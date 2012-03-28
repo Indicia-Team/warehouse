@@ -92,6 +92,7 @@ class iform_mnhnl_reptiles extends iform_mnhnl_dynamic_1 {
               "@searchUpdatesSref=true\r\n".
               "[point grid]\r\n".
               "@srefs=2169,LUREF (m),X,Y,;4326,Lat/Long Deg,Lat,Long,D;4326,Lat/Long Deg:Min,Lat,Long,DM;4326,Lat/Long Deg:Min:Sec,Lat,Long,DMS\r\n".
+              "[location comment]\r\n".
              "=Conditions=\r\n".
               "[target species grid]\r\n".
               "@targetSpeciesTermList=reptile:targetSpecies\r\n".
@@ -484,6 +485,16 @@ jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:
     return '';
   }
 
+  /**
+   * Get the location comment control
+   */
+  protected static function get_control_locationcomment($auth, $args, $tabalias, $options) {
+    return data_entry_helper::textarea(array_merge(array(
+      'fieldname'=>'location:comment',
+      'label'=>lang::get('Location Comment')
+    ), $options)); 
+  }
+
   protected static function get_control_lateJS($auth, $args, $tabalias, $options) {
    return iform_mnhnl_locationmodule_lateJS($auth, $args, $tabalias, $options);
   }
@@ -744,7 +755,7 @@ hook_species_checklist_pre_delete_row=function(e) {
         $thirdrow = "";
         if ($options['occurrenceComment']) {
           $thirdrow .= "\n<td class=\"ui-widget-content scCommentCell\" $colspan><label for=\"sc:$ttlid:$existing_record_id:occurrence:comment\" class=\"auto-width\" >".lang::get("Comment")." : </label><input class=\"scComment\" type=\"text\" name=\"sc:$ttlid:$existing_record_id:occurrence:comment\" ".
-          "id=\"sc:$ttlid:$existing_record_id:occurrence:comment\" value=\"".htmlspecialchars(utf8_decode(data_entry_helper::$entity_to_load["sc:$ttlid:$existing_record_id:occurrence:comment"]))."\" /></td>";
+          "id=\"sc:$ttlid:$existing_record_id:occurrence:comment\" value=\"".htmlspecialchars(data_entry_helper::$entity_to_load["sc:$ttlid:$existing_record_id:occurrence:comment"])."\" /></td>";
         }
         // no confidential checkbox.
         $rows[]='<tr>'.$firstrow.'</tr>';

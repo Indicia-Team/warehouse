@@ -17,7 +17,7 @@
   color:red !important;
 }
 .cggrid-row,.cgAddedRow {
-  border-top: solid silver 1px;
+  border-top: solid black 2px;
 }
 .remove-cgnewrow {
   color:red !important;
@@ -41,12 +41,27 @@
 input.cgAttr {
   width: 50px;
 }
+#conditions-grid label {
+	width: 108px;
+	padding-left: 6px;
+}
+#conditions-grid label.auto-width {
+	width: auto;
+}
+#conditions-grid td {
+  border: solid silver 1px;
+}
 .control-box span {
-    margin-left: 0px;
+  margin-left: 0px;
+}
+.control-box span * {
+  margin-left: 0px;
 }
 .control-box input {
   width: auto;
-  margin-left: 0px;
+}
+#conditions-grid .control-box label {
+  width: auto;
 }
 .cggrid-date {
   width: 90px;
@@ -67,10 +82,6 @@ p.inline-error {
 }
 .control-box {
   display:inline  !important;
-}
-#conditions-grid label {
-	width: 115px;
-	padding-left: 6px;
 }
 label.auto-width {
 	width: auto;

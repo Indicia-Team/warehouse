@@ -49,6 +49,7 @@ END)" />
        THEN regexp_replace(array(SELECT ST_AsText(st_transform(st_centroid((ST_dump(ST_CollectionExtract(xl2.boundary_geom,3))).geom),2169)) FROM locations xl2 where xl2.id = #this#.id )::text,'[(){}\\x22]|\\.[0-9]*|POINT','', 'g')
      ELSE ''
 END)" />
+      <tabColumn name='comment' display='Site comment'/>
     </subTable>
     <attributes separator='|' meaningIdLanguage='preferred'/>
     <subTable tablename="samples" tableKey="parent_id" parentKey="id" where="#this#.deleted = FALSE" >

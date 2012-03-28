@@ -901,7 +901,7 @@ hook_species_checklist_pre_delete_row=function(e) {
         <label for=\"sc:$ttlid:$existing_record_id:occurrence:comment\" class=\"auto-width\">".lang::get("Comment").":</label>
       </td>
       <td>
-        <input type=\"text\" class=\"scComment\" name=\"sc:$ttlid:$existing_record_id:occurrence:comment\" id=\"sc:$ttlid:$existing_record_id:occurrence:comment\" value=\"".htmlspecialchars(utf8_decode(data_entry_helper::$entity_to_load["sc:$ttlid:$existing_record_id:occurrence:comment"]))."\">
+        <input type=\"text\" class=\"scComment\" name=\"sc:$ttlid:$existing_record_id:occurrence:comment\" id=\"sc:$ttlid:$existing_record_id:occurrence:comment\" value=\"".htmlspecialchars(data_entry_helper::$entity_to_load["sc:$ttlid:$existing_record_id:occurrence:comment"])."\">
       </td>
     </tr></tbody>
   </table>

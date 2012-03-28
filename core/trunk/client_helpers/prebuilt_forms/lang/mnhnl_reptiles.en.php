@@ -97,6 +97,7 @@ $custom_terms = array(
 	'LANG_DeletePoint'=>'Delete this point',
 	'LANG_AddPoint'=>'Add this point',
 	'LANG_HighlightPoint'=>'Highlight this point',
+	'Location Comment' => 'Comment',
 
 	'LANG_Tab_otherinformation' => 'Conditions',
 	'LANG_Date' => 'Date',

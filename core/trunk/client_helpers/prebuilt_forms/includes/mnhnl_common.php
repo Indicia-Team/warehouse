@@ -1903,7 +1903,7 @@ jQuery('#".$options['mainFieldID']."').change(function(){
             'class'=>'checkGrid',
             'extraParams' => $auth['read'] + array('termlist_id'=>$args['siteNameTermListID'], 'orderby'=>'id'))));
     }
-    $retVal .= "<input type='hidden' id=\"sample-location-name\" name=\"sample:location_name\" value=\"".htmlspecialchars(utf8_decode(data_entry_helper::$entity_to_load['sample:location_name']))."\" />";
+    $retVal .= "<input type='hidden' id=\"sample-location-name\" name=\"sample:location_name\" value=\"".htmlspecialchars(data_entry_helper::$entity_to_load['sample:location_name'])."\" />";
     if($args['includeLocTools'] && function_exists('iform_loctools_listlocations')){
       $locations = iform_loctools_listlocations($node);
     } else $locations = 'all';
@@ -1973,7 +1973,7 @@ jQuery('#".$options['mainFieldID']."').change(function(){
                          array('', htmlentities(lang::get('LANG_CommonEmptyLocationID')), ''),
                          $indicia_templates[$locOptions['itemTemplate']]);
           foreach ($response as $record) {
-            $caption = htmlspecialchars(utf8_decode($record[$locOptions['captionField']])); // it will be extended using a attribute template by JS
+            $caption = htmlspecialchars($record[$locOptions['captionField']]); // it will be extended using a attribute template by JS
             $opts .= str_replace(array('{value}', '{caption}', '{selected}'),
                                array($record[$locOptions['valueField']], htmlentities($caption),
                                      isset(data_entry_helper::$entity_to_load['location:id']) ? (data_entry_helper::$entity_to_load['sample:location_id'] == $record[$locOptions['valueField']] ? 'selected=selected' : '') : ''),
@@ -1986,7 +1986,7 @@ jQuery('#".$options['mainFieldID']."').change(function(){
         // single site requires all location data in main form. Mult site must have array: depends on implementation so left to actual form.
         $retVal .= data_entry_helper::apply_template($locOptions['template'], $locOptions)."<br />";
         if($args['siteNameTermListID']== '') {
-          $retVal .= "<label for=\"location-name\">".$options['NameLabel'].":</label> <input type='text' id=\"location-name\" name=\"location:name\" class='required wide' value=\"".htmlspecialchars(utf8_decode(data_entry_helper::$entity_to_load['location:name']))."\" /><span class='deh-required'>*</span><br/>";
+          $retVal .= "<label for=\"location-name\">".$options['NameLabel'].":</label> <input type='text' id=\"location-name\" name=\"location:name\" class='required wide' value=\"".htmlspecialchars(data_entry_helper::$entity_to_load['location:name'])."\" /><span class='deh-required'>*</span><br/>";
         } else {
           $retVal .= data_entry_helper::select(array(
             'label'=>$options['NameLabel'], 
@@ -2010,7 +2010,7 @@ jQuery(\"#".$options['parentFieldID']."\").change(function(){
       } else {
       	// multiSite needs the location name.
         if($args['siteNameTermListID']== '') {
-          $retVal .= "<label for=\"dummy-name\">".$options['NameLabel'].":</label> <input type='text' id=\"dummy-name\" name=\"dummy:name\" class='wide' value=\"".htmlspecialchars(utf8_decode(data_entry_helper::$entity_to_load['location:name']))."\" /><span class='deh-required'>*</span><br/>";
+          $retVal .= "<label for=\"dummy-name\">".$options['NameLabel'].":</label> <input type='text' id=\"dummy-name\" name=\"dummy:name\" class='wide' value=\"".htmlspecialchars(data_entry_helper::$entity_to_load['location:name'])."\" /><span class='deh-required'>*</span><br/>";
         } else {
           $retVal .= data_entry_helper::select(array(
             'label'=>$options['NameLabel'], 
@@ -2092,11 +2092,11 @@ jQuery(\"#".$options['parentFieldID']."\").change(function(){
       } else
         $retVal .= '<p>'.lang::get("LANG_NoSites").'</p>';
         
-      $retVal .= "</fieldset><label for=\"location-name\">".$options['NameLabel'].":</label> <input id=\"location-name\" name=\"location:name\" class='wide required' value=\"".htmlspecialchars(utf8_decode(data_entry_helper::$entity_to_load['location:name']))."\"><span class=\"deh-required\">*</span><br />
+      $retVal .= "</fieldset><label for=\"location-name\">".$options['NameLabel'].":</label> <input id=\"location-name\" name=\"location:name\" class='wide required' value=\"".htmlspecialchars(data_entry_helper::$entity_to_load['location:name'])."\"><span class=\"deh-required\">*</span><br />
       <input type='hidden' id=\"sample-location-id\" name=\"sample:location_id\" value='".data_entry_helper::$entity_to_load['sample:location_id']."' />";
     }
     if(isset($args['includeLocationCode']) && $args['includeLocationCode'])
-      $retVal .= "<label for=\"location-code\">".$options['CodeLabel'].":</label> <input id=\"location-code\" name=\"location:code\" value=\"".htmlspecialchars(utf8_decode(data_entry_helper::$entity_to_load['location:code']))."\"><br />";
+      $retVal .= "<label for=\"location-code\">".$options['CodeLabel'].":</label> <input id=\"location-code\" name=\"location:code\" value=\"".htmlspecialchars(data_entry_helper::$entity_to_load['location:code'])."\"><br />";
     return $retVal;
 }
 

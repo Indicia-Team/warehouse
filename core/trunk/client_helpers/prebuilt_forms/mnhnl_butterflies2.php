@@ -141,7 +141,7 @@ class iform_mnhnl_butterflies2 extends iform_mnhnl_dynamic_1 {
   	if(!$retTabs) return array('#downloads' => lang::get('LANG_Download'), '#locations' => lang::get('LANG_Locations'));
     $LocationTypeID = iform_mnhnl_getTermID(self::$auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
     $retVal = '<div id="downloads" >
-    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_butterflies2_sites_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=downloadconditions">
+    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_butterflies2_sites_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=downloadsites">
       <p>'.lang::get('LANG_Sites_Report_Download').'</p>
       <input type="hidden" id="params" name="params" value=\'{"location_type_id":'.$LocationTypeID.'}\' />
       <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
@@ -280,8 +280,8 @@ createGridEntries = function(feature, isnew) {
       myID = feature.attributes.data.id;
       name = feature.attributes.data.name;
     }
-    var fieldname=newCGRows[0].find('.cggrid-name').attr('name');
-    jQuery(newCGRows[0]).find('.cggrid-namecell').empty().append('<input name=\"'+fieldname+'\" class=\"cggrid-name narrow\" value=\"'+name+'\" readonly=\"readonly\" ><input type=\"hidden\" name=\"CG:--rownum--:--sampleid--:location_id\" value=\"'+myID+'\" >');
+    var fieldname=jQuery(newCGRows[0]).find('.cggrid-name').attr('name');
+    jQuery(newCGRows[0]).find('.cggrid-namecell').empty().append('<input name=\"'+fieldname+'\" class=\"cggrid-name narrow\" value=\"'+name+'\" readonly=\"readonly\" ><input type=\"hidden\" name=\"CG:'+cgRowNum+':--sampleid--:location_id\" value=\"'+myID+'\" >');
     //  cggrid-centroid_sref,cggrid-centroid_geom,cggrid-boundary_geom,cggrid-location_type_id are all removed by the cggrid-name empty above
     jQuery(newCGRows[0]).find('.remove-cgnewrow').removeClass('remove-cgnewrow').addClass('clear-cgrow');
   } else {
@@ -309,7 +309,7 @@ createGridEntries = function(feature, isnew) {
     for(var i = newCGRows.length-1; i>=0; i--)
       jQuery(newCGRows[i]).insertAfter(insertPoint);
   }
-  jQuery(newCGrow[0]).find('.cggrid-date').datepicker({dateFormat : 'dd/mm/yy', changeMonth: true, changeYear: true, constrainInput: false, maxDate: '0', onClose: function() { $(this).valid(); }});
+  jQuery(newCGRows[0]).find('.cggrid-date').datepicker({dateFormat : 'dd/mm/yy', changeMonth: true, changeYear: true, constrainInput: false, maxDate: '0', onClose: function() { $(this).valid(); }});
   recalcNumSites();
   // Species grid 1) add to header, 2) add to cloneable row, 3) add to existing rows
   insertPoint=jQuery('#species-grid-header').children(':eq('+insertCount+')');
@@ -324,7 +324,7 @@ createGridEntries = function(feature, isnew) {
   });
   insertCount++;// double cells at start for these rows.
   insertPoint=jQuery('.sgCloneableRow').children(':eq('+insertCount+')');
-  jQuery('<td class=\"smp-'+cgRowNum+'\"><input class=\"digits narrow\" name=\"SG:'+cgRowNum+':--sampleid--:--ttlid--:--occid--:occAttr:".$countAttr."\" disabled=\"disabled\" min=\"1\"></td>').css('opacity',0.25).insertAfter(insertPoint);
+  jQuery('<td class=\"smp-'+cgRowNum+'\"><input class=\"digits narrow\" name=\"SG:--sgrownum--:'+cgRowNum+':--sampleid--:--ttlid--:--occid--:occAttr:".$countAttr."\" disabled=\"disabled\" min=\"1\"></td>').css('opacity',0.25).insertAfter(insertPoint);
   jQuery('.sgAddedRow,.sgOrigRow').each(function(i, Row) {
     insertPoint=jQuery(Row).children(':eq('+insertCount+')');
     jQuery('<td class=\"smp-'+cgRowNum+'\"><input class=\"digits narrow\" name=\"SG:'+jQuery(Row).data('taxonRow')+':'+cgRowNum+':--sampleid--:'+jQuery(Row).data('ttlid')+':--occid--:occAttr:".$countAttr."\" disabled=\"disabled\" min=\"1\"></td>').css('opacity',0.25).insertAfter(insertPoint);
@@ -730,7 +730,7 @@ jQuery('#cgCloneableTable').find('td').attr('disabled','disabled').find('input,s
     <td class=\"cggrid-namecell\" rowspan=".$numRows." ><input name=\"".$cloneprefix."name\" class=\"cggrid-name narrow\" value=\"\" readonly=\"readonly\" >
       <input type=\"hidden\" name=\"".$cloneprefix."location:centroid_sref\" class=\"cggrid-centroid_sref\" ><input type=\"hidden\" name=\"".$cloneprefix."location:centroid_geom\" class=\"cggrid-centroid_geom\" ><input type=\"hidden\" name=\"".$cloneprefix."location:boundary_geom\" class=\"cggrid-boundary_geom\" ><input type=\"hidden\" name=\"".$cloneprefix."location:location_type_id\" class=\"cggrid-location_type_id\" value=\"".$LocationTypeID."\"></td>
     ".$attrHtml[0]."
-    <td class=\"cggrid-datecell\"><label>".lang::get('Date').":</label> <input name=\"".$cloneprefix."date\" class=\"cggrid-date customDate checkYear checkComplete\" value=\"\" ></td>
+    <td class=\"cggrid-datecell\"><label class=\"auto-width\">".lang::get('Date').":</label> <input name=\"".$cloneprefix."date\" class=\"cggrid-date customDate checkYear checkComplete\" value=\"\" ></td>
     <td class=\"cggrid-commentcell\" colspan=".(count($sampleAttributes)-3)."><label>".lang::get('Comment').":</label> <input name=\"".$cloneprefix."comment\" class=\"cggrid-comment\" ></td>
   </tr>";
     for($i=1; $i<$numRows; $i++){
@@ -780,11 +780,11 @@ jQuery('#conditions-grid > tbody').find('tr:eq(".($numRows*($cgRowNum-1)+$i).")'
           $attrHtml[0] = preg_replace ( '/>/' , ' rowspan='.$numRows.'>' , $attrHtml[0], 1);
           $ret .= "  <tr class=\"cggrid-row\">
     <td class=\"ui-state-default clear-cgrow\" style=\"width: 1%\" rowspan=".$numRows." >X</td>
-    <td class=\"cggrid-namecell\" rowspan=".$numRows." ><input name=\"".$fieldprefix."name\" class=\"cggrid-name narrow\" value=\"".htmlspecialchars(utf8_decode($entity['name']))."\" readonly=\"readonly\" >
+    <td class=\"cggrid-namecell\" rowspan=".$numRows." ><input name=\"".$fieldprefix."name\" class=\"cggrid-name narrow\" value=\"".$entity['name']."\" readonly=\"readonly\" >
       <input type=\"hidden\" name=\"".$fieldprefix."location_id\" value=\"".$entity['location_id']."\" class=\"cggrid-location_id\" ></td>
     ".$attrHtml[0]."
-    <td class=\"cggrid-datecell\"><label>".lang::get('Date').":</label> <input name=\"".$fieldprefix."date\" class=\"cggrid-date customDate checkYear checkComplete\" value=\"".$entity['date']."\" ></td>
-    <td class=\"cggrid-commentcell\" colspan=".(count($sampleAttributes)-3)."><label>".lang::get('Comment').":</label> <input name=\"".$fieldprefix."comment\" class=\"cggrid-comment\" value=\"".htmlspecialchars(utf8_decode($entity['comment']))."\" ></td>
+    <td class=\"cggrid-datecell\"><label class=\"auto-width\">".lang::get('Date').":</label> <input name=\"".$fieldprefix."date\" class=\"cggrid-date customDate checkYear checkComplete\" value=\"".$entity['date']."\" ></td>
+    <td class=\"cggrid-commentcell\" colspan=".(count($sampleAttributes)-3)."><label>".lang::get('Comment').":</label> <input name=\"".$fieldprefix."comment\" class=\"cggrid-comment\" value=\"".htmlspecialchars($entity['comment'])."\" ></td>
   </tr>";
           for($i=1; $i<$numRows; $i++){
             $ret .= "  <tr class=\"cggrid-row".($i+1)."\">\n    ".$attrHtml[$i]."\n  </tr>\n";
@@ -1120,8 +1120,7 @@ hook_new_site_added = function(feature) {
     // locations and subsamples arrays are indexed by cgrownum.
     // next create an array of subsample models with their occurrences attached.
     $subsamples2 = array();
-    $newsgrowContents = array();
-    $oldsgrowContents = array();
+    $newsgrowContents = array(); // array indexed on sgrownum of subarrays of samples which have new occurrences
     ksort($subsamples); // by cgrownum
     foreach($subsamples as $sampleIndex => $subsampleFields) {
       if(isset($subsampleFields['date']) && $subsampleFields['date']['value']!=""){
@@ -1154,19 +1153,16 @@ hook_new_site_added = function(feature) {
             }
             if($parts[5] != "--occid--" && $parts[5] != ""){
               $occ['model']['fields']['id']=array('value' => $parts[5]);
-              $occs[] = $occ;
-              if(!isset($oldsgrowContents[intval($parts[1])]))
-                $oldsgrowContents[intval($parts[1])]=array();
-              $oldsgrowContents[intval($parts[1])][]=$sampleIndex;
             } else {
-              $occs[] = $occ;
               if(!isset($newsgrowContents[intval($parts[1])]))
                 $newsgrowContents[intval($parts[1])]=array();
               $newsgrowContents[intval($parts[1])][]=$sampleIndex;
             }
+            $occs[] = $occ;
           }
         }
         if(count($occs)>0) $subsample['model']['subModels'] = $occs;
+        $subsamples2[$sampleIndex] = $subsample;
       } else if(isset($subsampleFields['id']) && $subsampleFields['id']['value']!=""){
         $subsample = array('fkId' => 'parent_id',
           'model' => array('id' => 'sample','fields' => array(
@@ -1174,8 +1170,8 @@ hook_new_site_added = function(feature) {
             'deleted'=>array('value' => 't'),
             'website_id'=>$subsampleFields['website_id'],
             'survey_id'=>$subsampleFields['survey_id'])));
+        $subsamples2[$sampleIndex] = $subsample;
       }
-      $subsamples2[$sampleIndex] = $subsample;
     }
     // finally create an unindexed array of subsamples, in the order of sgrownum....
     // don't care about order of already saved occurrences, only new ones: in fact old ones may mess things up!
@@ -1192,12 +1188,11 @@ hook_new_site_added = function(feature) {
         }
       }
     }
-    foreach($oldsgrowContents as $sgrownum => $list){
-      foreach($list as $cgrow){
-        if(!isset($subsampleslist[$cgrow])){
-          $subsampleslist[$cgrow] = true;
-          $subsamples3[] = $subsamples2[$cgrow];
-        }
+    // now we dump in any other subsamples
+    foreach($subsamples2 as $cgrownum => $subsample){
+      if(!isset($subsampleslist[$cgrownum])){
+        $subsampleslist[$cgrownum] = true;
+        $subsamples3[] = $subsample;
       }
     }
     if(count($subsamples3)>0) $sampleMod['subModels'] = $subsamples3;

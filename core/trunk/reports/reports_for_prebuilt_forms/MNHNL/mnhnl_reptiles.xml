@@ -9,7 +9,7 @@
           INNER JOIN detail_termlists_terms dtt ON sav.int_value = dtt.meaning_id AND dtt.preferred = true
           WHERE s2.parent_id = s.id AND s2.deleted = false)::text, '}', ''), '{', ''), '"', '') as target_species,
   		parent.name as square,
-  		l.name,
+  		l.name as location_name,
   		sav1.text_value as creator,
   		s.date_start,
   		s.date_end,
