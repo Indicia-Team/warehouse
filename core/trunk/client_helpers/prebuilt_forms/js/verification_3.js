@@ -334,7 +334,7 @@ function showTab() {
           $('#chart-div').empty();
           $.jqplot('chart-div', [data], {
             seriesDefaults:{renderer:$.jqplot.BarRenderer, rendererOptions:[]}, legend:[], series:[],
-            axes:{"xaxis":{"renderer":$.jqplot.CategoryAxisRenderer,"ticks":["1","2","3","4","5","6","7","8","9","10","11","12"]},"yaxis":{"min":0}}
+            axes:{"xaxis":{"label":indiciaData.str_month,"showLabel":true,"renderer":$.jqplot.CategoryAxisRenderer,"ticks":["1","2","3","4","5","6","7","8","9","10","11","12"]},"yaxis":{"min":0}}
           });
           $('#chart-div').css('opacity',1);
         }

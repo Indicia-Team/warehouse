@@ -462,3 +462,9 @@ button.default-button:hover {
 #record-details-toolbar label {
   width: 100px;
 }
+
+/* line 218, sass/verification_3.scss */
+#phenology-tab p {
+  font-size: 80%;
+  margin: 0;
+}

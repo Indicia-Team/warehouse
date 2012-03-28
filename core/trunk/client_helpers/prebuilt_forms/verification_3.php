@@ -381,7 +381,8 @@ idlist=';
       iform_map_get_ol_options($args)
     );
     $r .= '</div>';
-    $r .= '<div id="phenology-tab"><div id="chart-div"></div></div>';
+    $r .= '<div id="phenology-tab"><p>'.lang::get('The following phenology chart shows the relative abundance of records through the '.
+        'year for this species, <em>from the online recording data only.</em>').'</p><div id="chart-div"></div></div>';
     $r .= '<div id="images-tab"></div>';
     $r .= '<div id="comments-tab"></div>';
     $r .= '</div></div></div></div>';
@@ -446,7 +447,8 @@ idlist=';
       'divId'=>'record-details-tabs'
     ));
     $r .= '<div id="details-tab"></div>';    
-    $r .= '<div id="phenology-tab"><div id="chart-div"></div></div>';
+    $r .= '<div id="phenology-tab"><p>'.lang::get('The following phenology chart shows the relative abundance of records through the '.
+        'year for this species, <em>from the online recording data only.</em>').'</p><div id="chart-div"></div></div>';
     $r .= '<div id="images-tab"></div>';
     $r .= '<div id="comments-tab"></div>';
     $r .= '</div></div></div></div></div>';
@@ -623,6 +625,7 @@ idlist=';
     data_entry_helper::$javascript .= 'indiciaData.email_subject_dubious = "'.$args['email_subject_dubious']."\";\n";
     $body = str_replace(array("\r", "\n"), array('', '\n'), $args['email_subject_dubious']);
     data_entry_helper::$javascript .= 'indiciaData.email_subject_dubious = "'.$body."\";\n";
+    data_entry_helper::$javascript .= 'indiciaData.str_month = "'.lang::get('month')."\";\n";
     data_entry_helper::add_resource('jqplot');
     data_entry_helper::add_resource('jqplot_bar');
     return $r;
