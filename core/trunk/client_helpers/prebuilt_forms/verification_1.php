@@ -392,9 +392,8 @@ var email_body_send_to_verifier = "'.str_replace(array("\r", "\n"), array('', '\
    * Use the mapping from Drupal to Indicia users to get the Indicia user ID for the current logged in Drupal user.
    */
   private static function get_indicia_user_id($args) {
-    $userId = '';
     global $user;
-    if (substr(',', $args['verifiers_mapping'])!==false) {
+    if (strpos($args['verifiers_mapping'], ',')!==false) {
       $arr = explode(',', $args['verifiers_mapping']);
       foreach ($arr as $mapping) {
         $mapArr = explode('=', $mapping);
