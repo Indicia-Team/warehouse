@@ -275,6 +275,13 @@ class iform_verification_3 {
           'type'=>'text_input',
           'required'=>false,
           'group'=>'Other Map Settings'
+        ),array(
+          'name'=>'indicia_species_layer_sld',
+          'caption'=>'SLD file from GeoServer for Indicia species layer',
+          'description'=>'Set to the name of an SLD file available on the GeoServer for the rendering of the Indicia species layer, or leave blank for default.',
+          'type'=>'text_input',
+          'required'=>false,
+          'group'=>'Other Map Settings'
         ),
         array(
           'name'=>'additional_wms_species_layer_title',
@@ -560,6 +567,7 @@ idlist=';
           '  "wmsUrl":"'.data_entry_helper::$geoserver_url."wms\",\n".
           '  "cqlFilter":"website_id IN ('.implode(',',$websiteIds).') AND '.$args['indicia_species_layer_filter_field']."='{filterValue}'\",\n".
           '  "filterField":"'.$args['indicia_species_layer_ds_filter_field']."\",\n".
+          '  "sld":"'.(isset($args['indicia_species_layer_sld']) ? $args['indicia_species_layer_sld'] : '')."\",\n".
           "};\n";
     }
     if (!empty($args['additional_wms_species_layer_title'])) {

@@ -85,19 +85,19 @@
   *display: inline;
 }
 /* line 63, sass/verification_3.scss */
-#verification-grid div.verification_check_identification_difficulty {
+#verification-grid div.data_cleaner_identification_difficulty {
   background: url("../images/nuvola/xmag-16px.png") no-repeat 2px 2px;
 }
 /* line 67, sass/verification_3.scss */
-#verification-grid div.verification_check_period {
+#verification-grid div.data_cleaner_period {
   background: url("../images/nuvola/history-16px.png") no-repeat 2px 2px;
 }
 /* line 71, sass/verification_3.scss */
-#verification-grid div.verification_check_period_within_year {
+#verification-grid div.data_cleaner_period_within_year {
   background: url("../images/nuvola/date-16px.png") no-repeat 2px 2px;
 }
 /* line 75, sass/verification_3.scss */
-#verification-grid div.verification_check_polygon {
+#verification-grid div.data_cleaner_without_polygon {
   background: url("../images/nuvola/browser-16px.png") no-repeat 2px 2px;
 }
 /* line 79, sass/verification_3.scss */

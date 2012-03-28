@@ -1,4 +1,4 @@
-var mapDiv = null, occurrence_id = null, current_record = null, urlSep, validator;
+var mapDiv = null, occurrence_id = null, current_record = null, urlSep, validator, speciesLayers = [];
 var email = {to:'', subject:'', body:'', type:''};
 
 function selectRow(tr) {
@@ -17,19 +17,17 @@ function selectRow(tr) {
         $(tr).parents('tbody').children('tr').removeClass('selected');
         $(tr).addClass('selected');
         // point the image and comments tabs to the correct AJAX call for the selected occurrence.
-        var tabcount = $('#record-details-tabs').tabs('length');
-        $('#record-details-tabs').tabs('url', tabcount-2, indiciaData.ajaxUrl + '/images/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id);
-        $('#record-details-tabs').tabs('url', tabcount-1, indiciaData.ajaxUrl + '/comments/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id);
+        $('#record-details-tabs').tabs('url', indiciaData.detailsTabs.indexOf('images'), indiciaData.ajaxUrl + '/images/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id);
+        $('#record-details-tabs').tabs('url', indiciaData.detailsTabs.indexOf('comments'), indiciaData.ajaxUrl + '/comments/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id);
         // reload current tabs
         $('#record-details-tabs').tabs('load', $('#record-details-tabs').tabs('option', 'selected'));
         $('#record-details-toolbar *').attr('disabled', '');
         showTab();
         // remove any wms layers for species or the gateway data
-        $.each(mapDiv.map.layers, function(idx, layer) {
-          if (layer.CLASS_NAME==='OpenLayers.Layer.WMS') {
-            mapDiv.map.removeLayer(layer);
-          }
+        $.each(speciesLayers, function(idx, layer) {
+          mapDiv.map.removeLayer(layer);
         });
+        speciesLayers = [];
         var layer, thisSpSettings, filter;
         if (typeof indiciaData.wmsSpeciesLayers!=="undefined") {
           $.each(indiciaData.wmsSpeciesLayers, function(idx, layerDef) {
@@ -43,14 +41,16 @@ function selectRow(tr) {
             layer = new OpenLayers.Layer.WMS(layerDef.title, layerDef.url.replace('{external_key}', data.additional.taxon_external_key), 
                 thisSpLyrSettings, layerDef.olSettings);
             mapDiv.map.addLayer(layer);
+            speciesLayers.push(layer);
           });
         }
         if (typeof indiciaData.indiciaSpeciesLayer!=="undefined") {
-          filter=indiciaData.indiciaSpeciesLayer.cqlFilter.replace('{filterValue}',data[indiciaData.indiciaSpeciesLayer.filterField]);
+          filter=indiciaData.indiciaSpeciesLayer.cqlFilter.replace('{filterValue}',data.additional[indiciaData.indiciaSpeciesLayer.filterField]);
           layer = new OpenLayers.Layer.WMS(indiciaData.indiciaSpeciesLayer.title, indiciaData.indiciaSpeciesLayer.wmsUrl, 
-              {layers: indiciaData.indiciaSpeciesLayer.featureType, transparent: true, CQL_FILTER: filter},
-              {isBaseLayer: false, sphericalMercator: true, singleTile: true});
+              {layers: indiciaData.indiciaSpeciesLayer.featureType, transparent: true, CQL_FILTER: filter, STYLES: indiciaData.indiciaSpeciesLayer.sld},
+              {isBaseLayer: false, sphericalMercator: true, singleTile: true, opacity: 0.5});
           mapDiv.map.addLayer(layer);
+          speciesLayers.push(layer);
         }
       }
     }
@@ -342,17 +342,32 @@ function showTab() {
     }
     if (mapDiv !== null) {
       // Ensure the current record is centred and highlighted on the map.
-      var parser = new OpenLayers.Format.WKT(),
-        feature = parser.read(current_record.additional.wkt),
-        c,
-        lastFeature;
-      if (mapDiv.map.projection.getCode() != 'EPSG:3857') {
-        feature.geometry = feature.geometry.transform(new OpenLayers.Projection('EPSG:3857'), mapDiv.map.projection);
+      if (current_record.additional.wkt!==null) {
+        var parser = new OpenLayers.Format.WKT(),
+          feature = parser.read(current_record.additional.wkt),
+          c,
+          lastFeature;
+        if (mapDiv.map.projection.getCode() != 'EPSG:3857') {
+          feature.geometry = feature.geometry.transform(new OpenLayers.Projection('EPSG:3857'), mapDiv.map.projection);
+        }
+        // Make the current record marker obvious
+        var style = $.extend({}, mapDiv.map.editLayer.styleMap.styles['default']['defaultStyle'], {fillOpacity: 0.5, fillColor: '#0000FF'});
+        feature.style=style;
+        feature.tag='currentRecord';
+        mapDiv.map.editLayer.addFeatures([feature]);
+        c = feature.geometry.getCentroid();
+        mapDiv.map.setCenter(new OpenLayers.LonLat(c.x, c.y));
+        // default is to show approx 100m of map
+        var maxDimension=100;
+        if (feature.geometry.CLASS_NAME!=='OpenLayers.Geometry.Point') {
+          var bounds = feature.geometry.bounds;
+          maxDimension = Math.max(bounds.right-bounds.left, bounds.top-bounds.bottom)*4;
+        }
+        mapDiv.map.zoomTo(mapDiv.map.getZoomForExtent(new OpenLayers.Bounds(0, 0, maxDimension, maxDimension)));
+        $(mapDiv).css('opacity', 1);
+      } else {
+        $(mapDiv).css('opacity', 0.1);
       }
-      // Make the current record marker obvious
-      var style = $.extend({}, mapDiv.map.editLayer.styleMap.styles['default']['defaultStyle'], {fillOpacity: 0.5, fillColor: '#0000FF'});
-      feature.style=style;
-      feature.tag='currentRecord';
       var toRemove=[];
       $.each(mapDiv.map.editLayer.features, function(idx, feature) {
         if (feature.tag==='currentRecord') {
@@ -360,16 +375,6 @@ function showTab() {
         }
       });
       mapDiv.map.editLayer.removeFeatures(toRemove, {});
-      mapDiv.map.editLayer.addFeatures([feature]);
-      c = feature.geometry.getCentroid();
-      mapDiv.map.setCenter(new OpenLayers.LonLat(c.x, c.y));
-      // default is to show approx 100m of map
-      var maxDimension=100;
-      if (feature.geometry.CLASS_NAME!=='OpenLayers.Geometry.Point') {
-        var bounds = feature.geometry.bounds;
-        maxDimension = Math.max(bounds.right-bounds.left, bounds.top-bounds.bottom)*4;
-      }
-      mapDiv.map.zoomTo(mapDiv.map.getZoomForExtent(new OpenLayers.Bounds(0, 0, maxDimension, maxDimension)));
     }
   }
 }
