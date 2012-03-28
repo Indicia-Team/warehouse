@@ -40,6 +40,8 @@
   var baseColourId = '';
   var textColourId = '';
   var sequenceId = '';
+  var hideOrDisable = 'disable';
+  var validate = false;
 
   /*
    * Private variables
@@ -170,10 +172,29 @@
   var setIdentifierDisplayState = function(checkboxId) {
     // make identifier fieldset display state reflect the checkbox setting
     var fieldsetId = checkboxId.replace('identifier:checkbox', 'fieldset');
-    if ($('#'+esc4jq(checkboxId)+':checked').length===0) {
-      $('#'+esc4jq(fieldsetId)).slideUp();
-    } else {
-      $('#'+esc4jq(fieldsetId)).slideDown();
+    switch (hideOrDisable) {
+    case 'hide' :
+      if ($('#'+esc4jq(checkboxId)+':checked').length===0) {
+        $('#'+esc4jq(fieldsetId)).slideUp();
+      } else {
+        $('#'+esc4jq(fieldsetId)).slideDown();
+      }
+      break;
+    case 'disable' :
+      if ($('#'+esc4jq(checkboxId)+':checked').length===0) {
+        $('#'+esc4jq(fieldsetId)+':hidden').show();
+        $('input, select', '#'+esc4jq(fieldsetId)).each(function() {
+          $(this).attr('disabled', true);
+        });
+        $('.indentifier-colourbox', '#'+esc4jq(fieldsetId)).fadeOut();
+      } else {
+        $('#'+esc4jq(fieldsetId)+':hidden').show();
+        $('input, select', '#'+esc4jq(fieldsetId)).each(function() {
+          $(this).attr('disabled', false);
+        });
+        $('.indentifier-colourbox', '#'+esc4jq(fieldsetId)).fadeIn();
+      }
+      break;
     }
   };
 
@@ -193,41 +214,55 @@
       break;
     }
   };
+  
+  var errorHTML = function(ctlId, msg) {
+    var html = '<p class="inline-error" generated="true" htmlfor="'+ctlId+'">'+msg+'.</p>';
+    return html;
+  };
 
   /*
    * Public functions
    */
 
   /**
-   * initialises lock settings and set event handlers, called from indicia ready
+   * initialises settings and set event handlers, called from indicia ready
    * handler.
    */
-  indicia.wwt.initForm = function(pSvcUrl, pReadNonce, pReadAuthToken, pBaseColourId, pTextColourId, pSequenceId) {
-    // set config from PHP.
-    svcUrl = pSvcUrl;
+  indicia.wwt.initForm = function(pSvcUrl, pReadNonce, pReadAuthToken, pBaseColourId, pTextColourId, pSequenceId, pHideOrDisable, pValidate) {
+      // set config from PHP.
+      svcUrl = pSvcUrl;
     readNonce = pReadNonce;
     readAuthToken = pReadAuthToken;
     baseColourId = parseInt(pBaseColourId);
     textColourId = parseInt(pTextColourId);
     sequenceId = parseInt(pSequenceId);
+    hideOrDisable = pHideOrDisable;
+    validate = pValidate=='true';
     // install the submit handler for the form
     $('form#entry_form').submit(function(event) {
       var codes = [];
-      // for each identifier
+      var idnCount = 0;
+      // for each identifier in use
       $('fieldset.taxon_identifier').each(function() {
-        // set the unique identifier:coded_value
-        var parts = this.id.split(':');
-        var idx = parts[1];
-        var iType = parts[2];
-        var iCode = makeIdentifierCode(idx, iType);
-        if (iCode) {
-          $('#idn\\:'+idx+'\\:'+iType+'\\:identifier\\:coded_value').val(iCode);
-          codes[codes.length] = iCode;
+        var checkboxId = this.id.replace('fieldset', 'identifier:checkbox');
+        if ($('#'+esc4jq(checkboxId)+':checked').length > 0) {
+          idnCount++;
+          // set the unique identifier:coded_value
+          var parts = this.id.split(':');
+          var idx = parts[1];
+          var iType = parts[2];
+          var iCode = makeIdentifierCode(idx, iType);
+          if (iCode) {
+            $('#idn\\:'+idx+'\\:'+iType+'\\:identifier\\:coded_value').val(iCode);
+            if ($('#idn\\:'+idx+'\\:'+iType+'\\:identifier\\:identifier_id').val()=='-1') {
+              codes[codes.length] = iCode;
+            }
+          }
         }
       });
-      // check if each identifier exists on warehouse and set its id if so.
-      var query = {"in" : ["coded_value", codes ]};
-      if ($('input.identifier_id').val()=='-1') {
+      if (codes.length > 0) {
+        // check if each identifier in use and without an id, exists on warehouse and set its id if so.
+        var query = {"in" : ["coded_value", codes ]};
         $.ajax({
           type: 'GET', 
           url: svcUrl+'/data/identifier?mode=json' +
@@ -252,11 +287,47 @@
           async: false 
         });
       }
-      // now continue with the submit
-      return true;
+      // if jQuery validation not in use, we do some basic validation
+      var valid = true;
+      if (validate) {
+        // the taxon must be set
+        $('[id$="taxa_taxon_list_id"]').each(function() {
+          if ($(this).val()=='') {
+            valid = false;
+            $(this).addClass('ui-state-error');
+            $(this).after(errorHTML(this.id, 'This field is required'));
+          }
+        });
+        // at least one identifier must be set
+        $('[id$="taxa_taxon_list_id"]').each(function() {
+          var parts = this.id.split(':');
+          var iCount = $('input[id^="'+parts[0]+'\\:'+parts[1]+'\\:"]:checked').filter('.identifier_checkbox').length;
+          if (iCount===0) {
+            valid = false;
+            var checkBox$ = $('input[id^="'+parts[0]+'\\:'+parts[1]+'\\:"]').filter('.identifier_checkbox');
+            checkBox$.after(errorHTML(this.id, 'At least one identifier must be recorded'));
+          }
+        });
+        // the sample date must be set
+        var date$ = $('#sample\\:date');
+        if (date$.val()=='') {
+          valid = false;
+          date$.addClass('ui-state-error');
+          date$.after(errorHTML(this.id, 'This field is required'));
+        }
+        // the spatial ref must be set
+        var place$ = $('#imp-sref');
+        if (place$.val()=='') {
+          valid = false;
+          place$.addClass('ui-state-error');
+          place$.after(errorHTML(this.id, 'This field is required'));
+        }
+      }
+      // now continue with the submit if all valid
+      return valid;
     });
     // set indentifier initial display state to reflect the checkbox setting
-    $('.identifier_checkbox:checked').each(function() {
+    $('.identifier_checkbox').each(function() {
       setIdentifierDisplayState(this.id);
     });
     // install a click handler for the identifier checkboxes to display the identifier fields

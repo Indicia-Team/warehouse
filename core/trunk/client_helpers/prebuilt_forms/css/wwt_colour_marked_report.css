@@ -2,8 +2,8 @@
 
 .ui-state-highlight,.ui-widget-content .ui-state-highlight {
 	border: 1px solid #008f93;
-	background: #ffffff;
-	color: #008f93;
+	background: #008f93;
+	color: #ffffff;
 }
 
 #tabs-wrapper h2, #tabs-wrapper h3 {
@@ -45,7 +45,5 @@ h2 {
 	font-family: Verdana, sans-serif;
 	line-height: 2em;
 	margin-left: 0.5em;
-	background-color: #ffffff;
-	color: #000000;
 }
 	

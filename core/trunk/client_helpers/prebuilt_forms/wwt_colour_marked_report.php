@@ -89,6 +89,7 @@ class iform_wwt_colour_marked_report {
             'wizard' => 'Wizard',
             'one_page' => 'All One Page'
           ),
+          'default' => 'wizard',
           'group' => 'User Interface'
         ),
         array(
@@ -96,7 +97,7 @@ class iform_wwt_colour_marked_report {
           'caption'=>'Show Progress through Wizard/Tabs',
           'description'=>'For Wizard or Tabs interfaces, check this option to show a progress summary above the controls.',
           'type'=>'boolean',
-          'default' => false,
+          'default' => true,
           'required' => false,
           'group' => 'User Interface'
         ),
@@ -149,8 +150,8 @@ class iform_wwt_colour_marked_report {
             "<strong>=tab/page name=</strong> is used to specify the name of a tab or wizard page. (Alpha-numeric characters only)<br/>".
             "<strong>=*=</strong> indicates a placeholder for putting any custom attribute tabs not defined in this form structure. <br/>".
             "<strong>[control name]</strong> indicates a predefined control is to be added to the form with the following predefined controls available: <br/>".
-                "&nbsp;&nbsp;<strong>[species]</strong> - a species grid or input control<br/>".
-                "&nbsp;&nbsp;<strong>[species attributes]</strong> - any custom attributes for the occurrence, if not using the grid. Also includes a file upload ".
+                "&nbsp;&nbsp;<strong>[species]</strong> - a species input control<br/>".
+                "&nbsp;&nbsp;<strong>[species attributes]</strong> - any custom attributes for the occurrence.  Also includes a file upload ".
                 "box if relevant. The attrubutes @resizeWidth and @resizeHeight can specified on subsequent lines, otherwise they default to 1600.<br/>".
                 "&nbsp;&nbsp;<strong>[date]</strong><br/>".
                 "&nbsp;&nbsp;<strong>[map]</strong><br/>".
@@ -163,7 +164,6 @@ class iform_wwt_colour_marked_report {
                 "&nbsp;&nbsp;<strong>[record status]</strong><br/>".
                 "&nbsp;&nbsp;<strong>[sample comment]</strong>. <br/>".
                 "&nbsp;&nbsp;<strong>[observation comment]</strong>. <br/>".
-                "&nbsp;&nbsp;<strong>[identifier]</strong>. <br/>".
                 "&nbsp;&nbsp;<strong>[species identifier]</strong>. <br/>".
             "<strong>@option=value</strong> on the line(s) following any control allows you to override one of the options passed to the control. The options ".
         "available depend on the control. For example @label=Abundance would set the untranslated label of a control to Abundance. Where the ".
@@ -176,16 +176,15 @@ class iform_wwt_colour_marked_report {
             "<strong>?help text?</strong> is used to define help text to add to the tab, e.g. ?Enter the name of the site.?",
           'type'=>'textarea',
           'default' => "=Colour Marks=\r\n".
-              "?Please pick the species from the following list and enter the details for the colour identifiers.?\r\n".
+              "?Please pick the species from the following list and enter the details for the bird and the colour marks.?\r\n".
               "[species identifier]\r\n".
               "@individualRepeat=1\r\n".
               "[species attributes]\r\n".
               "[*]\r\n".
-              "=Date=\r\n".
+              "=When and Where=\r\n".
               "?Please tell us when you saw the colour-marked bird.?\r\n".
               "[date]\r\n".
               "[*]\r\n".
-              "=Place=\r\n".
               "?Please tell us where you saw the marked bird. You can do this in any of the following ways:-<ol>".
               "<li>enter GPS co-ordinates or an OS grid reference directly,</li>".
               "<li>enter a place name and search for it,</li>".
@@ -248,39 +247,11 @@ class iform_wwt_colour_marked_report {
           'group' => 'User Interface'
         ),
         array(
-          'name'=>'multiple_occurrence_mode',
-          'caption'=>'Allow a single ad-hoc record or a list of records',
-          'description'=>'Method of data entry, one occurrence at a time, via a grid allowing '.
-              'entry of multiple occurrences at the same place and date, or allow the user to choose.',
-          'type'=>'select',
-          'options' => array(
-            'single' => 'Only allow entry of one occurrence at a time',
-            'multi' => 'Only allow entry of multiple occurrences using a grid',
-            'either' => 'Allow the user to choose single or multiple occurrence data entry.'
-          ),
-          'default' => 'multi',
-          'group' => 'Species'
-        ),
-        array(
           'fieldname'=>'list_id',
           'label'=>'Species List ',
           'helpText'=>'The species list that species can be selected from. This list is pre-populated '.
               'into the grid when doing grid based data entry, or provides the list which a species '.
               'can be picked from when doing single occurrence data entry.',
-          'type'=>'select',
-          'table'=>'taxon_list',
-          'valueField'=>'id',
-          'captionField'=>'title',
-          'required'=>false,
-          'group'=>'Species',
-          'siteSpecific'=>true
-        ),
-        array(
-          'fieldname'=>'extra_list_id',
-          'label'=>'Extra Species List',
-          'helpText'=>'The second species list that species can be selected from. This list is available for additional '.
-              'taxa being added to the grid when doing grid based data entry. It is not used when the form is configured '.
-              'to allow a single occurrence to be input at a time.',
           'type'=>'select',
           'table'=>'taxon_list',
           'valueField'=>'id',
@@ -315,7 +286,7 @@ class iform_wwt_colour_marked_report {
             'treeview' => 'Treeview',
             'tree_browser' => 'Tree browser'
           ),
-          'default' => 'autocomplete',
+          'default' => 'select',
           'group'=>'Species'
         ),
         array(
@@ -337,15 +308,6 @@ class iform_wwt_colour_marked_report {
           'group' => 'Species'
         ),
         array(
-          'name'=>'occurrence_comment',
-          'caption'=>'Occurrence Comment',
-          'description'=>'Should an input box be present for a comment against each occurrence?',
-          'type'=>'boolean',
-          'required' => false,
-          'default'=>false,
-          'group'=>'Species'
-        ),
-        array(
           'name'=>'occurrence_confidential',
           'caption'=>'Occurrence Confidential',
           'description'=>'Should a checkbox be present for confidential status of each occurrence?',
@@ -362,15 +324,6 @@ class iform_wwt_colour_marked_report {
           'required' => false,
           'default'=>false,
           'group'=>'Species'
-        ),
-        array(
-          'name'=>'col_widths',
-          'caption'=>'Grid Column Widths',
-          'description'=>'Provide percentage column widths for each species checklist grid column as a comma separated list. To leave a column at its default with, put a blank '.
-              'entry in the list. E.g. "25,,20" would set the first column to 25% width and the 3rd column to 20%, leaving the other columns as they are.',
-          'type'=>'string',
-          'group'=>'Species',
-          'required' => false
         ),
         array(
           'name'=>'taxon_filter_field',
@@ -413,19 +366,7 @@ class iform_wwt_colour_marked_report {
           ),
           'default' => 'all',
           'group'=>'Species'
-        ),
-        array(
-          'name'=>'link_species_popups',
-          'caption'=>'Create popups for certain species',
-          'description'=>'You can mark some blocks of the form to only be shown as a popup when a certain species is entered into the species grid. For each popup block, '.
-              'put the species name on a newline, followed by | then the outer block name, followed by | then the inner block name if relevant. For example, '.
-              '"Lasius niger|Additional info|Colony info" pops up the controls from the block Additional Info > Colony info when a species is entered with this '.
-              'name. For the species name, specify the preferred name from list.',
-          'type' => 'textarea',
-          'required'=>false,
-          'group'=>'Species'
-        ),
-        array(
+        ),        array(
           'name'=>'spatial_systems',
           'caption'=>'Allowed Spatial Ref Systems',
           'description'=>'List of allowable spatial reference systems, comma separated. Use the spatial ref system code (e.g. OSGB or the EPSG code number such as 4326). '.
@@ -474,23 +415,6 @@ class iform_wwt_colour_marked_report {
               'sample:date but will be extended in future.',
           'type'=>'textarea',
           'default'=>'occurrence:record_status=C'
-        ),
-        array(
-          'name'=>'includeLocTools',
-          'caption'=>'Include Location Tools',
-          'description'=>'Include a tab for the allocation of locations when displaying the initial grid.',
-          'type'=>'boolean',
-          'required' => false,
-          'default' => false,
-          'group' => 'Locations'
-        ),
-        array(
-          'name'=>'loctoolsLocTypeID',
-          'caption'=>'Location Tools Location Type ID filter',
-          'description'=>'When performing allocation of locations, filter available locations by this location_type_id.',
-          'type'=>'int',
-          'required' => false,
-          'group' => 'Locations'
         ),
         array(
           'name'=>'identifier_types',
@@ -550,7 +474,7 @@ class iform_wwt_colour_marked_report {
           'table'=>'termlists_term',
           'captionField'=>'term',
           'valueField'=>'id',
-          'extraParams' => array('termlist_external_key'=>'indicia:assoc:identifier_position'),
+          'extraParams' => array('termlist_external_key'=>'indicia:assoc:identifier_position','orderby'=>'sort_order'),
           'required' => false,
           'helpText' => 'The helptext. Todo: change this one you see where it shows on screen!!',
           'group' => 'Identifiers',
@@ -559,6 +483,16 @@ class iform_wwt_colour_marked_report {
           'name'=>'use_colour_picker',
           'caption'=>'Use Colour Picker',
           'description'=>'Tick this to use a colour-picker control for choosing colours rather than a select control of colour names.',
+          'type'=>'boolean',
+          'required' => false,
+          'default' => false,
+          'group' => 'Identifiers'
+        ),
+        array(
+          'name'=>'hide_unused_identifiers',
+          'caption'=>'Hide Unused Identifier Details',
+          'description'=>'If this is ticked, the details of any specified identifier will be hidden until the their box is ticked. '.
+            'Otherwise, the detail fields are just disabled rather than hidden.',
           'type'=>'boolean',
           'required' => false,
           'default' => false,
@@ -596,7 +530,7 @@ class iform_wwt_colour_marked_report {
           'table'=>'termlists_term',
           'captionField'=>'term',
           'valueField'=>'id',
-          'extraParams' => array('termlist_external_key'=>'indicia:assoc:gender'),
+          'extraParams' => array('termlist_external_key'=>'indicia:assoc:gender','orderby'=>'sort_order'),
           'required' => false,
           'helpText' => 'The helptext. Todo: change this one you see where it shows on screen!!',
           'group' => 'Subject observation',
@@ -610,7 +544,7 @@ class iform_wwt_colour_marked_report {
           'table'=>'termlists_term',
           'captionField'=>'term',
           'valueField'=>'id',
-          'extraParams' => array('termlist_external_key'=>'indicia:assoc:stage'),
+          'extraParams' => array('termlist_external_key'=>'indicia:assoc:stage','orderby'=>'sort_order'),
           'required' => false,
           'helpText' => 'The helptext. Todo: change this one you see where it shows on screen!!',
           'group' => 'Subject observation',
@@ -624,7 +558,7 @@ class iform_wwt_colour_marked_report {
           'table'=>'termlists_term',
           'captionField'=>'term',
           'valueField'=>'id',
-          'extraParams' => array('termlist_external_key'=>'indicia:assoc:life_status'),
+          'extraParams' => array('termlist_external_key'=>'indicia:assoc:life_status','orderby'=>'sort_order'),
           'required' => false,
           'helpText' => 'The helptext. Todo: change this one you see where it shows on screen!!',
           'group' => 'Subject observation',
@@ -645,6 +579,14 @@ class iform_wwt_colour_marked_report {
     self::parse_defaults($args);
     self::getArgDefaults($args);
     self::$node = $node;
+    
+    // hard-wire some 'dynamic' options to simplify the form. Todo: take out the dynamic code for these
+    $args['multiple_occurrence_mode'] = 'single';
+    $args['extra_list_id'] = '';
+    $args['occurrence_comment'] = false;
+    $args['col_widths'] = '';
+    $args['includeLocTools'] = false;
+    $args['loctoolsLocTypeID'] = 0;
     
     // Get authorisation tokens to update and read from the Warehouse.
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
@@ -878,43 +820,7 @@ class iform_wwt_colour_marked_report {
     }   
     $r .= "</form>";
     
-    $r .= self::link_species_popups($args);
     if (method_exists(get_called_class(), 'getTrailerHTML')) $r .= call_user_func(array(get_called_class(), 'getTrailerHTML'), true, $args);
-    return $r;
-  }
-  
-  /** 
-   * Implement the link_species_popups parameter. This hides any identified blocks and pops them up when a certain species is entered.
-   */
-  protected static function link_species_popups($args) {
-    $r='';
-    if (isset($args['link_species_popups']) && !empty($args['link_species_popups'])) {
-      data_entry_helper::add_resource('fancybox');
-      $popups = helper_base::explode_lines($args['link_species_popups']);    
-      foreach ($popups as $popup) {
-        $tokens = explode("|", $popup);
-        if (count($tokens)==2) 
-          $fieldset = get_fieldset_id($tokens[1]);
-        else if (count($tokens)==3) 
-          $fieldset = get_fieldset_id($tokens[1],$tokens[2]);
-        else
-          throw new Exception('The link species popups form argument contains an invalid value');
-        // insert a save button into the fancyboxed fieldset, since the normal close X looks like it cancels changes
-        data_entry_helper::$javascript .= "$('#$fieldset').append('<input type=\"button\" value=\"".lang::get('Close')."\" onclick=\"$.fancybox.close();\" ?>');\n";
-        // create an empty link that we can fire to fancybox the popup fieldset
-        $r .= "<a href=\"#$fieldset\" id=\"click-$fieldset\"></a>\n";
-        // add a hidden div to the page so we can put the popup fieldset into it when not popped up
-        data_entry_helper::$javascript .= "$('#$fieldset').after('<div style=\"display:none;\" id=\"hide-$fieldset\"></div>');\n";
-        // put the popup fieldset into the hidden div
-        data_entry_helper::$javascript .= "$('#hide-$fieldset').append($('#$fieldset'));\n";
-        // capture new row events on the grid
-        data_entry_helper::$javascript .= "hook_species_checklist_new_row=function(data) { 
-  if (data.preferred_name=='$tokens[0]') {
-    $('#click-$fieldset').fancybox({showCloseButton: false}).trigger('click');
-  }
-}\n";
-      }
-    }
     return $r;
   }
   
@@ -1527,15 +1433,20 @@ class iform_wwt_colour_marked_report {
         }
       }
     }
-    
+    $hideOrDisable = $args['hide_unused_identifiers'] ? 'hide' : 'disable';
+    $validate = $args['clientSideValidation'] ? 'false' : 'true';
+    // configure the identifiers javascript
+    //data_entry_helper::$javascript .= "indicia.wwt.initForm (
     data_entry_helper::$javascript .= "indicia.wwt.initForm (
       '".$svcUrl."', 
       '".$auth['read']['nonce']."',
       '".$auth['read']['auth_token']."',
       '".$options['baseColourId']."',
       '".$options['textColourId']."',
-      '".$options['sequenceId']."'
-      );\n";
+      '".$options['sequenceId']."',
+      '".$hideOrDisable."',
+      '".$validate."'\n".
+      ");\n";
     
     $r = '';
     if (empty($options['individualRepeat']) || !is_numeric($options['individualRepeat'])) {
@@ -1550,7 +1461,7 @@ class iform_wwt_colour_marked_report {
       }
       // output the species selection control
       $options['blankText'] = '<Please select>';
-      $r .= self::get_control_species($auth, $args, $tabalias, $options);
+      $r .= self::get_control_species($auth, $args, $tabalias, $options+array('validation' => array('required')));
       // gender
       if ($options['genderId'] > 0
         && !empty($args['request_gender_values'])
@@ -1602,6 +1513,7 @@ class iform_wwt_colour_marked_report {
           'extraParams' => $extraParams,
         ), $options));
       }
+      
       // loop through each requested identifier
       foreach ($identAttrLines as $identifierLine) {
         $ident_parts = explode(',', str_replace(' ', '', strtolower($identifierLine)));
@@ -1775,8 +1687,7 @@ class iform_wwt_colour_marked_report {
     $submission = self::add_occurrence_submissions($submission, $values);
     // add observation and identifier data to sample/occurrence in submission
     $submission = self::add_observation_submissions($submission, $values, $args);
-    //array_push($sample['subModels'], array('fkId' => 'sample_id', 'model' => $observation));
-    //$submission = $sample;
+    
     return($submission);
   }
     
@@ -1993,30 +1904,8 @@ class iform_wwt_colour_marked_report {
    * working.
    */
   protected function getArgDefaults(&$args) {
-     if (!isset($args['structure']) || empty($args['structure']))
-      $args['structure'] = "=Species=\r\n".
-              "?Please enter the species you saw and any other information about them.?\r\n".
-              "[species]\r\n".
-              "[species attributes]\r\n".
-              "[*]\r\n".
-              "=Place=\r\n".
-              "?Please provide the spatial reference of the record. You can enter the reference directly, or search for a place then click on the map.?\r\n".
-              "[place search]\r\n".
-              "[spatial reference]\r\n".
-              "[map]\r\n".
-              "[*]\r\n".
-              "=Other Information=\r\n".
-              "?Please provide the following additional information.?\r\n".
-              "[date]\r\n".
-              "[sample comment]\r\n".
-              "[*]\r\n".
-              "=*=";
-    if (!isset($args['occurrence_comment']))
-      $args['occurrence_comment'] == false; 
-    if (!isset($args['occurrence_images']))
-      $args['occurrence_images'] == false; 
-	  if (!isset($args['attribute_termlist_language_filter']))
-	    $args['attribute_termlist_language_filter'] == false;
+    if (!isset($args['hide_unused_identifiers']))
+      $args['hide_unused_identifiers'] == false; 
   }
 
   protected function getReportActions() {
