@@ -1,6 +1,6 @@
 <report
-    title="Auto-checked verification data"
-    description="List of occurrences for verification with support for mapping the occurrences and the verification check system."
+    title="Explore records"
+    description="Report designed for the explore records facility in iRecord."
 >
   <query website_filter_field="o.website_id">
   SELECT #columns#
