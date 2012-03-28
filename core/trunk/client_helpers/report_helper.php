@@ -1952,7 +1952,7 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     }
     foreach ($reloadUrl['params'] as $key => $value) {
       if (!in_array($key, $excludedParams)){
-        $reloadUrl['path'] .= (strpos($pageUrl,'?')===false ? '?' : '&')."$key=$value";
+        $reloadUrl['path'] .= (strpos($reloadUrl['path'],'?')===false ? '?' : '&')."$key=$value";
       }
     }
     return $reloadUrl['path'];
@@ -2265,47 +2265,6 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     // Note for the calendar reports, the user_id is assumed to be the CMS user id as recorded in the CMS User ID attribute,
     // not the Indicia user id.
     return $options;
-  }
-
- /**
-   * Works out the page URL param names for this report calendar grid, and also gets their current values.
-   * Note there is no need to sort for the calender grid.
-   * @param $options Control options array
-   * @return array Contains the page params, as an assoc array. Each array value is an array containing name & value.
-   */
-  private static function get_report_calendar_summary_page_url_params($options) {
-    $yearKey = 'year';
-    return array(
-      'year' => array(
-        'name' => $yearKey,
-        'value' => isset($_GET[$yearKey]) ? $_GET[$yearKey] : null
-      )
-    );
-  }
-  /**
-   * Build a url suitable for inclusion in the links for the report calendar grid column pagination
-   * bar. This effectively re-builds the current page's URL, but drops the query string parameters that
-   * indicate the year and site.
-   * Note there is no need to sort for the calender grid.
-   * @param array $pageUrlParams List pagination parameters which should be excluded.
-   * @return string
-   */
-  private static function report_calendar_summary_get_reload_url($pageUrlParams) {
-    // get the url parameters. Don't use $_GET, because it contains any parameters that are not in the
-    // URL when search friendly URLs are used (e.g. a Drupal path node/123 is mapped to index.php?q=node/123
-    // using Apache mod_alias but we don't want to know about that)
-    $reloadUrl = data_entry_helper::get_reload_link_parts();
-    // find the names of the params we must not include
-    $excludedParams = array();
-    foreach($pageUrlParams as $param) {
-      $excludedParams[] = $param['name'];
-    }
-    foreach ($reloadUrl['params'] as $key => $value) {
-      if (!in_array($key, $excludedParams)){
-        $reloadUrl['path'] .= (strpos($pageUrl,'?')===false ? '?' : '&')."$key=$value";
-      }
-    }
-    return $reloadUrl['path'];
   }
 
 }

@@ -38,7 +38,7 @@ class iform_report_calendar_summary {
    */
   public static function get_report_calendar_summary_definition() {
     return array(
-      'title'=>'Report Calendar Summary v2',
+      'title'=>'Report Calendar Summary',
       'category' => 'Reporting',
       'description'=>'Outputs a grid of sumary data loaded from an Indicia report, arranged by week.',
       'helpLink' => 'http://code.google.com/p/indicia/wiki/PrebuiltFormReportCalendarSummary'
