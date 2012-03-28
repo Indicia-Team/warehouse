@@ -2045,6 +2045,11 @@ if (typeof(mapSettingsHooks)!=='undefined') {
   * Examples: "1:30" - Weeks one to thirty inclusive.
   * "4:" - Week four onwards.
   * ":5" - Upto and including week five.</li>
+  * <li><b>rowGroupColumn</b>
+  * The column in the report which is used as the vertical axis on the grid.</li>
+  * <li><b>countColumn</b>
+  * OPTIONAL: The column in the report which contains the count for this occurrence. If omitted then the default
+  * is to assume one occurrence = count of 1</li>
   */
   // Future Enhancements? Allow restriction to month.
   public static function report_calendar_summary($options) {
@@ -2060,11 +2065,11 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     $extras = '';
     self::request_report($response, $options, $currentParamValues, false, $extras);
     if (isset($response['error'])) {
-      return "ERROR RETURNED FROM request_report:".$response['error'];
+      return "ERROR RETURNED FROM request_report:<br />".(print_r($response,true));
     }
     // We're not even going to bother with asking the user to populate a partially filled in report parameter set.
     if (isset($response['parameterRequest'])) {
-      return '<p>Internal Error: Report request parameters not set up correctly.<p>';    
+      return '<p>Internal Error: Report request parameters not set up correctly.<br />'.(print_r($response,true)).'<p>';    
     }
     // convert records to a date based array so it can be used when generating the grid.
     $records = $response['records'];
@@ -2134,14 +2139,20 @@ if (typeof(mapSettingsHooks)!=='undefined') {
         $this_date->modify('+7 days');
         $weekno--;
       }
-      if(isset($summaryArray[$record['taxon']])) { //todo
-        if(isset($summaryArray[$record['taxon']][$weekno])){
-          $summaryArray[$record['taxon']][$weekno] += 1; //todo count in report
+      if(isset($options['countColumn'])){
+        if(!isset($record[$options['countColumn']]))
+          return "Error: can't find ".$options['countColumn']." in record keys ".implode(',',array_keys($record));
+      	$count = $record[$options['countColumn']];
+      } else
+        $count = 1; // default to single row = single occurrence
+      if(isset($summaryArray[$record[$options['rowGroupColumn']]])) {
+        if(isset($summaryArray[$record[$options['rowGroupColumn']]][$weekno])){
+          $summaryArray[$record[$options['rowGroupColumn']]][$weekno] += $count; //todo count in report
         } else {
-          $summaryArray[$record['taxon']][$weekno] = 1;
+          $summaryArray[$record[$options['rowGroupColumn']]][$weekno] = $count;
         }
       } else {
-        $summaryArray[$record['taxon']] = array($weekno => 1);
+        $summaryArray[$record[$options['rowGroupColumn']]] = array($weekno => $count);
       }
     }
     $year_start = date_create($date_from['year'].'-Jan-01');
@@ -2242,13 +2253,14 @@ if (typeof(mapSettingsHooks)!=='undefined') {
         // it is possible to create a partial calendar.
       'includeWeekNumber' => false,
       'weekstart' => 'weekday=7', // Default Sunday
-      'weekNumberFilter' => ':'
+      'weekNumberFilter' => ':',
+      'rowGroupColumn'=>'taxon'
     ), $options);
     $options["extraParams"] = array_merge(array(
       'date_from' => $options["year"].'-01-01',
       'date_to' => $options["year"].'-12-31',
       'user_id' => $user->uid, // CMS User, not Indicia User.
-      'smpattrs' => '',
+//      'smpattrs' => '',
       'occattrs' => ''), $options["extraParams"]);
     // Note for the calendar reports, the user_id is assumed to be the CMS user id as recorded in the CMS User ID attribute,
     // not the Indicia user id.

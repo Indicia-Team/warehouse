@@ -38,7 +38,7 @@ class iform_report_calendar_summary {
    */
   public static function get_report_calendar_summary_definition() {
     return array(
-      'title'=>'Report Calendar Summary',
+      'title'=>'Report Calendar Summary v2',
       'category' => 'Reporting',
       'description'=>'Outputs a grid of sumary data loaded from an Indicia report, arranged by week.',
       'helpLink' => 'http://code.google.com/p/indicia/wiki/PrebuiltFormReportCalendarSummary'
@@ -79,12 +79,33 @@ class iform_report_calendar_summary {
           'group' => 'Report Settings'
         ),
         array(
+          'name'=>'locationTypeFilter',
+          'caption'=>'Restrict locations to type',
+          'description'=>'Retrict the locations in the user specific location filter to a particular location type. The CMS User ID attribute must be defined for this location type or all location types.',
+          'type'=>'select',
+          'table'=>'termlists_term',
+          'captionField'=>'term',
+          'valueField'=>'id',
+          'extraParams'=>array('termlist_external_key'=>'indicia:location_types'),
+          'default' => false,
+          'required' => false,
+          'group' => 'Report Settings'
+        ),
+        array(
           'name'=>'includeSrefInLocationFilter',
           'caption'=>'Include Sref in location filter name',
           'description'=>'When including a user specific location filter, choose whether to include the sref when generating the select name.',
           'type'=>'boolean',
           'default' => true,
           'required' => false,
+          'group' => 'Report Settings'
+        ),
+        array(
+          'name'=>'locationParam',
+          'caption'=>'Location Parameter',
+          'description'=>'When using the user specific location filter, pass the filter value through to the report using this parameter name.',
+          'type'=>'string',
+          'default' => 'location_id',
           'group' => 'Report Settings'
         ),
         array(
@@ -127,6 +148,22 @@ class iform_report_calendar_summary {
           'type'=>'string',
           'required' => false,
           'group' => 'Report Settings'
+        ),
+        array(
+          'name'=>'rowGroupColumn',
+          'caption'=>'Vertical Axis',
+          'description'=>'The column in the report which is used as the vertical axis in the grid.',
+          'type'=>'string',
+          'default'=>'taxon',
+          'group' => 'Report Settings'
+        ),
+        array(
+          'name'=>'countColumn',
+          'caption'=>'Count Column',
+          'description'=>'The column in the report which is used as the count associated with the occurrence. If not proviced then each occurrence has a count of one.',
+          'type'=>'string',
+          'required' => false,
+          'group' => 'Report Settings'
         )
     );
   }
@@ -149,16 +186,18 @@ class iform_report_calendar_summary {
     return $reportOptions;
   }
 
+  /* This is the URL parameter used to pass the location_id filter through */
+  private static $locationKey = 'location_id';
+  
   private function location_control($args, $readAuth, $node)
   {
     global $user;
     // loctools is not appropriate here as it is based on a node, for which this is a very simpe one, invoking other nodes for the sample creation
     // need to scan param_presets for survey_id..
-    $locationKey = 'location_id';
     $siteUrlParams = array(
-      $locationKey => array(
-        'name' => $locationKey,
-        'value' => isset($_GET[$locationKey]) ? $_GET[$locationKey] : null
+      self::$locationKey => array(
+        'name' => self::$locationKey,
+        'value' => isset($_GET[self::$locationKey]) ? $_GET[self::$locationKey] : null
       )
     );
     $presets = get_options_array_with_user_data($args['param_presets']);
@@ -172,6 +211,8 @@ class iform_report_calendar_summary {
         'fieldprefix'=>'locAttr',
         'extraParams'=>$readAuth,
         'survey_id'=>$presets['survey_id']);
+    if(isset($args['locationTypeFilter']))
+      $attrArgs['location_type_id'] = $args['locationTypeFilter'];
     $locationAttributes = data_entry_helper::getAttributes($attrArgs, false);
     $cmsAttr=extract_cms_user_attr($locationAttributes,false);
     if(!$cmsAttr){
@@ -201,9 +242,9 @@ class iform_report_calendar_summary {
     $ctrlid='calendar-location-select-'.$node->nid;
     $ctrl='<label for="'.$ctrlid.'" class="location-select-label">'.lang::get('Filter by location').
           ' :</label><select id="'.$ctrlid.'" class="location-select">'.
-          '<option value="" class="location-select-option" '.($siteUrlParams[$locationKey]['value']==null ? 'selected=\"selected\" ' : '').'>'.lang::get('All locations').'</option>';
+          '<option value="" class="location-select-option" '.($siteUrlParams[self::$locationKey]['value']==null ? 'selected=\"selected\" ' : '').'>'.lang::get('All locations').'</option>';
     foreach($locationList as $location){
-      $ctrl .= '<option value='.$location['id'].' class="location-select-option" '.($siteUrlParams[$locationKey]['value']==$location['id'] ? 'selected=\"selected\" ' : '').'>'.
+      $ctrl .= '<option value='.$location['id'].' class="location-select-option" '.($siteUrlParams[self::$locationKey]['value']==$location['id'] ? 'selected=\"selected\" ' : '').'>'.
                $location['name'].(isset($args['includeSrefInLocationFilter']) && $args['includeSrefInLocationFilter'] ? ' ('.$location['centroid_sref'].')' : '').
                '</option>';
     }
@@ -218,7 +259,7 @@ class iform_report_calendar_summary {
         $reloadUrl['path'] .= (strpos($reloadUrl['path'],'?')===false ? '?' : '&')."$key=$value";
       }
     }
-    $param=(strpos($reloadUrl['path'],'?')===false ? '?' : '&').$locationKey.'=';
+    $param=(strpos($reloadUrl['path'],'?')===false ? '?' : '&').self::$locationKey.'=';
     data_entry_helper::$javascript .="
 jQuery('#".$ctrlid."').change(function(){
   window.location = '".$reloadUrl['path']."' + (jQuery(this).val()=='' ? '' : '".$param."'+jQuery(this).val());
@@ -236,13 +277,9 @@ jQuery('#".$ctrlid."').change(function(){
    */
   public static function get_form($args, $node, $response) {
   // Future enhancement? manager user access right who can see all walks by all people, with a person filter drop down.
-  // Future enhancement? Download list of surveys used as basis for calendar
+  // Future enhancement? Download
   // Future Enhancement? Restrict to location_type_id
-  // TODO optional week numbering: if not the do first of Week.
-  // TODO configurable label column from report
   // TODO configurable use of count attribute for value.
-  // TODO CLASSES, inc altRow
-  // TODO CSS.
   // Aggregate other sample based attrs?
     global $user;
     $logged_in = $user->uid>0;
@@ -251,18 +288,25 @@ jQuery('#".$ctrlid."').change(function(){
     }
     iform_load_helpers(array('report_helper'));
     $auth = report_helper::get_read_auth($args['website_id'], $args['password']);
-    /* survey_id should be set in param_presets $args entry. This is then fetched by iform_report_get_report_options */
+    // survey_id should be set in param_presets $args entry. This is then fetched by iform_report_get_report_options 
     $reportOptions = self::get_report_calendar_options($args, $auth);
-    // get the grid output before outputting the download link, so we can check if the download link is needed.
     $reportOptions['id']='calendar-summary-'.$node->nid;
     if(isset($_GET['year'])) $reportOptions['year']=$_GET['year'];
-    $reportOptions['weekstart']= $args['weekstart'];
+    $reportOptions['weekstart']=$args['weekstart'];
     if(isset($args['weekHeaders'])) $reportOptions['weekHeaders']=$args['weekHeaders'];
-    if(isset($args['weekOneContains'])) $reportOptions['weekOneContains']= $args['weekOneContains'];
-    if(isset($args['weekNumberFilter'])) $reportOptions['weekNumberFilter']= $args['weekNumberFilter'];
-    // TODO add location_id filter to report
-    $grid = (isset($args['includeLocationFilter']) && $args['includeLocationFilter'] ? self::location_control($args, $auth, $node) : '').
-            report_helper::report_calendar_summary($reportOptions);
-    return $grid;
+    if(isset($args['weekOneContains'])) $reportOptions['weekOneContains']=$args['weekOneContains'];
+    if(isset($args['weekNumberFilter'])) $reportOptions['weekNumberFilter']=$args['weekNumberFilter'];
+    if(isset($args['rowGroupColumn'])) $reportOptions['rowGroupColumn']=$args['rowGroupColumn'];
+    if(isset($args['countColumn']) && $args['countColumn']!='') {
+      $reportOptions['countColumn']= 'attr_occurrence_'.str_replace(' ', '_', strtolower($args['countColumn'])); // assume that this is an occurrence attribute.
+      $reportOptions['extraParams']['occattrs']=$args['countColumn'];
+    }
+    $retVal = '';
+    if(isset($args['includeLocationFilter']) && $args['includeLocationFilter']){
+    	$retVal .= self::location_control($args, $auth, $node);
+    	$reportOptions['extraParams'][$args['locationParam']] = (isset($_GET[self::$locationKey])?$_GET[self::$locationKey]:'');
+    }
+    $retVal .= report_helper::report_calendar_summary($reportOptions);
+    return $retVal;
   }
 }
