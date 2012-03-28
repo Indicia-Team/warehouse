@@ -25,7 +25,7 @@
 
 $(document).ready(function() {
   
-var total=0;
+var totaldone=0;
 
 /**
 * Upload a single chunk of files, by doing an AJAX get. If there is more, then on receiving the response upload the
@@ -33,16 +33,18 @@ var total=0;
 */
 uploadChunk = function() {
   $.ajax({
-    url: '<?php echo url::base(); ?>index.php/verification_rule/upload_rule_file?uploadId=<?php echo $uploadId; ?>&totaldone='+total,
+    url: '<?php echo url::base(); ?>index.php/verification_rule/upload_rule_file?uploadId=<?php echo $uploadId; ?>&totaldone='+totaldone,
     dataType: 'json',
     success: function(response) {
-      if (typeof response.error!=='undefined') {
-        $('#messages div').append(response.error + '<br/>');
-      } else {
-        $('#messages div').append('File '+response.lastfile+' done.<br/>');
-      }
+      $.each(response.errors, function(idx, error) {
+        $('#messages > div').append('<div class="error">' + error + '</div>');
+      });
+      $.each(response.files, function(idx, file) {
+        $('#messages > div').append('<div class="ok">' + file + ' done</div>');
+      });
+      $('#messages div').scrollTop(999999);
       $('#progress-bar').progressbar ('option', 'value', response.progress);
-      total++;
+      totaldone=response.totaldone;
       if (typeof response.complete!=="undefined") {
         jQuery('#progress-text').html('Upload complete.');
         $('#progress').hide();

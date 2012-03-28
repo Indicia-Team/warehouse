@@ -139,7 +139,6 @@ function data_cleaner_run_rules($rules, $db) {
       // we now have the query ready to run which will return a list of the occurrence ids that fail the check.
       try {
         $count += $db->query($sql)->count();
-        echo $db->last_query().'<br/>';
       } catch (Exception $e) {
         echo "Query failed<br/>";
         echo $e->getMessage().'<br/>';

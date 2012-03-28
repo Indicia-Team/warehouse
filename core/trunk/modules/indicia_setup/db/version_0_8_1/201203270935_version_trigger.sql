@@ -19,5 +19,7 @@ BEGIN
 END;
 $taxon_verification_check_versioning$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS taxon_verification_check_versioning ON taxa_taxon_list_attribute_values;
+
 CREATE TRIGGER taxon_verification_check_versioning AFTER INSERT OR UPDATE ON taxa_taxon_list_attribute_values
 	FOR EACH ROW EXECUTE PROCEDURE taxon_verification_check_versioning();

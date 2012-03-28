@@ -83,8 +83,7 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
           $files[] = array(
             'file' => $tokens[0],
             'title' => $tokens[1],
-            'date' => $tokens[2],
-            'source_url'=>$serverList[$idx]['file']
+            'date' => $tokens[2]
           );
         }
         // build a string we can use to create an upload identifier
@@ -96,22 +95,28 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
       foreach($files as $file)
         $paths[] = array(
           'file'=>$this->process_rule_zip_file($file['title'], $file['file']),
-          'source_url'=>$file['source_url']
+          'source_url'=>$file['file'],
+          'title'=>$file['title']
         );
       $ruleFiles = array();
       foreach ($paths as $path) {
-        $dir = opendir($path['file'].'/extract');
-        while (false !== $ruleFile = readdir($dir))
-          if (substr($ruleFile, 0, 1)!=='.')
+        $dir_iterator = new RecursiveDirectoryIterator($path['file'].'/extract');
+        $iterator = new RecursiveIteratorIterator($dir_iterator, RecursiveIteratorIterator::SELF_FIRST);
+        foreach ($iterator as $file) {
+          if ($file->isFile()) {
+            $relativePath = substr($file->getRealPath(), strlen(realpath($path['file'].'/extract')));
             $ruleFiles[] = array(
-              'file'=>$path['file']."/extract/$ruleFile",
-              'source_url'=>$path['source_url']
+              'file'=>$file->__toString(),
+              'source_url'=>$path['source_url'].$relativePath,
+              'display'=>$path['title'].' '.$relativePath
             );
+          }
+        }
       }
       // Save the rule file list to a cached list, so we can preserve it across http requests
       $uploadId = time() . md5($uniqueUploadKey);
       $cacheHandle = fopen(DOCROOT . "extract/$uploadId.txt", "w");
-      fwrite($cacheHandle, json_encode($ruleFiles));
+      fwrite($cacheHandle, json_encode(array('paths'=>$paths, 'files'=>$ruleFiles)));
       fclose($cacheHandle);
       //  show a progress view.
       $view = new View('verification_rule/upload_rule_files');
@@ -133,9 +138,6 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
    * @return bool Returns true or an error string.
    */
   private function process_rule_zip_file($name, $sourcefile) {
-    $session = curl_init($sourcefile);
-    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-    $content = curl_exec($session);
     try {
       $dir = $this->create_zip_extract_dir().'rules-'.time().'-'.rand(0,1000);
     } catch (Exception $e) {
@@ -144,7 +146,14 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
     mkdir($dir, 0777, TRUE);
     mkdir("$dir/extract", 0777, TRUE);
     $zipFile = "$dir/".basename($sourcefile);
-    file_put_contents($zipFile, $content);
+    $fh = fopen($zipFile, "wb");
+    // str_replace used here for spaces in file names, I would have thought urlencode would work but apparently not...
+    $session = curl_init(str_replace(' ','%20',$sourcefile));
+    curl_setopt($session, CURLOPT_FILE, $fh);
+    curl_exec($session);
+    if (curl_errno($session)) 
+      throw new exception("Error downloading zip file $sourcefile: ".curl_error($session));
+    curl_close($session);
     $zip = new ZipArchive;
     $res = $zip->open($zipFile);
     $zip->extractTo("$dir/extract/");
@@ -173,51 +182,75 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
    */
   public function upload_rule_file() {
     $this->auto_render=false;
+    $start=time();
+    $totaldone=$_GET['totaldone'];
     // find the cached list of files we are processing.
     $uploadId = $_GET['uploadId'];
     $cacheHandle = fopen(DOCROOT . "extract/$uploadId.txt", "r");
-    $content = fread($cacheHandle,100000);
+    $cacheData = fread($cacheHandle,10000000);
     fclose($cacheHandle);
-    $files = json_decode($content,true);
-    $filepath = $files[$_GET['totaldone']]['file'];
-    // try fopen as more likely to work for local files.
-    $resource=fopen($filepath, 'r');
-    if ($resource!==false) {
-      $filecontent = fread($resource,100000);
-    } else {
-      // try curl as more likely to work for remote files
-      $session = curl_init();
-      curl_setopt ($session, CURLOPT_URL, $fullpath);
-      curl_setopt($session, CURLOPT_HEADER, false);
-      curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-      $filecontent = curl_exec($session);
-      if (curl_errno($session)) {
-        echo json_encode(array(
-          'error' => curl_error($session),
-          'filepath' => $fullpath
-        ));
-        return;
+    $cacheArr = json_decode($cacheData,true);
+    $response=array('files'=>array(),'errors'=>array());
+    // Do whatever we can get done in 10 seconds. 
+    while (time()<$start+10 && $totaldone<count($cacheArr['files'])) {
+      try {
+        $response['files'][] = $this->internal_upload_rule_file($totaldone, $cacheArr);      
+      } catch (Exception $e) {
+        error::log_error('Verification rule import', $e);
+        $response['errors'][]=$e->getMessage();
       }
+      $totaldone++;
     }
-    $response = array('lastfile'=>basename($filepath));
-    
-    try {
-      $this->read_file_content($filecontent, basename($filepath), $files[$_GET['totaldone']]['source_url']);
-    } catch (Exception $e) {
-      kohana::log('debug', $e->getMessage());
-      $response['error']=$e->getMessage();
-    }
-    if ($_GET['totaldone']>=count($files)-1) {
+    if ($totaldone>=count($cacheArr['files'])) {
       $response['complete']=true;
+      $response['progress']=100;
       // clean up the cached list of files to process
-      unlink(DOCROOT . "extract/$uploadId.txt");
-      // @todo clean up the extract directory
-    }
-    $reponse['progress'] = (($_GET['totaldone']+1) * 100) / count($files);
+//      unlink(DOCROOT . "extract/$uploadId.txt");
+      foreach($cacheArr['paths'] as $path) {
+//        $this->deleteDir($path['file']);
+      }
+    } else    
+      $response['progress'] = ($totaldone * 100) / count($cacheArr['files']);
+    $response['totaldone'] = $totaldone;
     echo json_encode($response);
-  
   }
   
+  private function internal_upload_rule_file($totaldone, $cacheArr) {
+    $filepath = $cacheArr['files'][$totaldone]['file'];
+    // try fopen as more likely to work for local files.
+    $resource=fopen($filepath, 'r');
+    if ($resource===false) {
+      throw new exception("Could not open file $filepath");
+    }
+    $filecontent = fread($resource,1000000);
+    $this->read_file_content($filecontent, basename($filepath), $cacheArr['files'][$_GET['totaldone']]['source_url']);
+    return $cacheArr['files'][$totaldone]['display'];
+  }
+  
+  /**
+   * Recursively deletes the contents of a directory
+   */
+  private function deleteDir($dirPath) {
+    if (! is_dir($dirPath)) {
+      throw new InvalidArgumentException('$dirPath must be a directory');
+    }
+    if (substr($dirPath, strlen($dirPath) - 1, 1) != '/' && substr($dirPath, strlen($dirPath) - 1, 1) != '\\') {
+      $dirPath .= '/';
+    }
+    $files = glob($dirPath . '*', GLOB_MARK);
+    foreach ($files as $file) {
+      if (is_dir($file)) {
+        $this->deleteDir($file);
+      } else {
+        unlink($file);
+      }
+    }
+    rmdir($dirPath);
+  }
+
+  /**
+   * Process the content of a verification rule file.
+   */
   private function read_file_content($filecontent, $filename, $source_url) {
     $fileSettings = $this->parse_test_file($filecontent, true);
     if (!isset($fileSettings['Metadata']))
@@ -274,14 +307,13 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
       'verification_rule:source_filename'=>$filename,
       'verification_rule:error_message'=>$errorMsg,
     );
-    
-    if ($vr->id!==0) 
+    $newRule = $vr->id===0;
+    if (!$newRule)
       $submission['verification_rule:id']=$vr->id;
     if (isset($fileSettings['Metadata']['Description']))
       $submission['verification_rule:description']=$fileSettings['Metadata']['Description'];
     $vr->set_submission_data($submission);
     $vr->submit();
-    kohana::log('debug', 'vr saved');
     if (count($vr->getAllErrors())>0)
       throw new exception("Errors saving $filename to database - ".print_r($vr->getAllErrors(), true));
     // work out the other fields to submit
@@ -308,46 +340,70 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
     }
     // Metadata done now. 
     unset($fields['Metadata']);
-    // counter to keep track of groups of related field values in a data section
+    // counter to keep track of groups of related field values in a data section. Not implemented properly 
+    // at the moment but we are likely to need this e.g. for periodInYear checks with multiple stages.
     $dataGroup=1;
+    $rows = array();
     foreach($fields as $dataSection=>$dataContent) {
-      foreach ($dataContent as $field) {
-        if ($field==='*') {
-          // * means that any field value is allowed
-          foreach ($fileSettings[$dataSection] as $anyField=>$anyValue)
-            $this->save_verification_rule_data($vr->id, $dataSection, $dataGroup, $anyField, $anyValue);
+      if (isset($fileSettings[$dataSection])) {
+        foreach ($dataContent as $key) {
+          if ($key==='*') {
+            // * means that any field value is allowed
+            foreach ($fileSettings[$dataSection] as $anyField=>$anyValue)
+              $rows[] = array('dataSection'=>$dataSection, 'dataGroup'=>$dataGroup, 'key'=>$anyField, 'value'=>$anyValue);
+          }
+          elseif (isset($fileSettings[$dataSection][$key])) 
+            // doing specific named fields
+            $rows[] = array('dataSection'=>$dataSection, 'dataGroup'=>$dataGroup, 'key'=>$key, 'value'=>$fileSettings[$dataSection][$field]);
         }
-        elseif (isset($fileSettings[$dataSection][$field])) 
-          // doing specific named fields
-          $this->save_verification_rule_data($vr->id, $dataSection, $dataGroup, $field, $fileSettings[$dataSection][$field]);
       }
+    }
+    $this->save_verification_rule_data($vr->id, $rows, $newRule);
+    // Is there any post processing for the rule plugin, e.g. to construct a geom from grid squares?
+    $ppMethod = $currentRule['plugin'].'_data_cleaner_postprocess';
+    require_once(MODPATH.$currentRule['plugin'].'/plugins/'.$currentRule['plugin'].'.php');
+    if (function_exists($ppMethod)) {
+      call_user_func($ppMethod, $vr->id, $this->db);
     }
   }
   
   /**
    * Save a verification rule data record, either overwriting existing or creating a new one.
    * Avoids ORM for performance reasons as some files can be pretty big.
-   * @param type $vrId
-   * @param type $dataSection
-   * @param type $dataGroup
-   * @param type $field
-   * @param type $value 
+   * @param integer $vrId
+   * @param array $rows
+   * @param bool $newRule Is this a new or existing rule?
    */
-  private function save_verification_rule_data($vrId, $dataSection, $dataGroup, $field, $value) {
-    $updated = $this->db->update('verification_rule_data', 
-      array('value'=>$value, 'updated_on'=>date("Ymd H:i:s"), 'updated_by_id'=>$_SESSION['auth_user']->id), 
-      array(
-        'header_name'=>$dataSection, 'data_group'=>$dataGroup, 
-        'verification_rule_id'=>$vrId, 'key'=>strval($field)
-      )
-    );
-    if (!count($updated)) {
-      $this->db->insert('verification_rule_data', array('header_name'=>$dataSection, 'data_group'=>$dataGroup, 
-        'verification_rule_id'=>$vrId, 'key'=>strval($field), 'value'=>$value, 
-        'updated_on'=>date("Ymd H:i:s"), 'updated_by_id'=>$_SESSION['auth_user']->id,
-        'created_on'=>date("Ymd H:i:s"), 'created_by_id'=>$_SESSION['auth_user']->id));
-      
+  private function save_verification_rule_data($vrId, $rows, $newRule) { //$dataSection, $dataGroup, $field, $value) {
+    // only worth trying an update if we are updating an existing rule.
+    if (!$newRule) {
+      foreach ($rows as $idx=>$row) {
+        $updated = $this->db->update('verification_rule_data', 
+          array('value'=>$row['value'], 'updated_on'=>date("Ymd H:i:s"), 'updated_by_id'=>$_SESSION['auth_user']->id), 
+          array(
+            'header_name'=>$row['dataSection'], 'data_group'=>$row['dataGroup'], 
+            'verification_rule_id'=>$vrId, 'key'=>strval($row['key'])
+          )
+        );
+        // remove the stuff we have done via update because it already existed.
+        if (count($updated)) {
+          unset($row[$idx]);
+        }
+      }
     }
+    // build a multirow insert as it is faster than doing lots of single inserts
+    $value = '';
+    foreach ($rows as $idx=>$row) {
+      if ($value!=='')
+        $value .= ',';
+      $value .= "('".$row['dataSection']."',".$row['dataGroup'].",$vrId,'".strval($row['key'])."','".
+          $row['value']."','".date("Ymd H:i:s")."',".$_SESSION['auth_user']->id.",'".date("Ymd H:i:s")."',".$_SESSION['auth_user']->id.")";
+    }
+    kohana::log('debug', 'bulk inserting '.count($rows));
+    kohana::log('debug', $newRule ? 'new' : 'existing');
+    if (count($rows))
+      $this->db->query("insert into verification_rule_data(header_name, data_group, verification_rule_id, key, value, ".
+          "updated_on, updated_by_id, created_on, created_by_id) values $value");
   }
   
   /**
@@ -374,10 +430,10 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
         // reset for the next section
         $currentSection = $matches['section'];
         $currentSectionData=array();
-      } elseif (preg_match('/^(?P<key>.+)=(?P<value>.+)$/', $line, $matches)) {
+      } elseif (preg_match('/^(?P<key>.+)=(?P<value>.+)$/', $line, $matches)) 
         $currentSectionData[$matches['key']]=$matches['value'];
-        
-      }
+      elseif (preg_match('/^(?P<key>.+)$/', $line, $matches)) 
+        $currentSectionData[$matches['key']]='-';
     }
     // set the final section content
     if (!empty($currentSectionData))
