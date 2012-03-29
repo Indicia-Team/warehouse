@@ -31,7 +31,7 @@
  * @return array List of parameter definitions.
  */
 function iform_map_get_map_parameters() {
-  return array(
+  $r = array(
     array(
       'name'=>'map_centroid_lat',
       'caption'=>'Centre of Map Latitude',
@@ -163,10 +163,21 @@ function iform_map_get_map_parameters() {
       'group'=>'Other Map Settings',
       'required'=>false,
       'default'=>"layerSwitcher\npanZoom"
-    ),
-
+    )
   );
-
+  // Check for easy login module to allow integration into profile locations. Degrade gracefully if Drupal not installed.
+  if (function_exists('module_exists') && module_exists('easy_login')) {
+    $r[] = array(
+      'fieldname'=>'display_user_profile_location',
+      'label'=>'Display location from user profile',
+      'helpText'=>'Tick this box to display the outline of the user\'s preferred recording location from the user '.
+          'account on the map. The map will be centred and zoomed to this location on first usage.',
+      'type'=>'checkbox',
+      'required'=>false,
+      'group'=>'Initial Map View'
+    );
+  }
+  return $r;
 }
 
 /**
@@ -280,6 +291,43 @@ function iform_map_get_map_options($args, $readAuth) {
     global $base_url;
     $options['proxy'] = $base_url . '/?q=' . variable_get('iform_proxy_path', 'proxy') . '&url=';
   }
+  if (isset($args['display_user_profile_location']) && $args['display_user_profile_location']) {
+    global $user;
+    if (!isset($user->profile_location))
+      profile_load_profile($user);
+    if (!empty($user->profile_location)) {
+      $getPopDataOpts = array(
+        'table' => 'location',
+        'extraParams' => $readAuth + array('id'=>$user->profile_location,'view' => 'detail')
+      );
+      $response = data_entry_helper::get_population_data($getPopDataOpts);
+      data_entry_helper::$javascript .= "
+mapInitialisationHooks.push(function(mapdiv) {
+  var parser, feature, loclayer = new OpenLayers.Layer.Vector(
+    '".lang::get('My Preferred Locality')."',
+    {'sphericalMercator': true, displayInLayerSwitcher: true}
+  );
+  parser = new OpenLayers.Format.WKT();
+  feature = parser.read('".$response[0]['boundary_geom']."');
+  feature.style = {fillOpacity: 0, strokeColor: '#0000ff', strokeWidth: 2};  
+  feature.style.fillOpacity=0;
+  loclayer.addFeatures([feature]);
+  // Don't zoom to the locality if the map is set to remember last position
+  var bounds=loclayer.getDataExtent();
+  if (typeof $.cookie === 'undefined' || mapdiv.settings.rememberPos===false || $.cookie('maplon')===null) {
+    if (mapdiv.map.getZoomForExtent(bounds) > mapdiv.settings.maxZoom) {
+      // if showing something small, don't zoom in too far
+      mapdiv.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
+    }
+    else {
+      // Set the default view to show something triple the size of the feature
+      mapdiv.map.zoomToExtent(bounds);
+    }  
+  }
+  mapdiv.map.addLayer(loclayer);
+});\n";
+    }
+  } 
   return $options;
 }
 
