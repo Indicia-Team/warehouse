@@ -67,6 +67,55 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
   }
   
   /**
+   * Controller function that responds to any request for an upload.
+   */
+  public function upload() {
+    if (isset($_FILES['zipFile'])) {
+      $this->upload_rule_zip();
+    } else {
+      $this->load_from_server();
+    }
+  }
+  
+  /**
+   * Uploading from a zipped batch of rule files. Displays 
+   * the upload template with progress bar and status message, which then initiates the actual import.
+   */
+  private function upload_rule_zip() {
+    $ruleFiles = array();
+    kohana::log('debug', print_r($_FILES, true));
+    if (!empty($_FILES['zipFile'])) {
+      $dir = $this->process_rule_zip_file($_FILES['zipFile']['tmp_name'], true);
+      $dir_iterator = new RecursiveDirectoryIterator($dir);
+      $iterator = new RecursiveIteratorIterator($dir_iterator, RecursiveIteratorIterator::SELF_FIRST);
+      foreach ($iterator as $file) {
+        if ($file->isFile()) {
+          $relativePath = substr($file->getRealPath(), strlen(realpath("$dir/extract")));
+          $ruleFiles[] = array(
+            'file'=>$file->__toString(),
+            'source_url'=>$_FILES['zipFile']['name'],
+            'display'=>basename($_FILES['zipFile']['name']).' '.$relativePath
+          );
+        }
+      }
+      // Save the rule file list to a cached list, so we can preserve it across http requests
+      $uploadId = time() . md5($_FILES['zipFile']['tmp_name']);
+      $cacheHandle = fopen(DOCROOT . "extract/$uploadId.txt", "w");
+      fwrite($cacheHandle, json_encode(array('paths'=>array($dir), 'files'=>$ruleFiles)));
+      fclose($cacheHandle);
+      //  show a progress view.
+      $view = new View('verification_rule/upload_rule_files');
+      $view->uploadId = $uploadId;
+      $this->template->content = $view;
+      $this->template->title = 'Uploading rule files';
+    } else {
+      $this->session->set_flash('flash_info', 'Please enter a path to upload rule files from.');
+      url::redirect('verification_rule/index');
+    }
+    
+  }
+  
+  /**
    * Controller action for loading rule files from the verification rule server.
    */
   public function load_from_server() {
@@ -94,7 +143,7 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
       $paths = array();
       foreach($files as $file)
         $paths[] = array(
-          'file'=>$this->process_rule_zip_file($file['title'], $file['file']),
+          'file'=>$this->process_rule_zip_file($file['file']),
           'source_url'=>$file['file'],
           'title'=>$file['title']
         );
@@ -134,10 +183,12 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
   
   /**
    * Loads a remote zip file, extracts the rule files and processes them.
-   * @param string $file Path to a remote file.
-   * @return bool Returns true or an error string.
+   * @param string $sourcefile Path to a file.
+   * @param bool $local Is the file local or remote?
+   * @return bool Returns the unzipped directory location.
    */
-  private function process_rule_zip_file($name, $sourcefile) {
+  private function process_rule_zip_file($sourcefile, $local=false) {
+    kohana::log('debug', 'processing '.$sourcefile);
     try {
       $dir = $this->create_zip_extract_dir().'rules-'.time().'-'.rand(0,1000);
     } catch (Exception $e) {
@@ -145,36 +196,24 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
     }
     mkdir($dir, 0777, TRUE);
     mkdir("$dir/extract", 0777, TRUE);
-    $zipFile = "$dir/".basename($sourcefile);
-    $fh = fopen($zipFile, "wb");
-    // str_replace used here for spaces in file names, I would have thought urlencode would work but apparently not...
-    $session = curl_init(str_replace(' ','%20',$sourcefile));
-    curl_setopt($session, CURLOPT_FILE, $fh);
-    curl_exec($session);
-    if (curl_errno($session)) 
-      throw new exception("Error downloading zip file $sourcefile: ".curl_error($session));
-    curl_close($session);
+    if ($local) {
+      // file is local so can just unzip it.
+      $zipFile = $sourcefile;
+    } else {
+      $zipFile = "$dir/".basename($sourcefile);
+      $fh = fopen($zipFile, "wb");
+      // str_replace used here for spaces in file names, I would have thought urlencode would work but apparently not...
+      $session = curl_init(str_replace(' ','%20',$sourcefile));
+      curl_setopt($session, CURLOPT_FILE, $fh);
+      curl_exec($session);
+      if (curl_errno($session)) 
+        throw new exception("Error downloading zip file $sourcefile: ".curl_error($session));
+      curl_close($session);
+    }
     $zip = new ZipArchive;
     $res = $zip->open($zipFile);
     $zip->extractTo("$dir/extract/");
     return $dir;
-  }
-  
-  /**
-   * Controller method for the upload_rule_files path. Displays the upload template with 
-   * progress bar and status message, which then initiates the actual import.
-   */
-  public function upload_rule_files() {
-    if (!empty($_POST['path'])) {
-      $view = new View('verification_rule/upload_rule_files');
-      $view->paths = array($_POST['path']);
-      $this->template->content = $view;
-      $this->template->title = 'Uploading rule files';
-    } else {
-      $this->session->set_flash('flash_info', 'Please enter a path to upload rule files from.');
-      url::redirect('verification_rule/index');
-    }
-    
   }
   
   /**
@@ -205,9 +244,9 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
       $response['complete']=true;
       $response['progress']=100;
       // clean up the cached list of files to process
-//      unlink(DOCROOT . "extract/$uploadId.txt");
+      unlink(DOCROOT . "extract/$uploadId.txt");
       foreach($cacheArr['paths'] as $path) {
-//        $this->deleteDir($path['file']);
+        $this->deleteDir($path['file']);
       }
     } else    
       $response['progress'] = ($totaldone * 100) / count($cacheArr['files']);

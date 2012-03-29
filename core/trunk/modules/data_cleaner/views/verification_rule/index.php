@@ -24,20 +24,20 @@
  
 echo $grid;
 ?>
-<form action="<?php echo url::site().'verification_rule/create'; ?>">
+<!--<form action="<?php echo url::site().'verification_rule/create'; ?>">
 <input type="submit" value="New verification_rule" class="ui-corner-all ui-state-default button" />
-</form>
-<form class="linear-form" method="post" action="<?php echo url::site().'verification_rule/upload_rule_files'; ?>">
+</form>-->
+<p>Verification rule files are created by uploading files that are compatible with the NBN Record Cleaner. 
+For more information on creating these files, see 
+<a href="http://www.nbn.org.uk/Tools-Resources/Recording-Resources/NBN-Record-Cleaner/Creating-verification-rules.aspx">
+NBN Record Cleaner - creating verification rules</a>. You can either use the online file servers
+as used by NBN Record Cleaner to obtain rules or zip your files into a batch to upload.</p>
+<form class="linear-form" enctype="multipart/form-data" method="post" action="<?php echo url::site().'verification_rule/upload'; ?>">
 <fieldset>
-  <legend>Upload verification rule files from a local folder</legend>
-  <label>Enter local folder containing files:<input type="text" id="path" name="path" class="control-width-6"
-                              value="/Applications/XAMPP/xamppfiles/htdocs/data_cleaner_rules"/></label>
-  <input type="submit" value="Upload from local folder"/>
+  <label>Select a zip file to upload:<input type="file" name="zipFile" class="control-width-6" /></label>
 </fieldset>
-</form>
-<form class="linear-form" method="post" action="<?php echo url::site().'verification_rule/load_from_server'; ?>">
 <fieldset>
-  <p>Load verification rule files from a Record Cleaner server list. Please select the servers to use when loading files.</p>
+  <p>Or, load verification rule files from a Record Cleaner server list. Please select the servers to use when loading files.</p>
   <table>
     <thead>
       <th></th><th>Server owner</th><th>Date</th>
@@ -47,6 +47,6 @@ echo $grid;
     <?php endforeach; ?>
     </tbody>
   </table>
-  <input type="submit" value="Load from Record Cleaner server"/>
+  <input type="submit" value="Upload rule files"/>
 </fieldset>
 </form>
