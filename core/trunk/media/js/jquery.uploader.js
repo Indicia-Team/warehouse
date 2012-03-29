@@ -16,7 +16,7 @@
  /**
  * Form submit handler that prevents the user clicking save during an upload
  */
-checkSubmitInProgress = function () {
+var checkSubmitInProgress = function () {
   if ($('.file-box .progress').length!==0) {
     alert('Please wait till your images have finished uploading before submitting the form.');
     return false;
@@ -38,7 +38,7 @@ checkSubmitInProgress = function () {
     var opts = $.extend({}, $.fn.uploader.defaults, options), html5OK=false;
     
     if (/Firefox[\/\s](\d+\.\d+)/.test(navigator.userAgent)){ //test for Firefox/x.x or Firefox x.x (ignoring remaining digits);
-      var ffversion=new Number(RegExp.$1) // capture x.x portion and store as a number
+      var ffversion=new Number(RegExp.$1); // capture x.x portion and store as a number
       if (ffversion>=3.5) {
         // Browser is not FF3.5+, so Html5 is a good runtime as HTML5 resize only works on FF3.5+. 
         html5OK = true;
