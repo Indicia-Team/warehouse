@@ -249,7 +249,7 @@ function loadSpeciesList() {
     	     	        $.ajax({
     	      	          'url': indiciaData.indiciaSvc+'index.php/services/data/sample',
     	      	    	    'data': {
-    	      	    	        'parent_id': sampleList,
+    	     	                'query': JSON.stringify({'in': {'parent_id': sampleList}}),
     	      	    	        'auth_token': indiciaData.readAuth.auth_token,
     	      	    	        'nonce': indiciaData.readAuth.nonce,
     	      	    	        'mode': 'json',
@@ -264,7 +264,7 @@ function loadSpeciesList() {
     	    	     	        $.ajax({
     	      	      	          'url': indiciaData.indiciaSvc+'index.php/services/data/occurrence',
     	      	      	    	    'data': {
-    	      	      	    	        'sample_id': subSampleList,
+        	     	                    'query': JSON.stringify({'in': {'sample_id': subSampleList}}),
     	      	      	    	        'auth_token': indiciaData.readAuth.auth_token,
     	      	      	    	        'nonce': indiciaData.readAuth.nonce,
     	      	      	    	        'mode': 'json',
@@ -285,6 +285,59 @@ function loadSpeciesList() {
     	    	    }});
       		  break;
     	    case 'mine':
+     	       // get all samples on this transect
+     	       $.ajax({
+     	         'url': indiciaData.indiciaSvc+'index.php/services/data/sample_attribute_value',
+     	    	    'data': {
+     	    	        'sample_attribute_id': indiciaData.CMSUserAttrID,
+     	    	        'raw_value': indiciaData.CMSUserID,
+     	    	        'auth_token': indiciaData.readAuth.auth_token,
+     	    	        'nonce': indiciaData.readAuth.nonce,
+     	    	        'mode': 'json'
+     	    	    },
+     	    	    'dataType': 'jsonp',
+     	    	    'success': function(savdata) {
+     	     	       // next get all transect section subsamples
+     	    	    	var sampleList = [];
+     	          		for(var i=0; i<savdata.length; i++)
+     	          			sampleList.push(savdata[i].sample_id);
+     	     	        $.ajax({
+     	      	          'url': indiciaData.indiciaSvc+'index.php/services/data/sample',
+     	      	    	    'data': {
+     	     	                'query': JSON.stringify({'in': {'parent_id': sampleList}}),
+     	      	    	        'auth_token': indiciaData.readAuth.auth_token,
+     	      	    	        'nonce': indiciaData.readAuth.nonce,
+     	      	    	        'mode': 'json',
+     	      	    	        'view': 'detail'
+     	      	    	    },
+     	      	    	    'dataType': 'jsonp',
+     	      	    	    'success': function(ssdata) {
+     	      	    	      // finally get all occurrences
+     	      	    	    	var subSampleList = [];
+     	      	          		for(var i=0; i<ssdata.length; i++)
+     	      	          		  subSampleList.push(ssdata[i].id);
+     	    	     	        $.ajax({
+     	      	      	          'url': indiciaData.indiciaSvc+'index.php/services/data/occurrence',
+     	      	      	    	    'data': {
+         	     	                    'query': JSON.stringify({'in': {'sample_id': subSampleList}}),
+     	      	      	    	        'auth_token': indiciaData.readAuth.auth_token,
+     	      	      	    	        'nonce': indiciaData.readAuth.nonce,
+     	      	      	    	        'mode': 'json',
+     	      	      	    	        'view': 'detail'
+     	      	      	    	    },
+     	      	      	    	    'dataType': 'jsonp',
+     	      	      	    	    'success': function(odata) {
+     	      	      	      		  for(var j=0; j<odata.length; j++){
+     	      	              		    for(var i=0; i<indiciaData.speciesList1List.length; i++){
+     	      	            			  if(odata[j].taxon_meaning_id ==
+     	      	            				      indiciaData.speciesList1List[i].taxon_meaning_id &&
+     	      	            				    jQuery('#row-'+indiciaData.speciesList1List[i]['id']).length==0)
+     	      	            				  addGridRow(indiciaData.speciesList1List[i], 'table#transect-input1');
+     	      	              		    }
+     	      	            		  }
+     	      	      	    	    }});
+     	      	    	    }});
+     	    	    }});
       		  break;
     	  }
           $('#listSelectMsg').empty();
@@ -493,3 +546,46 @@ function loadSpeciesList() {
     }
   });
 };
+function bindSpecies1Autocomplete(selectorID, url, lookupListId, readAuth, duplicateMsg, max) {
+	  // inner function to handle a selection of a taxon from the autocomplete
+	  var handleSelectedTaxon = function(event, data) {
+	    if(jQuery('#row-'+data.id).length>0){
+	      alert(duplicateMsg);
+	      $(event.target).val('');
+	      return;
+	    }
+	    addGridRow(data, 'table#transect-input1');
+	    $(event.target).val('');
+	  };
+
+	    // Attach auto-complete code to the input
+	  ctrl = $('#' + selectorID).autocomplete(url+'/taxa_taxon_list', {
+	      extraParams : {
+	        view : 'detail',
+	        orderby : 'taxon',
+	        mode : 'json',
+	        qfield : 'taxon',
+	        auth_token: readAuth.auth_token,
+	        nonce: readAuth.nonce,
+	        taxon_list_id: lookupListId
+	      },
+	      max : max,
+	      parse: function(data) {
+	        var results = [];
+	        jQuery.each(data, function(i, item) {
+	          results[results.length] =
+	          {
+	            'data' : item,
+	            'result' : item.taxon,
+	            'value' : item.id
+	          };
+	        });
+	        return results;
+	      },
+	      formatItem: function(item) {
+	        return item.taxon;
+	      }
+	  });
+	  ctrl.bind('result', handleSelectedTaxon);
+	  setTimeout(function() { $('#' + ctrl.attr('id')).focus(); });
+	}

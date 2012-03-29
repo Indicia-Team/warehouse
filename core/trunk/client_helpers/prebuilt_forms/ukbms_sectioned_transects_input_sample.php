@@ -25,9 +25,6 @@ require_once 'includes/form_generation.php';
 
 
 // TODO
-// Add Species List control change:
-//   Add all species on this location: filtered by being on full list
-//   Add all species that I have recorded: filtered by being on full list
 // Convert List creation on subsidiary grids to look up taxon details for the taxons we have rather than driving from list.
 // Add species auto completes to bottom of grids
 // When auto complete selected, new row added.
@@ -292,7 +289,8 @@ class iform_ukbms_sectioned_transects_input_sample {
   }
 
   public static function get_occurrences_form($args, $node, $response) {
-    if (!module_exists('iform_ajaxproxy'))
+    global $user;
+  	if (!module_exists('iform_ajaxproxy'))
       return 'This form must be used in Drupal with the Indicia AJAX Proxy module enabled.';
     data_entry_helper::add_resource('jquery_form');
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
@@ -320,6 +318,19 @@ class iform_ukbms_sectioned_transects_input_sample {
       $parentLocId = $sample['location_id'];
       $date=$sample['date_start'];
     }
+    
+    $sampleMethods = helper_base::get_termlist_terms($auth, 'indicia:sample_methods', array('Transect'));
+    $attributes = data_entry_helper::getAttributes(array(
+      'valuetable'=>'sample_attribute_value',
+      'attrtable'=>'sample_attribute',
+      'key'=>'sample_id',
+      'fieldprefix'=>'smpAttr',
+      'extraParams'=>$auth['read'],
+      'survey_id'=>$args['survey_id'],
+      'sample_method_id'=>$sampleMethods[0]['id']
+    ));
+    if (false== ($cmsUserAttr = extract_cms_user_attr($attributes)))
+      return 'This form is designed to be used with the CMS User ID attribute setup for samples in the survey.';
     // find any attributes that apply to transect section samples.
     $sampleMethods = helper_base::get_termlist_terms($auth, 'indicia:sample_methods', array('Transect Section'));
     $attributes = data_entry_helper::getAttributes(array(
@@ -438,7 +449,7 @@ class iform_ukbms_sectioned_transects_input_sample {
     $r .= '<td class="ui-state-disabled"></td></tr></tfoot>';
     $r .= '</table>'.
           '<label for="listSelect">'.lang::get('Use species list').' :</label><select id="listSelect"><option value="full">'.lang::get('All species').'</option><option value="common">'.lang::get('Common species').'</option><option value="here">'.lang::get('Species known at this site').'</option><option value="mine">'.lang::get('Species I have recorded').'</option></select>';
-    $r .= '<span id="listSelectMsg"></span></div>';
+    $r .= '<span id="listSelectMsg"></span><br /><label for="taxonLookupControl" class="auto-width">'.lang::get('Add species to list').':</label> <input id="taxonLookupControl" name="taxonLookupControl" ></div>';
 
     if(isset($args['second_taxon_list_id']) && $args['second_taxon_list_id']!=''){
       $r .= '<div id="grid2"><table id="transect-input2" class="ui-widget"><thead>';
@@ -506,6 +517,9 @@ class iform_ukbms_sectioned_transects_input_sample {
     $r .= '</form>';
     // tell the Javascript where to get species from.
     // @todo handle diff species lists.
+    data_entry_helper::add_resource('jquery_ui');
+    data_entry_helper::add_resource('json');
+    data_entry_helper::add_resource('autocomplete');
     data_entry_helper::$javascript .= "indiciaData.speciesList1 = ".$args['taxon_list_id'].";\n";
     data_entry_helper::$javascript .= "indiciaData.speciesList1Subset = ".(isset($args['common_taxon_list_id'])&&$args['common_taxon_list_id']!=""?$args['common_taxon_list_id']:"-1").";\n";
     data_entry_helper::$javascript .= "indiciaData.speciesList2 = ".(isset($args['second_taxon_list_id'])&&$args['second_taxon_list_id']!=""?$args['second_taxon_list_id']:"-1").";\n";
@@ -517,10 +531,13 @@ class iform_ukbms_sectioned_transects_input_sample {
     data_entry_helper::$javascript .= "indiciaData.parentSample = ".$parentSampleId.";\n";
     data_entry_helper::$javascript .= "indiciaData.sections = ".json_encode($sections).";\n";
     data_entry_helper::$javascript .= "indiciaData.occAttrId = ".$args['occurrence_attribute_id'] .";\n";
-
+    data_entry_helper::$javascript .= "indiciaData.CMSUserAttrID = ".$cmsUserAttr['attributeId'] .";\n";
+    data_entry_helper::$javascript .= "indiciaData.CMSUserID = ".$user->uid.";\n";
     // Do an AJAX population of the grid rows.
-    data_entry_helper::$javascript .= "loadSpeciesList();\n";
-    data_entry_helper::add_resource('jquery_ui');
+    data_entry_helper::$javascript .= "loadSpeciesList();
+bindSpecies1Autocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url."index.php/services/data\", \"".$args['taxon_list_id']."\", {\"auth_token\" : \"".
+            $auth['read']['auth_token']."\", \"nonce\" : \"".$auth['read']['nonce']."\"}, \"".lang::get('LANG_Duplicate_Taxon')."\", 25);";
+    
     return $r;
   }
 
