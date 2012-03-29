@@ -1542,15 +1542,19 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     }
     $links = array();
     $currentUrl = self::get_reload_link_parts(); // needed for params
-    if (!empty($pathParam)) 
+    if (!empty($pathParam)) {
+      $pathParamValue = isset($currentUrl['params'][$pathParam]) ? $currentUrl['params'][$pathParam] : '';
       unset($currentUrl['params'][$pathParam]);
+    }
     foreach ($actions as $action) {
       // skip any actions which are marked as invisible for this row.
       if (isset($action['visibility_field']) && $row[$action['visibility_field']]==='f')
         continue;
       if (isset($action['url'])) {
-        if (!empty($pathParam) && strpos($action['url'], "?$pathParam=")===false)
+        if (!empty($pathParam) && strpos($action['url'], "?$pathParam=")===false) {
           $row['rootFolder'] .="?$pathParam=";
+          $action['url'] .='?'.self::array_to_query_string(array($pathParam=>$pathParamValue));
+        }
         $actionUrl = self::mergeParamsIntoTemplate($row, $action['url'], true);
         // include any $_GET parameters to reload the same page, except the parameters that are specified by the action
         if (isset($action['urlParams']))
