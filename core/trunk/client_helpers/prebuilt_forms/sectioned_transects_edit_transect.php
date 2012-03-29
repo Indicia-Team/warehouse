@@ -445,10 +445,8 @@ class iform_sectioned_transects_edit_transect {
    */
   public static function get_redirect_on_success($values, $args) {
     if (!isset($values['location:id'])) {
-      return 'site-details#your-route';
+      return drupal_get_path_alias($_GET['q']).'#your-route';
     }
-  } 
-  
-  
-  
+  }
+
 }
