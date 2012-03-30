@@ -3,6 +3,9 @@ var email = {to:'', subject:'', body:'', type:''};
 
 function selectRow(tr) {
   // The row ID is row1234 where 1234 is the occurrence ID. 
+  if (tr.id.substr(3)===occurrence_id) {
+    return;
+  }
   occurrence_id = tr.id.substr(3);
   // make it clear things are loading
   $('#chart-div').css('opacity',0.15);
@@ -28,8 +31,8 @@ function selectRow(tr) {
           mapDiv.map.removeLayer(layer);
         });
         speciesLayers = [];
-        var layer, thisSpSettings, filter;
-        if (typeof indiciaData.wmsSpeciesLayers!=="undefined") {
+        var layer, thisSpSettings, filter, skip;
+        if (typeof indiciaData.wmsSpeciesLayers!=="undefined" && data.additional.taxon_external_key!==null) {
           $.each(indiciaData.wmsSpeciesLayers, function(idx, layerDef) {
             thisSpLyrSettings = $.extend({}, layerDef.settings);
             // replace values with the extrnal key if the token is used
@@ -44,7 +47,7 @@ function selectRow(tr) {
             speciesLayers.push(layer);
           });
         }
-        if (typeof indiciaData.indiciaSpeciesLayer!=="undefined") {
+        if (typeof indiciaData.indiciaSpeciesLayer!=="undefined" && data.additional[indiciaData.indiciaSpeciesLayer.filterField]!==null) {
           filter=indiciaData.indiciaSpeciesLayer.cqlFilter.replace('{filterValue}',data.additional[indiciaData.indiciaSpeciesLayer.filterField]);
           layer = new OpenLayers.Layer.WMS(indiciaData.indiciaSpeciesLayer.title, indiciaData.indiciaSpeciesLayer.wmsUrl, 
               {layers: indiciaData.indiciaSpeciesLayer.featureType, transparent: true, CQL_FILTER: filter, STYLES: indiciaData.indiciaSpeciesLayer.sld},
@@ -412,6 +415,63 @@ $(document).ready(function () {
     urlSep = indiciaData.ajaxUrl.indexOf('?') === -1 ? '?' : '&';
     $('#record-details-toolbar *').attr('disabled', 'disabled');
     selectRow($(evt.target).parents('tr')[0]);
+    if ($(evt.target).hasClass('quick-verify')) {
+      var visibleIdx=0, userColIdx, taxonColIdx, userVal, taxonVal, row=$(evt.target).parents('tr:first')[0];
+      // work out which visible column index applies to the user and species data
+      $.each(indiciaData.reports.verification.grid_verification_grid[0].settings.columns, function(idx, column) {
+        if (typeof column.fieldname !=="undefined") {
+          if (column.fieldname==='user') {
+            userColIdx = visibleIdx;
+          } else if (column.fieldname==='taxon') {
+            taxonColIdx = visibleIdx;
+          }
+        }
+        if (column.visible!=="false" && column.visible!==false) {
+          visibleIdx++;
+        }
+      });
+      userVal = $(row).find('td:eq('+userColIdx+')').html();
+      taxonVal = $(row).find('td:eq('+taxonColIdx+')').html();
+      $.fancybox('<div class="quick-verify-popup" style="width: 550px"><h2>Quick verification</h2>'+
+          '<p>The following options let you rapidly verify records. The only records affected are those in the grid but they can be on any page of the grid, '+
+          'so please ensure you have set the grid\'s filter correctly before proceeding. You should only proceed if you are certain that data you are verifying '+
+          'can be trusted without further investigation.</p>'+
+          '<label><input type="radio" name="quick-option" value="recorder"/>Verify grid\'s records by <span class="quick-user">'+userVal+'</span></label><br/>'+
+          '<label><input type="radio" name="quick-option" value="species" />Verify grid\'s records of <span class="quick-taxon">'+taxonVal+'</span></label><br/>'+
+          '<label><input type="radio" name="quick-option" value="species-recorder" />Verify grid\'s records of <span class="quick-taxon">'+taxonVal+
+              '</span> by <span class="quick-user">'+userVal+'</span></label><br/>'+
+          '<button type="button" class="default-button verify-button">Verify chosen records</button>'+
+          '<button type="button" class="default-button cancel-button">Cancel</button>'+
+        "</div>\n");
+      $('.quick-verify-popup button').click(function(evt) {
+        if ($(evt.target).hasClass('verify-button')) {
+          var params=indiciaData.reports.verification.grid_verification_grid.getUrlParamsForAllRecords(), request,
+              radio=$('.quick-verify-popup input[name=quick-option]:checked');
+          if (radio.length===1) {
+            if ($(radio).val().indexOf('recorder')!==-1) {
+              params.user=$(row).find('td:eq('+userColIdx+')').html();
+            }
+            if ($(radio).val().indexOf('species')!==-1) {
+              params.taxon=$(row).find('td:eq('+taxonColIdx+')').html();
+            }
+            // We now have parameters that can be applied to a report and we know the report, so we can ask the warehouse
+            // to verify the occurrences provided by the report that match the filter.
+            request = indiciaData.ajaxUrl + '/bulk_verify';
+            $.post(request,
+                'report='+encodeURI(indiciaData.reports.verification.grid_verification_grid[0].settings.dataSource)+'&params='+encodeURI(JSON.stringify(params))+
+                    '&user_id='+indiciaData.userId,
+                function(response) {
+                  indiciaData.reports.verification.grid_verification_grid.reload();
+                  alert(response + ' records verified');
+                }
+            );
+            $.fancybox.close();
+          }
+        } else {
+          $.fancybox.close();
+        }
+      });
+    }
   });
 
   $('#record-details-tabs').bind('tabsshow', function (evt, ui) {
@@ -436,22 +496,7 @@ $(document).ready(function () {
   
   $('#btn-email-recorder').click(function () {
     buildRecorderConfirmationEmail();
-  });
-  
-  $('#btn-verify-all').click(function () {
-    var thOccId = document.getElementById('verification-grid-th-occurrence_id');
-    var idIndex = $('#verification-grid thead th').index(thOccId);
-    $.each($('#verification-grid tbody tr td:nth-child(1)'), function(idx, occurrenceIdCell) {
-      data = {
-        'website_id': indiciaData.website_id,
-        'occurrence:id': occurrenceIdCell.textContent,
-        'occurrence:record_status': 'V',
-        'occurrence_comment:comment': 'Verified as it passes all automated checks.',
-        'occurrence_comment:person_name': indiciaData.username
-      };
-      postOccurrence(data);
-    });
-  });
+  }); 
 
 });
 

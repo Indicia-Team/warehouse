@@ -540,6 +540,10 @@ idlist=';
           'sharing'=>'verification'
         )
     );
+    $opts['columns'][] = array(
+      'display'=>'',
+      'template' => '<button class="default-button quick-verify" type="button" id="quick-{occurrence_id}" title="Quick verification options">...</button>'
+    );
     if (isset($args['show_map']) && $args['show_map']) {
       $opts['paramsOnly']=true;
       $paramsForm = data_entry_helper::report_grid($opts);
@@ -895,6 +899,20 @@ idlist=';
       $output[$month['name']] = intval($month['value']);
     echo json_encode($output);
   } 
+  
+  /**
+   * Ajax method to proxy requests for bulk verification on to the warehouse, attaching write auth
+   * as it goes.
+   */
+  public static function ajax_bulk_verify($website_id, $password) {
+    iform_load_helpers(array('data_entry_helper'));
+    $auth = data_entry_helper::get_read_write_auth($website_id, $password);
+    $url = data_entry_helper::$base_url."index.php/services/data_utils/bulk_verify";
+    $params = array_merge($_POST, $auth['write_tokens']);
+    $response = data_entry_helper::http_post($url, $params);
+    watchdog('response', print_r($response, true));
+    echo $response['output'];
+  }
   
   /** 
    * Convert a timestamp into readable format (... ago) for use on a comment list.

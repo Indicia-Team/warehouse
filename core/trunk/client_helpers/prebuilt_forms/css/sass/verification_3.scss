@@ -1,5 +1,3 @@
-
-
 @import "sassy-buttons";
 @import "compass/css3";
 @import "blueprint/form";
@@ -219,4 +217,15 @@ button.default-button {
     font-size: 80%;
     margin: 0;
   }
+}
+
+.quick-verify-popup {
+  label {
+    width: auto;
+    margin-left: 2em;
+  }
+  button {
+    margin-top: 1em;
+  }
+  
 }
