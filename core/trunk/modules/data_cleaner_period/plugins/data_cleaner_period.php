@@ -36,7 +36,7 @@ function data_cleaner_period_data_cleaner_rules() {
       // year so all dates are covered.
       array(
         'joins' => 
-            "join verification_rule_metadata vrm on vrm.value=co.taxa_taxon_list_external_key and vrm.key='Tvk' ".
+            "join verification_rule_metadata vrm on (vrm.value=co.taxa_taxon_list_external_key and vrm.key='Tvk') or (vrm.value=co.preferred_taxon and vrm.key='Taxon') ".
             "join verification_rules vr on vr.id=vrm.verification_rule_id and vr.test_type='Period' ".
             "left join verification_rule_metadata vrmstart on vrmstart.verification_rule_id=vr.id and vrmstart.key='StartDate' ".
             "left join verification_rule_metadata vrmend on vrmend.verification_rule_id=vr.id and vrmend.key='EndDate' ",

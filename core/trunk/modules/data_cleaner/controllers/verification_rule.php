@@ -70,7 +70,7 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
    * Controller function that responds to any request for an upload.
    */
   public function upload() {
-    if (isset($_FILES['zipFile'])) {
+    if (!empty($_FILES['zipFile']['name'])) {
       $this->upload_rule_zip();
     } else {
       $this->load_from_server();
@@ -101,7 +101,11 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
       // Save the rule file list to a cached list, so we can preserve it across http requests
       $uploadId = time() . md5($_FILES['zipFile']['tmp_name']);
       $cacheHandle = fopen(DOCROOT . "extract/$uploadId.txt", "w");
-      fwrite($cacheHandle, json_encode(array('paths'=>array($dir), 'files'=>$ruleFiles)));
+      fwrite($cacheHandle, json_encode(array('paths'=>array(array(
+          'file'=>$dir,
+          'source_url'=>$_FILES['zipFile']['name'],
+          'title'=>basename($_FILES['zipFile']['name'])
+        )), 'files'=>$ruleFiles)));
       fclose($cacheHandle);
       //  show a progress view.
       $view = new View('verification_rule/upload_rule_files');
