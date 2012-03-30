@@ -90,6 +90,27 @@ function simple_tooltip(target_items, name){
       return request;
     }
     
+    function getUrlParamsForAllRecords(div) {
+      request = {};
+      // Extract any parameters from the attached form
+      $('form#'+div.settings.reportGroup+'-params input, form#'+div.settings.reportGroup+'-params select').each(function(idx, input) {
+        if (input.type!=='submit') {
+          paramName = $(input).attr('name').replace(div.settings.reportGroup+'-', '');
+          request[paramName] = $(input).attr('value');
+        }
+      });
+      if (typeof div.settings.extraParams !== "undefined") {
+        $.each(div.settings.extraParams, function(key, value) {
+          // skip sorting params if the grid has its own sort applied by clicking a column title
+          if ((key!=='orderby' && key!=='sortdir') || div.settings.orderby === null) {
+            request[key] = value;
+          }
+        });
+      }
+      $.extend(request, getQueryParam(div));
+      return request;
+    };
+    
     function mergeParamsIntoTemplate (div, params, template) {
       var regex, regexEsc, regexEscDbl, r;
       $.each(params, function(param) {
@@ -249,9 +270,9 @@ function simple_tooltip(target_items, name){
         });
       }
       if (needQuery) {
-        return '&query=' + JSON.stringify(query);
+        return {query: JSON.stringify(query)};
       } else {
-        return '';
+        return {};
       }
     }
     
@@ -366,18 +387,15 @@ function simple_tooltip(target_items, name){
      * Function to make a service call to load the grid data.
      */
     function load (div, recount) {
-      var paramName, request = getRequest(div);
+      var paramName, request = getRequest(div), params=getUrlParamsForAllRecords(div);
+      $.each(params, function(key, val) {
+        request += '&' + key + '=' + val;
+      });
+      
       request += '&offset=' + div.settings.offset;
       if (recount) {
         request += '&wantCount=1';
       }
-      // Extract any parameters from the attached form
-      $('form#'+div.settings.reportGroup+'-params input, form#'+div.settings.reportGroup+'-params select').each(function(idx, input) {
-        if (input.type!=='submit') {
-          paramName = $(input).attr('name').replace(div.settings.reportGroup+'-', '');
-          request += '&' + paramName + '=' + $(input).attr('value');
-        }
-      });
       if (div.settings.orderby !== null) {
         request += '&orderby=' + div.settings.orderby + '&sortdir=' + div.settings.sortdir;
       }
@@ -385,15 +403,6 @@ function simple_tooltip(target_items, name){
       if (div.settings.itemsPerPage !== null) {
         request += '&limit=' + (div.settings.itemsPerPage+1);
       }
-      if (typeof div.settings.extraParams !== "undefined") {
-        $.each(div.settings.extraParams, function(key, value) {
-          // skip sorting params if the grid has its own sort applied by clicking a column title
-          if ((key!=='orderby' && key!=='sortdir') || div.settings.orderby === null) {
-            request += '&' + key + '=' + value;
-          }
-        });
-      }
-      request += getQueryParam(div);
       loadGridFrom(div, request, true);
     }
     
@@ -469,6 +478,14 @@ function simple_tooltip(target_items, name){
         });
       }
     }
+    
+    this.getUrlParamsForAllRecords = function() {
+      // loop, though we only return 1.
+      $.each($(this), function(idx, div) {
+        r=getUrlParamsForAllRecords(div, false);
+      });
+      return r;
+    };
     
     /**
      * Public function which adds a list of records to the bottom of the grid, loaded according to a filter.
