@@ -4,6 +4,9 @@
 
 -- View: list_termlists_terms
 
+-- remove a possible dependency
+DROP VIEW IF EXISTS detail_taxa_taxon_designations;
+
 DROP VIEW list_termlists_terms;
 
 CREATE OR REPLACE VIEW list_termlists_terms AS 
