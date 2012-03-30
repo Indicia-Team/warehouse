@@ -1,0 +1,139 @@
+.ui-accordion-header {
+	padding: 4px;
+}
+
+.addn-info-label {
+	width: 160;
+}
+
+#new-id label {
+	display: block;
+	width: auto;
+}
+
+.collection-image {
+  display: inline-block;
+  margin-right: 10px;
+  height: 180px;
+  width: 240px;
+  background-color:#878787;
+  border:black thin solid;
+}
+
+#map2_container {
+  display: inline-block;
+	width: 47%;
+	margin-left: 1%;
+	vertical-align: top;
+}
+
+#flower-image-container {
+	display: inline-block;
+	width: 48%;
+	margin-right: 1%;
+	vertical-align: top;
+}
+#flower-image {
+    border: #878787 thin solid;
+}
+#environment-image {
+	display: inline-block;
+	width: 47%;
+	margin-left: 1%;
+	vertical-align: top;
+    border: #878787 thin solid;
+}
+#collection-description {
+    background-color:#f0f0f0;
+	display: inline-block;
+	width: 48%;
+	margin-right: 1%;
+	vertical-align: top;
+}
+.collection-insect,.filter-insect {
+	display: inline-block;
+	width: 31%;
+	margin-right: 1%;
+	vertical-align: top;
+}
+
+.thumb {
+  vertical-align: top;
+  height: 50px;
+  width: 50px;
+  margin: 3px;
+  border: #878787 thin solid;
+  background-color:#878787;
+  display: inline-block;
+  position: relative;
+}
+.thumb-image {
+   width: 100%;
+   height: 100%; /* for IE 6 */
+}
+
+.thumb-text {
+   position: absolute;
+   top: 0%;
+   left: 30%;
+   color: red;
+   font-size: 35px;
+}
+
+.insect-ok {
+    margin-top:0px;
+    margin-bottom:0px;
+    margin-left: auto ;
+    margin-right: auto ;
+    padding:0px;
+    width: 24px;
+    height: 24px;
+}
+.reset-button {
+	float: right;
+}
+.fold-button {
+	float: right;
+    padding:0px;
+    width: 13px;
+    height: 13px;
+    background: url(/misc/arrow-desc.png) !important ;
+}
+.fold-button-folded {
+    background: url(/misc/arrow-asc.png) !important ;
+}
+.insect-unknown {
+    margin-top:0px;
+    margin-bottom:0px;
+    margin-left: auto ;
+    margin-right: auto ;
+    padding:0px;
+    width: 24px;
+    height: 24px;
+    background: url(/misc/occ_unknown.png);
+}
+.insect-dubious {
+    margin-top:0px;
+    margin-bottom:0px;
+    margin-left: auto ;
+    margin-right: auto ;
+    padding:0px;
+    width: 24px;
+    height: 24px;
+    background: url(/misc/occ_doubtful.png);
+}
+.display-button {
+	text-align: center;
+}
+.thumb, .collection-image, .collection-insect, .filter-insect {
+  *display: inline;
+}
+#map2_container, #flower-image, #environment-image, #collection-description {
+  *display: inline;
+}
+.filter-collection div {
+	*zoom: 1;
+}
+#results-insects-results div {
+	*zoom: 1;
+}
