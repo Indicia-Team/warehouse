@@ -441,6 +441,10 @@ class report_helper extends helper_base {
         $r .= '</tr>';
     }
     $r .= "</tbody></table>\n";
+    // amend currentUrl path if we have drupal dirty URLs so javascript will work properly
+    if ($pathParam==='q' && isset($currentUrl['params']['q']) && strpos($currentUrl['path'], '?')===false) {
+      $currentUrl['path'] = $currentUrl['path'].'?q='.$currentUrl['params']['q'];
+    }
     self::addFeaturesLoadingJs($addFeaturesJs);
     // $r may be empty if a spatial report has put all its controls on the map toolbar, when using params form only mode.
     // In which case we don't need to output anything.
@@ -1553,7 +1557,7 @@ if (typeof(mapSettingsHooks)!=='undefined') {
       if (isset($action['url'])) {
         if (!empty($pathParam) && strpos($action['url'], "?$pathParam=")===false) {
           $row['rootFolder'] .="?$pathParam=";
-          $action['url'] .='?'.self::array_to_query_string(array($pathParam=>$pathParamValue));
+          $action['url'] .="?$pathParam=$pathParamValue";
         }
         $actionUrl = self::mergeParamsIntoTemplate($row, $action['url'], true);
         // include any $_GET parameters to reload the same page, except the parameters that are specified by the action

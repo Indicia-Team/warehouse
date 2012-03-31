@@ -35,8 +35,8 @@ require_once('includes/form_generation.php');
 
 class iform_wwt_colour_marked_report {
 
-  // A list of the occurrence ids we are loading if editing existing data
-  protected static $occurrenceIds = array();
+  // A list of the subject observation ids we are loading if editing existing data
+  protected static $subjectObservationIds = array();
 
   protected static $auth = array();
   
@@ -44,6 +44,7 @@ class iform_wwt_colour_marked_report {
   
   protected static $node;
   
+  protected static $submission = array();
   /** 
    * Return the form metadata.
    * @return string The definition of the form.
@@ -66,7 +67,7 @@ class iform_wwt_colour_marked_report {
    *  Sort out {common}.
    * 
    * The report paging will not be converted to use LIMIT & OFFSET because we want the full list returned so 
-   * we can display all the occurrences on the map.
+   * we can display all the subject observations on the map.
    * When displaying transects, we should display children locations as well as parent.
    */
   /**
@@ -163,7 +164,6 @@ class iform_wwt_colour_marked_report {
                 "&nbsp;&nbsp;<strong>[recorder names]</strong><br/>".
                 "&nbsp;&nbsp;<strong>[record status]</strong><br/>".
                 "&nbsp;&nbsp;<strong>[sample comment]</strong>. <br/>".
-                "&nbsp;&nbsp;<strong>[observation comment]</strong>. <br/>".
                 "&nbsp;&nbsp;<strong>[species identifier]</strong>. <br/>".
             "<strong>@option=value</strong> on the line(s) following any control allows you to override one of the options passed to the control. The options ".
         "available depend on the control. For example @label=Abundance would set the untranslated label of a control to Abundance. Where the ".
@@ -176,10 +176,9 @@ class iform_wwt_colour_marked_report {
             "<strong>?help text?</strong> is used to define help text to add to the tab, e.g. ?Enter the name of the site.?",
           'type'=>'textarea',
           'default' => "=Colour Marks=\r\n".
-              "?Please pick the species from the following list and enter the details for the bird and the colour marks.?\r\n".
+              "?Please pick the species from the following list and enter the details for the colour identifiers.?\r\n".
               "[species identifier]\r\n".
               "@individualRepeat=1\r\n".
-              "[species attributes]\r\n".
               "[*]\r\n".
               "=When and Where=\r\n".
               "?Please tell us when you saw the colour-marked bird.?\r\n".
@@ -221,11 +220,11 @@ class iform_wwt_colour_marked_report {
           'name' => 'grid_report',
           'caption' => 'Grid Report',
           'description' => 'Name of the report to use to populate the grid for selecting existing data from. The report must return a sample_id '.
-              'field or occurrence_id field for linking to the data entry form. As a starting point, try reports_for_prebuilt_forms/simple_occurrence_list_1 or '.
-              'reports_for_prebuilt_forms/simple_sample_list_1 for a list of occurrences or samples respectively.',
+              'field and subject_observation_id field for linking to the data entry form. As a starting point, try reports_for_prebuilt_forms/simple_subject_observation_identifier_list_1 '.
+              'for a list of subject observations.',
           'type'=>'string',
           'group' => 'User Interface',
-          'default' => 'reports_for_prebuilt_forms/simple_sample_list_1'
+          'default' => 'reports_for_prebuilt_forms/simple_subject_observation_identifier_list_1'
         ),
         array(
           'name'=>'grid_num_rows',
@@ -251,7 +250,7 @@ class iform_wwt_colour_marked_report {
           'label'=>'Species List ',
           'helpText'=>'The species list that species can be selected from. This list is pre-populated '.
               'into the grid when doing grid based data entry, or provides the list which a species '.
-              'can be picked from when doing single occurrence data entry.',
+              'can be picked from when doing single subject observation data entry.',
           'type'=>'select',
           'table'=>'taxon_list',
           'valueField'=>'id',
@@ -308,16 +307,16 @@ class iform_wwt_colour_marked_report {
           'group' => 'Species'
         ),
         array(
-          'name'=>'occurrence_confidential',
+          'name'=>'subject observation_confidential',
           'caption'=>'Occurrence Confidential',
-          'description'=>'Should a checkbox be present for confidential status of each occurrence?',
+          'description'=>'Should a checkbox be present for confidential status of each subject observation?',
           'type'=>'boolean',
           'required' => false,
           'default'=>false,
           'group'=>'Species'
         ),
         array(
-          'name'=>'occurrence_images',
+          'name'=>'occurrence observation_images',
           'caption'=>'Occurrence Images',
           'description'=>'Should occurrences allow images to be uploaded?',
           'type'=>'boolean',
@@ -366,7 +365,8 @@ class iform_wwt_colour_marked_report {
           ),
           'default' => 'all',
           'group'=>'Species'
-        ),        array(
+        ),        
+        array(
           'name'=>'spatial_systems',
           'caption'=>'Allowed Spatial Ref Systems',
           'description'=>'List of allowable spatial reference systems, comma separated. Use the spatial ref system code (e.g. OSGB or the EPSG code number such as 4326). '.
@@ -563,6 +563,15 @@ class iform_wwt_colour_marked_report {
           'helpText' => 'The helptext. Todo: change this one you see where it shows on screen!!',
           'group' => 'Subject observation',
         ),
+        array(
+          'name'=>'debug_info',
+          'caption'=>'Provide debug information',
+          'description'=>'Tick this to provide debug info on the form, DO NOT USE IN PRODUCTION!!!!',
+          'type'=>'boolean',
+          'required' => false,
+          'default' => false,
+          'group' => 'Debug'
+        ),
       )
     );
     return $retVal;
@@ -581,7 +590,7 @@ class iform_wwt_colour_marked_report {
     self::$node = $node;
     
     // hard-wire some 'dynamic' options to simplify the form. Todo: take out the dynamic code for these
-    $args['multiple_occurrence_mode'] = 'single';
+    $args['multiple_subject_observation_mode'] = 'single';
     $args['extra_list_id'] = '';
     $args['occurrence_comment'] = false;
     $args['col_widths'] = '';
@@ -590,7 +599,7 @@ class iform_wwt_colour_marked_report {
     
     // Get authorisation tokens to update and read from the Warehouse.
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
-    $svcUrl = data_entry_helper::$base_url.'index.php/services';
+    $svcUrl = self::warehouseUrl().'index.php/services';
     self::$auth = $auth;
     
     drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/jquery.form.js', 'module');
@@ -600,7 +609,7 @@ class iform_wwt_colour_marked_report {
         : MODE_GRID; // default mode when no grid set to false - display grid of existing data
                 // mode MODE_EXISTING: display existing sample
     $loadedSampleId = null;
-    $loadedOccurrenceId = null;
+    $loadedSubjectObservationId = null;
     if ($_POST) {
       if(!array_key_exists('website_id', $_POST)) { // non Indicia POST, in this case must be the location allocations. add check to ensure we don't corrept the data by accident
         if(function_exists('iform_loctools_checkaccess') && iform_loctools_checkaccess($node,'admin') && array_key_exists('mnhnld1', $_POST)){
@@ -610,20 +619,21 @@ class iform_wwt_colour_marked_report {
             iform_loctools_insertlocation($node, $parts[2], $parts[1]);
           }
         }
-      } else if(!is_null(data_entry_helper::$entity_to_load)){
+      } else if(!is_null(data_entry_helper::$entity_to_load)) {
         $mode = MODE_EXISTING; // errors with new sample, entity populated with post, so display this data.
       } // else valid save, so go back to gridview: default mode 0
     }
-    if (array_key_exists('sample_id', $_GET) && $_GET['sample_id']!='{sample_id}'){
+    if (array_key_exists('sample_id', $_GET) && $_GET['sample_id']!='{sample_id}') {
       $mode = MODE_EXISTING;
       $loadedSampleId = $_GET['sample_id'];
     }
-    if (array_key_exists('occurrence_id', $_GET) && $_GET['occurrence_id']!='{occurrence_id}'){
+    if (array_key_exists('subject_observation_id', $_GET) && $_GET['subject_observation_id']!='{subject_observation_id}') {
       $mode = MODE_EXISTING;
-      $loadedOccurrenceId = $_GET['occurrence_id'];
-      self::$occurrenceIds = array($loadedOccurrenceId);
+      // single subject_observation case
+      $loadedSubjectObservationId = $_GET['subject_observation_id'];
+      self::$subjectObservationIds = array($loadedSubjectObservationId);
     } 
-    if ($mode!=MODE_EXISTING && array_key_exists('newSample', $_GET)){
+    if ($mode!=MODE_EXISTING && array_key_exists('newSample', $_GET)) {
       $mode = MODE_NEW_SAMPLE;
       data_entry_helper::$entity_to_load = array();
     } // else default to mode MODE_GRID or MODE_NEW_SAMPLE depending on no_grid parameter
@@ -632,7 +642,19 @@ class iform_wwt_colour_marked_report {
     // or edit an existing one.
     if($mode ==  MODE_GRID) {
       $r = '';
-      if (method_exists(get_called_class(), 'getHeaderHTML')) $r .= call_user_func(array(get_called_class(), 'getHeaderHTML'), true, $args);
+      // debug section
+      if (!empty($args['debug_info']) && $args['debug_info']) {
+        $r .= '<input type="button" value="Debug info" onclick="$(\'#debug-info-div\').slideToggle();" /><br />'.
+          '<div id="debug-info-div" style="display: none;">';
+        $r .= '<p>$_GET is:<br /><pre>'.print_r($_GET, true).'</pre></p>';
+        $r .= '<p>$_POST is:<br /><pre>'.print_r($_POST, true).'</pre></p>';
+        $r .= '<p>Entity to load is:<br /><pre>'.print_r(data_entry_helper::$entity_to_load, true).'</pre></p>';
+        $r .= '<p>Submission was:<br /><pre>'.print_r(self::$submission, true).'</pre></p>';
+        $r .= '</div>';
+      }
+      if (method_exists(get_called_class(), 'getHeaderHTML')) {
+        $r .= call_user_func(array(get_called_class(), 'getHeaderHTML'), true, $args);
+      }
       $attributes = data_entry_helper::getAttributes(array(
         'valuetable'=>'sample_attribute_value'
        ,'attrtable'=>'sample_attribute'
@@ -642,20 +664,25 @@ class iform_wwt_colour_marked_report {
        ,'survey_id'=>$args['survey_id']
       ), false);
       $tabs = array('#sampleList'=>lang::get('LANG_Main_Samples_Tab'));
-      if($args['includeLocTools'] && function_exists('iform_loctools_checkaccess') && iform_loctools_checkaccess($node,'admin')){
+      if($args['includeLocTools'] 
+        && function_exists('iform_loctools_checkaccess') 
+        && iform_loctools_checkaccess($node,'admin')) {
         $tabs['#setLocations'] = lang::get('LANG_Allocate_Locations');
       }
       if (method_exists(get_called_class(), 'getExtraGridModeTabs')) {
         $extraTabs = call_user_func(array(get_called_class(), 'getExtraGridModeTabs'), false, $auth['read'], $args, $attributes);
-        if(is_array($extraTabs))
+        if(is_array($extraTabs)) {
           $tabs = $tabs + $extraTabs;
+        }
       }
-      if(count($tabs) > 1){
+      if(count($tabs) > 1) {
         $r .= "<div id=\"controls\">".(data_entry_helper::enable_tabs(array('divId'=>'controls','active'=>'#sampleList')))."<div id=\"temp\"></div>";
         $r .= data_entry_helper::tab_header(array('tabs'=>$tabs));
       }
       $r .= "<div id=\"sampleList\">".call_user_func(array(get_called_class(), 'getSampleListGrid'), $args, $node, $auth, $attributes)."</div>";
-      if($args['includeLocTools'] && function_exists('iform_loctools_checkaccess') && iform_loctools_checkaccess($node,'admin')){
+      if($args['includeLocTools'] 
+        && function_exists('iform_loctools_checkaccess') 
+        && iform_loctools_checkaccess($node,'admin')) {
         $r .= '
   <div id="setLocations">
     <form method="post">
@@ -665,16 +692,16 @@ class iform_wwt_colour_marked_report {
         curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
         $entities = json_decode(curl_exec($session), true);
         $userlist = iform_loctools_listusers($node);
-        foreach($userlist as $uid => $a_user){
+        foreach($userlist as $uid => $a_user) {
           $r .= '<td>'.$a_user->name.'</td>';
         }
         $r .= "</tr>";
-        if(!empty($entities)){
-          foreach($entities as $entity){
-            if(!$entity["parent_id"]){ // only assign parent locations.
+        if(!empty($entities)) {
+          foreach($entities as $entity) {
+            if(!$entity["parent_id"]) { // only assign parent locations.
               $r .= "<tr><td>".$entity["name"]."</td>";
               $defaultuserids = iform_loctools_getusers($node, $entity["id"]);
-              foreach($userlist as $uid => $a_user){
+              foreach($userlist as $uid => $a_user) {
                 $r .= '<td><input type="checkbox" name="location:'.$entity["id"].':'.$uid.(in_array($uid, $defaultuserids) ? '" checked="checked"' : '"').'></td>';
               }
               $r .= "</tr>";
@@ -689,29 +716,25 @@ class iform_wwt_colour_marked_report {
       if (method_exists(get_called_class(), 'getExtraGridModeTabs')) {
         $r .= call_user_func(array(get_called_class(), 'getExtraGridModeTabs'), true, $auth['read'], $args, $attributes);
       }
-      if(count($tabs)>1){ // close tabs div if present
+      if(count($tabs)>1) { // close tabs div if present
         $r .= "</div>";
       }
-      if (method_exists(get_called_class(), 'getTrailerHTML')) $r .= call_user_func(array(get_called_class(), 'getTrailerHTML'), true, $args);
+      if (method_exists(get_called_class(), 'getTrailerHTML')) {
+        $r .= call_user_func(array(get_called_class(), 'getTrailerHTML'), true, $args);
+      }
       return $r;
     }
+    // from this point on, we are MODE_EXISTING or MODE_NEW_SAMPLE
     if ($mode == MODE_EXISTING && is_null(data_entry_helper::$entity_to_load)) { // only load if not in error situation
-      data_entry_helper::$entity_to_load = array();
-      // Displaying an existing sample. If we know the occurrence ID, and don't know the sample ID or are displaying just one occurrence
-      // rather than a grid of occurrences then we must load the occurrence data to get the sample id.
-      if ($loadedOccurrenceId && (!$loadedSampleId || !self::getGridMode($args))) {
-        data_entry_helper::load_existing_record($auth['read'], 'occurrence', $loadedOccurrenceId);
-        // Get the sample ID for the occurrence. This overwrites it if supply in GET but did not match the occurrence's sample
-        $loadedSampleId = data_entry_helper::$entity_to_load['occurrence:sample_id'];
-        if (self::getGridMode($args)) {
-          // in grid mode, we only needed to load the occurrence to find out the sample id.
-          data_entry_helper::$entity_to_load=array();
-        }
+      // Displaying an existing sample. If we know the subject_observation ID, and don't know the sample ID 
+      // then we must get the sample id from the subject_observation data.
+      if ($loadedSubjectObservationId && !$loadedSampleId) {
+        data_entry_helper::load_existing_record($auth['read'], 'subject_observation', $loadedSubjectObservationId);
+        $loadedSampleId = data_entry_helper::$entity_to_load['subject_observation:sample_id'];
       }
-      if ($loadedSampleId)
-        data_entry_helper::load_existing_record($auth['read'], 'sample', $loadedSampleId);
+      data_entry_helper::$entity_to_load = self::reload_form_data($loadedSampleId, $auth);
     }
-    // attributes must be fetched after the entity to load is filled in - this is because the id gets filled in then!
+    // get the sample attributes
     $attrOpts = array(
         'id' => data_entry_helper::$entity_to_load['sample:id']
        ,'valuetable'=>'sample_attribute_value'
@@ -729,11 +752,33 @@ class iform_wwt_colour_marked_report {
     //// Make sure the form action points back to this page
     $reload = data_entry_helper::get_reload_link_parts();
     unset($reload['params']['sample_id']);
-    unset($reload['params']['occurrence_id']);
+    unset($reload['params']['subject_observation_id']);
     unset($reload['params']['newSample']);
     $reloadPath = $reload['path'];
-    if(count($reload['params'])) $reloadPath .= '?'.http_build_query($reload['params']);
+    // don't url-encode the drupal path id using dirty url
+    $pathParam = (function_exists('variable_get') && variable_get('clean_url', 0)=='0') ? 'q' : '';
+    if(count($reload['params'])) {
+      if ($pathParam==='q' && array_key_exists('q', $reload['params'])) {
+        $reloadPath .= '?q='.$reload['params']['q'];
+        unset($reload['params']['q']);
+        if (count($reload['params'])) {
+          $reloadPath .= '&'.http_build_query($reload['params']);
+        }
+      } else {
+        $reloadPath .= '?'.http_build_query($reload['params']);
+      }
+    }
     $r = "<form method=\"post\" id=\"entry_form\" action=\"$reloadPath\">\n";
+    // debug section
+    if (!empty($args['debug_info']) && $args['debug_info']) {
+      $r .= '<input type="button" value="Debug info" onclick="$(\'#debug-info-div\').slideToggle();" /><br />'.
+        '<div id="debug-info-div" style="display: none;">';
+      $r .= '<p>$_GET is:<br /><pre>'.print_r($_GET, true).'</pre></p>';
+      $r .= '<p>$_POST is:<br /><pre>'.print_r($_POST, true).'</pre></p>';
+      $r .= '<p>Entity to load is:<br /><pre>'.print_r(data_entry_helper::$entity_to_load, true).'</pre></p>';
+      $r .= '<p>Submission was:<br /><pre>'.print_r(self::$submission, true).'</pre></p>';
+      $r .= '</div>';
+    }
     // Get authorisation tokens to update the Warehouse, plus any other hidden data.
     $hiddens = $auth['write'].
           "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n".
@@ -744,24 +789,13 @@ class iform_wwt_colour_marked_report {
     if (isset(data_entry_helper::$entity_to_load['sample:id'])) {
       $hiddens .= "<input type=\"hidden\" id=\"sample:id\" name=\"sample:id\" value=\"".data_entry_helper::$entity_to_load['sample:id']."\" />\n";    
     }
-    if (isset(data_entry_helper::$entity_to_load['occurrence:id'])) {
-      $hiddens .= "<input type=\"hidden\" id=\"occurrence:id\" name=\"occurrence:id\" value=\"".data_entry_helper::$entity_to_load['occurrence:id']."\" />\n";    
-    }
-    // Check if Record Status is included as a control. If not, then add it as a hidden.
-    $arr = helper_base::explode_lines($args['structure']);
-    if (!in_array('[record status]', $arr)) {
-      $value = isset($args['defaults']['occurrence:record_status']) ? $args['defaults']['occurrence:record_status'] : 'C'; 
-      $hiddens .= "<input type=\"hidden\" id=\"occurrence:record_status\" name=\"occurrence:record_status\" value=\"$value\" />\n";    
-    }
-    // add subject type and count as a hidden
-    if (!empty($args['subject_type_id'])) {
-      $hiddens .= '<input type="hidden" name="subject_observation:subject_type_id" value="'.$args['subject_type_id'].'"/>';
-      $hiddens .= '<input type="hidden" name="subject_observation:count" value="1"/>';
-    }
     // request automatic JS validation
-    if (!isset($args['clientSideValidation']) || $args['clientSideValidation'])
+    if (!isset($args['clientSideValidation']) || $args['clientSideValidation']) {
       data_entry_helper::enable_validation('entry_form');
-    if (method_exists(get_called_class(), 'getHeaderHTML')) $r .= call_user_func(array(get_called_class(), 'getHeaderHTML'), true, $args);
+    }
+    if (method_exists(get_called_class(), 'getHeaderHTML')) {
+      $r .= call_user_func(array(get_called_class(), 'getHeaderHTML'), true, $args);
+    }
     $hiddens .= get_user_profile_hidden_inputs($attributes, $args, $mode, $auth['read']);
     $customAttributeTabs = get_attribute_tabs($attributes);
     $tabs = self::get_all_tabs($args['structure'], $customAttributeTabs);
@@ -947,6 +981,175 @@ class iform_wwt_colour_marked_report {
     return data_entry_helper::map_panel($options, $olOptions);
   }
   
+  /*
+   * helper function to reload data for existing sample 
+   * @param $loadedSampleId Required. id for required sample.
+   * if not supplied, all subject_observations in the sample are loaded
+   * @return array of data values matching the form control names. 
+   */
+  private static function reload_form_data($loadedSampleId, $auth) {
+    $form_data = array();
+    if (!$loadedSampleId) { // required
+      return $form_data;
+    }
+    
+    // load the sample
+    data_entry_helper::load_existing_record($auth['read'], 'sample', $loadedSampleId);
+    $form_data = array_merge(data_entry_helper::$entity_to_load, $form_data);
+    
+    // if we have a subject_observation, then we just load that,
+    // otherwise we need all the subjects_observations in the sample
+    $filter = array();
+    if (count(self::$subjectObservationIds)===1) {
+      $filter = array('id'=>self::$subjectObservationIds[0]);
+      self::$subjectObservationIds = array();
+    }
+  
+    // load the subject_observation(s) for this sample
+    $options = array(
+      'table' => 'subject_observation',
+      'extraParams' => $auth['read'] + array('sample_id'=>$loadedSampleId, 'view'=>'detail') + $filter,
+      'nocache' => true,
+    );
+    $subjectObservations = data_entry_helper::get_population_data($options);
+    // add each subject_observation to the form data
+    for ($idx=0; $idx<count($subjectObservations); $idx++) {
+      $subjectObservation=$subjectObservations[$idx];
+      self::$subjectObservationIds[] = $subjectObservation['id'];
+      // prefix the keys and load to form data
+      $identifier_type_id = 0;
+      $fieldprefix = 'idn:'.$idx.':'.$identifier_type_id.':subject_observation:';
+      $keys = array_keys($subjectObservation);
+      foreach ($keys as $key) {
+        $form_data[$fieldprefix.$key] = $subjectObservation[$key];
+      }
+    }
+  
+    // load the subject_observation_attribute(s) for this sample
+    $query = array('in'=>array('subject_observation_id', self::$subjectObservationIds));
+    $filter = array('query'=>json_encode($query),);
+    $options = array(
+      'table' => 'subject_observation_attribute_value',
+      'extraParams' => $auth['read'] + $filter,
+      'nocache' => true,
+    );
+    $sjoAttrs = data_entry_helper::get_population_data($options);
+    // add each subject_observation_attribute to the form data
+    for ($idx=0; $idx<count($subjectObservations); $idx++) {
+      $subjectObservation=$subjectObservations[$idx];
+      // prefix the keys and load to form data
+      $identifier_type_id = 0;
+      $fieldprefix = 'idn:'.$idx.':'.$identifier_type_id.':sjoAttr:';
+      foreach ($sjoAttrs as $sjoAttr) {
+        if ($sjoAttr['subject_observation_id']===$subjectObservation['id']) {
+          if ($sjoAttr['multi_value']==='t') {
+            $form_data[$fieldprefix.$sjoAttr['subject_observation_attribute_id']][] = $sjoAttr['raw_value'];
+          } else {
+            $form_data[$fieldprefix.$sjoAttr['subject_observation_attribute_id']] = $sjoAttr['raw_value'];
+          }
+        }
+      }
+    }
+    
+    // load the occurrence(s) for this sample
+    $query = array('in'=>array('subject_observation_id', self::$subjectObservationIds));
+    $filter = array('query'=>json_encode($query),);
+    $options = array(
+      'table' => 'occurrences_subject_observation',
+      'extraParams' => $auth['read'] + array('view'=>'detail') + $filter,
+      'nocache' => true,
+    );
+    $osos = data_entry_helper::get_population_data($options);
+    $occurrenceIds = array();
+    foreach ($osos as $oso) {
+      $occurrenceIds[] = $oso['occurrence_id'];
+    }
+    $query = array('in'=>array('id', $occurrenceIds));
+    $filter = array('query'=>json_encode($query),);
+    $options = array(
+      'table' => 'occurrence',
+      'extraParams' => $auth['read'] + array('view'=>'detail') + $filter,
+      'nocache' => true,
+    );
+    $occurrences = data_entry_helper::get_population_data($options);
+    // add each occurrence to the form data
+    for ($idx=0; $idx<count($subjectObservations); $idx++) {
+      // prefix the keys and load to form data
+      $identifier_type_id = 0;
+      $fieldprefix = 'idn:'.$idx.':'.$identifier_type_id.':occurrence:';
+      foreach ($osos as $oso) {
+        foreach ($occurrences as $occurrence) {
+          if ($oso['occurrence_id']===$occurrence['id']) {
+            $keys = array_keys($occurrence);
+            foreach ($keys as $key) {
+              $form_data[$fieldprefix.$key] = $occurrence[$key];
+            }
+          }
+        }
+      }
+    }
+    
+    // load the identifier(s) for this sample
+    $query = array('in'=>array('subject_observation_id', self::$subjectObservationIds));
+    $filter = array('query'=>json_encode($query),);
+    $options = array(
+      'table' => 'identifiers_subject_observation',
+      'extraParams' => $auth['read'] + array('view'=>'detail') + $filter,
+      'nocache' => true,
+    );
+    $isos = data_entry_helper::get_population_data($options);
+    $identifierIds = array();
+    foreach ($isos as $iso) {
+      $identifierIds[] = $iso['identifier_id'];
+    }
+    $query = array('in'=>array('id', $identifierIds));
+    $filter = array('query'=>json_encode($query),);
+    $options = array(
+      'table' => 'identifier',
+      'extraParams' => $auth['read'] + array('view'=>'detail') + $filter,
+      'nocache' => true,
+    );
+    $identifiers = data_entry_helper::get_population_data($options);
+    $query = array('in'=>array('identifier_id', $identifierIds));
+    $filter = array('query'=>json_encode($query),);
+    $options = array(
+      'table' => 'identifier_attribute_value',
+      'extraParams' => $auth['read'] + $filter,
+      'nocache' => true,
+    );
+    $idnAttrs = data_entry_helper::get_population_data($options);
+    // add each identifier to the form data
+    for ($idx=0; $idx<count($subjectObservations); $idx++) {
+      // prefix the keys and load to form data
+      foreach ($isos as $iso) {
+        foreach ($identifiers as $identifier) {
+          if ($iso['identifier_id']===$identifier['id']) {
+            $identifier_type_id = $identifier['identifier_type_id'];
+            $fieldprefix = 'idn:'.$idx.':'.$identifier_type_id.':identifier:';
+            $form_data[$fieldprefix.'checkbox'] = 'on';
+            $keys = array_keys($identifier);
+            foreach ($keys as $key) {
+              $form_data[$fieldprefix.$key] = $identifier[$key];
+            }
+            $fieldprefix = 'idn:'.$idx.':'.$identifier_type_id.':idnAttr:';
+            foreach ($idnAttrs as $idnAttr) {
+              if ($iso['identifier_id']===$idnAttr['identifier_id']) {
+                if ($idnAttr['multi_value']==='t') {
+                  $form_data[$fieldprefix.$idnAttr['identifier_attribute_id']][] = $idnAttr['raw_value'];
+                } else {
+                  $form_data[$fieldprefix.$idnAttr['identifier_attribute_id']] = $idnAttr['raw_value'];
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    //print_r($form_data);exit;
+    return $form_data;
+  }
+
   /**
    * Get the control for species input, either a grid or a single species input control.
    */
@@ -956,7 +1159,7 @@ class iform_wwt_colour_marked_report {
     $fieldPrefix = !empty($options['fieldprefix']) ? $options['fieldprefix'] : '';
     if (!empty($args['taxon_filter_field']) && !empty($args['taxon_filter'])) {
       $filterLines = helper_base::explode_lines($args['taxon_filter']);
-      if ($args['multiple_occurrence_mode'] !== 'single' && $args['taxon_filter_field']!=='taxon_group' && count($filterLines)===1) {
+      if ($args['multiple_subject_observation_mode'] !== 'single' && $args['taxon_filter_field']!=='taxon_group' && count($filterLines)===1) {
         // The form is configured for filtering by taxon name or meaning id. If there is only one specified then the form
         // cannot display a species checklist, as there is no point. So, convert our preferred taxon name or meaning ID to find the 
         // preferred taxa_taxon_list_id from the selected checklist, and then output a hidden ID.
@@ -991,7 +1194,7 @@ class iform_wwt_colour_marked_report {
           'extraParams'=>$extraParams,
           'survey_id'=>$args['survey_id'],
           'occurrenceComment'=>$args['occurrence_comment'],
-          'occurrenceConfidential'=>(isset($args['occurrence_confidential']) ? $args['occurrence_confidential'] : false),
+          'occurrenceConfidential'=>(isset($args['subject_observation_confidential']) ? $args['subject_observation_confidential'] : false),
           'occurrenceImages'=>$args['occurrence_images'],
           'PHPtaxonLabel' => true,
           'language' => iform_lang_iso_639_2($user->lang), // used for termlists in attributes
@@ -1071,7 +1274,7 @@ class iform_wwt_colour_marked_report {
       if ($args['species_ctrl']=='tree_browser') {
         // change the node template to include images
         $indicia_templates['tree_browser_node']='<div>'.
-            '<img src="'.data_entry_helper::$base_url.'/upload/thumb-{image_path}" alt="Image of {caption}" width="80" /></div>'.
+            '<img src="'.self::warehouseUrl().'/upload/thumb-{image_path}" alt="Image of {caption}" width="80" /></div>'.
             '<span>{caption}</span>';
       }
       // Dynamically generate the species selection control required.
@@ -1195,9 +1398,9 @@ class iform_wwt_colour_marked_report {
          'extraParams'=>$auth['read'],
          'survey_id'=>$args['survey_id']
       );
-      if (count(self::$occurrenceIds)==1) {
-        // if we have a single occurrence Id to load, use it to get attribute values
-        $attrArgs['id'] = self::$occurrenceIds[0];
+      if (count(self::$subjectObservationIds)==1) {
+        // if we have a single subject observation Id to load, use it to get attribute values
+        $attrArgs['id'] = self::$subjectObservationIds[0];
       }
       $attributes = data_entry_helper::getAttributes($attrArgs, false);
       $defAttrOptions = array('extraParams'=>$auth['read']);
@@ -1365,7 +1568,7 @@ class iform_wwt_colour_marked_report {
     } elseif (count($identAttrLines)!==$identifiers) {
       throw new exception(lang::get('Please configure the Identifier Attributes in the Identifiers section with one line for each identifier type you have chosen.'));
     }
-    $svcUrl = data_entry_helper::$base_url.'index.php/services';
+    $svcUrl = self::warehouseUrl().'index.php/services';
     // get the identifier type data
     $filter = array(
       'termlist_external_key' => 'indicia:assoc:identifier_type',
@@ -1459,6 +1662,47 @@ class iform_wwt_colour_marked_report {
         $r .= '<fieldset id="'.$options['fieldprefix'].'individual:fieldset" class="taxon_individual ui-corner-all">';
         $r .= '<legend>Colour-marked individual '.($taxIdx+1).'</legend>';
       }
+      // output the hiddens
+      if (isset(data_entry_helper::$entity_to_load[$options['fieldprefix'].'subject_observation:id'])) {
+        $r .= '<input type="hidden" id="'.$options['fieldprefix'].'subject_observation:id" name="'.$options['fieldprefix'].'subject_observation:id" '.
+          'value="'.data_entry_helper::$entity_to_load[$options['fieldprefix'].'subject_observation:id'].'" />'."\n";    
+      }
+      if (isset(data_entry_helper::$entity_to_load[$options['fieldprefix'].'occurrence:id'])) {
+        $r .= '<input type="hidden" id="'.$options['fieldprefix'].'occurrence:id" name="'.$options['fieldprefix'].'occurrence:id" '.
+          'value="'.data_entry_helper::$entity_to_load[$options['fieldprefix'].'occurrence:id'].'" />'."\n";    
+      }
+      // Check if Record Status is included as a control. If not, then add it as a hidden.
+      $arr = helper_base::explode_lines($args['structure']);
+      if (!in_array('[record status]', $arr)) {
+        if (isset(data_entry_helper::$entity_to_load[$options['fieldprefix'].'occurrence:record_status'])) {
+          $value = data_entry_helper::$entity_to_load[$options['fieldprefix'].'occurrence:record_status'];
+        } else {
+          $value = isset($args['defaults']['occurrence:record_status']) ? $args['defaults']['occurrence:record_status'] : 'C'; 
+        }
+        $r .= '<input type="hidden" id="'.$options['fieldprefix'].'occurrence:record_status" '.
+          'name="'.$options['fieldprefix'].'occurrence:record_status" value="'.$value.'" />'."\n";    
+      }
+      // add subject type and count as a hidden
+      $value = '';
+      if (isset(data_entry_helper::$entity_to_load[$options['fieldprefix'].'subject_observation:subject_type_id'])) {
+        $value = data_entry_helper::$entity_to_load[$options['fieldprefix'].'subject_observation:subject_type_id'];
+      } else if (isset($args['subject_type_id'])) {
+        $value = $args['subject_type_id']; 
+      }
+      if ($value!=='') {
+        $r .= '<input type="hidden" id="'.$options['fieldprefix'].'subject_observation:subject_type_id" '.
+          'name="'.$options['fieldprefix'].'subject_observation:subject_type_id" value="'.$value.'" />'."\n";
+      }
+      if (isset(data_entry_helper::$entity_to_load[$options['fieldprefix'].'subject_observation:count'])) {
+        $value = data_entry_helper::$entity_to_load[$options['fieldprefix'].'subject_observation:count'];
+      } else  {
+        $value = '1'; 
+      }
+      if ($value!=='') {
+        $r .= '<input type="hidden" id="'.$options['fieldprefix'].'subject_observation:count" '.
+          'name="'.$options['fieldprefix'].'subject_observation:count" value="'.$value.'" />'."\n";
+      }
+
       // output the species selection control
       $options['blankText'] = '<Please select>';
       $r .= self::get_control_species($auth, $args, $tabalias, $options+array('validation' => array('required')));
@@ -1688,6 +1932,9 @@ class iform_wwt_colour_marked_report {
     // add observation and identifier data to sample/occurrence in submission
     $submission = self::add_observation_submissions($submission, $values, $args);
     
+    if (isset($args['debug_info']) && $args['debug_info']) {
+      self::$submission = $submission;
+    }
     return($submission);
   }
     
@@ -1705,9 +1952,20 @@ class iform_wwt_colour_marked_report {
     {
       if (!in_array($values[$key], $taxa)) {
         $taxa[] = $values[$key];
-        // set the taxa and build the occurrence submission
-        $values['occurrence:taxa_taxon_list_id'] = $values[$key];
+        // flatten keys and build the occurrence submission
+        $key_parts = explode(':', $key);
+        $idx = $key_parts[1];
+        $o_keys = preg_grep('/^idn:'.$idx.':0:(occurrence|occAttr):/', array_keys($values));
+        foreach ($o_keys as $o_key) {
+          $o_key_parts = explode(':', $o_key, 4);
+          $values[$o_key_parts[3]] = $values[$o_key];
+        }
         $occ = submission_builder::build_submission($values, array('model'=>'occurrence',));
+        // clean up the flattened occurrence keys
+        foreach ($o_keys as $o_key) {
+          $o_key_parts = explode(':', $o_key, 4);
+          unset($values[$o_key_parts[3]]);
+        }
         // add to the main sample submission
         $sample['subModels'][] = array('fkId' => 'sample_id', 'model' => $occ);
       }
@@ -1751,6 +2009,16 @@ class iform_wwt_colour_marked_report {
           $iso = self::build_identifier_observation_submission($values);
           $so['subModels'][] = array('fkId' => 'subject_observation_id', 'model' => $iso,);
         }
+        // clean up the flattened keys
+        foreach ($ident_keys as $i_key) {
+          $i_key_parts = explode(':', $i_key, 4);
+          unset($values[$i_key_parts[3]]);
+        }
+      }
+      // clean up the flattened subject_observation keys
+      foreach ($so_keys as $so_key) {
+        $so_key_parts = explode(':', $so_key, 4);
+        unset($values[$so_key_parts[3]]);
       }
       // add it all to the main sample submission
       $sample['subModels'][] = array('fkId' => 'sample_id', 'model' => $so,);
@@ -1801,7 +2069,7 @@ class iform_wwt_colour_marked_report {
     } else {
       $submission['fields']['identifier_id'] = $values['identifier:identifier_id'];
     }
-   return $submission;
+    return $submission;
   }
   
   /**
@@ -1811,7 +2079,7 @@ class iform_wwt_colour_marked_report {
    * @return array List of css files to include for this form.
    */
   public static function get_css() {
-    return array('mnhnl_collaborators_1.css');
+    return array();
   }
   
   /**
@@ -1825,23 +2093,23 @@ class iform_wwt_colour_marked_report {
   }
   
   /**
-   * Returns true if this form should be displaying a multiple occurrence entry grid.
+   * Returns true if this form should be displaying a multiple subject observation entry grid.
    */
   protected static function getGridMode($args) {
     // if loading an existing sample and we are allowed to display a grid or single species selector
-    if ($args['multiple_occurrence_mode']=='either') {
+    if ($args['multiple_subject_observation_mode']=='either') {
       // Either we are in grid mode because we were instructed to externally, or because the form is reloading
       // after a validation failure with a hidden input indicating grid mode.
       return isset($_GET['gridmode']) || 
           isset(data_entry_helper::$entity_to_load['gridmode']) ||
           ((array_key_exists('sample_id', $_GET) && $_GET['sample_id']!='{sample_id}') &&
-           (!array_key_exists('occurrence_id', $_GET) || $_GET['occurrence_id']=='{occurrence_id}'));
+           (!array_key_exists('subject_observation_id', $_GET) || $_GET['subject_observation_id']=='{subject_observation_id}'));
     } else
       return 
           // a form saved using a previous version might not have this setting, so default to grid mode=true
-          (!isset($args['multiple_occurrence_mode'])) ||
+          (!isset($args['multiple_subject_observation_mode'])) ||
           // Are we fixed in grid mode?
-          $args['multiple_occurrence_mode']=='multi';
+          $args['multiple_subject_observation_mode']=='multi';
   }
   
   /**
@@ -1850,25 +2118,29 @@ class iform_wwt_colour_marked_report {
   protected static function getSampleListGrid($args, $node, $auth, $attributes) {
     global $user;
     // get the CMS User ID attribute so we can filter the grid to this user
+    /*
     foreach($attributes as $attrId => $attr) {
       if (strcasecmp($attr['caption'],'CMS User ID')==0) {
         $userIdAttr = $attr['attributeId'];
         break;
       }
     }
+    */
     if ($user->uid===0) {
       // Return a login link that takes you back to this form when done.
       return lang::get('Before using this facility, please <a href="'.url('user/login', array('query'=>'destination=node/'.($node->nid))).'">login</a> to the website.');
     }
-    if (!isset($userIdAttr)) {
-      return lang::get('This form must be used with a survey that has the CMS User ID attribute associated with it so records can '.
-          'be tagged against the user.');
+    // ToDo: use drupal profile to get warehouse user id
+    $userId = 8;
+    if (!isset($userId)) {
+      return lang::get('This form must be used with the indicia \'Easy Login\' module so records can '.
+          'be tagged against the warehouse user id.');
     }
     if (isset($args['grid_report']))
       $reportName = $args['grid_report'];
     else
       // provide a default in case the form settings were saved in an old version of the form
-      $reportName = 'reports_for_prebuilt_forms/simple_sample_list_1';
+      $reportName = 'reports_for_prebuilt_forms/simple_subject_observation_identifier_list_1';
     if(method_exists(get_called_class(), 'getSampleListGridPreamble'))
       $r = call_user_func(array(get_called_class(), 'getSampleListGridPreamble'));
     else
@@ -1883,12 +2155,11 @@ class iform_wwt_colour_marked_report {
       'autoParamsForm' => true,
       'extraParams' => array(
         'survey_id'=>$args['survey_id'], 
-        'userID_attr_id'=>$userIdAttr,
-        'userID'=>$user->uid
+        'userID'=>$userId,
       )
     ));    
     $r .= '<form>';    
-    if (isset($args['multiple_occurrence_mode']) && $args['multiple_occurrence_mode']=='either') {
+    if (isset($args['multiple_subject_observation_mode']) && $args['multiple_subject_observation_mode']=='either') {
       $r .= '<input type="button" value="'.lang::get('LANG_Add_Sample_Single').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'newSample')).'\'">';
       $r .= '<input type="button" value="'.lang::get('LANG_Add_Sample_Grid').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'newSample&gridmode')).'\'">';
     } else {
@@ -1910,9 +2181,15 @@ class iform_wwt_colour_marked_report {
 
   protected function getReportActions() {
     return array(array('display' => 'Actions', 'actions' => 
-        array(array('caption' => lang::get('Edit'), 'url'=>'{currentUrl}', 'urlParams'=>array('sample_id'=>'{sample_id}','occurrence_id'=>'{occurrence_id}')))));
+        array(array('caption' => lang::get('Edit'), 'url'=>'{currentUrl}', 'urlParams'=>array('sample_id'=>'{sample_id}','subject_observation_id'=>'{subject_observation_id}')))));
   }
   
+  /*
+   * helper function to return a proxy-aware warehouse url
+   */
+  protected function warehouseUrl() {
+    return !empty(data_entry_helper::$warehouse_proxy) ? data_entry_helper::$warehouse_proxy : data_entry_helper::$base_url;
+  }
 }
 
 /**

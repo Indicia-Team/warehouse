@@ -87,6 +87,8 @@ function individuals_and_associations_extend_data_services() {
     'identifier_attribute_values'=>array(),
     'subject_observation_attribute_values'=>array(),
     'known_subject_comments'=>array(),
+    'identifiers_subject_observations'=>array(),
+    'occurrences_subject_observations'=>array(),
   );
 }
 

@@ -261,23 +261,38 @@
         }
       });
       if (codes.length > 0) {
-        // check if each identifier in use and without an id, exists on warehouse and set its id if so.
+        // for each identifier in use and without an id, check if it exists on the warehouse and set its id if so.
         var query = {"in" : ["coded_value", codes ]};
+        var ajaxError = false;
         $.ajax({
           type: 'GET', 
           url: svcUrl+'/data/identifier?mode=json' +
               '&nonce='+readNonce+'&auth_token='+readAuthToken+
               '&orderby=id&callback=?&query='+escape(JSON.stringify(query)), 
           data: {}, 
-          success: function(detData) {
-            if(detData.length>0) { // we found one or more matches
+          success: function(data) {
+            if (typeof data.error!=="undefined") {
+              if (typeof data.errors!=="undefined") {
+                $.each(data.errors, function(idx, error) {
+                  alert(error);
+                });
+                ajaxError = true;
+              } else {
+                if (data.error.indexOf('unauthorised')===-1) {
+                  alert('An error occured when trying to save the data '+data.error);
+                  ajaxError = true;
+                } else {
+                  // just ignore if unauthorised, let it submit and fail and refresh the tokens.
+                }
+              }
+            } else if(typeof data.length!=='undefined' && data.length>0) { // we found one or more matches
               var id$ = $('input.identifier_id');
               var code$ = $('input.identifier\\:coded_value');
-              for (i=0; i<detData.length; i++) {
+              for (i=0; i<data.length; i++) {
                 for (j=0; j<code$.length; j++) {
-                  if (code$[j].value==detData[i].coded_value) {
+                  if (code$[j].value==data[i].coded_value) {
                     // set the id
-                    id$[j].value = detData[i].id+'';
+                    id$[j].value = data[i].id+'';
                   }
                 }
               }
@@ -286,6 +301,10 @@
           dataType: 'json', 
           async: false 
         });
+        if (ajaxError) {
+          // stop the submit
+          return false;
+        }
       }
       // if jQuery validation not in use, we do some basic validation
       var valid = true;
