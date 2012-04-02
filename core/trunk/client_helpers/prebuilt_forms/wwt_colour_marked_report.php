@@ -480,6 +480,20 @@ class iform_wwt_colour_marked_report {
           'group' => 'Identifiers',
         ),
         array(
+          'name'=>'default_leg_vertical',
+          'caption'=>'Default Position on Leg',
+          'description'=>'If you are not specifying if a leg mark is above or below the \'knee\' in the above choices, '.
+             'you can optionally specify a default position here.',
+          'type'=>'select',
+          'options' => array(
+            '?' => 'No Default',
+            'A' => 'Above the \'Knee\'',
+            'B' => 'Below the \'Knee\'',
+          ),
+          'required'=>false,
+          'group'=>'Identifiers'
+        ),
+        array(
           'name'=>'use_colour_picker',
           'caption'=>'Use Colour Picker',
           'description'=>'Tick this to use a colour-picker control for choosing colours rather than a select control of colour names.',
@@ -1072,14 +1086,22 @@ class iform_wwt_colour_marked_report {
       'nocache' => true,
     );
     $occurrences = data_entry_helper::get_population_data($options);
-    // add each occurrence to the form data
+    // add each occurrence and occurrences_subject_observation to the form data
     for ($idx=0; $idx<count($subjectObservations); $idx++) {
+      // note, this code would break with more than one occurrence on the subject_observation
+      // fortunately, that can't happen with this form
       // prefix the keys and load to form data
       $identifier_type_id = 0;
       $fieldprefix = 'idn:'.$idx.':'.$identifier_type_id.':occurrence:';
       foreach ($osos as $oso) {
         foreach ($occurrences as $occurrence) {
           if ($oso['occurrence_id']===$occurrence['id']) {
+            $fieldprefix = 'idn:'.$idx.':'.$identifier_type_id.':occurrences_subject_observation:';
+            $keys = array_keys($oso);
+            foreach ($keys as $key) {
+              $form_data[$fieldprefix.$key] = $oso[$key];
+            }
+            $fieldprefix = 'idn:'.$idx.':'.$identifier_type_id.':occurrence:';
             $keys = array_keys($occurrence);
             foreach ($keys as $key) {
               $form_data[$fieldprefix.$key] = $occurrence[$key];
@@ -1125,6 +1147,11 @@ class iform_wwt_colour_marked_report {
         foreach ($identifiers as $identifier) {
           if ($iso['identifier_id']===$identifier['id']) {
             $identifier_type_id = $identifier['identifier_type_id'];
+            $fieldprefix = 'idn:'.$idx.':'.$identifier_type_id.':identifiers_subject_observation:';
+            $keys = array_keys($iso);
+            foreach ($keys as $key) {
+              $form_data[$fieldprefix.$key] = $iso[$key];
+            }
             $fieldprefix = 'idn:'.$idx.':'.$identifier_type_id.':identifier:';
             $form_data[$fieldprefix.'checkbox'] = 'on';
             $keys = array_keys($identifier);
@@ -1647,6 +1674,8 @@ class iform_wwt_colour_marked_report {
       '".$options['baseColourId']."',
       '".$options['textColourId']."',
       '".$options['sequenceId']."',
+      '".$options['positionId']."',
+      '".$args['default_leg_vertical']."',
       '".$hideOrDisable."',
       '".$validate."'\n".
       ");\n";
@@ -1666,6 +1695,10 @@ class iform_wwt_colour_marked_report {
       if (isset(data_entry_helper::$entity_to_load[$options['fieldprefix'].'subject_observation:id'])) {
         $r .= '<input type="hidden" id="'.$options['fieldprefix'].'subject_observation:id" name="'.$options['fieldprefix'].'subject_observation:id" '.
           'value="'.data_entry_helper::$entity_to_load[$options['fieldprefix'].'subject_observation:id'].'" />'."\n";    
+      }
+      if (isset(data_entry_helper::$entity_to_load[$options['fieldprefix'].'occurrences_subject_observation:id'])) {
+        $r .= '<input type="hidden" id="'.$options['fieldprefix'].'occurrences_subject_observation:id" name="'.$options['fieldprefix'].'occurrences_subject_observation:id" '.
+          'value="'.data_entry_helper::$entity_to_load[$options['fieldprefix'].'occurrences_subject_observation:id'].'" />'."\n";    
       }
       if (isset(data_entry_helper::$entity_to_load[$options['fieldprefix'].'occurrence:id'])) {
         $r .= '<input type="hidden" id="'.$options['fieldprefix'].'occurrence:id" name="'.$options['fieldprefix'].'occurrence:id" '.
@@ -1778,7 +1811,7 @@ class iform_wwt_colour_marked_report {
           'label'=>'Was there a '.strtolower($identifier_name).'?',
           'class'=>'identifier_checkbox',
         ), $options));
-        $r .= '<fieldset id="'.$options['fieldprefix'].'fieldset" class="taxon_identifier ui-corner-all">';
+        $r .= '<fieldset id="'.$options['fieldprefix'].'fieldset" class="taxon_identifier ui-corner-all '.str_replace(' ', '-', strtolower($identifier_name)).'">';
         $r .= '<legend>Enter details for the '.strtolower($identifier_name).'</legend>';
         $options['identifierTypeId'] = $identifier_type_id;
         $options['identifierName'] = $identifier_name;
@@ -1828,6 +1861,10 @@ class iform_wwt_colour_marked_report {
     $r .= '<input type="hidden" name="'.$fieldPrefix.'identifier:identifier_name" id="'.$fieldPrefix.'identifier:identifier_name" value="'.$options['identifierName'].'" />'."\n";
     $r .= '<input type="hidden" name="'.$fieldPrefix.'identifier:coded_value" id="'.$fieldPrefix.'identifier:coded_value" class="identifier:coded_value" value="" />'."\n";
     $r .= '<input type="hidden" name="'.$fieldPrefix.'identifier:identifier_id" id="'.$fieldPrefix.'identifier:identifier_id" class="identifier_id" value="-1" />'."\n";
+    if (isset(data_entry_helper::$entity_to_load[$options['fieldprefix'].'identifiers_subject_observation:id'])) {
+      $r .= '<input type="hidden" id="'.$options['fieldprefix'].'identifiers_subject_observation:id" name="'.$options['fieldprefix'].'identifiers_subject_observation:id" '.
+        'value="'.data_entry_helper::$entity_to_load[$options['fieldprefix'].'identifiers_subject_observation:id'].'" />'."\n";    
+    }
     $r .= '<div class="indentifier-controls">';
     // loop through the requested attributes and output an appropriate control
     foreach ($options['identifierAttrList'] as $attrId) {
@@ -1987,7 +2024,7 @@ class iform_wwt_colour_marked_report {
       // build the observation submission
       $key_parts = explode(':', $key);
       $idx = $key_parts[1];
-      $so_keys = preg_grep('/^idn:'.$idx.':0:(subject_observation|sjoAttr):/', array_keys($values));
+      $so_keys = preg_grep('/^idn:'.$idx.':0:(subject_observation|occurrences_subject_observation|sjoAttr):/', array_keys($values));
       foreach ($so_keys as $so_key) {
         $so_key_parts = explode(':', $so_key, 4);
         $values[$so_key_parts[3]] = $values[$so_key];
@@ -1999,7 +2036,7 @@ class iform_wwt_colour_marked_report {
       $so['subModels'][] = array('fkId' => 'subject_observation_id', 'model' => $oso,);
       // create submodel for each join to identifier (plus identifier models if new) and add it
       foreach ($args['identifier_types'] as $identifier_type_id) {
-        $ident_keys = preg_grep('/^idn:'.$idx.':'.$identifier_type_id.':(identifier|idnAttr):/', array_keys($values));
+        $ident_keys = preg_grep('/^idn:'.$idx.':'.$identifier_type_id.':(identifier|identifiers_subject_observation|idnAttr):/', array_keys($values));
         foreach ($ident_keys as $i_key) {
           $i_key_parts = explode(':', $i_key, 4);
           $values[$i_key_parts[3]] = $values[$i_key];
@@ -2032,19 +2069,29 @@ class iform_wwt_colour_marked_report {
    * @return array occurences_subject_observation Submission structure.
    */
   private static function build_occurrence_observation_submission($values) {
+    // provide defaults if these keys not present
+    $values = array_merge(array(
+      'occurrences_subject_observation:subject_observation_id' => $values['subject_observation:id'],
+      ), $values);
+    
+    // build submission
     $submission = submission_builder::build_submission($values, array('model'=>'occurrences_subject_observation',));
-    // add data to look up occurrence_id
-    $submission['fkFields'] = array(
-      'fk_occurrence' => array(
-        'fkIdField' => 'occurrence_id',
-        'fkTable' => 'occurrence',
-        'fkSearchField' => 'sample_id',
-        'fkSearchValue' => 0, // place holder, this will be populated in subject_observation model
-        'fkSearchFilterField' => 'taxa_taxon_list_id',
-        'fkSearchFilterValue' => $values['occurrence:taxa_taxon_list_id'],
-        'readableTableName' => 'Occurrence',
-      ),
-    );
+    
+    if (empty($values['occurrences_subject_observation:occurrence_id'])) {
+      // add data to look up occurrence_id if we don't have one
+      $submission['fkFields'] = array(
+        'fk_occurrence' => array(
+          'fkIdField' => 'occurrence_id',
+          'fkTable' => 'occurrence',
+          'fkSearchField' => 'sample_id',
+          'fkSearchValue' => 0, // place holder, this will be populated in subject_observation model
+          'fkSearchFilterField' => 'taxa_taxon_list_id',
+          'fkSearchFilterValue' => $values['occurrence:taxa_taxon_list_id'],
+          'readableTableName' => 'Occurrence',
+        ),
+      );
+    }
+    
     return $submission;
   }
   
@@ -2055,19 +2102,32 @@ class iform_wwt_colour_marked_report {
    * @return array occurences_subject_observation Submission structure.
    */
   private static function build_identifier_observation_submission($values) {
-    $values['identifiers_subject_observation:verified_status'] = 'U';
-    $values['identifiers_subject_observation:matched'] = $values['identifier:identifier_id']!==-1;
+    // provide defaults if these keys not present
+    $values = array_merge(array(
+      'identifiers_subject_observation:verified_status' => 'U',
+      'identifiers_subject_observation:matched' => $values['identifier:identifier_id']!==-1,
+      ), $values);
+
+    // build submission
     $submission = submission_builder::build_submission(
       $values, array('model'=>'identifiers_subject_observation',));
+      
     // add super model for identifier if it doesn't exist
     if ($values['identifier:identifier_id']==='-1') {
-      $values['identifier:status'] = 'U';
+      // provide defaults if these keys not present
+      $values = array_merge(array(
+        'identifier:status' => 'U',
+        ), $values);
+  
+      // build submission
       $i =  submission_builder::build_submission($values, array('model'=>'identifier',));
       $submission['superModels'] = array(
         array('fkId' => 'identifier_id', 'model' => $i,),
       );
     } else {
-      $submission['fields']['identifier_id'] = $values['identifier:identifier_id'];
+      if (empty($submission['fields']['identifier_id'])) {
+        $submission['fields']['identifier_id'] = $values['identifier:identifier_id'];
+      }
     }
     return $submission;
   }

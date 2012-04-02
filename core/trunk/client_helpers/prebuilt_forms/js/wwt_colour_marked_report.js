@@ -40,6 +40,8 @@
   var baseColourId = '';
   var textColourId = '';
   var sequenceId = '';
+  var positionId = '';
+  var verticalDefault = '?';
   var hideOrDisable = 'disable';
   var validate = false;
 
@@ -148,24 +150,73 @@
     var iCode = '';
     var prefix = 'idn\\:'+idx+'\\:'+typeId+'\\:';
     var iTypeName = $('#'+prefix+'identifier\\:identifier_name').val();
-    var iBase = $('#'+prefix+'idnAttr\\:1 option:selected').text();
-    var iText = $('#'+prefix+'idnAttr\\:2 option:selected').text();
-    var iSeq = $('#'+prefix+'idnAttr\\:3').val();
+    var compactTypeName = iTypeName.toLowerCase().replace(/[^a-z]/g, '');
+    var iBase = $('#'+prefix+'idnAttr\\:'+baseColourId+' option:selected').text();
+    var iText = $('#'+prefix+'idnAttr\\:'+textColourId+' option:selected').text();
+    var iPos = $('#'+prefix+'idnAttr\\:'+positionId+' option:selected').text();
+    var iSeq = $('#'+prefix+'idnAttr\\:'+sequenceId+'').val();
     iSeq = $.trim(iSeq);
     if (iSeq==='') {
       return false;
     }
-    switch (iTypeName.toLowerCase().replace(/[^a-z]/g, '')) {
+    switch (compactTypeName) {
     case 'darvicring':
-      iCode = 'LB'; // assume left below, not a characteristic of the identifier
+      if (iPos.toLowerCase().indexOf('left')!==-1) {
+        iCode = 'L';
+      } else if (iPos.toLowerCase().indexOf('right')!==-1) {
+        iCode = 'R';
+      } else {
+        iCode = '?';
+      }
+      if (iPos.toLowerCase().indexOf('above')!==-1) {
+        iCode = iCode + 'A';
+      } else if (iPos.toLowerCase().indexOf('below')!==-1) {
+        iCode = iCode + 'B';
+      } else {
+        iCode = iCode + verticalDefault;
+      }
+      break;
+    case 'metalring':
+      if (iPos.toLowerCase().indexOf('left')!==-1) {
+        iCode = 'L';
+      } else if (iPos.toLowerCase().indexOf('right')!==-1) {
+        iCode = 'R';
+      } else {
+        iCode = '?';
+      }
+      if (iPos.toLowerCase().indexOf('above')!==-1) {
+        iCode = iCode + 'A';
+      } else if (iPos.toLowerCase().indexOf('below')!==-1) {
+        iCode = iCode + 'B';
+      } else {
+        iCode = iCode + verticalDefault;
+      }
+      break;
+    case 'wingtag':
+      if (iPos.toLowerCase().indexOf('left')!==-1) {
+        iCode = 'L';
+      } else if (iPos.toLowerCase().indexOf('right')!==-1) {
+        iCode = 'R';
+      } else {
+        iCode = '?';
+      }
+      iCode = iCode + 'W';
       break;
     case 'neckcollar':
       iCode = 'NC';
       break;
+    case 'nasalsaddle':
+      iCode = 'NS';
+      break;
     default:
       iCode = '??';
     }
-    iCode += getColourCode(iBase)+getColourCode(iText)+'('+iSeq.toUpperCase()+')';
+    if (compactTypeName==='metalring') {
+      iCode += getColourCode('metal')+'('+iSeq.toUpperCase()+')';
+    } else {
+      iCode += getColourCode(iBase)+getColourCode(iText)+'('+iSeq.toUpperCase()+')';
+    }
+    
     return iCode;
   };
   
@@ -212,6 +263,15 @@
     case sequenceId :
       colourBox$.text($(ctl).val());
       break;
+    case positionId :
+      if ($('#'+esc4jq(ctl.id)+' option:selected').text().toLowerCase().indexOf('left')!==-1) {
+        colourBox$.removeClass('right-leg').addClass('left-leg');
+      } else if ($('#'+esc4jq(ctl.id)+' option:selected').text().toLowerCase().indexOf('right')!==-1) {
+        colourBox$.removeClass('left-leg').addClass('right-leg');
+      } else {
+        colourBox$.removeClass('left-leg').removeClass('right-leg');
+      }
+      break;
     }
   };
   
@@ -219,7 +279,7 @@
     var html = '<p class="inline-error" generated="true" htmlfor="'+ctlId+'">'+msg+'.</p>';
     return html;
   };
-
+  
   /*
    * Public functions
    */
@@ -228,7 +288,7 @@
    * initialises settings and set event handlers, called from indicia ready
    * handler.
    */
-  indicia.wwt.initForm = function(pSvcUrl, pReadNonce, pReadAuthToken, pBaseColourId, pTextColourId, pSequenceId, pHideOrDisable, pValidate) {
+  indicia.wwt.initForm = function(pSvcUrl, pReadNonce, pReadAuthToken, pBaseColourId, pTextColourId, pSequenceId, pPositionId, pVerticalDefault, pHideOrDisable, pValidate) {
       // set config from PHP.
       svcUrl = pSvcUrl;
     readNonce = pReadNonce;
@@ -236,6 +296,8 @@
     baseColourId = parseInt(pBaseColourId);
     textColourId = parseInt(pTextColourId);
     sequenceId = parseInt(pSequenceId);
+    positionId = parseInt(pPositionId);
+    verticalDefault = (pVerticalDefault==='') ? '?' : pVerticalDefault;
     hideOrDisable = pHideOrDisable;
     validate = pValidate=='true';
     // install the submit handler for the form

@@ -10,7 +10,7 @@
      s.entered_sref, 
      s.entered_sref_system, 
      t.taxon, 
-     array_to_string(array_agg(i.coded_value),', ') AS codes, 
+     array_to_string(array_agg(i.coded_value),';') AS codes, 
      so.id as subject_observation_id, 
      substring(so.comment from 1 for 30) as short_comment, 
      so.sample_id

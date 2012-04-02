@@ -30,20 +30,94 @@ h2 {
 .indentifier-controls  { 
 	float: left;
 	display: inline-block;
+	width: 400px;
 	max-width: 400px;
+	margin-right: -400px;
 }
 
 .indentifier-colourbox  {
 	float: left;
-	width: 5em;
+	width: 4em;
 	height: 2em;
 	border: 1px solid #3f3f3f; 
 	text-align: center;
 	text-transform: uppercase;
-	font-size: 3em;
+	font-size: 1.25em;
 	font-weight: bold;
 	font-family: Verdana, sans-serif;
 	line-height: 2em;
-	margin-left: 0.5em;
+	margin-top: 35px;
+	margin-left: 423px;
+}
+
+* html .indentifier-colourbox  {
+	margin-left: 211px;
+}
+
+fieldset.darvic-ring .right-leg {
+	-moz-transform:rotate(85deg); 
+	-moz-transform-origin: 50% 50%;
+	-webkit-transform: rotate(85deg);
+	-webkit-transform-origin: 50% 50%;
+	-o-transform: rotate(85deg);
+	-o-transform-origin:  50% 50%;
+	/*filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=1);*/
+	-ms-transform: rotate(85deg);
+	-ms-transform-origin:  50% 50%;
+	margin-top: 50px;
+	margin-left: 460px;
+}
+	
+* html fieldset.darvic-ring .right-leg {
+	margin-left: 230px;
+}
+	
+fieldset.darvic-ring .left-leg {
+	-moz-transform:rotate(108deg); 
+	-moz-transform-origin: 50% 50%;
+	-webkit-transform: rotate(108deg);
+	-webkit-transform-origin: 50% 50%;
+	-o-transform: rotate(108deg);
+	-o-transform-origin:  50% 50%;
+	/*filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=1);*/
+	-ms-transform: rotate(108deg);
+	-ms-transform-origin:  50% 50%;
+	margin-top: 20px;
+	margin-left: 398px;
+}
+	
+* html fieldset.darvic-ring .left-leg {
+	margin-left: 199px;
+}
+	
+fieldset.darvic-ring {
+	background-image: url('../images/goose-legs.png');
+	background-repeat: no-repeat;
+	background-position: 400px 8px;
+}
+
+fieldset.neck-collar {
+	background-image: url('../images/goose-neck.png');
+	background-repeat: no-repeat;
+	background-position: 410px 8px;
+}
+
+fieldset.neck-collar .indentifier-colourbox {
+	height: 2.5em;
+	-moz-transform:rotate(100deg); 
+	-moz-transform-origin: 50% 50%;
+	-webkit-transform: rotate(100deg);
+	-webkit-transform-origin: 50% 50%;
+	-o-transform: rotate(100deg);
+	-o-transform-origin:  50% 50%;
+	/*filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=1);*/
+	-ms-transform: rotate(100deg);
+	-ms-transform-origin:  50% 50%;
+	margin-top: 50px;
+	margin-left: 438px;
+}
+	
+* html fieldset.neck-collar .indentifier-colourbox {
+	margin-left: 219px;
 }
 	
