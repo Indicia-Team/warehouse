@@ -151,9 +151,6 @@ class iform_wwt_colour_marked_report {
             "<strong>=tab/page name=</strong> is used to specify the name of a tab or wizard page. (Alpha-numeric characters only)<br/>".
             "<strong>=*=</strong> indicates a placeholder for putting any custom attribute tabs not defined in this form structure. <br/>".
             "<strong>[control name]</strong> indicates a predefined control is to be added to the form with the following predefined controls available: <br/>".
-                "&nbsp;&nbsp;<strong>[species]</strong> - a species input control<br/>".
-                "&nbsp;&nbsp;<strong>[species attributes]</strong> - any custom attributes for the occurrence.  Also includes a file upload ".
-                "box if relevant. The attrubutes @resizeWidth and @resizeHeight can specified on subsequent lines, otherwise they default to 1600.<br/>".
                 "&nbsp;&nbsp;<strong>[date]</strong><br/>".
                 "&nbsp;&nbsp;<strong>[map]</strong><br/>".
                 "&nbsp;&nbsp;<strong>[spatial reference]</strong><br/>".
@@ -161,8 +158,6 @@ class iform_wwt_colour_marked_report {
                 "&nbsp;&nbsp;<strong>[location autocomplete]</strong><br/>".
                 "&nbsp;&nbsp;<strong>[location select]</strong><br/>".
                 "&nbsp;&nbsp;<strong>[place search]</strong><br/>".
-                "&nbsp;&nbsp;<strong>[recorder names]</strong><br/>".
-                "&nbsp;&nbsp;<strong>[record status]</strong><br/>".
                 "&nbsp;&nbsp;<strong>[sample comment]</strong>. <br/>".
                 "&nbsp;&nbsp;<strong>[species identifier]</strong>. <br/>".
             "<strong>@option=value</strong> on the line(s) following any control allows you to override one of the options passed to the control. The options ".
@@ -178,7 +173,6 @@ class iform_wwt_colour_marked_report {
           'default' => "=Colour Marks=\r\n".
               "?Please pick the species from the following list and enter the details for the colour identifiers.?\r\n".
               "[species identifier]\r\n".
-              "@individualRepeat=1\r\n".
               "[*]\r\n".
               "=When and Where=\r\n".
               "?Please tell us when you saw the colour-marked bird.?\r\n".
@@ -305,24 +299,6 @@ class iform_wwt_colour_marked_report {
           'type' => 'boolean',
           'required' => false,
           'group' => 'Species'
-        ),
-        array(
-          'name'=>'subject observation_confidential',
-          'caption'=>'Occurrence Confidential',
-          'description'=>'Should a checkbox be present for confidential status of each subject observation?',
-          'type'=>'boolean',
-          'required' => false,
-          'default'=>false,
-          'group'=>'Species'
-        ),
-        array(
-          'name'=>'occurrence observation_images',
-          'caption'=>'Occurrence Images',
-          'description'=>'Should occurrences allow images to be uploaded?',
-          'type'=>'boolean',
-          'required' => false,
-          'default'=>false,
-          'group'=>'Species'
         ),
         array(
           'name'=>'taxon_filter_field',
@@ -610,6 +586,8 @@ class iform_wwt_colour_marked_report {
     $args['col_widths'] = '';
     $args['includeLocTools'] = false;
     $args['loctoolsLocTypeID'] = 0;
+    $args['subject_observation_confidential'] = false;
+    $args['observation_images'] = false;
     
     // Get authorisation tokens to update and read from the Warehouse.
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
@@ -1222,7 +1200,7 @@ class iform_wwt_colour_marked_report {
           'survey_id'=>$args['survey_id'],
           'occurrenceComment'=>$args['occurrence_comment'],
           'occurrenceConfidential'=>(isset($args['subject_observation_confidential']) ? $args['subject_observation_confidential'] : false),
-          'occurrenceImages'=>$args['occurrence_images'],
+          'occurrenceImages'=>$args['observation_images'],
           'PHPtaxonLabel' => true,
           'language' => iform_lang_iso_639_2($user->lang), // used for termlists in attributes
           'cacheLookup' => isset($args['cache_lookup']) && $args['cache_lookup'],
@@ -1437,12 +1415,12 @@ class iform_wwt_colour_marked_report {
           'fieldname'=>'occurrence:comment',
           'label'=>lang::get('Record Comment')
         ));
-      if ($args['occurrence_confidential'])
+      if ($args['subject_observation_confidential'])
         $r .= data_entry_helper::checkbox(array(
           'fieldname'=>'occurrence:confidential',
           'label'=>lang::get('Record Confidental')
         ));
-      if ($args['occurrence_images']){
+      if ($args['observation_images']){
         $opts = array(
           'table'=>'occurrence_image',
           'label'=>lang::get('Upload your photos'),
