@@ -160,7 +160,7 @@ class osie {
    */
   public static function get_srid()
   {
-    return 29903;
+    return 29901;
   }
 
   /** Retrieve the easting and northing of the sw corner of a
