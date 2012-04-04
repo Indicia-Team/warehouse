@@ -160,6 +160,8 @@ class iform_wwt_colour_marked_report {
                 "&nbsp;&nbsp;<strong>[place search]</strong><br/>".
                 "&nbsp;&nbsp;<strong>[sample comment]</strong>. <br/>".
                 "&nbsp;&nbsp;<strong>[species identifier]</strong>. <br/>".
+                "&nbsp;&nbsp;<strong>[show added sample comments]</strong>. <br/>".
+                "&nbsp;&nbsp;<strong>[add sample comment]</strong>. <br/>".
             "<strong>@option=value</strong> on the line(s) following any control allows you to override one of the options passed to the control. The options ".
         "available depend on the control. For example @label=Abundance would set the untranslated label of a control to Abundance. Where the ".
         "option value is an array, use valid JSON to encode the value. For example an array of strings could be passed as @occAttrClasses=[\"class1\",\"class2\"]. ".
@@ -186,6 +188,11 @@ class iform_wwt_colour_marked_report {
               "[spatial reference]\r\n".
               "[place search]\r\n".
               "[map]\r\n".
+              "[*]\r\n".
+              "=Added Comments=\r\n".
+              "?Please add any comments for review or editing of this report.?\r\n".
+              "[show added sample comments]\r\n".
+              "[add sample comment]\r\n".
               "[*]\r\n".
               "=*=",
           'group' => 'User Interface'
@@ -642,6 +649,7 @@ class iform_wwt_colour_marked_report {
         $r .= '<p>$_POST is:<br /><pre>'.print_r($_POST, true).'</pre></p>';
         $r .= '<p>Entity to load is:<br /><pre>'.print_r(data_entry_helper::$entity_to_load, true).'</pre></p>';
         $r .= '<p>Submission was:<br /><pre>'.print_r(self::$submission, true).'</pre></p>';
+        $r .= '<input type="button" value="Hide debug info" onclick="$(\'#debug-info-div\').slideToggle();" />';
         $r .= '</div>';
       }
       if (method_exists(get_called_class(), 'getHeaderHTML')) {
@@ -769,6 +777,7 @@ class iform_wwt_colour_marked_report {
       $r .= '<p>$_POST is:<br /><pre>'.print_r($_POST, true).'</pre></p>';
       $r .= '<p>Entity to load is:<br /><pre>'.print_r(data_entry_helper::$entity_to_load, true).'</pre></p>';
       $r .= '<p>Submission was:<br /><pre>'.print_r(self::$submission, true).'</pre></p>';
+      $r .= '<input type="button" value="Hide debug info" onclick="$(\'#debug-info-div\').slideToggle();" />';
       $r .= '</div>';
     }
     // Get authorisation tokens to update the Warehouse, plus any other hidden data.
@@ -790,6 +799,17 @@ class iform_wwt_colour_marked_report {
     }
     $hiddens .= get_user_profile_hidden_inputs($attributes, $args, $mode, $auth['read']);
     $customAttributeTabs = get_attribute_tabs($attributes);
+    // remove added comment controls unless editing an existing sample
+    if ($mode!==MODE_EXISTING || helper_base::$form_mode==='ERRORS') {
+      $controls = helper_base::explode_lines($args['structure']);
+      $new_controls = array();
+      foreach ($controls as $control) {
+        if ($control!=='[show added sample comments]' && $control!=='[add sample comment]') {
+          $new_controls[] = $control;
+        }
+      }
+      $args['structure'] = implode("\r\n", $new_controls);
+    }
     $tabs = self::get_all_tabs($args['structure'], $customAttributeTabs);
     $r .= "<div id=\"controls\">\n";
     // Build a list of the tabs that actually have content
@@ -1366,7 +1386,6 @@ class iform_wwt_colour_marked_report {
     $indicia_templates['taxon_label'] = $php;
   }
   
-    
   /**
    * Get the sample comment control
    */
@@ -1385,6 +1404,41 @@ class iform_wwt_colour_marked_report {
     return data_entry_helper::textarea(array_merge(array(
       'fieldname'=>$fieldPrefix.'subject_observation:comment',
       'label'=>lang::get('Any information you might like to add'),
+      'class'=>'control-width-6',
+    ), $options)); 
+  }
+  
+  /**
+   * Get the add sample comment control. This is for additional comments by other people after the 
+   * colour-marked individual has been reported.
+   */
+  private static function get_control_showaddedsamplecomments($auth, $args, $tabalias, $options) {
+    $r = '';
+    if (isset(data_entry_helper::$entity_to_load['sample:id'])) {
+      $reportName = 'reports_for_prebuilt_forms/sample_comments_list';
+      $r .= data_entry_helper::report_grid(array(
+        'id' => 'sample-comments-grid',
+        'dataSource' => $reportName,
+        'mode' => 'report',
+        'readAuth' => $auth['read'],
+        'itemsPerPage' =>(isset($args['grid_num_rows']) ? $args['grid_num_rows'] : 10),
+        'autoParamsForm' => true,
+        'extraParams' => array(
+          'sample_id'=>data_entry_helper::$entity_to_load['sample:id'], 
+        )
+      ));    
+    }
+    return $r;
+  }
+  
+  /**
+   * Get the add sample comment control. This is for additional comments by other people after the 
+   * colour-marked individual has been reported.
+   */
+  private static function get_control_addsamplecomment($auth, $args, $tabalias, $options) {
+    return data_entry_helper::textarea(array_merge(array(
+      'fieldname'=>'sample_comment:comment',
+      'label'=>lang::get('Add a comment about this report'),
       'class'=>'control-width-6',
     ), $options)); 
   }
@@ -1940,12 +1994,19 @@ class iform_wwt_colour_marked_report {
    * @return array Submission structure.
    */
   public static function get_submission($values, $args) {
+    // tidy away the OpenLayers fields which we don't need
+    $ol_keys = preg_grep('/^OpenLayers_/', array_keys($values));
+    foreach ($ol_keys as $ol_key) {
+      unset($values[$ol_key]);
+    }
     // build a simple sample submission
     $submission = submission_builder::build_submission($values, array('model'=>'sample',));
     // add occurrences
     $submission = self::add_occurrence_submissions($submission, $values);
     // add observation and identifier data to sample/occurrence in submission
     $submission = self::add_observation_submissions($submission, $values, $args);
+    // add new sample comment
+    $submission = self::add_sample_comment_submissions($submission, $values);
     
     if (isset($args['debug_info']) && $args['debug_info']) {
       self::$submission = $submission;
@@ -1989,9 +2050,26 @@ class iform_wwt_colour_marked_report {
   }
   
   /**
+   * Adds the sample comment data to the submission array from the form values.
+   * @param array $sample The sample submission. 
+   * @param array $values Associative array of form data values. 
+   * @return array Submission structure with the sample comment added.
+   */
+  private static function add_sample_comment_submissions($sample, $values) {
+    if (array_key_exists('sample_comment:comment', $values) && $values['sample_comment:comment']!=='') {
+      // add new sample comment
+      $sample_comment = submission_builder::build_submission($values, array('model'=>'sample_comment',));
+      // add to the main sample submission
+      $sample['subModels'][] = array('fkId' => 'sample_id', 'model' => $sample_comment);
+    }
+    return $sample;
+  }
+  
+  /**
    * Adds the observation data and identifiers (if new) to the submission array from the form values.
    * @param array $sample The sample submission. 
    * @param array $values Associative array of form data values. 
+   * @param array $args Associative array of form configuration parameters. 
    * @return array Submission structure with observations/identifiers added.
    */
   private static function add_observation_submissions($sample, $values, $args) {
@@ -2168,8 +2246,11 @@ class iform_wwt_colour_marked_report {
       // Return a login link that takes you back to this form when done.
       return lang::get('Before using this facility, please <a href="'.url('user/login', array('query'=>'destination=node/'.($node->nid))).'">login</a> to the website.');
     }
-    // ToDo: use drupal profile to get warehouse user id
-    $userId = 8;
+    // use drupal profile to get warehouse user id
+    if (function_exists('profile_load_profile')) {
+      profile_load_profile($user);
+      $userId = $user->profile_indicia_user_id;
+    }
     if (!isset($userId)) {
       return lang::get('This form must be used with the indicia \'Easy Login\' module so records can '.
           'be tagged against the warehouse user id.');
