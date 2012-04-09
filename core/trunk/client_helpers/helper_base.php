@@ -234,8 +234,8 @@ jQuery('#{parentControlId}').change();\n",
         '<input type="text" id="{idLong}" name="{fieldnameLong}" {class} {disabled} value="{defaultLong}" />' .
         '<input type="hidden" id="imp-geom" name="geomFieldname" value="{defaultGeom}" />'.
         '<input type="hidden" id="{id}" name="{fieldname}" value="{default}" />',
-  'attribute_cell' => "\n<td class=\"scOccAttrCell ui-widget-content {class}\">{content}</td>",
-  'taxon_label_cell' => "\n<td class=\"scTaxonCell ui-state-default\"{colspan}>{content}</td>",
+  'attribute_cell' => "\n<td class=\"scOccAttrCell ui-widget-content {class}\" headers=\"{headers}\">{content}</td>",
+  'taxon_label_cell' => "\n<td class=\"scTaxonCell ui-state-default\" headers=\"{tableId}-species\" {colspan}>{content}</td>",
   'helpText' => "\n<p class=\"{helpTextClass}\">{helpText}</p>",
   'button' => '<div class="indicia-button ui-state-default ui-corner-all" id="{id}"><span>{caption}</span></div>',
   'file_box' => '',                   // the JQuery plugin default will apply, this is just a placeholder for template overrides.

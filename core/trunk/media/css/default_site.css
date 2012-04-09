@@ -1,5 +1,9 @@
 .scTaxonCell {
-  padding-right: 1em;
+  padding-right: 1em; 
+}
+
+.scTaxonCell .ui-effects-wrapper {
+  width: 100% !important;
 }
 
 .species-grid input, .species-grid select {
@@ -9,6 +13,7 @@
 
 .species-grid td {
   padding: 4px;
+  
 }
 
 .scPresenceCell {

@@ -71,7 +71,6 @@ $.Autocompleter = function(input, options) {
   var timeout;
   var previousValue = "";
   var cache = $.Autocompleter.Cache(options);
-  var hasFocus = 0;
   var lastKeyPressCode;
   var config = {
     mouseDownOnSelect: false
@@ -132,14 +131,16 @@ $.Autocompleter = function(input, options) {
       
       // matches also semicolon
       case options.multiple && $.trim(options.multipleSeparator) == "," && KEY.COMMA:
-      case KEY.TAB:
       case KEY.RETURN:
-        if( selectCurrent() ) {
-          // stop default to prevent a form submit, Opera needs special handling
-          event.preventDefault();
-          blockSubmit = true;
-          return false;
+        // stop default to prevent a form submit, Opera needs special handling
+        event.preventDefault();
+        blockSubmit = true;
+        if ($input.val().length>0) {
+          // return event fired when return hit during a search.
+          $input.trigger('return');
         }
+      case KEY.TAB:
+        selectCurrent(event.keyCode);
         break;
         
       case KEY.ESC:
@@ -151,18 +152,14 @@ $.Autocompleter = function(input, options) {
         timeout = setTimeout(onChange, options.delay);
         break;
     }
-  }).focus(function(){
-    // track whether the field has focus, we shouldn't process any
-    // results if the field no longer has focus
-    hasFocus++;
   }).blur(function() {
-    hasFocus = 0;
-    if (!config.mouseDownOnSelect) {
+    if (!config.mouseDownOnSelect && !options.continueOnBlur) {
       hideResults();
     }
   }).click(function() {
     // show select when clicking in a focused field
-    if ( hasFocus++ > 1 && !select.visible() ) {
+    var hasFocus = $('#'+$input[0].id+':focus').length>0;
+    if ( hasFocus && !select.visible() ) {
       onChange(0, true);
     }
   }).bind("search", function() {
@@ -198,7 +195,7 @@ $.Autocompleter = function(input, options) {
   });
   
   
-  function selectCurrent() {
+  function selectCurrent(keycode) {
     var selected = select.selected();
     if( !selected )
       return false;
@@ -287,7 +284,8 @@ $.Autocompleter = function(input, options) {
   };
 
   function hideResultsNow() {
-    var wasVisible = select.visible();
+    var hasFocus = $('#'+$input[0].id+':focus').length>0;
+    var wasFocused = hasFocus;
     select.hide();
     clearTimeout(timeout);
     stopLoading();
@@ -307,23 +305,43 @@ $.Autocompleter = function(input, options) {
         }
       );
     }
-    if (wasVisible)
+    if (select.visible() && wasFocused)
       // position cursor at end of input field
       $.Autocompleter.Selection(input, input.value.length, input.value.length);
   };
 
   function receiveData(q, data) {
-    if ( data && data.length && hasFocus ) {
+    if (data && data.length) {
+      for (idx=data.length-1; idx>=0; idx--) {
+        // Drop anything that does not match, in case the edit has changed since the query was issued.
+        if (!data[idx].result.toLowerCase().match('^'+$input.val().toLowerCase().replace('*','.*'))) {
+          data.splice(idx, 1);
+        }
+      }
+    }
+    var hasFocus = $('#'+$input[0].id+':focus').length>0;
+    // hasFocus may not have been updated at this point
+    if ( data && data.length && (hasFocus || options.continueOnBlur) ) {
       stopLoading();
       select.display(data, q);
       autoFill(q, data[0].value);
       select.show();
+      $input.removeClass('error');
+      if (!hasFocus && options.continueOnBlur && data.length===1) {
+        selectCurrent();
+      }
     } else {
+      if (!hasFocus) {
+        $input.addClass('error');
+        $input.effect("shake", { times:2, distance:3 }, 150);
+      }
       hideResultsNow();
     }
   };
 
   function request(term, success, failure) {
+    
+    $input.trigger('request');
     if (!options.matchCase)
       term = term.toLowerCase();
     var data = cache.load(term);
@@ -407,6 +425,7 @@ $.Autocompleter.defaults = {
   width: 0,
   multiple: false,
   multipleSeparator: ", ",
+  continueOnBlur: false,
   highlight: function(value, term) {
     return value ? 
         value.replace(new RegExp("(?![^&;]+;)(?!<[^<>]*)(" + term.replace(/([\^\$\(\)\[\]\{\}\*\.\+\?\|\\])/gi, "\\$1") + ")(?![^<>]*>)(?![^&;]+;)", "gi"), "<strong>$1</strong>")

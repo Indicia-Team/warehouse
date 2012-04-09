@@ -1790,6 +1790,8 @@ class data_entry_helper extends helper_base {
       $rows = array();
       $rowIdx = 0;
       foreach ($taxalist as $taxon) {
+        // multi-column input does not work when image upload allowed
+        $colIdx = $options['occurrenceImages'] ? 0 : floor($rowIdx / (count($taxalist)/$options['columns']));
         $id = $taxon['id'];
         // Get the cell content from the taxon_label template
         $firstCell = self::mergeParamsIntoTemplate($taxon, 'taxon_label');
@@ -1801,9 +1803,8 @@ class data_entry_helper extends helper_base {
         // Add a X button if the user can remove rows
         if ($options['rowInclusionCheck']=='alwaysRemovable')
           $row .= '<td class="ui-state-default remove-row" style="width: 1%">X</td>';
-        $row .= str_replace('{content}', $firstCell,
-            str_replace('{colspan}', $colspan, $indicia_templates['taxon_label_cell'])
-        );
+        $row .= str_replace(array('{content}','{colspan}','{tableId}'), 
+            array($firstCell,$colspan,$options['id']), $indicia_templates['taxon_label_cell']);
 
         $existing_record_id = false;
         if (is_array(self::$entity_to_load)) {
@@ -1822,11 +1823,11 @@ class data_entry_helper extends helper_base {
         } else {
           $checked='';
         }
-        $row .= "\n<td class=\"scPresenceCell\"$hidden>";
+        $row .= "\n<td class=\"scPresenceCell\" headers=\"".$options['id']."-present-$colIdx\"$hidden>";
         if ($options['rowInclusionCheck']!='hasData')
           // this includes a control to force out a 0 value when the checkbox is unchecked.
           $row .= "<input type=\"hidden\" class=\"scPresence\" name=\"sc:$id:$existing_record_id:present\" value=\"0\"/><input type=\"checkbox\" class=\"scPresence\" name=\"sc:$id:$existing_record_id:present\" $checked />";
-        $row .= "</td>";
+        $row .= "</td>";  
         foreach ($occAttrControls as $attrId => $control) {
           if ($existing_record_id) {
             $search = preg_grep("/^sc:$id:$existing_record_id:occAttr:$attrId".'[:[0-9]*]?$/', array_keys(self::$entity_to_load));
@@ -1863,14 +1864,16 @@ class data_entry_helper extends helper_base {
               $oc .= $error;
             }
           }
-          $row .= str_replace(array('{label}', '{content}'), array(lang::get($attributes[$attrId]['caption']), $oc), $indicia_templates[$options['attrCellTemplate']]);
+          $headers=$options['id']."-attr$attrId-$colIdx";
+          $row .= str_replace(array('{label}', '{content}','{headers}'), array(lang::get($attributes[$attrId]['caption']), $oc, $headers), 
+              $indicia_templates[$options['attrCellTemplate']]);
         }
         if ($options['occurrenceComment']) {
-          $row .= "\n<td class=\"ui-widget-content scCommentCell\"><input class=\"scComment\" type=\"text\" name=\"sc:$id:$existing_record_id:occurrence:comment\" ".
+          $row .= "\n<td class=\"ui-widget-content scCommentCell\" headers=\"".$options['id']."-comment-$colIdx\"><input class=\"scComment\" type=\"text\" name=\"sc:$id:$existing_record_id:occurrence:comment\" ".
           "id=\"sc:$id:$existing_record_id:occurrence:comment\" value=\"".self::$entity_to_load["sc:$id:$existing_record_id:occurrence:comment"]."\" /></td>";
         }
         if (isset($options['occurrenceConfidential']) && $options['occurrenceConfidential']) {
-          $row .= "\n<td class=\"ui-widget-content scConfidentialCell\">";
+          $row .= "\n<td class=\"ui-widget-content scConfidentialCell\" headers=\"".$options['id']."-confidential-$colIdx\">";
           $row .= self::checkbox(array('fieldname'=>"sc:$id:$existing_record_id:occurrence:confidential"));
           $row .= "</td>\n";
         }
@@ -1883,8 +1886,8 @@ class data_entry_helper extends helper_base {
             $row .= "\n<td class=\"ui-widget-content scImageLinkCell\"><a href=\"\" class=\"hide-image-link scImageLink\" id=\"hide-images:$id:$existing_record_id\">".
                 str_replace(' ','&nbsp;',lang::get('hide images')).'</a></td>';
         }
-        // Are we in the first column? Note multi-column grids are disabled if using occurrenceImages as it adds extra rows and messes things up.
-        if ($options['occurrenceImages'] || $rowIdx < count($taxalist)/$options['columns']) {
+        // Are we in the first column of a multicolumn grid, or doing single column grid? If so start new row. 
+        if ($colIdx===0) {
           $rows[$rowIdx]=$row;
         } else {
           $rows[$rowIdx % (ceil(count($taxalist)/$options['columns']))] .= $row;
@@ -1912,9 +1915,7 @@ class data_entry_helper extends helper_base {
       // made into an occurrence
       if ($options['rowInclusionCheck']=='hasData')
         $grid .= '<input name="rowInclusionCheck" value="hasData" type="hidden" />';
-      if (isset($options['lookupListId']) || (isset($options['occurrenceImages']) && $options['occurrenceImages']))
-        // include a js file that has code for handling grid rows, including adding image rows.
-        self::add_resource('addrowtogrid');
+      self::add_resource('addrowtogrid');
       // If the lookupListId parameter is specified then the user is able to add extra rows to the grid,
       // selecting the species from this list. Add the required controls for this.
       if (isset($options['lookupListId'])) {
@@ -1932,8 +1933,9 @@ class data_entry_helper extends helper_base {
       // If options contain a help text, output it at the end if that is the preferred position
       $options['helpTextClass'] = 'helpTextLeft';
       $r = self::get_help_text($options, 'before');
-      $r = $grid;
+      $r .= $grid;
       $r .= self::get_help_text($options, 'after');
+      self::$javascript .= "$('#".$options['id']."').find('input,select').keydown(keyHandler);\n";
       return $r;
     } else {
       return $taxalist['error'];
@@ -2012,21 +2014,21 @@ class data_entry_helper extends helper_base {
       $r .= "<thead class=\"ui-widget-header\"><tr>";
       for ($i=0; $i<$options['columns']; $i++) {
         $colspan = isset($options['lookupListId']) || $options['rowInclusionCheck']=='alwaysRemovable' ? ' colspan="2"' : '';
-        $r .= self::get_species_checklist_col_header(lang::get('species_checklist.species'), $visibleColIdx, $options['colWidths'], $colspan);
+        $r .= self::get_species_checklist_col_header($options['id']."-species-$i", lang::get('species_checklist.species'), $visibleColIdx, $options['colWidths'], $colspan);
         $hidden = ($options['rowInclusionCheck']=='checkbox' ? '' : ' style="display:none"');
-        $r .= self::get_species_checklist_col_header(lang::get('species_checklist.present'), $visibleColIdx, $options['colWidths'], $hidden);
+        $r .= self::get_species_checklist_col_header($options['id']."-present-$i", lang::get('species_checklist.present'), $visibleColIdx, $options['colWidths'], $hidden);
 
-        foreach ($occAttrs as $a) {
-          $r .= self::get_species_checklist_col_header(lang::get($a), $visibleColIdx, $options['colWidths']) ;
+        foreach ($occAttrs as $idx=>$a) {
+          $r .= self::get_species_checklist_col_header($options['id']."-attr$idx-$i", lang::get($a), $visibleColIdx, $options['colWidths']) ;
         }
         if ($options['occurrenceComment']) {
-          $r .= self::get_species_checklist_col_header(lang::get('Comment'), $visibleColIdx, $options['colWidths']) ;
+          $r .= self::get_species_checklist_col_header($options['id']."-comment-$i", lang::get('Comment'), $visibleColIdx, $options['colWidths']) ;
         }
         if ($options['occurrenceConfidential']) {
-          $r .= self::get_species_checklist_col_header(lang::get('Confidential'), $visibleColIdx, $options['colWidths']) ;
+          $r .= self::get_species_checklist_col_header($options['id']."-confidential-$i", lang::get('Confidential'), $visibleColIdx, $options['colWidths']) ;
         }
         if ($options['occurrenceImages']) {
-          $r .= self::get_species_checklist_col_header(lang::get('Images'), $visibleColIdx, $options['colWidths']) ;
+          $r .= self::get_species_checklist_col_header($options['id']."-images-$i", lang::get('Images'), $visibleColIdx, $options['colWidths']) ;
         }
       }
       $r .= '</tr></thead>';
@@ -2034,10 +2036,10 @@ class data_entry_helper extends helper_base {
     }
   }
 
-  private static function get_species_checklist_col_header($caption, &$colIdx, $colWidths, $attrs='') {
+  private static function get_species_checklist_col_header($id, $caption, &$colIdx, $colWidths, $attrs='') {
     $width = count($colWidths)>$colIdx && $colWidths[$colIdx] ? ' style="width: '.$colWidths[$colIdx].'%;"' : '';
     if (!strpos($attrs, 'display:none')) $colIdx++;
-    return "<th$attrs$width>".$caption."</th>";
+    return "<th id=\"$id\"$attrs$width>".$caption."</th>";
   }
 
   /**
@@ -2197,11 +2199,15 @@ class data_entry_helper extends helper_base {
    */
   public static function get_species_checklist_clonable_row($options, $occAttrControls, $attributes) {
     global $indicia_templates;
+    // We use the headers attribute of each td to link it to the id attribute of each th, for accessibility
+    // and also to facilitate keyboard navigation. The last digit of the th id is the index of the column
+    // group in a multi-column grid, or zero if the grid's columns property is set to default of 1. 
+    // Because the clonable row always goes in the first col, this can be always left to 0.
     $r = '<table style="display: none"><tbody><tr class="scClonableRow" id="'.$options['id'].'-scClonableRow">';
     $colspan = isset($options['lookupListId']) || $options['rowInclusionCheck']=='alwaysRemovable' ? ' colspan="2"' : '';
-    $r .= str_replace('{colspan}', $colspan, $indicia_templates['taxon_label_cell']);
+    $r .= str_replace(array('{colspan}','{tableId}'), array($colspan, $options['id']), $indicia_templates['taxon_label_cell']);
     $hidden = ($options['rowInclusionCheck']=='checkbox' ? '' : ' style="display:none"');
-    $r .= '<td class="scPresenceCell"'.$hidden.'><input type="checkbox" class="scPresence" name="" value="" /></td>';
+    $r .= '<td class="scPresenceCell" headers="'.$options['id'].'-present-0"'.$hidden.'><input type="checkbox" class="scPresence" name="" value="" /></td>';
     $idx = 0;
     foreach ($occAttrControls as $attrId=>$oc) {
       $class = self::species_checklist_occ_attr_class($options, $idx, $attributes[$attrId]['caption']);
@@ -2215,18 +2221,18 @@ class data_entry_helper extends helper_base {
           $oc = str_replace('value=""', 'value="'.$existing_value.'"', $oc);
         }
       }
-      $r .= str_replace(array('{content}', '{class}'),
-          array(str_replace('{fieldname}', "sc:-ttlId-::occAttr:$attrId", $oc), $class.'Cell'),
+      $r .= str_replace(array('{content}', '{class}', '{headers}'),
+          array(str_replace('{fieldname}', "sc:-ttlId-::occAttr:$attrId", $oc), $class.'Cell', $options['id']."-attr$attrId-0"),
           $indicia_templates['attribute_cell']
       );
       $idx++;
     }
     if ($options['occurrenceComment']) {
-      $r .= '<td class="ui-widget-content scCommentCell"><input class="scComment" type="text" ' .
+      $r .= '<td class="ui-widget-content scCommentCell" headers="'.$options['id'].'-comment-0"><input class="scComment" type="text" ' .
           'id="sc:-ttlId-::occurrence:comment" name="sc:-ttlId-::occurrence:comment" value="" /></td>';
     }
     if (isset($options['occurrenceConfidential']) && $options['occurrenceConfidential']) {
-      $r .= '<td class="ui-widget-content scConfidentialCell">'.
+      $r .= '<td class="ui-widget-content scConfidentialCell" headers="'.$options['id'].'-confidential-0">'.
           self::checkbox(array('fieldname'=>'sc:-ttlId-::occurrence:confidential')).
           '</td>';
     }
