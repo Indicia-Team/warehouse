@@ -1,0 +1,34 @@
+.vertical {
+  -moz-transform: rotate(270deg);  /* FF3.5+ */        
+  -o-transform: rotate(270deg);  /* Opera 10.5 */   
+  -webkit-transform: rotate(270deg);  /* Saf3.1+, Chrome */
+  writing-mode: tb-rl;
+  width: 87px;
+}
+
+#report-calendar td {
+  font-size: 80%;
+  line-height: 1.3em;
+}
+
+table td.future {
+  background-color: grey;
+}
+table td.existingLink {
+  background-color: #00e7e7;
+}
+table td.otherSite {
+  background-color: yellow;
+}
+table td.multiLink {
+  background-color: green;
+}
+tr.datarow td {
+	border: navy solid thin;
+	padding: 3px;
+}
+tr td.week {
+	border: navy solid thin;
+	padding: 3px;
+}
+

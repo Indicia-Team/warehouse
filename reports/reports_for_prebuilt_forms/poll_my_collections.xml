@@ -1,0 +1,34 @@
+<report
+    title="Pollenators My Collections List"
+    description="Form Internal Report: Used to retrieve details of collections associated with a survey and user."
+>
+  <query>
+  SELECT s.id,
+  	s.location_name,
+  	s.location_id,
+  	sav2.int_value as completed
+  FROM samples s
+  INNER JOIN sample_attribute_values sav1
+  	ON sav1.sample_id = s.id AND sav1.sample_attribute_id = #userID_attr_id# AND sav1.int_value = #userID#
+  INNER JOIN sample_attribute_values sav2
+  	ON sav2.sample_id = s.id AND sav2.sample_attribute_id = #complete_attr_id#
+  WHERE s.survey_id=#survey_id# AND s.deleted = FALSE AND s.parent_id IS NULL
+  #order_by#
+  </query>
+  <order_bys>
+    <order_by>s.id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='survey_id' display='Survey: ' description='Select the survey to return data for?' datatype='lookup'
+        query='SELECT id, title as caption FROM surveys' />
+    <param name='userID_attr_id' display='CMS User Sample Attribute ID' description='Sample Attribute ID used to Identify User' datatype='int' />
+    <param name='userID' display='CMS User ID' description='CMS User ID: use -1 for non logged in people' datatype='int' />
+    <param name='complete_attr_id' display='Sample Complete Attribute ID' description='Sample Attribute ID used to indicate when collection is complete' datatype='int' />
+  </params>
+  <columns>
+    <column name='id' display='ID' />
+    <column name='location_name' display='Location name' />
+    <column name='location_id' display='Location ID' />
+    <column name='completed' display='Completed' />
+  </columns>
+</report>

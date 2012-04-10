@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="Summary species counts by location" description="Lists locations with mappable boundary output and the number of records within them. ">
+      <query website_filter_field="o.website_id">
+      SELECT #columns#
+      FROM locations l
+      LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
+      LEFT JOIN (cache_occurrences o
+        #agreements_join# 
+      ) ON st_intersects(o.public_geom, coalesce(l.boundary_geom, l.centroid_geom)) 
+      #joins#
+      WHERE l.deleted=false
+      AND (lw.website_id in (#website_ids#) OR l.public=true)
+      AND (o.id IS NULL or (
+        o.zero_abundance='f'
+        AND #sharing_filter# 
+        AND (CAST(o.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
+        AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR o.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+        AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+        AND ( 
+            (o.record_status='V') OR
+            ('#quality#'='C' AND o.certainty='C') OR
+            ('#quality#'='L' AND o.certainty in ('C', 'L')) OR
+            ('#quality#'='!D' AND o.record_status&lt;&gt;'D') OR
+            ('#quality#'='!R')
+        )
+        AND o.record_status&lt;&gt;'R')
+      )
+      </query>
+      <order_bys>
+            <order_by>value DESC</order_by>
+      </order_bys>
+      <params>
+        <param name='date_from' display='Date From' datatype='date' />
+        <param name='date_to' display='Date To' datatype='date' />
+        <param name='survey_id' display='Survey' description='Select the survey to return data for, or leave for all surveys' datatype='lookup'
+            query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title' />
+        <param name='location_type_id' display='Location Type' description='Select the location type, or leave blank to not filter by location type.' datatype='lookup'
+            population_call='report:library/terms/terms_list:id:term:termlist_external_key=indicia:location_types,termlist_id='>
+          <join value="" operator="notequal">JOIN termlists_terms ttl1 ON ttl1.id=l.location_type_id and ttl1.deleted=false
+              JOIN termlists_terms ttl2 ON ttl2.meaning_id=ttl1.meaning_id and ttl2.deleted=false
+              JOIN terms t ON t.id=ttl2.term_id and t.deleted=false AND (t.term='#location_type_id#' or cast(ttl.id as varchar)='#location_type_id#')
+          </join>      
+        </param>
+        <param name='locattrs' display='Location attribute list' description='Comma separated list of location attribute IDs to include' datatype='locattrs' />
+        <param name='quality' display='Data quality' description='Quality level required of data to be included in the map.' datatype='lookup' 
+            lookup_values='V:Data must be verified,C:Data must be verified or certain,L:Data must be at least likely,!D:Include anything not dubious or rejected,!R:Include anything not rejected' />
+      </params>
+      <columns>
+            <column name="id" visible="false" distincton="true" sql="l.id" unique="true" />
+            <column name="name" display="Site Name" style="background-color: #e7e7e7;" sql="l.name" />
+            <column name="boundary" display="Boundary" sql="st_astext(ST_SnapToGrid(ST_Simplify(COALESCE(l.boundary_geom, l.centroid_geom), 100), 100, 100))" visible="false" mappable="true"/>
+            <column name="value" display="No. of Records" distincton="true" aggregate="true" sql="count(distinct o.id)" in_count="false"/>
+            <column name="minvalue" visible="false" aggregate="true" sql="0" />
+            <column name="maxvalue" visible="false" aggregate="true" sql="max(count(distinct o.id)) OVER ()" />
+      </columns>
+</report>

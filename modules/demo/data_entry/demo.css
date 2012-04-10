@@ -1,0 +1,91 @@
+*
+{
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-size:80%;
+  font-family: calibri, sans-serif;
+  width: 780px;
+  margin: auto;
+  text-align: center;
+  background-color: #BAD1EC;
+}
+
+h1 {
+  font-size: 1.3em;
+}
+
+#wrap {
+  text-align: left;
+  background-color: #ffffff;
+  padding: 8px;
+  border: solid black 1px;
+}
+
+p
+{
+  padding-bottom: 12px;
+}
+
+form {
+  width: 724px;
+  padding: 2px;
+}
+
+fieldset {
+  padding: 12px;
+  margin: 6px;
+}
+
+p#addOccAttr {
+  text-align: right;
+  color: #D00002;
+  cursor: pointer;
+}
+
+div#occAttr0 {
+  display: none;
+}
+
+.instruct {
+  width: 600px;
+  color: #666666;
+  font-size: 90%;
+  border: 0;
+  padding: 0;
+}
+
+#actaxa_taxon_list_id, #acdeterminer_id, #survey_id {
+  width: 205px;
+}
+
+#outermap {
+  margin-left: 205px;
+  margin-bottom: 12px;
+}
+
+.wide {
+  width: 400px;
+}
+
+.checklist span {
+  margin-right: 22px;
+  white-space: nowrap;
+  display: inline-block;
+}
+
+.checklist input {
+  margin-right: 8px;
+}
+
+.checklist {
+  border: silver solid 1px;
+  margin-bottom: 8px;
+  padding: 8px;
+}
+
+.smaller {
+  font-size: 0.8em;
+}

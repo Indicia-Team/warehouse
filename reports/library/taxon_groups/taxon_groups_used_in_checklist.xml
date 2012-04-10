@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="Record counts by taxon group" description="Lists taxon groups and the number of records within them. ">
+      <query>
+      SELECT #columns#
+      FROM cache_taxa_taxon_lists cttl      
+      WHERE cttl.taxon_list_id=#taxon_list_id#
+      </query>
+      <order_bys>
+            <order_by>taxon_group ASC</order_by>
+      </order_bys>
+      <params>
+        <param name='taxon_list_id' display='Taxon List' description='Select the taxon list to find taxon groups for' datatype='lookup'
+            query='SELECT id, title as caption FROM taxon_lists' population_call='direct:taxon_list:id:title' />
+      </params>
+      <columns>
+            <column name="id" visible="false" sql="distinct cttl.taxon_group_id" />
+            <column name="title" display="Group Name" sql="cttl.taxon_group" />
+      </columns>
+</report>
