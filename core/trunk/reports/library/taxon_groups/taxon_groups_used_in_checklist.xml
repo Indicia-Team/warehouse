@@ -14,7 +14,7 @@
             query='SELECT id, title as caption FROM taxon_lists' population_call='direct:taxon_list:id:title' />
       </params>
       <columns>
-            <column name="id" visible="false" sql="cttl.taxon_group_id" unique="true" distincton="true" />
-            <column name="title" display="Group Name" distincton="true" sql="cttl.taxon_group" />
+            <column name="id" visible="false" sql="distinct cttl.taxon_group_id" />
+            <column name="title" display="Group Name" sql="cttl.taxon_group" />
       </columns>
 </report>
