@@ -286,6 +286,17 @@ class iform_mnhnl_dynamic_1 {
           'siteSpecific'=>true
         ),
         array(
+          'fieldname' => 'user_controls_taxon_filter',
+          'label' => 'User can filter the Extra Species List',
+          'helpText' => 'Tick this box to enable a filter button in the species column title which allows the user to control '.
+              'which species groups are available for selection when adding new species to the grid, e.g. the user can filter '.
+              'to allow selection from just one species group.',
+          'type' => 'checkbox',
+          'default' => false,
+          'required' => false,
+          'group'=>'Species'
+        ),
+        array(
           'fieldname'=>'cache_lookup',
           'label'=>'Cache lookups',
           'helpText'=>'Tick this box to select to use a cached version of the lookup list when '.
@@ -930,8 +941,12 @@ class iform_mnhnl_dynamic_1 {
           'PHPtaxonLabel' => true,
           'language' => iform_lang_iso_639_2($user->lang), // used for termlists in attributes
           'cacheLookup' => isset($args['cache_lookup']) && $args['cache_lookup'],
-          'speciesNameFilterMode' => self::getSpeciesNameFilterMode($args),          
+          'speciesNameFilterMode' => self::getSpeciesNameFilterMode($args), 
+          'userControlsTaxonFilter' => isset($args['user_controls_taxon_filter']) ? $args['user_controls_taxon_filter'] : false
       ), $options);
+      if ($groups=hostsite_get_user_field('taxon_groups')) {
+        $species_ctrl_opts['usersPreferredGroups'] = unserialize($groups);
+      }
       if ($args['extra_list_id']) $species_ctrl_opts['lookupListId']=$args['extra_list_id'];
       if (!empty($args['taxon_filter_field']) && !empty($args['taxon_filter'])) {
         $species_ctrl_opts['taxonFilterField']=$args['taxon_filter_field'];

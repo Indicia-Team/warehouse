@@ -1638,6 +1638,14 @@ class data_entry_helper extends helper_base {
   * If taxonFilterField is not set to none, then pass an array of values to filter against, i.e. an array of
   * taxon preferred names, taxon meaning ids or taxon group titles.
   * </li>
+  * <li><b>usersPreferredGroups</b><br/>
+  * If the user has defined a list of taxon groups they like to record, then supply an array of the taxon group IDs in this parameter.
+  * This lets the user easily opt to record against their chosen groups.
+  * </li>
+  * <li><b>userControlsTaxonFilter</b><br/>
+  * If set to true, then a filter button in the title of the species input column allows the user to configure the filter applied to 
+  * which taxa are available to select from, e.g. which taxon groups can be picked from. Only applies when lookupListId is set.
+  * </li>
   * <li><b>speciesNameFilterMode</b><br/>
   * Optional. Method of filtering the available species names (both for initial population into the grid and additional rows). Options are
   *   preferred - only preferred names
@@ -1709,6 +1717,7 @@ class data_entry_helper extends helper_base {
     self::add_resource('autocomplete');
     $filterArray = array();
     $query = array();
+    // Code in the species checklist filter configuration button assumes that the query in clause is the taxonFilter.
     if (preg_match('/^(preferred_name|taxon_meaning_id|taxon_group)$/', $options['taxonFilterField']))
       $query['in'] = array($options['taxonFilterField'], $options['taxonFilter']);
     if (isset($options['speciesNameFilterMode'])) {
@@ -1936,11 +1945,115 @@ class data_entry_helper extends helper_base {
       $r .= $grid;
       $r .= self::get_help_text($options, 'after');
       self::$javascript .= "$('#".$options['id']."').find('input,select').keydown(keyHandler);\n";
+      self::species_checklist_filter_popup($options);
       return $r;
     } else {
       return $taxalist['error'];
     }
+  }
+  
+  /**
+   * Adds javascript to popup a config box for the current filter on the species you can add to the grid.
+   */
+  private static function species_checklist_filter_popup($options) {
+    if ($options['userControlsTaxonFilter'] && !empty($options['lookupListId'])) {
+      if ($options['taxonFilterField']==='none') {
+        $defaultOptionLabel=lang::get('Input any species from the list available for this form');
+      } else {
+        $type = $options['taxonFilterField'] == 'taxon_group' ? 'species groups' : 'species';
+        $defaultOptionLabel=lang::get('Input species from the form\\\'s default {1}.', lang::get($type));
+      }
+      self::$javascript .= "
 
+var applyFilterMode = function(type, group_id) {
+  if (typeof group_id==='undefined') {
+    group_id=null;
+  }
+  var query=JSON.parse(indiciaData['taxonExtraParams-".$options['id']."']['query']);
+  if (typeof indiciaData.originalTaxonQuery==='undefined') {
+    indiciaData.originalTaxonQuery=$.extend({},query);
+  }
+  switch (type) {
+    case 'user':
+      query['in']={\"taxon_group_id\":[".implode(',', $options['usersPreferredGroups'])."]};
+      break;
+    case 'selected':
+      query['in']={\"taxon_group_id\":[group_id]};
+      break;
+    default:
+      query=indiciaData.originalTaxonQuery;
+  }
+  if (type==='default') {
+    $('#".$options['id']."-filter').removeClass('ui-state-active');
+  } else {
+    $('#".$options['id']."-filter').addClass('ui-state-active');
+  }
+  indiciaData['taxonExtraParams-".$options['id']."']['query']=JSON.stringify(query);
+  // store in cookie
+  $.cookie('user_selected_taxon_filter', JSON.stringify({\"type\":type,\"group_id\":group_id}));
+  $('.scTaxonCell input').setExtraParams({\"query\":JSON.stringify(query)});
+};
+
+// load the filter mode from a cookie
+var userFilter=$.cookie('user_selected_taxon_filter');
+if (userFilter) {
+  userFilter = JSON.parse(userFilter);
+  applyFilterMode(userFilter.type, userFilter.group_id);
+}\n";
+      self::$javascript .= "
+$('#".$options['id']."-filter').click(function(evt) {
+  var userFilter=$.cookie('user_selected_taxon_filter'), defaultChecked='', userChecked='', selectedChecked='';
+  if (userFilter) {
+    userFilter = JSON.parse(userFilter);
+    if (userFilter.type==='user') {
+      userChecked = ' checked=\"checked\"';
+    } else if (userFilter.type==='selected') {
+      selectedChecked = ' checked=\"checked\"';
+    } else {
+      defaultChecked = ' checked=\"checked\"';
+    }
+  }
+  $.fancybox('<div id=\"filter-form\"><fieldset class=\"popup-form\">' +
+        '<legend>".lang::get('Configure the filter applied to species names you are searching for').":</legend>' +
+        '<label class=\"auto\"><input type=\"radio\" name=\"filter-mode\" id=\"filter-mode-default\"'+defaultChecked+'/>$defaultOptionLabel</label><br/>' + \n";
+      if (!empty($options['usersPreferredGroups'])) {
+        self::$javascript .= "        '<label class=\"auto\"><input type=\"radio\" name=\"filter-mode\" id=\"filter-mode-user\"'+userChecked+'/>".
+            lang::get('Input species from the preferred list of species groups from your user account.')."</label><br/>' + \n";
+      }
+      self::$javascript .= "        '<label class=\"auto\"><input type=\"radio\" name=\"filter-mode\" id=\"filter-mode-selected\"'+selectedChecked+'/>".
+          lang::get('Input species from the following species group:')."</label><br/>' +
+        '<select name=\"filter-group\" id=\"filter-group\"></select>' +
+        '</fieldset><button type=\"button\" id=\"filter-popup-apply\">".lang::get('Apply')."</button><button type=\"button\" id=\"filter-popup-cancel\">".lang::get('Cancel')."</button></div>');
+  $.getJSON(\"".self::$base_url."index.php/services/report/requestReport?report=library/taxon_groups/taxon_groups_used_in_checklist.xml&reportSource=local&mode=json".
+      "&taxon_list_id=".$options['lookupListId']."&auth_token=".$options['readAuth']['auth_token']."&nonce=".$options['readAuth']['nonce']."&callback=?\", function(data) {
+    var checked;
+    $.each(data, function(idx, item) {
+      selected = (item.id===userFilter.group_id) ? ' selected=\"selected\"' : '';
+      $('#filter-group').append('<option value=\"'+item.id+'\"' + selected + '>'+item.title+'</option>');
+    });
+  });
+  
+  $('#filter-group').focus(function() {
+    $('#filter-mode-selected').attr('checked','checked');
+  });
+  
+  $('#filter-popup-apply').click(function() {       
+    if ($('#filter-mode-default').attr('checked')==true) {
+      applyFilterMode('default');
+    } else if ($('#filter-mode-user').attr('checked')==true) {
+      applyFilterMode('user');
+    }";
+    if (!empty($options['usersPreferredGroups']))
+      self::$javascript .= " else if ($('#filter-mode-selected').attr('checked')==true) {
+      applyFilterMode('selected', $('#filter-group').val()); 
+    }";
+    self::$javascript .= "\n    $.fancybox.close(); 
+  });
+  $('#filter-popup-cancel').click(function() {
+    $.fancybox.close(); 
+  });
+});\n";
+    }
   }
 
   /**
@@ -2014,9 +2127,18 @@ class data_entry_helper extends helper_base {
       $r .= "<thead class=\"ui-widget-header\"><tr>";
       for ($i=0; $i<$options['columns']; $i++) {
         $colspan = isset($options['lookupListId']) || $options['rowInclusionCheck']=='alwaysRemovable' ? ' colspan="2"' : '';
-        $r .= self::get_species_checklist_col_header($options['id']."-species-$i", lang::get('species_checklist.species'), $visibleColIdx, $options['colWidths'], $colspan);
+        $speciesColTitle = lang::get('species_checklist.species');
+        if ($options['userControlsTaxonFilter'] && !empty($options['lookupListId'])) {
+          global $indicia_templates;
+          $imgPath = empty(self::$images_path) ? self::relative_client_helper_path()."../media/images" : self::$images_path;
+          $speciesColTitle .= '<a id="'.$options['id'].'-filter" class="ui-state-default ui-corner-all"><img src="'.
+              $imgPath.'/filter.png" alt="'.lang::get('Filter').'" style="vertical-align: middle" title="'.
+              lang::get('Filter the list of species you can search').'" width="16" height="16"/></a>';
+        }
+        $r .= self::get_species_checklist_col_header($options['id']."-species-$i", $speciesColTitle, $visibleColIdx, $options['colWidths'], $colspan);
         $hidden = ($options['rowInclusionCheck']=='checkbox' ? '' : ' style="display:none"');
-        $r .= self::get_species_checklist_col_header($options['id']."-present-$i", lang::get('species_checklist.present'), $visibleColIdx, $options['colWidths'], $hidden);
+        $r .= self::get_species_checklist_col_header($options['id']."-present-$i", lang::get('species_checklist.present'), 
+            $visibleColIdx, $options['colWidths'], $hidden);
 
         foreach ($occAttrs as $idx=>$a) {
           $r .= self::get_species_checklist_col_header($options['id']."-attr$idx-$i", lang::get($a), $visibleColIdx, $options['colWidths']) ;
@@ -2115,6 +2237,7 @@ class data_entry_helper extends helper_base {
     }
     // Apply default values
     $options = array_merge(array(
+        'userControlsTaxonFilter'=>false,
         'header'=>'true',
         'columns'=>1,
         'rowInclusionCheck'=>$rowInclusionCheck,
