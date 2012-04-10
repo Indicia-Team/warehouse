@@ -560,17 +560,18 @@ div.olControlEditingToolbar .olControlClickSrefItemActive {
  * Do not remove this comment as it constitutes the required attribution.
  */
 .unlocked-icon {
-	background-image: url(../images/lock_open.png);
+	background-image: url(../images/Indicia_PadlockIcons_Open.png);
+	width: 18px;
 }
 
 .locked-icon {
-	background-image: url(../images/lock.png);
+	background-image: url(../images/Indicia_PadlockIcons_Closed.png);
+	width: 14px;
 }
 
 .locked-icon, .unlocked-icon {
 	background-repeat: no-repeat;
 	display: inline-block;
-	width: 16px;
 	margin: 0 0.25em;
 	cursor: pointer;
 }
