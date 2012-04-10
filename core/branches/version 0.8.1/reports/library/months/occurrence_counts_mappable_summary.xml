@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="Record counts by month" description="Lists months and the number of records for each. ">
+      <query website_filter_field="o.website_id">
+      SELECT #columns#
+      FROM cache_occurrences o
+      #agreements_join#
+      #joins#
+      WHERE #sharing_filter#
+        AND o.zero_abundance='f'
+        AND (CAST(o.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
+        AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR o.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+        AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+        AND ( 
+            (o.record_status='V') OR
+            ('#quality#'='C' AND o.certainty='C') OR
+            ('#quality#'='L' AND o.certainty in ('C', 'L')) OR
+            ('#quality#'='!D' AND o.record_status&lt;&gt;'D') OR
+            ('#quality#'='!R')
+        )
+        AND o.record_status&lt;&gt;'R'
+      AND o.date_type &lt;&gt; 'U' AND o.date_type not like '%-%'
+      </query>
+      <order_bys>
+            <order_by>name ASC</order_by>
+      </order_bys>
+      <params>
+        <param name='date_from' display='Date From' datatype='date' />
+        <param name='date_to' display='Date To' datatype='date' />
+        <param name='survey_id' display='Survey' description='Select the survey to return data for, or leave for all surveys' datatype='lookup'
+            query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title' />
+        <param name='quality' display='Data quality' description='Quality level required of data to be included in the map.' datatype='lookup' 
+            lookup_values='V:Data must be verified,C:Data must be verified or certain,L:Data must be at least likely,!D:Include anything not dubious or rejected,!R:Include anything not rejected' />
+      </params>
+      <columns>
+            <column name="name" display="Month" style="background-color: #e7e7e7;" sql="extract(month from o.date_start)" distincton="true"/>
+            <column name="value" display="No. of Records" distincton="true" sql="count(distinct o.id)" aggregate="true" in_count="false"/>
+            <column name="minvalue" visible="false" sql="0" aggregate="true" />
+            <column name="maxvalue" visible="false" sql="max(count(distinct o.id)) OVER ()" aggregate="true"/>
+      </columns>
+</report>
