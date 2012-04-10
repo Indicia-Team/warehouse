@@ -2012,6 +2012,8 @@ $('#".$options['id']."-filter').click(function(evt) {
     } else {
       defaultChecked = ' checked=\"checked\"';
     }
+  } else {
+    defaultChecked = ' checked=\"checked\"';
   }
   $.fancybox('<div id=\"filter-form\"><fieldset class=\"popup-form\">' +
         '<legend>".lang::get('Configure the filter applied to species names you are searching for').":</legend>' +
