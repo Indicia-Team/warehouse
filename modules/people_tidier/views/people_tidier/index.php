@@ -34,7 +34,7 @@ $readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohan
   'table' => 'person',
   'captionField' => 'caption',
   'valueField' => 'id',
-  'extraParams' => $readAuth
+  'extraParams' => $readAuth + array('query'=>urlencode(json_encode(array('notin'=>array('id', $personId)))))
 ));
 data_entry_helper::$javascript .= "$('input#person_id\\:caption').change(function(event) {
   var personId=$('input#person_id').val(), table;
