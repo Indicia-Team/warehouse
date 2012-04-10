@@ -97,8 +97,39 @@
     var escControlId = esc4jq(controlId);
     locked.ctl_page = document.title;
     locked.ctl_id = controlId;
-    locked.ctl_value = $('#' + escControlId).val();
-    locked.ctl_caption = $('input[id*=' + escControlId + '\\:]').val();
+    if ($('#' + escControlId).length==1) {
+      locked.ctl_value = $('#' + escControlId).val();
+      locked.ctl_caption = $('input[id*=' + escControlId + '\\:]').val();
+    } else {
+      var control$;
+      var checked$;
+      control$ = $('input[name^=' + escControlId + ']');
+      if (control$.length>0) {
+        switch (control$[0].type) {
+        case 'radio':
+          checked$ = control$.filter(':checked');
+          locked.ctl_value = (checked$.length == 1) ? checked$.val() : '';
+          locked.ctl_caption = '';
+          break;
+        case 'checkbox':
+          checked$ = control$.filter(':checked');
+          locked.ctl_value = [];
+          checked$.each(function(n) {
+            locked.ctl_value[n] = this.value;
+          });
+          locked.ctl_caption = '';
+          break;
+        default:
+          locked.ctl_value = '';
+          locked.ctl_caption = '';
+          break;
+        }
+      } else {
+        // don't know what control this is
+        locked.ctl_value = '';
+        locked.ctl_caption = '';
+      }
+    }
     lockedArray.push(locked);
     $.cookie('indicia_locked_controls', JSON.stringify(lockedArray));
   };
@@ -173,9 +204,36 @@
     // may need to do something more for certain controls, but this works for
     // text input, and also for textarea and select (I don't know why).
     var escControlId = esc4jq(controlId);
-    $('#' + escControlId).val(value);
-    // trigger change and blur events, may have to be selective about this?
-    $('#' + escControlId).change().blur();
+    if ($('#' + escControlId).length==1) {
+      if ($('#' + escControlId).attr('type')=='checkbox'){
+        var values = [];
+        values[0] = value;
+        $('#' + escControlId).val(values);
+      } else {
+        $('#' + escControlId).val(value);
+      }
+      // trigger change and blur events, may have to be selective about this?
+      $('#' + escControlId).change().blur();
+    } else {
+      var control$;
+      control$ = $('input[name^=' + escControlId + ']');
+      if (control$.length>0) {
+        var values = [];
+        switch (control$[0].type) {
+        case 'radio':
+          values[0] = value;
+          control$.val(values);
+          break;
+        case 'checkbox':
+          control$.val(value);
+          break;
+        default:
+          break;
+        }
+      } else {
+        // don't know what control this is
+      }
+    }
     // for autocomplete
     if (hasCaption(controlId)) {
       $('input[id*=' + escControlId + '\\:]').val(getLockedCaption(controlId))
@@ -186,25 +244,29 @@
   var setWriteStatus = function(id) {
     var escId = esc4jq(id);
     var escControlId = escId.replace('_lock', '');
+    var control$ = $('#' + escControlId);
+    if (control$.length==0) {
+      control$ = $('input[name^=' + escControlId + ']');
+    }
     if ($('#' + escId).hasClass('locked-icon')) {
+      control$.attr('readonly', 'readonly').attr('disabled', 'disabled');
       if (typeof $.datepicker!=="undefined") {
-        $('#' + escControlId).attr('readonly', 'readonly').attr('disabled',
-            'disabled').filter('.hasDatepicker').datepicker('disable');
+        control$.filter('.hasDatepicker').datepicker('disable');
       }
       if (typeof $.autocomplete!=="undefined") {
         $('input[id*=' + escControlId + '\\:]').filter(
             '.ac_input, .ui-autocomplete').attr('readonly', 'readonly').attr(
-            'disabled', 'disabled').autocomplete('disable');
+            'disabled', 'disabled');
       }
     } else {
+      control$.removeAttr('readonly').removeAttr('disabled');
       if (typeof $.datepicker!=="undefined") {
-        $('#' + escControlId).removeAttr('readonly').removeAttr('disabled')
-            .filter('.hasDatepicker').datepicker('enable');
+        control$.filter('.hasDatepicker').datepicker('enable');
       }
       if (typeof $.autocomplete!=="undefined") {
         $('input[id*=' + escControlId + '\\:]').filter(
             '.ac_input, .ui-autocomplete').removeAttr('readonly').removeAttr(
-            'disabled').autocomplete('enable');
+            'disabled');
       }
     }
   };
@@ -295,7 +357,7 @@
                   $('#' + escControlId).removeAttr('disabled').filter(
                       '.hasDatepicker').datepicker('enable');
                   $('input[id*=' + escControlId + '\\:]').filter(
-                      '.ac_input, .ui-autocomplete').autocomplete('enable');
+                      '.ac_input, .ui-autocomplete').removeAttr('disabled');
                 });
             if (formIdAdded) {
               form.id = '';
