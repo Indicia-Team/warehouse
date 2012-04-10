@@ -195,7 +195,7 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, cacheLooku
     var extraParams, newRow =$('tr#'+gridId + '-scClonableRow').clone(true);
     // build an auto-complete control for selecting the species to add to the bottom of the grid. 
     // The next line gets a unique id for the autocomplete.
-    selectorId = gridId + '-' + $('#' + gridId +' tbody')[0].childElementCount;
+    selectorId = gridId + '-' + $('#' + gridId +' tbody')[0].children.length;
     var speciesSelector = '<input type="text" id="' + selectorId + '" class="grid-required" />';
     // put this inside the new row template in place of the species label.
     $(newRow).html($(newRow.html().replace('{content}', speciesSelector)));

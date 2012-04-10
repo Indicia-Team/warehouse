@@ -45,6 +45,9 @@ $.fn.extend({
   setOptions: function(options){
     return this.trigger("setOptions", [options]);
   },
+  setExtraParams: function(extraParams){
+    return this.trigger("setExtraParams", [extraParams]);
+  },
   unautocomplete: function() {
     return this.trigger("unautocomplete");
   }
@@ -158,7 +161,7 @@ $.Autocompleter = function(input, options) {
     }
   }).click(function() {
     // show select when clicking in a focused field
-    var hasFocus = $('#'+$input[0].id+':focus').length>0;
+    var hasFocus = $('#'+$input[0].id)[0]===document.activeElement;
     if ( hasFocus && !select.visible() ) {
       onChange(0, true);
     }
@@ -188,6 +191,9 @@ $.Autocompleter = function(input, options) {
     // if we've updated the data, repopulate
     if ( "data" in arguments[1] )
       cache.populate();
+  }).bind("setExtraParams", function() {
+    $.extend(options.extraParams, arguments[1]);
+    cache.flush();
   }).bind("unautocomplete", function() {
     select.unbind();
     $input.unbind();
@@ -284,7 +290,7 @@ $.Autocompleter = function(input, options) {
   };
 
   function hideResultsNow() {
-    var hasFocus = $('#'+$input[0].id+':focus').length>0;
+    var hasFocus = $('#'+$input[0].id)[0]===document.activeElement;
     var wasFocused = hasFocus;
     select.hide();
     clearTimeout(timeout);
@@ -319,8 +325,7 @@ $.Autocompleter = function(input, options) {
         }
       }
     }
-    var hasFocus = $('#'+$input[0].id+':focus').length>0;
-    // hasFocus may not have been updated at this point
+    var hasFocus = $('#'+$input[0].id)[0]===document.activeElement;
     if ( data && data.length && (hasFocus || options.continueOnBlur) ) {
       stopLoading();
       select.display(data, q);
