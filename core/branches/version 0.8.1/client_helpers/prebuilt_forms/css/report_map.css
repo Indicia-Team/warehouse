@@ -1,9 +1,0 @@
-#map {
-  float: left;
-}
-
-#map-legend, #map-layer-picker {
-  float: right;
-  clear: right;
-}
-
