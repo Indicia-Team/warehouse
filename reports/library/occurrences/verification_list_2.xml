@@ -11,6 +11,7 @@
   LEFT JOIN (sample_attribute_values vuser
     JOIN sample_attributes sauser on sauser.id=vuser.sample_attribute_id and sauser.deleted=false and sauser.system_function = 'cms_username'
   ) on vuser.sample_id=s.id and vuser.deleted=false
+  LEFT JOIN users ouser ON ouser.id=o.created_by_id AND ouser.id&lt;&gt;1 -- don't return records allocated by default to admin user
   LEFT JOIN occurrence_comments oc 
       ON oc.occurrence_id=o.id 
       AND oc.implies_manual_check_required=true 
@@ -46,7 +47,7 @@
     <column name='occurrence_id' display='ID' sql='o.id' datatype='integer' template="&lt;div class='status-{record_status}'&gt;{occurrence_id}&lt;/div&gt;" />
     <column name='website' display='Source' sql='w.title' datatype="text" />
     <column name='survey' display='Survey' sql='o.survey_title' datatype="text" visible="false"/>
-    <column name='user' display='User' sql='vuser.text_value' datatype="text" />
+    <column name='user' display='User' sql='COALESCE(vuser.text_value, ouser.username)' datatype="text" />
     <column name='sample_id' visible='false' sql='o.sample_id' datatype='integer' />
     <column name='taxon' display='Species' sql="CASE WHEN o.preferred_taxon=o.default_common_name then o.preferred_taxon ELSE o.preferred_taxon || COALESCE(' | ' || o.default_common_name, '') END" datatype='text' />
     <column name='taxa_taxon_list_id' visible='false' sql='o.taxa_taxon_list_id' datatype='integer' />   

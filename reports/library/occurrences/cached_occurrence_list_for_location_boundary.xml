@@ -6,12 +6,17 @@
   SELECT #field_sql#
   FROM cache_occurrences o
   JOIN locations l ON st_intersects(o.public_geom, l.boundary_geom) AND l.id=#location_id# AND l.deleted=false
+  LEFT JOIN (sample_attribute_values vuser
+    JOIN sample_attributes sauser on sauser.id=vuser.sample_attribute_id and sauser.deleted=false and sauser.system_function = 'cms_username'
+  ) on vuser.sample_id=o.sample_id and vuser.deleted=false
+  LEFT JOIN users ouser ON ouser.id=o.created_by_id AND ouser.id&lt;&gt;1 -- don't return records allocated by default to admin user
   #joins#
   WHERE #website_filter#
   AND (CAST(o.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
   AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR o.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
       AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
   AND (CAST(o.taxon_group_id AS character varying)='#taxon_group_id#' OR '#taxon_group_id#'='')
+  AND o.record_status not in ('D','I','R','T')
   #order_by#
   </query>
   <field_sql>
@@ -26,6 +31,7 @@
       o.preferred_taxon as taxon,
       o.default_common_name as common,
       o.taxon_group,
+      COALESCE(vuser.text_value, ouser.username) as recorder,
       st_astext(o.public_geom) as geom,
       o.zero_abundance,
       o.certainty
@@ -56,6 +62,7 @@
     <column name='date' display='Date' />
     <column name='zero_abundance' display='Zero Abundance' />
     <column name='taxon_group' display='Taxon Group' />
+    <column name='recorder' display='Recorder' />
     <column name='geom' visible='false' mappable="true" />
     <column name='certainty' visible='false' />
   </columns>
