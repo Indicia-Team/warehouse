@@ -1984,9 +1984,9 @@ var applyFilterMode = function(type, group_id) {
       query=indiciaData.originalTaxonQuery;
   }
   if (type==='default') {
-    $('#".$options['id']."-filter').removeClass('ui-state-active');
+    $('#".$options['id']."-filter').removeClass('button-active');
   } else {
-    $('#".$options['id']."-filter').addClass('ui-state-active');
+    $('#".$options['id']."-filter').addClass('button-active');
   }
   indiciaData['taxonExtraParams-".$options['id']."']['query']=JSON.stringify(query);
   // store in cookie
@@ -2025,7 +2025,7 @@ $('#".$options['id']."-filter').click(function(evt) {
       self::$javascript .= "        '<label class=\"auto\"><input type=\"radio\" name=\"filter-mode\" id=\"filter-mode-selected\"'+selectedChecked+'/>".
           lang::get('Input species from the following species group:')."</label><br/>' +
         '<select name=\"filter-group\" id=\"filter-group\"></select>' +
-        '</fieldset><button type=\"button\" id=\"filter-popup-apply\">".lang::get('Apply')."</button><button type=\"button\" id=\"filter-popup-cancel\">".lang::get('Cancel')."</button></div>');
+        '</fieldset><button type=\"button\" class=\"default-button\" id=\"filter-popup-apply\">".lang::get('Apply')."</button><button type=\"button\" class=\"default-button\" id=\"filter-popup-cancel\">".lang::get('Cancel')."</button></div>');
   $.getJSON(\"".self::$base_url."index.php/services/report/requestReport?report=library/taxon_groups/taxon_groups_used_in_checklist.xml&reportSource=local&mode=json".
       "&taxon_list_id=".$options['lookupListId']."&auth_token=".$options['readAuth']['auth_token']."&nonce=".$options['readAuth']['nonce']."&callback=?\", function(data) {
     var checked;
@@ -2133,9 +2133,9 @@ $('#".$options['id']."-filter').click(function(evt) {
         if ($options['userControlsTaxonFilter'] && !empty($options['lookupListId'])) {
           global $indicia_templates;
           $imgPath = empty(self::$images_path) ? self::relative_client_helper_path()."../media/images" : self::$images_path;
-          $speciesColTitle .= '<a id="'.$options['id'].'-filter" class="ui-state-default ui-corner-all"><img src="'.
+          $speciesColTitle .= '<button type="button" id="'.$options['id'].'-filter" class="default-button"><img src="'.
               $imgPath.'/filter.png" alt="'.lang::get('Filter').'" style="vertical-align: middle" title="'.
-              lang::get('Filter the list of species you can search').'" width="16" height="16"/></a>';
+              lang::get('Filter the list of species you can search').'" width="16" height="16"/></button>';
         }
         $r .= self::get_species_checklist_col_header($options['id']."-species-$i", $speciesColTitle, $visibleColIdx, $options['colWidths'], $colspan);
         $hidden = ($options['rowInclusionCheck']=='checkbox' ? '' : ' style="display:none"');
