@@ -6,6 +6,11 @@
   width: 100% !important;
 }
 
+.species-grid th button {
+  padding: 0;
+  margin: 0 0.5em;
+}
+
 .species-grid input, .species-grid select {
   width: 95%;
   margin: 0;
