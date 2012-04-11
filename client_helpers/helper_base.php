@@ -68,7 +68,7 @@ $indicia_templates = array(
     "document.write('<div id=\"{divId}\" style=\"width: {width}; height: {height};\"{class}></div>');\n".
     "/* ]]> */</script>",
   'georeference_lookup' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
-    "document.write('<input id=\"imp-georef-search\"{class} />');\n".
+    "document.write('<input type=\"text\" id=\"imp-georef-search\"{class} />');\n".
     "document.write('<input type=\"button\" id=\"imp-georef-search-btn\" class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" value=\"{search}\" />');\n".
     "document.write('<div id=\"imp-georef-div\" class=\"ui-corner-all ui-widget-content ui-helper-hidden\">');\n".
     "document.write('  <div id=\"imp-georef-output-div\">');\n".

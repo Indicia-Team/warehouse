@@ -235,8 +235,8 @@ class iform_mnhnl_dynamic_1 {
         
         array(
           'name'=>'save_button_below_all_pages',
-          'caption'=>'Save button below all pages?',
-          'description'=>'Should the save button be present below all the pages (checked), or should it be only on the last page (unchecked)? '.
+          'caption'=>'Submit button below all pages?',
+          'description'=>'Should the submit button be present below all the pages (checked), or should it be only on the last page (unchecked)? '.
               'Only applies to the Tabs interface style.',
           'type'=>'boolean',
           'default' => false,
@@ -597,7 +597,7 @@ class iform_mnhnl_dynamic_1 {
           }
         }
         $r .= "</table>
-      <input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save_Location_Allocations')."\" />
+      <input type=\"submit\" class=\"default-button\" value=\"".lang::get('LANG_Save_Location_Allocations')."\" />
     </form>
   </div>";
       }
@@ -717,13 +717,13 @@ class iform_mnhnl_dynamic_1 {
         ));        
       } elseif ($pageIdx==count($tabHtml)-1 && !($args['interface']=='tabs' && $args['save_button_below_all_pages']))
         // last part of a non wizard interface must insert a save button, unless it is tabbed interface with save button beneath all pages 
-        $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" id=\"save-button\" value=\"".lang::get('LANG_Save')."\" />\n";      
+        $r .= "<input type=\"submit\" class=\"default-button\" id=\"save-button\" value=\"".lang::get('Submit')."\" />\n";      
       $pageIdx++;
       $r .= "</div>\n";      
     }
     $r .= "</div>\n";
     if ($args['interface']=='tabs' && $args['save_button_below_all_pages']) {
-      $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" id=\"save-button\" value=\"".lang::get('LANG_Save')."\" />\n";
+      $r .= "<input type=\"submit\" class=\"default-button\" id=\"save-button\" value=\"".lang::get('Submit')."\" />\n";
     }
     if(!empty(data_entry_helper::$validation_errors)){
       $r .= data_entry_helper::dump_remaining_errors();

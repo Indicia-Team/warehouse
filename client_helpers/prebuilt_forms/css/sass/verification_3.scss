@@ -1,6 +1,5 @@
-@import "sassy-buttons";
 @import "compass/css3";
-@import "blueprint/form";
+@import "sassy-buttons";
 
 $verify-color: #00a000;
 $reject-color: #a00000;
@@ -140,12 +139,6 @@ ul.gallery li {
   text-decoration: line-through;
 }
 
-button {
-  margin: 0.25em;
-  @include sassy-button-structure(4px, 1px, 0.25em, 11px, 1em);
-  font-weight: bold; 
-}
-
 #btn-verify, #btn-verify-all {
   @include sassy-button-colors("simple", $verify-color, darken($verify-color, 20%), true, #ffffff, raised);
 }
@@ -158,10 +151,6 @@ button {
   @include sassy-button-colors("simple", $dubious-color, darken($dubious-color, 20%), true, #ffffff, raised);
 }
 
-button.default-button {
-  @include sassy-button-colors("simple", $default-color, darken($default-color, 20%), true, #ffffff, raised);
-}
-
 #comment-text {
   display: block;
   width: 100%;
@@ -170,7 +159,6 @@ button.default-button {
 .popup-form {
   width: 500px;
   @include blueprint-form-layout;
-  @include blueprint-form-borders;
   @include blueprint-form-sizes(360px, 360px);
   @include blueprint-inline-form;
 
