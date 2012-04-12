@@ -117,9 +117,28 @@ class spatial_ref {
    *
    * @todo Consider moving PostGIS specific code into a driver.
    */
-  protected static function wkt_to_internal_wkt($wkt, $srid)
+  public static function wkt_to_internal_wkt($wkt, $srid)
   {
     return postgreSQL::transformWkt($wkt, $srid, kohana::config('sref_notations.internal_srid'));
+  }
+
+  /**
+   * Converts WKT text in internally stored srid to WKT in a known SRID.
+   * This is used to produce a drawable geometry when map geometry is not the same as internal one.
+   * @todo Consider moving PostGIS specific code into a driver.
+   */
+  public static function internal_wkt_to_wkt($wkt, $sref_system)
+  {
+    $system = strtolower($sref_system);
+    $wkt = strtoupper($wkt);
+    if (is_numeric($system)) {
+      // EPSG code
+      $srid = $system;
+    } else {
+      self::validateSystemClass($system);
+      $srid = call_user_func("$system::get_srid");
+    }
+    return postgreSQL::transformWkt($wkt, kohana::config('sref_notations.internal_srid'), $srid);
   }
 
   /*

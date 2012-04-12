@@ -10,7 +10,11 @@ class Spatial_Controller extends Service_Base_Controller {
   {
     try
     {
-      $r = json_encode(array('wkt'=>spatial_ref::sref_to_internal_wkt($_GET['sref'], $_GET['system'])));
+      $r = array('wkt'=>spatial_ref::sref_to_internal_wkt($_GET['sref'], $_GET['system']));
+      if (array_key_exists('mapsystem', $_GET)){
+        $r['mapwkt'] = spatial_ref::internal_wkt_to_wkt($r['wkt'], $_GET['mapsystem']);
+      }
+      $r = json_encode($r);
       // enable a JSONP request
       if (array_key_exists('callback', $_GET)){
         $r = $_GET['callback']."(".$r.")";
@@ -26,10 +30,11 @@ class Spatial_Controller extends Service_Base_Controller {
   /**
    * Handle a service request to convert a WKT representing the reference
    * using the internal SRID (normally spherical mercator since it is compatible with Google Maps)
-   * into a spatial reference. Returns the sref, plus a new WKT representing the returned
-   * sref. Note that if you pass in a point and convert it to a grid square, then the returned
-   * wkt will reflect the grid square not the point. GET parameters allowed are wkt, system, precision
-   * and callback (for JSONP).
+   * into a spatial reference, though this can optionally be overriden by providing a wktsystem.
+   * Returns the sref, plus new WKTs representing the returned sref in the internal SRID and an optional map system.
+   * Note that if you pass in a point and convert it to a grid square, then the returned
+   * wkts will reflect the grid square not the point. GET parameters allowed are wkt, system, precision
+   * wktsystem, mapsystem, and callback (for JSONP).
    */
   public function wkt_to_sref()
   {
@@ -47,10 +52,18 @@ class Spatial_Controller extends Service_Base_Controller {
         $output = $_GET['output'];
       else
         $output = null;
-      $sref = spatial_ref::internal_wkt_to_sref($_GET['wkt'], $_GET['system'], $precision, $output, $metresAccuracy);
+      if (array_key_exists('wktsystem',$_GET))
+        $wkt = spatial_ref::wkt_to_internal_wkt($_GET['wkt'], $_GET['wktsystem']);
+      else
+        $wkt = $_GET['wkt'];
+      $sref = spatial_ref::internal_wkt_to_sref($wkt, $_GET['system'], $precision, $output, $metresAccuracy);
       // Note we also need to return the wkt of the actual sref, which may be a square now.
       $wkt = spatial_ref::sref_to_internal_wkt($sref, $_GET['system']);
-      $r = json_encode(array('sref'=>$sref,'wkt'=>$wkt));
+      $r = array('sref'=>$sref,'wkt'=>$wkt);
+      if (array_key_exists('mapsystem', $_GET)){
+        $r['mapwkt'] = spatial_ref::internal_wkt_to_wkt($r['wkt'], $_GET['mapsystem']);
+      }
+      $r = json_encode($r);
       // enable a JSONP request
       if (array_key_exists('callback', $_GET)){
         $r = $_GET['callback']."(".$r.")";
