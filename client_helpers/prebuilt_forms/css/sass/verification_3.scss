@@ -8,6 +8,7 @@ $dubious-color: #c08000;
 $default-color: #4ba3cc;
 $hover-color: #ffffcc;
 $selected-color: #027AC6;
+$header-font-color: #027AC6;
 $selected-font-color: #ffffff;
 
 #verification-params {
@@ -199,6 +200,22 @@ ul.gallery li {
   label {
     width: 100px;
   }
+}
+
+#details-tab {
+  table {
+    td {
+      &.header {
+        color: $header-font-color;
+        font-weight: bold;
+        border-bottom: solid silver 1px;
+      }
+      &.caption {
+        padding: 0 1em 0 0.5em;
+        font-weight: bold;
+      }
+    }
+  }  
 }
 
 #phenology-tab {
