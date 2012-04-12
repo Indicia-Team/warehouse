@@ -58,6 +58,22 @@ class iform_verification_3 {
       iform_map_get_map_parameters(),
       iform_report_get_minimal_report_parameters(),
       array(
+         array(
+          'name'=>'record_details_report',
+          'caption'=>'Report for record details',
+          'description'=>'Report used to obtain the details of a record. See reports_for_prebuilt_forms/verification_3/record_data.xml for an example.',
+          'type'=>'report_helper::report_picker',
+          'group'=>'Report Settings',
+          'default'=>'reports_for_prebuilt_forms/verification_3/record_data'
+        ),
+        array(
+          'name'=>'record_attrs_report',
+          'caption'=>'Report for record attributes',
+          'description'=>'Report used to obtain the custom attributes of a record. See reports_for_prebuilt_forms/verification_3/record_data_attributes.xml for an example.',
+          'type'=>'report_helper::report_picker',
+          'group'=>'Report Settings',
+          'default'=>'reports_for_prebuilt_forms/verification_3/record_data_attributes'
+        ),
         array(
             'name' => 'columns_config',
             'caption' => 'Columns Configuration',
@@ -669,22 +685,28 @@ idlist=';
   /**
    * Ajax handler to provide the content for the details of a single record.
    */
-  public static function ajax_details($website_id, $password) {
+  public static function ajax_details($website_id, $password, $node) {
+    
+    $details_report = empty($node->params['record_details_report']) ? 'reports_for_prebuilt_forms/verification_3/record_data' : $node->params['record_details_report'];
+    $attrs_report = empty($node->params['record_attrs_report']) ? 'reports_for_prebuilt_forms/verification_3/record_data_attributes' : $node->params['record_attrs_report'];
     iform_load_helpers(array('report_helper'));
     $auth = report_helper::get_read_auth($website_id, $password);
     $options = array(
-      'dataSource' => 'reports_for_prebuilt_forms/verification_3/record_data',
+      'dataSource' => $details_report,
       'readAuth' => $auth,
       'sharing' => 'verification',
       'extraParams' => array('occurrence_id'=>$_GET['occurrence_id'], 'wantColumns'=>1)
     );
     $reportData = report_helper::get_report_data($options);
-    $record = $reportData['records'][0];
+    // set some values which must exist in the record
+    $record = array_merge(array(
+        'wkt'=>'','taxon'=>'','sample_id'=>'','date'=>'','entered_sref'=>'','taxon_external_key'=>'','taxon_meaning_id'=>'','record_status'=>'','zero_abundance'=>''
+    ), $reportData['records'][0]);
     // build an array of all the data. This allows the JS to insert the data into emails etc. Note we
     // use an array rather than an assoc array to build the JSON, so that order is guaranteed.
     $data = array();
     foreach($reportData['columns'] as $col=>$def) {
-      if ($def['visible']!=='false') {
+      if ($def['visible']!=='false' && !empty($record[$col])) {
         $caption = explode(':', $def['display']);
         // is this a new heading?
         if (!isset($data[$caption[0]]))
@@ -695,16 +717,18 @@ idlist=';
     
     // Do the custom attributes
      $options = array(
-      'dataSource' => 'reports_for_prebuilt_forms/verification_3/record_data_attributes',
+      'dataSource' => $attrs_report,
       'readAuth' => $auth,
       'sharing' => 'verification',
       'extraParams' => array('occurrence_id'=>$_GET['occurrence_id'])
     );
     $reportData = report_helper::get_report_data($options);
     foreach ($reportData as $attribute) {
-      if (!isset($data[$attribute['attribute_type']]))
-        $data[$attribute['attribute_type']]=array();
-      $data[$attribute['attribute_type']][] = array('caption'=>$attribute['caption'], 'value'=>$attribute['value']);
+      if (!empty($attribute['value'])) {
+        if (!isset($data[$attribute['attribute_type']]))
+          $data[$attribute['attribute_type']]=array();
+        $data[$attribute['attribute_type']][] = array('caption'=>$attribute['caption'], 'value'=>$attribute['value']);
+      }
     }
     
     $r = "<table>\n";
