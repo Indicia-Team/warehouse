@@ -8,6 +8,8 @@
   join occurrences o on o.id=co.id and o.deleted=false
   join samples s on s.id=o.sample_id and s.deleted=false
   left join samples sparent on sparent.id=s.parent_id and sparent.deleted=false
+  #agreements_join#
+  #joins#
   where co.id=#occurrence_id#
   </query>
   <params>
