@@ -1,0 +1,175 @@
+<report
+    title="Individuals record attributes for verification"
+    description="Report used to retrieve custom attributes of a record for the verification 3 prebuilt form when showing records that have associated individuals information."
+>
+  <query website_filter_field="o.website_id">
+  select 
+      o.id, 'Record' as attribute_type, a.system_function,
+      CASE a.data_type
+              WHEN 'T'::bpchar THEN 'Text'::bpchar
+              WHEN 'L'::bpchar THEN 'Lookup List'::bpchar
+              WHEN 'I'::bpchar THEN 'Integer'::bpchar
+              WHEN 'B'::bpchar THEN 'Boolean'::bpchar
+              WHEN 'F'::bpchar THEN 'Float'::bpchar
+              WHEN 'D'::bpchar THEN 'Specific Date'::bpchar
+              WHEN 'V'::bpchar THEN 'Vague Date'::bpchar
+              ELSE a.data_type
+          END AS data_type, a.caption, 
+          CASE a.data_type
+              WHEN 'T'::bpchar THEN av.text_value
+              WHEN 'L'::bpchar THEN lookup.term::text
+              WHEN 'I'::bpchar THEN av.int_value::character varying::text
+              WHEN 'B'::bpchar THEN av.int_value::character varying::text
+              WHEN 'F'::bpchar THEN av.float_value::character varying::text
+              WHEN 'D'::bpchar THEN av.date_start_value::character varying::text
+              WHEN 'V'::bpchar THEN (av.date_start_value::character varying::text || ' - '::text) || av.date_end_value::character varying::text
+              ELSE NULL::text
+          END AS value, 
+          CASE a.data_type
+              WHEN 'T'::bpchar THEN av.text_value
+              WHEN 'L'::bpchar THEN av.int_value::character varying::text
+              WHEN 'I'::bpchar THEN av.int_value::character varying::text
+              WHEN 'B'::bpchar THEN av.int_value::character varying::text
+              WHEN 'F'::bpchar THEN av.float_value::character varying::text
+              WHEN 'D'::bpchar THEN av.date_start_value::character varying::text
+              WHEN 'V'::bpchar THEN (av.date_start_value::character varying::text || ' - '::text) || av.date_end_value::character varying::text
+              ELSE NULL::text
+          END AS raw_value
+  from occurrences o
+  join occurrence_attribute_values av on av.occurrence_id=o.id and av.deleted=false
+  join occurrence_attributes a on a.id=av.occurrence_attribute_id and a.deleted=false
+  left join cache_termlists_terms lookup on lookup.id=av.int_value 
+  where o.id=#occurrence_id#
+  and o.deleted=false
+  
+  union
+
+  select 
+    o.id, 'Parent sample' as attribute_type, a.system_function,
+    CASE a.data_type
+            WHEN 'T'::bpchar THEN 'Text'::bpchar
+            WHEN 'L'::bpchar THEN 'Lookup List'::bpchar
+            WHEN 'I'::bpchar THEN 'Integer'::bpchar
+            WHEN 'B'::bpchar THEN 'Boolean'::bpchar
+            WHEN 'F'::bpchar THEN 'Float'::bpchar
+            WHEN 'D'::bpchar THEN 'Specific Date'::bpchar
+            WHEN 'V'::bpchar THEN 'Vague Date'::bpchar
+            ELSE a.data_type
+        END AS data_type, a.caption, 
+        CASE a.data_type
+            WHEN 'T'::bpchar THEN av.text_value
+            WHEN 'L'::bpchar THEN lookup.term::text
+            WHEN 'I'::bpchar THEN av.int_value::character varying::text
+            WHEN 'B'::bpchar THEN av.int_value::character varying::text
+            WHEN 'F'::bpchar THEN av.float_value::character varying::text
+            WHEN 'D'::bpchar THEN av.date_start_value::character varying::text
+            WHEN 'V'::bpchar THEN (av.date_start_value::character varying::text || ' - '::text) || av.date_end_value::character varying::text
+            ELSE NULL::text
+        END AS value, 
+        CASE a.data_type
+            WHEN 'T'::bpchar THEN av.text_value
+            WHEN 'L'::bpchar THEN av.int_value::character varying::text
+            WHEN 'I'::bpchar THEN av.int_value::character varying::text
+            WHEN 'B'::bpchar THEN av.int_value::character varying::text
+            WHEN 'F'::bpchar THEN av.float_value::character varying::text
+            WHEN 'D'::bpchar THEN av.date_start_value::character varying::text
+            WHEN 'V'::bpchar THEN (av.date_start_value::character varying::text || ' - '::text) || av.date_end_value::character varying::text
+            ELSE NULL::text
+        END AS raw_value
+  from occurrences o
+  join samples s on s.id=o.sample_id and s.deleted=false
+  join sample_attribute_values av on av.sample_id=s.parent_id and av.deleted=false
+  join sample_attributes a on a.id=av.sample_attribute_id and a.deleted=false
+  left join cache_termlists_terms lookup on lookup.id=av.int_value 
+  where o.id=#occurrence_id#
+  and o.deleted=false
+  and a.system_function&lt;&gt;'cms_user_id'
+
+  union
+
+  select 
+    o.id, 'Sample' as attribute_type, a.system_function,
+    CASE a.data_type
+            WHEN 'T'::bpchar THEN 'Text'::bpchar
+            WHEN 'L'::bpchar THEN 'Lookup List'::bpchar
+            WHEN 'I'::bpchar THEN 'Integer'::bpchar
+            WHEN 'B'::bpchar THEN 'Boolean'::bpchar
+            WHEN 'F'::bpchar THEN 'Float'::bpchar
+            WHEN 'D'::bpchar THEN 'Specific Date'::bpchar
+            WHEN 'V'::bpchar THEN 'Vague Date'::bpchar
+            ELSE a.data_type
+        END AS data_type, a.caption, 
+        CASE a.data_type
+            WHEN 'T'::bpchar THEN av.text_value
+            WHEN 'L'::bpchar THEN lookup.term::text
+            WHEN 'I'::bpchar THEN av.int_value::character varying::text
+            WHEN 'B'::bpchar THEN av.int_value::character varying::text
+            WHEN 'F'::bpchar THEN av.float_value::character varying::text
+            WHEN 'D'::bpchar THEN av.date_start_value::character varying::text
+            WHEN 'V'::bpchar THEN (av.date_start_value::character varying::text || ' - '::text) || av.date_end_value::character varying::text
+            ELSE NULL::text
+        END AS value, 
+        CASE a.data_type
+            WHEN 'T'::bpchar THEN av.text_value
+            WHEN 'L'::bpchar THEN av.int_value::character varying::text
+            WHEN 'I'::bpchar THEN av.int_value::character varying::text
+            WHEN 'B'::bpchar THEN av.int_value::character varying::text
+            WHEN 'F'::bpchar THEN av.float_value::character varying::text
+            WHEN 'D'::bpchar THEN av.date_start_value::character varying::text
+            WHEN 'V'::bpchar THEN (av.date_start_value::character varying::text || ' - '::text) || av.date_end_value::character varying::text
+            ELSE NULL::text
+        END AS raw_value
+  from occurrences o
+  join sample_attribute_values av on av.sample_id=o.sample_id and av.deleted=false
+  join sample_attributes a on a.id=av.sample_attribute_id and a.deleted=false
+  left join cache_termlists_terms lookup on lookup.id=av.int_value 
+  where o.id=#occurrence_id#
+  and o.deleted=false
+  and a.system_function&lt;&gt;'cms_user_id'
+  
+  union
+  
+  select 
+      o.id, 'Subject observation' as attribute_type, a.system_function,
+      CASE a.data_type
+              WHEN 'T'::bpchar THEN 'Text'::bpchar
+              WHEN 'L'::bpchar THEN 'Lookup List'::bpchar
+              WHEN 'I'::bpchar THEN 'Integer'::bpchar
+              WHEN 'B'::bpchar THEN 'Boolean'::bpchar
+              WHEN 'F'::bpchar THEN 'Float'::bpchar
+              WHEN 'D'::bpchar THEN 'Specific Date'::bpchar
+              WHEN 'V'::bpchar THEN 'Vague Date'::bpchar
+              ELSE a.data_type
+          END AS data_type, a.caption, 
+          CASE a.data_type
+              WHEN 'T'::bpchar THEN av.text_value
+              WHEN 'L'::bpchar THEN lookup.term::text
+              WHEN 'I'::bpchar THEN av.int_value::character varying::text
+              WHEN 'B'::bpchar THEN av.int_value::character varying::text
+              WHEN 'F'::bpchar THEN av.float_value::character varying::text
+              WHEN 'D'::bpchar THEN av.date_start_value::character varying::text
+              WHEN 'V'::bpchar THEN (av.date_start_value::character varying::text || ' - '::text) || av.date_end_value::character varying::text
+              ELSE NULL::text
+          END AS value, 
+          CASE a.data_type
+              WHEN 'T'::bpchar THEN av.text_value
+              WHEN 'L'::bpchar THEN av.int_value::character varying::text
+              WHEN 'I'::bpchar THEN av.int_value::character varying::text
+              WHEN 'B'::bpchar THEN av.int_value::character varying::text
+              WHEN 'F'::bpchar THEN av.float_value::character varying::text
+              WHEN 'D'::bpchar THEN av.date_start_value::character varying::text
+              WHEN 'V'::bpchar THEN (av.date_start_value::character varying::text || ' - '::text) || av.date_end_value::character varying::text
+              ELSE NULL::text
+          END AS raw_value
+  from occurrences o
+  join occurrences_subject_observations oso on oso.occurrence_id=o.id and oso.deleted=false
+  join subject_observation_attribute_values av on av.subject_observation_id=oso.subject_observation_id and av.deleted=false
+  join subject_observation_attributes a on a.id=av.subject_observation_attribute_id and a.deleted=false
+  left join cache_termlists_terms lookup on lookup.id=av.int_value 
+  where o.id=#occurrence_id#
+  and o.deleted=false
+  </query>
+  <params>
+    <param name='occurrence_id' display='Occurrence ID' description='ID of the occurrence to load' datatype='text' />
+  </params>
+</report>
