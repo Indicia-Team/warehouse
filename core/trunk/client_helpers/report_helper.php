@@ -1259,9 +1259,6 @@ mapSettingsHooks.push(function(opts) {
    * </li>
    * <li><b>dataSource</b><br/>
    * Name of the report or entity being queried.
-   * <li><b>mode</b><br/>
-   * Pass report for a report, or direct for an Indicia table or view. Default is report.</li>
-   * </li>
    * <li><b>readAuth</b><br/>
    * Read authentication tokens.
    * </li>

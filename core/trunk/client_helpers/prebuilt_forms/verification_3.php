@@ -670,79 +670,70 @@ idlist=';
    * Ajax handler to provide the content for the details of a single record.
    */
   public static function ajax_details($website_id, $password) {
-    iform_load_helpers(array('data_entry_helper'));
-    $auth = data_entry_helper::get_read_auth($website_id, $password);
-    data_entry_helper::load_existing_record($auth, 'occurrence', $_GET['occurrence_id'], 'detail', 'verification');
-    data_entry_helper::load_existing_record($auth, 'sample', data_entry_helper::$entity_to_load['occurrence:sample_id'], 'detail', 'verification');
-    $siteLabels = array();
-    if (!empty(data_entry_helper::$entity_to_load['sample:location'])) $siteLabels[] = data_entry_helper::$entity_to_load['sample:location'];
-    if (!empty(data_entry_helper::$entity_to_load['sample:location_name'])) $siteLabels[] = data_entry_helper::$entity_to_load['sample:location_name'];
+    iform_load_helpers(array('report_helper'));
+    $auth = report_helper::get_read_auth($website_id, $password);
+    $options = array(
+      'dataSource' => 'reports_for_prebuilt_forms/verification_3/record_data',
+      'readAuth' => $auth,
+      'sharing' => 'verification',
+      'extraParams' => array('occurrence_id'=>$_GET['occurrence_id'], 'wantColumns'=>1)
+    );
+    $reportData = report_helper::get_report_data($options);
+    $record = $reportData['records'][0];
     // build an array of all the data. This allows the JS to insert the data into emails etc. Note we
     // use an array rather than an assoc array to build the JSON, so that order is guaranteed.
-    $data = array(
-      array('caption'=>lang::get('Species'), 'value'=>data_entry_helper::$entity_to_load['occurrence:taxon']),
-      array('caption'=>lang::get('Date'), 'value'=>data_entry_helper::$entity_to_load['sample:date']),
-      array('caption'=>lang::get('Grid Ref.'), 'value'=>data_entry_helper::$entity_to_load['sample:entered_sref']),
-      array('caption'=>lang::get('Site'), 'value'=>implode(' | ', $siteLabels)),
-      array('caption'=>lang::get('Comment'), 'value'=>data_entry_helper::$entity_to_load['sample:comment']),
-      array('caption'=>lang::get('Record Comment'), 'value'=>data_entry_helper::$entity_to_load['occurrence:comment'])
+    $data = array();
+    foreach($reportData['columns'] as $col=>$def) {
+      if ($def['visible']!=='false') {
+        $caption = explode(':', $def['display']);
+        // is this a new heading?
+        if (!isset($data[$caption[0]]))
+          $data[$caption[0]]=array();
+        $data[$caption[0]][] = array('caption'=>$caption[1], 'value'=>$record[$col]);
+      }
+    }
+    
+    // Do the custom attributes
+     $options = array(
+      'dataSource' => 'reports_for_prebuilt_forms/verification_3/record_data_attributes',
+      'readAuth' => $auth,
+      'sharing' => 'verification',
+      'extraParams' => array('occurrence_id'=>$_GET['occurrence_id'])
     );
-    $smpAttrs = data_entry_helper::getAttributes(array(
-        'id' => data_entry_helper::$entity_to_load['sample:id'],
-        'valuetable'=>'sample_attribute_value',
-        'attrtable'=>'sample_attribute',
-        'key'=>'sample_id',
-        'extraParams'=>$auth,
-        'survey_id'=>data_entry_helper::$entity_to_load['occurrence:survey_id']
-    ), true, 'verification');
-    if (!empty(data_entry_helper::$entity_to_load['sample:parent_id'])) {
-      $parentAttrs = data_entry_helper::getAttributes(array(
-        'id' => data_entry_helper::$entity_to_load['sample:parent_id'],
-        'valuetable'=>'sample_attribute_value',
-        'attrtable'=>'sample_attribute',
-        'key'=>'sample_id',
-        'extraParams'=>$auth,
-        'survey_id'=>data_entry_helper::$entity_to_load['occurrence:survey_id']
-      ), true, 'verification');
-    } else
-      $parentAttrs = array();
-    $occAttrs = data_entry_helper::getAttributes(array(
-        'id' => $_GET['occurrence_id'],
-        'valuetable'=>'occurrence_attribute_value',
-        'attrtable'=>'occurrence_attribute',
-        'key'=>'occurrence_id',
-        'extraParams'=>$auth,
-        'survey_id'=>data_entry_helper::$entity_to_load['occurrence:survey_id']
-    ), true, 'verification');
-    $attributes = array_merge($parentAttrs, $smpAttrs, $occAttrs);
-    foreach($attributes as $attr) {
-      $data[] = array('caption'=>lang::get($attr['caption']), 'value'=>$attr['displayValue']);
+    $reportData = report_helper::get_report_data($options);
+    foreach ($reportData as $attribute) {
+      if (!isset($data[$attribute['attribute_type']]))
+        $data[$attribute['attribute_type']]=array();
+      $data[$attribute['attribute_type']][] = array('caption'=>$attribute['caption'], 'value'=>$attribute['value']);
     }
     
     $r = "<table>\n";
-    $status = data_entry_helper::$entity_to_load['occurrence:record_status'];
-    $r .= '<tr><td><strong>'.lang::get('Status').'</strong></td><td class="status status-'.$status.'">';
-    $r .= self::statusLabel($status);
-    if (data_entry_helper::$entity_to_load['occurrence:zero_abundance']==='t')
+    $r .= '<tr><td><strong>'.lang::get('Status').'</strong></td><td class="status status-'.$record['record_status'].'">';
+    $r .= self::statusLabel($record['record_status']);
+    if ($record['zero_abundance']==='t')
       $r .= '<br/>' . lang::get('This is a record indicating absence.');
     $r .= "</td></tr>\n";
     $email='';
-    foreach($data as $item) {
-      if (!is_null($item['value']) && $item['value'] != '') {
-        $r .= "<tr><td><strong>".$item['caption']."</strong></td><td>".$item['value'] ."</td></tr>\n";
-        if (strtolower($item['caption'])==='email' || strtolower($item['caption'])==='email address')
-          $email=$item['value'];
+    foreach($data as $heading=>$items) {
+      $r .= "<tr><td colspan=\"2\" class=\"header\">$heading</td></tr>\n";
+      foreach ($items as $item) {
+        if (!is_null($item['value']) && $item['value'] != '') {
+          $r .= "<tr><td class=\"caption\">".$item['caption']."</td><td>".$item['value'] ."</td></tr>\n";
+          if (strtolower($item['caption'])==='email' || strtolower($item['caption'])==='email address')
+            $email=$item['value'];
+        }
       }
     }
     $r .= "</table>\n";
+    
     $additional=array();
-    $additional['wkt'] = data_entry_helper::$entity_to_load['occurrence:wkt'];
-    $additional['taxon'] = data_entry_helper::$entity_to_load['occurrence:taxon'];
-    $additional['sample_id'] = data_entry_helper::$entity_to_load['occurrence:sample_id'];
-    $additional['date'] = data_entry_helper::$entity_to_load['sample:date'];
-    $additional['entered_sref'] = data_entry_helper::$entity_to_load['sample:entered_sref'];
-    $additional['taxon_external_key'] = data_entry_helper::$entity_to_load['occurrence:taxon_external_key'];
-    $additional['taxon_meaning_id'] = data_entry_helper::$entity_to_load['occurrence:taxon_meaning_id'];
+    $additional['wkt'] = $record['wkt'];
+    $additional['taxon'] = $record['taxon'];
+    $additional['sample_id'] = $record['sample_id'];
+    $additional['date'] = $record['date'];
+    $additional['entered_sref'] = $record['entered_sref'];
+    $additional['taxon_external_key'] = $record['taxon_external_key'];
+    $additional['taxon_meaning_id'] = $record['taxon_meaning_id'];
     $additional['recorder_email'] = $email;
     header('Content-type: application/json');
     echo json_encode(array(
