@@ -43,6 +43,9 @@ class iform_mnhnl_dynamic_1 {
   
   protected static $node;
   
+  // The class called by iform.module which may be a subclass of iform_mnhnm_dynamic_1
+  protected static $called_class;
+
   /** 
    * Return the form metadata.
    * @return string The definition of the form.
@@ -504,6 +507,7 @@ class iform_mnhnl_dynamic_1 {
     self::parse_defaults($args);
     self::getArgDefaults($args);
     self::$node = $node;
+    self::$called_class = 'iform_' . $node->iform;
     
     // Get authorisation tokens to update and read from the Warehouse.
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
@@ -547,7 +551,7 @@ class iform_mnhnl_dynamic_1 {
     // or edit an existing one.
     if($mode ==  MODE_GRID) {
       $r = '';
-      if (method_exists(get_called_class(), 'getHeaderHTML')) $r .= call_user_func(array(get_called_class(), 'getHeaderHTML'), true, $args);
+      if (method_exists(self::$called_class, 'getHeaderHTML')) $r .= call_user_func(array(self::$called_class, 'getHeaderHTML'), true, $args);
       $attributes = data_entry_helper::getAttributes(array(
         'valuetable'=>'sample_attribute_value'
        ,'attrtable'=>'sample_attribute'
@@ -560,8 +564,8 @@ class iform_mnhnl_dynamic_1 {
       if($args['includeLocTools'] && function_exists('iform_loctools_checkaccess') && iform_loctools_checkaccess($node,'admin')){
         $tabs['#setLocations'] = lang::get('LANG_Allocate_Locations');
       }
-      if (method_exists(get_called_class(), 'getExtraGridModeTabs')) {
-        $extraTabs = call_user_func(array(get_called_class(), 'getExtraGridModeTabs'), false, $auth['read'], $args, $attributes);
+      if (method_exists(self::$called_class, 'getExtraGridModeTabs')) {
+        $extraTabs = call_user_func(array(self::$called_class, 'getExtraGridModeTabs'), false, $auth['read'], $args, $attributes);
         if(is_array($extraTabs))
           $tabs = $tabs + $extraTabs;
       }
@@ -569,7 +573,7 @@ class iform_mnhnl_dynamic_1 {
         $r .= "<div id=\"controls\">".(data_entry_helper::enable_tabs(array('divId'=>'controls','active'=>'#sampleList')))."<div id=\"temp\"></div>";
         $r .= data_entry_helper::tab_header(array('tabs'=>$tabs));
       }
-      $r .= "<div id=\"sampleList\">".call_user_func(array(get_called_class(), 'getSampleListGrid'), $args, $node, $auth, $attributes)."</div>";
+      $r .= "<div id=\"sampleList\">".call_user_func(array(self::$called_class, 'getSampleListGrid'), $args, $node, $auth, $attributes)."</div>";
       if($args['includeLocTools'] && function_exists('iform_loctools_checkaccess') && iform_loctools_checkaccess($node,'admin')){
         $r .= '
   <div id="setLocations">
@@ -601,13 +605,13 @@ class iform_mnhnl_dynamic_1 {
     </form>
   </div>";
       }
-      if (method_exists(get_called_class(), 'getExtraGridModeTabs')) {
-        $r .= call_user_func(array(get_called_class(), 'getExtraGridModeTabs'), true, $auth['read'], $args, $attributes);
+      if (method_exists(self::$called_class, 'getExtraGridModeTabs')) {
+        $r .= call_user_func(array(self::$called_class, 'getExtraGridModeTabs'), true, $auth['read'], $args, $attributes);
       }
       if(count($tabs)>1){ // close tabs div if present
         $r .= "</div>";
       }
-      if (method_exists(get_called_class(), 'getTrailerHTML')) $r .= call_user_func(array(get_called_class(), 'getTrailerHTML'), true, $args);
+      if (method_exists(self::$called_class, 'getTrailerHTML')) $r .= call_user_func(array(self::$called_class, 'getTrailerHTML'), true, $args);
       return $r;
     }
     if ($mode == MODE_EXISTING && is_null(data_entry_helper::$entity_to_load)) { // only load if not in error situation
@@ -671,7 +675,7 @@ class iform_mnhnl_dynamic_1 {
     // request automatic JS validation
     if (!isset($args['clientSideValidation']) || $args['clientSideValidation'])
       data_entry_helper::enable_validation('entry_form');
-    if (method_exists(get_called_class(), 'getHeaderHTML')) $r .= call_user_func(array(get_called_class(), 'getHeaderHTML'), true, $args);
+    if (method_exists(self::$called_class, 'getHeaderHTML')) $r .= call_user_func(array(self::$called_class, 'getHeaderHTML'), true, $args);
     $hiddens .= get_user_profile_hidden_inputs($attributes, $args, $mode, $auth['read']);
     $customAttributeTabs = get_attribute_tabs($attributes);
     $tabs = self::get_all_tabs($args['structure'], $customAttributeTabs);
@@ -731,7 +735,7 @@ class iform_mnhnl_dynamic_1 {
     $r .= "</form>";
     
     $r .= self::link_species_popups($args);
-    if (method_exists(get_called_class(), 'getTrailerHTML')) $r .= call_user_func(array(get_called_class(), 'getTrailerHTML'), true, $args);
+    if (method_exists(self::$called_class, 'getTrailerHTML')) $r .= call_user_func(array(self::$called_class, 'getTrailerHTML'), true, $args);
     return $r;
   }
   
@@ -807,8 +811,8 @@ class iform_mnhnl_dynamic_1 {
               if ($options[$option[0]]=='') $options[$option[0]]=$option[1];            
             }
           }
-          if (method_exists(get_called_class(), $method)) { 
-            $html .= call_user_func(array(get_called_class(), $method), $auth, $args, $tabalias, $options);
+          if (method_exists(self::$called_class, $method)) { 
+            $html .= call_user_func(array(self::$called_class, $method), $auth, $args, $tabalias, $options);
             $hasControls = true;
           } elseif (trim($component)==='[*]'){
             // this outputs any custom attributes that remain for this tab. The custom attributes can be configured in the 
@@ -927,7 +931,7 @@ class iform_mnhnl_dynamic_1 {
         return '<input type="hidden" name="occurrence:taxa_taxon_list_id" value="'.$response[0]['id']."\"/>\n";
       }
     }
-    if (call_user_func(array(get_called_class(), 'getGridMode'), $args)) {      
+    if (call_user_func(array(self::$called_class, 'getGridMode'), $args)) {      
       // multiple species being input via a grid      
       $species_ctrl_opts=array_merge(array(
           'listId'=>$args['list_id'],
@@ -953,8 +957,8 @@ class iform_mnhnl_dynamic_1 {
         $species_ctrl_opts['taxonFilter']=$filterLines;
       }
       if (isset($args['col_widths']) && $args['col_widths']) $species_ctrl_opts['colWidths']=explode(',', $args['col_widths']);
-      call_user_func(array(get_called_class(), 'build_grid_taxon_label_function'), $args);
-      call_user_func(array(get_called_class(), 'build_grid_autocomplete_function'), $args);
+      call_user_func(array(self::$called_class, 'build_grid_taxon_label_function'), $args);
+      call_user_func(array(self::$called_class, 'build_grid_autocomplete_function'), $args);
       
       // Start by outputting a hidden value that tells us we are using a grid when the data is posted,
       // then output the grid control
@@ -1122,7 +1126,7 @@ class iform_mnhnl_dynamic_1 {
    * Get the block of custom attributes at the species (occurrence) level
    */
   private static function get_control_speciesattributes($auth, $args, $tabalias, $options) {
-    if (!(call_user_func(array(get_called_class(), 'getGridMode'), $args))) {  
+    if (!(call_user_func(array(self::$called_class, 'getGridMode'), $args))) {  
       // Add any dynamically generated controls
       $attrArgs = array(
          'valuetable'=>'occurrence_attribute_value',
@@ -1363,8 +1367,8 @@ class iform_mnhnl_dynamic_1 {
     else
       // provide a default in case the form settings were saved in an old version of the form
       $reportName = 'reports_for_prebuilt_forms/simple_sample_list_1';
-    if(method_exists(get_called_class(), 'getSampleListGridPreamble'))
-      $r = call_user_func(array(get_called_class(), 'getSampleListGridPreamble'));
+    if(method_exists(self::$called_class, 'getSampleListGridPreamble'))
+      $r = call_user_func(array(self::$called_class, 'getSampleListGridPreamble'));
     else
       $r = '';
     $r .= data_entry_helper::report_grid(array(
@@ -1372,7 +1376,7 @@ class iform_mnhnl_dynamic_1 {
       'dataSource' => $reportName,
       'mode' => 'report',
       'readAuth' => $auth['read'],
-      'columns' => call_user_func(array(get_called_class(), 'getReportActions')),
+      'columns' => call_user_func(array(self::$called_class, 'getReportActions')),
       'itemsPerPage' =>(isset($args['grid_num_rows']) ? $args['grid_num_rows'] : 10),
       'autoParamsForm' => true,
       'extraParams' => array(
@@ -1431,34 +1435,3 @@ class iform_mnhnl_dynamic_1 {
   
 }
 
-/**
- * For PHP 5.2, declare the get_called_class method which allows us to use subclasses of this form.
- */
-if(!function_exists('get_called_class')) {
-function get_called_class() {
-    $matches=array();
-    $bt = debug_backtrace();
-    $l = 0;
-    do {
-        $l++;
-        if(isset($bt[$l]['class']) AND !empty($bt[$l]['class'])) {
-            return $bt[$l]['class'];
-        }
-        $lines = file($bt[$l]['file']);
-        $callerLine = $lines[$bt[$l]['line']-1];
-        preg_match('/([a-zA-Z0-9\_]+)::'.$bt[$l]['function'].'/',
-                   $callerLine,
-                   $matches);
-        if (!isset($matches[1])) $matches[1]=NULL; //for notices
-        if ($matches[1] == 'self') {
-               $line = $bt[$l]['line']-1;
-               while ($line > 0 && strpos($lines[$line], 'class') === false) {
-                   $line--;                 
-               }
-               preg_match('/class[\s]+(.+?)[\s]+/si', $lines[$line], $matches);
-       }
-    }
-    while ($matches[1] == 'parent'  && $matches[1]);
-    return $matches[1];
-  } 
-} 
