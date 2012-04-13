@@ -732,7 +732,7 @@ idlist=';
     }
     
     $r = "<table>\n";
-    $r .= '<tr><td><strong>'.lang::get('Status').'</strong></td><td class="status status-'.$record['record_status'].'">';
+    $r .= '<tr><td class="caption">'.lang::get('Status').'</td><td class="status status-'.$record['record_status'].'">';
     $r .= self::statusLabel($record['record_status']);
     if ($record['zero_abundance']==='t')
       $r .= '<br/>' . lang::get('This is a record indicating absence.');
@@ -925,7 +925,6 @@ idlist=';
     $url = data_entry_helper::$base_url."index.php/services/data_utils/bulk_verify";
     $params = array_merge($_POST, $auth['write_tokens']);
     $response = data_entry_helper::http_post($url, $params);
-    watchdog('response', print_r($response, true));
     echo $response['output'];
   }
   
