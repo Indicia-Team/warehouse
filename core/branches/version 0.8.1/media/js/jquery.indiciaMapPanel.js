@@ -253,12 +253,15 @@ mapInitialisationHooks = [];
         var corner1;
         var corner2;
         var epsg = (places[0].epsg === undefined ? 4326 : places[0].epsg);
-        if (places.length==1 && places[0].name.toLowerCase()==$('#' + div.georefOpts.georefSearchId).val().toLowerCase()) {
+        if (places.length == 1 && 
+          places[0].name.toLowerCase().replace('.','') == $('#' + div.georefOpts.georefSearchId).val().toLowerCase().replace('.','')) {
+          // one place found that matches (ignoring case and full stop) e.g. 'st albans' matches 'St. Albans'
           ref=places[0].centroid.y + ', ' + places[0].centroid.x;
           corner1=places[0].boundingBox.northEast.y + ', ' + places[0].boundingBox.northEast.x;
           corner2=places[0].boundingBox.southWest.y + ', ' + places[0].boundingBox.southWest.x;
           _displayLocation(div, ref, corner1, corner2, epsg);
-        } else if (places.length!==0) {
+        } else if (places.length !== 0) {
+          // one inexact match or multiple matches
           $('<p>'+opts.msgGeorefSelectPlace+'</p>')
                   .appendTo('#'+div.georefOpts.georefOutputDivId);
           var ol=$('<ol>'), placename;
@@ -295,6 +298,7 @@ mapInitialisationHooks = [];
           $('#'+div.georefOpts.georefDivId).show("fast", function() {div.map.updateSize();});
         }
       } else {
+        // no matches found
         $('<p>'+opts.msgGeorefNothingFound+'</p>').appendTo('#'+div.georefOpts.georefOutputDivId);
         $('#'+div.georefOpts.georefDivId).show("fast", function() {div.map.updateSize();});
       }
