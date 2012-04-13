@@ -35,9 +35,10 @@ function Georeferencer(mapdiv, callback) {
           var places = [], converted={};
           jQuery.each(data.places.place, function(i,place) {
             // Ignore places outside the chosen country, plus ignore places that were hit because they
-            // are similar to the country name we are searching in.
+            // are similar to the country name or preferred area we are searching in.
             if (place.country.toUpperCase()==settings.georefCountry.toUpperCase() &&
-                (place.name.toUpperCase().indexOf(settings.georefCountry.toUpperCase())==-1 ||
+                (place.name.toUpperCase().indexOf(settings.georefCountry.toUpperCase())==-1 &&
+                (place.name.toUpperCase().indexOf(settings.georefPreferredArea.toUpperCase())==-1 || settings.georefPreferredArea == '') ||
                 place.name.toUpperCase().indexOf(searchtext.toUpperCase())!=-1)) {
               // make the place object readable by indicia (i.e. standardised with all drivers)
               place.centroid.x = place.centroid.longitude;
