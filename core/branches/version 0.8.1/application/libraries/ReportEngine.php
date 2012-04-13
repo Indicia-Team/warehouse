@@ -730,8 +730,9 @@ class ReportEngine {
             $query = $this->mergeAttrListParam($query, 'taxa_taxon_list', $value);
           elseif ($paramDefs[$name]['datatype']=='psnattrs')
             $query = $this->mergeAttrListParam($query, 'person', $value);
-          else 
+          else {
             $query = preg_replace("/#$name#/", $value, $query);
+          }
         }
       }      
       elseif (isset($this->customAttributes[$name])) {
@@ -786,9 +787,12 @@ class ReportEngine {
       $operator=substr($value, 0, 1);
       $value = substr($value, 1);
     }
-    if ($datatype=='text') 
+    if ($datatype=='text') {
+      // ensure value is escaped for apostrophes
+      $value = preg_replace("/[^']'[^']/", "''", $value);
       // quote text and date values 
       $value="'".$value."'";
+    }
     if ($datatype != 'date') 
       return "$field $operator $value";
     else {
