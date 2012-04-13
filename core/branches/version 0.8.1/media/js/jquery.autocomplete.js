@@ -161,7 +161,7 @@ $.Autocompleter = function(input, options) {
     }
   }).click(function() {
     // show select when clicking in a focused field
-    var hasFocus = $('#'+$input[0].id)[0]===document.activeElement;
+    var hasFocus = $input[0].id===document.activeElement.id;
     if ( hasFocus && !select.visible() ) {
       onChange(0, true);
     }
@@ -290,7 +290,7 @@ $.Autocompleter = function(input, options) {
   };
 
   function hideResultsNow() {
-    var hasFocus = $('#'+$input[0].id)[0]===document.activeElement;
+    var hasFocus = $input[0].id===document.activeElement.id;
     var wasFocused = hasFocus;
     select.hide();
     clearTimeout(timeout);
@@ -325,7 +325,7 @@ $.Autocompleter = function(input, options) {
         }
       }
     }
-    var hasFocus = $('#'+$input[0].id)[0]===document.activeElement;
+    var hasFocus = $input[0].id===document.activeElement.id;
     if ( data && data.length && (hasFocus || options.continueOnBlur) ) {
       stopLoading();
       select.display(data, q);
