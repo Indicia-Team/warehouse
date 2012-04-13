@@ -1335,7 +1335,7 @@ mapSettingsHooks.push(function(opts) {
     else {
       $response = self::http_post($request, null);
       $decoded = json_decode($response['output'], true);
-      if (empty($decoded)) 
+      if (!is_array($decoded)) 
         return array('error'=>print_r($response, true));
       else
         return $decoded;
