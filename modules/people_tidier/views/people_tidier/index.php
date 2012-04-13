@@ -55,7 +55,7 @@ $('#resolution').submit(function(e){
     e.preventDefault();
 });\n";
 ?>
-<div id="person-tidier"></div>
+<div id="selected-person" style="margin-left: 160px"></div>
 </div>
 <div class="right" style="width: 45%">
 <h2>Selected user</h2>
