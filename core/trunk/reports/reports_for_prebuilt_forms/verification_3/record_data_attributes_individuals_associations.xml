@@ -171,9 +171,9 @@
   
   union
   
-  select o.id, 'Identifiers' as attribute_type, null as system_function, 'Text'::bpchar as data_type, 'Identifier' as caption,
-  i.coded_value || '(' || idtype.term || ')' as value, 
-  i.coded_value || '(' || idtype.term || ')' as raw_value
+  select o.id, 'Identifiers' as attribute_type, null as system_function, 'Text'::bpchar as data_type, idtype.term as caption,
+  i.coded_value as value, 
+  i.coded_value as raw_value
   from occurrences o
   join occurrences_subject_observations oso on oso.occurrence_id=o.id and oso.deleted=false
   join identifiers_subject_observations iso on iso.subject_observation_id=oso.subject_observation_id and iso.deleted=false
