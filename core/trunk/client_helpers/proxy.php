@@ -32,30 +32,29 @@ $found = false;
 $proxyParams = array("url");
 foreach($_GET AS $key => $value)
 {
-  // Do not copy the url param, only everything after it
+  // Do not copy the url param, only everything after it. Must include blanks in this so that reports know when they
+  // get passed a blank param.
   if ($found) {
-    if ($value != null && strlen($value)>0) {
-      $url=$url."$key=$value&";
-    }
+    $url=$url."$key=$value&";
   }
   if ($key == "url"){
     $found =true;
   }
 }
-
-$postData = file_get_contents( "php://input" );
-
 $url = str_replace ('\"','"',$url);
 $url = str_replace (' ','%20',$url);
 
 $session = curl_init($url);
 // Set the POST options.
 $httpHeader = array();
+$postData = file_get_contents( "php://input" );
+if (empty($postData))
+  $postData = $_POST;
 if (!empty($postData)) {
   curl_setopt($session, CURLOPT_POST, 1);
   curl_setopt($session, CURLOPT_POSTFIELDS, $postData);
   // post contains a raw XML document?
-  if (substr($postData, 0, 1)=='<') {
+  if (is_string($postData) && substr($postData, 0, 1)=='<') {
     $httpHeader[]='Content-Type: text/xml';
   }
 }
