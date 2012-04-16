@@ -545,15 +545,23 @@ function simple_tooltip(target_items, name){
       });
       
       var doFilter = function(e) {
-        var fieldname = e.target.id.substr(11);
-        if ($(e.target).val().trim()==='') {
-          delete div.settings.extraParams[fieldname];
-        } else {
-          div.settings.extraParams[fieldname] = $(e.target).val();
+        if (e.target.hasChanged) {
+          var fieldname = e.target.id.substr(11);
+          if ($(e.target).val().trim()==='') {
+            delete div.settings.extraParams[fieldname];
+          } else {
+            div.settings.extraParams[fieldname] = $(e.target).val();
+          }
+          load(div, true);
+          e.target.hasChanged = false;
         }
-        load(div, true);
       };
-      
+      $(this).find('th .col-filter').focus(function(e) {
+        e.target.hasChanged = false;
+      });
+      $(this).find('th .col-filter').change(function(e) {
+        e.target.hasChanged = true;
+      });
       $(this).find('th .col-filter').blur(doFilter);
       $(this).find('th .col-filter').keypress(function(e) {
         if (e.keyCode===13) {
