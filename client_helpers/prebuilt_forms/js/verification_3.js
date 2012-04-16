@@ -416,7 +416,7 @@ $(document).ready(function () {
     $('#record-details-toolbar *').attr('disabled', 'disabled');
     selectRow($(evt.target).parents('tr')[0]);
     if ($(evt.target).hasClass('quick-verify')) {
-      var visibleIdx=0, userColIdx, taxonColIdx, userVal, taxonVal, row=$(evt.target).parents('tr:first')[0];
+      var visibleIdx=0, userColIdx, taxonColIdx, userVal, taxonVal, row=$(evt.target).parents('tr:first')[0], popupHtml;
       // work out which visible column index applies to the user and species data
       $.each(indiciaData.reports.verification.grid_verification_grid[0].settings.columns, function(idx, column) {
         if (typeof column.fieldname !=="undefined") {
@@ -432,17 +432,20 @@ $(document).ready(function () {
       });
       userVal = $(row).find('td:eq('+userColIdx+')').html();
       taxonVal = $(row).find('td:eq('+taxonColIdx+')').html();
-      $.fancybox('<div class="quick-verify-popup" style="width: 550px"><h2>Quick verification</h2>'+
+      popupHtml = '<div class="quick-verify-popup" style="width: 550px"><h2>Quick verification</h2>'+
           '<p>The following options let you rapidly verify records. The only records affected are those in the grid but they can be on any page of the grid, '+
           'so please ensure you have set the grid\'s filter correctly before proceeding. You should only proceed if you are certain that data you are verifying '+
           'can be trusted without further investigation.</p>'+
-          '<label><input type="radio" name="quick-option" value="recorder"/>Verify grid\'s records by <span class="quick-user">'+userVal+'</span></label><br/>'+
-          '<label><input type="radio" name="quick-option" value="species" />Verify grid\'s records of <span class="quick-taxon">'+taxonVal+'</span></label><br/>'+
-          '<label><input type="radio" name="quick-option" value="species-recorder" />Verify grid\'s records of <span class="quick-taxon">'+taxonVal+
-              '</span> by <span class="quick-user">'+userVal+'</span></label><br/>'+
-          '<button type="button" class="default-button verify-button">Verify chosen records</button>'+
+          '<label><input type="radio" name="quick-option" value="species" />Verify grid\'s records of <span class="quick-taxon">'+taxonVal+'</span></label><br/>';
+      if (userVal!=='') {
+        popupHtml += '<label><input type="radio" name="quick-option" value="recorder"/>Verify grid\'s records by <span class="quick-user">'+userVal+'</span></label><br/>'+          
+            '<label><input type="radio" name="quick-option" value="species-recorder" />Verify grid\'s records of <span class="quick-taxon">'+taxonVal+
+            '</span> by <span class="quick-user">'+userVal+'</span></label><br/>';
+      }
+      popupHtml += '<button type="button" class="default-button verify-button">Verify chosen records</button>'+
           '<button type="button" class="default-button cancel-button">Cancel</button>'+
-        "</div>\n");
+          "</div>\n";
+      $.fancybox(popupHtml);
       $('.quick-verify-popup button').click(function(evt) {
         if ($(evt.target).hasClass('verify-button')) {
           var params=indiciaData.reports.verification.grid_verification_grid.getUrlParamsForAllRecords(), request,
