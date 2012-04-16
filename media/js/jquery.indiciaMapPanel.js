@@ -248,7 +248,10 @@ mapInitialisationHooks = [];
      */
     function _setClickPoint(data, div) {
       // data holds the sref in _getSystem format, wkt in indiciaProjection, mapwkt in mapProjection
-      $('#'+opts.srefId).val(data.sref);
+      if (div.settings.click_zoom)
+       $('#'+opts.srefId).val(data.sref).change();
+      else
+        $('#'+opts.srefId).val(data.sref);
       // If the sref is in two parts, then we might need to split it across 2 input fields for lat and long
       if (data.sref.indexOf(' ')!==-1) {
         var parts=data.sref.split(' ');
@@ -1253,6 +1256,7 @@ $.fn.indiciaMapPanel.defaults = {
     initial_long: -2,
     initial_zoom: 5,
     scroll_wheel_zoom: true,
+    click_zoom: false, // zoom in and recentre on grid square after clicking map
     bing_api_key: '',
     proxy: '',
     presetLayers: [],
