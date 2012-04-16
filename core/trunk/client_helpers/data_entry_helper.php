@@ -3308,7 +3308,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
           'checked' => $checked ? ' checked="checked" ' : '', // cant use === as need to compare an int with a string representation
           'type' => $type,
           'value' => $value,
-          'class' => $itemClass,
+          'class' => $itemClass . (($idx == 0) ? ' first-item' : ''),
           'itemId' => $options['id'].':'.$idx
         )
       );
