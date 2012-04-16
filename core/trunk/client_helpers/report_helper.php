@@ -456,6 +456,10 @@ class report_helper extends helper_base {
       $uniqueName = 'grid_' . preg_replace( "/[^a-z0-9]+/", "_", $options['id']);
       $group = preg_replace( "/[^a-zA-Z0-9]+/", "_", $options['reportGroup']);
       global $indicia_templates;
+      if (!empty(parent::$warehouse_proxy))
+        $warehouseUrl = parent::$warehouse_proxy;
+      else
+        $warehouseUrl = parent::$base_url;
       self::$javascript .= "
 if (typeof indiciaData.reports==='undefined') { indiciaData.reports={}; }
 if (typeof indiciaData.reports.$group==='undefined') { indiciaData.reports.$group={}; }
@@ -469,7 +473,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   auth_token: '".$options['readAuth']['auth_token']."',
   nonce: '".$options['readAuth']['nonce']."',
   callback: '".$options['callback']."',
-  url: '".parent::$base_url."',
+  url: '".$warehouseUrl."',
   reportGroup: '".$options['reportGroup']."',
   autoParamsForm: '".$options['autoParamsForm']."',
   rootFolder: '".dirname($_SERVER['PHP_SELF'])."/',
