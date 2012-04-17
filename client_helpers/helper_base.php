@@ -819,6 +819,18 @@ $('.ui-state-default').live('mouseout', function() {
     return $r;
   }
   
+  /** 
+   * Internal method to safely find the value of a preset parameter. Returns empty string if not defined.
+   */
+  private static function get_preset_param($options, $name) {
+    if (!isset($options['presetParams']))
+      return '';
+    else if (!isset($options['presetParams'][$name]))
+      return '';
+    else
+      return $options['presetParams'][$name];
+  }
+  
   private static function get_params_form_control($key, $info, $options, &$tools) {
     $r = '';
     
@@ -836,9 +848,9 @@ $('.ui-state-default').live('mouseout', function() {
       $ctrlOptions['default'] = $info['default'];
     if ($info['datatype']=='idlist') {
       // idlists are not for human input so use a hidden. 
-      $r .= "<input type=\"hidden\" name=\"$fieldPrefix$key\" value=\"".$options['presetParams'][$key]."\" class=\"".$fieldPrefix."idlist-param\" />\n";
+      $r .= "<input type=\"hidden\" name=\"$fieldPrefix$key\" value=\"".self::get_preset_param($options, $key)."\" class=\"".$fieldPrefix."idlist-param\" />\n";
     } elseif (isset($options['presetParams']) && array_key_exists($key, $options['presetParams'])) {
-      $r .= "<input type=\"hidden\" name=\"$fieldPrefix$key\" value=\"".$options['presetParams'][$key]."\" />\n";
+      $r .= "<input type=\"hidden\" name=\"$fieldPrefix$key\" value=\"".self::get_preset_param($options, $key)."\" />\n";
     } elseif ($info['datatype']=='lookup' && isset($info['population_call'])) {
       // population call is colon separated, of the form direct|report:table|view|report:idField:captionField:params(key=value,key=value,...)
       $popOpts = explode(':', $info['population_call']);
