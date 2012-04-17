@@ -157,7 +157,7 @@
     var iSeq = $('#'+prefix+'idnAttr\\:'+sequenceId+'').val();
     iSeq = $.trim(iSeq);
     if (iSeq==='') {
-      return false;
+      // return false;
     }
     switch (compactTypeName) {
     case 'darvicring':

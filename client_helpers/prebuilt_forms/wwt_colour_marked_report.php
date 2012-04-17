@@ -1523,7 +1523,7 @@ class iform_wwt_colour_marked_report {
     }
     return data_entry_helper::sref_and_system(array_merge(array(
       'label' => lang::get('LANG_SRef_Label'),
-      'systems' => $systems
+      'systems' => $systems,
     ), $options));
   }
   
@@ -1698,8 +1698,8 @@ class iform_wwt_colour_marked_report {
     $hideOrDisable = $args['hide_unused_identifiers'] ? 'hide' : 'disable';
     $validate = $args['clientSideValidation'] ? 'false' : 'true';
     // configure the identifiers javascript
-    //data_entry_helper::$javascript .= "indicia.wwt.initForm (
-    data_entry_helper::$javascript .= "indicia.wwt.initForm (
+    // write it late so it happens after any locked values are applied
+    data_entry_helper::$late_javascript .= "indicia.wwt.initForm (
       '".$svcUrl."', 
       '".$auth['read']['nonce']."',
       '".$auth['read']['auth_token']."',
@@ -1805,7 +1805,7 @@ class iform_wwt_colour_marked_report {
           'extraParams' => $extraParams,
         ), $options));
       }
-      // alive?
+      // subject status
       if ($options['lifeStatusId'] > 0
         && !empty($args['request_life_status_values'])
         && count($args['request_life_status_values']) > 0) {
@@ -1813,8 +1813,8 @@ class iform_wwt_colour_marked_report {
         $query = array('in'=>array('id', $args['request_life_status_values']));
         $filter = array('query'=>json_encode($query),);
         $extraParams = array_merge($filter, $auth['read']);
-        $r .= data_entry_helper::radio_group(array_merge(array(
-          'label' => lang::get('Was the bird alive'),
+        $r .= data_entry_helper::select(array_merge(array(
+          'label' => lang::get('Circumstances of this report'),
           'fieldname' => $options['fieldprefix'].'sjoAttr:'.$options['lifeStatusId'],
           'table'=>'termlists_term',
           'captionField'=>'term',
