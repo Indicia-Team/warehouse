@@ -167,14 +167,15 @@ class iform_mnhnl_dynamic_1 {
                 "&nbsp;&nbsp;<strong>[record status]</strong><br/>".
                 "&nbsp;&nbsp;<strong>[sample comment]</strong>. <br/>".
             "<strong>@option=value</strong> on the line(s) following any control allows you to override one of the options passed to the control. The options ".
-        "available depend on the control. For example @label=Abundance would set the untranslated label of a control to Abundance. Where the ".
-        "option value is an array, use valid JSON to encode the value. For example an array of strings could be passed as @occAttrClasses=[\"class1\",\"class2\"]. ".
-        "Other common options include helpText (set to a piece of additional text to display alongside the control) and class (to add css ".
-        "classes to the control such as control-width-3). <br/>".
-        "<strong>[*]</strong> is used to make a placeholder for putting any custom attributes that should be inserted into the current tab. When this option is ".
-        "used, you can change any of the control options for an individual custom attribute control by putting @control|option=value on the subsequent line(s). ".
-        "For example, if a control is for smpAttr:4 then you can update it's label by specifying @smpAttr:4|label=New Label on the line after the [*].<br/>".
-            "<strong>?help text?</strong> is used to define help text to add to the tab, e.g. ?Enter the name of the site.?",
+            "available depend on the control. For example @label=Abundance would set the untranslated label of a control to Abundance. Where the ".
+            "option value is an array, use valid JSON to encode the value. For example an array of strings could be passed as @occAttrClasses=[\"class1\",\"class2\"]. ".
+            "Other common options include helpText (set to a piece of additional text to display alongside the control) and class (to add css ".
+            "classes to the control such as control-width-3). <br/>".
+            "<strong>[*]</strong> is used to make a placeholder for putting any custom attributes that should be inserted into the current tab. When this option is ".
+            "used, you can change any of the control options for an individual custom attribute control by putting @control|option=value on the subsequent line(s). ".
+            "For example, if a control is for smpAttr:4 then you can update it's label by specifying @smpAttr:4|label=New Label on the line after the [*].<br/>".
+            "<strong>?help text?</strong> is used to define help text to add to the tab, e.g. ?Enter the name of the site.? <br/>".
+            "<strong>all else</strong> is copied to the output html so you can add structure for styling.",
           'type'=>'textarea',
           'default' => "=Species=\r\n".
               "?Please enter the species you saw and any other information about them.?\r\n".
@@ -832,7 +833,11 @@ class iform_mnhnl_dynamic_1 {
             $html .= $attrHtml;
           } else          
             $html .= "The form structure includes a control called $component which is not recognised.<br/>";
-        }      
+        }
+        else {
+          // output anything else as is. This allow us to add html to the form structure.
+          $html .= $component;
+        }
       }
       if (!empty($html) && $hasControls) {
         $tabHtml[$tab] = $html;
