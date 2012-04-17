@@ -39,6 +39,7 @@ class Identifier_Controller extends Gridview_Base_Controller {
       'id'=>'ID',
       'first_use_date'=>'',
       'identifier_type'=>'',
+      'status'=>'',
       'coded_value'=>'',
       'summary'=>'',
       'short_description'=>'Subject description',
@@ -85,6 +86,7 @@ class Identifier_Controller extends Gridview_Base_Controller {
       'issue_authority_terms' => $this->get_termlist_terms('indicia:assoc:issue_authority'), 
       'issue_scheme_terms' => $this->get_termlist_terms('indicia:assoc:issue_scheme'), 
       'identifier_type_terms' => $this->get_termlist_terms('indicia:assoc:identifier_type'),  
+      'status_options' => array('M' => 'Manufactured', 'I' => 'Issued', 'A' => 'Attached', 'R' => 'Retired', 'U' => 'Unknown'),  
     );   
   }
 

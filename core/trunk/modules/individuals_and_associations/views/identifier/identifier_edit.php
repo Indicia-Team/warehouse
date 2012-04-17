@@ -99,6 +99,14 @@ echo data_entry_helper::select(array(
   'extraParams' => $readAuth,
 ));
 echo data_entry_helper::select(array(
+  'label' => 'Identifier Status',
+  'fieldname' => 'identifier:status',
+  'default'=>html::initial_value($values, 'identifier:status'),
+  'lookupValues' => $other_data['status_options'],
+  'blankText' => '<Please select>',
+  'extraParams' => $readAuth,
+));
+echo data_entry_helper::select(array(
   'label' => 'Website',
   'fieldname' => 'identifier:website_id',
   'table' => 'website',
