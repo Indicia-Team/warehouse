@@ -601,7 +601,7 @@ class iform_wwt_colour_marked_report {
     $svcUrl = self::warehouseUrl().'index.php/services';
     self::$auth = $auth;
     
-    drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/jquery.form.js', 'module');
+    drupal_add_js(iform_media_folder_path() . 'js/jquery.form.js', 'module');
     
     $mode = (isset($args['no_grid']) && $args['no_grid']) 
         ? MODE_NEW_SAMPLE // default mode when no_grid set to true - display new sample
