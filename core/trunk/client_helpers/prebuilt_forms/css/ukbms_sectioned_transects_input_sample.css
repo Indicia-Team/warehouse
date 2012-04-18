@@ -6,16 +6,16 @@ label {
   margin-left: 144px;
 }
 
-table#transect-input1 {
+table#transect-input1,table#transect-input2,table#transect-input3 {
   width: auto;
 }
 
-table#transect-input1 td, table#transect-input input{
-  margin: 0;
-  padding: 0
+table#transect-input1 td, table#transect-input1 input, table#transect-input2 td, table#transect-input2 input, table#transect-input3 td, table#transect-input3 input{
+  margin: 1px;
+  padding: 1px;
 }
 
-table#transect-input1 input {
+table#transect-input1 input,table#transect-input2 input,table#transect-input3 input {
   width: 50px;
 }
 
