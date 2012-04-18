@@ -29,5 +29,7 @@ global $custom_terms;
 $custom_terms = array(
   'Enter Transect Species Data 1' => 'Butterflies',
   'Enter Transect Species Data 2' => 'Day Flying Moths',
-  'Enter Transect Species Data 3' => 'Other Insects'
+  'Enter Transect Species Data 3' => 'Other Insects',
+  'LANG_Duplicate_Taxon' => 'This taxon is already included in one of the lists on this form', 
+  'LANG_Tab_Msg' => 'UKBMS does not required you to complete this tab. If you do not want to use it, you can turn it off [here - TBD].' 
 );
