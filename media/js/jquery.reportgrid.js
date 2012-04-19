@@ -94,7 +94,8 @@ function simple_tooltip(target_items, name){
       request = {};
       // Extract any parameters from the attached form as long as they are report parameters
       $('form#'+div.settings.reportGroup+'-params input, form#'+div.settings.reportGroup+'-params select').each(function(idx, input) {
-        if (input.type!=='submit' && $(input).attr('name').indexOf(div.settings.reportGroup+'-')===0) {
+        if (input.type!=='submit' && $(input).attr('name').indexOf(div.settings.reportGroup+'-')===0
+		          && (input.type!=="checkbox" || $(input).attr('checked'))) {
           paramName = $(input).attr('name').replace(div.settings.reportGroup+'-', '');
           request[paramName] = $(input).attr('value');
         }
