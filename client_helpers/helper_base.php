@@ -917,7 +917,12 @@ $('.ui-state-default').live('mouseout', function() {
     } elseif ($info['datatype']=='point') {
       $tools = array('Point');
     } else {
-      $r .= data_entry_helper::text_input($ctrlOptions);
+      if (method_exists('data_entry_helper', $info['datatype'])) {
+        $ctrl = $info['datatype'];
+        $r .= data_entry_helper::$ctrl($ctrlOptions);
+      } else {
+        $r .= data_entry_helper::text_input($ctrlOptions);
+      }
     }
     return $r;
   }
