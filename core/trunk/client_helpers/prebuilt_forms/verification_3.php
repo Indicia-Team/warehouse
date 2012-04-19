@@ -589,7 +589,7 @@ idlist=';
           '  "wmsUrl":"'.data_entry_helper::$geoserver_url."wms\",\n".
           '  "cqlFilter":"website_id IN ('.implode(',',$websiteIds).') AND '.$args['indicia_species_layer_filter_field']."='{filterValue}'\",\n".
           '  "filterField":"'.$args['indicia_species_layer_ds_filter_field']."\",\n".
-          '  "sld":"'.(isset($args['indicia_species_layer_sld']) ? $args['indicia_species_layer_sld'] : '')."\",\n".
+          '  "sld":"'.(isset($args['indicia_species_layer_sld']) ? $args['indicia_species_layer_sld'] : '')."\"\n".
           "};\n";
     }
     if (!empty($args['additional_wms_species_layer_title'])) {

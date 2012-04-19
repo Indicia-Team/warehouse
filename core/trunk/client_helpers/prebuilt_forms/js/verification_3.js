@@ -1,6 +1,17 @@
 var mapDiv = null, occurrence_id = null, current_record = null, urlSep, validator, speciesLayers = [];
 var email = {to:'', subject:'', body:'', type:''};
 
+// IE7 compatability
+if(!Array.indexOf){
+  Array.prototype.indexOf = function(obj){
+    for(var i=0; i<this.length; i++){
+      if(this[i]==obj){
+        return i;
+      }
+    }
+  }
+}
+
 function selectRow(tr) {
   // The row ID is row1234 where 1234 is the occurrence ID. 
   if (tr.id.substr(3)===occurrence_id) {
