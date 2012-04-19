@@ -15,6 +15,7 @@
   WHERE #sharing_filter# 
   AND o.record_status not in ('D','I','R','T')
   AND ('#searchArea#'='' OR st_intersects(o.public_geom, st_geomfromtext('#searchArea#',900913)))
+  AND (#ownData#=0 OR CAST(ouser.id AS character varying)='#currentUser#')
   #idlist#
   </query>
   <order_bys>
@@ -26,12 +27,15 @@
     <param name='searchArea' display='Report Search Area' datatype='geometry' allow_buffer='true' />
     <param name='idlist' display='List of IDs' description='Comma separated list of occurrence IDs to filter to.' datatype='idlist' fieldname='o.id' alias='occurrence_id' />
 	  <param name="currentUser" display="Current User ID" description="Current user's warehouse ID. Allows a column to be output indicating that the user owns the record." datatype="text" />
-    <param name='location_id' display='Location' description='Provide the location to display records for' datatype='lookup' 
-        population_call='direct:location:id:name'>
-        <join>JOIN locations lfilter ON st_intersects(lfilter.boundary_geom, o.public_geom) AND lfilter.id=#location_id#</join>  
+    <param name="ownData" display="Own data only?" datatype="checkbox" />
+    <param name='location_id' display='Location' description='Provide the location to display records for' datatype='lookup' emptyvalue="0"
+        population_call='direct:location:id:name' />
+    <param name="ownLocality" display="My locality only?" datatype="checkbox">
+      <join value="1">JOIN locations lfilter ON st_intersects(lfilter.boundary_geom, o.public_geom) AND lfilter.id=#location_id#</join>  
     </param>
-    <param name="taxon_groups" display="Taxon Groups" description="List of taxon group IDs to view data for" datatype="text">
-      <join>JOIN taxon_groups tgfilter ON tgfilter.id=o.taxon_group_id AND tgfilter.id IN (#taxon_groups#)</join>
+    <param name="taxon_groups" display="Taxon Groups" description="List of taxon group IDs to view data for" datatype="text" emptyvalue="0"/>
+    <param name="ownGroups" display="My species groups only?" datatype="checkbox">      
+      <join value="1">JOIN taxon_groups tgfilter ON tgfilter.id=o.taxon_group_id AND tgfilter.id IN (#taxon_groups#)</join>
     </param>
   </params>
   <columns>
@@ -47,7 +51,7 @@
     <column name='recorder' display='Recorder' sql="COALESCE(vuser.text_value, ouser.username)" datatype="text" />
     <column name='zero_abundance' display='Zero Abundance' sql='o.zero_abundance' visible="false" />
     <column name='record_status' display='State' sql='o.record_status' visible="false" />
-    <column name='belongs_to_user' display='Belongs to User' sql='CASE o.created_by_id WHEN #currentUser# THEN true ELSE false END' visible="false" />
+    <column name='belongs_to_user' display='Belongs to User' sql="CASE CAST(o.created_by_id AS character varying) WHEN '#currentUser#' THEN true ELSE false END" visible="false" />
     <column name='geom' visible='false' mappable="true" sql='st_astext(o.public_geom)' />
     <column name='strokewidth' visible='false' feature_style="strokeWidth" sql='length(o.public_entered_sref) / 3' />
     <column name='fillopacity' visible='false' feature_style="fillOpacity" sql='length(o.public_entered_sref) / 24.0' />
