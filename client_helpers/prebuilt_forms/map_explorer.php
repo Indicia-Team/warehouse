@@ -175,7 +175,7 @@ class iform_map_explorer {
     else
       $reportOptions['extraParams']['ownData']=0;
 
-    if (!empty($user->profile_location_id))
+    if (!empty($user->profile_location))
       $reportOptions['paramDefaults']['ownLocality']=1;
     else
       $reportOptions['extraParams']['ownLocality']=0;
