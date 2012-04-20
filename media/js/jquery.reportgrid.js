@@ -299,7 +299,7 @@ function simple_tooltip(target_items, name){
               indiciaData.reportlayer.removeAllFeatures();
               map=indiciaData.reportlayer.map;
             }
-            rowTitle = (div.settings.sendOutputToMap && typeof indiciaData.reportlayer!=="undefined") ?
+            rowTitle = (div.settings.rowId && div.settings.linkFeatures && typeof indiciaData.reportlayer!=="undefined") ?
               ' title="'+div.settings.msgRowLinkedToMapHint+'"' : '';
             $.each(rows, function(rowidx, row) {
               // We asked for one too many rows. If we got it, then we can add a next page button
@@ -327,7 +327,7 @@ function simple_tooltip(target_items, name){
                     }
                     geom = geom.getCentroid();
                     feature = new OpenLayers.Feature.Vector(geom, {});
-                    if (typeof div.settings.rowId!=="undefined" && div.settings.rowId!=="") {
+                    if (div.settings.rowId!=="") {
                       feature.id = row[div.settings.rowId];
                     }
                     features.push(feature);
@@ -572,7 +572,7 @@ function simple_tooltip(target_items, name){
 
       setupReloadLinks(div);
       
-      if (div.settings.sendOutputToMap && div.settings.linkFeatures && 
+      if (div.settings.rowId && div.settings.linkFeatures && 
           typeof indiciaData.reportlayer!=="undefined") {
         // Setup highlighting of features on an associated map when rows are clicked
         $(div).find('tbody').click(function(evt) {
@@ -618,6 +618,7 @@ $.fn.reportgrid.defaults = {
   itemsPerPage : null,
   offset : 0,
   altRowClass : 'odd',
+  rowId: '',
   imageFolder : '',
   rootFolder: '',
   currentUrl: '',
@@ -630,6 +631,6 @@ $.fn.reportgrid.defaults = {
   langLast: 'last',
   langShowing: 'Showing records {1} to {2} of {3}',
   sendOutputToMap: false, // does the current page of report data get shown on a map?
-  linkFeatures: false, // combined with sendOutputToMap - the selected row's equivalent map feature is highlighted'
+  linkFeatures: false, // requires a rowId - the selected row's equivalent map feature is highlighted
   msgRowLinkedToMapHint: 'Click the row to highlight the record on the map. Double click to zoom in.'
 };

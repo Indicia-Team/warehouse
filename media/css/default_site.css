@@ -430,7 +430,7 @@ tfoot td div{
   padding: 2px 4px;
 }
 
-#map-toolbar-outer .olControlEditingToolbar, #map-toolbar-outer label {
+#map-toolbar-outer div.olControlEditingToolbar, #map-toolbar-outer div.param-container, #map-toolbar-outer label {
   width: auto;
   display:-moz-inline-stack;
   display:inline-block;
@@ -438,8 +438,17 @@ tfoot td div{
   *display:inline;
 }
 
+#map-toolbar-outer label {
+  padding: 0 0.5em 0 1.5em;
+}
+
 #map-toolbar-outer  * {
   vertical-align: middle;
+}
+
+form #map-toolbar {
+  float: none;
+  padding-left: 1.5em;
 }
 
 .no-border {
