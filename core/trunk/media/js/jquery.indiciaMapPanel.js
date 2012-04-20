@@ -536,6 +536,7 @@ mapInitialisationHooks = [];
         // Create a control that can handle both WMS and vector layer clicks.
         var infoCtrl = new OpenLayers.Control({
           displayClass: align + 'olControlSelectFeature',
+          title: div.settings.reportGroup===null ? '' : div.settings.hintClickToFilterGridTool,
           lastclick: {},
           allowBox: false,
           activate: function() {
@@ -886,7 +887,7 @@ mapInitialisationHooks = [];
       // Create a projection to represent data in the Indicia db
       div.indiciaProjection = new OpenLayers.Projection('EPSG:3857');
       olOptions.controls = [
-            new OpenLayers.Control.Navigation(),
+            new OpenLayers.Control.Navigation({title: 'navigation'}),
             new OpenLayers.Control.ArgParser(),
             new OpenLayers.Control.Attribution()
       ];
@@ -1133,7 +1134,7 @@ mapInitialisationHooks = [];
       if (div.settings.editLayer && div.settings.allowPolygonRecording) {
         div.map.editLayer.events.on({'afterfeaturemodified': recordPolygon});     
       }
-      var ctrl, pushDrawCtrl = function(c) {
+      var ctrl, hint, pushDrawCtrl = function(c) {
         toolbarControls.push(c);
         if (div.settings.editLayer && div.settings.allowPolygonRecording) {
           c.events.register('featureadded', c, recordPolygon);
@@ -1150,19 +1151,31 @@ mapInitialisationHooks = [];
         } else if (ctrl=='panZoomBar') {
           div.map.addControl(new OpenLayers.Control.PanZoomBar());
         } else if (ctrl=='drawPolygon' && div.settings.editLayer) {
+          hint = div.settings.hintDrawPolygonHint;
+          if (div.settings.reportGroup!==null) {
+            hint += ' ' + div.settings.hintDrawForReportingHint;
+          }
           ctrl = new OpenLayers.Control.DrawFeature(div.map.editLayer,
               OpenLayers.Handler.Polygon,
-              {'displayClass': align + 'olControlDrawFeaturePolygon', 'title':'Draw polygons by clicking on the then double click to finish'})
+              {'displayClass': align + 'olControlDrawFeaturePolygon', 'title':hint})
           pushDrawCtrl(ctrl);
         } else if (ctrl=='drawLine' && div.settings.editLayer) {
+          hint = div.settings.hintDrawLineHint;
+          if (div.settings.reportGroup!==null) {
+            hint += ' ' + div.settings.hintDrawForReportingHint;
+          }
           ctrl = new OpenLayers.Control.DrawFeature(div.map.editLayer,
               OpenLayers.Handler.Path,
-              {'displayClass': align + 'olControlDrawFeaturePath', 'title':'Draw lines by clicking on the then double click to finish'})
+              {'displayClass': align + 'olControlDrawFeaturePath', 'title':hint})
           pushDrawCtrl(ctrl);
         } else if (ctrl=='drawPoint' && div.settings.editLayer) {
+          hint = div.settings.hintDrawPointHint;
+          if (div.settings.reportGroup!==null) {
+            hint += ' ' + div.settings.hintDrawForReportingHint;
+          }
           ctrl = new OpenLayers.Control.DrawFeature(div.map.editLayer,
               OpenLayers.Handler.Point,
-              {'displayClass': align + 'olControlDrawFeaturePoint', 'title':'Draw points by clicking on the map'});
+              {'displayClass': align + 'olControlDrawFeaturePoint', 'title':hint});
           pushDrawCtrl(ctrl);
         } else if (ctrl=='selectFeature' && div.settings.editLayer) {
           toolbarControls.push(new OpenLayers.Control.SelectFeature(div.map.editLayer));
@@ -1172,10 +1185,10 @@ mapInitialisationHooks = [];
           highlighter.activate();
         } else if (ctrl=='clearEditLayer' && div.settings.editLayer) {
           toolbarControls.push(new OpenLayers.Control.ClearLayer([div.map.editLayer],
-              {'displayClass': align + ' olControlClearLayer', 'title':'Clear selection'}));
+              {'displayClass': align + ' olControlClearLayer', 'title':div.settings.hintClearSelection}));
         } else if (ctrl=='modifyFeature' && div.settings.editLayer) {
           toolbarControls.push(new OpenLayers.Control.ModifyFeature(div.map.editLayer,
-              {'displayClass': align + 'olControlModifyFeature', 'title':'Modify a feature'}));
+              {'displayClass': align + 'olControlModifyFeature', 'title':div.settings.hintModifyFeature}));
         } else if (ctrl=='graticule') {
           var graticule = new OpenLayers.Control.IndiciaGraticule({projection: div.settings.graticuleProjection, bounds: div.settings.graticuleBounds});
           div.map.addControl(graticule);
@@ -1206,7 +1219,7 @@ mapInitialisationHooks = [];
         }
         var toolbar = new OpenLayers.Control.Panel(toolbarOpts);
         // add a nav control to the toolbar
-        var nav=new OpenLayers.Control.Navigation({displayClass: align + "olControlNavigation"});
+        var nav=new OpenLayers.Control.Navigation({displayClass: align + "olControlNavigation", "title":div.settings.hintNavigation});
         toolbar.addControls([nav]);
         toolbar.addControls(toolbarControls);
         div.map.addControl(toolbar);
@@ -1275,7 +1288,7 @@ $.fn.indiciaMapPanel.defaults = {
     locationLayerName: '', // define a feature type that can be used to auto-populate the location control when clicking on a location
     controls: [],
     standardControls: ['layerSwitcher','panZoom'],
-    toolbarDiv: 'map', // map or div ID
+    toolbarDiv: 'map', // map, top, bottom, or div ID
     toolbarPrefix: '', // content to prepend to the toolbarDiv content if not on the map
     toolbarSuffix: '', // content to append to the toolbarDiv content if not on the map
     editLayer: true,
@@ -1303,6 +1316,14 @@ $.fn.indiciaMapPanel.defaults = {
     msgSrefOutsideGrid: 'The position is outside the range of the selected grid reference system.',
     msgSrefNotRecognised: 'The grid reference is not recognised.',
     msgReplaceBoundary: 'Would you like to replace the existing boundary with the new one?',
+    hintDrawPolygonHint: 'Draw polygons by clicking on the map then double click to finish.',
+    hintDrawLineHint: 'Draw lines by clicking on the map then double click to finish.',
+    hintDrawPointHint: 'Draw points by clicking on the map.',
+    hintDrawForReportingHint: 'These will then define the search area next time you click the reload the report data.',
+    hintClickToFilterGridTool: 'Use this tool to click on records on the map and filter the grid to show the records you clicked on. You can also drag a bounding box around a selection of records.',
+    hintClearSelection: 'Clear selection',
+    hintModifyFeature: 'Modify an object on the map',
+    hintNavigation: 'Select this tool to navigate around the map. Drag the map for panning, double click to zoom, or shift drag to zoom to a bounding box.',
     maxZoom: 19, //maximum zoom when relocating to gridref, postcode etc.
     maxZoomBuffer: 0.67, //margin around feature when relocating to gridref
 
