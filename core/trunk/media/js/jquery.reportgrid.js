@@ -577,10 +577,11 @@ function simple_tooltip(target_items, name){
         // Setup highlighting of features on an associated map when rows are clicked
         $(div).find('tbody').click(function(evt) {
           var tr=$(evt.target).parents('tr')[0];
-          var featureId=tr.id.substr(3), feature;
+          var featureId=tr.id.substr(3), feature, featureArr;
           feature=indiciaData.reportlayer.getFeatureById(featureId);
+          featureArr = (feature===null) ? [] : [feature];
           // deselect any existing selection and select the feature
-          indiciaData.reportlayer.map.setSelection(indiciaData.reportlayer, [feature]);
+          indiciaData.reportlayer.map.setSelection(indiciaData.reportlayer, featureArr);
           $(div).find('tbody tr').removeClass('selected');
           // select row
           $(tr).addClass('selected');
@@ -589,7 +590,11 @@ function simple_tooltip(target_items, name){
           var tr=$(evt.target).parents('tr')[0];
           var featureId=tr.id.substr(3), feature;
           feature=indiciaData.reportlayer.getFeatureById(featureId);
-          indiciaData.reportlayer.map.zoomToExtent(feature.geometry.getBounds());
+          if (feature!==null) {
+            indiciaData.reportlayer.map.zoomToExtent(feature.geometry.getBounds());
+          } else {
+            alert('This record does not have spatial information in the database');
+          }
         });
       }
 
