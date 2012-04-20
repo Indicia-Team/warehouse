@@ -1101,6 +1101,11 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * <li><b>UserId</b>
   * If sharing=me, then this must contain the Indicia user ID of the user to return data for.
   * </li>
+  * <li><b>rowId</b>
+  * Optional. Set this to the name of a field in the report to define which field is being used to define the feature ID created on the map
+  * layer. For example this can be used in conjunction with rowId on a report grid to allow a report's rows to be linked to the associated
+  * features.
+  * </li>
   * </ul>
   */
   public static function report_map($options) {
@@ -1151,7 +1156,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
           'strokeColor'=> '#ff0000',
           'strokeWidth'=>1,
           'fillOpacity'=>0.5,
-          'pointRadius'=>4
+          'pointRadius'=>4,
+          'graphicZIndex'=>0
         ), $settings);
         if ($options['displaySymbol']!=='vector')
           $defsettings['graphicName']=$options['displaySymbol'];
@@ -1196,14 +1202,16 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         $selsettings = array_merge($defsettings, array(
           'fillColor'=> '#0000ff',
           'strokeColor'=> '#0000ff',
+          'graphicZIndex'=>1
         ));
         // convert these styles into a JSON definition ready to feed into JS.
         $defsettings = json_encode($defsettings);
         $selsettings = json_encode($selsettings);
         $addFeaturesJs = "";
         $opts = json_encode(array('type'=>$options['displaySymbol']));
+        $rowId = isset($options['rowId']) ? ' id="row'.$row[$options['rowId']].'"' : '';
         foreach ($records as $record) {
-          $addFeaturesJs.= "addDistPoint(features, ".json_encode($record).", '$wktCol', $opts);\n";
+          $addFeaturesJs.= "addDistPoint(features, ".json_encode($record).", '$wktCol', $opts".(empty($rowId) ? '' : ", '".$record[$options['rowId']]."'").");\n";
         }
         if (!empty($styleFns)) {
           $styleFns = ", {context: { 
@@ -1978,7 +1986,7 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     var defaultStyle = new OpenLayers.Style($defsettings$styleFns);
     var selectStyle = new OpenLayers.Style($selsettings$styleFns);
     var styleMap = new OpenLayers.StyleMap({'default' : defaultStyle, 'select' : selectStyle});
-    indiciaData.reportlayer = new OpenLayers.Layer.Vector('Report output', {styleMap: styleMap}); 
+    indiciaData.reportlayer = new OpenLayers.Layer.Vector('Report output', {styleMap: styleMap, rendererOptions: {zIndexing: true}}); 
     mapInitialisationHooks.push(function(div) {
       function addDistPoint(features, record, wktCol, opts, id) {
         if (record[wktCol]!==null) {
