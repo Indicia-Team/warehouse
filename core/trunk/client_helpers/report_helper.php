@@ -189,7 +189,7 @@ class report_helper extends helper_base {
   * </li>
   * <li><b>rowId</b>
   * Optional. Names the field in the data that contains the unique identifier for each row. If set, then the &lt;tr&gt; elements have their id attributes
-  * set to row + this field value, e.g. row37.</li>
+  * set to row + this field value, e.g. row37. This is used to allow synchronisation of the selected table rows with a report map output showing the same data.</li>
   * <li><b>includeAllColumns</b>
   * Defaults to true. If true, then any columns in the report, view or table which are not in the columns
   * option array are automatically added to the grid after any columns specified in the columns option array.
@@ -368,7 +368,7 @@ class report_helper extends helper_base {
     $addFeaturesJs = '';
     if (count($records)>0) {
       $rowInProgress=false;
-      $rowTitle = (isset($options['sendOutputToMap']) && $options['sendOutputToMap']) ?
+      $rowTitle = !empty($options['rowId']) ?
           ' title="'.lang::get('Click the row to highlight the record on the map. Double click to zoom in.').'"' : '';
       foreach ($records as $rowIdx => $row) {
         // Don't output the additional row we requested just to check if the next page link is required.
@@ -484,7 +484,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   pagingTemplate: '".$indicia_templates['paging']."',
   pathParam: '".$pathParam."',
   sendOutputToMap: ".((isset($options['sendOutputToMap']) && $options['sendOutputToMap']) ? 'true' : 'false').",
-  linkFeatures: ".((!empty($options['rowId']) && isset($options['sendOutputToMap']) && $options['sendOutputToMap']) ? 'true' : 'false').",
+  linkFeatures: ".(!empty($options['rowId'])).",
   msgRowLinkedToMapHint: '".lang::get('Click the row to highlight the record on the map. Double click to zoom in.')."',
   altRowClass: '".$options['altRowClass']."'";
       if (isset($options['extraParams']))
@@ -1248,11 +1248,11 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
 mapSettingsHooks.push(function(opts) {
   opts.reportGroup = '".$options['reportGroup']."';
   if (typeof indiciaData.reportlayer!=='undefined') {
-    opts.layers.push(indiciaData.reportlayer);
-  }\n";
+    opts.layers.push(indiciaData.reportlayer);\n";
       if ($options['clickable'])
-        report_helper::$javascript .= "  opts.clickableLayers.push(indiciaData.reportlayer);\n";
-      report_helper::$javascript .= "  opts.clickableLayersOutputMode='".$options['clickableLayersOutputMode']."';\n";
+        report_helper::$javascript .= "    opts.clickableLayers.push(indiciaData.reportlayer);\n";
+      
+      report_helper::$javascript .= "}\n  opts.clickableLayersOutputMode='".$options['clickableLayersOutputMode']."';\n";
       if ($options['clickableLayersOutputDiv'])
         report_helper::$javascript .= "  opts.clickableLayersOutputDiv='".$options['clickableLayersOutputDiv']."';\n";
       if (isset($options['clickableLayersOutputColumns']))
