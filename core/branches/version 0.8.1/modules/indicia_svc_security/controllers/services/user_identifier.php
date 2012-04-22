@@ -104,7 +104,7 @@ class User_Identifier_Controller extends Service_Base_Controller {
           $joinType='LEFT';
         } else
           $joinType='INNER';
-        $this->db->select('DISTINCT um.user_id, u.person_id')
+        $this->db->select('DISTINCT u.id as user_id, u.person_id')
             ->from('users as u')
             ->join('people as p', 'p.id', 'u.person_id')
             ->join('user_identifiers as um', 'um.user_id', 'u.id', $joinType)
