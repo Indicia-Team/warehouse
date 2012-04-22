@@ -22,7 +22,7 @@
  */
 
 /**
- * Model class for the Taxa_Taxon_List_Attributes_Websites table.
+ * Model class for the Taxa_Taxon_List_Attributes table.
  *
  * @package	Core
  * @subpackage Models
