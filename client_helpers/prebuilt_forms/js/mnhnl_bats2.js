@@ -21,7 +21,7 @@
   the newly added rows.
  */
 var addRowToGridSequence = 1000; // this should be more than the length of the initial taxon list
-function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth, formatter, duplicateMsg) {
+function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth, formatter, duplicateMsg, max) {
   // inner function to handle a selection of a taxon from the autocomplete
   var handleSelectedTaxon = function(event, data) {
     var myClass='scMeaning-'+data.taxon_meaning_id;
@@ -30,20 +30,20 @@ function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth
       $(event.target).val('');
       return;
     }
-    addRowToGridSequence++;
     var rows=$('#'+gridId + '-scClonable').find('tr');
     var newRows=[];
     rows.each(function(){newRows.push($(this).clone(true))})
     var taxonCell=newRows[0].find('td:eq(1)');
     // Replace the tags in the row template with the taxa_taxon_list_ID
     $.each(newRows, function(i, row) {
+      addRowToGridSequence++;
       row.addClass('added-row').addClass(myClass).removeClass('scClonableRow').attr('id','');
       $.each(row.children(), function(j, cell) {
         cell.innerHTML = cell.innerHTML.replace(/-ttlId-:/g, data.id+':y'+addRowToGridSequence);
       }); 
       row.appendTo('#'+gridId);
     }); 
-    newRows[0].find('.scPresenceCell input').attr('name', 'sc:' + data.id + ':y'+addRowToGridSequence+':present').attr('checked', 'checked');
+    newRows[0].find('.scPresenceCell input').attr('name', 'sc::' + data.id + ':y'+addRowToGridSequence+':present').attr('checked', 'checked');
     $(event.target).val('');
     formatter(data,taxonCell);
   };
@@ -59,6 +59,7 @@ function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth
         nonce: readAuth.nonce,
         taxon_list_id: lookupListId
       },
+      max : max,
       parse: function(data) {
         var results = [];
         jQuery.each(data, function(i, item) {
