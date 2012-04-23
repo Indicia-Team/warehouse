@@ -484,7 +484,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   pagingTemplate: '".$indicia_templates['paging']."',
   pathParam: '".$pathParam."',
   sendOutputToMap: ".((isset($options['sendOutputToMap']) && $options['sendOutputToMap']) ? 'true' : 'false').",
-  linkFeatures: ".(!empty($options['rowId'])).",
+  linkFeatures: ".(!empty($options['rowId']) ? 'true' : 'false').",
   msgRowLinkedToMapHint: '".lang::get('Click the row to highlight the record on the map. Double click to zoom in.')."',
   altRowClass: '".$options['altRowClass']."'";
       if (isset($options['extraParams']))
