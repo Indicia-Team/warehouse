@@ -137,7 +137,8 @@ class iform_mnhnl_butterflies extends iform_mnhnl_dynamic_1 {
     global $indicia_templates;
     global $user;
     $indicia_templates['select_item'] = '<option value="{value}" {selected} >{caption}&nbsp;</option>';
-    
+    if ($user->uid===0)
+      return lang::get('Before using this facility, please <a href="'.url('user/login', array('query'=>'destination=node/'.($node->nid))).'">login</a> to the website.');
     // we don't use the map, but a lot of the inherited code assumes the map is present.
     self::$svcUrl = data_entry_helper::$base_url.'/index.php/services';
     data_entry_helper::add_resource('openlayers');

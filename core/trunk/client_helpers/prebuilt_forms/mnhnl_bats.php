@@ -616,9 +616,9 @@ jQuery('#location-code').attr('readonly','readonly');
     $primary = iform_mnhnl_getTermID($auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
     if($args['SecondaryLocationTypeTerm'] != ''){
       $secondary = iform_mnhnl_getTermID($auth, $args['locationTypeTermListExtKey'],$args['SecondaryLocationTypeTerm']);
-      $loctypequery="\"&query=\"+escape(JSON.stringify({'in': ['location_type_id', [$primary, $secondary]]}))";
+      $loctypequery="&query='+escape(JSON.stringify({'in': ['location_type_id', [$primary, $secondary]]}))+'";
     } else {
-      $loctypequery="\"&location_type_id=".$primary."\"";
+      $loctypequery="&location_type_id=".$primary;
     }
     data_entry_helper::$javascript .= "
 // this is called after the location is cleared, including the code. If when we come to set the code

@@ -178,7 +178,8 @@ class iform_mnhnl_butterflies2 extends iform_mnhnl_dynamic_1 {
   protected static function getSampleListGrid($args, $node, $auth, $attributes) {
   	global $user;
     // get the CMS User ID attribute so we can filter the grid to this user
-    if ($user->uid===0) return lang::get('LANG_Please_Login').'<a href="'.url('user/login', array('query'=>'destination=node/'.($node->nid))).'">'.lang::get('LANG_Login').'</a>';
+    if ($user->uid===0)
+      return lang::get('Before using this facility, please <a href="'.url('user/login', array('query'=>'destination=node/'.($node->nid))).'">login</a> to the website.');
     $userIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'CMS User ID');
     if (!$userIdAttr) return lang::get('This form must be used with a survey that has the CMS User ID attribute associated with it so records can be tagged against their creator.');
     $userNameAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'CMS Username');
