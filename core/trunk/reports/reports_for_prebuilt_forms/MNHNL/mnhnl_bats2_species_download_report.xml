@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="MNHNL Bat Species Download Report" description="Lists all occurrences associated with saved samples. Normally invoked from Reports tab on the form.">
+      <params>
+		    <param name='survey_id' display='Survey: ' description='Select the survey to return data for:' datatype='lookup'
+		        query='SELECT id, title as caption FROM surveys' />
+      </params>
+      <table tablename="samples" where="#this#.deleted = FALSE
+      		and #this#.parent_id IS NULL
+      		and #this#.survey_id = #survey_id#" >
+		  <subTable tablename="locations" where="#this#.deleted = FALSE" >
+			<tabColumn name='name' display='Site'/>
+			<tabColumn name='code' display='Code'/>
+      <tabColumn name='xy' display='XY centroid' func="(regexp_replace(#this#.centroid_sref, ',|\\.[0-9]*' , '','g'))" />
+      <tabColumn name='points' display='XY point coordinates' func="(CASE
+     WHEN #this#.boundary_geom is null THEN (replace(#this#.centroid_sref, ',' , ''))
+     WHEN GeometryType(#this#.boundary_geom) = 'POINT' THEN regexp_replace(ST_AsText(ST_Transform(#this#.boundary_geom,2169)),'[(){}\\x22]|\\.[0-9]*|POINT','','g')
+     WHEN GeometryType(#this#.boundary_geom) = 'MULTIPOINT' THEN regexp_replace(ST_AsText(ST_Transform(#this#.boundary_geom,2169)),'[(){}\\x22]|\\.[0-9]*|MULTIPOINT','', 'g')
+     WHEN GeometryType(#this#.boundary_geom) = 'GEOMETRYCOLLECTION' AND NOT ST_IsEmpty(ST_CollectionExtract(#this#.boundary_geom, 1)) THEN regexp_replace(ST_AsText(ST_Transform(ST_CollectionExtract(#this#.boundary_geom,1),2169)),'[(){}\\x22]|\\.[0-9]*|MULTIPOINT','', 'g')
+     ELSE ''
+END)" />
+			<tabColumn name='comment' display='Site comment' />
+			<attributes separator='|' meaningIdLanguage='preferred'/>
+		  </subTable>
+ 		  <tabColumn name='date_start' visible='false'/>
+		  <tabColumn name='date_end' visible='false'/>
+		  <tabColumn name='date_type' visible='false'/>
+		  <tabColumn name='date' func="''" display='Date' /> // dummy field for the vague date processing, here so appears at logical position and with reasonable description in the report
+          <tabColumn name='recorder_names' display='Recorder names' />
+		  <tabColumn name='comment' display='Visit comment' />
+          <attributes separator='|' meaningIdLanguage='preferred'/>
+          <subTable tablename="samples" tableKey="parent_id" parentKey="id" where="#this#.deleted = FALSE" >
+            <attributes separator='|' meaningIdLanguage='preferred'/>
+            <subTable tablename="occurrences" parentKey="id" where=" #this#.deleted = FALSE" >
+				<subTable tablename='taxa_taxon_lists' >
+		      		<subTable tablename='taxa' >
+		    	    	<tabColumn name='taxon' display='Entered Species'/>
+		      		</subTable>
+					<subTable tablename='taxa_taxon_lists' parentKey="taxon_meaning_id" tableKey="taxon_meaning_id" where="#this#.preferred = TRUE " >
+		      			<subTable tablename='taxa' >
+		    	    		<tabColumn name='taxon' display='Species'/>
+		      			</subTable>
+		    		</subTable>
+		    	</subTable>
+            	<attributes separator='|'  meaningIdLanguage='preferred'/> 
+		    	<tabColumn name='comment' />
+		    	<tabColumn name='id' visible='true' />
+          </subTable>
+        </subTable>    
+      </table>
+</report>

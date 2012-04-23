@@ -270,7 +270,7 @@ createGridEntries = function(feature, isnew) {
   jQuery(newCGRows[0]).find('td:not(.cggrid-datecell,.cggrid-namecell,.remove-cgnewrow)').css('opacity',0.25);
   jQuery(newCGRows[0]).find('*:.cggrid-date,.cggrid-datecell,.cggrid-name,.cggrid-namecell,.remove-cgnewrow').removeAttr('disabled');
   for(var i = 1; i< newCGRows.length; i++){
-    jQuery(newCGRows[i]).find('*').attr('disabled','disabled').filter('td').css('opacity',0.25);;
+    jQuery(newCGRows[i]).find('*').attr('disabled','disabled').filter('td').css('opacity',0.25);
   }
   if(!isnew){
     if(typeof(feature)=='object'&&(feature instanceof Array)){

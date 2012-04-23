@@ -74,6 +74,10 @@ span.extra-text {
 label.auto-width {
 	width: auto;
 }
+.survey-method-grid label {
+	width: auto;
+	padding-left: 10px;	
+}
 label.prepad {
   padding-left: 20px;	
 }
@@ -123,4 +127,16 @@ div.olControlEditingToolbar  {
 }
 #imp-srefY {
 	width: 60px;
+}
+.smg-starttime,.smg-endtime {
+	width: 60px;
+}
+.species-grid label {
+	width: auto;
+}
+.species-grid input {
+	width: 40px;
+}
+.scFirstRow {
+  border-top: solid silver 1px;
 }

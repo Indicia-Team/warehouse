@@ -215,24 +215,32 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
   }
 
   protected static function getExtraGridModeTabs($retTabs, $readAuth, $args, $attributes) {
-    $isAdmin = user_access('IForm n'.self::$node->nid.' admin');
+    return call_user_func(array(get_called_class(), 'getExtraGridModeTabsSub'),
+      $retTabs, $readAuth, $args, $attributes,
+        'mnhnl_bats_sites_download_report.xml',
+        'mnhnl_bats_conditions_download_report.xml',
+        'mnhnl_bats_species_download_report.xml');
+  }
+  
+  protected static function getExtraGridModeTabsSub($retTabs, $readAuth, $args, $attributes, $rep1, $rep2, $rep3) {
+  	$isAdmin = user_access('IForm n'.self::$node->nid.' admin');
   	if(!$isAdmin) return('');
     if(!$retTabs) return array('#downloads' => lang::get('LANG_Download'), '#locations' => lang::get('LANG_Locations'));
     $confirmedLocationTypeID = iform_mnhnl_getTermID(self::$auth, $args['locationTypeTermListExtKey'],$args['SecondaryLocationTypeTerm']);
     $submittedLocationTypeID = iform_mnhnl_getTermID(self::$auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
     
     $r = '<div id="downloads" >
-    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_bats_sites_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename='.$args['reportFilenamePrefix'].'sitesreport">
+    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/'.$rep1.'&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename='.$args['reportFilenamePrefix'].'sitesreport">
       <p>'.lang::get('LANG_Sites_Download').'</p>
       <input type="hidden" id="params" name="params" value=\'{"website_id":'.$args['website_id'].', "survey_id":'.$args['survey_id'].', "orig_location_type_id":'.$confirmedLocationTypeID.', "new_location_type_id":'.$submittedLocationTypeID.'}\' />
       <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
     </form>
-    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_bats_conditions_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename='.$args['reportFilenamePrefix'].'conditionsreport">
+    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/'.$rep2.'&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename='.$args['reportFilenamePrefix'].'conditionsreport">
       <p>'.lang::get('LANG_Conditions_Download').'</p>
       <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].'}\' />
       <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
     </form>
-    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_bats_species_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename='.$args['reportFilenamePrefix'].'speciesreport">
+    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/'.$rep3.'&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename='.$args['reportFilenamePrefix'].'speciesreport">
       <p>'.lang::get('LANG_Species_Download').'</p>
       <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].'}\' />
       <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
@@ -260,6 +268,7 @@ checkRadioStatus();
     self::communeJS(self::$auth, $args);
     return $r;
   }
+
   protected static function getHeaderHTML($args) {
     $base = base_path();
     if(substr($base, -1)!='/') $base.='/';
@@ -603,22 +612,31 @@ jQuery('#smpAttr\\\\:$attrId').next().after(\"<span class='extra-text'>".lang::g
       data_entry_helper::$javascript .= "
 jQuery('#location-code').attr('readonly','readonly');
 ";
+    if($args['LocationTypeTerm']=='' && isset($args['loctoolsLocTypeID'])) $args['LocationTypeTerm']=$args['loctoolsLocTypeID'];
+    $primary = iform_mnhnl_getTermID($auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
+    if($args['SecondaryLocationTypeTerm'] != ''){
+      $secondary = iform_mnhnl_getTermID($auth, $args['locationTypeTermListExtKey'],$args['SecondaryLocationTypeTerm']);
+      $loctypequery="\"&query=\"+escape(JSON.stringify({'in': ['location_type_id', [$primary, $secondary]]}))";
+    } else {
+      $loctypequery="\"&location_type_id=".$primary."\"";
+    }
     data_entry_helper::$javascript .= "
 // this is called after the location is cleared, including the code. If when we come to set the code
 // we find it is filled in, it must have been set by fetch from DB so leave...
 hook_set_defaults=function(){
-  jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/location' +
-            '?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?', function(data) {
-    // store value in saved field?
-    if (data instanceof Array && data.length>0) {
+  if(jQuery('[name=location\\:code]').val() == '')
+    jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/location' +
+            '?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"].$loctypequery."&callback=?', function(data) {
+      // store value in saved field?
       var maxCode = 0;
-      for(var i = 0; i< data.length; i++){
-        if(parseInt(data[i].code) > maxCode)
-          maxCode = parseInt(data[i].code)
+      if (data instanceof Array && data.length>0) {
+        for(var i = 0; i< data.length; i++){
+          if(parseInt(data[i].code) > maxCode)
+            maxCode = parseInt(data[i].code)
+        }
       }
-      if(jQuery('[name=location\\:code]').val() == '')
-        jQuery('[name=location\\:code]').val(maxCode+1);
-    }});
+      jQuery('[name=location\\:code]').val(maxCode+1);
+    });
 };";
     return $retVal;
   }

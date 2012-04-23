@@ -65,6 +65,7 @@ $custom_terms = array(
 	'LANG_LocModTool_NameLabel'=>'New site name',
 	'LANG_LocModTool_DeleteLabel'=>'Delete site',
 	'LANG_LocModTool_DeleteInstructions'=>'When a site is deleted, any existing visit data will still be available in the reports. The visit data will not be available via the data entry form, and the site will no longer appear on the map. You will not be able to undelete the site using this form.',
+	'LANG_LocationModTool_CommentLabel'=>'Comment',
 
 	'LANG_Locations'=>'Sites',
 

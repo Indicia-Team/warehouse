@@ -17,6 +17,7 @@
     <tabColumn name='date_end' visible='false'/>
     <tabColumn name='date_type' visible='false'/>
     <tabColumn name='date' func="''" display='Visit date'/> // dummy field for the vague date processing, here so appears at logical position and with reasonable description in the report
+    <tabColumn name='comment' display='Conditions comment'/>
     <subTable tablename="locations" > // allow deleted Sites!
       <subTable tablename="locations" parentKey="parent_id" where="#this#.deleted = FALSE" >
         <tabColumn name='name' display='Square (5x5km)'/>
@@ -50,6 +51,7 @@ END)" />
      ELSE ''
 END)" />
       <tabColumn name='comment' display='Site comment'/>
+      <attributes separator='|' meaningIdLanguage='preferred'/>
     </subTable>
     <attributes separator='|' meaningIdLanguage='preferred'/>
     <subTable tablename="samples" tableKey="parent_id" parentKey="id" where="#this#.deleted = FALSE" >
