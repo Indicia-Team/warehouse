@@ -118,10 +118,14 @@ function simple_tooltip(target_items, name){
         regex = new RegExp('\\{'+param+'\\}','g');
         regexEsc = new RegExp('\\{'+param+'-escape-quote\\}','g');
         regexEscDbl = new RegExp('\\{'+param+'-escape-dblquote\\}','g');
+        regexHtmlEsc = new RegExp('\\{'+param+'-escape-htmlquote\\}','g');
+        regexHtmlEscDbl = new RegExp('\\{'+param+'-escape-htmldblquote\\}','g');
         r = params[param] || '';
         template = template.replace(regex, r);
         template = template.replace(regexEsc, r.replace("'","\\'"));
         template = template.replace(regexEscDbl, r.replace('"','\\"'));
+        template = template.replace(regexHtmlEsc, r.replace("'","&#39;"));
+        template = template.replace(regexHtmlEscDbl, r.replace('"','&quot;'));
       });
       // Also do some standard params from the settings, for various paths/urls
       regex = new RegExp('\\{rootFolder\\}','g');
