@@ -31,8 +31,6 @@
 /* Development Stream: TBD
  * 
  * TODO documentation
- * TODO check submission
- * TODO convert occurrences to hang off the survey method...
  * TODO SVN & Deploy to Live
  * 
  * Future possibles:
