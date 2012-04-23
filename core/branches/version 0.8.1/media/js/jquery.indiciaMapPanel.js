@@ -48,7 +48,34 @@ mapInitialisationHooks = [];
     }
 
     /**
+     * Convert any projection representation to a system string.
+     */
+    function _projToSystem(proj, convertGoogle) {
+    	var system;
+    	if(typeof proj != "string") { // assume a OpenLayers Projection Object
+    		system = proj.getCode();
+    	} else {
+    		system = proj;
+    	}
+    	if(system.substring(0,5)=='EPSG:'){
+    		system = system.substring(5);
+    	}
+    	if(convertGoogle && system=="900913"){
+    		system="3857";
+    	}
+    	return system;
+    }
+
+    /**
+     * Compare 2 projection representations.
+     */
+    function _diffProj(proj1, proj2) {
+    	return (_projToSystem(proj1, true) != _projToSystem(proj2, true));
+    }
+
+    /**
      * Add a well known text definition of a feature to the map.
+     * WKT is assumed to be in map projection.
      * @access private
      */
     function _showWktFeature(div, wkt, layer, invisible, temporary) {
@@ -173,7 +200,17 @@ mapInitialisationHooks = [];
             "?mode=json&view=detail" + div.settings.readAuth + "&callback=?", function(data) {
               // store value in saved field?
               if (data.length>0) {
-                _showWktFeature(div, data[0].boundary_geom || data[0].centroid_geom, div.map.editLayer, null, true);
+                // TODO not sure best way of doing this using the services, we don't really want
+                // to use the proj4 client transform until its issues are sorted out, but have little choice here as
+                // the wkt for a boundary could be too big to send to the services on the URL
+                var geomwkt = data[0].boundary_geom || data[0].centroid_geom;
+                if(_diffProj(div.indiciaProjection, div.map.projection)){
+                  // NB geometry may not be a point (especially if a boundary!)
+                  var parser = new OpenLayers.Format.WKT();
+                  var feature = parser.read(wkt);
+                  geomwkt = feature.geometry.transform(div.indiciaProjection, div.map.projection).toString();
+                }
+                _showWktFeature(div, geomwkt, div.map.editLayer, null, true);
               }
             }
           );
@@ -186,6 +223,7 @@ mapInitialisationHooks = [];
         $.getJSON(div.settings.indiciaSvc + "index.php/services/spatial/sref_to_wkt"+
             "?sref=" + value +
             "&system=" + _getSystem() +
+            "&mapsystem=" + _projToSystem(div.map.projection, false) +
             "&callback=?", function(data) {
               if(typeof data.error != 'undefined')
                 if(data.error == 'Spatial reference is not a recognisable grid square.')
@@ -193,9 +231,10 @@ mapInitialisationHooks = [];
                 else
                   alert(data.error);
               else {
-                // store value in saved field?
+                // data should contain 2 wkts, one in indiciaProjection which is stored in the geom field, 
+                // and one in mapProjection which is used to draw the object.
                 if (div.map.editLayer) {
-                  _showWktFeature(div, data.wkt, div.map.editLayer, null, false);
+                  _showWktFeature(div, data.mapwkt, div.map.editLayer, null, false);
                 }
                 $('#'+opts.geomId).val(data.wkt);
               }
@@ -208,6 +247,7 @@ mapInitialisationHooks = [];
      * Having clicked on the map, and asked warehouse services to transform this to a WKT, add the feature to the map editlayer.
      */
     function _setClickPoint(data, div) {
+      // data holds the sref in _getSystem format, wkt in indiciaProjection, mapwkt in mapProjection
       if (div.settings.click_zoom)
        $('#'+opts.srefId).val(data.sref).change();
       else
@@ -223,12 +263,9 @@ mapInitialisationHooks = [];
       _removeAllFeaturesExcept(div.map.editLayer, 'boundary');
       $('#'+opts.geomId).val(data.wkt);
       var parser = new OpenLayers.Format.WKT();
-      var feature = parser.read(data.wkt);
+      var feature = parser.read(data.mapwkt);
       feature.attributes = {type:"clickPoint"};
       feature.style = new style(false);
-      if (div.map.projection.getCode() != div.indiciaProjection.getCode()) {
-        feature.geometry.transform(div.indiciaProjection, div.map.projection);
-      }
       div.map.editLayer.addFeatures([feature]);
     }
 
@@ -314,6 +351,7 @@ mapInitialisationHooks = [];
     */
     function _displayLocation(div, ref, corner1, corner2, epsgCode)
     {
+      // TODO either confirm that transform is OK or convert srefs using services.
       var epsg=new OpenLayers.Projection("EPSG:"+epsgCode);
       var refxy = ref.split(', ');
       var dataref = new OpenLayers.Geometry.Point(refxy[1],refxy[0]).transform(epsg, div.map.projection).toString();
@@ -701,34 +739,16 @@ mapInitialisationHooks = [];
     }
     
     /**
-     * Converts a point to a spatial reference.
+     * Converts a point to a spatial reference, and also generates the indiciaProjection and mapProjection wkts.
+     * The point should be a point geometry in the map projection, system should hold the system we wish to
+     * display the Sref in.
+     * We have consistency problems between the proj4 on the client and in the database, so go to the services
+     * whereever possible to convert.
+     * Callback gets called with the sref in system, and the wkt in indiciaProjection. These may be different.
      */
     function pointToSref(div, point, system, callback) {
-      var wkt, transformed;
-      if (!isNaN(system)&&parseInt(system)==system) {
-        if ('EPSG:' + system == div.map.projection.getCode())
-          transformed = point;
-        else 
-          // numerical code, so we can transform it
-          transformed = point.transform(div.map.projection, new OpenLayers.Projection('EPSG:' + system));
-        if (system==='4326') {
-          sref = pointToLatLong(div, point);
-        } else {
-          // in metres, so we can round (no need for sub-metre precision)
-          sref = Math.round(transformed.x) + ', ' + Math.round(transformed.y);
-        }
-        // Geto point in projection required for indicia DB.
-        if ('EPSG:' + system === div.indiciaProjection ||
-            // following are also equivalent
-            (system == 3857 && div.indiciaProjection==='EPSG:900913') ||
-            (system == 900913 && div.indiciaProjection==='EPSG:3857'))            
-          internalPoint=point;
-        else
-          internalPoint=point.transform(new OpenLayers.Projection('EPSG:' + system), div.indiciaProjection);
-        wkt = 'POINT(' + internalPoint.x + ' ' + internalPoint.y + ')';
-        callback({sref: sref, wkt: wkt});
-      } else {
-        // get approx metres accuracy we can expect from the mouse click - about 5mm accuracy.
+      // because of issues with proj4 transformations, it is easiest to go to the services for all
+       // get approx metres accuracy we can expect from the mouse click - about 5mm accuracy.
         var precision, metres = div.map.getScale()/200;
         // now round to find appropriate square size
         if (metres<30) {
@@ -747,16 +767,17 @@ mapInitialisationHooks = [];
         if (div.settings.clickedSrefPrecisionMax!=='') {
           precision=Math.min(div.settings.clickedSrefPrecisionMax, precision);
         }
-        
+        // next call also generates the wkt in map projection
         $.getJSON(opts.indiciaSvc + "index.php/services/spatial/wkt_to_sref"+
                 "?wkt=" + point +
                 "&system=" + system +
+                "&wktsystem=" + _projToSystem(div.map.projection, false) +
+                "&mapsystem=" + _projToSystem(div.map.projection, false) +
                 "&precision=" + precision +
                 "&metresAccuracy=" + metres +
                 "&output=" + div.settings.latLongFormat +
                 "&callback=?", callback
         );
-      }
     }
     
     /**
@@ -801,7 +822,11 @@ mapInitialisationHooks = [];
     function clickOnMap(xy, div, callback)
     {
       var lonlat = div.map.getLonLatFromPixel(xy);
-      pointToSref(div, new OpenLayers.Geometry.Point(lonlat.lon, lonlat.lat), _getSystem(), callback);        
+      // This is in the SRS of the current base layer, which should but may not be the same projection as the map!
+      // Definitely not indiciaProjection!
+      // Need to convert this map based Point to a _getSystem based Sref (done by pointToSref) and a
+      // indiciaProjection based geometry (done by the callback)
+      pointToSref(div, new OpenLayers.Geometry.Point(lonlat.lon, lonlat.lat), _getSystem(), callback);
     }
 
     // Extend our default options with those provided, basing this on an empty object
@@ -1085,7 +1110,7 @@ mapInitialisationHooks = [];
                       var lonlat=div.map.getLonLatFromPixel(e.xy);
                       $('#'+opts.srefSystemId).val('4326');
                       pointToSref(div, new OpenLayers.Geometry.Point(lonlat.lon, lonlat.lat), '4326', function(data) {
-                        _setClickPoint(data, div);
+                        _setClickPoint(data, div); // data sref in 4326, wkt in indiciaProjection, mapwkt in mapProjection
                       });
                     } else {
                       alert(div.settings.msgSrefOutsideGrid);
@@ -1093,7 +1118,7 @@ mapInitialisationHooks = [];
                   } else
                     alert(data.error);
                 else
-                  _setClickPoint(data, div);
+                  _setClickPoint(data, div); // data sref in _getSystem, wkt in indiciaProjection, mapwkt in mapProjection
               }
             );
           },
