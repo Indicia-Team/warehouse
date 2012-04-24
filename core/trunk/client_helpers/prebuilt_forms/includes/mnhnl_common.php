@@ -32,13 +32,13 @@
  * TBD put in check to enforce ParentLocationType and LocationType in options, loctools set?
  * TBD put in check to prevent/confirm selecting something else when existing selection is modified (will lose changes?).
  * TBD attributes to handle checkboxes, inc booleans.
- * TBD restrict location_attribute_values fetch in populateExtensions to location IDs in this square.
  * TBD put in check to ensure at least 1 geometry specified.
  * TBD Add zoom to commune: display boundary on map, restrict displayed sites to those in commune.
  * TBD Add control to undo changes to existing locations.
  * TBD Hide buttons that can't be used.
  * 
  * The location centroid sref will contain the central point of the geom.
+ * cant restrict location_attribute_values fetch in populateExtensions to location IDs in this square as this uses GET params: too small!
  */
 
 
@@ -744,33 +744,53 @@ loadFeatures = function(parent_id, child_id, childArgs, loadParent, setSelectOpt
   }
 };
 populateExtensions = function(locids){
+// first get the list of attributes, sorted by location_id. Locations are in name order not ID order.
+// rip out the list of attribute captions.
+// loop through list of locations,
+// Binary search attribute list for my locations
+// Run through its attributes and do translate
 ";
     if($args['extendLocationNameTemplate']!="") {
       data_entry_helper::$javascript .= "  locList = [];
   for(var i=0;i<locids.length;i++){
     var template = \"".$args['extendLocationNameTemplate']."\".replace('{name}',locids[i].feature.attributes.data.name);
-    template = template.replace('{code}',locids[i].feature.attributes.data.code);
+    template = template.replace('{code}',locids[i].feature.attributes.data.code==null?'-':locids[i].feature.attributes.data.code);
     locList.push({id : locids[i].id,
         feature : locids[i].feature,
         template : template});
   }
   jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/location_attribute_value' +
-            '?mode=json&view=list&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?', function(data) {
+            '?mode=json&view=list&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&orderby=location_id&callback=?', function(data) {
     if(data instanceof Array && data.length>0){
-      templateReplace = function(template, id, att_id, attList, caption){
-        var found=false;
-        for (var i=0;i<attList.length;i++){
-          if (attList[i].id && attList[i].location_id == id && attList[i].location_attribute_id==att_id){
-            found=true;
-            template = template.replace('{'+caption+'}',attList[i].value);
-            }}
-        if(!found){
-          template = template.replace('{'+caption+'}','-');
+      function locBinarySearch(attList, location_id){ // this makes assumptions about the location attribute list contents and order.
+        var startIndex = 0,
+            stopIndex = attList.length - 1;
+        while(startIndex < stopIndex){ // This doesn't work for the top entry but multiple attributes mean this doesn't matter
+          var middle = Math.floor((stopIndex + startIndex)/2);
+          if (attList[middle].location_id == location_id) {
+            // there will be more than one attribute per location. Scan back.
+            while(middle > 0 && attList[middle-1].location_id == location_id) middle--;
+            return middle;
+          }
+          //adjust search area
+          if (parseInt(location_id) < parseInt(attList[middle].location_id)){
+            stopIndex = middle - 1;
+          } else {
+            startIndex = middle + 1;
+          }
         }
-        return template;
-      };
-      for (var j=0;j<locList.length;j++){
-";
+        return -1;
+      }
+      templateReplace = function(template, location_id, attList){
+        var attrid = locBinarySearch(attList, location_id);
+        if(attrid >= 0) {
+          while(attrid < attList.length && attList[attrid].location_id == location_id) {
+            if (attList[attrid].id){
+              template = template.replace('{'+attList[attrid].caption+'}',attList[attrid].value);
+            }
+            attrid++;
+          }
+        }";
     $attrArgs = array(
        'valuetable'=>'location_attribute_value',
        'attrtable'=>'location_attribute',
@@ -781,9 +801,14 @@ populateExtensions = function(locids){
       );
     $locationAttributes = data_entry_helper::getAttributes($attrArgs, false);
     foreach($locationAttributes as $locAttr)
-      data_entry_helper::$javascript .= "        locList[j].template = templateReplace(locList[j].template, locList[j].id, ".$locAttr["attributeId"].", data, '".$locAttr["untranslatedCaption"]."');
+      data_entry_helper::$javascript .= "        template = template.replace('{".$locAttr["untranslatedCaption"]."}','-');
 ";
-    data_entry_helper::$javascript .= "        SiteLabelLayer.removeFeatures([locList[j].feature]);
+    data_entry_helper::$javascript .= "
+        return template;
+      };
+      for (var j=0;j<locList.length;j++){
+        locList[j].template = templateReplace(locList[j].template, locList[j].id, data);
+        SiteLabelLayer.removeFeatures([locList[j].feature]);
         locList[j].feature.style.label = locList[j].template;
         SiteLabelLayer.addFeatures([locList[j].feature]);
         var myOption = jQuery(\"#".$options['mainFieldID']."\").find('option').filter('[value='+locList[j].id+']').empty();
