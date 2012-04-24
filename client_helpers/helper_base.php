@@ -977,9 +977,11 @@ $('.ui-state-default').live('mouseout', function() {
    * template text, otherwise it is the name of a template in the $indicia_templates array. Default false.
    * @param boolean $allowHtml If true then HTML is emitted as is from the parameter values inserted into the template,
    * otherwise they are escaped.
+   * @param boolean $allowEscapeQuotes If true then parameter names can be suffixes -esape-quote, -escape-dblquote, 
+   * -escape-htmlquote or -escape-htmldblquote to insert backslashes or html entities into the replacements for string escaping. 
    * @return string HTML for the item label
    */
-  public static function mergeParamsIntoTemplate($params, $template, $useTemplateAsIs=false, $allowHtml=false) {
+  public static function mergeParamsIntoTemplate($params, $template, $useTemplateAsIs=false, $allowHtml=false, $allowEscapeQuotes=false) {
     global $indicia_templates;
     // Build an array of all the possible tags we could replace in the template.
     $replaceTags=array();
@@ -987,12 +989,24 @@ $('.ui-state-default').live('mouseout', function() {
     foreach ($params as $param=>$value) {
       if (!is_array($value) && !is_object($value)) {
         array_push($replaceTags, '{'.$param.'}');
+        if ($allowEscapeQuotes) {
+          array_push($replaceTags, '{'.$param.'-escape-quote}');
+          array_push($replaceTags, '{'.$param.'-escape-dblquote}');
+          array_push($replaceTags, '{'.$param.'-escape-htmlquote}');
+          array_push($replaceTags, '{'.$param.'-escape-htmldblquote}');
+        }
         // allow sep to have <br/>
         $value = ($param == 'sep' || $allowHtml) ? $value : htmlentities($value);
         // HTML attributes get automatically wrapped
         if (in_array($param, self::$html_attributes) && !empty($value))
           $value = " $param=\"$value\"";
         array_push($replaceValues, $value);
+        if ($allowEscapeQuotes) {
+          array_push($replaceValues, str_replace("'","\'",$value));
+          array_push($replaceValues, str_replace('"','\"',$value));
+          array_push($replaceValues, str_replace("'","&#39;",$value));
+          array_push($replaceValues, str_replace('"','&quot;',$value));
+        }
       }
     }
     if (!$useTemplateAsIs) $template = $indicia_templates[$template];

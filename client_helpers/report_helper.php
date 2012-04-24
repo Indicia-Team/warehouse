@@ -164,12 +164,14 @@ class report_helper extends helper_base {
   *      current page's URL, {rootFolder} to represent the folder on the server that the current PHP page is running from, and 
   *      {imageFolder} for the image upload folder. Because the javascript may pass the field values as parameters to functions, 
   *      there are escaped versions of each of the replacements available for the javascript action type. Add -escape-quote or 
-  *      -escape-dblquote to the fieldname. For example this would be valid in the action javascript: foo("{bar-escape-dblquote}"); 
+  *      -escape-dblquote to the fieldname for quote escaping, or -escape-htmlquote/-escape-htmldblquote for escaping quotes in HTML
+  *      attributes. For example this would be valid in the action javascript: foo("{bar-escape-dblquote}");
   *      even if the field value contains a double quote which would have broken the syntax.
   *  - visible: true or false, defaults to true
   *  - template: allows you to create columns that contain dynamic content using a template, rather than just the output
   *      of a field. The template text can contain fieldnames in braces, which will be replaced by the respective field values.
-  *      Note that template columns cannot be sorted by clicking grid headers.
+  *      Add -escape-quote or -escape-dblquote to the fieldname for quote escaping, or -escape-htmlquote/-escape-htmldblquote 
+  *      for escaping quotes in HTML attributes. Note that template columns cannot be sorted by clicking grid headers.
   *     An example array for the columns option is:
   *     array(
   *       array('fieldname' => 'survey', 'display' => 'Survey Title'),
@@ -412,7 +414,7 @@ class report_helper extends helper_base {
             $value = self::get_report_grid_actions($field['actions'],$row, $pathParam);
             $classes[]='actions';
           } elseif (isset($field['template'])) {
-            $value = self::mergeParamsIntoTemplate($row, $field['template'], true, true);
+            $value = self::mergeParamsIntoTemplate($row, $field['template'], true, true, true);
           }
           else {
             $value = isset($field['fieldname']) && isset($row[$field['fieldname']]) ? $row[$field['fieldname']] : '';
@@ -1552,6 +1554,8 @@ if (typeof(mapSettingsHooks)!=='undefined') {
       $jsReplacements[$key]=$value;
       $jsReplacements["$key-escape-quote"]=str_replace("'", "\'", $value);
       $jsReplacements["$key-escape-dblquote"]=str_replace('"', '\"', $value);
+      $jsReplacements["$key-escape-htmlquote"]=str_replace("'", "&#39;", $value);
+      $jsReplacements["$key-escape-htmldblquote"]=str_replace('"', '&quot;', $value);
     }
     $links = array();
     $currentUrl = self::get_reload_link_parts(); // needed for params
