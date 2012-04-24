@@ -42,9 +42,13 @@ class iform_mnhnl_dynamic_1 {
   protected static $mode;
   
   protected static $node;
-  
+
   // The class called by iform.module which may be a subclass of iform_mnhnm_dynamic_1
   protected static $called_class;
+
+  public static function get_perms($nid) {
+    return array('IForm n'.$nid.' admin', 'IForm n'.$nid.' user');
+  }
 
   /** 
    * Return the form metadata.
@@ -509,7 +513,11 @@ class iform_mnhnl_dynamic_1 {
     self::getArgDefaults($args);
     self::$node = $node;
     self::$called_class = 'iform_' . $node->iform;
-    
+    if (method_exists(self::$called_class, 'enforcePermissions')){
+      if(call_user_func(array(self::$called_class, 'enforcePermissions')) && !user_access('IForm n'.$node->nid.' admin') && !user_access('IForm n'.$node->nid.' user')){
+        return lang::get('LANG_no_permissions');
+      }
+    }
     // Get authorisation tokens to update and read from the Warehouse.
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     $svcUrl = data_entry_helper::$base_url.'/index.php/services';

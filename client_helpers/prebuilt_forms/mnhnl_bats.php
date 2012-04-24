@@ -42,7 +42,11 @@ require_once('mnhnl_dynamic_1.php');
 require_once('includes/mnhnl_common.php');
 
 class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
-  
+
+  protected static function enforcePermissions(){
+  	return true;
+  }
+
   /** 
    * Return the form metadata.
    * @return array The definition of the form.
@@ -63,10 +67,6 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
     return 'MNHNL Bats';  
   }
 
-  public static function get_perms($nid) {
-    return array('IForm n'.$nid.' admin', 'IForm n'.$nid.' user');
-  }
-  
   public static function get_parameters() {
     $retVal=array();
     $parentVal = array_merge(

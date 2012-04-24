@@ -132,8 +132,8 @@ class iform_mnhnl_reptiles extends iform_mnhnl_dynamic_1 {
     return array('mnhnl_reptiles.css');
   }
 
-  public static function get_perms($nid) {
-    return array('IForm n'.$nid.' admin', 'IForm n'.$nid.' user');
+  protected static function enforcePermissions(){
+  	return true;
   }
   
   protected static function getExtraGridModeTabs($retTabs, $readAuth, $args, $attributes) {

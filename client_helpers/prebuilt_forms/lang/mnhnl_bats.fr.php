@@ -30,6 +30,7 @@ global $custom_terms;
 // TBD translations for report grid headings.
 $custom_terms = array(
 // Tab Titles
+	'LANG_no_permissions' => "Vous devez être un utilisateur enregistré ou d'un administrateur agréé de ce formulaire pour voir ce contenu.",
 	'LANG_Main_Samples_Tab' => 'Echantillons',
 	'LANG_Download' => 'Reports',
 	'LANG_Locations' => 'Sites',

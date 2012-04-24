@@ -29,6 +29,7 @@ global $custom_terms;
 $custom_terms = array(
 	'LANG_Trailer_Text' => "Coordination of the Common Bird Monitoring in Luxembourg: <a href='http://www.naturemwelt.lu/' target='_blank'>natur&ëmwelt</a> (Centrale ornithologique Luxembourg), <a href='http://www.crpgl.lu' target='_blank'>Centre de Recherche Public - Gabriel Lippmann</a> (Département Environnement et Agro-biotechnologies) & <a href='http://www.environnement.public.lu' target='_blank'>Ministère du Développement durable et des Infrastructures</a> (Département de l'environnement)",
 	'LANG_not_logged_in' => 'You must be logged in to display the contents of this node.',
+	'LANG_no_permissions' => 'You must be either a registered User or a registered Admin of this form in order to access this form.',
 	'LANG_Error_When_Moving_Sample' => 'An error has occurred during the merge process. Failed to move an occurrence.',
 	'LANG_Error_When_Deleting_Sample' => 'An error has occurred during the merge process. Failed to delete empty survey.',
 	'LANG_Location_Layer' => 'Location Layer',
