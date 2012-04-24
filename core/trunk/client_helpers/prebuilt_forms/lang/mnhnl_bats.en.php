@@ -28,6 +28,7 @@ global $custom_terms;
  */
 $custom_terms = array(
 // Tab Titles
+	'LANG_no_permissions' => 'You must be either a registered User or a registered Admin of this form in order to access this form.',
 	'LANG_Main_Samples_Tab' => 'Surveys',
 	'LANG_Download' => 'Reports',
 	'LANG_Locations' => 'Sites',

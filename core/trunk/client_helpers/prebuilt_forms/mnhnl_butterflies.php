@@ -42,6 +42,9 @@ require_once('includes/mnhnl_common.php');
 class iform_mnhnl_butterflies extends iform_mnhnl_dynamic_1 {
   protected static $locations;
   protected static $svcUrl;
+  protected static function enforcePermissions(){
+  	return true;
+  }
   /** 
    * Return the form metadata.
    * @return array The definition of the form.

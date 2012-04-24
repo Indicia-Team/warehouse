@@ -43,7 +43,11 @@
  */
 require_once('mnhnl_bats.php');
 class iform_mnhnl_bats2 extends iform_mnhnl_bats {
-  
+
+  protected static function enforcePermissions(){
+  	return true;
+  }
+
   /** 
    * Return the form metadata.
    * @return array The definition of the form.
@@ -604,8 +608,6 @@ hook_species_checklist_pre_delete_row=function(e) {
           $ttlidList[] = $ttlid;
         }
       }
-//      var_dump($ttlidList);
-//      var_dump($occList);
       foreach ($ttlidList as $ttlid) {
         $id=1;
         foreach($options['surveyMethods'] as $method){
@@ -657,7 +659,6 @@ hook_species_checklist_pre_delete_row=function(e) {
           $rowIdx++;
         }
       }
-//      throw(1);
       if ($rowIdx==0) $retVal .= "<tr style=\"display: none\"><td></td></tr>\n";
       $retVal .= "</tbody></table>\n";
       // no confidential checkbox.
@@ -702,7 +703,6 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
     $occurrenceIds = array();
     // don't load from the db if there are validation errors, since the $_POST will already contain all the
     // data we need.
-//   var_dump($method);
     if (is_null(data_entry_helper::$validation_errors)) {
       $occurrences = data_entry_helper::get_population_data(array(
         'table' => 'occurrence',
@@ -725,13 +725,10 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
         'extraParams' => $readAuth + array('occurrence_id' => array_keys($occurrenceIds)),
         'nocache' => true
       ));
-      //var_dump(data_entry_helper::$entity_to_load);
       foreach($attrValues as $attrValue) {
         data_entry_helper::$entity_to_load['sc:'.$method.':'.$occurrenceIds[$attrValue['occurrence_id']].':'.$attrValue['occurrence_id'].':occAttr:'.$attrValue['occurrence_attribute_id'].(isset($attrValue['id'])?':'.$attrValue['id']:'')]
             = $attrValue['raw_value'];
       }
-      //var_dump(data_entry_helper::$entity_to_load);
-      
     }
     return $occurrenceIds;
   }
@@ -828,7 +825,6 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
       if (count($parts) > 2 && $parts[0] == 'sc' && $parts[1]!='' && $parts[2]!='-ttlId-') {
         if($parts[3]=='') $occList['error'] = 'ERROR PROCESSING entity_to_load: found name '.$key.' with no sequence/id number in part 2';
         else if(!isset($occList[$parts[3]])){
-        //	var_dump($parts);
           $occ['id'] = $parts[3];
           $occ['method'] = $parts[1];
           foreach($fullTaxalist as $taxon){
@@ -892,7 +888,6 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
           }
           if($value == '1' || $parts[1] != '-'){
             $occurrences = self::wrap_species_checklist($values, $parts[2]);
-            //var_dump($occurrences);
             if(count($occurrences)>0) 
               $smp['model']['subModels'] = $occurrences;
             $subModels[]=$smp;
@@ -910,8 +905,6 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
         return $locationMod;
       }
     }
-      //var_dump($sampleMod);
-//      throw(1);
     return $sampleMod;
   }
   /**

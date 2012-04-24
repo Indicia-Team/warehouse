@@ -252,7 +252,7 @@ class iform_mnhnl_bird_transect_walks {
   }
 
   public static function get_perms($nid) {
-    return array('IForm node '.$nid.' admin');
+    return array('IForm n'.$nid.' admin', 'IForm n'.$nid.' user');
   }
 
   /**
@@ -301,8 +301,12 @@ class iform_mnhnl_bird_transect_walks {
     $childSample = array();
     $childLoadID = null;
     $thisOccID=-1; // IDs have to be >0, so this is outside the valid range
-    $adminPerm = 'IForm node '.$node->nid.' admin';
-    
+    $adminPerm = 'IForm n'.$node->nid.' admin';
+    $userPerm = 'IForm n'.$node->nid.' user';
+    if(!user_access($adminPerm) && !user_access($userPerm)){
+      return lang::get('LANG_no_permissions');
+    }
+
     if ($_POST) {
       if(!array_key_exists('website_id', $_POST)) { // non Indicia POST, in this case must be the location allocations. add check to ensure we don't corrept the data by accident
         if(iform_loctools_checkaccess($node,'admin') && array_key_exists('mnhnlbtw', $_POST)){
