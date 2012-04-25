@@ -569,10 +569,6 @@ div.olControlEditingToolbar .olControlClickSrefItemActive {
   float: right;
 }
 
-/* lock_open.png and lock.png are sourced from http://www.famfamfam.com/lab/icons/silk/
- * by Mark James under the creative commons attibution 2.5 licence.
- * Do not remove this comment as it constitutes the required attribution.
- */
 .unlocked-icon {
 	background-image: url(../images/Indicia_PadlockIcons_Open.png);
 	width: 19px;
