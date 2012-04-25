@@ -55,14 +55,14 @@ h2 {
 }
 
 fieldset.darvic-ring .right-leg {
-	-moz-transform:rotate(85deg); 
+	-moz-transform:rotate(-95deg); 
 	-moz-transform-origin: 50% 50%;
-	-webkit-transform: rotate(85deg);
+	-webkit-transform: rotate(-95deg);
 	-webkit-transform-origin: 50% 50%;
-	-o-transform: rotate(85deg);
+	-o-transform: rotate(-95deg);
 	-o-transform-origin:  50% 50%;
 	/*filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=1);*/
-	-ms-transform: rotate(85deg);
+	-ms-transform: rotate(-95deg);
 	-ms-transform-origin:  50% 50%;
 	margin-top: 50px;
 	margin-left: 460px;
@@ -73,14 +73,14 @@ fieldset.darvic-ring .right-leg {
 }
 	
 fieldset.darvic-ring .left-leg {
-	-moz-transform:rotate(108deg); 
+	-moz-transform:rotate(-72deg); 
 	-moz-transform-origin: 50% 50%;
-	-webkit-transform: rotate(108deg);
+	-webkit-transform: rotate(-72deg);
 	-webkit-transform-origin: 50% 50%;
-	-o-transform: rotate(108deg);
+	-o-transform: rotate(-72deg);
 	-o-transform-origin:  50% 50%;
 	/*filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=1);*/
-	-ms-transform: rotate(108deg);
+	-ms-transform: rotate(-72deg);
 	-ms-transform-origin:  50% 50%;
 	margin-top: 20px;
 	margin-left: 398px;
