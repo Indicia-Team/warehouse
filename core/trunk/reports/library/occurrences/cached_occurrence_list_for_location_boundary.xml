@@ -5,7 +5,6 @@
   <query website_filter_field="o.website_id">
   SELECT #field_sql#
   FROM cache_occurrences o
-  JOIN locations l ON st_intersects(o.public_geom, l.boundary_geom) AND l.id=#location_id# AND l.deleted=false
   LEFT JOIN (sample_attribute_values vuser
     JOIN sample_attributes sauser on sauser.id=vuser.sample_attribute_id and sauser.deleted=false and sauser.system_function = 'cms_username'
   ) on vuser.sample_id=o.sample_id and vuser.deleted=false
@@ -47,7 +46,9 @@
     <param name='taxon_group_id' display='Taxon Group' description='Select the taxon group to return data for, or leave for all groups' datatype='lookup'
         query='SELECT id, title as caption FROM taxon_groups' population_call='direct:taxon_group:id:title' />
     <param name='location_id' display='Location' description='Select the location to return data for' datatype='lookup'
-        population_call='direct:location:id:name' />
+        population_call='direct:location:id:name'>
+      <join>JOIN locations l ON l.id=#location_id# AND st_intersects(o.public_geom, l.boundary_geom) AND l.deleted=false</join>
+    </param>
     <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
     <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
   </params>
