@@ -437,7 +437,7 @@ idlist=';
     ));
     $r .= '</div>';
     $r .= '<div id="record-details-wrap" class="ui-widget ui-widget-content">';
-    $r .= self::instructions('grid below');    
+    $r .= self::instructions('grid on the left');    
     $r .= '<div id="record-details-content" style="display: none">';
     $r .= '<div id="record-details-toolbar">';
     $r .= '<label>Set status:</label>';
@@ -478,12 +478,13 @@ idlist=';
    */
   private static function instructions($gridpos) {
     $r = '<div id="instructions">'.lang::get('You can').":\n<ul>\n";
-    $r .= '<li>'.lang::get('Use the <strong>Report Parameters</strong> box to filter the list of records to verify.')."</li>\n";
+    $r .= '<li>'.lang::get('Select the records to include in the list of records to verify using the drop-down box above the grid.')."</li>\n";
+    $r .= '<li>'.lang::get('Fine tune the list of records by entering search criteria into the boxes at the top of each grid column.')."</li>\n";
     $r .= '<li>'.lang::get("Click on a record in the $gridpos to view the details.")."</li>\n";
-    $r .= '<li>'.lang::get('When viewing the record details, verify, reject, mark as dubious or email the record to someone for checking.')."</li>\n";
+    $r .= '<li>'.lang::get('When viewing the record details, verify, reject, mark as dubious or email the record details for confirmation.')."</li>\n";
     $r .= '<li>'.lang::get('When viewing the record details, view and add comments on the record.')."</li>\n";    
-    $r .= '<li>'.lang::get('When viewing a list of clean records with no verification rule violations, click the <strong>Verify all visible</strong> button to quickly verify records.')."</li>\n";
-    $r .= '<li>'.lang::get('Use the map tool buttons to draw lines, polygons or points then reload the report using the <strong>Run Report</strong> button in the <strong>Report Parameters</strong> box.')."</li>\n";
+    $r .= '<li>'.lang::get('Use the ... button to the left of each record to view bulk-verification options for similar records.')."</li>\n";
+    $r .= '<li>'.lang::get('Use the map tool buttons to draw lines, polygons or points then reload the report using the <strong>Filter</strong> button above the grid.')."</li>\n";
     $r .= '<li>'.lang::get('Use the <strong>Buffer (m)</strong> input box to buffer your lines, polygons or points to search against.')."</li>\n";
     $r .= '<li>'.lang::get('Use the <strong>Query Map</strong> tool to click on points on the map and view them in the grid. You can also drag boxes to select multiple records.')."</li>\n";
     $r .= '</ul></div>';
@@ -550,7 +551,7 @@ idlist=';
           'id' => 'verification-grid',
           'reportGroup' => 'verification',
           'rowId' => 'occurrence_id',
-          'paramsFormButtonCaption' => lang::get('Reload Records'),
+          'paramsFormButtonCaption' => lang::get('Filter'),
           'paramPrefix'=>'<div class="report-param">',
           'paramSuffix'=>'</div>',
           'sharing'=>'verification'
