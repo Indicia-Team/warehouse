@@ -108,12 +108,13 @@ echo html::stylesheet(
     <?php foreach ($menu as $toplevel => $submenu): ?>
 
         <!-- BEGIN: print the top level menu items -->
-        <?php if(count($submenu)==0): ?>
-            <!-- No submenu, so treat as link to the home page -->
-            <li class="ui-state-default"><?php echo html::anchor('home', $toplevel); ?>
-        <?php else: ?>
-            <li class="ui-state-default"><a href="#"><?php echo $toplevel; ?></a>
-        <?php endif; ?>
+        <li class="ui-state-default">
+        <?php if(count($submenu)==0) {
+            // No submenu, so treat as link to the home page
+          echo html::anchor('home', $toplevel);
+        } else {
+            echo '<a href="#">'.$toplevel.'</a>';
+        } ?>
 
             <!-- BEGIN: print the sub menu items -->
             <?php if (count($submenu)>0): ?>
