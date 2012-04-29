@@ -123,7 +123,7 @@ $config['taxa_taxon_lists']['update'] = "update cache_taxa_taxon_lists cttl
       preferred_language_iso=lpref.iso,
       preferred_language=lpref.language,
       default_common_name=tcommon.taxon,
-      search_name=regexp_replace(regexp_replace(lower(t.taxon), 'ae', 'e', 'g'), '[ \''\-_]', '', 'g'),
+      search_name=regexp_replace(regexp_replace(lower(t.taxon), 'ae', 'e', 'g'), '[ \\\\-'']', '', 'g'),
       external_key=tpref.external_key,
       taxon_meaning_id=ttlpref.taxon_meaning_id,
       taxon_group_id = tpref.taxon_group_id,
@@ -157,7 +157,7 @@ $config['taxa_taxon_lists']['insert']="insert into cache_taxa_taxon_lists (
       tpref.taxon as preferred_taxon, tpref.authority as preferred_authority, 
       lpref.iso as preferred_language_iso, lpref.language as preferred_language,
       tcommon.taxon as default_common_name,
-      regexp_replace(regexp_replace(lower(t.taxon), 'ae', 'e', 'g'), '[ \''\-_]', '', 'g'), tpref.external_key, 
+      regexp_replace(regexp_replace(lower(t.taxon), 'ae', 'e', 'g'), '[ \\\\-'']', '', 'g'), tpref.external_key, 
       ttlpref.taxon_meaning_id, tpref.taxon_group_id, tg.title,
       now(), now()
     from taxon_lists tl
