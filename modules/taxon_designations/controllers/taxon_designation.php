@@ -263,7 +263,7 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
   public function upload_complete() {
     $this->session->set_flash('flash_info', $_GET['total']." designations were uploaded.");
     $cache= Cache::instance();
-    $cache->delete(basename($_GET['uploaded_csv']));
+    $cache->delete(basename($_GET['uploaded_csv']).'metadata');
     $csvTempFile = DOCROOT . "upload/" . $_GET['uploaded_csv'];
     unlink($csvTempFile);
     url::redirect('taxon_designation/index'); 
