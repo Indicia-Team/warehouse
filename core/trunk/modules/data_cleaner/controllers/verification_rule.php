@@ -55,7 +55,14 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
     $session = curl_init(kohana::config('data_cleaner.servers'));
     curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
     $r = array();
-    foreach($this->safe_explode_lines(curl_exec($session)) as $line) {
+    $response = curl_exec($session);
+    if (curl_errno($session)) {
+      $this->session->set_flash('flash_info', 'The list of verification rule servers could not be retrieved from the internet.');
+      kohana::log('error', 'Error occurred when retrieving list of verification rule servers. '.curl_error($session));
+      return array();
+    }
+    
+    foreach($this->safe_explode_lines($response) as $line) {
       $tokens = explode('#', $line);
       $r[] = array(
         'file' => $tokens[0],
@@ -70,8 +77,17 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
    * Controller function that responds to any request for an upload.
    */
   public function upload() {
-    if (!empty($_FILES['zipFile']['name'])) {
-      $this->upload_rule_zip();
+    if (!empty($_FILES['zipOrCsvFile']['name'])) {
+      $tokens = explode('.', $_FILES['zipOrCsvFile']['name']);
+      $ext = array_pop($tokens);
+      if (strcasecmp($ext, 'zip')===0)
+        $this->upload_rule_zip($_FILES['zipOrCsvFile']);
+      elseif (strcasecmp($ext, 'csv')===0)
+        $this->upload_rule_csv($_FILES['zipOrCsvFile']);
+      else {
+        $this->session->set_flash('flash_error', "Incompatible file selected. The rule file upload requires a zipped file ".
+            "containing Record Cleaner compatible rule files or a CSV file containing rule definitions.");
+      }
     } else {
       $this->load_from_server();
     }
@@ -81,42 +97,35 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
    * Uploading from a zipped batch of rule files. Displays 
    * the upload template with progress bar and status message, which then initiates the actual import.
    */
-  private function upload_rule_zip() {
+  private function upload_rule_zip($file) {
     $ruleFiles = array();
-    kohana::log('debug', print_r($_FILES, true));
-    if (!empty($_FILES['zipFile'])) {
-      $dir = $this->process_rule_zip_file($_FILES['zipFile']['tmp_name'], true);
-      $dir_iterator = new RecursiveDirectoryIterator($dir);
-      $iterator = new RecursiveIteratorIterator($dir_iterator, RecursiveIteratorIterator::SELF_FIRST);
-      foreach ($iterator as $file) {
-        if ($file->isFile()) {
-          $relativePath = substr($file->getRealPath(), strlen(realpath("$dir/extract")));
-          $ruleFiles[] = array(
-            'file'=>$file->__toString(),
-            'source_url'=>$_FILES['zipFile']['name'],
-            'display'=>basename($_FILES['zipFile']['name']).' '.$relativePath
-          );
-        }
+    $dir = $this->process_rule_zip_file($file['tmp_name'], true);
+    $dir_iterator = new RecursiveDirectoryIterator($dir);
+    $iterator = new RecursiveIteratorIterator($dir_iterator, RecursiveIteratorIterator::SELF_FIRST);
+    foreach ($iterator as $file) {
+      if ($file->isFile()) {
+        $relativePath = substr($file->getRealPath(), strlen(realpath("$dir/extract")));
+        $ruleFiles[] = array(
+          'file'=>$file->__toString(),
+          'source_url'=>$file['name'],
+          'display'=>basename($file['name']).' '.$relativePath
+        );
       }
-      // Save the rule file list to a cached list, so we can preserve it across http requests
-      $uploadId = time() . md5($_FILES['zipFile']['tmp_name']);
-      $cacheHandle = fopen(DOCROOT . "extract/$uploadId.txt", "w");
-      fwrite($cacheHandle, json_encode(array('paths'=>array(array(
-          'file'=>$dir,
-          'source_url'=>$_FILES['zipFile']['name'],
-          'title'=>basename($_FILES['zipFile']['name'])
-        )), 'files'=>$ruleFiles)));
-      fclose($cacheHandle);
-      //  show a progress view.
-      $view = new View('verification_rule/upload_rule_files');
-      $view->uploadId = $uploadId;
-      $this->template->content = $view;
-      $this->template->title = 'Uploading rule files';
-    } else {
-      $this->session->set_flash('flash_info', 'Please enter a path to upload rule files from.');
-      url::redirect('verification_rule/index');
     }
-    
+    // Save the rule file list to a cached list, so we can preserve it across http requests
+    $uploadId = time() . md5($file['tmp_name']);
+    $cacheHandle = fopen(DOCROOT . "extract/$uploadId.txt", "w");
+    fwrite($cacheHandle, json_encode(array('paths'=>array(array(
+        'file'=>$dir,
+        'source_url'=>$file['name'],
+        'title'=>basename($file['name'])
+      )), 'files'=>$ruleFiles)));
+    fclose($cacheHandle);
+    //  show a progress view.
+    $view = new View('verification_rule/upload_rule_files');
+    $view->uploadId = $uploadId;
+    $this->template->content = $view;
+    $this->template->title = 'Uploading rule files';
   }
   
   /**
@@ -266,7 +275,8 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
       throw new exception("Could not open file $filepath");
     }
     $filecontent = fread($resource,1000000);
-    $this->read_file_content($filecontent, basename($filepath), $cacheArr['files'][$_GET['totaldone']]['source_url']);
+    $settings = $this->parse_test_file($filecontent, true);
+    $this->read_rule_content($settings, basename($filepath), $cacheArr['files'][$_GET['totaldone']]['source_url']);
     return $cacheArr['files'][$totaldone]['display'];
   }
   
@@ -294,17 +304,16 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
   /**
    * Process the content of a verification rule file.
    */
-  private function read_file_content($filecontent, $filename, $source_url) {
-    $fileSettings = $this->parse_test_file($filecontent, true);
-    if (!isset($fileSettings['Metadata']))
+  private function read_rule_content($rulesettings, $filename, $source_url) {
+    if (!isset($rulesettings['metadata']))
       throw new exception("Missing Metadata section in $filename");
-    if (!isset($fileSettings['Metadata']['TestType']))
+    if (!isset($rulesettings['metadata']['testtype']))
       throw new exception("Missing Metadata TestType value in $filename");
     require_once(MODPATH.'data_cleaner/plugins/data_cleaner.php');
     $rules = data_cleaner_get_rules();
     // Ensure that the required key/value pairs for this rule type are all present.
     foreach ($rules as $rule) {
-      if (strcasecmp($rule['testType'], $fileSettings['Metadata']['TestType'])===0) {
+      if (strcasecmp($rule['testType'], $rulesettings['metadata']['testtype'])===0) {
         $currentRule = $rule;
         // found a rule plugin which understands this rule test type. What does it require?
         if (isset($rule['required']))
@@ -312,9 +321,9 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
             foreach($keys as $key) {
               // every key must exist. A * key means that anything is accepted.
               if ($key='*') {
-                if (!isset($fileSettings[$category]))
+                if (!isset($rulesettings[$category]))
                   throw new exception("Missing content for $category section in $filename");
-              } elseif (!isset($fileSettings[$category][$key]))
+              } elseif (!isset($rulesettings[$category][$key]))
                 throw new exception("Missing $category $key value in $filename");
             }
           }
@@ -323,38 +332,39 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
       } 
     }
     if (!isset($currentRule))
-      throw new exception ('Test type '.$fileSettings['Metadata']['TestType']. ' not found');
+      throw new exception ('Test type '.$rulesettings['metadata']['testtype']. ' not found');
     if (!isset($currentRule['required']))
       $currentRule['required']=array();
     if (!isset($currentRule['optional']))
       $currentRule['optional']=array();
     // find existing or new verification rule record
     $vr = ORM::Factory('verification_rule')->where(array('source_url'=>$source_url, 'source_filename'=>$filename))->find();
-    if (isset($fileSettings['Metadata']['ShortName']))
-      $title = $fileSettings['Metadata']['ShortName'];
+    if (isset($rulesettings['metadata']['shortname']))
+      $title = $rulesettings['metadata']['shortname'];
     else {
       // no short name in the rule, so build a valid title
-      $titleArr=array($fileSettings['Metadata']['TestType']);
-      if (isset($fileSettings['Metadata']['Organisation']))
-        $titleArr[] = $fileSettings['Metadata']['Organisation'];
+      $titleArr=array($rulesettings['metadata']['testtype']);
+      if (isset($rulesettings['metadata']['organisation']))
+        $titleArr[] = $rulesettings['metadata']['Oorganisation'];
       $title = implode(' - ', $titleArr);
     }
-    if (isset($fileSettings['Metadata']['ErrorMsg']))
-      $errorMsg = $fileSettings['Metadata']['ErrorMsg'];
+    if (isset($rulesettings['metadata']['errormsg']))
+      $errorMsg = $rulesettings['metadata']['errormsg'];
     else
       $errorMsg = 'Test failed';
     $submission = array(
       'verification_rule:title'=>$title,
-      'verification_rule:test_type'=>$fileSettings['Metadata']['TestType'],
+      'verification_rule:test_type'=>$rulesettings['metadata']['testtype'],
       'verification_rule:source_url'=>$source_url,
       'verification_rule:source_filename'=>$filename,
       'verification_rule:error_message'=>$errorMsg,
+      // The error message gives us a useful description in the absence of a specific one
+      'verification_rule:description'=>isset($rulesettings['metadata']['description']) ?
+          $rulesettings['metadata']['description'] : $errorMsg
     );
     $newRule = $vr->id===0;
     if (!$newRule)
       $submission['verification_rule:id']=$vr->id;
-    if (isset($fileSettings['Metadata']['Description']))
-      $submission['verification_rule:description']=$fileSettings['Metadata']['Description'];
     $vr->set_submission_data($submission);
     $vr->submit();
     if (count($vr->getAllErrors())>0)
@@ -363,13 +373,13 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
     $fields = array_merge_recursive($currentRule['required'], $currentRule['optional']);
     if (isset($fields['Metadata'])) {
       foreach ($fields['Metadata'] as $field) {
-        if (isset($fileSettings['Metadata'][$field])) {
+        if (isset($rulesettings['metadata'][strtolower($field)])) {
           $vrm = ORM::Factory('verification_rule_metadatum')->where(array(
               'verification_rule_id'=>$vr->id, 'key'=>$field
           ))->find();
           $submission=array(
             'verification_rule_metadatum:key'=>$field,
-            'verification_rule_metadatum:value'=>$fileSettings['Metadata'][$field],
+            'verification_rule_metadatum:value'=>$rulesettings['metadata'][strtolower($field)],
             'verification_rule_metadatum:verification_rule_id'=>$vr->id
           );
           if ($vrm->id!==0)
@@ -388,16 +398,17 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
     $dataGroup=1;
     $rows = array();
     foreach($fields as $dataSection=>$dataContent) {
-      if (isset($fileSettings[$dataSection])) {
+      if (isset($rulesettings[strtolower($dataSection)])) {
         foreach ($dataContent as $key) {
           if ($key==='*') {
             // * means that any field value is allowed
-            foreach ($fileSettings[$dataSection] as $anyField=>$anyValue)
+            foreach ($rulesettings[strtolower($dataSection)] as $anyField=>$anyValue)
               $rows[] = array('dataSection'=>$dataSection, 'dataGroup'=>$dataGroup, 'key'=>$anyField, 'value'=>$anyValue);
           }
-          elseif (isset($fileSettings[$dataSection][$key])) 
+          elseif (isset($rulesettings[strtolower($dataSection)][strtolower($key)])) 
             // doing specific named fields
-            $rows[] = array('dataSection'=>$dataSection, 'dataGroup'=>$dataGroup, 'key'=>$key, 'value'=>$fileSettings[$dataSection][$field]);
+            $rows[] = array('dataSection'=>$dataSection, 'dataGroup'=>$dataGroup, 'key'=>$key, 
+                'value'=>$rulesettings[strtolower($dataSection)][strtolower($key)]);
         }
       }
     }
@@ -417,7 +428,8 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
    * @param array $rows
    * @param bool $newRule Is this a new or existing rule?
    */
-  private function save_verification_rule_data($vrId, $rows, $newRule) { //$dataSection, $dataGroup, $field, $value) {
+  private function save_verification_rule_data($vrId, $rows, $newRule) { 
+    $done=array();
     // only worth trying an update if we are updating an existing rule.
     if (!$newRule) {
       foreach ($rows as $idx=>$row) {
@@ -428,21 +440,21 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
             'verification_rule_id'=>$vrId, 'key'=>strval($row['key'])
           )
         );
-        // remove the stuff we have done via update because it already existed.
-        if (count($updated)) {
-          unset($row[$idx]);
-        }
+        if (count($updated))
+          $done[]=$idx;
       }
     }
     // build a multirow insert as it is faster than doing lots of single inserts
     $value = '';
     foreach ($rows as $idx=>$row) {
-      if ($value!=='')
-        $value .= ',';
-      $value .= "('".$row['dataSection']."',".$row['dataGroup'].",$vrId,'".strval($row['key'])."','".
-          $row['value']."','".date("Ymd H:i:s")."',".$_SESSION['auth_user']->id.",'".date("Ymd H:i:s")."',".$_SESSION['auth_user']->id.")";
+      if (array_search($idx, $done)===false) {
+        if ($value!=='')
+          $value .= ',';
+        $value .= "('".$row['dataSection']."',".$row['dataGroup'].",$vrId,'".strval($row['key'])."','".
+            $row['value']."','".date("Ymd H:i:s")."',".$_SESSION['auth_user']->id.",'".date("Ymd H:i:s")."',".$_SESSION['auth_user']->id.")";
+      }
     }
-    if (count($rows))
+    if ($value)
       $this->db->query("insert into verification_rule_data(header_name, data_group, verification_rule_id, key, value, ".
           "updated_on, updated_by_id, created_on, created_by_id) values $value");
   }
@@ -469,12 +481,12 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
         if (!empty($currentSectionData))
           $r[$currentSection]=$currentSectionData;
         // reset for the next section
-        $currentSection = $matches['section'];
+        $currentSection = strtolower($matches['section']);
         $currentSectionData=array();
       } elseif (preg_match('/^(?P<key>.+)=(?P<value>.+)$/', $line, $matches)) 
-        $currentSectionData[$matches['key']]=$matches['value'];
+        $currentSectionData[strtolower($matches['key'])]=$matches['value'];
       elseif (preg_match('/^(?P<key>.+)$/', $line, $matches)) 
-        $currentSectionData[$matches['key']]='-';
+        $currentSectionData[strtolower($matches['key'])]='-';
     }
     // set the final section content
     if (!empty($currentSectionData))
@@ -492,6 +504,155 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
     $content = str_replace("\r", "\n", $text);
     $lines = explode("\n", trim($text));
     return $lines;
+  }
+  
+  public function upload_rule_csv($file) {
+    try
+    {
+      // We will be using a POST array to send data, and presumably a FILES array for the
+      // media.
+      // Upload size
+      $ups = Kohana::config('indicia.maxUploadSize');
+      $_FILES = Validation::factory($_FILES)->add_rules(
+        'zipOrCsvFile', 'upload::valid', 
+        'upload::type[csv]', "upload::size[$ups]"
+      );
+      if (count($_FILES)===0) {
+        echo "No file was uploaded.";
+      }
+      elseif ($_FILES->validate())
+      {
+        $finalName = time().strtolower($file['name']);
+        $fTmp = upload::save('zipOrCsvFile', $finalName);
+        url::redirect('verification_rule/csv_import_progress?uploaded_csv='.urlencode(basename($fTmp)));
+      }
+      else
+      {
+        kohana::log('error', 'Validation errors uploading file '. $_FILES['csv_upload']['name']);
+        kohana::log('error', print_r($_FILES->errors('form_error_messages'), true));
+        Throw new ArrayException('Validation error', $_FILES->errors('form_error_messages'));
+      }
+    }
+    catch (Exception $e)
+    {
+      $this->handle_error($e);
+    }
+  }
+  
+    /**
+   * Controller method for the import_progress path. Displays the upload template with 
+   * progress bar and status message, which then initiates the actual import.
+   */
+  public function csv_import_progress() {
+    if (file_exists(kohana::config('upload.directory').'/'.$_GET['uploaded_csv'])) {
+      $this->template->content = new View('verification_rule/upload_csv');
+      $this->template->title = 'Uploading verification rule files';
+      $csvTempFile = DOCROOT . "upload/" . $_GET['uploaded_csv'];
+      $handle = fopen ($csvTempFile, "r");
+      // first row, so load the column headings. Force lowercase so we can case insensitive search later. 
+      $headings = array_map('strtolower',fgetcsv($handle, 1000, ","));
+      $obj = array('headings'=>$headings);
+      $filepos = ftell($handle);
+      $obj['ruleIdColIdx'] = array_search('ruleid', $headings);
+      if ($obj['ruleIdColIdx']===false) {
+        $this->session->set_flash('flash_error', 'The CSV upload file must contain a RuleID column to provide unique '.
+            'identifiers for each rule');
+        $csvTempFile = DOCROOT . "upload/" . $_GET['uploaded_csv'];
+        unlink($csvTempFile);
+        url::redirect('verification_rule/index');
+      }
+      $cache= Cache::instance();
+      $cache->set(basename($_GET['uploaded_csv']).'metadata', $obj);          
+    }
+  }
+  
+  /**
+   * AJAX callback to handle upload of a single chunk of designations spreadsheet.
+   */
+  public function csv_upload() {
+    try {
+      $this->auto_render=false;
+      $csvTempFile = DOCROOT . "upload/" . $_GET['uploaded_csv'];
+      $cache= Cache::instance();
+      if (file_exists($csvTempFile))
+      {
+        // Following helps for files from Macs
+        ini_set('auto_detect_line_endings',1);
+        // create the file pointer, plus one for errors
+        $handle = fopen ($csvTempFile, "r");
+        $count=0;
+        $limit = (isset($_GET['limit']) ? $_GET['limit'] : false);
+        $filepos = (isset($_GET['filepos']) ? $_GET['filepos'] : 0);
+        $offset = (isset($_GET['offset']) ? $_GET['offset'] : 0);
+        // skip rows to allow for the last file position
+        fseek($handle, $filepos);
+        if ($filepos==0) 
+          // skip the headers
+          fgetcsv($handle, 1000, ",");
+        $obj = $cache->get(basename($_GET['uploaded_csv']).'metadata');
+        $errors = array();
+        while (($data = fgetcsv($handle, 1000, ",")) !== FALSE && ($limit===false || $count<$limit)) {
+          $count++;
+          $filepos = ftell($handle);
+          $ruleSettings = $this->parse_csv_row($obj['headings'], $data);
+          $uniqueId = $data[$obj['ruleIdColIdx']];
+          if (!empty($uniqueId)) 
+            try {
+              $this->read_rule_content($ruleSettings, $uniqueId, 'csv');
+            } catch (Exception $e) {
+              $errors[]=$e->getMessage();
+              error::log_error('Error during Data Cleaner module CSV upload.', $e);
+            }
+        }
+      }
+      $progress = $filepos * 100 / filesize($csvTempFile);
+      $r = array('uploaded'=>$count, 'progress'=>$progress, 'filepos'=>$filepos,'errors'=>$errors);
+      if (count($errors))
+        kohana::log('debug', 'Upload CSV rule errors: '.print_r($errors, true));
+      else
+        kohana::log('debug', 'no errors');
+      ob_clean();
+      echo json_encode($r);
+      fclose($handle);
+    } catch (Exception $e) {
+      error::log_error('Error during Data Cleaner module CSV upload.', $e);
+      throw $e;
+    }
+  }
+  
+  /**
+   * Converts a row of CSV data to the structured array representing the verification rule.
+   * @param type $headings Array of CSV column headings
+   * @param type $data Array of CSV column values.
+   * @return array Structured array defining the rule
+   */
+  private function parse_csv_row($headings, $data) {
+    $r = array();
+    foreach ($data as $idx=>$value) {
+      $tokens = explode(':', $headings[$idx]);
+      // skip columns that are not correct format as assumed to be irrelevant
+      if (count($tokens)===2) {
+        // store a new section heading
+        if (!isset($r[$tokens[0]]))
+          $r[$tokens[0]] = array();
+        $r[$tokens[0]][$tokens[1]] = $value;
+      }
+    }
+    return $r;
+  }
+  
+  /**
+   * Controller method for the upload_complate path, called at the end of upload.
+   * Displays a message about the number of designations uploaded, cleans the cache
+   * and upload file, then navigaes to the taxon designation index page.
+   */
+  public function csv_upload_complete() {
+    $this->session->set_flash('flash_info', $_GET['total']." rules were uploaded.");
+    $cache= Cache::instance();
+    $cache->delete(basename($_GET['uploaded_csv']).'metadata');
+    $csvTempFile = DOCROOT . "upload/" . $_GET['uploaded_csv'];
+    unlink($csvTempFile);
+    url::redirect('verification_rule/index'); 
   }
   
 }

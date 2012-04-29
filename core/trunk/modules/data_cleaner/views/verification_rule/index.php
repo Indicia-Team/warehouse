@@ -31,11 +31,18 @@ echo $grid;
 For more information on creating these files, see 
 <a href="http://www.nbn.org.uk/Tools-Resources/Recording-Resources/NBN-Record-Cleaner/Creating-verification-rules.aspx">
 NBN Record Cleaner - creating verification rules</a>. You can either use the online file servers
-as used by NBN Record Cleaner to obtain rules or zip your files into a batch to upload.</p>
+as used by NBN Record Cleaner to obtain rules or zip your files into a batch to upload. Alternatively you can create
+a CSV file containing one column per property in a rule file and one row per rule to upload. Column titles
+must exactly match the name of the section, followed by a colon, then the name of the attribute, e.g.
+a column Data:StartDate contains the start date for a periodWithinYear check. The CSV file should therefore 
+contain a column called Metadata:TestType containing the rule name e.g. period or periodWithinYear. Finally
+the CSV file should contain a RuleID column containing a unique reference for every row for the rule being created,
+allowing future file uploads to replace existing rules if they have the same rule ID.</p>
 <form class="linear-form" enctype="multipart/form-data" method="post" action="<?php echo url::site().'verification_rule/upload'; ?>">
 <fieldset>
-  <label>Select a zip file to upload:<input type="file" name="zipFile" class="control-width-6" /></label>
+  <label>Select a zip or csv file to upload:<input type="file" name="zipOrCsvFile" class="control-width-6" /></label>
 </fieldset>
+<?php if (count($serverList)) : ?>
 <fieldset>
   <p>Or, load verification rule files from a Record Cleaner server list. Please select the servers to use when loading files.</p>
   <table>
@@ -47,6 +54,7 @@ as used by NBN Record Cleaner to obtain rules or zip your files into a batch to 
     <?php endforeach; ?>
     </tbody>
   </table>
-  <input type="submit" value="Upload rule files"/>
 </fieldset>
+<?php endif; ?>
+<fieldset><input type="submit" value="Upload rule files"/></fieldset>
 </form>
