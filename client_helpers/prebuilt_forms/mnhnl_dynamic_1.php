@@ -1155,7 +1155,15 @@ class iform_mnhnl_dynamic_1 {
       }
       $attributes = data_entry_helper::getAttributes($attrArgs, false);
       $defAttrOptions = array('extraParams'=>$auth['read']);
-      $r = get_attribute_html($attributes, $args, $defAttrOptions);
+      $blockOptions = array();
+      // look for options specific to each attribute
+      foreach ($options as $option => $value) {
+        // split the id of the option into the control name and option name.
+        $optionId = explode('|', $option);
+        if (!isset($blockOptions[$optionId[0]])) $blockOptions[$optionId[0]]=array();
+        $blockOptions[$optionId[0]][$optionId[1]] = $value;
+      }
+      $r = get_attribute_html($attributes, $args, $defAttrOptions, $tabAlias, $blockOptions);
       if ($args['occurrence_comment'])
         $r .= data_entry_helper::textarea(array(
           'fieldname'=>'occurrence:comment',
