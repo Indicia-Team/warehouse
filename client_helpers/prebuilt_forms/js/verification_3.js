@@ -470,7 +470,7 @@ $(document).ready(function () {
             }
             // We now have parameters that can be applied to a report and we know the report, so we can ask the warehouse
             // to verify the occurrences provided by the report that match the filter.
-            request = indiciaData.ajaxUrl + '/bulk_verify';
+            request = indiciaData.ajaxUrl + '/bulk_verify/'+indiciaData.nid;
             $.post(request,
                 'report='+encodeURI(indiciaData.reports.verification.grid_verification_grid[0].settings.dataSource)+'&params='+encodeURI(JSON.stringify(params))+
                     '&user_id='+indiciaData.userId,
