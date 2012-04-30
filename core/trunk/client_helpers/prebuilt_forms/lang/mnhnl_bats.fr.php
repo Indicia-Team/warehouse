@@ -62,6 +62,7 @@ $custom_terms = array(
 	'Existing locations' => 'Sites existants',
 	'LANG_Location_Label' => 'Location',
 	'LANG_Location_Name' => 'Nom du site',
+	'LANG_Multiple_Location_Types' => 'Certains sites sont mis en évidence en rouge car ils ne sont pas encore confirmée par un utilisateur Admin.',
 	'Create New Location' => 'Créer un nouvel emplacement',
 	'LANG_Location_Name_Blank_Text' => 'Choisissez un site',
 	'SRef'=>'Coordonnées',

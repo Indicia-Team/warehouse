@@ -122,11 +122,11 @@ div.olControlEditingToolbar div.olControlStartNewSiteItemInactive {
 div.olControlEditingToolbar  {
     width: 350px;
 }
-#imp-srefX {
+#imp-srefX,#imp-srefY,.precision {
 	width: 60px;
 }
-#imp-srefY {
-	width: 60px;
+.hasDatepicker {
+	width: 80px;
 }
 .smg-starttime,.smg-endtime {
 	width: 60px;
@@ -134,9 +134,17 @@ div.olControlEditingToolbar  {
 .species-grid label {
 	width: auto;
 }
+#fieldset-extras label {
+	width: auto;
+}
 .species-grid input {
 	width: 40px;
 }
 .scFirstRow {
   border-top: solid silver 1px;
+}
+.data,.actions {
+  border: solid silver 1px;
+  padding-left: 4px;	
+  padding-right: 4px;	
 }

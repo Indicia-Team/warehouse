@@ -38,14 +38,16 @@ function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth
     $.each(newRows, function(i, row) {
       addRowToGridSequence++;
       row.addClass('added-row').addClass(myClass).removeClass('scClonableRow').attr('id','');
+      row.find('.scPresence').val('1');
       $.each(row.children(), function(j, cell) {
         cell.innerHTML = cell.innerHTML.replace(/-ttlId-:/g, data.id+':y'+addRowToGridSequence);
       }); 
       row.appendTo('#'+gridId);
     }); 
-    newRows[0].find('.scPresenceCell input').attr('name', 'sc::' + data.id + ':y'+addRowToGridSequence+':present').attr('checked', 'checked');
     $(event.target).val('');
     formatter(data,taxonCell);
+    // we have added a row, so no_record is no longer applicable.
+    $('.no_record').removeAttr('checked').attr('disabled','disabled').next().filter('.inline-error').remove();
   };
 
     // Attach auto-complete code to the input
@@ -93,19 +95,22 @@ $('.remove-row').live('click', function(e) {
     for(var i=1;i<numRows;i++) row.next().remove();
     row.remove();
   } else {
-    // This was a pre-existing occurrence so we can't just delete the row from the grid. Grey it out
-    // Use the presence checkbox to remove the taxon, even if the checkbox is hidden.
-    // Hide the checkbox so this can't be undone
-    row.find('.scPresence').attr('checked',false).css('display','none');
+    // This was a pre-existing occurrence so we can't just delete the row from the grid.
     var considerRow = row;
     for(var i=0;i<numRows;i++){
       // disable or remove all other active controls from the row.
       // Do NOT disable the presence checkbox or the container td, otherwise it is not submitted.
-      considerRow.addClass('deleted-row').css('opacity',0.25);
+      considerRow.find('.scPresence').val('0');
       considerRow.find('*:not(.scPresence,.scPresenceCell)').attr('disabled','disabled').removeClass('required ui-state-error').filter('input,select').val('').width('');
       considerRow.find('a').remove();
       considerRow.find('.deh-required,.inline-error').remove();
+      considerRow.addClass('deleted-row').hide();
       considerRow= considerRow.next();
     }
   }
+  // now update the no_record checkbox if none left.
+  if(jQuery('.scPresence').filter('[value=1]').length == 0){
+    jQuery('.no_record').filter(':checkbox').removeAttr('disabled');
+  }
+
 });

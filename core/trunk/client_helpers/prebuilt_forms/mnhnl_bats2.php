@@ -80,6 +80,15 @@ class iform_mnhnl_bats2 extends iform_mnhnl_bats {
           'type' => 'string',
           'required' => false,
           'group' => 'User Interface'
+        ),
+        array(
+          'name' => 'language',
+          'caption' => 'Language Override',
+          'description' => '',
+          'type' => 'string',
+          'required' => true,
+          'default' => 'en',
+          'group' => 'User Interface'
         )));
     
     foreach($parentVal as $param){
@@ -224,7 +233,37 @@ if(myTerms.filter('[checked]').filter('[value=".$siteType2TermList[0]['meaning_i
   jQuery('[name=locAttr\\:".$siteTypeOtherAttrID."],[name^=locAttr\\:".$siteTypeOtherAttrID."\\:]').addClass('required').removeAttr('readonly');
 else
   jQuery('[name=locAttr\\:".$siteTypeOtherAttrID."],[name^=locAttr\\:".$siteTypeOtherAttrID."\\:]').removeClass('required').val('').attr('readonly',true);
+var recorders = jQuery('#RecorderInstructions').next();
 ";
+    // Move the date after the Institution
+    $insitutionAttrID=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Institution');
+    if($insitutionAttrID) {
+      data_entry_helper::$javascript .= "
+var insitutionAttr = jQuery('[name=smpAttr\\:".$insitutionAttrID."],[name^=smpAttr\\:".$insitutionAttrID."\\:]').not(':hidden').eq(0).closest('.control-box').next();
+var recorderField = jQuery('#sample\\\\:recorder_names');
+var recorderLabel = recorderField.prev().filter('label');
+var recorderRequired = recorderField.next();
+recorderRequired.next().filter('br').remove();
+var recorderText = recorderRequired.next();
+recorderText.next().filter('br').remove();
+recorderText.next().filter('br').remove();
+insitutionAttr.after('<br/>');
+insitutionAttr.after('<br/>');
+insitutionAttr.after(recorderText);
+insitutionAttr.after('<br/>');
+insitutionAttr.after(recorderRequired);
+insitutionAttr.after(recorderField);
+insitutionAttr.after(recorderLabel);
+var dateField = jQuery('#sample\\\\:date');
+var dateLabel = dateField.prev().filter('label');
+var dateRequired = dateField.next();
+dateRequired.next().filter('br').remove();
+insitutionAttr.after('<br/>');
+insitutionAttr.after(dateRequired);
+insitutionAttr.after(dateField);
+insitutionAttr.after(dateLabel);
+";
+    }
     
     if (array_key_exists('sample:id', data_entry_helper::$entity_to_load))
       data_entry_helper::$javascript .= "jQuery('[name=locAttr\\:".$siteType2AttrID."],[name^=locAttr\\:".$siteType2AttrID."\\:]').filter('[checked]').change();\n";
@@ -274,6 +313,12 @@ other.prev().remove(); // remove legend
 other.removeClass('wide').remove(); // remove Other field, then bolt in after the other radio button.
 myTerm.parent().append(other);
 myTerm.change();
+jQuery('span').filter('.control-box').each(function(idex, elem){
+  if(jQuery(elem).find(':checkbox').length){
+    jQuery(elem).prev().filter('label').addClass('auto-width');
+    jQuery(elem).prev().after('<br/>');
+  }
+});
 ";
     if (array_key_exists('sample:id', data_entry_helper::$entity_to_load))
       data_entry_helper::$javascript .= "jQuery('[name=locAttr\\:".$siteType2AttrID."],[name^=locAttr\\:".$siteType2AttrID."\\:]').filter('[checked]').change();\n";
@@ -294,7 +339,12 @@ myTerm.change();
 jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:',$rule[0])."\\:]').attr('".$details[0]."',".$details[1].");";
           }  else if($rule[$i]=='no_record'){
             data_entry_helper::$late_javascript .= "
-jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:',$rule[0])."\\:]').filter(':checkbox').addClass('no_record');
+noRecCheckbox = jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:',$rule[0])."\\:]').filter(':checkbox');
+numRows = jQuery('.scPresence').filter('[value=1]').length;
+if(numRows>0)
+  noRecCheckbox.addClass('no_record').removeAttr('checked').attr('disabled','disabled');
+else
+  noRecCheckbox.addClass('no_record').removeAttr('disabled');
 ";
           } else if(substr($rule[0], 3, 4)!= 'Attr'){ // have to add for non attribute case.
             data_entry_helper::$late_javascript .= "
@@ -312,14 +362,14 @@ $.validator.addMethod('smg-endtime', function(value, element){
   return (value >= assocStartTime.val()); 
 },
   \"".lang::get('validation_smg-endtime')."\");
-$.validator.addMethod('scNumAlive', function(value, element){
-  var assocNumDead = jQuery(element).closest('tr').find('.scNumDead');
-  if(jQuery(element).val()=='' || assocNumDead.val()=='') return true;
-  return ((jQuery(element).val()=='' ? 0 : jQuery(element).val()) + (assocNumDead.val()=='' ? 0 : assocNumDead.val()) > 0)
+$.validator.addMethod('scNumDead', function(value, element){
+  var assocNumAlive = jQuery(element).closest('tr').find('.scNumAlive');
+  if(jQuery(element).val()=='' && assocNumAlive.val()=='') return true;
+  return ((jQuery(element).val()=='' ? 0 : jQuery(element).val()) + (assocNumAlive.val()=='' ? 0 : assocNumAlive.val()) > 0)
 },
-  \"".lang::get('validation_scNumAlive')."\");
+  \"".lang::get('validation_scNumDead')."\");
 $.validator.addMethod('no_record', function(value, element){
-  var numRows = jQuery('.scPresence').filter(':checkbox').filter('[checked]').length;
+  var numRows = jQuery('.scPresence').filter('[value=1]').length;
   var isChecked = jQuery(element).filter('[checked]').length>0;
   if(isChecked) return(numRows==0)
   else  return(numRows>0);
@@ -347,6 +397,54 @@ $.validator.addMethod('no_record', function(value, element){
     $termlist = $list[0]['id'];
     $extraParams = $auth['read'] + array('termlist_id' => $termlist, 'view'=>'detail');
     $surveyMethods = data_entry_helper::get_population_data(array('table' => 'termlists_term', 'extraParams' => $extraParams));
+    data_entry_helper::$javascript .= "// JS for survey method grid control.
+jQuery('.method-presence').change(function(){
+  var myTR = jQuery(this).closest('tr');
+  if(jQuery(this).filter('[checked]').length>0) {
+    myTR.find('.method-grid-cell').find('input,select').removeAttr('disabled').addClass('required').after('<span class=\"deh-required\">*</span>');
+    // when you select a survey method: enable all the rows
+    jQuery('.sg-tr-'+this.name.split(':')[2]).find('input').removeAttr('disabled');
+  } else {
+    if(jQuery('.species-grid').find('.sg-tr-'+this.name.split(':')[2]).length>0)
+      if(!confirm(\"".lang::get('LANG_Confirm_Survey_Method_Removal')."\")){
+        jQuery(this).attr('checked',true);
+        return;
+      };
+    myTR.find('input,select').not('.method-presence').attr('disabled','disabled').val('').removeClass('required');
+    myTR.find('.deh-required,.inline-error').remove();
+    myTR.find('.required').removeClass('ui-state-error required');
+    jQuery('.sg-tr-'+this.name.split(':')[2]).find('input').not('.scPresence').attr('disabled','disabled').removeAttr('checked').val('');
+    myTR.find('.deh-required,.inline-error').remove();
+  }
+  jQuery('.species-grid').find('*').removeClass('ui-state-error').filter('.inline-error').remove();
+});
+";
+    if(isset($options['removeOptions'])){
+      $removeList = explode(';', $options['removeOptions']);
+      foreach($removeList as $removeSpec){
+        $removeDetails = explode(',', $removeSpec);
+        for($i=1; $i<count($removeDetails); $i++){
+          data_entry_helper::$javascript .= "
+jQuery('.survey-method-grid').find('[name*=\\:".$removeDetails[0]."\\:smpAttr\\:]').find('option').filter('[value=".$removeDetails[$i]."]').remove();
+";
+        }
+        data_entry_helper::$javascript .= "
+if(jQuery('.survey-method-grid').find('[name*=\\:".$removeDetails[0]."\\:smpAttr\\:]').find('option').not('[value=]').length == 1)
+  jQuery('.survey-method-grid').find('[name*=\\:".$removeDetails[0]."\\:smpAttr\\:]').find('option').filter('[value=]').remove();
+";
+      }
+    }    
+    if(isset($options['removeAttr'])){
+      $removeList = explode(';', $options['removeAttr']);
+      foreach($removeList as $removeSpec){
+        $removeDetails = explode(',', $removeSpec);
+        for($i=1; $i<count($removeDetails); $i++){
+          data_entry_helper::$javascript .= "
+jQuery('.survey-method-grid').find('[name$=\\:".$removeDetails[0]."\\:smpAttr\\:".$removeDetails[$i]."]').closest('td').empty();
+";
+        }
+      }
+    }    
     $smpAttributes = data_entry_helper::getAttributes(array(
        'attrtable'=>'sample_attribute'
        ,'key'=>'sample_id'
@@ -415,66 +513,22 @@ $.validator.addMethod('no_record', function(value, element){
               '<td class="method-grid-cell">'.data_entry_helper::outputAttribute($myAttr, $attrOpts).'</td>');
       }
       $retval .= '</tr>';
-      data_entry_helper::$late_javascript .= "
-jQuery('.sg-tr-".$method['meaning_id']."').find('input').addClass('sg-method-".$method['meaning_id']."');
-$.validator.addMethod('sg-method-".$method['meaning_id']."', function(value, element){
-  if(jQuery('.method-".$method['meaning_id']."').filter('[checked]').length == 0) return true;
-  var checkboxes = jQuery('.sg-tr-".$method['meaning_id']."').find('input').filter(':checkbox').not('.scPresence');
-  var textfields = jQuery('.sg-tr-".$method['meaning_id']."').find('input').filter(':text');
-  return textfields.not('[value=]').length > 0 || checkboxes.filter('[checked]').length > 0;
-},
-  \"".lang::get('validation_must_provide')."\");
-";
     }
     $retval .= '</tbody></table><br />';
-    data_entry_helper::$javascript .= "// JS for survey method grid control.
-jQuery('.method-presence').change(function(){
-  var myTR = jQuery(this).closest('tr');
-  if(jQuery(this).filter('[checked]').length>0) {
-    myTR.find('.method-grid-cell').find('input,select').removeAttr('disabled').addClass('required').after('<span class=\"deh-required\">*</span>');
-    // when you select a survey method: enable all the rows
-    jQuery('.sg-tr-'+this.name.split(':')[2]).find('input').removeAttr('disabled');
-  } else {
-    if(jQuery('.species-grid').find('.sg-tr-'+this.name.split(':')[2]).length>0)
-      if(!confirm(\"".lang::get('LANG_Confirm_Survey_Method_Removal')."\")){
-        jQuery(this).attr('checked',true);
-        return;
-      };
-    myTR.find('input,select').not('.method-presence').attr('disabled','disabled').val('').removeClass('required');
-    myTR.find('.deh-required,.inline-error').remove();
-    myTR.find('.required').removeClass('ui-state-error required');
-    jQuery('.sg-tr-'+this.name.split(':')[2]).find('input').not('.scPresence').attr('disabled','disabled').removeAttr('checked').val('');
-    myTR.find('.deh-required,.inline-error').remove();
-  }
-  jQuery('.species-grid').find('*').removeClass('ui-state-error').filter('.inline-error').remove();
-});
+    $sketchAttrID=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Sketch provided');
+    if($sketchAttrID) {
+      data_entry_helper::$javascript .= "
+var sketchAttr = jQuery('[name=smpAttr\\:".$sketchAttrID."],[name^=smpAttr\\:".$sketchAttrID."\\:]').not(':hidden').next();
+var smgrid = jQuery('.survey-method-grid');
+smgrid.next().filter('br').remove();
+var smtext = smgrid.next().filter('div');
+sketchAttr.after('<br/>');
+if(smtext.length) sketchAttr.after(smtext);
+sketchAttr.after(smgrid);
+sketchAttr.after('<br/>');
 ";
-    if(isset($options['removeOptions'])){
-      $removeList = explode(';', $options['removeOptions']);
-      foreach($removeList as $removeSpec){
-        $removeDetails = explode(',', $removeSpec);
-        for($i=1; $i<count($removeDetails); $i++){
-          data_entry_helper::$javascript .= "
-jQuery('.survey-method-grid').find('[name*=\\:".$removeDetails[0]."\\:smpAttr\\:]').find('option').filter('[value=".$removeDetails[$i]."]').remove();
-";
-        }
-        data_entry_helper::$javascript .= "
-if(jQuery('.survey-method-grid').find('[name*=\\:".$removeDetails[0]."\\:smpAttr\\:]').find('option').not('[value=]').length == 1)
-  jQuery('.survey-method-grid').find('[name*=\\:".$removeDetails[0]."\\:smpAttr\\:]').find('option').filter('[value=]').remove();
-";
-      }
-    }    
-    if(isset($options['removeAttr'])){
-      $removeList = explode(';', $options['removeAttr']);
-      foreach($removeList as $removeSpec){
-        $removeDetails = explode(',', $removeSpec);
-        for($i=1; $i<count($removeDetails); $i++){
-          data_entry_helper::$javascript .= "
-jQuery('.survey-method-grid').find('[name$=\\:".$removeDetails[0]."\\:smpAttr\\:".$removeDetails[$i]."]').remove();
-";
-        }
-      }
-    }    
+    }
+    
     return $retval;
   }
   
@@ -625,10 +679,9 @@ hook_species_checklist_pre_delete_row=function(e) {
             // assume always removeable and scPresence is hidden.
             $retVal .= '<td class="ui-state-default remove-row" style="width: 1%" rowspan="'.(count($attrsPerRow)).'">X</td>';
             $retVal .= str_replace('{content}', $firstCell, str_replace('{colspan}', 'rowspan="'.(count($attrsPerRow)).'"', $indicia_templates['taxon_label_cell']));
-            $ctrlId = "sc::$ttlid:$existing_record_id:present";
-            $retVal .= '<td class="scPresenceCell" style="display:none"><input type="checkbox" class="scPresence" checked="checked" name="'.$ctrlId.'" value="" /></td>';
           }
-          $retVal .= '<td>'.$method['term'].':</td><td>';
+          $ctrlId = "sc:".$method['meaning_id'].":$ttlid:$existing_record_id:present";
+          $retVal .= '<td>'.$method['term'].':</td><td class="scPresenceCell" style="display:none"><input type="hidden" class="scPresence" name="'.$ctrlId.'" value="1" /></td><td>';
           foreach ($attrsPerRow[$id] as $attrId) {
           	if ($existing_record_id) {
               $search = preg_grep("/^sc:".$method['meaning_id'].":$ttlid:$existing_record_id:occAttr:$attrId".'[:[0-9]*]?$/', array_keys(data_entry_helper::$entity_to_load));
@@ -759,10 +812,8 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
       if($id=='1'){
         $r .= '<td class="ui-state-default remove-row" style="width: 1%" rowspan="'.(count($rows)).'">X</td>';
         $r .= str_replace('{colspan}', 'rowspan="'.(count($rows)).'"', $indicia_templates['taxon_label_cell']);
-        // assume always removeable: scPresence is hidden.
-        $r .= '<td class="scPresenceCell" style="display:none"><input type="checkbox" class="scPresence" name="sc::-ttlId-::present" value="" /></td>';
       }
-      $r .= '<td>'.$method['term'].':</td><td>';
+      $r .= '<td>'.$method['term'].':</td><td class="scPresenceCell" style="display:none"><input type="hidden" class="scPresence" name="sc:'.$method['meaning_id'].':-ttlId-::present"" value="0" /></td><td>';
       foreach ($rows[$id] as $attrId) {
         $oc = $occAttrControls[$attrId];
         // as we are using meaning_ids, we can't use standard default value method.
@@ -816,23 +867,19 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
     unset($extraTaxonOptions['extraParams']['language_iso']);
      // append the taxa to the list to load into the grid
     $fullTaxalist = data_entry_helper::get_population_data($extraTaxonOptions);
-    $taxaLoaded = array();
     $occList = array();
-    $maxgensequence = 0;
     foreach(data_entry_helper::$entity_to_load as $key => $value) {
       $parts = explode(':', $key,5);
       // Is this taxon attribute data?
       if (count($parts) > 2 && $parts[0] == 'sc' && $parts[1]!='' && $parts[2]!='-ttlId-') {
-        if($parts[3]=='') $occList['error'] = 'ERROR PROCESSING entity_to_load: found name '.$key.' with no sequence/id number in part 2';
+        if($parts[3]=='') $occList['error'] = 'ERROR PROCESSING entity_to_load: found name '.$key.' with no sequence/id number in part 3';
         else if(!isset($occList[$parts[3]])){
           $occ['id'] = $parts[3];
           $occ['method'] = $parts[1];
           foreach($fullTaxalist as $taxon){
             if($parts[2] == $taxon['id']) $occ['taxon'] = $taxon;
-            $taxaLoaded[] = $parts[2];
           }
           $occList[$parts[3]] = $occ;
-          if(!is_numeric($parts[3])) $maxgensequence = intval(max(substr($parts[3],1),$maxgensequence));
         }
       }
     }
@@ -911,15 +958,14 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
   * Wraps data from a species checklist grid: modified from original data_entry_helper
   * function to allow multiple rows for the same species, plus linking to survey method
   */
-  private static function wrap_species_checklist($arr, $method, $include_if_any_data=false){
+  private static function wrap_species_checklist($arr, $method){
     if (array_key_exists('website_id', $arr))
       $website_id = $arr['website_id'];
     else throw new Exception('Cannot find website id in POST array!');
-    // Set the default method of looking for rows to include - either using data, or the checkbox (which could be hidden)
-    $include_if_any_data = $include_if_any_data || (isset($arr['rowInclusionCheck']) && $arr['rowInclusionCheck']=='hasData');
+    // occurrences are included dependant on the present field... If present is 
     // Species checklist entries take the following format
     // sc:<method-meaning-id>:<taxa_taxon_list_id>:[<occurrence_id>|<sequence(negative)>]:occAttr:<occurrence_attribute_id>[:<occurrence_attribute_value_id>]
-    // sc::<taxa_taxon_list_id>:[<occurrence_id>]:present
+    // sc:<method-meaning-id>:<taxa_taxon_list_id>:[<occurrence_id>|<sequence(negative)>]:present
     // not doing occurrence images at this point - TBD
     $records = array();
     $subModels = array();
@@ -928,27 +974,17 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
         // Don't explode the last element for occurrence attributes
         $a = explode(':', $key, 5);
         if($a[3] && $a[1] == $method){
-          $records[$a[3]]['taxa_taxon_list_id'] = $a[2];
-          $records[$a[3]][$a[4]] = $value;
-          // store any id so update existing record
-          if(is_numeric($a[3])) $records[$a[3]]['id'] = $a[3];
-        }
-      }
-    }
-    foreach ($arr as $key=>$value){
-      $a = explode(':', $key, 5);
-      if ($a[0]=='sc' && $a[4] == 'present'){
-        // Don't explode the last element for occurrence attributes
-        foreach($records as $occid=>$rec){
-          if($rec['taxa_taxon_list_id']==$a[2]){
-            $records[$occid]['present'] = $value;
+          if(!array_key_exists($a[3],$records)){
+            $records[$a[3]]['taxa_taxon_list_id'] = $a[2];
+            if(is_numeric($a[3]) && $a[3]>0) $records[$a[3]]['id'] = $a[3];
           }
+          $records[$a[3]][$a[4]] = $value; // does attrs and present field
         }
       }
     }
     foreach ($records as $id => $record) {
-      $present = self::wrap_species_checklist_record_present($record, $include_if_any_data);
-      if (array_key_exists('id', $record) || $present) { // must always handle row if already present in the db
+    	$present = self::wrap_species_checklist_record_present($record);
+    	if (array_key_exists('id', $record) || $present) { // must always handle row if already present in the db
         if (!$present) $record['deleted'] = 't';
         $record['website_id'] = $website_id;
         if (array_key_exists('occurrence:determiner_id', $arr)) $record['determiner_id'] = $arr['occurrence:determiner_id'];
@@ -959,19 +995,23 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
     }
     return $subModels;
   }
-
+  
   /**
    * Test whether the data extracted from the $_POST for a species_checklist grid row refers to an occurrence record.
    * @access Private
    */
-  private static function wrap_species_checklist_record_present($record, $include_if_any_data) {
-    unset($record['taxa_taxon_list_id']); // discard ttlid, as no bearing on entered data.
-  	// as we are working on a copy of the record, discard the ID so it is easy to check if there is any other data for the row.
+  private static function wrap_species_checklist_record_present($record) {
+    // if a present record is there and = 1, and some data has been filled in, return true
+    // else return false.
+    // have to accept a hit on any checkboxes, as can't differentiate between unchecked and text zero.
+    if(!array_key_exists('present', $record) || $record['present']=='0') return false;
+  	unset($record['taxa_taxon_list_id']); // discard ttlid, as no bearing on entered data.
     unset($record['id']);
+    unset($record['present']);
     $recordData=implode('',$record);// this implodes the values only, not the keys
-    return ($include_if_any_data && $recordData!='' && !preg_match("/^[0]*$/", $recordData)) ||       // inclusion of record is detected from having a non-zero value in any cell
-      (!$include_if_any_data && array_key_exists('present', $record) && $record['present']!='0'); // inclusion of record detected from the presence checkbox
+    return ($recordData!='');
   }
+  
   
   /**
    * Retrieves a list of the css files that this form requires in addition to the standard
