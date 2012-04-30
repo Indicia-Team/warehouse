@@ -723,7 +723,7 @@ class data_entry_helper extends helper_base {
     // version.
     return '<div class="file-box" id="'.$containerId.'"></div><noscript>'.self::image_upload(array(
       'label' => $options['caption'],
-	  // Convert table into a psuedo field name for the images
+      // Convert table into a psuedo field name for the images
       'id' => $options['id'],
       'fieldname' => str_replace('_', ':', $options['table'])
     )).'</noscript>';
@@ -1450,6 +1450,11 @@ class data_entry_helper extends helper_base {
     $options = array_merge(array(
       'fieldname'=>'sample:entered_sref'
     ), $options);
+    // If helpText set, only use this for the 2nd control so it appears once on the next line
+    if (isset($options['helpText'])) {
+      $helpText = $options['helpText'];
+      unset($options['helpText']);
+    }
     // Force no separate lines for the 2 controls
     if (!array_key_exists('systems',$options) || count($options['systems'])!=1) {
       $srefOptions = array_merge($options, array('suffixTemplate'=>'nosuffix'));
@@ -1461,6 +1466,8 @@ class data_entry_helper extends helper_base {
     // tweak the options passed to the system selector
     $options['fieldname']=$options['fieldname']."_system";
     unset($options['label']);
+    if (isset($helpText))
+      $options['helpText']=$helpText;
     if (array_key_exists('systems', $options) && count($options['systems']) == 1) {
       // Hidden field for the system
       $keys = array_keys($options['systems']);
@@ -1776,7 +1783,7 @@ class data_entry_helper extends helper_base {
     if (isset(self::$entity_to_load['sample:id']))
       self::preload_species_checklist_occurrences(self::$entity_to_load['sample:id'], $options['readAuth'], $options['occurrenceImages']);
     // load the full list of species for the grid, including the main checklist plus any additional species in the reloaded occurrences.
-	  $taxalist = self::get_species_checklist_taxa_list($options, $taxaThatExist);
+    $taxalist = self::get_species_checklist_taxa_list($options, $taxaThatExist);
     // If we managed to read the species list data we can proceed
     if (! array_key_exists('error', $taxalist)) {
       $attributes = self::getAttributes(array(
@@ -1973,11 +1980,12 @@ var applyFilterMode = function(type, group_id) {
   if (typeof indiciaData.originalTaxonQuery==='undefined') {
     indiciaData.originalTaxonQuery=$.extend({},query);
   }
-  switch (type) {
-    case 'user':
+  switch (type) {\n";
+      if (!empty($options['usersPreferredGroups'])) 
+        self::$javascript .= "    case 'user':
       query['in']={\"taxon_group_id\":[".implode(',', $options['usersPreferredGroups'])."]};
-      break;
-    case 'selected':
+      break;\n";
+      self::$javascript .= "    case 'selected':
       query['in']={\"taxon_group_id\":[group_id]};
       break;
     default:
@@ -2030,7 +2038,7 @@ $('#".$options['id']."-filter').click(function(evt) {
       "&taxon_list_id=".$options['lookupListId']."&auth_token=".$options['readAuth']['auth_token']."&nonce=".$options['readAuth']['nonce']."&callback=?\", function(data) {
     var checked;
     $.each(data, function(idx, item) {
-      selected = (item.id===userFilter.group_id) ? ' selected=\"selected\"' : '';
+      selected = userFilter!==null && (item.id===userFilter.group_id) ? ' selected=\"selected\"' : '';
       $('#filter-group').append('<option value=\"'+item.id+'\"' + selected + '>'+item.title+'</option>');
     });
   });
@@ -2042,12 +2050,12 @@ $('#".$options['id']."-filter').click(function(evt) {
   $('#filter-popup-apply').click(function() {       
     if ($('#filter-mode-default').attr('checked')==true) {
       applyFilterMode('default');
-    } else if ($('#filter-mode-user').attr('checked')==true) {
-      applyFilterMode('user');
+    } else if ($('#filter-mode-selected').attr('checked')==true) {
+      applyFilterMode('selected', $('#filter-group').val()); 
     }";
     if (!empty($options['usersPreferredGroups']))
-      self::$javascript .= " else if ($('#filter-mode-selected').attr('checked')==true) {
-      applyFilterMode('selected', $('#filter-group').val()); 
+      self::$javascript .= " else if ($('#filter-mode-user').attr('checked')==true) {
+      applyFilterMode('user');
     }";
     self::$javascript .= "\n    $.fancybox.close(); 
   });
@@ -2215,7 +2223,7 @@ $('#".$options['id']."-filter').click(function(evt) {
       // append the taxa to the list to load into the grid
       $taxalist = array_merge($taxalist, self::get_population_data($extraTaxonOptions));
     }
-  	return $taxalist;
+    return $taxalist;
   }
 
   /**
@@ -2268,7 +2276,7 @@ $('#".$options['id']."-filter').click(function(evt) {
       );
     }
     $options['table']='taxa_taxon_list';
-  	return $options;
+    return $options;
   }
 
   /**
@@ -3214,7 +3222,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
             else
               $caption = $record[$options['captionField']];
             if(isset($options['listCaptionSpecialChars'])) {
-            	$caption=htmlspecialchars($caption);
+              $caption=htmlspecialchars($caption);
             }
             $item = str_replace(
                 array('{value}', '{caption}'),
