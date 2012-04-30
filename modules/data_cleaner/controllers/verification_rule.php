@@ -592,6 +592,10 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
         $obj = $cache->get(basename($_GET['uploaded_csv']).'metadata');
         $errors = array();
         while (($data = fgetcsv($handle, 1000, ",")) !== FALSE && ($limit===false || $count<$limit)) {
+          $line = implode('', $data);
+          // skip blank lines
+          if (empty($line)) 
+            continue;
           $count++;
           $filepos = ftell($handle);
           $ruleSettings = $this->parse_csv_row($obj['headings'], $data);
