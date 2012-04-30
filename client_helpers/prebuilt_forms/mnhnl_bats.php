@@ -564,25 +564,7 @@ jQuery('#smpAttr\\\\:$attrId').next().after(\"<span class='extra-text'>".lang::g
    * Get the block of custom attributes at the location level
    */
   protected static function get_control_locationattributes($auth, $args, $tabalias, $options) {
-  	$attrArgs = array(
-       'valuetable'=>'location_attribute_value',
-       'attrtable'=>'location_attribute',
-       'key'=>'location_id',
-       'fieldprefix'=>'locAttr',
-       'extraParams'=>$auth['read'],
-       'survey_id'=>$args['survey_id']
-      );
-    $tabName = (isset($options['tabNameFilter']) ? $options['tabNameFilter'] : null);
-    if (array_key_exists('location:id', data_entry_helper::$entity_to_load) && data_entry_helper::$entity_to_load['location:id']!="") {
-      // if we have location Id to load, use it to get attribute values
-      $attrArgs['id'] = data_entry_helper::$entity_to_load['location:id'];
-    }
-    $locationAttributes = data_entry_helper::getAttributes($attrArgs, false);
-    $defAttrOptions = array_merge(
-        array('extraParams' => array_merge($auth['read'], array('view'=>'detail')),
-              'language' => iform_lang_iso_639_2($args['language'])),$options);
-    $r = self::bats_get_attribute_html($locationAttributes, $args, $defAttrOptions, $tabName);
-    return $r;
+    return iform_mnhnl_locationattributes($auth, $args, $tabalias, $options);
   }
 
   /**
@@ -624,8 +606,7 @@ jQuery('#location-code').attr('readonly','readonly');
 // this is called after the location is cleared, including the code. If when we come to set the code
 // we find it is filled in, it must have been set by fetch from DB so leave...
 hook_set_defaults=function(){
-  if(jQuery('[name=location\\:code]').val() == '')
-    jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/location' +
+  jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/location' +
             '?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"].$loctypequery."&callback=?', function(data) {
       // store value in saved field?
       var maxCode = 0;
@@ -635,7 +616,8 @@ hook_set_defaults=function(){
             maxCode = parseInt(data[i].code)
         }
       }
-      jQuery('[name=location\\:code]').val(maxCode+1);
+      if(jQuery('[name=location\\:code]').val() == '')
+        jQuery('[name=location\\:code]').val(maxCode+1);
     });
 };";
     return $retVal;

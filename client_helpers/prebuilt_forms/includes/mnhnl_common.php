@@ -313,7 +313,7 @@ function iform_mnhnl_recordernamesControl($node, $auth, $args, $tabalias, $optio
       'lookupValues'=>$userlist
       ,'validation'=>array('required')
     ), $options));
-    return $r."<span>".lang::get('LANG_RecorderInstructions')."</span><br />";
+    return $r."<span id='RecorderInstructions'>".lang::get('LANG_RecorderInstructions')."</span><br />";
   }
 
 function iform_mnhnl_lux5kgridControl($auth, $args, $node, $options) {
@@ -341,6 +341,16 @@ function iform_mnhnl_lux5kgridControl($auth, $args, $node, $options) {
                                     'mainFieldName' => 'location:id'
                               ), $options);
         break;
+    }
+    $precisionAttrID=iform_mnhnl_getAttrID($auth, $args, 'location', 'Precision');
+    if($precisionAttrID) {
+      data_entry_helper::$javascript .= "
+var precisionAttr = jQuery('[name=locAttr\\:".$precisionAttrID."],[name^=locAttr\\:".$precisionAttrID."\\:]');
+var precisionLabel = precisionAttr.prev();
+precisionAttr.next().filter('br').remove();
+precisionLabel.addClass('auto-width prepad').insertAfter('#imp-srefY');
+precisionAttr.insertAfter(precisionLabel).addClass('precision');
+";
     }
     $creatorAttr=iform_mnhnl_getAttrID($auth, $args, 'location', 'Creator');
     if(isset(data_entry_helper::$entity_to_load["sample:updated_by_id"])) // only set if data loaded from db, not error condition
@@ -2114,9 +2124,11 @@ jQuery(\"#".$options['parentFieldID']."\").change(function(){
           array('', htmlentities($location_list_args['NameBlankText']), ''),
           $indicia_templates[$location_list_args['itemTemplate']]).$NameOpts;
         $retVal .= data_entry_helper::apply_template($location_list_args['template'], $location_list_args);
+        if($args['SecondaryLocationTypeTerm'] != ''){
+          $retVal .= '<p>'.lang::get("LANG_Multiple_Location_Types").'</p>';
+        }
       } else
         $retVal .= '<p>'.lang::get("LANG_NoSites").'</p>';
-        
       $retVal .= "</fieldset><label for=\"location-name\">".$options['NameLabel'].":</label> <input id=\"location-name\" name=\"location:name\" class='wide required' value=\"".htmlspecialchars(data_entry_helper::$entity_to_load['location:name'])."\"><span class=\"deh-required\">*</span><br />
       <input type='hidden' id=\"sample-location-id\" name=\"sample:location_id\" value='".data_entry_helper::$entity_to_load['sample:location_id']."' />";
     }
@@ -2383,8 +2395,10 @@ function handleEnteredSref(value) {
         for(var i=0; i<SitePointLayer.features.length; i++){
           if(SitePointLayer.features[i].attributes.highlighted == true){
             replaceGeom(SitePointLayer.features[i], SitePointLayer, modPointFeature, feature.geometry, false, false);
+            return;
           }
         }
+        addAndSelectNewGeom(SitePointLayer, modPointFeature, feature.geometry, true);
       }
     });
   }
