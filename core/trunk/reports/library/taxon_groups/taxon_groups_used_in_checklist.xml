@@ -4,7 +4,7 @@
       <query>
       SELECT #columns#
       FROM cache_taxa_taxon_lists cttl      
-      WHERE cttl.taxon_list_id=#taxon_list_id#
+      WHERE '#taxon_list_id#' = '' OR CAST(cttl.taxon_list_id AS CHARACTER VARYING)='#taxon_list_id#'
       </query>
       <order_bys>
             <order_by>taxon_group ASC</order_by>
