@@ -7,10 +7,11 @@
   FROM cache_occurrences o
   JOIN occurrences xo ON xo.id=o.id AND xo.deleted=false
   JOIN samples s on s.id=o.sample_id
+  LEFT JOIN samples sparent on sparent.id=s.parent_id and sparent.deleted=false
   JOIN websites w on w.id=o.website_id 
   LEFT JOIN (sample_attribute_values vuser
     JOIN sample_attributes sauser on sauser.id=vuser.sample_attribute_id and sauser.deleted=false and sauser.system_function = 'cms_username'
-  ) on vuser.sample_id=s.id and vuser.deleted=false
+  ) on (vuser.sample_id=s.id or vuser.sample_id=sparent.id) and vuser.deleted=false
   LEFT JOIN users ouser ON ouser.id=o.created_by_id AND ouser.id&lt;&gt;1 -- don't return records allocated by default to admin user
   LEFT JOIN occurrence_comments oc 
       ON oc.occurrence_id=o.id 
@@ -52,7 +53,7 @@
     <column name='taxon' display='Species' sql="CASE WHEN o.preferred_taxon=o.default_common_name then o.preferred_taxon ELSE o.preferred_taxon || COALESCE(' | ' || o.default_common_name, '') END" datatype='text' />
     <column name='taxa_taxon_list_id' visible='false' sql='o.taxa_taxon_list_id' datatype='integer' />   
     <column name='location_name' display='Site name' sql='o.location_name' datatype='text' />
-    <column name='entered_sref' display='SRef' sql='s.entered_sref' datatype='text' />
+    <column name='entered_sref' display='Grid Ref' sql='s.entered_sref' datatype='text' />
     <column name='date' display='Date' sql='o.date_start' datatype='date' />
     <column name='zero_abundance' display='Zero Abundance' sql='o.zero_abundance' visible="false" />
     <column name='taxon_group' display='Taxon Group' sql='o.taxon_group' datatype='text' visible="false" />
