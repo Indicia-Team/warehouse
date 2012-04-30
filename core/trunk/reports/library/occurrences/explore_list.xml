@@ -55,7 +55,7 @@
     <column name='record_status' display='State' sql='o.record_status' visible="false" />
     <column name='belongs_to_user' display='Belongs to User' sql="CASE CAST(o.created_by_id AS character varying) WHEN '#currentUser#' THEN true ELSE false END" visible="false" />
     <column name='geom' visible='false' mappable="true" sql='st_astext(o.public_geom)' />
-    <column name='strokewidth' visible='false' feature_style="strokeWidth" sql="CASE WHEN o.entered_sref_system ilike 'osgb' THEN length(o.public_entered_sref) / 3 ELSE 0.4 END" />
+    <column name='strokewidth' visible='false' feature_style="strokeWidth" sql="CASE WHEN o.entered_sref_system ilike 'osgb' THEN length(o.public_entered_sref) / 3 ELSE 1 END" />
     <column name='fillopacity' visible='false' feature_style="fillOpacity" sql="CASE WHEN o.entered_sref_system ilike 'osgb' THEN length(o.public_entered_sref) / 24.0 ELSE 0.4 END" />
     <column name='certainty' sql="o.certainty" visible='false' />
   </columns>
