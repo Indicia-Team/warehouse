@@ -758,12 +758,16 @@ class data_entry_helper extends helper_base {
   * Optional. Hint provided to the locality search service as to which country to look for the place name in. Defaults to United Kingdom.</li>
   * <li><b>georefLang</b><br/>
   * Optional. Language to request place names in. Defaults to en-EN for English place names.</li>
+  * <li><b>readAuth</b><br/>
+  * Optional. Read authentication tokens for the Indicia warehouse if using the indicia_locations driver setting.</li>
   * <li><b>driver</b><br/>
   * Optional. Driver to use for the georeferencing operation. Supported options are:<br/>
   *   geoplanet - uses the Yahoo! GeoPlanet place search. This is the default.<br/>
   *   google_search_api - uses the Google AJAX API LocalSearch service. This method requires both a
-  *       georefPreferredArea and georefCountry to work correctly.<br/>
+  *       georefPreferredArea and georefCountry to work correctly. Note that the Google AJAX API is deprecated
+  *       so its future support is not guaranteed.<br/>
   *   geoportal_lu - Use the Luxembourg specific place name search provided by geoportal.lu.
+  *   indicia_locations - Use the list of locations available to the current website in Indicia as a search list.
   * </li>
   * </ul>
   * @link http://code.google.com/apis/ajaxsearch/terms.html Google AJAX Search API Terms of Use.
@@ -805,6 +809,12 @@ class data_entry_helper extends helper_base {
     // a path to a simple PHP proxy script on the server.
     self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.proxy='".
         self::getRootFolder() . self::relative_client_helper_path() . "proxy.php';\n\n";
+    // for the indicia_locations driver, pass through the read auth and url
+    if ($options['driver']==='indicia_locations') {
+      self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.warehouseUrl='".self::$base_url."';\n";
+      self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.auth_token='".$options['readAuth']['auth_token']."';\n";
+      self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.nonce='".$options['readAuth']['nonce']."';\n";
+    }
     return self::apply_template('georeference_lookup', $options);
   }
 

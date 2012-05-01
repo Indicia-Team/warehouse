@@ -215,8 +215,9 @@ function iform_map_get_georef_parameters() {
       'default'=>'geoplanet',
       'options' => array(
         'geoplanet' => 'Yahoo! GeoPlanet (all round place search)',
-        'google_search_api' => 'Google AJAX Search API (works well with postcodes or for places near the preferred area)',
-        'geoportal_lu' => 'ACT Geoportal Luxembourg (for places in Luxumbourg)'
+        'google_search_api' => 'Google AJAX Search API (works well with postcodes or for places near the preferred area). Note this API is deprecated and may not be supported in future.',
+        'geoportal_lu' => 'ACT Geoportal Luxembourg (for places in Luxumbourg)',
+        'indicia_locations' => 'Search the Indicia locations list.'
       ),
       'group'=>'Georeferencing'
     )
@@ -355,14 +356,15 @@ function iform_map_get_ol_options($args) {
  * form arguments.
  * @param $args
  * @param $readAuth
- * @return array Options array for the map.
+ * @return array Options array for the georeferencer.
  */
-function iform_map_get_georef_options($args) {
+function iform_map_get_georef_options($args, $readAuth) {
   return array(
     'driver'=>$args['georefDriver'],
     'label' => lang::get('LANG_Georef_Label'),
     'georefPreferredArea' => $args['georefPreferredArea'],
     'georefCountry' => $args['georefCountry'],
-    'georefLang' => $args['language']
+    'georefLang' => $args['language'],
+    'readAuth' => $readAuth
   );
 }

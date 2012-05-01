@@ -1566,7 +1566,7 @@ class iform_wwt_colour_marked_report {
    * Get the location search control.
    */
   private static function get_control_placesearch($auth, $args, $tabalias, $options) {
-    $georefOpts = iform_map_get_georef_options($args);
+    $georefOpts = iform_map_get_georef_options($args, $auth['read']);
     if ($georefOpts['driver']=='geoplanet' && empty(helper_config::$geoplanet_api_key))
       // can't use place search without the driver API key
       return '';

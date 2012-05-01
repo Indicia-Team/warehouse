@@ -39,7 +39,7 @@ function Georeferencer(mapdiv, callback) {
   
   this.localSearch.setSearchCompleteCallback(this,
         function() {
-          // an array to store the responses in the required country, because GeoPlanet will not limit to a country
+          // an array to store the responses in the required country, because Google search will not limit to a country
           var places = [];
           var converted={};
           jQuery.each(this.localSearch.results, function(i,place) {
