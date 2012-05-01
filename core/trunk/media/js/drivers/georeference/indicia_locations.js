@@ -21,9 +21,14 @@
 function Georeferencer(mapdiv, callback) {
 
   this.georeference = function(searchtext) {
-    var request = mapdiv.georefOpts.warehouseUrl + 'index.php/services/data/location?mode=json&nonce=' + mapdiv.georefOpts.nonce +
+    var request, query={
+      'like': ['name',searchtext],
+      'orlike': ['comment',searchtext],
+      'orlike': ['code',searchtext]      
+    }
+    request = mapdiv.georefOpts.warehouseUrl + 'index.php/services/data/location?mode=json&nonce=' + mapdiv.georefOpts.nonce +
           '&auth_token=' + mapdiv.georefOpts.auth_token +
-          '&view=detail&name='+searchtext+'&callback=?';
+          '&view=detail&query='+encodeURI(JSON.stringify(query))+'&callback=?';
     $.getJSON(request,
       null,
       function(response) {
@@ -58,9 +63,13 @@ function Georeferencer(mapdiv, callback) {
             }; 
           }
           centroid = feature.geometry.getCentroid();
+          nameTokens = [place.name];
+          if (place.code!==null) {
+            nameTokens.push(place.code);
+          }
           converted = {
             name : place.name,
-            display : place.name,
+            display : nameTokens.join(' '),
             epsg: 3857,
             centroid: {
               x: centroid.x,
