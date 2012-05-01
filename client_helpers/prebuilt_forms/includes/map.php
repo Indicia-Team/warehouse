@@ -193,7 +193,8 @@ function iform_map_get_georef_parameters() {
       'type'=>'string',
       'default'=>'gb',
       'group'=>'Georeferencing',
-      'siteSpecific'=>true
+      'siteSpecific'=>true,
+      'required'=>false
     ),
     array(
       'name'=>'georefCountry',
@@ -202,7 +203,8 @@ function iform_map_get_georef_parameters() {
       'type'=>'string',
       'default'=>'United Kingdom',
       'group'=>'Georeferencing',
-      'siteSpecific'=>true
+      'siteSpecific'=>true,
+      'required'=>false
     ),
     array(
       'name'=>'georefDriver',
