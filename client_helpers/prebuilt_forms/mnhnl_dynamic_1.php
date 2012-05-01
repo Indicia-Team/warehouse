@@ -407,9 +407,9 @@ class iform_mnhnl_dynamic_1 {
           'description'=>'When filtering the list of available taxa, taxa will not be available for recording unless they match one of the '.
               'values you input in this box. Enter one value per line. E.g. enter a list of taxon group titles if you are filtering by taxon group. '.
               'If you provide a single taxon preferred name or taxon meaning ID in this box, then the form is set up for recording just this single '.
-              'species. Therefore there will be no species picker control, and the form will always operate in the single record, non-grid mode. '.
+              'species. Therefore there will be no species picker control or input grid, and the form will always operate in the single record, non-grid mode. '.
               'As there is no visual indicator which species is recorded you may like to include information about what is being recorded in the '.
-              'header. You may also want to configure the User Interface section of the form\'s Form Structure to move the [species] and [species] controls '.
+              'body text for the page. You may also want to configure the User Interface section of the form\'s Form Structure to move the [species] and [species] controls '.
               'to a different tab and remove the =species= tab, especially if there are no other occurrence attributes on the form.',
           'type' => 'textarea',
           'required'=>false,
@@ -918,7 +918,7 @@ class iform_mnhnl_dynamic_1 {
     $extraParams = $auth['read'];
     if (!empty($args['taxon_filter_field']) && !empty($args['taxon_filter'])) {
       $filterLines = helper_base::explode_lines($args['taxon_filter']);
-      if ($args['multiple_occurrence_mode'] !== 'single' && $args['taxon_filter_field']!=='taxon_group' && count($filterLines)===1) {
+      if ($args['taxon_filter_field']!=='taxon_group' && count($filterLines)===1) {
         // The form is configured for filtering by taxon name or meaning id. If there is only one specified then the form
         // cannot display a species checklist, as there is no point. So, convert our preferred taxon name or meaning ID to find the 
         // preferred taxa_taxon_list_id from the selected checklist, and then output a hidden ID.
