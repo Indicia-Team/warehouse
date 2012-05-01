@@ -868,6 +868,7 @@ class Data_Controller extends Data_Service_Base_Controller {
         case 'orwhere':
         case 'like':
         case 'orlike':
+          $this_cmd=$cmd;
           unset($foundfield);
           unset($foundvalue);
           foreach($params as $key=>$value) {
