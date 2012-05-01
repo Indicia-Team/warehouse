@@ -25,8 +25,14 @@ function Georeferencer(mapdiv, callback) {
   this.localSearch = new google.search.LocalSearch();
   this.localSearch.setResultSetSize(google.search.Search.LARGE_RESULTSET);
   // make the place search near the chosen location
-  var near= this.mapdiv.georefOpts.georefPreferredArea == '' ? '' : this.mapdiv.georefOpts.georefPreferredArea + ', ';
-  near = near + this.mapdiv.georefOpts.georefCountry;
+  var tokens = [], near;
+  if (this.mapdiv.georefOpts.georefPreferredArea!=='') {
+    tokens.push(this.mapdiv.georefOpts.georefPreferredArea);
+  }
+  if (this.mapdiv.georefOpts.georefCountry!=='') {
+    tokens.push(this.mapdiv.georefOpts.georefCountry);
+  }
+  near=tokens.join(', ');
   this.localSearch.setCenterPoint(near);
   
   this.callback = callback;

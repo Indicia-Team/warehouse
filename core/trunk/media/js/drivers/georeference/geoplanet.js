@@ -27,8 +27,15 @@ function Georeferencer(mapdiv, callback) {
   
   this.georeference = function(searchtext) {
     searchtext = searchtext.replace(/,/gi, ' ');
-    var request = 'http://where.yahooapis.com/v1/places.q(' +
-        searchtext + ' ' + settings.georefPreferredArea + ' ' + settings.georefCountry + ');count=10';
+    var tokens = [searchtext], searchfor;
+    if (settings.georefPreferredArea!=='') {
+      tokens.push(settings.georefPreferredArea);
+    }
+    if (settings.georefCountry!=='') {
+      tokens.push(settings.georefCountry);
+    }
+    searchfor=tokens.join(' ');
+    var request = 'http://where.yahooapis.com/v1/places.q(' + searchfor + ')';
     $.getJSON(request + "?format=json&lang="+settings.georefLang+
             "&appid="+settings.geoplanet_api_key+"&callback=?", function(data){
           // an array to store the responses in the required country, because GeoPlanet will not limit to a country
