@@ -409,7 +409,7 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
     
     $r .= call_user_func(array('data_entry_helper', $args['location_ctrl']), $location_list_args);
     
-    $r .= data_entry_helper::georeference_lookup(iform_map_get_georef_options($args));
+    $r .= data_entry_helper::georeference_lookup(iform_map_get_georef_options($args, $auth['read']));
     $options = iform_map_get_map_options($args, $auth['read']);
     $options['layers'][] = 'locationLayer';
     $olOptions = iform_map_get_ol_options($args);

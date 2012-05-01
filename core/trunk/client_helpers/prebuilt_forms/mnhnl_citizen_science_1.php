@@ -392,7 +392,7 @@ class iform_mnhnl_citizen_science_1 {
     foreach($list as $system) {
       $systems[$system] = lang::get($system);
     }
-    $r .= data_entry_helper::georeference_lookup(iform_map_get_georef_options($args));
+    $r .= data_entry_helper::georeference_lookup(iform_map_get_georef_options($args, $auth['read']));
     $r .= data_entry_helper::sref_and_system(array(
         'label' => lang::get('sample:entered_sref'),
         'systems' => $systems

@@ -1174,7 +1174,7 @@ $('#cc-1-reinit-button').click(function() {
       '.iform_pollenators::help_button($use_help, "location-help-button", $args['help_function'], $args['help_location_arg']).'
       <div id="cc-2-location-notes" >'.lang::get('LANG_Location_Notes').'</div>
       <div id="cc-2-location-entry">
-        '.data_entry_helper::georeference_lookup(iform_map_get_georef_options($args)).'
+        '.data_entry_helper::georeference_lookup(iform_map_get_georef_options($args, $readAuth)).'
     	<span >'.lang::get('LANG_Georef_Notes').'</span>
  	    <label for="place:INSEE">'.lang::get('LANG_Or').'</label>
  		<input type="text" id="place:INSEE" name="place:INSEE" value="'.lang::get('LANG_INSEE').'"
