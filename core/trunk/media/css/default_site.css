@@ -6,6 +6,14 @@
   width: 100% !important;
 }
 
+/* ensure a shake effect on failed autocompletes stays put */
+div.ui-effects-wrapper {
+  display:-moz-inline-stack;
+  display:inline-block;
+  zoom:1;
+  *display:inline;
+}
+
 .species-grid th button {
   padding: 0;
   margin: 0 0.5em;
