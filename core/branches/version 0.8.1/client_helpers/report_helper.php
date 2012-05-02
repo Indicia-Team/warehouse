@@ -483,6 +483,11 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   linkFeatures: ".((!empty($options['rowId']) && isset($options['sendOutputToMap']) && $options['sendOutputToMap']) ? 'true' : 'false').",
   msgRowLinkedToMapHint: '".lang::get('Click the row to highlight the record on the map. Double click to zoom in.')."',
   altRowClass: '".$options['altRowClass']."'";
+      if (isset($options['sharing'])) {
+        if (!isset($options['extraParams']))
+          $options['extraParams']=array();
+        $options['extraParams']['sharing']=$options['sharing'];
+      }
       if (isset($options['extraParams']))
         self::$javascript .= ",\n  extraParams: ".json_encode($options['extraParams']);
       if (isset($options['filters']))
