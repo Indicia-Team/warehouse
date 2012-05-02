@@ -434,7 +434,7 @@ $.Autocompleter.defaults = {
   width: 0,
   multiple: false,
   multipleSeparator: ", ",
-  continueOnBlur: false,
+  continueOnBlur: true,
   highlight: function(value, term) {
     return value ? 
         value.replace(new RegExp("(?![^&;]+;)(?!<[^<>]*)(" + term.replace(/([\^\$\(\)\[\]\{\}\*\.\+\?\|\\])/gi, "\\$1") + ")(?![^<>]*>)(?![^&;]+;)", "gi"), "<strong>$1</strong>")
