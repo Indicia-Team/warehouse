@@ -163,7 +163,7 @@ $.Autocompleter = function(input, options) {
     // show select when clicking in a focused field
     var hasFocus = $input[0].id===document.activeElement.id;
     if ( hasFocus && !select.visible() ) {
-      onChange(0, true);
+      onChange(0, false);
     }
   }).bind("search", function() {
     // TODO why not just specifying both arguments?
@@ -317,10 +317,14 @@ $.Autocompleter = function(input, options) {
   };
 
   function receiveData(q, data) {
+    var value;
     if (data && data.length) {
+      // escape special characters in regexp
+      value = $input.val().toLowerCase().replace(/[\[\]\\\^\$\.\|\?\*\+\(\)]/g, "\\+");
       for (idx=data.length-1; idx>=0; idx--) {
         // Drop anything that does not match, in case the edit has changed since the query was issued.
-        if (!data[idx].result.toLowerCase().match('^'+$input.val().toLowerCase().replace('*','.*'))) {
+        
+        if (!data[idx].result.toLowerCase().match('^'+value.replace('*','.*'))) {
           data.splice(idx, 1);
         }
       }
