@@ -130,6 +130,12 @@ This page allows you to specify the details of a location.
     'blankText' => '<Please select>',
     'disabled' => $disabled,
   ));
+  echo data_entry_helper::textarea(array(
+    'label' => 'Comment',
+    'fieldname' => 'location:comment',
+    'default' => html::initial_value($values, 'location:comment'),
+    'disabled' => $disabled,
+  ));
   echo data_entry_helper::sref_and_system(array(
     'label' => 'Spatial Ref',
     'fieldname' => 'location:centroid_sref',
