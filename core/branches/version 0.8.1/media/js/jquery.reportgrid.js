@@ -440,7 +440,7 @@ function simple_tooltip(target_items, name){
           e.preventDefault();
           if (div.loading) {return;}
           div.loading = true;
-          div.settings.offset = Math.round(div.settings.recordCount / div.settings.itemsPerPage-1)*div.settings.itemsPerPage;
+          div.settings.offset = Math.floor((div.settings.recordCount-1) / div.settings.itemsPerPage)*div.settings.itemsPerPage;
           load(div, false);
         });
         
