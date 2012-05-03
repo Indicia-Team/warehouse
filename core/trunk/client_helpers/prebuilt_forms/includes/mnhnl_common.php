@@ -2395,10 +2395,12 @@ function handleEnteredSref(value) {
         for(var i=0; i<SitePointLayer.features.length; i++){
           if(SitePointLayer.features[i].attributes.highlighted == true){
             replaceGeom(SitePointLayer.features[i], SitePointLayer, modPointFeature, feature.geometry, false, false);
+            ZoomToSite();
             return;
           }
         }
         addAndSelectNewGeom(SitePointLayer, modPointFeature, feature.geometry, true);
+        ZoomToSite();
       }
     });
   }

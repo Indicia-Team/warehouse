@@ -6,11 +6,13 @@
         query='SELECT id, title as caption FROM websites' />
     <param name='survey_id' display='Survey: ' description='Select the survey to return data for:' datatype='lookup'
         query='SELECT id, title as caption FROM surveys' />
-    <param name='orig_location_type_id' display='Location Type: ' description='Term ID for the Location Type used to indicate orginal locations:' datatype='int' />
-    <param name='new_location_type_id' display='Location Type: ' description='Term ID for the Location Type used to indicate new locations:' datatype='int' />
+    <param name='primary_loc_type_id' display='Location Type: ' description='Term ID for the Location Type used to indicate primary locations:' datatype='int' />
+    <param name='primary_name' display='Location Name: ' description='Name to use for primary locations:' datatype='text_input' />
+    <param name='secondary_loc_type_id' display='Location Type: ' description='Term ID for the Location Type used to indicate secondary locations:' datatype='int' />
+    <param name='secondary_name' display='Location Name: ' description='Name to use for secondary locations:' datatype='text_input' />
   </params>
   <table tablename="locations_websites" where="#this#.deleted = FALSE AND #this#.website_id=#website_id#" >
-    <subTable tablename="locations" where="#this#.deleted = FALSE AND #this#.location_type_id IN (#orig_location_type_id#, #new_location_type_id#) " >
+    <subTable tablename="locations" where="#this#.deleted = FALSE AND #this#.location_type_id IN (#primary_loc_type_id#, #secondary_loc_type_id#) " >
       <tabColumn name='name' display='Site'/>
       <tabColumn name='code' display='Code'/>
       <tabColumn name='xy' display='XY centroid' func="(regexp_replace(#this#.centroid_sref, ',|\\.[0-9]*' , '','g'))" />
@@ -21,7 +23,12 @@
      WHEN GeometryType(#this#.boundary_geom) = 'GEOMETRYCOLLECTION' AND NOT ST_IsEmpty(ST_CollectionExtract(#this#.boundary_geom, 1)) THEN regexp_replace(ST_AsText(ST_Transform(ST_CollectionExtract(#this#.boundary_geom,1),2169)),'[(){}\\x22]|\\.[0-9]*|MULTIPOINT','', 'g')
      ELSE ''
 END)" />
-      <tabColumn name='comment' display='Comment'/>
+      <tabColumn name='comment' display='Site comment'/>
+      <tabColumn name='location_type_id' display='Site status' func="(CASE
+     WHEN #this#.location_type_id = #primary_loc_type_id# THEN '#primary_name#'::text
+     WHEN #this#.location_type_id = #secondary_loc_type_id# THEN '#secondary_name#'::text
+     ELSE 'Unknown'::text
+END)" />
       <attributes separator='|' meaningIdLanguage='preferred'/>
     </subTable>
   </table>

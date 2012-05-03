@@ -76,7 +76,7 @@ class iform_mnhnl_bats2 extends iform_mnhnl_bats {
         array(
           'name' => 'addBreaks',
           'caption' => 'Add Breaks',
-          'description' => 'Add line breaks after these items',
+          'description' => 'Add line breaks before these items',
           'type' => 'string',
           'required' => false,
           'group' => 'User Interface'
