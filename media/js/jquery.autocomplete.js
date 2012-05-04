@@ -317,14 +317,15 @@ $.Autocompleter = function(input, options) {
   };
 
   function receiveData(q, data) {
-    var value;
     if (data && data.length) {
       // escape special characters in regexp
-      value = $input.val().toLowerCase().replace(/[\[\]\\\^\$\.\|\?\*\+\(\)]/g, "\\+");
+      value = $input.val().toLowerCase().replace(/[\[\]\\\^\$\.\|\?\+\(\)]/g, "\\$&");
+      regexp = new RegExp('^'+value.replace('*','.*'));
+      var value, regexp;
       for (idx=data.length-1; idx>=0; idx--) {
         // Drop anything that does not match, in case the edit has changed since the query was issued.
         
-        if (!data[idx].result.toLowerCase().match('^'+value.replace('*','.*'))) {
+        if (!data[idx].result.toLowerCase().match(regexp)) {
           data.splice(idx, 1);
         }
       }
