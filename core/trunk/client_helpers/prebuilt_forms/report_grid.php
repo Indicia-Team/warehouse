@@ -101,8 +101,27 @@ class iform_report_grid {
         },
         "visible": {"type":"bool","desc":"Should this column be shown? Hidden columns can still be used in templates or actions."},
         "template": {"type":"txt","desc":"Allows you to create columns that contain dynamic content using a template, rather than just the output '.
-        'of a field. The template text can contain fieldnames in braces, which will be replaced by the respective field values. '.
-        'Note that template columns cannot be sorted by clicking grid headers." }
+          'of a field. The template text can contain fieldnames in braces, which will be replaced by the respective field values. '.
+          'Note that template columns cannot be sorted by clicking grid headers." },
+        "update": {
+          "type":"map",
+          "title":"Update Specification",
+          "desc":"Defines the configuration to allow this field to update the database via AJAX. This assumes assume that we have access through iform_ajaxproxy.",
+          "mapping": {
+            "permission": {"type":"str","desc":"The CMS permission that the user must have in order for the field to be editable. If left blank then all users may update it."},
+            "method": {"type":"str","desc":"Ajax proxy method, e.g. loc"},
+            "tablename": {"type":"str","desc":"Submission table name: used to create the form field names from which the submission is built; e.g. location"},
+            "fieldname": {"type":"str","desc":"Field name for this field in submission; e.g. code"},
+            "website_id": {"type":"str","desc":"website_id"},
+            "class": {"type":"str","desc":"Class name to apply to input control."},
+            "parameters": {
+              "type":"map",
+              "subtype":"str",
+              "desc":"List of parameters to copy from the report to the submission; with field value replacements such as {id} begin replaced '.
+                  'by the value of the id field for the current row."
+            }
+          }
+        }
       }
     }
   ]
@@ -148,6 +167,7 @@ class iform_report_grid {
    */
   public static function get_form($args, $node, $response) {
     iform_load_helpers(array('report_helper'));
+    data_entry_helper::add_resource('jquery_form');
     $auth = report_helper::get_read_auth($args['website_id'], $args['password']);
     $reportOptions = iform_report_get_report_options($args, $auth);
     // get the grid output before outputting the download link, so we can check if the download link is needed.

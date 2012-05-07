@@ -157,7 +157,7 @@ class report_helper extends helper_base {
   *  - fieldname: name of the field to output in this column. Does not need to be specified when using the template option.
   *  - display: caption of the column, which defaults to the fieldname if not specified
   *  - actions: list of action buttons to add to each grid row. Each button is defined by a sub-array containing
-  *      values for caption, visibility_field, url, urlParams, class and javascript. The visibibility field is an optional
+  *      values for caption, visibility_field, url, urlParams, class and javascript. The visibility field is an optional
   *      name of a field in the data which contains true or false to define the visibility of this action. The javascript, url 
   *      and urlParams values can all use the field names from the report in braces as substitutions, for example {id} is replaced
   *      by the value of the field called id in the respective row. In addition, the url can use {currentUrl} to represent the 
@@ -368,6 +368,8 @@ class report_helper extends helper_base {
     $imagePath = self::get_uploaded_image_folder();
     $relpath = self::relative_client_helper_path();
     $addFeaturesJs = '';
+    $haveUpdates=false;
+    $updateformID=0;
     if (count($records)>0) {
       $rowInProgress=false;
       $rowTitle = !empty($options['rowId']) ?
@@ -415,6 +417,31 @@ class report_helper extends helper_base {
             $classes[]='actions';
           } elseif (isset($field['template'])) {
             $value = self::mergeParamsIntoTemplate($row, $field['template'], true, true, true);
+          } else if (isset($field['update']) &&(!isset($field['update']['permission']) || user_access($field['update']['permission']))){
+          	// TODO include checks to ensure method etc are included in structure - 
+          	$updateformID++;
+          	$value="<form id=\"updateform-".$updateformID."\" method=\"post\" action=\"".iform_ajaxproxy_url($node, $field['update']['method'])."\"><input type=\"hidden\" name=\"website_id\" value=\"".$field['update']['website_id']."\"><input type=\"hidden\" name=\"transaction_id\" value=\"updateform-".$updateformID."-field\"><input id=\"updateform-".$updateformID."-field\" name=\"".$field['update']['tablename'].":".$field['update']['fieldname']."\" class=\"update-input ".(isset($field['update']['class']) ? $field['update']['class'] : "")."\" value=\"".(isset($field['fieldname']) && isset($row[$field['fieldname']]) ? $row[$field['fieldname']] : '')."\">";
+          	if(isset($field['update']['parameters'])){
+              foreach($field['update']['parameters'] as $pkey=>$pvalue){
+                $value.="<input type=\"hidden\" name=\"".$field['update']['tablename'].":".$pkey."\" value=\"".$pvalue."\">";
+              }
+            }
+            $value.="</form>";
+          	$value=self::mergeParamsIntoTemplate($row, $value, true);
+          	$haveUpdates = true;
+            self::$javascript .= "
+jQuery('#updateform-".$updateformID."').ajaxForm({
+    async: true,
+    dataType:  'json',
+    success:   function(data, status, form){
+      if (checkErrors(data)) {
+        var selector = '#'+data.transaction_id.replace(/:/g, '\\:');
+        $(selector).removeClass('input-saving');
+        $(selector).removeClass('input-edited');
+      }
+    }
+  });
+";
           }
           else {
             $value = isset($field['fieldname']) && isset($row[$field['fieldname']]) ? $row[$field['fieldname']] : '';
@@ -446,6 +473,42 @@ class report_helper extends helper_base {
     // amend currentUrl path if we have drupal dirty URLs so javascript will work properly
     if ($pathParam==='q' && isset($currentUrl['params']['q']) && strpos($currentUrl['path'], '?')===false) {
       $currentUrl['path'] = $currentUrl['path'].'?q='.$currentUrl['params']['q'];
+    }
+    if($haveUpdates){
+      self::$javascript .= "
+function checkErrors(data) {
+  if (typeof data.error!==\"undefined\") {
+    if (typeof data.errors!==\"undefined\") {
+      $.each(data.errors, function(idx, error) {
+        alert(error);
+      });
+    } else {
+      alert('An error occured when trying to save the data: '+data.error);
+    }
+    // data.transaction_id stores the last cell at the time of the post.
+    var selector = '#'+data.transaction_id.replace(/:/g, '\\\\:');
+    $(selector).focus();
+    $(selector).select();
+    return false;
+  } else {
+    return true;
+  }
+}
+$('.update-input').focus(function(evt) {
+  $(evt.target).addClass('input-selected');
+}).change(function(evt) {
+  $(evt.target).addClass('input-edited');
+}).blur(function(evt) {        
+  var selector = '#'+evt.target.id.replace(/:/g, '\\:');
+  currentCell = evt.target.id;
+  $(selector).removeClass('input-selected');
+  if ($(selector).hasClass('input-edited')) {
+    $(selector).addClass('input-saving');
+    // WARNING No validation currently applied...
+    $(selector).parent().submit();
+  }
+});
+";
     }
     self::addFeaturesLoadingJs($addFeaturesJs);
     // $r may be empty if a spatial report has put all its controls on the map toolbar, when using params form only mode.
