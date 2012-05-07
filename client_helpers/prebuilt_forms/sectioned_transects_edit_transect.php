@@ -271,6 +271,12 @@ class iform_sectioned_transects_edit_transect {
       'class' => 'required',
       'helpText' => lang::get('Click on the map to set the central grid reference.')      
     ));
+    $r .= data_entry_helper::text_input(array(
+      'fieldname' => 'location:code',
+      'label' => lang::get('Site Code'),
+      'class' => 'control-width-4',
+      'disabled' => ' readonly="readonly" '
+    ));
     
     // setup the map options
     $options = iform_map_get_map_options($args, $auth['read']);
