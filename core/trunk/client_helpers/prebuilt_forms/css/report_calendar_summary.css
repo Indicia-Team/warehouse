@@ -31,4 +31,7 @@ tr td.week {
 	border: navy solid thin;
 	padding: 3px;
 }
+#date-control-table,#chartdiv-container {
+	margin-bottom: 3px;
+}
 

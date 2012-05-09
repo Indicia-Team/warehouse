@@ -2092,13 +2092,11 @@ if (typeof(mapSettingsHooks)!=='undefined') {
 
  /**
   * <p>Outputs a calendar grid that loads the content of a report.</p>
-  * <p>The grid supports a pagination header (year by year). If you need 2 grids on one page, then you must
+  * <p>If you need 2 grids on one page, then you must
   * define a different id in the options for each grid.</p>
-  * <p>The grid operation has NOT been AJAXified.</p>
+  * <p>The grid operation has NOT been AJAXified. There is no download option.</p>
   *
   * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>year</b><br/>
-  * The year to output the calendar for. Default is this year.</li>
   * <li><b>id</b><br/>
   * Optional unique identifier for the grid's container div. This is required if there is more than
   * one grid on a single web page to allow separation of the page and sort $_GET parameters in the URLs
@@ -2119,7 +2117,7 @@ if (typeof(mapSettingsHooks)!=='undefined') {
   * </li>
   * <li><b>paramDefaults</b>
   * Optional associative array of parameter default values. Default values appear in the parameter form and can be overridden.</li>
-  * <li><b>weekHeaders</b>
+  * <li><b>tableHeaders</b>
   * Defines which week column headers should be included: date, number or both
   * <li><b>weekstart</b>
   * Defines the first day of the week. There are 2 options.<br/>'.
@@ -2150,6 +2148,7 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     // there are some report parameters that we can assume for a calendar based request...
     // the report must have a date field, a user_id field if set in the configuration, and a location_id.
     // default is samples_list_for_cms_user.xml
+    // TODO y-axis integer as start at zero
     $options = self::get_report_calendar_summary_options($options);
     $extras = '';
     self::request_report($response, $options, $currentParamValues, false, $extras);
@@ -2165,8 +2164,6 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     $pageUrlParams = self::get_report_calendar_grid_page_url_params($options);
     $pageUrl = self::report_calendar_grid_get_reload_url($pageUrlParams);
     $pageUrl .= (strpos($pageUrl , '?')===false) ? '?' : '&';
-    $date_from = array('year'=>$options["year"], 'month'=>1, 'day'=>1);
-    $date_to = array('year'=>$options["year"], 'month'=>12, 'day'=>31);
     // ISO Date - Mon=1, Sun=7
     // Week 1 = the week with date_from in
     if(!isset($options['weekstart']) || $options['weekstart']=="") {
@@ -2191,7 +2188,7 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     }
     $weekstart=explode('=',$options['weekstart']);
     if($weekstart[0]=='date'){
-      $weekstart_date = date_create($date_from['year']."-".$weekstart[1]);
+      $weekstart_date = date_create(substr($options['date_start'],0,4)."-".$weekstart[1]);
       if(!$weekstart_date){
         $warnings .= "Weekstart month-day combination unrecognised {".$weekstart[1]."} defaulting to weekday=7 - Sunday<br />";
         $weekstart[1]=7;
@@ -2202,17 +2199,17 @@ if (typeof(mapSettingsHooks)!=='undefined') {
       $weekstart[1]=7;
     }
     if(isset($options['weekOneContains']) && $options['weekOneContains']!=""){
-      $weekOne_date = date_create($date_from['year'].'-'.$options['weekOneContains']);
+      $weekOne_date = date_create(substr($options['date_start'],0,4).'-'.$options['weekOneContains']);
       if(!$weekOne_date){
         $warnings .= "Week one month-day combination unrecognised {".$options['weekOneContains']."} defaulting to Jan-01<br />";
-        $weekOne_date = date_create($date_from['year'].'-Jan-01');
+        $weekOne_date = date_create(substr($options['date_start'],0,4).'-Jan-01');
       }
     } else 
-      $weekOne_date = date_create($date_from['year'].'-Jan-01');
+      $weekOne_date = date_create(substr($options['date_start'],0,4).'-Jan-01');
     while($weekOne_date->format('N')!=$weekstart[1]){
       $weekOne_date->modify('-1 day'); // scan back to start of week
     }
-    $summaryArray=array();
+    $summaryArray=array(); // this is used for the table output format
     foreach($records as $record){
     	// first work out the week number
       $this_date = date_create(str_replace('/','-',$record['date'])); // prevents day/month orderinfg issues
@@ -2228,7 +2225,7 @@ if (typeof(mapSettingsHooks)!=='undefined') {
         $this_date->modify('+7 days');
         $weekno--;
       }
-      if(isset($options['countColumn'])){
+      if(isset($options['countColumn']) && $options['countColumn']!=''){
         if(!isset($record[$options['countColumn']]))
           return "Error: can't find ".$options['countColumn']." in record keys ".implode(',',array_keys($record));
       	$count = $record[$options['countColumn']];
@@ -2236,7 +2233,7 @@ if (typeof(mapSettingsHooks)!=='undefined') {
         $count = 1; // default to single row = single occurrence
       if(isset($summaryArray[$record[$options['rowGroupColumn']]])) {
         if(isset($summaryArray[$record[$options['rowGroupColumn']]][$weekno])){
-          $summaryArray[$record[$options['rowGroupColumn']]][$weekno] += $count; //todo count in report
+          $summaryArray[$record[$options['rowGroupColumn']]][$weekno] += $count;
         } else {
           $summaryArray[$record[$options['rowGroupColumn']]][$weekno] = $count;
         }
@@ -2244,11 +2241,13 @@ if (typeof(mapSettingsHooks)!=='undefined') {
         $summaryArray[$record[$options['rowGroupColumn']]] = array($weekno => $count);
       }
     }
-    $year_start = date_create($date_from['year'].'-Jan-01');
-    $year_end = date_create($date_from['year'].'-Dec-12');
+    if(count($summaryArray)==0)
+      return $warnings.'<p>'.lang::get('No data returned for this period.').'</p>';
+    $year_start = date_create(substr($options['date_start'],0,4).'-Jan-01');
+    $year_end = date_create(substr($options['date_start'],0,4).'-Dec-12');
+    $firstWeek_date = clone $weekOne_date;
     if($weeknumberfilter[0]!=''){
       $minWeekNo = 1;
-      $firstWeek_date = clone $weekOne_date;
       while($firstWeek_date > $year_start && $minWeekNo>$weeknumberfilter[0]){
         $firstWeek_date->modify('-7 days');
         $minWeekNo--;
@@ -2259,8 +2258,6 @@ if (typeof(mapSettingsHooks)!=='undefined') {
       }
     } else {
       $minWeekNo = 1;
-      $firstWeek_date = clone $weekOne_date;
-      $year_start = date_create($date_from['year'].'-Jan-01');
       while($firstWeek_date > $year_start){
         $firstWeek_date->modify('-7 days');
         $minWeekNo--;
@@ -2271,58 +2268,143 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     } else {
       $maxWeekNo = 1;
       $lastWeek_date = clone $weekOne_date;
-      $year_end = date_create($date_from['year'].'-Dec-12');
+      $year_end = date_create(substr($options['date_start'],0,4).'-Dec-12');
       while($lastWeek_date <= $year_end){
         $lastWeek_date->modify('+7 days');
         $maxWeekNo++;
       }
     }
+    $r="";
     // will storedata in an array[Y][X]
-    $thClass = $options['thClass'];
-    $r = "\n<table class=\"".$options['class']."\">";
-    $r .= "\n<thead class=\"$thClass\"><tr><td></td><td>
-  <a title=\"".($options["year"]-1)."\" rel=\"\nofollow\" href=\"".$pageUrl.$pageUrlParams['year']['name']."=".($options["year"]-1)."\" class=\"ui-datepicker-prev ui-corner-all\">
-    <span class=\"ui-icon ui-icon-circle-triangle-w\">Prev</span></a></td><td></td><td colspan=3><span class=\"thisYear\">".$options["year"]."</span></td><td></td><td>";
-    if($options["year"]<date('Y')){
-      $r .= "  <a title=\"".($options["year"]+1)."\" rel=\"\nofollow\" href=\"".$pageUrl.$pageUrlParams['year']['name']."=".($options["year"]+1)."\" class=\"ui-datepicker-next ui-corner-all\">
-        <span class=\"ui-icon ui-icon-circle-triangle-e\">Next</span></a>";
+    $format= array();
+    if(isset($options['outputTable']) && $options['outputTable']){
+      $format['table'] = array('include'=>true,
+          'display'=>(isset($options['simultaneousOutput']) && $options['simultaneousOutput'])||(isset($options['defaultOutput']) && $options['defaultOutput']=='table')||!isset($options['defaultOutput']));
     }
-    $dateRow = "";
-    $numberRow = "";
-    // Not implementing a download.
-    $r.= '</td><td colspan='.($maxWeekNo-$minWeekNo-5).'></td></tr>';
+    if(isset($options['outputLineChart']) && $options['outputLineChart']){
+      $format['line'] = array('include'=>true,
+          'display'=>(isset($options['simultaneousOutput']) && $options['simultaneousOutput'])||(isset($options['defaultOutput']) && $options['defaultOutput']=='line'));
+      data_entry_helper::add_resource('jqplot');
+      self::add_resource('jqplot_category_axis_renderer');
+      $opts = array();
+      $options['legendOptions']["show"]=true;
+      $opts[] = "seriesDefaults:{\n".(isset($renderer) ? "  renderer:$renderer,\n" : '')."  rendererOptions:".json_encode($options['rendererOptions'])."}";
+      $opts[] = 'legend:'.json_encode($options['legendOptions']);
+    }
+    if(count($format)==0) $format['table'] = array('include'=>true);
+    
+    $chartDateLabels=array();
+    $chartNumberLabels=array();
+    $tableDateHeaderRow = "";
+    $tableNumberHeaderRow = "";
+    $seriesData=array();
     for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
-      $numberRow.= '<td class="week">'.$i.'</td>';
-      $dateRow.= '<td class="week">'.$firstWeek_date->format('M').'<br/>'.$firstWeek_date->format('d').'</td>';
+      $tableNumberHeaderRow.= '<td class="week">'.$i.'</td>';
+      $tableDateHeaderRow.= '<td class="week">'.$firstWeek_date->format('M').'<br/>'.$firstWeek_date->format('d').'</td>';
+      $chartNumberLabels[] = $i;
+      $chartDateLabels[] = $firstWeek_date->format('M').'-'.$firstWeek_date->format('d');
       $firstWeek_date->modify('+7 days');
     }
-    if(isset($options['weekHeaders']) && ($options['weekHeaders'] == 'both' || $options['weekHeaders'] == 'number')){
-    	$r .= '<tr><td>Week</td>'.$numberRow.'<td>Total</td></tr>';
-    }
-    if(!isset($options['weekHeaders']) || $options['weekHeaders'] != 'number'){
-    	$r .= '<tr><td>Date</td>'.$dateRow.(!isset($options['weekHeaders']) || $options['weekHeaders'] == 'both' || $options['weekHeaders'] == 'number'?'<td></td>':'<td>Total</td>').'</tr>';
-    }
-    $r.= "</thead>\n";
-    $r .= "<tbody>\n";
-    $altRow=false;
-    foreach($summaryArray as $label => $summaryRow){
-      $total=0;
-      $r .= "<tr class=\"datarow ".($altRow?$options['altRowClass']:'')."\">";
-      $r.= '<td>'.$label.'</td>';
-      for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
-        if(isset($summaryRow[$i])){
-          $r.= '<td>'.$summaryRow[$i].'</td>';
-          $total += $summaryRow[$i];
-        } else {
-          $r.= '<td></td>';
+    if(count($format)>1 && !(isset($options['simultaneousOutput']) && $options['simultaneousOutput'])){
+      // TODO should implement visibility with a class rather than direct with display.
+      // TODO should use classes on the labels etc, rather than direct style.
+      // TODO invariant IDs and names [rebvents more than one on a page.
+      $checked = !isset($options['defaultOutput']) || $options['defaultOutput']=='' || $options['defaultOutput']=='table';
+      $r .= '<label for="simultaneousOutput:table" style="width:auto;" >'.lang::get('View data as a table').'</label><input type="radio" name="simultaneousOutput" id="simultaneousOutput:table" '.($checked?'checked="checked"':'').' value="table"/>'.
+            '<label for="simultaneousOutput:line" style="width:auto; margin-left:20px;" >'.lang::get('View data as a line chart').'</label><input type="radio" name="simultaneousOutput" '.(!$checked?'checked="checked"':'').' id="simultaneousOutput:line" value="line"/><br/>';
+      data_entry_helper::$javascript .= "jQuery('[name=simultaneousOutput]').change(function(){
+  jQuery('#".$options['tableID'].",#".$options['chartContainerID']."').toggle();
+  // TODO global variable prevents more than one on a page.
+  plot.redraw();
+});"; 
+    }    
+    if(isset($format['line'])){
+      $seriesData=array();
+      $seriesOptions=array();
+      // Series options are not configurable as we need to setup for ourselves...
+      // we need show, label and show label filled in. rest are left to defaults
+      foreach($summaryArray as $label => $summaryRow){
+        $values=array();
+        for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
+          if(isset($summaryRow[$i])){
+            $values[]=$summaryRow[$i];
+          } else {
+            $values[]=0;
+          }
         }
+        // each series will occupy an entry in $seriesData
+        $seriesData[] = '['.implode(',', $values).']';
+        $seriesOptions[] = '{"show":true,"label":"'.$label.'","showlabel":true}';
       }
-      $r.= '<td>'.$total.'</td>';
-      // TODO total is optional
-      $r .= "</tr>";
-      $altRow=!$altRow;
+      $opts[] = 'series:['.implode(',', $seriesOptions).']';
+      $options['axesOptions']['xaxis']['renderer'] = '$.jqplot.CategoryAxisRenderer';
+      if(isset($options['chartLabels']) && $options['chartLabels'] == 'number')
+        $options['axesOptions']['xaxis']['ticks'] = $chartNumberLabels;
+      else
+        $options['axesOptions']['xaxis']['ticks'] = $chartDateLabels;
+      // We need to fudge the json so the renderer class is not a string
+      $opts[] = str_replace('"$.jqplot.CategoryAxisRenderer"', '$.jqplot.CategoryAxisRenderer',
+        'axes:'.json_encode($options['axesOptions']));
+      // Finally, dump out the Javascript with our constructed parameters
+      data_entry_helper::$javascript .= "var plot = $.jqplot('".$options['chartID']."',  [".implode(',', $seriesData)."], \n{".implode(",\n", $opts)."});\n";
+      $r .= '<div id="'.$options['chartContainerID'].'" class="'.$options['chartClass'].'" style="width:'.$options['width'].'; '.($format['line']['display']?'':'display:none;').'">';
+      if (isset($options['title']))
+        $r .= '<div class="'.$options['headerClass'].'">'.$options['title'].'</div>';
+      $r .= '<div id="'.$options['chartID'].'" style="height:'.$options['height'].'px;width:'.$options['width'].'px; "></div>'."\n";
+      if(isset($options['disableableSeries']) && $options['disableableSeries']){
+        drupal_add_js('misc/collapse.js');
+        $r .= '<fieldset id="'.$options['chartID'].'-series" class="collapsible collapsed"><legend>'.lang::get('Display Series').'</legend>'."\n";
+        $idx=0;
+        foreach($summaryArray as $label => $summaryRow){
+          $r .= '<input type="checkbox" checked="checked" id="'.$options['chartID'].'-series-'.$idx.'" name="'.$options['chartID'].'-series" value="'.$idx.'"/><label for="'.$options['chartID'].'-series-'.$idx.'">'.$label.'</label>';
+          $idx++;
+        }
+      data_entry_helper::$javascript .= "
+jQuery('[name=".$options['chartID']."-series]').change(function(){
+  if(jQuery(this).filter('[checked]').length){
+    plot.series[jQuery(this).val()].show = true;
+  } else {
+    plot.series[jQuery(this).val()].show = false;
+  }
+  plot.redraw();
+});
+";
+        $r .= "</fieldset>\n";
+      }
+      $r .= "</div>\n";
     }
-    $r .= "</tbody></table>\n";
+    if(isset($format['table'])){
+      $thClass = $options['thClass'];
+      $r .= "\n<table id=\"".$options['tableID']."\" class=\"".$options['tableClass']."\" style=\"".($format['table']['display']?'':'display:none;')."\">";
+      $r .= "\n<thead class=\"$thClass\">";
+      if(isset($options['tableHeaders']) && ($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number')){
+        $r .= '<tr><td>Week</td>'.$tableNumberHeaderRow.'<td>Total</td></tr>';
+      }
+      if(!isset($options['tableHeaders']) || $options['tableHeaders'] != 'number'){
+        $r .= '<tr><td>Date</td>'.$tableDateHeaderRow.(!isset($options['tableHeaders']) || $options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number'?'<td></td>':'<td>Total</td>').'</tr>';
+      }
+      $r.= "</thead>\n";
+      $r .= "<tbody>\n";
+      $altRow=false;
+      foreach($summaryArray as $label => $summaryRow){
+        $total=0;
+        $r .= "<tr class=\"datarow ".($altRow?$options['altRowClass']:'')."\">";
+        $r.= '<td>'.$label.'</td>';
+        for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
+          if(isset($summaryRow[$i])){
+            $r.= '<td>'.$summaryRow[$i].'</td>';
+            $total += $summaryRow[$i];
+          } else {
+            $r.= '<td></td>';
+          }
+        }
+        $r.= '<td>'.$total.'</td>';
+        // TODO total is optional
+        $r .= "</tr>";
+        $altRow=!$altRow;
+      }
+      $r .= "</tbody></table>\n";
+    }
     if(count($summaryArray)==0)
       $r .= '<p>'.lang::get('No data returned for this period.').'</p>';
     return $warnings.$r;
@@ -2333,22 +2415,32 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     $options = array_merge(array(
       'mode' => 'report',
       'id' => 'calendar-report-output', // this needs to be set explicitly when more than one report on a page
-      'class' => 'ui-widget ui-widget-content report-grid',
+      'tableID' => 'report-table',
+      'tableClass' => 'ui-widget ui-widget-content report-grid',
       'thClass' => 'ui-widget-header',
       'altRowClass' => 'odd',  
       'extraParams' => array(),
-      'year' => date('Y'),
       'viewPreviousIfTooEarly' => true, // if today is before the start of the calendar, display last year.
         // it is possible to create a partial calendar.
       'includeWeekNumber' => false,
       'weekstart' => 'weekday=7', // Default Sunday
       'weekNumberFilter' => ':',
-      'rowGroupColumn'=>'taxon'
+      'rowGroupColumn'=>'taxon',
+      'chartContainerID' => 'chartdiv-container',
+      'chartID' => 'chartdiv',
+      'chartClass' => 'ui-widget ui-widget-content ui-corner-all',
+      'headerClass' => 'ui-widget-header ui-corner-all',
+      'height' => 400,
+      'width' => 400,
+      'chartType' => 'line', // bar, pie
+      'rendererOptions' => array(),
+      'legendOptions' => array(),
+      'axesOptions' => array()
     ), $options);
     $options["extraParams"] = array_merge(array(
-      'date_from' => $options["year"].'-01-01',
-      'date_to' => $options["year"].'-12-31',
-      'user_id' => $user->uid, // CMS User, not Indicia User.
+      'date_from' => $options['date_start'],
+      'date_to' => $options['date_end'],
+      'user_id' => '', // CMS User, not Indicia User.
 //      'smpattrs' => '',
       'occattrs' => ''), $options["extraParams"]);
     // Note for the calendar reports, the user_id is assumed to be the CMS user id as recorded in the CMS User ID attribute,
