@@ -19,7 +19,7 @@
   AND (CAST(s.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
   AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
       AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
-  AND CAST(sav.int_value AS character varying)='#user_id#'
+  AND (CAST(sav.int_value AS character varying)='#user_id#' OR '#user_id#' = '')
   AND (CAST(parent.location_id AS character varying)='#location_id#' OR '#location_id#'='')
   #order_by#
   </query>

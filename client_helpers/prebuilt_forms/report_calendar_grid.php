@@ -73,7 +73,7 @@ class iform_report_calendar_grid {
         array(
           'name'=>'includeLocationFilter',
           'caption'=>'Include user specific location filter',
-          'description'=>'Choose whether to include a filter on the locations assigned to this user using the CMS User ID location attribute. This alters how the links are highlighted, and provides a default site when creationg a new sample.',
+          'description'=>'Choose whether to include a filter on the locations assigned to this user using the CMS User ID location attribute. This alters how the links are highlighted, and provides a default site when creating a new sample.',
           'type'=>'boolean',
           'default' => false,
           'required' => false,
@@ -234,7 +234,7 @@ class iform_report_calendar_grid {
         'fieldprefix'=>'locAttr',
         'extraParams'=>$readAuth,
         'survey_id'=>$presets['survey_id']);
-    if(isset($args['locationTypeFilter']))
+    if(isset($args['locationTypeFilter']) && $args['locationTypeFilter']!="")
       $attrArgs['location_type_id'] = $args['locationTypeFilter'];
     $locationAttributes = data_entry_helper::getAttributes($attrArgs, false);
     $cmsAttr=extract_cms_user_attr($locationAttributes,false);
