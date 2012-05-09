@@ -685,7 +685,7 @@ jQuery('#".$ctrlid."').change(function(){
       array('weekstart','weekOneContains','weekNumberFilter',
             'outputTable','outputLineChart','simultaneousOutput','defaultOutput',
             'tableHeaders','chartLabels','disableableSeries',
-            'rowGroupColumn'));
+            'rowGroupColumn','width','height'));
       
     // Advanced Chart options
     $rendererOptions = trim($args['renderer_options']);
