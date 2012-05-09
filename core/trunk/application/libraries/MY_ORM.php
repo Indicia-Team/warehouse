@@ -1486,8 +1486,8 @@ class ORM extends ORM_Core {
     $validation->add_rules($sref_system_field, 'required');
     if (!empty($values[$sref_system_field])) {
       $system = $values[$sref_system_field];
-      $validation->add_rules('entered_sref', "sref[$system]");
-      $validation->add_rules('entered_sref_system', 'sref_system');
+      $validation->add_rules($sref_field, "sref[$system]");
+      $validation->add_rules($sref_system_field, 'sref_system');
     }
   }
   
