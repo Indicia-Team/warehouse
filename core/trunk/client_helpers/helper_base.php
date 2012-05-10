@@ -1202,6 +1202,9 @@ $('.ui-state-default').live('mouseout', function() {
           }
           if (isset($resourceList[$resource]['javascript'])) {
             foreach ($resourceList[$resource]['javascript'] as $j) {
+              // if enabling fancybox, link it up
+              if (strpos($j, 'fancybox.')!==false)
+                self::$javascript .= "jQuery('a.fancybox').fancybox();\n";
               // look out for a condition that this script is IE only.
               if (substr($j, 0, 4)=='[IE]')
                 $libraries .= "<!--[if IE]><script type=\"text/javascript\" src=\"".substr($j, 4)."\"></script><![endif]-->\n";

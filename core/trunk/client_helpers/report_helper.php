@@ -273,7 +273,6 @@ class report_helper extends helper_base {
   */
   public static function report_grid($options) {
     self::add_resource('fancybox');
-    self::$javascript .= "jQuery('a.fancybox').fancybox();\n";
     $sortAndPageUrlParams = self::get_report_grid_sort_page_url_params($options);
     $options = self::get_report_grid_options($options);
     $extras = self::get_report_sorting_paging_params($options, $sortAndPageUrlParams);
