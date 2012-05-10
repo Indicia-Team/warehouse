@@ -2147,7 +2147,6 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     // there are some report parameters that we can assume for a calendar based request...
     // the report must have a date field, a user_id field if set in the configuration, and a location_id.
     // default is samples_list_for_cms_user.xml
-    // TODO y-axis integer as start at zero
     $options = self::get_report_calendar_summary_options($options);
     $extras = '';
     self::request_report($response, $options, $currentParamValues, false, $extras);
@@ -2226,8 +2225,9 @@ if (typeof(mapSettingsHooks)!=='undefined') {
       }
       if(isset($options['countColumn']) && $options['countColumn']!=''){
         if(!isset($record[$options['countColumn']]))
-          return "Error: can't find ".$options['countColumn']." in record keys ".implode(',',array_keys($record));
-      	$count = $record[$options['countColumn']];
+          $count = 1; // default to single row = single occurrence even if occurrence count requested.
+        else
+          $count = $record[$options['countColumn']];
       } else
         $count = 1; // default to single row = single occurrence
       if(isset($summaryArray[$record[$options['rowGroupColumn']]])) {
@@ -2280,10 +2280,17 @@ if (typeof(mapSettingsHooks)!=='undefined') {
       $format['table'] = array('include'=>true,
           'display'=>(isset($options['simultaneousOutput']) && $options['simultaneousOutput'])||(isset($options['defaultOutput']) && $options['defaultOutput']=='table')||!isset($options['defaultOutput']));
     }
-    if(isset($options['outputLineChart']) && $options['outputLineChart']){
-      $format['line'] = array('include'=>true,
-          'display'=>(isset($options['simultaneousOutput']) && $options['simultaneousOutput'])||(isset($options['defaultOutput']) && $options['defaultOutput']=='line'));
+    if(isset($options['outputChart']) && $options['outputChart']){
+      $format['chart'] = array('include'=>true,
+          'display'=>(isset($options['simultaneousOutput']) && $options['simultaneousOutput'])||(isset($options['defaultOutput']) && $options['defaultOutput']=='chart'));
       data_entry_helper::add_resource('jqplot');
+      switch ($options['chartType']) {
+        case 'bar' :
+          self::add_resource('jqplot_bar');
+          $renderer='$.jqplot.BarRenderer';
+          break;
+        // default is line
+      }
       self::add_resource('jqplot_category_axis_renderer');
       $opts = array();
       $options['legendOptions']["show"]=true;
@@ -2307,17 +2314,17 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     if(count($format)>1 && !(isset($options['simultaneousOutput']) && $options['simultaneousOutput'])){
       // TODO should implement visibility with a class rather than direct with display.
       // TODO should use classes on the labels etc, rather than direct style.
-      // TODO invariant IDs and names [rebvents more than one on a page.
+      // TODO invariant IDs and names prevents more than one on a page.
       $checked = !isset($options['defaultOutput']) || $options['defaultOutput']=='' || $options['defaultOutput']=='table';
-      $r .= '<label for="simultaneousOutput:table" style="width:auto;" >'.lang::get('View data as a table').'</label><input type="radio" name="simultaneousOutput" id="simultaneousOutput:table" '.($checked?'checked="checked"':'').' value="table"/>'.
-            '<label for="simultaneousOutput:line" style="width:auto; margin-left:20px;" >'.lang::get('View data as a line chart').'</label><input type="radio" name="simultaneousOutput" '.(!$checked?'checked="checked"':'').' id="simultaneousOutput:line" value="line"/><br/>';
+      $r .= "\n".'<label for="simultaneousOutput:table" style="width:auto;" >'.lang::get('View data as a table').'</label><input type="radio" name="simultaneousOutput" id="simultaneousOutput:table" '.($checked?'checked="checked"':'').' value="table"/>'.
+            '<label for="simultaneousOutput:chart" style="width:auto; margin-left:20px;" >'.lang::get('View data as a chart').'</label><input type="radio" name="simultaneousOutput" '.(!$checked?'checked="checked"':'').' id="simultaneousOutput:chart" value="chart"/><br/>'."\n";
       data_entry_helper::$javascript .= "jQuery('[name=simultaneousOutput]').change(function(){
   jQuery('#".$options['tableID'].",#".$options['chartContainerID']."').toggle();
   // TODO global variable prevents more than one on a page.
-  plot.redraw();
+  replot();
 });"; 
     }    
-    if(isset($format['line'])){
+    if(isset($format['chart'])){
       $seriesData=array();
       $seriesOptions=array();
       // Series options are not configurable as we need to setup for ourselves...
@@ -2344,21 +2351,45 @@ if (typeof(mapSettingsHooks)!=='undefined') {
       // We need to fudge the json so the renderer class is not a string
       $opts[] = str_replace('"$.jqplot.CategoryAxisRenderer"', '$.jqplot.CategoryAxisRenderer',
         'axes:'.json_encode($options['axesOptions']));
-      // Finally, dump out the Javascript with our constructed parameters
-      data_entry_helper::$javascript .= "var plot = $.jqplot('".$options['chartID']."',  [".implode(',', $seriesData)."], \n{".implode(",\n", $opts)."});\n";
-      $r .= '<div id="'.$options['chartContainerID'].'" class="'.$options['chartClass'].'" style="width:'.$options['width'].'; '.($format['line']['display']?'':'display:none;').'">';
+      // Finally, dump out the Javascript with our constructed parameters.
+      // width stuff is a bit weird, but jqplot requires a fixed width, so this just stretches it to fill the space.
+      if($format['chart']['display']){
+        if(!isset($options['width']) || $options['width'] == '')
+          data_entry_helper::$javascript .= "\njQuery(\"#".$options['chartID']."\").width(jQuery(\"#".$options['chartID']."\").width());";
+        data_entry_helper::$javascript .= "
+var plot = $.jqplot('".$options['chartID']."',  [".implode(',', $seriesData)."], \n{".implode(",\n", $opts)."});
+function replot(){
+  plot.redraw();
+}
+";
+      }else{
+        data_entry_helper::$javascript .= "\nvar plot;
+function replot(){
+  if(typeof plot=='undefined'){";
+        if(!isset($options['width']) || $options['width'] == '')
+          data_entry_helper::$javascript .= "\njQuery(\"#".$options['chartID']."\").width(jQuery(\"#".$options['chartID']."\").width());";
+        data_entry_helper::$javascript .= "
+    plot = $.jqplot('".$options['chartID']."',  [".implode(',', $seriesData)."], \n{".implode(",\n", $opts)."});
+  }else
+    plot.redraw();
+};
+";
+      }
+      // div are full width.
+      $r .= '<div id="'.$options['chartContainerID'].'" class="'.$options['chartClass'].'" style="'.(isset($options['width']) && $options['width'] != '' ? 'width:'.$options['width'].'px;':'').($format['chart']['display']?'':'display:none;').'">';
       if (isset($options['title']))
         $r .= '<div class="'.$options['headerClass'].'">'.$options['title'].'</div>';
-      $r .= '<div id="'.$options['chartID'].'" style="height:'.$options['height'].'px;width:'.$options['width'].'px; "></div>'."\n";
-      if(isset($options['disableableSeries']) && $options['disableableSeries']){
+      $r .= '<div id="'.$options['chartID'].'" style="height:'.$options['height'].'px;'.(isset($options['width']) && $options['width'] != '' ? 'width:'.$options['width'].'px;':'').'"></div>'."\n";
+      if(isset($options['disableableSeries']) && $options['disableableSeries'] && count($summaryArray)>1){
         drupal_add_js('misc/collapse.js');
-        $r .= '<fieldset id="'.$options['chartID'].'-series" class="collapsible collapsed"><legend>'.lang::get('Display Series').'</legend>'."\n";
+        $r .= '<fieldset id="'.$options['chartID'].'-series" class="collapsible collapsed"><legend>'.lang::get('Display ').$options['rowGroupColumn'].'</legend>'."\n";
         $idx=0;
         foreach($summaryArray as $label => $summaryRow){
           $r .= '<input type="checkbox" checked="checked" id="'.$options['chartID'].'-series-'.$idx.'" name="'.$options['chartID'].'-series" value="'.$idx.'"/><label for="'.$options['chartID'].'-series-'.$idx.'">'.$label.'</label>';
           $idx++;
         }
-      data_entry_helper::$javascript .= "
+        $r .= "</fieldset>\n";
+        data_entry_helper::$javascript .= "
 jQuery('[name=".$options['chartID']."-series]').change(function(){
   if(jQuery(this).filter('[checked]').length){
     plot.series[jQuery(this).val()].show = true;
@@ -2368,7 +2399,6 @@ jQuery('[name=".$options['chartID']."-series]').change(function(){
   plot.redraw();
 });
 ";
-        $r .= "</fieldset>\n";
       }
       $r .= "</div>\n";
     }
@@ -2398,7 +2428,7 @@ jQuery('[name=".$options['chartID']."-series]').change(function(){
           }
         }
         $r.= '<td>'.$total.'</td>';
-        // TODO total is optional
+        // TODO add control to allow total to be optional
         $r .= "</tr>";
         $altRow=!$altRow;
       }
@@ -2430,7 +2460,7 @@ jQuery('[name=".$options['chartID']."-series]').change(function(){
       'chartClass' => 'ui-widget ui-widget-content ui-corner-all',
       'headerClass' => 'ui-widget-header ui-corner-all',
       'height' => 400,
-      'width' => 400,
+      // 'width' is optional
       'chartType' => 'line', // bar, pie
       'rendererOptions' => array(),
       'legendOptions' => array(),
