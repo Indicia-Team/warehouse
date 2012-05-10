@@ -3268,9 +3268,11 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     if (array_key_exists('extraParams', $options)) {
       $request .= '&'.self::array_to_query_string($options['extraParams']);
     }
+    $query = urlencode(json_encode(array('in'=>array($options['filterField'], array(null, 'val')))));
+    $query = str_replace('%22val%22', "'+$(this).val()+'", $query);
     self::$javascript .= str_replace(
-        array('{fn}','{escapedId}','{request}','{filterField}','{valueField}','{captionField}','{parentControlId}', '{instruct}'),
-        array($fn, $escapedId, $request,$options['filterField'],$options['valueField'],$options['captionField'],$parentControlId, $instruct),
+        array('{fn}','{escapedId}','{request}','{query}','{valueField}','{captionField}','{parentControlId}', '{instruct}'),
+        array($fn, $escapedId, $request,$query,$options['valueField'],$options['captionField'],$parentControlId, $instruct),
         $indicia_templates['linked_list_javascript']
     );
   }
