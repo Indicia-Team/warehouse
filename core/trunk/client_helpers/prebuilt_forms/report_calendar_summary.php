@@ -23,7 +23,7 @@
 /*
  * Future enhancements:
  * Aggregate other sample based attrs?
- * Extend to accept bar charts as well as line.
+ * Extand to allow user to select between line and bar charts.
  * Extend Header processing on table to allow configuration so that user can choose whether to have week numbers or dates.
  * Extend X label processing on chart to allow configuration so that user can choose whether to have week numbers or dates.
  */
@@ -86,9 +86,9 @@ class iform_report_calendar_summary {
           'group' => 'Report Output'
         ),
         array(
-          'name'=>'outputLineChart',
-          'caption'=>'Output line chart',
-          'description'=>'Allow output of data as a line chart.',
+          'name'=>'outputChart',
+          'caption'=>'Output chart',
+          'description'=>'Allow output of data as a chart. The exact chart type (e.g. line or bar) can be set using the options below.',
           'type'=>'boolean',
           'default' => false,
           'required' => false,
@@ -110,7 +110,7 @@ class iform_report_calendar_summary {
           'type'=>'select',
           'options' => array(
             'table' => 'Data table',
-            'line' => 'Line graph'
+            'chart' => 'Chart'
           ),
           'default' => 'table',
           'required' => false,
@@ -118,9 +118,35 @@ class iform_report_calendar_summary {
         ),
         
         array(
+          'name'=>'includeUserFilter',
+          'caption'=>'Include user filter',
+          'description'=>'Choose whether to include a filter on the user. This is passed through to the report parameter list as user_id. If not selected, user_id is not included in the report parameter list.',
+          'type'=>'boolean',
+          'default' => false,
+          'required' => false,
+          'group' => 'Controls'
+        ),
+        array(
           'name'=>'managerPermission',
           'caption'=>'Drupal Permission for Manager mode',
-          'description'=>'Enter the Drupal permission name to be used to determine if this user is a manager. Entering this will allow the identified users to filter by user, which sets the user_id in the report parameter list to the CMS user id (not the Indicia user id). For non managers the user_id is automatically set to the users CMS ID. The selection of the "All Users" option sets the user_id of the report parameter list to a empty string.',
+          'description'=>'Enter the Drupal permission name to be used to determine if this user is a manager. Entering this will allow the identified users to chose which user to filter by via a drop down list, which sets the user_id in the report parameter list to the CMS user id (not the Indicia user id). For non managers the user_id is automatically set to the users CMS ID. The selection of the "All Users" option sets the user_id of the report parameter list to a empty string.',
+          'type'=>'string',
+          'required' => false,
+          'group' => 'Controls'
+        ),
+        array(
+          'name'=>'cmsUserLookpUp',
+          'caption'=>'Only Users who have entered data',
+          'description'=>'Choose whether to include only users which have entered data (indicated by the CMS User ID attribute lodged against a sample).',
+          'type'=>'boolean',
+          'default' => false,
+          'required' => false,
+          'group' => 'Controls'
+        ),
+        array(
+          'name'=>'cmsUserLookpUpSampleMethod',
+          'caption'=>'Sample Method',
+          'description'=>'When looking up the sample attributes, enter an optional sample method term.',
           'type'=>'string',
           'required' => false,
           'group' => 'Controls'
@@ -159,7 +185,7 @@ class iform_report_calendar_summary {
         array(
           'name'=>'dateFilter',
           'caption'=>'Date Filter type',
-          'description'=>'When the user is provided with the output type selection control (more then one output type and user selectable), then this determines which is displayed first. If a choice is made which is not selected above, then the default is first selected in the order as above (table, line, bar).',
+          'description'=>'Type of control used to select the start and end dates provided to the report.',
           'type'=>'select',
           'options' => array(
             'none' => 'None',
@@ -222,14 +248,23 @@ class iform_report_calendar_summary {
           'required' => false,
           'group' => 'Report Output'
         ),
-        // Chart ttype is determined by the output options above. Note there is no provision for pie chart at the moments.
+        
+        array(
+          'name' => 'chartType',
+          'caption' => 'Chart Type',
+          'description' => 'Type of chart.',
+          'type' => 'select',
+          'lookupValues' => array('line'=>lang::get('Line'), 'bar'=>lang::get('Bar')),
+          'required' => true,
+          'default' => 'line',
+          'group'=>'Chart Options'
+        ),
         array(
           'name' => 'width',
           'caption' => 'Chart Width',
-          'description' => 'Width of the output chart in pixels.',
+          'description' => 'Width of the output chart in pixels: if not set then it will automatically to fill the space.',
           'type' => 'text_input',
-          'required' => true,
-          'default' => 500,
+          'required' => false,
           'group'=>'Chart Options'
         ),
         array(
@@ -241,7 +276,7 @@ class iform_report_calendar_summary {
           'default' => 500,
           'group'=>'Chart Options'
         ),
-        array( // TODO
+        array(
           'name' => 'disableableSeries',
           'caption' => 'Switchable Series',
           'description' => 'User can switch off display of individual Series.',
@@ -254,9 +289,8 @@ class iform_report_calendar_summary {
           'name' => 'renderer_options',
           'caption' => 'Renderer Options',
           'description' => 'Editor for the renderer options to pass to the chart. For full details of the options available, '.
-              'see <a href="http://www.jqplot.com/docs/files/plugins/jqplot-barRenderer-js.html">bar chart renderer options</a>, '.
-              '<a href="http://www.jqplot.com/docs/files/plugins/jqplot-lineRenderer-js.html">line charts rendered options<a/> or '.
-              '<a href="http://www.jqplot.com/docs/files/plugins/jqplot-pieRenderer-js.html">pie chart renderer options</a>.',
+              'see <a href="http://www.jqplot.com/docs/files/plugins/jqplot-barRenderer-js.html">bar chart renderer options</a> or '.
+              '<a href="http://www.jqplot.com/docs/files/plugins/jqplot-lineRenderer-js.html">line charts rendered options<a/>.',
           'type' => 'jsonwidget',
           'schema' => '{
   "type":"map",
@@ -266,36 +300,22 @@ class iform_report_calendar_summary {
     "barMargin":{"title":"Bar Margin", "type":"int","desc":"Number of pixels between groups of bars at adjacent axis values."},
     "barDirection":{"title":"Bar Direction", "type":"str","desc":"Select vertical for up and down bars or horizontal for side to side bars","enum":["vertical","horizontal"]},
     "barWidth":{"title":"Bar Width", "type":"int","desc":"Width of the bar in pixels (auto by devaul)."},
-    "shadowOffset":{"title":"Bar or Pie Slice Shadow Offset", "type":"number","desc":"Offset of the shadow from the slice and offset of each succesive stroke of the shadow from the last."},
-    "shadowDepth":{"title":"Bar or Pie Slice Shadow Depth", "type":"int","desc":"Number of strokes to apply to the shadow, each stroke offset shadowOffset from the last."},
-    "shadowAlpha":{"title":"Bar or Pie Slice Shadow Alpha", "type":"number","desc":"Transparency of the shadow (0 = transparent, 1 = opaque)"},
+    "shadowOffset":{"title":"Bar Slice Shadow Offset", "type":"number","desc":"Offset of the shadow from the slice and offset of each succesive stroke of the shadow from the last."},
+    "shadowDepth":{"title":"Bar Slice Shadow Depth", "type":"int","desc":"Number of strokes to apply to the shadow, each stroke offset shadowOffset from the last."},
+    "shadowAlpha":{"title":"Bar Slice Shadow Alpha", "type":"number","desc":"Transparency of the shadow (0 = transparent, 1 = opaque)"},
     "waterfall":{"title":"Bar Waterfall","type":"bool","desc":"Check to enable waterfall plot."},
     "groups":{"type":"int","desc":"Group bars into this many groups."},
     "varyBarColor":{"type":"bool","desc":"Check to color each bar of a series separately rather than have every bar of a given series the same color."},
     "highlightMouseOver":{"type":"bool","desc":"Check to highlight slice, bar or filled line plot when mouse over."},
     "highlightMouseDown":{"type":"bool","desc":"Check to highlight slice, bar or filled line plot when mouse down."},
-    "highlightColors":{"type":"seq","desc":"An array of colors to use when highlighting a bar or pie slice.",
+    "highlightColors":{"type":"seq","desc":"An array of colors to use when highlighting a bar.",
         "sequence":[{"type":"str"}]
     },
-    "highlightColor":{"type":"str","desc":"A colour to use when highlighting an area on a filled line plot."},
-    "diameter":{"title":"Pie Diameter","type":"int","desc":"Outer diameter of the pie, auto computed by default."},
-    "padding":{"title":"Pie Padding","type":"int","desc":"padding between the pie and plot edges, legend, etc."},
-    "sliceMargin":{"title":"Pie Slice Margin","type":"int","desc":"Angular spacing between pie slices in degrees."},
-    "fill":{"title":"Pie Fill", "type":"bool","desc":"true or false, whether to fill the slices."},
-    "dataLabels":{"title":"Pie Data Labels", "type":"str","desc":"Select what to display as labels on pie slices.",
-      "enum":["label","value","percent"]
-    },
-    "showDataLabels":{"title":"Pie Show Data Labels", "type":"bool","desc":"Check to show data labels on pie slices."},
-    "dataLabelFormatString":{"title":"Pie Data Label Format String", "type":"str","desc":"Format string for data labels. %s is replaced with the label, %d with the value, %d%% with the percentage."},
-    "dataLabelThreshold":{"title":"Pie Data Label Threshold", "type":"int","desc":"Threshhold in percentage (0-100) of pie area, below which no label will be displayed.  This applies to all label types, not just to percentage labels."},
-    "dataLabelPositionFactor":{"title":"Pie Data Label Position Factor", "type":"number","desc":"A Multiplier (0-1) of the pie radius which controls position of label on slice."},
-    "dataLabelNudge":{"title":"Pie Data Label Nudge", "type":"number","desc":"Number of pixels to slide the label away from (+) or toward (-) the center of the pie."},
-    "dataLabelCenterOn":{"title":"Pie Data Label Centre On", "type":"bool","desc":"Check to center the data label at its position."},
-    "startAngle":{"title":"Pie Start Angle", "type":"int","desc":"Angle to start drawing pie in degrees."}
+    "highlightColor":{"type":"str","desc":"A colour to use when highlighting an area on a filled line plot."}
   }  
 }',
           'required' => false,
-          'group'=>'Chart Options'
+          'group'=>'Advanced Chart Options'
         ),
         array(
           'name' => 'legend_options',
@@ -303,15 +323,13 @@ class iform_report_calendar_summary {
           'description' => 'Editor for the legend options to pass to the chart. For full details of the options available, '.
               'see <a href="http://www.jqplot.com/docs/files/jqplot-core-js.html#Legend">chart legend options</a>. '.
               'For example, set the value to <em>{"show":true,"location":"ne"}</em> to show the legend in the top-right '.
-              '(north east) corner.',
+              '(north east) corner. Note some legend options are set by this form, so are not available in this list.',
           'type' => 'jsonwidget',
           'schema'=>'{
   "type":"map",
   "title":"Legend Options",
   "mapping":{
     "location":{"type":"str","desc":"Placement of the legend (compass direction).","enum":["nw","n","ne","e","se","s","sw","w"]},
-    "labels":{"type":"seq","desc":"Array of labels to use. By default the renderer will look for labels on the series.  Labels specified in this array will override labels specified on the series.",
-        "sequence":[{"type":"str"}]},
     "showLabels":{"type":"bool","desc":"Check to show the label text on the legend."},
     "showSwatch":{"type":"bool","desc":"Check to show the color swatches on the legend."},
     "placement":{"type":"str","desc":"insideGrid places legend inside the grid area of the plot. OutsideGrid places the legend outside the grid but inside the plot container, shrinking the '.
@@ -330,7 +348,7 @@ class iform_report_calendar_summary {
   }
 }',
           'required' => false,
-          'group'=>'Chart Options'
+          'group'=>'Advanced Chart Options'
         ),
         array(
           'name' => 'axes_options',
@@ -341,7 +359,7 @@ class iform_report_calendar_summary {
               'For example, <em>{"yaxis":{"min":0,"max":100}}</em>.',
           'type' => 'jsonwidget',
           'required' => false,
-          'group'=>'Chart Options',
+          'group'=>'Advanced Chart Options',
           'schema'=>'{
   "type":"map",
   "title":"Axis options",
@@ -476,21 +494,27 @@ class iform_report_calendar_summary {
   /* This is the URL parameter used to pass the location_id filter through */
   private static $locationKey = 'location_id';
   
-  private function location_control($args, $readAuth, $node)
+  private function location_control($args, $readAuth, $node, &$options)
   {
     global $user;
-    // loctools is not appropriate here as it is based on a node, for which this is a very simple one, invoking other nodes for the sample creation
-    // need to scan param_presets for survey_id..
     $siteUrlParams = array(
       self::$locationKey => array(
         'name' => self::$locationKey,
-        'value' => isset($_GET[self::$locationKey]) ? $_GET[self::$locationKey] : null
-      )
-    );
+        'value' => isset($_GET[self::$locationKey]) ? $_GET[self::$locationKey] : ''));
+    // loctools is not appropriate here as it is based on a node, for which this is a very simple one, invoking other nodes for the sample creation
+    if(!isset($args['includeLocationFilter']) || !$args['includeLocationFilter'])
+      return '';
+    // this is user specific: when no user selection control, or all users selected then default to all locations
+    // this means it does not get a list of all locations if no user is selected: to be added later?
+    if(!isset($args['includeUserFilter']) || !$args['includeUserFilter'] || !isset($options['userId']) || $options['userId']==""){
+      $options['extraParams']['location_id'] = '';
+      return lang::get('All locations');
+    }  
+    // need to scan param_presets for survey_id..
+    $options['extraParams']['location_id'] = $siteUrlParams[self::$locationKey]['value'];
     $presets = get_options_array_with_user_data($args['param_presets']);
-    if(!isset($presets['survey_id']) || $presets['survey_id']==''){
-      return('<p>'.lang::get('The location selection control requires that survey_id is set in the presets in the form parameters.').'</p>');
-    }
+    if(!isset($presets['survey_id']) || $presets['survey_id']=='')
+      return(lang::get('Location control: survey_id missing from presets.'));
     $attrArgs = array(
         'valuetable'=>'location_attribute_value',
         'attrtable'=>'location_attribute',
@@ -502,40 +526,36 @@ class iform_report_calendar_summary {
       $attrArgs['location_type_id'] = $args['locationTypeFilter'];
     $locationAttributes = data_entry_helper::getAttributes($attrArgs, false);
     $cmsAttr=extract_cms_user_attr($locationAttributes,false);
-    if(!$cmsAttr){
-      return('<p>'.lang::get('The location selection control requires that CMS User ID location attribute is defined for locations in this survey.').'</p>');
-    }
+    if(!$cmsAttr)
+      return(lang::get('Location control: missing CMS User ID location attribute.'));
     $attrListArgs=array('nocache'=>true,
         'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
                            'location_attribute_id'=>$cmsAttr['attributeId'], 'raw_value'=>$user->uid),
                      $readAuth),
         'table'=>'location_attribute_value');
     $attrList = data_entry_helper::get_population_data($attrListArgs);
-    if (isset($attrList['error'])){
+    if (isset($attrList['error']))
       return $attrList['error'];
-    }
     $locationIDList=array();
-    foreach($attrList as $attr) {
+    foreach($attrList as $attr)
       $locationIDList[] = $attr['location_id'];
-    }
     $locationListArgs=array('nocache'=>true,
         'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'], 'id'=>$locationIDList),
                      $readAuth),
         'table'=>'location');
     $locationList = data_entry_helper::get_population_data($locationListArgs);
-    if (isset($locationList['error'])) {
+    if (isset($locationList['error']))
       return $locationList['error'];
-    }
     $ctrlid='calendar-location-select-'.$node->nid;
     $ctrl='<label for="'.$ctrlid.'" class="location-select-label">'.lang::get('Filter by location').
-          ' :</label><select id="'.$ctrlid.'" class="location-select">'.
-          '<option value="" class="location-select-option" '.($siteUrlParams[self::$locationKey]['value']==null ? 'selected=\"selected\" ' : '').'>'.lang::get('All locations').'</option>';
+          ': </label><select id="'.$ctrlid.'" class="location-select">'.
+          '<option value="" class="location-select-option" '.($siteUrlParams[self::$locationKey]['value']=='' ? 'selected="selected" ' : '').'>'.lang::get('All locations').'</option>';
     foreach($locationList as $location){
-      $ctrl .= '<option value='.$location['id'].' class="location-select-option" '.($siteUrlParams[self::$locationKey]['value']==$location['id'] ? 'selected=\"selected\" ' : '').'>'.
+      $ctrl .= '<option value='.$location['id'].' class="location-select-option" '.($siteUrlParams[self::$locationKey]['value']==$location['id'] ? 'selected="selected" ' : '').'>'.
                $location['name'].(isset($args['includeSrefInLocationFilter']) && $args['includeSrefInLocationFilter'] ? ' ('.$location['centroid_sref'].')' : '').
                '</option>';
     }
-    $ctrl.='</select><br />';
+    $ctrl.='</select>';
     self::set_up_control_change($ctrlid, self::$locationKey, $siteUrlParams);
     return $ctrl;
   }
@@ -543,9 +563,15 @@ class iform_report_calendar_summary {
   /* This is the URL parameter used to pass the user_id filter through */
   private static $userKey = 'userID';
   
-  private function user_control($args, $readAuth, $node)
+  private function user_control($args, $readAuth, $node, &$options)
   {
     global $user;
+    if(!isset($args['includeUserFilter']) || !$args['includeUserFilter'])
+      return '';
+    if(!isset($args['managerPermission']) || $args['managerPermission']=="" || !user_access($args['managerPermission'])) {
+      $options['userId'] = $user->uid;
+      return lang::get('User').': '.$user->name;
+    }
     // if the user is changed then we must reset the location
     $siteUrlParams = array(
       self::$userKey => array(
@@ -554,49 +580,61 @@ class iform_report_calendar_summary {
       self::$locationKey => array(
         'name' => self::$locationKey,
         'value' => ''));
-    // need to scan param_presets for survey_id.
-    $presets = get_options_array_with_user_data($args['param_presets']);
-    if(!isset($presets['survey_id']) || $presets['survey_id']=='')
-      return('<p>'.lang::get('The user selection control requires that survey_id is set in the presets in the form parameters.').'</p>');
-    $attrArgs = array(
+    $options['userId'] = $siteUrlParams[self::$userKey]['value'];    
+    $userList=array();
+    if(!isset($args['cmsUserLookpUp']) || !$args['cmsUserLookpUp']) {
+      $results = db_query('SELECT uid, name FROM {users}');
+      while($result = db_fetch_object($results)){
+        if($result->uid){
+          $account = user_load($result->uid);
+          $userList[$account->uid] = $account;
+        }
+      }
+    } else {
+      // need to scan param_presets for survey_id.
+      $presets = get_options_array_with_user_data($args['param_presets']);
+      if(!isset($presets['survey_id']) || $presets['survey_id']=='')
+        return(lang::get('User control: survey_id missing from presets.'));
+      $attrArgs = array(
         'valuetable'=>'sample_attribute_value',
         'attrtable'=>'sample_attribute',
         'key'=>'sample_id',
         'fieldprefix'=>'smpAttr',
         'extraParams'=>$readAuth,
         'survey_id'=>$presets['survey_id']);
-    $sampleAttributes = data_entry_helper::getAttributes($attrArgs, false);
-    $cmsAttr=extract_cms_user_attr($sampleAttributes,false);
-    if(!$cmsAttr)
-      return('<p>'.lang::get('The user selection control requires that CMS User ID sample attribute is defined for samples in this survey.').'</p>');
-    $attrListArgs=array('nocache'=>true,
+      if(isset($args['cmsUserLookpUpSampleMethod']) && $args['cmsUserLookpUpSampleMethod']!="") {
+        $sampleMethods = helper_base::get_termlist_terms(array('read'=>$readAuth), 'indicia:sample_methods', array(trim($args['cmsUserLookpUpSampleMethod'])));
+        $attrArgs['sample_method_id']=$sampleMethods[0]['id'];
+      }
+      $sampleAttributes = data_entry_helper::getAttributes($attrArgs, false);
+      if (false== ($cmsAttr = extract_cms_user_attr($sampleAttributes)))
+        return(lang::get('User control: CMS User ID missing.'));
+      $attrListArgs=array('nocache'=>true,
         'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
                            'sample_attribute_id'=>$cmsAttr['attributeId']),
                      $readAuth),
         'table'=>'sample_attribute_value');
-    $attrList = data_entry_helper::get_population_data($attrListArgs);
-    if (isset($attrList['error']))
-      return $attrList['error'];
-    $userList=array();
-    foreach($attrList as $attr)
-      if($attr['id']!=null)
-        $userList[intval($attr['raw_value'])] = true;
-    // This next bit is DRUPAL specific
-    $retVal = array();
-    $results = db_query('SELECT uid, name FROM {users}');
-    while($result = db_fetch_object($results)){
-      $account = user_load($result->uid);
-      if(isset($userList[$account->uid]) && $userList[$account->uid])
-        $userList[$account->uid] = $account;
+      $attrList = data_entry_helper::get_population_data($attrListArgs);
+      if (isset($attrList['error']))
+        return $attrList['error'];
+      foreach($attrList as $attr)
+        if($attr['id']!=null)
+          $userList[intval($attr['raw_value'])] = true;
+      // This next bit is DRUPAL specific
+      $results = db_query('SELECT uid, name FROM {users}');
+      while($result = db_fetch_object($results)){
+        $account = user_load($result->uid);
+        if(isset($userList[$account->uid]) && $userList[$account->uid])
+          $userList[$account->uid] = $account;
+      }
     }
     $ctrlid='calendar-user-select-'.$node->nid;
     $ctrl='<label for="'.$ctrlid.'" class="user-select-label">'.lang::get('Filter by user').
-          ' :</label><select id="'.$ctrlid.'" class="user-select">'.
-          '<option value="" class="user-select-option" '.($siteUrlParams[self::$userKey]['value']=='' ? 'selected=\"selected\" ' : '').'>'.lang::get('All Users').'</option>';
-    foreach($userList as $id => $account){
-      $ctrl .= '<option value='.$id.' class="user-select-option" '.($siteUrlParams[self::$userKey]['value']==$id ? 'selected=\"selected\" ' : '').'>'.$account->name.'</option>';
-    }
-    $ctrl.='</select><br />';
+          ': </label><select id="'.$ctrlid.'" class="user-select">'.
+          '<option value="" class="user-select-option" '.($siteUrlParams[self::$userKey]['value']=='' ? 'selected="selected" ' : '').'>'.lang::get('All Users').'</option>';
+    foreach($userList as $id => $account)
+      $ctrl .= '<option value='.$id.' class="user-select-option" '.($siteUrlParams[self::$userKey]['value']==$id ? 'selected="selected" ' : '').'>'.$account->name.'</option>';
+    $ctrl.='</select>';
     self::set_up_control_change($ctrlid, self::$userKey, $siteUrlParams);
     return $ctrl;
   }
@@ -615,14 +653,14 @@ class iform_report_calendar_summary {
     $param=(strpos($reloadUrl['path'],'?')===false ? '?' : '&').$urlparam.'=';
     data_entry_helper::$javascript .="
 jQuery('#".$ctrlid."').change(function(){
-  window.location = '".$reloadUrl['path']."' + (jQuery(this).val()=='' ? '' : '".$param."'+jQuery(this).val());
+  window.location = '".$reloadUrl['path'].$param."'+jQuery(this).val();
 });
 ";
   }
 
   private function copy_args($args, &$options, $list){
     foreach($list as $arg){
-      if(isset($args[$arg]))
+      if(isset($args[$arg]) && $args[$arg]!="")
         $options[$arg]=$args[$arg];
     }
   }
@@ -652,11 +690,10 @@ jQuery('#".$ctrlid."').change(function(){
           }
         }
         $param=(strpos($reloadUrl['path'],'?')===false ? '?' : '&').$yearKey.'=';
-        $r .= "\n<table id=\"date-control-table\" class=\"ui-widget ui-widget-content ui-corner-all report-grid\"><thead class=\"ui-widget-header\"><tr><th><a title=\"".($siteUrlParams[$yearKey]['value']-1)."\" rel=\"\nofollow\" href=\"".$reloadUrl['path'].$param.($siteUrlParams[$yearKey]['value']-1)."\" class=\"ui-datepicker-prev ui-corner-all\"><span class=\"ui-icon ui-icon-circle-triangle-w\">Prev</span></a></th><th><span class=\"thisYear\">".$siteUrlParams[$yearKey]['value']."</span></th><th>";
+        $r .= "<th><a title=\"".($siteUrlParams[$yearKey]['value']-1)."\" rel=\"nofollow\" href=\"".$reloadUrl['path'].$param.($siteUrlParams[$yearKey]['value']-1)."\" class=\"ui-datepicker-prev ui-corner-all\"><span class=\"ui-icon ui-icon-circle-triangle-w\">Prev</span></a></th><th><span class=\"thisYear\">".$siteUrlParams[$yearKey]['value']."</span></th>";
         if($siteUrlParams[$yearKey]['value']<date('Y')){
-          $r .= "<a title=\"".($siteUrlParams[$yearKey]['value']+1)."\" rel=\"\nofollow\" href=\"".$reloadUrl['path'].$param.($siteUrlParams[$yearKey]['value']+1)."\" class=\"ui-datepicker-next ui-corner-all\"><span class=\"ui-icon ui-icon-circle-triangle-e\">Next</span></a>";
+          $r .= "<th><a title=\"".($siteUrlParams[$yearKey]['value']+1)."\" rel=\"nofollow\" href=\"".$reloadUrl['path'].$param.($siteUrlParams[$yearKey]['value']+1)."\" class=\"ui-datepicker-next ui-corner-all\"><span class=\"ui-icon ui-icon-circle-triangle-e\">Next</span></a></th>";
         }
-        $r.= '</th></tr></thead></table>';
         $options['date_start'] = $siteUrlParams[$yearKey]['value'].'-Jan-01';
         $options['date_end'] = $siteUrlParams[$yearKey]['value'].'-Dec-31';
         return $r;
@@ -683,39 +720,34 @@ jQuery('#".$ctrlid."').change(function(){
     $reportOptions['id']='calendar-summary-'.$node->nid;
     self::copy_args($args, $reportOptions,
       array('weekstart','weekOneContains','weekNumberFilter',
-            'outputTable','outputLineChart','simultaneousOutput','defaultOutput',
+            'outputTable','outputChart','simultaneousOutput','defaultOutput',
             'tableHeaders','chartLabels','disableableSeries',
-            'rowGroupColumn','width','height'));
+            'chartType','rowGroupColumn','width','height'));
       
     // Advanced Chart options
     $rendererOptions = trim($args['renderer_options']);
     if (!empty($rendererOptions))
-      $chartOptions['rendererOptions'] = json_decode($rendererOptions, true);
+      $reportOptions['rendererOptions'] = json_decode($rendererOptions, true);
     $legendOptions = trim($args['legend_options']);
     if (!empty($legendOptions))
-      $chartOptions['legendOptions'] = json_decode($legendOptions, true);
+      $reportOptions['legendOptions'] = json_decode($legendOptions, true);
     $axesOptions = trim($args['axes_options']);
     if (!empty($axesOptions))
-      $chartOptions['axesOptions'] = json_decode($axesOptions, true);
-      
+      $reportOptions['axesOptions'] = json_decode($axesOptions, true);
+    
     if(isset($args['countColumn']) && $args['countColumn']!='') {
       $reportOptions['countColumn']= 'attr_occurrence_'.str_replace(' ', '_', strtolower($args['countColumn'])); // assume that this is an occurrence attribute.
       $reportOptions['extraParams']['occattrs']=$args['countColumn'];
     }
 
     $retVal = '';
-    // Add controls first
-    if((isset($args['managerPermission']) && $args['managerPermission']!="" && user_access($args['managerPermission']))) {
-      $retVal .= self::user_control($args, $auth, $node);
-      $reportOptions['userId'] = (isset($_GET[self::$userKey])?$_GET[self::$userKey]:'');
-    } else {
-      $reportOptions['userId'] = $user->uid;
-    }
-    if(isset($args['includeLocationFilter']) && $args['includeLocationFilter']){
-    	$retVal .= self::location_control($args, $auth, $node);
-    	$reportOptions['extraParams']['location_id'] = (isset($_GET[self::$locationKey])?$_GET[self::$locationKey]:'');
-    };
+    // Add controls first: set up a control bar
+    $retVal .= "\n<table id=\"controls-table\" class=\"ui-widget ui-widget-content ui-corner-all controls-table\"><thead class=\"ui-widget-header\"><tr>";
     $retVal .= self::date_control($args, $auth, $node, $reportOptions);
+    $retVal .= '<th></th><th>'.self::user_control($args, $auth, $node, $reportOptions).'</th>';
+    $retVal .= '<th></th><th>'.self::location_control($args, $auth, $node, $reportOptions).'</th>';
+    $retVal.= '</tr></thead></table>';
+//    $retVal .= print_r($reportOptions,true);
     $retVal .= report_helper::report_calendar_summary($reportOptions);
     return $retVal;
   }
