@@ -210,7 +210,7 @@ $indicia_templates = array(
 {fn} = function() {
   $('#{escapedId}').addClass('ui-state-disabled');
   $('#{escapedId}').html('<option>Loading...</option>');
-  $.getJSON('{request}&{filterField}='+$(this).val(), function(data){
+  $.getJSON('{request}&query={query}', function(data){
     $('#{escapedId}').html('');
     if (data.length>0) {
       $('#{escapedId}').removeClass('ui-state-disabled');
