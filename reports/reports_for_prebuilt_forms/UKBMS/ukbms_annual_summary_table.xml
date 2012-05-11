@@ -34,7 +34,7 @@
       tpref.taxon
   </field_sql>
   <order_bys>
-    <order_by>o.id DESC</order_by>
+    <order_by>tpref.taxon, o.id DESC</order_by>
   </order_bys>
   <params>
     <param name='survey_id' display='Survey' description='Select the survey, or leave for all surveys' datatype='lookup'

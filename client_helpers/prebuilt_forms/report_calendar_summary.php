@@ -206,29 +206,6 @@ class iform_report_calendar_summary {
         ),
         
         array(
-          'name'=>'tableHeaders',
-          'caption'=>'Type of header rows to include in the table output',
-          'description'=>'Choose whether to include either the week comence date, week number or both as rows in the table header for each column.',
-          'type'=>'select',
-          'options' => array(
-            'date' => 'Date Only',
-            'number' => 'Week number only',
-            'both' => 'Both'
-          ),
-          'group' => 'Report Output'
-        ),
-        array(
-          'name'=>'chartLabels',
-          'caption'=>'Chart X-axis labels',
-          'description'=>'Choose whether to have either the week comence date or week number as the chart X-axis labels.',
-          'type'=>'select',
-          'options' => array(
-            'date' => 'Date Only',
-            'number' => 'Week number only',
-          ),
-          'group' => 'Report Output'
-        ),
-        array(
           'name'=>'weekstart',
           'caption'=>'Start of week definition',
           'description'=>'Define the first day of the week. There are 2 options.<br/>'.
@@ -236,7 +213,7 @@ class iform_report_calendar_summary {
                         "&nbsp;&nbsp;<strong>date=MMM/DD</strong> where <strong>MMM/DD</strong> is a month/day combination: e.g. choosing Apr-1 will start each week on the day of the week on which the 1st of April occurs.",
           'type'=>'string',
           'default' => 'weekday=7',
-          'group' => 'Report Output'
+          'group' => 'Date Axis Options'
         ),
         array(
           'name'=>'weekOneContains',
@@ -244,7 +221,7 @@ class iform_report_calendar_summary {
           'description'=>'When including a week number column, calculate week one as the week containing this date: value should be in the format <strong>MMM/DD</strong>, which is a month/day combination: e.g. choosing Apr-1 will mean week one contains the date of the 1st of April. Default is the Jan-01',
           'type'=>'string',
           'required' => false,
-          'group' => 'Report Output'
+          'group' => 'Date Axis Options'
         ),
         array(
           'name'=>'weekNumberFilter',
@@ -254,9 +231,40 @@ class iform_report_calendar_summary {
                          'Examples: "1:30" - Weeks one to thirty inclusive. "4:" - Week four onwards. ":5" - Upto and including week five.',
           'type'=>'string',
           'required' => false,
-          'group' => 'Report Output'
+          'group' => 'Date Axis Options'
         ),
-        
+
+        array(
+          'name'=>'tableHeaders',
+          'caption'=>'Type of header rows to include in the table output',
+          'description'=>'Choose whether to include either the week comence date, week number or both as rows in the table header for each column.',
+          'type'=>'select',
+          'options' => array(
+            'date' => 'Date Only',
+            'number' => 'Week number only',
+            'both' => 'Both'
+          ),
+          'group' => 'Table Options'
+        ),
+        array(
+          'name'=>'includeTableTotalColumn',
+          'caption'=>'Include Total Column',
+          'description'=>'Choose whether to generate a totals column at the right of the table - each row is totaled for the whole time period.',
+          'type'=>'boolean',
+          'default' => true,
+          'required' => false,
+          'group' => 'Table Options'
+        ),
+        array(
+          'name'=>'includeTableTotalRow',
+          'caption'=>'Include Total Row',
+          'description'=>'Choose whether to generate a totals row at the bottom of the table - each week is totaled.',
+          'type'=>'boolean',
+          'default' => true,
+          'required' => false,
+          'group' => 'Table Options'
+        ),
+
         array(
           'name' => 'chartType',
           'caption' => 'Chart Type',
@@ -266,6 +274,26 @@ class iform_report_calendar_summary {
           'required' => true,
           'default' => 'line',
           'group'=>'Chart Options'
+        ),
+        array(
+          'name'=>'chartLabels',
+          'caption'=>'Chart X-axis labels',
+          'description'=>'Choose whether to have either the week commence date or week number as the chart X-axis labels.',
+          'type'=>'select',
+          'options' => array(
+            'date' => 'Date Only',
+            'number' => 'Week number only',
+          ),
+          'group' => 'Chart Options'
+        ),
+        array(
+          'name'=>'includeChartTotalSeries',
+          'caption'=>'Include Total Series',
+          'description'=>'Choose whether to generate a series which gives the totals for each week.',
+          'type'=>'boolean',
+          'default' => true,
+          'required' => false,
+          'group' => 'Chart Options'
         ),
         array(
           'name' => 'width',
@@ -738,7 +766,8 @@ jQuery('#".$ctrlid."').change(function(){
       array('weekstart','weekOneContains','weekNumberFilter',
             'outputTable','outputChart','simultaneousOutput','defaultOutput',
             'tableHeaders','chartLabels','disableableSeries',
-            'chartType','rowGroupColumn','width','height'));
+            'chartType','rowGroupColumn','width','height',
+            'includeTableTotalRow','includeTableTotalColumn','includeChartTotalSeries'));
       
     // Advanced Chart options
     $rendererOptions = trim($args['renderer_options']);

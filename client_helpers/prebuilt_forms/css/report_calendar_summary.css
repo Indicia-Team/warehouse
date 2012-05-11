@@ -27,6 +27,11 @@ tr.datarow td {
 	border: navy solid thin;
 	padding: 3px;
 }
+tr.totalrow td {
+	font-weight:bold;
+	border: navy solid thin;
+	padding: 3px;
+}
 tr td.week {
 	border: navy solid thin;
 	padding: 3px;
@@ -41,5 +46,13 @@ tr td.week {
 	width: auto;
 	margin-right: 20px;
 	margin-left: 5px;
+}
+.simultaneousOutputGroup label {
+	width: auto;
+	margin-right: 30px;
+	margin-left: 5px;
+}
+.disable-button {
+	margin-right: 20px;
 }
 
