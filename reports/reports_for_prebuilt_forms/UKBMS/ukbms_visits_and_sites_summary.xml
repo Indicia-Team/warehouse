@@ -13,8 +13,12 @@
       JOIN locations l  ON p.location_id = l.id AND l.deleted = false
       JOIN taxa_taxon_lists ttlpref ON ttlpref.taxon_meaning_id=ttl.taxon_meaning_id AND ttlpref.preferred='t' AND ttlpref.deleted=false
       JOIN taxa tpref ON tpref.id=ttlpref.taxon_id AND tpref.deleted=false
+      JOIN (sample_attribute_values sav
+        JOIN sample_attributes sa ON sa.id=sav.sample_attribute_id AND sa.deleted=false AND sa.caption='CMS User ID'
+      ) ON sav.sample_id=p.id AND sav.deleted=false
       #joins#
     WHERE ttl.deleted = false
+    AND (CAST(sav.int_value AS character varying)='#user_id#' OR '#user_id#' = '')
     GROUP by tpref.taxon
     #order_by#
   </query>
@@ -26,6 +30,7 @@
         population_call='direct:survey:id:title' />
     <param name='date_from' display='Date From' datatype='date' />
     <param name='date_to' display='Date To' datatype='date' />
+    <param name='user_id' display='CMS User ID' description='Enter the ID of the CMS user' datatype='int' />
   </params>
   <columns>
     <column name='taxon' display='Species' />    
