@@ -37,4 +37,9 @@ tr td.week {
 .controls-table label {
 	width: auto;
 }
+.series-fieldset label {
+	width: auto;
+	margin-right: 20px;
+	margin-left: 5px;
+}
 
