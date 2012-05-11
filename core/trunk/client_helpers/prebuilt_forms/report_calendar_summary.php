@@ -79,7 +79,7 @@ class iform_report_calendar_summary {
         array(
           'name'=>'outputTable',
           'caption'=>'Output data table',
-          'description'=>'Allow output of data in a table.',
+          'description'=>'Allow output of data in a table. This is the default if non selected.',
           'type'=>'boolean',
           'default' => true,
           'required' => false,
@@ -118,6 +118,19 @@ class iform_report_calendar_summary {
         ),
         
         array(
+          'name'=>'dateFilter',
+          'caption'=>'Date Filter type',
+          'description'=>'Type of control used to select the start and end dates provided to the report.',
+          'type'=>'select',
+          'options' => array(
+//            'none' => 'None',
+            'year' => 'User selectable year',
+            'currentyear' => 'This year (no user control)'
+          ),
+          'default' => 'year',
+          'group' => 'Controls'
+        ),
+        array(
           'name'=>'includeUserFilter',
           'caption'=>'Include user filter',
           'description'=>'Choose whether to include a filter on the user. This is passed through to the report parameter list as user_id. If not selected, user_id is not included in the report parameter list.',
@@ -153,10 +166,19 @@ class iform_report_calendar_summary {
         ),
         array(
           'name'=>'includeLocationFilter',
-          'caption'=>'Include user specific location filter',
-          'description'=>'Choose whether to include a filter on the locations assigned to this user using the CMS User ID location attribute. This is passed through to the report parameter list as location_id. If not selected, location_id is not included in the report parameter list.',
+          'caption'=>'Include location filter',
+          'description'=>'Choose whether to include a filter on the locations. This is passed through to the report parameter list as location_id. If not selected, location_id is not included in the report parameter list.',
           'type'=>'boolean',
           'default' => false,
+          'required' => false,
+          'group' => 'Controls'
+        ),
+        array(
+          'name'=>'cmsLocationLookpUp',
+          'caption'=>'Make location list user specific',
+          'description'=>'Choose whether to restrict the list of locations to those assigned to the selected user the CMS User ID location attribute.',
+          'type'=>'boolean',
+          'default' => true,
           'required' => false,
           'group' => 'Controls'
         ),
@@ -179,20 +201,6 @@ class iform_report_calendar_summary {
           'description'=>'When including the user specific location filter, choose whether to include the sref when generating the select name.',
           'type'=>'boolean',
           'default' => true,
-          'required' => false,
-          'group' => 'Controls'
-        ),
-        array(
-          'name'=>'dateFilter',
-          'caption'=>'Date Filter type',
-          'description'=>'Type of control used to select the start and end dates provided to the report.',
-          'type'=>'select',
-          'options' => array(
-            'none' => 'None',
-            'year' => 'User selectable year',
-            'currentyear' => 'This year (no user control)'
-          ),
-          'default' => 'year',
           'required' => false,
           'group' => 'Controls'
         ),
@@ -492,7 +500,7 @@ class iform_report_calendar_summary {
   }
 
   /* This is the URL parameter used to pass the location_id filter through */
-  private static $locationKey = 'location_id';
+  private static $locationKey = 'locationID';
   
   private function location_control($args, $readAuth, $node, &$options)
   {
@@ -506,43 +514,50 @@ class iform_report_calendar_summary {
       return '';
     // this is user specific: when no user selection control, or all users selected then default to all locations
     // this means it does not get a list of all locations if no user is selected: to be added later?
-    if(!isset($args['includeUserFilter']) || !$args['includeUserFilter'] || !isset($options['userId']) || $options['userId']==""){
-      $options['extraParams']['location_id'] = '';
-      return lang::get('All locations');
-    }  
-    // need to scan param_presets for survey_id..
     $options['extraParams']['location_id'] = $siteUrlParams[self::$locationKey]['value'];
-    $presets = get_options_array_with_user_data($args['param_presets']);
-    if(!isset($presets['survey_id']) || $presets['survey_id']=='')
-      return(lang::get('Location control: survey_id missing from presets.'));
-    $attrArgs = array(
-        'valuetable'=>'location_attribute_value',
-        'attrtable'=>'location_attribute',
-        'key'=>'location_id',
-        'fieldprefix'=>'locAttr',
-        'extraParams'=>$readAuth,
-        'survey_id'=>$presets['survey_id']);
+    if(!isset($args['includeUserFilter']) || !$args['includeUserFilter'] || !isset($options['extraParams']['user_id']) || $options['extraParams']['user_id']=="" || !isset($args['cmsLocationLookpUp']) || !$args['cmsLocationLookpUp']){
+      // Get list of all locations
+      $locationListArgs=array('nocache'=>true,
+          'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'], 'orderby'=>'name'),
+                       $readAuth),
+          'table'=>'location');
+    } else {
+      // Get list of locations attached to this user via the cms user id attribute: have to have included the user control to get user id, and set the cmsLocationLookpUp flag
+      // first need to scan param_presets for survey_id..
+      $presets = get_options_array_with_user_data($args['param_presets']);
+      if(!isset($presets['survey_id']) || $presets['survey_id']=='')
+        return(lang::get('Location control: survey_id missing from presets.'));
+      $attrArgs = array(
+          'valuetable'=>'location_attribute_value',
+          'attrtable'=>'location_attribute',
+          'key'=>'location_id',
+          'fieldprefix'=>'locAttr',
+          'extraParams'=>$readAuth,
+          'survey_id'=>$presets['survey_id']);
+      if(isset($args['locationTypeFilter']) && $args['locationTypeFilter']!="")
+        $attrArgs['location_type_id'] = $args['locationTypeFilter'];
+      $locationAttributes = data_entry_helper::getAttributes($attrArgs, false);
+      $cmsAttr=extract_cms_user_attr($locationAttributes,false);
+      if(!$cmsAttr)
+        return(lang::get('Location control: missing CMS User ID location attribute.'));
+      $attrListArgs=array('nocache'=>true,
+          'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
+                             'location_attribute_id'=>$cmsAttr['attributeId'], 'raw_value'=>$options['extraParams']['user_id']),
+                       $readAuth),
+          'table'=>'location_attribute_value');
+      $attrList = data_entry_helper::get_population_data($attrListArgs);
+      if (isset($attrList['error']))
+        return $attrList['error'];
+      $locationIDList=array();
+      foreach($attrList as $attr)
+        $locationIDList[] = $attr['location_id'];
+      $locationListArgs=array('nocache'=>true,
+          'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'], 'id'=>$locationIDList, 'orderby'=>'name'),
+                       $readAuth),
+          'table'=>'location');
+    }
     if(isset($args['locationTypeFilter']) && $args['locationTypeFilter']!="")
-      $attrArgs['location_type_id'] = $args['locationTypeFilter'];
-    $locationAttributes = data_entry_helper::getAttributes($attrArgs, false);
-    $cmsAttr=extract_cms_user_attr($locationAttributes,false);
-    if(!$cmsAttr)
-      return(lang::get('Location control: missing CMS User ID location attribute.'));
-    $attrListArgs=array('nocache'=>true,
-        'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
-                           'location_attribute_id'=>$cmsAttr['attributeId'], 'raw_value'=>$user->uid),
-                     $readAuth),
-        'table'=>'location_attribute_value');
-    $attrList = data_entry_helper::get_population_data($attrListArgs);
-    if (isset($attrList['error']))
-      return $attrList['error'];
-    $locationIDList=array();
-    foreach($attrList as $attr)
-      $locationIDList[] = $attr['location_id'];
-    $locationListArgs=array('nocache'=>true,
-        'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'], 'id'=>$locationIDList),
-                     $readAuth),
-        'table'=>'location');
+      $locationListArgs['extraParams']['location_type_id'] = $args['locationTypeFilter'];
     $locationList = data_entry_helper::get_population_data($locationListArgs);
     if (isset($locationList['error']))
       return $locationList['error'];
@@ -565,11 +580,12 @@ class iform_report_calendar_summary {
   
   private function user_control($args, $readAuth, $node, &$options)
   {
+    // we don't use the userID option as the user_id can be blank, and will force the parameter request if left as a blank
     global $user;
     if(!isset($args['includeUserFilter']) || !$args['includeUserFilter'])
       return '';
     if(!isset($args['managerPermission']) || $args['managerPermission']=="" || !user_access($args['managerPermission'])) {
-      $options['userId'] = $user->uid;
+      $options['extraParams']['user_id'] = $user->uid;
       return lang::get('User').': '.$user->name;
     }
     // if the user is changed then we must reset the location
@@ -580,12 +596,12 @@ class iform_report_calendar_summary {
       self::$locationKey => array(
         'name' => self::$locationKey,
         'value' => ''));
-    $options['userId'] = $siteUrlParams[self::$userKey]['value'];    
+    $options['extraParams']['user_id'] = $siteUrlParams[self::$userKey]['value'];    
     $userList=array();
     if(!isset($args['cmsUserLookpUp']) || !$args['cmsUserLookpUp']) {
       $results = db_query('SELECT uid, name FROM {users}');
       while($result = db_fetch_object($results)){
-        if($result->uid){
+        if($result->uid){ // ignore unauthorised user, uid zero
           $account = user_load($result->uid);
           $userList[$account->uid] = $account;
         }
@@ -624,7 +640,7 @@ class iform_report_calendar_summary {
       $results = db_query('SELECT uid, name FROM {users}');
       while($result = db_fetch_object($results)){
         $account = user_load($result->uid);
-        if(isset($userList[$account->uid]) && $userList[$account->uid])
+        if($result->uid && isset($userList[$account->uid]) && $userList[$account->uid])
           $userList[$account->uid] = $account;
       }
     }
@@ -674,7 +690,7 @@ jQuery('#".$ctrlid."').change(function(){
       case 'currentyear':
         $options['date_start'] = date('Y').'-Jan-01';
         $options['date_end'] = date('Y').'-Dec-31';
-        return '<p>'.lang::get('Data for ').date('Y').'</p>';
+        return '<th>'.lang::get('Data for ').date('Y').'</th>';
       default: // case year
         // Add year paginator where it can have an impact for both tables and plots.
         $yearKey = 'year';

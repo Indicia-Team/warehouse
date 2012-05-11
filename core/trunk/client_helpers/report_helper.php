@@ -2298,7 +2298,15 @@ if (typeof(mapSettingsHooks)!=='undefined') {
       $opts[] = 'legend:'.json_encode($options['legendOptions']);
     }
     if(count($format)==0) $format['table'] = array('include'=>true);
-    
+    $defaultSet=false;
+    foreach($format as $type=>$info){
+      if($info['display']==true)
+        $defaultSet=true;
+    }
+    if(!$defaultSet){
+      if(isset($format['table'])) $format['table']['display']=true;
+      else if(isset($format['chart'])) $format['chart']['display']=true;
+    }
     $chartDateLabels=array();
     $chartNumberLabels=array();
     $tableDateHeaderRow = "";
@@ -2382,10 +2390,10 @@ function replot(){
       $r .= '<div id="'.$options['chartID'].'" style="height:'.$options['height'].'px;'.(isset($options['width']) && $options['width'] != '' ? 'width:'.$options['width'].'px;':'').'"></div>'."\n";
       if(isset($options['disableableSeries']) && $options['disableableSeries'] && count($summaryArray)>1){
         drupal_add_js('misc/collapse.js');
-        $r .= '<fieldset id="'.$options['chartID'].'-series" class="collapsible collapsed"><legend>'.lang::get('Display ').$options['rowGroupColumn'].'</legend>'."\n";
+        $r .= '<fieldset id="'.$options['chartID'].'-series" class="collapsible collapsed series-fieldset"><legend>'.lang::get('Display ').$options['rowGroupColumn'].'</legend>'."\n";
         $idx=0;
         foreach($summaryArray as $label => $summaryRow){
-          $r .= '<input type="checkbox" checked="checked" id="'.$options['chartID'].'-series-'.$idx.'" name="'.$options['chartID'].'-series" value="'.$idx.'"/><label for="'.$options['chartID'].'-series-'.$idx.'">'.$label.'</label>';
+          $r .= '<nobr><input type="checkbox" checked="checked" id="'.$options['chartID'].'-series-'.$idx.'" name="'.$options['chartID'].'-series" value="'.$idx.'"/><label for="'.$options['chartID'].'-series-'.$idx.'">'.$label.'</label></nobr> ';
           $idx++;
         }
         $r .= "</fieldset>\n";
@@ -2469,7 +2477,7 @@ jQuery('[name=".$options['chartID']."-series]').change(function(){
     $options["extraParams"] = array_merge(array(
       'date_from' => $options['date_start'],
       'date_to' => $options['date_end'],
-      'user_id' => '', // CMS User, not Indicia User.
+//      'user_id' => '', // CMS User, not Indicia User.
 //      'smpattrs' => '',
       'occattrs' => ''), $options["extraParams"]);
     // Note for the calendar reports, the user_id is assumed to be the CMS user id as recorded in the CMS User ID attribute,
