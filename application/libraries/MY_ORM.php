@@ -942,7 +942,9 @@ class ORM extends ORM_Core {
     $this->db->select($attr_entity.'s.id', $attr_entity.'s.caption', $attr_entity.'s.data_type');
     $this->db->from($attr_entity.'s');
     $this->db->where($attr_entity.'s.deleted', 'f');
-    if (($this->identifiers['website_id'] || $this->identifiers['survey_id']) && $this->db->table_exists($attr_entity.'s_websites')) {
+    $dbConfig = kohana::config('database.default');
+    $prefix = (isset($dbConfig['schema']) && !empty($dbConfig['schema'])) ? $dbConfig['schema'].'.' : '';
+    if (($this->identifiers['website_id'] || $this->identifiers['survey_id']) && $this->db->table_exists($prefix.$attr_entity.'s_websites')) {
       $this->db->join($attr_entity.'s_websites', $attr_entity.'s_websites.'.$attr_entity.'_id', $attr_entity.'s.id');
       $this->db->where($attr_entity.'s_websites.deleted', 'f');
       if ($this->identifiers['website_id'])
