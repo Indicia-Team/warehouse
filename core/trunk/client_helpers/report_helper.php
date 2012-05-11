@@ -117,7 +117,7 @@ class report_helper extends helper_base {
     $extras = self::get_report_sorting_paging_params($options, $sortAndPageUrlParams);    
     $link = self::get_report_data($options, $extras.'&'.self::array_to_query_string($currentParamValues, true), true). '&mode=csv';
     global $indicia_templates;
-    return str_replace(array('{link}','{caption}'), array($link, lang::get($options['caption'])), $indicia_templates['report_download_link']);;
+    return str_replace(array('{link}','{caption}'), array($link, lang::get($options['caption'])), $indicia_templates['report_download_link']);
   }
   
   /**
@@ -392,7 +392,7 @@ class report_helper extends helper_base {
           if ($altRowClass)
             $classes[]=$altRowClass;
           if (isset($options['rowClass']))
-            $classes[]=self::mergeParamsIntoTemplate($row, $options['rowClass'], true, true);;
+            $classes[]=self::mergeParamsIntoTemplate($row, $options['rowClass'], true, true);
           $classes=implode(' ',$classes);
           $class = empty($classes) ? '' : "class=\"$classes\" ";
           $r .= "<tr $class$rowId$rowTitle>";
@@ -2090,9 +2090,8 @@ if (typeof(mapSettingsHooks)!=='undefined') {
   }
 
  /**
-  * <p>Outputs a calendar grid that loads the content of a report.</p>
-  * <p>If you need 2 grids on one page, then you must
-  * define a different id in the options for each grid.</p>
+  * <p>Outputs a calendar based summary grid that loads the content of a report.</p>
+  * <p>If you need 2 grids on one page, then you must define a different id in the options for each grid.</p>
   * <p>The grid operation has NOT been AJAXified. There is no download option.</p>
   *
   * @param array $options Options array with the following possibilities:<ul>
@@ -2142,6 +2141,8 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     // I know that there are better ways to approach some of the date manipulation, but they are PHP 5.3+.
     // We support back to PHP 5.2
     // TODO : i8n
+    // TODO invariant IDs and names prevents more than one on a page.
+    // TODO convert to tabs when switching between chart and table.
     $warnings="";
     data_entry_helper::add_resource('jquery_ui');
     // there are some report parameters that we can assume for a calendar based request...
@@ -2224,10 +2225,7 @@ if (typeof(mapSettingsHooks)!=='undefined') {
         $weekno--;
       }
       if(isset($options['countColumn']) && $options['countColumn']!=''){
-        if(!isset($record[$options['countColumn']]))
-          $count = 1; // default to single row = single occurrence even if occurrence count requested.
-        else
-          $count = $record[$options['countColumn']];
+        $count = (!isset($record[$options['countColumn']])?$record[$options['countColumn']]:0);
       } else
         $count = 1; // default to single row = single occurrence
       if(isset($summaryArray[$record[$options['rowGroupColumn']]])) {
@@ -2320,28 +2318,30 @@ if (typeof(mapSettingsHooks)!=='undefined') {
       $firstWeek_date->modify('+7 days');
     }
     if(count($format)>1 && !(isset($options['simultaneousOutput']) && $options['simultaneousOutput'])){
-      // TODO should implement visibility with a class rather than direct with display.
-      // TODO should use classes on the labels etc, rather than direct style.
-      // TODO invariant IDs and names prevents more than one on a page.
       $checked = !isset($options['defaultOutput']) || $options['defaultOutput']=='' || $options['defaultOutput']=='table';
-      $r .= "\n".'<label for="simultaneousOutput:table" style="width:auto;" >'.lang::get('View data as a table').'</label><input type="radio" name="simultaneousOutput" id="simultaneousOutput:table" '.($checked?'checked="checked"':'').' value="table"/>'.
-            '<label for="simultaneousOutput:chart" style="width:auto; margin-left:20px;" >'.lang::get('View data as a chart').'</label><input type="radio" name="simultaneousOutput" '.(!$checked?'checked="checked"':'').' id="simultaneousOutput:chart" value="chart"/><br/>'."\n";
+      $r .= "\n".'<div class="simultaneousOutputGroup"><input type="radio" name="simultaneousOutput" id="simultaneousOutput:table" '.($checked?'checked="checked"':'').' value="table"/><label for="simultaneousOutput:table" >'.lang::get('View data as a table').'</label>'.
+            '<input type="radio" name="simultaneousOutput" '.(!$checked?'checked="checked"':'').' id="simultaneousOutput:chart" value="chart"/><label for="simultaneousOutput:chart" >'.lang::get('View data as a chart').'</label></div>'."\n";
       data_entry_helper::$javascript .= "jQuery('[name=simultaneousOutput]').change(function(){
   jQuery('#".$options['tableID'].",#".$options['chartContainerID']."').toggle();
   // TODO global variable prevents more than one on a page.
   replot();
-});"; 
-    }    
+});
+jQuery('[name=simultaneousOutput]').filter('[value=".($checked?'table':'chart')."]').attr('checked','checked');
+";
+    }
     if(isset($format['chart'])){
       $seriesData=array();
       $seriesOptions=array();
       // Series options are not configurable as we need to setup for ourselves...
       // we need show, label and show label filled in. rest are left to defaults
+      $totalRow = array();
+      for($i= $minWeekNo; $i <= $maxWeekNo; $i++) $totalRow[$i] = 0;
       foreach($summaryArray as $label => $summaryRow){
         $values=array();
         for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
           if(isset($summaryRow[$i])){
             $values[]=$summaryRow[$i];
+            $totalRow[$i] += $summaryRow[$i];
           } else {
             $values[]=0;
           }
@@ -2350,6 +2350,10 @@ if (typeof(mapSettingsHooks)!=='undefined') {
         $seriesData[] = '['.implode(',', $values).']';
         $seriesOptions[] = '{"show":true,"label":"'.$label.'","showlabel":true}';
       }
+      if(isset($options['includeChartTotalSeries']) && $options['includeChartTotalSeries']){
+        array_unshift($seriesData, '['.implode(',', $totalRow).']');
+        array_unshift($seriesOptions, '{"show":true,"label":"'.lang::get('Total').'","showlabel":true}');
+      }
       $opts[] = 'series:['.implode(',', $seriesOptions).']';
       $options['axesOptions']['xaxis']['renderer'] = '$.jqplot.CategoryAxisRenderer';
       if(isset($options['chartLabels']) && $options['chartLabels'] == 'number')
@@ -2357,8 +2361,10 @@ if (typeof(mapSettingsHooks)!=='undefined') {
       else
         $options['axesOptions']['xaxis']['ticks'] = $chartDateLabels;
       // We need to fudge the json so the renderer class is not a string
-      $opts[] = str_replace('"$.jqplot.CategoryAxisRenderer"', '$.jqplot.CategoryAxisRenderer',
+      $axesOpts = str_replace('"$.jqplot.CategoryAxisRenderer"', '$.jqplot.CategoryAxisRenderer',
         'axes:'.json_encode($options['axesOptions']));
+      $opts[] = $axesOpts;
+      data_entry_helper::$javascript .= "\nvar axesOpts = {".$axesOpts."};\naxesOpts.resetAxes=['yaxis'];\n";
       // Finally, dump out the Javascript with our constructed parameters.
       // width stuff is a bit weird, but jqplot requires a fixed width, so this just stretches it to fill the space.
       if($format['chart']['display']){
@@ -2392,19 +2398,50 @@ function replot(){
         drupal_add_js('misc/collapse.js');
         $r .= '<fieldset id="'.$options['chartID'].'-series" class="collapsible collapsed series-fieldset"><legend>'.lang::get('Display ').$options['rowGroupColumn'].'</legend>'."\n";
         $idx=0;
+        if(isset($options['includeChartTotalSeries']) && $options['includeChartTotalSeries']){
+          $r .= '<nobr><input type="checkbox" checked="checked" id="'.$options['chartID'].'-series-'.$idx.'" name="'.$options['chartID'].'-series" value="'.$idx.'"/><label for="'.$options['chartID'].'-series-'.$idx.'">'.lang::get('Total').'</label></nobr> &nbsp; ';
+          $idx++;
+        }
+        $r .= '<input type="button" class="disable-button" id="'.$options['chartID'].'-series-disable" value="'.lang::get('Hide all ').$options['rowGroupColumn'].'"/> ';
         foreach($summaryArray as $label => $summaryRow){
-          $r .= '<nobr><input type="checkbox" checked="checked" id="'.$options['chartID'].'-series-'.$idx.'" name="'.$options['chartID'].'-series" value="'.$idx.'"/><label for="'.$options['chartID'].'-series-'.$idx.'">'.$label.'</label></nobr> ';
+          $r .= '<nobr><input type="checkbox" checked="checked" id="'.$options['chartID'].'-series-'.$idx.'" name="'.$options['chartID'].'-series" value="'.$idx.'"/><label for="'.$options['chartID'].'-series-'.$idx.'">'.$label.'</label></nobr> &nbsp; ';
           $idx++;
         }
         $r .= "</fieldset>\n";
+        // Known issue: jqplot considers the min and max of all series when drawing on the screen, even those which are not displayed
+        // so replotting doesn't scale to the displayed series!
         data_entry_helper::$javascript .= "
+// initially all are displayed: need to ensure get around field caching on browser refresh.
+jQuery('[name=".$options['chartID']."-series]').attr('checked','checked');
 jQuery('[name=".$options['chartID']."-series]').change(function(){
   if(jQuery(this).filter('[checked]').length){
     plot.series[jQuery(this).val()].show = true;
   } else {
     plot.series[jQuery(this).val()].show = false;
   }
-  plot.redraw();
+  var max=0;
+  for(var i=0; i<plot.series.length; i++)
+    if(plot.series[i].show)
+      for(var j=0; j<plot.series[i].data.length; j++)
+        max=(max>plot.series[i].data[j][1]?max:plot.series[i].data[j][1]);
+  axesOpts.axes.yaxis.max=max+1;
+  plot.replot(axesOpts);
+});
+jQuery('#".$options['chartID']."-series-disable').click(function(){
+  if(jQuery(this).is('.cleared')){ // button is to show all
+    jQuery('[name=".$options['chartID']."-series]')".(isset($options['includeChartTotalSeries']) && $options['includeChartTotalSeries']?".not('[value=0]')":"").".attr('checked','checked').each(function(){plot.series[jQuery(this).val()].show = true;});
+    jQuery(this).removeClass('cleared').val(\"".lang::get('Hide all ').$options['rowGroupColumn']."\");
+  } else {
+    jQuery('[name=".$options['chartID']."-series]')".(isset($options['includeChartTotalSeries']) && $options['includeChartTotalSeries']?".not('[value=0]')":"").".removeAttr('checked').each(function(){plot.series[jQuery(this).val()].show = false;});
+    jQuery(this).addClass('cleared').val(\"".lang::get('Show all ').$options['rowGroupColumn']."\");
+  }
+  var max=0;
+  for(var i=0; i<plot.series.length; i++)
+    if(plot.series[i].show)
+      for(var j=0; j<plot.series[i].data.length; j++)
+        max=(max>plot.series[i].data[j][1]?max:plot.series[i].data[j][1]);
+  axesOpts.axes.yaxis.max=max+1;
+  plot.replot(axesOpts);
 });
 ";
       }
@@ -2415,30 +2452,43 @@ jQuery('[name=".$options['chartID']."-series]').change(function(){
       $r .= "\n<table id=\"".$options['tableID']."\" class=\"".$options['tableClass']."\" style=\"".($format['table']['display']?'':'display:none;')."\">";
       $r .= "\n<thead class=\"$thClass\">";
       if(isset($options['tableHeaders']) && ($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number')){
-        $r .= '<tr><td>Week</td>'.$tableNumberHeaderRow.'<td>Total</td></tr>';
+        $r .= '<tr><td>Week</td>'.$tableNumberHeaderRow.(isset($options['includeTableTotalColumn']) && $options['includeTableTotalColumn']?'<td>Total</td>':'').'</tr>';
       }
       if(!isset($options['tableHeaders']) || $options['tableHeaders'] != 'number'){
-        $r .= '<tr><td>Date</td>'.$tableDateHeaderRow.(!isset($options['tableHeaders']) || $options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number'?'<td></td>':'<td>Total</td>').'</tr>';
+        $r .= '<tr><td>Date</td>'.$tableDateHeaderRow.(isset($options['includeTableTotalColumn']) && $options['includeTableTotalColumn']?(!isset($options['tableHeaders']) || $options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number'?'<td></td>':'<td>Total</td>'):'').'</tr>';
       }
       $r.= "</thead>\n";
       $r .= "<tbody>\n";
       $altRow=false;
+      $grandTotal=0;
+      $totalRow = array();
+      for($i= $minWeekNo; $i <= $maxWeekNo; $i++) $totalRow[$i] = 0;
       foreach($summaryArray as $label => $summaryRow){
-        $total=0;
+        $total=0;  // row total
         $r .= "<tr class=\"datarow ".($altRow?$options['altRowClass']:'')."\">";
         $r.= '<td>'.$label.'</td>';
         for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
           if(isset($summaryRow[$i])){
             $r.= '<td>'.$summaryRow[$i].'</td>';
             $total += $summaryRow[$i];
+            $totalRow[$i] += $summaryRow[$i];
+            $grandTotal += $summaryRow[$i];
           } else {
             $r.= '<td></td>';
           }
         }
-        $r.= '<td>'.$total.'</td>';
-        // TODO add control to allow total to be optional
+        if(isset($options['includeTableTotalColumn']) && $options['includeTableTotalColumn']) $r.= '<td class="total-column">'.$total.'</td>';
         $r .= "</tr>";
         $altRow=!$altRow;
+      }
+      if(isset($options['includeTableTotalRow']) && $options['includeTableTotalRow']){
+        $r .= "<tr class=\"totalrow\">";
+        $r.= '<td>'.lang::get('Total').'</td>';
+        for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
+          $r.= '<td>'.$totalRow[$i].'</td>';
+        }
+        if(isset($options['includeTableTotalColumn']) && $options['includeTableTotalColumn']) $r.= '<td class="total-column grand-total">'.$grandTotal.'</td>';
+        $r .= "</tr>";
       }
       $r .= "</tbody></table>\n";
     }
