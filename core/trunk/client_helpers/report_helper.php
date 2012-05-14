@@ -2396,18 +2396,18 @@ function replot(){
       $r .= '<div id="'.$options['chartID'].'" style="height:'.$options['height'].'px;'.(isset($options['width']) && $options['width'] != '' ? 'width:'.$options['width'].'px;':'').'"></div>'."\n";
       if(isset($options['disableableSeries']) && $options['disableableSeries'] && count($summaryArray)>1){
         drupal_add_js('misc/collapse.js');
-        $r .= '<fieldset id="'.$options['chartID'].'-series" class="collapsible collapsed series-fieldset"><legend>'.lang::get('Display ').$options['rowGroupColumn'].'</legend>'."\n";
+        $r .= '<fieldset id="'.$options['chartID'].'-series" class="collapsible collapsed series-fieldset"><legend>'.lang::get('Display ').$options['rowGroupColumn']."</legend><span>\n";
         $idx=0;
         if(isset($options['includeChartTotalSeries']) && $options['includeChartTotalSeries']){
-          $r .= '<span class="chart-series-span"><input type="checkbox" checked="checked" id="'.$options['chartID'].'-series-'.$idx.'" name="'.$options['chartID'].'-series" value="'.$idx.'"/><label for="'.$options['chartID'].'-series-'.$idx.'">'.lang::get('Total').'</label></span>  ';
+          $r .= '<span class="chart-series-span"><input type="checkbox" checked="checked" id="'.$options['chartID'].'-series-'.$idx.'" name="'.$options['chartID'].'-series" value="'.$idx.'"/><label for="'.$options['chartID'].'-series-'.$idx.'">'.lang::get('Total')."</label></span>\n";
           $idx++;
         }
-        $r .= '<input type="button" class="disable-button" id="'.$options['chartID'].'-series-disable" value="'.lang::get('Hide all ').$options['rowGroupColumn'].'"/> ';
+        $r .= '<input type="button" class="disable-button" id="'.$options['chartID'].'-series-disable" value="'.lang::get('Hide all ').$options['rowGroupColumn']."\"/>\n";
         foreach($summaryArray as $label => $summaryRow){
-          $r .= '<span class="chart-series-span"><input type="checkbox" checked="checked" id="'.$options['chartID'].'-series-'.$idx.'" name="'.$options['chartID'].'-series" value="'.$idx.'"/><label for="'.$options['chartID'].'-series-'.$idx.'">'.$label.'</label></span> ';
+          $r .= '<span class="chart-series-span"><input type="checkbox" checked="checked" id="'.$options['chartID'].'-series-'.$idx.'" name="'.$options['chartID'].'-series" value="'.$idx.'"/><label for="'.$options['chartID'].'-series-'.$idx.'">'.$label."</label></span>\n";
           $idx++;
         }
-        $r .= "</fieldset>\n";
+        $r .= "</span></fieldset>\n";
         // Known issue: jqplot considers the min and max of all series when drawing on the screen, even those which are not displayed
         // so replotting doesn't scale to the displayed series!
         data_entry_helper::$javascript .= "
