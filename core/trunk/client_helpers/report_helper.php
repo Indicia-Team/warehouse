@@ -2241,7 +2241,7 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     if(count($summaryArray)==0)
       return $warnings.'<p>'.lang::get('No data returned for this period.').'</p>';
     $year_start = date_create(substr($options['date_start'],0,4).'-Jan-01');
-    $year_end = date_create(substr($options['date_start'],0,4).'-Dec-12');
+    $year_end = date_create(substr($options['date_start'],0,4).'-Dec-25'); // don't want to go beyond the end of year: this is 1st Jan minus 1 week: it is the start of the last full week
     $firstWeek_date = clone $weekOne_date;
     if($weeknumberfilter[0]!=''){
       $minWeekNo = 1;
@@ -2265,7 +2265,7 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     } else {
       $maxWeekNo = 1;
       $lastWeek_date = clone $weekOne_date;
-      $year_end = date_create(substr($options['date_start'],0,4).'-Dec-12');
+      $year_end = date_create(substr($options['date_start'],0,4).'-Dec-25'); // don't want to go beyond the end of year: this is 1st Jan minus 1 week: it is the start of the last full week
       while($lastWeek_date <= $year_end){
         $lastWeek_date->modify('+7 days');
         $maxWeekNo++;
