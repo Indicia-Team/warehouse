@@ -2225,7 +2225,7 @@ if (typeof(mapSettingsHooks)!=='undefined') {
         $weekno--;
       }
       if(isset($options['countColumn']) && $options['countColumn']!=''){
-        $count = (!isset($record[$options['countColumn']])?$record[$options['countColumn']]:0);
+        $count = (isset($record[$options['countColumn']])?$record[$options['countColumn']]:0);
       } else
         $count = 1; // default to single row = single occurrence
       if(isset($summaryArray[$record[$options['rowGroupColumn']]])) {
@@ -2399,12 +2399,12 @@ function replot(){
         $r .= '<fieldset id="'.$options['chartID'].'-series" class="collapsible collapsed series-fieldset"><legend>'.lang::get('Display ').$options['rowGroupColumn'].'</legend>'."\n";
         $idx=0;
         if(isset($options['includeChartTotalSeries']) && $options['includeChartTotalSeries']){
-          $r .= '<nobr><input type="checkbox" checked="checked" id="'.$options['chartID'].'-series-'.$idx.'" name="'.$options['chartID'].'-series" value="'.$idx.'"/><label for="'.$options['chartID'].'-series-'.$idx.'">'.lang::get('Total').'</label></nobr> &nbsp; ';
+          $r .= '<span class="chart-series-span"><input type="checkbox" checked="checked" id="'.$options['chartID'].'-series-'.$idx.'" name="'.$options['chartID'].'-series" value="'.$idx.'"/><label for="'.$options['chartID'].'-series-'.$idx.'">'.lang::get('Total').'</label></span>  ';
           $idx++;
         }
         $r .= '<input type="button" class="disable-button" id="'.$options['chartID'].'-series-disable" value="'.lang::get('Hide all ').$options['rowGroupColumn'].'"/> ';
         foreach($summaryArray as $label => $summaryRow){
-          $r .= '<nobr><input type="checkbox" checked="checked" id="'.$options['chartID'].'-series-'.$idx.'" name="'.$options['chartID'].'-series" value="'.$idx.'"/><label for="'.$options['chartID'].'-series-'.$idx.'">'.$label.'</label></nobr> &nbsp; ';
+          $r .= '<span class="chart-series-span"><input type="checkbox" checked="checked" id="'.$options['chartID'].'-series-'.$idx.'" name="'.$options['chartID'].'-series" value="'.$idx.'"/><label for="'.$options['chartID'].'-series-'.$idx.'">'.$label.'</label></span> ';
           $idx++;
         }
         $r .= "</fieldset>\n";

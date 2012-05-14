@@ -55,4 +55,6 @@ tr td.week {
 .disable-button {
 	margin-right: 20px;
 }
-
+.chart-series-span {
+    white-space: nowrap; 
+}
