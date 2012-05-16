@@ -824,7 +824,7 @@ populateExtensions = function(locids){
         var myOption = jQuery(\"#".$options['mainFieldID']."\").find('option').filter('[value='+locList[j].id+']').empty();
 ".($args['SecondaryLocationTypeTerm']!='' ?
 "        if(locList[j].feature.attributes.data.location_type_id == $primary)
-          myOption.css('color','red');;
+          myOption.css('color','red');
 " : "")."        myOption.append(locList[j].template);
       }
     }});
@@ -2439,14 +2439,12 @@ function handleEnteredSref(value) {
 function iform_mnhnl_set_editable($auth, $args, $node, $locList, $force){
   global $user;
   if($force === true || $force === false){
-    data_entry_helper::$javascript .= "canEditExistingSites = ".($force ? "true" : "false").";
-";
+    data_entry_helper::$javascript .= "canEditExistingSites = ".($force ? "true" : "false").";\n";
     return;
   }
   $isAdmin = user_access('IForm n'.$node->nid.' admin');
   if($isAdmin) {
-  	data_entry_helper::$javascript .= "canEditExistingSites = true;
-";
+  	data_entry_helper::$javascript .= "canEditExistingSites = true;\n";
     return;
   }
   $userIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'CMS User ID');

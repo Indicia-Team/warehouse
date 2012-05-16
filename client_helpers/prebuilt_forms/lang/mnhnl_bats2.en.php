@@ -57,6 +57,7 @@ $custom_terms = array(
 	'LANG_Submit' => 'Save',
 
 	'validation_required' => 'Please enter a value for this field',
+	'validation_integer' => 'Please enter an integer',
 
 	'LANG_Location_Code_Label' => 'Code',
 	'LANG_Location_Name_Blank_Text' => 'Choose a location using its name',
@@ -121,7 +122,7 @@ $custom_terms = array(
 	'Institution' => 'Institution(s)',
 	'LANG_RecorderInstructions'=>"To select more than one observer, keep the CTRL button down.",
 	'Site followup' => 'Pertinence of site for a regular followup',
-	'Sketch provided' => 'A Sketch has been provided with the paper copy',
+	'Sketch provided' => 'A sketch has been provided with the paper copy',
 	'Disturbances2' => 'Disturbances',
 	'Disturbances other comment' => 'If Others',
 	'Temperature' => 'Temperature (&degC)',
@@ -135,11 +136,11 @@ $custom_terms = array(
 	'LANG_Tab_species' => 'Species',
 	'species_checklist.species'=>'Species',
 	'species_checklist.observations'=>'Observations',
-	'LANG_SpeciesInstructions'=>"Report observations of any bat species separately using the control under the grid.<br />Click the red 'X' to delete the relevant row.",
+	'LANG_SpeciesInstructions'=>"Report observations of any bat species separately using the control under the grid.<br />Click the red 'X' to delete the relevant row.<br />Observations may only be reported for the survey methods you selected in the Conditions grid.",
 	'LANG_Duplicate_Taxon' => 'You have chosen a taxon for which there is already an entry.',
 	'Num alive'=>'Individuals (alive)',
 	'Num dead'=>'Individuals (dead)',
-	'Count'=>'Individuals',
+	'Emergence count'=>'Individuals',
 	'Picture of Maternity Count'=>'Individuals',
 	'No record'=>'No record (no bat species recorded during the survey)',
 	'Species Comment'=>'Comment',
@@ -147,9 +148,9 @@ $custom_terms = array(
 	'validation_observation_type'=>'At least one observation type must be provided.',
 	'validation_method-presence'=>'At least one Survey method must be selected.',
 	'validation_smg-endtime'=>'The end time must be after the start time',
-	'validation_scNumDead'=>'sum of alive and dead individuals must be equal to or greater than 1',
+	'validation_scNumDead'=>'Sum of alive and dead individuals must be equal to or greater than 1',
 	'validation_no_record' => "The <strong>No record</strong> must be checked if and only if there is no data in the species grid.",
-
+	'validation_taxon_data' => 'Data must be entered for at least one survey method for each taxon.',
 	'next step'=>'Next step',
 	'prev step'=>'Previous step'
 
