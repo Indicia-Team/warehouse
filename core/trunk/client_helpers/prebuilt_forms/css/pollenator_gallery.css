@@ -110,7 +110,7 @@
     padding:0px;
     width: 24px;
     height: 24px;
-    background: url(/misc/occ_unknown.png);
+    background: url("../images/occ_unknown.png");
 }
 .insect-dubious {
     margin-top:0px;
@@ -120,7 +120,7 @@
     padding:0px;
     width: 24px;
     height: 24px;
-    background: url(/misc/occ_doubtful.png);
+    background: url("../images/occ_doubtful.png");
 }
 .insect-valid {
     margin-top:0px;
@@ -151,4 +151,18 @@
 .loading-button {  background: transparent url(/misc/throbber.gif) no-repeat 50% -18px  !important ;}
 .ui-progressbar {
     height: 1em;
+}
+#fo-localisation-info .addn-info-title {
+    color: #85C302;
+    font-size: 0.8em;
+    font-weight: bold;
+    padding-bottom: 5px;
+    text-transform: uppercase;
+}
+#fo-localisation-info p {
+    color: #999999;
+    font-size: 0.8em;
+}
+#fo-localisation-info p span {
+    color: #333333;
 }
