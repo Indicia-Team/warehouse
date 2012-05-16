@@ -544,10 +544,11 @@ jQuery('#".$id."').click(function(){
         '<input type="text" id="{idLat}" name="{fieldnameLat}" {class} {disabled} value="{default}" /></div>' .
         '<div class="latLongDiv"><label for="{idLong}">{labelLong}:</label>'.
         '<input type="text" id="{idLong}" name="{fieldnameLong}" {class} {disabled} value="{default}" /></div>';
-    
+    $base = base_path();
+    if(substr($base, -1)!='/') $base.='/';
 	$r .= '<script type="text/javascript">
 /* <![CDATA[ */
-document.write("<div class=\"ui-widget ui-widget-content ui-corner-all loading-panel\" ><img src=\"'.helper_config::$base_url.'media/images/ajax-loader2.gif\" />'.lang::get('loading').'...<span class=\"poll-loading-extras\">0</span></div>");
+document.write("<div class=\"ui-widget ui-widget-content ui-corner-all loading-panel\" ><img src=\"'.$base.drupal_get_path('module', 'iform').'/media/images/ajax-loader2.gif\" />'.lang::get('loading').'...<span class=\"poll-loading-extras\">0</span></div>");
 document.write("<div class=\"poll-loading-hide\">");
 /* ]]> */</script>
 ';
@@ -633,7 +634,7 @@ document.write("<div class=\"poll-loading-hide\">");
     <div id="cc-1-valid-button" class="ui-state-default ui-corner-all save-button">'.lang::get('LANG_Validate').'</div>
   </div>
   <div id="cc-1-trailer" class="poll-section-trailer">
-    <div id="cc-1-trailer-image" ><img src="'.helper_config::$base_url.'media/images/exclamation.jpg" /></div>
+    <div id="cc-1-trailer-image" ><img src="'.$base.drupal_get_path('module', 'iform').'/media/images/exclamation.jpg" /></div>
     <p>'.lang::get('LANG_Collection_Trailer_Point_1').'</p>
     <p>'.lang::get('LANG_Collection_Trailer_Point_2').'</p>
   </div>
@@ -697,7 +698,7 @@ $.getJSON('".$svcUrl."' + '/spatial/sref_to_wkt'+
           			'&system=' + jQuery('#imp-sref-system').val() +
           			'&callback=?', function(data) {
             	defaultGeom = data.wkt;
-        	});
+                   	});
 
 $.fn.resetPanel = function(){
 	this.find('.poll-section-body').show();
@@ -969,13 +970,13 @@ $('#cc-1-collection-details').ajaxForm({
   		},
         success:   function(data){
         	if(data.success == 'multiple records' && data.outer_table == 'location'){
-        	    jQuery('[name=location\\:id]').removeAttr('disabled').val(data.outer_id);
+        	    jQuery('[name=location\\:id],[name=sample\\:location_id]').removeAttr('disabled').val(data.outer_id);
         	    jQuery('[name=locations_website\\:website_id]').attr('disabled', 'disabled');
         	    // data.struct.children[0] holds the details of the sample record.
 				jQuery('#cc-6-consult-collection').attr('href', '".url('node/'.$args['gallery_node'])."'+'?collection_id='+data.struct.children[0].id);
-				jQuery('#cc-1-collection-details,#cc-1-collection-details').find('[name=sample\\:id]').removeAttr('disabled').val(data.struct.children[0].id);
+				jQuery('#cc-1-collection-details,#cc-2-floral-station,#cc-1-delete-collection').find('[name=sample\\:id]').removeAttr('disabled').val(data.struct.children[0].id);
 				// In this case we use loadAttributes to set the names of the attributes to include the attribute_value id.
-				// cant use the struct as can't tell which is which. 
+				// cant use the struct as it can't tell which attribute is which. 
 				loadAttributes('#cc-1-collection-details,#cc-5-collection', 'sample_attribute_value', 'sample_attribute_id', 'sample_id', data.struct.children[0].id, 'smpAttr', true, true);
 			   	checkProtocolStatus(true);
         		$('#cc-1').foldPanel();
@@ -1308,7 +1309,7 @@ toolPoller = function(toolStruct){
 		jQuery('#'+this.toolStruct.type+'_taxa_list').append(resultsText+ ' }');
 		jQuery('#'+this.toolStruct.type+'-id-button').data('toolRetValues', resultsIDs);
 	  	if(notFound != ''){
-			var comment = jQuery(this.toolStruct.selector+' [name='+this.toolStruct.type+'\\:comment]');
+			var comment = jQuery('[name='+this.toolStruct.type+'\\:comment]');
 			comment.val('".lang::get('LANG_ID_Unrecognised')." '+notFound+' '+comment.val());
 		}
   	  }
@@ -1360,7 +1361,7 @@ taxonChosen = function(toolStruct){
 	jQuery('#'+toolStruct.type+'-id-button').data('toolRetValues', []);
 	jQuery(toolStruct.selector+' [name='+toolStruct.type+'\\:taxon_details]').val('');
 	jQuery('#'+toolStruct.type+'_taxa_list').empty();
-	jQuery(toolStruct.selector+' [name='+toolStruct.type+'\\:comment]').val('');
+	jQuery('[name='+toolStruct.type+'\\:comment]').val('');
   	jQuery(toolStruct.selector+' [name='+toolStruct.type+'\\:determination_type]').val('A');
 };
 jQuery('#cc-2-flower-identify select[name=flower\\:taxa_taxon_list_id]').change(function(){
@@ -1376,7 +1377,7 @@ idLater = function (toolStruct){
 		jQuery('#'+toolStruct.type+'_taxa_list').empty();
 		jQuery(toolStruct.selector+' [name='+toolStruct.type+'\\:taxa_taxon_list_id]').val('');
 		jQuery(toolStruct.selector+' [name='+toolStruct.type+'\\:taxon_extra_info]').val(''); // more precise info
-		jQuery(toolStruct.selector+' [name='+toolStruct.type+'\\:comment]').val('');
+		jQuery('[name='+toolStruct.type+'\\:comment]').val('');
 	}
 };
 jQuery('#id-flower-later').change(function (){
@@ -1513,11 +1514,12 @@ $('#cc-2-flower-upload').ajaxForm({
 		async: false,
 		dataType:  'json', 
         beforeSubmit:   function(data, obj, options){
-         	if (!jQuery('form#cc-2-flower-upload').valid()) {
+         	if (!jQuery('form#cc-2-flower-upload').valid() ||
+                    jQuery('#cc-2-flower-image').hasClass('loading')) {
    				return false;
    			}
-        	$('#cc-2-flower-image').empty();
-        	$('#cc-2-flower-image').addClass('loading')
+   			$('#cc-2-flower-image').empty();
+        	$('#cc-2-flower-image').addClass('loading');
 		   	jQuery('form#cc-2-floral-station input[name=occurrence_image\\:path]').val('');
   		},
         success:   function(data){
@@ -1628,21 +1630,22 @@ $('#cc-2-floral-station').ajaxForm({
     success:   function(data){
        	if(data.success == 'multiple records' && data.outer_table == 'sample'){
        		// the sample and location ids are already fixed, so just need to populate the occurrence and image IDs, and rename the location and occurrence attribute.
-			// ONLY 1 CHILD, THE OCCURRENCE: TBD ADD CHECK THAT IF ALREADY eXISTS THAT VALUES ARE THE SAME.
+			// ONLY 1 CHILD, THE OCCURRENCE: TBD ADD CHECK THAT IF ALREADY EXISTS THAT VALUES ARE THE SAME.
 			jQuery('#cc-2-floral-station > input[name=occurrence\\:id]').removeAttr('disabled').val(data.struct.children[0].id);
+			// the occurrence has whole range of children: attributes, image and determination.
 			loadAttributes('#cc-2-floral-station', 'occurrence_attribute_value', 'occurrence_attribute_id', 'occurrence_id', data.struct.children[0].id, 'occAttr', false, true);
 			for(i=0; i<data.struct.children[0].children.length; i++){
 				if(data.struct.children[0].children[i].model == 'occurrence_image'){
-					jQuery('#cc-2-floral-station > input[name=occurrence_image\\:id]').removeAttr('disabled').val(data.struct.children[0].children[i].id);}}
-			// ONLY 1 PARENT, THE LOCATION: TBD ADD CHECK THAT IF ALREADY eXISTS THAT VALUES ARE THE SAME.
+					jQuery('#cc-2-floral-station > input[name=occurrence_image\\:id]').removeAttr('disabled').val(data.struct.children[0].children[i].id);}
+				if(data.struct.children[0].children[i].model == 'determination'){
+					jQuery('#cc-2-floral-station > input[name=determination\\:id]').removeAttr('disabled').val(data.struct.children[0].children[i].id);}
+			}
+			// ONLY 1 PARENT, THE LOCATION: TBD ADD CHECK THAT IF ALREADY EXISTS THAT VALUES ARE THE SAME.
 		    var location_id = jQuery('#cc-2-floral-station > input[name=location\\:id]').val();
        		loadAttributes('#cc-2-floral-station', 'location_attribute_value', 'location_attribute_id', 'location_id', location_id, 'locAttr', true, true);
 			for(i=0; i<data.struct.parents[0].children.length; i++){
 				if(data.struct.parents[0].children[i].model == 'location_image'){
 					jQuery('#cc-2-floral-station > input[name=location_image\\:id]').removeAttr('disabled').val(data.struct.parents[0].children[i].id);}}
-			for(i=0; i<data.struct.parents[0].children.length; i++){
-				if(data.struct.parents[0].children[i].model == 'determination'){
-					jQuery('#cc-2-floral-station > input[name=determination\\:id]').removeAttr('disabled').val(data.struct.parents[0].children[i].id);}}
 			jQuery('#cc-2').foldPanel();
 			if(showSessionsPanel) { jQuery('#cc-3').showPanel(); }
 			showSessionsPanel = true;
@@ -2621,7 +2624,11 @@ loadAttributes = function(formsel, attributeTable, attributeKey, key, keyValue, 
    			alertIndiciaError(attrdata);
    		  } else if (attrdata.length>0) {
 			for (var i=0;i<attrdata.length;i++){
-				if (attrdata[i].id && (attrdata[i].iso == null || attrdata[i].iso == '' || attrdata[i].iso == '".$language."')){
+				// attribute list views now use id rather than meaning_id for the term.
+				// This means (1) that the term will be either not present or wrong, as we are storing the meaning_id.
+				// and (2) only one row will be returned per attribute.
+				// As we already use raw_value below, the only change is no need to check the iso field.
+				if (attrdata[i].id){
 					var radiobuttons = jQuery(this.myFormsel).find('[name='+prefix+'\\:'+attrdata[i][this.myAttributeKey]+'],[name^='+prefix+'\\:'+attrdata[i][this.myAttributeKey]+'\\:]').filter(':radio');
 					var multicheckboxes = jQuery(this.myFormsel).find('[name='+prefix+'\\:'+attrdata[i][this.myAttributeKey]+'\\[\\]],[name^='+prefix+'\\:'+attrdata[i][this.myAttributeKey]+':]').filter(':checkbox');
 					var boolcheckbox = jQuery(this.myFormsel).find('[name='+prefix+'\\:'+attrdata[i][this.myAttributeKey]+'],[name^='+prefix+'\\:'+attrdata[i][this.myAttributeKey]+':]').filter(':checkbox');
@@ -2635,7 +2642,7 @@ loadAttributes = function(formsel, attributeTable, attributeKey, key, keyValue, 
 							.attr('name', prefix+':'+attrdata[i][this.myAttributeKey]+':'+attrdata[i].id)
 							.attr('checked', 'checked');
 						multicheckboxes.each(function(){
-							jQuery('<input type=\"hidden\" value=\"0\" >').attr('name', jQuery(this).attr('name')).insertBefore(this);
+							jQuery('<input type=\"hidden\" value=\"0\" class=\"multiselect\">').attr('name', jQuery(this).attr('name')).insertBefore(this);
 						});
 					} else if(boolcheckbox.length > 0){ // has extra hidden field to force zero if unchecked.
 						jQuery(this.myFormsel).find('[name='+prefix+'\\:'+attrdata[i][this.myAttributeKey]+'],[name^='+prefix+'\\:'+attrdata[i][this.myAttributeKey]+':]')
@@ -2910,14 +2917,14 @@ jQuery.getJSON(\"".$svcUrl."\" + \"/report/requestReport?report=reports_for_preb
 			\"&auth_token=".$readAuth['auth_token']."&reset_timeout=true&nonce=".$readAuth["nonce"]."\" + 
 			\"&survey_id=".$args['survey_id']."&userID_attr_id=".$args['uid_attr_id']."&userID=".$uid."&complete_attr_id=".$args['complete_attr_id']."&callback=?\", 
 	function(data) {
-	  if(!(data instanceof Array)){
+	if(!(data instanceof Array)){
    		alertIndiciaError(data);
    	  } else if (data.length>0) { // could have zero length
 		var i;
        	for ( i=0;i<data.length;i++) {
        		if(data[i].completed == '0'){
        			jQuery('#cc-1-collection-details,#cc-1-delete-collection,#cc-2').find('[name=sample\\:id]').val(data[i].id).removeAttr('disabled');
-		    	jQuery('[name=location\\:id]').val(data[i].location_id).removeAttr('disabled');
+		    	jQuery('[name=location\\:id],[name=sample\\:location_id]').val(data[i].location_id).removeAttr('disabled');
        			jQuery('#cc-6-consult-collection').attr('href', '".url('node/'.$args['gallery_node'])."'+'?collection_id='+data[i].id);
        			preloadIDs.sample_id = data[i].id;
        			preloadIDs.location_id = data[i].location_id;

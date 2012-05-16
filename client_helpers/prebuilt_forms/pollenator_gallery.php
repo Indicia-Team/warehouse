@@ -1558,6 +1558,8 @@ loadCollection = function(id, index){
 								.attr('checked', 'checked');
 							break;";
     }
+    $base = base_path();
+    if(substr($base, -1)!='/') $base.='/';
 	data_entry_helper::$javascript .= "
     }}}}}));
 	ajaxStack.push($.getJSON(\"".$svcUrl."/data/sample/\" +id+
@@ -1789,14 +1791,17 @@ addCollection = function(index, attributes, geom, first){
 		    	if(!(insectData instanceof Array)){
    					alertIndiciaError(insectData);
    				} else if (insectData.length>0) {
+				  var n=0;
+				  // there seems to be an upper limit on how many can be done at one time - so restrict to 20 at a time
+				  while(n<insectData.length){
    					var insectIDs=[];
-					for (var j=0;j<insectData.length;j++){
-						var container = jQuery('<div/>').addClass('thumb thumb-new loading').attr('occID', insectData[j].id.toString()).data('collectionIndex',index).click(function () {
+					for (var j=0;j<20 && n<insectData.length; j++,n++){
+						var container = jQuery('<div/>').addClass('thumb thumb-new loading').attr('occID', insectData[n].id.toString()).data('collectionIndex',index).click(function () {
 							loadInsect(jQuery(this).attr('occID'),jQuery(this).data('collectionIndex'),null,'P');
 						});
 						jQuery('<span>".lang::get('LANG_Unknown')."</span>').addClass('thumb-text').appendTo(container);
-						jQuery('.photoreel-session').filter('[sessID='+insectData[j].sample_id+']').append(container);
-						insectIDs.push(insectData[j].id);
+						jQuery('.photoreel-session').filter('[sessID='+insectData[n].sample_id+']').append(container);
+						insectIDs.push(insectData[n].id);
 					}
 					$.getJSON(\"".$svcUrl."/data/determination\" + 
 							\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" + 
@@ -1825,7 +1830,8 @@ addCollection = function(index, attributes, geom, first){
 								var img = new Image();
 								jQuery(img).load(function () {jQuery(this).parent().removeClass('loading');}).attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."thumb-'+imageData[j].path)
 			    					.attr('width', container.width()).attr('height', container.height()).addClass('thumb-image').appendTo(container);
-			    			}}}); 
+			    			}}})
+			      }; 
 			}});
 		}});
 	$.getJSON(\"".$svcUrl."/data/determination\" + 
@@ -1855,7 +1861,7 @@ addCollection = function(index, attributes, geom, first){
 								string = (string == '' ? '' : string + ' ') + '('+htmlspecialchars(detData[i].taxon_extra_info)+')';
 							}
 							if(detData[i].determination_type == 'B' || detData[i].determination_type == 'I' || detData[i].determination_type == 'U'){
-								string=string+'<span class=\"flower-dubious\"><img src=\"/misc/occ_doubtful.png\" style=\"vertical-align: middle;\"></span>';
+								string=string+'<span class=\"flower-dubious\"><img src=\"".$base.drupal_get_path('module', 'iform')."/client_helpers/prebuilt_forms/images/occ_doubtful.png\" style=\"vertical-align: middle;\"></span>';
 							} else if(detData[i].determination_type == 'C'){
 								string=string+'<span class=\"flower-valid\"><img src=\"/misc/watchdog-ok.png\" style=\"vertical-align: middle;\"></span>';
 							} else string=string+'<span class=\"flower-ok\"></span>';
@@ -2377,7 +2383,7 @@ jQuery('#search-insee-button').click(function(){
 	place = place.toUpperCase();
 	while(place!='' && place.substring(0,1)=='*'){place=place.substring(1);}
 	while(place!='' && place.substring(place.length-1)=='*'){place=place.substring(0,place.length-1);}
-	if(place.length < 3 || place == \"".lang::get('LANG_Enter_Location')."\") return;
+	if(place == \"".lang::get('LANG_Enter_Location')."\") return;
 	jQuery('#search-insee-button').addClass('loading-button');
 	switch(jQuery('[name=place\\:INSEE_Type]').val()){";
 	$searches=explode(';',trim($args['Localisation_spec']));
@@ -2796,7 +2802,7 @@ runSearch = function(forCollections){
 		  filter: new OpenLayers.Filter.Logical({type: OpenLayers.Filter.Logical.AND, filters: filters})
 	});
 	if(forCollections) {
-		jQuery('#results-collections-results').empty().append('<div class=\"collection-loading-panel\" ><img src=\"".helper_config::$base_url."media/images/ajax-loader2.gif\" />".lang::get('loading')."...</div>');
+		jQuery('#results-collections-results').empty().append('<div class=\"collection-loading-panel\" ><img src=\"".$base.drupal_get_path('module', 'iform')."/media/images/ajax-loader2.gif\" />".lang::get('loading')."...</div>');
 		searchResultsLayer.events.register('featuresadded', {}, function(a1){
 			searchResultsLayer.events.remove('featuresadded');
 			searchResults = clusterStrategy;
@@ -2810,7 +2816,7 @@ runSearch = function(forCollections){
 			}
 		});
 	} else {
-		jQuery('#results-insects-results').empty().append('<div class=\"insect-loading-panel\" ><img src=\"".helper_config::$base_url."media/images/ajax-loader2.gif\" />".lang::get('loading')."...</div>');
+		jQuery('#results-insects-results').empty().append('<div class=\"insect-loading-panel\" ><img src=\"".$base.drupal_get_path('module', 'iform')."/media/images/ajax-loader2.gif\" />".lang::get('loading')."...</div>');
 		searchResultsLayer.events.register('featuresadded', {}, function(a1){
 			searchResultsLayer.events.remove('featuresadded');
 			searchResults = clusterStrategy;
@@ -3309,8 +3315,8 @@ loadDeterminations = function(keyValue, historyID, currentID, lookup, callback, 
 	if(can_doubt || expert) {jQuery('#fo-id-buttons').show();
 	} else {jQuery('#fo-id-buttons').hide();}
 	jQuery('#fo-doubt-button').hide();
-	jQuery('#fo-express-doubt-form').find('[name=determination:taxon_extra_info]').val('');
-	jQuery('#fo-express-doubt-form').find('[name=determination:taxa_taxon_list_id]').val('');
+	jQuery('#fo-express-doubt-form').find('[name=determination\\:taxon_extra_info]').val('');
+	jQuery('#fo-express-doubt-form').find('[name=determination\\:taxa_taxon_list_id]').val('');
 	jQuery('#fo-doubt-button').data('toolRetValues',[]);
 	jQuery('.poll-id-button').data('toolRetValues',[]);
 	jQuery('#fo-warning').addClass('occurrence-ok').removeClass('occurrence-dubious').removeClass('occurrence-unknown');
@@ -3372,7 +3378,13 @@ loadDeterminations = function(keyValue, historyID, currentID, lookup, callback, 
 				jQuery(\"<p>".lang::get('LANG_Doubt_Expressed')."</p>\").appendTo(this.myCurrentID);
 				jQuery('#fo-warning').removeClass('occurrence-ok').addClass('occurrence-dubious');
 			} else if(detData[i].determination_type == 'C'){
-				jQuery(\"<p>".lang::get('LANG_Determination_Valid')."</p>\").appendTo(this.myCurrentID);
+				// This has been set by an expert. If it is the same as the previous determination, then it has been confirmed,
+				// If different then it is has been corrected. Use different messages.
+				// Ideally could be able to tell if bulk validation - but cant!
+				if(i==0 || (detData[i].taxon == detData[i].taxon && detData[i].taxa_taxon_list_id_list == detData[i].taxa_taxon_list_id_list))
+				  jQuery(\"<p>".lang::get('LANG_Determination_Valid')."</p>\").appendTo(this.myCurrentID);
+				else
+				  jQuery(\"<p>".lang::get('LANG_Determination_Corrected')."</p>\").appendTo(this.myCurrentID);
 				if(!expert)
 					jQuery('.new-id-button').hide();
 			} else if(detData[i].determination_type == 'I'){
