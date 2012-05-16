@@ -44,10 +44,6 @@
 require_once('mnhnl_bats.php');
 class iform_mnhnl_bats2 extends iform_mnhnl_bats {
 
-  protected static function enforcePermissions(){
-  	return true;
-  }
-
   /** 
    * Return the form metadata.
    * @return array The definition of the form.
@@ -236,10 +232,10 @@ else
 var recorders = jQuery('#RecorderInstructions').next();
 ";
     // Move the date after the Institution
-    $insitutionAttrID=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Institution');
-    if($insitutionAttrID) {
+    $institutionAttrID=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Institution');
+    if($institutionAttrID) {
       data_entry_helper::$javascript .= "
-var insitutionAttr = jQuery('[name=smpAttr\\:".$insitutionAttrID."],[name^=smpAttr\\:".$insitutionAttrID."\\:]').not(':hidden').eq(0).closest('.control-box').next();
+var institutionAttr = jQuery('[name=smpAttr\\:".$institutionAttrID."],[name^=smpAttr\\:".$institutionAttrID."\\:],[name^=smpAttr\\:".$institutionAttrID."\\[\\]]').not(':hidden').eq(0).closest('.control-box').next();
 var recorderField = jQuery('#sample\\\\:recorder_names');
 var recorderLabel = recorderField.prev().filter('label');
 var recorderRequired = recorderField.next();
@@ -247,21 +243,21 @@ recorderRequired.next().filter('br').remove();
 var recorderText = recorderRequired.next();
 recorderText.next().filter('br').remove();
 recorderText.next().filter('br').remove();
-insitutionAttr.after('<br/>');
-insitutionAttr.after('<br/>');
-insitutionAttr.after(recorderText);
-insitutionAttr.after('<br/>');
-insitutionAttr.after(recorderRequired);
-insitutionAttr.after(recorderField);
-insitutionAttr.after(recorderLabel);
+institutionAttr.after('<br/>');
+institutionAttr.after('<br/>');
+institutionAttr.after(recorderText);
+institutionAttr.after('<br/>');
+institutionAttr.after(recorderRequired);
+institutionAttr.after(recorderField);
+institutionAttr.after(recorderLabel);
 var dateField = jQuery('#sample\\\\:date');
 var dateLabel = dateField.prev().filter('label');
 var dateRequired = dateField.next();
 dateRequired.next().filter('br').remove();
-insitutionAttr.after('<br/>');
-insitutionAttr.after(dateRequired);
-insitutionAttr.after(dateField);
-insitutionAttr.after(dateLabel);
+institutionAttr.after('<br/>');
+institutionAttr.after(dateRequired);
+institutionAttr.after(dateField);
+institutionAttr.after(dateLabel);
 ";
     }
     
@@ -318,8 +314,7 @@ jQuery('span').filter('.control-box').each(function(idex, elem){
     jQuery(elem).prev().filter('label').addClass('auto-width');
     jQuery(elem).prev().after('<br/>');
   }
-});
-";
+});\n";
     if (array_key_exists('sample:id', data_entry_helper::$entity_to_load))
       data_entry_helper::$javascript .= "jQuery('[name=locAttr\\:".$siteType2AttrID."],[name^=locAttr\\:".$siteType2AttrID."\\:]').filter('[checked]').change();\n";
     else
@@ -374,7 +369,21 @@ $.validator.addMethod('no_record', function(value, element){
   if(isChecked) return(numRows==0)
   else  return(numRows>0);
 },
-  \"".lang::get('validation_no_record')."\");\n";
+  \"".lang::get('validation_no_record')."\");
+$.validator.addMethod('scCheckTaxon', function(value, element){
+  var retVal = false;
+  var row = jQuery(element).closest('tr');
+  var classList = row.attr('class').split(/\s+/);
+  var inputs = row.find('input');
+  if(inputs.eq(inputs.length-1)[0] != element) return true; // nb jQuery 1.3
+  $.each( classList, function(index, item){
+    if (item.split(/-/)[0] === 'scMeaning') {
+      if(jQuery('.'+item).find(':checkbox').filter('[checked]').length>0) retVal=true;
+      if(jQuery('.'+item).find(':text').not('[value=]').length>0) retVal=true;
+    }});
+  return retVal;
+},
+  \"".lang::get('validation_taxon_data')."\");\n";
     
     return '';
   }
@@ -636,6 +645,7 @@ hook_species_checklist_pre_delete_row=function(e) {
            ,'extraParams'=>$options['readAuth']
            ,'survey_id'=>array_key_exists('survey_id', $options) ? $options['survey_id'] : null
       ));
+      foreach($attributes as $idx=>$attr) $attributes[$idx]['class'] = "scCheckTaxon"; // this allows extra validation
       // Get the attribute and control information required to build the custom occurrence attribute columns
       self::species_checklist_prepare_attributes($options, $attributes, $occAttrControls, $occAttrs);
       $retVal = "<p>".lang::get('LANG_SpeciesInstructions')."</p>\n";
@@ -655,11 +665,15 @@ hook_species_checklist_pre_delete_row=function(e) {
       $rows = array();
       $rowIdx = 0;
       // each row grouping is driven by the ttlid, not the occurrence, as there is a different occurrence for each survey method.
+      // that said we want it to be in general occurrence order so it matches the order in which the occurrences are created
+      // i.e. in order of first occurrence in ttl group
       $ttlidList=array();
+      $ttlList=array();
       foreach ($occList as $occ) {
         $ttlid = $occ['taxon']['id'];
         if(!in_array($ttlid,$ttlidList)){
           $ttlidList[] = $ttlid;
+          $ttlList[$ttlid] = $occ['taxon'];
         }
       }
       foreach ($ttlidList as $ttlid) {
@@ -672,16 +686,16 @@ hook_species_checklist_pre_delete_row=function(e) {
               $existing_record_id = $occ['id'];
             }
           }
-          $retVal .= '<tr class="scMeaning-'.$occ['taxon']['taxon_meaning_id'].' scDataRow sg-tr-'.$method['meaning_id'].' '.($id=='1'?'scFirstRow':'').'">';
+          $retVal .= '<tr class="scMeaning-'.$ttlList[$ttlid]['taxon_meaning_id'].' scDataRow sg-tr-'.$method['meaning_id'].' '.($id=='1'?'scFirstRow':'').'">';
           if($id=='1'){
-          	$firstCell = data_entry_helper::mergeParamsIntoTemplate($occ['taxon'], 'taxon_label');
+          	$firstCell = data_entry_helper::mergeParamsIntoTemplate($ttlList[$ttlid], 'taxon_label');
             if ($options['PHPtaxonLabel']) $firstCell=eval($firstCell);
             // assume always removeable and scPresence is hidden.
             $retVal .= '<td class="ui-state-default remove-row" style="width: 1%" rowspan="'.(count($attrsPerRow)).'">X</td>';
             $retVal .= str_replace('{content}', $firstCell, str_replace('{colspan}', 'rowspan="'.(count($attrsPerRow)).'"', $indicia_templates['taxon_label_cell']));
           }
           $ctrlId = "sc:".$method['meaning_id'].":$ttlid:$existing_record_id:present";
-          $retVal .= '<td>'.$method['term'].':</td><td class="scPresenceCell" style="display:none"><input type="hidden" class="scPresence" name="'.$ctrlId.'" value="1" /></td><td>';
+          $retVal .= '<td>'.$method['term'].':</td><td class="scPresenceCell" style="display:none"><input type="hidden" class="scPresence" name="'.$ctrlId.'" value="1" /></td><td><span>';
           foreach ($attrsPerRow[$id] as $attrId) {
           	if ($existing_record_id) {
               $search = preg_grep("/^sc:".$method['meaning_id'].":$ttlid:$existing_record_id:occAttr:$attrId".'[:[0-9]*]?$/', array_keys(data_entry_helper::$entity_to_load));
@@ -705,15 +719,16 @@ hook_species_checklist_pre_delete_row=function(e) {
               }
             // assume all error handling/validation done client side
             }
-            $retVal .= $oc;
+            $retVal .= '<span class="scKeepTogether">'.$oc.'</span> ';
           }
-          $retVal .= '</td></tr>';
+          $retVal .= '</span></td></tr>';
           $id++;
           $rowIdx++;
         }
       }
       if ($rowIdx==0) $retVal .= "<tr style=\"display: none\"><td></td></tr>\n";
       $retVal .= "</tbody></table>\n";
+      data_entry_helper::$javascript .= "\njQuery('#species,.scClonableRow').find(':checkbox').addClass('sgCheckbox');\n";
       // no confidential checkbox.
       if ($options['rowInclusionCheck']=='hasData') $r .= '<input name="rowInclusionCheck" value="hasData" type="hidden" />';
       // If the lookupListId parameter is specified then the user is able to add extra rows to the grid,
@@ -732,9 +747,9 @@ hook_species_checklist_pre_delete_row=function(e) {
          if(data instanceof Array && data.length>0){
           for (var i=0;i<data.length;i++){
             if(data[i].preferred == 'f')
-              taxaList += (taxaList == '' ? '' : ', ')+data[i].taxon;
+              taxaList += (taxaList == '' ? '' : '<br/>')+data[i].taxon;
             else
-              taxaList = '<em>'+data[i].taxon+'</em>'+(taxaList == '' ? '' : ', '+taxaList);
+              taxaList = '<em>'+data[i].taxon+'</em>'+(taxaList == '' ? '' : '<br/>'+taxaList);
             }
           }
           taxonCell.html(taxaList).removeClass('extraCommonNames');
@@ -752,6 +767,43 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
     }
   }
 
+  /**
+   * Build a JavaScript function  to format the autocomplete item list according to the form parameters
+   * autocomplete_include_both_names and autocomplete_include_taxon_group.
+   */
+  protected static function build_grid_taxon_label_function($args) {
+    global $indicia_templates;
+    // always include the searched name
+    $php = '$r="";'."\n".
+        'if ("{preferred}"=="t") {'."\n".
+        '  $r .= "<em>{taxon}</em>";'."\n".
+        '} else {'."\n".
+        '  $r .= "{taxon}";'."\n".
+        '}'."\n".
+        '$taxa_list_args=array('."\n".
+        '  "extraParams"=>array("website_id"=>'.$args['website_id'].','."\n".
+        '    "view"=>"detail",'."\n".
+        '    "auth_token"=>"'.self::$auth['read']['auth_token'].'",'."\n".
+        '    "nonce"=>"'.self::$auth['read']['nonce'].'"),'."\n".
+        '  "table"=>"taxa_taxon_list");'."\n".
+        '$responseRecords = data_entry_helper::get_population_data($taxa_list_args);'."\n".
+        '$taxaList = "";'."\n".
+        '$taxaMeaning = -1;'."\n".
+        'foreach ($responseRecords as $record)'."\n".
+        '  if($record["id"] == {id}) $taxaMeaning=$record["taxon_meaning_id"];'."\n".
+        'foreach ($responseRecords as $record){'."\n".
+        '  if($record["id"] != {id} && $taxaMeaning==$record["taxon_meaning_id"]){'."\n".
+        '    if($record["preferred"] == "f")'."\n".
+        '      $taxaList .= ($taxaList == "" ? "" : "<br/>").$record["taxon"];'."\n".
+        '    else'."\n".
+        '      $taxaList = "<em>".$record["taxon"]."</em>".($taxaList == "" ? "" : "<br/>".$taxaList);'."\n".
+        '}}'."\n".
+        '$r .= "<br/>".$taxaList;'."\n".
+        'return $r;'."\n";
+    // Set it into the indicia templates
+    $indicia_templates['taxon_label'] = $php;
+  }
+  
   public static function preload_species_checklist_occurrences($sampleId, $method, $readAuth) {
     $occurrenceIds = array();
     // don't load from the db if there are validation errors, since the $_POST will already contain all the
@@ -857,6 +909,9 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
     return $r;
   }
 
+  private static function gscol_cmp($k1, $k2){
+    return intval($k1)-intval($k2);
+  }
   public static function get_species_checklist_occ_list($options) {
     // at this point the data_entry_helper::$entity_to_load has been preloaded with the occurrence data.
     // copy the options array so we can modify it
@@ -883,7 +938,8 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
         }
       }
     }
-  	return $occList;
+    uksort($occList, "self::gscol_cmp");
+    return $occList;
   }
   
 
