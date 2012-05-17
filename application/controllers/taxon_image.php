@@ -40,7 +40,7 @@ class Taxon_image_Controller extends Gridview_Base_Controller
   }
 
  /**
-  * Override the default index functionality to filter by sample_id.
+  * Override the default index functionality to filter by taxon_meaning_id.
   */
   public function index()
   { 

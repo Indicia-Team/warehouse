@@ -37,8 +37,12 @@ class cache_builder {
     try {
       cache_builder::do_delete($db, $table);
       cache_builder::run_statement($db, $table, $queries['update'], 'update');
-      $insertSql = str_replace('#insert_join_needs_update#', $queries['insert_join_needs_update'], $queries['insert']);
-      cache_builder::run_statement($db, $table, $insertSql, 'insert');
+      if (is_array($queries['insert']))
+        foreach($queries['insert'] as $key=>&$sql)
+          $sql = str_replace('#insert_join_needs_update#', $queries['insert_join_needs_update'], $sql);
+      else 
+        $queries['insert'] = str_replace('#insert_join_needs_update#', $queries['insert_join_needs_update'], $queries['insert']);
+      cache_builder::run_statement($db, $table, $queries['insert'], 'insert');
       if (!variable::get("populated-$table")) {
         $cacheQuery = $db->query("select count(*) from cache_$table")->result_array(false);
         $totalQuery = $db->query("select count(*) from $table where deleted='f'")->result_array(false);
@@ -119,14 +123,25 @@ class cache_builder {
   }
 
   /**
-   * Runs an insert or update statemnet to update one of the cache tables. 
+   * Runs an insert or update statemnet to update one of 
+   * the cache tables. 
    * @param object $db Database connection.
-   * @param string $query Query used to perform the update or insert
+   * @param string $query Query used to perform the update or insert. Can be a string, or an 
+   *   associative array of SQL strings if multiple required to do the task.
    * @param string $action Term describing the action, used for feedback only.
    */
   private static function run_statement($db, $table, $query, $action) {
+    if (is_array($query)) {
+    foreach ($query as $title => $sql) {
+      $count = $db->query($sql)->count();
+      if (variable::get("populated-$table"))
+        echo ", $count $action(s) for $title";
+    }
+    
+  } else {
     $count = $db->query($query)->count();
     if (variable::get("populated-$table"))
       echo ", $count $action(s)";
+  }
   }
 }

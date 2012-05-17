@@ -82,14 +82,25 @@ class Data_Controller extends Data_Service_Base_Controller {
       'taxa_taxon_list',
       'taxon_relation',
       'taxon_group',
-      'notification'
+      'notification',
+      'cache_taxon_searchterm'
   );
   
   // List of tables that do not use views to expose their data.
   protected $tables_without_views = array(
     'index_websites_website_agreements',
+    'cache_taxon_searchterms',
     'notification'
   );
+  
+  /**
+  * Provides the /services/data/cache_taxon_searchterms service.
+  * Retrieves details of a single language.
+  */
+  public function cache_taxon_searchterm()
+  {
+    $this->handle_call('cache_taxon_searchterm');
+  }
   
   /**
   * Provides the /services/data/index_websites_website_agreements service.
@@ -275,6 +286,15 @@ class Data_Controller extends Data_Service_Base_Controller {
   }
 
   /**
+  * Provides the /service/data/taxon_code service.
+  * Retrieves details of location images.
+  */
+  public function taxon_code()
+  {
+    $this->handle_call('taxon_code');
+  }
+
+  /**
   * Provides the /services/data/taxon_group service.
   * Retrieves details of a single taxon_group.
   */
@@ -283,7 +303,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   $this->handle_call('taxon_group');
   }
 
- /**
+  /**
   * Provides the /service/data/taxon_image service.
   * Retrieves details of location images.
   */

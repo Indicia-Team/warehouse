@@ -445,8 +445,6 @@ class ORM extends ORM_Core {
     $a = array_fill_keys($keys, $ids);
     $fieldname = $this->submission['fields']['insert_captions_use']['value'];
     $this->submission['fields'][$fieldname] = $a;
-    Kohana::log('debug', 'Leaving ORM createIdsFromCaptions, model fields are '.
-      print_r($this->submission['fields'], true));
     return true;
   }
   
@@ -623,6 +621,7 @@ class ORM extends ORM_Core {
       if (array_key_exists('deleted', $vArray) && $vArray['deleted']=='t') {
         // For a record deletion, we don't want to validate and save anything. Just mark delete it.
         $this->deleted='t';
+        $this->set_metadata();
         $v=$this->save();
       } else {
         // Create a new record by calling the validate method
