@@ -96,7 +96,7 @@ class Websites_website_agreement_Controller extends Gridview_Base_Controller
   }
 
   /**
-   * Core admin can see the list of websites
+   * Core admin or website admins can see the list of website agreements
    */
   public function page_authorised() {
     return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('admin');

@@ -67,15 +67,17 @@ $config['termlists_terms']['insert']="insert into cache_termlists_terms (
       now(), now()
     from termlists tl
     join termlists_terms tlt on tlt.termlist_id=tl.id 
-    join needs_update_termlists_terms nutlt on nutlt.id=tlt.id and nutlt.deleted=false
     left join cache_termlists_terms ctlt on ctlt.id=tlt.id
     join termlists_terms tltpref on tltpref.meaning_id=tlt.meaning_id and tltpref.preferred='t' 
     join terms t on t.id=tlt.term_id and t.deleted=false
     join languages l on l.id=t.language_id and l.deleted=false
     join terms tpref on tpref.id=tltpref.term_id 
     join languages lpref on lpref.id=tpref.language_id
+    #insert_join_needs_update#
     where ctlt.id is null";
     
+$config['termlists_terms']['insert_join_needs_update']='join needs_update_termlists_terms nutlt on nutlt.id=tlt.id and nutlt.deleted=false';
+$config['termlists_terms']['insert_key_field']='tlt.id';
 
 $config['taxa_taxon_lists']['get_changelist_query']="
     select distinct on (ttl.id) ttl.id, tl.deleted or ttl.deleted or ttlpref.deleted or t.deleted 
@@ -162,7 +164,6 @@ $config['taxa_taxon_lists']['insert']="insert into cache_taxa_taxon_lists (
       now(), now()
     from taxon_lists tl
     join taxa_taxon_lists ttl on ttl.taxon_list_id=tl.id 
-    join needs_update_taxa_taxon_lists nuttl on nuttl.id=ttl.id and nuttl.deleted=false
     left join cache_taxa_taxon_lists cttl on cttl.id=ttl.id
     join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred='t' 
     join taxa t on t.id=ttl.taxon_id and t.deleted=false
@@ -171,8 +172,11 @@ $config['taxa_taxon_lists']['insert']="insert into cache_taxa_taxon_lists (
     join taxon_groups tg on tg.id=tpref.taxon_group_id
     join languages lpref on lpref.id=tpref.language_id
     left join taxa tcommon on tcommon.id=ttlpref.common_taxon_id
+    #insert_join_needs_update#
     where cttl.id is null";
 
+$config['taxa_taxon_lists']['insert_join_needs_update']='join needs_update_taxa_taxon_lists nuttl on nuttl.id=ttl.id and nuttl.deleted=false';
+$config['taxa_taxon_lists']['insert_key_field']='ttl.id';
 
 $config['occurrences']['get_changelist_query'] = "
   select o.id, o.deleted or s.deleted or su.deleted or (cttl.id is null) as deleted
@@ -272,7 +276,6 @@ $config['occurrences']['insert']="insert into cache_occurrences (
     end,
     COALESCE(l.name, s.location_name)
   from occurrences o
-  join needs_update_occurrences nuo on nuo.id=o.id and nuo.deleted=false
   left join cache_occurrences co on co.id=o.id
   join samples s on s.id=o.sample_id 
   left join locations l on l.id=s.location_id and l.deleted=false
@@ -283,7 +286,10 @@ $config['occurrences']['insert']="insert into cache_occurrences (
     join termlists_terms certainty on certainty.id=oav.int_value
     join occurrence_attributes oa on oa.id=oav.occurrence_attribute_id and oa.deleted='f' and oa.system_function='certainty'
   ) on oav.occurrence_id=o.id and oav.deleted='f'
+  #insert_join_needs_update#
   where co.id is null";
-
+  
+  $config['occurrences']['insert_join_needs_update']='join needs_update_occurrences nuo on nuo.id=o.id and nuo.deleted=false';
+  $config['occurrences']['insert_key_field']='o.id';
 
 ?>
