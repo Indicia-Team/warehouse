@@ -3,29 +3,32 @@
 <report title="Summary species counts by location" description="Lists locations with mappable boundary output and the number of species within them. ">
       <query website_filter_field="o.website_id">
       SELECT #columns#
-      FROM locations l
-      LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
-      LEFT JOIN (cache_occurrences o
-        #agreements_join# 
-      ) ON st_intersects(o.public_geom, coalesce(l.boundary_geom, l.centroid_geom)) 
-      #joins#
-      WHERE l.deleted=false
-      AND (lw.website_id in (#website_ids#) OR l.public=true)
-      AND (o.id IS NULL or (
-        o.zero_abundance='f'
-        AND #sharing_filter# 
-        AND (CAST(o.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
-        AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR o.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
-        AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
-        AND ( 
-            (o.record_status='V') OR
-            ('#quality#'='C' AND o.certainty='C') OR
-            ('#quality#'='L' AND o.certainty in ('C', 'L')) OR
-            ('#quality#'='!D' AND o.record_status&lt;&gt;'D') OR
-            ('#quality#'='!R')
-        )
-        AND o.record_status&lt;&gt;'R')
-      )
+      FROM (SELECT l.id as id, count(distinct o.taxon_meaning_id) as value, max(count(distinct o.taxon_meaning_id)) OVER () as maxvalue
+          FROM locations l
+          LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
+          LEFT JOIN (cache_occurrences o
+            #agreements_join# 
+          ) ON st_intersects(o.public_geom, coalesce(l.boundary_geom, l.centroid_geom)) 
+          #joins#
+          WHERE l.deleted=false
+          AND (lw.website_id in (#website_ids#) OR l.public=true)
+          AND (o.id IS NULL or (
+            o.zero_abundance='f'
+            AND #sharing_filter# 
+            AND (CAST(o.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
+            AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR o.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+            AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+            AND ( 
+                (o.record_status='V') OR
+                ('#quality#'='C' AND o.certainty='C') OR
+                ('#quality#'='L' AND o.certainty in ('C', 'L')) OR
+                ('#quality#'='!D' AND o.record_status&lt;&gt;'D') OR
+                ('#quality#'='!R')
+            )
+            AND o.record_status&lt;&gt;'R')
+          )
+      GROUP BY l.id) AS stats
+      JOIN locations l on l.id=stats.id AND l.deleted=false
       </query>
       <order_bys>
             <order_by>value DESC</order_by>
@@ -47,11 +50,11 @@
             lookup_values='V:Data must be verified,C:Data must be verified or certain,L:Data must be at least likely,!D:Include anything not dubious or rejected,!R:Include anything not rejected' />
       </params>
       <columns>
-            <column name="id" visible="false" distincton="true" sql="l.id" unique="true" />
+            <column name="id" visible="false" sql="l.id" />
             <column name="name" display="Site Name" style="background-color: #e7e7e7;" sql="l.name" />
             <column name="boundary" display="Boundary" sql="st_astext(ST_SnapToGrid(ST_Simplify(COALESCE(l.boundary_geom, l.centroid_geom), 100), 100, 100))" visible="false" mappable="true"/>
-            <column name="value" display="No. of Taxa" distincton="true" aggregate="true" sql="count(distinct o.taxon_meaning_id)" in_count="false"/>
-            <column name="minvalue" visible="false" aggregate="true" sql="0" />
-            <column name="maxvalue" visible="false" aggregate="true" sql="max(count(distinct o.taxon_meaning_id)) OVER ()" />
+            <column name="value" display="No. of Taxa" sql="stats.value" />
+            <column name="minvalue" visible="false" sql="0" />
+            <column name="maxvalue" visible="false" sql="stats.maxvalue" />
       </columns>
 </report>
