@@ -268,6 +268,10 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       'title' => 'Images',
       'actions'=>array('edit')
     ), array(
+      'controller' => 'taxon_code',
+      'title' => 'Codes',
+      'actions'=>array('edit')
+    ), array(
       'controller' => 'taxa_taxon_list/children',
       'title' => 'Child Taxa',
       'actions'=>array('edit')

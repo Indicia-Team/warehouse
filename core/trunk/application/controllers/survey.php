@@ -53,7 +53,7 @@ class Survey_Controller extends Gridview_Base_Controller {
       ),
       array(
         'caption'=>'setup attributes',
-        'url'=>"/attribute_by_survey/{id}?type=sample"
+        'url'=>"attribute_by_survey/{id}?type=sample"
       )
     );
   }
