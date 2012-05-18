@@ -189,9 +189,10 @@ function iform_map_get_georef_parameters() {
     array(
       'name'=>'georefPreferredArea',
       'caption'=>'Preferred area for georeferencing.',
-      'description'=>'Preferred area to look within when trying to resolve a place name. For example set this to the region name you are recording within.',
+      'description'=>'Preferred area to look within when trying to resolve a place name. For example set this to the region name you are recording within. Can be left blank to not specify '.
+          'in which case users can add a comma plus the region to search if needed, e.g. "wimborne, Dorset".',
       'type'=>'string',
-      'default'=>'gb',
+      'default'=>'',
       'group'=>'Georeferencing',
       'siteSpecific'=>true,
       'required'=>false
@@ -199,7 +200,7 @@ function iform_map_get_georef_parameters() {
     array(
       'name'=>'georefCountry',
       'caption'=>'Preferred country for georeferencing.',
-      'description'=>'Preferred country to look within when trying to resolve a place name.',
+      'description'=>'Preferred country to look within when trying to resolve a place name. Can be left blank to not specify, in which case users can add a comma then the country to search. ',
       'type'=>'string',
       'default'=>'United Kingdom',
       'group'=>'Georeferencing',

@@ -26,6 +26,9 @@ function Georeferencer(mapdiv, callback) {
   }
   
   this.georeference = function(searchtext) {
+    var split=searchtext.split(','), tokens, searchfor, searchedplace;
+    // the name of the town/village to match etc might precede a comma
+    searchedplace=split[0];
     searchtext = searchtext.replace(/,/gi, ' ');
     var tokens = [searchtext], searchfor;
     if (settings.georefPreferredArea!=='') {
@@ -35,29 +38,31 @@ function Georeferencer(mapdiv, callback) {
       tokens.push(settings.georefCountry);
     }
     searchfor=tokens.join(' ');
-    var request = 'http://where.yahooapis.com/v1/places.q(' + searchfor + ')';
+    var request = 'http://where.yahooapis.com/v1/places.q(' + searchfor + ');count=100';
     $.getJSON(request + "?format=json&lang="+settings.georefLang+
             "&appid="+settings.geoplanet_api_key+"&callback=?", function(data){
           // an array to store the responses in the required country, because GeoPlanet will not limit to a country
           var places = [], converted={};
-          jQuery.each(data.places.place, function(i,place) {
-            // Ignore places outside the chosen country, plus ignore places that were hit because they
-            // are similar to the country name or preferred area we are searching in.
-            if (place.country.toUpperCase()==settings.georefCountry.toUpperCase() &&
-                (place.name.toUpperCase().indexOf(settings.georefCountry.toUpperCase())==-1 &&
-                (place.name.toUpperCase().indexOf(settings.georefPreferredArea.toUpperCase())==-1 || settings.georefPreferredArea == '') ||
-                place.name.toUpperCase().indexOf(searchtext.toUpperCase())!=-1)) {
-              // make the place object readable by indicia (i.e. standardised with all drivers)
-              place.centroid.x = place.centroid.longitude;
-              place.centroid.y = place.centroid.latitude;
-              place.boundingBox.southWest.x = place.boundingBox.southWest.longitude;
-              place.boundingBox.southWest.y = place.boundingBox.southWest.latitude;
-              place.boundingBox.northEast.x = place.boundingBox.northEast.longitude;
-              place.boundingBox.northEast.y = place.boundingBox.northEast.latitude;
-              place.epsg=4326;
-              places.push(place);
-            }
-          });
+          if (typeof data.places.place !== "undefined") {
+            jQuery.each(data.places.place, function(i,place) {
+              // Ignore places outside the chosen country, plus ignore places that were hit because they
+              // are similar to the country name or preferred area we are searching in.
+              if ((!settings.georefCountry || place.country.toUpperCase()==settings.georefCountry.toUpperCase()) &&
+                  (place.name.toUpperCase().indexOf(settings.georefCountry.toUpperCase())==-1 &&
+                  (place.name.toUpperCase().indexOf(settings.georefPreferredArea.toUpperCase())==-1 || settings.georefPreferredArea == '') ||
+                  place.name.toUpperCase().indexOf(searchedplace.toUpperCase())!=-1)) {
+                // make the place object readable by indicia (i.e. standardised with all drivers)
+                place.centroid.x = place.centroid.longitude;
+                place.centroid.y = place.centroid.latitude;
+                place.boundingBox.southWest.x = place.boundingBox.southWest.longitude;
+                place.boundingBox.southWest.y = place.boundingBox.southWest.latitude;
+                place.boundingBox.northEast.x = place.boundingBox.northEast.longitude;
+                place.boundingBox.northEast.y = place.boundingBox.northEast.latitude;
+                place.epsg=4326;
+                places.push(place);
+              }
+            });
+          }
           callback(mapdiv, places)
         });
   }
