@@ -44,7 +44,7 @@
     </param>
   </params>
   <columns>
-    <column name='occurrence_id' display='ID' sql='o.id' datatype='integer' template="&lt;div class='status-{record_status}'&gt;{occurrence_id}&lt;/div&gt;" />
+    <column name='occurrence_id' display='ID' sql='o.id' datatype='integer' template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />
     <column name='source' display='Source' sql="w.title || ' | ' || o.survey_title" datatype="text" />
     <column name='sample_id' visible='false' sql='o.sample_id' datatype='integer' />
     <column name='taxon' display='Species' sql="CASE WHEN o.preferred_taxon=o.default_common_name then o.preferred_taxon ELSE o.preferred_taxon || COALESCE(' | ' || o.default_common_name, '') END" datatype='text' />
