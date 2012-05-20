@@ -240,14 +240,15 @@ var checkSubmitInProgress = function () {
       });
       
       $('.delete-file').live('click', function(evt) {
-        // if this is a newly uploaded file, we can simply delete the div since all that has been done is an upload to the 
+        // if this is a newly uploaded file or still uploading, we can simply delete the div since all that has been done is an upload to the 
         // temp upload folder, which will get purged anyway. isNewField is a hidden input that marks up new and existing files.
         var id=evt.target.id.substr(4);
-        if ($('#isNew-'+id).val()==='t')
+        if ($('#isNew-'+id).length===0 || $('#isNew-'+id).val()==='t')
           $(evt.target).parents('#'+id).remove();
         else {
           $(evt.target).parents('#'+id).addClass('disabled').css('opacity', 0.5);
           $(evt.target).parents('#'+id).find('.deleted-value').val('t');
+          $(evt.target).parents('#'+id+' .progress').remove();
         }
       });
     });
