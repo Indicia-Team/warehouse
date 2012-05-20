@@ -55,7 +55,7 @@ $indicia_templates = array(
   'password_input' => '<input type="password" id="{id}" name="{fieldname}"{class} {disabled} value="{default}" {title} />'."\n",
   'textarea' => '<textarea id="{id}" name="{fieldname}"{class} {disabled} cols="{cols}" rows="{rows}" {title}>{default}</textarea>'."\n",
   'checkbox' => '<input type="hidden" name="{fieldname}" value="0"/><input type="checkbox" id="{id}" name="{fieldname}" value="1"{class}{checked}{disabled} {title} />'."\n",
-  'date_picker' => '<input type="text" size="30"{class} id="{id}" name="{fieldname}" value="{default}" {title}/>',
+  'date_picker' => '<input type="text" placeholder="{placeholder}" size="30"{class} id="{id}" name="{fieldname}" value="{default}" {title}/>',
   'select' => '<select id="{id}" name="{fieldname}"{class} {disabled} {title}>{items}</select>',
   'select_item' => '<option value="{value}" {selected} >{caption}</option>',
   'select_species' => '<option value="{value}" {selected} >{caption} - {common}</option>',
