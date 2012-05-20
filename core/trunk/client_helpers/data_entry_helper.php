@@ -467,6 +467,8 @@ class data_entry_helper extends helper_base {
   * <li><b>dateFormat</b><br/>
   * Optional. Allows the date format string to be set, which must match a date format that can be parsed by the JavaScript Date object.
   * Default is dd/mm/yy.</li>
+  <li><b>allowVagueDates</b><br/>
+  * Optional. Set to true to enable vague date input, which disables client side validation for standard date input formats.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the date picker control.
@@ -474,16 +476,22 @@ class data_entry_helper extends helper_base {
   public static function date_picker() {
     $options = self::check_arguments(func_get_args(), array('fieldname', 'default'));
     $options = array_merge(array(
-      'dateFormat'=>'dd/mm/yy'
+      'dateFormat'=>'dd/mm/yy',
+      'allowVagueDates'=>false,
+      'default'=>''
     ), $options);
+    if (!isset($options['placeholder']))
+      $options['placeholder'] = $options['allowVagueDates'] ? lang::get('Pick or type a vague date') : lang::get('Click here');
     self::add_resource('jquery_ui');
     $escaped_id=str_replace(':','\\\\:',$options['id']);
     // Don't set js up for the datepicker in the clonable row for the species checklist grid
     if ($escaped_id!='{fieldname}') {
       if (self::$validated_form_id!==null) {
-        if (!isset($options['default']) || $options['default']=='')
-          $options['default']=lang::get('click here');
-        self::$javascript .= "if (typeof jQuery.validator !== \"undefined\") {
+        /*if ($options['default']=='')
+          $options['default']=lang::get('click here');*/
+        if ($options['allowVagueDates']) {
+        } else {
+          self::$javascript .= "if (typeof jQuery.validator !== \"undefined\") {
   jQuery.validator.addMethod('customDate',
     function(value, element) {
       // parseDate throws exception if the value is invalid
@@ -492,6 +500,7 @@ class data_entry_helper extends helper_base {
     }, '".lang::get('Please enter a valid date')."'
   );
 }\n";
+        }
       }
       self::$javascript .= "jQuery('#$escaped_id').datepicker({
     dateFormat : '".$options['dateFormat']."',
