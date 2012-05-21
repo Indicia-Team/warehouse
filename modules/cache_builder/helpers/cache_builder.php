@@ -45,7 +45,10 @@ class cache_builder {
       cache_builder::run_statement($db, $table, $queries['insert'], 'insert');
       if (!variable::get("populated-$table")) {
         $cacheQuery = $db->query("select count(*) from cache_$table")->result_array(false);
-        $totalQuery = $db->query("select count(*) from $table where deleted='f'")->result_array(false);
+        if (isset($queries['count']))
+          $totalQuery = $db->query($queries['count'])->result_array(false);
+        else
+          $totalQuery = $db->query("select count(*) from $table where deleted='f'")->result_array(false);
         $percent = round($cacheQuery[0]['count']*100/$totalQuery[0]['count']);
         echo "$table population in progress - $percent% done";
       }
@@ -132,16 +135,15 @@ class cache_builder {
    */
   private static function run_statement($db, $table, $query, $action) {
     if (is_array($query)) {
-    foreach ($query as $title => $sql) {
-      $count = $db->query($sql)->count();
+      foreach ($query as $title => $sql) {
+        $count = $db->query($sql)->count();
+        if (variable::get("populated-$table"))
+          echo ", $count $action(s) for $title";
+      }
+    } else {
+      $count = $db->query($query)->count();
       if (variable::get("populated-$table"))
-        echo ", $count $action(s) for $title";
+        echo ", $count $action(s)";
     }
-    
-  } else {
-    $count = $db->query($query)->count();
-    if (variable::get("populated-$table"))
-      echo ", $count $action(s)";
-  }
   }
 }
