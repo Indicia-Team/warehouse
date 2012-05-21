@@ -3399,8 +3399,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       self::$javascript .= "  var current=$('#$divId').tabs('option', 'selected');\n";
       // Use a selector to find the inputs and selects on the current tab and validate them.
       if (isset(self::$validated_form_id)) {
-        self::$javascript .= "  var tabinputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select').not(':disabled');\n";
-        self::$javascript .= "  if (!tabinputs.valid()) {\n";
+        self::$javascript .= "  var tabinputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select,textarea').not(':disabled');\n";
+        self::$javascript .= "  if (tabinputs.length>0 && !tabinputs.valid()) {\n";
         self::$javascript .= "    return;";
         self::$javascript .= "  }\n";
       }

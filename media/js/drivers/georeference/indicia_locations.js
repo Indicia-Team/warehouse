@@ -24,7 +24,8 @@ function Georeferencer(mapdiv, callback) {
     var request, query={
       'like': ['name',searchtext],
       'orlike': ['comment',searchtext],
-      'orlike': ['code',searchtext]      
+      'orlike': ['code',searchtext],
+      'orlike': ['centroid_sref',searchtext]      
     }
     request = mapdiv.georefOpts.warehouseUrl + 'index.php/services/data/location?mode=json&nonce=' + mapdiv.georefOpts.nonce +
           '&auth_token=' + mapdiv.georefOpts.auth_token +
@@ -67,6 +68,7 @@ function Georeferencer(mapdiv, callback) {
           if (place.code!==null) {
             nameTokens.push(place.code);
           }
+          nameTokens.push(place.centroid_sref);
           converted = {
             name : place.name,
             display : nameTokens.join(' '),
@@ -75,7 +77,8 @@ function Georeferencer(mapdiv, callback) {
               x: centroid.x,
               y: centroid.y
             },
-            boundingBox: box
+            boundingBox: box,
+            obj: place
           };
           places.push(converted);
         });

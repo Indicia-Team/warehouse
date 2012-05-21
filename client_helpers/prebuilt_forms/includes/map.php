@@ -36,7 +36,7 @@ function iform_map_get_map_parameters() {
       'name'=>'map_centroid_lat',
       'caption'=>'Centre of Map Latitude',
       'description'=>'WGS84 Latitude of the initial map centre point, in decimal form. Set to "default" to use the settings '.
-          'defined in the ">IForm Settings page.',
+          'defined in the IForm Settings page.',
       'type'=>'text_input',
       'group'=>'Initial Map View',
       'default'=>'default'

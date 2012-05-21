@@ -122,8 +122,9 @@ function get_fieldset_id($outerBlock, $innerBlock='', $idPrefix='') {
   if (!empty($innerBlock)) 
     $parts[]=substr($innerBlock, 0, 20);
   $r = implode('-', $parts);
-  // Make it lowercase and no whitespace
-  $r = strtolower(preg_replace('/\s+/', '-', $r));
+  // Make it lowercase and no whitespace or other special chars
+  $r = strtolower(preg_replace('/[\s\'()]+/', '-', $r));
+  $r = strtolower(preg_replace('/[()]+/', '', $r));
   return $r;
 }
 

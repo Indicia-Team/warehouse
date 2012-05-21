@@ -60,7 +60,8 @@ function Georeferencer(mapdiv, callback) {
                   x: parseFloat(place.lng)+0.01, 
                   y: parseFloat(place.lat)+0.01 
                 }
-              }
+              },
+              obj: place
             }
             places.push(converted);
           });
