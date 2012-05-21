@@ -42,7 +42,6 @@
   var sequenceId = '';
   var positionId = '';
   var verticalDefault = '?';
-  var hideOrDisable = 'disable';
   var validate = false;
 
   /*
@@ -144,13 +143,12 @@
     return cHex;
   };
 
-  var makeIdentifierCode = function(idx, typeId) {
+  var makeIdentifierCode = function(prefix) {
     // constructs the unique coded_value from the identifier characteristics
     // currently based on BTO coding scheme http://www.btoipmr.f9.co.uk/cm/cm_codes.htm
     var iCode = '';
-    var prefix = 'idn\\:'+idx+'\\:'+typeId+'\\:';
-    var iTypeName = $('#'+prefix+'identifier\\:identifier_name').val();
-    var compactTypeName = iTypeName.toLowerCase().replace(/[^a-z]/g, '');
+    var parts = prefix.split('\\:');
+    var idnTypeName = parts[2];
     var iBase = $('#'+prefix+'idnAttr\\:'+baseColourId+' option:selected').text();
     var iText = $('#'+prefix+'idnAttr\\:'+textColourId+' option:selected').text();
     var iPos = $('#'+prefix+'idnAttr\\:'+positionId+' option:selected').text();
@@ -159,59 +157,38 @@
     if (iSeq==='') {
       // return false;
     }
-    switch (compactTypeName) {
-    case 'darvicring':
-      if (iPos.toLowerCase().indexOf('left')!==-1) {
-        iCode = 'L';
-      } else if (iPos.toLowerCase().indexOf('right')!==-1) {
-        iCode = 'R';
-      } else {
-        iCode = '?';
-      }
-      if (iPos.toLowerCase().indexOf('above')!==-1) {
-        iCode = iCode + 'A';
-      } else if (iPos.toLowerCase().indexOf('below')!==-1) {
-        iCode = iCode + 'B';
-      } else {
-        iCode = iCode + verticalDefault;
-      }
-      break;
-    case 'metalring':
-      if (iPos.toLowerCase().indexOf('left')!==-1) {
-        iCode = 'L';
-      } else if (iPos.toLowerCase().indexOf('right')!==-1) {
-        iCode = 'R';
-      } else {
-        iCode = '?';
-      }
-      if (iPos.toLowerCase().indexOf('above')!==-1) {
-        iCode = iCode + 'A';
-      } else if (iPos.toLowerCase().indexOf('below')!==-1) {
-        iCode = iCode + 'B';
-      } else {
-        iCode = iCode + verticalDefault;
-      }
-      break;
-    case 'wingtag':
-      if (iPos.toLowerCase().indexOf('left')!==-1) {
-        iCode = 'L';
-      } else if (iPos.toLowerCase().indexOf('right')!==-1) {
-        iCode = 'R';
-      } else {
-        iCode = '?';
-      }
-      iCode = iCode + 'W';
-      break;
-    case 'neckcollar':
+    switch (idnTypeName) {
+    case 'neck-collar':
       iCode = 'NC';
       break;
-    case 'nasalsaddle':
-      iCode = 'NS';
+    case 'colour-left':
+      iCode = 'L';
+      iCode = iCode + verticalDefault;
+      break;
+    case 'colour-right':
+      iCode = 'R';
+      iCode = iCode + verticalDefault;
+      break;
+    case 'metal':
+      if (iPos.toLowerCase().indexOf('left')!==-1) {
+        iCode = 'L';
+      } else if (iPos.toLowerCase().indexOf('right')!==-1) {
+        iCode = 'R';
+      } else {
+        iCode = '?';
+      }
+      if (iPos.toLowerCase().indexOf('above')!==-1) {
+        iCode = iCode + 'A';
+      } else if (iPos.toLowerCase().indexOf('below')!==-1) {
+        iCode = iCode + 'B';
+      } else {
+        iCode = iCode + verticalDefault;
+      }
       break;
     default:
       iCode = '??';
     }
-    if (compactTypeName==='metalring') {
+    if (idnTypeName==='metal') {
       iCode += getColourCode('metal')+'('+iSeq.toUpperCase()+')';
     } else {
       iCode += getColourCode(iBase)+getColourCode(iText)+'('+iSeq.toUpperCase()+')';
@@ -220,39 +197,10 @@
     return iCode;
   };
   
-  var setIdentifierDisplayState = function(checkboxId) {
-    // make identifier fieldset display state reflect the checkbox setting
-    var fieldsetId = checkboxId.replace('identifier:checkbox', 'fieldset');
-    switch (hideOrDisable) {
-    case 'hide' :
-      if ($('#'+esc4jq(checkboxId)+':checked').length===0) {
-        $('#'+esc4jq(fieldsetId)).slideUp();
-      } else {
-        $('#'+esc4jq(fieldsetId)).slideDown();
-      }
-      break;
-    case 'disable' :
-      if ($('#'+esc4jq(checkboxId)+':checked').length===0) {
-        $('#'+esc4jq(fieldsetId)+':hidden').show();
-        $('input, select', '#'+esc4jq(fieldsetId)).each(function() {
-          $(this).attr('disabled', true);
-        });
-        $('.indentifier-colourbox', '#'+esc4jq(fieldsetId)).fadeOut();
-      } else {
-        $('#'+esc4jq(fieldsetId)+':hidden').show();
-        $('input, select', '#'+esc4jq(fieldsetId)).each(function() {
-          $(this).attr('disabled', false);
-        });
-        $('.indentifier-colourbox', '#'+esc4jq(fieldsetId)).fadeIn();
-      }
-      break;
-    }
-  };
-
   var setIdentifierVisualisation = function(ctl) {
     // set the colour identifier visualisation panel to reflect the attributes
     var parts = ctl.id.split(':');
-    var colourBox$ = $('.indentifier-colourbox', $(ctl).closest('fieldset'));
+    var colourBox$ = $('.'+parts[2]+'-indentifier-colourbox', $(ctl).closest('div.individual_panel'));
     switch (parseInt(parts[parts.length-1])) {
     case baseColourId :
       colourBox$.css('background-color', $('#'+esc4jq(ctl.id)+' option:selected').attr('data-colour'));
@@ -274,10 +222,51 @@
       break;
     }
   };
-  
+
+  var setTaxonPicture = function(ctl) {
+    // set the individual panel to reflect the taxon
+    var panel$ = $(ctl).closest('.individual_panel');
+    $('option', $(ctl)).each(function() {
+      panel$.removeClass($(this).text().toLowerCase().replace(/[^a-z]/g, ''));
+    });
+    panel$.addClass($('option:selected', $(ctl)).text().toLowerCase().replace(/[^a-z]/g, ''));
+  };
+
   var errorHTML = function(ctlId, msg) {
     var html = '<p class="inline-error" generated="true" htmlfor="'+ctlId+'">'+msg+'.</p>';
     return html;
+  };
+  
+  var initIndividuals = function(scope) {
+    // colour any colour selects
+    $('select.select_colour option', scope).each(function() {
+      var hexCode = getColourHex(getColourCode($(this).text()));
+      $(this).css('background-color', '#'+hexCode).attr('data-colour', '#'+hexCode);
+      var colour = (parseInt(hexCode.substr(0,2), 16)+parseInt(hexCode.substr(2,2), 16)+parseInt(hexCode.substr(4,2), 16))<384 ? 'ffffff' : '000000';
+      $(this).css('color', '#'+colour);
+    });
+    // set the initial state of the identifier visuals
+    $('select.select_taxon', scope).each(function() {
+      setTaxonPicture(this);
+    });
+    // set the initial state of the taxon
+    $('select.select_colour, input.select_colour', scope).each(function() {
+      setIdentifierVisualisation(this);
+    });
+    // install a change handler for the colour selecters to set the ring colours
+    $('select.select_colour', scope).change(function(event) {
+      setIdentifierVisualisation(this);
+    });
+    // install a keyup handler for the colour selecters to set the ring colours
+    $('input.select_colour', scope).keyup(function(event) {
+      setIdentifierVisualisation(this);
+    });
+    // install a change handler for the taxon selecters to set the pictures
+    $('select.select_taxon', scope).change(function(event) {
+      setTaxonPicture(this);
+    });
+    // activate accordions
+    $('.idn-accordion, .idn-subject-accordion', scope).accordion();
   };
   
   /*
@@ -288,9 +277,9 @@
    * initialises settings and set event handlers, called from indicia ready
    * handler.
    */
-  indicia.wwt.initForm = function(pSvcUrl, pReadNonce, pReadAuthToken, pBaseColourId, pTextColourId, pSequenceId, pPositionId, pVerticalDefault, pHideOrDisable, pValidate) {
-      // set config from PHP.
-      svcUrl = pSvcUrl;
+  indicia.wwt.initForm = function(pSvcUrl, pReadNonce, pReadAuthToken, pBaseColourId, pTextColourId, pSequenceId, pPositionId, pVerticalDefault, pValidate) {
+    // set config from PHP.
+    svcUrl = pSvcUrl;
     readNonce = pReadNonce;
     readAuthToken = pReadAuthToken;
     baseColourId = parseInt(pBaseColourId);
@@ -298,25 +287,23 @@
     sequenceId = parseInt(pSequenceId);
     positionId = parseInt(pPositionId);
     verticalDefault = (pVerticalDefault==='') ? '?' : pVerticalDefault;
-    hideOrDisable = pHideOrDisable;
     validate = pValidate=='true';
     // install the submit handler for the form
     $('form#entry_form').submit(function(event) {
       var codes = [];
       var idnCount = 0;
       // for each identifier in use
-      $('fieldset.taxon_identifier').each(function() {
-        var checkboxId = this.id.replace('fieldset', 'identifier:checkbox');
+      $('.idn\\:accordion\\:panel').each(function() {
+        var fldPrefix = this.id.replace('panel', '');
+        var escFldPrefix = esc4jq(fldPrefix);
+        var checkboxId = fldPrefix + 'identifier:checkbox';
         if ($('#'+esc4jq(checkboxId)+':checked').length > 0) {
           idnCount++;
           // set the unique identifier:coded_value
-          var parts = this.id.split(':');
-          var idx = parts[1];
-          var iType = parts[2];
-          var iCode = makeIdentifierCode(idx, iType);
+          var iCode = makeIdentifierCode(escFldPrefix);
           if (iCode) {
-            $('#idn\\:'+idx+'\\:'+iType+'\\:identifier\\:coded_value').val(iCode);
-            if ($('#idn\\:'+idx+'\\:'+iType+'\\:identifier\\:identifier_id').val()=='-1') {
+            $('#'+escFldPrefix+'identifier\\:coded_value').val(iCode);
+            if ($('#'+escFldPrefix+'identifier\\:identifier_id').val()=='-1') {
               codes[codes.length] = iCode;
             }
           }
@@ -407,32 +394,18 @@
       // now continue with the submit if all valid
       return valid;
     });
-    // set indentifier initial display state to reflect the checkbox setting
-    $('.identifier_checkbox').each(function() {
-      setIdentifierDisplayState(this.id);
-    });
-    // install a click handler for the identifier checkboxes to display the identifier fields
-    $('.identifier_checkbox').click(function(event) {
-      setIdentifierDisplayState(this.id);
-    });
-    // colour any colour selects
-    $('select.select_colour option').each(function() {
-      var hexCode = getColourHex(getColourCode($(this).text()));
-      $(this).css('background-color', '#'+hexCode).attr('data-colour', '#'+hexCode);
-      var color = (parseInt(hexCode.substr(0,2), 16)+parseInt(hexCode.substr(2,2), 16)+parseInt(hexCode.substr(4,2), 16))<384 ? 'ffffff' : '000000';
-      $(this).css('color', '#'+color);
-    });
-    // set the initial state of the identifier visuals
-    $('select.select_colour, input.select_colour').each(function() {
-      setIdentifierVisualisation(this);
-    });
-    // install a change handler for the colour selecters to set the ring colours
-    $('select.select_colour').change(function(event) {
-      setIdentifierVisualisation(this);
-    });
-    // install a keyup handler for the colour selecters to set the ring colours
-    $('input.select_colour').keyup(function(event) {
-      setIdentifierVisualisation(this);
+    // initialise individual and identifier controls
+    initIndividuals('body');
+    // install a click handler for the 'add another' button
+    $('input#idn\\:add-another').click(function(event) {
+      var indCount = $('.individual_panel').length;      
+      var newInd = window.indicia.wwt.newIndividual.replace(/idn:0/g, 'idn:'+indCount).replace(/Colour-marked individual 1/g, 'Colour-marked individual '+(indCount+1));
+      //$(this).before(newInd);
+      $('#idn\\:subject\\:accordion').append(newInd);
+      // initialise new individual and identifier controls
+      initIndividuals('#idn\\:'+indCount+'\\:individual\\:panel');
+      // reactivate subject accordion
+      $('.idn-subject-accordion').accordion('destroy').accordion({'active':indCount});
     });
   };
 })(jQuery);
