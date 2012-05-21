@@ -6,6 +6,7 @@ CREATE TABLE cache_taxon_searchterms
 (
   id serial NOT NULL, -- Unique identifier and primary key for the table.
   taxa_taxon_list_id integer NOT NULL, -- Identifies the taxon list entry which this searchable name applies to.
+  taxon_list_id integer NOT NULL, -- Identifies the taxon list which this searchable name is from.
   searchterm character varying NOT NULL, -- Searchable identifier for the taxon. Includes taxon formal and vernacular names, simplified versions of these for searching and codes, abbreviations or other shortcuts used to lookup taxa.
   original character varying NOT NULL, -- When the term is simplified, provides the original unsimplified version of the term.
   taxon_group character varying NOT NULL, -- Name of the taxon group.
@@ -37,6 +38,7 @@ WITH (
 COMMENT ON TABLE cache_taxon_searchterms IS 'Provides a table with content optimised for searching for taxon name strings. There can be several searchable terms or other codes per taxon item.';
 COMMENT ON COLUMN cache_taxon_searchterms.id IS 'Unique identifier and primary key for the table.';
 COMMENT ON COLUMN cache_taxon_searchterms.taxa_taxon_list_id IS 'Identifies the taxon list entry which this searchable name applies to.';
+COMMENT ON COLUMN cache_taxon_searchterms.taxon_list_id IS 'Identifies the taxon list which this searchable name is from.';
 COMMENT ON COLUMN cache_taxon_searchterms.searchterm IS 'Searchable identifier for the taxon. Includes taxon formal and vernacular names, simplified versions of these for searching and codes, abbreviations or other shortcuts used to lookup taxa.';
 COMMENT ON COLUMN cache_taxon_searchterms.taxon_group IS 'Name of the taxon group.';
 COMMENT ON COLUMN cache_taxon_searchterms.taxon_meaning_id IS 'Identifies the taxon meaning associated with this name. All names with the same ID refer to the same taxon.';
