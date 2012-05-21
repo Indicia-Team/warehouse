@@ -99,7 +99,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
   }
   
   /**
-  * Overrides the postSubmit function to add in synonomies and common names. This only applies
+  * Overrides the postSubmit function to add in synonomies and common names as well as search codes. This only applies
   * when adding a preferred name, not a synonym or common name.
   */
   protected function postSubmit()
@@ -217,9 +217,49 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
       // post the common name id change if required.
       if (isset($this->changed['common_taxon_id'])) {
         $this->save();        
-      }      
+      }
+      if ($result && array_key_exists('codes', $this->submission['metaFields']))
+        $result = $this->saveCodeMetafields($this->submission['metaFields']['codes']);
     }
     return $result;
+  }
+  
+  /**
+   * Handle any taxon codes submitted in a CSV file as metadata.
+   */
+  protected function saveCodeMetafields($codes) {
+    foreach ($codes as $code) {
+      // Code should be formatted type|code. e.g. Bradley Fletcher|1234
+      $tokens = explode('|',$code);
+      // Find the ID of the codes termlist
+      $codeTypesListId = $this->fkLookup(array(
+        'fkTable' => 'termlist',
+        'fkSearchField' => 'external_key',
+        'fkSearchValue' => 'indicia:taxon_code_types'
+      ));
+      // Find the id of the term that matches the input.
+      $typeId = $this->fkLookup(array(
+        'fkTable' => 'list_termlists_term',
+        'fkSearchField' => 'term',
+        'fkSearchValue' => $tokens[0],
+        'fkSearchFilterField' => 'termlist_id',
+        'fkSearchFilterValue' => $codeTypesListId
+      ));
+      // save a taxon code.
+      $tc = ORM::Factory('taxon_code');
+      $tc->set_submission_data(array(
+        'code'=>$tokens[1],
+        'taxon_meaning_id'=>$this->taxon_meaning_id,
+        'code_type_id'=>$typeId
+      ));
+      if (!$tc->submit()) {
+        foreach($tc->errors as $key=>$value) {
+          $this->errors[$tc->object_name.':'.$key]=$value;
+        }          
+        return false;
+      }
+    }
+    return true;
   }
   
   /**
@@ -282,7 +322,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
           'taxon_meaning'=>array('fk' => 'taxon_meaning_id'),
           'taxon'=>array('fk' => 'taxon_id')
         ),
-        'metaFields'=>array('synonyms', 'commonNames')      
+        'metaFields'=>array('synonyms', 'commonNames', 'codes')      
     );
   }
   

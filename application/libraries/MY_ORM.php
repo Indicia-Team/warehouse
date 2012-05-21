@@ -684,7 +684,7 @@ class ORM extends ORM_Core {
    * 
    * @return Foreign key value or false if not found
    */ 
-  private function fkLookup($fkArr) {
+  protected function fkLookup($fkArr) {
     $r = false;
     if (ORM::$cacheFkLookups) {
       $keyArr=array('lookup', $fkArr['fkTable'], $fkArr['fkSearchField'], $fkArr['fkSearchValue']);
