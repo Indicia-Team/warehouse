@@ -46,7 +46,8 @@ function Georeferencer(mapdiv, callback) {
                   x: place.bbox[2], 
                   y: place.bbox[3]
                 }
-              }
+              },
+              obj: place
             };
             places.push(converted);
           });

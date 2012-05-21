@@ -22,7 +22,7 @@
 global $custom_terms;
 
 /**
- * Language terms for the survey_reporting_form_2 form.
+ * Language terms for the mnhnl_dynamic_1 form.
  *
  * @package	Client
  */

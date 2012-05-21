@@ -58,7 +58,7 @@ function setupButtons(tabs, index) {
       // first, validate
       var current=wizList.parent().children('.ui-tabs').tabs('option', 'selected');
       var tabinputs = $('#entry_form div > .ui-tabs-panel:eq('+current+')').find('input,select').not(':disabled');
-      if (!tabinputs.valid()) {
+      if (typeof tabinputs.valid !== "undefined" && !tabinputs.valid()) {
         return;
       }
       // submit the form
@@ -110,7 +110,7 @@ function wizardProgressIndicator(options) {
     var totalWidth = progressUl.width();
     // Get difference in width of li between width including margin, and width of part inside padding. 
     var spacing = arrowBlockLis.outerWidth(true) - arrowBlockLis.width();
-    var width = ((totalWidth / (arrowBlockLis.length)) | 0) - spacing - 1 - arrowHeadLis.outerWidth(true);
+    var width = ((totalWidth / (arrowBlockLis.length)) | 0) - spacing - 3 - arrowHeadLis.outerWidth(true);
     arrowBlockLis.css('width', width + 'px');
   }
   

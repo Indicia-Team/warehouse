@@ -159,11 +159,13 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, cacheLooku
   var mapFromCacheTable = function(item) {
     item.common = item.default_common_name;
     item.preferred_name = item.preferred_taxon;
+    item.taxon = item.original;
+    item.id = item.taxa_taxon_list_id;
     return item;
   };
   
   /**
-   * Function fired when return pressed in the species selecto - adds a new row and focuses it.
+   * Function fired when return pressed in the species selector - adds a new row and focuses it.
    */
   var returnPressedInAutocomplete=function(evt) {
     var rows=$(evt.currentTarget).parents('tbody').children(),
@@ -204,33 +206,36 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, cacheLooku
     extraParams = {
       orderby : 'taxon',
       mode : 'json',
-      qfield : 'taxon',
+      qfield : cacheLookup ? 'searchterm' : 'taxon',
       auth_token: readAuth.auth_token,
       nonce: readAuth.nonce,
       taxon_list_id: lookupListId
     };
-    if (cacheLookup) {
-      extraParams.view='cache';
-    }
     if (typeof indiciaData['taxonExtraParams-'+gridId]!=="undefined") {
       $.extend(extraParams, indiciaData['taxonExtraParams-'+gridId]);
     }
+    if (cacheLookup) {
+      $.extend(extraParams, {"query":encodeURI('{"in":{"simplified":[true,null]}}')})
+    }
     $(newRow).find('input,select').keydown(keyHandler);
     // Attach auto-complete code to the input
-    ctrl = $('#' + selectorId).autocomplete(url+'/taxa_taxon_list', {
+    ctrl = $('#' + selectorId).autocomplete(url+'/'+(cacheLookup ? 'cache_taxon_searchterm' : 'taxa_taxon_list'), {
       extraParams : extraParams,
       continueOnBlur: true,
+      simplify: cacheLookup, // uses simplified version of search string in cache to remove errors due to punctuation etc.
       parse: function(data) {
         var results = [];
         jQuery.each(data, function(i, item) {
           // common name can be supplied in a field called common, or default_common_name
           if (cacheLookup) {
             item = mapFromCacheTable(item);
+          } else {
+            item.searchterm = item.taxon;
           }
           results[results.length] =
           {
             'data' : item,
-            'result' : item.taxon,
+            'result' : item.searchterm,
             'value' : item.id
           };
         });
