@@ -228,7 +228,11 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
    * Handle any taxon codes submitted in a CSV file as metadata.
    */
   protected function saveCodeMetafields($codes) {
-    foreach ($codes as $code) {
+    kohana::log('debug', 'Codes: '.print_r($codes, true));
+    $temp = str_replace("\r\n", "\n", $codes['value']);
+    $temp = str_replace("\r", "\n", $temp);
+    $codeList = explode("\n", trim($temp));
+    foreach ($codeList as $code) {
       // Code should be formatted type|code. e.g. Bradley Fletcher|1234
       $tokens = explode('|',$code);
       // Find the ID of the codes termlist
@@ -245,6 +249,8 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
         'fkSearchFilterField' => 'termlist_id',
         'fkSearchFilterValue' => $codeTypesListId
       ));
+      if (!$typeId)
+        throw new Exception('The taxon code type '.$tokens[0].' could not be found in the code types termlist');
       // save a taxon code.
       $tc = ORM::Factory('taxon_code');
       $tc->set_submission_data(array(
