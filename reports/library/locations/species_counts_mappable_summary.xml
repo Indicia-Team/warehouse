@@ -3,14 +3,13 @@
 <report title="Summary species counts by location" description="Lists locations with mappable boundary output and the number of species within them. ">
       <query website_filter_field="o.website_id">
       SELECT #columns#
-      FROM (SELECT l.id as id, count(distinct o.taxon_meaning_id) as value, max(count(distinct o.taxon_meaning_id)) OVER () as maxvalue
+      FROM (SELECT l.id as id, count(distinct o.taxon_meaning_id) as value
           FROM locations l
-          LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
-          LEFT JOIN (cache_occurrences o
-            #agreements_join# 
-          ) ON st_intersects(o.public_geom, coalesce(l.boundary_geom, l.centroid_geom)) 
+          LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false 
+          JOIN cache_occurrences o ON st_intersects(o.public_geom, l.boundary_geom) 
+          #agreements_join# 
           #joins#
-          WHERE l.deleted=false
+          WHERE l.deleted=false AND l.boundary_geom IS NOT NULL
           AND (lw.website_id in (#website_ids#) OR l.public=true)
           AND (o.id IS NULL or (
             o.zero_abundance='f'
@@ -28,11 +27,11 @@
             AND o.record_status&lt;&gt;'R')
           )
       GROUP BY l.id) AS stats
-      JOIN locations l on l.id=stats.id AND l.deleted=false
+      RIGHT JOIN locations l on l.id=stats.id AND l.deleted=false AND l.boundary_geom IS NOT NULL
+      LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false 
+      WHERE l.deleted=false
+          AND (lw.website_id in (#website_ids#) OR l.public=true)
       </query>
-      <order_bys>
-            <order_by>value DESC</order_by>
-      </order_bys>
       <params>
         <param name='date_from' display='Date From' datatype='date' />
         <param name='date_to' display='Date To' datatype='date' />
@@ -53,8 +52,8 @@
             <column name="id" visible="false" sql="l.id" />
             <column name="name" display="Site Name" style="background-color: #e7e7e7;" sql="l.name" />
             <column name="boundary" display="Boundary" sql="st_astext(ST_SnapToGrid(ST_Simplify(COALESCE(l.boundary_geom, l.centroid_geom), 100), 100, 100))" visible="false" mappable="true"/>
-            <column name="value" display="No. of Taxa" sql="stats.value" />
+            <column name="value" display="No. of Records"  sql="stats.value"/>
             <column name="minvalue" visible="false" sql="0" />
-            <column name="maxvalue" visible="false" sql="stats.maxvalue" />
+            <column name="maxvalue" visible="false" sql="max(stats.value) OVER ()" />
       </columns>
 </report>
