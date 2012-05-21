@@ -120,7 +120,7 @@ class iform_mnhnl_bats2 extends iform_mnhnl_bats {
               "[recorder names]\r\n".
               "[survey method grid]\r\n".
               "@surveyMethodTermList=bats2:surveymethod\r\n".
-              "@tableHeadings=Survey method,Start time,End Time,Visit\r\n".
+              "@tableHeadings=Survey method,Start time,End time,Visit\r\n".
               "@defaultAttrs=<TBD>\r\n".
               "@removeOptions=<TBD>\r\n".
               "@removeAttr=<TBD>\r\n".
@@ -348,7 +348,11 @@ jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:
     }
     data_entry_helper::$late_javascript .= "// JS for survey methods grid control.
 $.validator.addMethod('method-presence', function(value, element){
-	return jQuery('.method-presence').filter('[checked]').length > 0;
+    var valid = jQuery('.method-presence').filter('[checked]').length > 0;
+	if(valid){
+	  jQuery('.method-presence').removeClass('ui-state-error').next('p.inline-error').remove();
+	}
+	return valid;
 },
   \"".lang::get('validation_method-presence')."\");
 $.validator.addMethod('smg-endtime', function(value, element){
@@ -374,16 +378,44 @@ $.validator.addMethod('scCheckTaxon', function(value, element){
   var retVal = false;
   var row = jQuery(element).closest('tr');
   var classList = row.attr('class').split(/\s+/);
-  var inputs = row.find('input');
-  if(inputs.eq(inputs.length-1)[0] != element) return true; // nb jQuery 1.3
   $.each( classList, function(index, item){
     if (item.split(/-/)[0] === 'scMeaning') {
       if(jQuery('.'+item).find(':checkbox').filter('[checked]').length>0) retVal=true;
       if(jQuery('.'+item).find(':text').not('[value=]').length>0) retVal=true;
     }});
+    // this is called at two points: when a value is entered and when the save button is called.
+  // If this fails then fine, there is no data entered for this species.
+  // If it passes then look up all the error paragraphs.
+  if(retVal){
+    $.each( classList, function(index, item){
+      if (item.split(/-/)[0] === 'scMeaning') {
+        jQuery('.'+item).find('p.inline-error').each(function(index, item){
+          if(item.innerHTML == \"".lang::get('validation_taxon_data')."\")
+            jQuery(item).prev('.ui-state-error').removeClass('ui-state-error');
+            jQuery(item).remove();
+        });
+      }});
+  }
+  var inputs = row.find('input');
+  if(inputs.eq(inputs.length-1)[0] != element) return true; // nb jQuery 1.3, we are only interested in displaying the error for the last entry in the row.
   return retVal;
 },
-  \"".lang::get('validation_taxon_data')."\");\n";
+  \"".lang::get('validation_taxon_data')."\");
+jQuery('.scCheckTaxon:checkbox').live('change', function(value, element){
+  if(jQuery(this).filter('[checked]').length > 0){
+    var row = jQuery(this).closest('tr');
+    var classList = row.attr('class').split(/\s+/);
+    $.each( classList, function(index, item){
+      if (item.split(/-/)[0] === 'scMeaning') {
+        jQuery('.'+item).find('p.inline-error').each(function(index, item){
+          if(item.innerHTML == \"".lang::get('validation_taxon_data')."\")
+            jQuery(item).prev('.ui-state-error').removeClass('ui-state-error');
+            jQuery(item).remove();
+        });
+      }});
+  }
+});\n";
+  
     
     return '';
   }
@@ -463,8 +495,8 @@ jQuery('.survey-method-grid').find('[name$=\\:".$removeDetails[0]."\\:smpAttr\\:
     ), true);
     $retval = '<br /><table class="survey-method-grid"><thead><tr>';
     $headingList = explode(',', $options['tableHeadings']);
-    foreach($headingList as $heading){
-      $retval .= '<th>'.t($heading).'</th>'; //because the text is a configuration item we use the drupal translation rather than hardcoded iform translations.
+    foreach($headingList as $idx=>$heading){
+      $retval .= '<th>'.t($heading).(!$idx?'<span class="deh-required">*</span>':'').'</th>'; //because the text is a configuration item we use the drupal translation rather than hardcoded iform translations.
     }
     $retval .= '</tr></thead><tbody>';
     $subSamples = array();
