@@ -234,7 +234,7 @@ $config['taxon_searchterms']['update']['standard terms'] = "update cache_taxon_s
         when l.iso='lat' and ttlpref.id=tpref.id then 'S' 
         else 'V'
       end,
-      simplified=false, -- regexp_replace(regexp_replace(lower(t.taxon), 'ae', 'e', 'g'), '[^a-z0-9]', '', 'g'),
+      simplified=false, 
       code_type_id=null,
       source_id=null
     from taxon_lists tl
@@ -247,6 +247,34 @@ $config['taxon_searchterms']['update']['standard terms'] = "update cache_taxon_s
     join taxon_groups tg on tg.id=tpref.taxon_group_id
     left join taxa tcommon on tcommon.id=ttlpref.common_taxon_id
     where cts.taxa_taxon_list_id=ttl.id and cts.name_type in ('L','S','V') and cts.simplified=false";
+
+/*
+ * 3+2 letter abbreviations are created for all latin names. 
+ */
+$config['taxon_searchterms']['update']['abbreviations'] = "update cache_taxon_searchterms cts
+    set taxa_taxon_list_id=ttl.id,
+      searchterm=taxon_abbreviation(t.taxon),
+      original=t.taxon,
+      taxon_group=tg.title,
+      taxon_meaning_id=ttl.taxon_meaning_id,
+      preferred_taxon=tpref.taxon,
+      default_common_name=tcommon.taxon,
+      preferred_authority=tpref.authority,
+      language_iso=l.iso,
+      name_type='A',
+      simplified=null, 
+      code_type_id=null,
+      source_id=null
+    from taxon_lists tl
+    join taxa_taxon_lists ttl on ttl.taxon_list_id=tl.id 
+    join needs_update_taxon_searchterms nuts on nuts.id=ttl.id
+    join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred='t' 
+    join taxa t on t.id=ttl.taxon_id 
+    join languages l on l.id=t.language_id 
+    join taxa tpref on tpref.id=ttlpref.taxon_id 
+    join taxon_groups tg on tg.id=tpref.taxon_group_id
+    left join taxa tcommon on tcommon.id=ttlpref.common_taxon_id
+    where cts.taxa_taxon_list_id=ttl.id and cts.name_type ='A' and l.iso='lat'";
 
 $config['taxon_searchterms']['update']['simplified terms'] = "update cache_taxon_searchterms cts
     set taxa_taxon_list_id=ttl.id,
@@ -327,6 +355,26 @@ $config['taxon_searchterms']['insert']['standard terms']="insert into cache_taxo
     #insert_join_needs_update#
     where cts.taxa_taxon_list_id is null";
 
+$config['taxon_searchterms']['insert']['abbreviations']="insert into cache_taxon_searchterms (
+      taxa_taxon_list_id, searchterm, original, taxon_group, taxon_meaning_id, preferred_taxon,
+      default_common_name, preferred_authority, language_iso,
+      name_type, simplified, code_type_id
+    )
+    select distinct on (ttl.id) ttl.id, taxon_abbreviation(t.taxon), t.taxon, tg.title, ttl.taxon_meaning_id, tpref.taxon,
+      tcommon.taxon, tpref.authority, l.iso, 
+      'A', null, null
+    from taxon_lists tl
+    join taxa_taxon_lists ttl on ttl.taxon_list_id=tl.id 
+    left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=ttl.id and cts.name_type='A'
+    join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred='t' 
+    join taxa t on t.id=ttl.taxon_id and t.deleted=false
+    join languages l on l.id=t.language_id and l.deleted=false
+    join taxa tpref on tpref.id=ttlpref.taxon_id 
+    join taxon_groups tg on tg.id=tpref.taxon_group_id
+    left join taxa tcommon on tcommon.id=ttlpref.common_taxon_id
+    #insert_join_needs_update#
+    where cts.taxa_taxon_list_id is null and l.iso='lat'";
+
 $config['taxon_searchterms']['insert']['simplified terms']="insert into cache_taxon_searchterms (
       taxa_taxon_list_id, searchterm, original, taxon_group, taxon_meaning_id, preferred_taxon,
       default_common_name, preferred_authority, language_iso,
@@ -359,7 +407,7 @@ $config['taxon_searchterms']['insert']['codes']="insert into cache_taxon_searcht
       name_type, simplified, code_type_id, source_id
     )
     select distinct on (tc.id) ttlpref.id, tc.code, tc.code, tg.title, ttlpref.taxon_meaning_id, tpref.taxon,
-      tcommon.taxon, tpref.authority, null, 'C', false, tc.code_type_id, tc.id
+      tcommon.taxon, tpref.authority, null, 'C', null, tc.code_type_id, tc.id
     from taxon_lists tl
     join taxa_taxon_lists ttlpref on ttlpref.taxon_list_id=tl.id and ttlpref.preferred=true
     join taxon_codes tc on tc.taxon_meaning_id=ttlpref.taxon_meaning_id and tc.deleted=false
@@ -377,9 +425,17 @@ $config['taxon_searchterms']['insert_join_needs_update']='join needs_update_taxo
 $config['taxon_searchterms']['insert_key_field']='ttlpref.id';
 
 $config['taxon_searchterms']['count']='select sum(count) as count from (
-    select count(*) as count from taxon_codes where code_type_id in (149 /*%searchable_terms%*/)
+    -- count of codes
+    select count(*) as count from taxon_codes where deleted=false and code_type_id in (149 /*%searchable_terms%*/)
     union
-    select count(*) as count from taxa_taxon_lists
+    -- count of taxon names, * 2 to allow for simplified versions as well
+    select count(*)*2 as count from taxa_taxon_lists where deleted=false
+    union 
+    -- additional count of latin names because these get abbreviations added
+    select count(ttl.id) as count
+    from taxa_taxon_lists ttl
+    join taxa t on t.id=ttl.taxon_id and t.deleted=false
+    join languages l on l.id=t.language_id and l.iso=\'lat\'
   ) as countlist';
 
 $config['occurrences']['get_changelist_query'] = "
