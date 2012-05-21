@@ -5,19 +5,19 @@
 CREATE TABLE cache_taxon_searchterms
 (
   id serial NOT NULL, -- Unique identifier and primary key for the table.
-  taxa_taxon_list_id integer, -- Identifies the taxon list entry which this searchable name applies to.
-  searchterm character varying, -- Searchable identifier for the taxon. Includes taxon formal and vernacular names, simplified versions of these for searching and codes, abbreviations or other shortcuts used to lookup taxa.
-  taxon_group character varying, -- Name of the taxon group.
-  taxon_meaning_id integer, -- Identifies the taxon meaning associated with this name. All names with the same ID refer to the same taxon.
-  preferred_taxon character varying, -- Provides the preferred taxon name for a taxon that has been looked up,
+  taxa_taxon_list_id integer NOT NULL, -- Identifies the taxon list entry which this searchable name applies to.
+  searchterm character varying NOT NULL, -- Searchable identifier for the taxon. Includes taxon formal and vernacular names, simplified versions of these for searching and codes, abbreviations or other shortcuts used to lookup taxa.
+  original character varying NOT NULL, -- When the term is simplified, provides the original unsimplified version of the term.
+  taxon_group character varying NOT NULL, -- Name of the taxon group.
+  taxon_meaning_id integer NOT NULL, -- Identifies the taxon meaning associated with this name. All names with the same ID refer to the same taxon.
+  preferred_taxon character varying NOT NULL, -- Provides the preferred taxon name for a taxon that has been looked up,
   default_common_name character varying, -- Provides the preferred common name for a taxon that has been looked up,
   preferred_authority character varying, -- The taxonomic authority of the preferred taxon name.
   language_iso character varying, -- The language associated with the search term, or null if not language specific.
-  name_type character(1), -- Type of taxon name string. Options are (L)atin, (S)ynonym, (V)ernacular, (O)ther vernacular name, (C)ode, (A)bbreviation.
+  name_type character(1) NOT NULL, -- Type of taxon name string. Options are (L)atin, (S)ynonym, (V)ernacular, (O)ther vernacular name, (C)ode, (A)bbreviation.
   simplified boolean DEFAULT false, -- Is this a name which has been simplified make it tolerant of some spelling and punctuation errors when searching.
   code_type_id integer, -- For names which are codes, identifies the type of code. Foreign key to the termlists_terms table.
-  source_id integer, -- When the search term is from a taxon_codes table record, provides the id of the record which the code was source from.
-  original character varying, -- When the term is simplified, provides the original unsimplified version of the term.
+  source_id integer, -- When the search term is from a taxon_codes table record, provides the id of the record which the code was source from.  
   CONSTRAINT pk_cache_taxon_searchterms PRIMARY KEY (id),
   CONSTRAINT fk_taxon_searchterms_code_type_id FOREIGN KEY (code_type_id)
       REFERENCES termlists_terms (id) MATCH SIMPLE
@@ -33,7 +33,7 @@ CREATE TABLE cache_taxon_searchterms
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE cache_taxon_searchterms OWNER TO indicia_user;
+
 COMMENT ON TABLE cache_taxon_searchterms IS 'Provides a table with content optimised for searching for taxon name strings. There can be several searchable terms or other codes per taxon item.';
 COMMENT ON COLUMN cache_taxon_searchterms.id IS 'Unique identifier and primary key for the table.';
 COMMENT ON COLUMN cache_taxon_searchterms.taxa_taxon_list_id IS 'Identifies the taxon list entry which this searchable name applies to.';
