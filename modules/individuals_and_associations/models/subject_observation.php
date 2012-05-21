@@ -101,23 +101,28 @@ class Subject_Observation_Model extends ORM_Tree
   protected function preSubmit()
   { 
     kohana::log('debug', 'In Subject_observation_Model::preSubmit() $this->submission is '.print_r($this->submission, true));
-    // if sample_id not set for fkLookup in occurrences_subject_observation, then set it now
+    // if sample_id not set in occurrence submissions, then set it now
     if (array_key_exists('subModels', $this->submission)) {
       foreach ($this->submission['subModels'] as &$subModel) {
         if (array_key_exists('model', $subModel)
           && array_key_exists('id', $subModel['model'])
           && $subModel['model']['id'] === 'occurrences_subject_observation'
-          && array_key_exists('fkFields', $subModel['model'])
-          && array_key_exists('fk_occurrence', $subModel['model']['fkFields'])
-          && array_key_exists('fkSearchField', $subModel['model']['fkFields']['fk_occurrence'])
-          && $subModel['model']['fkFields']['fk_occurrence']['fkSearchField'] === 'sample_id'
-          && array_key_exists('fkSearchValue', $subModel['model']['fkFields']['fk_occurrence'])
-          && $subModel['model']['fkFields']['fk_occurrence']['fkSearchValue'] == 0
-          && array_key_exists('fields', $this->submission)
-          && array_key_exists('sample_id', $this->submission['fields'])
-          && array_key_exists('value', $this->submission['fields']['sample_id'])) {
-          $subModel['model']['fkFields']['fk_occurrence']['fkSearchValue'] = 
-            $this->submission['fields']['sample_id']['value'];
+          && array_key_exists('superModels', $subModel['model'])) {
+          foreach ($subModel['model']['superModels'] as &$superModel) {
+            if (array_key_exists('model', $superModel)
+              && array_key_exists('id', $superModel['model'])
+              && $superModel['model']['id'] === 'occurrence'
+              && array_key_exists('fields', $superModel['model'])
+              && array_key_exists('sample_id', $superModel['model']['fields'])
+              && array_key_exists('value', $superModel['model']['fields']['sample_id'])
+              && $superModel['model']['fields']['sample_id']['value'] == 0
+              && array_key_exists('fields', $this->submission)
+              && array_key_exists('sample_id', $this->submission['fields'])
+              && array_key_exists('value', $this->submission['fields']['sample_id'])) {
+              $superModel['model']['fields']['sample_id']['value'] = 
+                $this->submission['fields']['sample_id']['value'];
+            }
+          }
         }
       }
     }

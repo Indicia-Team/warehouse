@@ -14,30 +14,56 @@ h2 {
 	color: #008f93;
 }
 
-.taxon_individual, .taxon_identifier {
+.taxon_individual {
 	border:1px solid #008f93;
+	background-color: transparent;
+	width: 500px;
+	float: left;
+	margin-right: -500px;
 }
 
-.taxon_individual legend, .taxon_identifier legend {
+.taxon_individual legend {
 	color: #008f93;
 	border:1px solid #008f93;
 }
 
-.taxon_identifier {
-	display: none;
+.barnaclegoose {
+	background-image: url('../images/barnacle.jpg');
+	background-repeat: no-repeat;
+	background-position: 560px 100px;
 }
 
-.indentifier-controls  { 
-	float: left;
-	display: inline-block;
-	width: 400px;
-	max-width: 400px;
-	margin-right: -400px;
+.bewicksswan {
+	background-image: url('../images/bewicks.jpg');
+	background-repeat: no-repeat;
+	background-position: 560px 100px;
+}
+	
+.greylaggoose {
+	background-image: url('../images/greylag.jpg');
+	background-repeat: no-repeat;
+	background-position: 560px 100px;
+}
+	
+.pinkfootedgoose {
+	background-image: url('../images/pinkfoot.jpg');
+	background-repeat: no-repeat;
+	background-position: 560px 100px;
+}
+	
+.whooperswan {
+	background-image: url('../images/whooper.jpg');
+	background-repeat: no-repeat;
+	background-position: 560px 100px;
+}
+	
+.idn-accordion {
+	width: 480px;
 }
 
-.indentifier-colourbox  {
+.neck-collar-indentifier-colourbox  {
 	float: left;
-	width: 4em;
+	width: 5em;
 	height: 2em;
 	border: 1px solid #3f3f3f; 
 	text-align: center;
@@ -46,78 +72,203 @@ h2 {
 	font-weight: bold;
 	font-family: Verdana, sans-serif;
 	line-height: 2em;
-	margin-top: 35px;
-	margin-left: 423px;
-}
-
-* html .indentifier-colourbox  {
-	margin-left: 211px;
-}
-
-fieldset.darvic-ring .right-leg {
-	-moz-transform:rotate(-95deg); 
-	-moz-transform-origin: 50% 50%;
-	-webkit-transform: rotate(-95deg);
-	-webkit-transform-origin: 50% 50%;
-	-o-transform: rotate(-95deg);
-	-o-transform-origin:  50% 50%;
-	/*filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=1);*/
-	-ms-transform: rotate(-95deg);
-	-ms-transform-origin:  50% 50%;
 	margin-top: 50px;
-	margin-left: 460px;
-}
-	
-* html fieldset.darvic-ring .right-leg {
-	margin-left: 230px;
-}
-	
-fieldset.darvic-ring .left-leg {
-	-moz-transform:rotate(-72deg); 
-	-moz-transform-origin: 50% 50%;
-	-webkit-transform: rotate(-72deg);
-	-webkit-transform-origin: 50% 50%;
-	-o-transform: rotate(-72deg);
-	-o-transform-origin:  50% 50%;
-	/*filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=1);*/
-	-ms-transform: rotate(-72deg);
-	-ms-transform-origin:  50% 50%;
-	margin-top: 20px;
-	margin-left: 398px;
-}
-	
-* html fieldset.darvic-ring .left-leg {
-	margin-left: 199px;
-}
-	
-fieldset.darvic-ring {
-	background-image: url('../images/goose-legs.png');
-	background-repeat: no-repeat;
-	background-position: 400px 8px;
+	margin-left: 540px;
+	margin-right: -617px;
 }
 
-fieldset.neck-collar {
-	background-image: url('../images/goose-neck.png');
-	background-repeat: no-repeat;
-	background-position: 410px 8px;
+* html .neck-collar-indentifier-colourbox  {
+	margin-left: 270px;
 }
 
-fieldset.neck-collar .indentifier-colourbox {
-	height: 2.5em;
-	-moz-transform:rotate(100deg); 
-	-moz-transform-origin: 50% 50%;
-	-webkit-transform: rotate(100deg);
-	-webkit-transform-origin: 50% 50%;
-	-o-transform: rotate(100deg);
-	-o-transform-origin:  50% 50%;
-	/*filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=1);*/
-	-ms-transform: rotate(100deg);
-	-ms-transform-origin:  50% 50%;
+.colour-left-indentifier-colourbox  {
+	float: left;
+	width: 5em;
+	height: 2em;
+	border: 1px solid #3f3f3f; 
+	text-align: center;
+	text-transform: uppercase;
+	font-size: 1.25em;
+	font-weight: bold;
+	font-family: Verdana, sans-serif;
+	line-height: 2em;
 	margin-top: 50px;
-	margin-left: 438px;
+	margin-left: 640px;
+	margin-right: -717px;
 }
-	
-* html fieldset.neck-collar .indentifier-colourbox {
-	margin-left: 219px;
+
+* html .colour-left-indentifier-colourbox  {
+	margin-left: 320px;
 }
+
+.colour-right-indentifier-colourbox  {
+	float: left;
+	width: 5em;
+	height: 2em;
+	border: 1px solid #3f3f3f; 
+	text-align: center;
+	text-transform: uppercase;
+	font-size: 1.25em;
+	font-weight: bold;
+	font-family: Verdana, sans-serif;
+	line-height: 2em;
+	margin-top: 50px;
+	margin-left: 740px;
+	margin-right: -817px;
+}
+
+* html .colour-left-indentifier-colourbox  {
+	margin-left: 370px;
+}
+
+.barnaclegoose .neck-collar-indentifier-colourbox  {
+	margin-top: 200px;
+	margin-left: 760px;
+	margin-right: -837px;
+}
+
+* html .barnaclegoose .neck-collar-indentifier-colourbox  {
+	margin-left: 380px;
+}
+
+.barnaclegoose .colour-left-indentifier-colourbox  {
+	margin-top: 380px;
+	margin-left: 650px;
+	margin-right: -727px;
+}
+
+* html .barnaclegoose .colour-left-indentifier-colourbox  {
+	margin-left: 325px;
+}
+
+.barnaclegoose .colour-right-indentifier-colourbox  {
+	margin-top: 420px;
+	margin-left: 680px;
+	margin-right: -757px;
+}
+
+* html .barnaclegoose .colour-right-indentifier-colourbox  {
+	margin-left: 340px;
+}
+
+.bewicksswan .neck-collar-indentifier-colourbox  {
+	margin-top: 210px;
+	margin-left: 750px;
+	margin-right: -827px;
+}
+
+* html .bewicksswan .neck-collar-indentifier-colourbox  {
+	margin-left: 375px;
+}
+
+.bewicksswan .colour-left-indentifier-colourbox  {
+	margin-top: 390px;
+	margin-left: 630px;
+	margin-right: -707px;
+}
+
+* html .bewicksswan .colour-left-indentifier-colourbox  {
+	margin-left: 315px;
+}
+
+.bewicksswan .colour-right-indentifier-colourbox  {
+	margin-top: 430px;
+	margin-left: 660px;
+	margin-right: -737px;
+}
+
+* html .bewicksswan .colour-right-indentifier-colourbox  {
+	margin-left: 310px;
+}
+
+.greylaggoose .neck-collar-indentifier-colourbox  {
+	margin-top: 190px;
+	margin-left: 760px;
+	margin-right: -837px;
+}
+
+* html .greylaggoose .neck-collar-indentifier-colourbox  {
+	margin-left: 380px;
+}
+
+.greylaggoose .colour-left-indentifier-colourbox  {
+	margin-top: 360px;
+	margin-left: 600px;
+	margin-right: -677px;
+}
+
+* html .greylaggoose .colour-left-indentifier-colourbox  {
+	margin-left: 300px;
+}
+
+.greylaggoose .colour-right-indentifier-colourbox  {
+	margin-top: 400px;
+	margin-left: 690px;
+	margin-right: -767px;
+}
+
+* html .greylaggoose .colour-right-indentifier-colourbox  {
+	margin-left: 345px;
+}
+
+.pinkfootedgoose .neck-collar-indentifier-colourbox  {
+	margin-top: 190px;
+	margin-left: 750px;
+	margin-right: -827px;
+}
+
+* html .pinkfootedgoose .neck-collar-indentifier-colourbox  {
+	margin-left: 375px;
+}
+
+.pinkfootedgoose .colour-left-indentifier-colourbox  {
+	margin-top: 390px;
+	margin-left: 580px;
+	margin-right: -657px;
+}
+
+* html .pinkfootedgoose .colour-left-indentifier-colourbox  {
+	margin-left: 290px;
+}
+
+.pinkfootedgoose .colour-right-indentifier-colourbox  {
+	margin-top: 430px;
+	margin-left: 670px;
+	margin-right: -747px;
+}
+
+* html .pinkfootedgoose .colour-right-indentifier-colourbox  {
+	margin-left: 315px;
+}
+
+.whooperswan .neck-collar-indentifier-colourbox  {
+	margin-top: 220px;
+	margin-left: 740px;
+	margin-right: -817px;
+}
+
+* html .whooperswan .neck-collar-indentifier-colourbox  {
+	margin-left: 370px;
+}
+
+.whooperswan .colour-left-indentifier-colourbox  {
+	margin-top: 390px;
+	margin-left: 630px;
+	margin-right: -707px;
+}
+
+* html .whooperswan .colour-left-indentifier-colourbox  {
+	margin-left: 315px;
+}
+
+.whooperswan .colour-right-indentifier-colourbox  {
+	margin-top: 430px;
+	margin-left: 680px;
+	margin-right: -757px;
+}
+
+* html .whooperswan .colour-right-indentifier-colourbox  {
+	margin-left: 320px;
+}
+
 	
