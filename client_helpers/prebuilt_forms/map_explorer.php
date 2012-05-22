@@ -64,6 +64,14 @@ class iform_map_explorer {
           'required' => false
         ),
         array(
+          'name' => 'includeEditLink',
+          'caption' => 'Include edit link',
+          'description' => 'Include an edit link for each row that was input by the current user',
+          'type' => 'checkbox',
+          'default' => true,
+          'required' => false
+        ),
+        array(
           'name' => 'columns_config',
           'caption' => 'Columns Configuration',
           'description' => 'Define a list of columns with various configuration options when you want to override the '.
@@ -233,14 +241,13 @@ class iform_map_explorer {
           'rowClass'=>'certainty{certainty}'
         )
     );
-    $reportOptions['columns'][] = array(
-      array(
-        'display'=>'Actions',
-        'actions'=>array(
-          array('caption'=>'edit','url'=>'{rootFolder}index.php?q=enter-record-list','urlParams'=>array('occurrence_id'=>'{occurrence_id}'),'visibility_field'=>'belongs_to_user')
-        )
-      )
-    );
+    if (isset($args['includeEditLink']) && $args['includeEditLink'])
+      $reportOptions['columns'][] = array(
+          'display'=>'Actions',
+          'actions'=>array(
+            array('caption'=>'edit','url'=>'{rootFolder}index.php?q=enter-record-list','urlParams'=>array('occurrence_id'=>'{occurrence_id}'),'visibility_field'=>'belongs_to_user')
+          )
+      );
     $r .= report_helper::report_grid($reportOptions);
     return $r;
 
