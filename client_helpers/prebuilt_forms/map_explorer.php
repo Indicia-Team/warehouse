@@ -56,6 +56,14 @@ class iform_map_explorer {
       iform_report_get_minimal_report_parameters(),
       array(
         array(
+          'name' => 'downloadOwnDataOnly',
+          'caption' => 'Download own data only',
+          'description' => 'If ticked then the user is only allowed to download data when showing just their own data.',
+          'type' => 'checkbox',
+          'default' => false,
+          'required' => false
+        ),
+        array(
           'name' => 'columns_config',
           'caption' => 'Columns Configuration',
           'description' => 'Define a list of columns with various configuration options when you want to override the '.
@@ -209,13 +217,18 @@ class iform_map_explorer {
       )
     );
     $r .= map_helper::map_panel($options);
+    $allowDownload = !isset($args['downloadOwnDataOnly']) || !$args['downloadOwnDataOnly'] 
+      || (isset($reportOptions['extraParams']['ownData']) && $reportOptions['extraParams']['ownData']===1)
+      || (isset($_POST['explore-ownData']) && $_POST['explore-ownData']==='1')
+      || (!(isset($_POST['explore-ownData']) || $_POST['explore-ownData']==='0') 
+            && isset($reportOptions['paramDefaults']['ownData']) && $reportOptions['paramDefaults']['ownData']===1);
     $reportOptions = array_merge(
         $reportOptions,
         array(
           'id'=>'explore-records',
           'paramsOnly'=>false,
           'autoParamsForm'=>false,
-          'downloadLink'=>true,
+          'downloadLink'=>$allowDownload,
           'rowClass'=>'certainty{certainty}'
         )
     );
