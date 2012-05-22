@@ -288,9 +288,7 @@ class report_helper extends helper_base {
     // return the params form, if that is all that is being requested, or the parameters are not complete.
     if ($options['paramsOnly'] || !isset($response['records'])) return $r;
     $records = $response['records'];
-    
     self::report_grid_get_columns($response, $options);
-    
     $pageUrl = self::report_grid_get_reload_url($sortAndPageUrlParams);
     $thClass = $options['thClass'];
     $r .= "\n<table class=\"".$options['class']."\">";
