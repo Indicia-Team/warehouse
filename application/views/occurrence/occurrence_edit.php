@@ -27,7 +27,10 @@
   'media/js/jquery.bgiframe.min.js',
   'media/js/jquery.autocomplete.js'
 ), FALSE); 
-$id = html::initial_value($values, 'occurrence:id'); ?>
+$id = html::initial_value($values, 'occurrence:id'); 
+$sample = $model->sample;
+$website_id = $sample->survey->website_id;
+?>
 <script type="text/javascript" >
 $(document).ready(function() {
   $("input#determiner").autocomplete("<?php echo url::site() ?>services/data/person", {
@@ -37,12 +40,12 @@ $(document).ready(function() {
       orderby : "caption",
       mode : "json",
       deleted : 'false',
+      website_id : '<?php echo $website_id ?>',
       qfield : 'caption'
     },
     parse: function(data) {
       var results = [];
-      var obj = JSON.parse(data);
-      $.each(obj, function(i, item) {
+      $.each(data, function(i, item) {
         results[results.length] = {
           'data' : item,
           'value' : item.id,
@@ -66,12 +69,13 @@ $(document).ready(function() {
     extraParams : {
       orderby : "taxon",
       mode : "json",
-      deleted : 'false'
+      deleted : 'false',
+      website_id : '<?php echo $website_id ?>',
+      qfield: "taxon"
     },
     parse: function(data) {
       var results = [];
-      var obj = JSON.parse(data);
-      $.each(obj, function(i, item) {
+      $.each(data, function(i, item) {
         results[results.length] = {
           'data' : item,
           'value' : item.id,
@@ -96,7 +100,6 @@ $(document).ready(function() {
 <form class="cmxform" action="<?php echo url::site().'occurrence/save' ?>" method="post">
 <?php 
 echo $metadata; 
-$sample = $model->sample;
 ?>
 <fieldset class="readonly">
 <legend>Sample summary</legend>
@@ -129,7 +132,8 @@ print form::hidden('occurrence:sample_id', html::initial_value($values, 'occurre
 <ol>
 <li>
 <label for='taxon'>Taxon:</label>
-<?php print form::input('taxon', $model->taxa_taxon_list->taxon->taxon);
+<?php 
+print form::input('taxon', $model->taxa_taxon_list->taxon->taxon);
 print form::hidden('occurrence:taxa_taxon_list_id', html::initial_value($values, 'occurrence:taxa_taxon_list_id'));
 echo html::error_message($model->getError('occurrence:taxa_taxon_list_id')); ?>
 </li>
