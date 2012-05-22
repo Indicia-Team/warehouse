@@ -154,6 +154,7 @@ class Service_Base_Controller extends Controller {
       $auth = new Auth();
       $authentic = ($auth->logged_in() || $auth->auto_login());
       $this->in_warehouse = $authentic;
+      $this->user_is_core_admin = $auth->logged_in('CoreAdmin');
     }
 
     if (!$authentic)
