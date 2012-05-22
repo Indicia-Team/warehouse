@@ -60,7 +60,7 @@ function iform_report_get_minimal_report_parameters() {
       'type' => 'textarea',
       'required' => false,
       'group'=>'Report Settings'
-    ),array(
+    ), array(
       'name' => 'items_per_page',
       'caption' => 'Items per page',
       'description' => 'Maximum number of rows shown on each page of the table',
@@ -102,6 +102,16 @@ function iform_report_get_report_parameters() {
         'type' => 'text_input',
         'default' => 'report',
         'group' => 'Report Settings'
+      ), array(
+        'name' => 'remember_params_report_group',
+        'description' => 'Enter any value in this parameter to allow the report to save its parameters for the next time the report is loaded. '.
+          'The parameters are saved site wide, so if several reports share the same value and the same report group then the parameter '.
+          'settings will be shared across the reports even if they are on different pages of the site. This functionality '.
+          'requires cookies to be enabled on the browser.',
+        'type'=>'text',
+        'required'=>false,
+        'default' => '',
+        'group'=>'Report Settings'
       ), array(
         'name' => 'params_in_map_toolbar',
         'caption' => 'Params in map toolbar',
@@ -158,7 +168,8 @@ function iform_report_get_report_options($args, $readAuth) {
     $columns = json_decode($args['columns_config'], true);
   $reportOptions = array(
     'id' => 'report-grid',
-    'reportGroup' => $args['report_group'],
+    'reportGroup' => isset($args['report_group']) ? $args['report_group'] : '',
+    'remeberParamsReportGroup' => isset($args['remember_params_report_group']) ? $args['remember_params_report_group'] : '',
     'dataSource' => $args['report_name'],
     'mode' => 'report',
     'readAuth' => $readAuth,
