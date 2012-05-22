@@ -72,6 +72,15 @@ class iform_map_explorer {
           'required' => false
         ),
         array(
+          'name' => 'includeEditLinkPath',
+          'caption' => 'Path to page used for edits',
+          'description' => 'The path to the page used for edits. This is just the site relative path, e.g. http://www.example.com/index.php?q=enter-records needs '.
+              'to be input as just enter-records. The path is called with the id of the record in a parameter called occurrence_id.',
+          'type' => 'text_input',
+          'default' => '',
+          'required' => false
+        ),
+        array(
           'name' => 'columns_config',
           'caption' => 'Columns Configuration',
           'description' => 'Define a list of columns with various configuration options when you want to override the '.
@@ -241,11 +250,11 @@ class iform_map_explorer {
           'rowClass'=>'certainty{certainty}'
         )
     );
-    if (isset($args['includeEditLink']) && $args['includeEditLink'])
+    if (isset($args['includeEditLink']) && $args['includeEditLink'] && !empty($args['includeEditLinkPath']))
       $reportOptions['columns'][] = array(
           'display'=>'Actions',
           'actions'=>array(
-            array('caption'=>'edit','url'=>'{rootFolder}index.php?q=enter-record-list','urlParams'=>array('occurrence_id'=>'{occurrence_id}'),'visibility_field'=>'belongs_to_user')
+            array('caption'=>'edit','url'=>url($args['includeEditLinkPath']),'urlParams'=>array('occurrence_id'=>'{occurrence_id}'),'visibility_field'=>'belongs_to_user')
           )
       );
     $r .= report_helper::report_grid($reportOptions);
