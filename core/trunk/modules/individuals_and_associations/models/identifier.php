@@ -112,7 +112,7 @@ class Identifier_Model extends ORM
   protected function postSubmit($isInsert)
   { 
     kohana::log('debug', 'In Identifier_Model::postSubmit() $this->submission is '.print_r($this->submission, true));
-    return parent::postSubmit();
+    return parent::postSubmit($isInsert);
   }
 
   /** 
