@@ -168,6 +168,7 @@ class iform_map_explorer {
       iform_report_get_report_options($args, $readAuth),
       array(
         'reportGroup'=>'explore',
+        'rememberParamsReportGroup'=>'explore',
         'paramsOnly'=>true,
         'paramsInMapToolbar'=>true,
         'sharing'=>$sharing,

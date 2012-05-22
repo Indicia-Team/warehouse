@@ -137,6 +137,12 @@ class report_helper extends helper_base {
   * When joining multiple reports together, this can be used on a report that has autoParamsForm set to false to bind the report to the
   * parameters form from a different report by giving both report controls the same reportGroup string. This will only work when all 
   * parameters required by this report are covered by the other report's parameters form.</li>
+  * <li><b>rememberParamsReportGroup</b><br/>
+  * Enter any value in this parameter to allow the report to save its parameters for the next time the report is loaded.
+  * The parameters are saved site wide, so if several reports share the same value and the same report group then the parameter 
+  * settings will be shared across the reports even if they are on different pages of the site. For example if several reports on the 
+  * site have an ownData boolean parameter which filters the data to the user's own data, this can be set so that the reports all 
+  * share the setting. This functionality requires cookies to be enabled on the browser.</li>
   * <li><b>mode</b><br/>
   * Pass report for a report, or direct for an Indicia table or view. Default is report.</li>
   * <li><b>readAuth</b><br/>
@@ -751,6 +757,12 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * When joining multiple reports together, this can be used on a report that has autoParamsForm set to false to bind the report to the
   * parameters form from a different report by giving both report controls the same reportGroup string. This will only work when all 
   * parameters required by this report are covered by the other report's parameters form.</li>
+  * <li><b>rememberParamsReportGroup</b><br/>
+  * Enter any value in this parameter to allow the report to save its parameters for the next time the report is loaded.
+  * The parameters are saved site wide, so if several reports share the same value and the same report group then the parameter 
+  * settings will be shared across the reports even if they are on different pages of the site. For example if several reports on the 
+  * site have an ownData boolean parameter which filters the data to the user's own data, this can be set so that the reports all 
+  * share the setting. This functionality requires cookies to be enabled on the browser.</li>
   * <li><b>height</b><br/>
   * Chart height in pixels.</li>
   * <li><b>width</b><br/>
@@ -968,6 +980,12 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * When joining multiple reports together, this can be used on a report that has autoParamsForm set to false to bind the report to the
   * parameters form from a different report by giving both report controls the same reportGroup string. This will only work when all 
   * parameters required by this report are covered by the other report's parameters form.</li>
+  * <li><b>rememberParamsReportGroup</b><br/>
+  * Enter any value in this parameter to allow the report to save its parameters for the next time the report is loaded.
+  * The parameters are saved site wide, so if several reports share the same value and the same report group then the parameter 
+  * settings will be shared across the reports even if they are on different pages of the site. For example if several reports on the 
+  * site have an ownData boolean parameter which filters the data to the user's own data, this can be set so that the reports all 
+  * share the setting. This functionality requires cookies to be enabled on the browser.</li>
   * <li><b>header</b><br/>
   * Text to output as the header of the report.</li>
   * <li><b>footer</b><br/>
@@ -1066,6 +1084,12 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * When joining multiple reports together, this can be used on a report that has autoParamsForm set to false to bind the report to the
   * parameters form from a different report by giving both report controls the same reportGroup string. This will only work when all 
   * parameters required by this report are covered by the other report's parameters form.</li>
+  * <li><b>rememberParamsReportGroup</b><br/>
+  * Enter any value in this parameter to allow the report to save its parameters for the next time the report is loaded.
+  * The parameters are saved site wide, so if several reports share the same value and the same report group then the parameter 
+  * settings will be shared across the reports even if they are on different pages of the site. For example if several reports on the 
+  * site have an ownData boolean parameter which filters the data to the user's own data, this can be set so that the reports all 
+  * share the setting. This functionality requires cookies to be enabled on the browser.</li>
   * <li><b>mode</b><br/>
   * Pass report for a report, or direct for an Indicia table or view. Default is report.</li>
   * <li><b>readAuth</b><br/>
@@ -1742,8 +1766,33 @@ if (typeof(mapSettingsHooks)!=='undefined') {
       }
     }
     // Are there any parameters embedded in the post data, e.g. after submitting the params form?
+    $providedParams = $_POST;
+    if (isset($_COOKIE['providedParams']) && !empty($options['rememberParamsReportGroup'])) {
+      $savedParams = json_decode($_COOKIE['providedParams'], true);
+      if (!empty($savedParams[$options['rememberParamsReportGroup']]))
+        $providedParams = array_merge(
+          $savedParams[$options['rememberParamsReportGroup']],
+          $providedParams
+        );
+    }
+    if (!empty($options['rememberParamsReportGroup'])) {
+      // need to store the current set of saved params. These need to be merged into an array to go in
+      // the single stored cookie with the array key being the rememberParamsReportGroup and the value being 
+      // an associative array of params. 
+      if (!isset($savedParams))
+        $savedParams=array($options['rememberParamsReportGroup']=>array());
+      elseif (!isset($savedParams[$options['rememberParamsReportGroup']]))
+        $savedParams[$options['rememberParamsReportGroup']]=array();
+      // merge the params with any others stored under the same rememberParamsReportGroup name
+      $savedParams[$options['rememberParamsReportGroup']] = array_merge(
+        $savedParams[$options['rememberParamsReportGroup']],
+        $providedParams
+      );
+      setcookie('providedParams', json_encode($savedParams));
+    }
+    // Get the report group prefix required for each relevant parameter
     $paramKey = (isset($options['reportGroup']) ? $options['reportGroup'] : '').'-';
-    foreach ($_POST as $key=>$value) {
+    foreach ($providedParams as $key=>$value) {
       if (substr($key, 0, strlen($paramKey))==$paramKey) {
         // We have found a parameter, so put it in the request to the report service
         $param = substr($key, strlen($paramKey));
