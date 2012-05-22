@@ -132,7 +132,7 @@ class Subject_Observation_Model extends ORM_Tree
   /**
   * After submission, TODO perhaps?
   */
-  protected function postSubmit()
+  protected function postSubmit($isInsert)
   { 
     kohana::log('debug', 'In Subject_observation_Model::postSubmit() $this->submission is '.print_r($this->submission, true));
     return parent::postSubmit();

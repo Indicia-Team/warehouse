@@ -48,7 +48,7 @@ class Taxa_Taxon_List_Attribute_Model extends ATTR_ORM {
    * list are created or deleted.
    * @return boolean Returns true to indicate success.  
    */
-  protected function postSubmit() {
+  protected function postSubmit($isInsert) {
     $lists = ORM::factory('taxon_list')->find_all();
     foreach ($lists as $list) {
       // First check for non survey specific checkbox

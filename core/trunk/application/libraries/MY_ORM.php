@@ -553,6 +553,7 @@ class ORM extends ORM_Core {
    * If not, returns null - errors are embedded in the model.
    */
   public function inner_submit(){
+    $isInsert = $this->id===0;
     $this->handleCaptionSubmission();
     $return = $this->populateFkLookups();
     $this->populateIdentifiers();
@@ -571,7 +572,7 @@ class ORM extends ORM_Core {
       }
       // Call postSubmit
       if ($return) {
-        $ps = $this->postSubmit();
+        $ps = $this->postSubmit($isInsert);
         if ($ps == null) {
           $return = null;
         }
@@ -769,9 +770,7 @@ class ORM extends ORM_Core {
     if (array_key_exists('subModels', $this->submission)) {
       // Iterate through the subModel array, linking them to this model
       foreach ($this->submission['subModels'] as $a) {
-
         Kohana::log("debug", "Submitting submodel ".$a['model']['id'].".");
-
         // Establish the right model
         $m = ORM::factory($a['model']['id']);
 
@@ -1323,9 +1322,10 @@ class ORM extends ORM_Core {
 
   /**
    * Overrideable function to allow some models to handle additional records created on submission.
+   * @param boolean True if this is a new inserted record, false for an update.
    * @return boolean True if successful.
    */
-  protected function postSubmit() {
+  protected function postSubmit($isInsert) {
     return true;
   }
 
