@@ -102,7 +102,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
   * Overrides the postSubmit function to add in synonomies and common names as well as search codes. This only applies
   * when adding a preferred name, not a synonym or common name.
   */
-  protected function postSubmit()
+  protected function postSubmit($isInsert)
   {
     $result = true;
     if ($this->submission['fields']['preferred']['value']=='t' && array_key_exists('metaFields', $this->submission)) {      
