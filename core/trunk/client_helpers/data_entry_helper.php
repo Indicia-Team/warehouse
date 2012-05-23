@@ -2317,7 +2317,7 @@ $('#".$options['id']."-filter').click(function(evt) {
       $occAttrs[$occAttrId] = $attrDef['caption'];
       // Get the control class if available. If the class array is too short, the last entry gets reused for all remaining.
       $ctrlOptions = array(
-        'class'=>self::species_checklist_occ_attr_class($options, $idx, $attrDef['caption']) .
+        'class'=>self::species_checklist_occ_attr_class($options, $idx, $attrDef['untranslatedCaption']) .
             (isset($attrDef['class']) ? ' '.$attrDef['class'] : ''),
         'extraParams' => $options['readAuth'],
         'suffixTemplate' => 'nosuffix',
