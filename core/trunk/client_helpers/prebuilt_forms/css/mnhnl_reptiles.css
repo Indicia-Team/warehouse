@@ -43,7 +43,13 @@ input.scComment  {
 	width: 750px;
 	margin-top: 4px;
 }
-td.targ-grid-cell {
+input.scCount  {
+	width: 30px;
+}
+input.scAmphibianBehaviour  {
+	width: auto;
+}
+.targ-grid-cell {
   padding-left: 20px;	
 }
 div.olControlEditingToolbar div.olControlCancelSketchItemInactive {
@@ -95,5 +101,7 @@ div.olControlEditingToolbar  {
 #imp-srefY {
 	width: 60px;
 }
-
+.target-species-grid label {
+	width: auto;
+}
 

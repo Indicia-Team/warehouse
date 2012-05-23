@@ -1,0 +1,48 @@
+<report
+    title="MNHNL Amphibians (Sites) Samples List"
+    description="Form Internal Report: Used by the Samples grid to retrieve the samples associated with a survey and user."
+>
+  <query>
+  SELECT s.id as sample_id,
+	    replace(replace(replace(ARRAY(select dtt.term::text from samples s2
+	      INNER JOIN sample_attribute_values sav ON sav.sample_id = s2.id AND sav.deleted = false AND sav.sample_attribute_id = #target_species_attr_id#
+          INNER JOIN detail_termlists_terms dtt ON sav.int_value = dtt.meaning_id AND dtt.preferred = true
+          WHERE s2.parent_id = s.id AND s2.deleted = false)::text, '}', ''), '{', ''), '"', '') as target_species,
+  		l.name as location_name,
+  		sav1.text_value as creator,
+  		s.date_start,
+  		s.date_end,
+  		s.date_type
+  FROM samples s
+  INNER JOIN locations l ON l.id = s.location_id
+  INNER JOIN sample_attribute_values sav1
+  		ON sav1.sample_id = s.id AND sav1.sample_attribute_id = #userName_attr_id# and sav1.deleted = FALSE
+  WHERE s.survey_id=#survey_id# AND s.deleted = FALSE AND s.parent_id IS NULL
+  AND ((#userID# > 0 AND (EXISTS (SELECT id FROM sample_attribute_values sav2
+  								WHERE sav2.sample_id = s.id
+  								AND sav2.sample_attribute_id = #userID_attr_id#
+  								AND sav2.int_value = #userID#
+  								AND sav2.deleted = FALSE)))
+  		OR (#userID# &lt;= 0))
+  #order_by#
+  </query>
+  <order_bys>
+    <order_by>s.id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='survey_id' display='Survey: ' description='Select the survey to return data for?' datatype='lookup'
+        query='SELECT id, title as caption FROM surveys' />
+    <param name='userID_attr_id' display='CMS User ID Sample Attribute ID' description='Sample Attribute ID used to Identify User' datatype='int' />
+    <param name='userID' display='CMS User ID' description='CMS User ID: use -1 for superusers' datatype='int' />
+    <param name='userName_attr_id' display='CMS User Name Sample Attribute ID' description='Sample Attribute ID used to Identify User Name' datatype='int' />
+    <param name='userName' display='CMS User Name' description='CMS User Name' datatype='text' />
+    <param name='target_species_attr_id' display='Target Species Attribute ID' description='Sample Attribute ID used to Identify the Reptile Target Species' datatype='int' />
+  </params>
+  <columns>
+    <column name='sample_id' display='ID' />
+    <column name='target_species' display='Target Species' />
+    <column name='location_name' display='Site' />
+    <column name='creator' display='Entered By' />
+    <column name='date' display='Date' />
+  </columns>
+</report>
