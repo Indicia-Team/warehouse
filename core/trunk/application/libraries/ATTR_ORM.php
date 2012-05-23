@@ -89,9 +89,10 @@ abstract class ATTR_ORM extends Valid_ORM {
   /**
    * After saving, ensures that the join records linking the attribute to a website
    * & survey combination are created or deleted.
+   * @param boolean True if this is a new inserted record, false for an update.
    * @return boolean Returns true to indicate success. 
    */
-  protected function postSubmit() {
+  protected function postSubmit($isInsert) {
     // Record has saved correctly or is being reused
     $websites = ORM::factory('website')->find_all();
     foreach ($websites as $website) {
