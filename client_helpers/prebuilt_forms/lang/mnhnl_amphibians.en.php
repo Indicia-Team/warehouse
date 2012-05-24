@@ -37,5 +37,8 @@ $custom_term_overrides[] = array(
 	,'Amphibian Stage (Sites)'=>'Stage'
 	,'Amphibian Behaviour'=>'Behaviour'
 	,'Amphibian Recording Summary'=>'Recording summary'
+	,'LANG_PositionOutsideCommune' => 'The position you have chosen is outside the set of allowable Communes.'
+	,'LANG_PositionInDifferentCommune' => 'The position you have chosen is outside the selected Commune. Do you wish to change the Commune field to match the point?'
+	
 );
 ?>
