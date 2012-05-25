@@ -539,7 +539,7 @@ class iform_mnhnl_dynamic_1 {
           }
         }
       } else if(!is_null(data_entry_helper::$entity_to_load)){
-        $mode = MODE_EXISTING; // errors with new sample, entity populated with post, so display this data.
+        $mode = MODE_EXISTING; // errors with new sample or entity populated with post, so display this data.
       } // else valid save, so go back to gridview: default mode 0
     }
     if (array_key_exists('sample_id', $_GET) && $_GET['sample_id']!='{sample_id}'){
@@ -685,7 +685,7 @@ class iform_mnhnl_dynamic_1 {
     if (!isset($args['clientSideValidation']) || $args['clientSideValidation'])
       data_entry_helper::enable_validation('entry_form');
     if (method_exists(self::$called_class, 'getHeaderHTML')) $r .= call_user_func(array(self::$called_class, 'getHeaderHTML'), true, $args);
-    $hiddens .= get_user_profile_hidden_inputs($attributes, $args, $mode, $auth['read']);
+    $hiddens .= get_user_profile_hidden_inputs($attributes, $args, isset(data_entry_helper::$entity_to_load['sample:id']), $auth['read']);
     $customAttributeTabs = get_attribute_tabs($attributes);
     $tabs = self::get_all_tabs($args['structure'], $customAttributeTabs);
     $r .= "<div id=\"controls\">\n";
