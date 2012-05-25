@@ -1106,6 +1106,9 @@ class iform_wwt_colour_marked_report {
               $keys = array_keys($occurrence);
               foreach ($keys as $key) {
                 $form_data[$fieldprefix.$key] = $occurrence[$key];
+                if ($key=='taxon' && $args['species_ctrl']=='autocomplete') {
+                  $form_data[$fieldprefix.'taxa_taxon_list_id:taxon'] = $occurrence[$key];
+                }
               }
             }
           }
@@ -1723,10 +1726,9 @@ class iform_wwt_colour_marked_report {
     if (!$options['inNewIndividual']) {;
       $r .= '<div id="idn:subject:accordion" class="idn-subject-accordion">';
     }
-    $r .= '<h3><a href="">Colour-marked individual '.($taxIdx+1).'</a></h3>';
+    $r .= '<h3><a href="" data-heading="'.lang::get('Colour-marked individual').' '.($taxIdx+1).'">'.lang::get('Colour-marked individual').' '.($taxIdx+1).'</a></h3>';
     $r .= '<div id="'.$options['fieldprefix'].'individual:panel" class="individual_panel ui-helper-clearfix">';
     $r .= '<fieldset id="'.$options['fieldprefix'].'individual:fieldset" class="taxon_individual ui-corner-all">';
-    $r .= '<legend>Colour-marked individual '.($taxIdx+1).'</legend>';
     // output the hiddens
     if (isset(data_entry_helper::$entity_to_load[$options['fieldprefix'].'subject_observation:id'])) {
       $r .= '<input type="hidden" id="'.$options['fieldprefix'].'subject_observation:id" name="'.$options['fieldprefix'].'subject_observation:id" '.
@@ -1774,7 +1776,20 @@ class iform_wwt_colour_marked_report {
 
     // output the species selection control
     $options['blankText'] = '<Please select>';
+    if ($args['species_ctrl']=='autocomplete') {
+      $temp = data_entry_helper::$javascript;
+    }
     $r .= self::get_control_species($auth, $args, $tabalias, $options+array('validation' => array('required'), 'class' => 'select_taxon'));
+    if ($args['species_ctrl']=='autocomplete') {
+      if (!$options['inNewIndividual']) {
+        $autoJavascript = substr(data_entry_helper::$javascript, strlen($temp));
+      } else {
+        data_entry_helper::$javascript = $temp;
+      }
+      unset($temp);
+    } else {
+      $autoJavascript = '';
+    }
     // gender
     if ($options['genderId'] > 0
       && !empty($args['request_gender_values'])
@@ -1853,7 +1868,7 @@ class iform_wwt_colour_marked_report {
     $options['identifierTypeId'] = '';
     foreach ($options['identifierTypes'] as $identifier_type) {
       if ($identifier_type['id']==$args['enscribed_colour_ring_type']) {
-        $options['identifierName'] = $identifier_type['term'].' (Left leg)';
+        $options['identifierName'] = $identifier_type['term'].lang::get(' (Left leg)');
         $options['identifierTypeId'] = $identifier_type['id'];
         break;
       }
@@ -1871,7 +1886,7 @@ class iform_wwt_colour_marked_report {
     $options['identifierTypeId'] = '';
     foreach ($options['identifierTypes'] as $identifier_type) {
       if ($identifier_type['id']==$args['enscribed_colour_ring_type']) {
-        $options['identifierName'] = $identifier_type['term'].' (Right leg)';
+        $options['identifierName'] = $identifier_type['term'].lang::get(' (Right leg)');
         $options['identifierTypeId'] = $identifier_type['id'];
         break;
       }
@@ -1961,10 +1976,14 @@ class iform_wwt_colour_marked_report {
         data_entry_helper::$entity_to_load = $temp;
         unset($options['inNewIndividual']);
       }
-      data_entry_helper::$javascript .= "window.indicia.wwt.newIndividual = '".str_replace(array('\'', "\n"), array('\\\'', ''), $new_individual)."';\n";
+      data_entry_helper::$javascript .= "window.indicia.wwt.newIndividual = '".str_replace(array('\'', "\n"), array('\\\'', ' '), $new_individual)."';\n";
       $opts['codeGenerated'] = 'js';
       $photoJavascript = data_entry_helper::file_box($opts);
-      data_entry_helper::$javascript .= "window.indicia.wwt.photoJavascript = '".str_replace(array('\'', "\n"), array('\\\'', ''), $photoJavascript)."';\n";
+      // save the javascript needed for an additional colour-marked individual
+      // process it to sanitise the string and remove comments (works now but not 100% reliable)
+      data_entry_helper::$javascript .= "window.indicia.wwt.newJavascript = '"
+        .str_replace(array('\'', "\n"), array('\\\'', ' '), str_replace('\\', '\\\\', preg_replace('#^\s*//.+$#m', '', $photoJavascript)))
+        .str_replace(array('\'', "\n", "\r"), array('\\\'', ' ', ' '), str_replace('\\', '\\\\', preg_replace('#^\s*//.+$#m', '', $autoJavascript)))."';\n";
       $r .= '<input type="button" id="idn:add-another" value="Add Another Colour-marked Bird" /><br />';
     }
 
