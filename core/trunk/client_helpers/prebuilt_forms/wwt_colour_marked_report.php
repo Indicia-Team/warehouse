@@ -802,7 +802,12 @@ class iform_wwt_colour_marked_report {
     if (method_exists(get_called_class(), 'getHeaderHTML')) {
       $r .= call_user_func(array(get_called_class(), 'getHeaderHTML'), true, $args);
     }
-    $hiddens .= get_user_profile_hidden_inputs($attributes, $args, $mode, $auth['read']);
+    if ($mode==MODE_EXISTING && ($loadedSampleId || $loadedSubjectObservationId)) {
+      $existing = true;
+    } else {
+      $existing = false;
+    }
+    $hiddens .= get_user_profile_hidden_inputs($attributes, $args, $existing, $auth['read']);
     $customAttributeTabs = get_attribute_tabs($attributes);
     // remove added comment controls unless editing an existing sample
     if ($mode!==MODE_EXISTING || helper_base::$form_mode==='ERRORS') {
