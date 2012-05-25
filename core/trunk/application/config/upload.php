@@ -20,3 +20,9 @@ $config['create_directories'] = TRUE;
  * Remove spaces from uploaded filenames.
  */
 $config['remove_spaces'] = TRUE;
+
+/**
+ * Directory levels to create in the upload directory, dependent on time function, takes pairs of digits, from the front, to form the directory names.
+ * Default is zero - ie OFF, no directory sub structure
+ */
+$config['use_sub_directory_levels'] = 0;

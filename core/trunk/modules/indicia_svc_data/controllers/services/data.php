@@ -618,11 +618,30 @@ class Data_Controller extends Data_Service_Base_Controller {
           $finalName = strtolower($_FILES['media_upload']['name']);
         else
           $finalName = time().strtolower($_FILES['media_upload']['name']);
-        $fTmp = upload::save('media_upload', $finalName);
-        Image::create_image_files(dirname($fTmp), basename($fTmp));
-        $this->response=basename($fTmp);
+        // time is approx 10 characters long at the moment & will be for forseeable future
+        // If we use first 3 sets of pairs for directory name, then will get a new directory every 3 hours.
+        $levels = Kohana::config('upload.use_sub_directory_levels');
+        $subdir = "";
+        $directory = Kohana::config('upload.directory', TRUE);
+        if($levels){
+          $now = (string)time();
+          for($i = 0; $i < $levels; $i++){
+            $dirname=substr($now,0,2);
+            if(strlen($dirname)){
+              $subdir .= $dirname.'/';
+              $now = substr($now,2);
+            }
+          }
+          if($subdir != "" && !is_dir($directory.$subdir)){
+            kohana::log('debug', 'Creating Directory '.$directory.$subdir);
+            mkdir($directory.$subdir, 0755 , true);
+          }
+        }
+        $fTmp = upload::save('media_upload', $finalName, $directory.$subdir);
+        Image::create_image_files($directory, basename($fTmp), $subdir);
+        $this->response=$subdir.basename($fTmp);
         $this->send_response();
-        kohana::log('debug', 'Successfully uploaded media to '. basename($fTmp));
+        kohana::log('debug', 'Successfully uploaded media to '. $subdir.basename($fTmp));
       }
       else
       {

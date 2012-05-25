@@ -34,13 +34,15 @@ class Image extends Image_Core {
    * @param string $uploadpath Path to the upload directory.
    * @param string $filename The file name of the original uploaded file.   *
    */
-  public static function create_image_files($uploadpath, $filename) {
+  public static function create_image_files($uploadpath, $filename, $subdir = "") {
     // First check that the configured graphics library is available.
     // @todo Consider implementing checks if the driver is set to ImageMagick or GraphicsMagick.    
     if (kohana::config('image.driver') != 'GD' || function_exists('gd_info')) {      
       // tolerate path with or withoug trailing slash
       if (substr($uploadpath,-1) != '\\' && substr($uploadpath,-1) != '/')
         $uploadpath = $uploadpath.'/';      
+      if ($subdir != "" && substr($subdir,-1) != '\\' && substr($subdir,-1) != '/')
+        $subdir = $subdir.'/';      
       $fileParts = explode('.', $filename);
       $ext = strtolower(array_pop($fileParts));
       if (in_array($ext, Image::$allowed_types)) {
@@ -54,14 +56,19 @@ class Image extends Image_Core {
           );
         }
         foreach ($config as $imageName => $settings) {
-          $img = new Image($uploadpath.$filename);
+          $img = new Image($uploadpath.$subdir.$filename);
           self::do_img_resize($img, $settings);
           // Create the correct image path as image name + '-' + destination file name. Default image setting
           // however is used to overwrite the original image.
           if ($imageName=='default') 
-            $imagePath = $uploadpath.$filename;
-          else
-            $imagePath = $uploadpath.$imageName.'-'.$filename;
+            $imagePath = $uploadpath.$subdir.$filename; // note this is the same as the original source file
+          else {
+            if($subdir != "" && !is_dir($uploadpath.$imageName.'-'.$subdir)){
+              kohana::log('debug', 'Creating Directory '.$uploadpath.$imageName.'-'.$subdir);
+              mkdir($uploadpath.$imageName.'-'.$subdir, 0755 , true);
+            }
+            $imagePath = $uploadpath.$imageName.'-'.$subdir.$filename;
+          }
           $img->save($imagePath);
         }
       }
