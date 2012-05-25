@@ -13,8 +13,8 @@
   ) on vuser.sample_id =o.id  and vuser.deleted=false
   LEFT JOIN (sample_attribute_values vuserp
     JOIN sample_attributes sauserp on sauserp.id=vuserp.sample_attribute_id and sauserp.deleted=false and sauserp.system_function = 'cms_username'
-  ) on vuserp.sample_id =sparent.id  and vuserp.deleted=false
-  JOIN users ouser ON ouser.id=o.created_by_id AND ouser.id&lt;&gt;1 -- don't return records allocated by default to admin user
+  ) on vuserp.sample_id =sparent.id and vuserp.deleted=false
+  JOIN users ouser ON ouser.id=o.created_by_id
   #agreements_join#
   #joins#
   WHERE #sharing_filter# 
@@ -44,7 +44,7 @@
     </param>
   </params>
   <columns>
-    <column name='occurrence_id' display='ID' sql='o.id' datatype='integer' template="&lt;div class='status-{record_status}'&gt;{occurrence_id}&lt;/div&gt;" />
+    <column name='occurrence_id' display='ID' sql='o.id' datatype='integer' template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />
     <column name='source' display='Source' sql="w.title || ' | ' || o.survey_title" datatype="text" />
     <column name='sample_id' visible='false' sql='o.sample_id' datatype='integer' />
     <column name='taxon' display='Species' sql="CASE WHEN o.preferred_taxon=o.default_common_name then o.preferred_taxon ELSE o.preferred_taxon || COALESCE(' | ' || o.default_common_name, '') END" datatype='text' />
