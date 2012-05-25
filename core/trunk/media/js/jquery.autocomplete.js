@@ -266,7 +266,7 @@ $.Autocompleter = function(input, options) {
   function simplify(value) {
     // use same regexp as used to populate cache_taxon_searchterms to simplify the search string
     if (options.simplify) {
-      return value.replace(/\(.+\)/g,'').replace(/[^a-z0-9]/g,'').replace(/ae/g,'e').toLowerCase();
+      return value.replace(/\(.+\)/g,'').replace(/[^a-z0-9\+\?]/g,'').replace(/ae/g,'e').toLowerCase();
     } else {
       return value;
     }
@@ -326,12 +326,12 @@ $.Autocompleter = function(input, options) {
   };
 
   function receiveData(q, data) {
-    var value, simple, regecp;
+    var value, simple, regexp;
     if (data && data.length) {
+      simple = simplify($input.val());
       // escape special characters in regexp
-      value = $input.val().toLowerCase().replace(/[\[\]\\\^\$\.\|\?\+\(\)]/g, "\\$&");
-      simple = simplify(value);
-      regexp = new RegExp('^'+simple.replace('*','.*'));
+      value = simple.toLowerCase().replace(/[\[\]\\\^\$\.\|\?\+\(\)]/g, "\\$&");
+      regexp = new RegExp('^'+value.replace('*','.*'));
       for (idx=data.length-1; idx>=0; idx--) {
         // Drop anything that does not match, in case the edit has changed since the query was issued.
         if (!data[idx].result.toLowerCase().match(regexp)) {
