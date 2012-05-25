@@ -32,6 +32,9 @@ h2 {
 	color: #008f93;
 }
 
+input.locked-control, select.locked-control, textarea.locked-control {
+	background-color: yellow !important;
+}
 .taxon_individual {
 	border:1px solid #008f93;
 	background-color: transparent;

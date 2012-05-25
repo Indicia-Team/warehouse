@@ -249,24 +249,24 @@
       control$ = $('input[name^=' + escControlId + ']');
     }
     if ($('#' + escId).hasClass('locked-icon')) {
-      control$.attr('readonly', 'readonly').attr('disabled', 'disabled');
+      control$.attr('readonly', 'readonly').attr('disabled', 'disabled').addClass('locked-control');
       if (typeof $.datepicker!=="undefined") {
         control$.filter('.hasDatepicker').datepicker('disable');
       }
       if (typeof $.autocomplete!=="undefined") {
         $('input[id*=' + escControlId + '\\:]').filter(
             '.ac_input, .ui-autocomplete').attr('readonly', 'readonly').attr(
-            'disabled', 'disabled');
+            'disabled', 'disabled').addClass('locked-control');
       }
     } else {
-      control$.removeAttr('readonly').removeAttr('disabled');
+      control$.removeAttr('readonly').removeAttr('disabled').removeClass('locked-control');
       if (typeof $.datepicker!=="undefined") {
         control$.filter('.hasDatepicker').datepicker('enable');
       }
       if (typeof $.autocomplete!=="undefined") {
         $('input[id*=' + escControlId + '\\:]').filter(
             '.ac_input, .ui-autocomplete').removeAttr('readonly').removeAttr(
-            'disabled');
+            'disabled').removeClass('locked-control');
       }
     }
   };
