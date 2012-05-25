@@ -184,6 +184,8 @@ class iform_wwt_colour_marked_report {
               "[spatial reference]\r\n".
               "[place search]\r\n".
               "[map]\r\n".
+              "?What name do you know this location by?\r\n".
+              "[location name]\r\n".
               "[*]\r\n".
               "=Colour Marks=\r\n".
               "?Please pick the species from the following list and enter the details for the colour identifiers.?\r\n".
