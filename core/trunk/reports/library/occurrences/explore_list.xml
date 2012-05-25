@@ -13,8 +13,8 @@
   ) on vuser.sample_id =o.id  and vuser.deleted=false
   LEFT JOIN (sample_attribute_values vuserp
     JOIN sample_attributes sauserp on sauserp.id=vuserp.sample_attribute_id and sauserp.deleted=false and sauserp.system_function = 'cms_username'
-  ) on vuserp.sample_id =sparent.id  and vuserp.deleted=false
-  JOIN users ouser ON ouser.id=o.created_by_id AND ouser.id&lt;&gt;1 -- don't return records allocated by default to admin user
+  ) on vuserp.sample_id =sparent.id and vuserp.deleted=false
+  JOIN users ouser ON ouser.id=o.created_by_id
   #agreements_join#
   #joins#
   WHERE #sharing_filter# 
