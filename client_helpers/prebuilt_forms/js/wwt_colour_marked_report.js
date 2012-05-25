@@ -226,10 +226,36 @@
   var setTaxonPicture = function(ctl) {
     // set the individual panel to reflect the taxon
     var panel$ = $(ctl).closest('.individual_panel');
-    $('option', $(ctl)).each(function() {
-      panel$.removeClass($(this).text().toLowerCase().replace(/[^a-z]/g, ''));
+    var classList = panel$.attr('class');
+    var classPrefix = 'ind-tax-img-';
+    var imgClassArray = classList.match(/ind-tax-img-\S+/g);
+    // remove any existing image classes
+    for(i=0; imgClassArray && i<imgClassArray.length; i++) {
+      panel$.removeClass(imgClassArray[i]);
+    }
+    // if species control is a select
+    $('option:selected', $(ctl)).each(function() {
+      panel$.addClass(classPrefix+$(this).text().toLowerCase().replace(/[^a-z]/g, ''));
     });
-    panel$.addClass($('option:selected', $(ctl)).text().toLowerCase().replace(/[^a-z]/g, ''));
+    // if species control is an autocomplete input
+    $(ctl).filter('input').each(function() {
+      panel$.addClass(classPrefix+$(this).val().toLowerCase().replace(/[^a-z]/g, ''));
+    });
+  };
+  
+  var setTaxonHeader = function(ctl) {
+    // set the individual panel header to reflect the taxon
+    var heading$ = $(ctl).closest('.individual_panel').prev('h3').children('a');
+    var taxonName = '';
+    // if species control is a select
+    $('option:selected', $(ctl)).each(function() {
+      taxonName = $(this).text();
+    });
+    // if species control is an autocomplete input
+    $(ctl).filter('input').each(function() {
+      taxonName = $(this).val();
+    });
+    heading$.text(heading$.attr('data-heading')+' : '+taxonName);
   };
 
   var errorHTML = function(ctlId, msg) {
@@ -246,8 +272,9 @@
       $(this).css('color', '#'+colour);
     });
     // set the initial state of the identifier visuals
-    $('select.select_taxon', scope).each(function() {
+    $('.select_taxon', scope).each(function() {
       setTaxonPicture(this);
+      setTaxonHeader(this);
     });
     // set the initial state of the taxon
     $('select.select_colour, input.select_colour', scope).each(function() {
@@ -257,13 +284,19 @@
     $('select.select_colour', scope).change(function(event) {
       setIdentifierVisualisation(this);
     });
-    // install a keyup handler for the colour selecters to set the ring colours
+    // install a keyup handler for the colour selecters to set the ring sequence
     $('input.select_colour', scope).keyup(function(event) {
       setIdentifierVisualisation(this);
     });
-    // install a change handler for the taxon selecters to set the pictures
-    $('select.select_taxon', scope).change(function(event) {
+    // install a change handler for the taxon selecters to set the pictures and header
+    $('.select_taxon', scope).change(function(event) {
       setTaxonPicture(this);
+      setTaxonHeader(this);
+    });
+    // install an additional 'blur' handler for the autocomplete taxon selecters to set the pictures and header
+    $('input.select_taxon', scope).blur(function(event) {
+      setTaxonPicture(this);
+      setTaxonHeader(this);
     });
     // activate accordions
     $('.idn-accordion, .idn-subject-accordion', scope).accordion();
@@ -399,11 +432,13 @@
     // install a click handler for the 'add another' button
     $('input#idn\\:add-another').click(function(event) {
       var indCount = $('.individual_panel').length;      
-      var newInd = window.indicia.wwt.newIndividual.replace(/idn:0/g, 'idn:'+indCount).replace(/Colour-marked individual 1/g, 'Colour-marked individual '+(indCount+1));
-      //$(this).before(newInd);
+      var newInd = window.indicia.wwt.newIndividual.replace(/idn:0/g, 'idn:'+indCount)
+        .replace(/Colour-marked individual 1/g, 'Colour-marked individual '+(indCount+1));
       $('#idn\\:subject\\:accordion').append(newInd);
       // initialise new individual and identifier controls
       initIndividuals('#idn\\:'+indCount+'\\:individual\\:panel');
+      // initialise new javascript dependent controls
+      eval(window.indicia.wwt.newJavascript.replace(/idn:0/g, 'idn:'+indCount).replace(/idn\\\\:0/g, 'idn\\\\:'+indCount));
       // reactivate subject accordion
       $('.idn-subject-accordion').accordion('destroy').accordion({'active':indCount});
     });
