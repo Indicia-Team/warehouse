@@ -266,7 +266,7 @@ $.Autocompleter = function(input, options) {
   function simplify(value) {
     // use same regexp as used to populate cache_taxon_searchterms to simplify the search string
     if (options.simplify) {
-      return value.replace(/\(.+\)/g,'').replace(/[^a-z0-9\+\?]/g,'').replace(/ae/g,'e').toLowerCase();
+      return value.replace(/\. /g, '* ').replace(/\(.+\)/g,'').replace(/[^a-z0-9\+\?*]/g,'').replace(/ae/g,'e').toLowerCase();
     } else {
       return value;
     }
