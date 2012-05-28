@@ -38,7 +38,8 @@
       tpref.taxon,
       tcommon.taxon as common,
       tg.title as taxon_group,
-      o.zero_abundance
+      o.zero_abundance,
+      o.comment
   </field_sql>
   <order_bys>
     <order_by>o.id DESC</order_by>
@@ -66,5 +67,6 @@
     <column name='date' display='Date' />
     <column name='zero_abundance' display='Zero Abundance' />
     <column name='taxon_group' display='Taxon Group' />
+    <column name='comment'  visible='false'/>
   </columns>
 </report>
