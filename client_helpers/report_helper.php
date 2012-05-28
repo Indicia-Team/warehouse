@@ -306,7 +306,7 @@ class report_helper extends helper_base {
       // Output the headers. Repeat if galleryColCount>1;
       for ($i=0; $i<$options['galleryColCount']; $i++) {
         foreach ($options['columns'] as $field) {
-          if (isset($field['visible']) && ($field['visible']=='false' || $field['visible']===false))
+          if (isset($field['visible']) && ($field['visible']==='false' || $field['visible']===false))
             continue; // skip this column as marked invisible
           // allow the display caption to be overriden in the column specification
           $caption = lang::get(empty($field['display']) ? $field['fieldname'] : $field['display']);
@@ -413,7 +413,7 @@ class report_helper extends helper_base {
             $addFeaturesJs.= "  addDistPoint(features, ".json_encode($row).", '".$field['fieldname']."', {}".
                 (empty($rowId) ? '' : ", '".$row[$options['rowId']]."'").");\n";
           }          
-          if (isset($field['visible']) && ($field['visible']=='false' || $field['visible']===false))
+          if (isset($field['visible']) && ($field['visible']==='false' || $field['visible']===false))
             continue; // skip this column as marked invisible
           if (isset($field['actions'])) {
             $value = self::get_report_grid_actions($field['actions'],$row, $pathParam);
