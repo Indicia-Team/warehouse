@@ -49,6 +49,19 @@ $indicia_templates = array(
   'validation_icon' => '<span class="ui-state-error ui-corner-all validation-icon">'.
       '<span class="ui-icon ui-icon-alert"></span></span>',
   'error_class' => 'inline-error',
+  'invalid_handler_javascript' => "function(form, validator) {
+          var tabselected=false;
+          jQuery.each(validator.errorMap, function(ctrlId, error) {
+            // select the tab containing the first error control
+            var ctrl = jQuery('[name=' + ctrlId.replace(/:/g, '\\\\:').replace(/\[/g, '\\\\[').replace(/]/g, '\\\\]') + ']');
+            if (!tabselected && typeof(tabs)!=='undefined') {
+              tabs.tabs('select',ctrl.filter('input,select').parents('.ui-tabs-panel')[0].id);
+              tabselected = true;
+            }
+            ctrl.parents('fieldset').removeClass('collapsed');
+            ctrl.parents('.fieldset-wrapper').show();
+          });
+        }",
   'image_upload' => '<input type="file" id="{id}" name="{fieldname}" accept="png|jpg|gif|jpeg" {title}/>'."\n".
       '<input type="hidden" id="{pathFieldName}" name="{pathFieldName}" value="{pathFieldValue}"/>'."\n",
   'text_input' => '<input type="text" id="{id}" name="{fieldname}"{class} {disabled} value="{default}" {title} {maxlength} />'."\n",
@@ -1284,19 +1297,7 @@ indiciaData.windowLoaded=false;
         unhighlight: function(element, errorClass) {
           $(element).removeClass('ui-state-error');
         },
-        invalidHandler: function(form, validator) {
-          var tabselected=false;
-          jQuery.each(validator.errorMap, function(ctrlId, error) {
-            // select the tab containing the first error control
-            var ctrl = jQuery('[name=' + ctrlId.replace(/:/g, '\\\\:').replace(/\[/g, '\\\\[').replace(/]/g, '\\\\]') + ']');
-            if (!tabselected && typeof(tabs)!=='undefined') {
-              tabs.tabs('select',ctrl.filter('input,select').parents('.ui-tabs-panel')[0].id);
-              tabselected = true;
-            }
-            ctrl.parents('fieldset').removeClass('collapsed');
-            ctrl.parents('.fieldset-wrapper').show();
-          });
-        },
+        invalidHandler: ".$indicia_templates['invalid_handler_javascript'].",
         messages: ".json_encode(self::$validation_messages)."
       });\n";
     }
