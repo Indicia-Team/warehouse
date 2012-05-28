@@ -2972,7 +2972,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       self::$entity_to_load["$model:$key"] = $value;
     }
     if ($model=='sample') {
-      self::$entity_to_load['sample:geom'] = ''; // value received from db in geom is not WKT, which is assumed by all the code.
+      self::$entity_to_load['sample:geom'] = self::$entity_to_load['sample:wkt']; // value received from db in geom is not WKT, which is assumed by all the code.
       self::$entity_to_load['sample:date'] = self::$entity_to_load['sample:date_start']; // bit of a bodge to get around vague dates.
     } elseif ($model=='occurrence') {
       // prepare data to work in autocompletes
