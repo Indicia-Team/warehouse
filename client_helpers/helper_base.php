@@ -51,7 +51,7 @@ $indicia_templates = array(
   'error_class' => 'inline-error',
   'image_upload' => '<input type="file" id="{id}" name="{fieldname}" accept="png|jpg|gif|jpeg" {title}/>'."\n".
       '<input type="hidden" id="{pathFieldName}" name="{pathFieldName}" value="{pathFieldValue}"/>'."\n",
-  'text_input' => '<input type="text" id="{id}" name="{fieldname}"{class} {disabled} value="{default}" {title} />'."\n",
+  'text_input' => '<input type="text" id="{id}" name="{fieldname}"{class} {disabled} value="{default}" {title} {maxlength} />'."\n",
   'password_input' => '<input type="password" id="{id}" name="{fieldname}"{class} {disabled} value="{default}" {title} />'."\n",
   'textarea' => '<textarea id="{id}" name="{fieldname}"{class} {disabled} cols="{cols}" rows="{rows}" {title}>{default}</textarea>'."\n",
   'checkbox' => '<input type="hidden" name="{fieldname}" value="0"/><input type="checkbox" id="{id}" name="{fieldname}" value="1"{class}{checked}{disabled} {title} />'."\n",
@@ -1337,6 +1337,11 @@ indiciaData.windowLoaded=false;
     }
     if (!array_key_exists('disabled', $options)) {
       $options['disabled']='';
+    }
+    if (array_key_exists('maxlength', $options)) {
+      $options['maxlength']='maxlength="'.$options['maxlength'].'"';
+    } else {
+      $options['maxlength']='';
     }
     // Add an error class to colour the control if there is an error and this option is set
     if ($error && in_array('colour', $options['validation_mode'])) {
