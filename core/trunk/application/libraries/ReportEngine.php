@@ -908,7 +908,7 @@ class ReportEngine {
         $alias = preg_replace('/\_value$/', '', "attr_$type"."_term_$uniqueId");
         $query = str_replace('#fields#', ", ltt$id.term as $alias#fields#", $query);
         $query = str_replace('#group_bys#', ", ltt$id.term#group_bys#", $query);
-        $this->attrColumns["attr_$type$id"] = array(
+        $this->attrColumns["attr_$type"."_term_$uniqueId"] = array(
           'display' => $attr->caption
         );
       }
