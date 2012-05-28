@@ -267,9 +267,11 @@
     // colour any colour selects
     $('select.select_colour option', scope).each(function() {
       var hexCode = getColourHex(getColourCode($(this).text()));
-      $(this).css('background-color', '#'+hexCode).attr('data-colour', '#'+hexCode);
-      var colour = (parseInt(hexCode.substr(0,2), 16)+parseInt(hexCode.substr(2,2), 16)+parseInt(hexCode.substr(4,2), 16))<384 ? 'ffffff' : '000000';
-      $(this).css('color', '#'+colour);
+      if (hexCode!=='?') {
+        $(this).css('background-color', '#'+hexCode).attr('data-colour', '#'+hexCode);
+        var colour = (parseInt(hexCode.substr(0,2), 16)+parseInt(hexCode.substr(2,2), 16)+parseInt(hexCode.substr(4,2), 16))<384 ? 'ffffff' : '000000';
+        $(this).css('color', '#'+colour);
+      }
     });
     // set the initial state of the identifier visuals
     $('.select_taxon', scope).each(function() {
@@ -286,6 +288,7 @@
     });
     // install a keyup handler for the colour selecters to set the ring sequence
     $('input.select_colour', scope).keyup(function(event) {
+      $(this).val($(this).val().toUpperCase());
       setIdentifierVisualisation(this);
     });
     // install a change handler for the taxon selecters to set the pictures and header
@@ -310,7 +313,7 @@
    * initialises settings and set event handlers, called from indicia ready
    * handler.
    */
-  indicia.wwt.initForm = function(pSvcUrl, pReadNonce, pReadAuthToken, pBaseColourId, pTextColourId, pSequenceId, pPositionId, pVerticalDefault, pValidate) {
+  indicia.wwt.initForm = function(pSvcUrl, pReadNonce, pReadAuthToken, pBaseColourId, pTextColourId, pSequenceId, pPositionId, pVerticalDefault, pCollarRegex, pColourRegex, pMetalRegex, pValidate) {
     // set config from PHP.
     svcUrl = pSvcUrl;
     readNonce = pReadNonce;
@@ -320,6 +323,9 @@
     sequenceId = parseInt(pSequenceId);
     positionId = parseInt(pPositionId);
     verticalDefault = (pVerticalDefault==='') ? '?' : pVerticalDefault;
+    collarRegex = pCollarRegex;
+    colourRegex = pColourRegex;
+    metalRegex = pMetalRegex;
     validate = pValidate=='true';
     // install the submit handler for the form
     $('form#entry_form').submit(function(event) {
@@ -388,45 +394,40 @@
           return false;
         }
       }
-      // if jQuery validation not in use, we do some basic validation
-      var valid = true;
-      if (validate) {
-        // the taxon must be set
-        $('[id$="taxa_taxon_list_id"]').each(function() {
-          if ($(this).val()=='') {
-            valid = false;
-            $(this).addClass('ui-state-error');
-            $(this).after(errorHTML(this.id, 'This field is required'));
-          }
-        });
-        // at least one identifier must be set
-        $('[id$="taxa_taxon_list_id"]').each(function() {
-          var parts = this.id.split(':');
-          var iCount = $('input[id^="'+parts[0]+'\\:'+parts[1]+'\\:"]:checked').filter('.identifier_checkbox').length;
-          if (iCount===0) {
-            valid = false;
-            var checkBox$ = $('input[id^="'+parts[0]+'\\:'+parts[1]+'\\:"]').filter('.identifier_checkbox');
-            checkBox$.after(errorHTML(this.id, 'At least one identifier must be recorded'));
-          }
-        });
-        // the sample date must be set
-        var date$ = $('#sample\\:date');
-        if (date$.val()=='') {
-          valid = false;
-          date$.addClass('ui-state-error');
-          date$.after(errorHTML(this.id, 'This field is required'));
-        }
-        // the spatial ref must be set
-        var place$ = $('#imp-sref');
-        if (place$.val()=='') {
-          valid = false;
-          place$.addClass('ui-state-error');
-          place$.after(errorHTML(this.id, 'This field is required'));
-        }
-      }
-      // now continue with the submit if all valid
-      return valid;
+      return true;
     });
+    // add jQuery validation options/methods
+    if (validate==true) {
+      jQuery.validator.addMethod("identifierRequired", function(value, element) {
+        // select the checked checkboxes in this identifier set and return true if any are set
+        var checkbox$ = $('.identifier_checkbox:checked', $(element).closest('.idn-accordion'));
+        return checkbox$.length > 0;
+      }, "Please record at least one identifier for this bird");
+      jQuery.validator.addMethod('collarFormat', function (value, element) { 
+        if (collarRegex==='') {
+          return true;
+        } else {
+          var re = new RegExp(collarRegex);
+          return this.optional(element) || re.test(value);
+        }
+      }, 'This is not a known neck collar sequence, please check the value and re-enter.');
+      jQuery.validator.addMethod('colourRingFormat', function (value, element) { 
+        if (colourRegex==='') {
+          return true;
+        } else {
+          var re = new RegExp(colourRegex);
+          return this.optional(element) || re.test(value);
+        }
+      }, 'This is not a known colour ring sequence, please check the value and re-enter.');
+      jQuery.validator.addMethod('metalRingFormat', function (value, element) { 
+        if (metalRegex==='') {
+          return true;
+        } else {
+          var re = new RegExp(metalRegex);
+          return this.optional(element) || re.test(value);
+        }
+      }, 'This is not a known metal ring sequence, please check the value and re-enter.');
+    }
     // initialise individual and identifier controls
     initIndividuals('body');
     // install a click handler for the 'add another' button

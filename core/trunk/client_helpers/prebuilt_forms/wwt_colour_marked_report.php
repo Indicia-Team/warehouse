@@ -415,6 +415,24 @@ class iform_wwt_colour_marked_report {
           'group' => 'Identifiers',
         ),
         array(
+          'name'=>'neck_collar_max_length',
+          'caption'=>'Neck collar maximum length',
+          'description'=>'Maximum length for a neck-collar identifier sequence.',
+          'type'=>'string',
+          'required' => false,
+          'group'=>'Identifiers'
+        ),
+        array(
+          'name'=>'neck_collar_regex',
+          'caption'=>'Neck collar validation pattern',
+          'description'=>'The validation pattern (as a regular expression) for a neck-collar identifier sequence. '.
+              'Eg. /^([A-Z]{2}[0-9]{2}|[A-Z]{3}[0-9])$/ would only permit sequences of either 2 uppercase letters followed by 2 digits, '.
+              'or 3 uppercase letters followed by 1 digit.',
+          'type'=>'string',
+          'required' => false,
+          'group'=>'Identifiers'
+        ),
+        array(
           'name'=>'enscribed_colour_ring_type',
           'caption'=>'Enscribed Colour Ring Type',
           'description'=>'The type of identifier which indicates an enscribed colour ring (\'darvic\').',
@@ -428,6 +446,24 @@ class iform_wwt_colour_marked_report {
           'group' => 'Identifiers',
         ),
         array(
+          'name'=>'enscribed_colour_ring_max_length',
+          'caption'=>'Colour ring maximum length',
+          'description'=>'Maximum length for an enscribed colour ring identifier sequence.',
+          'type'=>'string',
+          'required' => false,
+          'group'=>'Identifiers'
+        ),
+        array(
+          'name'=>'enscribed_colour_ring_regex',
+          'caption'=>'Colour ring validation pattern',
+          'description'=>'The validation pattern (as a regular expression) for an enscribed colour ring identifier sequence. '.
+              'Eg. /^([A-Z]{2}[0-9]{2}|[A-Z]{3}[0-9])$/ would only permit sequences of either 2 uppercase letters followed by 2 digits, '.
+              'or 3 uppercase letters followed by 1 digit.',
+          'type'=>'string',
+          'required' => false,
+          'group'=>'Identifiers'
+        ),
+        array(
           'name'=>'metal_ring_type',
           'caption'=>'Metal Ring Type',
           'description'=>'The type of identifier which indicates a metal ring.',
@@ -439,6 +475,24 @@ class iform_wwt_colour_marked_report {
           'required' => true,
           'helpText' => 'The helptext. Todo: change this one you see where it shows on screen!!',
           'group' => 'Identifiers',
+        ),
+        array(
+          'name'=>'metal_ring_max_length',
+          'caption'=>'Metal ring maximum length',
+          'description'=>'Maximum length for a metal identifier sequence.',
+          'type'=>'string',
+          'required' => false,
+          'group'=>'Identifiers'
+        ),
+        array(
+          'name'=>'metal_ring_regex',
+          'caption'=>'Metal ring validation pattern',
+          'description'=>'The validation pattern (as a regular expression) for a metal ring identifier sequence. '.
+              'Eg. /^([A-Z]{2}[0-9]{2}|[A-Z]{3}[0-9])$/ would only permit sequences of either 2 uppercase letters followed by 2 digits, '.
+              'or 3 uppercase letters followed by 1 digit.',
+          'type'=>'string',
+          'required' => false,
+          'group'=>'Identifiers'
         ),
         array(
           'name'=>'base_colours',
@@ -800,6 +854,11 @@ class iform_wwt_colour_marked_report {
     // request automatic JS validation
     if (!isset($args['clientSideValidation']) || $args['clientSideValidation']) {
       data_entry_helper::enable_validation('entry_form');
+      // By default, validate doesn't validate any ':hidden' fields, 
+      // but we need to validate hidden with display: none; fields in accordions
+      data_entry_helper::$javascript .= "jQuery.validator.setDefaults({ 
+        ignore: \"input[type='hidden']\"
+      });\n";
     }
     if (method_exists(get_called_class(), 'getHeaderHTML')) {
       $r .= call_user_func(array(get_called_class(), 'getHeaderHTML'), true, $args);
@@ -1711,7 +1770,7 @@ class iform_wwt_colour_marked_report {
         }
       }
     }
-    $validate = $args['clientSideValidation'] ? 'false' : 'true';
+    $validate = $args['clientSideValidation'] ? 'true' : 'false';
     // configure the identifiers javascript
     // write it late so it happens after any locked values are applied
     if (!$options['inNewIndividual']) {
@@ -1724,6 +1783,9 @@ class iform_wwt_colour_marked_report {
         '".$options['sequenceId']."',
         '".$options['positionId']."',
         '".$args['default_leg_vertical']."',
+        '".(!empty($args['neck_collar_regex']) ? $args['neck_collar_regex'] : '')."',
+        '".(!empty($args['enscribed_colour_ring_regex']) ? $args['enscribed_colour_ring_regex'] : '')."',
+        '".(!empty($args['metal_ring_regex']) ? $args['metal_ring_regex'] : '')."',
         '".$validate."'\n".
         ");\n";
     }
@@ -1868,7 +1930,15 @@ class iform_wwt_colour_marked_report {
       $options['sequenceId'],
     );
     $options['fieldprefix'] = 'idn:'.$taxIdx.':neck-collar:';
+    $options['classprefix'] = 'idn-neck-collar-';
+    $options['seq_maxlength'] = (!empty($args['neck_collar_max_length'])) ? $args['neck_collar_max_length'] : '';
+    if (!empty($args['neck_collar_regex'])) {
+      $options['seq_format_class'] = 'collarFormat';
+    }
     $r .= self::get_control_identifier($auth, $args, $tabalias, $options);
+    if (!empty($args['neck_collar_regex'])) {
+      unset($options['seq_format_class']);
+    }
     
     // setup and call function for left enscribed colour ring
     $options['identifierName'] = '';
@@ -1886,7 +1956,15 @@ class iform_wwt_colour_marked_report {
       $options['sequenceId'],
     );
     $options['fieldprefix'] = 'idn:'.$taxIdx.':colour-left:';
+    $options['classprefix'] = 'idn-colour-left-';
+    $options['seq_maxlength'] = (!empty($args['enscribed_colour_ring_max_length'])) ? $args['enscribed_colour_ring_max_length'] : '';
+    if (!empty($args['enscribed_colour_ring_regex'])) {
+      $options['seq_format_class'] = 'colourRingFormat';
+    }
     $r .= self::get_control_identifier($auth, $args, $tabalias, $options);
+    if (!empty($args['enscribed_colour_ring_regex'])) {
+      unset($options['seq_format_class']);
+    }
     
     // setup and call function for right enscribed colour ring
     $options['identifierName'] = '';
@@ -1904,7 +1982,15 @@ class iform_wwt_colour_marked_report {
       $options['sequenceId'],
     );
     $options['fieldprefix'] = 'idn:'.$taxIdx.':colour-right:';
+    $options['classprefix'] = 'idn-colour-right-';
+    $options['seq_maxlength'] = (!empty($args['enscribed_colour_ring_max_length'])) ? $args['enscribed_colour_ring_max_length'] : '';
+    if (!empty($args['enscribed_colour_ring_regex'])) {
+      $options['seq_format_class'] = 'colourRingFormat';
+    }
     $r .= self::get_control_identifier($auth, $args, $tabalias, $options);
+    if (!empty($args['enscribed_colour_ring_regex'])) {
+      unset($options['seq_format_class']);
+    }
     
     // setup and call function for metal ring
     $options['identifierName'] = '';
@@ -1921,7 +2007,18 @@ class iform_wwt_colour_marked_report {
       $options['sequenceId'],
     );
     $options['fieldprefix'] = 'idn:'.$taxIdx.':metal:';
+    $options['classprefix'] = 'idn-metal-';
+    $options['seq_maxlength'] = (!empty($args['metal_ring_max_length'])) ? $args['metal_ring_max_length'] : '';
+    $options['seq_maxlength'] = (!empty($args['metal_ring_max_length'])) ? $args['metal_ring_max_length'] : '';
+    if (!empty($args['metal_ring_regex'])) {
+      $options['seq_format_class'] = 'metalRingFormat';
+    }
     $r .= self::get_control_identifier($auth, $args, $tabalias, $options);
+    if (!empty($args['metal_ring_regex'])) {
+      unset($options['seq_format_class']);
+    }
+    
+    unset($options['seq_maxlength']);
     
     $r .= '</div>';    
     //---------------------------------
@@ -2019,10 +2116,11 @@ class iform_wwt_colour_marked_report {
     $r .= data_entry_helper::checkbox(array_merge(array(
       'label' => lang::get('Is this identifier being recorded?'),
       'fieldname' => $fieldPrefix.'identifier:checkbox',
-      'class'=>'identifier_checkbox',
+      'class'=>'identifier_checkbox identifierRequired',
     ), $options));
       
     // loop through the requested attributes and output an appropriate control
+    $classes = $options['class'];
     foreach ($options['identifierAttrList'] as $attrId) {
       // find the definition of this attribute
       $found = false;
@@ -2042,28 +2140,36 @@ class iform_wwt_colour_marked_report {
           // filter the colours available
           $query = array('in'=>array('id', $args['base_colours']));
         }
-        if ($args['use_colour_picker']) {
-          $options['class'] = empty($options['class']) ? 'select_colour' : 
-            (strstr($options['class'], 'select_colour') ? $options['class'] : $options['class'].' select_colour');
-        }
+        $attr_name = 'base-colour';
         $colourIdentifier = true;
       } elseif ($options['textColourId']==$attrId) {
         if (!empty($args['text_colours'])) {
           // filter the colours available
           $query = array('in'=>array('id', $args['text_colours']));
         }
-        if ($args['use_colour_picker']) {
-          $options['class'] = empty($options['class']) ? 'select_colour' : 
-            (strstr($options['class'], 'select_colour') ? $options['class'] : $options['class'].' select_colour');
-        }
+        $attr_name = 'text-colour';
         $colourIdentifier = true;
-      } elseif ($options['positionId']==$attrId
-        && count($args['position']) > 0) {
-        // filter the identifier position available
-        $query = array('in'=>array('id', $args['position']));
+      } elseif ($options['positionId']==$attrId) {
+        $attr_name = 'position';
+        if (count($args['position']) > 0) {
+          // filter the identifier position available
+          $query = array('in'=>array('id', $args['position']));
+        }
+      } elseif ($options['sequenceId']==$attrId) {
+        $attr_name = 'sequence';
+        $options['maxlength'] = $options['seq_maxlength'] ? $options['seq_maxlength'] : '';
+        if ($options['seq_format_class']) {
+          $options['class'] = empty($options['class']) ? $options['seq_format_class'] : 
+            (strstr($options['class'], $options['seq_format_class']) ? $options['class'] : $options['class'].' '.$options['seq_format_class']);
+        }
       }
-            
-      // Todo: do we need to set defaults for reload on error or edit?
+
+      $options['class'] = empty($options['class']) ? $options['classprefix'].$attr_name : 
+        (strstr($options['class'], $options['classprefix'].$attr_name) ? $options['class'] : $options['class'].' '.$options['classprefix'].$attr_name);
+      if ($args['use_colour_picker']) {
+        $options['class'] = empty($options['class']) ? 'select_colour' : 
+          (strstr($options['class'], 'select_colour') ? $options['class'] : $options['class'].' select_colour');
+      }
           
       switch ($attrType['data_type']) {
         case 'D':
@@ -2100,6 +2206,10 @@ class iform_wwt_colour_marked_report {
             'label' => lang::get($attrType['caption']),
             'fieldname' => $fieldPrefix.'idnAttr:'.$attrType['id'],
           ), $options));
+      }
+      $options['class'] = $classes;
+      if (isset($options['maxlength'])) {
+        unset($options['maxlength']);
       }
     }
     $r .= '</div>';
