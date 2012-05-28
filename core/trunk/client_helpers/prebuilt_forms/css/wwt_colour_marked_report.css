@@ -35,6 +35,11 @@ h2 {
 input.locked-control, select.locked-control, textarea.locked-control {
 	background-color: yellow !important;
 }
+
+.identifier_checkbox {
+	display: none;
+}
+
 .taxon_individual {
 	border:1px solid #008f93;
 	background-color: transparent;
