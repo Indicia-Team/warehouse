@@ -68,8 +68,9 @@ class User_Model extends ORM {
 
   public function preSubmit() {
 
-    if (!is_numeric($this->submission['fields']['core_role_id']['value']))
-      $this->submission['fields']['core_role_id']['value'] = NULL;
+    if (isset($this->submission['fields']['core_role_id']))
+      if (!is_numeric($this->submission['fields']['core_role_id']['value']))
+        $this->submission['fields']['core_role_id']['value'] = NULL;
 
     $this->submission['fields']['email_visible']	 = array('value' => (isset($this->submission['fields']['email_visible']) ? 't' : 'f'));
     $this->submission['fields']['view_common_names'] = array('value' => (isset($this->submission['fields']['view_common_names']) ? 't' : 'f'));
