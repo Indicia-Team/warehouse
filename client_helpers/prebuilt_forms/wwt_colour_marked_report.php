@@ -854,6 +854,33 @@ class iform_wwt_colour_marked_report {
     // request automatic JS validation
     if (!isset($args['clientSideValidation']) || $args['clientSideValidation']) {
       data_entry_helper::enable_validation('entry_form');
+      // override the default invalidHandler to activate the first accordion panels which has an error
+      global $indicia_templates;  
+      $indicia_templates['invalid_handler_javascript'] = "function(form, validator) {
+          var tabselected=false;
+          var accordion$=jQuery('.ui-accordion');
+          jQuery.each(validator.errorMap, function(ctrlId, error) {
+            // select the tab containing the first error control
+            var ctrl = jQuery('[name=' + ctrlId.replace(/:/g, '\\\\:').replace(/\[/g, '\\\\[').replace(/]/g, '\\\\]') + ']');
+            if (!tabselected && typeof(tabs)!=='undefined') {
+              tabs.tabs('select',ctrl.filter('input,select').parents('.ui-tabs-panel')[0].id);
+              tabselected = true;
+            }
+            ctrl.parents('fieldset').removeClass('collapsed');
+            ctrl.parents('.fieldset-wrapper').show();
+            // for each accordion, activate the first panel which has an error
+            ctrl.parents('.ui-accordion-content').each(function (n) {
+              var acc$ = $(this).closest('.ui-accordion');
+              var accId = acc$[0].id.replace(/:/g, '\\\\:').replace(/\[/g, '\\\\[').replace(/]/g, '\\\\]');
+              if (accordion$.is('#'+accId)) {
+                var header$ = $(this).prev('h3');
+                var accHeaderId = header$.attr('id').replace(/:/g, '\\\\:').replace(/\[/g, '\\\\[').replace(/]/g, '\\\\]');
+                acc$.accordion('activate', '#'+accHeaderId);
+                accordion$ = accordion$.not('#'+accId);
+              }
+            });
+          });
+        }";
       // By default, validate doesn't validate any ':hidden' fields, 
       // but we need to validate hidden with display: none; fields in accordions
       data_entry_helper::$javascript .= "jQuery.validator.setDefaults({ 
@@ -1703,6 +1730,12 @@ class iform_wwt_colour_marked_report {
     static $taxIdx = 0; 
     
     $svcUrl = self::warehouseUrl().'index.php/services';
+    if (!empty($options['lockable']) && $options['lockable']==true) {
+      $options['identifiers_lockable'] = $options['lockable'];
+      unset($options['lockable']);
+    } else {
+      $options['identifiers_lockable'] = '';
+    }
     // get the identifier type data
     $filter = array(
       'termlist_external_key' => 'indicia:assoc:identifier_type',
@@ -1795,7 +1828,7 @@ class iform_wwt_colour_marked_report {
     if (!$options['inNewIndividual']) {;
       $r .= '<div id="idn:subject:accordion" class="idn-subject-accordion">';
     }
-    $r .= '<h3><a href="" data-heading="'.lang::get('Colour-marked individual').' '.($taxIdx+1).'">'.lang::get('Colour-marked individual').' '.($taxIdx+1).'</a></h3>';
+    $r .= '<h3 id="'.$options['fieldprefix'].'individual:header" class="individual_header"><a href="" data-heading="'.lang::get('Colour-marked individual').' '.($taxIdx+1).'">'.lang::get('Colour-marked individual').' '.($taxIdx+1).'</a></h3>';
     $r .= '<div id="'.$options['fieldprefix'].'individual:panel" class="individual_panel ui-helper-clearfix">';
     $r .= '<fieldset id="'.$options['fieldprefix'].'individual:fieldset" class="taxon_individual ui-corner-all">';
     // output the hiddens
@@ -1867,6 +1900,7 @@ class iform_wwt_colour_marked_report {
       $query = array('in'=>array('id', $args['request_gender_values']));
       $filter = array('query'=>json_encode($query),);
       $extraParams = array_merge($filter, $auth['read']);
+      $options['lockable'] = $options['identifiers_lockable'];
       $r .= data_entry_helper::select(array_merge(array(
         'label' => lang::get('Sex of the bird'),
         'fieldname' => $options['fieldprefix'].'sjoAttr:'.$options['genderId'],
@@ -1875,6 +1909,7 @@ class iform_wwt_colour_marked_report {
         'valueField'=>'id',
         'extraParams' => $extraParams,
       ), $options));
+      unset($options['lockable']);
     }
     // age
     if ($options['stageId'] > 0
@@ -1884,6 +1919,7 @@ class iform_wwt_colour_marked_report {
       $query = array('in'=>array('id', $args['request_stage_values']));
       $filter = array('query'=>json_encode($query),);
       $extraParams = array_merge($filter, $auth['read']);
+      $options['lockable'] = $options['identifiers_lockable'];
       $r .= data_entry_helper::select(array_merge(array(
         'label' => lang::get('Age of the bird'),
         'fieldname' => $options['fieldprefix'].'sjoAttr:'.$options['stageId'],
@@ -1892,6 +1928,7 @@ class iform_wwt_colour_marked_report {
         'valueField'=>'id',
         'extraParams' => $extraParams,
       ), $options));
+      unset($options['lockable']);
     }
     // subject status
     if ($options['lifeStatusId'] > 0
@@ -1901,6 +1938,7 @@ class iform_wwt_colour_marked_report {
       $query = array('in'=>array('id', $args['request_life_status_values']));
       $filter = array('query'=>json_encode($query),);
       $extraParams = array_merge($filter, $auth['read']);
+      $options['lockable'] = $options['identifiers_lockable'];
       $r .= data_entry_helper::select(array_merge(array(
         'label' => lang::get('Circumstances of this report'),
         'fieldname' => $options['fieldprefix'].'sjoAttr:'.$options['lifeStatusId'],
@@ -1909,10 +1947,11 @@ class iform_wwt_colour_marked_report {
         'valueField'=>'id',
         'extraParams' => $extraParams,
       ), $options));
+      unset($options['lockable']);
     }
     
     // output each required identifier
-    $r .= '<div class="idn-accordion">';
+    $r .= '<div id="'.$options['fieldprefix'].'accordion" class="idn-accordion">';
     
     // setup and call function for neck collar
     $options['identifierName'] = '';
@@ -2101,7 +2140,7 @@ class iform_wwt_colour_marked_report {
   private static function get_control_identifier($auth, $args, $tabalias, $options) {
     $fieldPrefix = !empty($options['fieldprefix']) ? $options['fieldprefix'] : '';
     $r = '';
-    $r .= '<h2><a href="#">'.$options['identifierName'].'</a></h2>';
+    $r .= '<h3 id="'.$fieldPrefix.'header" class="idn:accordion:header"><a href="#">'.$options['identifierName'].'</a></h2>';
     $r .= '<div id="'.$fieldPrefix.'panel" class="idn:accordion:panel">';
     $r .= '<input type="hidden" name="'.$fieldPrefix.'identifier:identifier_type_id" value="'.$options['identifierTypeId'].'" />'."\n";
     $r .= '<input type="hidden" name="'.$fieldPrefix.'identifier:identifier_name" id="'.$fieldPrefix.'identifier:identifier_name" value="'.$options['identifierName'].'" />'."\n";
@@ -2114,7 +2153,8 @@ class iform_wwt_colour_marked_report {
     
     // temp checkbox - probably remove later?
     $r .= data_entry_helper::checkbox(array_merge(array(
-      'label' => lang::get('Is this identifier being recorded?'),
+      // 'label' => lang::get('Is this identifier being recorded?'),
+      'label' => '',
       'fieldname' => $fieldPrefix.'identifier:checkbox',
       'class'=>'identifier_checkbox identifierRequired',
     ), $options));
@@ -2142,6 +2182,7 @@ class iform_wwt_colour_marked_report {
         }
         $attr_name = 'base-colour';
         $colourIdentifier = true;
+        $options['lockable'] = $options['identifiers_lockable'];
       } elseif ($options['textColourId']==$attrId) {
         if (!empty($args['text_colours'])) {
           // filter the colours available
@@ -2149,8 +2190,10 @@ class iform_wwt_colour_marked_report {
         }
         $attr_name = 'text-colour';
         $colourIdentifier = true;
+        $options['lockable'] = $options['identifiers_lockable'];
       } elseif ($options['positionId']==$attrId) {
         $attr_name = 'position';
+        $options['lockable'] = $options['identifiers_lockable'];
         if (count($args['position']) > 0) {
           // filter the identifier position available
           $query = array('in'=>array('id', $args['position']));
@@ -2210,6 +2253,9 @@ class iform_wwt_colour_marked_report {
       $options['class'] = $classes;
       if (isset($options['maxlength'])) {
         unset($options['maxlength']);
+      }
+      if (isset($options['lockable'])) {
+        unset($options['lockable']);
       }
     }
     $r .= '</div>';

@@ -242,7 +242,7 @@
       panel$.addClass(classPrefix+$(this).val().toLowerCase().replace(/[^a-z]/g, ''));
     });
   };
-  
+
   var setTaxonHeader = function(ctl) {
     // set the individual panel header to reflect the taxon
     var heading$ = $(ctl).closest('.individual_panel').prev('h3').children('a');
@@ -256,6 +256,39 @@
       taxonName = $(this).val();
     });
     heading$.text(heading$.attr('data-heading')+' : '+taxonName);
+  };
+
+  var controlIsSet = function(ctl) {
+    // return true if this is set
+    // if control is a select
+    if ($(ctl).filter('select').length>0) {
+      if (ctl.selectedIndex!==0) return true;
+    }
+    // if control is an input
+    if ($(ctl).filter('input').length>0) {
+      if ($.trim(ctl.value).length>0) return true;
+    }
+    return false;
+  };
+
+  var autoSetCheckbox = function(ctl) {
+    // set the identifier checkbox to set if any of its controls are set
+    var control$ = $(ctl).closest('.idn\\:accordion\\:panel').children('select, input[type="text"]');
+    var checkbox = $(ctl).closest('.idn\\:accordion\\:panel').children('.identifier_checkbox')[0];
+    var setting = false;
+    // set checkbox if any of this identifier's controls are set
+    control$.each(function() {
+      if (controlIsSet(this)) {
+        setting = true;
+      }
+    });
+    checkbox.checked = setting;
+    // if checked, all identifier values are required
+    if (setting) {
+      control$.addClass('required');
+    } else {
+      control$.removeClass('required');
+    }
   };
 
   var errorHTML = function(ctlId, msg) {
@@ -273,22 +306,25 @@
         $(this).css('color', '#'+colour);
       }
     });
-    // set the initial state of the identifier visuals
+    // set the initial state of the taxon
     $('.select_taxon', scope).each(function() {
       setTaxonPicture(this);
       setTaxonHeader(this);
     });
-    // set the initial state of the taxon
+    // set the initial state of the identifier visuals
     $('select.select_colour, input.select_colour', scope).each(function() {
+      autoSetCheckbox(this);
       setIdentifierVisualisation(this);
     });
     // install a change handler for the colour selecters to set the ring colours
     $('select.select_colour', scope).change(function(event) {
+      autoSetCheckbox(this);
       setIdentifierVisualisation(this);
     });
     // install a keyup handler for the colour selecters to set the ring sequence
     $('input.select_colour', scope).keyup(function(event) {
       $(this).val($(this).val().toUpperCase());
+      autoSetCheckbox(this);
       setIdentifierVisualisation(this);
     });
     // install a change handler for the taxon selecters to set the pictures and header
@@ -410,7 +446,7 @@
           var re = new RegExp(collarRegex);
           return this.optional(element) || re.test(value);
         }
-      }, 'This is not a known neck collar sequence, please check the value and re-enter.');
+      }, 'This is not a known neck collar format, please check the value and re-enter.');
       jQuery.validator.addMethod('colourRingFormat', function (value, element) { 
         if (colourRegex==='') {
           return true;
@@ -418,7 +454,7 @@
           var re = new RegExp(colourRegex);
           return this.optional(element) || re.test(value);
         }
-      }, 'This is not a known colour ring sequence, please check the value and re-enter.');
+      }, 'This is not a known colour ring format, please check the value and re-enter.');
       jQuery.validator.addMethod('metalRingFormat', function (value, element) { 
         if (metalRegex==='') {
           return true;
@@ -426,7 +462,7 @@
           var re = new RegExp(metalRegex);
           return this.optional(element) || re.test(value);
         }
-      }, 'This is not a known metal ring sequence, please check the value and re-enter.');
+      }, 'This is not a known metal ring format, please check the value and re-enter.');
     }
     // initialise individual and identifier controls
     initIndividuals('body');
