@@ -37,7 +37,8 @@ function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth
     // auto-check the row
     newRow2.find('.scPresenceCell input').attr('name', 'sc:' + data.id + ':y'+addRowToGridSequence+':present').attr('checked', 'checked');
     newRow2.find('.scCount').addClass('required').attr('min',1).after('<span class=\"deh-required\">*</span>');
-    newRow2.find('.scOccAttrCell').find('select').addClass('required').width('auto').after('<span class=\"deh-required\">*</span>');
+    newRow2.find('.scOccAttrCell').find('select').not('.scUnits').addClass('required').width('auto').after('<span class=\"deh-required\">*</span>');
+    newRow2.find('.scUnits').width('auto');
     newRow1.appendTo('#'+gridId);
     newRow2.appendTo('#'+gridId);
     if($('tr#'+gridId + '-scClonableRow3').length>0){

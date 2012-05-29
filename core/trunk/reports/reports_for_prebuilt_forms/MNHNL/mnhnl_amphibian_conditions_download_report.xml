@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="MNHNL Amphibian Download Report" description="Lists all occurrences associated with saved samples. Normally invoked from Reports tab on the form.">
+  <params>
+    <param name='survey_id' display='Survey: ' description='Select the survey to return data for:' datatype='lookup'
+        query='SELECT id, title as caption FROM surveys' />
+    <param name='target_species' display='Target Species: ' description='Select the target species to return data for:' datatype='int' />
+  </params>
+  <table tablename="samples" where="#this#.deleted = FALSE
+      and #this#.parent_id IS NULL
+      and #this#.survey_id = #survey_id#" >
+    <tabColumn name='id' display='Survey ID' visible='true'/>
+    <tabColumn name='recorder_names' display='Recorder names' />
+    <tabColumn name='date_start' visible='false'/>
+    <tabColumn name='date_end' visible='false'/>
+    <tabColumn name='date_type' visible='false'/>
+    <tabColumn name='date' func="''" display='Visit date'/> // dummy field for the vague date processing, here so appears at logical position and with reasonable description in the report
+    <tabColumn name='comment' display='Conditions comment'/>
+    <subTable tablename="locations" > // allow deleted Sites!
+      <tabColumn name='id' visible='true' display='Location ID' />
+      <tabColumn name='name' display='Site'/>
+      <tabColumn name='xy' display='XY' func="(regexp_replace(#this#.centroid_sref, ',|\\.[0-9]*' , '','g'))" />
+      <tabColumn name='comment' display='Site comment'/>
+      <attributes separator='|' meaningIdLanguage='preferred'/>
+    </subTable>
+    <attributes separator='|' meaningIdLanguage='preferred'/>
+    <subTable tablename="samples" tableKey="parent_id" parentKey="id" where="#this#.deleted = FALSE" >
+      <subTable tablename="sample_attribute_values" tableKey="sample_id" parentKey="id" where="#this#.deleted = FALSE and #this#.int_value = #target_species# " >
+      </subTable>
+      <attributes separator='|' meaningIdLanguage='preferred'/>
+    </subTable>
+  </table>
+  <order_bys>
+    <order_by>lt0_id ASC</order_by>
+  </order_bys>
+</report>

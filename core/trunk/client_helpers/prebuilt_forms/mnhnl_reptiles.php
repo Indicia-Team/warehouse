@@ -99,11 +99,43 @@ class iform_mnhnl_reptiles extends iform_mnhnl_dynamic_1 {
           'group'=>'Locations',
         ),
         array(
-          'name' => 'download_report',
-          'caption' => 'Download Report',
-          'description' => 'Name of the download report.',
+          'name'=>'locationLayerLookup',
+          'caption'=>'WFS Layer specification for Locations Lookup',
+          'description'=>'Comma separated: proxiedurl,featurePrefix,featureType,geometryName,featureNS,srsName,propertyNames',
           'type'=>'string',
-          'group' => 'User Interface',
+          'required' => false,
+          'group'=>'Locations',
+        ),
+        array(
+          'name' => 'reportFilenamePrefix',
+          'caption' => 'Report Filename Prefix',
+          'description' => 'Prefix to be used at the start of the download report filenames.',
+          'type' => 'string',
+          'default' => 'reptiles',
+          'group' => 'Reporting'
+        ),
+        array(
+          'name' => 'sites_download_report',
+          'caption' => 'Sites download report',
+          'description' => 'Name of the sites download report.',
+          'type'=>'string',
+          'group' => 'Reporting',
+          'required' => false
+        ),
+        array(
+          'name' => 'conditions_download_report',
+          'caption' => 'Conditions download report',
+          'description' => 'Name of the conditions download report.',
+          'type'=>'string',
+          'group' => 'Reporting',
+          'required' => false
+        ),
+        array(
+          'name' => 'species_download_report',
+          'caption' => 'Species download report',
+          'description' => 'Name of the species download report.',
+          'type'=>'string',
+          'group' => 'Reporting',
           'default' => 'reports_for_prebuilt_forms/MNHNL/mnhnl_reptile_download_report'
         )
       )
@@ -174,6 +206,8 @@ class iform_mnhnl_reptiles extends iform_mnhnl_dynamic_1 {
     $targetSpeciesAttr=iform_mnhnl_getAttr(self::$auth, $args, 'sample', $args['targetSpeciesAttr']);
     if (!$targetSpeciesAttr) return lang::get('This form must be used with a survey that has the '.$args['targetSpeciesAttr'].' attribute associated with it.');
     if(!$retTabs) return array('#downloads' => lang::get('LANG_Download'), '#locations' => lang::get('LANG_Locations'));
+    if($args['LocationTypeTerm']=='' && isset($args['loctoolsLocTypeID'])) $args['LocationTypeTerm']=$args['loctoolsLocTypeID'];
+    $primary = iform_mnhnl_getTermID(array('read'=>$readAuth), $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
     $control = data_entry_helper::select(array(
           'label'=>lang::get("LANG_TargetSpecies"),
           'fieldname'=>'targetSpecies',
@@ -184,20 +218,30 @@ class iform_mnhnl_reptiles extends iform_mnhnl_dynamic_1 {
         ));
     data_entry_helper::$javascript .= "
 jQuery('[name=targetSpecies]').change(function(){
-  jQuery('[name=params]').val('{\"survey_id\":".$args['survey_id'].", \"taxon_list_id\":".$args['extra_list_id'].", \"target_species\":'+jQuery(this).val()+'}');
-  var action='".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=".$args['download_report'].".xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv&filename=';
+  jQuery('[name=params]').val('{\"survey_id\":".$args['survey_id'].", \"location_type_id\":".$primary.", \"taxon_list_id\":".$args['extra_list_id'].", \"target_species\":'+jQuery(this).val()+'}');
   var filename=jQuery(this).find('[selected]')[0].text.replace(/ /g, \"\");
-  action=action+filename;
-  jQuery('#reportRequestForm').attr('action',action);
+  jQuery('#sitesReportRequestForm').attr('action',
+    '".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=".$args['sites_download_report'].".xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv&filename=".$args['reportFilenamePrefix']."Sites');
+  jQuery('#conditionsReportRequestForm').attr('action',
+    '".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=".$args['conditions_download_report'].".xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv&filename=".$args['reportFilenamePrefix']."Conditions'+filename);
+  jQuery('#speciesReportRequestForm').attr('action',
+    '".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=".$args['species_download_report'].".xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv&filename=".$args['reportFilenamePrefix']."Species'+filename);
 });
 jQuery('[name=targetSpecies]').change();
 ";
     return  '<div id="downloads" >
-  <p>'.lang::get('LANG_Data_Download').'</p>
-  '.$control.'
-  <form id="reportRequestForm" method="post" action="">
+  <p>'.lang::get('LANG_Data_Download').'</p>'.$control.($args['sites_download_report']!=''?'
+  <form id="sitesReportRequestForm" method="post" action="">
     <input type="hidden" id="params" name="params" value="" />
-    <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
+    <label>'.lang::get('Sites report').':</label><input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
+  </form>':'').($args['conditions_download_report']!=''?'
+  <form id="conditionsReportRequestForm" method="post" action="">
+    <input type="hidden" id="params" name="params" value="" />
+    <label>'.lang::get('Conditions report').':</label><input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
+  </form>':'').'
+  <form id="speciesReportRequestForm" method="post" action="">
+    <input type="hidden" id="params" name="params" value="" />
+    <label>'.lang::get('Species report').':</label><input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
   </form>
 </div>'.iform_mnhnl_locModTool(self::$auth, $args, self::$node);
 	
@@ -224,6 +268,34 @@ jQuery('[name=targetSpecies]').change();
     else
       // provide a default in case the form settings were saved in an old version of the form
       $reportName = 'reports_for_prebuilt_forms/MNHNL/mnhnl_reptiles';
+    $extraParams = array(
+        'survey_id'=>$args['survey_id'], 
+        'userID_attr_id'=>$userIdAttr,
+        'userID'=>(iform_loctools_checkaccess($node,'superuser') ? -1 :  $user->uid), // use -1 if superuser - non logged in will not get this far.
+        'userName_attr_id'=>$userNameAttr,
+        'userName'=>($user->name),
+        'target_species_attr_id'=>$targetSpeciesIdAttr);
+    if(isset($args['filterAttrs']) && $args['filterAttrs']!=''){
+      global $custom_terms;
+      $filterAttrs = explode(',',$args['filterAttrs']);
+      $idxN=1;
+      foreach($filterAttrs as $idx=>$filterAttr){
+        $filterAttr=explode(':',$filterAttr);
+        switch($filterAttr[0]){
+        	case 'Display': break;
+        	case 'Parent':
+              $extraParams['attr_id_'.$idxN]=iform_mnhnl_getAttrID($auth, $args, 'location', $filterAttr[1]);
+              $custom_terms['attr_'.$idxN]=lang::get($filterAttr[1]);
+              $idxN++;
+              break;
+        	default:
+              $extraParams['attr_id_'.$idxN]=iform_mnhnl_getAttrID($auth, $args, 'location', $filterAttr[0]);
+              $custom_terms['attr_'.$idxN]=lang::get($filterAttr[0]);
+              $idxN++;
+              break;
+        }
+      }
+    }
     $r = call_user_func(array(get_called_class(), 'getSampleListGridPreamble'));
     $r .= data_entry_helper::report_grid(array(
       'id' => 'samples-grid',
@@ -233,15 +305,7 @@ jQuery('[name=targetSpecies]').change();
       'columns' => call_user_func(array(get_called_class(), 'getReportActions')),
       'itemsPerPage' =>(isset($args['grid_num_rows']) ? $args['grid_num_rows'] : 25),
       'autoParamsForm' => true,
-      'extraParams' => array(
-        'survey_id'=>$args['survey_id'], 
-        'userID_attr_id'=>$userIdAttr,
-        'userID'=>(iform_loctools_checkaccess($node,'superuser') ? -1 :  $user->uid), // use -1 if superuser - non logged in will not get this far.
-        'userName_attr_id'=>$userNameAttr,
-        'userName'=>($user->name),
-        'target_species_attr_id'=>$targetSpeciesIdAttr
-    )
-    ));	
+      'extraParams' => $extraParams));	
     $r .= '<form>';    
     if (isset($args['multiple_occurrence_mode']) && $args['multiple_occurrence_mode']=='either') {
       $r .= '<input type="button" value="'.lang::get('LANG_Add_Sample_Single').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'newSample')).'\'">';
@@ -620,8 +684,6 @@ jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:
             ,'fieldprefix'=>'{MyPrefix}:smpAttr'
             ,'extraParams'=>$auth['read']
             ,'survey_id'=>$args['survey_id']), true);
-    // TODO All existing filled in target methods must have any select controls mandatory: need data!
-    // TODO        $subSamplesAttrs[$sample['id']][$visitAttr]['validation_rules']='required';
       }
     }
     // targ:sampleID:termlist_meaning_id:presence|smpAttr:attrdetails.
@@ -697,7 +759,8 @@ speciesRows = jQuery('.species-grid > tbody').find('tr');
 for(var j=0; j<speciesRows.length; j++){
 	occAttrs = jQuery(speciesRows[j]).find('.scOccAttrCell');
 	occAttrs.find('.scCount').addClass('required').attr('min',1).after('<span class=\"deh-required\">*</span>');
-	occAttrs.find('select').addClass('required').width('auto').after('<span class=\"deh-required\">*</span>');
+	occAttrs.find('select').not('.scUnits').addClass('required').width('auto').after('<span class=\"deh-required\">*</span>');
+	occAttrs.find('.scUnits').width('auto');
 }
 hook_species_checklist_pre_delete_row=function(e) {
     return confirm(\"".lang::get('Are you sure you want to delete this row?')."\");

@@ -52,7 +52,7 @@ function iform_mnhnl_getParameters() {
           'type'=>'select',
           'options' => array(
             'single' => 'Simple site choice, no parent locations',
-            'singleFiltered' => 'Filtered site choice, no parent locations',
+            'filtered' => 'Filtered site choice',
             'parent' => 'Single site chosen using a Parent location',
             'multi' => 'Multiple sites (under a parent Location) processed at the same time.'
           ),
@@ -238,7 +238,7 @@ function iform_mnhnl_locModTool($auth, $args, $node) {
   if (!isset($args['clientSideValidation']) || $args['clientSideValidation'])
       data_entry_helper::enable_validation('entry_form');
   if($args['locationMode']=='multi') $args['locationMode']='parent';
-  if($args['locationMode']=='singleFiltered') $args['locationMode']='single';
+//  if($args['locationMode']=='filtered') $args['locationMode']='single';
   data_entry_helper::$entity_to_load=array();
   if($args['shpFileDownloadURL']==""){
     $retVal = "<div id=\"locations\">";
@@ -279,7 +279,7 @@ function iform_mnhnl_locModTool($auth, $args, $node) {
       'ide'=>'location-comment',
       'fieldname'=>'location:comment',
       'label'=>lang::get("LANG_LocationModTool_CommentLabel")))."<br />";
-  $retVal .= iform_mnhnl_locationattributes($auth, $args, '', array("lookUpKey"=>"meaning_id", "sep"=>" ", "class"=>"wide"));
+  $retVal .= iform_mnhnl_locationattributes($auth, $args, '', array("lookUpKey"=>"meaning_id", "sep"=>" ", "class"=>"wide","tabNameFilter"=>""));
   $retVal .= "<label for=\"location-delete\">".lang::get("LANG_LocModTool_DeleteLabel").":</label> <input type=checkbox id=\"location-delete\" name=\"location:deleted\" value='t'><br />
   <p>".lang::get("LANG_LocModTool_DeleteInstructions")."</p>";
   $retVal .= iform_mnhnl_SrefFields($auth, $args, true);
@@ -352,7 +352,7 @@ function iform_mnhnl_lux5kgridControl($auth, $args, $node, $options) {
                                     'mainFieldName' => 'dummy:location_id'
                               ), $options);
        break;
-      default : // parent and single, singleFiltered
+      default : // parent, single, filtered
        $options = array_merge(array('parentFieldID' => 'location_parent_id',
                                     'parentFieldName' => 'location:parent_id',
                                     'mainFieldID' => 'location_id',
@@ -766,7 +766,7 @@ loadFeatures = function(parent_id, child_id, childArgs, loadParent, setSelectOpt
             if(typeof hook_ChildFeatureLoad != 'undefined') hook_ChildFeatureLoad(feature, data[i], child_id, childArgs);
           }
           recalcNumSites();
-          ".($args['locationMode']=='single'||$args['locationMode']=='singleFiltered' ? "" : "if(setSelectOptions) ")."populateExtensions(locationList);
+          ".($args['locationMode']=='single'||$args['locationMode']=='filtered' ? "" : "if(setSelectOptions) ")."populateExtensions(locationList);
         } else if(setSelectOptions){
           setPermissionsNoParent();
           jQuery('#".$options['mainFieldID']."').append('<option value=\"\">".lang::get("LANG_NoSitesInSquare")."</option>');
@@ -845,8 +845,8 @@ populateExtensions = function(locids){
         locList[j].template = templateReplace(locList[j].template, locList[j].id, data);
         SiteLabelLayer.removeFeatures([locList[j].feature]);
         locList[j].feature.style.label = locList[j].template;
-        SiteLabelLayer.addFeatures([locList[j].feature]);".
-($args['locationMode']!='singleFiltered' ? 
+        SiteLabelLayer.addFeatures([locList[j].feature]);\n".
+($args['locationMode']!='filtered' ? 
 "        var myOption = jQuery(\"#".$options['mainFieldID']."\").find('option').filter('[value='+locList[j].id+']').empty();
 ".($args['SecondaryLocationTypeTerm']!='' ?
 "        if(locList[j].feature.attributes.data.location_type_id == $primary)
@@ -1090,7 +1090,7 @@ if (typeof hook_new_site_added == 'undefined')
 };
 addDrawnPointToSelection = function(geometry) {
   // we assume that we have a point geometry.
-".($args['locationMode']!='single' && $args['locationMode']!='singleFiltered' ?
+".($args['locationMode']!='single' && $args['locationMode']!='filtered' ?
 "  if(ParentLocationLayer.features.length == 0) return;
   if(!ParentLocationLayer.features[0].geometry.intersects(geometry))
     alert(\"".lang::get('LANG_PointOutsideParent')."\");
@@ -1157,7 +1157,7 @@ addDrawnPointToSelection = function(geometry) {
   return true;
 }
 addDrawnLineToSelection = function(geometry) {
-".($args['locationMode']!='single' && $args['locationMode']!='singleFiltered' ?
+".($args['locationMode']!='single' && $args['locationMode']!='filtered' ?
 "  if(ParentLocationLayer.features.length == 0) return;
 " : "").
 "  var points = geometry.getVertices();
@@ -1165,7 +1165,7 @@ addDrawnLineToSelection = function(geometry) {
     alert(\"".lang::get('LANG_TooFewLinePoints')."\");
     return false;
   }
-".($args['locationMode']!='single' && $args['locationMode']!='singleFiltered' ?
+".($args['locationMode']!='single' && $args['locationMode']!='filtered' ?
 "  var centre = getCentroid(geometry);
   if(!ParentLocationLayer.features[0].geometry.intersects(centre))
     alert(\"".lang::get('LANG_LineOutsideParent')."\");
@@ -1229,7 +1229,7 @@ addDrawnLineToSelection = function(geometry) {
   return true;
 }
 addDrawnPolygonToSelection = function(geometry) {
-".($args['locationMode']!='single' && $args['locationMode']!='singleFiltered' ?
+".($args['locationMode']!='single' && $args['locationMode']!='filtered' ?
 "  if(ParentLocationLayer.features.length == 0) return;
 " : "").
 "  var points = geometry.components[0].getVertices();
@@ -1237,7 +1237,7 @@ addDrawnPolygonToSelection = function(geometry) {
     alert(\"".lang::get('LANG_TooFewPoints')."\");
     return false;
   }
-".($args['locationMode']!='single' && $args['locationMode']!='singleFiltered' ?
+".($args['locationMode']!='single' && $args['locationMode']!='filtered' ?
 "  var centre = getCentroid(geometry);
   if(!ParentLocationLayer.features[0].geometry.intersects(centre))
     alert(\"".lang::get('LANG_PolygonOutsideParent')."\");
@@ -1304,7 +1304,7 @@ onFeatureModified = function(evt) {
   var feature = evt.feature;
   switch(feature.geometry.CLASS_NAME){
     case \"OpenLayers.Geometry.Point\":
-".($args['locationMode']!='single' && $args['locationMode']!='singleFiltered' ?
+".($args['locationMode']!='single' && $args['locationMode']!='filtered' ?
 "      if(!ParentLocationLayer.features[0].geometry.intersects(feature.geometry))
         alert(\"".lang::get('LANG_PointOutsideParent')."\");
 " : "").
@@ -1315,7 +1315,7 @@ onFeatureModified = function(evt) {
         modPointFeature.unselectFeature(feature);
         SitePointLayer.destroyFeatures([feature]);
       }
-".($args['locationMode']!='single' && $args['locationMode']!='singleFiltered' ?
+".($args['locationMode']!='single' && $args['locationMode']!='filtered' ?
 "      var centre = getCentroid(feature.geometry);
       if(!ParentLocationLayer.features[0].geometry.intersects(centre))
         alert(\"".lang::get('LANG_PointOutsideParent')."\");
@@ -1329,7 +1329,7 @@ onFeatureModified = function(evt) {
         modPathFeature.unselectFeature(feature);
         SitePathLayer.destroyFeatures([feature]);
       }
-".($args['locationMode']!='single' && $args['locationMode']!='singleFiltered' ?
+".($args['locationMode']!='single' && $args['locationMode']!='filtered' ?
 "      else {
         var centre = getCentroid(feature.geometry);
         if(!ParentLocationLayer.features[0].geometry.intersects(centre))
@@ -1357,7 +1357,7 @@ onFeatureModified = function(evt) {
         modPathFeature.unselectFeature(feature);
         SitePathLayer.destroyFeatures([feature]);
       }
-".($args['locationMode']!='single' && $args['locationMode']!='singleFiltered' ?
+".($args['locationMode']!='single' && $args['locationMode']!='filtered' ?
 "      else {
         var centre = getCentroid(feature.geometry);
         if(!ParentLocationLayer.features[0].geometry.intersects(centre))
@@ -1372,7 +1372,7 @@ onFeatureModified = function(evt) {
         modAreaFeature.unselectFeature(feature);
         SiteAreaLayer.destroyFeatures([feature]);
       }
-".($args['locationMode']!='single' && $args['locationMode']!='singleFiltered' ?
+".($args['locationMode']!='single' && $args['locationMode']!='filtered' ?
 "      else {
         var centre = getCentroid(feature.geometry);
         if(!ParentLocationLayer.features[0].geometry.intersects(centre))
@@ -1400,7 +1400,7 @@ onFeatureModified = function(evt) {
         modAreaFeature.unselectFeature(feature);
         SiteAreaLayer.destroyFeatures([feature]);
       }
-".($args['locationMode']!='single' && $args['locationMode']!='singleFiltered' ?
+".($args['locationMode']!='single' && $args['locationMode']!='filtered' ?
 "      else {
         var centre = getCentroid(feature.geometry);
         if(!ParentLocationLayer.features[0].geometry.intersects(centre))
@@ -1537,7 +1537,7 @@ selectFeatureActivate = function(){
     modPathFeature.deactivate();
     modPointFeature.deactivate();
     resetVertices();
-".($args['locationMode']!='single' && $args['locationMode']!='singleFiltered' ?
+".($args['locationMode']!='single' && $args['locationMode']!='filtered' ?
 "    if(!ParentLocationLayer.features.length) {
       selectFeature.deactivate();
       return false;
@@ -1552,7 +1552,7 @@ polygonDrawActivate = function(){
   modPointFeature.deactivate();
   modPathFeature.deactivate();
   resetVertices();
-".($args['locationMode']!='single'  && $args['locationMode']!='singleFiltered' ?
+".($args['locationMode']!='single'  && $args['locationMode']!='filtered' ?
 "  if(!ParentLocationLayer.features.length) {
     polygonDraw.deactivate();
     return false;
@@ -1596,7 +1596,7 @@ lineDrawActivate = function(){
   modPointFeature.deactivate();
   modAreaFeature.deactivate();
   resetVertices();
-".($args['locationMode']!='single' && $args['locationMode']!='singleFiltered' ?
+".($args['locationMode']!='single' && $args['locationMode']!='filtered' ?
 "  if(!ParentLocationLayer.features.length) {
     lineDraw.deactivate();
     return false;
@@ -1645,7 +1645,7 @@ pointDrawActivate = function(){
   modAreaFeature.deactivate();
   modPathFeature.deactivate();
   resetVertices();
-".($args['locationMode']!='single' && $args['locationMode']!='singleFiltered' ?
+".($args['locationMode']!='single' && $args['locationMode']!='filtered' ?
 "  if(!ParentLocationLayer.features.length) {
     pointDraw.deactivate();
     return false;
@@ -1702,7 +1702,7 @@ MyEditingToolbar=OpenLayers.Class(
 				         ,new OpenLayers.Control.Button({displayClass: \"olControlStartNewSite\", trigger: StartNewSite, title: '".lang::get('LANG_StartNewSite')."'})
 " : '').
 "				         ,new OpenLayers.Control.Button({displayClass: \"olControlZoomToSite\", trigger: ZoomToSite, title: '".lang::get('LANG_ZoomToSite')."'})
-".($args['locationMode'] != 'single' && $args['locationMode']!='singleFiltered' ? "				         ,new OpenLayers.Control.Button({displayClass: \"olControlZoomToSquare\", trigger: ZoomToParent, title: '".lang::get('LANG_ZoomToParent')."'})
+".($args['locationMode'] != 'single' && $args['locationMode']!='filtered' ? "				         ,new OpenLayers.Control.Button({displayClass: \"olControlZoomToSquare\", trigger: ZoomToParent, title: '".lang::get('LANG_ZoomToParent')."'})
 " : '').
 "				         ,new OpenLayers.Control.Button({displayClass: \"olControlZoomToCountry\", trigger: ZoomToCountry, title: '".lang::get('LANG_ZoomToCountry')."'})
 				         ]);
@@ -1795,15 +1795,15 @@ mapInitialisationHooks.push(function(mapdiv) {
     		data_entry_helper::$javascript .= "	loadFeatures(".data_entry_helper::$entity_to_load['sample:location_id'].",'',{initial: true}, true, true);\n";
     		break;
     	case 'single':
-    	case 'singleFiltered':
+    	case 'filtered':
     		data_entry_helper::$javascript .= "	loadFeatures('',".data_entry_helper::$entity_to_load['location:id'].",{initial: true}, false, false);\n";
       		break;
     	default: // mode = parent
       		data_entry_helper::$javascript .= "	loadFeatures(".data_entry_helper::$entity_to_load['location:parent_id'].",".data_entry_helper::$entity_to_load['location:id'].",{initial: true}, true, true);\n"; 
       }
-    } else if($args['locationMode']=='single' || $args['locationMode']=='singleFiltered'){
+    } else if($args['locationMode']=='single' || $args['locationMode']=='filtered'){
       data_entry_helper::$javascript .= "	loadFeatures('','',{initial: true}, false, false);\n";
-    } else { // either multi or parent with non specified at the moment.
+    } else { // either multi, parent with none specified at the moment.
       data_entry_helper::$javascript .= "	setPermissionsNoParent();\n";
     }
     data_entry_helper::$javascript .= "});
@@ -2013,11 +2013,23 @@ jQuery('#".$options['mainFieldID']."').change(function(){
         data_entry_helper::apply_template($locOptions['template'], $locOptions).
         ($args['includeNumSites'] ? '<label for="dummy-num-sites" class=\"auto-width\">'.lang::get('LANG_NumSites').':</label> <input id="dummy-num-sites" name="dummy:num-sites" class="checkNumSites narrow" readonly="readonly"><br />
 ' : '').'<p>'.$options['Instructions2'].'</p>';
-      if($args['locationMode']=='parent'){
-        // choose a single site from a parent, so built site selector drop down.
-        // parent uses ID locModTool
-        $opts = "";
-        $locOptions = array('label'=>$options['mainFieldLabel'],
+    }
+    if($args['locationMode']=='parent'){
+      $retVal .= "<input type='hidden' id=\"sample-location-id\" name=\"sample:location_id\" value='".data_entry_helper::$entity_to_load['sample:location_id']."' />";
+      data_entry_helper::$javascript .= "
+jQuery(\"#".$options['parentFieldID']."\").change(function(){
+  jQuery(\"#imp-geom,#imp-boundary-geom,#imp-sref,#imp-srefX,#imp-srefY\").val('');
+  jQuery(\"#".$options['mainFieldID'].",#sample-location-id,#location-name,#sample-location-name\").val('');
+  jQuery(\"#location_location_type_id\").val('$primary');
+  loadFeatures(this.value, '', {initial: false}, true, true);
+  if(typeof hook_mnhnl_parent_changed != 'undefined')
+    hook_mnhnl_parent_changed();
+});
+";
+      // choose a single site from a parent, so built site selector drop down.
+      // parent uses ID locModTool
+      $opts = "";
+      $locOptions = array('label'=>$options['mainFieldLabel'],
     					'id'=>$options['mainFieldID'],
     					'table'=>'location',
     					'fieldname'=>$options['mainFieldName'], // 'sample:location_id'
@@ -2031,29 +2043,29 @@ jQuery('#".$options['mainFieldID']."').change(function(){
     								'orderby'=>'name',
     								'location_type_id'=>$loctypeParam,
     								'deleted'=>'f')));
-        if(isset(data_entry_helper::$entity_to_load["sample:id"])){ // if preloaded, then drop down is dependant on value in parent field: if not then get user to enter parent first
-          $response = data_entry_helper::get_population_data($locOptions);
-           if (isset($response['error'])) return "CHILD LOOKUP ERROR:  ".$response['error'];
-          $opts .= str_replace(array('{value}', '{caption}', '{selected}'),
+      if(isset(data_entry_helper::$entity_to_load["sample:id"])){ // if preloaded, then drop down is dependant on value in parent field: if not then get user to enter parent first
+        $response = data_entry_helper::get_population_data($locOptions);
+        if (isset($response['error'])) return "CHILD LOOKUP ERROR:  ".$response['error'];
+        $opts .= str_replace(array('{value}', '{caption}', '{selected}'),
                          array('', htmlentities(lang::get('LANG_CommonEmptyLocationID')), ''),
                          $indicia_templates[$locOptions['itemTemplate']]);
-          foreach ($response as $record) {
-            $caption = htmlspecialchars($record[$locOptions['captionField']]); // it will be extended using a attribute template by JS
-            $opts .= str_replace(array('{value}', '{caption}', '{selected}'),
+        foreach ($response as $record) {
+          $caption = htmlspecialchars($record[$locOptions['captionField']]); // it will be extended using a attribute template by JS
+          $opts .= str_replace(array('{value}', '{caption}', '{selected}'),
                                array($record[$locOptions['valueField']], htmlentities($caption),
                                      isset(data_entry_helper::$entity_to_load['location:id']) ? (data_entry_helper::$entity_to_load['sample:location_id'] == $record[$locOptions['valueField']] ? 'selected=selected' : '') : ''),
                                $indicia_templates[$locOptions['itemTemplate']]);
-          }
-        } else {
-          $opts = "<option >".lang::get("LANG_CommonChooseParentFirst")."</option>";
         }
-        $locOptions['items'] = $opts;
-        // single site requires all location data in main form. Mult site must have array: depends on implementation so left to actual form.
-        $retVal .= data_entry_helper::apply_template($locOptions['template'], $locOptions)."<br />";
-        if($args['siteNameTermListID']== '') {
-          $retVal .= "<label for=\"location-name\">".$options['NameLabel'].":</label> <input type='text' id=\"location-name\" name=\"location:name\" class='required wide' value=\"".htmlspecialchars(data_entry_helper::$entity_to_load['location:name'])."\" /><span class='deh-required'>*</span><br/>";
-        } else {
-          $retVal .= data_entry_helper::select(array(
+      } else {
+        $opts = "<option >".lang::get("LANG_CommonChooseParentFirst")."</option>";
+      }
+      $locOptions['items'] = $opts;
+      // single site requires all location data in main form. Mult site must have array: depends on implementation so left to actual form.
+      $retVal .= data_entry_helper::apply_template($locOptions['template'], $locOptions)."<br />";
+      if($args['siteNameTermListID']== '') {
+        $retVal .= "<label for=\"location-name\">".$options['NameLabel'].":</label> <input type='text' id=\"location-name\" name=\"location:name\" class='required wide' value=\"".htmlspecialchars(data_entry_helper::$entity_to_load['location:name'])."\" /><span class='deh-required'>*</span><br/>";
+      } else {
+        $retVal .= data_entry_helper::select(array(
             'label'=>$options['NameLabel'], 
             'id'=>'location-name',
             'fieldname'=>'location:name',
@@ -2061,42 +2073,32 @@ jQuery('#".$options['mainFieldID']."').change(function(){
             'captionField'=>'term',
             'valueField'=>'term',
             'extraParams' => $auth['read'] + array('termlist_id'=>$args['siteNameTermListID'], 'orderby'=>'id')
-          ));
-        }
-        $retVal .= "<input type='hidden' id=\"sample-location-id\" name=\"sample:location_id\" value='".data_entry_helper::$entity_to_load['sample:location_id']."' />";
-        data_entry_helper::$javascript .= "
-jQuery(\"#".$options['parentFieldID']."\").change(function(){
-  jQuery(\"#imp-geom,#imp-boundary-geom,#imp-sref,#imp-srefX,#imp-srefY\").val('');
-  jQuery(\"#".$options['mainFieldID'].",#sample-location-id,#location-name,#sample-location-name\").val('');
-  jQuery(\"#location_location_type_id\").val('$primary');
-  loadFeatures(this.value, '', {initial: false}, true, true);
-});
-";
+        ));
+      }
+    } else if($args['locationMode'] == 'multi'){
+      // multiSite needs the location name.
+      if($args['siteNameTermListID']== '') {
+        $retVal .= "<label for=\"dummy-name\">".$options['NameLabel'].":</label> <input type='text' id=\"dummy-name\" name=\"dummy:name\" class='wide' value=\"".htmlspecialchars(data_entry_helper::$entity_to_load['location:name'])."\" /><span class='deh-required'>*</span><br/>";
       } else {
-      	// multiSite needs the location name.
-        if($args['siteNameTermListID']== '') {
-          $retVal .= "<label for=\"dummy-name\">".$options['NameLabel'].":</label> <input type='text' id=\"dummy-name\" name=\"dummy:name\" class='wide' value=\"".htmlspecialchars(data_entry_helper::$entity_to_load['location:name'])."\" /><span class='deh-required'>*</span><br/>";
-        } else {
-          $retVal .= data_entry_helper::select(array(
-            'label'=>$options['NameLabel'], 
-            'id'=>'dummy-name',
-            'fieldname'=>'dummy:name',
-            'table'=>'termlists_term',
-            'captionField'=>'term',
-            'valueField'=>'term',
-            'blankText'=>'',
-            'class'=>'checkGrid',
-            'extraParams' => $auth['read'] + array('termlist_id'=>$args['siteNameTermListID'], 'orderby'=>'id')
-          ));
-        }
-      	data_entry_helper::$javascript .= "
+        $retVal .= data_entry_helper::select(array(
+          'label'=>$options['NameLabel'], 
+          'id'=>'dummy-name',
+          'fieldname'=>'dummy:name',
+          'table'=>'termlists_term',
+          'captionField'=>'term',
+          'valueField'=>'term',
+          'blankText'=>'',
+          'class'=>'checkGrid',
+          'extraParams' => $auth['read'] + array('termlist_id'=>$args['siteNameTermListID'], 'orderby'=>'id')
+        ));
+      }
+      data_entry_helper::$javascript .= "
 jQuery(\"#".$options['parentFieldID']."\").change(function(){
   if(typeof hook_mnhnl_parent_changed != 'undefined')
     hook_mnhnl_parent_changed();
   loadFeatures(this.value, '', {initial : false}, true, true);
 });
 ";
-      }
     } else if($args['locationMode']=='single'){ // no parent look up: actual name is a text entry field.
       $location_list_args=array(
           'nocache'=>true,
@@ -2131,9 +2133,6 @@ jQuery(\"#".$options['parentFieldID']."\").change(function(){
       }
       $retVal .= '<p>'.$options['Instructions2'].'</p><fieldset><legend>'.lang::get('Existing locations').'</legend>';
       if($NameOpts != ''){
-//        $location_list_args['label']=$location_list_args['NameLabel'];
-//        $location_list_args['fieldname']=$location_list_args['NameFieldName'];
-//        $location_list_args['id']=$location_list_args['NameID'];
         $location_list_args['items'] = str_replace(array('{value}', '{caption}', '{selected}'),
           array('', htmlentities($location_list_args['NameBlankText']), ''),
           $indicia_templates[$location_list_args['itemTemplate']]).$NameOpts;
@@ -2164,41 +2163,44 @@ jQuery(\"#".$options['parentFieldID']."\").change(function(){
       $locationAttributes = data_entry_helper::getAttributes($attrArgs, false);
       if($args['LocationTypeTerm']=='' && isset($args['loctoolsLocTypeID'])) $args['LocationTypeTerm']=$args['loctoolsLocTypeID'];
       $primary = iform_mnhnl_getTermID($auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
-      $prevAttr=null;
-      $filterAttrs[]="Name";
-      $defaultsFunction="hook_set_defaults = function(copyFilter){ // note we do not set the name
-  if(!copyFilter) return\n";
+      $filterAttrs[]="Name"; // always add the location name special case to the filter list.
+      $defaultsFunction="hook_set_defaults = function(copyFilter){ // note we do not set the name\n  if(!copyFilter) return\n";
       $loadFunction="hook_loadFilters = function(){\n";
+      $prevAttr=null;
       foreach($filterAttrs as $idx=>$filterAttr){
-        if($filterAttr!="Name"){
+        $filterAttr=explode(':',$filterAttr);
+        if($filterAttr[0]!="Name"){
           $attr = "";
           foreach($locationAttributes as $locationAttribute)
-            if($locationAttribute['untranslatedCaption']==$filterAttr || $locationAttribute['attributeId']==$filterAttr)
+            if($locationAttribute['untranslatedCaption']==$filterAttr[0] ||
+                (($filterAttr[0]=="Parent" || $filterAttr[0]=="Display") && $locationAttribute['untranslatedCaption']==$filterAttr[1]))
               $attr=$locationAttribute;
-          if($attr==""){
-            $retVal .= '<p>'.lang::get("Location Module: Could not find attribute ").$filterAttr.'</p>';
-            continue;
-          }
+          if($attr=="")
+            return '<p>'.lang::get("Location Module: Could not find attribute ").$filterAttr[$filterAttr[0]=="Parent" || $filterAttr[0]=="Display"?1:0].'</p>';
         }
-      	switch($filterAttr){
-      		case "Commune": //special case
+        for($nextIdx=$idx+1;$nextIdx<count($filterAttrs) && substr($filterAttrs[$nextIdx],0,7)=="Display";$nextIdx++);
+        // need to add functionality to tie locations to a square, even if not in use (for sites form)
+      	// also this form must fill in a hidden commune field.
+        switch($filterAttr[0]){
+      		case "Parent": //special case, assume only one of these in a form.
       			$retVal .= '<label>'.$attr['caption'].':</label> <select id="filterSelect'.$idx.'"></select><br/>';
+      			if($filterAttr[3]!='')
+                  $parentLocTypeID = iform_mnhnl_getTermID($auth,$args['locationTypeTermListExtKey'],$filterAttr[3]);
       			// proxiedurl,featurePrefix,featureType,geometryName,featureNS,srsName,propertyNames
-      			$protocol = explode(',', $args['communeLayerLookup']);
+      			$protocol = explode(',', ($filterAttr[1]=="Commune" ? $args['communeLayerLookup'] : $args['locationLayerLookup']));
 				data_entry_helper::$javascript .="
 jQuery('#locAttr\\\\:".$attr['attributeId']."').attr('readonly','readonly');
 filterLoad".$idx." = function(value){
   jQuery('#filterSelect".$idx."').empty().data('storedValue',value).append('<option value=\"'+value+'\" selected=\"selected\" >'+value+'</option>');
   var protocol = new OpenLayers.Protocol.WFS({
-    url:  '".$protocol[0]."',featurePrefix: '".$protocol[1]."',featureType: '".$protocol[2]."',geometryName: '".$protocol[3]."',featureNS: '".$protocol[4]."',srsName: '".$protocol[5]."',version: '1.1.0',sortBy: '".$protocol[6]."',propertyNames: ['".$protocol[6]."']
-   ,callback:function(data){
+    url:  '".$protocol[0]."',featurePrefix: '".$protocol[1]."',featureType: '".$protocol[2]."',geometryName: '".$protocol[3]."',featureNS: '".$protocol[4]."',srsName: '".$protocol[5]."',version: '1.1.0',sortBy: '".$protocol[6]."',propertyNames: ['".$protocol[6].($filterAttr[3]!=''?"','location_type_id":'')."']
+    ,callback:function(data){
       jQuery('#filterSelect".$idx."').empty().append('<option value=\"\">".lang::get("Please select...")."</option>');
-      var communeNames=[];
-      for(var i=0; i<data.features.length; i++) communeNames.push(data.features[i].attributes['".$protocol[6]."']);
-      communeNames.sort();
-      for(var i=0; i<communeNames.length; i++) jQuery('#filterSelect".$idx."').append('<option value=\"'+communeNames[i]+'\">'+communeNames[i]+'</option>');
-      if(jQuery('#filterSelect".$idx."').data('storedValue')!='')
-        jQuery('#filterSelect".$idx."').val(jQuery('#filterSelect".$idx."').data('storedValue'));
+      var names=[];
+      for(var i=0; i<data.features.length; i++) names.push(data.features[i].attributes['".$protocol[6]."']);
+      names.sort(); // the sort WFS does not work...
+      for(var i=0; i<names.length; i++) jQuery('#filterSelect".$idx."').append('<option value=\"'+names[i]+'\">'+names[i]+'</option>');
+      if(jQuery('#filterSelect".$idx."').data('storedValue')!='') jQuery('#filterSelect".$idx."').val(jQuery('#filterSelect".$idx."').data('storedValue'));
       jQuery.getJSON(\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/LocationSearch/mnhnl_search0.xml&reportSource=local&mode=json&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&location_attr_1_id=".$attr['attributeId']."&location_type_id=".$primary."&callback=?\",
         function(data) {
           if(data instanceof Array && data.length>0){
@@ -2209,55 +2211,53 @@ filterLoad".$idx." = function(value){
               // more than one shouldn't happen so ignore              
         }}});
   }});
-  protocol.read();
+  protocol.read(".($filterAttr[3]!=''?"{filter: new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.EQUAL_TO, property: 'location_type_id', value: '".$parentLocTypeID."'})}":'').");
 }
-displayCommune = function(){
+displayParent = function(){
   ParentLocationLayer.destroyFeatures();
   if(jQuery('#filterSelect".$idx."').val()=='') return;
   var protocol = new OpenLayers.Protocol.WFS({
     url:  '".$protocol[0]."',featurePrefix: '".$protocol[1]."',featureType: '".$protocol[2]."',geometryName: '".$protocol[3]."',featureNS: '".$protocol[4]."',srsName: 'EPSG:3857',version: '1.1.0',propertyNames: ['".$protocol[6]."','".$protocol[3]."']
    ,callback:function(data){
-      if(data.features.length>0)
+      if(data.features.length>0){
         ParentLocationLayer.addFeatures(data.features);
-      ZoomToParent();
-  }});
-  var filter = new OpenLayers.Filter.Comparison({
-  		type: OpenLayers.Filter.Comparison.EQUAL_TO ,
-    	property: '".$protocol[6]."',
-    	value: jQuery('#filterSelect".$idx."').val()
-  });
-  protocol.read({filter: filter});
+        ZoomToParent();
+      }}});
+  var filter = new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.EQUAL_TO, property: '".$protocol[6]."', value: jQuery('#filterSelect".$idx."').val()});\n".
+($filterAttr[3]!=''?"  filter = new OpenLayers.Filter.Logical({type:OpenLayers.Filter.Logical.AND, filters:[filter, new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.EQUAL_TO, property: 'location_type_id', value: '".$parentLocTypeID."'})]});\n":'').
+"  protocol.read({filter: filter});
 }
-hook_setSref = function(geom){
- jQuery('#filterSelect".$idx."').ajaxStop(function(event){
-  var protocol = new OpenLayers.Protocol.WFS({
-    url:  '".$protocol[0]."',featurePrefix: '".$protocol[1]."',featureType: '".$protocol[2]."',geometryName:'".$protocol[3]."',featureNS: '".$protocol[4]."',srsName: '".$protocol[5]."',version: '1.1.0',propertyNames: [\"".$protocol[6]."\",'".$protocol[3]."']
-   ,callback: function(a1){
-      if(a1.error && (typeof a1.error.success == 'undefined' || a1.error.success == false)){
-        alert(\"".lang::get('LANG_CommuneLookUpFailed')."\");
-        return;
-      }
-      if(a1.features.length > 0) {
-        if(jQuery('#filterSelect".$idx."').val() == '' || // commune not currently filled in
-            (jQuery('#filterSelect".$idx."').val() != a1.features[0].attributes[\"".$protocol[6]."\"] && confirm(\"".lang::get('LANG_PositionInDifferentCommune')."\"))) {
-          ParentLocationLayer.destroyFeatures();
-          ParentLocationLayer.addFeatures(a1.features);
-          jQuery('#filterSelect".$idx."').val(a1.features[0].attributes[\"".$protocol[6]."\"]);
-          jQuery('#locAttr\\\\:".$attr['attributeId']."').val(a1.features[0].attributes[\"".$protocol[6]."\"]);
-          filterLoad".($idx+1)."('');\n";
-				foreach($filterAttrs as $idx1=>$filterAttr1)
-					if($idx1 > $idx+1 && $idx1<count($filterAttrs)-1) // don't do name
+hook_setSref_".$idx." = function(geom){
+  jQuery('#filterSelect".$idx."').ajaxStop(function(event){
+    var protocol = new OpenLayers.Protocol.WFS({
+      url:  '".$protocol[0]."',featurePrefix: '".$protocol[1]."',featureType: '".$protocol[2]."',geometryName:'".$protocol[3]."',featureNS: '".$protocol[4]."',srsName: '".$protocol[5]."',version: '1.1.0',propertyNames: [\"".$protocol[6]."\",'".$protocol[3]."']
+     ,callback: function(a1){
+        if(a1.error && (typeof a1.error.success == 'undefined' || a1.error.success == false)){
+          alert(\"".lang::get('LANG_'.$filterAttr[1].'LookUpFailed')."\");
+          return;
+        }
+        if(a1.features.length > 0) {
+          if(jQuery('#filterSelect".$idx."').val() == '' || // not currently filled in
+              (jQuery('#filterSelect".$idx."').val() != a1.features[0].attributes[\"".$protocol[6]."\"] && confirm(\"".lang::get('LANG_PositionInDifferent'.$filterAttr[1])."\"))) {
+            ParentLocationLayer.destroyFeatures();
+            ParentLocationLayer.addFeatures(a1.features);
+            jQuery('#filterSelect".$idx."').val(a1.features[0].attributes[\"".$protocol[6]."\"]);
+            jQuery('#locAttr\\\\:".$attr['attributeId']."').val(a1.features[0].attributes[\"".$protocol[6]."\"]);
+            filterLoad".$nextIdx."('');\n";
+				foreach($filterAttrs as $idx1=>$filterAttr1) // just need index, so don't explode
+					if($idx1 > $nextIdx && $idx1<count($filterAttrs)-1) // don't do name
 					  data_entry_helper::$javascript .="  filterReset".($idx1)."();\n";
 				data_entry_helper::$javascript .="
         }
-      } else {
-        alert(\"".lang::get('LANG_PositionOutsideCommune')."\");
-        jQuery('#locAttr\\\\:".$attr['attributeId']."').val('');
+      } else {\n".
+($filterAttr[2]=='true'?"        alert(\"".lang::get('LANG_PositionOutside'.$filterAttr[1])."\");\n":'').
+"        jQuery('#locAttr\\\\:".$attr['attributeId']."').val('');
       }
     }
   });
-  var filter = new OpenLayers.Filter.Spatial({type: OpenLayers.Filter.Spatial.CONTAINS,property: '".$parts[3]."',value: geom});
-  protocol.read({filter: filter});
+  var filter = new OpenLayers.Filter.Spatial({type: OpenLayers.Filter.Spatial.CONTAINS,property: '".$parts[3]."',value: geom});\n".
+($filterAttr[3]!=''?"  filter = new OpenLayers.Filter.Logical({type:OpenLayers.Filter.Logical.AND, filters:[filter, new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.EQUAL_TO, property: 'location_type_id', value: '".$parentLocTypeID."'})]});\n":'').
+"  protocol.read({filter: filter});
   $(this).unbind(event);
  }); 
 };
@@ -2266,19 +2266,52 @@ filterLoad".$idx."('".$attr['default']."');
 jQuery('#filterSelect".$idx."').change(function(){
   jQuery('#locAttr\\\\:".$attr['attributeId']."').val(jQuery('#filterSelect".$idx."').val());
   SetFilterNewLocation();
-  filterLoad".($idx+1)."('');\n";
+  filterLoad".$nextIdx."('');\n";
 				foreach($filterAttrs as $idx1=>$filterAttr1)
-					if($idx1 > $idx+1)
+					if($idx1 > $nextIdx)
 					  data_entry_helper::$javascript .="  filterReset".($idx1)."();\n";
-				data_entry_helper::$javascript .="  displayCommune();\n});\n";
+				data_entry_helper::$javascript .="  displayParent();\n});\n";
 				$defaultsFunction .= "  jQuery('#locAttr\\\\:".$attr['attributeId']."').val(jQuery('#filterSelect".$idx."').val());\n";
 				$loadFunction .= "  jQuery('#filterSelect".$idx."').val(jQuery('#locAttr\\\\:".$attr['attributeId']."').val());\n";
+				$prevAttr=$filterAttr;
 				break;
+
+      		case "Display": //special case, actual field will be displayed by normal functionality. Must be placed at end of list.
+      			$protocol = explode(',', ($filterAttr[1]=="Commune" ? $args['communeLayerLookup'] : $args['locationLayerLookup']));
+      			if($filterAttr[3]!='')
+                  $parentLocTypeID = iform_mnhnl_getTermID($auth,$args['locationTypeTermListExtKey'],$filterAttr[3]);
+      			data_entry_helper::$javascript .="
+jQuery('#locAttr\\\\:".$attr['attributeId']."').attr('readonly','readonly');
+// No filter Load (no filter field to load)
+// no display function (as all this does is put the location on the page).
+// hook_setSref needs to set this field: Commune does WFS lookup, rest do location data lookup
+hook_setSref_".$idx." = function(geom){
+  // do not have to wait until all attributes are loaded in this case.
+  var protocol = new OpenLayers.Protocol.WFS({
+      url:  '".$protocol[0]."',featurePrefix: '".$protocol[1]."',featureType: '".$protocol[2]."',geometryName:'".$protocol[3]."',featureNS: '".$protocol[4]."',srsName: '".$protocol[5]."',version: '1.1.0',propertyNames: [\"".$protocol[6]."\",'".$protocol[3]."']
+     ,callback: function(a1){
+        if(a1.error && (typeof a1.error.success == 'undefined' || a1.error.success == false)){
+          alert(\"".lang::get('LANG_'.$filterAttr[1].'LookUpFailed')."\");
+          return;
+        }
+        if(a1.features.length > 0) {
+          jQuery('#locAttr\\\\:".$attr['attributeId']."').val(a1.features[0].attributes[\"".$protocol[6]."\"]);
+        } else {\n".
+($filterAttr[2]=='true'?"          alert(\"".lang::get('LANG_PositionOutside'.$filterAttr[1])."\");\n":'').
+"          jQuery('#locAttr\\\\:".$attr['attributeId']."').val('');
+        }
+    }
+  });
+  var filter = new OpenLayers.Filter.Spatial({type: OpenLayers.Filter.Spatial.CONTAINS,property: '".$parts[3]."',value: geom});\n".
+($filterAttr[3]!=''?"  filter = new OpenLayers.Filter.Logical({type:OpenLayers.Filter.Logical.AND, filters:[filter, new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.EQUAL_TO, property: 'location_type_id', value: '".$parentLocTypeID."'})]});\n":'').
+"  protocol.read({filter: filter});
+};\n";
+				break;
+				
       		case "Name": //special case:
-// TODO Move filtered attributes above the Location name. v2
       			$retVal .= '<label>'.$options['NameLabel'].':</label> '.
       			  '<select id="'.$options['mainFieldID'].'" name="'.$options['mainFieldName'].'" disabled="disabled">'.
-      			    '<option value="">'.lang::get("First choose a ").$filterAttrs[$idx-1].'</option>'.
+      			    '<option value="">'.lang::get("First choose a ").$prevAttr[0].'</option>'.
       			    (array_key_exists($options['mainFieldName'], data_entry_helper::$entity_to_load) && data_entry_helper::$entity_to_load[$options['mainFieldName']]!="" ?
       			      '<option value="'.data_entry_helper::$entity_to_load[$options['mainFieldName']].'" selected="selected">'.data_entry_helper::$entity_to_load['location:name'].'</option>' : '').
       			  '</select><br/>';
@@ -2287,22 +2320,24 @@ jQuery('#filterSelect".$idx."').change(function(){
 // when ".$options['mainFieldID']." changes the location will be loaded, including ".$options['mainFieldName']."
 filterLoad".$idx." = function(keep){
   if(jQuery('#filterSelect".($idx-1)."').val()==''){
-    jQuery('#filterSelect".$idx."').empty().attr('disabled','disabled').append('<option value=\"'+value+'\">".lang::get("First choose a ").$filterAttrs[$idx-1]."</option>');
+    jQuery('#filterSelect".$idx."').empty().attr('disabled','disabled').append('<option value=\"'+value+'\">".lang::get("First choose a ").$prevAttr[0]."</option>');
     return;
   }
   if(keep=='') keep=false;
   jQuery('#".$options['mainFieldID']."').data('storedValue',keep ? jQuery('#".$options['mainFieldID']."').val() : '').empty();
-  var query=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/LocationSearch/mnhnl_search".$idx.".xml&reportSource=local&mode=json&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&location_type_id=".$primary."\";";
-                foreach($filterAttrs as $idx1=>$filterAttr1)
-                  if($idx1<$idx){
-                    $attr1 = "";
-                    foreach($locationAttributes as $locationAttribute1)
-                      if($locationAttribute1['untranslatedCaption']==$filterAttr1 || $locationAttribute1['attributeId']==$filterAttr1)
-                        $attr1=$locationAttribute1;
-                    if($attr!="")
-                      data_entry_helper::$javascript .="\n  query=query+'&location_attr_".($idx1+1)."_id=".$attr1['attributeId']."&location_attr_".($idx1+1)."_value='+jQuery('#filterSelect".$idx1."').val();";
-                  }
+  var query=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?reportSource=local&mode=json&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&location_type_id=".$primary."\";";
+				$idxN=1;
+				foreach($filterAttrs as $idx1=>$filterAttr1){
+				  if($idx1>=$idx) continue;
+                  $filterAttr1=explode(':',$filterAttr1);
+                  foreach($locationAttributes as $locationAttribute1)
+                    if($filterAttr1[0]!="Display" && $locationAttribute1['untranslatedCaption']==($filterAttr1[0]=="Parent"?$filterAttr1[1]:$filterAttr1[0])){
+                      data_entry_helper::$javascript .="\n  query=query+'&location_attr_".$idxN."_id=".$locationAttribute1['attributeId']."&location_attr_".$idxN."_value='+jQuery('#filterSelect".$idx1."').val();";
+                      $idxN++;
+                    }
+                }
 				data_entry_helper::$javascript .="
+  query=query+'&report=reports_for_prebuilt_forms/MNHNL/LocationSearch/mnhnl_search".($idxN-1).".xml&location_attr_".$idxN."_id=".$attr['attributeId']."';
   jQuery.getJSON(query+'&callback=?',
     function(data) {
       if(data instanceof Array){
@@ -2318,7 +2353,7 @@ filterLoad".$idx." = function(keep){
     });
 };
 filterReset".$idx." = function(){
-  jQuery('#".$options['mainFieldID']."').empty().attr('disabled','disabled').append('<option value=\"\">".lang::get("First choose a ").$filterAttrs[$idx-1]."</option>');
+  jQuery('#".$options['mainFieldID']."').empty().attr('disabled','disabled').append('<option value=\"\">".lang::get("First choose a ").$prevAttr[0]."</option>');
 };";
       			if (array_key_exists('location:id', data_entry_helper::$entity_to_load) && data_entry_helper::$entity_to_load['location:id']!="") {
 				  data_entry_helper::$javascript .="\nfilterLoad".$idx."(true);";
@@ -2330,23 +2365,23 @@ filterReset".$idx." = function(){
       		default:
       			$retVal .= '<label>'.$attr['caption'].':</label> '.
       			'<select id="filterSelect'.$idx.'" disabled="disabled" >'.
-      				'<option value="">'.lang::get("First choose a ").$filterAttrs[$idx-1].'</option>'.
+      			    '<option value="">'.lang::get("First choose a ").$prevAttr[0].'</option>'.
       			'</select><br/>';
 				data_entry_helper::$javascript .="
 jQuery('#filterSelect".$idx."').change(function(){
   jQuery('#locAttr\\\\:".$attr['attributeId']."').val(jQuery('#filterSelect".$idx."').val());
   SetFilterNewLocation();
-  filterLoad".($idx+1)."('');\n";
+  filterLoad".$nextIdx."('');\n";
 				foreach($filterAttrs as $idx1=>$filterAttr1){
-					if($idx1 > $idx+1)
+					if($idx1 > $nextIdx)
 					  data_entry_helper::$javascript .="  filterReset".($idx1)."();\n";
 				}
 				data_entry_helper::$javascript .="
 });
 jQuery('#locAttr\\\\:".$attr['attributeId']."').change(function(){
-  filterLoad".($idx+1)."('');\n";
+  filterLoad".$nextIdx."('');\n";
 				foreach($filterAttrs as $idx1=>$filterAttr1){
-					if($idx1 > $idx+1)
+					if($idx1 > $nextIdx)
 					  data_entry_helper::$javascript .="  filterReset".($idx1)."();\n";
 				}
 				data_entry_helper::$javascript .="
@@ -2355,29 +2390,30 @@ jQuery('#locAttr\\\\:".$attr['attributeId']."').change(function(){
 // Triggered in several places: when the filter above changes value
 filterLoad".$idx." = function(value){
   if(jQuery('#filterSelect".($idx-1)."').val()==''){
-    jQuery('#filterSelect".$idx."').empty().attr('disabled','disabled').append('<option value=\"'+value+'\">".lang::get("First choose a ").$filterAttrs[$idx-1]."</option>');
+    jQuery('#filterSelect".$idx."').empty().attr('disabled','disabled').append('<option value=\"'+value+'\">".lang::get("First choose a ").($prevAttr[0]=="Display"||$prevAttr[0]=="Parent"?$prevAttr[1]:$prevAttr[0])."</option>');
     return;
   }
   jQuery('#filterSelect".$idx."').empty().data('storedValue',value).append('<option value=\"'+value+'\" selected=\"selected\" >'+value+'</option>');
-  var query=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/LocationSearch/mnhnl_search".$idx.".xml&reportSource=local&mode=json&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&location_type_id=".$primary."\";";
-                foreach($filterAttrs as $idx1=>$filterAttr1)
-                  if($idx1<$idx){
-                    $attr1 = "";
-                    foreach($locationAttributes as $locationAttribute1)
-                      if($locationAttribute1['untranslatedCaption']==$filterAttr1 || $locationAttribute1['attributeId']==$filterAttr1)
-                        $attr1=$locationAttribute1;
-                    if($attr!="")
-                      data_entry_helper::$javascript .="\n  query=query+'&location_attr_".($idx1+1)."_id=".$attr1['attributeId']."&location_attr_".($idx1+1)."_value='+jQuery('#filterSelect".$idx1."').val();";
-                  }
+  var query=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?reportSource=local&mode=json&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&location_type_id=".$primary."\";";
+				$idxN=1;
+				foreach($filterAttrs as $idx1=>$filterAttr1){
+				  if($idx1>=$idx) continue;
+                  $filterAttr1=explode(':',$filterAttr1);
+                  foreach($locationAttributes as $locationAttribute1)
+                    if($filterAttr1[0]!="Display" && $locationAttribute1['untranslatedCaption']==($filterAttr1[0]=="Parent"?$filterAttr1[1]:$filterAttr1[0])){
+                      data_entry_helper::$javascript .="\n  query=query+'&location_attr_".$idxN."_id=".$locationAttribute1['attributeId']."&location_attr_".$idxN."_value='+jQuery('#filterSelect".$idx1."').val();";
+                      $idxN++;
+                    }
+                }
 				data_entry_helper::$javascript .="
-  query=query+'&location_attr_".($idx+1)."_id=".$attr['attributeId']."';
+  query=query+'&report=reports_for_prebuilt_forms/MNHNL/LocationSearch/mnhnl_search".($idxN-1).".xml&location_attr_".$idxN."_id=".$attr['attributeId']."';
   jQuery.getJSON(query+'&callback=?',
     function(data) {
       if(data instanceof Array){
         if(data.length>0) {
           jQuery('#filterSelect".$idx."').empty().removeAttr('disabled').append('<option value=\"\">".lang::get("Please select...")."</option>');
           for (var i=0;i<data.length;i++){
-            jQuery('#filterSelect".$idx."').append('<option value=\"'+data[i].attr_value".($idx+1)."+'\" '+(data[i].attr_value".($idx+1)." == jQuery('#filterSelect".$idx."').data('storedValue') ? 'selected=\"selected\"' : '')+'>'+data[i].attr_value".($idx+1)."+' ('+data[i].count+')'+'</option>');
+            jQuery('#filterSelect".$idx."').append('<option value=\"'+data[i].attr_value".$idxN."+'\" '+(data[i].attr_value".$idxN." == jQuery('#filterSelect".$idx."').data('storedValue') ? 'selected=\"selected\"' : '')+'>'+data[i].attr_value".$idxN."+' ('+data[i].count+')'+'</option>');
           }
         } else {
             jQuery('#filterSelect".$idx."').empty().attr('disabled','disabled').append('<option value=\"\">".lang::get("None found")."</option>');
@@ -2386,7 +2422,7 @@ filterLoad".$idx." = function(value){
     });
 };
 filterReset".$idx." = function(){
-  jQuery('#filterSelect".$idx."').empty().append('<option value=\"\">".lang::get("First choose a ").$filterAttrs[$idx-1]."</option>').attr('disabled','disabled').show();
+  jQuery('#filterSelect".$idx."').empty().append('<option value=\"\">".lang::get("First choose a ").$prevAttr[0]."</option>').attr('disabled','disabled').show();
 };";
       			if (array_key_exists('location:id', data_entry_helper::$entity_to_load) && data_entry_helper::$entity_to_load['location:id']!="") {
 				  data_entry_helper::$javascript .="\nfilterLoad".$idx."(jQuery('#locAttr\\\\:".$attr['attributeId']."').val());";
@@ -2395,9 +2431,9 @@ filterReset".$idx." = function(){
       			}
 				$defaultsFunction .= "  jQuery('#locAttr\\\\:".$attr['attributeId']."').val(jQuery('#filterSelect".$idx."').val());\n";
 				$loadFunction .= "  filterLoad".$idx."(jQuery('#locAttr\\\\:".$attr['attributeId']."').val());\n";
+				$prevAttr=$filterAttr;
 				break;
       	}
-        $prevAttr = $attr;
       }
       iform_mnhnl_set_editable($auth, $args, $node, $responseRecords, 'conditional');
       $retVal .= "</fieldset>";
@@ -2414,7 +2450,13 @@ SetFilterNewLocation = function(){
 };
 ".$loadFunction."
 };
-";
+hook_setSref = function(geom){\n";
+      foreach($filterAttrs as $idx=>$filterAttr){
+        $filterAttr=explode(':',$filterAttr);
+        if($filterAttr[0]=="Parent" || $filterAttr[0]=="Display")
+          data_entry_helper::$javascript .="  hook_setSref_".$idx."(geom);\n";
+      }
+      data_entry_helper::$javascript .="};";
       $options['tabNameFilter']='Filter';
       $retVal .= iform_mnhnl_locationattributes($auth, $args, 'Filter', $options);
       if($args['siteNameTermListID']== '') {

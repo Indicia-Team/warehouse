@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="MNHNL Amphibian Download Report" description="Lists all occurrences associated with saved samples. Normally invoked from Reports tab on the form.">
+  <params>
+    <param name='location_type_id' display='Survey: ' description='Select the location_type_id to return data for:' datatype='int' />
+  </params>
+  <table tablename="locations" where="#this#.deleted = FALSE
+      and #this#.parent_id IS NULL
+      and #this#.location_type_id = #location_type_id#" >
+    <tabColumn name='id' visible='true' display='Location ID' />
+    <tabColumn name='name' display='Site'/>
+    <tabColumn name='xy' display='XY' func="(regexp_replace(#this#.centroid_sref, ',|\\.[0-9]*' , '','g'))" />
+    <tabColumn name='comment' display='Site comment'/>
+    <attributes separator='|' meaningIdLanguage='preferred'/>
+  </table>
+  <order_bys>
+    <order_by>lt0_id ASC</order_by>
+  </order_bys>
+</report>
