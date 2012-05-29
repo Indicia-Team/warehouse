@@ -2456,6 +2456,33 @@ $('#".$options['id']."-filter').click(function(evt) {
   }
 
  /**
+  * Helper function to output an HTML hidden text input. This includes re-loading of existing values.
+  * Hidden fields should not have any validation.
+  * No Labels allowed, no suffix.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldname</b><br/>
+  * Required. The name of the database field this control is bound to.</li>
+  * <li><b>id</b><br/>
+  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+  * <li><b>default</b><br/>
+  * Optional. The default value to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * </ul>
+  *
+  * @return string HTML to insert into the page for the hidden text control.
+  */
+  public static function hidden_text() {
+    $options = self::check_arguments(func_get_args(), array('fieldname'));
+    $options = array_merge(array(
+      'default'=>''
+    ), $options);
+    unset($options['label']);
+    $options['suffixTemplate'] = 'nosuffix';
+    return self::apply_template('hidden_text', $options);
+  }
+
+ /**
   * A control for inputting a time value. Provides a text input with a spin control that allows
   * the time to be input. Reverts to a standard text input when JavaScript disabled.
   * @param array $options Options array with the following possibilities:
@@ -4325,7 +4352,8 @@ if (errors.length>0) {
         case 'T':
           if (isset($item['control_type']) &&
               ($item['control_type']=='text_input' || $item['control_type']=='textarea'
-              || $item['control_type']=='postcode_textbox' || $item['control_type']=='time_input')) {
+              || $item['control_type']=='postcode_textbox' || $item['control_type']=='time_input'
+              || $item['control_type']=='hidden_text' )) {
             $ctrl = $item['control_type'];
           } else {
             $ctrl = 'text_input';
