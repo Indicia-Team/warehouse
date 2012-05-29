@@ -613,7 +613,12 @@ class ORM extends ORM_Core {
     // If we're editing an existing record, merge with the existing data.
     if (array_key_exists('id', $vArray) && $vArray['id'] != null) {
       $this->find($vArray['id']);
-      $vArray = array_merge($this->as_array(), $vArray);
+      $thisValues = $this->as_array();
+      // don't overwrite existing website_ids otherwise things like shared verification portals end up 
+      // grabbing records to their own website ID.
+      if (isset($thisValues['website_id']) && $thisValues['website_id'])
+        unset($vArray['website_id']);
+      $vArray = array_merge($thisValues, $vArray);
       $this->existing=true;
     }
     Kohana::log("debug", "About to validate the following array in model ".$this->object_name);
