@@ -43,9 +43,9 @@ input.locked-control, select.locked-control, textarea.locked-control {
 .taxon_individual {
 	border:1px solid #008f93;
 	background-color: transparent;
-	width: 500px;
+	width: 480px;
 	float: left;
-	margin-right: -500px;
+	margin-right: -488px;
 }
 
 .taxon_individual legend {
@@ -56,35 +56,35 @@ input.locked-control, select.locked-control, textarea.locked-control {
 .ind-tax-img-barnaclegoose {
 	background-image: url('../images/barnacle.jpg');
 	background-repeat: no-repeat;
-	background-position: 560px 100px;
+	background-position: 540px 24px;
 }
 
 .ind-tax-img-bewicksswan {
 	background-image: url('../images/bewicks.jpg');
 	background-repeat: no-repeat;
-	background-position: 560px 100px;
+	background-position: 540px 24px;
 }
 	
 .ind-tax-img-greylaggoose {
 	background-image: url('../images/greylag.jpg');
 	background-repeat: no-repeat;
-	background-position: 560px 100px;
+	background-position: 540px 24px;
 }
 	
 .ind-tax-img-pinkfootedgoose {
 	background-image: url('../images/pinkfoot.jpg');
 	background-repeat: no-repeat;
-	background-position: 560px 100px;
+	background-position: 540px 24px;
 }
 	
 .ind-tax-img-whooperswan {
 	background-image: url('../images/whooper.jpg');
 	background-repeat: no-repeat;
-	background-position: 560px 100px;
+	background-position: 540px 24px;;
 }
 	
 .idn-accordion {
-	width: 480px;
+	width: 460px;
 }
 
 .neck-collar-indentifier-colourbox  {
@@ -148,153 +148,153 @@ input.locked-control, select.locked-control, textarea.locked-control {
 }
 
 .ind-tax-img-barnaclegoose .neck-collar-indentifier-colourbox  {
-	margin-top: 200px;
-	margin-left: 760px;
-	margin-right: -837px;
-}
-
-* html .ind-tax-img-barnaclegoose .neck-collar-indentifier-colourbox  {
-	margin-left: 380px;
-}
-
-.ind-tax-img-barnaclegoose .colour-left-indentifier-colourbox  {
-	margin-top: 380px;
-	margin-left: 650px;
-	margin-right: -727px;
-}
-
-* html .ind-tax-img-barnaclegoose .colour-left-indentifier-colourbox  {
-	margin-left: 325px;
-}
-
-.ind-tax-img-barnaclegoose .colour-right-indentifier-colourbox  {
-	margin-top: 420px;
-	margin-left: 680px;
-	margin-right: -757px;
-}
-
-* html .ind-tax-img-barnaclegoose .colour-right-indentifier-colourbox  {
-	margin-left: 340px;
-}
-
-.ind-tax-img-bewicksswan .neck-collar-indentifier-colourbox  {
-	margin-top: 210px;
-	margin-left: 750px;
-	margin-right: -827px;
-}
-
-* html .ind-tax-img-bewicksswan .neck-collar-indentifier-colourbox  {
-	margin-left: 375px;
-}
-
-.ind-tax-img-bewicksswan .colour-left-indentifier-colourbox  {
-	margin-top: 390px;
-	margin-left: 630px;
-	margin-right: -707px;
-}
-
-* html .ind-tax-img-bewicksswan .colour-left-indentifier-colourbox  {
-	margin-left: 315px;
-}
-
-.ind-tax-img-bewicksswan .colour-right-indentifier-colourbox  {
-	margin-top: 430px;
-	margin-left: 660px;
-	margin-right: -737px;
-}
-
-* html .ind-tax-img-bewicksswan .colour-right-indentifier-colourbox  {
-	margin-left: 310px;
-}
-
-.ind-tax-img-greylaggoose .neck-collar-indentifier-colourbox  {
-	margin-top: 190px;
-	margin-left: 760px;
-	margin-right: -837px;
-}
-
-* html .ind-tax-img-greylaggoose .neck-collar-indentifier-colourbox  {
-	margin-left: 380px;
-}
-
-.ind-tax-img-greylaggoose .colour-left-indentifier-colourbox  {
-	margin-top: 360px;
-	margin-left: 600px;
-	margin-right: -677px;
-}
-
-* html .ind-tax-img-greylaggoose .colour-left-indentifier-colourbox  {
-	margin-left: 300px;
-}
-
-.ind-tax-img-greylaggoose .colour-right-indentifier-colourbox  {
-	margin-top: 400px;
-	margin-left: 690px;
-	margin-right: -767px;
-}
-
-* html .ind-tax-img-greylaggoose .colour-right-indentifier-colourbox  {
-	margin-left: 345px;
-}
-
-.ind-tax-img-pinkfootedgoose .neck-collar-indentifier-colourbox  {
-	margin-top: 190px;
-	margin-left: 750px;
-	margin-right: -827px;
-}
-
-* html .ind-tax-img-pinkfootedgoose .neck-collar-indentifier-colourbox  {
-	margin-left: 375px;
-}
-
-.ind-tax-img-pinkfootedgoose .colour-left-indentifier-colourbox  {
-	margin-top: 390px;
-	margin-left: 580px;
-	margin-right: -657px;
-}
-
-* html .ind-tax-img-pinkfootedgoose .colour-left-indentifier-colourbox  {
-	margin-left: 290px;
-}
-
-.ind-tax-img-pinkfootedgoose .colour-right-indentifier-colourbox  {
-	margin-top: 430px;
-	margin-left: 670px;
-	margin-right: -747px;
-}
-
-* html .ind-tax-img-pinkfootedgoose .colour-right-indentifier-colourbox  {
-	margin-left: 315px;
-}
-
-.ind-tax-img-whooperswan .neck-collar-indentifier-colourbox  {
-	margin-top: 220px;
+	margin-top: 120px;
 	margin-left: 740px;
 	margin-right: -817px;
 }
 
-* html .ind-tax-img-whooperswan .neck-collar-indentifier-colourbox  {
+* html .ind-tax-img-barnaclegoose .neck-collar-indentifier-colourbox  {
 	margin-left: 370px;
 }
 
-.ind-tax-img-whooperswan .colour-left-indentifier-colourbox  {
-	margin-top: 390px;
+.ind-tax-img-barnaclegoose .colour-left-indentifier-colourbox  {
+	margin-top: 300px;
 	margin-left: 630px;
 	margin-right: -707px;
 }
 
-* html .ind-tax-img-whooperswan .colour-left-indentifier-colourbox  {
+* html .ind-tax-img-barnaclegoose .colour-left-indentifier-colourbox  {
 	margin-left: 315px;
 }
 
+.ind-tax-img-barnaclegoose .colour-right-indentifier-colourbox  {
+	margin-top: 340px;
+	margin-left: 660px;
+	margin-right: -737px;
+}
+
+* html .ind-tax-img-barnaclegoose .colour-right-indentifier-colourbox  {
+	margin-left: 330px;
+}
+
+.ind-tax-img-bewicksswan .neck-collar-indentifier-colourbox  {
+	margin-top: 130px;
+	margin-left: 730px;
+	margin-right: -807px;
+}
+
+* html .ind-tax-img-bewicksswan .neck-collar-indentifier-colourbox  {
+	margin-left: 315px;
+}
+
+.ind-tax-img-bewicksswan .colour-left-indentifier-colourbox  {
+	margin-top: 310px;
+	margin-left: 610px;
+	margin-right: -687px;
+}
+
+* html .ind-tax-img-bewicksswan .colour-left-indentifier-colourbox  {
+	margin-left: 305px;
+}
+
+.ind-tax-img-bewicksswan .colour-right-indentifier-colourbox  {
+	margin-top: 350px;
+	margin-left: 640px;
+	margin-right: -717px;
+}
+
+* html .ind-tax-img-bewicksswan .colour-right-indentifier-colourbox  {
+	margin-left: 320px;
+}
+
+.ind-tax-img-greylaggoose .neck-collar-indentifier-colourbox  {
+	margin-top: 110px;
+	margin-left: 740px;
+	margin-right: -817px;
+}
+
+* html .ind-tax-img-greylaggoose .neck-collar-indentifier-colourbox  {
+	margin-left: 370px;
+}
+
+.ind-tax-img-greylaggoose .colour-left-indentifier-colourbox  {
+	margin-top: 280px;
+	margin-left: 580px;
+	margin-right: -657px;
+}
+
+* html .ind-tax-img-greylaggoose .colour-left-indentifier-colourbox  {
+	margin-left: 290px;
+}
+
+.ind-tax-img-greylaggoose .colour-right-indentifier-colourbox  {
+	margin-top: 320px;
+	margin-left: 670px;
+	margin-right: -747px;
+}
+
+* html .ind-tax-img-greylaggoose .colour-right-indentifier-colourbox  {
+	margin-left: 335px;
+}
+
+.ind-tax-img-pinkfootedgoose .neck-collar-indentifier-colourbox  {
+	margin-top: 110px;
+	margin-left: 730px;
+	margin-right: -807px;
+}
+
+* html .ind-tax-img-pinkfootedgoose .neck-collar-indentifier-colourbox  {
+	margin-left: 365px;
+}
+
+.ind-tax-img-pinkfootedgoose .colour-left-indentifier-colourbox  {
+	margin-top: 310px;
+	margin-left: 560px;
+	margin-right: -637px;
+}
+
+* html .ind-tax-img-pinkfootedgoose .colour-left-indentifier-colourbox  {
+	margin-left: 280px;
+}
+
+.ind-tax-img-pinkfootedgoose .colour-right-indentifier-colourbox  {
+	margin-top: 350px;
+	margin-left: 650px;
+	margin-right: -727px;
+}
+
+* html .ind-tax-img-pinkfootedgoose .colour-right-indentifier-colourbox  {
+	margin-left: 305px;
+}
+
+.ind-tax-img-whooperswan .neck-collar-indentifier-colourbox  {
+	margin-top: 140px;
+	margin-left: 720px;
+	margin-right: -797px;
+}
+
+* html .ind-tax-img-whooperswan .neck-collar-indentifier-colourbox  {
+	margin-left: 360px;
+}
+
+.ind-tax-img-whooperswan .colour-left-indentifier-colourbox  {
+	margin-top: 310px;
+	margin-left: 610px;
+	margin-right: -687px;
+}
+
+* html .ind-tax-img-whooperswan .colour-left-indentifier-colourbox  {
+	margin-left: 305px;
+}
+
 .ind-tax-img-whooperswan .colour-right-indentifier-colourbox  {
-	margin-top: 430px;
-	margin-left: 680px;
-	margin-right: -757px;
+	margin-top: 350px;
+	margin-left: 660px;
+	margin-right: -737px;
 }
 
 * html .ind-tax-img-whooperswan .colour-right-indentifier-colourbox  {
-	margin-left: 320px;
+	margin-left: 330px;
 }
 
 	

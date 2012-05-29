@@ -283,10 +283,6 @@ class iform_wwt_colour_marked_report {
           'options' => array(
             'autocomplete' => 'Autocomplete',
             'select' => 'Select',
-            'listbox' => 'List box',
-            'radio_group' => 'Radio group',
-            'treeview' => 'Treeview',
-            'tree_browser' => 'Tree browser'
           ),
           'default' => 'select',
           'group'=>'Species'
@@ -426,7 +422,7 @@ class iform_wwt_colour_marked_report {
           'name'=>'neck_collar_regex',
           'caption'=>'Neck collar validation pattern',
           'description'=>'The validation pattern (as a regular expression) for a neck-collar identifier sequence. '.
-              'Eg. /^([A-Z]{2}[0-9]{2}|[A-Z]{3}[0-9])$/ would only permit sequences of either 2 uppercase letters followed by 2 digits, '.
+              'Eg. ^([A-Z]{2}[0-9]{2}|[A-Z]{3}[0-9])$ would only permit sequences of either 2 uppercase letters followed by 2 digits, '.
               'or 3 uppercase letters followed by 1 digit.',
           'type'=>'string',
           'required' => false,
@@ -457,7 +453,7 @@ class iform_wwt_colour_marked_report {
           'name'=>'enscribed_colour_ring_regex',
           'caption'=>'Colour ring validation pattern',
           'description'=>'The validation pattern (as a regular expression) for an enscribed colour ring identifier sequence. '.
-              'Eg. /^([A-Z]{2}[0-9]{2}|[A-Z]{3}[0-9])$/ would only permit sequences of either 2 uppercase letters followed by 2 digits, '.
+              'Eg. ^([A-Z]{2}[0-9]{2}|[A-Z]{3}[0-9])$ would only permit sequences of either 2 uppercase letters followed by 2 digits, '.
               'or 3 uppercase letters followed by 1 digit.',
           'type'=>'string',
           'required' => false,
@@ -488,7 +484,7 @@ class iform_wwt_colour_marked_report {
           'name'=>'metal_ring_regex',
           'caption'=>'Metal ring validation pattern',
           'description'=>'The validation pattern (as a regular expression) for a metal ring identifier sequence. '.
-              'Eg. /^([A-Z]{2}[0-9]{2}|[A-Z]{3}[0-9])$/ would only permit sequences of either 2 uppercase letters followed by 2 digits, '.
+              'Eg. ^([A-Z]{2}[0-9]{2}|[A-Z]{3}[0-9])$ would only permit sequences of either 2 uppercase letters followed by 2 digits, '.
               'or 3 uppercase letters followed by 1 digit.',
           'type'=>'string',
           'required' => false,
