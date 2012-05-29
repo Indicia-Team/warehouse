@@ -65,6 +65,7 @@ $indicia_templates = array(
   'image_upload' => '<input type="file" id="{id}" name="{fieldname}" accept="png|jpg|gif|jpeg" {title}/>'."\n".
       '<input type="hidden" id="{pathFieldName}" name="{pathFieldName}" value="{pathFieldValue}"/>'."\n",
   'text_input' => '<input type="text" id="{id}" name="{fieldname}"{class} {disabled} value="{default}" {title} {maxlength} />'."\n",
+  'hidden_text' => '<input type="hidden" id="{id}" name="{fieldname}" {disabled} value="{default}" />',
   'password_input' => '<input type="password" id="{id}" name="{fieldname}"{class} {disabled} value="{default}" {title} />'."\n",
   'textarea' => '<textarea id="{id}" name="{fieldname}"{class} {disabled} cols="{cols}" rows="{rows}" {title}>{default}</textarea>'."\n",
   'checkbox' => '<input type="hidden" name="{fieldname}" value="0"/><input type="checkbox" id="{id}" name="{fieldname}" value="1"{class}{checked}{disabled} {title} />'."\n",
@@ -539,7 +540,7 @@ class helper_base extends helper_config {
         'reportPicker' => array('deps' => array('treeview'), 'javascript' => array(self::$js_path."reportPicker.js")),
         'treeview' => array('deps' => array('jquery'), 'stylesheets' => array(self::$css_path."jquery.treeview.css"), 'javascript' => array(self::$js_path."jquery.treeview.js")),
         'treeview_async' => array('deps' => array('treeview'), 'javascript' => array(self::$js_path."jquery.treeview.async.js", self::$js_path."jquery.treeview.edit.js")),
-        'googlemaps' => array('javascript' => array("http://maps.google.com/maps/api/js?v=3.5&amp;sensor=false")),
+        'googlemaps' => array('javascript' => array("http://maps.google.com/maps/api/js?v=3.6&amp;sensor=false")),
         'virtualearth' => array('javascript' => array('http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1')),
         'fancybox' => array('deps' => array('jquery'), 'stylesheets' => array(self::$js_path.'fancybox/jquery.fancybox.css'), 'javascript' => array(self::$js_path.'fancybox/jquery.fancybox.pack.js')),
         'flickr' => array('deps' => array('fancybox'), 'javascript' => array(self::$js_path."jquery.flickr.js")),
@@ -549,8 +550,8 @@ class helper_base extends helper_config {
         'plupload' => array('deps' => array('jquery_ui','fancybox'), 'javascript' => array(
             self::$js_path.'jquery.uploader.js', self::$js_path.'/plupload/js/plupload.full.js')),
         'jqplot' => array('stylesheets' => array(self::$js_path.'jqplot/jquery.jqplot.css'), 'javascript' => array(                
-                self::$js_path.'jqplot/jquery.jqplot.min.js',
-                '[IE]'.self::$js_path.'jqplot/excanvas.min.js')),
+                self::$js_path.'jqplot/jquery.jqplot.js',
+                '[IE]'.self::$js_path.'jqplot/excanvas.js')),
         'jqplot_bar' => array('javascript' => array(self::$js_path.'jqplot/plugins/jqplot.barRenderer.min.js')),
         'jqplot_pie' => array('javascript' => array(self::$js_path.'jqplot/plugins/jqplot.pieRenderer.min.js')),
         'jqplot_category_axis_renderer' => array('javascript' => array(self::$js_path.'jqplot/plugins/jqplot.categoryAxisRenderer.min.js')),
@@ -1219,9 +1220,9 @@ $('.ui-state-default').live('mouseout', function() {
               if (strpos($j, 'fancybox.')!==false)
                 self::$javascript .= "jQuery('a.fancybox').fancybox();\n";
               // look out for a condition that this script is IE only.
-              if (substr($j, 0, 4)=='[IE]')
-                $libraries .= "<!--[if IE]><script type=\"text/javascript\" src=\"".substr($j, 4)."\"></script><![endif]-->\n";
-              else
+              if (substr($j, 0, 4)=='[IE]'){
+              	$libraries .= "<!--[if IE]><script type=\"text/javascript\" src=\"".substr($j, 4)."\"></script><![endif]-->\n";
+              } else
                 $libraries .= "<script type=\"text/javascript\" src=\"$j\"></script>\n";
             }
           }
