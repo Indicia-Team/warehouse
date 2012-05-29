@@ -2217,7 +2217,7 @@ displayParent = function(){
   ParentLocationLayer.destroyFeatures();
   if(jQuery('#filterSelect".$idx."').val()=='') return;
   var protocol = new OpenLayers.Protocol.WFS({
-    url:  '".$protocol[0]."',featurePrefix: '".$protocol[1]."',featureType: '".$protocol[2]."',geometryName: '".$protocol[3]."',featureNS: '".$protocol[4]."',srsName: 'EPSG:3857',version: '1.1.0',propertyNames: ['".$protocol[6]."','".$protocol[3]."']
+    url:  '".$protocol[0]."',featurePrefix: '".$protocol[1]."',featureType: '".$protocol[2]."',geometryName: '".$protocol[3]."',featureNS: '".$protocol[4]."',srsName: 'EPSG:900913',version: '1.1.0',propertyNames: ['".$protocol[6]."','".$protocol[3]."']
    ,callback:function(data){
       if(data.features.length>0){
         ParentLocationLayer.addFeatures(data.features);
@@ -2288,7 +2288,7 @@ jQuery('#locAttr\\\\:".$attr['attributeId']."').attr('readonly','readonly');
 hook_setSref_".$idx." = function(geom){
   // do not have to wait until all attributes are loaded in this case.
   var protocol = new OpenLayers.Protocol.WFS({
-      url:  '".$protocol[0]."',featurePrefix: '".$protocol[1]."',featureType: '".$protocol[2]."',geometryName:'".$protocol[3]."',featureNS: '".$protocol[4]."',srsName: '".$protocol[5]."',version: '1.1.0',propertyNames: [\"".$protocol[6]."\",'".$protocol[3]."']
+      url:  '".$protocol[0]."',featurePrefix: '".$protocol[1]."',featureType: '".$protocol[2]."',geometryName:'".$protocol[3]."',featureNS: '".$protocol[4]."',srsName: '".$protocol[5]."',version: '1.1.0',propertyNames: [\"".$protocol[6]."\"]
      ,callback: function(a1){
         if(a1.error && (typeof a1.error.success == 'undefined' || a1.error.success == false)){
           alert(\"".lang::get('LANG_'.$filterAttr[1].'LookUpFailed')."\");
