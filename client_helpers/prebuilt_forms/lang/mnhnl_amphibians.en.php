@@ -39,6 +39,8 @@ $custom_term_overrides[] = array(
 	,'Amphibian Recording Summary'=>'Recording summary'
 	,'LANG_PositionOutsideCommune' => 'The position you have chosen is outside the set of allowable Communes.'
 	,'LANG_PositionInDifferentCommune' => 'The position you have chosen is outside the selected Commune. Do you wish to change the Commune field to match the point?'
+	,'LANG_NumSites'=>'Number of sites in this square'
+	,'LANG_Data_Download' => 'These reports provide details of the collections and species data entered in the surveys which are tagged for a particular target species. The sites download is not dependant on the target species.'
 	
 );
 ?>

@@ -95,13 +95,14 @@ div.olControlEditingToolbar  {
 .ui-widget-header th {
   padding-right: 8px;
 }
-#imp-srefX {
-	width: 60px;
-}
-#imp-srefY {
+#imp-srefX,#imp-srefY,.precision {
 	width: 60px;
 }
 .target-species-grid label {
 	width: auto;
+}
+#samples-grid td {
+  padding: 2px;
+  border: solid silver 1px;
 }
 

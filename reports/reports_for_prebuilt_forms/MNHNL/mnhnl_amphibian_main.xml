@@ -8,15 +8,21 @@
 	      INNER JOIN sample_attribute_values sav ON sav.sample_id = s2.id AND sav.deleted = false AND sav.sample_attribute_id = #target_species_attr_id#
           INNER JOIN detail_termlists_terms dtt ON sav.int_value = dtt.meaning_id AND dtt.preferred = true
           WHERE s2.parent_id = s.id AND s2.deleted = false)::text, '}', ''), '{', ''), '"', '') as target_species,
+        lav_1.text_value as attr_1,
+        lav_2.text_value as attr_2,
+        lav_3.text_value as attr_3,
   		l.name as location_name,
-  		sav1.text_value as creator,
+  		savuser.text_value as creator,
   		s.date_start,
   		s.date_end,
   		s.date_type
   FROM samples s
   INNER JOIN locations l ON l.id = s.location_id
-  INNER JOIN sample_attribute_values sav1
-  		ON sav1.sample_id = s.id AND sav1.sample_attribute_id = #userName_attr_id# and sav1.deleted = FALSE
+  INNER JOIN sample_attribute_values savuser
+  		ON savuser.sample_id = s.id AND savuser.sample_attribute_id = #userName_attr_id# and savuser.deleted = FALSE
+  LEFT JOIN location_attribute_values lav_1 ON lav_1.location_id=s.location_id AND lav_1.deleted=false AND lav_1.location_attribute_id = #attr_id_1#
+  LEFT JOIN location_attribute_values lav_2 ON lav_2.location_id=s.location_id AND lav_2.deleted=false AND lav_2.location_attribute_id = #attr_id_2#
+  LEFT JOIN location_attribute_values lav_3 ON lav_3.location_id=s.location_id AND lav_3.deleted=false AND lav_3.location_attribute_id = #attr_id_3#
   WHERE s.survey_id=#survey_id# AND s.deleted = FALSE AND s.parent_id IS NULL
   AND ((#userID# > 0 AND (EXISTS (SELECT id FROM sample_attribute_values sav2
   								WHERE sav2.sample_id = s.id
@@ -37,10 +43,16 @@
     <param name='userName_attr_id' display='CMS User Name Sample Attribute ID' description='Sample Attribute ID used to Identify User Name' datatype='int' />
     <param name='userName' display='CMS User Name' description='CMS User Name' datatype='text' />
     <param name='target_species_attr_id' display='Target Species Attribute ID' description='Sample Attribute ID used to Identify the Reptile Target Species' datatype='int' />
+    <param name='attr_id_1' display='Location Attribute ID' description='Location Attribute ID 1' datatype='int' />
+    <param name='attr_id_2' display='Location Attribute ID' description='Location Attribute ID 2' datatype='int' />
+    <param name='attr_id_3' display='Location Attribute ID' description='Location Attribute ID 3' datatype='int' />
   </params>
   <columns>
     <column name='sample_id' display='ID' />
     <column name='target_species' display='Target Species' />
+    <column name='attr_1' display='attr_1' />
+    <column name='attr_2' display='attr_2' />
+    <column name='attr_3' display='attr_3' />
     <column name='location_name' display='Site' />
     <column name='creator' display='Entered By' />
     <column name='date' display='Date' />
