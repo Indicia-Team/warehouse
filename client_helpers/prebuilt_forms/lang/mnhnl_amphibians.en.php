@@ -32,15 +32,19 @@ $custom_term_overrides[] = array(
 	,'LANG_SpeciesInstructions'=>"Additional species may be added using the control under the grid.<br />Additional rows may be added using the control for existing taxa if a different combination of Type/Stage/Sex is to be added.<br />There are various combinations Type/Stage/Sex/Behaviour which are not allowed. Such banned combinations will be greyed out in the drop down lists. In addition, it is not possible to enter multiple rows for the same combination of Species/Type/Stage/Sex: again duplicate possiblities will be greyed out.<br />If you think a combination is valid, but you can not select it, first check that there is no other existing row with this combination.<br />Click the red 'X' to delete the relevant row."
 	,'validation_no_record' => "The <strong>Recording summary</strong> must reflect the table of species. When no data is recorded then either 'No records taken' or 'No observation' must be checked."
 	,'Amphibian Visit (Sites)'=>'Visit'
-	,'Amphibian Sites Survey Method'=>'Amphibian Sites Survey Method'
+	,'Amphibian Sites Survey Method'=>'Survey method'
+	,'Amphibian Visit (Squares)'=>'Visit'
+	,'Amphibian Squares Survey Method'=>'Survey method'
 	,'Amphibian Type (Sites)'=>'Type'
 	,'Amphibian Stage (Sites)'=>'Stage'
 	,'Amphibian Behaviour'=>'Behaviour'
 	,'Amphibian Recording Summary'=>'Recording summary'
+	,'LANG_CommuneLookUpFailed' => 'Internal error: Lookup of the Commune for this location failed.'
 	,'LANG_PositionOutsideCommune' => 'The position you have chosen is outside the set of allowable Communes.'
 	,'LANG_PositionInDifferentCommune' => 'The position you have chosen is outside the selected Commune. Do you wish to change the Commune field to match the point?'
 	,'LANG_NumSites'=>'Number of sites in this square'
 	,'LANG_Data_Download' => 'These reports provide details of the collections and species data entered in the surveys which are tagged for a particular target species. The sites download is not dependant on the target species.'
-	
+	,'LANG_SquareLookUpFailed' => 'Internal error: Lookup of the square for this location failed.'
+	,'LANG_PositionInDifferentSquare' => 'The position you have chosen is outside the selected square. Do you wish to change the square field to match the point?'
 );
 ?>
