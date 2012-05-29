@@ -828,11 +828,16 @@ class Data_Controller extends Data_Service_Base_Controller {
               $attrs = explode(',', $value);
               break;
             default:
-              Kohana::log('debug', 'Trying to fetch attributes for non sample/occurrence/location table. Ignoring.');
+              Kohana::log('alert', 'Trying to fetch attributes for non sample/occurrence/location table. Ignoring.');
           }
           break;
         case 'query':
           $this->apply_query_def_to_db($value);
+          break;
+        case 'mode':
+        case 'view': 
+        case 'nonce':
+        case 'auth_token':
           break;
       default:
         if (array_key_exists(strtolower($param), $this->view_columns)) {
@@ -846,7 +851,8 @@ class Data_Controller extends Data_Service_Base_Controller {
           } else {
             $like[$param]=str_replace('*', '%', $value);
           }
-
+        } else {
+          Kohana::log('alert', "Trying to filter on unknown column $param. Ignoring.");
         }
       }
     }
