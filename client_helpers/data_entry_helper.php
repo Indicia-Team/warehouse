@@ -3306,7 +3306,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     $escapedId = str_replace(':','\\\\:',$options['id']);
     $fn = preg_replace("/[^A-Za-z0-9]/", "", $options['id'])."_populate";
     $url = parent::$base_url."index.php/services/data";
-    $request = "$url/".$options['table']."?mode=json";
+    $request = "$url/".$options['table']."?mode=json&callback=?";
     if (isset($options['parentControlLabel']))
       $instruct = str_replace('{0}', $options['parentControlLabel'], lang::get('Please select a {0} first'));
     else
