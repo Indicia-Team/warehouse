@@ -49,6 +49,10 @@ div.ui-effects-wrapper {
   z-index: 2000;
 }
 
+.ui-datepicker-trigger {
+  padding: 0;
+}
+
 .inline-error {
 	color: red;
 	width: auto;
