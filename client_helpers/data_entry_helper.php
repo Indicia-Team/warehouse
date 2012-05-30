@@ -467,8 +467,11 @@ class data_entry_helper extends helper_base {
   * <li><b>dateFormat</b><br/>
   * Optional. Allows the date format string to be set, which must match a date format that can be parsed by the JavaScript Date object.
   * Default is dd/mm/yy.</li>
-  <li><b>allowVagueDates</b><br/>
+  * <li><b>allowVagueDates</b><br/>
   * Optional. Set to true to enable vague date input, which disables client side validation for standard date input formats.</li>
+  * <li><b>showButton</b><br/>
+  * Optional. Set to true to show a button which must be clicked to drop down the picker. Defaults to false unless allowVagueDates is true
+  * as inputting a vague date without the button is confusing.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the date picker control.
@@ -480,6 +483,9 @@ class data_entry_helper extends helper_base {
       'allowVagueDates'=>false,
       'default'=>''
     ), $options);
+    if (!isset($options['showButton']))
+      // vague dates best with the button
+      $options['showButton']=$options['allowVagueDates'];
     if (!isset($options['placeholder']))
       $options['placeholder'] = $options['allowVagueDates'] ? lang::get('Pick or type a vague date') : lang::get('Click here');
     self::add_resource('jquery_ui');
@@ -487,10 +493,7 @@ class data_entry_helper extends helper_base {
     // Don't set js up for the datepicker in the clonable row for the species checklist grid
     if ($escaped_id!='{fieldname}') {
       if (self::$validated_form_id!==null) {
-        /*if ($options['default']=='')
-          $options['default']=lang::get('click here');*/
-        if ($options['allowVagueDates']) {
-        } else {
+        if (!$options['allowVagueDates']) {
           self::$javascript .= "if (typeof jQuery.validator !== \"undefined\") {
   jQuery.validator.addMethod('customDate',
     function(value, element) {
@@ -502,11 +505,17 @@ class data_entry_helper extends helper_base {
 }\n";
         }
       }
+      if ($options['showButton']) {
+        $imgPath = preg_replace('/client_helpers\/$/', '', self::relative_client_helper_path()).'media/images/nuvola/date-16px.png';
+        $button = ",\n    showOn: 'button',\n    buttonImage: '$imgPath'";
+      } else
+        $button='';
       self::$javascript .= "jQuery('#$escaped_id').datepicker({
     dateFormat : '".$options['dateFormat']."',
     changeMonth: true,
     changeYear: true,
-    constrainInput: false";
+    constrainInput: false $button
+    ";
       // Filter out future dates
       if (!array_key_exists('allow_future', $options) || $options['allow_future']==false) {
         self::$javascript .= ",
@@ -520,6 +529,7 @@ class data_entry_helper extends helper_base {
     }";
       }
       self::$javascript .= "\n});\n";
+      self::$javascript .= "$('button.ui-datepicker-trigger').addClass('ui-state-default');\n";
     }
     // Check for the special default value of today
     if (isset($options['default']) && $options['default']=='today')
