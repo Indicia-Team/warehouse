@@ -51,6 +51,7 @@ class map_helper extends helper_base {
   * <li><b>indiciaGeoSvc</b><br/>
   * </li>
   * <li><b>readAuth</b><br/>
+  * Provides read authentication tokens for the warehouse. Only required when there is a location control linked to the warehouse associated with this map.
   * </li>
   * <li><b>height</b><br/>
   * Height of the map panel, in pixels.

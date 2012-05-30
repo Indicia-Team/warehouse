@@ -179,7 +179,7 @@ class iform_map_explorer {
    */
   public static function get_form($args, $node, $response=null) {
     iform_load_helpers(array('report_helper','map_helper'));
-    $readAuth = report_helper::get_read_auth(variable_get('indicia_website_id',''), variable_get('indicia_password',''));
+    $readAuth = report_helper::get_read_auth($args['website_id'], $args['password']);
     $sharing='reporting';
     $reportOptions = array_merge(
       iform_report_get_report_options($args, $readAuth),
@@ -193,20 +193,24 @@ class iform_map_explorer {
         'rowId'=>'occurrence_id',
       )
     );    
-    
+    $allParams = array_merge($reportOptions['paramDefaults'], $reportOptions['extraParams']);
     global $user;
     profile_load_profile($user);
-    if (!empty($user->profile_indicia_user_id))
+    // Unless ownData explicitly set, we either default it to unchecked, or we set it unchecked and hidden if the user account
+    // is not on the warehouse
+    if (!array_key_exists('ownData', $allParams) && !empty($user->profile_indicia_user_id))
       $reportOptions['paramDefaults']['ownData']=0;
     else
       $reportOptions['extraParams']['ownData']=0;
-
-    if (!empty($user->profile_location))
+    // Unless ownLocality explicitly set, we either default it to checked, or we set it unchecked and hidden if the user account
+    // has no location preferences set
+    if (!array_key_exists('ownLocality', $allParams) && !empty($user->profile_location))
       $reportOptions['paramDefaults']['ownLocality']=1;
     else
       $reportOptions['extraParams']['ownLocality']=0;
-
-    if (!empty($user->profile_taxon_groups))
+    // Unless ownGroups explicitly set, we either default it to checked, or we set it unchecked and hidden if the user account
+    // has no taxon groups set
+    if (!array_key_exists('ownGroups', $allParams) && !empty($user->profile_taxon_groups))
       $reportOptions['paramDefaults']['ownGroups']=1;
     else
       $reportOptions['extraParams']['ownGroups']=0;

@@ -227,7 +227,7 @@ function processEmail(){
     if (email.type == 'recordCheck') {
     // ensure images are loaded
     $.ajax({
-      url: indiciaData.ajaxUrl + '/imagesAndComments' + urlSep + 'occurrence_id=' + occurrence_id,
+      url: indiciaData.ajaxUrl + '/imagesAndComments/' indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id,
       async: false,
       dataType: 'json',
       success: function (response) {
