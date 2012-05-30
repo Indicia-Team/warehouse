@@ -220,24 +220,26 @@ $indicia_templates = array(
       $('#{escaped_id}\\\\:search, #{escaped_id}\\\\:search\\\\:{escaped_captionField}')
         .attr('disabled', 'disabled');
     });\n",
-  'linked_list_javascript' => "
+    
+    'linked_list_javascript' => '
 {fn} = function() {
-  $('#{escapedId}').addClass('ui-state-disabled');
-  $('#{escapedId}').html('<option>Loading...</option>');
-  $.getJSON('{request}&query={query}', function(data){
-    $('#{escapedId}').html('');
+  $("#{escapedId}").addClass("ui-state-disabled").html("<option>Loading...</option>");
+  $.getJSON("{request}&{filterField}=" + $(this).val(), function(data){
+    var $control = $("#{escapedId}");
+    $control.html("");
     if (data.length>0) {
-      $('#{escapedId}').removeClass('ui-state-disabled');
+      $control.removeClass("ui-state-disabled");
       $.each(data, function(i) {
-        $('#{escapedId}').append('<option value=\"'+this.{valueField}+'\">'+this.{captionField}+'</option>');
+        $control.append("<option value=" + this.{valueField} + ">" + this.{captionField} + "</option>");
       });
     } else {
-      $('#{escapedId}').html('<option>{instruct}</option>');
+      $control.html("<option>{instruct}</option>");
     }
   });
 };
-jQuery('#{parentControlId}').change({fn});
-jQuery('#{parentControlId}').change();\n",
+$("#{parentControlId}").bind("change.indicia", {fn});
+$("#{parentControlId}").trigger("change.indicia");'."\n",
+    
   'postcode_textbox' => '<input type="text" name="{fieldname}" id="{id}"{class} value="{default}" '.
         'onblur="javascript:decodePostcode(\'{linkedAddressBoxId}\');" />',
   'sref_textbox' => '<input type="text" id="{id}" name="{fieldname}" {class} {disabled} value="{default}" />' .
