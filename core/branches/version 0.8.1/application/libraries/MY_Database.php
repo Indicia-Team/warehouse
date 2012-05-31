@@ -167,4 +167,28 @@ class Database extends Database_Core {
     return $this;
   }
 
+  /**
+    * See if a table exists in the database.
+    * Overriden to allow schema to be ignored.
+    *
+    * @param   string   table name
+    * @param   boolean  True to attach table prefix
+    * @param   boolean  True to attach database schema
+    * @return  boolean
+    */
+  public function table_exists($table_name, $prefix = TRUE, $schema = TRUE)
+  {
+    if ($schema) {
+      $schema_name = (isset($this->config['schema']) && !empty($this->config['schema'])) ? $this->config['schema'].'.' : ''; 
+      if ($prefix)
+              return in_array($schema_name.$this->config['table_prefix'].$table_name, $this->list_tables());
+      else
+              return in_array($schema_name.$table_name, $this->list_tables());   
+    } else {
+      if ($prefix)
+              return in_array($this->config['table_prefix'].$table_name, $this->list_tables());
+      else
+              return in_array($table_name, $this->list_tables());
+    }
+  }
 }
