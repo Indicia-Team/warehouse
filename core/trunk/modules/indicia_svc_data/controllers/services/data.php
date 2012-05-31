@@ -838,6 +838,9 @@ class Data_Controller extends Data_Service_Base_Controller {
         case 'view': 
         case 'nonce':
         case 'auth_token':
+        case 'callback':
+        case 'timestamp':
+        case '_':
           break;
       default:
         if (array_key_exists(strtolower($param), $this->view_columns)) {
