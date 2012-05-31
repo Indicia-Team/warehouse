@@ -916,11 +916,7 @@ class iform_mnhnl_dynamic_1 {
     );
     if (isset(data_entry_helper::$entity_to_load['sample:geom'])) {
       $options['initialFeatureWkt'] = data_entry_helper::$entity_to_load['sample:wkt'];
-      drupal_set_message('set');
     }
-    drupal_set_message(data_entry_helper::$entity_to_load['sample:geom'].' - geom');
-    drupal_set_message(data_entry_helper::$entity_to_load['sample:wkt'].' - wkt');
-    drupal_set_message('messages');
     if ($args['interface']!=='one_page')
       $options['tabDiv'] = $tabalias;
     $olOptions = iform_map_get_ol_options($args);
