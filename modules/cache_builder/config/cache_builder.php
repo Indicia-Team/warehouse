@@ -125,7 +125,7 @@ $config['taxa_taxon_lists']['update'] = "update cache_taxa_taxon_lists cttl
       preferred_language_iso=lpref.iso,
       preferred_language=lpref.language,
       default_common_name=tcommon.taxon,
-      search_name=regexp_replace(regexp_replace(regexp_replace(lower(t.taxon), E'\\\\(.+\\\\)', '', 'g'), 'ae', 'e', 'g'), '[^a-z0-9]', '', 'g'), 
+      search_name=regexp_replace(regexp_replace(regexp_replace(lower(t.taxon), E'\\\\(.+\\\\)', '', 'g'), 'ae', 'e', 'g'), E'[^a-z0-9\\\\?\\\\+]', '', 'g'), 
       external_key=tpref.external_key,
       taxon_meaning_id=ttlpref.taxon_meaning_id,
       taxon_group_id = tpref.taxon_group_id,
@@ -159,7 +159,7 @@ $config['taxa_taxon_lists']['insert']="insert into cache_taxa_taxon_lists (
       tpref.taxon as preferred_taxon, tpref.authority as preferred_authority, 
       lpref.iso as preferred_language_iso, lpref.language as preferred_language,
       tcommon.taxon as default_common_name,
-      regexp_replace(regexp_replace(regexp_replace(lower(t.taxon), E'\\\\(.+\\\\)', '', 'g'), 'ae', 'e', 'g'), '[^a-z0-9]', '', 'g'), 
+      regexp_replace(regexp_replace(regexp_replace(lower(t.taxon), E'\\\\(.+\\\\)', '', 'g'), 'ae', 'e', 'g'), E'[^a-z0-9\\\\?\\\\+]', '', 'g'), 
       tpref.external_key, ttlpref.taxon_meaning_id, tpref.taxon_group_id, tg.title,
       now(), now()
     from taxon_lists tl
@@ -281,7 +281,7 @@ $config['taxon_searchterms']['update']['abbreviations'] = "update cache_taxon_se
 $config['taxon_searchterms']['update']['simplified terms'] = "update cache_taxon_searchterms cts
     set taxa_taxon_list_id=ttl.id,
       taxon_list_id=ttl.taxon_list_id,
-      searchterm=regexp_replace(regexp_replace(regexp_replace(lower(t.taxon), E'\\\\(.+\\\\)', '', 'g'), 'ae', 'e', 'g'), '[^a-z0-9]', '', 'g'), 
+      searchterm=regexp_replace(regexp_replace(regexp_replace(lower(t.taxon), E'\\\\(.+\\\\)', '', 'g'), 'ae', 'e', 'g'), E'[^a-z0-9\\\\?\\\\+]', '', 'g'), 
       original=t.taxon,
       taxon_group=tg.title,
       taxon_meaning_id=ttl.taxon_meaning_id,
@@ -385,7 +385,7 @@ $config['taxon_searchterms']['insert']['simplified terms']="insert into cache_ta
       name_type, simplified, code_type_id
     )
     select distinct on (ttl.id) ttl.id, ttl.taxon_list_id, 
-      regexp_replace(regexp_replace(regexp_replace(lower(t.taxon), E'\\\\(.+\\\\)', '', 'g'), 'ae', 'e', 'g'), '[^a-z0-9]', '', 'g'), 
+      regexp_replace(regexp_replace(regexp_replace(lower(t.taxon), E'\\\\(.+\\\\)', '', 'g'), 'ae', 'e', 'g'), E'[^a-z0-9\\\\?\\\\+]', '', 'g'), 
       t.taxon, tg.title, ttl.taxon_meaning_id, tpref.taxon,
       tcommon.taxon, tpref.authority, l.iso, 
       case
