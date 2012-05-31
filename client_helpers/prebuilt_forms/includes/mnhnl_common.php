@@ -1823,7 +1823,7 @@ SitePointLayer.events.on({
     ,'featuremodified': onFeatureModified
   });
 ";
-    if($args['locationMode']!='multi')
+    if($args['locationMode']!='multi'){
       data_entry_helper::$javascript .= "
 hook_ChildFeatureLoad = function(feature, data, child_id, childArgs){
   if(child_id == '' || data.id != child_id){
@@ -1947,6 +1947,7 @@ jQuery('#".$options['mainFieldID']."').change(function(){
   clearLocation(false);
 });
 ";
+    }
     $retVal .= "<input type=\"hidden\" id=\"imp-sref-system\" name=\"location:centroid_sref_system\" value=\"2169\" >";
     if($args['locationMode']=='multi' && isset(data_entry_helper::$entity_to_load["sample:updated_by_id"])){ // only set if data loaded from db, not error condition
       iform_mnhnl_set_editable($auth, $args, $node, array(), !(isset($options['canCreate']) && $options['canCreate']));
