@@ -24,6 +24,11 @@ mapSettingsHooks = [];
 mapInitialisationHooks = [];
 
 /**
+ * Add functions to this array for them to be called a location is georeferenced.
+ */
+mapGeoreferenceHooks = [];
+
+/**
 * Class: indiciaMapPanel
 * JavaScript & OpenLayers based map implementation class for Indicia data entry forms.
 * This code file supports read only maps. A separate plugin will then run on top of this to provide editing support
@@ -279,8 +284,27 @@ mapInitialisationHooks = [];
         if (searchtext != '') {
           // delegate the service lookup task to the georeferencer driver that is loaded.
           div.georeferencer.georeference(searchtext);
+        } else {
+          div.georefInProgress = false;
         }
       }
+    }
+    
+    /**
+     * Convert a georeferenced place into a display place name.
+     */
+    function _getPlacename(place) {
+      var placename=(place.display===undefined ? place.name : place.display);
+      if (place.placeTypeName!==undefined) {
+        placename = placename+' (' + place.placeTypeName + ')';
+      }
+      if (place.admin1!==undefined && place.admin1!='') {
+        placename = placename + ', '+place.admin1;
+      }
+      if (place.admin2!==undefined && place.admin2!='') {
+        placename = placename + '\\' + place.admin2;
+      }
+      return placename;
     }
 
     /**
@@ -289,17 +313,17 @@ mapInitialisationHooks = [];
      */
     function _displayGeorefOutput(div, places) {
       if (places.length>0) {
-        var ref;
-        var corner1;
-        var corner2;
-        var epsg = (places[0].epsg === undefined ? 4326 : places[0].epsg);
+        var ref, corner1, corner2, obj, name,
+            epsg = (places[0].epsg === undefined ? 4326 : places[0].epsg);
         if (places.length == 1 && 
           places[0].name.toLowerCase().replace('.','') == $('#' + div.georefOpts.georefSearchId).val().toLowerCase().replace('.','')) {
           // one place found that matches (ignoring case and full stop) e.g. 'st albans' matches 'St. Albans'
           ref=places[0].centroid.y + ', ' + places[0].centroid.x;
+          name=places[0].name;
           corner1=places[0].boundingBox.northEast.y + ', ' + places[0].boundingBox.northEast.x;
           corner2=places[0].boundingBox.southWest.y + ', ' + places[0].boundingBox.southWest.x;
-          _displayLocation(div, ref, corner1, corner2, epsg);
+          obj = typeof places[0].obj==="undefined" ? {} : places[0].obj;
+          _displayLocation(div, ref, corner1, corner2, epsg, name, obj);
         } else if (places.length !== 0) {
           // one inexact match or multiple matches
           $('<p>'+opts.msgGeorefSelectPlace+'</p>')
@@ -309,28 +333,21 @@ mapInitialisationHooks = [];
             ref= place.centroid.y + ', ' + place.centroid.x;
             corner1=place.boundingBox.northEast.y + ', ' + place.boundingBox.northEast.x;
             corner2=place.boundingBox.southWest.y + ', ' + place.boundingBox.southWest.x;
-            placename= (place.display===undefined ? place.name : place.display);
-            if (place.placeTypeName!==undefined) {
-              placename = placename+' (' + place.placeTypeName + ')';
-            }
-            if (place.admin1!==undefined && place.admin1!='') {
-              placename = placename + ', '+place.admin1;
-            }
-            if (place.admin2!==undefined && place.admin2!='') {
-              placename = placename + '\\' + place.admin2;
-            }
+            placename= _getPlacename(place);
+            
+            obj = typeof place.obj==="undefined" ? {} : place.obj;
 
             ol.append($("<li>").append(
               $("<a href='#'>" + placename + "</a>")
                 .click(function(e) {e.preventDefault();})
                 .click((
-                  // use closures to persist the values of ref, corner1, corner 2
-                  function(ref, corner1, corner2, epsg){
+                  // use closures to persist the values of ref, corner1, etc, admin1, admin2
+                  function(ref, corner1, corner2, epsg, placename, obj){
                     return function() {
-                      _displayLocation(div, ref, corner1, corner2, epsg);
+                      _displayLocation(div, ref, corner1, corner2, epsg, placename, obj);
                     };
                   }
-                )(ref, corner1, corner2, epsg))
+                )(ref, corner1, corner2, epsg, placename, obj))
             ));
           });
 
@@ -349,7 +366,7 @@ mapInitialisationHooks = [];
     * After georeferencing a place, display a point on the map representing that place.
     * @access private
     */
-    function _displayLocation(div, ref, corner1, corner2, epsgCode)
+    function _displayLocation(div, ref, corner1, corner2, epsgCode, name, obj)
     {
       // TODO either confirm that transform is OK or convert srefs using services.
       var epsg=new OpenLayers.Projection("EPSG:"+epsgCode);
@@ -398,6 +415,10 @@ mapInitialisationHooks = [];
             $('#'+opts.srefLongId).val(refxy[1]);
           }
       }
+      // call any hooks that need to know about georeferences
+      $.each(mapGeoreferenceHooks, function(i, fn) {
+        fn(div, ref, corner1, corner2, epsgCode, name, obj);
+      });
     }
 
     /**
@@ -749,7 +770,7 @@ mapInitialisationHooks = [];
      */
     function pointToSref(div, point, system, callback) {
       // because of issues with proj4 transformations, it is easiest to go to the services for all
-       // get approx metres accuracy we can expect from the mouse click - about 5mm accuracy.
+        // get approx metres accuracy we can expect from the mouse click - about 5mm accuracy.
         var precision, metres = div.map.getScale()/200;
         // now round to find appropriate square size
         if (metres<30) {
@@ -779,7 +800,7 @@ mapInitialisationHooks = [];
                 "&output=" + div.settings.latLongFormat +
                 "&callback=?", callback
         );
-    }
+      }
     
     /**
      * Event handler for feature add/modify on the edit layer when polygon recording is enabled. Puts the geom in the hidden
@@ -827,7 +848,7 @@ mapInitialisationHooks = [];
       // Definitely not indiciaProjection!
       // Need to convert this map based Point to a _getSystem based Sref (done by pointToSref) and a
       // indiciaProjection based geometry (done by the callback)
-      pointToSref(div, new OpenLayers.Geometry.Point(lonlat.lon, lonlat.lat), _getSystem(), callback);
+      pointToSref(div, new OpenLayers.Geometry.Point(lonlat.lon, lonlat.lat), _getSystem(), callback);        
     }
 
     // Extend our default options with those provided, basing this on an empty object
@@ -1238,7 +1259,7 @@ mapInitialisationHooks = [];
       }
 
       // Disable the scroll wheel from zooming if required
-      if (!this.settings.scroll_wheel_zoom) {
+      if (!this.settings.scroll_wheel_zoom || this.settings.scroll_wheel_zoom==="false") {
         $.each(div.map.controls, function(i, control) {
           if (control instanceof OpenLayers.Control.Navigation) {
             control.disableZoomWheel();
@@ -1316,14 +1337,6 @@ $.fn.indiciaMapPanel.defaults = {
     msgSrefOutsideGrid: 'The position is outside the range of the selected grid reference system.',
     msgSrefNotRecognised: 'The grid reference is not recognised.',
     msgReplaceBoundary: 'Would you like to replace the existing boundary with the new one?',
-    hintDrawPolygonHint: 'Draw polygons by clicking on the map then double click to finish.',
-    hintDrawLineHint: 'Draw lines by clicking on the map then double click to finish.',
-    hintDrawPointHint: 'Draw points by clicking on the map.',
-    hintDrawForReportingHint: 'These will then define the search area next time you click the reload the report data.',
-    hintClickToFilterGridTool: 'Use this tool to click on records on the map and filter the grid to show the records you clicked on. You can also drag a bounding box around a selection of records.',
-    hintClearSelection: 'Clear selection',
-    hintModifyFeature: 'Modify an object on the map',
-    hintNavigation: 'Select this tool to navigate around the map. Drag the map for panning, double click to zoom, or shift drag to zoom to a bounding box.',
     maxZoom: 19, //maximum zoom when relocating to gridref, postcode etc.
     maxZoomBuffer: 0.67, //margin around feature when relocating to gridref
 
