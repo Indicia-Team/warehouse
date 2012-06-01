@@ -156,3 +156,7 @@ div.olControlEditingToolbar  {
 .scKeepTogether {
     white-space: nowrap; 
 }
+#samples-grid td {
+  padding: 2px;
+  border: solid silver 1px;
+}
