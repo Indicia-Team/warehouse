@@ -136,4 +136,7 @@ div.olControlEditingToolbar  {
 #imp-srefY {
 	width: 60px;
 }
-
+#samples-grid td {
+  padding: 2px;
+  border: solid silver 1px;
+}
