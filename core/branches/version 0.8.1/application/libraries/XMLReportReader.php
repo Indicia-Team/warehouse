@@ -42,6 +42,7 @@ class XMLReportReader_Core implements ReportReader
   private $automagic = false;
   private $vagueDateProcessing = 'true';
   private $download = 'OFF';
+  private $surveyParam='survey_id';
 
   /**
    * @var boolean Identify if we have got SQL defined in the columns array. If so we are able to auto-generate the
@@ -543,7 +544,8 @@ class XMLReportReader_Core implements ReportReader
     }
     $query .= " INNER JOIN ".$parentSingular."_attribute_values vt ON (vt.".$parentSingular."_id = "." lt".$attributes->parentTableIndex.".id and vt.deleted = FALSE) ";
     $query .= " INNER JOIN ".$parentSingular."_attributes at ON (vt.".$parentSingular."_attribute_id = at.id and at.deleted = FALSE) ";
-    $query .= " INNER JOIN ".$parentSingular."_attributes_websites rt ON (rt.".$parentSingular."_attribute_id = at.id and rt.deleted = FALSE and (rt.restrict_to_survey_id = #survey_id# or rt.restrict_to_survey_id is null)) ";
+    $query .= " INNER JOIN ".$parentSingular."_attributes_websites rt ON (rt.".$parentSingular."_attribute_id = at.id and rt.deleted = FALSE and (rt.restrict_to_survey_id = #".
+        $this->surveyParam."# or rt.restrict_to_survey_id is null)) ";
     // where list
     $previous=false;
     if($this->tables[0]['where'] != null) {
@@ -560,8 +562,12 @@ class XMLReportReader_Core implements ReportReader
   /**
    * Merges a parameter into the list of parameters read for the report. Updates existing
    * ones if there is a name match.
+   * @todo Review the handling of $this->surveyParam
    */
   private function mergeParam($name, $reader=null) {
+    // Some parts of the code assume the survey will be identified by a parameter called survey or survey_id.
+    if ($name==='survey_id' || $name==='survey')      
+      $this->surveyParam = $name;
     $display = ($reader===null) ? '' : $reader->getAttribute('display');
     $type = ($reader===null) ? '' : $reader->getAttribute('datatype');
     $allow_buffer = ($reader===null) ? '' : $reader->getAttribute('allow_buffer');
