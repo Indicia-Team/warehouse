@@ -947,10 +947,10 @@ class data_entry_helper extends helper_base {
         'valueField'=>'id',
         'captionField'=>'name',
         'id'=>'imp-location'
-        ), $options);
+    ), $options);
 
     return self::autocomplete($options);
-  }
+      }
 
  /**
   * Outputs a select control that is dedicated to listing locations and which is bound to any map panel
@@ -1586,8 +1586,7 @@ class data_entry_helper extends helper_base {
     $tokens=explode(':', $options['fieldname']);
     // Merge the default parameters
     $options = array_merge(array(
-        'srefField'=>'sample:entered_sref',
-        'systemfield'=>'sample:entered_sref_system',
+        'fieldname'=>'sample:entered_sref',
         'hiddenFields'=>true,
         'id'=>'imp-sref',
         'geomFieldname'=>$tokens[0].':geom',
@@ -3728,7 +3727,7 @@ if (errors.length>0) {
     $records = array();
     $subModels = array();
     foreach ($arr as $key=>$value){
-      if (substr($key, 0, 3)=='sc:'){
+      if (substr($key, 0, 3)=='sc:'){ 
         // Don't explode the last element for occurrence attributes
         $a = explode(':', $key, 4);
         $records[$a[1]][$a[3]] = $value;
