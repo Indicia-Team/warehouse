@@ -654,7 +654,7 @@ class data_entry_helper extends helper_base {
       'maxFileCount' => 4,
       'autoupload' => false,
       'flickr' => false,
-      'uploadSelectBtnCaption' => lang::get('Select file(s)'),
+      'uploadSelectBtnCaption' => lang::get('Upload photo(s)'),
       'flickrSelectBtnCaption' => lang::get('Choose photo from Flickr'),
       'startUploadBtnCaption' => lang::get('Start upload'),
       'msgUploadError' => lang::get('upload error'),
@@ -801,7 +801,7 @@ class data_entry_helper extends helper_base {
       // Internationalise the labels here, because if we do this directly in the template setup code it is too early for any custom
       // language files to be loaded.
       'search' => lang::get('search'),
-      'close' => lang::get('close'),
+      'close' => lang::get('Close the search results'),
     ), $options);
     self::add_resource('indiciaMapPanel');
     // dynamically build a resource to link us to the driver js file.
