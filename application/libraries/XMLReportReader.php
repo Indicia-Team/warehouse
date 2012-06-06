@@ -26,6 +26,7 @@
 */
 class XMLReportReader_Core implements ReportReader
 {
+  public $columns = array();
   private $name;
   private $title;
   private $description;
@@ -36,7 +37,6 @@ class XMLReportReader_Core implements ReportReader
   private $field_sql;
   private $order_by;
   private $params = array();
-  private $columns = array();
   private $tables = array();
   private $attributes = array();
   private $automagic = false;
