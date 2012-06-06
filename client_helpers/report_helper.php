@@ -19,7 +19,7 @@
  * @license	http://www.gnu.org/licenses/gpl.html GPL 3.0
  * @link 	http://code.google.com/p/indicia/
  */
- 
+
 /**
  * Link in other required php files.
  */
@@ -92,13 +92,13 @@ class report_helper extends helper_base {
         $r .= "</li>\n";
       }
     }
-    if (!empty($r)) 
+    if (!empty($r))
       $r = "<ul>\n$r\n</ul>\n";
     return $r;
   }
 
   /**
-   * Returns a simple HTML link to download the contents of a report defined by the options. The options arguments supported are the same as for the 
+   * Returns a simple HTML link to download the contents of a report defined by the options. The options arguments supported are the same as for the
    * report_grid method. Pagination information will be ignored (e.g. itemsPerPage).
    * If this download link is to be displayed alongside a report_grid to provide a download of the same data, set the id
    * option to the same value for both the report_download_link and report_grid controls to link them together.
@@ -114,12 +114,12 @@ class report_helper extends helper_base {
     $sortAndPageUrlParams = self::get_report_grid_sort_page_url_params($options);
     // don't want to paginate the download link
     unset($sortAndPageUrlParams['page']);
-    $extras = self::get_report_sorting_paging_params($options, $sortAndPageUrlParams);    
+    $extras = self::get_report_sorting_paging_params($options, $sortAndPageUrlParams);
     $link = self::get_report_data($options, $extras.'&'.self::array_to_query_string($currentParamValues, true), true). '&mode=csv';
     global $indicia_templates;
     return str_replace(array('{link}','{caption}'), array($link, lang::get($options['caption'])), $indicia_templates['report_download_link']);
   }
-  
+
   /**
   * <p>Outputs a grid that loads the content of a report or Indicia table.</p>
   * <p>The grid supports a simple pagination footer as well as column title sorting through PHP. If
@@ -135,13 +135,13 @@ class report_helper extends helper_base {
   * generated.</li>
   * <li><b>reportGroup</b><br/>
   * When joining multiple reports together, this can be used on a report that has autoParamsForm set to false to bind the report to the
-  * parameters form from a different report by giving both report controls the same reportGroup string. This will only work when all 
+  * parameters form from a different report by giving both report controls the same reportGroup string. This will only work when all
   * parameters required by this report are covered by the other report's parameters form.</li>
   * <li><b>rememberParamsReportGroup</b><br/>
   * Enter any value in this parameter to allow the report to save its parameters for the next time the report is loaded.
-  * The parameters are saved site wide, so if several reports share the same value and the same report group then the parameter 
-  * settings will be shared across the reports even if they are on different pages of the site. For example if several reports on the 
-  * site have an ownData boolean parameter which filters the data to the user's own data, this can be set so that the reports all 
+  * The parameters are saved site wide, so if several reports share the same value and the same report group then the parameter
+  * settings will be shared across the reports even if they are on different pages of the site. For example if several reports on the
+  * site have an ownData boolean parameter which filters the data to the user's own data, this can be set so that the reports all
   * share the setting. This functionality requires cookies to be enabled on the browser.</li>
   * <li><b>mode</b><br/>
   * Pass report for a report, or direct for an Indicia table or view. Default is report.</li>
@@ -164,19 +164,19 @@ class report_helper extends helper_base {
   *  - display: caption of the column, which defaults to the fieldname if not specified
   *  - actions: list of action buttons to add to each grid row. Each button is defined by a sub-array containing
   *      values for caption, visibility_field, url, urlParams, class and javascript. The visibility field is an optional
-  *      name of a field in the data which contains true or false to define the visibility of this action. The javascript, url 
+  *      name of a field in the data which contains true or false to define the visibility of this action. The javascript, url
   *      and urlParams values can all use the field names from the report in braces as substitutions, for example {id} is replaced
-  *      by the value of the field called id in the respective row. In addition, the url can use {currentUrl} to represent the 
-  *      current page's URL, {rootFolder} to represent the folder on the server that the current PHP page is running from, and 
-  *      {imageFolder} for the image upload folder. Because the javascript may pass the field values as parameters to functions, 
-  *      there are escaped versions of each of the replacements available for the javascript action type. Add -escape-quote or 
+  *      by the value of the field called id in the respective row. In addition, the url can use {currentUrl} to represent the
+  *      current page's URL, {rootFolder} to represent the folder on the server that the current PHP page is running from, and
+  *      {imageFolder} for the image upload folder. Because the javascript may pass the field values as parameters to functions,
+  *      there are escaped versions of each of the replacements available for the javascript action type. Add -escape-quote or
   *      -escape-dblquote to the fieldname for quote escaping, or -escape-htmlquote/-escape-htmldblquote for escaping quotes in HTML
   *      attributes. For example this would be valid in the action javascript: foo("{bar-escape-dblquote}");
   *      even if the field value contains a double quote which would have broken the syntax.
   *  - visible: true or false, defaults to true
   *  - template: allows you to create columns that contain dynamic content using a template, rather than just the output
   *      of a field. The template text can contain fieldnames in braces, which will be replaced by the respective field values.
-  *      Add -escape-quote or -escape-dblquote to the fieldname for quote escaping, or -escape-htmlquote/-escape-htmldblquote 
+  *      Add -escape-quote or -escape-dblquote to the fieldname for quote escaping, or -escape-htmlquote/-escape-htmldblquote
   *      for escaping quotes in HTML attributes. Note that template columns cannot be sorted by clicking grid headers.
   *     An example array for the columns option is:
   *     array(
@@ -186,12 +186,12 @@ class report_helper extends helper_base {
   *         array('caption' => 'edit', 'url'=>'{currentUrl}', 'urlParams'=>array('survey_id'=>'{id}'))
   *       ))
   *     )
-  *  - json: set to true if the column contains a json string object with properties that can be decoded to give strings that 
+  *  - json: set to true if the column contains a json string object with properties that can be decoded to give strings that
   *      can be used as replacements in a template. For example, a column is returned from a report with fieldname='data', json=true
-  *      and containing a data value '{"species":"Arnica montana","date":"14/04/2004"}'. A second column with fieldname='comment' 
-  *      contains the value 'Growing on a mountain pasture'. A third column is setup in the report with template set to 
+  *      and containing a data value '{"species":"Arnica montana","date":"14/04/2004"}'. A second column with fieldname='comment'
+  *      contains the value 'Growing on a mountain pasture'. A third column is setup in the report with template set to
   *      '<div>{species} was recorded on {date}.<br/>{comment}</div>'. The json data and the second column's raw value are all
-  *      available in the template replacements, so the output is set to 
+  *      available in the template replacements, so the output is set to
   *      '<div>Arnice montana was recorded on 14/04/2004.<br/>Growing on a mountain pasture</div>'
   *      template
   * </li>
@@ -226,7 +226,7 @@ class report_helper extends helper_base {
   * Array of key value pairs to include as a filter against the data.
   * </li>
   * <li><b>extraParams</b><br/>
-  * Array of additional key value pairs to attach to the request. This should include fixed values which cannot be changed by the 
+  * Array of additional key value pairs to attach to the request. This should include fixed values which cannot be changed by the
   * user and therefore are not needed in the parameters form.
   * </li>
   * <li><b>paramDefaults</b>
@@ -250,25 +250,25 @@ class report_helper extends helper_base {
   * </li>
   * <li><b>footer</b>
   * Additional HTML to include in the report footer area. {currentUrl} is replaced by the
-  * current page's URL, {rootFolder} is replaced by the folder on the server that the current PHP page 
+  * current page's URL, {rootFolder} is replaced by the folder on the server that the current PHP page
   * is running from.</li>
   * </li>
   * <li><b>downloadLink</b>
   * Should a download link be included in the report footer? Defaults to false.</li>
   * <li><b>sharing</b>
-  * Assuming the report has been written to take account of website sharing agreements, set this to define the task 
-  * you are performing with the report and therefore the type of sharing to allow. Options are reporting (default), 
+  * Assuming the report has been written to take account of website sharing agreements, set this to define the task
+  * you are performing with the report and therefore the type of sharing to allow. Options are reporting (default),
   * verification, moderation, peer_review, data_flow, website (this website only) or me (my data only).</li>
   * <li><b>UserId</b>
   * If sharing=me, then this must contain the Indicia user ID of the user to return data for.
   * </li>
   * <li><b>sendOutputToMap</b>
-  * Default false. If set to true, then the records visible on the current page are drawn onto a map. This is different to the 
+  * Default false. If set to true, then the records visible on the current page are drawn onto a map. This is different to the
   * report_map method when linked to a report_grid, which loads its own report data for display on a map, just using the same input parameters
   * as other reports. In this case the report_grid's report data is used to draw the features on the map, so only 1 report request is made.
   * </li>
   * <li><b>rowClass</b>
-  * A CSS class to add to each row in the grid. Can include field value replacements in braces, e.g. {certainty} to construct classes from 
+  * A CSS class to add to each row in the grid. Can include field value replacements in braces, e.g. {certainty} to construct classes from
   * field values, e.g. to colour rows in the grid according to the data.
   * </li>
   * </ul>
@@ -283,7 +283,7 @@ class report_helper extends helper_base {
     $options = self::get_report_grid_options($options);
     $extras = self::get_report_sorting_paging_params($options, $sortAndPageUrlParams);
     self::request_report($response, $options, $currentParamValues, true, $extras);
-    if (isset($response['error'])) return $response['error'];   
+    if (isset($response['error'])) return $response['error'];
     $r = self::params_form_if_required($response, $options, $currentParamValues);
     // return the params form, if that is all that is being requested, or the parameters are not complete.
     if ($options['paramsOnly'] || !isset($response['records'])) return $r;
@@ -330,7 +330,7 @@ class report_helper extends helper_base {
           $r .= "<th$fieldId class=\"$thClass$orderStyle\">$captionLink</th>\n";
           if (isset($field['datatype'])) {
             switch ($field['datatype']) {
-              case 'text': 
+              case 'text':
                 $title=lang::get("$caption search. Use * as a wildcard.");
                 break;
               case 'date':
@@ -356,7 +356,7 @@ class report_helper extends helper_base {
     $r .= '<tr><td colspan="'.count($options['columns'])*$options['galleryColCount'].'">'.self::output_pager($options, $pageUrl, $sortAndPageUrlParams, $response).'</td></tr>'.
     $extraFooter = '';
     if (isset($options['footer']) && !empty($options['footer'])) {
-      $footer = str_replace(array('{rootFolder}', '{currentUrl}'), 
+      $footer = str_replace(array('{rootFolder}', '{currentUrl}'),
           array(dirname($_SERVER['PHP_SELF']) . ($pathParam=='' ? '/' : "?$pathParam="), $currentUrl['path']), $options['footer']);
       $extraFooter .= '<div class="left">'.$footer.'</div>';
     }
@@ -412,7 +412,7 @@ class report_helper extends helper_base {
           if (isset($options['sendOutputToMap']) && $options['sendOutputToMap'] && isset($field['mappable']) && $field['mappable']==='true') {
             $addFeaturesJs.= "  addDistPoint(features, ".json_encode($row).", '".$field['fieldname']."', {}".
                 (empty($rowId) ? '' : ", '".$row[$options['rowId']]."'").");\n";
-          }          
+          }
           if (isset($field['visible']) && ($field['visible']==='false' || $field['visible']===false))
             continue; // skip this column as marked invisible
           if (isset($field['actions'])) {
@@ -421,7 +421,7 @@ class report_helper extends helper_base {
           } elseif (isset($field['template'])) {
             $value = self::mergeParamsIntoTemplate($row, $field['template'], true, true, true);
           } else if (isset($field['update']) &&(!isset($field['update']['permission']) || user_access($field['update']['permission']))){
-          	// TODO include checks to ensure method etc are included in structure - 
+          	// TODO include checks to ensure method etc are included in structure -
           	$updateformID++;
           	$value="<form id=\"updateform-".$updateformID."\" method=\"post\" action=\"".iform_ajaxproxy_url($node, $field['update']['method'])."\"><input type=\"hidden\" name=\"website_id\" value=\"".$field['update']['website_id']."\"><input type=\"hidden\" name=\"transaction_id\" value=\"updateform-".$updateformID."-field\"><input id=\"updateform-".$updateformID."-field\" name=\"".$field['update']['tablename'].":".$field['update']['fieldname']."\" class=\"update-input ".(isset($field['update']['class']) ? $field['update']['class'] : "")."\" value=\"".(isset($field['fieldname']) && isset($row[$field['fieldname']]) ? $row[$field['fieldname']] : '')."\">";
           	if(isset($field['update']['parameters'])){
@@ -501,7 +501,7 @@ $('.update-input').focus(function(evt) {
   $(evt.target).addClass('input-selected');
 }).change(function(evt) {
   $(evt.target).addClass('input-edited');
-}).blur(function(evt) {        
+}).blur(function(evt) {
   var selector = '#'+evt.target.id.replace(/:/g, '\\:');
   currentCell = evt.target.id;
   $(selector).removeClass('input-selected');
@@ -582,17 +582,17 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     }
     return $r;
   }
-  
+
   private static function request_report(&$response, &$options, &$currentParamValues, $wantCount, $extras='') {
     $extras .= '&wantColumns=1&wantParameters=1';
-    if ($wantCount) 
+    if ($wantCount)
       $extras .= '&wantCount=1';
-    // any extraParams are fixed values that don't need to be available in the params form, so they can be added to the 
+    // any extraParams are fixed values that don't need to be available in the params form, so they can be added to the
     // list of ignorable parameters.
-    if (array_key_exists('extraParams', $options) && array_key_exists('ignoreParams', $options)) 
+    if (array_key_exists('extraParams', $options) && array_key_exists('ignoreParams', $options))
       $options['ignoreParams'] = array_merge($options['ignoreParams'], array_keys($options['extraParams']));
     elseif (array_key_exists('extraParams', $options))
-      $options['ignoreParams'] = array_keys($options['extraParams']);    
+      $options['ignoreParams'] = array_keys($options['extraParams']);
     if (array_key_exists('ignoreParams', $options))
       $extras .= '&paramsFormExcludes='.json_encode($options['ignoreParams']);
     // specify the view variant to load, if loading from a view
@@ -606,11 +606,11 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       $extras .= '&'.self::array_to_query_string($currentParamValues, true);
     $response = self::get_report_data($options, $extras);
   }
-  
+
   private static function params_form_if_required($response, $options, $currentParamValues) {
     if (isset($response['parameterRequest'])) {
       // We put report param controls into their own divs, making layout easier. Unless going in the
-      // map toolbar as they will then be inline. 
+      // map toolbar as they will then be inline.
       global $indicia_templates;
       $oldprefix = $indicia_templates['prefix'];
       $oldsuffix = $indicia_templates['suffix'];
@@ -626,10 +626,10 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       // loading records from a view (not a report), so we can put a simple filter parameter form at the top.
       return self::get_direct_mode_params_form($options);
     }
-    
+
     return ''; // no form required
   }
-  
+
   /**
    * Output pagination links
    */
@@ -645,7 +645,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     $r = str_replace('{paging}', $r, $indicia_templates['paging_container']);
     return $r;
   }
-  
+
   /**
    * Creates the HTML for the simple version of the pager.
    */
@@ -659,18 +659,18 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       if ($sortAndPageUrlParams['page']['value']>0) {
         $prev = max(0, $sortAndPageUrlParams['page']['value']-1);
         $r .= "<a class=\"pag-prev pager-button\" rel=\"nofollow\" href=\"$pagLinkUrl".$sortAndPageUrlParams['page']['name']."=$prev\">".lang::get('previous')."</a> \n";
-      } else 
+      } else
         $r .= "<span class=\"pag-prev ui-state-disabled pager-button\">".lang::get('previous')."</span> \n";
       // if the service call returned more records than we are displaying (because we asked for 1 more), then we can go forward
       if (count($response['records'])>$options['itemsPerPage']) {
         $next = $sortAndPageUrlParams['page']['value'] + 1;
         $r .= "<a class=\"pag-next pager-button\" rel=\"nofollow\" href=\"$pagLinkUrl".$sortAndPageUrlParams['page']['name']."=$next\">".lang::get('next')." &#187</a> \n";
-      } else 
+      } else
         $r .= "<span class=\"pag-next ui-state-disabled pager-button\">".lang::get('next')."</span> \n";
       return $r;
     }
   }
-  
+
   /**
    * Creates the HTML for the advanced version of the pager.
    */
@@ -692,7 +692,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     $pagelist = '';
     $page = ($sortAndPageUrlParams['page']['value'] ? $sortAndPageUrlParams['page']['value'] : 0)+1;
     for ($i=max(1, $page-5); $i<=min(ceil($response['count']/$options['itemsPerPage']), $page+5); $i++) {
-      if ($i===$page) 
+      if ($i===$page)
         $pagelist .= "<span class=\"pag-page pager-button ui-state-disabled\" id=\"page-".$options['id']."-$i\">$i</span>\n";
       else
         $pagelist .= "<a class=\"pag-page pager-button\" rel=\"nofollow\" href=\"$pagLinkUrl=".($i-1)."\" id=\"page-".$options['id']."-$i\">$i</a>\n";
@@ -708,8 +708,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       $replacements['last'] = "<span class=\"pag-last pager-button ui-state-disabled\">".lang::get('last')."</span>\n";
     }
     if ($response['count']) {
-      $replacements['showing'] = '<span class="pag-showing">'.lang::get('Showing records {1} to {2} of {3}', 
-          ($page-1)*$options['itemsPerPage']+1, 
+      $replacements['showing'] = '<span class="pag-showing">'.lang::get('Showing records {1} to {2} of {3}',
+          ($page-1)*$options['itemsPerPage']+1,
           min($page*$options['itemsPerPage'], $response['count']),
           $response['count']).'</span>';
     } else {
@@ -753,13 +753,13 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * CSS class to apply to the box containing the header.</li>
   * <li><b>reportGroup</b><br/>
   * When joining multiple reports together, this can be used on a report that has autoParamsForm set to false to bind the report to the
-  * parameters form from a different report by giving both report controls the same reportGroup string. This will only work when all 
+  * parameters form from a different report by giving both report controls the same reportGroup string. This will only work when all
   * parameters required by this report are covered by the other report's parameters form.</li>
   * <li><b>rememberParamsReportGroup</b><br/>
   * Enter any value in this parameter to allow the report to save its parameters for the next time the report is loaded.
-  * The parameters are saved site wide, so if several reports share the same value and the same report group then the parameter 
-  * settings will be shared across the reports even if they are on different pages of the site. For example if several reports on the 
-  * site have an ownData boolean parameter which filters the data to the user's own data, this can be set so that the reports all 
+  * The parameters are saved site wide, so if several reports share the same value and the same report group then the parameter
+  * settings will be shared across the reports even if they are on different pages of the site. For example if several reports on the
+  * site have an ownData boolean parameter which filters the data to the user's own data, this can be set so that the reports all
   * share the setting. This functionality requires cookies to be enabled on the browser.</li>
   * <li><b>height</b><br/>
   * Chart height in pixels.</li>
@@ -794,8 +794,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * field(s) which contains the labels. Also used for pie chart segment names. Can be an array for multi-series
   * charts.</li>
   * <li><b>sharing</b>
-  * Assuming the report has been written to take account of website sharing agreements, set this to define the task 
-  * you are performing with the report and therefore the type of sharing to allow. Options are reporting (default), 
+  * Assuming the report has been written to take account of website sharing agreements, set this to define the task
+  * you are performing with the report and therefore the type of sharing to allow. Options are reporting (default),
   * verification, moderation, peer_review, data_flow, website (this website only) or me (my data only).</li>
   * <li><b>UserId</b>
   * If sharing=me, then this must contain the Indicia user ID of the user to return data for.
@@ -928,10 +928,10 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       self::add_resource('jqplot_category_axis_renderer');
     }
   }
-  
+
   /**
    * When loading records from a view, put a simple filter parameters form at the top as the view does not specify any
-   * parameters. 
+   * parameters.
    */
   private static function get_direct_mode_params_form($options) {
     $reloadUrl = self::get_reload_link_parts();
@@ -940,7 +940,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     $value = (isset($_GET['filters'])) ? ' value="'.$_GET['filters'].'"' : '';
     $r .= '<input type="text" name="filters" id="filters" class="filterInput"'.$value.'/> ';
     $r .= '<label for="columns" class="auto">'.lang::get('in').'</label> <select name="columns" class="filterSelect" id="columns">';
-    
+
     foreach ($options['columns'] as $column) {
       if (isset($column['fieldname']) && isset($column['display']) && (!isset($column['visible']) || $column['visible']===false)) {
         $selected = (isset($_GET['columns']) && $_GET['columns']==$column['fieldname']) ? ' selected="selected"' : '';
@@ -976,13 +976,13 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * CSS class to apply to the outer div. Default is banded-report.</li>
   * <li><b>reportGroup</b><br/>
   * When joining multiple reports together, this can be used on a report that has autoParamsForm set to false to bind the report to the
-  * parameters form from a different report by giving both report controls the same reportGroup string. This will only work when all 
+  * parameters form from a different report by giving both report controls the same reportGroup string. This will only work when all
   * parameters required by this report are covered by the other report's parameters form.</li>
   * <li><b>rememberParamsReportGroup</b><br/>
   * Enter any value in this parameter to allow the report to save its parameters for the next time the report is loaded.
-  * The parameters are saved site wide, so if several reports share the same value and the same report group then the parameter 
-  * settings will be shared across the reports even if they are on different pages of the site. For example if several reports on the 
-  * site have an ownData boolean parameter which filters the data to the user's own data, this can be set so that the reports all 
+  * The parameters are saved site wide, so if several reports share the same value and the same report group then the parameter
+  * settings will be shared across the reports even if they are on different pages of the site. For example if several reports on the
+  * site have an ownData boolean parameter which filters the data to the user's own data, this can be set so that the reports all
   * share the setting. This functionality requires cookies to be enabled on the browser.</li>
   * <li><b>header</b><br/>
   * Text to output as the header of the report.</li>
@@ -999,8 +999,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * each time one of the named trigger fields' values change. Therefore when using
   * trigger fields the band acts as a group header band.</li>
   * <li><b>sharing</b>
-  * Assuming the report has been written to take account of website sharing agreements, set this to define the task 
-  * you are performing with the report and therefore the type of sharing to allow. Options are reporting (default), 
+  * Assuming the report has been written to take account of website sharing agreements, set this to define the task
+  * you are performing with the report and therefore the type of sharing to allow. Options are reporting (default),
   * verification, moderation, peer_review, data_flow, website (this website only) or me (my data only).</li>
   * <li><b>UserId</b>
   * If sharing=me, then this must contain the Indicia user ID of the user to return data for.
@@ -1008,13 +1008,13 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * </ul>
   */
   public static function freeform_report($options) {
-    $options = self::get_report_grid_options($options);    
+    $options = self::get_report_grid_options($options);
     self::request_report($response, $options, $currentParamValues, false);
-    if (isset($response['error'])) return $response['error'];   
+    if (isset($response['error'])) return $response['error'];
     $r = self::params_form_if_required($response, $options, $currentParamValues);
     // return the params form, if that is all that is being requested, or the parameters are not complete.
     if ($options['paramsOnly'] || !isset($response['records'])) return $r;
-    $records = $response['records'];    
+    $records = $response['records'];
 
     $options = array_merge(array(
       'header' => '',
@@ -1060,7 +1060,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     }
     return $r;
   }
-  
+
  /**
   * Function to output a report onto a map rather than a grid.
   * Because there are many options for the map, this method does not generate the
@@ -1080,13 +1080,13 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * generated.</li>
   * <li><b>reportGroup</b><br/>
   * When joining multiple reports together, this can be used on a report that has autoParamsForm set to false to bind the report to the
-  * parameters form from a different report by giving both report controls the same reportGroup string. This will only work when all 
+  * parameters form from a different report by giving both report controls the same reportGroup string. This will only work when all
   * parameters required by this report are covered by the other report's parameters form.</li>
   * <li><b>rememberParamsReportGroup</b><br/>
   * Enter any value in this parameter to allow the report to save its parameters for the next time the report is loaded.
-  * The parameters are saved site wide, so if several reports share the same value and the same report group then the parameter 
-  * settings will be shared across the reports even if they are on different pages of the site. For example if several reports on the 
-  * site have an ownData boolean parameter which filters the data to the user's own data, this can be set so that the reports all 
+  * The parameters are saved site wide, so if several reports share the same value and the same report group then the parameter
+  * settings will be shared across the reports even if they are on different pages of the site. For example if several reports on the
+  * site have an ownData boolean parameter which filters the data to the user's own data, this can be set so that the reports all
   * share the setting. This functionality requires cookies to be enabled on the browser.</li>
   * <li><b>mode</b><br/>
   * Pass report for a report, or direct for an Indicia table or view. Default is report.</li>
@@ -1151,16 +1151,16 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * <li>clickableLayersOutputDiv<br/>
   * Set to the id of a div to display the clicked data in, or leave blank to display a popup.</li>
   * <li>clickableLayersOutputColumns<br/>
-  * An associated array of column field names with column titles as the values which defines the columns that are output when clicking on a data point. 
+  * An associated array of column field names with column titles as the values which defines the columns that are output when clicking on a data point.
   * If ommitted, then all available columns are output using their original field names.</li>
   * <li>displaySymbol</li>
   * Symbol to display instead of the actual polygon. The symbol is displayed at the centre of the polygon.
-  * If not set then defaults to output the original polygon. Allowed values are circle, 
+  * If not set then defaults to output the original polygon. Allowed values are circle,
   * square, star, x, cross, triangle.</li>
   * <li>valueOutput
   * Allows definition of how a data value in the report output is used to change the output of each symbol.
   * This allows symbol size, colour and/or opacity to be used to provide an indication of data values.
-  * Provide an array of entries. The key of the entries should match the style parameter you want to 
+  * Provide an array of entries. The key of the entries should match the style parameter you want to
   * control which should be one of fillOpacity, fillColor, strokeOpacity, strokeWidth or strokeColor. If using
   * displaySymbol to render symbols rather than polygons then pointRadius (the symbol size) and rotation are also
   * available. If the report defines labels (using the feature_style attribute of a column to define a
@@ -1168,10 +1168,10 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * Each array entry is a sub-array with associative array values set for the following:
   *   "from" is the start value of the range of output values (e.g. the minimum opacity or first colour in a range).
   *   "to" is the end value of the range of output values (e.g. the maximum opacity or last colour in a range).
-  *   "valueField" is the name of the numeric field in the report output to be used to control display. 
-  *   "minValue" is the data value that equates to the output value specified by "from". This can be a 
+  *   "valueField" is the name of the numeric field in the report output to be used to control display.
+  *   "minValue" is the data value that equates to the output value specified by "from". This can be a
   *     fieldname if wrapped in braces.
-  *   "maxValue" is the data value that equates to the output value specified by "from". This can be a 
+  *   "maxValue" is the data value that equates to the output value specified by "from". This can be a
   *     fieldname if wrapped in braces.
   * The following example maps a field called value (with minvalue and maxvalue also output by the report)
   * to a range of colours from blue to red.
@@ -1186,8 +1186,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * )
   * </li>
   * <li><b>sharing</b>
-  * Assuming the report has been written to take account of website sharing agreements, set this to define the task 
-  * you are performing with the report and therefore the type of sharing to allow. Options are reporting (default), 
+  * Assuming the report has been written to take account of website sharing agreements, set this to define the task
+  * you are performing with the report and therefore the type of sharing to allow. Options are reporting (default),
   * verification, moderation, peer_review, data_flow, website (this website only) or me (my data only).</li>
   * <li><b>UserId</b>
   * If sharing=me, then this must contain the Indicia user ID of the user to return data for.
@@ -1209,7 +1209,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     $options = self::get_report_grid_options($options);
     if (empty($options['geoserverLayer'])) {
       self::request_report($response, $options, $currentParamValues, false, '');
-      if (isset($response['error'])) return $response['error'];   
+      if (isset($response['error'])) return $response['error'];
       $r = self::params_form_if_required($response, $options, $currentParamValues);
       // return the params form, if that is all that is being requested, or the parameters are not complete.
       if ($options['paramsOnly'] || !isset($response['records'])) return $r;
@@ -1224,14 +1224,14 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       if (!isset($wktCol))
         $r .= "<p>".lang::get("The report's configuration does not output any mappable data")."</p>";
     } else {
-      // using geoserver, so we just need to know the param values. 
+      // using geoserver, so we just need to know the param values.
       $response = self::get_report_data($options, self::array_to_query_string($currentParamValues, true).'&wantRecords=0&wantParameters=1');
       $currentParamValues = self::get_report_grid_current_param_values($options);
       $r .= self::get_report_grid_parameters_form($response, $options, $currentParamValues);
     }
     // don't load the report layer if not all parameters are filled in
     if (!isset($response['parameterRequest']) || count(array_intersect_key($currentParamValues, $response['parameterRequest']))==count($response['parameterRequest'])) {
-      if (empty($options['geoserverLayer'])) {  
+      if (empty($options['geoserverLayer'])) {
         // we are doing vector reporting via indicia services
         // first we need to build a style object which respects columns in the report output that define style settings for each vector.
         $settings=array();
@@ -1266,7 +1266,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
               $maxvalue = $outputdef['maxValue'];
             $from = $outputdef['from'];
             $to = $outputdef['to'];
-            if (substr($type, -5)==='Color') 
+            if (substr($type, -5)==='Color')
               $styleFns[] = "get$type: function(feature) { \n".
                   "var from_r, from_g, from_b, to_r, to_g, to_b, ratio = (feature.data.$value - $minvalue) / ($maxvalue - $minvalue); \n".
                   "from_r = parseInt('$from'.substring(1,3),16);\n".
@@ -1305,7 +1305,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
           $addFeaturesJs.= "addDistPoint(features, ".json_encode($record).", '$wktCol', $opts".(empty($rowId) ? '' : ", '".$record[$options['rowId']]."'").");\n";
         }
         if (!empty($styleFns)) {
-          $styleFns = ", {context: { 
+          $styleFns = ", {context: {
   $styleFns
 }}";
         }
@@ -1334,7 +1334,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
           $filter, $style},
       {singleTile: true, isBaseLayer: false, sphericalMercator: true});\n";
       }
-      
+
       report_helper::$javascript.= "
 mapSettingsHooks.push(function(opts) {
   opts.reportGroup = '".$options['reportGroup']."';
@@ -1342,7 +1342,7 @@ mapSettingsHooks.push(function(opts) {
     opts.layers.push(indiciaData.reportlayer);\n";
       if ($options['clickable'])
         report_helper::$javascript .= "    opts.clickableLayers.push(indiciaData.reportlayer);\n";
-      
+
       report_helper::$javascript .= "}\n  opts.clickableLayersOutputMode='".$options['clickableLayersOutputMode']."';\n";
       if ($options['clickableLayersOutputDiv'])
         report_helper::$javascript .= "  opts.clickableLayersOutputDiv='".$options['clickableLayersOutputDiv']."';\n";
@@ -1352,7 +1352,7 @@ mapSettingsHooks.push(function(opts) {
     }
     return $r;
   }
-  
+
   /**
    * Method that retrieves the data from a report or a table/view, ready to display in a chart or grid.
    * Respects the filters and columns $_GET variables generated by a grid's filter form when JavaScript is disabled.
@@ -1375,16 +1375,16 @@ mapSettingsHooks.push(function(opts) {
    * Pass true to return a link to the report data request rather than the data itself. Default false.
    * </li>
    * <li><b>sharing</b>
-   * Assuming the report has been written to take account of website sharing agreements, set this to define the task 
-   * you are performing with the report and therefore the type of sharing to allow. Options are reporting (default), 
+   * Assuming the report has been written to take account of website sharing agreements, set this to define the task
+   * you are performing with the report and therefore the type of sharing to allow. Options are reporting (default),
    * verification, moderation, peer_review, data_flow, website (this website only) or me (my data only).</li>
    * <li><b>UserId</b>
    * If sharing=me, then this must contain the Indicia user ID of the user to return data for.
    * </li>
    * </ul>
-   
+
    * @param string $extra Any additional parameters to append to the request URL, for example orderby, limit or offset.
-   * @return object If linkOnly is set in the options, returns the link string, otherwise returns the response as an array. 
+   * @return object If linkOnly is set in the options, returns the link string, otherwise returns the response as an array.
    */
   public static function get_report_data($options, $extra='') {
     $query = array();
@@ -1422,10 +1422,13 @@ mapSettingsHooks.push(function(opts) {
     }
     if (!empty($query))
       $request .= "&query=".urlencode(json_encode($query));
-    if (isset($options['extraParams'])) { 
+    if (isset($options['extraParams'])) {
       foreach ($options['extraParams'] as $key=>$value)
-        // Must urlencode the keys and parameters, as things like spaces cause curl to hang.
-        $request .= '&'.urlencode($key).'='.urlencode($value);
+        // Don't add any parameters that are already in the query string. E.g. this may happen when a parameter value is in the 
+        // preset values and gets overridden in the url calling the report.
+        if (!preg_match("/[\?$key=|&$key=]/", $request))
+          // Must urlencode the keys and parameters, as things like spaces cause curl to hang.
+          $request .= '&'.urlencode($key).'='.urlencode($value);
     }
     // Pass through the type of data sharing
     if (isset($options['sharing']))
@@ -1438,22 +1441,22 @@ mapSettingsHooks.push(function(opts) {
     else {
       $response = self::http_post($request, null);
       $decoded = json_decode($response['output'], true);
-      if (!is_array($decoded)) 
+      if (!is_array($decoded))
         return array('error'=>print_r($response, true));
       else
         return $decoded;
     }
   }
-  
+
   /**
-   * Generates the extra URL parameters that need to be appended to a report service call request, in order to 
+   * Generates the extra URL parameters that need to be appended to a report service call request, in order to
    * include the sorting and pagination parameters.
    * @param array @options Options array sent to the report.
    * @param array @sortAndPageUrlParams Paging and sorting info returned from a call to get_report_grid_sort_page_url_params.
    * @return string Snippet of URL containing the required URL parameters.
    */
   private static function get_report_sorting_paging_params($options, $sortAndPageUrlParams) {
-    // Work out the names and current values of the params we expect in the report request URL for sort and pagination    
+    // Work out the names and current values of the params we expect in the report request URL for sort and pagination
     $page = ($sortAndPageUrlParams['page']['value'] ? $sortAndPageUrlParams['page']['value'] : 0);
     // set the limit to one higher than we need, so the extra row can trigger the pagination next link
     $extraParams = '&limit='.($options['itemsPerPage']+1);
@@ -1540,7 +1543,7 @@ mapSettingsHooks.push(function(opts) {
         if (!empty($options['fieldsetClass']))
           $cls .= ' '.$options['fieldsetClass'];
         $r .= '<form action="'.$_SERVER['REQUEST_URI'].'" method="post" id="'.$options['reportGroup'].'-params">'."\n<fieldset class=\"$cls\">";
-        if (!$options['paramsInMapToolbar']) 
+        if (!$options['paramsInMapToolbar'])
           // don't use the fieldset legend in toolbar mode
           $r .= '<legend>'.lang::get('Report Parameters').'</legend>';
       }
@@ -1560,12 +1563,12 @@ mapSettingsHooks.push(function(opts) {
       if ($options['completeParamsForm']==true) {
         $suffix = '<input type="submit" value="'.lang::get($options['paramsFormButtonCaption']).'" id="run-report"/>'.
             '</fieldset></form>';
-      } else 
+      } else
         $suffix = '';
-      // look for idlist parameters with an alias. If we find one, we need to pass this information to any map panel, because the 
+      // look for idlist parameters with an alias. If we find one, we need to pass this information to any map panel, because the
       // alias provides the name of the key field in the features loaded onto the map. E.g. if you click on the feature, the alias
       // allows the map to find the primary key value and therefore filter the report to show the matching feature.
-      foreach($response['parameterRequest'] as $key=>$param) 
+      foreach($response['parameterRequest'] as $key=>$param)
         if (!empty($param['alias']) && $param['datatype']=='idlist') {
           $alias = $param['alias'];
           data_entry_helper::$javascript .= "
@@ -1576,11 +1579,11 @@ if (typeof(mapSettingsHooks)!=='undefined') {
 }\n";
         }
       if ($options['paramsInMapToolbar']) {
-        $toolbarControls = str_replace(array('<br/>', "\n"), '', $r);
+        $toolbarControls = str_replace(array('<br/>', "\n", "'"), array('', '', "\'"), $r);
         data_entry_helper::$javascript .= "$.fn.indiciaMapPanel.defaults.toolbarPrefix+='$toolbarControls';\n";
         data_entry_helper::$javascript .= "$.fn.indiciaMapPanel.defaults.toolbarSuffix+='$suffix';\n";
         return '';
-      } else      
+      } else
         return "$r$suffix\n";
     } else {
       return '';
@@ -1636,7 +1639,7 @@ if (typeof(mapSettingsHooks)!=='undefined') {
    * @param array $row
    * @param string $dirtyUrlParam Set to the name of a URL param used to pass the path to this page. E.g. in Drupal
    * with clean urls disabled, this is set to q. Otherwise leave empty.
-   */   
+   */
   private static function get_report_grid_actions($actions, $row, $pathParam='') {
     $jsReplacements = array();
     foreach ($row as $key=>$value) {
@@ -1714,7 +1717,7 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     if (!isset($options['reportGroup'])) $options['reportGroup'] = $options['id'];
     if (!isset($options['fieldNamePrefix'])) $options['fieldNamePrefix'] = $options['reportGroup'];
     if (function_exists('hostsite_get_user_field')) {
-      // If the host environment (e.g. Drupal module) can tell us which Indicia user is logged in, pass that 
+      // If the host environment (e.g. Drupal module) can tell us which Indicia user is logged in, pass that
       // to the report call as it might be required for filters.
       if ($indiciaUserId = hostsite_get_user_field('indicia_user_id'))
         $options['extraParams']['user_id'] = $indiciaUserId;
@@ -1745,7 +1748,7 @@ if (typeof(mapSettingsHooks)!=='undefined') {
   }
 
   /**
-   * Returns the parameters for the report grid data services call which are embedded in the query string or 
+   * Returns the parameters for the report grid data services call which are embedded in the query string or
    * default param value data.
    * @param $options
    * @return Array Associative array of parameters.
@@ -1763,8 +1766,8 @@ if (typeof(mapSettingsHooks)!=='undefined') {
           $params[$key]=$value;
       }
     }
-    // Are there any parameters embedded in the post data, e.g. after submitting the params form?
-    $providedParams = $_POST;
+    // Are there any parameters embedded in the request data, e.g. after submitting the params form?
+    $providedParams = $_REQUEST;
     if (isset($_COOKIE['providedParams']) && !empty($options['rememberParamsReportGroup'])) {
       $savedParams = json_decode($_COOKIE['providedParams'], true);
       if (!empty($savedParams[$options['rememberParamsReportGroup']]))
@@ -1775,8 +1778,8 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     }
     if (!empty($options['rememberParamsReportGroup'])) {
       // need to store the current set of saved params. These need to be merged into an array to go in
-      // the single stored cookie with the array key being the rememberParamsReportGroup and the value being 
-      // an associative array of params. 
+      // the single stored cookie with the array key being the rememberParamsReportGroup and the value being
+      // an associative array of params.
       if (!isset($savedParams))
         $savedParams=array($options['rememberParamsReportGroup']=>array());
       elseif (!isset($savedParams[$options['rememberParamsReportGroup']]))
@@ -1824,7 +1827,7 @@ if (typeof(mapSettingsHooks)!=='undefined') {
   * When loading from a view, specify list, gv or detail to determine which view variant is loaded. Default is list.
   * </li>
   * <li><b>extraParams</b><br/>
-  * Array of additional key value pairs to attach to the request. This should include fixed values which cannot be changed by the 
+  * Array of additional key value pairs to attach to the request. This should include fixed values which cannot be changed by the
   * user and therefore are not needed in the parameters form.
   * </li>
   * <li><b>paramDefaults</b>
@@ -1876,7 +1879,7 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     }
     // We're not even going to bother with asking the user to populate a partially filled in report parameter set.
     if (isset($response['parameterRequest'])) {
-      return '<p>Internal Error: Report request parameters not set up correctly.<p>';    
+      return '<p>Internal Error: Report request parameters not set up correctly.<p>';
     }
     // convert records to a date based array so it can be used when generating the grid.
     $records = $response['records'];
@@ -1958,7 +1961,7 @@ if (typeof(mapSettingsHooks)!=='undefined') {
         $warnings .= "Week one month-day combination unrecognised {".$options['weekOneContains']."} defaulting to Jan-01<br />";
         $weekOne_date = date_create($date_from['year'].'-Jan-01');
       }
-    } else 
+    } else
       $weekOne_date = date_create($date_from['year'].'-Jan-01');
     while($weekOne_date->format('N')!=$weekstart[1]){
       $weekOne_date->modify('-1 day'); // scan back to start of week
@@ -1981,7 +1984,7 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     }
     $options["newURL"] .= (strpos($options["newURL"] , '?')===false) ? '?' : '&';
     $options["existingURL"] .= (strpos($options["existingURL"] , '?')===false) ? '?' : '&';
-    
+
     while($consider_date->format('Y') <= $options["year"] && ($weeknumberfilter[1]=='' || $consider_date->format('N')!=$weekstart[1] || $weekno < $weeknumberfilter[1])){
       if($consider_date->format('N')==$weekstart[1]) {
         $weekno++;
@@ -2026,7 +2029,7 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     $r .= "</tbody></table>\n";
     return $warnings.$r;
   }
-  
+
   private static function get_report_calendar_grid_options($options) {
     global $user;
     $options = array_merge(array(
@@ -2092,11 +2095,11 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     }
     return $reloadUrl['path'];
   }
-  
-  /** 
+
+  /**
    * Inserts into the page javascript a function for loading features onto the map as a result of report output.
    */
-  private static function addFeaturesLoadingJs($addFeaturesJs, $defsettings='', 
+  private static function addFeaturesLoadingJs($addFeaturesJs, $defsettings='',
       $selsettings='{"strokeColor":"#ff0000","fillColor":"#ff0000","strokeWidth":2}', $styleFns='', $zoomToExtent=true) {
     if (!empty($addFeaturesJs)) {
       report_helper::$javascript.= "
@@ -2104,7 +2107,7 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     var defaultStyle = new OpenLayers.Style($defsettings$styleFns);
     var selectStyle = new OpenLayers.Style($selsettings$styleFns);
     var styleMap = new OpenLayers.StyleMap({'default' : defaultStyle, 'select' : selectStyle});
-    indiciaData.reportlayer = new OpenLayers.Layer.Vector('Report output', {styleMap: styleMap, rendererOptions: {zIndexing: true}}); 
+    indiciaData.reportlayer = new OpenLayers.Layer.Vector('Report output', {styleMap: styleMap, rendererOptions: {zIndexing: true}});
     mapInitialisationHooks.push(function(div) {
       function addDistPoint(features, record, wktCol, opts, id) {
         if (record[wktCol]!==null) {
@@ -2124,11 +2127,11 @@ if (typeof(mapSettingsHooks)!=='undefined') {
           }
           features.push(feature);
         }
-      } 
+      }
       features = [];
       $addFeaturesJs
       indiciaData.reportlayer.addFeatures(features);\n";
-        if ($zoomToExtent) 
+        if ($zoomToExtent)
           self::$javascript .= "  div.map.zoomToExtent(indiciaData.reportlayer.getDataExtent());\n";
         self::$javascript .= "  div.map.addLayer(indiciaData.reportlayer);
     });
@@ -2157,7 +2160,7 @@ if (typeof(mapSettingsHooks)!=='undefined') {
   * When loading from a view, specify list, gv or detail to determine which view variant is loaded. Default is list.
   * </li>
   * <li><b>extraParams</b><br/>
-  * Array of additional key value pairs to attach to the request. This should include fixed values which cannot be changed by the 
+  * Array of additional key value pairs to attach to the request. This should include fixed values which cannot be changed by the
   * user and therefore are not needed in the parameters form.
   * </li>
   * <li><b>paramDefaults</b>
@@ -2203,7 +2206,7 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     }
     // We're not even going to bother with asking the user to populate a partially filled in report parameter set.
     if (isset($response['parameterRequest'])) {
-      return '<p>Internal Error: Report request parameters not set up correctly.<br />'.(print_r($response,true)).'<p>';    
+      return '<p>Internal Error: Report request parameters not set up correctly.<br />'.(print_r($response,true)).'<p>';
     }
     // convert records to a date based array so it can be used when generating the grid.
     $records = $response['records'];
@@ -2250,7 +2253,7 @@ if (typeof(mapSettingsHooks)!=='undefined') {
         $warnings .= "Week one month-day combination unrecognised {".$options['weekOneContains']."} defaulting to Jan-01<br />";
         $weekOne_date = date_create(substr($options['date_start'],0,4).'-Jan-01');
       }
-    } else 
+    } else
       $weekOne_date = date_create(substr($options['date_start'],0,4).'-Jan-01');
     while($weekOne_date->format('N')!=$weekstart[1]){
       $weekOne_date->modify('-1 day'); // scan back to start of week
@@ -2543,7 +2546,7 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
       $r .= '<p>'.lang::get('No data returned for this period.').'</p>';
     return $warnings.$r;
   }
-  
+
   private static function get_report_calendar_summary_options($options) {
     global $user;
     $options = array_merge(array(
@@ -2552,7 +2555,7 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
       'tableID' => 'report-table',
       'tableClass' => 'ui-widget ui-widget-content report-grid',
       'thClass' => 'ui-widget-header',
-      'altRowClass' => 'odd',  
+      'altRowClass' => 'odd',
       'extraParams' => array(),
       'viewPreviousIfTooEarly' => true, // if today is before the start of the calendar, display last year.
         // it is possible to create a partial calendar.
