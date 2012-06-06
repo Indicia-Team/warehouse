@@ -237,7 +237,8 @@ class report_helper extends helper_base {
   * <li><b>ignoreParams</b>
   * Array that can be set to a list of the report parameter names that should not be included in the parameters form. Useful
   * when using paramsOnly=true to display a parameters entry form, but the system has default values for some of the parameters
-  * which the user does not need to be asked about.</li>
+  * which the user does not need to be asked about. Can also be used to provide parameter values that can be overridden only via
+  * a URL parameter.</li>
   * <li><b>completeParamsForm</b>
   * Defaults to true. If false, the control HTML is returned for the params form without being wrapped in a <form> and
   * without the Run Report button, allowing it to be embedded into another form.</li>
@@ -1424,11 +1425,8 @@ mapSettingsHooks.push(function(opts) {
       $request .= "&query=".urlencode(json_encode($query));
     if (isset($options['extraParams'])) {
       foreach ($options['extraParams'] as $key=>$value)
-        // Don't add any parameters that are already in the query string. E.g. this may happen when a parameter value is in the 
-        // preset values and gets overridden in the url calling the report.
-        if (!preg_match("/[\?$key=|&$key=]/", $request))
-          // Must urlencode the keys and parameters, as things like spaces cause curl to hang.
-          $request .= '&'.urlencode($key).'='.urlencode($value);
+        // Must urlencode the keys and parameters, as things like spaces cause curl to hang.
+        $request .= '&'.urlencode($key).'='.urlencode($value);
     }
     // Pass through the type of data sharing
     if (isset($options['sharing']))

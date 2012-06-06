@@ -40,7 +40,7 @@ function iform_report_get_minimal_report_parameters() {
       'group'=>'Report Settings'
     ), array(
       'name' => 'param_presets',
-      'caption' => 'Preset Parameter Values',
+      'caption' => 'Preset parameter values',
       'description' => 'To provide preset values for any report parameter and avoid the user having to enter them, enter each parameter into this '.
           'box one per line. Each parameter is followed by an equals then the value, e.g. survey_id=6. You can use {user_id} as a value which will be replaced by the '.
           'user ID from the CMS logged in user or {username} as a value replaces with the logged in username. If you have installed the Profile module then you can also '.
@@ -51,7 +51,7 @@ function iform_report_get_minimal_report_parameters() {
       'group'=>'Report Settings'
     ), array(
       'name' => 'param_defaults',
-      'caption' => 'Default Parameter Values',
+      'caption' => 'Default parameter values',
       'description' => 'To provide default values for any report parameter which allow the report to run initially but can be overridden, enter each parameter into this '.
           'box one per line. Each parameter is followed by an equals then the value, e.g. survey_id=6. You can use {user_id} as a value which will be replaced by the '.
           'user ID from the CMS logged in user or {username} as a value replaces with the logged in username. If you have installed the Profile module then you can also '.
@@ -61,6 +61,15 @@ function iform_report_get_minimal_report_parameters() {
       'required' => false,
       'group'=>'Report Settings'
     ), array(
+      'name' => 'param_ignores',
+      'caption' => 'Default params to exclude from the form',
+      'description' => 'Provide a list of the parameter names which are in the Default Parameter Values but should not appear in the parameters form. An example usage of this '.
+          'is to provide parameters that can be overridden via a URL parameter.',
+      'type' => 'textarea',
+      'required' => false,
+      'group'=>'Report Settings'
+    ), 
+      array(
       'name' => 'items_per_page',
       'caption' => 'Items per page',
       'description' => 'Maximum number of rows shown on each page of the table',
@@ -104,11 +113,12 @@ function iform_report_get_report_parameters() {
         'group' => 'Report Settings'
       ), array(
         'name' => 'remember_params_report_group',
+        'caption' => 'Remember report parameters group',
         'description' => 'Enter any value in this parameter to allow the report to save its parameters for the next time the report is loaded. '.
           'The parameters are saved site wide, so if several reports share the same value and the same report group then the parameter '.
           'settings will be shared across the reports even if they are on different pages of the site. This functionality '.
           'requires cookies to be enabled on the browser.',
-        'type'=>'text',
+        'type'=>'text_input',
         'required'=>false,
         'default' => '',
         'group'=>'Report Settings'
@@ -161,6 +171,7 @@ function iform_report_get_report_options($args, $readAuth) {
   require_once('user.php');
   $presets = get_options_array_with_user_data($args['param_presets']);
   $defaults = get_options_array_with_user_data($args['param_defaults']);
+  $ignores = isset($args['param_ignores']) ? report_helper::explode_lines($args['param_ignores']) : array();
   // default columns behaviour is to just include anything returned by the report
   $columns = array();
   // this can be overridden
@@ -177,6 +188,7 @@ function iform_report_get_report_options($args, $readAuth) {
     'itemsPerPage' => empty($args['items_per_page']) ? 20 : $args['items_per_page'],
     'extraParams' => $presets,
     'paramDefaults' => $defaults,
+    'ignoreParams' => $ignores,
     'galleryColCount' => isset($args['gallery_col_count']) ? $args['gallery_col_count'] : 1,
     'headers' => isset($args['gallery_col_count']) && $args['gallery_col_count']>1 ? false : true,
     'paramsInMapToolbar'=>isset($args['params_in_map_toolbar']) ? $args['params_in_map_toolbar'] : false    
