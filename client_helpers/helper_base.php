@@ -1518,7 +1518,7 @@ indiciaData.windowLoaded=false;
           lang::get($options['fieldname']));
     }
     // Convert these rules into jQuery format.
-    return self::convert_to_jquery_val_metadata($rules);
+    return self::convert_to_jquery_val_metadata($rules, $options);
   }
 
   /**
@@ -1556,10 +1556,11 @@ indiciaData.windowLoaded=false;
   * Takes a list of validation rules in Kohana/Indicia format, and converts them to the jQuery validation
   * plugin metadata format.
   * @param array $rules List of validation rules to be converted.
+  * @param array $options Options passed to the validated control.
   * @return string Validation metadata classes to add to the input element.
   * @todo Implement a more complete list of validation rules.
   */
-  protected static function convert_to_jquery_val_metadata($rules) {
+  protected static function convert_to_jquery_val_metadata($rules, $options) {
     $converted = array();
     foreach ($rules as $rule) {
       // Detect the rules that can simply be passed through
@@ -1572,7 +1573,7 @@ indiciaData.windowLoaded=false;
           || $rule=='integer') {
         $converted[] = $rule.':true';
       // Now any rules which need parsing or conversion
-      } else if ($rule=='date') {
+      } else if ($rule=='date' && !isset($options['allowVagueDates']) || $options['allowVagueDates']===false) {
         $converted[] = 'customDate:true';
       } else if ($rule=='digit') {
         $converted[] = 'digits:true';
