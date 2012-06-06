@@ -358,9 +358,10 @@ class ReportEngine {
           array_push($col_sets, $prefix);
           if (!in_array($prefix.'date', $cols)) {
             $this->columns[$prefix.'date'] = array(
-              'display'=>'',
+              'display'=>'Date',
               'class'=>'',
-              'style'=>''
+              'style'=>'',
+              'datatype'=>'date'
             );
           }
           // Hide the internal vague date columns, unless the report explicitly asks for them (in which case
@@ -745,6 +746,15 @@ class ReportEngine {
         $filterClause = $this->getFilterClause($field, $this->reportReader->filterableColumns[$name]['datatype'], $operator, $value);
         $query = str_replace('#filters#', "AND $filterClause\n#filters#", $query);
       }
+      elseif (preg_match('/(?P<prefix>.*)date$/', $name, $matches) 
+          && array_key_exists($matches['prefix'].'date_start', $this->reportReader->columns)
+          && array_key_exists($matches['prefix'].'date_end', $this->reportReader->columns)
+          && array_key_exists($matches['prefix'].'date_type', $this->reportReader->columns)) {
+        // special handling for a filter on a vague date added column
+        $field = $this->reportReader->columns[$matches['prefix'].'date_start']['sql'];
+        $filterClause = $this->getFilterClause($field, 'date', $operator, $value);
+        $query = str_replace('#filters#', "AND $filterClause\n#filters#", $query);
+      }
     }
     // remove the marker left in the query to show where to insert joins
     $query = str_replace(array('#joins#','#fields#','#group_bys#','#filters#'), array('','','',''), $query);
@@ -783,7 +793,7 @@ class ReportEngine {
     } else 
       $operator = '='; 
     // apart from text and date values we can use > or < to set the filter operator
-      if ($datatype!='text' && $datatype!='date' && (substr($value, 0, 1)=='<' || substr($value, 0, 1)=='>')) {
+    if ($datatype!='text' && $datatype!='date' && (substr($value, 0, 1)=='<' || substr($value, 0, 1)=='>')) {
       $operator=substr($value, 0, 1);
       $value = substr($value, 1);
     }
