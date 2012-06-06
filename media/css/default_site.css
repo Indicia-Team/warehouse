@@ -667,3 +667,10 @@ span.ind-cancel-icon {
 .tooltip p {
   margin: 0;
 }
+
+/* override jquery-ui.custom.css to support browsers which understand border-radius (e.g. IE9) */
+.ui-corner-all { 
+	-moz-border-radius: 4px; 
+	-webkit-border-radius: 4px; 
+	border-radius: 4px; 
+}
