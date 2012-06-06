@@ -827,7 +827,12 @@ add_section_column = function(column, sampleID){
       data_entry_helper::$javascript .= "
     		} else if(j == (rows.length-".($numAttrs-$i).")) { // section sample attribute rows.
     		  var newName = 'SLA:'+i+':'+(i==column ? sampleID : '-')+':-'; //this will replace the smpAttr, so the AttrID is left alone at the end.
-    		  var attr = '".str_replace("\n", "", data_entry_helper::outputAttribute($attributes[$options['smpAttr'][$i]], $defAttrOptions))."';
+    		  var attr = '".str_replace("\n", "",
+      				data_entry_helper::outputAttribute($attributes[$options['smpAttr'][$i]],
+      					($attributes[$options['smpAttr'][$i]]['data_type']=='Boolean' ||
+      							$attributes[$options['smpAttr'][$i]]['data_type']=='B' ?
+      						$defNRAttrOptions :
+      						$defAttrOptions)))."';
     		  jQuery('<td>'+attr.replace(/smpAttr/g, newName)+'</td>').appendTo(rows[j]);";
     }
     $indicia_templates['label'] = $tempLabel;
