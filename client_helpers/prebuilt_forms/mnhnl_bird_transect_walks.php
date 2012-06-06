@@ -567,7 +567,7 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
       // Create Map
       $options = iform_map_get_map_options($args, $readAuth);
       $olOptions = iform_map_get_ol_options($args);
-      if($locations == 'all' || count($locations)>0)
+      if($locations == 'all' || $loclist != '-1')
         $options['layers'] = array('locationListLayer');
       $options['searchLayer'] = 'false';
       $options['editLayer'] = 'false';
