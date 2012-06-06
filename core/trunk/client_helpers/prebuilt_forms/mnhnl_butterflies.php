@@ -187,10 +187,14 @@ var monthAttr = jQuery('[name=smpAttr\\\\:".$args['month_attr_id']."],[name^=smp
 monthAttr.before('<input type=\"hidden\" id=\"storedMonth\" name=\"'+monthAttr.attr('name')+'\">');
 updateSampleDate = function(context, doAlert){
   jQuery('.displayDateDetails').empty().append('<span>'+jQuery('[name=sample\\:date]').val()+'</span>');
-  var myDate = jQuery(context).datepicker(\"getDate\").getMonthName();
-  var monthAttr = jQuery('[name=smpAttr\\\\:".$args['month_attr_id']."],[name^=smpAttr\\\\:".$args['month_attr_id']."\\\\:]').filter('select').val(\"\");
-  monthAttr.find(\"option:contains('\"+myDate+\"')\").attr('selected',true) ; 
-  jQuery('#storedMonth').val(monthAttr.val()); // doing in this order converts the text to a number and stores that number in the storedMonth
+  var myDate = jQuery(context).datepicker(\"getDate\");
+  var monthAttr = jQuery('[name=smpAttr\\\\:".$args['month_attr_id']."],[name^=smpAttr\\\\:".$args['month_attr_id']."\\\\:]').filter('select').val('');
+  if(myDate != null){
+    myDate = myDate.getMonthName();
+    monthAttr.find(\"option:contains('\"+myDate+\"')\").attr('selected',true) ; 
+    jQuery('#storedMonth').val(monthAttr.val()); // doing in this order converts the text to a number and stores that number in the storedMonth
+  } else
+    jQuery('#storedMonth').val('');
   if(doAlert && monthAttr.val() == \"\")
   	alert('Given date is outside valid month range (April to September).');
 };
