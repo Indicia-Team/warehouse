@@ -4,12 +4,13 @@ var email = {to:'', subject:'', body:'', type:''};
 // IE7 compatability
 if(!Array.indexOf){
   Array.prototype.indexOf = function(obj){
-    for(var i=0; i<this.length; i++){
-      if(this[i]==obj){
+    var i;
+    for(i=0; i<this.length; i++){
+      if(this[i]===obj){
         return i;
       }
     }
-  }
+  };
 }
 
 function selectRow(tr) {
@@ -42,13 +43,13 @@ function selectRow(tr) {
           mapDiv.map.removeLayer(layer);
         });
         speciesLayers = [];
-        var layer, thisSpSettings, filter, skip;
+        var layer, thisSpLyrSettings, filter, skip;
         if (typeof indiciaData.wmsSpeciesLayers!=="undefined" && data.additional.taxon_external_key!==null) {
           $.each(indiciaData.wmsSpeciesLayers, function(idx, layerDef) {
             thisSpLyrSettings = $.extend({}, layerDef.settings);
             // replace values with the extrnal key if the token is used
             $.each(thisSpLyrSettings, function(prop, value) {
-              if (typeof(value)=='string' && $.trim(value)==='{external_key}') {
+              if (typeof(value)==='string' && $.trim(value)==='{external_key}') {
                 thisSpLyrSettings[prop]=data.additional.taxon_external_key;
               }
             });
@@ -75,13 +76,13 @@ function getAttributeValue(caption) {
   //returns the value of the attribute in the current_record.data with the caption supplied
  var r = '';
  $.each(current_record.data, function(){
-    if (this.caption == caption) {
+    if (this.caption === caption) {
       //found attribute
-      r = this.value
+      r = this.value;
       return false;
     }
   });
-  return r
+  return r;
 }
 
 /** 
@@ -89,8 +90,7 @@ function getAttributeValue(caption) {
  * visual indicators of the record's status.
  */
 function postOccurrence(occ) {
-  var status = occ['occurrence:record_status'];
-  var id=occ['occurrence:id'];
+  var status = occ['occurrence:record_status'], id=occ['occurrence:id'];
   $.post(
     indiciaData.ajaxFormPostUrl,
     occ,
@@ -101,14 +101,14 @@ function postOccurrence(occ) {
       $('#row' + id + ' td:first div, #details-tab td').removeClass('status-I');
       $('#row' + id + ' td:first div, #details-tab td').removeClass('status-T');
       $('#row' + id + ' td:first div, #details-tab td.status').addClass('status-' + status);
-      var text = indiciaData.statusTranslations[status];
+      var text = indiciaData.statusTranslations[status], nextRow;
       $('#details-tab td.status').html(text);
-      if (indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] == 'details' ||
-          indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] == 'comments') {
+      if (indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] === 'details' ||
+          indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] === 'comments') {
         $('#record-details-tabs').tabs('load', $('#record-details-tabs').tabs('option', 'selected'));
       }
       if (indiciaData.autoDiscard) {
-        var nextRow = $('#row' + id).next();
+        nextRow = $('#row' + id).next();
         $('#row' + id).remove();
         if (nextRow.length>0) {
           selectRow(nextRow[0]);
@@ -137,7 +137,7 @@ function buildVerifierEmail() {
 
   email.subject = indiciaData.email_subject_send_to_verifier
       .replace('%taxon%', current_record.additional.taxon)
-      .replace('%id%', occurrence_id),
+      .replace('%id%', occurrence_id);
   email.body = indiciaData.email_body_send_to_verifier
       .replace('%taxon%', current_record.additional.taxon)
       .replace('%id%', occurrence_id)
@@ -160,7 +160,7 @@ function buildRecorderConfirmationEmail() {
   record += "\n\n[Photos]\n\n[Comments]";
   email.subject = indiciaData.email_subject_send_to_recorder
       .replace('%taxon%', current_record.additional.taxon)
-      .replace('%id%', occurrence_id),
+      .replace('%id%', occurrence_id);
   email.body = indiciaData.email_body_send_to_recorder
       .replace('%taxon%', current_record.additional.taxon)
       .replace('%id%', occurrence_id)
@@ -173,15 +173,15 @@ function buildRecorderConfirmationEmail() {
 
 function buildRecorderEmail(status, comment)
 {
-  if (status == 'V') {
+  if (status === 'V') {
     email.subject = indiciaData.email_subject_verified;
     email.body = indiciaData.email_body_verified;
   }
-  else if (status == 'R') {
+  else if (status === 'R') {
     email.subject = indiciaData.email_subject_rejected;
     email.body = indiciaData.email_body_rejected;
   }
-  else if (status == 'D') {
+  else if (status === 'D') {
     email.subject = indiciaData.email_subject_dubious;
     email.body = indiciaData.email_body_dubious;
   }
@@ -224,10 +224,10 @@ function processEmail(){
     email.subject = $('#email-subject').val();
     email.body = $('#email-body').val();
 
-    if (email.type == 'recordCheck') {
+    if (email.type === 'recordCheck') {
     // ensure images are loaded
     $.ajax({
-      url: indiciaData.ajaxUrl + '/imagesAndComments/' indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id,
+      url: indiciaData.ajaxUrl + '/imagesAndComments/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id,
       async: false,
       dataType: 'json',
       success: function (response) {
@@ -307,7 +307,7 @@ function saveComment() {
 function saveVerifyComment() {
   var status = $('#set-status').val(),
     comment = indiciaData.statusTranslations[status],
-    data;
+    data, sendEmail = false;
   if ($('#verify-comment').val()!=='') {
     comment += ".\n" + $('#verify-comment').val();
   }  
@@ -322,15 +322,14 @@ function saveVerifyComment() {
   postOccurrence(data);
   
   //Does the recorder email option exist?
-  var sendEmail = false
   if (indiciaData.email_request_attribute !== '') {
     //Find attribute to see if recorder wants email confirmation
-    if (getAttributeValue(indiciaData.email_request_attribute) == 1) {
+    if (getAttributeValue(indiciaData.email_request_attribute) === 1) {
       sendEmail = true;
       buildRecorderEmail(status, comment);
     }
   }
-  if (!sendEmail) $.fancybox.close();
+  if (!sendEmail) {$.fancybox.close();}
 
 }
 
@@ -361,20 +360,20 @@ function showTab() {
           feature = parser.read(current_record.additional.wkt),
           c,
           lastFeature;
-        if (mapDiv.map.projection.getCode() != 'EPSG:3857') {
+        if (mapDiv.map.projection.getCode() !== 'EPSG:3857') {
           feature.geometry = feature.geometry.transform(new OpenLayers.Projection('EPSG:3857'), mapDiv.map.projection);
         }
         // Make the current record marker obvious
-        var style = $.extend({}, mapDiv.map.editLayer.styleMap.styles['default']['defaultStyle'], {fillOpacity: 0.5, fillColor: '#0000FF'});
+        var style = $.extend({}, mapDiv.map.editLayer.styleMap.styles.['default'].defaultStyle, {fillOpacity: 0.5, fillColor: '#0000FF'}),
+            // default is to show approx 100m of map
+            maxDimension=100, bounds;
         feature.style=style;
         feature.tag='currentRecord';
         mapDiv.map.editLayer.addFeatures([feature]);
         c = feature.geometry.getCentroid();
         mapDiv.map.setCenter(new OpenLayers.LonLat(c.x, c.y));
-        // default is to show approx 100m of map
-        var maxDimension=100;
         if (feature.geometry.CLASS_NAME!=='OpenLayers.Geometry.Point') {
-          var bounds = feature.geometry.bounds;
+          bounds = feature.geometry.bounds;
           maxDimension = Math.max(bounds.right-bounds.left, bounds.top-bounds.bottom)*4;
         }
         mapDiv.map.zoomTo(mapDiv.map.getZoomForExtent(new OpenLayers.Bounds(0, 0, maxDimension, maxDimension)));
