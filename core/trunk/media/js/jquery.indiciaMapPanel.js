@@ -1124,21 +1124,19 @@ mapGeoreferenceHooks = [];
           trigger: function(e) {
             clickOnMap(e.xy, div, function(data)
               {
-                if(typeof data.error != 'undefined')
-                  if(data.error == 'wkt_to_sref translation is outside range of grid.') {
-                    // We can switch to lat long if the system is available for selection
-                    var system=$('#'+opts.srefSystemId+' option[value=4326]');
-                    if (system.length===1) {
-                      var lonlat=div.map.getLonLatFromPixel(e.xy);
-                      $('#'+opts.srefSystemId).val('4326');
-                      pointToSref(div, new OpenLayers.Geometry.Point(lonlat.lon, lonlat.lat), '4326', function(data) {
-                        _setClickPoint(data, div); // data sref in 4326, wkt in indiciaProjection, mapwkt in mapProjection
-                      });
-                    } else {
-                      alert(div.settings.msgSrefOutsideGrid);
-                    }
-                  } else
-                    alert(data.error);
+                if(typeof data.error != 'undefined') {
+                  // We can switch to lat long if the system is available for selection
+                  var system=$('#'+opts.srefSystemId+' option[value=4326]');
+                  if (system.length===1) {
+                    var lonlat=div.map.getLonLatFromPixel(e.xy);
+                    $('#'+opts.srefSystemId).val('4326');
+                    pointToSref(div, new OpenLayers.Geometry.Point(lonlat.lon, lonlat.lat), '4326', function(data) {
+                      _setClickPoint(data, div); // data sref in 4326, wkt in indiciaProjection, mapwkt in mapProjection
+                    });
+                  } else {
+                    alert(div.settings.msgSrefOutsideGrid);
+                  }
+                }  
                 else
                   _setClickPoint(data, div); // data sref in _getSystem, wkt in indiciaProjection, mapwkt in mapProjection
               }
