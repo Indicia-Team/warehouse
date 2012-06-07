@@ -364,7 +364,7 @@ function showTab() {
           feature.geometry = feature.geometry.transform(new OpenLayers.Projection('EPSG:3857'), mapDiv.map.projection);
         }
         // Make the current record marker obvious
-        var style = $.extend({}, mapDiv.map.editLayer.styleMap.styles.['default']['defaultStyle'], {fillOpacity: 0.5, fillColor: '#0000FF'}),
+        var style = $.extend({}, mapDiv.map.editLayer.styleMap.styles['default'].defaultStyle, {fillOpacity: 0.5, fillColor: '#0000FF'}),
             // default is to show approx 100m of map
             maxDimension=100, bounds;
         feature.style=style;
