@@ -165,5 +165,30 @@ class Location_Model extends ORM_Tree {
     $this->__set('centroid_sref', $centroid['sref']);
     $this->__set('centroid_sref_system', $centroid['sref_system']);
   }
+  
+  /**
+   * Define a form that is used to capture a set of predetermined values that apply to every record during an import.
+   */
+  public function fixed_values_form() {
+  $srefs = array();
+    foreach (kohana::config('sref_notations.sref_notations') as $code=>$caption) {
+      $srefs[] = "$code:$caption";
+    }
+    return array(
+      'website_id' => array( 
+        'display'=>'Website', 
+        'description'=>'Select the website to import records into.', 
+        'datatype'=>'lookup',
+        'population_call'=>'direct:website:id:title' 
+      ),
+      'location:centroid_sref_system' => array(
+        'display'=>'Spatial Ref. System', 
+        'description'=>'Select the spatial reference system used in this import file. Note, if you have a file with a mix of spatial reference systems then you need a '.
+            'column in the import file which is mapped to the Location Spatial Reference System field containing the spatial reference system code.', 
+        'datatype'=>'lookup',
+        'lookup_values'=>implode(',', $srefs)
+      )
+    );
+  }
 
 }
