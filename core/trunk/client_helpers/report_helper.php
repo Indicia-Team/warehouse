@@ -593,7 +593,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     if (array_key_exists('extraParams', $options) && array_key_exists('ignoreParams', $options))
       $options['ignoreParams'] = array_merge($options['ignoreParams'], array_keys($options['extraParams']));
     elseif (array_key_exists('extraParams', $options))
-      $options['ignoreParams'] = array_keys($options['extraParams']);
+      $options['ignoreParams'] = array_keys($options['extraParams']);    
     if (array_key_exists('ignoreParams', $options))
       $extras .= '&paramsFormExcludes='.json_encode($options['ignoreParams']);
     // specify the view variant to load, if loading from a view
@@ -1769,8 +1769,14 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     if (isset($_COOKIE['providedParams']) && !empty($options['rememberParamsReportGroup'])) {
       $savedParams = json_decode($_COOKIE['providedParams'], true);
       if (!empty($savedParams[$options['rememberParamsReportGroup']]))
+        $savedParams = $savedParams[$options['rememberParamsReportGroup']];
+        // We shouldn't use the cookie values to overwrite any parameters that are hidden in the form as this is confusing.
+        $ignoreParamNames = array();
+        foreach($options['ignoreParams'] as $param)
+          $ignoreParamNames[$options['reportGroup']."-$param"] = '';
+        $savedParams = array_diff_key($savedParams, $ignoreParamNames);
         $providedParams = array_merge(
-          $savedParams[$options['rememberParamsReportGroup']],
+          $savedParams,
           $providedParams
         );
     }
