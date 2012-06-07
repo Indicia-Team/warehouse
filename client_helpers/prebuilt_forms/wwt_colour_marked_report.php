@@ -21,12 +21,13 @@
  */
 
 /**
- * Prebuilt Indicia data entry form.
+ * Prebuilt Indicia data entry form for WWT Colour-marked wildfowl.
  * NB has Drupal specific code. Relies on presence of IForm loctools and IForm Proxy.
  * NB relies on the individuals and associations optional module being enabled in the warehouse.
  * 
  * @package    Client
  * @subpackage PrebuiltForms
+ * @link http://code.google.com/p/indicia/wiki/PrebuiltFormWWTColourMarkedRecords
  */
 
 require_once('includes/map.php');
@@ -53,7 +54,7 @@ class iform_wwt_colour_marked_report {
     return array(
       'title'=>'WWT Colour-marked Wildfowl - dynamically generated data entry form',
       'category' => 'General Purpose Data Entry Forms',
-      //'helpLink'=>'http://code.google.com/p/indicia/wiki/TutorialDynamicForm',
+      'helpLink'=>'http://code.google.com/p/indicia/wiki/PrebuiltFormWWTColourMarkedRecords',
       'description'=>'A data entry form reporting observations of colour-marked individuals.'
     );
   }
@@ -1936,7 +1937,7 @@ class iform_wwt_colour_marked_report {
       $extraParams = array_merge($filter, $auth['read']);
       $options['lockable'] = $options['identifiers_lockable'];
       $r .= data_entry_helper::select(array_merge(array(
-        'label' => lang::get('Circumstances of this report'),
+        'label' => lang::get('This bird was'),
         'fieldname' => $options['fieldprefix'].'sjoAttr:'.$options['lifeStatusId'],
         'table'=>'termlists_term',
         'captionField'=>'term',
@@ -2123,7 +2124,7 @@ class iform_wwt_colour_marked_report {
       data_entry_helper::$javascript .= "window.indicia.wwt.newJavascript = '"
         .str_replace(array('\'', "\n"), array('\\\'', ' '), str_replace('\\', '\\\\', preg_replace('#^\s*//.+$#m', '', $photoJavascript)))
         .str_replace(array('\'', "\n", "\r"), array('\\\'', ' ', ' '), str_replace('\\', '\\\\', preg_replace('#^\s*//.+$#m', '', $autoJavascript)))."';\n";
-      $r .= '<input type="button" id="idn:add-another" value="Add Another Colour-marked Bird" /><br />';
+      $r .= '<input type="button" id="idn:add-another" value="'.lang::get('Add Another Bird at the Same Date and Location').'" /><br />';
     }
 
     return $r;
