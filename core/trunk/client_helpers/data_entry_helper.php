@@ -472,6 +472,8 @@ class data_entry_helper extends helper_base {
   * <li><b>showButton</b><br/>
   * Optional. Set to true to show a button which must be clicked to drop down the picker. Defaults to false unless allowVagueDates is true
   * as inputting a vague date without the button is confusing.</li>
+  * <li><b>buttonText</b><br/>
+  * Optional. if showButton is true, this text will be shown as the 'alt' text for the buttom image.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the date picker control.
@@ -507,7 +509,12 @@ class data_entry_helper extends helper_base {
       }
       if ($options['showButton']) {
         $imgPath = preg_replace('/client_helpers\/$/', '', self::relative_client_helper_path()).'media/images/nuvola/date-16px.png';
-        $button = ",\n    showOn: 'button',\n    buttonImage: '$imgPath'";
+        if ($options['buttonText']) {
+          $buttonText = $options['buttonText'];
+        } else {
+          $buttonText = $options['allowVagueDates'] ? lang::get('To enter an exact date, click here. To enter a vague date, type it into the text box') : lang::get('Click here to pick a date');
+        }
+        $button = ",\n    showOn: 'button',\n    buttonImage: '$imgPath',\n    buttonText: '$buttonText'";
       } else
         $button='';
       self::$javascript .= "jQuery('#$escaped_id').datepicker({
