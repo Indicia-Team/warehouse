@@ -799,7 +799,7 @@ class ReportEngine {
     }
     if ($datatype=='text') {
       // ensure value is escaped for apostrophes
-      $value = preg_replace("/[^']'[^']/", "''", $value);
+      $value = pg_escape_string($value);
       // quote text and date values 
       $value="'".$value."'";
     }
