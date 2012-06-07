@@ -192,7 +192,8 @@ class Import_Controller extends Service_Base_Controller {
       } else
         // skip rows to allow for the last file position
         fseek($handle, $filepos);
-      $model = ORM::Factory($_GET['model']);      
+      $model = ORM::Factory($_GET['model']);
+      $submissionStruct = $model->get_submission_structure();
       while (($data = fgetcsv($handle, 1000, ",")) !== FALSE && ($limit===false || $count<$limit)) {
         $count++;
         $index = 0;
@@ -212,10 +213,14 @@ class Import_Controller extends Service_Base_Controller {
           $index++;
         }
         // copy across the fixed values, including the website id, into the data to save.
-        if (!empty($metadata['website_id']))
-          $saveArray['website_id']=$metadata['website_id'];
         if ($metadata['settings']) {
           $saveArray = array_merge($metadata['settings'], $saveArray);
+        }
+        if (!empty($saveArray['website_id'])) {
+          // automatically join to the website if relevant
+          if (isset($submissionStruct['joinsTo']) && in_array('websites', $submissionStruct['joinsTo'])) {
+            $saveArray['joinsTo:website:'.$saveArray['website_id']]=1;
+          }
         }
         // If posting a supermodel, are the details of the supermodel the same as for the previous CSV row? If so, we can link to that
         // record rather than create a new supermodel record.
