@@ -553,7 +553,8 @@ class ORM extends ORM_Core {
    * If not, returns null - errors are embedded in the model.
    */
   public function inner_submit(){
-    $isInsert = $this->id===0;
+    $isInsert = $this->id===0 
+        && (!isset($this->submission['fields']['id']) || !$this->submission['fields']['id']);
     $this->handleCaptionSubmission();
     $return = $this->populateFkLookups();
     $this->populateIdentifiers();
