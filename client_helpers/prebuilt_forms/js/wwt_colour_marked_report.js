@@ -43,6 +43,7 @@
   var positionId = '';
   var verticalDefault = '?';
   var validate = false;
+  var subjectAccordion = false;
 
   /*
    * Private variables
@@ -338,7 +339,11 @@
       setTaxonHeader(this);
     });
     // activate accordions
-    $('.idn-accordion, .idn-subject-accordion', scope).accordion();
+    if (subjectAccordion) {
+      $('.idn-accordion, .idn-subject-accordion', scope).accordion();
+    } else {
+      $('.idn-accordion', scope).accordion();
+    }
   };
   
   /*
@@ -349,7 +354,8 @@
    * initialises settings and set event handlers, called from indicia ready
    * handler.
    */
-  indicia.wwt.initForm = function(pSvcUrl, pReadNonce, pReadAuthToken, pBaseColourId, pTextColourId, pSequenceId, pPositionId, pVerticalDefault, pCollarRegex, pColourRegex, pMetalRegex, pValidate) {
+  indicia.wwt.initForm = function(pSvcUrl, pReadNonce, pReadAuthToken, pBaseColourId, pTextColourId, 
+      pSequenceId, pPositionId, pVerticalDefault, pCollarRegex, pColourRegex, pMetalRegex, pValidate, pSubjectAccordion) {
     // set config from PHP.
     svcUrl = pSvcUrl;
     readNonce = pReadNonce;
@@ -363,6 +369,7 @@
     colourRegex = pColourRegex;
     metalRegex = pMetalRegex;
     validate = pValidate=='true';
+    subjectAccordion = pSubjectAccordion=='true';
     // install the submit handler for the form
     $('form#entry_form').submit(function(event) {
       var codes = [];
@@ -477,7 +484,9 @@
       // initialise new javascript dependent controls
       eval(window.indicia.wwt.newJavascript.replace(/idn:0/g, 'idn:'+indCount).replace(/idn\\\\:0/g, 'idn\\\\:'+indCount));
       // reactivate subject accordion
-      $('.idn-subject-accordion').accordion('destroy').accordion({'active':indCount});
+      if (subjectAccordion) {
+        $('.idn-subject-accordion').accordion('destroy').accordion({'active':indCount});
+      }
     });
   };
 })(jQuery);

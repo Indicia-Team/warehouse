@@ -145,6 +145,15 @@ class iform_wwt_colour_marked_report {
           'group' => 'User Interface'
         ),
         array(
+          'name'=>'subjectAccordion',
+          'caption'=>'Use Accordion for Individuals',
+          'description'=>'Put multiple individual subjects in an accordion control to save space.',
+          'type'=>'boolean',
+          'default' => false,
+          'required' => false,
+          'group' => 'User Interface'
+        ),
+        array(
           'name'=>'structure',
           'caption'=>'Form Structure',
           'description'=>'Define the structure of the form. Each component goes on a new line and is nested inside the previous component where appropriate. The following types of '.
@@ -1801,6 +1810,7 @@ class iform_wwt_colour_marked_report {
       }
     }
     $validate = $args['clientSideValidation'] ? 'true' : 'false';
+    $subjectAccordion = $args['subjectAccordion'] ? 'true' : 'false';
     // configure the identifiers javascript
     // write it late so it happens after any locked values are applied
     if (!$options['inNewIndividual']) {
@@ -1816,7 +1826,8 @@ class iform_wwt_colour_marked_report {
         '".(!empty($args['neck_collar_regex']) ? $args['neck_collar_regex'] : '')."',
         '".(!empty($args['enscribed_colour_ring_regex']) ? $args['enscribed_colour_ring_regex'] : '')."',
         '".(!empty($args['metal_ring_regex']) ? $args['metal_ring_regex'] : '')."',
-        '".$validate."'\n".
+        '".$validate."',
+        '".$subjectAccordion."'\n".
         ");\n";
     }
     
