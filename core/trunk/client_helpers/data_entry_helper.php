@@ -733,12 +733,12 @@ class data_entry_helper extends helper_base {
       if (isset($options['tabDiv'])) {
         // The file box is displayed on a tab, so we must only generate it when the tab is displayed.
         $javascript =
-            "var tabHandler = function(event, ui) { \n".
+            "var uploaderTabHandler = function(event, ui) { \n".
             "  if (ui.panel.id=='".$options['tabDiv']."') {\n    ".
         $javascript.
-            "    jQuery(jQuery('#".$options['tabDiv']."').parent()).unbind('tabsshow', tabHandler);\n".
+            "    jQuery(jQuery('#".$options['tabDiv']."').parent()).unbind('tabsshow', uploaderTabHandler);\n".
             "  }\n};\n".
-            "jQuery(jQuery('#".$options['tabDiv']."').parent()).bind('tabsshow', tabHandler);\n";
+            "jQuery(jQuery('#".$options['tabDiv']."').parent()).bind('tabsshow', uploaderTabHandler);\n";
         // Insert this script at the beginning, because it must be done before the tabs are initialised or the
         // first tab cannot fire the event
         self::$javascript = $javascript . self::$javascript;
