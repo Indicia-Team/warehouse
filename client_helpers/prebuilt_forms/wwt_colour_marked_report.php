@@ -847,6 +847,8 @@ class iform_wwt_colour_marked_report {
       $r .= '<input type="button" value="Hide debug info" onclick="$(\'#debug-info-div\').slideToggle();" />';
       $r .= '</div>';
     }
+    // reset button
+    $r .= '<input type="button" value="'.lang::get('Abandon Form and Reload').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'newSample')).'\'">';    
     // Get authorisation tokens to update the Warehouse, plus any other hidden data.
     $hiddens = $auth['write'].
           "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n".
@@ -1836,8 +1838,9 @@ class iform_wwt_colour_marked_report {
     if (!$options['inNewIndividual']) {;
       $r .= '<div id="idn:subject:accordion" class="idn-subject-accordion">';
     }
-    $r .= '<h3 id="'.$options['fieldprefix'].'individual:header" class="individual_header"><a href="" data-heading="'.lang::get('Colour-marked individual').' '.($taxIdx+1).'">'.lang::get('Colour-marked individual').' '.($taxIdx+1).'</a></h3>';
-    $r .= '<div id="'.$options['fieldprefix'].'individual:panel" class="individual_panel ui-helper-clearfix">';
+    $r .= '<h3 id="'.$options['fieldprefix'].'individual:header" class="individual_header"><a href="" data-heading="'.lang::get('Colour-marked Individual').' '.($taxIdx+1).'">'.lang::get('Colour-marked Individual').' '.($taxIdx+1).'</a></h3>';
+    $r .= '<div id="'.$options['fieldprefix'].'individual:panel" class="individual_panel ui-corner-all">';
+    $r .= '<div class="ui-helper-clearfix">';
     $r .= '<fieldset id="'.$options['fieldprefix'].'individual:fieldset" class="taxon_individual ui-corner-all">';
     // output the hiddens
     if (isset(data_entry_helper::$entity_to_load[$options['fieldprefix'].'subject_observation:id'])) {
@@ -2067,8 +2070,7 @@ class iform_wwt_colour_marked_report {
     
     unset($options['seq_maxlength']);
     
-    $r .= '</div>';    
-    //---------------------------------
+    $r .= '</div>'; // end of identifier accordion
       
     // other devices (trackers etc.)
     if ($options['attachmentId'] > 0
@@ -2093,6 +2095,13 @@ class iform_wwt_colour_marked_report {
     if ($args['observation_comment']) {
       $r .= self::get_control_observationcomment($auth, $args, $tabalias, $options);
     }
+    
+    $r .= '</fieldset>';
+    // output identifier visualisations
+    $r .= '<div id="idn:'.$taxIdx.':neck-collar:colourbox" class="neck-collar-indentifier-colourbox ui-corner-all">&nbsp;</div>';
+    $r .= '<div id="idn:'.$taxIdx.':colour-left:colourbox" class="colour-left-indentifier-colourbox ui-corner-all">&nbsp;</div>';
+    $r .= '<div id="idn:'.$taxIdx.':colour-right:colourbox" class="colour-right-indentifier-colourbox ui-corner-all">&nbsp;</div>';
+    
     // occurrence images
     $opts = array(
       'table'=>'occurrence_image',
@@ -2107,13 +2116,12 @@ class iform_wwt_colour_marked_report {
     if ($options['inNewIndividual']) {
       $opts['codeGenerated'] = 'php';
     }
+    $r .= '</div>'; // close clearfix div
     $r .= data_entry_helper::file_box($opts);
-        
-    $r .= '</fieldset>';
-    // output identifier visualisations
-    $r .= '<div id="idn:'.$taxIdx.':neck-collar:colourbox" class="neck-collar-indentifier-colourbox ui-corner-all">&nbsp;</div>';
-    $r .= '<div id="idn:'.$taxIdx.':colour-left:colourbox" class="colour-left-indentifier-colourbox ui-corner-all">&nbsp;</div>';
-    $r .= '<div id="idn:'.$taxIdx.':colour-right:colourbox" class="colour-right-indentifier-colourbox ui-corner-all">&nbsp;</div>';
+    
+    // remove bird button - don't show if bird is being edited or only bird on the form
+    $r .= '<input type="button" id="idn:0:remove-individual" class="idn-remove-individual" value="'.lang::get('Remove This Bird').'" />';
+    
     $r .= '</div>';
     if (!$options['inNewIndividual']) {
       $r .= '</div>';
