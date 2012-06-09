@@ -44,6 +44,7 @@
   var verticalDefault = '?';
   var validate = false;
   var subjectAccordion = false;
+  var subjectCount = 0;
 
   /*
    * Private variables
@@ -292,9 +293,134 @@
     }
   };
 
-  var errorHTML = function(ctlId, msg) {
-    var html = '<p class="inline-error" generated="true" htmlfor="'+ctlId+'">'+msg+'.</p>';
-    return html;
+  var setRemoveButtonDisplay = function() {
+    // set the remove buttons to display none if only one bird or if a bird exists on database
+    var button$ = $('.idn-remove-individual');
+    if (button$.length<2) {
+      button$.hide();
+    } else {
+      button$.each(function() {
+        var subjectId$ = $('#'+esc4jq(this.id.replace('remove-individual', 'subject_observation:id')));
+        if (subjectId$.length>0 && subjectId$.val()>0) {
+          $(this).hide();
+        } else {
+          $(this).show();
+        }
+      });
+    }
+  };
+
+  var removeIndividual = function(ctl) {
+    // remove panel for individual when remove button clicked
+    var panel$ = $(ctl).closest('.individual_panel');
+    var header$ = panel$.prev('h3');
+    header$.remove();
+    // hide panel slowly then remove the html and reset the form
+    panel$.slideUp('normal',function() {
+      panel$.remove();
+      setRemoveButtonDisplay();
+      // reactivate subject accordion, if used
+      if (subjectAccordion) {
+        $('.idn-subject-accordion').accordion('destroy').accordion({'active':indCount});
+      }
+    });
+  };
+
+  var submitHandler = function(event) {
+    var codes = [];
+    var idnCount = 0;
+    // for each identifier in use
+    $('.idn\\:accordion\\:panel').each(function() {
+      var fldPrefix = this.id.replace('panel', '');
+      var escFldPrefix = esc4jq(fldPrefix);
+      var checkboxId = fldPrefix + 'identifier:checkbox';
+      if ($('#'+esc4jq(checkboxId)+':checked').length > 0) {
+        idnCount++;
+        // set the unique identifier:coded_value
+        var iCode = makeIdentifierCode(escFldPrefix);
+        if (iCode) {
+          $('#'+escFldPrefix+'identifier\\:coded_value').val(iCode);
+          if ($('#'+escFldPrefix+'identifier\\:identifier_id').val()=='-1') {
+            codes[codes.length] = iCode;
+          }
+        }
+      }
+    });
+    if (codes.length > 0) {
+      // for each identifier in use and without an id, check if it exists on the warehouse and set its id if so.
+      var query = {"in" : ["coded_value", codes ]};
+      var ajaxError = false;
+      $.ajax({
+        type: 'GET', 
+        url: svcUrl+'/data/identifier?mode=json' +
+            '&nonce='+readNonce+'&auth_token='+readAuthToken+
+            '&orderby=id&callback=?&query='+escape(JSON.stringify(query)), 
+        data: {}, 
+        success: function(data) {
+          if (typeof data.error!=="undefined") {
+            if (typeof data.errors!=="undefined") {
+              $.each(data.errors, function(idx, error) {
+                alert(error);
+              });
+              ajaxError = true;
+            } else {
+              if (data.error.indexOf('unauthorised')===-1) {
+                alert('An error occured when trying to save the data '+data.error);
+                ajaxError = true;
+              } else {
+                // just ignore if unauthorised, let it submit and fail and refresh the tokens.
+              }
+            }
+          } else if(typeof data.length!=='undefined' && data.length>0) { // we found one or more matches
+            var id$ = $('input.identifier_id');
+            var code$ = $('input.identifier\\:coded_value');
+            for (i=0; i<data.length; i++) {
+              for (j=0; j<code$.length; j++) {
+                if (code$[j].value==data[i].coded_value) {
+                  // set the id
+                  id$[j].value = data[i].id+'';
+                }
+              }
+            }
+          }
+        },
+        dataType: 'json', 
+        async: false 
+      });
+      if (ajaxError) {
+        // stop the submit
+        return false;
+      }
+    }
+    return true;
+  };
+  
+  var setLiveHandlers = function() {
+    // install a change handler for the colour selecters to set the ring colours
+    $('select.select_colour').live('change', function(event) {
+      autoSetCheckbox(this);
+      setIdentifierVisualisation(this);
+    });
+    // install a keyup handler for the colour selecters to set the ring sequence
+    $('input.select_colour').live('keyup', function(event) {
+      $(this).val($(this).val().toUpperCase());
+      autoSetCheckbox(this);
+      setIdentifierVisualisation(this);
+    });
+    // install a change handler for the taxon selecters to set the pictures and header
+    $('.select_taxon').live('change', function(event) {
+      setTaxonPicture(this);
+      setTaxonHeader(this);
+    });
+    // install an additional 'blur' handler for the autocomplete taxon selecters to set the pictures and header
+    $('input.select_taxon').live('blur', function(event) {
+      setTaxonPicture(this);
+      setTaxonHeader(this);
+    });
+    // install a click handler for the remove individual button
+    $('input.idn-remove-individual').live('click', function(event) {
+      removeIndividual(this);
+    });
   };
   
   var initIndividuals = function(scope) {
@@ -316,27 +442,6 @@
     $('select.select_colour, input.select_colour', scope).each(function() {
       autoSetCheckbox(this);
       setIdentifierVisualisation(this);
-    });
-    // install a change handler for the colour selecters to set the ring colours
-    $('select.select_colour', scope).change(function(event) {
-      autoSetCheckbox(this);
-      setIdentifierVisualisation(this);
-    });
-    // install a keyup handler for the colour selecters to set the ring sequence
-    $('input.select_colour', scope).keyup(function(event) {
-      $(this).val($(this).val().toUpperCase());
-      autoSetCheckbox(this);
-      setIdentifierVisualisation(this);
-    });
-    // install a change handler for the taxon selecters to set the pictures and header
-    $('.select_taxon', scope).change(function(event) {
-      setTaxonPicture(this);
-      setTaxonHeader(this);
-    });
-    // install an additional 'blur' handler for the autocomplete taxon selecters to set the pictures and header
-    $('input.select_taxon', scope).blur(function(event) {
-      setTaxonPicture(this);
-      setTaxonHeader(this);
     });
     // activate accordions
     if (subjectAccordion) {
@@ -370,74 +475,11 @@
     metalRegex = pMetalRegex;
     validate = pValidate=='true';
     subjectAccordion = pSubjectAccordion=='true';
+    // set count of loaded individuals
+    subjectCount = $('.individual_panel').length - 1;
     // install the submit handler for the form
     $('form#entry_form').submit(function(event) {
-      var codes = [];
-      var idnCount = 0;
-      // for each identifier in use
-      $('.idn\\:accordion\\:panel').each(function() {
-        var fldPrefix = this.id.replace('panel', '');
-        var escFldPrefix = esc4jq(fldPrefix);
-        var checkboxId = fldPrefix + 'identifier:checkbox';
-        if ($('#'+esc4jq(checkboxId)+':checked').length > 0) {
-          idnCount++;
-          // set the unique identifier:coded_value
-          var iCode = makeIdentifierCode(escFldPrefix);
-          if (iCode) {
-            $('#'+escFldPrefix+'identifier\\:coded_value').val(iCode);
-            if ($('#'+escFldPrefix+'identifier\\:identifier_id').val()=='-1') {
-              codes[codes.length] = iCode;
-            }
-          }
-        }
-      });
-      if (codes.length > 0) {
-        // for each identifier in use and without an id, check if it exists on the warehouse and set its id if so.
-        var query = {"in" : ["coded_value", codes ]};
-        var ajaxError = false;
-        $.ajax({
-          type: 'GET', 
-          url: svcUrl+'/data/identifier?mode=json' +
-              '&nonce='+readNonce+'&auth_token='+readAuthToken+
-              '&orderby=id&callback=?&query='+escape(JSON.stringify(query)), 
-          data: {}, 
-          success: function(data) {
-            if (typeof data.error!=="undefined") {
-              if (typeof data.errors!=="undefined") {
-                $.each(data.errors, function(idx, error) {
-                  alert(error);
-                });
-                ajaxError = true;
-              } else {
-                if (data.error.indexOf('unauthorised')===-1) {
-                  alert('An error occured when trying to save the data '+data.error);
-                  ajaxError = true;
-                } else {
-                  // just ignore if unauthorised, let it submit and fail and refresh the tokens.
-                }
-              }
-            } else if(typeof data.length!=='undefined' && data.length>0) { // we found one or more matches
-              var id$ = $('input.identifier_id');
-              var code$ = $('input.identifier\\:coded_value');
-              for (i=0; i<data.length; i++) {
-                for (j=0; j<code$.length; j++) {
-                  if (code$[j].value==data[i].coded_value) {
-                    // set the id
-                    id$[j].value = data[i].id+'';
-                  }
-                }
-              }
-            }
-          },
-          dataType: 'json', 
-          async: false 
-        });
-        if (ajaxError) {
-          // stop the submit
-          return false;
-        }
-      }
-      return true;
+      return submitHandler(event);
     });
     // add jQuery validation options/methods
     if (validate==true) {
@@ -473,17 +515,25 @@
     }
     // initialise individual and identifier controls
     initIndividuals('body');
+    // set live handlers
+    setLiveHandlers();
+    // hide remove buttons if only one bird or for birds which exist on database
+    setRemoveButtonDisplay();
     // install a click handler for the 'add another' button
     $('input#idn\\:add-another').click(function(event) {
+      // use subjectCount for the incremental number of individuals (not reduced when subjects removed), indCount for the actual number.
+      subjectCount++;
       var indCount = $('.individual_panel').length;      
-      var newInd = window.indicia.wwt.newIndividual.replace(/idn:0/g, 'idn:'+indCount)
-        .replace(/Colour-marked individual 1/g, 'Colour-marked individual '+(indCount+1));
+      var newInd = window.indicia.wwt.newIndividual.replace(/idn:0/g, 'idn:'+subjectCount)
+        .replace(/Colour-marked Individual 1/g, 'Colour-marked Individual '+(subjectCount+1));
       $('#idn\\:subject\\:accordion').append(newInd);
       // initialise new individual and identifier controls
-      initIndividuals('#idn\\:'+indCount+'\\:individual\\:panel');
+      initIndividuals('#idn\\:'+subjectCount+'\\:individual\\:panel');
+      // hide remove buttons if only one bird or for birds which exist on database
+      setRemoveButtonDisplay();
       // initialise new javascript dependent controls
-      eval(window.indicia.wwt.newJavascript.replace(/idn:0/g, 'idn:'+indCount).replace(/idn\\\\:0/g, 'idn\\\\:'+indCount));
-      // reactivate subject accordion
+      eval(window.indicia.wwt.newJavascript.replace(/idn:0/g, 'idn:'+subjectCount).replace(/idn\\\\:0/g, 'idn\\\\:'+subjectCount));
+      // reactivate subject accordion, if used
       if (subjectAccordion) {
         $('.idn-subject-accordion').accordion('destroy').accordion({'active':indCount});
       }
