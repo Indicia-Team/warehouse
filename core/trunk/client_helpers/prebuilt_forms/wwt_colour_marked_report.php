@@ -1838,7 +1838,12 @@ class iform_wwt_colour_marked_report {
     if (!$options['inNewIndividual']) {;
       $r .= '<div id="idn:subject:accordion" class="idn-subject-accordion">';
     }
-    $r .= '<h3 id="'.$options['fieldprefix'].'individual:header" class="individual_header"><a href="" data-heading="'.lang::get('Colour-marked Individual').' '.($taxIdx+1).'">'.lang::get('Colour-marked Individual').' '.($taxIdx+1).'</a></h3>';
+    if ($args['subjectAccordion']) {
+      $r .= '<h3 id="'.$options['fieldprefix'].'individual:header" class="individual_header"><a href="" data-heading="'.lang::get('Colour-marked Individual').' '.($taxIdx+1).'">'.lang::get('Colour-marked Individual').' '.($taxIdx+1).'</a></h3>';
+    } else {
+      $r .= '<h3 id="'.$options['fieldprefix'].'individual:header" class="individual_header" data-heading="'.lang::get('Colour-marked Individual').' '.($taxIdx+1).'">'.lang::get('Colour-marked Individual').' '.($taxIdx+1).'</h3>';
+    }
+    
     $r .= '<div id="'.$options['fieldprefix'].'individual:panel" class="individual_panel ui-corner-all">';
     $r .= '<div class="ui-helper-clearfix">';
     $r .= '<fieldset id="'.$options['fieldprefix'].'individual:fieldset" class="taxon_individual ui-corner-all">';
@@ -2101,10 +2106,11 @@ class iform_wwt_colour_marked_report {
     $r .= '<div id="idn:'.$taxIdx.':neck-collar:colourbox" class="neck-collar-indentifier-colourbox ui-corner-all">&nbsp;</div>';
     $r .= '<div id="idn:'.$taxIdx.':colour-left:colourbox" class="colour-left-indentifier-colourbox ui-corner-all">&nbsp;</div>';
     $r .= '<div id="idn:'.$taxIdx.':colour-right:colourbox" class="colour-right-indentifier-colourbox ui-corner-all">&nbsp;</div>';
+    $r .= '</div>'; // close clearfix div
     
     // occurrence images
     $opts = array(
-      'table'=>'occurrence_image',
+      'table'=>'idn:'.$taxIdx.':'.'occurrence_image',
       'label'=>lang::get('Upload your photos'),
     );
     if ($args['interface']!=='one_page')
@@ -2116,7 +2122,6 @@ class iform_wwt_colour_marked_report {
     if ($options['inNewIndividual']) {
       $opts['codeGenerated'] = 'php';
     }
-    $r .= '</div>'; // close clearfix div
     $r .= data_entry_helper::file_box($opts);
     
     // remove bird button - don't show if bird is being edited or only bird on the form
@@ -2335,7 +2340,7 @@ class iform_wwt_colour_marked_report {
       // build the observation submission
       $key_parts = explode(':', $key);
       $idx = $key_parts[1];
-      $so_keys = preg_grep('/^idn:'.$idx.':(subject_observation|occurrence|occurrences_subject_observation|occAttr|sjoAttr):/', array_keys($values));
+      $so_keys = preg_grep('/^idn:'.$idx.':(subject_observation|occurrence|occurrence_image|occurrences_subject_observation|occAttr|sjoAttr):/', array_keys($values));
       foreach ($so_keys as $so_key) {
         $so_key_parts = explode(':', $so_key, 3);
         $values[$so_key_parts[2]] = $values[$so_key];
@@ -2388,7 +2393,6 @@ class iform_wwt_colour_marked_report {
       
     // add super model for occurrence
     // provide defaults if these keys not present
-    // Todo: get sample_id from somewhere???
     $values = array_merge(array(
       'occurrence:sample_id' => 0, // place holder, this will be populated in subject_observation model
       ), $values);
