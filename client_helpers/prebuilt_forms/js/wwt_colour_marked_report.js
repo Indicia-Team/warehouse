@@ -247,7 +247,11 @@
 
   var setTaxonHeader = function(ctl) {
     // set the individual panel header to reflect the taxon
-    var heading$ = $(ctl).closest('.individual_panel').prev('h3').children('a');
+    if (subjectAccordion) {
+      var heading$ = $(ctl).closest('.individual_panel').prev('h3').children('a');
+    } else {
+      var heading$ = $(ctl).closest('.individual_panel').prev('h3');
+    }
     var taxonName = '';
     // if species control is a select
     $('option:selected', $(ctl)).each(function() {
@@ -403,6 +407,12 @@
     });
     // install a keyup handler for the colour selecters to set the ring sequence
     $('input.select_colour').live('keyup', function(event) {
+      $(this).val($(this).val().toUpperCase());
+      autoSetCheckbox(this);
+      setIdentifierVisualisation(this);
+    });
+    // install a change handler for the colour selecters to set the ring sequence
+    $('input.select_colour').live('change', function(event) {
       $(this).val($(this).val().toUpperCase());
       autoSetCheckbox(this);
       setIdentifierVisualisation(this);
