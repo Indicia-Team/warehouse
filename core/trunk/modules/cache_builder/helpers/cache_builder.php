@@ -56,6 +56,7 @@ class cache_builder {
       $db->query("drop table needs_update_$table");
     } catch (Exception $e) {
       $db->query("drop table needs_update_$table");
+      error::log_error('Building cache', $e);
       echo $e->getMessage();
     }
   }
