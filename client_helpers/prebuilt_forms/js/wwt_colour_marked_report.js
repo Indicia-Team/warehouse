@@ -433,6 +433,47 @@
     });
   };
   
+  var addValidationMethods = function() {
+    // add jQuery validation options/methods
+    jQuery.validator.addMethod("identifierRequired", function(value, element) {
+      // select the checked checkboxes in this identifier set and return true if any are set
+      var checkbox$ = $('.identifier_checkbox:checked', $(element).closest('.idn-accordion'));
+      return checkbox$.length > 0;
+    }, "Please record at least one identifier for this bird");
+    jQuery.validator.addMethod("textAndBaseMustDiffer", function(value, element) {
+      // no identifier can have the same base colour and text colour
+      var colourSelected$ = $('select.select_colour option:selected', $(element).closest('.idn\\:accordion\\:panel'));
+      if (colourSelected$.length===2) {
+        return colourSelected$[0].value!==colourSelected$[1].value || colourSelected$[0].value==='';
+      }
+      return true;
+    }, "The base colour is the same as the text colour, please check the colours and re-enter.");
+    jQuery.validator.addMethod('collarFormat', function (value, element) { 
+      if (collarRegex==='') {
+        return true;
+      } else {
+        var re = new RegExp(collarRegex);
+        return this.optional(element) || re.test(value);
+      }
+    }, 'This is not a known neck collar format, please check the value and re-enter.');
+    jQuery.validator.addMethod('colourRingFormat', function (value, element) { 
+      if (colourRegex==='') {
+        return true;
+      } else {
+        var re = new RegExp(colourRegex);
+        return this.optional(element) || re.test(value);
+      }
+    }, 'This is not a known colour ring format, please check the value and re-enter.');
+    jQuery.validator.addMethod('metalRingFormat', function (value, element) { 
+      if (metalRegex==='') {
+        return true;
+      } else {
+        var re = new RegExp(metalRegex);
+        return this.optional(element) || re.test(value);
+      }
+    }, 'This is not a known metal ring format, please check the value and re-enter.');
+  };
+  
   var initIndividuals = function(scope) {
     // colour any colour selects
     $('select.select_colour option', scope).each(function() {
@@ -493,35 +534,7 @@
     });
     // add jQuery validation options/methods
     if (validate==true) {
-      jQuery.validator.addMethod("identifierRequired", function(value, element) {
-        // select the checked checkboxes in this identifier set and return true if any are set
-        var checkbox$ = $('.identifier_checkbox:checked', $(element).closest('.idn-accordion'));
-        return checkbox$.length > 0;
-      }, "Please record at least one identifier for this bird");
-      jQuery.validator.addMethod('collarFormat', function (value, element) { 
-        if (collarRegex==='') {
-          return true;
-        } else {
-          var re = new RegExp(collarRegex);
-          return this.optional(element) || re.test(value);
-        }
-      }, 'This is not a known neck collar format, please check the value and re-enter.');
-      jQuery.validator.addMethod('colourRingFormat', function (value, element) { 
-        if (colourRegex==='') {
-          return true;
-        } else {
-          var re = new RegExp(colourRegex);
-          return this.optional(element) || re.test(value);
-        }
-      }, 'This is not a known colour ring format, please check the value and re-enter.');
-      jQuery.validator.addMethod('metalRingFormat', function (value, element) { 
-        if (metalRegex==='') {
-          return true;
-        } else {
-          var re = new RegExp(metalRegex);
-          return this.optional(element) || re.test(value);
-        }
-      }, 'This is not a known metal ring format, please check the value and re-enter.');
+      addValidationMethods();
     }
     // initialise individual and identifier controls
     initIndividuals('body');
