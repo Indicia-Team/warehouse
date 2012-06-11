@@ -1188,7 +1188,15 @@ class iform_wwt_colour_marked_report {
       'nocache' => true,
     );
     $occurrences = data_entry_helper::get_population_data($options);
-    // add each occurrence and occurrences_subject_observation to the form data
+    $query = array('in'=>array('occurrence_id', $occurrenceIds));
+    $filter = array('query'=>json_encode($query),);
+    $options = array(
+      'table' => 'occurrence_image',
+      'extraParams' => $auth['read'] + array('view'=>'list') + $filter,
+      'nocache' => true,
+    );
+    $occurrence_images = data_entry_helper::get_population_data($options);
+    // add each occurrence, occurrences_subject_observation and occurrence_image to the form data
     for ($idx=0; $idx<count($subjectObservations); $idx++) {
       $subjectObservation=$subjectObservations[$idx];
       // note, this code would break with more than one occurrence on the subject_observation
@@ -1210,6 +1218,16 @@ class iform_wwt_colour_marked_report {
                 if ($key=='taxon' && $args['species_ctrl']=='autocomplete') {
                   $form_data[$fieldprefix.'taxa_taxon_list_id:taxon'] = $occurrence[$key];
                 }
+              }
+            }
+          }
+          foreach ($occurrence_images as $occurrence_image) {
+            if ($oso['occurrence_id']===$occurrence_image['occurrence_id']) {
+              $fieldprefix = 'idn:'.$idx.':occurrence_image:';
+              $fieldsuffix = ':'.$occurrence_image['path'];
+              $keys = array_keys($occurrence_image);
+              foreach ($keys as $key) {
+                $form_data[$fieldprefix.$key.$fieldsuffix] = $occurrence_image[$key];
               }
             }
           }
@@ -2118,7 +2136,7 @@ class iform_wwt_colour_marked_report {
     $opts['resizeWidth'] = isset($options['resizeWidth']) ? $options['resizeWidth'] : 1600;
     $opts['resizeHeight'] = isset($options['resizeHeight']) ? $options['resizeHeight'] : 1600;
     $opts['caption'] = lang::get('Photos');
-    $opts['id'] = 'idn:0';
+    // $opts['id'] = 'idn:0';
     if ($options['inNewIndividual']) {
       $opts['codeGenerated'] = 'php';
     }
@@ -2130,19 +2148,16 @@ class iform_wwt_colour_marked_report {
     $r .= '</div>';
     if (!$options['inNewIndividual']) {
       $r .= '</div>';
-      if (is_null(data_entry_helper::$entity_to_load)) {
-        $new_individual = $r;
-      } else {
-        $temp = data_entry_helper::$entity_to_load;
-        data_entry_helper::$entity_to_load = null;
-        $options['inNewIndividual'] = true;
-        $new_individual = self::get_control_speciesidentifier($auth, $args, $tabalias, $options);
-        data_entry_helper::$entity_to_load = $temp;
-        unset($options['inNewIndividual']);
-      }
-      data_entry_helper::$javascript .= "window.indicia.wwt.newIndividual = '".str_replace(array('\'', "\n"), array('\\\'', ' '), $new_individual)."';\n";
+      $temp = data_entry_helper::$entity_to_load;
+      data_entry_helper::$entity_to_load = null;
+      $options['inNewIndividual'] = true;
+      $new_individual = self::get_control_speciesidentifier($auth, $args, $tabalias, $options);
       $opts['codeGenerated'] = 'js';
       $photoJavascript = data_entry_helper::file_box($opts);
+      data_entry_helper::$entity_to_load = $temp;
+      unset($options['inNewIndividual']);
+        
+      data_entry_helper::$javascript .= "window.indicia.wwt.newIndividual = '".str_replace(array('\'', "\n"), array('\\\'', ' '), $new_individual)."';\n";
       // save the javascript needed for an additional colour-marked individual
       // process it to sanitise the string and remove comments (works now but not 100% reliable)
       data_entry_helper::$javascript .= "window.indicia.wwt.newJavascript = '"

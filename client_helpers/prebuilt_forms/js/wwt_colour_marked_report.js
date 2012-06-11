@@ -534,7 +534,7 @@
       // use subjectCount for the incremental number of individuals (not reduced when subjects removed), indCount for the actual number.
       subjectCount++;
       var indCount = $('.individual_panel').length;      
-      var newInd = window.indicia.wwt.newIndividual.replace(/idn:0/g, 'idn:'+subjectCount)
+      var newInd = window.indicia.wwt.newIndividual.replace(/idn:0:/g, 'idn:'+subjectCount+':')
         .replace(/Colour-marked Individual 1/g, 'Colour-marked Individual '+(subjectCount+1));
       $('#idn\\:subject\\:accordion').append(newInd);
       // initialise new individual and identifier controls
@@ -542,7 +542,8 @@
       // hide remove buttons if only one bird or for birds which exist on database
       setRemoveButtonDisplay();
       // initialise new javascript dependent controls
-      eval(window.indicia.wwt.newJavascript.replace(/idn:0/g, 'idn:'+subjectCount).replace(/idn\\\\:0/g, 'idn\\\\:'+subjectCount));
+      eval(window.indicia.wwt.newJavascript.replace(/idn:0:/g, 'idn:'+subjectCount+':')
+        .replace(/idn\\\\:0\\\\:/g, 'idn\\\\:'+subjectCount+'\\\\:'));
       // reactivate subject accordion, if used
       if (subjectAccordion) {
         $('.idn-subject-accordion').accordion('destroy').accordion({'active':indCount});
