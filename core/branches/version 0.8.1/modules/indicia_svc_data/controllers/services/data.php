@@ -286,12 +286,12 @@ class Data_Controller extends Data_Service_Base_Controller {
   }
 
   /**
-   * Provides the /services/data/cache_taxon_code service.
+   * Provides the /services/data/taxon_code service.
    * Retrieves details of a single taxon code.
    */
-  public function cache_taxon_code()
+  public function taxon_code()
   {
-    $this->handle_call('cache_taxon_code');
+    $this->handle_call('taxon_code');
   }
   
   /**
