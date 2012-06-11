@@ -291,8 +291,8 @@ $config['taxon_searchterms']['update']['simplified terms'] = "update cache_taxon
     where cts.taxa_taxon_list_id=cttl.id and cts.name_type in ('L','S','V') and cts.simplified=true";
 
 $config['taxon_searchterms']['update']['codes'] = "update cache_taxon_searchterms cts
-    set taxa_taxon_list_id=cttl.id,
-      taxon_list_id=cttl.taxon_list_id,
+  set taxa_taxon_list_id=cttl.id,
+    taxon_list_id=cttl.taxon_list_id,
       searchterm=tc.code,
       original=tc.code,
       taxon_group_id=cttl.taxon_group_id,
@@ -359,7 +359,7 @@ $config['taxon_searchterms']['insert']['simplified terms']="insert into cache_ta
         else 'V'
       end, true, null
     from cache_taxa_taxon_lists cttl
-    left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type='A'
+    left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type in ('L','S','V') and cts.simplified=true
     #insert_join_needs_update#
     where cts.taxa_taxon_list_id is null";
 
@@ -368,11 +368,11 @@ $config['taxon_searchterms']['insert']['codes']="insert into cache_taxon_searcht
       default_common_name, preferred_authority, language_iso,
       name_type, simplified, code_type_id, source_id
     )
-    select distinct on (cttl.id) cttl.id, cttl.taxon_list_id, tc.code, tc.code, cttl.taxon_group_id, cttl.taxon_group, cttl.taxon_meaning_id, cttl.preferred_taxon,
-      cttl.default_common_name, cttl.authority, cttl.language_iso, 'C', null, tc.code_type_id, tc.id
+    select distinct on (tc.id) cttl.id, cttl.taxon_list_id, tc.code, tc.code, cttl.taxon_group_id, cttl.taxon_group, cttl.taxon_meaning_id, cttl.preferred_taxon,
+      cttl.default_common_name, cttl.authority, null, 'C', null, tc.code_type_id, tc.id
     from cache_taxa_taxon_lists cttl
-    left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type='A'
     join taxon_codes tc on tc.taxon_meaning_id=cttl.taxon_meaning_id and tc.deleted=false
+    left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type='C' and cts.source_id=tc.id
     join termlists_terms tlttype on tlttype.id=tc.code_type_id and tlttype.deleted=false
     join termlists_terms tltcategory on tltcategory.id=tlttype.parent_id and tltcategory.deleted=false
     join terms tcategory on tcategory.id=tltcategory.term_id and tcategory.term='searchable' and tcategory.deleted=false
