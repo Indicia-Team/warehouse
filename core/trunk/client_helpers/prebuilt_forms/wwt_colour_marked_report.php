@@ -2259,6 +2259,9 @@ class iform_wwt_colour_marked_report {
           ), $options));
           break;
         case 'L':
+          if (strstr($options['class'], 'select_colour')) {
+            $options['class'] = (strstr($options['class'], 'textAndBaseMustDiffer') ? $options['class'] : $options['class'].' textAndBaseMustDiffer');
+          }
           $filter = array('termlist_id'=>$attrType['termlist_id'],);
           if (!empty($query)) {
             $filter += array('query'=>json_encode($query),);
