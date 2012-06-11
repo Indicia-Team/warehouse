@@ -40,18 +40,31 @@ class Scheduled_Tasks_Controller extends Controller {
 
   /**
    * The index method is the default method called when you access this controller, so we can use this
-   * to run the scheduled tasks.
+   * to run the scheduled tasks. Takes an optional URL parameter "tasks", which is a comma separated list of
+   * the module names to schedule, plus can contain "notifications" to fire the built in notifications system or
+   * "all_modules" to fire every module that declares a scheduled task plugin.
+   * If tasks are not specified then everything is run.
    */
   public function index() {
+    $this->db = new Database();
     $system = new System_Model();
-    $this->last_run_date = $system->getLastScheduledTaskCheck();
+    if (isset($_GET['tasks'])) {
+      $tasks = explode(',',$_GET['tasks']);
+    } else {
+      $tasks = array('notifications', 'all_modules');
+    }
     // grab the time before we start, so there is no chance of a record coming in while we run that is missed.
     $currentTime = time();
-    $this->checkTriggers();
-    $this->runScheduledPlugins($system);
-    $swift = email::connect();
-    $this->doRecordOwnerNotifications($swift);
-    $this->doDigestNotifications($swift);
+    if (in_array('notifications', $tasks)) {
+      $this->last_run_date = $system->getLastScheduledTaskCheck();
+      $this->checkTriggers();
+    }
+    $this->runScheduledPlugins($system, $tasks);
+    if (in_array('notifications', $tasks)) {
+      $swift = email::connect();
+      $this->doRecordOwnerNotifications($swift);
+      $this->doDigestNotifications($swift);
+    }
     // mark the time of the last scheduled task check, so we can get diffs next time
     $this->db->update('system', array('last_scheduled_task_check'=>"'" . date('c', $currentTime) . "'"), array('id' => 1));
     echo "Ok!";
@@ -64,7 +77,6 @@ class Scheduled_Tasks_Controller extends Controller {
   protected function checkTriggers() {
     echo "Checking triggers<br/>";
     kohana::log('info', "Checking triggers");
-    $this->db = new Database();
     // Get a list of all the triggers that have at least one action
     $result = $this->getTriggerQuery();
     // For each trigger, we need to get the output of the report file which defines the trigger
@@ -395,8 +407,9 @@ class Scheduled_Tasks_Controller extends Controller {
   /**
    * Loop through any plugin modules which declare scheduled tasks and run them.
    * @param object $system System model instance.
+   * @param array $tasks Array of plugin names to run, or array containing "all_modules" to run them all.
    */
-  private function runScheduledPlugins($system) {
+  private function runScheduledPlugins($system, $tasks) {
     $cacheId = 'indicia-scheduled-plugins';
     $cache = Cache::instance();
     if (!($plugins = $cache->get($cacheId))) {
@@ -415,23 +428,25 @@ class Scheduled_Tasks_Controller extends Controller {
     // now we have just a list of plugins with scheduled tasks to run
     foreach ($plugins as $path) {
       $plugin = basename($path);
-      require_once("$path/plugins/$plugin.php");
-      $last_run_date = $system->getLastScheduledTaskCheck($plugin);
-      // grab the time before we start, so there is no chance of a record coming in while we run that is missed.
-      $currentTime = time();
-      kohana::log('info', "Calling " . $plugin . "_scheduled_task");
-      call_user_func($plugin.'_scheduled_task', $last_run_date);
-      // mark the time of the last scheduled task check, so we can get diffs next time
-      // insert if not exists
-      if (!$this->db->update('system', array('last_scheduled_task_check'=>"'" . date('c', $currentTime) . "'"), array('name' => $plugin))->count())
-        $this->db->insert('system', array(
-            'version' => '0.1.0',
-            'name' => $plugin,
-            'repository'=>'Not specified',
-            'release_date'=>date('Y-m-d', $currentTime),
-            'last_scheduled_task_check'=>date("Ymd H:i:s", $currentTime),
-            'last_run_script'=>null
-        ));
+      if (in_array('all_modules', $tasks) || in_array($plugin, $tasks)) {
+        require_once("$path/plugins/$plugin.php");
+        $last_run_date = $system->getLastScheduledTaskCheck($plugin);
+        // grab the time before we start, so there is no chance of a record coming in while we run that is missed.
+        $currentTime = time();
+        kohana::log('info', "Calling " . $plugin . "_scheduled_task");
+        call_user_func($plugin.'_scheduled_task', $last_run_date, $this->db);
+        // mark the time of the last scheduled task check, so we can get diffs next time
+        // insert if not exists
+        if (!$this->db->update('system', array('last_scheduled_task_check'=>"'" . date('c', $currentTime) . "'"), array('name' => $plugin))->count())
+          $this->db->insert('system', array(
+              'version' => '0.1.0',
+              'name' => $plugin,
+              'repository'=>'Not specified',
+              'release_date'=>date('Y-m-d', $currentTime),
+              'last_scheduled_task_check'=>date("Ymd H:i:s", $currentTime),
+              'last_run_script'=>null
+          ));
+      }
     }
   }
 

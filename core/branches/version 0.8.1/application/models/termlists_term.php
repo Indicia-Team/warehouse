@@ -74,7 +74,7 @@ class Termlists_term_Model extends Base_Name_Model {
   /**
    * Overrides the post submit function to add in synonomies
    */
-  protected function postSubmit(){
+  protected function postSubmit($isInsert){
     $success = true;
     if ($this->submission['fields']['preferred']['value']=='t') {
       try {

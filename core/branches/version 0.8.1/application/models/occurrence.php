@@ -194,5 +194,14 @@ class Occurrence_Model extends ORM
     );
   }
   
+  /**
+   * Force occurrences to appear in the cache so that they are immediately available to report on.
+   */
+  protected function postSubmit($isInsert) {
+    if ($isInsert && class_exists('cache_builder'))
+      cache_builder::insert($this->db, 'occurrences', $this->id);
+    return true;
+  }
+  
 }
 ?>

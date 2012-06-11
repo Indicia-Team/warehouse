@@ -104,10 +104,10 @@ class Known_subject_Model extends ORM_Tree
   /**
   * After submission, TODO perhaps?
   */
-  protected function postSubmit()
+  protected function postSubmit($isInsert)
   { 
     kohana::log('debug', 'In Known_subject_Model::postSubmit() $this->submission is '.print_r($this->submission, true));
-    return parent::postSubmit();
+    return parent::postSubmit($isInsert);
   }
   
   /**

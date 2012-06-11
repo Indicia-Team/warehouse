@@ -50,7 +50,7 @@ class Person_Attribute_Model extends ATTR_ORM {
    * After saving, ensures that the join records linking the attribute to a website are created or deleted.
    * @return boolean Returns true to indicate success. 
    */
-  protected function postSubmit() {
+  protected function postSubmit($isInsert) {
     // Record has saved correctly or is being reused
     $websites = ORM::factory('website')->find_all();
     foreach ($websites as $website) {

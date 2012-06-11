@@ -445,8 +445,6 @@ class ORM extends ORM_Core {
     $a = array_fill_keys($keys, $ids);
     $fieldname = $this->submission['fields']['insert_captions_use']['value'];
     $this->submission['fields'][$fieldname] = $a;
-    Kohana::log('debug', 'Leaving ORM createIdsFromCaptions, model fields are '.
-      print_r($this->submission['fields'], true));
     return true;
   }
   
@@ -555,6 +553,8 @@ class ORM extends ORM_Core {
    * If not, returns null - errors are embedded in the model.
    */
   public function inner_submit(){
+    $isInsert = $this->id===0 
+        && (!isset($this->submission['fields']['id']) || !$this->submission['fields']['id']);
     $this->handleCaptionSubmission();
     $return = $this->populateFkLookups();
     $this->populateIdentifiers();
@@ -573,7 +573,7 @@ class ORM extends ORM_Core {
       }
       // Call postSubmit
       if ($return) {
-        $ps = $this->postSubmit();
+        $ps = $this->postSubmit($isInsert);
         if ($ps == null) {
           $return = null;
         }
@@ -691,7 +691,7 @@ class ORM extends ORM_Core {
    * 
    * @return Foreign key value or false if not found
    */ 
-  private function fkLookup($fkArr) {
+  protected function fkLookup($fkArr) {
     $r = false;
     if (ORM::$cacheFkLookups) {
       $keyArr=array('lookup', $fkArr['fkTable'], $fkArr['fkSearchField'], $fkArr['fkSearchValue']);
@@ -776,9 +776,7 @@ class ORM extends ORM_Core {
     if (array_key_exists('subModels', $this->submission)) {
       // Iterate through the subModel array, linking them to this model
       foreach ($this->submission['subModels'] as $a) {
-
         Kohana::log("debug", "Submitting submodel ".$a['model']['id'].".");
-
         // Establish the right model
         $m = ORM::factory($a['model']['id']);
 
@@ -1328,9 +1326,10 @@ class ORM extends ORM_Core {
 
   /**
    * Overrideable function to allow some models to handle additional records created on submission.
+   * @param boolean True if this is a new inserted record, false for an update.
    * @return boolean True if successful.
    */
-  protected function postSubmit() {
+  protected function postSubmit($isInsert) {
     return true;
   }
 
@@ -1492,8 +1491,8 @@ class ORM extends ORM_Core {
     $validation->add_rules($sref_system_field, 'required');
     if (!empty($values[$sref_system_field])) {
       $system = $values[$sref_system_field];
-      $validation->add_rules('entered_sref', "sref[$system]");
-      $validation->add_rules('entered_sref_system', 'sref_system');
+      $validation->add_rules($sref_field, "sref[$system]");
+      $validation->add_rules($sref_system_field, 'sref_system');
     }
   }
   

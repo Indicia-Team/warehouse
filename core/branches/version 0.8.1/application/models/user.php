@@ -106,7 +106,7 @@ class User_Model extends ORM {
    * submission. If this is the case, the users_websites data will be stored in $this->droppedFields
    * since it is not part of the main user submission.
    */
-  public function postSubmit() {
+  public function postSubmit($isInsert) {
     if (count($this->droppedFields)>0) {
       try {
         $websites = ORM::factory('website')->in_allowed_websites()->find_all();
