@@ -95,7 +95,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   
   /**
   * Provides the /services/data/cache_taxon_searchterms service.
-  * Retrieves details of a single language.
+  * Retrieves details of a single taxon searchterm.
   */
   public function cache_taxon_searchterm()
   {
@@ -104,7 +104,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   
   /**
   * Provides the /services/data/index_websites_website_agreements service.
-  * Retrieves details of a single language.
+  * Retrieves details of a single index_websites_website_agreements record.
   */
   public function index_websites_website_agreement()
   {
@@ -122,7 +122,7 @@ class Data_Controller extends Data_Service_Base_Controller {
 
   /**
   * Provides the /services/data/location service.
-  * Retrieves details of a single survey.
+  * Retrieves details of a single location.
   */
   public function location()
   {
@@ -167,7 +167,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   
   /**
   * Provides the /services/data/occurrence service.
-  * Retrieves details of occurrences.
+  * Retrieves details of notifications.
   */
   public function notification()
   {
@@ -241,7 +241,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   
   /**
   * Provides the /service/data/person_attribute_value service.
-  * Retrieves details of occurrence attributes.
+  * Retrieves details of person attribute values.
   */
   public function person_attribute_value()
   {
@@ -287,7 +287,7 @@ class Data_Controller extends Data_Service_Base_Controller {
 
   /**
   * Provides the /service/data/taxon_code service.
-  * Retrieves details of location images.
+  * Retrieves details of taxon codes.
   */
   public function taxon_code()
   {
@@ -305,7 +305,7 @@ class Data_Controller extends Data_Service_Base_Controller {
 
   /**
   * Provides the /service/data/taxon_image service.
-  * Retrieves details of location images.
+  * Retrieves details of taxon images.
   */
   public function taxon_image()
   {
@@ -342,7 +342,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   
   /**
   * Provides the /service/data/occurrence_attribute service.
-  * Retrieves details of occurrence attributes.
+  * Retrieves details of taxa on taxon list attributes.
   */
   public function taxa_taxon_list_attribute()
   {
@@ -351,7 +351,7 @@ class Data_Controller extends Data_Service_Base_Controller {
 
   /**
   * Provides the /service/data/taxa_taxon_list_attribute_value service.
-  * Retrieves details of occurrence attribute values.
+  * Retrieves details of taxa on taxon list attribute values.
   */
   public function taxa_taxon_list_attribute_value()
   {
@@ -414,7 +414,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   
   /**
   * Provides the /services/data/user service.
-  * Retrieves details of a single user.
+  * Retrieves details of a single user identifier.
   */
   public function user_identifier()
   {
@@ -466,7 +466,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   }
 
   /**
-  * Provides the /services/data/occurrence_comments service.
+  * Provides the /services/data/sample_comments service.
   */
   public function sample_comment()
   {
