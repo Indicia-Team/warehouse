@@ -1653,15 +1653,14 @@ if (typeof(mapSettingsHooks)!=='undefined') {
       $pathParamValue = isset($currentUrl['params'][$pathParam]) ? $currentUrl['params'][$pathParam] : '';
       unset($currentUrl['params'][$pathParam]);
     }
+    // Ensure the rootFolder replacement value supports Drupal's dirty URLs
+    if (!empty($pathParam) && strpos($row['rootFolder'], "?$pathParam=")===false)
+      $row['rootFolder'] .="?$pathParam=";
     foreach ($actions as $action) {
       // skip any actions which are marked as invisible for this row.
       if (isset($action['visibility_field']) && $row[$action['visibility_field']]==='f')
         continue;
       if (isset($action['url'])) {
-        if (!empty($pathParam) && strpos($action['url'], "?$pathParam=")===false) {
-          $row['rootFolder'] .="?$pathParam=";
-          $action['url'] .="?$pathParam=$pathParamValue";
-        }
         $actionUrl = self::mergeParamsIntoTemplate($row, $action['url'], true);
         // include any $_GET parameters to reload the same page, except the parameters that are specified by the action
         if (isset($action['urlParams']))
