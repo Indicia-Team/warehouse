@@ -32,7 +32,8 @@ class Taxon_meaning_Model extends ORM {
   public $search_field='id';
 
   protected $has_many = array(
-      'taxa_taxon_lists'
+      'taxa_taxon_lists',
+      'taxon_codes'
     );
 
   public function insert(){

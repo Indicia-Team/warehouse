@@ -628,6 +628,7 @@ class ORM extends ORM_Core {
       if (array_key_exists('deleted', $vArray) && $vArray['deleted']=='t') {
         // For a record deletion, we don't want to validate and save anything. Just mark delete it.
         $this->deleted='t';
+        $this->set_metadata();
         $v=$this->save();
       } else {
         // Create a new record by calling the validate method

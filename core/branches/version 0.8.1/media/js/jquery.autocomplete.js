@@ -263,6 +263,15 @@ $.Autocompleter = function(input, options) {
     return result;
   }
   
+  function simplify(value) {
+    // use same regexp as used to populate cache_taxon_searchterms to simplify the search string
+    if (options.simplify) {
+      return value.replace(/\. /g, '* ').replace(/\(.+\)/g,'').replace(/[^a-z0-9\+\?*]/g,'').replace(/ae/g,'e').toLowerCase();
+    } else {
+      return value;
+    }
+  }
+  
   function lastWord(value) {
     if ( !options.multiple )
       return value;
@@ -317,14 +326,14 @@ $.Autocompleter = function(input, options) {
   };
 
   function receiveData(q, data) {
+    var value, simple, regexp;
     if (data && data.length) {
+      simple = simplify($input.val());
       // escape special characters in regexp
-      value = $input.val().toLowerCase().replace(/[\[\]\\\^\$\.\|\?\+\(\)]/g, "\\$&");
+      value = simple.toLowerCase().replace(/[\[\]\\\^\$\.\|\?\+\(\)]/g, "\\$&");
       regexp = new RegExp('^'+value.replace('*','.*'));
-      var value, regexp;
       for (idx=data.length-1; idx>=0; idx--) {
         // Drop anything that does not match, in case the edit has changed since the query was issued.
-        
         if (!data[idx].result.toLowerCase().match(regexp)) {
           data.splice(idx, 1);
         }
@@ -375,7 +384,7 @@ $.Autocompleter = function(input, options) {
         dataType: options.dataType,
         url: options.url,
         data: $.extend({
-          q: encodeURIComponent(lastWord(term)),
+          q: encodeURIComponent(simplify(lastWord(term))),
           limit: options.max
         }, extraParams),
         success: function(data) {
@@ -436,6 +445,7 @@ $.Autocompleter.defaults = {
   multiple: false,
   multipleSeparator: ", ",
   continueOnBlur: true,
+  simplify: false,
   highlight: function(value, term) {
     return value ? 
         value.replace(new RegExp("(?![^&;]+;)(?!<[^<>]*)(" + term.replace(/([\^\$\(\)\[\]\{\}\*\.\+\?\|\\])/gi, "\\$1") + ")(?![^<>]*>)(?![^&;]+;)", "gi"), "<strong>$1</strong>")

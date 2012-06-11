@@ -429,7 +429,7 @@ class Scheduled_Tasks_Controller extends Controller {
             'name' => $plugin,
             'repository'=>'Not specified',
             'release_date'=>date('Y-m-d', $currentTime),
-            'last_scheduled_task_check'=>"'" . date('c', $currentTime) . "'",
+            'last_scheduled_task_check'=>date("Ymd H:i:s", $currentTime),
             'last_run_script'=>null
         ));
     }
