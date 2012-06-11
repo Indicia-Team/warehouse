@@ -759,9 +759,14 @@ class data_entry_helper extends helper_base {
    * Calculates the folder that submitted images end up in according to the helper_config.
    */
   public static function get_uploaded_image_folder() {
-    if (!isset(self::$final_image_folder) || self::$final_image_folder=='warehouse')
-      return self::$base_url.(isset(self::$indicia_upload_path) ? self::$indicia_upload_path : 'upload/');
-    else {
+    if (!isset(self::$final_image_folder) || self::$final_image_folder=='warehouse') {
+      if (!empty(self::$warehouse_proxy)) {
+        $warehouseUrl = self::$warehouse_proxy;
+      } else {
+        $warehouseUrl = self::$base_url;
+      }
+      return $warehouseUrl.(isset(self::$indicia_upload_path) ? self::$indicia_upload_path : 'upload/');
+    } else {
       return self::getRootFolder() . self::relative_client_helper_path() . self::$final_image_folder;
     }
   }
@@ -4502,6 +4507,10 @@ if (errors.length>0) {
             'path' => $value,
             'caption' => isset($values[$prefix.':caption'.$uniqueId]) ? utf8_encode($values[$prefix.':caption'.$uniqueId]) : ''
           );
+          // if deleted = 't', add it to array so image is marked deleted
+          if (isset($values[$prefix.':deleted'.$uniqueId]) && $values[$prefix.':deleted'.$uniqueId]==='t') {
+            $r[count($r)-1]['deleted'] = 't';
+          }
         }
       }
     }

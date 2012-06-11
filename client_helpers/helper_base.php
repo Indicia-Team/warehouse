@@ -676,9 +676,14 @@ $('.ui-state-default').live('mouseout', function() {
    * Calculates the folder that submitted images end up in according to the helper_config.
    */
   public static function get_uploaded_image_folder() {
-    if (!isset(self::$final_image_folder) || self::$final_image_folder=='warehouse')
-      return self::$base_url.(isset(self::$indicia_upload_path) ? self::$indicia_upload_path : 'upload/');
-    else {
+    if (!isset(self::$final_image_folder) || self::$final_image_folder=='warehouse') {
+      if (!empty(self::$warehouse_proxy)) {
+        $warehouseUrl = self::$warehouse_proxy;
+      } else {
+        $warehouseUrl = self::$base_url;
+      }
+      return $warehouseUrl.(isset(self::$indicia_upload_path) ? self::$indicia_upload_path : 'upload/');
+    } else {
       return dirname(__FILE__).'/'.self::$final_image_folder;
     }
   }
