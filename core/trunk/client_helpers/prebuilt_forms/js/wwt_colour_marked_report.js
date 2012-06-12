@@ -479,7 +479,6 @@
               oCode = 'LR'+oCode.substring(2);
             }
             if (iCode===oCode) {
-              alert('Match!\nelement is '+element+', i is '+i+', iCode is '+iCode+', oCode is '+oCode);
               result = false;
             }
           }
