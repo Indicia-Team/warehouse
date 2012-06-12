@@ -21,15 +21,18 @@
 function Georeferencer(mapdiv, callback) {
 
   this.georeference = function(searchtext) {
-    var request, query={
-      'like': ['name',searchtext],
-      'orlike': ['comment',searchtext],
-      'orlike': ['code',searchtext],
-      'orlike': ['centroid_sref',searchtext]      
+    var request, query={}, queryStr;
+    if (typeof mapdiv.georefOpts['public']==="undefined" || mapdiv.georefOpts['public']==='f') {
+      query = {'where': {'public': 'f'}};
     }
+    // specifying orlike2 & orlike3 is a fudge to build the object. We replace them with orlike later.
+    $.extend(query, {'like': ['name',searchtext],
+      'orlike': {'comment':searchtext,'code':searchtext,'centroid_sref':searchtext}
+    });
+    queryStr=encodeURI(JSON.stringify(query));
     request = mapdiv.georefOpts.warehouseUrl + 'index.php/services/data/location?mode=json&nonce=' + mapdiv.georefOpts.nonce +
           '&auth_token=' + mapdiv.georefOpts.auth_token +
-          '&view=detail&query='+encodeURI(JSON.stringify(query))+'&callback=?';
+          '&view=detail&query='+queryStr+'&callback=?';
     $.getJSON(request,
       null,
       function(response) {

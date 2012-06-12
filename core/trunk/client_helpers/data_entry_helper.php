@@ -800,6 +800,10 @@ class data_entry_helper extends helper_base {
   *   geoportal_lu - Use the Luxembourg specific place name search provided by geoportal.lu.
   *   indicia_locations - Use the list of locations available to the current website in Indicia as a search list.
   * </li>
+  * <li><b>public</b><br/>
+  * Optional. If using the indicia_locations driver, then set this to true to include public (non-website specific)
+  * locations in the search results. Defaults to false.
+  * </li>
   * </ul>
   * @link http://code.google.com/apis/ajaxsearch/terms.html Google AJAX Search API Terms of Use.
   * @link http://code.google.com/p/indicia/wiki/GeoreferenceLookupDrivers Documentation for the driver architecture.
@@ -814,6 +818,7 @@ class data_entry_helper extends helper_base {
       // language files to be loaded.
       'search' => lang::get('search'),
       'close' => lang::get('Close the search results'),
+      'public' => false
     ), $options);
     self::add_resource('indiciaMapPanel');
     // dynamically build a resource to link us to the driver js file.
@@ -845,6 +850,7 @@ class data_entry_helper extends helper_base {
       self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.warehouseUrl='".self::$base_url."';\n";
       self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.auth_token='".$options['readAuth']['auth_token']."';\n";
       self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.nonce='".$options['readAuth']['nonce']."';\n";
+      self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.public='".($options['public'] ? 't' : 'f')."';\n";
       self::add_resource('json');
     }
     return self::apply_template('georeference_lookup', $options);
