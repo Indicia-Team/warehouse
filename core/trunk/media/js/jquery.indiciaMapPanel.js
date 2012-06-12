@@ -216,6 +216,20 @@ mapGeoreferenceHooks = [];
                   geomwkt = feature.geometry.transform(div.indiciaProjection, div.map.projection).toString();
                 }
                 _showWktFeature(div, geomwkt, div.map.editLayer, null, true);
+              
+                if (typeof indiciaData.searchUpdatesSref !== "undefined" && indiciaData.searchUpdatesSref) {
+                  // The location search box must fill in the sample sref box
+                  $('#'+div.settings.srefId).val(data[0].centroid_sref);
+                  $('#'+div.settings.srefSystemId).val(data[0].centroid_sref_system);
+                  // If the sref is in two parts, then we might need to split it across 2 input fields for lat and long
+                  if (data[0].centroid_sref.indexOf(' ')!==-1) {
+                    var parts=data[0].centroid_sref.split(' ');
+                    // part 1 may have a comma at the end, so remove
+                    parts[0]=parts[0].split(',')[0];
+                    $('#'+div.settings.srefLatId).val(parts[0]);
+                    $('#'+div.settings.srefLongId).val(parts[1]);
+                  }                
+                }
               }
             }
           );

@@ -947,6 +947,22 @@ class data_entry_helper extends helper_base {
   * rather than use a locally stored (cached) copy of the previous request. This speeds things up
   * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
   * if this is not specified then 1 hour.</li>
+  * <li><b>useLocationName</b>
+  * Optional. If true, then inputting a place name which does not match to an existing place
+  * gets stored in the location_name field. Defaults to false.
+  * </li>
+  * <li><b>searchUpdatesSref</b>
+  * Optional. If true, then when a location is found in the autocomplete, the location's centroid spatial 
+  * reference is loaded into the spatial_ref control on the form if any exists. Defaults to false.
+  * </li>
+  * <li><b>allowcreate</b>
+  * Optional. If true, if the user has typed in a non-existing location name and also supplied
+  * a spatial reference, a button is displayed which lets them save a location for future
+  * personal use. Defaults to false. For this to work, you must either allow the standard Indicia
+  * code to handle the submission for you, or your code must handle the presence of a value called
+  * save-site-flag in the form submission data and if true, it must first save the site information
+  * to the locations table database then attach the location_id returned to the submitted sample data.
+  * </li>
   * </ul>
   *
   * @return string HTML to insert into the page for the location select control.
@@ -958,11 +974,29 @@ class data_entry_helper extends helper_base {
         'fieldname'=>'sample:location_id',
         'valueField'=>'id',
         'captionField'=>'name',
-        'id'=>'imp-location'
+        'id'=>'imp-location',
+        'useLocationName'=>false,
+        'allowCreate'=>false,
+        'searchUpdatesSref'=>false
     ), $options);
-
-    return self::autocomplete($options);
+    $r = self::autocomplete($options);
+    // put a hidden input in the form to indicate that the location value should be 
+    // copied to the location_name field if not linked to a location id.
+    if ($options['useLocationName']) 
+      $r = '<input type="hidden" name="useLocationName" value="true"/>'.$r;
+    if ($options['allowCreate'] || $options['searchUpdatesSref']) {
+      self::add_resource('createPersonalSites');
+      if ($options['allowCreate']) {
+        self::$javascript .= "indiciaData.msgRememberSite='".lang::get('Remember site')."';\n";
+        self::$javascript .= "indiciaData.msgRememberSiteHint='".lang::get('Remember details of this site so you can enter records at the same location in future.')."';\n";
+        self::$javascript .= "indiciaData.msgSiteWillBeRemembered='".lang::get('The site will be available to search for next time you input some records.')."';\n";
+        self::$javascript .= "allowCreateSites();\n";
       }
+      if ($options['searchUpdatesSref'])
+        self::$javascript .= "indiciaData.searchUpdatesSref=true;\n";
+    }
+    return $r;
+  }
 
  /**
   * Outputs a select control that is dedicated to listing locations and which is bound to any map panel
@@ -1572,7 +1606,7 @@ class data_entry_helper extends helper_base {
   * box is automatically linked to a map_panel if one is added to the page.
   *
   * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
+  * <li><b>fieldName</b><br/>
   * Required. The name of the database field this control is bound to. Defaults to sample:entered_sref.</li>
   * <li><b>id</b><br/>
   * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
@@ -3462,7 +3496,9 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       if (isset(self::$validated_form_id)) {
         self::$javascript .= "  var tabinputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select').not(':disabled');\n";
         self::$javascript .= "  if (!tabinputs.valid()) {\n";
-        self::$javascript .= "    return;";
+        self::$javascript .= "    alert('".lang::get('Before going to the next step, some of the values in the input boxes on this step need checking. '.
+                'They have been highlighted on the form for you.')."')\n";
+        self::$javascript .= "    return;\n";
         self::$javascript .= "  }\n";
       }
       // If all is well, move to the next tab. Note the code detects if the top of the tabset is not visible, if so

@@ -83,7 +83,7 @@ $indicia_templates = array(
     "/* ]]> */</script>",
   'georeference_lookup' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
     "document.write('<input type=\"text\" id=\"imp-georef-search\"{class} />');\n".
-    "document.write('<input type=\"button\" id=\"imp-georef-search-btn\" class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" value=\"{search}\" />');\n".
+    "document.write('<input type=\"button\" id=\"imp-georef-search-btn\" class=\"ui-corner-all ui-widget-content ui-state-default indicia-button inline-control\" value=\"{search}\" />');\n".
     "document.write('<div id=\"imp-georef-div\" class=\"ui-corner-all ui-widget-content ui-helper-hidden\">');\n".
     "document.write('  <div id=\"imp-georef-output-div\">');\n".
     "document.write('  </div>');\n".
@@ -441,6 +441,7 @@ class helper_base extends helper_config {
    * <li>georeference_google_search_api</li>
    * <li>google_search</li>
    * <li>locationFinder</li>
+   * <li>createPersonalSites</li>
    * <li>autocomplete</li>
    * <li>indicia_locks</li>
    * <li>jquery_cookie</li>
@@ -532,6 +533,7 @@ class helper_base extends helper_config {
         // For any other usage of google search, e.g. postcode textbox
         'google_search' => array('deps' =>array('georeference_google_search_api'), 'javascript' => array(self::$js_path."google_search.js")),
         'locationFinder' => array('deps' =>array('indiciaMapEdit'), 'javascript' => array(self::$js_path."jquery.indiciaMap.edit.locationFinder.js")),
+        'createPersonalSites' => array('deps' => array('jquery'), 'javascript' => array(self::$js_path."createPersonalSites.js")),
         'autocomplete' => array('deps' => array('jquery'), 'stylesheets' => array(self::$css_path."jquery.autocomplete.css"), 'javascript' => array(self::$js_path."jquery.autocomplete.js")),
         'indicia_locks' => array('deps' =>array('jquery_cookie', 'json'), 'javascript' => array(self::$js_path."indicia.locks.js")),
         'jquery_cookie' => array('deps' =>array('jquery'), 'javascript' => array(self::$js_path."jquery.cookie.js")),
@@ -1084,7 +1086,7 @@ $('.ui-state-default').live('mouseout', function() {
  /**
   * Internal function to find the path to the root of the site, including the trailing slash.
   */
-  protected static function getRootFolder() {
+  public static function getRootFolder() {
     $rootFolder = dirname($_SERVER['PHP_SELF']);
     if ($rootFolder =='\\') $rootFolder = '/'; // if no directory, then on windows may just return a single backslash.
     if (substr($rootFolder, -1)!='/') $rootFolder .= '/';

@@ -153,6 +153,8 @@ class submission_builder extends helper_config {
    */
   public static function wrap($array, $entity, $field_prefix=null)
   {
+    if (array_key_exists('save-site-flag', $array))
+      self::create_personal_site($array);
     // Initialise the wrapped array
     $sa = array(
         'id' => $entity,
@@ -180,7 +182,56 @@ class submission_builder extends helper_config {
         }
       } 
     }
+    // useLocationName is a special flag to indicate that an unmatched location can go
+    // in the locaiton_name field.
+    if (isset($array['useLocationName'])) {
+      if ($entity==='sample' && 
+          (empty($sa['fields']['location_id']) || empty($sa['fields']['location_id']['value']))
+           && !empty($array['imp-location:name'])) {
+        $sa['fields']['location_name']=$array['imp-location:name'];
+
+      }
+      unset($array['useLocationName']);
+    }
     return $sa;
+  }
+  
+  /**
+   * Creates a site using the form submission data and attaches the location_id to the
+   * sample information in the submission.
+   * @param array Form submission data. 
+   */
+  private function create_personal_site(&$array) {
+    // Check we don't already have a location ID, and have the other stuff we require
+    if (!empty($array['sample:location_id']) || !array_key_exists('imp-location:name', $array)
+        || !array_key_exists('sample:entered_sref', $array) || !array_key_exists('sample:entered_sref_system', $array))
+      return;
+    $loc = array(
+      'location:name'=>$array['imp-location:name'],
+      'location:centroid_sref'=>$array['sample:entered_sref'],
+      'location:centroid_sref_system'=>$array['sample:entered_sref_system'],
+      'locations_website:website_id' => $array['website_id']
+    );
+    if (!empty($array['sample:geom']))
+      $loc['location:centroid_geom']=$array['sample:geom'];
+    $submission = self::build_submission($loc, array('model'=>'location',
+        'subModels'=>array('locations_website'=>array('fk'=>'location_id'))));
+    $request = parent::$base_url."index.php/services/data/location";
+    $postargs = 'submission='.urlencode(json_encode($submission));
+    // Setting persist_auth allows the write tokens to be re-used
+    $postargs .= '&persist_auth=true&auth_token='.$array['auth_token'];
+    $postargs .= '&nonce='.$array['nonce'];
+    $response = data_entry_helper::http_post($request, $postargs);
+    // The response should be in JSON if it worked
+    if (isset($response['output'])) {
+      $output = json_decode($response['output'], true);
+      if (!$output)
+        throw new exception(print_r($response, true));
+      elseif (isset($output['success']))
+        $array['sample:location_id']=$output['success'];
+      else
+        throw new exception(print_r($response, true));
+    }
   }
 
   /**
