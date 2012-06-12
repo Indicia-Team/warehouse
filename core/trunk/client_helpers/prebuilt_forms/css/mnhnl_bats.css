@@ -85,21 +85,6 @@ span.extra-text {
 .remove-row {
   color:red !important;
 }
-.locgrid-code {
-  width: 40px;
-}
-.locgrid-precision {
-  width: 40px;
-}
-.locgrid-codegsl {
-  width: 40px;
-}
-.locgrid-depth {
-  width: 40px;
-}
-.locgrid-development {
-  width: 40px;
-}
 .narrow {
   width: 30px;
 }

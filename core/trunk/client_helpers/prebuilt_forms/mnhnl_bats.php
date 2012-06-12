@@ -247,7 +247,6 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
       <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
     </form>
   </div>'.iform_mnhnl_locModTool(self::$auth, $args, self::$node);
-    iform_mnhnl_addCancelButton();
     data_entry_helper::$javascript .= "
 var other = jQuery('[name=locAttr\\:".$args['siteTypeOtherAttrID']."],[name^=locAttr\\:".$args['siteTypeOtherAttrID']."\\:]');
 other.next().remove(); // remove break
@@ -387,7 +386,7 @@ $.validator.addMethod('fillgroup', function(value, element){
     $numRows=2;
     $numCols=1;
     $startPos=2;
-    iform_mnhnl_addCancelButton();
+    iform_mnhnl_addCancelButton($args['interface']);
     data_entry_helper::$javascript .= "
 checkRadioStatus = function(){
   jQuery('[name^=locAttr]').filter(':radio').filter('[value=".$args['siteTypeOtherTermID']."]').each(function(){
@@ -652,8 +651,9 @@ fillCommune = function(a1){
     alert(\"".lang::get('LANG_PositionOutsideCommune')."\");
   }
 }
+jQuery('[name=locAttr\\:$communeAttr],[name^=locAttr\\:$communeAttr\\:]').attr('readonly','readonly');
 hook_setSref = function(geom){
-  jQuery('[name=locAttr\\:$communeAttr],[name^=locAttr\\:$communeAttr\\:]').val('').attr('readonly','readonly');
+  jQuery('[name=locAttr\\:$communeAttr],[name^=locAttr\\:$communeAttr\\:]').val('');
   var filter = new OpenLayers.Filter.Spatial({
   		type: OpenLayers.Filter.Spatial.CONTAINS ,
     	property: '".$parts[3]."',
@@ -758,7 +758,7 @@ hook_setSref = function(geom){
     $indicia_templates['taxon_label'] = $php;
   }
 
-    /**
+  /**
    * Get the control for species input, either a grid or a single species input control.
    */
   protected static function get_control_species($auth, $args, $tabalias, $options) {
