@@ -241,7 +241,6 @@ class iform_mnhnl_dynamic_1 {
           'default' => 10,
           'group' => 'User Interface'
         ),
-        
         array(
           'name'=>'save_button_below_all_pages',
           'caption'=>'Submit button below all pages?',
@@ -251,6 +250,20 @@ class iform_mnhnl_dynamic_1 {
           'default' => false,
           'required' => false,
           'group' => 'User Interface'
+        ),
+        array(
+          'name'=>'users_manage_own_sites',
+          'caption'=>'Users can save sites',
+          'description'=>'Allow users to save named sites for recall when they add records in future. Users '.
+              'are only able to use their own sites. To use this option, make sure you include a '.
+              '[location autocomplete] control in the User Interface - Form Structure setting. Use @searchUpdatesSref=true '.
+              'on the next line in the form structure to specify that the grid reference for the site should be automatically filled '.
+              'in after a site has been selected. You can also add @useLocationName=true on a line after the location autocomplete '.
+              'to force any unmatched location names to be stored as a free-text location name against the sample.',
+          'type'=>'boolean',
+          'default' => false,
+          'required' => false,
+          'group' => 'Locations'
         ),
         array(
           'name'=>'multiple_occurrence_mode',
@@ -1248,9 +1261,15 @@ class iform_mnhnl_dynamic_1 {
   private static function get_control_locationautocomplete($auth, $args, $tabalias, $options) {
     $location_list_args=array_merge(array(
         'label'=>lang::get('LANG_Location_Label'),
-        'view'=>'detail',
         'extraParams'=>array_merge(array('orderby'=>'name', 'website_id'=>$args['website_id']), $auth['read'])
     ), $options);
+    if (isset($args['users_manage_own_sites']) && $args['users_manage_own_sites']) {
+      $userId = hostsite_get_user_field('indicia_user_id');
+      if (!empty($userId))
+        $location_list_args['extraParams']['created_by_id']=$userId;
+      $location_list_args['extraParams']['view']='detail';
+      $location_list_args['allowCreate']=true;
+    }
     return data_entry_helper::location_autocomplete($location_list_args);
   }
   
