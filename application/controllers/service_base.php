@@ -183,14 +183,15 @@ class Service_Base_Controller extends Controller {
    */
   protected function handle_error($e)
   {
+    $message=kohana::lang('general_errors.'.$e->getMessage());
     $mode = $this->get_input_mode();
     if ($mode=='xml') {
       $view = new View("services/error");
-      $view->message = $e->getMessage();
+      $view->message = $message;
       $view->render(true);
     } else {
       $response = array(
-        'error'=>$e->getMessage()
+        'error'=>$message
       );
       if (get_class($e)=='ArrayException') {
         $response['errors'] = $e->errors();
