@@ -204,7 +204,7 @@ $.validator.messages.digits = $.validator.format(\"".lang::get('validation_digit
     if(lang::get('validation_integer') != 'validation_integer')
       data_entry_helper::$late_javascript .= "
 $.validator.messages.integer = $.validator.format(\"".lang::get('validation_integer')."\");";
-    iform_mnhnl_addCancelButton();
+    iform_mnhnl_addCancelButton($args['interface']);
     
     $siteTypeOtherAttrID=iform_mnhnl_getAttrID($auth, $args, 'location', 'site type other');
     if (!$siteTypeOtherAttrID) return lang::get('This form must be used with a survey that has the site type other attribute associated with it.');

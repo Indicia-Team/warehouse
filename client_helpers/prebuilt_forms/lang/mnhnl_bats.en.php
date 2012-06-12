@@ -123,7 +123,7 @@ $custom_terms = array(
 	'LANG_Georef_Label'=>'Search for place on map',
 	'LANG_Georef_SelectPlace' => 'Select the correct one from the following places that were found matching your search. (Click on the list items to see them on the map.)',
 	'LANG_Georef_NothingFound' => 'No place found with that name. Try a nearby town name.',
-	'LANG_PositionOutsideCommune' => 'The position you have choosen is outside the set of allowable Communes. You will not be able to save this position.',
+	'LANG_PositionOutsideCommune' => 'The position you have chosen is outside the set of allowable Communes. You will not be able to save this position.',
 	'LANG_CommuneLookUpFailed' => 'Commune Lookup Failed',
 // Conditions
 	// 'General'  is unchanged in English

@@ -216,6 +216,15 @@ function iform_mnhnl_getParameters() {
           'group' => 'Locations'
         ),
         array(
+          'name'=>'movePrecision',
+          'caption'=>'Move Precision',
+          'description'=>'When a precision attribute is included, choose whether to move it next to the X,Y coordinates.',
+          'type'=>'boolean',
+          'default' => true,
+          'required' => false,
+          'group' => 'Locations'
+        ),
+        array(
           'name'=>'shpFileDownloadURL',
           'caption'=>'Shape File Download URL',
           'description'=>'Proxied URL to use to access the geoserver to allow the download of the shape files.',
@@ -361,7 +370,7 @@ function iform_mnhnl_lux5kgridControl($auth, $args, $node, $options) {
         break;
     }
     $precisionAttrID=iform_mnhnl_getAttrID($auth, $args, 'location', 'Precision');
-    if($precisionAttrID) {
+    if($precisionAttrID && isset($args['movePrecision']) && $args['movePrecision']) {
       data_entry_helper::$javascript .= "
 var precisionAttr = jQuery('[name=locAttr\\:".$precisionAttrID."],[name^=locAttr\\:".$precisionAttrID."\\:]');
 var precisionLabel = precisionAttr.prev();
@@ -1948,7 +1957,6 @@ jQuery('#".$options['mainFieldID']."').change(function(){
 });
 ";
     }
-    $retVal .= "<input type=\"hidden\" id=\"imp-sref-system\" name=\"location:centroid_sref_system\" value=\"2169\" >";
     if($args['locationMode']=='multi' && isset(data_entry_helper::$entity_to_load["sample:updated_by_id"])){ // only set if data loaded from db, not error condition
       iform_mnhnl_set_editable($auth, $args, $node, array(), !(isset($options['canCreate']) && $options['canCreate']));
       // multiple site: parent sample points to parent location in location_id, not parent_id. Each site has own subsample.
@@ -2187,9 +2195,14 @@ jQuery(\"#".$options['parentFieldID']."\").change(function(){
       			$retVal .= '<label>'.$attr['caption'].':</label> <select id="filterSelect'.$idx.'"></select><br/>';
       			if($filterAttr[3]!='')
                   $parentLocTypeID = iform_mnhnl_getTermID($auth,$args['locationTypeTermListExtKey'],$filterAttr[3]);
-      			// proxiedurl,featurePrefix,featureType,geometryName,featureNS,srsName,propertyNames
-      			$protocol = explode(',', ($filterAttr[1]=="Commune" ? $args['communeLayerLookup'] : $args['locationLayerLookup']));
-				data_entry_helper::$javascript .="
+                // proxiedurl,featurePrefix,featureType,geometryName,featureNS,srsName,propertyNames
+                if($filterAttr[1]=="Commune"){
+                  $protocol = explode(',', $args['communeLayerLookup']);
+                } else {
+//                  $retVal .= '<input type="hidden" ><br/>';
+                  $protocol = explode(',', $args['locationLayerLookup']);
+                }
+                data_entry_helper::$javascript .="
 jQuery('#locAttr\\\\:".$attr['attributeId']."').attr('readonly','readonly');
 filterLoad".$idx." = function(value){
   jQuery('#filterSelect".$idx."').empty().data('storedValue',value).append('<option value=\"'+value+'\" selected=\"selected\" >'+value+'</option>');
@@ -2321,7 +2334,7 @@ hook_setSref_".$idx." = function(geom){
 // when ".$options['mainFieldID']." changes the location will be loaded, including ".$options['mainFieldName']."
 filterLoad".$idx." = function(keep){
   if(jQuery('#filterSelect".($idx-1)."').val()==''){
-    jQuery('#filterSelect".$idx."').empty().attr('disabled','disabled').append('<option value=\"'+value+'\">".lang::get("First choose a ").$prevAttr[0]."</option>');
+    jQuery('#filterSelect".$idx."').empty().attr('disabled','disabled').append('<option value=\"\">".lang::get("First choose a ").$prevAttr[0]."</option>');
     return;
   }
   if(keep=='') keep=false;
@@ -2333,7 +2346,7 @@ filterLoad".$idx." = function(keep){
                   $filterAttr1=explode(':',$filterAttr1);
                   foreach($locationAttributes as $locationAttribute1)
                     if($filterAttr1[0]!="Display" && $locationAttribute1['untranslatedCaption']==($filterAttr1[0]=="Parent"?$filterAttr1[1]:$filterAttr1[0])){
-                      data_entry_helper::$javascript .="\n  query=query+'&location_attr_".$idxN."_id=".$locationAttribute1['attributeId']."&location_attr_".$idxN."_value='+jQuery('#filterSelect".$idx1."').val();";
+                      data_entry_helper::$javascript .="\n  query=query+'&location_attr_".$idxN."_id=".$locationAttribute1['attributeId']."&location_attr_".$idxN."_value='+jQuery('#filterSelect".$idx1."').val().replace(\"'\",\"''\");";
                       $idxN++;
                     }
                 }
@@ -2402,7 +2415,7 @@ filterLoad".$idx." = function(value){
                   $filterAttr1=explode(':',$filterAttr1);
                   foreach($locationAttributes as $locationAttribute1)
                     if($filterAttr1[0]!="Display" && $locationAttribute1['untranslatedCaption']==($filterAttr1[0]=="Parent"?$filterAttr1[1]:$filterAttr1[0])){
-                      data_entry_helper::$javascript .="\n  query=query+'&location_attr_".$idxN."_id=".$locationAttribute1['attributeId']."&location_attr_".$idxN."_value='+jQuery('#filterSelect".$idx1."').val();";
+                      data_entry_helper::$javascript .="\n  query=query+'&location_attr_".$idxN."_id=".$locationAttribute1['attributeId']."&location_attr_".$idxN."_value='+jQuery('#filterSelect".$idx1."').val().replace(\"'\",\"''\");";
                       $idxN++;
                     }
                 }
@@ -2751,7 +2764,9 @@ function handleEnteredSref(value) {
   }
 }
 ";
-	$retVal = "<input type=\"hidden\" id=\"imp-sref\" name=\"location:centroid_sref\" value=\"".data_entry_helper::$entity_to_load['location:centroid_sref']."\" />
+  //TBD sort 2169 hardcode
+    $retVal .= "<input type=\"hidden\" id=\"imp-sref-system\" name=\"location:centroid_sref_system\" value=\"2169\" >
+<input type=\"hidden\" id=\"imp-sref\" name=\"location:centroid_sref\" value=\"".data_entry_helper::$entity_to_load['location:centroid_sref']."\" />
 <input type=\"hidden\" id=\"imp-geom\" name=\"location:centroid_geom\" value=\"".data_entry_helper::$entity_to_load['location:centroid_geom']."\" />
 <input type=\"hidden\" id=\"imp-boundary-geom\" name=\"location:boundary_geom\" value=\"".data_entry_helper::$entity_to_load['location:boundary_geom']."\" />
 <input type=\"hidden\" id=\"locWebsite\" name=\"locations_website:website_id\" value=\"".$args['website_id']."\" />
@@ -2916,7 +2931,7 @@ jQuery('[name=locAttr:".$creatorAttr."],[name^=locAttr:".$creatorAttr.":]').attr
        'extraParams'=>$auth['read'],
        'survey_id'=>$args['survey_id']
       );
-    $tabName = (isset($options['tabNameFilter']) ? $options['tabNameFilter'] : null);
+    $tabName = (isset($options['tabNameFilter']) && isset($options['tabNameFilter'])!='' ? $options['tabNameFilter'] : '');
     if (array_key_exists('location:id', data_entry_helper::$entity_to_load) && data_entry_helper::$entity_to_load['location:id']!="") {
       // if we have location Id to load, use it to get attribute values
       $attrArgs['id'] = data_entry_helper::$entity_to_load['location:id'];
@@ -2927,7 +2942,7 @@ jQuery('[name=locAttr:".$creatorAttr."],[name^=locAttr:".$creatorAttr.":]').attr
               'language' => iform_lang_iso_639_2($args['language'])),$options);
    $r = '';
    foreach ($locationAttributes as $attribute) {
-   	if ($tabName===null || strcasecmp($tabName,$attribute['inner_structure_block'])==0) {
+   	if ($tabName=='' || strcasecmp($tabName,$attribute['inner_structure_block'])==0) {
       $opt = $defAttrOptions + get_attr_validation($attribute, $args);
       $r .= data_entry_helper::outputAttribute($attribute, $opt);
     }
@@ -2951,8 +2966,13 @@ function iform_mnhnl_getReloadPath(){
   return $reloadPath;
 }
 
-function iform_mnhnl_addCancelButton(){
-  data_entry_helper::$javascript .= "
-jQuery('<div class=\"ui-widget-content ui-state-default ui-corner-all indicia-button tab-cancel\"><span><a href=\"".iform_mnhnl_getReloadPath()."\">".lang::get('LANG_Cancel')."</a></span></div>').appendTo('.buttons');
-";
+function iform_mnhnl_addCancelButton($interface = 'tabs'){
+  switch($interface){
+    case 'wizard':
+        data_entry_helper::$javascript .= "\njQuery('<div class=\"ui-widget-content ui-state-default ui-corner-all indicia-button tab-cancel\"><span><a href=\"".iform_mnhnl_getReloadPath()."\">".lang::get('LANG_Cancel')."</a></span></div>').appendTo('.buttons');\n";
+        break;
+    default:
+        data_entry_helper::$javascript .= "\njQuery('<a href=\"".iform_mnhnl_getReloadPath()."\"><input type=\"button\" name=\"cancel\" value=\"".lang::get('LANG_Cancel')."\" /></a>').appendTo('#controls > div');\n";
+        break;
+  }
 }

@@ -150,7 +150,7 @@ class iform_mnhnl_butterflies extends iform_mnhnl_dynamic_1 {
     self::$locations = iform_loctools_listlocations($node);
     $retVal = parent::get_form($args, $node, $response);
     if(self::$mode != 0){
-      iform_mnhnl_addCancelButton();
+      iform_mnhnl_addCancelButton($args['interface']);
       data_entry_helper::$javascript .= "
 $.validator.messages.required = \"".lang::get('validation_required')."\";";
       if(!iform_loctools_checkaccess($node,'superuser')){

@@ -1050,7 +1050,7 @@ jQuery(jQuery('#conditions').parent()).bind('tabsshow', conditionsTabHandler);
   }
 
   protected static function get_control_lateJS($auth, $args, $tabalias, $options) {
-    iform_mnhnl_addCancelButton();
+    iform_mnhnl_addCancelButton($args['interface']);
   	data_entry_helper::$javascript .= "
 hook_new_site_added = function(feature) {
   if(!feature) return;

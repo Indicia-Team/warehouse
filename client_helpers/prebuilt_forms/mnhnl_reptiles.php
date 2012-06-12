@@ -384,7 +384,7 @@ $.validator.messages.number = $.validator.format(\"".lang::get('validation_numbe
       data_entry_helper::$late_javascript .= "
 $.validator.messages.digits = $.validator.format(\"".lang::get('validation_digits')."\");";
   	// possible clash with link_species_popups, so latter disabled.
-    iform_mnhnl_addCancelButton();
+    iform_mnhnl_addCancelButton($args['interface']);
     data_entry_helper::$javascript .= "
 resetChildValue = function(child){
   var options = child.find('option').not('[value=]').not('[disabled]');
