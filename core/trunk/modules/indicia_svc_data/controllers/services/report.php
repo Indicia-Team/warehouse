@@ -52,13 +52,11 @@
 class Report_Controller extends Data_Service_Base_Controller {
 
   private $reportEngine;
-
-  public function __construct($suppress = false)
-  {
+  
+  private function setup() {
     $this->authenticate('read');
     $websites = $this->website_id ? array($this->website_id) : null;
     $this->reportEngine = new ReportEngine($websites, $this->user_id);
-    parent::__construct();
   }
 
   /**
@@ -76,6 +74,7 @@ class Report_Controller extends Data_Service_Base_Controller {
   public function requestReport()
   { 
     try {
+      $this->setup();
       $this->entity = 'record';
       $this->handle_request();
       $mode = $this->get_output_mode();
@@ -108,7 +107,13 @@ class Report_Controller extends Data_Service_Base_Controller {
    * Method called via report services to return a JSON encoded nested array of the available reporting directory structure.
    */
   public function report_list() {
-    echo json_encode($this->reportEngine->report_list());
+    try {
+      $this->setup();
+      echo json_encode($this->reportEngine->report_list());
+    }
+    catch (Exception $e) {
+      $this->handle_error($e);
+    }
   }
 
   /**
@@ -165,11 +170,17 @@ class Report_Controller extends Data_Service_Base_Controller {
    */
   public function resumeReport($cacheid = null)
   {
-    // Check we have both a uid and a set of parameters given
-    $uid = $cacheid ? $cacheid : $this->input->post('uid', null);
-    $params = json_decode($this->input->post('params', '{}'), true);
+    try {
+      $this->setup();
+      // Check we have both a uid and a set of parameters given
+      $uid = $cacheid ? $cacheid : $this->input->post('uid', null);
+      $params = json_decode($this->input->post('params', '{}'), true);
 
-    return $this->formatJSON($this->reportEngine->resumeReport($uid, $params));
+      return $this->formatJSON($this->reportEngine->resumeReport($uid, $params));
+    }
+    catch (Exception $e) {
+      $this->handle_error($e);
+    }
   }
 
   private function formatJSON($stuff)
