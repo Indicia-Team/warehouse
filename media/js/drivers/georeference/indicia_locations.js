@@ -64,14 +64,18 @@ function Georeferencer(mapdiv, callback) {
             }; 
           }
           centroid = feature.geometry.getCentroid();
-          nameTokens = [place.name];
+          var name, nameTokens = ['<strong>'+place.name+'</strong>'];
           if (place.code!==null) {
             nameTokens.push(place.code);
           }
           nameTokens.push(place.centroid_sref);
+          name = nameTokens.join(' ');
+          if (place.comment!==null) {
+            nameTokens += '<em>'+place.comment+'</em>';
+          }
           converted = {
             name : place.name,
-            display : nameTokens.join(' '),
+            display : name,
             epsg: 3857,
             centroid: {
               x: centroid.x,

@@ -636,7 +636,7 @@ $.extend($.validator, {
 		},
 
 		showLabel: function(element, message) {
-			var label = this.errorsFor( element );
+			var label = this.errorsFor( element ), elementBefore;
 			if ( label.length ) {
 				// refresh error/success class
 				label.removeClass( this.settings.validClass ).addClass( this.settings.errorClass );
@@ -654,10 +654,12 @@ $.extend($.validator, {
 					// actually showing the wrapped element is handled elsewhere
 					label = label.hide().show().wrap("<" + this.settings.wrapper + "/>").parent();
 				}
-				if ( !this.labelContainer.append(label).length )
+				if ( !this.labelContainer.append(label).length ) {
+					elementBefore = $(element).next().hasClass('deh-required') ? $(element).next() : element;
 					this.settings.errorPlacement
 						? this.settings.errorPlacement(label, $(element) )
-						: label.insertAfter(element);
+						: label.insertAfter(elementBefore);
+        }
 			}
 			if ( !message && this.settings.success ) {
 				label.text("");

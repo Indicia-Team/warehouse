@@ -110,8 +110,8 @@ var checkSubmitInProgress = function () {
         uniqueId = file.path.split('.')[0];
         uniqueId = uniqueId.replace(/[^a-zA-Z0-9]+/g,'');
         existing = div.settings.file_box_initial_file_infoTemplate.replace(/\{id\}/g, uniqueId)
-            .replace(/\{filename\}/g, file.caption)
-            .replace(/\{filesize\}/g, 'Uploaded')
+            .replace(/\{filename\}/g, div.settings.msgExistingImage)
+            .replace(/\{filesize\}/g, '')
             .replace(/\{imagewidth\}/g, div.settings.imageWidth);
         $('#' + div.id.replace(/:/g,'\\:') + ' .filelist').append(existing);
         $('#' + uniqueId + ' .progress').remove();
@@ -152,19 +152,20 @@ var checkSubmitInProgress = function () {
         }
         $.each(files, function(i, file) {
           $('#' + div.id.replace(/:/g,'\\:') + ' .filelist').append(div.settings.file_box_initial_file_infoTemplate.replace(/\{id\}/g, file.id)
-              .replace(/\{filename\}/g, file.name)
+              .replace(/\{filename\}/g, div.settings.msgNewImage)
               .replace(/\{filesize\}/g, plupload.formatSize(file.size))
               .replace(/\{imagewidth\}/g, div.settings.imageWidth)
           );
           // change the file name to be unique
           file.name=plupload.guid() + '.jpg';
-          $('#' + file.id + ' .progress-percent').progressbar ({value: 0});
+          $('#' + file.id + ' .progress-bar').progressbar ({value: 0});
           var msg='Resizing...';
           if (div.settings.resizeWidth===0 || div.settings.resizeHeight===0 || typeof div.uploader.features.jpgresize == "undefined") {
             msg='Uploading...';
           }
           var mediaPath = div.settings.jsPath.substr(0, div.settings.jsPath.length - 3);
-          $('#' + file.id + ' .progress-percent').html('<img style="display: inline; margin: 4px;" src="'+ mediaPath +'images/ajax-loader.gif" width="16" height="16" alt="In progress"/><span>'+msg+'</span>');
+          $('#' + file.id + ' .progress-gif').html('<img style="display: inline; margin: 4px;" src="'+ mediaPath +'images/ajax-loader.gif" width="300" height="16" alt="In progress"/>');
+          $('#' + file.id + ' .progress-percent').html('<span>'+msg+'</span>');
         });
         
       });
@@ -277,7 +278,8 @@ $.fn.uploader.defaults = {
   file_boxTemplate : '<fieldset class="ui-corner-all">\n<legend>{caption}</legend>\n{uploadSelectBtn}\n{flickrSelectBtn}\n<div class="filelist"></div>' +
                  '{uploadStartBtn}</fieldset>',
   file_box_initial_file_infoTemplate : '<div id="{id}" class="ui-widget-content ui-corner-all photo"><div class="ui-widget-header ui-corner-all"><span>{filename} ({filesize})</span> ' +
-      '<span class="delete-file ui-state-default ui-widget-content ui-corner-all ui-helper-clearfix" id="del-{id}">X</span></div><div class="progress"><div class="progress-bar" style="width: {imagewidth}px"></div><div class="progress-percent"></div></div><span class="photo-wrapper"></span></div>',
+          '<span class="delete-file ui-state-default ui-widget-content ui-corner-all ui-helper-clearfix" id="del-{id}">X</span></div><div class="progress"><div class="progress-bar" style="width: {imagewidth}px"></div>'+
+          '<div class="progress-percent"></div><div class="progress-gif"></div></div><span class="photo-wrapper"></span></div>',
   file_box_uploaded_imageTemplate : '<a class="fancybox" href="{origfilepath}"><img src="{thumbnailfilepath}" width="{imagewidth}"/></a>' +
       '<input type="hidden" name="{idField}" id="{idField}" value="{idValue}" />' +
       '<input type="hidden" name="{pathField}" id="{pathField}" value="{pathValue}" />' +
@@ -287,6 +289,8 @@ $.fn.uploader.defaults = {
   msgUploadError : 'An error occurred uploading the file.',
   msgFileTooBig : 'The file is too big to upload. Please resize it then try again.',
   msgTooManyFiles : 'Only [0] files can be uploaded.',
+  msgNewImage : 'New image',
+  msgExistingImage : 'Existing image',
   uploadScript : 'upload.php',
   destinationFolder : '',
   swfAndXapFolder : '',

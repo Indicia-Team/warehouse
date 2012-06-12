@@ -54,6 +54,8 @@ class report_helper extends helper_base {
         $options['readAuth']['nonce'].'&auth_token='.$options['readAuth']['auth_token']);
     if (isset($response['output'])) {
       $output = json_decode($response['output'], true);
+      if (isset($output['error']))
+        return $output['error'];
       $reports .= self::get_report_list_level($options['fieldname'], $options['default'], $output);
     }
     self::$javascript .= '$("#'.$options['id'].' > ul").treeview({collapsed: true});'."\n";
