@@ -224,7 +224,7 @@ $indicia_templates = array(
     'linked_list_javascript' => '
 {fn} = function() {
   $("#{escapedId}").addClass("ui-state-disabled").html("<option>Loading...</option>");
-  $.getJSON("{request}&{filterField}=" + $(this).val(), function(data){
+  $.getJSON("{request}&query={query}", function(data){
     var $control = $("#{escapedId}");
     $control.html("");
     if (data.length>0) {
