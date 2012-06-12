@@ -2136,6 +2136,7 @@ class iform_wwt_colour_marked_report {
     $opts['resizeWidth'] = isset($options['resizeWidth']) ? $options['resizeWidth'] : 1600;
     $opts['resizeHeight'] = isset($options['resizeHeight']) ? $options['resizeHeight'] : 1600;
     $opts['caption'] = lang::get('Photos');
+    $opts['imageWidth'] = '168';
     // $opts['id'] = 'idn:0';
     if ($options['inNewIndividual']) {
       $opts['codeGenerated'] = 'php';
@@ -2180,7 +2181,7 @@ class iform_wwt_colour_marked_report {
     $r .= '<div id="'.$fieldPrefix.'panel" class="idn:accordion:panel">';
     $r .= '<input type="hidden" name="'.$fieldPrefix.'identifier:identifier_type_id" value="'.$options['identifierTypeId'].'" />'."\n";
     $r .= '<input type="hidden" name="'.$fieldPrefix.'identifier:identifier_name" id="'.$fieldPrefix.'identifier:identifier_name" value="'.$options['identifierName'].'" />'."\n";
-    $r .= '<input type="hidden" name="'.$fieldPrefix.'identifier:coded_value" id="'.$fieldPrefix.'identifier:coded_value" class="identifier:coded_value" value="" />'."\n";
+    $r .= '<input type="hidden" name="'.$fieldPrefix.'identifier:coded_value" id="'.$fieldPrefix.'identifier:coded_value" class="identifier_coded_value" value="" />'."\n";
     $r .= '<input type="hidden" name="'.$fieldPrefix.'identifier:identifier_id" id="'.$fieldPrefix.'identifier:identifier_id" class="identifier_id" value="-1" />'."\n";
     if (isset(data_entry_helper::$entity_to_load[$fieldPrefix.'identifiers_subject_observation:id'])) {
       $r .= '<input type="hidden" id="'.$fieldPrefix.'identifiers_subject_observation:id" name="'.$fieldPrefix.'identifiers_subject_observation:id" '.
@@ -2192,7 +2193,7 @@ class iform_wwt_colour_marked_report {
       // 'label' => lang::get('Is this identifier being recorded?'),
       'label' => '',
       'fieldname' => $fieldPrefix.'identifier:checkbox',
-      'class'=>'identifier_checkbox identifierRequired',
+      'class'=>'identifier_checkbox identifierRequired noDuplicateIdentifiers',
     ), $options));
       
     // loop through the requested attributes and output an appropriate control

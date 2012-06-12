@@ -279,8 +279,11 @@
 
   var autoSetCheckbox = function(ctl) {
     // set the identifier checkbox to set if any of its controls are set
-    var control$ = $(ctl).closest('.idn\\:accordion\\:panel').children('select, input[type="text"]');
-    var checkbox = $(ctl).closest('.idn\\:accordion\\:panel').children('.identifier_checkbox')[0];
+    var panel$ = $(ctl).closest('.idn\\:accordion\\:panel');
+    var fldPrefix = panel$.attr('id').replace('panel', '');
+    var escFldPrefix = esc4jq(fldPrefix);
+    var control$ = panel$.children('select, input[type="text"]');
+    var checkbox = panel$.children('.identifier_checkbox')[0];
     var setting = false;
     // set checkbox if any of this identifier's controls are set
     control$.each(function() {
@@ -289,11 +292,18 @@
       }
     });
     checkbox.checked = setting;
-    // if checked, all identifier values are required
+    // if checked, all identifier values are required, set identifier coded_value
     if (setting) {
       control$.addClass('required');
+      var iCode = makeIdentifierCode(escFldPrefix);
+      if (iCode) {
+        $('#'+escFldPrefix+'identifier\\:coded_value').val(iCode);
+      } else {
+        $('#'+escFldPrefix+'identifier\\:coded_value').val('');
+      }
     } else {
       control$.removeClass('required');
+      $('#'+escFldPrefix+'identifier\\:coded_value').val('');
     }
   };
 
@@ -441,13 +451,42 @@
       return checkbox$.length > 0;
     }, "Please record at least one identifier for this bird");
     jQuery.validator.addMethod("textAndBaseMustDiffer", function(value, element) {
-      // no identifier can have the same base colour and text colour
+      // no identifier can have the same base colour and text colour as it would be unreadable
       var colourSelected$ = $('select.select_colour option:selected', $(element).closest('.idn\\:accordion\\:panel'));
       if (colourSelected$.length===2) {
         return colourSelected$[0].value!==colourSelected$[1].value || colourSelected$[0].value==='';
       }
       return true;
-    }, "The base colour is the same as the text colour, please check the colours and re-enter.");
+    }, "Base colour is the same as text colour, please check and re-enter.");
+    jQuery.validator.addMethod("noDuplicateIdentifiers", function(value, element) {
+      // no two identifiers on the form can be of same type with same attributes
+      var result = true;
+      var panel$ = $(element).closest('.idn\\:accordion\\:panel');
+      var fldPrefix = panel$.attr('id').replace('panel', '');
+      var escFldPrefix = esc4jq(fldPrefix);
+      var iCode = makeIdentifierCode(escFldPrefix);
+      if (iCode) {
+        // ignore leg ring position
+        if (/^[LR][AB]/.test(iCode)) {
+          iCode = 'LR'+iCode.substring(2);
+        }
+        var otherCode$ = $('.identifier_coded_value').not('#'+escFldPrefix+'identifier\\:coded_value');
+        for (var i=0; i<otherCode$.length; i++) {
+          var oCode = otherCode$[i].value;
+          if (oCode!=='') {
+            // ignore leg ring position
+            if (/^[LR][AB]/.test(oCode)) {
+              oCode = 'LR'+oCode.substring(2);
+            }
+            if (iCode===oCode) {
+              alert('Match!\nelement is '+element+', i is '+i+', iCode is '+iCode+', oCode is '+oCode);
+              result = false;
+            }
+          }
+        }
+      }
+      return result;
+    }, "This identifier already exists on this form, please check and re-enter.");
     jQuery.validator.addMethod('collarFormat', function (value, element) { 
       if (collarRegex==='') {
         return true;
