@@ -1655,10 +1655,9 @@ if (typeof(mapSettingsHooks)!=='undefined') {
       $pathParamValue = isset($currentUrl['params'][$pathParam]) ? $currentUrl['params'][$pathParam] : '';
       unset($currentUrl['params'][$pathParam]);
     }
-    // Ensure the rootFolder replacement value supports Drupal's dirty URLs
-    if (!empty($pathParam) && strpos($row['rootFolder'], "?$pathParam=")===false)
-      $row['rootFolder'] .="?$pathParam=";
     foreach ($actions as $action) {
+      if (!empty($pathParam) && strpos($action['url'], "?$pathParam=")===false)
+        $action['url'] .="?$pathParam=$pathParamValue";
       // skip any actions which are marked as invisible for this row.
       if (isset($action['visibility_field']) && $row[$action['visibility_field']]==='f')
         continue;
