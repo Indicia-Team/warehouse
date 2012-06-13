@@ -52,7 +52,7 @@ class Image extends Image_Core {
           $config = array(
             'thumb' => array('width'  => 100, 'height' => 100, 'crop' => true),
             'med' => array('width'  => 500),
-            'default' => array('width'  => 1024)
+            'default' => array('width'  => 1024, 'upscale'=>false)
           );
         }
         foreach ($config as $imageName => $settings) {
@@ -85,10 +85,11 @@ class Image extends Image_Core {
       if (array_key_exists('crop', $settings) && $settings['crop']===true) {
         // Is the cropped image wider aspect ratio than the original?
         $wider = $img->width/$img->height < $settings['width']/$settings['height'];
-        if ($wider) {
+        if ($wider && 
+            (!isset($settings['upscale']) || $settings['upscale'] || $img->width > $settings['width'])) {
           // Wider ratio, so we need to fit to this width, then crop the top and bottom.
           $img->resize($settings['width'], 0, Image::WIDTH);                
-        } else {
+        } elseif (!isset($settings['upscale']) || $settings['upscale'] || $img->height > $settings['height']) {
           // Taller ratio, so we need to fit to this height, then crop the left and right.
           $img->resize(0, $settings['height'], Image::HEIGHT);                
         }
@@ -97,10 +98,12 @@ class Image extends Image_Core {
       } else {
         $img->resize($settings['width'], $settings['height']);
       }
-    } else if (array_key_exists('width', $settings)) {
+    } else if (array_key_exists('width', $settings) && 
+        (!isset($settings['upscale']) || $settings['upscale'] || $img->width > $settings['width'])) {
       // resize to a set width and preserve aspect ratio
       $img->resize($settings['width'], 0, Image::WIDTH);
-    } else if (array_key_exists('height', $settings)) {
+    } else if (array_key_exists('height', $settings)  &&
+        (!isset($settings['upscale']) || $settings['upscale'] || $img->height > $settings['height'])) {
       // resize to a set height and preserve aspect ratio
       $img->resize(0, $settings['height'], Image::HEIGHT);
     }
