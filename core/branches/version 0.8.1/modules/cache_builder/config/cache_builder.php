@@ -96,7 +96,7 @@ $config['taxa_taxon_lists']['exclude_existing'] = "
       left join needs_update_taxa_taxon_lists nuttl on nuttl.id=ttl.id 
       where cttl.id is null and nuttl.id is null 
       and (tl.deleted or ttl.deleted or ttlpref.deleted or t.deleted 
-        or l.deleted or tpref.deleted or lpref.deleted) = false";
+        or l.deleted or tpref.deleted or tg.deleted or lpref.deleted) = false";
 
 $config['taxa_taxon_lists']['filter_on_date'] = "
       where tl.created_on>'#date#' or tl.updated_on>'#date#' 
@@ -476,7 +476,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       search_name, taxa_taxon_list_external_key, taxon_meaning_id, taxon_group_id, taxon_group,
       created_by_id, cache_created_on, cache_updated_on, certainty, location_name
     )
-  select o.id, o.record_status, o.downloaded_flag, o.zero_abundance,
+  select distinct on (o.id) o.id, o.record_status, o.downloaded_flag, o.zero_abundance,
     su.website_id as website_id, su.id as survey_id, s.id as sample_id, su.title as survey_title,
     s.date_start, s.date_end, s.date_type,
     case when o.confidential=true then null else s.entered_sref end as public_entered_sref,
