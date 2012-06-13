@@ -282,7 +282,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   */
   public function survey()
   {
-  $this->handle_call('survey');
+    $this->handle_call('survey');
   }
 
   /**
@@ -300,7 +300,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   */
   public function taxon_group()
   {
-  $this->handle_call('taxon_group');
+    $this->handle_call('taxon_group');
   }
 
   /**

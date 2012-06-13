@@ -96,7 +96,8 @@ $config['image_handling']=array(
     'width'  => 500
   ),
   'default' => array(
-    'width'  => 1024
+    'width'  => 1024,
+    'upscale' => false
   )
 );
 

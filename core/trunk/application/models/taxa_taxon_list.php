@@ -228,7 +228,6 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
    * Handle any taxon codes submitted in a CSV file as metadata.
    */
   protected function saveCodeMetafields($codes) {
-    kohana::log('debug', 'Codes: '.print_r($codes, true));
     $temp = str_replace("\r\n", "\n", $codes['value']);
     $temp = str_replace("\r", "\n", $temp);
     $codeList = explode("\n", trim($temp));
