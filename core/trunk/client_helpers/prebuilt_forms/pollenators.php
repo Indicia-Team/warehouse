@@ -558,7 +558,7 @@ document.write("<div class=\"poll-loading-hide\">");
 	$taxa = data_entry_helper::get_population_data($species_data_def);
 	$first = true;
 	foreach ($taxa as $taxon) {
-		data_entry_helper::$javascript .= ($first ? '' : ',')."{id: ".$taxon['id'].", taxon: \"".htmlSpecialChars($taxon['taxon'])."\"}\n";
+		data_entry_helper::$javascript .= ($first ? '' : ',')."{id: ".$taxon['id'].", taxon: \"".str_replace('"','\\"',$taxon['taxon'])."\"}\n";
 		$first=false;
 	}
     data_entry_helper::$javascript .= "];\nvar insectTaxa = [";
@@ -567,7 +567,7 @@ document.write("<div class=\"poll-loading-hide\">");
 	$taxa = data_entry_helper::get_population_data($species_data_def);
 	$first = true;
 	foreach ($taxa as $taxon) {
-		data_entry_helper::$javascript .= ($first ? '' : ',')."{id: ".$taxon['id'].", taxon: \"".htmlSpecialChars($taxon['taxon'])."\"}\n";
+		data_entry_helper::$javascript .= ($first ? '' : ',')."{id: ".$taxon['id'].", taxon: \"".str_replace('"','\\"',$taxon['taxon'])."\"}\n";
 		$first=false;
 	}
     data_entry_helper::$javascript .= "];";
@@ -657,6 +657,18 @@ var sessionCounter = 0;
 jQuery('#imp-georef-search-btn').removeClass('indicia-button').addClass('search-button');
 jQuery('.poll-loading-hide').hide();
 // can't use shuffle to side as dynamic generated code does like it in IE7
+
+htmlspecialchars = function(value){
+	return value.replace(/[<>\"'&]/g, function(m){return replacechar(m)})
+};
+
+replacechar = function(match){
+	if (match==\"<\") return \"&lt;\"
+	else if (match==\">\") return \"&gt;\"
+	else if (match=='\"') return \"&quot;\"
+	else if (match==\"'\") return \"&#039;\"
+	else if (match==\"&\") return \"&amp;\"
+};
 
 $.fn.foldPanel = function(){
 	this.children('.poll-section-body').hide();
@@ -1293,24 +1305,24 @@ toolPoller = function(toolStruct){
       	var resultsText = \"".lang::get('LANG_Taxa_Returned')."<br />{ \";
       	var notFound = '';
 		for(var j=0; j < count; j++){
-			itemText = items[j].replace(/</g, '&lt;').replace(/>/g, '&gt;');
 			var found = false;
 			for(i = 0; i< this.toolStruct.taxaList.length; i++){
-  				if(this.toolStruct.taxaList[i].taxon == itemText){
+  				if(this.toolStruct.taxaList[i].taxon == items[j]){
 	  				resultsIDs.push(this.toolStruct.taxaList[i].id);
-	  				resultsText = resultsText + (j == 0 ? '' : '<br />&nbsp;&nbsp;') + itemText;
+	  				resultsText = resultsText + (j == 0 ? '' : '<br />&nbsp;&nbsp;') + htmlspecialchars(items[j]);
 	  				found = true;
+	  				break;
   				}
   			};
   			if(!found){
-  				notFound = (notFound == '' ? '' : notFound + ', ') + itemText;
+  				notFound = (notFound == '' ? '' : notFound + ', ') + items[j]; // don't need special chars as going into an input field
   			}
   		}
 		jQuery('#'+this.toolStruct.type+'_taxa_list').append(resultsText+ ' }');
 		jQuery('#'+this.toolStruct.type+'-id-button').data('toolRetValues', resultsIDs);
 	  	if(notFound != ''){
 			var comment = jQuery('[name='+this.toolStruct.type+'\\:comment]');
-			comment.val('".lang::get('LANG_ID_Unrecognised')." '+notFound+' '+comment.val());
+			comment.val('".lang::get('LANG_ID_Unrecognised')." '+notFound+'. '+comment.val());
 		}
   	  }
     }});
@@ -2716,7 +2728,7 @@ loadDetermination = function(detData, toolStruc){
 			  	for(var j=0; j < resultsIDs.length; j++){
 					for(i = 0; i< toolStruc.taxaList.length; i++)
 						if(toolStruc.taxaList[i].id == resultsIDs[j])
-							resultsText = resultsText + (j == 0 ? '' : '<br />&nbsp;&nbsp;') + toolStruc.taxaList[i].taxon;
+							resultsText = resultsText + (j == 0 ? '' : '<br />&nbsp;&nbsp;') + htmlspecialchars(toolStruc.taxaList[i].taxon);
 		  		}
 	  			if(resultsIDs.length>1 || resultsIDs[0] != '')
 					jQuery('#'+toolStruc.type+'_taxa_list').append(resultsText+ ' }');

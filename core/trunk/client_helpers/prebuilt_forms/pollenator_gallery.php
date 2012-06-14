@@ -92,7 +92,15 @@ class iform_pollenator_gallery {
          'group'=>'Initial Map View',
          'default'=>300
        ),
-      array(
+       array(
+         'name'=>'2nd_map_zoom',
+         'caption'=>'Second Map Zoom',
+         'description'=>'Default Zoom when displaying a collection.',
+         'type'=>'int',
+         'group'=>'Initial Map View',
+         'required'=>false
+       ),
+       array(
         'name'=>'survey_id',
         'caption'=>'Survey ID',
         'description'=>'The Indicia ID of the survey that data will be posted into.',
@@ -590,7 +598,8 @@ class iform_pollenator_gallery {
     
 	$options2['divId'] = "map2";
     $options2['height'] = $args['2nd_map_height'];
-
+    if(isset($args['2nd_map_zoom']) && $args['2nd_map_zoom']!="")
+      $options2['maxZoom'] = $args['2nd_map_zoom'];
 	// we are using meaning_ids: services now use ids, so can't just output value - convert raw value
     data_entry_helper::$javascript .= "var terms = {";
 	$extraParams = $readAuth + array('view'=>'detail', 'iso'=>$language, 'orderby'=>'meaning_id');
@@ -612,21 +621,21 @@ var flowerTaxa = [";
 	$taxa = data_entry_helper::get_population_data($species_data_def);
 	$first = true;
 	foreach ($taxa as $taxon) {
-		data_entry_helper::$javascript .= ($first ? '' : ',')."{id: ".$taxon['id'].", taxon: \"".htmlSpecialChars($taxon['taxon'])."\"}\n";
+		data_entry_helper::$javascript .= ($first ? '' : ',')."{id: ".$taxon['id'].", taxon: \"".str_replace('"','\\"',$taxon['taxon'])."\"}\n";
 		$first=false;
 	}
     data_entry_helper::$javascript .= "];\nvar insectTaxa = [";
     $extraParams['taxon_list_id'] = $args['insect_list_id'];
     $species_data_def['extraParams']=$extraParams;
-	$taxa = data_entry_helper::get_population_data($species_data_def);
+    $taxa = data_entry_helper::get_population_data($species_data_def);
 	$first = true;
 	foreach ($taxa as $taxon) {
-		data_entry_helper::$javascript .= ($first ? '' : ',')."{id: ".$taxon['id'].", taxon: \"".htmlSpecialChars($taxon['taxon'])."\"}\n";
+		data_entry_helper::$javascript .= ($first ? '' : ',')."{id: ".$taxon['id'].", taxon: \"".str_replace('"','\\"',$taxon['taxon'])."\"}\n";
 		$first=false;
 	}
     data_entry_helper::$javascript .= "];";
     // TBD Breadcrumb
- 	$r .= '<h1 id="poll-banner">'.lang::get('LANG_Main_Title').'</h1>
+ 	$r .= '<h1 id="poll-banner"></h1>
 <div id="refresh-message" style="display:none" ><p>'.lang::get('LANG_Please_Refresh_Page').'</p></div>
 <div id="filter" class="ui-accordion ui-widget ui-helper-reset">
 	<div id="filter-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-accordion-content-active ui-corner-top">
@@ -962,7 +971,7 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
           <input type="hidden" name="determination:taxon_details" />
           <span id="insect-id-button" class="ui-state-default ui-corner-all poll-id-button" >'.lang::get('LANG_Launch_ID_Key').'</span>
 		  <span id="insect-id-cancel" class="ui-state-default ui-corner-all poll-id-cancel" >'.lang::get('LANG_Cancel_ID').'</span>
- 	      <p id="insect_taxa_list"></p>
+ 	      <p id="insect_taxa_list" class="taxa_list"></p>
  	    </div>
  	    <div class="id-specified-group">
  	      '.data_entry_helper::select($focus_insect_ctrl_args).'
@@ -1247,7 +1256,8 @@ jQuery('#fc-next-button,#fc-prev-button').click(function(){
 
 jQuery('#fc-filter-button,#fo-filter-button').click(function(){
     jQuery('#filter').show();
-	jQuery('#focus-occurrence,#focus-collection,#results-insects-header,#results-collections-header,#results-insects-results,#results-collections-results').hide();
+    jQuery('#poll-banner').empty();
+    jQuery('#focus-occurrence,#focus-collection,#results-insects-header,#results-collections-header,#results-insects-results,#results-collections-results').hide();
     loadFilter();
     if(searchResults != null){
     	if(searchResults.type == 'C')
@@ -1494,7 +1504,8 @@ loadCollection = function(id, index){
 							for(var j=0; j < resultsIDs.length; j++){
 								for(k = 0; k< flowerTaxa.length; k++){
 									if(flowerTaxa[k].id == resultsIDs[j]){
-										string = (string == '' ? '' : string + ', ') + flowerTaxa[k].taxon; // already specialchared
+										string = (string == '' ? '' : string + ', ') + htmlspecialchars(flowerTaxa[k].taxon);
+										break;
 									}
 								};
 					  		}
@@ -1634,7 +1645,7 @@ loadCollection = function(id, index){
    			// code has been changed to fetch all insects at once, so we can now go async
 			for (var i=0;i<sessiondata.length;i++)
 				sessList.push(sessiondata[i].id);
-			ajaxStack.push(jQuery.ajax({
+				ajaxStack.push(jQuery.ajax({
 					url: \"".$svcUrl."/data/occurrence?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&deleted=f&orderby=id&REMOVEABLEJSONP&callback=?&query=\"+escape(escape(JSON.stringify({'in': {'sample_id': sessList}}))),
 					dataType: 'json',
 					myIndex: this.myIndex,
@@ -1642,20 +1653,23 @@ loadCollection = function(id, index){
 					  if(!(insectData instanceof Array)){
    						alertIndiciaError(insectData);
    		  			  } else if (insectData.length>0) {
-   		  				var insectIDs=[];
-						for (var j=0;j<insectData.length;j++){
-							insectIDs.push(insectData[j].id);
-							var insect=jQuery('<div class=\"ui-widget-content ui-corner-all collection-insect\" />').attr('occID', insectData[j].id).appendTo('#collection-insects');
-							if((j+1)/".$args['insectsPerRow']." == parseInt((j+1)/".$args['insectsPerRow'].")) insect.addClass('end-of-row');
+					   var n=0;
+					   // there seems to be an upper limit on how many can be done at one time - so restrict to 20 at a time
+				 	   while(n<insectData.length){
+   						var insectIDs=[];
+						for (var j=0;j<20 && n<insectData.length; j++,n++){
+							insectIDs.push(insectData[n].id);
+							var insect=jQuery('<div class=\"ui-widget-content ui-corner-all collection-insect\" />').attr('occID', insectData[n].id).appendTo('#collection-insects');
+							if((n+1)/".$args['insectsPerRow']." == parseInt((n+1)/".$args['insectsPerRow'].")) insect.addClass('end-of-row');
 							jQuery('<p class=\"insect-tag insect-unknown\" />').appendTo(insect);
-							var image = jQuery('<div class=\"insect-image empty loading\" />').appendTo(insect).data('occID',insectData[j].id)
+							var image = jQuery('<div class=\"insect-image empty loading\" />').appendTo(insect).data('occID',insectData[n].id)
 									.data('collectionIndex',this.myIndex).click(function(){
 								loadInsect(jQuery(this).data('occID'),jQuery(this).data('collectionIndex'),null,'C');								
 							});
 							image.height(image.width()/(".$args['Insect_Image_Ratio']."));
 							jQuery('<p class=\"insect-determination empty\" />').appendTo(insect);
 							jQuery('<div class=\"ui-state-default ui-corner-all display-button\">".lang::get('LANG_Display')."</div>')
-									.appendTo(insect).attr('occID',insectData[j].id).data('collectionIndex',this.myIndex).data('collectionInsectIndex',j).click(function(){
+									.appendTo(insect).attr('occID',insectData[n].id).data('collectionIndex',this.myIndex).data('collectionInsectIndex',j).click(function(){
 								loadInsect(jQuery(this).attr('occID'),jQuery(this).data('collectionIndex'),null,'C');								
 							});
 						}
@@ -1694,7 +1708,8 @@ loadCollection = function(id, index){
 															for(var j=0; j < resultsIDs.length; j++){
 																for(var m = 0; m< insectTaxa.length; m++){
 																	if(insectTaxa[m].id == resultsIDs[j]){
-																		string = (string == '' ? '' : string + ', ') + insectTaxa[m].taxon;
+																		string = (string == '' ? '' : string + ', ') + htmlspecialchars(insectTaxa[m].taxon);
+																		break;
 																	}}}}}
 													// we use the short determination data here - no extra info
 													det.empty().removeClass('empty');
@@ -1711,14 +1726,17 @@ loadCollection = function(id, index){
 												}
 											}
 										}
-										var group = jQuery('#collection-insects').find('.collection-insect');
-										var tallest = 0;
-										group.each(function(){ tallest = Math.max($(this).height(), tallest); });
-										group.each(function(){ $(this).height(Math.max($(this).height(), tallest)); }); // have synchronicity problems.
 						}}));
-					  }
+					  }}
 					}
-				})); 
+				}));
+				jQuery('#collection-insects').ajaxStop(function(event){
+					var group = jQuery('#collection-insects').find('.collection-insect');
+					var tallest = 0;
+					group.each(function(){ tallest = Math.max($(this).height(), tallest); });
+					group.each(function(){ $(this).height(Math.max($(this).height(), tallest)); }); // have synchronicity problems.
+					$(this).unbind(event);
+				});
 			}}
 	    }));
 	myScrollTo('#poll-banner');
@@ -1855,7 +1873,8 @@ addCollection = function(index, attributes, geom, first){
 									for(var j=0; j < resultsIDs.length; j++){
 										for(var k = 0; k< flowerTaxa.length; k++){
 											if(flowerTaxa[k].id == resultsIDs[j]){
-												string = (string == '' ? '' : string + ', ') + flowerTaxa[k].taxon;
+												string = (string == '' ? '' : string + ', ') + htmlspecialchars(flowerTaxa[k].taxon);
+												break;
 							}}}}}
 							if(detData[i].taxon_extra_info != '' && detData[i].taxon_extra_info != null){
 								string = (string == '' ? '' : string + ' ') + '('+htmlspecialchars(detData[i].taxon_extra_info)+')';
@@ -1905,7 +1924,8 @@ addInsectDeterminations = function(insects){
 									for(var j=0; j < resultsIDs.length; j++){
 										for(var k = 0; k< insectTaxa.length; k++){
 											if(insectTaxa[k].id == resultsIDs[j]){
-												string = (string == '' ? '' : string + ', ') + insectTaxa[k].taxon;
+												string = (string == '' ? '' : string + ', ') + htmlspecialchars(insectTaxa[k].taxon);
+												break;
 							}}}}}
 							if(detData[i].taxon_extra_info != '' && detData[i].taxon_extra_info != null){
 								string = (string == '' ? '' : string + ' ') + '('+htmlspecialchars(detData[i].taxon_extra_info)+')';
@@ -2146,22 +2166,23 @@ toolPoller = function(toolStruct){
 	  	// no valid stuff so blank it all out.
 	  	jQuery('#'+this.toolStruct.type+'_taxa_list').append(\"".lang::get('LANG_Taxa_Unknown_In_Tool')."\");
 	  	jQuery(this.toolStruct.mainForm+' [name=determination\\:determination_type]').val('X'); // Unidentified.
+		jQuery('#'+this.toolStruct.type+'-id-button').data('toolRetValues', []);
       } else {
       	var resultsIDs = [];
       	var resultsText = \"".lang::get('LANG_Taxa_Returned')."<br />{ \";
       	var notFound = '';
 		for(var j=0; j < count; j++){
 			var found = false;
-			itemText = items[j].replace(/</g, '&lt;').replace(/>/g, '&gt;');
 			for(i = 0; i< this.toolStruct.taxaList.length; i++){
-				if(this.toolStruct.taxaList[i].taxon == itemText){
+				if(this.toolStruct.taxaList[i].taxon == items[j]){
 					resultsIDs.push(this.toolStruct.taxaList[i].id);
-					resultsText = resultsText + (j == 0 ? '' : '<br />&nbsp;&nbsp;') + itemText;
+					resultsText = resultsText + (j == 0 ? '' : '<br />&nbsp;&nbsp;') + htmlspecialchars(items[j]);
 					found = true;
+					break;
   				}
   			};
   			if(!found){
-  				notFound = (notFound == '' ? '' : notFound + ', ') + itemText;
+  				notFound = (notFound == '' ? '' : notFound + ', ') + items[j]; // going into a input field - no special characterisation required.
   			}
   		}
 		jQuery('#'+this.toolStruct.type+'_taxa_list').append(resultsText+ ' }');
@@ -3350,9 +3371,10 @@ loadDeterminations = function(keyValue, historyID, currentID, lookup, callback, 
 			  	for(j=0; j < resultsIDs.length; j++){
 					for(k = 0; k< taxaList.length; k++)
 						if(taxaList[k].id == resultsIDs[j]) {
-							string = (string == '' ? '' : string + ', ') + taxaList[k].taxon;
+							string = (string == '' ? '' : string + ', ') + htmlspecialchars(taxaList[k].taxon);
 							callbackEntry.taxa.push(taxaList[k].taxon);
-							resultsText = resultsText + (j == 0 ? '' : '<br />&nbsp;&nbsp;') + taxaList[k].taxon;
+							resultsText = resultsText + (j == 0 ? '' : '<br />&nbsp;&nbsp;') + htmlspecialchars(taxaList[k].taxon);
+							break;
   						}
 		  		}
 	  			if(resultsIDs.length>1 || resultsIDs[0] != '') {
@@ -3414,8 +3436,9 @@ loadDeterminations = function(keyValue, historyID, currentID, lookup, callback, 
 					for(j=0; j < resultsIDs.length; j++){
 						for(k = 0; k< taxaList.length; k++)
 							if(taxaList[k].id == resultsIDs[j]) {
-								string = (string == '' ? '' : string + ', ') + taxaList[k].taxon;
+								string = (string == '' ? '' : string + ', ') + htmlspecialchars(taxaList[k].taxon);
 								callbackEntry.taxa.push(taxaList[k].taxon);
+								break;
 							}
 					}
 				}

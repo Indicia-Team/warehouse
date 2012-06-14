@@ -30,7 +30,6 @@ $custom_terms = array(
 	'LANG_Invocation_Error' => 'Warning : invalid GET parameters in URL'
 	,'LANG_Insufficient_Privileges' => 'You do not have sufficient privileges to access this form.'
 	,'LANG_Please_Refresh_Page' => 'An error has occurred. Please refresh the page.'
-	,'LANG_Main_Title' => 'The Collections'
 	,'LANG_Enter_Filter_Name' => 'Enter a name for this filter'
 	,'LANG_Save_Filter_Button' => 'Save'
 	,'LANG_Collection' => 'Return to Collection'

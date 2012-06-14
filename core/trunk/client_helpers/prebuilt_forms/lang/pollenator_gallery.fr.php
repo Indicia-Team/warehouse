@@ -31,7 +31,6 @@ $custom_terms = array(
 	,'LANG_Insufficient_Privileges' => "Vous n'avez pas de privilèges suffisants pour accéder à cette page."
 	,'LANG_Please_Refresh_Page' => "Une erreur s'est produite. S'il vous plaît, actualisez la page."
 	
-	,'LANG_Main_Title' => 'Les Collections'
 	,'LANG_Enter_Filter_Name' => 'Entrer un nom pour ce filtre'
 	,'LANG_Save_Filter_Button' => 'Enregistrer'
 	,'LANG_Collection' => 'Retour à la Collection'
