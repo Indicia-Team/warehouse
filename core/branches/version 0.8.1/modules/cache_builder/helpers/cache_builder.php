@@ -90,13 +90,15 @@ class cache_builder {
    * suitable for injection into an SQL query.
    */
   private static function get_changelist($db, $table, $queries, $last_run_date) {
-    $query = str_replace('#date#', $last_run_date, $queries['get_changelist_query'] . $queries['filter_on_date']);
+    $query = str_replace('#date#', $last_run_date, $queries['get_changed_items_query']);
     $db->query("create temporary table needs_update_$table as $query");
+    
     if (!variable::get("populated-$table")) {
+      echo $db->last_query().'<br/>';
       // as well as the changed records, pick up max 5000 previous records, which is important for initial population. 
       // 5000 is an arbitrary number to compromise between performance and cache population.
       // of the cache
-      $query = $queries['get_changelist_query'] . $queries['exclude_existing'] . ' limit 5000';
+      $query = $queries['get_missing_items_query'] . ' limit 5000';
       $result = $db->query("insert into needs_update_$table $query");
       if ($result->count()===0) {
         // Flag that we don't need to do any more previously existing records as they are all done.
