@@ -31,7 +31,7 @@
 class Sample_Model extends ORM_Tree
 {
   public $search_field = 'id';
-  
+
   protected $ORM_Tree_children = "samples";
   protected $has_many=array('occurrences', 'sample_attribute_values', 'sample_images');
   protected $belongs_to=array
@@ -42,12 +42,12 @@ class Sample_Model extends ORM_Tree
     'updated_by'=>'user',
     'sample_method'=>'termlists_term'
   );
-  
+
   // Declare that this model has child attributes, and the name of the node in the submission which contains them
   protected $has_attributes=true;
   protected $attrs_submission_name='smpAttributes';
   protected $attrs_field_prefix='smpAttr';
-  
+
   // Declare additional fields required when posting via CSV.
   protected $additional_csv_fields=array(
     'survey_id' => 'Survey ID',
@@ -70,7 +70,7 @@ class Sample_Model extends ORM_Tree
     $orig_values = $array->as_array();
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
- 
+
     // Any fields that don't have a validation rule need to be copied into the model manually
     $this->unvalidatedFields = array
     (
@@ -87,16 +87,22 @@ class Sample_Model extends ORM_Tree
     // when deleting a sample, only need the id and the deleted flag, don't need the date or location details, but copy over if they are there.
     if(array_key_exists('deleted', $orig_values) && $orig_values['deleted']=='t'){
       $this->unvalidatedFields = array_merge($this->unvalidatedFields,
-                                     array('date_type','date_start','date_end','location_id','entered_sref','entered_sref_system','geom'));
+          array('date_type','date_start','date_end','location_id','entered_sref','entered_sref_system','geom'));
     } else {
       $array->add_rules('date_type', 'required', 'length[1,2]');
       $array->add_rules('date_start', 'date_in_past');
       // We need either at least one of the location_id and sref/geom : in some cases may have both
       if (array_key_exists('location_id', $orig_values) && $orig_values['location_id']!=='' && $orig_values['location_id']!== null) { // if a location is provided, we don't need an sref.
-        $array->add_rules('location_id', 'required');        
+        $array->add_rules('location_id', 'required');
         // if any of the sref fields are also supplied, need all 3 fields
         if (!empty($orig_values['entered_sref']) || !empty($orig_values['entered_sref_system']) || !empty( $orig_values['geom']))
           $this->add_sref_rules($array, 'entered_sref', 'entered_sref_system');
+        else {
+          // we are not requiring  the fields so they must go in unvalidated fields
+          $this->unvalidatedFields[] = 'entered_sref';
+          $this->unvalidatedFields[] = 'entered_sref_system';
+        }
+        $this->unvalidatedFields[] = 'geom';
       } else {
         // without a location_id, default to requires an sref.
         // no need to copy over location_id, as not present.
@@ -117,20 +123,20 @@ class Sample_Model extends ORM_Tree
   * Before submission, map vague dates to their underlying database fields.
   */
   protected function preSubmit()
-  { 
+  {
     if (array_key_exists('date', $this->submission['fields'])) {
       $vague_date=vague_date::string_to_vague_date($this->submission['fields']['date']['value']);
       $this->submission['fields']['date_start']['value'] = $vague_date[0];
       $this->submission['fields']['date_end']['value'] = $vague_date[1];
-      $this->submission['fields']['date_type']['value'] = $vague_date[2];      
+      $this->submission['fields']['date_type']['value'] = $vague_date[2];
     }
     // Allow a sample to be submitted with a spatial ref and system but no Geom. If so we
-    // can work out the Geom    
+    // can work out the Geom
     if (array_key_exists('entered_sref', $this->submission['fields']) &&
         array_key_exists('entered_sref_system', $this->submission['fields']) &&
         !(array_key_exists('geom', $this->submission['fields']) && $this->submission['fields']['geom']['value']) &&
         $this->submission['fields']['entered_sref']['value'] &&
-        $this->submission['fields']['entered_sref_system']['value']) {                    
+        $this->submission['fields']['entered_sref_system']['value']) {
       try {
         $this->submission['fields']['geom']['value'] = spatial_ref::sref_to_internal_wkt(
             $this->submission['fields']['entered_sref']['value'],
@@ -172,7 +178,7 @@ class Sample_Model extends ORM_Tree
     }
     return $value;
   }
-  
+
   /**
    * Return a displayable caption for the item.
    * For samples this is a combination of the date and spatial reference.
