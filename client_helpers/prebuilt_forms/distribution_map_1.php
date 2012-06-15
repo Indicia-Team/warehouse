@@ -54,6 +54,15 @@ class iform_distribution_map_1 {
       iform_map_get_map_parameters(),
       array(
         array(
+          'name' => 'include_layer_list',
+          'caption' => 'Include Legend',
+          'description' => 'Should a legend be shown on the page?',
+          'type' => 'boolean',
+          'required'=>false,
+          'default'=>true,
+          'group' => 'Other Map Settings'
+        ),
+        array(
           'name' => 'layer_title',
           'caption' => 'Layer Caption',
           'description' => 'Caption to display for the species distribution map layer. Can contain replacement strings {species} or {survey}.',
@@ -268,10 +277,11 @@ class iform_distribution_map_1 {
       $options['proxy'] = $base_url . '?q=' . variable_get('iform_proxy_path', 'proxy') . '&url=';
     }
     // output a legend
-    $r .= map_helper::layer_list(array(
-      'includeSwitchers' => true,
-      'includeHiddenLayers' => true
-    ));
+    if (!isset($args['include_layer_list']) || $args['include_layer_list'])
+      $r .= map_helper::layer_list(array(
+        'includeSwitchers' => true,
+        'includeHiddenLayers' => true
+      ));
     // output a map    
     $r .= map_helper::map_panel($options, $olOptions);
     // add an empty div for the output of getinfo requests
