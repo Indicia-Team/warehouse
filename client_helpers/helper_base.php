@@ -64,7 +64,7 @@ $indicia_templates = array(
         }",
   'image_upload' => '<input type="file" id="{id}" name="{fieldname}" accept="png|jpg|gif|jpeg" {title}/>'."\n".
       '<input type="hidden" id="{pathFieldName}" name="{pathFieldName}" value="{pathFieldValue}"/>'."\n",
-  'text_input' => '<input type="text" id="{id}" name="{fieldname}"{class} {disabled} value="{default}" {title} {maxlength} />'."\n",
+  'text_input' => '<input type="text" id="{id}" name="{fieldname}"{class} {disabled} {readonly} value="{default}" {title} {maxlength} />'."\n",
   'hidden_text' => '<input type="hidden" id="{id}" name="{fieldname}" {disabled} value="{default}" />',
   'password_input' => '<input type="password" id="{id}" name="{fieldname}"{class} {disabled} value="{default}" {title} />'."\n",
   'textarea' => '<textarea id="{id}" name="{fieldname}"{class} {disabled} cols="{cols}" rows="{rows}" {title}>{default}</textarea>'."\n",
@@ -1348,6 +1348,9 @@ indiciaData.windowLoaded=false;
     }
     if (!array_key_exists('disabled', $options)) {
       $options['disabled']='';
+    }
+    if (!array_key_exists('readonly', $options)) {
+      $options['readonly']='';
     }
     if (array_key_exists('maxlength', $options)) {
       $options['maxlength']='maxlength="'.$options['maxlength'].'"';
