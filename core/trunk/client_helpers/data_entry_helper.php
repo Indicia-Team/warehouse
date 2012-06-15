@@ -2504,6 +2504,8 @@ $('#".$options['id']."-filter').click(function(evt) {
   * record with existing data for this control.</li>
   * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
+  * <li><b>readonly</b><br/>
+  * Optional. can be set to 'readonly="readonly"' to set this control as read only.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the text input control.
