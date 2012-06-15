@@ -82,18 +82,12 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
           'group' => 'Reporting'
         ),
         array(
-          'name' => 'siteTypeOtherTermID',
-          'caption' => 'Site Type Attribute, Other Term ID',
-          'description' => 'The site type has an Other choice which when selected allows an additional text field to be filled in. This field holds the Indicia term meaning id for the radiobutton.',
+          'name' => 'siteTypeAttr',
+          'caption' => 'Site Type Attribute',
+          'description' => 'Caption of the location attribute used to indicate the site type.',
           'type' => 'int',
-          'group' => 'User Interface'
-        ),
-        array(
-          'name' => 'siteTypeOtherAttrID',
-          'caption' => 'Site Type Other Attribute ID',
-          'description' => 'The site type has an Other choice which when selected allows an additional text field to be filled in. This field holds the text field Indicia attribute id',
-          'type' => 'int',
-          'group' => 'User Interface'
+          'default' => 'Site type',
+          'group' => 'Locations'
         ),
         array(
           'name' => 'entranceDefectiveTermID',
@@ -125,8 +119,8 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
         ),
         array(
           'name' => 'removeBreakIDs',
-          'caption' => 'Attributes to remove the break after',
-          'description' => 'The Attributes to remove the break after. This text field holds a colon separated list of Indicia attribute ids',
+          'caption' => 'Remove breaks',
+          'description' => 'The Sample Attributes to remove the break after. This text field holds a colon separated list of Indicia attribute ids',
           'type' => 'string',
           'group' => 'User Interface'
         ),
@@ -247,28 +241,53 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
       <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
     </form>
   </div>'.iform_mnhnl_locModTool(self::$auth, $args, self::$node);
-    data_entry_helper::$javascript .= "
-var other = jQuery('[name=locAttr\\:".$args['siteTypeOtherAttrID']."],[name^=locAttr\\:".$args['siteTypeOtherAttrID']."\\:]');
-other.next().remove(); // remove break
-other.prev().remove(); // remove legend
-other.removeClass('wide').remove(); // remove Other field, then bolt in after the other radio button.
-jQuery('[name^=locAttr]').filter(':radio').filter('[value=".$args['siteTypeOtherTermID']."]').parent().append(other);
-checkRadioStatus = function(){
-  jQuery('[name^=locAttr]').filter(':radio').filter('[value=".$args['siteTypeOtherTermID']."]').each(function(){
-    if(this.checked)
-      jQuery('[name=locAttr\\:".$args['siteTypeOtherAttrID']."],[name^=locAttr\\:".$args['siteTypeOtherAttrID']."\\:]').addClass('required').removeAttr('readonly');
-    else
-      jQuery('[name=locAttr\\:".$args['siteTypeOtherAttrID']."],[name^=locAttr\\:".$args['siteTypeOtherAttrID']."\\:]').removeClass('required').val('').attr('readonly',true);
-  });
-};
-jQuery('[name^=locAttr]').filter(':radio').change(checkRadioStatus);
-checkRadioStatus();
-// we arent going to move the 'if others' field.
-";
+    $r .= self::getSiteTypeJS(self::$auth, $args);
     self::communeJS(self::$auth, $args);
     return $r;
   }
-
+  
+  protected static function getSiteTypeJS($auth, $args){
+    $siteTypeAttr=iform_mnhnl_getAttr($auth, $args, 'location', $args['siteTypeAttr']);
+    if (!$siteTypeAttr) return lang::get('This form must be used with a survey that has the '.$args['siteTypeAttr'].' attribute associated with it.');
+    $siteTypeAttrID=$siteTypeAttr['attributeId'];
+    $siteTypeTermList = helper_base::get_termlist_terms($auth, intval($siteTypeAttr['termlist_id']), array('Other'));
+    $siteTypeOtherAttrID=iform_mnhnl_getAttrID($auth, $args, 'location', 'site type other');
+    if (!$siteTypeOtherAttrID) return lang::get("This form must be used with a survey that has the 'site type other' location attribute associated with it.");
+  	// this needs to handle site type as radio (bats1) or checkbox (bats2)
+  	// type-required is only used for checkboxes - radio ones can use required as per normal.
+  	data_entry_helper::$javascript .= "
+var myTerms = jQuery('[name=locAttr\\:".$siteTypeAttrID."],[name=locAttr\\:".$siteTypeAttrID."\\[\\]],[name^=locAttr\\:".$siteTypeAttrID."\\:]').not(':hidden');
+myTerms_change = function(){
+  if(jQuery('.type-required').filter('[checked]').length > 0)
+    jQuery('.type-required').removeClass('ui-state-error').next('p.inline-error').remove();
+  // for a radio button the change is fired on the newly checked button
+  // for a checkbox button the change is fired on the button itself
+  var attrs = jQuery('[name=locAttr\\:".$siteTypeAttrID."],[name=locAttr\\:".$siteTypeAttrID."\\[\\]],[name^=locAttr\\:".$siteTypeAttrID."\\:]').filter('[value=".$siteTypeTermList[0]['meaning_id']."]').filter('[checked]');
+  if(attrs.length>0)
+    jQuery('[name=locAttr\\:".$siteTypeOtherAttrID."],[name^=locAttr\\:".$siteTypeOtherAttrID."\\:]').addClass('required').removeAttr('readonly');
+  else
+    jQuery('[name=locAttr\\:".$siteTypeOtherAttrID."],[name^=locAttr\\:".$siteTypeOtherAttrID."\\:]').removeClass('required').val('').attr('readonly',true);
+};
+var other = jQuery('[name=locAttr\\:".$siteTypeOtherAttrID."],[name^=locAttr\\:".$siteTypeOtherAttrID."\\:]');
+other.next('br').remove();
+other.prev('label').remove();
+other.removeClass('wide').remove(); // remove Other field, then bolt in after the 'other' selection.
+myTerms.change(myTerms_change).filter('[value=".$siteTypeTermList[0]['meaning_id']."]').parent().append(other);
+if(myTerms.filter(':checkbox').length>0){
+  myTerms.addClass('type-required');
+  other.after('<span class=\"deh-required\">*</span>');
+  $.validator.addMethod('type-required', function(value, element){
+    var valid = jQuery('.type-required').filter('[checked]').length > 0 || element != jQuery('.type-required').eq(0)[0];
+    if(valid){
+      jQuery('.type-required').removeClass('ui-state-error').next('p.inline-error').remove();
+    }
+    return valid;
+  }, \"".lang::get('At least one site type entry must be selected.')."\");
+}
+myTerms_change();
+";
+    return '';
+  }
   protected static function getHeaderHTML($args) {
     $base = base_path();
     if(substr($base, -1)!='/') $base.='/';
@@ -358,6 +377,7 @@ deleteSurvey = function(sampleID){
    * Does not include any HTML.
    */
   protected static function get_control_customJS($auth, $args, $tabalias, $options) {
+    $r='';
     if(lang::get('validation_required') != 'validation_required')
       data_entry_helper::$late_javascript .= "
 $.validator.messages.required = \"".lang::get('validation_required')."\";";
@@ -387,24 +407,8 @@ $.validator.addMethod('fillgroup', function(value, element){
     $numCols=1;
     $startPos=2;
     iform_mnhnl_addCancelButton($args['interface']);
+    $r .= self::getSiteTypeJS($auth, $args);
     data_entry_helper::$javascript .= "
-checkRadioStatus = function(){
-  jQuery('[name^=locAttr]').filter(':radio').filter('[value=".$args['siteTypeOtherTermID']."]').each(function(){
-    if(this.checked)
-      jQuery('[name=locAttr\\:".$args['siteTypeOtherAttrID']."],[name^=locAttr\\:".$args['siteTypeOtherAttrID']."\\:]').addClass('required').removeAttr('readonly');
-    else
-      jQuery('[name=locAttr\\:".$args['siteTypeOtherAttrID']."],[name^=locAttr\\:".$args['siteTypeOtherAttrID']."\\:]').removeClass('required').val('').attr('readonly',true);
-  });
-};
-jQuery('[name^=locAttr]').filter(':radio').change(checkRadioStatus);
-checkRadioStatus();
-
-var other = jQuery('[name=locAttr\\:".$args['siteTypeOtherAttrID']."],[name^=locAttr\\:".$args['siteTypeOtherAttrID']."\\:]');
-other.next().remove(); // remove break
-other.prev().remove(); // remove legend
-other.removeClass('wide').remove(); // remove Other field, then bolt in after the other radio button.
-jQuery('[name^=locAttr]').filter(':radio').filter('[value=".$args['siteTypeOtherTermID']."]').parent().append(other);
-
 var other = jQuery('[name=smpAttr\\:".$args['entranceDefectiveCommentAttrID']."],[name^=smpAttr\\:".$args['entranceDefectiveCommentAttrID']."\\:]');
 other.next().remove(); // remove break
 other.prev().remove(); // remove legend
@@ -448,11 +452,10 @@ jQuery('.species-grid > thead').find('th').not(':hidden').filter(':eq(".$i.")').
     }
     
     // Move the Temperature and Humidity fields side by side.
-    $removeBreakIDs = explode(';', $args['removeBreakIDs']);
+    $removeBreakIDs = explode(':', $args['removeBreakIDs']);
     foreach($removeBreakIDs as $removeBreakID){
-      $removeBreakID = str_replace(':', '\\:', $removeBreakID);
       data_entry_helper::$javascript .= "
-jQuery('[name=".$removeBreakID."],[name^=".$removeBreakID."\\:]').css('margin-right', '20px').nextAll('br').eq(0).remove();";
+jQuery('[name=smpAttr\\:".$removeBreakID."],[name^=smpAttr\\:".$removeBreakID."\\:]').css('margin-right', '20px').nextAll('br').eq(0).remove();";
     }
     if (!empty($args['attributeValidation'])) {
       $rules = array();
@@ -557,7 +560,7 @@ jQuery('#smpAttr\\\\:$attrId').next().after(\"<span class='extra-text'>".lang::g
       }
     }
       
-    return '';
+    return $r;
   }
   
   /**
