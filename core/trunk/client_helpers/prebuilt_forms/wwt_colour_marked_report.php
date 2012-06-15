@@ -641,6 +641,12 @@ class iform_wwt_colour_marked_report {
     return $retVal;
   }
   
+  public static function get_perms($nid) {
+    return array(
+      'IForm n'.$nid.' enter data by proxy',
+    );
+  }
+
   /**
    * Return the generated form output.
    * @return Form HTML.
@@ -816,6 +822,19 @@ class iform_wwt_colour_marked_report {
     if (!empty($args['sample_method_id']))
       $attrOpts['sample_method_id']=$args['sample_method_id'];
     $attributes = data_entry_helper::getAttributes($attrOpts, false);
+    // Check if Recorder details is included as a control. 
+    // If so, remove the recorder attributes from the $attributes array so not output anywhere else.
+    $arr = helper_base::explode_lines($args['structure']);
+    if (in_array('[recorder details]', $arr)) {
+      $attrCount = count($attributes);
+      for ($i = 0; $i < $attrCount; $i++) {
+        if (strcasecmp($attributes[$i]['caption'], 'first name')===0 
+        || strcasecmp($attributes[$i]['caption'], 'last name')===0 
+        || strcasecmp($attributes[$i]['caption'], 'email')===0) {
+          unset($attributes[$i]);
+        }
+      }
+    }
     //// Make sure the form action points back to this page
     $reload = data_entry_helper::get_reload_link_parts();
     unset($reload['params']['sample_id']);
@@ -1028,7 +1047,9 @@ class iform_wwt_colour_marked_report {
               $blockOptions[$optionId[0]][$optionId[1]] = $value;
             }
             $defAttrOptions = array_merge($defAttrOptions, $options);
+            dd('Before calling get_attribute_html $tab is '.print_r($tab, true).', $attributes is '.print_r($attributes, true), date('r'));
             $attrHtml = get_attribute_html($attributes, $args, $defAttrOptions, $tab, $blockOptions);
+            dd('After calling get_attribute_html $attrHtml is '.print_r($attrHtml, true), date('r'));
             if (!empty($attrHtml))
               $hasControls = true;
             $html .= $attrHtml;
@@ -1748,6 +1769,59 @@ class iform_wwt_colour_marked_report {
       return $r;
   }   
     
+  /**
+   * Get the block of sample custom attributes for the recorder
+   */
+  private static function get_control_recorderdetails($auth, $args, $tabalias, $options) {
+    // get the sample attributes
+    $attrOpts = array(
+        'id' => data_entry_helper::$entity_to_load['sample:id']
+       ,'valuetable'=>'sample_attribute_value'
+       ,'attrtable'=>'sample_attribute'
+       ,'key'=>'sample_id'
+       ,'fieldprefix'=>'smpAttr'
+       ,'extraParams'=>$auth['read']
+       ,'survey_id'=>$args['survey_id']
+    );
+    // select only the custom attributes that are for this sample method or all sample methods, if this
+    // form is for a specific sample method.
+    if (!empty($args['sample_method_id']))
+      $attrOpts['sample_method_id']=$args['sample_method_id'];
+    $attributes = data_entry_helper::getAttributes($attrOpts, false);
+    // load values from profile. This is Drupal specific code, so degrade gracefully.
+    if (function_exists('profile_load_all_profile')) {
+      global $user;
+      profile_load_all_profile($user);
+      foreach($attributes as &$attribute) {
+        if (!isset($attribute['default'])) {
+          $attrPropName = 'profile_'.strtolower(str_replace(' ','_',$attribute['caption']));
+          if (isset($user->$attrPropName)) {
+            $attribute['default'] = $user->$attrPropName;
+          } elseif (strcasecmp($attribute['caption'], 'email')===0 && isset($user->mail)) {
+            $attribute['default'] = $user->mail;
+          }
+        }
+      }
+    }
+    $defAttrOptions = array('extraParams'=>$auth['read'], 'class'=>"required");
+    $attrHtml = '';
+    // Drupal specific code
+    dd('Before user_access, permission name is ['.'IForm n'.self::$node->nid.' enter data by proxy'.']', date('r'));
+    if (!user_access('IForm n'.self::$node->nid.' enter data by proxy')) {
+      $defAttrOptions += array('readonly'=>'readonly="readonly"');
+      $attrHtml .= '<div class="readonlyFieldset">';
+    }
+    $blockOptions = array();
+    dd('Before calling get_attribute_html $tab is '.'Enter data by proxy'.', $attributes is '.print_r($attributes, true), date('r'));
+    $attrHtml .= get_attribute_html($attributes, $args, $defAttrOptions, 'Enter data by proxy', $blockOptions);
+    dd('After calling get_attribute_html $attrHtml is '.print_r($attrHtml, true), date('r'));
+    if (!user_access('IForm n'.self::$node->nid.' enter data by proxy')) {
+      $attrHtml .= '</div>';
+    }
+  
+    return $attrHtml;
+  }
+  
   /*
    * Get the species picker with selected colour identifier controls
    */

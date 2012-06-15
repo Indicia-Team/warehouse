@@ -57,6 +57,15 @@ input.locked-control, select.locked-control, textarea.locked-control {
 	color: #008f93;
 	border:1px solid #008f93;
 }
+
+.readonlyFieldset fieldset {
+	background-color: #E7E7E7;
+}
+
+.readonlyFieldset legend:after {
+	content: " (read-only)";
+}
+
 /*
 .ind-tax-img-barnaclegoose {
 	background-image: url('../images/barnacle.jpg');
