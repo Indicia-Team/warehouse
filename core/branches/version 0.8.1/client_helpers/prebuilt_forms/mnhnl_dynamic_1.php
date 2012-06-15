@@ -814,7 +814,7 @@ class iform_mnhnl_dynamic_1 {
             $i++;
             // ignore empty lines
             if (trim($tabContent[$i])!=='') {
-              $option = explode('=',substr($tabContent[$i],1));
+              $option = explode('=', substr($tabContent[$i],1), 2);
               $options[$option[0]]=json_decode($option[1]);
               // if not json then need to use option value as it is
               if ($options[$option[0]]=='') $options[$option[0]]=$option[1];            
@@ -823,7 +823,7 @@ class iform_mnhnl_dynamic_1 {
           
           if (method_exists(self::$called_class, $method)) {
             //outputs a control for which a specific output function has been written.
-            $html .= call_user_func(array(self::$called_class, $method), $auth, $args, $tabalias, $options);
+            $html .= call_user_func(array(self::$called_class, $method), $auth, $args, $tabalias, $options, $attributes);
             $hasControls = true;
           } elseif (($attribKey = array_search(substr($component, 1, -1), $attribNames)) !== false) {
             //outputs a control for a single custom attribute where component is in the form [smpAttr:167]
