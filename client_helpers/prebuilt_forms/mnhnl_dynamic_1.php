@@ -835,7 +835,7 @@ class iform_mnhnl_dynamic_1 {
             $i++;
             // ignore empty lines
             if (trim($tabContent[$i])!=='') {
-              $option = explode('=',substr($tabContent[$i],1));
+              $option = explode('=', substr($tabContent[$i],1), 2);
               $options[$option[0]]=json_decode($option[1]);
               // if not json then need to use option value as it is
               if ($options[$option[0]]=='') $options[$option[0]]=$option[1];            
