@@ -1047,9 +1047,7 @@ class iform_wwt_colour_marked_report {
               $blockOptions[$optionId[0]][$optionId[1]] = $value;
             }
             $defAttrOptions = array_merge($defAttrOptions, $options);
-            dd('Before calling get_attribute_html $tab is '.print_r($tab, true).', $attributes is '.print_r($attributes, true), date('r'));
             $attrHtml = get_attribute_html($attributes, $args, $defAttrOptions, $tab, $blockOptions);
-            dd('After calling get_attribute_html $attrHtml is '.print_r($attrHtml, true), date('r'));
             if (!empty($attrHtml))
               $hasControls = true;
             $html .= $attrHtml;
@@ -1806,15 +1804,12 @@ class iform_wwt_colour_marked_report {
     $defAttrOptions = array('extraParams'=>$auth['read'], 'class'=>"required");
     $attrHtml = '';
     // Drupal specific code
-    dd('Before user_access, permission name is ['.'IForm n'.self::$node->nid.' enter data by proxy'.']', date('r'));
     if (!user_access('IForm n'.self::$node->nid.' enter data by proxy')) {
       $defAttrOptions += array('readonly'=>'readonly="readonly"');
       $attrHtml .= '<div class="readonlyFieldset">';
     }
     $blockOptions = array();
-    dd('Before calling get_attribute_html $tab is '.'Enter data by proxy'.', $attributes is '.print_r($attributes, true), date('r'));
     $attrHtml .= get_attribute_html($attributes, $args, $defAttrOptions, 'Enter data by proxy', $blockOptions);
-    dd('After calling get_attribute_html $attrHtml is '.print_r($attrHtml, true), date('r'));
     if (!user_access('IForm n'.self::$node->nid.' enter data by proxy')) {
       $attrHtml .= '</div>';
     }
