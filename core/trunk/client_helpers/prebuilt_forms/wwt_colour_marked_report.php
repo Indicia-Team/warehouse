@@ -104,37 +104,6 @@ class iform_wwt_colour_marked_report {
           'group' => 'User Interface'
         ),
         array(
-          'name'=>'emailShow',
-          'caption'=>'Show email field even if logged in',
-          'description'=>'If the survey requests an email address, it is sent implicitly for logged in users. Check this box to show it explicitly.',
-          'type'=>'boolean',
-          'default' => false,
-          'required' => false,
-          'group' => 'User Interface'
-        ),
-        array(
-          'name'=>'nameShow',
-          'caption'=>'Show user profile fields even if logged in',
-          'description'=>'If the survey requests first name and last name or any field which matches a field in the users profile, these are hidden. '.
-              'Check this box to show these fields. Always show these fields if they are required at the warehouse unless the profile module is enabled, '.
-              '<em>copy field values from user profile</em> is selected and the fields are required in the profile.',
-          'type'=>'boolean',
-          'default' => false,
-          'required' => false,
-          'group' => 'User Interface'
-        ),
-        array(
-          'name'=>'copyFromProfile',
-          'caption'=>'Copy field values from user profile',
-          'description'=>'Copy any matching fields from the user\'s profile into the fields with matching names in the sample data. This works for fields '.
-              'defined in the Drupal Profile module. Applies whether fields are shown or not.',
-          'type'=>'boolean',
-          'default' => false,
-          'required' => false,
-          'group' => 'User Interface',
-          'visible' => function_exists('profile_load_profile')
-        ),
-        array(
           'name'=>'clientSideValidation',
           'caption'=>'Client Side Validation',
           'description'=>'Enable client side validation of controls using JavaScript. Note that there are bugs in Internet Explorer which can cause errors when '.
@@ -161,12 +130,11 @@ class iform_wwt_colour_marked_report {
             "<strong>=tab/page name=</strong> is used to specify the name of a tab or wizard page. (Alpha-numeric characters only)<br/>".
             "<strong>=*=</strong> indicates a placeholder for putting any custom attribute tabs not defined in this form structure. <br/>".
             "<strong>[control name]</strong> indicates a predefined control is to be added to the form with the following predefined controls available: <br/>".
+                "&nbsp;&nbsp;<strong>[recorder details]</strong><br/>".
                 "&nbsp;&nbsp;<strong>[date]</strong><br/>".
                 "&nbsp;&nbsp;<strong>[map]</strong><br/>".
                 "&nbsp;&nbsp;<strong>[spatial reference]</strong><br/>".
                 "&nbsp;&nbsp;<strong>[location name]</strong><br/>".
-                "&nbsp;&nbsp;<strong>[location autocomplete]</strong><br/>".
-                "&nbsp;&nbsp;<strong>[location select]</strong><br/>".
                 "&nbsp;&nbsp;<strong>[place search]</strong><br/>".
                 "&nbsp;&nbsp;<strong>[sample comment]</strong>. <br/>".
                 "&nbsp;&nbsp;<strong>[species identifier]</strong>. <br/>".
@@ -182,7 +150,9 @@ class iform_wwt_colour_marked_report {
         "For example, if a control is for smpAttr:4 then you can update it's label by specifying @smpAttr:4|label=New Label on the line after the [*].<br/>".
             "<strong>?help text?</strong> is used to define help text to add to the tab, e.g. ?Enter the name of the site.?",
           'type'=>'textarea',
-          'default' => "=When and Where=\r\n".
+          'default' => "=Who When and Where=\r\n".
+              "?Recorder details for this information.?\r\n".
+              "[recorder details]\r\n".
               "?Please tell us when you saw the colour-marked bird.?\r\n".
               "[date]\r\n".
               "[*]\r\n".
@@ -417,7 +387,7 @@ class iform_wwt_colour_marked_report {
           'valueField'=>'id',
           'extraParams' => array('termlist_external_key'=>'indicia:assoc:identifier_type'),
           'required' => true,
-          'helpText' => 'The helptext. Todo: change this one you see where it shows on screen!!',
+          'helpText' => 'The helptext. Todo: change this once you see where it shows on screen!!',
           'group' => 'Identifiers',
         ),
         array(
@@ -552,7 +522,7 @@ class iform_wwt_colour_marked_report {
           ),
           'required'=>false,
           'group'=>'Identifiers'
-        ),
+        ),/*
         array(
           'name'=>'use_colour_picker',
           'caption'=>'Use Colour Picker',
@@ -561,7 +531,7 @@ class iform_wwt_colour_marked_report {
           'required' => false,
           'default' => false,
           'group' => 'Identifiers'
-        ),
+        ),*/
         array(
           'name'=>'other_devices',
           'caption'=>'Other Devices',
@@ -660,6 +630,10 @@ class iform_wwt_colour_marked_report {
     self::$node = $node;
     
     // hard-wire some 'dynamic' options to simplify the form. Todo: take out the dynamic code for these
+    $args['use_colour_picker'] = true;
+    $args['emailShow'] = false;
+    $args['nameShow'] = false;
+    $args['copyFromProfile'] = false;
     $args['multiple_subject_observation_mode'] = 'single';
     $args['extra_list_id'] = '';
     $args['occurrence_comment'] = false;
@@ -1685,30 +1659,6 @@ class iform_wwt_colour_marked_report {
       'label' => lang::get('LANG_SRef_Label'),
       'systems' => $systems,
     ), $options));
-  }
-  
-  /** 
-   * Get the location control as an autocomplete.
-   */
-  private static function get_control_locationautocomplete($auth, $args, $tabalias, $options) {
-    $location_list_args=array_merge(array(
-        'label'=>lang::get('LANG_Location_Label'),
-        'view'=>'detail',
-        'extraParams'=>array_merge(array('orderby'=>'name', 'website_id'=>$args['website_id']), $auth['read'])
-    ), $options);
-    return data_entry_helper::location_autocomplete($location_list_args);
-  }
-  
-  /** 
-   * Get the location control as a select dropdown.
-   */
-  private static function get_control_locationselect($auth, $args, $tabalias, $options) {
-    $location_list_args=array_merge(array(
-        'label'=>lang::get('LANG_Location_Label'),
-        'view'=>'detail',
-        'extraParams'=>array_merge(array('orderby'=>'name', 'website_id'=>$args['website_id']), $auth['read'])
-    ), $options);
-    return data_entry_helper::location_select($location_list_args);
   }
   
   /** 
