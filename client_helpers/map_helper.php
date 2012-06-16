@@ -321,6 +321,10 @@ class map_helper extends helper_base {
         $mapSetupJs .= $options['setupJs']."\n";
       }
       $mapSetupJs .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
+      // trigger a change event on the sref if it's set in case locking in use. This will draw the polygon on the map.
+      $srefId = !empty($options['srefId']) ? $options['srefId'] : '';
+      $mapSetupJs .= "      var srefId = '$srefId'!=='' ? '$srefId' : $.fn.indiciaMapPanel.defaults.srefId;\n".
+                     "      if (srefId && srefId.value!=='') {jQuery('#'+srefId).change();}\n";
       // If the map is displayed on a tab, so we must only generate it when the tab is displayed as creating the 
       // map on a hidden div can cause problems. Also, the map must not be created until onload or later. So 
       // we have to set use the mapTabLoaded and windowLoaded to track when these events are fired, and only
