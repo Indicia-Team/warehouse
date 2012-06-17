@@ -465,7 +465,7 @@
       var fldPrefix = panel$.attr('id').replace('panel', '');
       var escFldPrefix = esc4jq(fldPrefix);
       var iCode = makeIdentifierCode(escFldPrefix);
-      if (iCode) {
+      if (iCode && !(/\(\)/.test(iCode))) {
         // ignore leg ring position
         if (/^[LR][AB]/.test(iCode)) {
           iCode = 'LR'+iCode.substring(2);
@@ -587,7 +587,9 @@
       var indCount = $('.individual_panel').length;      
       var newInd = window.indicia.wwt.newIndividual.replace(/idn:0:/g, 'idn:'+subjectCount+':')
         .replace(/Colour-marked Individual 1/g, 'Colour-marked Individual '+(subjectCount+1));
+      var fromSelector = '#'+esc4jq($('.individual_panel').filter(':last').attr('id'));
       $('#idn\\:subject\\:accordion').append(newInd);
+      var toSelector = '#'+esc4jq($('.individual_panel').filter(':last').attr('id'));
       // initialise new individual and identifier controls
       initIndividuals('#idn\\:'+subjectCount+'\\:individual\\:panel');
       // hide remove buttons if only one bird or for birds which exist on database
@@ -595,6 +597,10 @@
       // initialise new javascript dependent controls
       eval(window.indicia.wwt.newJavascript.replace(/idn:0:/g, 'idn:'+subjectCount+':')
         .replace(/idn\\\\:0\\\\:/g, 'idn\\\\:'+subjectCount+'\\\\:'));
+      // copy locks from preceding individual
+      if (indicia.locks.copyLocks!=='undefined') {
+        indicia.locks.copyLocks(fromSelector, toSelector);
+      }
       // reactivate subject accordion, if used
       if (subjectAccordion) {
         $('.idn-subject-accordion').accordion('destroy').accordion({'active':indCount});

@@ -4,6 +4,7 @@
 	border: 1px solid #008f93;
 	background: #008f93;
 	color: #ffffff;
+	font-weight: bold;
 }
 
 .ui-accordion-header.ui-state-active {
@@ -22,22 +23,31 @@
 	border: 1px solid #008f93;
 	background: #008f93;
 	color: #ffffff;
+	font-weight: bold;
 }
 
-#tabs-wrapper h2, #tabs-wrapper h3 {
+.ui-accordion-header.ui-state-default a {
+	font-weight: bold;
+}
+
+#tabs-wrapper h1, #tabs-wrapper h2, #tabs-wrapper h3 {
 	color: #008f93;
 }
 
-h2 {
+#controls h1, #controls h2, #controls h3 {
 	color: #008f93;
 }
 
 input.locked-control, select.locked-control, textarea.locked-control {
-	background-color: yellow !important;
+	background-color: #fff99d !important;
 }
 
 .identifier_checkbox {
 	display: none;
+}
+
+fieldset, #fieldset-recorder-details, .file-box fieldset {
+	border:1px solid #008f93;
 }
 
 .individual_panel {
@@ -53,9 +63,9 @@ input.locked-control, select.locked-control, textarea.locked-control {
 	margin-right: -488px;
 }
 
-.taxon_individual legend {
+.taxon_individual legend, #fieldset-recorder-details legend, .file-box legend  {
 	color: #008f93;
-	border:1px solid #008f93;
+	font-weight: bold;
 }
 
 .readonlyFieldset fieldset {
