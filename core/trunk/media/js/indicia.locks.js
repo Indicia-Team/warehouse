@@ -41,6 +41,9 @@
     window.indicia.locks = {};
   }
 
+  // variable to indicate if locking initialised.
+  var initialised = false;
+  
   // variables to hold the tool-tips pumped in from PHP. This has to be done to
   // support I18n.
   var lockedTip = '';
@@ -48,6 +51,9 @@
 
   // variable to hold form mode, NEW, RELOAD or ERRORS.
   var formMode = '';
+
+  // variable to hold simpleHash of title
+  var hash = 0;
 
   // boolean variable to tell us if cookies are enabled in this browser. Note,
   // the anonymous function is invoked and cookiesEnabled is set to the result.
@@ -71,6 +77,49 @@
         '\\$1') : '';
   };
 
+  var simpleHash = function(str) {
+    // returns the sum of bytes in the string, terrible hash function but we don't need much
+    if (hash>0) {
+      return hash;
+    }
+    for (var i=0; i<str.length; i++) {
+      hash += str.charCodeAt(i);
+    }
+    return hash;
+  };
+
+  var housekeepLocks = function() {
+    // remove any locks for the page which don't exist on the page
+    var pageHash = simpleHash(document.title);
+    var lockedArray = [];
+    if ($.cookie('indicia_locked_controls')) {
+      lockedArray = JSON.parse($.cookie('indicia_locked_controls'));
+    } else {
+      return;
+    }
+    var locks = [];
+    $('.unset-lock, .locked-icon, .unlocked-icon').each(function(n) {
+      locks.push(this.id.replace('_lock', ''));
+    });
+    for (var i = 0; i < lockedArray.length; i++) {
+      if (lockedArray[i].ctl_id
+          && lockedArray[i].ctl_page
+          && lockedArray[i].ctl_page === pageHash) {
+        var found = false;
+        for (var j = 0; j < locks.length; j++) {
+          if (lockedArray[i].ctl_id===locks[j]) {
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          lockedArray.splice(i, 1);
+        }
+      }
+    }
+    $.cookie('indicia_locked_controls', JSON.stringify(lockedArray));
+  };
+
   var getOtherLocks = function(controlId) {
     // gets an array of locks for all locked controls other than the one
     // supplied
@@ -82,7 +131,7 @@
     for (i = 0; i < lockedArray.length; i++) {
       if (lockedArray[i].ctl_id && lockedArray[i].ctl_id === controlId
           && lockedArray[i].ctl_page
-          && lockedArray[i].ctl_page === document.title) {
+          && lockedArray[i].ctl_page === simpleHash(document.title)) {
         lockedArray.splice(i, 1);
         break;
       }
@@ -95,7 +144,7 @@
     var lockedArray = getOtherLocks(controlId);
     var locked = {};
     var escControlId = esc4jq(controlId);
-    locked.ctl_page = document.title;
+    locked.ctl_page = simpleHash(document.title);
     locked.ctl_id = controlId;
     if ($('#' + escControlId).length==1) {
       locked.ctl_value = $('#' + escControlId).val();
@@ -154,7 +203,7 @@
       for (i = 0; i < lockedArray.length; i++) {
         if (lockedArray[i].ctl_id && lockedArray[i].ctl_id === controlId
             && lockedArray[i].ctl_page
-            && lockedArray[i].ctl_page === document.title) {
+            && lockedArray[i].ctl_page === simpleHash(document.title)) {
           value = lockedArray[i].ctl_value;
           break;
         }
@@ -173,7 +222,7 @@
       for (i = 0; i < lockedArray.length; i++) {
         if (lockedArray[i].ctl_id && lockedArray[i].ctl_id === controlId
             && lockedArray[i].ctl_page
-            && lockedArray[i].ctl_page === document.title
+            && lockedArray[i].ctl_page === simpleHash(document.title)
             && lockedArray[i].ctl_caption) {
           caption = lockedArray[i].ctl_caption;
           break;
@@ -282,6 +331,65 @@
     }
   };
 
+  var setControlFromLock = function(id, mode) {
+    var escId = esc4jq(id);
+    var controlId = id.replace('_lock', '');
+    var escControlId = escId.replace('_lock', '');
+    // establish lock state and set class/value
+    if (isControlLocked(controlId) && mode !== 'RELOAD') {
+      if (controlHasError(controlId)) {
+        // release lock if validation error
+        $('#' + escId).addClass('unlocked-icon');
+        unlockControl(controlId);
+      } else {
+        // set to locked value
+        $('#' + escId).addClass('locked-icon');
+        setControlValue(controlId, getLockedValue(controlId));
+      }
+    } else {
+      // lock is open and don't set value
+      $('#' + escId).addClass('unlocked-icon');
+    }
+    $('#' + escId).removeClass('unset-lock');
+    setWriteStatus(id);
+    setLockToolTip(id);
+  };
+
+  /**
+   * copy lock settings and state from one set of controls to another matching set.
+   * @param fromSelector jQuery selector for the part of the form to copy from
+   * @param toSelector jQuery selector for the matching part of the form to copy to
+   */
+  indicia.locks.copyLocks = function(fromSelector, toSelector) {
+    // do nothing unless initialised
+    if (initialised) {
+      var fromLock$ = $('.unset-lock, .locked-icon, .unlocked-icon', fromSelector);
+      var toLock$ = $('.unset-lock, .locked-icon, .unlocked-icon', toSelector);
+      var fromLocked$ = $('.locked-icon', fromSelector);
+      // ensure all 'to' locks initially unset
+      toLock$.not('.unset-lock').each(function(n) {
+        $(this).removeClass('locked-icon').removeClass('unlocked-icon').addClass('unset-lock');
+      });
+      // for each locked 'from' control, create a corresponding 'to' lock
+      fromLocked$.each(function(n) {
+        for (var i=0; (i<fromLock$.length && i<toLock$.length); i++) {
+          if (this.id===fromLock$[i].id) {
+            var fromControlId = fromLock$[i].id.replace('_lock', '');
+            var toControlId = toLock$[i].id.replace('_lock', '');
+            // copy value
+            setControlValue(toControlId, getLockedValue(fromControlId));
+            // set lock values in cookie
+            lockControl(toControlId);
+          }
+        }
+      });
+      // configure lockable controls on page load to reflect lock status from cookie
+      $('.unset-lock', toSelector).each(function(n) {
+        setControlFromLock(this.id, 'NEW');
+      });
+    }
+  };
+
   /**
    * initialises lock settings and set event handlers, called from indicia ready
    * handler.
@@ -294,33 +402,14 @@
       unlockedTip = unlockedToolTip;
       // set form mode
       formMode = mode;
+      // tidy up any dynamically created locks for this page
+      housekeepLocks();
       // configure lockable controls on page load to reflect lock status
       $('.unset-lock').each(function(n) {
-        var id = this.id;
-        var escId = esc4jq(id);
-        var controlId = id.replace('_lock', '');
-        var escControlId = escId.replace('_lock', '');
-        // establish lock state and set class/value
-        if (isControlLocked(controlId) && formMode !== 'RELOAD') {
-          if (controlHasError(controlId)) {
-            // release lock if validation error
-            $('#' + escId).addClass('unlocked-icon');
-            unlockControl(controlId);
-          } else {
-            // set to locked value
-            $('#' + escId).addClass('locked-icon');
-            setControlValue(controlId, getLockedValue(controlId));
-          }
-        } else {
-          // lock is open and don't set value
-          $('#' + escId).addClass('unlocked-icon');
-        }
-        $('#' + escId).removeClass('unset-lock');
-        setWriteStatus(id);
-        setLockToolTip(id);
+        setControlFromLock(this.id, formMode);
       });
-      // install the click handler for the lockable controls
-      $('.locked-icon, .unlocked-icon').click(function(event) {
+      // install the live click handler for the lockable controls
+      $('.locked-icon, .unlocked-icon').live('click', function(event) {
         var id = this.id;
         var escId = esc4jq(id);
         var controlId = id.replace('_lock', '');
@@ -349,7 +438,6 @@
             var escFormId = esc4jq(form.id);
             // select all locked controls in this form and enable them
             $('#' + escFormId + ' span.locked-icon').each(
-            // $(form + ' span.locked-icon').each(
                     function(n) {
                   var span = this;
                   var escId = esc4jq(span.id);
@@ -363,6 +451,7 @@
               form.id = '';
             }
           });
+      initialised = true;
     }
   };
 
