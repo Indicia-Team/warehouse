@@ -112,7 +112,7 @@ class iform_wwt_colour_marked_report {
           'default' => true,
           'required' => false,
           'group' => 'User Interface'
-        ),
+        ),/*
         array(
           'name'=>'subjectAccordion',
           'caption'=>'Use Accordion for Individuals',
@@ -121,7 +121,7 @@ class iform_wwt_colour_marked_report {
           'default' => false,
           'required' => false,
           'group' => 'User Interface'
-        ),
+        ),*/
         array(
           'name'=>'structure',
           'caption'=>'Form Structure',
@@ -630,6 +630,7 @@ class iform_wwt_colour_marked_report {
     self::$node = $node;
     
     // hard-wire some 'dynamic' options to simplify the form. Todo: take out the dynamic code for these
+    $args['subjectAccordion'] = false;
     $args['use_colour_picker'] = true;
     $args['emailShow'] = false;
     $args['nameShow'] = false;
@@ -1755,9 +1756,13 @@ class iform_wwt_colour_marked_report {
     $attrHtml = '';
     // Drupal specific code
     if (!user_access('IForm n'.self::$node->nid.' enter data by proxy')) {
+      if (isset($options['lockable'])) {
+        unset($options['lockable']);
+      }
       $defAttrOptions += array('readonly'=>'readonly="readonly"');
       $attrHtml .= '<div class="readonlyFieldset">';
     }
+    $defAttrOptions += $options;
     $blockOptions = array();
     $attrHtml .= get_attribute_html($attributes, $args, $defAttrOptions, 'Enter data by proxy', $blockOptions);
     if (!user_access('IForm n'.self::$node->nid.' enter data by proxy')) {
@@ -1884,6 +1889,7 @@ class iform_wwt_colour_marked_report {
     $r .= '<div id="'.$options['fieldprefix'].'individual:panel" class="individual_panel ui-corner-all">';
     $r .= '<div class="ui-helper-clearfix">';
     $r .= '<fieldset id="'.$options['fieldprefix'].'individual:fieldset" class="taxon_individual ui-corner-all">';
+    $r .= '<legend id="'.$options['fieldprefix'].'individual:legend">Individual details</legend>';
     // output the hiddens
     if (isset(data_entry_helper::$entity_to_load[$options['fieldprefix'].'subject_observation:id'])) {
       $r .= '<input type="hidden" id="'.$options['fieldprefix'].'subject_observation:id" name="'.$options['fieldprefix'].'subject_observation:id" '.
@@ -2171,7 +2177,9 @@ class iform_wwt_colour_marked_report {
       $temp = data_entry_helper::$entity_to_load;
       data_entry_helper::$entity_to_load = null;
       $options['inNewIndividual'] = true;
+      $options['lockable'] = $options['identifiers_lockable'];
       $new_individual = self::get_control_speciesidentifier($auth, $args, $tabalias, $options);
+      unset($options['lockable']);
       $opts['codeGenerated'] = 'js';
       $photoJavascript = data_entry_helper::file_box($opts);
       data_entry_helper::$entity_to_load = $temp;
