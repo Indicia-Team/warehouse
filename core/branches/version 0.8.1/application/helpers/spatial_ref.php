@@ -59,7 +59,9 @@ class spatial_ref {
    * Throw an exception if the class name provided for spatial reference translation is not recognisable.
    */
   private static function validateSystemClass($system) {
-    // Note, do not use method_exists here as it can cause crashes in FastCGI servers.
+    if ($system == '')
+      throw new Exception("The spatial reference system is not set.");
+     // Note, do not use method_exists here as it can cause crashes in FastCGI servers.
     if (!is_callable(array($system, 'is_valid')) ||
         !is_callable(array($system, 'get_srid')) ||
         !is_callable(array($system, 'sref_to_wkt')) ||

@@ -1115,6 +1115,8 @@ mapInitialisationHooks = [];
                     } else {
                       alert(div.settings.msgSrefOutsideGrid);
                     }
+                  } else if(data.error == 'The spatial reference system is not set.') {
+                      alert(div.settings.msgSrefSystemNotSet);                    
                   } else
                     alert(data.error);
                 else
@@ -1302,6 +1304,7 @@ $.fn.indiciaMapPanel.defaults = {
     msgGetInfoNothingFound: 'No occurrences were found at the location you clicked.',
     msgSrefOutsideGrid: 'The position is outside the range of the selected grid reference system.',
     msgSrefNotRecognised: 'The grid reference is not recognised.',
+    msgSrefSystemNotSet: 'The spatial reference system is not set.',
     msgReplaceBoundary: 'Would you like to replace the existing boundary with the new one?',
     maxZoom: 19, //maximum zoom when relocating to gridref, postcode etc.
     maxZoomBuffer: 0.67, //margin around feature when relocating to gridref
