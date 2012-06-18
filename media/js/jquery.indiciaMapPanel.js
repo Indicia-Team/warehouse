@@ -1139,16 +1139,20 @@ mapGeoreferenceHooks = [];
             clickOnMap(e.xy, div, function(data)
               {
                 if(typeof data.error != 'undefined') {
-                  // We can switch to lat long if the system is available for selection
-                  var system=$('#'+opts.srefSystemId+' option[value=4326]');
-                  if (system.length===1) {
-                    var lonlat=div.map.getLonLatFromPixel(e.xy);
-                    $('#'+opts.srefSystemId).val('4326');
-                    pointToSref(div, new OpenLayers.Geometry.Point(lonlat.lon, lonlat.lat), '4326', function(data) {
-                      _setClickPoint(data, div); // data sref in 4326, wkt in indiciaProjection, mapwkt in mapProjection
-                    });
+                  if(data.error == 'The spatial reference system is not set.') {
+                      alert(div.settings.msgSrefSystemNotSet);                    
                   } else {
-                    alert(div.settings.msgSrefOutsideGrid);
+                    // We can switch to lat long if the system is available for selection
+                    var system=$('#'+opts.srefSystemId+' option[value=4326]');
+                    if (system.length===1) {
+                      var lonlat=div.map.getLonLatFromPixel(e.xy);
+                      $('#'+opts.srefSystemId).val('4326');
+                      pointToSref(div, new OpenLayers.Geometry.Point(lonlat.lon, lonlat.lat), '4326', function(data) {
+                        _setClickPoint(data, div); // data sref in 4326, wkt in indiciaProjection, mapwkt in mapProjection
+                      });
+                    } else {
+                      alert(div.settings.msgSrefOutsideGrid);
+                    }
                   }
                 }  
                 else
@@ -1348,6 +1352,7 @@ $.fn.indiciaMapPanel.defaults = {
     msgGetInfoNothingFound: 'No occurrences were found at the location you clicked.',
     msgSrefOutsideGrid: 'The position is outside the range of the selected grid reference system.',
     msgSrefNotRecognised: 'The grid reference is not recognised.',
+    msgSrefSystemNotSet: 'The spatial reference system is not set.',
     msgReplaceBoundary: 'Would you like to replace the existing boundary with the new one?',
     maxZoom: 19, //maximum zoom when relocating to gridref, postcode etc.
     maxZoomBuffer: 0.67, //margin around feature when relocating to gridref
