@@ -1937,6 +1937,7 @@ class iform_wwt_colour_marked_report {
 
     // output the species selection control
     $options['blankText'] = '<Please select>';
+    $options['lockable'] = $options['identifiers_lockable'];
     if ($args['species_ctrl']=='autocomplete') {
       $temp = data_entry_helper::$javascript;
     }
@@ -1951,6 +1952,8 @@ class iform_wwt_colour_marked_report {
     } else {
       $autoJavascript = '';
     }
+    unset($options['lockable']);
+    
     // gender
     if ($options['genderId'] > 0
       && !empty($args['request_gender_values'])

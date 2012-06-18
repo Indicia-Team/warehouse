@@ -590,8 +590,6 @@
       var fromSelector = '#'+esc4jq($('.individual_panel').filter(':last').attr('id'));
       $('#idn\\:subject\\:accordion').append(newInd);
       var toSelector = '#'+esc4jq($('.individual_panel').filter(':last').attr('id'));
-      // initialise new individual and identifier controls
-      initIndividuals('#idn\\:'+subjectCount+'\\:individual\\:panel');
       // hide remove buttons if only one bird or for birds which exist on database
       setRemoveButtonDisplay();
       // initialise new javascript dependent controls
@@ -601,6 +599,8 @@
       if (indicia.locks.copyLocks!=='undefined') {
         indicia.locks.copyLocks(fromSelector, toSelector);
       }
+      // initialise new individual and identifier controls
+      initIndividuals('#idn\\:'+subjectCount+'\\:individual\\:panel');
       // reactivate subject accordion, if used
       if (subjectAccordion) {
         $('.idn-subject-accordion').accordion('destroy').accordion({'active':indCount});
