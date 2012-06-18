@@ -1406,7 +1406,9 @@ indiciaData.windowLoaded=false;
       if (!self::$using_locking) {
         self::$using_locking = true;
         $options['lock_form_mode'] = self::$form_mode ? self::$form_mode : 'NEW';
-        self::$javascript .= self::apply_replacements_to_template($indicia_templates['lock_javascript'], $options);
+        // self::$javascript .= self::apply_replacements_to_template($indicia_templates['lock_javascript'], $options);
+        // write lock javascript at the start of the late javascript so after control setup but before any other late javascript
+        self::$late_javascript = self::apply_replacements_to_template($indicia_templates['lock_javascript'], $options).self::$late_javascript;
         self::add_resource('indicia_locks');
       }
     }
