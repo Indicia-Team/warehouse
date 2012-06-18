@@ -313,7 +313,7 @@ class report_helper extends helper_base {
             continue; // skip this column as marked invisible
           // allow the display caption to be overriden in the column specification
           $caption = lang::get(empty($field['display']) ? $field['fieldname'] : $field['display']);
-          if (isset($field['fieldname']) && !isset($field['img']) || $field['img']!='true') {
+          if (isset($field['fieldname']) && !(isset($field['img']) && $field['img']=='true')) {
             if (empty($field['orderby'])) $field['orderby']=$field['fieldname'];
             $sortLink = $sortUrl.$sortAndPageUrlParams['orderby']['name'].'='.$field['orderby'];
             // reverse sort order if already sorted by this field in ascending dir
