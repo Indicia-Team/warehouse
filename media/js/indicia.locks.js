@@ -249,7 +249,7 @@
     return $('#' + escControlId).hasClass('ui-state-error');
   };
 
-  var setControlValue = function(controlId, value) {
+  var setControlValue = function(controlId, value, caption) {
     // may need to do something more for certain controls, but this works for
     // text input, and also for textarea and select (I don't know why).
     var escControlId = esc4jq(controlId);
@@ -284,8 +284,8 @@
       }
     }
     // for autocomplete
-    if (hasCaption(controlId)) {
-      $('input[id*=' + escControlId + '\\:]').val(getLockedCaption(controlId))
+    if (caption) {
+      $('input[id*=' + escControlId + '\\:]').val(caption)
           .change().blur();
     }
   };
@@ -294,25 +294,25 @@
     var escId = esc4jq(id);
     var escControlId = escId.replace('_lock', '');
     var control$ = $('#' + escControlId);
-    if (control$.length==0) {
+    if (control$.length===0) {
       control$ = $('input[name^=' + escControlId + ']');
     }
     if ($('#' + escId).hasClass('locked-icon')) {
       control$.attr('readonly', 'readonly').attr('disabled', 'disabled').addClass('locked-control');
-      if (typeof $.datepicker!=="undefined") {
+      if (typeof $.fn.datepicker!=="undefined") {
         control$.filter('.hasDatepicker').datepicker('disable');
       }
-      if (typeof $.autocomplete!=="undefined") {
+      if (typeof $.fn.autocomplete!=="undefined") {
         $('input[id*=' + escControlId + '\\:]').filter(
             '.ac_input, .ui-autocomplete').attr('readonly', 'readonly').attr(
             'disabled', 'disabled').addClass('locked-control');
       }
     } else {
       control$.removeAttr('readonly').removeAttr('disabled').removeClass('locked-control');
-      if (typeof $.datepicker!=="undefined") {
+      if (typeof $.fn.datepicker!=="undefined") {
         control$.filter('.hasDatepicker').datepicker('enable');
       }
-      if (typeof $.autocomplete!=="undefined") {
+      if (typeof $.fn.autocomplete!=="undefined") {
         $('input[id*=' + escControlId + '\\:]').filter(
             '.ac_input, .ui-autocomplete').removeAttr('readonly').removeAttr(
             'disabled').removeClass('locked-control');
@@ -344,7 +344,7 @@
       } else {
         // set to locked value
         $('#' + escId).addClass('locked-icon');
-        setControlValue(controlId, getLockedValue(controlId));
+        setControlValue(controlId, getLockedValue(controlId), getLockedCaption(controlId));
       }
     } else {
       // lock is open and don't set value
@@ -377,7 +377,7 @@
             var fromControlId = fromLock$[i].id.replace('_lock', '');
             var toControlId = toLock$[i].id.replace('_lock', '');
             // copy value
-            setControlValue(toControlId, getLockedValue(fromControlId));
+            setControlValue(toControlId, getLockedValue(fromControlId), getLockedCaption(fromControlId));
             // set lock values in cookie
             lockControl(toControlId);
           }
