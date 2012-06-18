@@ -42,6 +42,7 @@
     ttl.id as taxa_taxon_list_id,
     tpref.taxon,
     tcommon.taxon as common,
+    coalesce(tcommon.taxon, tpref.taxon) as species,
     tg.title as taxon_group,
     st_astext(s.geom) as geom,
     CASE
@@ -75,8 +76,9 @@
     <column name='path' display='Photo' img='true' />
     <column name='caption' display='Caption' />
     <column name='sample_id' visible='false' />
-    <column name='taxon' display='Species' />
-    <column name='common' display='Common' />
+    <column name='taxon' display='Preferred Name' />
+    <column name='common' display='Common Name' />
+    <column name='species' display='Species' visible="false" />
     <column name='taxa_taxon_list_id' visible='false' />
     <column name='taxon_group' display='Taxon Group' />
     <column name='location_name' display='Site name' />
