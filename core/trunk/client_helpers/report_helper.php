@@ -313,14 +313,13 @@ class report_helper extends helper_base {
             continue; // skip this column as marked invisible
           // allow the display caption to be overriden in the column specification
           $caption = lang::get(empty($field['display']) ? $field['fieldname'] : $field['display']);
-          if (isset($field['fieldname'])) {
+          if (isset($field['fieldname']) && !isset($field['img']) || $field['img']!='true') {
             if (empty($field['orderby'])) $field['orderby']=$field['fieldname'];
             $sortLink = $sortUrl.$sortAndPageUrlParams['orderby']['name'].'='.$field['orderby'];
             // reverse sort order if already sorted by this field in ascending dir
             if ($sortAndPageUrlParams['orderby']['value']==$field['orderby'] && $sortAndPageUrlParams['sortdir']['value']!='DESC')
               $sortLink .= '&'.$sortAndPageUrlParams['sortdir']['name']."=DESC";
-            if (!isset($field['img']) || $field['img']!='true')
-              $captionLink = "<a href=\"$sortLink\" rel=\"nofollow\" title=\"Sort by $caption\">$caption</a>";
+            $captionLink = "<a href=\"$sortLink\" rel=\"nofollow\" title=\"Sort by $caption\">$caption</a>";
             // set a style for the sort order
             $orderStyle = ($sortAndPageUrlParams['orderby']['value']==$field['orderby']) ? ' '.$sortdirval : '';
             $orderStyle .= ' sortable';
