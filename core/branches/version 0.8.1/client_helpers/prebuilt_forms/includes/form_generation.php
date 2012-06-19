@@ -179,11 +179,12 @@ function extract_cms_user_attr(&$attributes, $unset=true) {
  *   copyFromProfile - boolean indicating if values should be copied from the profile when the names match
  *   nameShow - boolean, if true then name values should be displayed rather than hidden
  *   emailShow - boolean, if true then email values should be displayed rather than hidden.
- * @param string $mode Pass MODE_EXISTING for existing data, to avoid overwriting the creator of the record's details
+ * @param boolean $exists Pass true for an existing record. If the record exists, then the attributes
+ *   are marked as handled but are not output to avoid overwriting metadata about the original creator of the record.
  * @param array $readAuth Read authorisation tokens.
  * @return string HTML for the hidden inputs.
  */
-function get_user_profile_hidden_inputs(&$attributes, $args, $mode, $readAuth) {
+function get_user_profile_hidden_inputs(&$attributes, $args, $exists, $readAuth) {
   // This is Drupal specific code, so degrade gracefully.
   if (!function_exists('profile_load_all_profile'))
     return '';
@@ -242,8 +243,9 @@ function get_user_profile_hidden_inputs(&$attributes, $args, $mode, $readAuth) {
       }
     }
     // If we have a value for one of the user login attributes then we need to output this value. BUT, for existing data
-    // we must not overwrite the user who created the record.
-    if (isset($attribute['value']) && $mode != MODE_EXISTING) {
+    // we must not overwrite the user who created the record. Note that we don't do this at the beginning of the method
+    // as we still wanted to mark the attributes as handled.
+    if (isset($attribute['value']) && !$exists) {
       $hiddens .= '<input type="hidden" name="'.$attribute['fieldname'].'" value="'.$attribute['value'].'" />'."\n";
     }
   }
