@@ -1300,15 +1300,18 @@ indiciaData.windowLoaded=false;
       global $indicia_templates;
       self::$javascript .= "$('#".self::$validated_form_id."').validate({
         errorClass: \"".$indicia_templates['error_class']."\",
-        ". (in_array('inline', self::$validation_mode) ? "\n      " : "errorElement: 'p',\n      ").
-        "highlight: function(element, errorClass) {
+        ". (in_array('inline', self::$validation_mode) ? "" : "errorElement: 'p',") ."
+        highlight: function(element, errorClass) {
           $(element).addClass('ui-state-error');
         },
         unhighlight: function(element, errorClass) {
           $(element).removeClass('ui-state-error');
         },
         invalidHandler: ".$indicia_templates['invalid_handler_javascript'].",
-        messages: ".json_encode(self::$validation_messages)."
+        messages: ".json_encode(self::$validation_messages) .
+        // Do not place errors if 'message' not in validation_mode
+        (in_array('message', self::$validation_mode) ? "" : ",
+        errorPlacement: function(error, element) {}") ."
       });\n";
     }
   }
