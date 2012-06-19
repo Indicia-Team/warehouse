@@ -3485,43 +3485,59 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         // browser scroll bar is too long making it possible to load the bottom blank part of the page if the user accidentally
       // drags the scroll bar while the page is loading.
       self::$javascript .= "\nscroll(0,0);";
-      self::$javascript .= "\n$('.tab-submit').click(function() {\n";
-      self::$javascript .= "  var current=$('#$divId').tabs('option', 'selected');\n";
-      // Use a selector to find the inputs and selects on the current tab and validate them.
-      if (isset(self::$validated_form_id)) {
-        self::$javascript .= "  var tabinputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select,textarea').not(':disabled');\n";
-        self::$javascript .= "  if (tabinputs.length>0 && !tabinputs.valid()) {\n";
-        self::$javascript .= "    return;";
-        self::$javascript .= "  }\n";
-      }
-      // If all is well, submit.
-      self::$javascript .= "      var form = $(this).parents('form:first');
+
+      // Client-side validation only works on active tabs so validate on tab change
+      if (array_key_exists('style', $options) && $options['style']=='wizard') {
+        //Add javascript for moving through wizard
+        self::$javascript .= "\n$('.tab-submit').click(function() {\n";
+        self::$javascript .= "  var current=$('#$divId').tabs('option', 'selected');\n";
+        // Use a selector to find the inputs and selects on the current tab and validate them.
+        if (isset(self::$validated_form_id)) {
+          self::$javascript .= "  var tabinputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select,textarea').not(':disabled');\n";
+          self::$javascript .= "  if (tabinputs.length>0 && !tabinputs.valid()) {\n";
+          self::$javascript .= "    return;";
+          self::$javascript .= "  }\n";
+        }
+        // If all is well, submit.
+        self::$javascript .= "      var form = $(this).parents('form:first');
         form.submit();
       });";
-      self::$javascript .= "\n$('.tab-next').click(function() {\n";
-      self::$javascript .= "  var current=$('#$divId').tabs('option', 'selected');\n";
-      // Use a selector to find the inputs and selects on the current tab and validate them.
-      if (isset(self::$validated_form_id)) {
-        self::$javascript .= "  var tabinputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select').not(':disabled');\n";
-        self::$javascript .= "  if (!tabinputs.valid()) {\n";
-        self::$javascript .= "    alert('".lang::get('Before going to the next step, some of the values in the input boxes on this step need checking. '.
-                'They have been highlighted on the form for you.')."')\n";
-        self::$javascript .= "    return;\n";
-        self::$javascript .= "  }\n";
-      }
-      // If all is well, move to the next tab. Note the code detects if the top of the tabset is not visible, if so
-      // it forces it into view. This helps a lot when the tabs vary in height.
-      self::$javascript .= "  var a = $('ul.ui-tabs-nav a')[current+1];
+        self::$javascript .= "\n$('.tab-next').click(function() {\n";
+        self::$javascript .= "  var current=$('#$divId').tabs('option', 'selected');\n";
+        // Use a selector to find the inputs and selects on the current tab and validate them.
+        if (isset(self::$validated_form_id)) {
+          self::$javascript .= "  var tabinputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select').not(':disabled');\n";
+          self::$javascript .= "  if (!tabinputs.valid()) {\n";
+          self::$javascript .= "    alert('".lang::get('Before going to the next step, some of the values in the input boxes on this step need checking. '.
+                  'They have been highlighted on the form for you.')."')\n";
+          self::$javascript .= "    return;\n";
+          self::$javascript .= "  }\n";
+        }
+        // If all is well, move to the next tab. Note the code detects if the top of the tabset is not visible, if so
+        // it forces it into view. This helps a lot when the tabs vary in height.
+        self::$javascript .= "  var a = $('ul.ui-tabs-nav a')[current+1];
   $(a).click();
   scrollTopIntoView('$topSelector');
 });";
 
-      self::$javascript .= "\n$('.tab-prev').click(function() {
+        self::$javascript .= "\n$('.tab-prev').click(function() {
   var current=$('#$divId').tabs('option', 'selected');
   var a = $('ul.ui-tabs-nav a')[current-1];
   $(a).click();
   scrollTopIntoView('$topSelector');
 });\n";
+      } else {
+        //Add javascript for changing tabs
+        if (isset(self::$validated_form_id)) {
+          self::$javascript .= "\n
+$('#$divId').tabs({
+  select: function(event, ui) {
+    var isValid = $('#". self::$validated_form_id ."').valid();
+    return isValid;
+  }
+});\n";
+        }
+      }
 
       // We put this javascript into $late_javascript so that it can come after the other controls.
       // This prevents some obscure bugs - e.g. OpenLayers maps cannot be centered properly on hidden
