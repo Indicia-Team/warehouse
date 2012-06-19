@@ -3361,10 +3361,15 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     // Only do anything if the id of the div to be tabified is specified
     if (array_key_exists('divId', $options)) {
       $divId = $options['divId'];
+      
       // Scroll to the top of the page. This may be required if subsequent tab pages are longer than the first one, meaning the
         // browser scroll bar is too long making it possible to load the bottom blank part of the page if the user accidentally
       // drags the scroll bar while the page is loading.
       self::$javascript .= "\nscroll(0,0);";
+
+      // Client-side validation only works on active tabs so validate on tab change
+      if (array_key_exists('style', $options) && $options['style']=='wizard') {
+        //Add javascript for moving through wizard
       self::$javascript .= "\n$('.tab-submit').click(function() {\n";
       self::$javascript .= "  var current=$('#$divId').tabs('option', 'selected');\n";
       // Use a selector to find the inputs and selects on the current tab and validate them.
@@ -3400,6 +3405,18 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   $(a).click();
   scrollTopIntoView('$topSelector');
 });\n";
+      } else {
+        //Add javascript for changing tabs
+        if (isset(self::$validated_form_id)) {
+          self::$javascript .= "\n
+$('#$divId').tabs({
+  select: function(event, ui) {
+    var isValid = $('#". self::$validated_form_id ."').valid();
+    return isValid;
+  }
+});\n";
+        }
+      }
 
       // We put this javascript into $late_javascript so that it can come after the other controls.
       // This prevents some obscure bugs - e.g. OpenLayers maps cannot be centered properly on hidden
