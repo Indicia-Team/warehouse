@@ -275,7 +275,7 @@ This page allows you to specify the details of a location.
 </div>
 <?php 
 endif;
-echo html::form_buttons(html::initial_value($values, 'location:id')!=null);
+echo html::form_buttons(html::initial_value($values, 'location:id')!=null, $disabled_input==='YES');
 data_entry_helper::$dumped_resources[] = 'jquery';
 data_entry_helper::$dumped_resources[] = 'jquery_ui';
 data_entry_helper::$dumped_resources[] = 'fancybox';
