@@ -3533,7 +3533,20 @@ $('div#$escaped_divId').indiciaTreeBrowser({
           self::$javascript .= "\n
 $('#$divId').tabs({
   select: function(event, ui) {
+    var isValid;
+    var prev = $(this).tabs('option', 'selected'); 
+    var panel = $('.ui-tabs-panel', this).eq(prev);
+    if ($('.species-grid', panel).length != 0) {
+      //leaving a panel with a species table so hide the clonable row to prevent trying to validate it.
+      var clonableRow = $('.species-grid .scClonableRow');            
+      var display = clonableRow.css('display');
+      clonableRow.css('display', 'none');
+      isValid = $('#". self::$validated_form_id ."').valid();
+      //restore the clonable row
+      clonableRow.css('display', display);
+    } else {
     var isValid = $('#". self::$validated_form_id ."').valid();
+    }
     return isValid;
   }
 });\n";
