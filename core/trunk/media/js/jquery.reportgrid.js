@@ -285,7 +285,7 @@ function simple_tooltip(target_items, name){
       $.getJSON(request,
           null,
           function(response) {
-            var tbody = $(div).find('tbody'), row, rows, rowclass='', hasMore=false, 
+            var tbody = $(div).find('tbody'), row, rows, rowclass, rowclasses, hasMore=false, 
                 value, rowInProgress=false, rowOutput, rowId, features=[],
                 feature, geom, map, valueData;
             // if we get a count back, then update the stored count
@@ -306,6 +306,15 @@ function simple_tooltip(target_items, name){
             rowTitle = (div.settings.rowId && div.settings.linkFeatures && typeof indiciaData.reportlayer!=="undefined") ?
               ' title="'+div.settings.msgRowLinkedToMapHint+'"' : '';
             $.each(rows, function(rowidx, row) {
+              if (div.settings.rowClass!=='') {
+                rowclasses=[mergeParamsIntoTemplate(div, row, div.settings.rowClass)];
+              } else {
+                rowclasses=[];
+              }
+              if (div.settings.altRowClass!=='' && rowidx%2===0) {
+                rowclasses[] = div.settings.altRowClass;
+              }
+              rowclass = (rowclasses.length>0) ? 'class="' + rowclasses.join(' ') + '" ' : '';
               // We asked for one too many rows. If we got it, then we can add a next page button
               if (div.settings.itemsPerPage !== null && rowidx>=div.settings.itemsPerPage) {
                 hasMore = true;
@@ -357,7 +366,6 @@ function simple_tooltip(target_items, name){
                   rowOutput += '</tr>';
                   tbody.append(rowOutput);
                   rowInProgress=false;
-                  rowclass = (rowclass==='' ? ' class="'+div.settings.altRowClass + '"' : '');
                 }
               }
             });
@@ -626,6 +634,7 @@ $.fn.reportgrid.defaults = {
   sortdir : 'ASC',
   itemsPerPage : null,
   offset : 0,
+  rowClass : '', // template for the output row class
   altRowClass : 'odd',
   rowId: '',
   imageFolder : '',
