@@ -1247,10 +1247,32 @@ indiciaData.windowLoaded=false;
         errorClass: \"".$indicia_templates['error_class']."\",
         ". (in_array('inline', self::$validation_mode) ? "" : "errorElement: 'p',") ."
         highlight: function(element, errorClass) {
-          $(element).addClass('ui-state-error');
+          var jqElement = $(element);
+          if (jqElement.is(':radio') || jqElement.is(':checkbox')) {
+            //if the element is a radio or checkbox group then highlight the group
+            var jqBox = jqElement.parents('.control-box');
+            if (jqBox.length != 0) {
+              jqBox.eq(0).addClass('ui-state-error');
+            } else {
+              jqElement.addClass('ui-state-error');
+            }
+          } else {
+            jqElement.addClass('ui-state-error');
+          }
         },
         unhighlight: function(element, errorClass) {
-          $(element).removeClass('ui-state-error');
+          var jqElement = $(element);
+          if (jqElement.is(':radio') || jqElement.is(':checkbox')) {
+            //if the element is a radio or checkbox group then highlight the group
+            var jqBox = jqElement.parents('.control-box');
+            if (jqBox.length != 0) {
+              jqBox.eq(0).removeClass('ui-state-error');
+            } else {
+              jqElement.removeClass('ui-state-error');
+            }
+          } else {
+            jqElement.removeClass('ui-state-error');
+          }
         },
         invalidHandler: function(form, validator) {
           var tabselected=false;
