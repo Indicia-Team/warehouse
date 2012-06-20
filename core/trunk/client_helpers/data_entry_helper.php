@@ -508,7 +508,8 @@ class data_entry_helper extends helper_base {
         }
       }
       if ($options['showButton']) {
-        $imgPath = preg_replace('/client_helpers\/$/', '', self::relative_client_helper_path()).'media/images/nuvola/date-16px.png';
+        $imgPath = empty(self::$images_path) ? self::relative_client_helper_path()."../media/images/" : self::$images_path;
+        $imgPath .= 'nuvola/date-16px.png';
         if ($options['buttonText']) {
           $buttonText = $options['buttonText'];
         } else {
@@ -2221,7 +2222,7 @@ $('#".$options['id']."-filter').click(function(evt) {
         $speciesColTitle = lang::get('species_checklist.species');
         if ($options['userControlsTaxonFilter'] && !empty($options['lookupListId'])) {
           global $indicia_templates;
-          $imgPath = empty(self::$images_path) ? self::relative_client_helper_path()."../media/images" : self::$images_path;
+          $imgPath = empty(self::$images_path) ? self::relative_client_helper_path()."../media/images/" : self::$images_path;
           $speciesColTitle .= '<button type="button" id="'.$options['id'].'-filter" class="default-button"><img src="'.
               $imgPath.'/filter.png" alt="'.lang::get('Filter').'" style="vertical-align: middle" title="'.
               lang::get('Filter the list of species you can search').'" width="16" height="16"/></button>';
@@ -2576,7 +2577,7 @@ $('#".$options['id']."-filter').click(function(evt) {
     ), $options);
     self::add_resource('timeentry');
     $steps = implode(', ', $options['timeSteps']);
-    $imgPath = empty(self::$images_path) ? self::relative_client_helper_path()."../media/images" : self::$images_path;
+    $imgPath = empty(self::$images_path) ? self::relative_client_helper_path()."../media/images/" : self::$images_path;
     // build a list of options to pass through to the jQuery widget
     $jsOpts = array(
       "timeSteps: [$steps]",
@@ -4439,9 +4440,10 @@ if (errors.length>0) {
   }
 
   /**
-  * Helper function to output an attribute
+  * Helper function to output an attribute.
   *
-  * @param array $item Attribute definition as returned by a call to getAttributes.
+  * @param array $item Attribute definition as returned by a call to getAttributes. The caption of the attribute
+  * will be translated then output as the label.
   * @param array $options Additional options for the attribute to be output. Array entries can be:
   *    disabled
   *    suffixTemplate
@@ -4465,7 +4467,7 @@ if (errors.length>0) {
         'id'=>$item['id'],
         'disabled'=>'');
     if (isset($item['caption']))
-      $attrOptions['label']=$item['caption'];
+      $attrOptions['label']=lang::get($item['caption']);
     $attrOptions = array_merge($attrOptions, $options);
     // build validation rule classes from the attribute data
     if (isset($item['validation_rules'])) {
