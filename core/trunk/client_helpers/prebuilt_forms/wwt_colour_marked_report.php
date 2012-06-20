@@ -1776,7 +1776,7 @@ class iform_wwt_colour_marked_report {
       $attrOpts['sample_method_id']=$args['sample_method_id'];
     $attributes = data_entry_helper::getAttributes($attrOpts, false);
     // load values from profile. This is Drupal specific code, so degrade gracefully.
-    if (function_exists('profile_load_all_profile')) {
+    if (function_exists('profile_load_profile')) {
       global $user;
       profile_load_all_profile($user);
       foreach($attributes as &$attribute) {
@@ -2369,9 +2369,16 @@ class iform_wwt_colour_marked_report {
           ), $options));
           break;
         case 'H':
+          // Any multi-value attributes shown as hidden will be single-valued
+          // so transform the array to a scalar
+          $fieldname = $fieldPrefix.'idnAttr:'.$attrType['id'];
+          if (!empty(data_entry_helper::$entity_to_load[$fieldname])
+            && is_array(data_entry_helper::$entity_to_load[$fieldname])) {
+            data_entry_helper::$entity_to_load[$fieldname]
+              = data_entry_helper::$entity_to_load[$fieldname][0];
+          }
           $r .= data_entry_helper::hidden_text(array_merge(array(
-            'label' => lang::get($attrType['caption']),
-            'fieldname' => $fieldPrefix.'idnAttr:'.$attrType['id'],
+            'fieldname' => $fieldname,
             'default' => $dataDefault,
           ), $options));
           break;
