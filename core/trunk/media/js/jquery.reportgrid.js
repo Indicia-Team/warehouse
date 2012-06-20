@@ -312,7 +312,7 @@ function simple_tooltip(target_items, name){
                 rowclasses=[];
               }
               if (div.settings.altRowClass!=='' && rowidx%2===0) {
-                rowclasses[] = div.settings.altRowClass;
+                rowclasses.push(div.settings.altRowClass);
               }
               rowclass = (rowclasses.length>0) ? 'class="' + rowclasses.join(' ') + '" ' : '';
               // We asked for one too many rows. If we got it, then we can add a next page button
