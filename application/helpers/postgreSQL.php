@@ -69,7 +69,7 @@ class postgreSQL {
       oc.comment,
       'The record was ' || case o.record_status when 'V' then 'verified' when 'R' then 'rejected' when 'D' then 'marked dubious' when 'S' then 'emailed for checking' end
     ) as comment, 
-    null as auto_generated, o.record_status, o.updated_on
+    oc.auto_generated, o.record_status, o.updated_on
 from occurrences o
 join cache_occurrences co on co.id=o.id
 left join occurrence_comments oc on oc.occurrence_id=o.id and oc.deleted=false and oc.created_on>'$last_run_date'
