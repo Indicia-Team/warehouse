@@ -41,6 +41,7 @@ class Verification_rule_metadatum_Model extends ORM {
     $array->add_rules('key', 'required');
     $array->add_rules('value', 'required');
     $array->add_rules('verification_rule_id', 'required');
+    $this->unvalidatedFields = array('deleted');
     return parent::validate($array, $save);
   }
 

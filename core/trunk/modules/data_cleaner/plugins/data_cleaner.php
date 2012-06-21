@@ -24,7 +24,7 @@ function data_cleaner_extend_data_services() {
  */
 function data_cleaner_scheduled_task() {
   $db = new Database();
-  $rules = data_cleaner_get_rules();
+  $rules = data_cleaner::get_rules();
   $count = data_cleaner_get_occurrence_list($db);
   try {
     if ($count>0) {
@@ -36,34 +36,6 @@ function data_cleaner_scheduled_task() {
   } catch (Exception $e) {
     $db->query('drop table occlist');
   }
-}
-
-/**
- * Build a list of all the rules that are exposed by enabled data cleaner rule modules.
- * @return array List of rules
- */
-function data_cleaner_get_rules() {
-  $cacheId = 'data-cleaner-rules';
-  $cache = Cache::instance();
-  // use cached rules if available
-  if (!($rules = $cache->get($cacheId))) {
-    // need to build the set of rules from plugin modules
-    $rules = array();
-    foreach (Kohana::config('config.modules') as $path) {
-      $plugin = basename($path);
-      if (file_exists("$path/plugins/$plugin.php")) {
-        require_once("$path/plugins/$plugin.php");
-        if (function_exists($plugin.'_data_cleaner_rules')) {
-          $pluginRules = call_user_func($plugin.'_data_cleaner_rules');
-          // mark each rule with the plugin name that generated it.
-          $pluginRules['plugin'] = $plugin;
-          $rules[] = $pluginRules;
-        }
-      }
-    }
-    $cache->set($cacheId, $rules);
-  }
-  return $rules;
 }
 
 /**

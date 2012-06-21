@@ -20,6 +20,8 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
+require_once(DOCROOT.'client_helpers/helper_base.php');
+
 /**
  * Controller class for the data cleaner plugin module.
  */
@@ -48,6 +50,56 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
   }
   
   /**
+   * Returns an array of all values from this model ready to be loaded into a form. 
+   * For this controller, we need to also setup text for the "other data" section.
+   */
+  protected function getModelValues() {
+    $r = parent::getModelValues();
+    $r['metaFields:metadata'] = $this->get_metadata_as_text();
+    $r['metaFields:data'] = $this->get_data_as_text();
+    return $r;
+  }
+  
+  private function get_metadata_as_text() {
+    if ($this->model->id) {
+      $items = $this->db->select('key, value')
+        ->from('verification_rule_metadata')
+        ->where(array('verification_rule_id'=>$this->model->id, 'deleted'=>'f'))
+        ->orderby(array('id'=>'ASC'))
+        ->get()->result();
+      $outputs=array();
+      foreach ($items as $item) {
+        $outputs[] = $item->key.'='.$item->value;
+      }
+      $r = implode("\n",$outputs);
+      return $r;
+    } else
+      return '';
+  }
+  
+  private function get_data_as_text() {
+    $currentHeader = '';
+    if ($this->model->id) {
+      $items = $this->db->select('header_name, data_group, key, value')
+        ->from('verification_rule_data')
+        ->where(array('verification_rule_id'=>$this->model->id, 'deleted'=>'f'))
+        ->orderby(array('data_group'=>'ASC', 'id'=>'ASC'))
+        ->get()->result();
+      $outputs=array();
+      foreach ($items as $item) {
+        if ($item->header_name!==$currentHeader) {
+          $outputs[] = '['.$item->header_name.']';
+          $currentHeader = $item->header_name;
+        }
+        $outputs[] = $item->key.'='.$item->value;
+      }
+      $r = implode("\n",$outputs);
+      return $r;
+    } else
+      return '';
+  }
+  
+  /**
    * Returns the list of servers from the remote server configuration file.
    * @return type 
    */
@@ -62,7 +114,7 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
       return array();
     }
     
-    foreach($this->safe_explode_lines($response) as $line) {
+    foreach(helper_base::explode_lines($response) as $line) {
       $tokens = explode('#', $line);
       $r[] = array(
         'file' => $tokens[0],
@@ -140,7 +192,7 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
         $idx = substr($key, 4);
         $session = curl_init($serverList[$idx]['file']);
         curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-        foreach($this->safe_explode_lines(curl_exec($session)) as $line) {
+        foreach(helper_base::explode_lines(curl_exec($session)) as $line) {
           $tokens = explode('#', $line);
           $files[] = array(
             'file' => $tokens[0],
@@ -275,7 +327,7 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
       throw new exception("Could not open file $filepath");
     }
     $filecontent = fread($resource,1000000);
-    $settings = $this->parse_test_file($filecontent, true);
+    $settings = data_cleaner::parse_test_file($filecontent);
     $this->read_rule_content($settings, basename($filepath), $cacheArr['files'][$_GET['totaldone']]['source_url']);
     return $cacheArr['files'][$totaldone]['display'];
   }
@@ -310,200 +362,29 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
     if (!isset($rulesettings['metadata']['testtype']))
       throw new exception("Missing Metadata TestType value in $filename");
     require_once(MODPATH.'data_cleaner/plugins/data_cleaner.php');
-    $rules = data_cleaner_get_rules();
+    
+    $currentRule = data_cleaner::get_rule($rulesettings['metadata']['testtype']);
     // Ensure that the required key/value pairs for this rule type are all present.
-    foreach ($rules as $rule) {
-      if (strcasecmp($rule['testType'], $rulesettings['metadata']['testtype'])===0) {
-        $currentRule = $rule;
-        // found a rule plugin which understands this rule test type. What does it require?
-        if (isset($rule['required']))
-          foreach($rule['required'] as $category=>$keys) {
-            foreach($keys as $key) {
-              // every key must exist. A * key means that anything is accepted.
-              if ($key='*') {
-                if (!isset($rulesettings[$category]))
-                  throw new exception("Missing content for $category section in $filename");
-              } elseif (!isset($rulesettings[$category][$key]))
-                throw new exception("Missing $category $key value in $filename");
-            }
-          }
-        $found = true;
-        break;
-      } 
-    }
-    if (!isset($currentRule))
-      throw new exception ('Test type '.$rulesettings['metadata']['testtype']. ' not found');
-    if (!isset($currentRule['required']))
-      $currentRule['required']=array();
-    if (!isset($currentRule['optional']))
-      $currentRule['optional']=array();
-    // find existing or new verification rule record
-    $vr = ORM::Factory('verification_rule')->where(array('source_url'=>$source_url, 'source_filename'=>$filename))->find();
-    if (isset($rulesettings['metadata']['shortname']))
-      $title = $rulesettings['metadata']['shortname'];
-    else {
-      // no short name in the rule, so build a valid title
-      $titleArr=array($rulesettings['metadata']['testtype']);
-      if (isset($rulesettings['metadata']['organisation']))
-        $titleArr[] = $rulesettings['metadata']['Oorganisation'];
-      $title = implode(' - ', $titleArr);
-    }
-    if (isset($rulesettings['metadata']['errormsg']))
-      $errorMsg = $rulesettings['metadata']['errormsg'];
-    else
-      $errorMsg = 'Test failed';
-    $submission = array(
-      'verification_rule:title'=>$title,
-      'verification_rule:test_type'=>$rulesettings['metadata']['testtype'],
-      'verification_rule:source_url'=>$source_url,
-      'verification_rule:source_filename'=>$filename,
-      'verification_rule:error_message'=>$errorMsg,
-      // The error message gives us a useful description in the absence of a specific one
-      'verification_rule:description'=>isset($rulesettings['metadata']['description']) ?
-          $rulesettings['metadata']['description'] : $errorMsg
-    );
-    $newRule = $vr->id===0;
-    if (!$newRule)
-      $submission['verification_rule:id']=$vr->id;
-    $vr->set_submission_data($submission);
-    $vr->submit();
-    if (count($vr->getAllErrors())>0)
-      throw new exception("Errors saving $filename to database - ".print_r($vr->getAllErrors(), true));
-    // work out the other fields to submit
-    $fields = array_merge_recursive($currentRule['required'], $currentRule['optional']);
-    if (isset($fields['Metadata'])) {
-      foreach ($fields['Metadata'] as $field) {
-        if (isset($rulesettings['metadata'][strtolower($field)])) {
-          $vrm = ORM::Factory('verification_rule_metadatum')->where(array(
-              'verification_rule_id'=>$vr->id, 'key'=>$field
-          ))->find();
-          $submission=array(
-            'verification_rule_metadatum:key'=>$field,
-            'verification_rule_metadatum:value'=>$rulesettings['metadata'][strtolower($field)],
-            'verification_rule_metadatum:verification_rule_id'=>$vr->id
-          );
-          if ($vrm->id!==0)
-            $submission['verification_rule_metadatum:id']=$vrm->id;
-          $vrm->set_submission_data($submission);
-          $vrm->submit();
-          if (count($vrm->getAllErrors())>0)
-            throw new exception("Errors saving $filename to database - ".print_r($vrm->getAllErrors(), true));
-        }
+    foreach($currentRule['required'] as $category=>$keys) {
+      foreach($keys as $key) {
+        // every key must exist. A * key means that anything is accepted.
+        if ($key='*') {
+          if (!isset($rulesettings[$category]))
+            throw new exception("Missing content for $category section in $filename");
+        } elseif (!isset($rulesettings[$category][$key]))
+          throw new exception("Missing $category $key value in $filename");
       }
     }
-    // Metadata done now. 
-    unset($fields['Metadata']);
-    // counter to keep track of groups of related field values in a data section. Not implemented properly 
-    // at the moment but we are likely to need this e.g. for periodInYear checks with multiple stages.
-    $dataGroup=1;
-    $rows = array();
-    foreach($fields as $dataSection=>$dataContent) {
-      if (isset($rulesettings[strtolower($dataSection)])) {
-        foreach ($dataContent as $key) {
-          if ($key==='*') {
-            // * means that any field value is allowed
-            foreach ($rulesettings[strtolower($dataSection)] as $anyField=>$anyValue)
-              $rows[] = array('dataSection'=>$dataSection, 'dataGroup'=>$dataGroup, 'key'=>$anyField, 'value'=>$anyValue);
-          }
-          elseif (isset($rulesettings[strtolower($dataSection)][strtolower($key)])) 
-            // doing specific named fields
-            $rows[] = array('dataSection'=>$dataSection, 'dataGroup'=>$dataGroup, 'key'=>$key, 
-                'value'=>$rulesettings[strtolower($dataSection)][strtolower($key)]);
-        }
-      }
-    }
-    $this->save_verification_rule_data($vr->id, $rows, $newRule);
-    // Is there any post processing for the rule plugin, e.g. to construct a geom from grid squares?
-    $ppMethod = $currentRule['plugin'].'_data_cleaner_postprocess';
-    require_once(MODPATH.$currentRule['plugin'].'/plugins/'.$currentRule['plugin'].'.php');
-    if (function_exists($ppMethod)) {
-      call_user_func($ppMethod, $vr->id, $this->db);
-    }
-  }
-  
-  /**
-   * Save a verification rule data record, either overwriting existing or creating a new one.
-   * Avoids ORM for performance reasons as some files can be pretty big.
-   * @param integer $vrId
-   * @param array $rows
-   * @param bool $newRule Is this a new or existing rule?
-   */
-  private function save_verification_rule_data($vrId, $rows, $newRule) { 
-    $done=array();
-    // only worth trying an update if we are updating an existing rule.
-    if (!$newRule) {
-      foreach ($rows as $idx=>$row) {
-        $updated = $this->db->update('verification_rule_data', 
-          array('value'=>$row['value'], 'updated_on'=>date("Ymd H:i:s"), 'updated_by_id'=>$_SESSION['auth_user']->id), 
-          array(
-            'header_name'=>$row['dataSection'], 'data_group'=>$row['dataGroup'], 
-            'verification_rule_id'=>$vrId, 'key'=>strval($row['key'])
-          )
-        );
-        if (count($updated))
-          $done[]=$idx;
-      }
-    }
-    // build a multirow insert as it is faster than doing lots of single inserts
-    $value = '';
-    foreach ($rows as $idx=>$row) {
-      if (array_search($idx, $done)===false) {
-        if ($value!=='')
-          $value .= ',';
-        $value .= "('".$row['dataSection']."',".$row['dataGroup'].",$vrId,'".strval($row['key'])."','".
-            $row['value']."','".date("Ymd H:i:s")."',".$_SESSION['auth_user']->id.",'".date("Ymd H:i:s")."',".$_SESSION['auth_user']->id.")";
-      }
-    }
-    if ($value)
-      $this->db->query("insert into verification_rule_data(header_name, data_group, verification_rule_id, key, value, ".
-          "updated_on, updated_by_id, created_on, created_by_id) values $value");
-  }
-  
-  /**
-   * Parses a data cleaner verification rule test file into an array of sections, 
-   * each contining an array of key value pairs.
-   * Very similar to PHP's parse_ini_string but a bit more tolerant, e.g of comments used.
-   * @param type $content Content of the verification rule test file.
-   * @return array File structure array.
-   */
-  private function parse_test_file($content) {
-    // break into lines, tolerating different line ending forms;
-    $lines = $this->safe_explode_lines($content);
-    $currentSection='';
-    $currentSectionData=array();
-    $r=array();
-    foreach($lines as $line) {
-      $line = trim($line);
-      // skip comments and blank lines plus the end of the metadata section
-      if (substr($line, 1)===';' || empty($line) || $line==='[EndMetadata]')
-        continue;
-      if (preg_match('/^\[(?P<section>.+)\]$/', $line, $matches)) {
-        if (!empty($currentSectionData))
-          $r[$currentSection]=$currentSectionData;
-        // reset for the next section
-        $currentSection = strtolower($matches['section']);
-        $currentSectionData=array();
-      } elseif (preg_match('/^(?P<key>.+)=(?P<value>.+)$/', $line, $matches)) 
-        $currentSectionData[strtolower($matches['key'])]=$matches['value'];
-      elseif (preg_match('/^(?P<key>.+)$/', $line, $matches)) 
-        $currentSectionData[strtolower($matches['key'])]='-';
-    }
-    // set the final section content
-    if (!empty($currentSectionData))
-      $r[$currentSection]=$currentSectionData;
-    return $r;
-  }
-  
-  /**
-   * Explode text into lines, tolerating different line endings.
-   * @param string $text Text to explode into lines
-   * @return array Text split into an array of lines.
-   */
-  private function safe_explode_lines($text) {
-    $content = str_replace("\r\n", "\n", $text);
-    $content = str_replace("\r", "\n", $text);
-    $lines = explode("\n", trim($text));
-    return $lines;
+    $this->model->save_verification_rule($source_url, $filename, $rulesettings['metadata']);
+    
+    $this->model->save_verification_rule_metadata($currentRule, $rulesettings['metadata']);
+    
+    unset($rulesettings['metadata']);
+    if (!empty($rulesettings))
+      $this->model->save_verification_rule_data($currentRule, $rulesettings);
+    
+    $this->model->postProcess($currentRule);
+
   }
   
   public function upload_rule_csv($file) {
