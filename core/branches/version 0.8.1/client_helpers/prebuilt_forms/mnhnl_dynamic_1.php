@@ -174,7 +174,7 @@ class iform_mnhnl_dynamic_1 {
             "<strong>[*]</strong> is used to make a placeholder for putting any custom attributes that should be inserted into the current tab. When this option is ".
             "used, you can change any of the control options for an individual custom attribute control by putting @control|option=value on the subsequent line(s). ".
             "For example, if a control is for smpAttr:4 then you can update it's label by specifying @smpAttr:4|label=New Label on the line after the [*].<br/>".
-            "<strong>[smpAttr:<i>n</i></strong> is used to insert a particular custom attribute identified by its ID number<br/>".
+            "<strong>[smpAttr:<i>n</i>]</strong> is used to insert a particular custom attribute identified by its ID number<br/>".
             "<strong>?help text?</strong> is used to define help text to add to the tab, e.g. ?Enter the name of the site.? <br/>".
             "<strong>all else</strong> is copied to the output html so you can add structure for styling.",
           'type'=>'textarea',
@@ -827,9 +827,10 @@ class iform_mnhnl_dynamic_1 {
             $hasControls = true;
           } elseif (($attribKey = array_search(substr($component, 1, -1), $attribNames)) !== false) {
             //outputs a control for a single custom attribute where component is in the form [smpAttr:167]
-              $options = array_merge($defAttrOptions, $options);
-              $html .= data_entry_helper::outputAttribute($attributes[$attribKey], $options);
-              $attributes[$attribKey]['handled'] = true;
+            $options = array_merge($defAttrOptions, $options);
+            $html .= data_entry_helper::outputAttribute($attributes[$attribKey], $options);
+            $attributes[$attribKey]['handled'] = true;
+            $hasControls = true;
           } elseif (trim($component)==='[*]'){
             // this outputs any custom attributes that remain for this tab. The custom attributes can be configured in the 
             // settings text using something like @smpAttr:4|label=My label. The next bit of code parses these out into an 
