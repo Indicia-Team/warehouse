@@ -172,7 +172,8 @@ class iform_mnhnl_dynamic_1 {
                 "&nbsp;&nbsp;<strong>[sample comment]</strong>. <br/>".
             "<strong>@option=value</strong> on the line(s) following any control allows you to override one of the options passed to the control. The options ".
             "available depend on the control. For example @label=Abundance would set the untranslated label of a control to Abundance. Where the ".
-            "option value is an array, use valid JSON to encode the value. For example an array of strings could be passed as @occAttrClasses=[\"class1\",\"class2\"]. ".
+            "option value is an array, use valid JSON to encode the value. For example an array of strings could be passed as @occAttrClasses=[\"class1\",\"class2\"] ".
+            "or a keyed array as @extraParams={\"preferred\":\"true\",\"orderby\":\"term\"}. " .
             "Other common options include helpText (set to a piece of additional text to display alongside the control) and class (to add css ".
             "classes to the control such as control-width-3). <br/>".
             "<strong>[*]</strong> is used to make a placeholder for putting any custom attributes that should be inserted into the current tab. When this option is ".
@@ -836,7 +837,7 @@ class iform_mnhnl_dynamic_1 {
             // ignore empty lines
             if (trim($tabContent[$i])!=='') {
               $option = explode('=', substr($tabContent[$i],1), 2);
-              $options[$option[0]]=json_decode($option[1]);
+              $options[$option[0]]=json_decode($option[1], true);
               // if not json then need to use option value as it is
               if ($options[$option[0]]=='') $options[$option[0]]=$option[1];            
             }
@@ -848,6 +849,8 @@ class iform_mnhnl_dynamic_1 {
             $hasControls = true;
           } elseif (($attribKey = array_search(substr($component, 1, -1), $attribNames)) !== false) {
             //outputs a control for a single custom attribute where component is in the form [smpAttr:167]
+            $options['extraParams'] = array_merge($defAttrOptions['extraParams'], (array)$options['extraParams']);
+            //merge extraParams first so we don't loose authentication
             $options = array_merge($defAttrOptions, $options);
             $html .= data_entry_helper::outputAttribute($attributes[$attribKey], $options);
             $attributes[$attribKey]['handled'] = true;
