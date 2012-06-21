@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<report title="Summary species counts by location" description="Lists locations with mappable boundary output and the number of records within them. ">
+<report title="Summary record counts by location" description="Lists locations with mappable boundary output and the number of records within them. ">
       <query website_filter_field="o.website_id">
       SELECT #columns#
       FROM (SELECT l.id as id, count(distinct o.id) as value
