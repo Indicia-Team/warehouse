@@ -24,27 +24,7 @@ require_once(DOCROOT.'client_helpers/data_entry_helper.php');
 if (isset($_POST))
   data_entry_helper::dump_errors(array('errors'=>$this->model->getAllErrors()));
 ?>
-<?php $tabs = false;
-if (!empty($values['known_subject:id']) 
-  && is_numeric($values['known_subject:id'])
-  && $values['known_subject:id'] > 0) : // edit so show tabs 
-  $tabs = true;
-?>
-<div id="tabs">
-<?php
-data_entry_helper::enable_tabs(array('divId'=>'tabs')); 
-echo data_entry_helper::tab_header(array('tabs'=>array(
-  '#details'=>'Known Subject',
-  '#observations'=>'Observations',
-  '#comments'=>'Comments',
-)));
-?>
-<div id="details">
-<?php  endif; ?>
 <form class="iform" action="<?php echo url::site(); ?>known_subject/save" method="post">
-<?php echo '$values: '.print_r($values, true).'<br />'; ?>
-<?php echo '$other_data: '.print_r($other_data, true).'<br />'; ?>
-<?php echo 'initial taxa: '.print_r(html::initial_value($values, 'joinsTo:taxa_taxon_list:id'), true).'<br />'; ?>
 <?php  
 echo $metadata; 
 if (isset($values['known_subject:id'])) : ?>
@@ -55,45 +35,20 @@ if (isset($values['known_subject:id'])) : ?>
 <legend>Known subject details</legend>
 <?php 
 $readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
-/*
+
 echo data_entry_helper::sub_list(array(
   'label' => 'Taxa',
   'fieldname' => 'joinsTo:taxa_taxon_list:id',
   //'default'=>html::initial_value($values, 'joinsTo:taxa_taxon_list:id'),
   'default' => array_key_exists('joinsTo:taxa_taxon_list:id', $values) ? $values['joinsTo:taxa_taxon_list:id'] : '',
   'table' => 'taxa_taxon_list',
+  'view' => 'cache',
   'captionField' => 'taxon',
   'valueField' => 'id',
   'addToTable' => false,
-  //'hide' => 'fast',
   'extraParams' => $readAuth + array('taxon_list_id' => '3'),
 ));
-*/
-echo data_entry_helper::select(array(
-  'label' => 'Taxon List',
-  'fieldname' => 'taxa_taxon_list:taxon_list_id',
-  'table' => 'taxon_list',
-  'captionField' => 'title',
-  'valueField' => 'id',
-  'default'=>html::initial_value($values, 'taxa_taxon_list:taxon_list_id'),
-  //'lookupValues' => $other_data['subject_type_terms'],
-  'blankText' => '<Please select>',
-  'extraParams' => $readAuth,
-));
-echo data_entry_helper::listbox(array(
-  'label' => 'Taxa',
-  'fieldname' => 'joinsTo:taxa_taxon_list:id[]',
-  'id' => 'joinsTo:taxa_taxon_list:id',
-  'table' => 'taxa_taxon_list',
-  'captionField' => 'taxon',
-  'valueField' => 'id',
-  'parentControlId' => 'taxa_taxon_list:taxon_list_id',
-  'filterField' => 'taxon_list_id',
-  'class' => 'control-width-3',
-  'multiselect' => true,
-  'default' => array_key_exists('joinsTo:taxa_taxon_list:id', $values) ? $values['joinsTo:taxa_taxon_list:id'] : '',
-  'extraParams' => $readAuth,
-));
+
 echo data_entry_helper::select(array(
   'label' => 'Subject Type',
   'fieldname' => 'known_subject:subject_type_id',
@@ -176,13 +131,3 @@ data_entry_helper::link_default_stylesheet();
 echo data_entry_helper::dump_javascript();
 ?>
 </form>
-<?php if ($tabs) : ?>
-</div>
-<div id="observations">
-TODO - will link to grid view of subject observations filtered on this subject
-</div>
-<div id="comments">
-TODO - only tables/views exist at present
-</div>
-</div>
-<?php endif; ?>
