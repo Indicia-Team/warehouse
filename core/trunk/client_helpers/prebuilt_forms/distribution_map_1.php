@@ -139,16 +139,6 @@ class iform_distribution_map_1 {
           'required' => false
         ),
         array(
-          'fieldname'=>'taxon_list_id',
-          'label'=>'Species List',
-          'helpText'=>'The species list that species can be selected from.',
-          'type'=>'select',
-          'table'=>'taxon_list',
-          'valueField'=>'id',
-          'captionField'=>'title',
-          'group' => 'Distribution Layer'
-        ),
-        array(
           'fieldname' => 'external_key',
           'label' => 'External Key',
           'helpText' => 'Check this box if the taxon is to be identified using the external key instead of the Meaning ID, either through the Taxon ID ' .
@@ -156,7 +146,19 @@ class iform_distribution_map_1 {
           'type' => 'checkbox',
           'group' => 'Distribution Layer',
           'required' => 'false'
-        ), array(
+        ), 
+        array(
+          'fieldname'=>'taxon_list_id',
+          'label'=>'Species List used to find external key',
+          'helpText'=>'If External Key is ticked, then choose the list which has the external key set for each of the taxa that might be displayed.',
+          'type'=>'select',
+          'table'=>'taxon_list',
+          'valueField'=>'id',
+          'captionField'=>'title',
+          'group' => 'Distribution Layer',
+          'required' => false
+        ),
+        array(
           'name' => 'refresh_timer',
           'caption' => 'Automatic reload seconds',
           'description' => 'Set this value to the number of seconds you want to elapse before the report will be automatically reloaded, useful for '.
@@ -197,6 +199,9 @@ class iform_distribution_map_1 {
         return lang::get("The distribution map cannot be displayed without a taxon identifier");
       }
       if ($args['external_key']==true) {
+        if (empty($args['taxon_list_id']))
+          return lang::get('This form is configured with the Distribution Layer - External Key option ticked, but no species list has been configured to '.
+              'lookup the external keys against.');
         // the taxon identifier is an external key, so we need to translate to a meaning ID.
         $fetchOpts = array(
         'table' => 'taxa_taxon_list',
