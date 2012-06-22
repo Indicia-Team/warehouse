@@ -51,9 +51,11 @@ class Known_subject_Controller extends Gridview_Base_Controller {
   
   protected function getModelValues() {
     $r = parent::getModelValues();
-    $r['joinsTo:taxa_taxon_list:id'] = 
-      $this->reformatTaxaJoinsForList($r, 'taxa_taxon_list');
-    // load data for attributes, TODO, fix this
+    $r['joinsTo:taxa_taxon_list:id'] = $this->reformatTaxaJoinsForList($r, 'taxa_taxon_list');
+    $identifiers=array();
+    foreach ($this->model->identifiers as $identifier)
+      $identifiers[$identifier->id]=$identifier->coded_value;
+    $r['metaFields:identifiers']=$identifiers;
     $websiteId = $r['known_subject:website_id'];
     $this->loadAttributes($r, array(
         'website_id'=>$websiteId,

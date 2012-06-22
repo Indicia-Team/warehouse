@@ -93,20 +93,30 @@ class Known_subject_Model extends ORM_Tree
   }
 
   /**
-  * Before submission, TODO perhaps?
-  */
-  protected function preSubmit()
-  { 
-    kohana::log('debug', 'In Known_subject_Model::preSubmit() $this->submission is '.print_r($this->submission, true));
-    return parent::presubmit();
-  }
-  
-  /**
-  * After submission, TODO perhaps?
+  * After submission ensure the identifiers are hooked up properly.
   */
   protected function postSubmit($isInsert)
   { 
-    kohana::log('debug', 'In Known_subject_Model::postSubmit() $this->submission is '.print_r($this->submission, true));
+    $id = $this->submission['fields']['id']['value'];
+    // Get the list of identifiers that should point to this known subject
+    $keys=array();
+    if (isset($this->submission['metaFields']['identifiers']))
+      foreach ($this->submission['metaFields']['identifiers']['value'] as $identifier) {
+        $keys[] = $identifier[0];
+    // do an update query to unlink identifiers that do point to this known subject but shouldn't
+    $this->db->from('identifiers')
+      ->set(array('known_subject_id'=>null))
+      ->where(array('known_subject_id'=>$id));
+    if (count($keys))
+      $this->db->notin('id', $keys);
+    $this->db->update();
+    // and another updated query to link those that should
+    if (count($keys)) {
+      $this->db->from('identifiers')
+        ->set(array('known_subject_id'=>$id))
+        ->in('id', $keys)
+        ->update();    
+    }
     return parent::postSubmit($isInsert);
   }
   
@@ -119,6 +129,7 @@ class Known_subject_Model extends ORM_Tree
   public function get_submission_structure() {
     $r = parent::get_submission_structure();
     $r['joinsTo'] = array('taxa_taxon_lists');
+    $r['metaFields']=array('identifiers');
     return $r;
   } 
 
@@ -134,5 +145,7 @@ class Known_subject_Model extends ORM_Tree
   protected function getAttributes($required = false, $typeFilter = null, $hasSurveyRestriction = true) {
     return parent::getAttributes($required, $typeFilter, false);
   }
+  
+  
   
 }

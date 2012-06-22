@@ -245,7 +245,7 @@ class data_entry_helper extends helper_base {
   * Optional. The id to assign to the HTML control. Base value defaults to fieldname, but 
   * this is a compound control and the many sub-controls have id values with additiobnal suffixes.</li>
   * <li><b>default</b><br/>
-  * Optional. An array of default captions. This is overridden when reloading a
+  * Optional. An associative array of default keys and captions. This is overridden when reloading a
   * record with existing data for this control.</li>
   * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>

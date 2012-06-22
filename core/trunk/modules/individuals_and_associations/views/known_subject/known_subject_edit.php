@@ -46,7 +46,19 @@ echo data_entry_helper::sub_list(array(
   'captionField' => 'taxon',
   'valueField' => 'id',
   'addToTable' => false,
-  'extraParams' => $readAuth + array('taxon_list_id' => '3'),
+  'extraParams' => $readAuth,
+));
+
+echo data_entry_helper::sub_list(array(
+  'label' => 'Identifiers',
+  'fieldname' => 'metaFields:identifiers',
+  'default' => array_key_exists('metaFields:identifiers', $values) ? $values['metaFields:identifiers'] : '',
+  'table' => 'identifier',
+  'view' => 'cache',
+  'captionField' => 'coded_value',
+  'valueField' => 'id',
+  'addToTable' => false,
+  'extraParams' => $readAuth,
 ));
 
 echo data_entry_helper::select(array(
