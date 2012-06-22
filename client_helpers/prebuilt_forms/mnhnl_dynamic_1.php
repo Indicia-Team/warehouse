@@ -1418,8 +1418,9 @@ class iform_mnhnl_dynamic_1 {
       return lang::get('Before using this facility, please <a href="'.url('user/login', array('query'=>'destination=node/'.($node->nid))).'">login</a> to the website.');
     }
     if (!isset($userIdAttr)) {
-      return lang::get('This form must be used with a survey that has the CMS User ID attribute associated with it so records can '.
-          'be tagged against the user.');
+      return lang::get('This form is configured to show the user a grid of their existing records which they can add to or edit. To do this, the form requires that '.
+          'it must be used with a survey that includes the CMS User ID attribute in the list of attributes configured for the survey on the warehouse. This allows records to '.
+          'be tagged against the user. Alternatively you can tick the box "Skip initial grid of data" in the "User Interface" section of the Edit page for the form.');
     }
     if (isset($args['grid_report']))
       $reportName = $args['grid_report'];
