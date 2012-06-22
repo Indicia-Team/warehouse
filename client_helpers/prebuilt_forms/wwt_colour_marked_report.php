@@ -883,6 +883,8 @@ class iform_wwt_colour_marked_report {
     $r .= '<input type="button" value="'.lang::get('Abandon Form and Reload').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'newSample')).'\'">';    
     // Get authorisation tokens to update the Warehouse, plus any other hidden data.
     $hiddens = $auth['write'].
+          "<input type=\"hidden\" id=\"read_auth_token\" name=\"read_auth_token\" value=\"".$auth['read']['auth_token']."\" />\n".
+          "<input type=\"hidden\" id=\"read_nonce\" name=\"read_nonce\" value=\"".$auth['read']['nonce']."\" />\n".
           "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n".
           "<input type=\"hidden\" id=\"survey_id\" name=\"survey_id\" value=\"".$args['survey_id']."\" />\n";
     if (!empty($args['sample_method_id'])) {
@@ -2251,9 +2253,9 @@ class iform_wwt_colour_marked_report {
     $r .= '<h3 id="'.$fieldPrefix.'header" class="idn:accordion:header"><a href="#">'.$options['identifierName'].'</a></h2>';
     $r .= '<div id="'.$fieldPrefix.'panel" class="idn:accordion:panel">';
     $r .= '<input type="hidden" name="'.$fieldPrefix.'identifier:identifier_type_id" value="'.$options['identifierTypeId'].'" />'."\n";
-    $r .= '<input type="hidden" name="'.$fieldPrefix.'identifier:identifier_name" id="'.$fieldPrefix.'identifier:identifier_name" value="'.$options['identifierName'].'" />'."\n";
     $r .= '<input type="hidden" name="'.$fieldPrefix.'identifier:coded_value" id="'.$fieldPrefix.'identifier:coded_value" class="identifier_coded_value" value="" />'."\n";
-    $r .= '<input type="hidden" name="'.$fieldPrefix.'identifier:identifier_id" id="'.$fieldPrefix.'identifier:identifier_id" class="identifier_id" value="-1" />'."\n";
+    $val = isset(data_entry_helper::$entity_to_load[$fieldPrefix.'identifier:id']) ? data_entry_helper::$entity_to_load[$fieldPrefix.'identifier:id'] : '0';
+    $r .= '<input type="hidden" name="'.$fieldPrefix.'identifier:id" id="'.$fieldPrefix.'identifier:id" class="identifier_id" value="'.$val.'" />'."\n";
     if (isset(data_entry_helper::$entity_to_load[$fieldPrefix.'identifiers_subject_observation:id'])) {
       $r .= '<input type="hidden" id="'.$fieldPrefix.'identifiers_subject_observation:id" name="'.$fieldPrefix.'identifiers_subject_observation:id" '.
         'value="'.data_entry_helper::$entity_to_load[$fieldPrefix.'identifiers_subject_observation:id'].'" />'."\n";    
@@ -2408,6 +2410,18 @@ class iform_wwt_colour_marked_report {
    * @return array Submission structure.
    */
   public static function get_submission($values, $args) {
+    // set warehouse auth settings from input so we can query database
+    self::$auth = array(
+      'write' => null,
+      'read' => array(
+        'auth_token' => $values['read_auth_token'],
+        'nonce' => $values['read_nonce']
+      ),
+      'write_tokens' => array(
+        'auth_token' => $values['auth_token'],
+        'nonce' => $values['nonce']
+      ),
+    );
     // tidy away the OpenLayers fields which we don't need
     $ol_keys = preg_grep('/^OpenLayers_/', array_keys($values));
     foreach ($ol_keys as $ol_key) {
@@ -2450,6 +2464,27 @@ class iform_wwt_colour_marked_report {
    * @return array Submission structure with observations/identifiers added.
    */
   private static function add_observation_submissions($sample, $values, $args) {
+    // get identifier ids for any stored identifiers which match the submitted identifier codes
+    $ident_code_keys = preg_grep('/^idn:[0-9]+:[^:]+:identifier:coded_value$/', array_keys($values));
+    $codes = array();
+    foreach ($ident_code_keys as $ident_code_key) {
+      $code = $values[$ident_code_key];
+      if ($code !== '') {
+        $codes[] = $code;
+      }
+    }
+    $matches = array();
+    if (count($codes)>0) {
+      $query = array('in'=>array('coded_value', $codes));
+      $filter = array('query'=>json_encode($query),);
+      $queryOptions = array(
+        'table' => 'identifier',
+        'extraParams' => self::$auth['read'] + $filter,
+        'nocache' => true,
+      );
+      $matches = data_entry_helper::get_population_data($queryOptions);
+    }
+    
     // get submission for each observation and add it to the sample submission
     $keys = preg_grep('/^idn:[0-9]+:occurrence:taxa_taxon_list_id$/', array_keys($values));
     foreach ( $keys as $key )
@@ -2465,7 +2500,7 @@ class iform_wwt_colour_marked_report {
       $so = submission_builder::build_submission($values, array('model'=>'subject_observation',));
       // create submodel for join to occurrence and add it
       $oso = self::build_occurrence_observation_submission($values);
-      $so['subModels'][] = array('fkId' => 'subject_observation_id', 'model' => $oso,);
+      $so['subModels'][] = array('fkId' => 'subject_observation_id', 'model' => $oso,);      
       // create submodel for each join to identifier (plus identifier models if new) and add it
       foreach (array('neck-collar', 'colour-left', 'colour-right', 'metal') as $identifier_type) {
         $ident_keys = preg_grep('/^idn:'.$idx.':'.$identifier_type.':(identifier|identifiers_subject_observation|idnAttr):/', array_keys($values));
@@ -2473,10 +2508,9 @@ class iform_wwt_colour_marked_report {
           $i_key_parts = explode(':', $i_key, 4);
           $values[$i_key_parts[3]] = $values[$i_key];
         }
-        // if identifier checkbox set, this identifier is being reported
-        if ($values['identifier:checkbox']==1) {
-          $iso = self::build_identifier_observation_submission($values);
-          $so['subModels'][] = array('fkId' => 'subject_observation_id', 'model' => $iso,);
+        // if identifier checkbox set, this identifier is being reported. If id > 0, this identifier exists.
+        if ($values['identifier:checkbox']==1 || $values['identifier:id']!=='0') {
+          $so = self::build_identifier_observation_submission($values, $matches, $so);
         }
         // clean up the flattened keys
         foreach ($ident_keys as $i_key) {
@@ -2527,37 +2561,94 @@ class iform_wwt_colour_marked_report {
    * Builds a submission for identifiers_subject_observation join data 
    * from the form values. Also adds identifier if it doesn't exist.
    * @param array $values Associative array of form data values. 
-   * @return array occurences_subject_observation Submission structure.
+   * @param array $matches Associative array of stored identifiers which match submitted values. 
+   * @param array $so The subject_observation submission we are adding to
+   * @return array subject_observation Submission structure with identifier data added.
    */
-  private static function build_identifier_observation_submission($values) {
-    // provide defaults if these keys not present
-    $values = array_merge(array(
-      'identifiers_subject_observation:verified_status' => 'U',
-      'identifiers_subject_observation:matched' => $values['identifier:identifier_id']!==-1,
-      ), $values);
-
-    // build submission
-    $submission = submission_builder::build_submission(
-      $values, array('model'=>'identifiers_subject_observation',));
-      
-    // add super model for identifier if it doesn't exist
-    if ($values['identifier:identifier_id']==='-1') {
-      // provide defaults if these keys not present
-      $values = array_merge(array(
-        'identifier:status' => 'U',
-        ), $values);
-  
-      // build submission
-      $i =  submission_builder::build_submission($values, array('model'=>'identifier',));
-      $submission['superModels'] = array(
-        array('fkId' => 'identifier_id', 'model' => $i,),
-      );
-    } else {
-      if (empty($submission['fields']['identifier_id'])) {
-        $submission['fields']['identifier_id'] = $values['identifier:identifier_id'];
+  private static function build_identifier_observation_submission($values, $matches, $so) {
+    // work out what to do, insert?, update? delete?
+    $set = $values['identifier:checkbox']==1;
+    $code = $values['identifier:coded_value'];
+    $old_id = (integer)$values['identifier:id'];
+    $new_id = 0;
+    $identifier_status = 'U';
+    foreach ($matches as $match) {
+      if ($match['coded_value']===$code) {
+        $new_id = (integer)$match['id'];
+        $identifier_status = $match['status'];
       }
     }
-    return $submission;
+    
+    // this identifier exists but is no longer set, or its identity has been changed
+    if ($old_id>0 && (!$set || $old_id!==$new_id)) {
+      // unlink the old identifier
+      $values['identifiers_subject_observation:deleted'] = 't';
+      $iso = submission_builder::build_submission(
+        $values, array('model'=>'identifiers_subject_observation',));
+      $so['subModels'][] = array('fkId' => 'subject_observation_id', 'model' => $iso,);
+    }
+    
+    // identifier submitted, has been edited and matches an existing identifier
+    if ($set && $new_id>0 && $old_id!==$new_id) {
+      // create link to the new matching identifier
+      unset($values['identifiers_subject_observation:id']);
+      $values['identifiers_subject_observation:identifier_id'] = $new_id;
+      $values['identifiers_subject_observation:matched'] = $identifier_status!=='U';
+      unset($values['identifiers_subject_observation:verified_status']);
+      unset($values['identifiers_subject_observation:verified_by_id']);
+      unset($values['identifiers_subject_observation:verified_on']);
+      unset($values['identifiers_subject_observation:created_on']);
+      unset($values['identifiers_subject_observation:created_by_id']);
+      unset($values['identifiers_subject_observation:updated_on']);
+      unset($values['identifiers_subject_observation:updated_by_id']);
+      unset($values['identifiers_subject_observation:deleted']);
+      $iso = submission_builder::build_submission(
+        $values, array('model'=>'identifiers_subject_observation',));
+      $so['subModels'][] = array('fkId' => 'subject_observation_id', 'model' => $iso,);
+    }
+    
+    // identifier submitted and doesn't match an existing identifier
+    if ($set && $new_id===0) {
+      // create new link to a new identifier which we also create here
+      unset($values['identifiers_subject_observation:id']);
+      unset($values['identifiers_subject_observation:identifier_id']);
+      $values['identifiers_subject_observation:matched'] = false;
+      unset($values['identifiers_subject_observation:verified_status']);
+      unset($values['identifiers_subject_observation:verified_by_id']);
+      unset($values['identifiers_subject_observation:verified_on']);
+      unset($values['identifiers_subject_observation:created_on']);
+      unset($values['identifiers_subject_observation:created_by_id']);
+      unset($values['identifiers_subject_observation:updated_on']);
+      unset($values['identifiers_subject_observation:updated_by_id']);
+      unset($values['identifiers_subject_observation:deleted']);
+      $iso = submission_builder::build_submission(
+        $values, array('model'=>'identifiers_subject_observation',));
+      // now add the identifier
+      unset($values['identifier:id']);
+      unset($values['identifier:issue_authority_id']);
+      unset($values['identifier:issue_scheme_id']);
+      unset($values['identifier:issue_date']);
+      unset($values['identifier:first_use_date']);
+      unset($values['identifier:last_observed_date']);
+      unset($values['identifier:final_date']);
+      unset($values['identifier:summary']);
+      unset($values['identifier:status']);
+      unset($values['identifier:verified_by_id']);
+      unset($values['identifier:verified_on']);
+      unset($values['identifier:known_subject_id']);
+      unset($values['identifier:created_on']);
+      unset($values['identifier:created_by_id']);
+      unset($values['identifier:updated_on']);
+      unset($values['identifier:updated_by_id']);
+      unset($values['identifier:deleted']);
+      $i =  submission_builder::build_submission($values, array('model'=>'identifier',));
+      $iso['superModels'] = array(
+        array('fkId' => 'identifier_id', 'model' => $i,),
+      );
+      $so['subModels'][] = array('fkId' => 'subject_observation_id', 'model' => $iso,);
+    }
+    
+    return $so;
   }
   
   /**

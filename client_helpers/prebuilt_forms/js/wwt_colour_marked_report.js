@@ -340,75 +340,6 @@
     });
   };
 
-  var submitHandler = function(event) {
-    var codes = [];
-    var idnCount = 0;
-    // for each identifier in use
-    $('.idn\\:accordion\\:panel').each(function() {
-      var fldPrefix = this.id.replace('panel', '');
-      var escFldPrefix = esc4jq(fldPrefix);
-      var checkboxId = fldPrefix + 'identifier:checkbox';
-      if ($('#'+esc4jq(checkboxId)+':checked').length > 0) {
-        idnCount++;
-        // set the unique identifier:coded_value
-        var iCode = makeIdentifierCode(escFldPrefix);
-        if (iCode) {
-          $('#'+escFldPrefix+'identifier\\:coded_value').val(iCode);
-          if ($('#'+escFldPrefix+'identifier\\:identifier_id').val()=='-1') {
-            codes[codes.length] = iCode;
-          }
-        }
-      }
-    });
-    if (codes.length > 0) {
-      // for each identifier in use and without an id, check if it exists on the warehouse and set its id if so.
-      var query = {"in" : ["coded_value", codes ]};
-      var ajaxError = false;
-      $.ajax({
-        type: 'GET', 
-        url: svcUrl+'/data/identifier?mode=json' +
-            '&nonce='+readNonce+'&auth_token='+readAuthToken+
-            '&orderby=id&callback=?&query='+escape(JSON.stringify(query)), 
-        data: {}, 
-        success: function(data) {
-          if (typeof data.error!=="undefined") {
-            if (typeof data.errors!=="undefined") {
-              $.each(data.errors, function(idx, error) {
-                alert(error);
-              });
-              ajaxError = true;
-            } else {
-              if (data.error.indexOf('unauthorised')===-1) {
-                alert('An error occured when trying to save the data '+data.error);
-                ajaxError = true;
-              } else {
-                // just ignore if unauthorised, let it submit and fail and refresh the tokens.
-              }
-            }
-          } else if(typeof data.length!=='undefined' && data.length>0) { // we found one or more matches
-            var id$ = $('input.identifier_id');
-            var code$ = $('input.identifier\\:coded_value');
-            for (i=0; i<data.length; i++) {
-              for (j=0; j<code$.length; j++) {
-                if (code$[j].value==data[i].coded_value) {
-                  // set the id
-                  id$[j].value = data[i].id+'';
-                }
-              }
-            }
-          }
-        },
-        dataType: 'json', 
-        async: false 
-      });
-      if (ajaxError) {
-        // stop the submit
-        return false;
-      }
-    }
-    return true;
-  };
-  
   var setLiveHandlers = function() {
     // install a change handler for the colour selecters to set the ring colours
     $('select.select_colour').live('change', function(event) {
@@ -566,10 +497,6 @@
     subjectAccordion = pSubjectAccordion=='true';
     // set count of loaded individuals
     subjectCount = $('.individual_panel').length - 1;
-    // install the submit handler for the form
-    $('form#entry_form').submit(function(event) {
-      return submitHandler(event);
-    });
     // add jQuery validation options/methods
     if (validate==true) {
       addValidationMethods();
