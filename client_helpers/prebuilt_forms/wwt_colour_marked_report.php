@@ -1192,10 +1192,8 @@ class iform_wwt_colour_marked_report {
       $fieldprefix = 'idn:'.$idx.':sjoAttr:';
       foreach ($sjoAttrs as $sjoAttr) {
         if ($sjoAttr['subject_observation_id']===$subjectObservation['id']) {
-          if ($sjoAttr['multi_value']==='t') {
-            $form_data[$fieldprefix.$sjoAttr['subject_observation_attribute_id']][] = $sjoAttr['raw_value'];
-          } else {
-            $form_data[$fieldprefix.$sjoAttr['subject_observation_attribute_id']] = $sjoAttr['raw_value'];
+          if (!empty($sjoAttr['id'])) {
+            $form_data[$fieldprefix.$sjoAttr['subject_observation_attribute_id'].':'.$sjoAttr['id']] = $sjoAttr['raw_value'];
           }
         }
       }
@@ -1819,13 +1817,14 @@ class iform_wwt_colour_marked_report {
   private static function get_control_speciesidentifier($auth, $args, $tabalias, $options) {
     static $taxIdx = 0; 
     
-    $svcUrl = self::warehouseUrl().'index.php/services';
+    // we need to control which items are lockable if locking requested
     if (!empty($options['lockable']) && $options['lockable']==true) {
       $options['identifiers_lockable'] = $options['lockable'];
-      unset($options['lockable']);
     } else {
       $options['identifiers_lockable'] = '';
     }
+    unset($options['lockable']);
+    
     // get the identifier type data
     $filter = array(
       'termlist_external_key' => 'indicia:assoc:identifier_type',
@@ -1835,13 +1834,15 @@ class iform_wwt_colour_marked_report {
       'extraParams' => $auth['read'] + $filter,
     );
     $options['identifierTypes'] = data_entry_helper::get_population_data($dataOpts);
-    // get the identifier attribute data
+    
+    // get the identifier attribute type data
     $dataOpts = array(
       'table' => 'identifier_attribute',
       'extraParams' => $auth['read'],
     );
     $options['idnAttributeTypes'] = data_entry_helper::get_population_data($dataOpts);
-    // set up the known system types
+    
+    // set up the known system types for identifier attributes
     $options['baseColourId'] = -1;
     $options['textColourId'] = -1;
     $options['sequenceId'] = -1;
@@ -1864,13 +1865,15 @@ class iform_wwt_colour_marked_report {
         }
       }
     }
-    // get the subject observation attribute data
+    
+    // get the subject observation attribute type data
     $dataOpts = array(
       'table' => 'subject_observation_attribute',
       'extraParams' => $auth['read'],
     );
     $options['sjoAttributeTypes'] = data_entry_helper::get_population_data($dataOpts);
-    // set up the known system types
+    
+    // set up the known system types for subject_observation attributes
     $options['attachmentId'] = -1;
     $options['genderId'] = -1;
     $options['stageId'] = -1;
@@ -1893,15 +1896,13 @@ class iform_wwt_colour_marked_report {
         }
       }
     }
-    $validate = $args['clientSideValidation'] ? 'true' : 'false';
-    $subjectAccordion = $args['subjectAccordion'] ? 'true' : 'false';
+    
+    // get subject attributes
+    
     // configure the identifiers javascript
     // write it late so it happens after any locked values are applied
     if (!$options['inNewIndividual']) {
       data_entry_helper::$late_javascript .= "indicia.wwt.initForm (
-        '".$svcUrl."', 
-        '".$auth['read']['nonce']."',
-        '".$auth['read']['auth_token']."',
         '".$options['baseColourId']."',
         '".$options['textColourId']."',
         '".$options['sequenceId']."',
@@ -1910,8 +1911,8 @@ class iform_wwt_colour_marked_report {
         '".(!empty($args['neck_collar_regex']) ? $args['neck_collar_regex'] : '')."',
         '".(!empty($args['enscribed_colour_ring_regex']) ? $args['enscribed_colour_ring_regex'] : '')."',
         '".(!empty($args['metal_ring_regex']) ? $args['metal_ring_regex'] : '')."',
-        '".$validate."',
-        '".$subjectAccordion."'\n".
+        '".($args['clientSideValidation'] ? 'true' : 'false')."',
+        '".($args['subjectAccordion'] ? 'true' : 'false')."'\n".
         ");\n";
     }
     
@@ -2003,9 +2004,21 @@ class iform_wwt_colour_marked_report {
       $filter = array('query'=>json_encode($query),);
       $extraParams = array_merge($filter, $auth['read']);
       $options['lockable'] = $options['identifiers_lockable'];
+      $fieldname = $options['fieldprefix'].'sjoAttr:'.$options['genderId'];
+      $idname = $fieldname;
+      // if this attribute exists on DB, we need to append id to fieldname
+      if (is_array(data_entry_helper::$entity_to_load)) {
+        $stored_keys = preg_grep('/^'.$fieldname.':[0-9]+$/', array_keys(data_entry_helper::$entity_to_load));
+        if (count($stored_keys)===1) {
+          foreach ($stored_keys as $stored_key) {
+            $fieldname = $stored_key;
+          }
+        }
+      }
       $r .= data_entry_helper::select(array_merge(array(
         'label' => lang::get('Sex of the bird'),
-        'fieldname' => $options['fieldprefix'].'sjoAttr:'.$options['genderId'],
+        'fieldname' => $fieldname,
+        'id' => $idname,
         'table'=>'termlists_term',
         'captionField'=>'term',
         'valueField'=>'id',
@@ -2022,9 +2035,21 @@ class iform_wwt_colour_marked_report {
       $filter = array('query'=>json_encode($query),);
       $extraParams = array_merge($filter, $auth['read']);
       $options['lockable'] = $options['identifiers_lockable'];
+      $fieldname = $options['fieldprefix'].'sjoAttr:'.$options['stageId'];
+      $idname = $fieldname;
+      // if this attribute exists on DB, we need to append id to fieldname
+      if (is_array(data_entry_helper::$entity_to_load)) {
+        $stored_keys = preg_grep('/^'.$fieldname.':[0-9]+$/', array_keys(data_entry_helper::$entity_to_load));
+        if (count($stored_keys)===1) {
+          foreach ($stored_keys as $stored_key) {
+            $fieldname = $stored_key;
+          }
+        }
+      }
       $r .= data_entry_helper::select(array_merge(array(
         'label' => lang::get('Age of the bird'),
-        'fieldname' => $options['fieldprefix'].'sjoAttr:'.$options['stageId'],
+        'fieldname' => $fieldname,
+        'id' => $idname,
         'table'=>'termlists_term',
         'captionField'=>'term',
         'valueField'=>'id',
@@ -2041,9 +2066,21 @@ class iform_wwt_colour_marked_report {
       $filter = array('query'=>json_encode($query),);
       $extraParams = array_merge($filter, $auth['read']);
       $options['lockable'] = $options['identifiers_lockable'];
+      $fieldname = $options['fieldprefix'].'sjoAttr:'.$options['lifeStatusId'];
+      $idname = $fieldname;
+      // if this attribute exists on DB, we need to append id to fieldname
+      if (is_array(data_entry_helper::$entity_to_load)) {
+        $stored_keys = preg_grep('/^'.$fieldname.':[0-9]+$/', array_keys(data_entry_helper::$entity_to_load));
+        if (count($stored_keys)===1) {
+          foreach ($stored_keys as $stored_key) {
+            $fieldname = $stored_key;
+          }
+        }
+      }
       $r .= data_entry_helper::select(array_merge(array(
         'label' => lang::get('This bird was'),
-        'fieldname' => $options['fieldprefix'].'sjoAttr:'.$options['lifeStatusId'],
+        'fieldname' => $fieldname,
+        'id' => $idname,
         'table'=>'termlists_term',
         'captionField'=>'term',
         'valueField'=>'id',
@@ -2177,12 +2214,24 @@ class iform_wwt_colour_marked_report {
       $filter = array('termlist_external_key'=>'indicia:assoc:identifier_type',);
       $filter = array('query'=>json_encode($query),);
       $extraParams = array_merge($filter, $auth['read']);
+      $fieldname = $options['fieldprefix'].'sjoAttr:'.$options['attachmentId'];
+      $default = array();
+      // if this attribute exists on DB, we need to write a hidden with id appended to fieldname and set defaults for checkboxes
+      if (is_array(data_entry_helper::$entity_to_load)) {
+        $stored_keys = preg_grep('/^'.$fieldname.':[0-9]+$/', array_keys(data_entry_helper::$entity_to_load));
+        foreach ($stored_keys as $stored_key) {
+          $r .= '<input type="hidden" name="'.$stored_key.'" value="" />';
+          $default[] = array('fieldname' => $stored_key, 'default' => data_entry_helper::$entity_to_load[$stored_key]);
+          unset(data_entry_helper::$entity_to_load[$stored_key]);
+        }
+      }
       $r .= data_entry_helper::checkbox_group(array_merge(array(
         'label' => lang::get('What other devices did you see on the bird'),
-        'fieldname' => $options['fieldprefix'].'sjoAttr:'.$options['attachmentId'],
+        'fieldname' => $fieldname,
         'table'=>'termlists_term',
         'captionField'=>'term',
         'valueField'=>'id',
+        'default'=>$default,
         'extraParams' => $extraParams,
       ), $options));
     }
@@ -2422,12 +2471,14 @@ class iform_wwt_colour_marked_report {
         'nonce' => $values['nonce']
       ),
     );
-    // tidy away the OpenLayers fields which we don't need
+    // remove these or they pollute all the submission models
+    unset($values['read_auth_token']);
+    unset($values['read_nonce']);
     $ol_keys = preg_grep('/^OpenLayers_/', array_keys($values));
     foreach ($ol_keys as $ol_key) {
       unset($values[$ol_key]);
     }
-    // build a simple sample submission
+    // build a sample submission
     $submission = submission_builder::build_submission($values, array('model'=>'sample',));
     // add observation/occurrence and identifier data to sample in submission
     $submission = self::add_observation_submissions($submission, $values, $args);
