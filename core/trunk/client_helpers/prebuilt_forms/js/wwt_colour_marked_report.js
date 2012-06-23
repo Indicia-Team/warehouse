@@ -34,14 +34,14 @@
   }
 
   // variables pumped in from PHP.
-  var svcUrl = '';
-  var readNonce = '';
-  var readAuthToken = '';
   var baseColourId = '';
   var textColourId = '';
   var sequenceId = '';
   var positionId = '';
   var verticalDefault = '?';
+  var collarRegex = '';
+  var colourRegex = '';
+  var metalRegex = '';
   var validate = false;
   var subjectAccordion = false;
   var subjectCount = 0;
@@ -50,7 +50,7 @@
    * Private variables
    */
   var colourTable = [
-    ["R", "Red", "red",],
+    ["R", "Red", "red"],
     ["P", "Pale Blue", "paleblue"],
     ["W", "White", "white"],
     ["O", "Orange", "orange"],
@@ -114,7 +114,7 @@
    */
   var esc4jq = function(selector) {
     // escapes the jquery metacharacters for jquery selectors
-    return selector ? selector.replace(/([ #;&,.+*~\':"!^$[\]()=>|\/%])/g,
+    return selector ? selector.replace(/([ #;&,.+*~\':"!\^$\[\]()=>|\/%])/g,
         '\\$1') : '';
   };
 
@@ -122,6 +122,7 @@
     // finds the single character code for colour name or returns '?' if not found
     var cCode = '?';
     var compactColour = colour.toLowerCase().replace(/[^a-z]/g, '');
+    var i;
     
     for (i=0; i<colourTableLength; i++) {
       if (colourTable[i][2]===compactColour) {
@@ -135,6 +136,7 @@
   var getColourHex = function(cCode) {
     // finds the hex code for colour character or returns 'ffffff' if not found
     var cHex = 'ffffff';
+    var i;
     
     for (i=0; i<hexColoursLength; i++) {
       if (hexColours[i][0]===cCode) {
@@ -154,7 +156,7 @@
     var iBase = $('#'+prefix+'idnAttr\\:'+baseColourId+' option:selected').text();
     var iText = $('#'+prefix+'idnAttr\\:'+textColourId+' option:selected').text();
     var iPos = $('#'+prefix+'idnAttr\\:'+positionId+' option:selected').text();
-    var iSeq = $('#'+prefix+'idnAttr\\:'+sequenceId+'').val();
+    var iSeq = $('#'+prefix+'idnAttr\\:'+sequenceId).val();
     iSeq = $.trim(iSeq);
     if (iSeq==='') {
       // return false;
@@ -203,7 +205,7 @@
     // set the colour identifier visualisation panel to reflect the attributes
     var parts = ctl.id.split(':');
     var colourBox$ = $('.'+parts[2]+'-indentifier-colourbox', $(ctl).closest('div.individual_panel'));
-    switch (parseInt(parts[parts.length-1])) {
+    switch (parseInt(parts[parts.length-1], 10)) {
     case baseColourId :
       colourBox$.css('background-color', $('#'+esc4jq(ctl.id)+' option:selected').attr('data-colour'));
       break;
@@ -231,6 +233,7 @@
     var classList = panel$.attr('class');
     var classPrefix = 'ind-tax-img-';
     var imgClassArray = classList.match(/ind-tax-img-\S+/g);
+    var i;
     // remove any existing image classes
     for(i=0; imgClassArray && i<imgClassArray.length; i++) {
       panel$.removeClass(imgClassArray[i]);
@@ -247,10 +250,11 @@
 
   var setTaxonHeader = function(ctl) {
     // set the individual panel header to reflect the taxon
+    var heading$;
     if (subjectAccordion) {
-      var heading$ = $(ctl).closest('.individual_panel').prev('h3').children('a');
+      heading$ = $(ctl).closest('.individual_panel').prev('h3').children('a');
     } else {
-      var heading$ = $(ctl).closest('.individual_panel').prev('h3');
+      heading$ = $(ctl).closest('.individual_panel').prev('h3');
     }
     var taxonName = '';
     // if species control is a select
@@ -267,12 +271,12 @@
   var controlIsSet = function(ctl) {
     // return true if this is set
     // if control is a select
-    if ($(ctl).filter('select').length>0) {
-      if (ctl.selectedIndex!==0) return true;
+    if ($(ctl).filter('select').length>0 && ctl.selectedIndex!==0) {
+      return true;
     }
     // if control is an input
-    if ($(ctl).filter('input').length>0) {
-      if ($.trim(ctl.value).length>0) return true;
+    if ($(ctl).filter('input').length>0 && $.trim(ctl.value).length>0) {
+      return true;
     }
     return false;
   };
@@ -332,6 +336,7 @@
     // hide panel slowly then remove the html and reset the form
     panel$.slideUp('normal',function() {
       panel$.remove();
+      var indCount = $('.individual_panel').length;   
       setRemoveButtonDisplay();
       // reactivate subject accordion, if used
       if (subjectAccordion) {
@@ -376,12 +381,12 @@
   
   var addValidationMethods = function() {
     // add jQuery validation options/methods
-    jQuery.validator.addMethod("identifierRequired", function(value, element) {
+    $.validator.addMethod("identifierRequired", function(value, element) {
       // select the checked checkboxes in this identifier set and return true if any are set
       var checkbox$ = $('.identifier_checkbox:checked', $(element).closest('.idn-accordion'));
       return checkbox$.length > 0;
     }, "Please record at least one identifier for this bird");
-    jQuery.validator.addMethod("textAndBaseMustDiffer", function(value, element) {
+    $.validator.addMethod("textAndBaseMustDiffer", function(value, element) {
       // no identifier can have the same base colour and text colour as it would be unreadable
       var colourSelected$ = $('select.select_colour option:selected', $(element).closest('.idn\\:accordion\\:panel'));
       if (colourSelected$.length===2) {
@@ -389,20 +394,21 @@
       }
       return true;
     }, "Base colour is the same as text colour, please check and re-enter.");
-    jQuery.validator.addMethod("noDuplicateIdentifiers", function(value, element) {
+    $.validator.addMethod("noDuplicateIdentifiers", function(value, element) {
       // no two identifiers on the form can be of same type with same attributes
       var result = true;
       var panel$ = $(element).closest('.idn\\:accordion\\:panel');
       var fldPrefix = panel$.attr('id').replace('panel', '');
       var escFldPrefix = esc4jq(fldPrefix);
       var iCode = makeIdentifierCode(escFldPrefix);
+      var i;
       if (iCode && !(/\(\)/.test(iCode))) {
         // ignore leg ring position
         if (/^[LR][AB]/.test(iCode)) {
           iCode = 'LR'+iCode.substring(2);
         }
         var otherCode$ = $('.identifier_coded_value').not('#'+escFldPrefix+'identifier\\:coded_value');
-        for (var i=0; i<otherCode$.length; i++) {
+        for (i=0; i<otherCode$.length; i++) {
           var oCode = otherCode$[i].value;
           if (oCode!=='') {
             // ignore leg ring position
@@ -417,29 +423,26 @@
       }
       return result;
     }, "This identifier already exists on this form, please check and re-enter.");
-    jQuery.validator.addMethod('collarFormat', function (value, element) { 
+    $.validator.addMethod('collarFormat', function (value, element) { 
       if (collarRegex==='') {
         return true;
-      } else {
-        var re = new RegExp(collarRegex);
-        return this.optional(element) || re.test(value);
       }
+      var re = new RegExp(collarRegex);
+      return this.optional(element) || re.test(value);
     }, 'This is not a known neck collar format, please check the value and re-enter.');
-    jQuery.validator.addMethod('colourRingFormat', function (value, element) { 
+    $.validator.addMethod('colourRingFormat', function (value, element) { 
       if (colourRegex==='') {
         return true;
-      } else {
-        var re = new RegExp(colourRegex);
-        return this.optional(element) || re.test(value);
       }
+      var re = new RegExp(colourRegex);
+      return this.optional(element) || re.test(value);
     }, 'This is not a known colour ring format, please check the value and re-enter.');
-    jQuery.validator.addMethod('metalRingFormat', function (value, element) { 
+    $.validator.addMethod('metalRingFormat', function (value, element) { 
       if (metalRegex==='') {
         return true;
-      } else {
-        var re = new RegExp(metalRegex);
-        return this.optional(element) || re.test(value);
       }
+      var re = new RegExp(metalRegex);
+      return this.optional(element) || re.test(value);
     }, 'This is not a known metal ring format, please check the value and re-enter.');
   };
   
@@ -471,6 +474,32 @@
     }
   };
   
+  var addIndividual = function() {
+    // use subjectCount for the incremental number of individuals (not reduced when subjects removed), indCount for the actual number.
+    subjectCount++;
+    var indCount = $('.individual_panel').length;      
+    var newInd = window.indicia.wwt.newIndividual.replace(/idn:0:/g, 'idn:'+subjectCount+':')
+      .replace(/Colour-marked Individual 1/g, 'Colour-marked Individual '+(subjectCount+1));
+    var fromSelector = '#'+esc4jq($('.individual_panel').filter(':last').attr('id'));
+    $('#idn\\:subject\\:accordion').append(newInd);
+    var toSelector = '#'+esc4jq($('.individual_panel').filter(':last').attr('id'));
+    // hide remove buttons if only one bird or for birds which exist on database
+    setRemoveButtonDisplay();
+    // initialise new javascript dependent controls
+    eval(window.indicia.wwt.newJavascript.replace(/idn:0:/g, 'idn:'+subjectCount+':')
+      .replace(/idn\\\\:0\\\\:/g, 'idn\\\\:'+subjectCount+'\\\\:'));
+    // copy locks from preceding individual
+    if (indicia.locks.copyLocks!=='undefined') {
+      indicia.locks.copyLocks(fromSelector, toSelector);
+    }
+    // initialise new individual and identifier controls
+    initIndividuals('#idn\\:'+subjectCount+'\\:individual\\:panel');
+    // reactivate subject accordion, if used
+    if (subjectAccordion) {
+      $('.idn-subject-accordion').accordion('destroy').accordion({'active':indCount});
+    }
+  };
+  
   /*
    * Public functions
    */
@@ -479,16 +508,14 @@
    * initialises settings and set event handlers, called from indicia ready
    * handler.
    */
-  indicia.wwt.initForm = function(pSvcUrl, pReadNonce, pReadAuthToken, pBaseColourId, pTextColourId, 
-      pSequenceId, pPositionId, pVerticalDefault, pCollarRegex, pColourRegex, pMetalRegex, pValidate, pSubjectAccordion) {
+  indicia.wwt.initForm = function(pBaseColourId, pTextColourId, 
+      pSequenceId, pPositionId, pVerticalDefault, pCollarRegex, 
+      pColourRegex, pMetalRegex, pValidate, pSubjectAccordion) {
     // set config from PHP.
-    svcUrl = pSvcUrl;
-    readNonce = pReadNonce;
-    readAuthToken = pReadAuthToken;
-    baseColourId = parseInt(pBaseColourId);
-    textColourId = parseInt(pTextColourId);
-    sequenceId = parseInt(pSequenceId);
-    positionId = parseInt(pPositionId);
+    baseColourId = parseInt(pBaseColourId, 10);
+    textColourId = parseInt(pTextColourId, 10);
+    sequenceId = parseInt(pSequenceId, 10);
+    positionId = parseInt(pPositionId, 10);
     verticalDefault = (pVerticalDefault==='') ? '?' : pVerticalDefault;
     collarRegex = pCollarRegex;
     colourRegex = pColourRegex;
@@ -509,29 +536,7 @@
     setRemoveButtonDisplay();
     // install a click handler for the 'add another' button
     $('input#idn\\:add-another').click(function(event) {
-      // use subjectCount for the incremental number of individuals (not reduced when subjects removed), indCount for the actual number.
-      subjectCount++;
-      var indCount = $('.individual_panel').length;      
-      var newInd = window.indicia.wwt.newIndividual.replace(/idn:0:/g, 'idn:'+subjectCount+':')
-        .replace(/Colour-marked Individual 1/g, 'Colour-marked Individual '+(subjectCount+1));
-      var fromSelector = '#'+esc4jq($('.individual_panel').filter(':last').attr('id'));
-      $('#idn\\:subject\\:accordion').append(newInd);
-      var toSelector = '#'+esc4jq($('.individual_panel').filter(':last').attr('id'));
-      // hide remove buttons if only one bird or for birds which exist on database
-      setRemoveButtonDisplay();
-      // initialise new javascript dependent controls
-      eval(window.indicia.wwt.newJavascript.replace(/idn:0:/g, 'idn:'+subjectCount+':')
-        .replace(/idn\\\\:0\\\\:/g, 'idn\\\\:'+subjectCount+'\\\\:'));
-      // copy locks from preceding individual
-      if (indicia.locks.copyLocks!=='undefined') {
-        indicia.locks.copyLocks(fromSelector, toSelector);
-      }
-      // initialise new individual and identifier controls
-      initIndividuals('#idn\\:'+subjectCount+'\\:individual\\:panel');
-      // reactivate subject accordion, if used
-      if (subjectAccordion) {
-        $('.idn-subject-accordion').accordion('destroy').accordion({'active':indCount});
-      }
+      addIndividual();
     });
   };
-})(jQuery);
+}(jQuery));
