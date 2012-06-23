@@ -345,36 +345,40 @@
     });
   };
 
-  var setLiveHandlers = function() {
+  var setHandlers = function(scope) {
     // install a change handler for the colour selecters to set the ring colours
-    $('select.select_colour').live('change', function(event) {
+    $('select.select_colour', scope).bind('change', function(event) {
       autoSetCheckbox(this);
       setIdentifierVisualisation(this);
     });
     // install a keyup handler for the colour selecters to set the ring sequence
-    $('input.select_colour').live('keyup', function(event) {
+    $('input.select_colour', scope).bind('keyup', function(event) {
       $(this).val($(this).val().toUpperCase());
       autoSetCheckbox(this);
       setIdentifierVisualisation(this);
     });
     // install a change handler for the colour selecters to set the ring sequence
-    $('input.select_colour').live('change', function(event) {
+    $('input.select_colour', scope).bind('change', function(event) {
       $(this).val($(this).val().toUpperCase());
       autoSetCheckbox(this);
       setIdentifierVisualisation(this);
     });
+    // install a change handler for the taxon hidden fields to trigger change on their inputs
+    $("input[id$='occurrence:taxa_taxon_list_id']", scope).bind('change', function(event) {
+      $('#'+esc4jq(this.id+':taxon')).change();
+    });
     // install a change handler for the taxon selecters to set the pictures and header
-    $('.select_taxon').live('change', function(event) {
+    $('.select_taxon', scope).bind('change', function(event) {
       setTaxonPicture(this);
       setTaxonHeader(this);
     });
     // install an additional 'blur' handler for the autocomplete taxon selecters to set the pictures and header
-    $('input.select_taxon').live('blur', function(event) {
+    $('input.select_taxon', scope).bind('blur', function(event) {
       setTaxonPicture(this);
       setTaxonHeader(this);
     });
     // install a click handler for the remove individual button
-    $('input.idn-remove-individual').live('click', function(event) {
+    $('input.idn-remove-individual', scope).bind('click', function(event) {
       removeIndividual(this);
     });
   };
@@ -494,6 +498,7 @@
     }
     // initialise new individual and identifier controls
     initIndividuals('#idn\\:'+subjectCount+'\\:individual\\:panel');
+    setHandlers('#idn\\:'+subjectCount+'\\:individual\\:panel');
     // reactivate subject accordion, if used
     if (subjectAccordion) {
       $('.idn-subject-accordion').accordion('destroy').accordion({'active':indCount});
@@ -530,8 +535,8 @@
     }
     // initialise individual and identifier controls
     initIndividuals('body');
-    // set live handlers
-    setLiveHandlers();
+    // set handlers
+    setHandlers('body');
     // hide remove buttons if only one bird or for birds which exist on database
     setRemoveButtonDisplay();
     // install a click handler for the 'add another' button
