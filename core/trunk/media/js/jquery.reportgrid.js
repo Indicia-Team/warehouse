@@ -154,7 +154,8 @@ function simple_tooltip(target_items, name){
           }
           if (typeof action.url !== "undefined") {
             var link = action.url, linkParams=[];
-            if (div.settings.pathParam!=='' && link.indexOf('?'+div.settings.pathParam+'=')) {
+            if (div.settings.pathParam !== '' && link.indexOf('?'+div.settings.pathParam+'=') === -1) {
+              //if there is a path param but it is not in the link already then add it to the rootFolder
               row.rootFolder = div.settings.rootFolder + '?'+div.settings.pathParam+'=';
             }
             link = mergeParamsIntoTemplate(div, row, link);
