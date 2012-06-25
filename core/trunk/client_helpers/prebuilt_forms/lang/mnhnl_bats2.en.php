@@ -69,6 +69,7 @@ $custom_terms = array(
 	'search' => 'Search',
 	'Location Comment' => 'Comment',
 	'Village' => 'Village / Locality',
+	'VillageDD' => 'Village / Locality',
 	'Site type other' => 'If Others',
 	// 'Precision' is unchanged in English
 

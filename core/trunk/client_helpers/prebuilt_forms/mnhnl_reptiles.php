@@ -232,15 +232,15 @@ jQuery('[name=targetSpecies]').change();
     return  '<div id="downloads" >
   <p>'.lang::get('LANG_Data_Download').'</p>'.$control.($args['sites_download_report']!=''?'
   <form id="sitesReportRequestForm" method="post" action="">
-    <input type="hidden" id="params" name="params" value="" />
+    <input type="hidden" name="params" value="" />
     <label>'.lang::get('Sites report').':</label><input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
   </form>':'').($args['conditions_download_report']!=''?'
   <form id="conditionsReportRequestForm" method="post" action="">
-    <input type="hidden" id="params" name="params" value="" />
+    <input type="hidden" name="params" value="" />
     <label>'.lang::get('Conditions report').':</label><input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
   </form>':'').'
   <form id="speciesReportRequestForm" method="post" action="">
-    <input type="hidden" id="params" name="params" value="" />
+    <input type="hidden" name="params" value="" />
     <label>'.lang::get('Species report').':</label><input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
   </form>
 </div>'.iform_mnhnl_locModTool(self::$auth, $args, self::$node);
@@ -608,19 +608,6 @@ jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:
   protected static function getSampleListGridPreamble() {
     global $user;
     $r = '<p>'.lang::get('LANG_SampleListGrid_Preamble').(iform_loctools_checkaccess(self::$node,'superuser') ? lang::get('LANG_All_Users') : $user->name).'</p>';
-    return $r;
-  }
-  protected static function getHeaderHTML($args) {
-    $base = base_path();
-    if(substr($base, -1)!='/') $base.='/';
-    $r = '<div id="iform-header">
-    <div id="iform-logo-left"><a href="http://www.environnement.public.lu" target="_blank"><img border="0" class="government-logo" alt="'.lang::get('Gouvernement').'" src="'.$base.'sites/all/files/gouv.png"></a></div>
-    <div id="iform-logo-right"><a href="http://www.crpgl.lu" target="_blank"><img border="0" class="gabriel-lippmann-logo" alt="'.lang::get('Gabriel Lippmann').'" src="'.$base.drupal_get_path('module', 'iform').'/client_helpers/prebuilt_forms/images/mnhnl-gabriel-lippmann-logo.jpg"></a></div>
-    </div>';
-    return $r;
-  }
-  protected static function getTrailerHTML($args) {
-    $r = '<p id="iform-trailer">'.lang::get('LANG_Trailer_Text').'</p>';
     return $r;
   }
   

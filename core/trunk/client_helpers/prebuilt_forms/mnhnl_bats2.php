@@ -94,13 +94,11 @@ class iform_mnhnl_bats2 extends iform_mnhnl_bats {
               "[custom JS]\r\n".
               "[location module]\r\n".
               "[location attributes]\r\n".
-              "@lookUpListCtrl=radio_group\r\n".
               "@lookUpKey=meaning_id\r\n".
               "@sep= \r\n".
               "@tabNameFilter=Site\r\n".
               "@class=wide\r\n".
               "[location attributes]\r\n".
-              "@lookUpListCtrl=radio_group\r\n".
               "@lookUpKey=meaning_id\r\n".
               "@sep= \r\n".
               "@tabNameFilter=SiteExtras\r\n".
@@ -149,8 +147,6 @@ class iform_mnhnl_bats2 extends iform_mnhnl_bats {
           $param['name'] != 'species_include_both_names' &&
           $param['name'] != 'includeLocTools' &&
           $param['name'] != 'loctoolsLocTypeID' &&
-          $param['name'] != 'siteTypeOtherTermID' &&
-          $param['name'] != 'siteTypeOtherAttrID' &&
           $param['name'] != 'entranceDefectiveTermID' &&
           $param['name'] != 'entranceDefectiveCommentAttrID' &&
           $param['name'] != 'disturbanceOtherTermID' &&
@@ -175,8 +171,11 @@ class iform_mnhnl_bats2 extends iform_mnhnl_bats {
   // because of validation issues (ie the validation is trying to validate the hidden cloneable table)
   // we put the cloneable table outside the form.
   private static $cloneableTable = "";
+  
   protected static function getTrailerHTML($args) {
-    $r = self::$cloneableTable.'<p id="iform-trailer">'.lang::get('LANG_Trailer_Text').'</p>';
+    $r = self::$cloneableTable.
+    $r .= (isset($args['headerAndFooter']) && $args['headerAndFooter'] ?
+      '<p id="iform-trailer">'.lang::get('LANG_Trailer_Text').'</p>' : '');
     return $r;
   }
   
@@ -206,31 +205,7 @@ $.validator.messages.digits = $.validator.format(\"".lang::get('validation_digit
 $.validator.messages.integer = $.validator.format(\"".lang::get('validation_integer')."\");";
     iform_mnhnl_addCancelButton($args['interface']);
     
-    $siteTypeOtherAttrID=iform_mnhnl_getAttrID($auth, $args, 'location', 'site type other');
-    if (!$siteTypeOtherAttrID) return lang::get('This form must be used with a survey that has the site type other attribute associated with it.');
-    $siteType2AttrID=iform_mnhnl_getAttrID($auth, $args, 'location', 'Site type2');
-    if (!$siteType2AttrID) return lang::get('This form must be used with a survey that has the Site type2 attribute associated with it.');
-    $siteType2TermList = helper_base::get_termlist_terms($auth, 'bats2:sitetype', array('Other'));
-    data_entry_helper::$javascript .= "
-var myTerms = jQuery('[name=locAttr\\:".$siteType2AttrID."],[name^=locAttr\\:".$siteType2AttrID."\\:]');
-myTerms.change(function(){
-    // for a radio button the change is fired on the newly checked button
-    if(this.value==".$siteType2TermList[0]['meaning_id'].")
-      jQuery('[name=locAttr\\:".$siteTypeOtherAttrID."],[name^=locAttr\\:".$siteTypeOtherAttrID."\\:]').addClass('required').removeAttr('readonly');
-    else
-      jQuery('[name=locAttr\\:".$siteTypeOtherAttrID."],[name^=locAttr\\:".$siteTypeOtherAttrID."\\:]').removeClass('required').val('').attr('readonly',true);
-  });
-var other = jQuery('[name=locAttr\\:".$siteTypeOtherAttrID."],[name^=locAttr\\:".$siteTypeOtherAttrID."\\:]');
-other.next().remove(); // remove break
-other.prev().remove(); // remove legend
-other.removeClass('wide').remove(); // remove Other field, then bolt in after the other radio button.
-jQuery('[name^=locAttr]').filter(':radio').filter('[value=".$siteType2TermList[0]['meaning_id']."]').parent().append(other);
-if(myTerms.filter('[checked]').filter('[value=".$siteType2TermList[0]['meaning_id']."]').length)
-  jQuery('[name=locAttr\\:".$siteTypeOtherAttrID."],[name^=locAttr\\:".$siteTypeOtherAttrID."\\:]').addClass('required').removeAttr('readonly');
-else
-  jQuery('[name=locAttr\\:".$siteTypeOtherAttrID."],[name^=locAttr\\:".$siteTypeOtherAttrID."\\:]').removeClass('required').val('').attr('readonly',true);
-var recorders = jQuery('#RecorderInstructions').next();
-";
+    $r .= self::getSiteTypeJS(self::$auth, $args);
     // Move the date after the Institution
     $institutionAttrID=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Institution');
     if($institutionAttrID) {
@@ -261,10 +236,6 @@ institutionAttr.after(dateLabel);
 ";
     }
     
-    if (array_key_exists('sample:id', data_entry_helper::$entity_to_load))
-      data_entry_helper::$javascript .= "jQuery('[name=locAttr\\:".$siteType2AttrID."],[name^=locAttr\\:".$siteType2AttrID."\\:]').filter('[checked]').change();\n";
-    else
-      data_entry_helper::$javascript .= "jQuery('[name=locAttr\\:".$siteTypeOtherAttrID."],[name^=locAttr\\:".$siteTypeOtherAttrID."\\:]').removeClass('required').val('').attr('readonly',true);\n";
     // Break up the Disturbances: makes assumptions on format, and assumes that we are doing a checkbox list
     if (!empty($args['addBreaks'])) {
       $addBreakSpecs = explode(';', $args['addBreaks']);
@@ -315,10 +286,6 @@ jQuery('span').filter('.control-box').each(function(idex, elem){
     jQuery(elem).prev().after('<br/>');
   }
 });\n";
-    if (array_key_exists('sample:id', data_entry_helper::$entity_to_load))
-      data_entry_helper::$javascript .= "jQuery('[name=locAttr\\:".$siteType2AttrID."],[name^=locAttr\\:".$siteType2AttrID."\\:]').filter('[checked]').change();\n";
-    else
-      data_entry_helper::$javascript .= "jQuery('[name=locAttr\\:".$siteTypeOtherAttrID."],[name^=locAttr\\:".$siteTypeOtherAttrID."\\:]').removeClass('required').val('').attr('readonly',true);\n";
     if (!empty($args['attributeValidation'])) {
       $rules = array();
       $argRules = explode(';', $args['attributeValidation']);
@@ -363,10 +330,22 @@ $.validator.addMethod('smg-endtime', function(value, element){
   \"".lang::get('validation_smg-endtime')."\");
 $.validator.addMethod('scNumDead', function(value, element){
   var assocNumAlive = jQuery(element).closest('tr').find('.scNumAlive');
-  if(jQuery(element).val()=='' && assocNumAlive.val()=='') return true;
-  return ((jQuery(element).val()=='' ? 0 : jQuery(element).val()) + (assocNumAlive.val()=='' ? 0 : assocNumAlive.val()) > 0)
+  var valid = true
+  if(jQuery(element).val()!='' || assocNumAlive.val()!='') {
+    valid = ((jQuery(element).val()=='' ? 0 : jQuery(element).val()) + (assocNumAlive.val()=='' ? 0 : assocNumAlive.val()) > 0);
+  }
+  if(valid){
+    assocNumAlive.removeClass('ui-state-error')
+  } else {
+    assocNumAlive.addClass('ui-state-error')
+  }
+  return valid;
 },
   \"".lang::get('validation_scNumDead')."\");
+jQuery('.scNumAlive').live('change', function(){
+  var assocNumDead = jQuery(this).closest('tr').find('.scNumDead');
+  assocNumDead.valid();
+});
 $.validator.addMethod('no_record', function(value, element){
   var numRows = jQuery('.scPresence').filter('[value=1]').length;
   var isChecked = jQuery(element).filter('[checked]').length>0;

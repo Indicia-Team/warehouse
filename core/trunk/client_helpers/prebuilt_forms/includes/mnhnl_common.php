@@ -508,23 +508,24 @@ clearLocation = function(hookArg){ // clears all the data in the fields.
   jQuery('#".$options['mainFieldID'].($args['locationMode']!='multi' ? ",#sample-location-name,#sample-location-id" : "").",#location-name,#centroid_sref,#imp-srefX,#imp-srefY,#centroid_geom,#boundary_geom,[name=location\\:comment],#location-code').val('');
   jQuery('#location_location_type_id').val('$primary');
   // first  to remove any hidden multiselect checkbox unclick fields
-  jQuery('[name^=locAttr\\:]').filter('.multiselect').remove();
-  jQuery('[name^=locAttr\\:]').filter(':checkbox').removeAttr('checked').each(function(idx,elem){
+  var attrList=jQuery('[name^=locAttr\\:]').not('[name$=\\:term]');
+  attrList.filter('.multiselect').remove();
+  attrList.filter(':checkbox').removeAttr('checked').each(function(idx,elem){
     var name = jQuery(elem).attr('name').split(':');
     jQuery('[name^=locAttr\\:'+name[1]+'\\:]').filter(':hidden').remove();
   });
   // rename
-  jQuery('[name^=locAttr\\:]').each(function(){
+  attrList.each(function(){
     var name = jQuery(this).attr('name').split(':');
     if(name[1].indexOf('[]') > 0) name[1] = name[1].substr(0, name[1].indexOf('[]'));
     jQuery(this).attr('name', name[0]+':'+name[1]);
   });
   // reset values (checkboxes done above).
-  jQuery('[name^=locAttr\\:]').filter(':radio').removeAttr('checked');
-  jQuery('[name^=locAttr\\:]').filter(':text').val('');
-  jQuery('[name^=locAttr\\:]').filter('select').val('');
+  attrList.filter(':radio').removeAttr('checked');
+  attrList.filter(':text').val('');
+  attrList.filter('select').val('');
   // rename checkboxes to add square brackets
-  jQuery('[name^=locAttr\\:]').filter(':checkbox').each(function(idx,elem){
+  attrList.filter(':checkbox').each(function(idx,elem){
 	var name = jQuery(elem).attr('name').split(':');
 	var similar = jQuery('[name=locAttr\\:'+name[1]+'],[name=locAttr\\:'+name[1]+'\\[\\]]').filter(':checkbox');
 	if(similar.length > 1) // only do this for checkbox groups.
@@ -682,6 +683,18 @@ loadLocation = function(feature){ // loads all the data into the location fields
           } else {
             jQuery('[name=locAttr\\:'+data[i]['location_attribute_id']+']')
                       .attr('name', 'locAttr:'+data[i]['location_attribute_id']+':'+data[i].id).val(data[i].raw_value);
+            if(jQuery('[name=locAttr\\:'+data[i]['location_attribute_id']+'\\:term]').length>0){ // autocomplete entries: force a lookup, we are using meaning_id
+              jQuery('[name=locAttr\\:'+data[i]['location_attribute_id']+'\\:term]').val('');
+              jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/termlists_term' +
+                '?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&preferred=t&meaning_id='+data[i].raw_value+'&callback=?', function(tdata) {
+                if(tdata.length>0){
+                  jQuery('[name^=locAttr]').filter('[value='+tdata[0].meaning_id+']').each(function(idx,elem){
+                    var name = jQuery(elem).attr('name').split(':');
+                    jQuery('[name=locAttr\\:'+name[1]+'\\:term]').val(tdata[0].term);
+                  });
+                }
+              });
+            }
           }
         }
       }

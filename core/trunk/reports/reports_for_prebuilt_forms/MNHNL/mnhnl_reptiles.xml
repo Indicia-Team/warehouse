@@ -37,7 +37,6 @@
     <param name='userID_attr_id' display='CMS User ID Sample Attribute ID' description='Sample Attribute ID used to Identify User' datatype='int' />
     <param name='userID' display='CMS User ID' description='CMS User ID: use -1 for superusers' datatype='int' />
     <param name='userName_attr_id' display='CMS User Name Sample Attribute ID' description='Sample Attribute ID used to Identify User Name' datatype='int' />
-    <param name='userName' display='CMS User Name' description='CMS User Name' datatype='text' />
     <param name='target_species_attr_id' display='Target Species Attribute ID' description='Sample Attribute ID used to Identify the Reptile Target Species' datatype='int' />
   </params>
   <columns>
