@@ -28,17 +28,13 @@
  * @subpackage Models
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
-class Identifiers_subject_observation_Model extends ORM
-{
+class Identifiers_subject_observation_Model extends ORM {
 
-  protected $has_one = array(
-    //'subject_observation',
-    //'identifier',
-  );
   protected $belongs_to = array(
     'subject_observation',
     'identifier',
     'created_by'=>'user',
+    'updated_by'=>'user',
   );
 
   public function validate(Validation $array, $save = FALSE) {
@@ -49,9 +45,50 @@ class Identifiers_subject_observation_Model extends ORM
 
     // Explicitly add those fields for which we don't do validation
     $this->unvalidatedFields = array(
-      'deleted',
+      'matched', 'verified_status', 'verified_by_id', 'verified_on', 'deleted',
     );
     return parent::validate($array, $save);
+  }
+  
+  public function caption()
+  { 
+    $species = array();
+    $result = $this->db->select('o.taxon')
+        ->from('occurrences_subject_observations as oso')
+        ->join('list_occurrences as o', array('o.id'=>'oso.occurrence_id'))
+        ->where(array('oso.deleted'=>'f', 'oso.subject_observation_id'=>$this->subject_observation_id))
+        ->get()->result();
+    foreach($result as $row) 
+      $species[] = $row->taxon;
+    return 'Identifier '.$this->identifier->coded_value .' for observation of '.implode(',',$species);
+  }
+  
+  // Override preSubmit to add in the verifier (verified_by_id) and verification date (verified_on) if the
+  // identifiers subject observation is being set to status=V(erified)
+  protected function preSubmit()
+  {
+    if (array_key_exists('verified_status', $this->submission['fields']))
+    {
+      $rs = $this->submission['fields']['verified_status']['value'];
+      // If we are making it verified in the submitted data, but we don't already have a verifier in
+      // the database
+      if (($rs == 'V') && !$this->verified_by_id)
+      {
+        $defaultUserId = Kohana::config('indicia.defaultPersonId');
+        // Set the verifier to the logged in user, or the default user ID from config if not logged
+        // into Warehouse, if it is not in the submission
+        if (!array_key_exists('verified_by_id', $this->submission['fields']))
+          $this->submission['fields']['verified_by_id']['value'] = isset($_SESSION['auth_user']) ? $_SESSION['auth_user'] : $defaultUserId;
+        // and store the date of the verification event if not specified.
+        if (!array_key_exists('verified_on', $this->submission['fields']))
+          $this->submission['fields']['verified_on']['value'] = date("Ymd H:i:s");
+      } else {
+        // Completed or in progress data not verified
+        $this->submission['fields']['verified_by_id']['value']='';
+        $this->submission['fields']['verified_on']['value']='';
+      }
+    }
+    parent::preSubmit();
   }
 
 }

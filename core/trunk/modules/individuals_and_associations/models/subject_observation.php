@@ -80,19 +80,19 @@ class Subject_Observation_Model extends ORM_Tree
   }
 
   /**
-   * Returns an abbreviated version of the description to act as a caption
+   * Returns the species this is an observation of to act as the caption. 
    */
   public function caption()
   {
-    if ($this->id) {
-      if (strlen($this->comment)>30) {
-        return substr($this->comment, 0, 30).'...';
-      } else {
-        return $this->comment;
-      }
-    } else {
-      return $this->getNewItemCaption();
-    }
+    $species = array();
+    $result = $this->db->select('o.taxon')
+        ->from('occurrences_subject_observations as oso')
+        ->join('list_occurrences as o', array('o.id'=>'oso.occurrence_id'))
+        ->where(array('oso.deleted'=>'f', 'oso.subject_observation_id'=>$this->id))
+        ->get()->result();
+    foreach($result as $row) 
+      $species[] = $row->taxon;
+    return 'Observation of '.implode(',',$species);
   }
 
   /**
