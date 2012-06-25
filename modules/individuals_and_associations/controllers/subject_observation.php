@@ -173,6 +173,11 @@ class Subject_observation_Controller extends Gridview_Base_Controller {
         'title' => 'Occurrences',
         'actions'=>array('edit')
       ),
+      array(
+        'controller' => 'identifiers_subject_observation',
+        'title' => 'Identifiers',
+        'actions'=>array('edit')
+      ),
     );
   }
 
