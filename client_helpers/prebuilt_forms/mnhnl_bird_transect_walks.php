@@ -460,7 +460,7 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
 ";
     drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/hasharray.js', 'module');
     drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/jquery.datagrid.js', 'module');
-    if (method_exists(get_called_class(), 'getHeaderHTML')) $r .= call_user_func(array(get_called_class(), 'getHeaderHTML'), true, $args);
+    if (method_exists(get_called_class(), 'getHeaderHTML')) $r .= call_user_func(array(get_called_class(), 'getHeaderHTML'), $args);
     // Work out list of locations this user can see.
     $locations = iform_loctools_listlocations($node);
     ///////////////////////////////////////////////////////////////////
@@ -544,22 +544,22 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
   <div id="downloads" class="mnhnl-btw-datapanel">
     <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_transect_direction_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
       <p>'.lang::get('LANG_Direction_Report').'</p>
-      <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].', "direction_attr_id":'.$args['sample_walk_direction_id'].', "closed_attr_id":'.$args['sample_closure_id'].'}\' />
+      <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "direction_attr_id":'.$args['sample_walk_direction_id'].', "closed_attr_id":'.$args['sample_closure_id'].'}\' />
       <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Direction_Report_Button').'">
     </form>
     <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
       <p>'.lang::get('LANG_Initial_Download').'</p>
-      <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].', "closed_attr_id":'.$args['sample_closure_id'].', "download": "INITIAL"}\' />
+      <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "closed_attr_id":'.$args['sample_closure_id'].', "download": "INITIAL"}\' />
       <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Initial_Download_Button').'">
     </form>
     <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
       <p>'.lang::get('LANG_Confirm_Download').'</p>
-      <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].', "closed_attr_id":'.$args['sample_closure_id'].', "download": "CONFIRM"}\' />
+      <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "closed_attr_id":'.$args['sample_closure_id'].', "download": "CONFIRM"}\' />
       <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Confirm_Download_Button').'">
     </form>
     <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
       <p>'.lang::get('LANG_Final_Download').'</p>
-      <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].', "closed_attr_id":'.$args['sample_closure_id'].', "download": "FINAL"}\' />
+      <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "closed_attr_id":'.$args['sample_closure_id'].', "download": "FINAL"}\' />
       <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Final_Download_Button').'">
     </form>
   </div>';
@@ -589,7 +589,7 @@ $('#controls').bind('tabsshow', function(event, ui) {
       if(count($tabs)>1){ // close tabs div if present
         $r .= "</div>";
       }
-      if (method_exists(get_called_class(), 'getTrailerHTML')) $r .= call_user_func(array(get_called_class(), 'getTrailerHTML'), true, $args);
+      if (method_exists(get_called_class(), 'getTrailerHTML')) $r .= call_user_func(array(get_called_class(), 'getTrailerHTML'), $args);
       return $r;
     }
     ///////////////////////////////////////////////////////////////////
@@ -1424,7 +1424,7 @@ $('div#occ_grid').indiciaDataGrid('rpt:mnhnl_btw_list_occurrences', {
 ";
     };
     $r .= "</div><div><form><input id=\"return-to-main\" type=\"button\" value=\"".lang::get('LANG_Return')."\" onclick=\"window.location.href='".url('node/'.($node->nid), array('query' => 'Main'))."'\"></form></div></div>\n";
-    if (method_exists(get_called_class(), 'getTrailerHTML')) $r .= call_user_func(array(get_called_class(), 'getTrailerHTML'), true, $args);
+    if (method_exists(get_called_class(), 'getTrailerHTML')) $r .= call_user_func(array(get_called_class(), 'getTrailerHTML'), $args);
     return $r;
   }
 

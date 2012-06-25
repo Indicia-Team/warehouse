@@ -363,29 +363,16 @@ deleteSurvey = function(sampleID){
     return  '<div id="downloads" >
     <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_butterflies_grid.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=downloadgrid">
       <p>'.lang::get('LANG_Grid_Based_Data_Download').'</p>
-      <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].', "username_attr_id":'.$userNameAttr.', "observer_attr_id":'.$ObserverIdAttr.', "month_attr_id":'.$MonthIdAttr.', "numberinmonth_attr_id":'.$NumInMonthIdAttr.', "starttime_attr_id":'.$StartTimeIdAttr.', "endtime_attr_id":'.$EndTimeIdAttr.', "temperature_attr_id":'.$TempIdAttr.', "wind_attr_id":'.$WindIdAttr.', "cloud_attr_id":'.$CloudIdAttr.'}\' />
+      <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "username_attr_id":'.$userNameAttr.', "observer_attr_id":'.$ObserverIdAttr.', "month_attr_id":'.$MonthIdAttr.', "numberinmonth_attr_id":'.$NumInMonthIdAttr.', "starttime_attr_id":'.$StartTimeIdAttr.', "endtime_attr_id":'.$EndTimeIdAttr.', "temperature_attr_id":'.$TempIdAttr.', "wind_attr_id":'.$WindIdAttr.', "cloud_attr_id":'.$CloudIdAttr.'}\' />
       <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Grid_Download_Button').'">
     </form>
 	<form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_butterflies_section.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=downloadsection">
       <p>'.lang::get('LANG_Section_Based_Data_Download').'</p>
-      <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].', "username_attr_id":'.$userNameAttr.', "observer_attr_id":'.$ObserverIdAttr.', "month_attr_id":'.$MonthIdAttr.', "numberinmonth_attr_id":'.$NumInMonthIdAttr.', "starttime_attr_id":'.$StartTimeIdAttr.', "endtime_attr_id":'.$EndTimeIdAttr.', "temperature_attr_id":'.$TempIdAttr.', "wind_attr_id":'.$WindIdAttr.', "cloud_attr_id":'.$CloudIdAttr.', "habitat_attr_id":'.$HabitatIdAttr.', "no_obs_attr_id":'.$NoObsIdAttr.', "reliability_attr_id":'.$ReliabilityIdAttr.'}\' />
+      <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "username_attr_id":'.$userNameAttr.', "observer_attr_id":'.$ObserverIdAttr.', "month_attr_id":'.$MonthIdAttr.', "numberinmonth_attr_id":'.$NumInMonthIdAttr.', "starttime_attr_id":'.$StartTimeIdAttr.', "endtime_attr_id":'.$EndTimeIdAttr.', "temperature_attr_id":'.$TempIdAttr.', "wind_attr_id":'.$WindIdAttr.', "cloud_attr_id":'.$CloudIdAttr.', "habitat_attr_id":'.$HabitatIdAttr.', "no_obs_attr_id":'.$NoObsIdAttr.', "reliability_attr_id":'.$ReliabilityIdAttr.'}\' />
       <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Section_Download_Button').'">
     </form>
   </div>';
 	
-  }
-  protected static function getHeaderHTML($args) {
-    $base = base_path();
-    if(substr($base, -1)!='/') $base.='/';
-    $r = '<div id="iform-header">
-    <div id="iform-logo-left"><a href="http://www.environnement.public.lu" target="_blank"><img border="0" class="government-logo" alt="'.lang::get('Gouvernement').'" src="'.$base.'sites/all/files/gouv.png"></a></div>
-    <div id="iform-logo-right"><a href="http://www.crpgl.lu" target="_blank"><img border="0" class="gabriel-lippmann-logo" alt="'.lang::get('Gabriel Lippmann').'" src="'.$base.drupal_get_path('module', 'iform').'/client_helpers/prebuilt_forms/images/mnhnl-gabriel-lippmann-logo.jpg"></a></div>
-    </div>';
-    return $r;
-  }
-  protected static function getTrailerHTML($args) {
-    $r = '<p id="iform-trailer">'.lang::get('LANG_Trailer_Text').'</p>';
-    return $r;
   }
   
   /**
