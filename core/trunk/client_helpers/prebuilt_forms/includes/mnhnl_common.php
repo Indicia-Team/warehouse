@@ -399,6 +399,41 @@ function iform_mnhnl_lux5kgridControl($auth, $args, $node, $options) {
                               ), $options);
         break;
     }
+    // we are using meaning_ids: for the location attributes we need to convert the id to the term for the templates. Can't just output value - convert raw value
+    $attrArgs = array(
+       'valuetable'=>'location_attribute_value',
+       'attrtable'=>'location_attribute',
+       'key'=>'location_id',
+       'fieldprefix'=>'locAttr',
+       'extraParams'=>$auth['read'],
+       'survey_id'=>$args['survey_id']
+      );
+    $locationAttributes = data_entry_helper::getAttributes($attrArgs, false);
+    $termlists=array();
+    $requiresConv=array();
+    foreach($locationAttributes as $locAttr)
+      if(!is_null($locAttr["termlist_id"])) {
+        $termlists[] = $locAttr["termlist_id"];
+        $requiresConv[]=$locAttr["attributeId"];
+      }
+    data_entry_helper::$javascript .= "\nvar requiresConv = ".json_encode($requiresConv).";\n";
+    if(count($termlists)>0){
+      data_entry_helper::$javascript .= "var terms = {";
+	  $extraParams = $auth['read'] + array('view'=>'detail', 'preferred'=>'t', 'orderby'=>'meaning_id', 'termlist_id'=>$termlists);
+	  $terms_data_def=array('table'=>'termlists_term','extraParams'=>$extraParams);
+	  $terms = data_entry_helper::get_population_data($terms_data_def);
+	  $first = true;
+	  foreach ($terms as $term) {
+		data_entry_helper::$javascript .= ($first ? '' : ',').$term['meaning_id'].": \"".htmlSpecialChars($term['term'])."\"\n";
+		$first=false;
+	  }
+      data_entry_helper::$javascript .= "};
+convertTerm=function(id){
+	if(typeof terms[id] == 'undefined') return id;
+	return terms[id];
+}
+";
+    }
     $precisionAttrID=iform_mnhnl_getAttrID($auth, $args, 'location', 'Precision');
     if($precisionAttrID && isset($args['movePrecision']) && $args['movePrecision']) {
       data_entry_helper::$javascript .= "
@@ -897,7 +932,7 @@ populateExtensions = function(locids){
         if(attrid >= 0) {
           while(attrid < attList.length && attList[attrid].location_id == location_id) {
             if (attList[attrid].id){
-              template = template.replace('{'+attList[attrid].caption+'}',attList[attrid].value);
+              template = template.replace('{'+attList[attrid].caption+'}',(attList[attrid].termlist_id != null ? convertTerm(parseInt(attList[attrid].raw_value)) : attList[attrid].value));
             }
             attrid++;
           }
