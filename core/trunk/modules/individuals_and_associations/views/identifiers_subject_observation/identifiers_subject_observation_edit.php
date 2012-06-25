@@ -23,15 +23,30 @@
 
 $id = html::initial_value($values, 'identifiers_subject_observation:id');
 require_once(DOCROOT.'client_helpers/data_entry_helper.php');
+$readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 ?>
 <p>This page allows you to specify the details of an identifier for a subject observation.</p>
-<form class="cmxform" action="<?php echo url::site().'identifiers_subject_observation/save'; ?>" method="post">
-<?php echo $metadata; ?>
+<form class="cmxform" action="<?php echo url::site().'identifiers_subject_observation/save'; ?>" method="post" id="entry-form">
+<?php 
+data_entry_helper::enable_validation('entry-form');
+echo $metadata; 
+?>
 <fieldset>
 <input type="hidden" name="identifiers_subject_observation:id" value="<?php echo $id ?>" />
 <input type="hidden" name="identifiers_subject_observation:subject_observation_id" value="<?php echo html::initial_value($values, 'identifiers_subject_observation:subject_observation_id'); ?>" />
 <legend>Identifier Details</legend>
 <?php
+echo data_entry_helper::autocomplete(array(
+  'label' => 'Identifier',
+  'fieldname' => 'identifiers_subject_observation:identifier_id',
+  'table' => 'identifier',
+  'captionField' => 'coded_value',
+  'valueField' => 'id',
+  'extraParams' => $readAuth,
+  'default' => html::initial_value($values, 'identifiers_subject_observation:identifier_id'),
+  'defaultCaption' => html::initial_value($values, 'identifier:coded_value'),
+  'validation'=>'required'
+));
 echo data_entry_helper::checkbox(array(
   'fieldname'=>'identifiers_subject_observation:matched',
   'label'=>'Matched',
@@ -42,8 +57,9 @@ echo data_entry_helper::select(array(
   'fieldname'=>'identifiers_subject_observation:verified_status',
   'label'=>'Verified status',
   'helpText'=>'Status of this identifier observation.',
-  'lookupValues'=>array('M'=>'misread', 'V'=>'verified', 'U'=>'unknown'),
-  'default'=>html::initial_value($values, 'identifiers_subject_observation:verified_status')
+  'lookupValues'=>array(''=>'Please select>', 'U'=>'unknown', 'M'=>'misread', 'V'=>'verified'),
+  'default'=>html::initial_value($values, 'identifiers_subject_observation:verified_status'),
+  'validation'=>'required'
 ));
   
 ?>

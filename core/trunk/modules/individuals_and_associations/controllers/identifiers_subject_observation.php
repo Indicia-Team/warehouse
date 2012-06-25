@@ -91,6 +91,29 @@ class Identifiers_subject_observation_Controller extends Gridview_Base_Controlle
     $this->page_breadcrumbs[] = html::anchor('subject_observation/edit/'.$so, $so->caption());
     $this->page_breadcrumbs[] = $this->model->caption();
   }
+  
+  /**
+   *  Setup the default values to use when loading this controller to create a new image.   
+   */
+  protected function getDefaults() {    
+    $r = parent::getDefaults();    
+    if ($this->uri->method(false)=='create') {
+      // subject_observation_id is passed as first argument in URL when creating. 
+      $r['identifiers_subject_observation:subject_observation_id'] = $this->uri->argument(1);
+    }
+    return $r;
+  }
+  
+  /**
+   * Retrieves additional values from the model that are required by the edit form.
+   * @return array List of additional values required by the form.
+   */
+  protected function getModelValues() {
+    $r = parent::getModelValues();
+    if ($this->model->identifier_id)
+      $r['identifier:coded_value'] = $this->model->identifier->coded_value;
+    return $r;      
+  }
 }
   
 ?>
