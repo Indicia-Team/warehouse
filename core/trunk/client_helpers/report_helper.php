@@ -1249,7 +1249,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         $defsettings = array_merge(array(
           'fillColor'=> '#ff0000',
           'strokeColor'=> '#ff0000',
-          'strokeWidth'=>1,
+          'strokeWidth'=>"\${getstrokewidth}",
           'fillOpacity'=>0.4,
           'strokeOpacity'=>0.4,
           'pointRadius'=>4,
@@ -1257,8 +1257,13 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         ), $settings);
         if ($options['displaySymbol']!=='vector')
           $defsettings['graphicName']=$options['displaySymbol'];
+        // The following function uses the strokeWidth to pad out the squares which go too small when zooming the map out. Points 
+        // always display the same size so are no problem.
+        $styleFns = array("getstrokewidth: function(feature) {          
+          var width=feature.geometry.getBounds().right - feature.geometry.getBounds().left;
+          return (width===0) ? 1 : 6 - (width / feature.layer.map.getResolution());
+        }");
         if (isset($options['valueOutput'])) {
-          $styleFns = array();
           foreach($options['valueOutput'] as $type => $outputdef) {
             $value = $outputdef['valueField'];
             if (preg_match('/{(?P<name>.+)}/', $outputdef['minValue'], $matches))
@@ -1292,8 +1297,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
                   '}';
             $defsettings[$type]="\${get$type}";
           }
-          $styleFns = implode(",\n", $styleFns);
         }
+        $styleFns = implode(",\n", $styleFns);
         // selected features are color blue by default
         $selsettings = array_merge($defsettings, array(
           'strokeWidth'=>9,
