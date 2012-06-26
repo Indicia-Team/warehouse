@@ -736,7 +736,9 @@ $('.ui-state-default').live('mouseout', function() {
    * <li><b>defaults</b><br/>
    * Associative array of default values for each form element.
    * </li>
-   * <li><b>ignoreParams</b><br/>
+   * <li><b>paramsToHide</b><br/>
+   * An optional array of parameter names for parameters that should be added to the form output as hidden inputs rather than visible controls.
+   * <li><b>paramsToExclude</b><br/>
    * An optional array of parameter names for parameters that should be skipped in the form output despite being in the form definition.
    * </li>
    * <li><b>presetParams</b><br/>
@@ -763,10 +765,16 @@ $('.ui-state-default').live('mouseout', function() {
       'helpText' => true
     ), $options);
     $r = '';
+    // Any ignored parameters will not be in the requested parameter form definition, but we do need hiddens
+    foreach($options['paramsToHide'] as $key) {
+      $default = isset($options['defaults'][$key]) ? $options['defaults'][$key] : '';
+      $fieldPrefix=(isset($options['fieldNamePrefix']) ? $options['fieldNamePrefix'].'-' : '');
+      $r .= "<input type=\"hidden\" name=\"$fieldPrefix$key\" value=\"$default\" class=\"test\"/>\n";
+    }
     foreach($options['form'] as $key=>$info) {
       $tools = array(); 
       // Skip parameters if we have been asked to ignore them
-      if (!isset($options['ignoreParams']) || !in_array($key, $options['ignoreParams'])) 
+      if (!isset($options['paramsToExclude']) || !in_array($key, $options['paramsToExclude'])) 
         $r .= self::get_params_form_control($key, $info, $options, $tools);
       // If the form has defined any tools to add to the map, we need to create JavaScript to add them to the map.
       if (count($tools)) {
