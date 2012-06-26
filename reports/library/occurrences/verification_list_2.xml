@@ -23,7 +23,11 @@
   #agreements_join#
   #joins#
   WHERE #sharing_filter# 
-  AND (xo.record_status in ('C','S') OR '#records#' = 'all')
+  AND ('#records#' = 'all'
+    OR ('#records#' IN ('unverified','fail') AND xo.record_status IN ('C','S'))
+    OR ('#records#'='verified' AND xo.record_status='V')
+    OR ('#records#'='dubious' AND xo.record_status='D')
+    OR ('#records#'='rejected' AND xo.record_status='R'))
   AND (o.certainty = 'C' or o.certainty is null)
   AND ('#records#'&lt;&gt;'fail' OR oc.occurrence_id is not null)
   AND ('#searchArea#'='' OR st_intersects(s.geom, st_geomfromtext('#searchArea#',900913)))
@@ -36,7 +40,7 @@
     <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
     <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
     <param name='records' display='Records to include' datatype='lookup'
-        lookup_values='unverified:All unverified records,fail:Records failing automated checks,all:All records' />
+        lookup_values='unverified:All unverified records,fail:Unverified records failing automated checks,verified:All verified records,dubious:All dubious records,rejected:All rejected records,all:All records' />
     <param name='searchArea' display='Report Search Area' datatype='geometry' allow_buffer='true' />
     <param name='idlist' display='List of IDs' description='Comma separated list of occurrence IDs to filter to.' datatype='idlist' fieldname='o.id' alias='occurrence_id' />
     <param name='expertise_location' display='Location of Expertise' description='Provide the location in which your expertise applies' datatype='lookup' 
@@ -62,8 +66,12 @@
     <column name='taxon_group' display='Taxon Group' sql='o.taxon_group' datatype='text' visible="false" />
     <column name='record_status' display='State' sql='xo.record_status' visible="false" />
     <column name='geom' visible='false' mappable="true" sql='st_astext(s.geom)' />
-    <column name='strokewidth' visible='false' feature_style="strokeWidth" sql="CASE WHEN s.entered_sref_system ~ '^[0-9]+$' THEN 1 ELSE length(s.entered_sref) / 3 END" />
-    <column name='fillopacity' visible='false' feature_style="fillOpacity" sql='length(s.entered_sref) / 24.0' />
+    <column name='strokewidth' visible='false' feature_style="strokeWidth" sql='length(o.public_entered_sref) / 3' />
+    <column name='fillopacity' visible='false' feature_style="fillOpacity" sql='length(o.public_entered_sref) / 24.0' />
+    <column name='strokecolor' visible='false' feature_style="strokeColor" sql="case xo.record_status when 'C' then 
+      case o.certainty when 'C' then 'green' when 'L' then 'orange' when 'U' then 'red' else 'blue' end
+    else 'black' end" />
+    <column name='fillcolor' visible='false' feature_style="fillColor" sql="case xo.record_status when 'V' then 'green' when 'D' then 'orange' when 'R' then 'red' else 'blue' end" />
     <column name='pass' visible='false' sql="CASE WHEN oc.id IS NULL THEN '&lt;div class=&quot;pass-icon&quot; title=&quot;This record passes all automated verification checks.&quot;/&gt;&lt;/div&gt;' END" />
     <column name='fails' display='Check' 
         sql="array_to_string(array_agg('&lt;div class=&quot;fail-icon ' || oc.generated_by || '&quot; title=&quot;' || oc.comment || '&quot;&gt;&lt;/div&gt;'),' ')" aggregate='true' 
