@@ -2644,7 +2644,7 @@ class iform_wwt_colour_marked_report {
       // create link to the new matching identifier
       unset($values['identifiers_subject_observation:id']);
       $values['identifiers_subject_observation:identifier_id'] = $new_id;
-      $values['identifiers_subject_observation:matched'] = $identifier_status!=='U';
+      $values['identifiers_subject_observation:matched'] = $identifier_status!=='U' ? 't' : 'f';
       unset($values['identifiers_subject_observation:verified_status']);
       unset($values['identifiers_subject_observation:verified_by_id']);
       unset($values['identifiers_subject_observation:verified_on']);
@@ -2663,7 +2663,7 @@ class iform_wwt_colour_marked_report {
       // create new link to a new identifier which we also create here
       unset($values['identifiers_subject_observation:id']);
       unset($values['identifiers_subject_observation:identifier_id']);
-      $values['identifiers_subject_observation:matched'] = false;
+      $values['identifiers_subject_observation:matched'] = 'f';
       unset($values['identifiers_subject_observation:verified_status']);
       unset($values['identifiers_subject_observation:verified_by_id']);
       unset($values['identifiers_subject_observation:verified_on']);
