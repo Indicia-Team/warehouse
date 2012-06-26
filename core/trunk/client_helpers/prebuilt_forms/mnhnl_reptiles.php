@@ -218,7 +218,7 @@ class iform_mnhnl_reptiles extends iform_mnhnl_dynamic_1 {
         ));
     data_entry_helper::$javascript .= "
 jQuery('[name=targetSpecies]').change(function(){
-  jQuery('[name=params]').val('{\"survey_id\":".$args['survey_id'].", \"location_type_id\":".$primary.", \"taxon_list_id\":".$args['extra_list_id'].", \"target_species\":'+jQuery(this).val()+'}');
+  jQuery('.downloadreportparams').val('{\"survey_id\":".$args['survey_id'].", \"location_type_id\":".$primary.", \"taxon_list_id\":".$args['extra_list_id'].", \"target_species\":'+jQuery(this).val()+'}');
   var filename=jQuery(this).find('[selected]')[0].text.replace(/ /g, \"\");
   jQuery('#sitesReportRequestForm').attr('action',
     '".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=".$args['sites_download_report'].".xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv&filename=".$args['reportFilenamePrefix']."Sites');
@@ -232,16 +232,16 @@ jQuery('[name=targetSpecies]').change();
     return  '<div id="downloads" >
   <p>'.lang::get('LANG_Data_Download').'</p>'.$control.($args['sites_download_report']!=''?'
   <form id="sitesReportRequestForm" method="post" action="">
-    <input type="hidden" name="params" value="" />
-    <label>'.lang::get('Sites report').':</label><input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
+    <input type="hidden" name="params" class="downloadreportparams" value="" />
+    <label>'.lang::get('Sites report').':</label><input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
   </form>':'').($args['conditions_download_report']!=''?'
   <form id="conditionsReportRequestForm" method="post" action="">
-    <input type="hidden" name="params" value="" />
-    <label>'.lang::get('Conditions report').':</label><input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
+    <input type="hidden" name="params" class="downloadreportparams" value="" />
+    <label>'.lang::get('Conditions report').':</label><input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
   </form>':'').'
   <form id="speciesReportRequestForm" method="post" action="">
-    <input type="hidden" name="params" value="" />
-    <label>'.lang::get('Species report').':</label><input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
+    <input type="hidden" name="params" class="downloadreportparams" value="" />
+    <label>'.lang::get('Species report').':</label><input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
   </form>
 </div>'.iform_mnhnl_locModTool(self::$auth, $args, self::$node);
 	

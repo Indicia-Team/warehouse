@@ -228,17 +228,17 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
     <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/'.$rep1.'&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename='.$args['reportFilenamePrefix'].'sitesreport">
       <p>'.lang::get('LANG_Sites_Download').'</p>
       <input type="hidden" name="params" value=\'{"website_id":'.$args['website_id'].', "survey_id":'.$args['survey_id'].', "primary_loc_type_id":'.$submittedLocationTypeID.', "primary_name":"'.lang::get('LANG_Location_Type_Primary').'", "secondary_loc_type_id":'.$confirmedLocationTypeID.', "secondary_name":"'.lang::get('LANG_Location_Type_Secondary').'"}\' />
-      <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
+      <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
     </form>
     <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/'.$rep2.'&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename='.$args['reportFilenamePrefix'].'conditionsreport">
       <p>'.lang::get('LANG_Conditions_Download').'</p>
       <input type="hidden" name="params" value=\'{"website_id":'.$args['website_id'].', "survey_id":'.$args['survey_id'].', "primary_loc_type_id":'.$submittedLocationTypeID.', "primary_name":"'.lang::get('LANG_Location_Type_Primary').'", "secondary_loc_type_id":'.$confirmedLocationTypeID.', "secondary_name":"'.lang::get('LANG_Location_Type_Secondary').'"}\' />
-      <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
+      <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
     </form>
     <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/'.$rep3.'&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename='.$args['reportFilenamePrefix'].'speciesreport">
       <p>'.lang::get('LANG_Species_Download').'</p>
       <input type="hidden" name="params" value=\'{"website_id":'.$args['website_id'].', "survey_id":'.$args['survey_id'].', "primary_loc_type_id":'.$submittedLocationTypeID.', "primary_name":"'.lang::get('LANG_Location_Type_Primary').'", "secondary_loc_type_id":'.$confirmedLocationTypeID.', "secondary_name":"'.lang::get('LANG_Location_Type_Secondary').'"}\' />
-      <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
+      <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
     </form>
   </div>'.iform_mnhnl_locModTool(self::$auth, $args, self::$node);
     $r .= self::getSiteTypeJS(self::$auth, $args);
