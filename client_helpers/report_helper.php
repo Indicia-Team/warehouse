@@ -411,7 +411,7 @@ class report_helper extends helper_base {
         }
         foreach ($options['columns'] as $field) {
           $classes=array();
-          if (isset($options['sendOutputToMap']) && $options['sendOutputToMap'] && isset($field['mappable']) && $field['mappable']==='true') {
+          if (isset($options['sendOutputToMap']) && $options['sendOutputToMap'] && isset($field['mappable']) && $field['mappable']==='true' || $field['mappable']===true) {
             $addFeaturesJs.= "  addDistPoint(features, ".json_encode($row).", '".$field['fieldname']."', {}".
                 (empty($rowId) ? '' : ", '".$row[$options['rowId']]."'").");\n";
           }
@@ -1250,7 +1250,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
           'fillColor'=> '#ff0000',
           'strokeColor'=> '#ff0000',
           'strokeWidth'=>1,
-          'fillOpacity'=>0.5,
+          'fillOpacity'=>0.4,
+          'strokeOpacity'=>0.4,
           'pointRadius'=>4,
           'graphicZIndex'=>0
         ), $settings);
@@ -1295,9 +1296,10 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         }
         // selected features are color blue by default
         $selsettings = array_merge($defsettings, array(
-          'fillColor'=> '#0000ff',
-          'strokeColor'=> '#0000ff',
-          'graphicZIndex'=>1
+          'strokeWidth'=>9,
+          'strokeOpacity'=>0.8,
+          'fillOpacity'=>0.8,
+          'pointRadius'=>8
         ));
         // convert these styles into a JSON definition ready to feed into JS.
         $defsettings = json_encode($defsettings);

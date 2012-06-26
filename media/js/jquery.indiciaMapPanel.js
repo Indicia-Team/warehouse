@@ -392,42 +392,42 @@ mapGeoreferenceHooks = [];
       var datac2 = new OpenLayers.Geometry.Point(corner2xy[1],corner2xy[0]).transform(epsg, div.map.projection).toString();
       _showWktFeature(div, dataref, div.map.searchLayer, [datac1, datac2], true);
       if(div.settings.searchUpdatesSref && !div.settings.searchLayer){ // if no separate search layer, ensure sref matches feature in editlayer, if requested.
-          $('#'+opts.geomId).val(dataref);
-          // Unfortunately there is no guarentee that the georeferencer will return the sref in the system required: eg it will usually be in
-          // Lat/Long EPSG:4326 WGS 84, but the sref system being used to record the data (which may not even be selectable by the user)
-          // may be eg 27700 (British National Grid) or 2169 (Luxembourg), or 27572 (French).
-          // We need to convert to the required system if the systems differ - the wkt is always in 900913.
-          if(_getSystem() != epsgCode){
-            $.getJSON(opts.indiciaSvc + "index.php/services/spatial/wkt_to_sref"+
-                  "?wkt=" + dataref +
-                  "&system=" + _getSystem() +
-                  "&precision=8" +
-                  "&output=" + div.settings.latLongFormat +
-                  "&callback=?", function(data)
-             {
-              if(typeof data.error != 'undefined') {
-                if(data.error == 'wkt_to_sref translation is outside range of grid.')
-                  alert(div.settings.msgSrefOutsideGrid);
-                else
-                  alert(data.error);
-              } else {
-                  $('#'+opts.srefId).val(data.sref);
-                  // If the sref is in two parts, then we might need to split it across 2 input fields for lat and long
-                  if (data.sref.indexOf(' ')!==-1) {
-                    var parts=data.sref.split(' ');
-                    // part 1 may have a comma at the end, so remove
-                    parts[0]=parts[0].split(',')[0];
-                    $('#'+opts.srefLatId).val(parts[0]);
-                    $('#'+opts.srefLongId).val(parts[1]);
-                  }
-              }
-             }
-            );
-          } else {
-            $('#'+opts.srefId).val(ref);
-            $('#'+opts.srefLatId).val(refxy[0]);
-            $('#'+opts.srefLongId).val(refxy[1]);
-          }
+        $('#'+opts.geomId).val(dataref);
+        // Unfortunately there is no guarentee that the georeferencer will return the sref in the system required: eg it will usually be in
+        // Lat/Long EPSG:4326 WGS 84, but the sref system being used to record the data (which may not even be selectable by the user)
+        // may be eg 27700 (British National Grid) or 2169 (Luxembourg), or 27572 (French).
+        // We need to convert to the required system if the systems differ - the wkt is always in 900913.
+        if(_getSystem() != epsgCode){
+          $.getJSON(opts.indiciaSvc + "index.php/services/spatial/wkt_to_sref"+
+                "?wkt=" + dataref +
+                "&system=" + _getSystem() +
+                "&precision=8" +
+                "&output=" + div.settings.latLongFormat +
+                "&callback=?", function(data)
+           {
+            if(typeof data.error != 'undefined') {
+              if(data.error == 'wkt_to_sref translation is outside range of grid.')
+                alert(div.settings.msgSrefOutsideGrid);
+              else
+                alert(data.error);
+            } else {
+                $('#'+opts.srefId).val(data.sref);
+                // If the sref is in two parts, then we might need to split it across 2 input fields for lat and long
+                if (data.sref.indexOf(' ')!==-1) {
+                  var parts=data.sref.split(' ');
+                  // part 1 may have a comma at the end, so remove
+                  parts[0]=parts[0].split(',')[0];
+                  $('#'+opts.srefLatId).val(parts[0]);
+                  $('#'+opts.srefLongId).val(parts[1]);
+                }
+            }
+           }
+          );
+        } else {
+          $('#'+opts.srefId).val(ref);
+          $('#'+opts.srefLatId).val(refxy[0]);
+          $('#'+opts.srefLongId).val(refxy[1]);
+        }
       }
       // call any hooks that need to know about georeferences
       $.each(mapGeoreferenceHooks, function(i, fn) {
