@@ -571,7 +571,7 @@ mapGeoreferenceHooks = [];
         // Create a control that can handle both WMS and vector layer clicks.
         var infoCtrl = new OpenLayers.Control({
           displayClass: align + 'olControlSelectFeature',
-          title: div.settings.reportGroup===null ? '' : div.settings.hintClickToFilterGridTool,
+          title: div.settings.reportGroup===null ? '' : div.settings.hintQueryDataPointsTool,
           lastclick: {},
           allowBox: false,
           activate: function() {
@@ -1388,8 +1388,15 @@ $.fn.indiciaMapPanel.defaults = {
 
     // Are we using the OpenLayers defaults, or are they all provided?
     useOlDefaults: true,
-    rememberPos: false // set to true to enable restoring the map position when the page is reloaded. Requires jquery.cookie plugin.
-
+    rememberPos: false, // set to true to enable restoring the map position when the page is reloaded. Requires jquery.cookie plugin.
+    hintQueryDataPointsTool: 'Select this tool then click on or drag a box over data points on the map to view the underlying records.',
+    hintDrawPolygonHint: 'Select this tool to draw a polygon, clicking on the map to draw the shape and double clicking to finish.',
+    hintDrawLineHint: 'Select this tool to draw a line, clicking on the map to draw the shape and double clicking to finish.',
+    hintDrawPointHint: 'Select this tool to draw points by clicking on the map.',
+    hintDrawForReportingHint: 'You can then filter the report for intersecting records.',
+    hintClearSelection: 'Clear the edit layer',
+    hintModifyFeature: 'Modify the selected feature. Grab and drag the handles or double click on lines to add new handles.'
+    
 };
 
 /**
