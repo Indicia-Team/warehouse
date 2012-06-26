@@ -334,7 +334,8 @@ function simple_tooltip(target_items, name){
                   }
                 });
                 $.each(div.settings.columns, function(idx, col) {
-                  if (div.settings.sendOutputToMap && typeof indiciaData.reportlayer!=="undefined" && typeof col.mappable!=="undefined" && col.mappable==="true") {
+                  if (div.settings.sendOutputToMap && typeof indiciaData.reportlayer!=="undefined" && 
+                      typeof col.mappable!=="undefined" && (col.mappable==="true" || col.mappable==true)) {
                     geom=OpenLayers.Geometry.fromWKT(row[col.fieldname]);
                     if (map.projection.getCode() != map.div.indiciaProjection.getCode()) {
                       geom.transform(map.div.indiciaProjection, map.projection);

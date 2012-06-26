@@ -36,7 +36,7 @@ function Georeferencer(mapdiv, callback) {
     $.getJSON(request,
       null,
       function(response) {
-        var places=[], converted, geom, parser = new OpenLayers.Format.WKT(), feature, centroid, bb, box;
+        var places=[], converted, parser = new OpenLayers.Format.WKT(), feature, centroid, bb, box;
         jQuery.each(response, function(i,place) {
           if (place.boundary_geom===null) {
             feature = parser.read(place.centroid_geom);
