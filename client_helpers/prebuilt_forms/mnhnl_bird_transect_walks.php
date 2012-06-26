@@ -550,7 +550,7 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
     <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
       <p>'.lang::get('LANG_Initial_Download').'</p>
       <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "closed_attr_id":'.$args['sample_closure_id'].', "download": "INITIAL"}\' />
-      <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Initial_Download_Button').'">
+      <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Initial_Download_Button').'">
     </form>
     <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
       <p>'.lang::get('LANG_Confirm_Download').'</p>

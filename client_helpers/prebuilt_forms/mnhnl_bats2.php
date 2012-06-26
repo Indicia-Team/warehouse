@@ -961,6 +961,11 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
    * @return array Submission structure.
    */
   public static function get_submission($values, $args) {
+    foreach($values as $key => $value){
+      $parts = explode(':', $key, 5);
+      if(count($parts)==3 && $parts[0]=='locAttr' && $parts[2]=='term')
+        unset($values[$key]);
+    }
     if (isset($values['source']))
       return submission_builder::wrap_with_images($values, 'location');
     if (isset($values['sample:location_id']) && $values['sample:location_id']=='') unset($values['sample:location_id']);

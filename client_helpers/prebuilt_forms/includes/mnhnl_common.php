@@ -265,9 +265,8 @@ function iform_mnhnl_locModTool($auth, $args, $node) {
   if($args['locationMode']=='multi') $args['locationMode']='parent';
 //  if($args['locationMode']=='filtered') $args['locationMode']='single';
   data_entry_helper::$entity_to_load=array();
-  if($args['shpFileDownloadURL']==""){
-    $retVal = "<div id=\"locations\">";
-  } else {
+  $retVal = "<div id=\"locations\">";
+  if($args['shpFileDownloadURL']!=""){
     $request= $args['shpFileDownloadURL']."/geoserver/wfs?request=GetFeature&service=wfs&version=1.0.0&outputformat=SHAPE-ZIP&srsName=EPSG:2169";
     if($args['LocationTypeTerm']=='' && isset($args['loctoolsLocTypeID'])) $args['LocationTypeTerm']=$args['loctoolsLocTypeID'];
     $primary = iform_mnhnl_getTermID($auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
@@ -279,12 +278,30 @@ function iform_mnhnl_locModTool($auth, $args, $node) {
       $request.="location_type_id=".$primary;
     }
     $request .= "&typename=".$args['shpFileFeaturePrefix'].':';
-    if($args['usePoints']!='none')   $retVal = "<a href=\"".$request."point_locations\">".lang::get('Points')."</a>";
-    if($args['useLines']!='none')    $retVal .= ($retVal == "" ? "" : " : ")."<a href=\"".$request."line_locations\">".lang::get('Lines')."</a>";
-    if($args['usePolygons']!='none') $retVal .= ($retVal == "" ? "" : " : ")."<a href=\"".$request."polygon_locations\">".lang::get('Polygons')."</a>";
-    $retVal = "<div id=\"locations\" >
-      <fieldset><legend>".lang::get('LANG_SHP_Download_Legend')."</legend>
-      <p>".lang::get('LANG_Shapefile_Download')." ".$retVal."</p></fieldset>";
+    $retValList = "";
+    if($args['usePoints']!='none')   $retValList .= "<a href=\"".$request."point_locations\">".lang::get('Points')."</a>";
+    if($args['useLines']!='none')    $retValList .= ($retVal == "" ? "" : " : ")."<a href=\"".$request."line_locations\">".lang::get('Lines')."</a>";
+    if($args['usePolygons']!='none') $retValList .= ($retVal == "" ? "" : " : ")."<a href=\"".$request."polygon_locations\">".lang::get('Polygons')."</a>";
+    $retVal .= "<fieldset><legend>".lang::get('LANG_SHP_Download_Legend')."</legend>
+      <p>".lang::get('LANG_Shapefile_Download')." ".$retValList."</p></fieldset>";
+  }
+  if($args['locationMode']=='parent'){ // includes multi - see above
+    $confirmedLocationTypeID = iform_mnhnl_getTermID($auth, $args['locationTypeTermListExtKey'],$args['SecondaryLocationTypeTerm']);
+    if(is_null($confirmedLocationTypeID)) $confirmedLocationTypeID="0";
+    $submittedLocationTypeID = iform_mnhnl_getTermID($auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
+    $retVal .= "<fieldset><legend>".lang::get('LANG_Outside_Square_Reports')."</legend>
+  	<form method='post' action='".data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/luxbio_outside_squares_1.xml&reportSource=local&auth_token='.$auth['read']['auth_token'].'&nonce='.$auth['read']['nonce'].'&mode=csv&filename='.$args['reportFilenamePrefix']."CentreOutsideSquaresReport'>
+      <label style='width:auto;'>".lang::get('LANG_Outside_Square_Download_1').":</label>
+      <input type='hidden' name='params' value='{\"website_id\":".$args['website_id'].", \"survey_id\":".$args['survey_id'].", \"primary_loc_type_id\":".$submittedLocationTypeID.", \"secondary_loc_type_id\":".$confirmedLocationTypeID."}' />
+      <input type='submit' class='ui-state-default ui-corner-all' value='".lang::get('LANG_Download_Button')."'>
+    </form>
+  	<form method='post' action='".data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/luxbio_outside_squares_2.xml&reportSource=local&auth_token='.$auth['read']['auth_token'].'&nonce='.$auth['read']['nonce'].'&mode=csv&filename='.$args['reportFilenamePrefix']."BoundaryCutsSquaresReport'>
+      <label style='width:auto;'>".lang::get('LANG_Outside_Square_Download_2').":</label>
+      <input type='hidden' name='params' value='{\"website_id\":".$args['website_id'].", \"survey_id\":".$args['survey_id'].", \"primary_loc_type_id\":".$submittedLocationTypeID.", \"secondary_loc_type_id\":".$confirmedLocationTypeID."}' />
+      <input type='submit' class='ui-state-default ui-corner-all' value='".lang::get('LANG_Download_Button')."'>
+    </form>
+    </fieldset>";
+  	
   }
   $retVal .= "<form method=\"post\" id=\"entry_form\">".
           $auth['write'].
@@ -324,7 +341,7 @@ function iform_mnhnl_locModTool($auth, $args, $node) {
   }
   // For main page we force to Tabs to ensure map drawn correctly
   $args['interface']='Tabs';
-  $mapOptions = iform_map_get_map_options($args,$readAuth);
+  $mapOptions = iform_map_get_map_options($args,$auth['read']);
   $olOptions = iform_map_get_ol_options($args);
   $mapOptions['tabDiv'] = 'locations';
   $mapOptions['standardControls']=array('layerSwitcher','panZoomBar');

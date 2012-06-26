@@ -63,6 +63,14 @@ class iform_mnhnl_butterflies2 extends iform_mnhnl_dynamic_1 {
       iform_mnhnl_getParameters(),
       array(
         array(
+          'name' => 'reportFilenamePrefix',
+          'caption' => 'Report Filename Prefix',
+          'description' => 'Prefix to be used at the start of the download report filenames.',
+          'type' => 'string',
+          'default' => 'ButterflySites',
+          'group' => 'Reporting'
+        ),
+        array(
           'name'=>'max_species_ids',
           'caption'=>'max number of species to be returned by a search',
           'description'=>'The maximum number of species to be returned by the drop downs at any one time.',

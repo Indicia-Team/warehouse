@@ -1,0 +1,44 @@
+<report
+    title="LuxBio: Sites Outside Square Check Report"
+    description="Form Internal Report: Used by the Location module on MNHNL/LuxBio forms to identify those Sites which have a boundary which crosses the boundary of their parent location."
+>
+  <query>
+  SELECT l2.name as square,
+        l.name as location_name,
+        l.id as location_id
+  FROM locations l
+  INNER JOIN locations l2 ON (l2.id = l.parent_id AND ST_Within(l.centroid_geom, l2.boundary_geom) = FALSE)
+  WHERE l.deleted = FALSE AND l.location_type_id IN (#primary_loc_type_id#, #secondary_loc_type_id#)
+  AND TRUE = (CASE
+     WHEN l.boundary_geom is null THEN FALSE
+     WHEN (GeometryType(l.boundary_geom) = 'POINT' OR
+         GeometryType(l.boundary_geom) = 'MULTIPOINT' OR
+         GeometryType(l.boundary_geom) = 'LINESTRING' OR
+         GeometryType(l.boundary_geom) = 'MULTILINESTRING' OR
+         GeometryType(l.boundary_geom) = 'POLYGON' OR
+         GeometryType(l.boundary_geom) = 'MULTIPOLYGON')
+       THEN ST_Covers(l2.boundary_geom, l.boundary_geom) = FALSE
+     WHEN GeometryType(l.boundary_geom) = 'GEOMETRYCOLLECTION' 
+       THEN (CASE WHEN ST_IsEmpty(ST_CollectionExtract(l.boundary_geom, 1)) = FALSE
+           THEN ST_Covers(l2.boundary_geom, ST_CollectionExtract(l.boundary_geom, 1)) = FALSE ELSE FALSE END) OR
+         (CASE WHEN ST_IsEmpty(ST_CollectionExtract(l.boundary_geom, 2)) = FALSE
+           THEN ST_Covers(l2.boundary_geom, ST_CollectionExtract(l.boundary_geom, 2)) = FALSE ELSE FALSE END) OR
+         (CASE WHEN ST_IsEmpty(ST_CollectionExtract(l.boundary_geom, 3)) = FALSE
+           THEN ST_Covers(l2.boundary_geom, ST_CollectionExtract(l.boundary_geom, 3)) = FALSE ELSE FALSE END)
+     ELSE FALSE
+    END)
+  #order_by#
+  </query>
+  <order_bys>
+    <order_by>l.id ASC</order_by>
+  </order_bys>
+  <params>
+    <param name='primary_loc_type_id' display='Location Type: ' description='Term ID for the Location Type used to indicate primary locations:' datatype='int' />
+    <param name='secondary_loc_type_id' display='Location Type: ' description='Term ID for the Location Type used to indicate secondary locations:' datatype='int' />
+  </params>
+  <columns>
+    <column name='square' display='Square' />
+    <column name='location_name' display='Site name' />
+    <column name='location_id' display='Indicia ID' />
+  </columns>
+</report>

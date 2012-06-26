@@ -364,12 +364,12 @@ deleteSurvey = function(sampleID){
     <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_butterflies_grid.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=downloadgrid">
       <p>'.lang::get('LANG_Grid_Based_Data_Download').'</p>
       <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "username_attr_id":'.$userNameAttr.', "observer_attr_id":'.$ObserverIdAttr.', "month_attr_id":'.$MonthIdAttr.', "numberinmonth_attr_id":'.$NumInMonthIdAttr.', "starttime_attr_id":'.$StartTimeIdAttr.', "endtime_attr_id":'.$EndTimeIdAttr.', "temperature_attr_id":'.$TempIdAttr.', "wind_attr_id":'.$WindIdAttr.', "cloud_attr_id":'.$CloudIdAttr.'}\' />
-      <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Grid_Download_Button').'">
+      <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Grid_Download_Button').'">
     </form>
 	<form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_butterflies_section.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=downloadsection">
       <p>'.lang::get('LANG_Section_Based_Data_Download').'</p>
       <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "username_attr_id":'.$userNameAttr.', "observer_attr_id":'.$ObserverIdAttr.', "month_attr_id":'.$MonthIdAttr.', "numberinmonth_attr_id":'.$NumInMonthIdAttr.', "starttime_attr_id":'.$StartTimeIdAttr.', "endtime_attr_id":'.$EndTimeIdAttr.', "temperature_attr_id":'.$TempIdAttr.', "wind_attr_id":'.$WindIdAttr.', "cloud_attr_id":'.$CloudIdAttr.', "habitat_attr_id":'.$HabitatIdAttr.', "no_obs_attr_id":'.$NoObsIdAttr.', "reliability_attr_id":'.$ReliabilityIdAttr.'}\' />
-      <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Section_Download_Button').'">
+      <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Section_Download_Button').'">
     </form>
   </div>';
 	
