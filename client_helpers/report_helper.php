@@ -592,13 +592,15 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     if ($wantCount)
       $extras .= '&wantCount=1';
     // any extraParams are fixed values that don't need to be available in the params form, so they can be added to the
-    // list of ignorable parameters.
+    // list of parameters to exclude from the params form.
     if (array_key_exists('extraParams', $options) && array_key_exists('ignoreParams', $options))
-      $options['ignoreParams'] = array_merge($options['ignoreParams'], array_keys($options['extraParams']));
+      $options['paramsToExclude'] = array_merge($options['ignoreParams'], array_keys($options['extraParams']));
     elseif (array_key_exists('extraParams', $options))
-      $options['ignoreParams'] = array_keys($options['extraParams']);    
-    if (array_key_exists('ignoreParams', $options))
-      $extras .= '&paramsFormExcludes='.json_encode($options['ignoreParams']);
+      $options['paramsToExclude'] = array_keys($options['extraParams']);
+    elseif (array_key_exists('ignoreParams', $options))
+      $options['paramsToExclude'] = array_merge($options['ignoreParams']);
+    if (array_key_exists('paramsToExclude', $options))
+      $extras .= '&paramsFormExcludes='.json_encode($options['paramsToExclude']);
     // specify the view variant to load, if loading from a view
     if ($options['mode']=='direct') $extras .= '&view='.$options['view'];
     $currentParamValues = self::get_report_grid_current_param_values($options);
@@ -1567,6 +1569,9 @@ mapSettingsHooks.push(function(opts) {
       }
       if ($options['paramsInMapToolbar'])
         $options['helpText']=false;
+      if (isset($options['ignoreParams']))
+        // tell the params form builder to hide the ignored parameters.
+        $options['paramsToHide']=$options['ignoreParams'];
       $r .= self::build_params_form(array_merge($options, array('form'=>$response['parameterRequest'], 'defaults'=>$params)));
       if ($options['completeParamsForm']==true) {
         $suffix = '<input type="submit" value="'.lang::get($options['paramsFormButtonCaption']).'" id="run-report"/>'.
@@ -1780,7 +1785,7 @@ if (typeof(mapSettingsHooks)!=='undefined') {
         $savedParams = $savedParams[$options['rememberParamsReportGroup']];
         // We shouldn't use the cookie values to overwrite any parameters that are hidden in the form as this is confusing.
         $ignoreParamNames = array();
-        foreach($options['ignoreParams'] as $param)
+        foreach($options['paramsToExclude'] as $param)
           $ignoreParamNames[$options['reportGroup']."-$param"] = '';
         $savedParams = array_diff_key($savedParams, $ignoreParamNames);
         $providedParams = array_merge(
