@@ -101,7 +101,7 @@ class Known_subject_Model extends ORM_Tree
     // Get the list of identifiers that should point to this known subject
     $keys=array();
     if (isset($this->submission['metaFields']['identifiers']))
-      foreach ($this->submission['metaFields']['identifiers']['value'] as $identifier) {
+      foreach ($this->submission['metaFields']['identifiers']['value'] as $identifier)
         $keys[] = $identifier[0];
     // do an update query to unlink identifiers that do point to this known subject but shouldn't
     $this->db->from('identifiers')
