@@ -66,7 +66,6 @@
     <column name='taxon_group' display='Taxon Group' sql='o.taxon_group' datatype='text' visible="false" />
     <column name='record_status' display='State' sql='xo.record_status' visible="false" />
     <column name='geom' visible='false' mappable="true" sql='st_astext(s.geom)' />
-    <column name='strokewidth' visible='false' feature_style="strokeWidth" sql='length(o.public_entered_sref) / 3' />
     <column name='fillopacity' visible='false' feature_style="fillOpacity" sql='length(o.public_entered_sref) / 24.0' />
     <column name='strokecolor' visible='false' feature_style="strokeColor" sql="case xo.record_status when 'C' then 
       case o.certainty when 'C' then 'green' when 'L' then 'orange' when 'U' then 'red' else 'blue' end
