@@ -1,12 +1,13 @@
 <report
-    title="Explore records"
-    description="Report designed for the explore records facility in iRecord."
+    title="Explore photos"
+    description="Report designed for the explore photos facility in iRecord."
 >
   <query website_filter_field="o.website_id">
   SELECT #columns#
   FROM cache_occurrences o
   JOIN websites w on w.id=o.website_id 
   JOIN samples s on s.id=o.sample_id
+  JOIN occurrence_images oi on oi.occurrence_id=o.id and oi.deleted=false
   LEFT JOIN samples sparent on sparent.id=s.parent_id and sparent.deleted=false
   LEFT JOIN (sample_attribute_values vuser
     JOIN sample_attributes sauser on sauser.id=vuser.sample_attribute_id and sauser.deleted=false and sauser.system_function = 'cms_username'
@@ -52,15 +53,14 @@
     <column name='taxa_taxon_list_id' visible='false' sql='o.taxa_taxon_list_id' datatype='integer' />   
     <column name='location_name' display='Site name' sql='o.location_name' datatype='text' />
     <column name='entered_sref' display='Grid Ref' sql='o.public_entered_sref' datatype='text' />
-    <column name='date_start' sql='o.date_start' visible='false' />
-    <column name='date_end' sql='o.date_end' visible='false' />
-    <column name='date_type' sql='o.date_type' visible='false' />
-    <column name='date' display='Date' datatype='date' />
+    <column name='date' display='Date' sql='o.date_start' datatype='date' />
     <column name='recorder' display='Recorder' sql="COALESCE(CASE w.id WHEN iwwa.from_website_id THEN COALESCE(vuser.text_value, vuserp.text_value) ELSE w.title || '-&gt;' || COALESCE(vuser.text_value, vuserp.text_value) END, CASE ouser.id WHEN 1 THEN null else ouser.username END)" datatype="text" />
     <column name='zero_abundance' display='Zero Abundance' sql='o.zero_abundance' visible="false" />
     <column name='record_status' display='State' sql='o.record_status' visible="false" />
     <column name='belongs_to_user' display='Belongs to User' sql="CASE CAST(o.created_by_id AS character varying) WHEN '#currentUser#' THEN true ELSE false END" visible="false" />
     <column name='certainty' sql="o.certainty" visible='false' />
+    <column name='path' sql="oi.path" display='Photo' img='true' />
+    <column name='caption' sql="oi.caption" display='Caption' datatype='text' />
     <column name='strokewidth' visible='false' feature_style="strokeWidth" sql='length(o.public_entered_sref) / 3' />
     <column name='fillopacity' visible='false' feature_style="fillOpacity" sql='length(o.public_entered_sref) / 24.0' />
     <column name='strokecolor' visible='false' feature_style="strokeColor" sql="case o.record_status when 'C' then 
