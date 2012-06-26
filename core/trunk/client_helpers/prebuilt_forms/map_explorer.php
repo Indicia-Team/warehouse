@@ -198,23 +198,29 @@ class iform_map_explorer {
     profile_load_profile($user);
     // Unless ownData explicitly set, we either default it to unchecked, or we set it unchecked and hidden if the user account
     // is not on the warehouse
-    if (!array_key_exists('ownData', $allParams) && !empty($user->profile_indicia_user_id))
-      $reportOptions['paramDefaults']['ownData']=0;
-    else
-      $reportOptions['extraParams']['ownData']=0;
+    if (!array_key_exists('ownData', $allParams)) {
+      if (!empty($user->profile_indicia_user_id))
+        $reportOptions['paramDefaults']['ownData']=0;
+      else
+        $reportOptions['extraParams']['ownData']=0;
+    }
     // Unless ownLocality explicitly set, we either default it to checked, or we set it unchecked and hidden if the user account
     // has no location preferences set
-    if (!array_key_exists('ownLocality', $allParams) && !empty($user->profile_location))
-      $reportOptions['paramDefaults']['ownLocality']=1;
-    else
-      $reportOptions['extraParams']['ownLocality']=0;
+    if (!array_key_exists('ownLocality', $allParams)) {
+      if (!empty($user->profile_location))
+        $reportOptions['paramDefaults']['ownLocality']=1;
+      else
+        $reportOptions['extraParams']['ownLocality']=0;
+    }
     // Unless ownGroups explicitly set, we either default it to checked, or we set it unchecked and hidden if the user account
     // has no taxon groups set
-    if (!array_key_exists('ownGroups', $allParams) && !empty($user->profile_taxon_groups))
-      $reportOptions['paramDefaults']['ownGroups']=1;
-    else
-      $reportOptions['extraParams']['ownGroups']=0;
-    $reportOptions['extraParams']['limit']=100;
+    if (!array_key_exists('ownGroups', $allParams)) {
+      if (!empty($user->profile_taxon_groups))
+        $reportOptions['paramDefaults']['ownGroups']=1;
+      else
+        $reportOptions['extraParams']['ownGroups']=0;
+    }
+    $reportOptions['extraParams']['limit']=500;
     $r = report_helper::report_grid($reportOptions);
    
     $r .= report_helper::report_map(array(
