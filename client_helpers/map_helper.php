@@ -260,6 +260,16 @@ class map_helper extends helper_base {
         str_replace('&', '&amp;', $options['readAuth']);
       }
 
+      // convert textual true/false to boolean equivalents.
+      if (array_key_exists('editLayer', $options)) {
+        if($options['editLayer']=="false") $options['editLayer']=false;
+        else if($options['editLayer']=="true") $options['editLayer']=true;
+      }
+      if (array_key_exists('searchLayer', $options)) {
+        if($options['searchLayer']=="false") $options['searchLayer']=false;
+        else if($options['searchLayer']=="true") $options['searchLayer']=true;
+      }
+
       // Autogenerate the links to the various mapping libraries as required
       if (array_key_exists('presetLayers', $options)) {
         foreach ($options['presetLayers'] as $layer)
@@ -333,7 +343,7 @@ class map_helper extends helper_base {
         
         $javascript .= "var mapTabHandler = function(event, ui) { \n";
         $javascript .= "  if (ui.panel.id=='".$options['tabDiv']."') {\n";
-        $javascript .= "    indiciaData.mapTabLoaded=true;\n";
+        $javascript .= "    indiciaData.".$options['divId']."TabLoaded=true;\n";
         $javascript .= "    if (indiciaData.windowLoaded) {\n      ";
         $javascript .= $mapSetupJs;
         $javascript .= "    }\n    $(this).unbind(event);\n";
@@ -342,7 +352,7 @@ class map_helper extends helper_base {
         // Insert this script at the beginning, because it must be done before the tabs are initialised or the 
         // first tab cannot fire the event
         self::$javascript = $javascript . self::$javascript;
-        self::$onload_javascript .= "if (typeof indiciaData.mapTabLoaded!==\"undefined\") {\n$mapSetupJs\n}\n";
+        self::$onload_javascript .= "if (typeof indiciaData.".$options['divId']."TabLoaded!==\"undefined\") {\n$mapSetupJs\n}\n";
       } else {
         self::$onload_javascript .= $mapSetupJs;
       }
