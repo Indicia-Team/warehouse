@@ -112,35 +112,6 @@ ul.gallery li {
   background: none;
 }
 
-.status-V {
-  @include background(linear-gradient(top, darken($verify-color, 30%), $verify-color));
-  @include border-radius(4px, 4px);
-  color: #ffffff;
-}
-
-.status-R {
-  @include background(linear-gradient(top, darken($reject-color, 30%), $reject-color));
-  @include border-radius(4px, 4px);
-  color: #ffffff;
-}
-
-.status-S {
-  @include background(linear-gradient(top, darken($default-color, 30%), $default-color));
-  @include border-radius(4px, 4px);
-  color: #ffffff;
-}
-
-.status-D {
-  @include background(linear-gradient(top, darken($dubious-color, 30%), $dubious-color));
-  @include border-radius(4px, 4px);
-  color: #ffffff;
-}
-
-.zero-t {
-  font-style: italic;
-  text-decoration: line-through;
-}
-
 #btn-verify, #btn-verify-all {
   @include sassy-button-colors("simple", $verify-color, darken($verify-color, 20%), true, #ffffff, raised);
 }
