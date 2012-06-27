@@ -433,7 +433,8 @@ idlist=';
       'extraParams' => $extraParams,
       'paramDefaults' => $paramDefaults,
       'reportGroup' => 'verification',
-      'clickableLayersOutputMode' => 'report'
+      'clickableLayersOutputMode' => 'report',
+      'rowId'=>'occurrence_id'
     ));
     $r .= '</div>';
     $r .= '<div id="record-details-wrap" class="ui-widget ui-widget-content">';

@@ -1314,9 +1314,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         $addFeaturesJs = "";
         $opts = json_encode(array('type'=>$options['displaySymbol']));
         $rowId = isset($options['rowId']) ? ' id="row'.$row[$options['rowId']].'"' : '';
-        foreach ($records as $record) {
+        foreach ($records as $record) 
           $addFeaturesJs.= "addDistPoint(features, ".json_encode($record).", '$wktCol', $opts".(empty($rowId) ? '' : ", '".$record[$options['rowId']]."'").");\n";
-        }
         if (!empty($styleFns)) {
           $styleFns = ", {context: {
   $styleFns

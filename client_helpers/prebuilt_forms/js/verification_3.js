@@ -356,41 +356,9 @@ function showTab() {
         }
       );
     }
+    // make it clear things are loading
     if (mapDiv !== null) {
-      // Ensure the current record is centred and highlighted on the map.
-      if (current_record.additional.wkt!==null) {
-        var parser = new OpenLayers.Format.WKT(),
-          feature = parser.read(current_record.additional.wkt),
-          c,
-          lastFeature;
-        if (mapDiv.map.projection.getCode() !== 'EPSG:3857') {
-          feature.geometry = feature.geometry.transform(new OpenLayers.Projection('EPSG:3857'), mapDiv.map.projection);
-        }
-        // Make the current record marker obvious
-        var style = $.extend({}, mapDiv.map.editLayer.styleMap.styles['default'].defaultStyle, {fillOpacity: 0.5, fillColor: '#0000FF', strokeWidth:3}),
-            // default is to show approx 100m of map
-            maxDimension=100, bounds;
-        feature.style=style;
-        feature.tag='currentRecord';
-        mapDiv.map.editLayer.addFeatures([feature]);
-        c = feature.geometry.getCentroid();
-        mapDiv.map.setCenter(new OpenLayers.LonLat(c.x, c.y));
-        if (feature.geometry.CLASS_NAME!=='OpenLayers.Geometry.Point') {
-          bounds = feature.geometry.bounds;
-          maxDimension = Math.max(bounds.right-bounds.left, bounds.top-bounds.bottom)*4;
-        }
-        mapDiv.map.zoomTo(mapDiv.map.getZoomForExtent(new OpenLayers.Bounds(0, 0, maxDimension, maxDimension)));
-        $(mapDiv).css('opacity', 1);
-      } else {
-        $(mapDiv).css('opacity', 0.1);
-      }
-      var toRemove=[];
-      $.each(mapDiv.map.editLayer.features, function(idx, f) {
-        if (f.tag==='currentRecord' && f!==feature) {
-          toRemove.push(f);
-        }
-      });
-      mapDiv.map.editLayer.removeFeatures(toRemove, {});
+      $(mapDiv).css('opacity', current_record.additional.wkt===null ? 0.1 : 1);
     }
   }
 }
