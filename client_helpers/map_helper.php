@@ -262,12 +262,12 @@ class map_helper extends helper_base {
 
       // convert textual true/false to boolean equivalents.
       if (array_key_exists('editLayer', $options)) {
-        if($options['editLayer']=="false") $options['editLayer']=false;
-        else if($options['editLayer']=="true") $options['editLayer']=true;
+        if($options['editLayer']==="false") $options['editLayer']=false;
+        else if($options['editLayer']==="true") $options['editLayer']=true;
       }
       if (array_key_exists('searchLayer', $options)) {
-        if($options['searchLayer']=="false") $options['searchLayer']=false;
-        else if($options['searchLayer']=="true") $options['searchLayer']=true;
+        if($options['searchLayer']==="false") $options['searchLayer']=false;
+        else if($options['searchLayer']==="true") $options['searchLayer']=true;
       }
 
       // Autogenerate the links to the various mapping libraries as required
