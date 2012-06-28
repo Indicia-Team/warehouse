@@ -138,8 +138,7 @@ class iform_mnhnl_dynamic_1 {
         array(
           'name'=>'clientSideValidation',
           'caption'=>'Client Side Validation',
-          'description'=>'Enable client side validation of controls using JavaScript. Note that there are bugs in Internet Explorer which can cause errors when '.
-              'clicking on the map if this box is ticked.',
+          'description'=>'Enable client side validation of controls using JavaScript.',
           'type'=>'boolean',
           'default' => true,
           'required' => false,

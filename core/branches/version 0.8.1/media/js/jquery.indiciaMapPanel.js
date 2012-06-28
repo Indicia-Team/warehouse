@@ -856,6 +856,14 @@ mapInitialisationHooks = [];
       // wrap the map in a div container
       $(this).wrap('<div id="map-container" style="width:'+opts.width+'" >');
       
+      // if the validator exists, stop map clicks bubbling up to its event handler as IE can't 
+      // get the attributes of some map items and errors arise.
+      if (typeof $.validator !== 'undefined') {
+        $(this).parent().click(function(){
+          return false;
+        });
+      }
+      
       if (this.settings.toolbarDiv!='map' && (opts.toolbarPrefix!=='' || opts.toolbarSuffix!=='')) {
         var toolbar='<div id="map-toolbar-outer" class="ui-helper-clearfix">' + opts.toolbarPrefix + '<div class="olControlEditingToolbar" id="map-toolbar"></div>' + opts.toolbarSuffix + '</div>';
         if (this.settings.toolbarDiv=='top') {
