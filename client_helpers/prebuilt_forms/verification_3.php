@@ -806,7 +806,7 @@ idlist=';
     ));
     $r = '';
     if (count($images)===0) 
-      $r .= lang::get('No images found for this record '.$_GET['occurrence_id']);
+      $r .= lang::get('No images found for this record');
     else {
       $path = data_entry_helper::get_uploaded_image_folder();
       $r .= '<ul class="gallery">';
@@ -815,6 +815,7 @@ idlist=';
             $image['path'].'"/>'.'<br/>'.$image['caption'].'</a></li>';
       }
       $r .= '</ul>';
+      $r .= '<p>'.lang::get('Click on image thumbnails to view full size').'</p>';
     }
     $r .= '<script type="text/javascript">$("a.fancybox").fancybox();</script>';
     return $r;

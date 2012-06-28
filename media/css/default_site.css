@@ -45,6 +45,10 @@ div.ui-effects-wrapper {
   padding-bottom: 1em;
 }
 
+#imp-postcode {
+  text-transform: uppercase;
+}
+
 #ui-datepicker-div {
   z-index: 2000;
 }

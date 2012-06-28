@@ -1,4 +1,4 @@
-var mapDiv = null, occurrence_id = null, current_record = null, urlSep, validator, speciesLayers = [];
+var occurrence_id = null, current_record = null, urlSep, validator, speciesLayers = [];
 var email = {to:'', subject:'', body:'', type:''};
 
 // IE7 compatability
@@ -40,7 +40,7 @@ function selectRow(tr) {
         showTab();
         // remove any wms layers for species or the gateway data
         $.each(speciesLayers, function(idx, layer) {
-          mapDiv.map.removeLayer(layer);
+          indiciaData.mapdiv.map.removeLayer(layer);
         });
         speciesLayers = [];
         var layer, thisSpLyrSettings, filter, skip;
@@ -55,7 +55,7 @@ function selectRow(tr) {
             });
             layer = new OpenLayers.Layer.WMS(layerDef.title, layerDef.url.replace('{external_key}', data.additional.taxon_external_key), 
                 thisSpLyrSettings, layerDef.olSettings);
-            mapDiv.map.addLayer(layer);
+            indiciaData.mapdiv.map.addLayer(layer);
             speciesLayers.push(layer);
           });
         }
@@ -64,7 +64,7 @@ function selectRow(tr) {
           layer = new OpenLayers.Layer.WMS(indiciaData.indiciaSpeciesLayer.title, indiciaData.indiciaSpeciesLayer.wmsUrl, 
               {layers: indiciaData.indiciaSpeciesLayer.featureType, transparent: true, CQL_FILTER: filter, STYLES: indiciaData.indiciaSpeciesLayer.sld},
               {isBaseLayer: false, sphericalMercator: true, singleTile: true, opacity: 0.5});
-          mapDiv.map.addLayer(layer);
+          indiciaData.mapdiv.map.addLayer(layer);
           speciesLayers.push(layer);
         }
       }
@@ -357,8 +357,8 @@ function showTab() {
       );
     }
     // make it clear things are loading
-    if (mapDiv !== null) {
-      $(mapDiv).css('opacity', current_record.additional.wkt===null ? 0.1 : 1);
+    if (indiciaData.mapdiv !== null) {
+      $(indiciaData.mapdiv).css('opacity', current_record.additional.wkt===null ? 0.1 : 1);
     }
   }
 }
@@ -374,7 +374,6 @@ function setStatus(status) {
 }
 
 mapInitialisationHooks.push(function (div) {
-  mapDiv = div;
   div.map.editLayer.style = null;
   div.map.editLayer.styleMap = new OpenLayers.StyleMap({
     'default': {

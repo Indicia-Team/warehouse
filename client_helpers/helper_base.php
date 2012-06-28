@@ -817,12 +817,10 @@ $('.ui-state-default').live('mouseout', function() {
         data_entry_helper::$javascript .= "
   $.fn.indiciaMapPanel.defaults.toolbarDiv='$toolbarDiv';
   mapInitialisationHooks.push(function(div) {
-    // keep a global reference to the map, so we can get it later when Run Report is clicked
-    mapDiv = div;
     var styleMap = new OpenLayers.StyleMap(OpenLayers.Util.applyDefaults(
           {fillOpacity: 0.05},
           OpenLayers.Feature.Vector.style['default']));
-    mapDiv.map.editLayer.styleMap = styleMap;\n";
+    div.map.editLayer.styleMap = styleMap;\n";
         
         if (isset($info['allow_buffer']) && $info['allow_buffer']=='true')
           $origWkt = empty($_POST['orig-wkt']) ? '' : $_POST['orig-wkt'];
@@ -831,10 +829,10 @@ $('.ui-state-default').live('mouseout', function() {
 
         if (!empty($origWkt)) {
           data_entry_helper::$javascript .= "  var geom=OpenLayers.Geometry.fromWKT('$origWkt');\n";
-          data_entry_helper::$javascript .= "  if (mapDiv.map.projection.getCode() !== mapDiv.indiciaProjection.getCode()) {\n";
-          data_entry_helper::$javascript .= "    geom.transform(mapDiv.indiciaProjection, mapDiv.map.projection);\n";
+          data_entry_helper::$javascript .= "  if (div.map.projection.getCode() !== div.indiciaProjection.getCode()) {\n";
+          data_entry_helper::$javascript .= "    geom.transform(div.indiciaProjection, div.map.projection);\n";
           data_entry_helper::$javascript .= "  }\n";
-          data_entry_helper::$javascript .= "  mapDiv.map.editLayer.addFeatures([new OpenLayers.Feature.Vector(geom)]);\n";
+          data_entry_helper::$javascript .= "  div.map.editLayer.addFeatures([new OpenLayers.Feature.Vector(geom)]);\n";
         }
         data_entry_helper::$javascript .= "
   });

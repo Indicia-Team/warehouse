@@ -1291,6 +1291,8 @@ mapGeoreferenceHooks = [];
         });
       }
       _bindControls(this);
+      // keep a handy reference
+      indiciaData.mapdiv=div;
       // call any post initialisation hooks
       $.each(mapInitialisationHooks, function(i, fn) {
         fn(div);

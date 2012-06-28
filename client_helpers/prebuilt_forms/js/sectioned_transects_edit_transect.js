@@ -111,8 +111,6 @@ $(document).ready(function() {
   
   mapInitialisationHooks.push(function(div) {
     if (div.id==='route-map') {
-      indiciaData.mapdiv = div;
-    
       // find the selectFeature control so we can interact with it later
       $.each(div.map.controls, function(idx, control) {
         if (control.CLASS_NAME==='OpenLayers.Control.SelectFeature') {
