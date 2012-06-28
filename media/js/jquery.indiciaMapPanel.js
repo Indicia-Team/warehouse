@@ -776,13 +776,16 @@ mapGeoreferenceHooks = [];
     
     /**
      * Converts a point to a spatial reference, and also generates the indiciaProjection and mapProjection wkts.
-     * The point should be a point geometry in the map projection, system should hold the system we wish to
-     * display the Sref in.
+     * The point should be a point geometry in the map projection or projection defined by pointSystem, system should hold the system we wish to
+     * display the Sref. pointSystem is optional and defines the projection of the point if not the map projection
      * We have consistency problems between the proj4 on the client and in the database, so go to the services
      * whereever possible to convert.
      * Callback gets called with the sref in system, and the wkt in indiciaProjection. These may be different.
      */
-    function pointToSref(div, point, system, callback) {
+    function pointToSref(div, point, system, callback, pointSystem) {
+      if (typeof pointSystem==="undefined") {
+        pointSystem=_projToSystem(div.map.projection, false);
+      }
       // because of issues with proj4 transformations, it is easiest to go to the services for all
         // get approx metres accuracy we can expect from the mouse click - about 5mm accuracy.
         var precision, metres = div.map.getScale()/200;
@@ -807,7 +810,7 @@ mapGeoreferenceHooks = [];
         $.getJSON(opts.indiciaSvc + "index.php/services/spatial/wkt_to_sref"+
                 "?wkt=" + point +
                 "&system=" + system +
-                "&wktsystem=" + _projToSystem(div.map.projection, false) +
+                "&wktsystem=" + pointSystem +
                 "&mapsystem=" + _projToSystem(div.map.projection, false) +
                 "&precision=" + precision +
                 "&metresAccuracy=" + metres +
@@ -888,7 +891,9 @@ mapGeoreferenceHooks = [];
       OpenLayers.ImgPath=opts.jsPath + 'img/';
     }
     return this.each(function() {
+      // expose public stuff
       this.settings = opts;
+      this.pointToSref = pointToSref;
       // wrap the map in a div container
       $(this).wrap('<div id="map-container" style="width:'+opts.width+'" >');
       
