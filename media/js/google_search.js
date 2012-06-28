@@ -44,7 +44,7 @@ function decodePostcode(addressField) {
               function(data) {
                 $('#imp-sref').attr('value', data.sref); // SRID for WGS84 lat long
                 $('#imp-sref').change();
-              }, new  OpenLayers.Projection('4326'))
+              }, new  OpenLayers.Projection('4326'), 8)
             );
           } else {
             // map not available for conversions, so have to use LatLong as returned projection.

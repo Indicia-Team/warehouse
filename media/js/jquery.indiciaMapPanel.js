@@ -777,27 +777,31 @@ mapGeoreferenceHooks = [];
     /**
      * Converts a point to a spatial reference, and also generates the indiciaProjection and mapProjection wkts.
      * The point should be a point geometry in the map projection or projection defined by pointSystem, system should hold the system we wish to
-     * display the Sref. pointSystem is optional and defines the projection of the point if not the map projection
+     * display the Sref. pointSystem is optional and defines the projection of the point if not the map projection. 
+     * Precision can be set to the number of digits in the grid ref to return or left for default which depends on the 
+     * map zoom.
      * We have consistency problems between the proj4 on the client and in the database, so go to the services
      * whereever possible to convert.
      * Callback gets called with the sref in system, and the wkt in indiciaProjection. These may be different.
      */
-    function pointToSref(div, point, system, callback, pointSystem) {
+    function pointToSref(div, point, system, callback, pointSystem, precision) {
       if (typeof pointSystem==="undefined") {
         pointSystem=_projToSystem(div.map.projection, false);
       }
       // because of issues with proj4 transformations, it is easiest to go to the services for all
         // get approx metres accuracy we can expect from the mouse click - about 5mm accuracy.
-        var precision, metres = div.map.getScale()/200;
-        // now round to find appropriate square size
-        if (metres<30) {
-          precision=8;
-        } else if (metres<300) {
-          precision=6;
-        } else if (metres<3000) {
-          precision=4;
-        } else {
-          precision=2;
+        var metres = div.map.getScale()/200;
+        if (typeof precision==="undefined") {
+          // now round to find appropriate square size
+          if (metres<30) {
+            precision=8;
+          } else if (metres<300) {
+            precision=6;
+          } else if (metres<3000) {
+            precision=4;
+          } else {
+            precision=2;
+          }
         }
         // enforce precision limits if specified in the settings
         if (div.settings.clickedSrefPrecisionMin!=='') {
