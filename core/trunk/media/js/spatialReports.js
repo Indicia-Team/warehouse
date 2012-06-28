@@ -48,7 +48,7 @@ function storeGeomsInHiddenInput(layer, inputId) {
 function bufferFeature(feature) {
   if (typeof feature.geometry!=="undefined" && feature.geometry!==null) {
     $.ajax({
-      url: mapDiv.settings.indiciaSvc + 'index.php/services/spatial/buffer'
+      url: indiciaData.mapdiv.settings.indiciaSvc + 'index.php/services/spatial/buffer'
           +'?wkt='+feature.geometry.toString()+'&buffer='+$('#geom_buffer').val()+'&callback=?',
       dataType: 'json',
       success: function(buffered) {

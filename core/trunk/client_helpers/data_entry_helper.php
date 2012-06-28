@@ -1323,8 +1323,8 @@ class data_entry_helper extends helper_base {
   * @return string HTML to insert into the page for the postcode control.
   */
   public static function postcode_textbox($options) {
-    // The id field default must take precedence over using the fieldname as the id
-    $options = array_merge(array('id'=>'imp-postcode'), $options);
+    // The id must be set to imp-postcode otherwise the search does not work
+    $options = array_merge($options, array('id'=>'imp-postcode'));
     $options = self::check_options($options);
     // Merge in the defaults
     $options = array_merge(array(

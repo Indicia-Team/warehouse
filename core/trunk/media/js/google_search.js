@@ -34,7 +34,7 @@ function decodePostcode(addressField) {
         $('#imp-postcode').val(),
         function(place) {
           if (addressField!=='') {
-            document.getElementById(addressField).value="\n" + place.city + "\n" + place.region;
+            document.getElementById(addressField).value=place.addressLines.join('\n');
           }
           $('#imp-sref').attr('value', place.lat + ', ' + place.lng);
           $('#imp-sref-system').attr('value', '4326'); // SRID for WGS84 lat long
