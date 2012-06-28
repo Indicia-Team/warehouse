@@ -33,12 +33,25 @@ function decodePostcode(addressField) {
     usePointFromPostcode(
         $('#imp-postcode').val(),
         function(place) {
+          var wkt='POINT(' + place.lng + ' ' + place.lat + ')';
           if (addressField!=='') {
             document.getElementById(addressField).value=place.addressLines.join('\n');
           }
-          $('#imp-sref').attr('value', place.lat + ', ' + place.lng);
-          $('#imp-sref-system').attr('value', '4326'); // SRID for WGS84 lat long
-          $('#imp-sref').change();
+          
+          if (indiciaData.mapdiv!=="undefined") {
+            // Use map to convert to preferred projection
+            $('#imp-sref').attr('value', indiciaData.mapdiv.pointToSref(indiciaData.mapdiv, wkt, $('#imp-sref-system').attr('value'), 
+              function(data) {
+                $('#imp-sref').attr('value', data.sref); // SRID for WGS84 lat long
+                $('#imp-sref').change();
+              }, new  OpenLayers.Projection('4326'))
+            );
+          } else {
+            // map not available for conversions, so have to use LatLong as returned projection.
+            $('#imp-sref').attr('value', place.lat + ', ' + place.lng);
+            $('#imp-sref-system').attr('value', '4326'); // SRID for WGS84 lat long
+            $('#imp-sref').change();
+          }          
         }
     );
   } else {
