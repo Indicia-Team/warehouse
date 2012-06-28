@@ -4,8 +4,10 @@
       <query>
       SELECT #columns#
       FROM report_websites w
-      JOIN occurrences o ON o.website_id = w.id
+      JOIN occurrences o ON o.website_id = w.id AND o.deleted = false
       JOIN taxa_taxon_lists ttl ON o.taxa_taxon_list_id = ttl.id AND ttl.deleted=false
+      LEFT JOIN samples s on s.id = o.sample_id and s.deleted = false
+      LEFT JOIN surveys sv on sv.id = s.survey_id and sv.deleted = false
       WHERE #website_filter#
       </query>
       <order_bys>
