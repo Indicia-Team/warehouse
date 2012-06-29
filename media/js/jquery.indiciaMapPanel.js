@@ -433,6 +433,9 @@ mapGeoreferenceHooks = [];
       $.each(mapGeoreferenceHooks, function(i, fn) {
         fn(div, ref, corner1, corner2, epsgCode, name, obj);
       });
+      if (div.georefOpts.autoCollapseResults) {
+        $('#'+div.georefOpts.georefDivId).hide('fast', function() {div.map.updateSize();});
+      }
     }
 
     /**
