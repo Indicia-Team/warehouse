@@ -208,7 +208,8 @@ class map_helper extends helper_base {
   * <li><b>graticuleBounds</b><br/>
   * Array of the bounding box coordinates for the graticule(W,S,E,N).</li>
   * <li><b>rememberPos</b><br/>
-  * Set to true to enable restoring the map position when the page is reloaded. Requires jquery.cookie plugin.</li>
+  * Set to true to enable restoring the map position when the page is reloaded. Requires jquery.cookie plugin. As this feature
+  * requires cookies, you should notify your users in compliance with European cookie law if you use this option.</li>
   * </ul>
   * @param array $olOptions Optional array of settings for the OpenLayers map object. If overriding the projection or
   * displayProjection settings, just pass the EPSG number, e.g. 27700.
