@@ -805,6 +805,9 @@ class data_entry_helper extends helper_base {
   * Optional. If using the indicia_locations driver, then set this to true to include public (non-website specific)
   * locations in the search results. Defaults to false.
   * </li>
+  * <li><b>autoCollapseResults</b><br/>
+  * Optional. If a list of possible matches are found, does selecting a match automatically fold up the results? Defaults to false.
+  * </li>
   * </ul>
   * @link http://code.google.com/apis/ajaxsearch/terms.html Google AJAX Search API Terms of Use.
   * @link http://code.google.com/p/indicia/wiki/GeoreferenceLookupDrivers Documentation for the driver architecture.
@@ -812,14 +815,14 @@ class data_entry_helper extends helper_base {
   */
   public static function georeference_lookup($options) {
     $options = self::check_options($options);
+    global $indicia_templates;
     $options = array_merge(array(
       'id' => 'imp-georef-search',
       'driver' => 'geoplanet',
-      // Internationalise the labels here, because if we do this directly in the template setup code it is too early for any custom
-      // language files to be loaded.
-      'search' => lang::get('search'),
-      'close' => lang::get('Close the search results'),
-      'public' => false
+      'searchButton' => self::apply_replacements_to_template($indicia_templates['button'], 
+          array('href'=>'#', 'id'=>'imp-georef-search-btn', 'class' => 'inline-control', 'caption'=>lang::get('Search'))),
+      'public' => false,
+      'autoCollapseResults' => false
     ), $options);
     self::add_resource('indiciaMapPanel');
     // dynamically build a resource to link us to the driver js file.
@@ -846,6 +849,7 @@ class data_entry_helper extends helper_base {
     // a path to a simple PHP proxy script on the server.
     self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.proxy='".
         self::getRootFolder() . self::relative_client_helper_path() . "proxy.php';\n\n";
+    self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.autoCollapseResults='".($options['autoCollapseResults'] ? 't' : 'f')."';\n";
     // for the indicia_locations driver, pass through the read auth and url
     if ($options['driver']==='indicia_locations') {
       self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.warehouseUrl='".self::$base_url."';\n";
@@ -853,6 +857,14 @@ class data_entry_helper extends helper_base {
       self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.nonce='".$options['readAuth']['nonce']."';\n";
       self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.public='".($options['public'] ? 't' : 'f')."';\n";
       self::add_resource('json');
+    }
+    if ($options['autoCollapseResults']) {
+      // no need for close button on results list
+      $options['closeButton']='';
+    } else {
+      // want a close button on the results list
+      $options['closeButton'] = self::apply_replacements_to_template($indicia_templates['button'], 
+          array('href'=>'#', 'id'=>'imp-georef-close-btn', 'class' => '', 'caption'=>lang::get('Close the search results')));
     }
     return self::apply_template('georeference_lookup', $options);
   }

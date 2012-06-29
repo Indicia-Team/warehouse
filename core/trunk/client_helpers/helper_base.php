@@ -39,6 +39,8 @@ $indicia_templates = array(
   'nosuffix' => " \n",
   'requiredsuffix' => '<span class="deh-required">*</span><br/>'."\n",
   'requirednosuffix' => '<span class="deh-required">*</span>'."\n",
+  'button' => '<input type=\"button\" id=\"{id}\" class=\"ui-corner-all ui-widget-content ui-state-default indicia-button {class}\" value=\"{caption}\" />',
+  'anchorButton' => '<a class=\"ui-corner-all ui-widget-content ui-state-default indicia-button {class}\" href=\"{href}\" id=\"{id}\">{caption}</a>',
   'lock_icon' => '<span id="{id}_lock" class="unset-lock">&nbsp;</span>',
   'lock_javascript' => "indicia.locks.initControls (
       \"".lang::get('locked tool-tip')."\", 
@@ -82,12 +84,10 @@ $indicia_templates = array(
     "document.write('<div id=\"{divId}\" style=\"width: {width}; height: {height};\"{class}></div>');\n".
     "/* ]]> */</script>",
   'georeference_lookup' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
-    "document.write('<input type=\"text\" id=\"imp-georef-search\"{class} />');\n".
-    "document.write('<input type=\"button\" id=\"imp-georef-search-btn\" class=\"ui-corner-all ui-widget-content ui-state-default indicia-button inline-control\" value=\"{search}\" />');\n".
+    "document.write('<input type=\"text\" id=\"imp-georef-search\"{class} />{searchButton}');\n".
     "document.write('<div id=\"imp-georef-div\" class=\"ui-corner-all ui-widget-content ui-helper-hidden\">');\n".
     "document.write('  <div id=\"imp-georef-output-div\">');\n".
-    "document.write('  </div>');\n".
-    "document.write('  <a class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" href=\"#\" id=\"imp-georef-close-btn\">{close}</a>');\n".
+    "document.write('  </div>  {closeButton}');\n".
     "document.write('</div>');".
     "\n/* ]]> */</script>",
   'tab_header' => '<script type="text/javascript">/* <![CDATA[ */'."\n".
