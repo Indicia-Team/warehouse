@@ -948,7 +948,7 @@ mapGeoreferenceHooks = [];
       div.map = new OpenLayers.Map($(this)[0], olOptions);
       
       // setup the map to save the last position
-      if (typeof $.cookie !== "undefined") {
+      if (div.settings.rememberPos && typeof $.cookie !== "undefined") {
         div.map.events.register('moveend', null, function() {
           $.cookie('mapzoom', div.map.zoom, {expires: 7});
           $.cookie('maplon', div.map.center.lon, {expires: 7});
