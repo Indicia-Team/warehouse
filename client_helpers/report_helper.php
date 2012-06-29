@@ -411,7 +411,7 @@ class report_helper extends helper_base {
         }
         foreach ($options['columns'] as $field) {
           $classes=array();
-          if (isset($options['sendOutputToMap']) && $options['sendOutputToMap'] && isset($field['mappable']) && $field['mappable']==='true' || $field['mappable']===true) {
+          if (isset($options['sendOutputToMap']) && $options['sendOutputToMap'] && isset($field['mappable']) && ($field['mappable']==='true' || $field['mappable']===true)) {
             $addFeaturesJs.= "  addDistPoint(features, ".json_encode($row).", '".$field['fieldname']."', {}".
                 (empty($rowId) ? '' : ", '".$row[$options['rowId']]."'").");\n";
           }
@@ -1416,7 +1416,7 @@ mapSettingsHooks.push(function(opts) {
     }
     if (!empty($extra) && substr($extra, 0, 1)!=='&')
       $extra = '&'.$extra;
-    $request = parent::$base_url.'index.php/services/'.
+    $request = 'index.php/services/'.
         $serviceCall.
         'mode=json&nonce='.$options['readAuth']['nonce'].
         '&auth_token='.$options['readAuth']['auth_token'].
@@ -1445,10 +1445,12 @@ mapSettingsHooks.push(function(opts) {
     if (isset($options['userId']))
       $request .= '&user_id='.$options['userId'];
     if (isset($options['linkOnly']) && $options['linkOnly']) {
-      return $request;
+      // a link must be proxied as can be used client-site 
+      return (empty(parent::$warehouse_proxy) ? parent::$base_url : parent::$warehouse_proxy).$request;
     }
     else {
-      $response = self::http_post($request, null);
+      // no need to proxy the request, as coming from server-side
+      $response = self::http_post(parent::$base_url.$request, null);
       $decoded = json_decode($response['output'], true);
       if (!is_array($decoded))
         return array('error'=>print_r($response, true));
