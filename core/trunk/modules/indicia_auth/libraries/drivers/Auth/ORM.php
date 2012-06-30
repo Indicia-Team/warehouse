@@ -61,6 +61,7 @@ class Auth_ORM_Driver implements Auth_Driver {
     }
 
     // Anyone with user status on a website, or a role on the Warehouse can log in.
+    // Deleted users cannot log in.
     
     $site_role = (new Site_role_Model('Admin'));
     
@@ -69,7 +70,8 @@ class Auth_ORM_Driver implements Auth_Driver {
     
      // If the password in the database is null, then do not check the password
     if ((!is_null($user->core_role_id) OR ($websites->count() > 0))
-        AND (is_null($user->password) OR ($user->password === $password)))
+        AND (is_null($user->password) OR ($user->password === $password))
+        AND $user->deleted == 'f')
     {
       if ($remember === TRUE)
       {
