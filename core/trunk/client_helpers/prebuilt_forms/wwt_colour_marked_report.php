@@ -608,6 +608,20 @@ class iform_wwt_colour_marked_report {
           'group' => 'Subject observation',
         ),
         array(
+          'name'=>'default_gender',
+          'caption'=>'Default Gender',
+          'description'=>'What (if any) gender should be the default for the colour-marked individual?',
+          'type'=>'select',
+          'table'=>'termlists_term',
+          'captionField'=>'term',
+          'valueField'=>'id',
+          'blankText'=>'No default',
+          'extraParams' => array('termlist_external_key'=>'indicia:assoc:gender','orderby'=>'sort_order'),
+          'required' => false,
+          'helpText' => 'The helptext. Todo: change this one you see where it shows on screen!!',
+          'group' => 'Subject observation',
+        ),
+        array(
           'name'=>'request_stage_values',
           'caption'=>'Request Age Values',
           'description'=>'What (if any) age/stage options do you want to present for the colour-marked individual? '.
@@ -622,14 +636,42 @@ class iform_wwt_colour_marked_report {
           'group' => 'Subject observation',
         ),
         array(
+          'name'=>'default_stage',
+          'caption'=>'Default Age',
+          'description'=>'What (if any) age/stage should be the default for the colour-marked individual?',
+          'type'=>'select',
+          'table'=>'termlists_term',
+          'captionField'=>'term',
+          'valueField'=>'id',
+          'blankText'=>'No default',
+          'extraParams' => array('termlist_external_key'=>'indicia:assoc:stage','orderby'=>'sort_order'),
+          'required' => false,
+          'helpText' => 'The helptext. Todo: change this one you see where it shows on screen!!',
+          'group' => 'Subject observation',
+        ),
+        array(
           'name'=>'request_life_status_values',
-          'caption'=>'Request Life Status Values',
+          'caption'=>'Request Subject Status Values',
           'description'=>'What (if any) life status options do you want to present for the colour-marked individual? '.
             'Leave un-ticked to hide all life status options.',
           'type'=>'checkbox_group',
           'table'=>'termlists_term',
           'captionField'=>'term',
           'valueField'=>'id',
+          'extraParams' => array('termlist_external_key'=>'indicia:assoc:life_status','orderby'=>'sort_order'),
+          'required' => false,
+          'helpText' => 'The helptext. Todo: change this one you see where it shows on screen!!',
+          'group' => 'Subject observation',
+        ),
+        array(
+          'name'=>'default_life_status',
+          'caption'=>'Default Subject Status',
+          'description'=>'What (if any) subject status should be the default for the colour-marked individual?',
+          'type'=>'select',
+          'table'=>'termlists_term',
+          'captionField'=>'term',
+          'valueField'=>'id',
+          'blankText'=>'No default',
           'extraParams' => array('termlist_external_key'=>'indicia:assoc:life_status','orderby'=>'sort_order'),
           'required' => false,
           'helpText' => 'The helptext. Todo: change this one you see where it shows on screen!!',
@@ -2005,7 +2047,7 @@ class iform_wwt_colour_marked_report {
       && count($args['request_gender_values']) > 0) {
       // filter the genders available
       $query = array('in'=>array('id', $args['request_gender_values']));
-      $filter = array('query'=>json_encode($query),);
+      $filter = array('query'=>json_encode($query),'orderby'=>'sort_order',);
       $extraParams = array_merge($filter, $auth['read']);
       $options['lockable'] = $options['identifiers_lockable'];
       $fieldname = $options['fieldprefix'].'sjoAttr:'.$options['genderId'];
@@ -2026,6 +2068,7 @@ class iform_wwt_colour_marked_report {
         'table'=>'termlists_term',
         'captionField'=>'term',
         'valueField'=>'id',
+        'default' => $args['default_gender'],
         'extraParams' => $extraParams,
       ), $options));
       unset($options['lockable']);
@@ -2036,7 +2079,7 @@ class iform_wwt_colour_marked_report {
       && count($args['request_stage_values']) > 0) {
       // filter the stages available
       $query = array('in'=>array('id', $args['request_stage_values']));
-      $filter = array('query'=>json_encode($query),);
+      $filter = array('query'=>json_encode($query),'orderby'=>'sort_order',);
       $extraParams = array_merge($filter, $auth['read']);
       $options['lockable'] = $options['identifiers_lockable'];
       $fieldname = $options['fieldprefix'].'sjoAttr:'.$options['stageId'];
@@ -2057,6 +2100,7 @@ class iform_wwt_colour_marked_report {
         'table'=>'termlists_term',
         'captionField'=>'term',
         'valueField'=>'id',
+        'default' => $args['default_stage'],
         'extraParams' => $extraParams,
       ), $options));
       unset($options['lockable']);
@@ -2067,7 +2111,7 @@ class iform_wwt_colour_marked_report {
       && count($args['request_life_status_values']) > 0) {
       // filter the life status's available
       $query = array('in'=>array('id', $args['request_life_status_values']));
-      $filter = array('query'=>json_encode($query),);
+      $filter = array('query'=>json_encode($query),'orderby'=>'sort_order',);
       $extraParams = array_merge($filter, $auth['read']);
       $options['lockable'] = $options['identifiers_lockable'];
       $fieldname = $options['fieldprefix'].'sjoAttr:'.$options['lifeStatusId'];
@@ -2088,6 +2132,7 @@ class iform_wwt_colour_marked_report {
         'table'=>'termlists_term',
         'captionField'=>'term',
         'valueField'=>'id',
+        'default' => $args['default_life_status'],
         'extraParams' => $extraParams,
       ), $options));
       unset($options['lockable']);
@@ -2215,8 +2260,7 @@ class iform_wwt_colour_marked_report {
       $options['fieldprefix'] = 'idn:'.$taxIdx.':';
       // filter the devices available
       $query = array('in'=>array('id', $args['other_devices']));
-      $filter = array('termlist_external_key'=>'indicia:assoc:identifier_type',);
-      $filter = array('query'=>json_encode($query),);
+      $filter = array('query'=>json_encode($query),'orderby'=>'sort_order',);
       $extraParams = array_merge($filter, $auth['read']);
       $fieldname = $options['fieldprefix'].'sjoAttr:'.$options['attachmentId'];
       $default = array();
@@ -2239,6 +2283,8 @@ class iform_wwt_colour_marked_report {
         'extraParams' => $extraParams,
       ), $options));
     }
+    
+    // subject_observation comment
     if ($args['observation_comment']) {
       $r .= self::get_control_observationcomment($auth, $args, $tabalias, $options);
     }
