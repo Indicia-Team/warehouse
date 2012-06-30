@@ -150,7 +150,7 @@ class New_Password_Controller extends Indicia_Controller {
         // just return a success confirmation, can't log them in as not a core user
         $this->template->title = 'Password reset successfully';
         $this->template->content = new View('login/login_message');
-        $this->template->content->message = 'Your indicia password has been reset and you can now use the new password to log in to your web site.<br />';
+        $this->template->content->message = 'Your indicia password has been reset and you can now use the new password to <a href="' . url::site() . '/login">log in</a>.<br />';
       } else {
         // with the password updated, login and jump to the home page
         $this->auth->login($user->id, $password);
