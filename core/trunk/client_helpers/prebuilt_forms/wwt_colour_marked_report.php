@@ -106,8 +106,7 @@ class iform_wwt_colour_marked_report {
         array(
           'name'=>'clientSideValidation',
           'caption'=>'Client Side Validation',
-          'description'=>'Enable client side validation of controls using JavaScript. Note that there are bugs in Internet Explorer which can cause errors when '.
-              'clicking on the map if this box is ticked.',
+          'description'=>'Enable client side validation of controls using JavaScript.',
           'type'=>'boolean',
           'default' => true,
           'required' => false,
@@ -2420,6 +2419,7 @@ class iform_wwt_colour_marked_report {
 
       $options['class'] = empty($options['class']) ? $options['classprefix'].$attr_name : 
         (strstr($options['class'], $options['classprefix'].$attr_name) ? $options['class'] : $options['class'].' '.$options['classprefix'].$attr_name);
+      $options['class'] = $options['class'].' idn-'.$attr_name;
       if ($args['use_colour_picker']) {
         $options['class'] = empty($options['class']) ? 'select_colour' : 
           (strstr($options['class'], 'select_colour') ? $options['class'] : $options['class'].' select_colour');
