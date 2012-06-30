@@ -880,7 +880,11 @@ class iform_wwt_colour_marked_report {
       $r .= '</div>';
     }
     // reset button
-    $r .= '<input type="button" value="'.lang::get('Abandon Form and Reload').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'newSample')).'\'">';    
+    $r .= '<input type="button" class="ui-state-default ui-corner-all" value="'.lang::get('Abandon Form and Reload').'" '
+      .'onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'newSample')).'\'">';    
+    // clear all padlocks button
+    $r .= ' <input type="button" class="ui-state-default ui-corner-all" value="'.lang::get('Clear All Padlocks').'" '
+      .'onclick="indicia.locks.unlockRegion(\'body\');">';    
     // Get authorisation tokens to update the Warehouse, plus any other hidden data.
     $hiddens = $auth['write'].
           "<input type=\"hidden\" id=\"read_auth_token\" name=\"read_auth_token\" value=\"".$auth['read']['auth_token']."\" />\n".
@@ -2286,7 +2290,8 @@ class iform_wwt_colour_marked_report {
       data_entry_helper::$javascript .= "window.indicia.wwt.newJavascript = '"
         .str_replace(array('\'', "\n"), array('\\\'', ' '), str_replace('\\', '\\\\', preg_replace('#^\s*//.+$#m', '', $photoJavascript)))
         .str_replace(array('\'', "\n", "\r"), array('\\\'', ' ', ' '), str_replace('\\', '\\\\', preg_replace('#^\s*//.+$#m', '', $autoJavascript)))."';\n";
-      $r .= '<input type="button" id="idn:add-another" value="'.lang::get('Add Another Bird at the Same Date and Location').'" /><br />';
+      $r .= '<input type="button" id="idn:add-another" class="ui-state-default ui-corner-all" '
+        .'value="'.lang::get('Add Another Bird at the Same Date and Location').'" /><br />';
     }
 
     return $r;

@@ -372,6 +372,16 @@
   };
 
   /**
+   * unlock lock settings for all controls within the specified region of the page
+   * @param region jQuery selector for the page region to unlock
+   */
+  indicia.locks.unlockRegion = function(region) {
+    $('.locked-icon', region).each(function(n) {
+      $(this).click();
+    });
+  };
+
+  /**
    * copy lock settings and state from one set of controls to another matching set.
    * @param fromSelector jQuery selector for the part of the form to copy from
    * @param toSelector jQuery selector for the matching part of the form to copy to
