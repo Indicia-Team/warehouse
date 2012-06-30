@@ -158,9 +158,6 @@
     var iPos = $('#'+prefix+'idnAttr\\:'+positionId+' option:selected').text();
     var iSeq = $('#'+prefix+'idnAttr\\:'+sequenceId).val();
     iSeq = $.trim(iSeq);
-    if (iSeq==='') {
-      // return false;
-    }
     switch (idnTypeName) {
     case 'neck-collar':
       iCode = 'NC';
@@ -296,17 +293,15 @@
       }
     });
     checkbox.checked = setting;
-    // if checked, all identifier values are required, set identifier coded_value
+    // if checked, all identifier values are required except sequence which requires a warning if not set, 
+    // set identifier coded_value
     if (setting) {
-      control$.addClass('required');
+      control$.not('.idn-sequence').addClass('required');
+      control$.filter('.idn-sequence').addClass('confirmIfBlank');
       var iCode = makeIdentifierCode(escFldPrefix);
-      if (iCode) {
-        $('#'+escFldPrefix+'identifier\\:coded_value').val(iCode);
-      } else {
-        $('#'+escFldPrefix+'identifier\\:coded_value').val('');
-      }
+      $('#'+escFldPrefix+'identifier\\:coded_value').val(iCode);
     } else {
-      control$.removeClass('required');
+      control$.removeClass('required confirmIfBlank');
       $('#'+escFldPrefix+'identifier\\:coded_value').val('');
     }
   };
@@ -390,6 +385,19 @@
       var checkbox$ = $('.identifier_checkbox:checked', $(element).closest('.idn-accordion'));
       return checkbox$.length > 0;
     }, "Please record at least one identifier for this bird");
+    $.validator.addMethod("confirmIfBlank", function(value, element) {
+      // if an identifier is being used, but the sequence is blank we must get confirmation to continue
+      if ($.trim(value)==='' && $(element).data('confirmed')===undefined) {
+        var identifier = $(element).closest('.idn\\:accordion\\:panel').prev('h3').text();
+        var confirmation = confirm('You\'ve entered no sequence for the '+identifier+', please choose \'OK\' to continue, or \'Cancel\' to enter a sequence.');
+        if (confirmation) {
+          // only say this once
+          $(element).data('confirmed', true);
+        }
+        return confirmation;
+      }
+      return true;
+    }, "This field is blank, you will be prompted for confirmation");
     $.validator.addMethod("textAndBaseMustDiffer", function(value, element) {
       // no identifier can have the same base colour and text colour as it would be unreadable
       var colourSelected$ = $('select.select_colour option:selected', $(element).closest('.idn\\:accordion\\:panel'));
