@@ -54,6 +54,9 @@
 
   // variable to hold simpleHash of title
   var hash = 0;
+  
+  // variables to hold reference to map div and spatial ref input
+  var mapDiv, srefId;
 
   // boolean variable to tell us if cookies are enabled in this browser. Note,
   // the anonymous function is invoked and cookiesEnabled is set to the result.
@@ -78,7 +81,8 @@
   };
 
   var simpleHash = function(str) {
-    // returns the sum of bytes in the string, terrible hash function but we don't need much
+    // returns the sum of bytes in the string, terrible hash function but we don't need much,
+    // the point is just to get a short but probably unique form identifier from the title
     if (hash>0) {
       return hash;
     }
@@ -307,6 +311,15 @@
             '.ac_input, .ui-autocomplete').attr('readonly', 'readonly').attr(
             'disabled', 'disabled').addClass('locked-control');
       }
+      if (srefId!==null && mapDiv!==null && escControlId===srefId) {
+        $(mapDiv).before('<div id="mapLockMask" style="position: absolute;"/>');
+        $('#mapLockMask').css({"opacity": "0.25", "background-color": "white",
+            "left":$(mapDiv).position().left + "px", 
+            "top":$(mapDiv).position().top + "px", 
+            "z-index":9999}) 
+            .width($(mapDiv).width())
+            .height($(mapDiv).height());
+      }
     } else {
       control$.removeAttr('readonly').removeAttr('disabled').removeClass('locked-control');
       if (typeof $.fn.datepicker!=="undefined") {
@@ -316,6 +329,9 @@
         $('input[id*=' + escControlId + '\\:]').filter(
             '.ac_input, .ui-autocomplete').removeAttr('readonly').removeAttr(
             'disabled').removeClass('locked-control');
+      }
+      if (srefId!==null && mapDiv!==null && escControlId===srefId) {
+        $('#mapLockMask').remove();
       }
     }
   };
@@ -425,32 +441,41 @@
       });
       // install the submit handler for the lockable forms to enable any locked
       // controls for submission
-      $('form:has(span.locked-icon, span.unlocked-icon)').submit(
-          function(event) {
-            // if the form has no id, set one so we can use the id to select its
-            // locked controls
-            var form = this;
-            var formIdAdded = false;
-            if (!form.id) {
-              form.id = 'tempId-5x667vvfd';
-              formIdAdded = true;
-            }
-            var escFormId = esc4jq(form.id);
-            // select all locked controls in this form and enable them
-            $('#' + escFormId + ' span.locked-icon').each(
-                    function(n) {
-                  var span = this;
-                  var escId = esc4jq(span.id);
-                  var escControlId = escId.replace('_lock', '');
-                  $('#' + escControlId).removeAttr('disabled').filter(
-                      '.hasDatepicker').datepicker('enable');
-                  $('input[id*=' + escControlId + '\\:]').filter(
-                      '.ac_input, .ui-autocomplete').removeAttr('disabled');
-                });
-            if (formIdAdded) {
-              form.id = '';
-            }
-          });
+      $('form:has(span.locked-icon, span.unlocked-icon)').submit(function(event) {
+        // if the form has no id, set one so we can use the id to select its
+        // locked controls
+        var form = this;
+        var formIdAdded = false;
+        if (!form.id) {
+          form.id = 'tempId-5x667vvfd';
+          formIdAdded = true;
+        }
+        var escFormId = esc4jq(form.id);
+        // select all locked controls in this form and enable them
+        $('#' + escFormId + ' span.locked-icon').each(
+                function(n) {
+              var span = this;
+              var escId = esc4jq(span.id);
+              var escControlId = escId.replace('_lock', '');
+              $('#' + escControlId).removeAttr('disabled').filter(
+                  '.hasDatepicker').datepicker('enable');
+              $('input[id*=' + escControlId + '\\:]').filter(
+                  '.ac_input, .ui-autocomplete').removeAttr('disabled');
+            });
+        if (formIdAdded) {
+          form.id = '';
+        }
+      });
+      if (typeof mapInitialisationHooks !== 'undefined') {
+        mapInitialisationHooks.push(function(div) {
+          // Capture the map div so when locking the sref control, set
+          // div.settings.clickForSpatialRef to false, and back again on unlock
+          // to stop users updating locked spatial refs by clicking on map
+          mapDiv = div;
+          srefId = mapDiv.settings.srefId;
+          setWriteStatus(srefId+'_lock');
+        });
+      }
       initialised = true;
     }
   };
