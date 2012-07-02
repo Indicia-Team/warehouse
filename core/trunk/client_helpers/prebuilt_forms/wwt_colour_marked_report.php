@@ -1433,10 +1433,8 @@ class iform_wwt_colour_marked_report {
               $fieldprefix = 'idn:'.$idx.':'.$identifier_type.':isoAttr:';
               foreach ($isoAttrs as $isoAttr) {
                 if ($iso['id']===$isoAttr['identifiers_subject_observation_id']) {
-                  if ($isoAttr['multi_value']==='t') {
-                    $form_data[$fieldprefix.$isoAttr['identifiers_subject_observation_attribute_id']][] = $isoAttr['raw_value'];
-                  } else {
-                    $form_data[$fieldprefix.$isoAttr['identifiers_subject_observation_attribute_id']] = $isoAttr['raw_value'];
+                  if (!empty($isoAttr['id'])) {
+                    $form_data[$fieldprefix.$isoAttr['identifiers_subject_observation_attribute_id'].':'.$isoAttr['id']] = $isoAttr['raw_value'];
                   }
                 }
               }
@@ -2802,8 +2800,20 @@ class iform_wwt_colour_marked_report {
       }
     }
     
-    // this identifier exists but is no longer set, or its identity has been changed
-    if ($old_id>0 && (!$set || $old_id!==$new_id)) {
+    // see if we have any updates on the isoAttr
+    $isoAttrUpdated = count(preg_grep('/^isoAttr:[0-9]+$/', array_keys($values))) > 0;
+    if (!$isoAttrUpdated) {
+      $keys = preg_grep('/^isoAttr:[0-9]+:[0-9]+$/', array_keys($values));
+      foreach ($keys as $key) {
+        if ($values[$key]==='') {
+          $isoAttrUpdated = true;
+          break;
+        }
+      }
+    }
+      
+    // this identifier exists but its identity has been changed
+    if ($old_id>0 && $old_id!==$new_id) {
       // unlink the old identifier
       $values['identifiers_subject_observation:deleted'] = 't';
       $iso = submission_builder::build_submission(
@@ -2868,6 +2878,14 @@ class iform_wwt_colour_marked_report {
       $iso['superModels'] = array(
         array('fkId' => 'identifier_id', 'model' => $i,),
       );
+      $so['subModels'][] = array('fkId' => 'subject_observation_id', 'model' => $iso,);
+    }
+    
+    // identifier exists and is unchanged but has iso attributes which have changed
+    if ($old_id>0 && $old_id===$new_id && $isoAttrUpdated) {
+      // update link to trigger update to isoAttr
+      $iso = submission_builder::build_submission(
+        $values, array('model'=>'identifiers_subject_observation',));
       $so['subModels'][] = array('fkId' => 'subject_observation_id', 'model' => $iso,);
     }
     
