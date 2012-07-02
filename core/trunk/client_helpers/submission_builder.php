@@ -153,7 +153,7 @@ class submission_builder extends helper_config {
    */
   public static function wrap($array, $entity, $field_prefix=null)
   {
-    if (array_key_exists('save-site-flag', $array))
+    if (array_key_exists('save-site-flag', $array) && $array['save-site-flag']==='1')
       self::create_personal_site($array);
     // Initialise the wrapped array
     $sa = array(
@@ -185,11 +185,12 @@ class submission_builder extends helper_config {
     // useLocationName is a special flag to indicate that an unmatched location can go
     // in the locaiton_name field.
     if (isset($array['useLocationName'])) {
-      if ($entity==='sample' && 
-          (empty($sa['fields']['location_id']) || empty($sa['fields']['location_id']['value']))
-           && !empty($array['imp-location:name'])) {
-        $sa['fields']['location_name']=$array['imp-location:name'];
-
+      if ($entity==='sample') {
+        if ((empty($sa['fields']['location_id']) || empty($sa['fields']['location_id']['value']))
+            && !empty($array['imp-location:name']))
+          $sa['fields']['location_name']=array('value'=>$array['imp-location:name']);
+        else 
+          $sa['fields']['location_name']=array('value'=>'');
       }
       unset($array['useLocationName']);
     }
