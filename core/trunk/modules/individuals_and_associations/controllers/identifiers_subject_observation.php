@@ -101,6 +101,18 @@ class Identifiers_subject_observation_Controller extends Gridview_Base_Controlle
       // subject_observation_id is passed as first argument in URL when creating. 
       $r['identifiers_subject_observation:subject_observation_id'] = $this->uri->argument(1);
     }
+    if (array_key_exists('identifiers_subject_observation:id', $_POST)) {
+      // some entity specific code to get the website(s)
+      $r = $this->addSubjectObservation($r, $_POST['identifiers_subject_observation:subject_observation_id']);
+      $r = $this->addSample($r, $_POST['subject_observation:sample_id']);
+      $websiteId = $r['subject_observation:website_id'];
+      $this->loadAttributes($r, array(
+        'website_id'=>$websiteId,
+        // get survey_id from an appropriate source.
+        'restrict_to_survey_id'=>array(null, $r['sample:survey_id']),
+        // other stuff here
+      ));
+    }
     return $r;
   }
   
@@ -112,8 +124,42 @@ class Identifiers_subject_observation_Controller extends Gridview_Base_Controlle
     $r = parent::getModelValues();
     if ($this->model->identifier_id)
       $r['identifier:coded_value'] = $this->model->identifier->coded_value;
+    // some entity specific code to get the website(s)
+    $websiteId = $this->model->subject_observation->website_id;
+    // get survey_id from an appropriate source.
+    $surveyId = $this->model->subject_observation->sample->survey_id;
+    $this->loadAttributes($r, array(
+      'website_id'=>$websiteId,
+        'restrict_to_survey_id'=>array(null, $surveyId),
+      // other stuff here
+    ));
     return $r;      
   }
-}
   
+  /**
+   * Adds sample data to the values array. 
+   */
+  private function addSubjectObservation($values, $id) {
+    $subjectObservation = ORM::Factory('subject_observation', $id);
+    $values['subject_observation:id'] = $subjectObservation->id;
+    $values['subject_observation:website_id'] = $subjectObservation->website_id;
+    $values['subject_observation:sample_id'] = $subjectObservation->sample_id;
+    return $values;
+  }
+  
+  /**
+   * Adds sample data to the values array. 
+   */
+  private function addSample($values, $id) {
+    $sample = ORM::Factory('sample', $id);
+    $values['sample:id'] = $sample->id;
+    $values['sample:date_start'] = $sample->date_start;
+    $values['sample:entered_sref:no_validate'] = $sample->entered_sref;
+    $values['sample:survey_id'] = $sample->survey_id;
+    $values['survey:title'] = $sample->survey->title;
+    return $values;
+  }
+  
+}
+
 ?>

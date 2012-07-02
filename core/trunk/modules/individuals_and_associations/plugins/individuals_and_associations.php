@@ -45,6 +45,7 @@ function individuals_and_associations_alter_menu ($menu, $auth) {
     $menu['Entered Data']['Subject Observations'] = 'subject_observation';
     $menu['Custom Attributes']['Known Subject Attributes'] = 'known_subject_attribute';
     $menu['Custom Attributes']['Identifiers Attributes'] = 'identifier_attribute';
+    $menu['Custom Attributes']['Identifiers Subject Observation Attributes'] = 'identifiers_subject_observation_attribute';
     $menu['Custom Attributes']['Subject Observation Attributes'] = 'subject_observation_attribute';
   }
   return $menu;
@@ -88,6 +89,8 @@ function individuals_and_associations_extend_data_services() {
     'subject_observation_attribute_values'=>array(),
     'known_subject_comments'=>array(),
     'identifiers_subject_observations'=>array(),
+    'identifiers_subject_observation_attributes'=>array(),
+    'identifiers_subject_observation_attribute_values'=>array(),
     'occurrences_subject_observations'=>array(),
   );
 }

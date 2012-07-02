@@ -36,6 +36,15 @@ class Identifiers_subject_observation_Model extends ORM {
     'created_by'=>'user',
     'updated_by'=>'user',
   );
+  protected $has_many = array('identifiers_subject_observation_attribute_values');
+  
+  // Declare that this model has child attributes, and the name of the node in the submission which contains them
+  protected $has_attributes=true;
+  // A public attribute does NOT need to be linked to a website to form part of the submissable data for a identifiers_subject_observation (unlike, say,
+  // sample attributes which are not submissable unless linked via a sample_attributes_websites record).
+  public $include_public_attributes = false;
+  protected $attrs_submission_name='isoAttributes';
+  protected $attrs_field_prefix='isoAttr';
 
   public function validate(Validation $array, $save = FALSE) {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
@@ -45,7 +54,7 @@ class Identifiers_subject_observation_Model extends ORM {
 
     // Explicitly add those fields for which we don't do validation
     $this->unvalidatedFields = array(
-      'matched', 'verified_status', 'verified_by_id', 'verified_on', 'deleted',
+      'matched', 'verified_status', 'verified_by_id', 'verified_on', 'deleted', 'website_id',
     );
     return parent::validate($array, $save);
   }
