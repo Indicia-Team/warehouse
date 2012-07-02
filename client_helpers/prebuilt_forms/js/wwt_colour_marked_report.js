@@ -268,7 +268,7 @@
   var controlIsSet = function(ctl) {
     // return true if this is set
     // if control is a select
-    if ($(ctl).filter('select').length>0 && ctl.selectedIndex!==0) {
+    if ($(ctl).filter('select').length>0 && ctl.selectedIndex >= 0 && ctl.options[ctl.selectedIndex].text!=='<Please select>') {
       return true;
     }
     // if control is an input
@@ -294,6 +294,7 @@
     });
     checkbox.checked = setting;
     // if checked, all identifier values are required except sequence which requires a warning if not set, 
+    // and conditions which is always optional (but not in the control$ wrapped set anyway)
     // set identifier coded_value
     if (setting) {
       control$.not('.idn-sequence').addClass('required');
@@ -347,13 +348,13 @@
       setIdentifierVisualisation(this);
     });
     // install a keyup handler for the colour selecters to set the ring sequence
-    $('input.select_colour', scope).bind('keyup', function(event) {
+    $('input.identifier_sequence', scope).bind('keyup', function(event) {
       $(this).val($(this).val().toUpperCase());
       autoSetCheckbox(this);
       setIdentifierVisualisation(this);
     });
     // install a change handler for the colour selecters to set the ring sequence
-    $('input.select_colour', scope).bind('change', function(event) {
+    $('input.identifier_sequence', scope).bind('change', function(event) {
       $(this).val($(this).val().toUpperCase());
       autoSetCheckbox(this);
       setIdentifierVisualisation(this);
@@ -474,7 +475,7 @@
       setTaxonHeader(this);
     });
     // set the initial state of the identifier visuals
-    $('select.select_colour, input.select_colour', scope).each(function() {
+    $('select.select_colour, input.identifier_sequence', scope).each(function() {
       autoSetCheckbox(this);
       setIdentifierVisualisation(this);
     });
