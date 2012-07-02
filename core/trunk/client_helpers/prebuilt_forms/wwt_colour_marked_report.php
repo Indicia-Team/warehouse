@@ -559,16 +559,46 @@ class iform_wwt_colour_marked_report {
           ),
           'required'=>false,
           'group'=>'Identifiers'
-        ),/*
+        ),
         array(
-          'name'=>'use_colour_picker',
-          'caption'=>'Use Colour Picker',
-          'description'=>'Tick this to use a colour-picker control for choosing colours rather than a select control of colour names.',
-          'type'=>'boolean',
+          'name'=>'neck_collar_conditions',
+          'caption'=>'Neck Collar Conditions',
+          'description'=>'The identifier conditions we want to be reportable by recorders when observing a neck collar. Tick all that apply.',
+          'type'=>'checkbox_group',
+          'table'=>'termlists_term',
+          'captionField'=>'term',
+          'valueField'=>'id',
+          'extraParams' => array('termlist_external_key'=>'indicia:assoc:identifier_condition','orderby'=>'sort_order'),
           'required' => false,
-          'default' => false,
-          'group' => 'Identifiers'
-        ),*/
+          'helpText' => 'The helptext. Todo: change this one you see where it shows on screen!!',
+          'group' => 'Identifiers',
+        ),
+        array(
+          'name'=>'coloured_ring_conditions',
+          'caption'=>'Coloured Ring Conditions',
+          'description'=>'The identifier conditions we want to be reportable by recorders when observing a coloured ring Tick all that apply.',
+          'type'=>'checkbox_group',
+          'table'=>'termlists_term',
+          'captionField'=>'term',
+          'valueField'=>'id',
+          'extraParams' => array('termlist_external_key'=>'indicia:assoc:identifier_condition','orderby'=>'sort_order'),
+          'required' => false,
+          'helpText' => 'The helptext. Todo: change this one you see where it shows on screen!!',
+          'group' => 'Identifiers',
+        ),
+        array(
+          'name'=>'metal_ring_conditions',
+          'caption'=>'Metal Ring Conditions',
+          'description'=>'The identifier conditions we want to be reportable by recorders when observing a metal ring Tick all that apply.',
+          'type'=>'checkbox_group',
+          'table'=>'termlists_term',
+          'captionField'=>'term',
+          'valueField'=>'id',
+          'extraParams' => array('termlist_external_key'=>'indicia:assoc:identifier_condition','orderby'=>'sort_order'),
+          'required' => false,
+          'helpText' => 'The helptext. Todo: change this one you see where it shows on screen!!',
+          'group' => 'Identifiers',
+        ),
         array(
           'name'=>'other_devices',
           'caption'=>'Other Devices',
@@ -710,7 +740,6 @@ class iform_wwt_colour_marked_report {
     
     // hard-wire some 'dynamic' options to simplify the form. Todo: take out the dynamic code for these
     $args['subjectAccordion'] = false;
-    $args['use_colour_picker'] = true;
     $args['emailShow'] = false;
     $args['nameShow'] = false;
     $args['copyFromProfile'] = false;
@@ -1312,7 +1341,7 @@ class iform_wwt_colour_marked_report {
       }
     }
     
-    // load the identifier(s) for this sample
+    // load the identifiers_subject_observation(s) for this sample
     $query = array('in'=>array('subject_observation_id', self::$subjectObservationIds));
     $filter = array('query'=>json_encode($query),);
     $options = array(
@@ -1321,6 +1350,22 @@ class iform_wwt_colour_marked_report {
       'nocache' => true,
     );
     $isos = data_entry_helper::get_population_data($options);
+    
+    // load the identifiers_subject_observation_attributes(s) for this sample
+    $isoIds = array();
+    foreach ($isos as $iso) {
+      $isoIds[] = $iso['id'];
+    }
+    $query = array('in'=>array('identifiers_subject_observation_id', $isoIds));
+    $filter = array('query'=>json_encode($query),);
+    $options = array(
+      'table' => 'identifiers_subject_observation_attribute_value',
+      'extraParams' => $auth['read'] + $filter,
+      'nocache' => true,
+    );
+    $isoAttrs = data_entry_helper::get_population_data($options);
+    
+    // load the identifier(s) for this sample
     $identifierIds = array();
     foreach ($isos as $iso) {
       $identifierIds[] = $iso['identifier_id'];
@@ -1333,6 +1378,8 @@ class iform_wwt_colour_marked_report {
       'nocache' => true,
     );
     $identifiers = data_entry_helper::get_population_data($options);
+    
+    // load the identifier_attributes(s) for this sample
     $query = array('in'=>array('identifier_id', $identifierIds));
     $filter = array('query'=>json_encode($query),);
     $options = array(
@@ -1383,13 +1430,22 @@ class iform_wwt_colour_marked_report {
                   }
                 }
               }
+              $fieldprefix = 'idn:'.$idx.':'.$identifier_type.':isoAttr:';
+              foreach ($isoAttrs as $isoAttr) {
+                if ($iso['id']===$isoAttr['identifiers_subject_observation_id']) {
+                  if ($isoAttr['multi_value']==='t') {
+                    $form_data[$fieldprefix.$isoAttr['identifiers_subject_observation_attribute_id']][] = $isoAttr['raw_value'];
+                  } else {
+                    $form_data[$fieldprefix.$isoAttr['identifiers_subject_observation_attribute_id']] = $isoAttr['raw_value'];
+                  }
+                }
+              }
             }
           }
         }
       }
     }
 
-    //print_r($form_data);exit;
     return $form_data;
   }
 
@@ -1942,7 +1998,24 @@ class iform_wwt_colour_marked_report {
       }
     }
     
-    // get subject attributes
+    // get the identifiers subject observation attribute type data
+    $dataOpts = array(
+      'table' => 'identifiers_subject_observation_attribute',
+      'extraParams' => $auth['read'],
+    );
+    $options['isoAttributeTypes'] = data_entry_helper::get_population_data($dataOpts);
+    
+    // set up the known system types for subject_observation attributes
+    $options['conditionsId'] = -1;
+    foreach ($options['isoAttributeTypes'] as $isoAttributeType) {
+      if (!empty($isoAttributeType['system_function'])) {
+        switch ($isoAttributeType['system_function']) {
+          case 'identifier_condition' :
+            $options['conditionsId'] = $isoAttributeType['id'];
+            break;
+        }
+      }
+    }
     
     // configure the identifiers javascript
     // write it late so it happens after any locked values are applied
@@ -2150,11 +2223,12 @@ class iform_wwt_colour_marked_report {
         break;
       }
     }
-    $options['identifierAttrList'] = array(
-      array('typeId' => $options['baseColourId'], 'lockable' => true, 'hidden' => false,),
-      array('typeId' => $options['textColourId'], 'lockable' => true, 'hidden' => false,),
-      array('typeId' => $options['sequenceId'], 'lockable' => false, 'hidden' => false,),
-      array('typeId' => $options['positionId'], 'lockable' => false, 'hidden' => true, 'hiddenValue' => $args['neck_collar_position'],),
+    $options['attrList'] = array(
+      array('attrType' => 'idn', 'typeId' => $options['baseColourId'], 'lockable' => true, 'hidden' => false,),
+      array('attrType' => 'idn', 'typeId' => $options['textColourId'], 'lockable' => true, 'hidden' => false,),
+      array('attrType' => 'idn', 'typeId' => $options['sequenceId'], 'lockable' => false, 'hidden' => false,),
+      array('attrType' => 'idn', 'typeId' => $options['positionId'], 'lockable' => false, 'hidden' => true, 'hiddenValue' => $args['neck_collar_position'],),
+      array('attrType' => 'iso', 'typeId' => $options['conditionsId'], 'lockable' => false, 'hidden' => false,),
     );
     $options['fieldprefix'] = 'idn:'.$taxIdx.':neck-collar:';
     $options['classprefix'] = 'idn-neck-collar-';
@@ -2177,11 +2251,12 @@ class iform_wwt_colour_marked_report {
         break;
       }
     }
-    $options['identifierAttrList'] = array(
-      array('typeId' => $options['baseColourId'], 'lockable' => true, 'hidden' => false,),
-      array('typeId' => $options['textColourId'], 'lockable' => true, 'hidden' => false,),
-      array('typeId' => $options['sequenceId'], 'lockable' => false, 'hidden' => false,),
-      array('typeId' => $options['positionId'], 'lockable' => false, 'hidden' => true, 'hiddenValue' => $args['left_enscribed_colour_ring_position'],),
+    $options['attrList'] = array(
+      array('attrType' => 'idn', 'typeId' => $options['baseColourId'], 'lockable' => true, 'hidden' => false,),
+      array('attrType' => 'idn', 'typeId' => $options['textColourId'], 'lockable' => true, 'hidden' => false,),
+      array('attrType' => 'idn', 'typeId' => $options['sequenceId'], 'lockable' => false, 'hidden' => false,),
+      array('attrType' => 'idn', 'typeId' => $options['positionId'], 'lockable' => false, 'hidden' => true, 'hiddenValue' => $args['left_enscribed_colour_ring_position'],),
+      array('attrType' => 'iso', 'typeId' => $options['conditionsId'], 'lockable' => false, 'hidden' => false,),
     );
     $options['fieldprefix'] = 'idn:'.$taxIdx.':colour-left:';
     $options['classprefix'] = 'idn-colour-left-';
@@ -2204,11 +2279,12 @@ class iform_wwt_colour_marked_report {
         break;
       }
     }
-    $options['identifierAttrList'] = array(
-      array('typeId' => $options['baseColourId'], 'lockable' => true, 'hidden' => false,),
-      array('typeId' => $options['textColourId'], 'lockable' => true, 'hidden' => false,),
-      array('typeId' => $options['sequenceId'], 'lockable' => false, 'hidden' => false,),
-      array('typeId' => $options['positionId'], 'lockable' => false, 'hidden' => true, 'hiddenValue' => $args['right_enscribed_colour_ring_position'],),
+    $options['attrList'] = array(
+      array('attrType' => 'idn', 'typeId' => $options['baseColourId'], 'lockable' => true, 'hidden' => false,),
+      array('attrType' => 'idn', 'typeId' => $options['textColourId'], 'lockable' => true, 'hidden' => false,),
+      array('attrType' => 'idn', 'typeId' => $options['sequenceId'], 'lockable' => false, 'hidden' => false,),
+      array('attrType' => 'idn', 'typeId' => $options['positionId'], 'lockable' => false, 'hidden' => true, 'hiddenValue' => $args['right_enscribed_colour_ring_position'],),
+      array('attrType' => 'iso', 'typeId' => $options['conditionsId'], 'lockable' => false, 'hidden' => false,),
     );
     $options['fieldprefix'] = 'idn:'.$taxIdx.':colour-right:';
     $options['classprefix'] = 'idn-colour-right-';
@@ -2231,9 +2307,10 @@ class iform_wwt_colour_marked_report {
         break;
       }
     }
-    $options['identifierAttrList'] = array(
-      array('typeId' => $options['positionId'], 'lockable' => true, 'hidden' => false,),
-      array('typeId' => $options['sequenceId'], 'lockable' => false, 'hidden' => false,),
+    $options['attrList'] = array(
+      array('attrType' => 'idn', 'typeId' => $options['positionId'], 'lockable' => true, 'hidden' => false,),
+      array('attrType' => 'idn', 'typeId' => $options['sequenceId'], 'lockable' => false, 'hidden' => false,),
+      array('attrType' => 'iso', 'typeId' => $options['conditionsId'], 'lockable' => false, 'hidden' => false,),
     );
     $options['fieldprefix'] = 'idn:'.$taxIdx.':metal:';
     $options['classprefix'] = 'idn-metal-';
@@ -2316,6 +2393,8 @@ class iform_wwt_colour_marked_report {
     $r .= '<input type="button" id="idn:0:remove-individual" class="idn-remove-individual" value="'.lang::get('Remove This Bird').'" />';
     
     $r .= '</div>';
+    
+    // recursive call to get a template for the 'individual panel' markup for a new observation so we can add another bird
     if (!$options['inNewIndividual']) {
       $r .= '</div>';
       $temp = data_entry_helper::$entity_to_load;
@@ -2347,6 +2426,7 @@ class iform_wwt_colour_marked_report {
    */
   
   private static function get_control_identifier($auth, $args, $tabalias, $options) {
+    
     $fieldPrefix = !empty($options['fieldprefix']) ? $options['fieldprefix'] : '';
     $r = '';
     $r .= '<h3 id="'.$fieldPrefix.'header" class="idn:accordion:header"><a href="#">'.$options['identifierName'].'</a></h2>';
@@ -2360,7 +2440,7 @@ class iform_wwt_colour_marked_report {
         'value="'.data_entry_helper::$entity_to_load[$fieldPrefix.'identifiers_subject_observation:id'].'" />'."\n";    
     }
     
-    // temp checkbox - probably remove later?
+    // checkbox - (now hidden by CSS, probably should refactor to hidden input?)
     $r .= data_entry_helper::checkbox(array_merge(array(
       // 'label' => lang::get('Is this identifier being recorded?'),
       'label' => '',
@@ -2370,17 +2450,26 @@ class iform_wwt_colour_marked_report {
       
     // loop through the requested attributes and output an appropriate control
     $classes = $options['class'];
-    foreach ($options['identifierAttrList'] as $attribute) {
+    foreach ($options['attrList'] as $attribute) {
       // find the definition of this attribute
       $found = false;
-      foreach ($options['idnAttributeTypes'] as $attrType) {
-        if ($attrType['id']===$attribute['typeId']) {
-          $found = true;
-          break;
+      if ($attribute['attrType']==='idn') {
+        foreach ($options['idnAttributeTypes'] as $attrType) {
+          if ($attrType['id']===$attribute['typeId']) {
+            $found = true;
+            break;
+          }
+        }
+      } else if ($attribute['attrType']==='iso') {
+        foreach ($options['isoAttributeTypes'] as $attrType) {
+          if ($attrType['id']===$attribute['typeId']) {
+            $found = true;
+            break;
+          }
         }
       }
       if (!$found) {
-        throw new exception(lang::get('Unknown identifier attribute type id ['.$attribute['typeId'].'] specified for '.
+        throw new exception(lang::get('Unknown '.$attribute['attrType'].' attribute type id ['.$attribute['typeId'].'] specified for '.
           $options['identifierName'].' in Identifier Attributes array.'));
       }
       // setup any locking
@@ -2388,41 +2477,53 @@ class iform_wwt_colour_marked_report {
         $options['lockable'] = $options['identifiers_lockable'];
       }
       // setup any data filters
-      if ($options['baseColourId']==$attribute['typeId']) {
+      if ($attribute['attrType']==='idn' && $options['baseColourId']==$attribute['typeId']) {
         if (!empty($args['base_colours'])) {
           // filter the colours available
           $query = array('in'=>array('id', $args['base_colours']));
         }
         $attr_name = 'base-colour';
-        $colourIdentifier = true;
-      } elseif ($options['textColourId']==$attribute['typeId']) {
+      } elseif ($attribute['attrType']==='idn' && $options['textColourId']==$attribute['typeId']) {
         if (!empty($args['text_colours'])) {
           // filter the colours available
           $query = array('in'=>array('id', $args['text_colours']));
         }
         $attr_name = 'text-colour';
-        $colourIdentifier = true;
-      } elseif ($options['positionId']==$attribute['typeId']) {
+      } elseif ($attribute['attrType']==='idn' && $options['positionId']==$attribute['typeId']) {
         $attr_name = 'position';
         if (count($args['position']) > 0) {
           // filter the identifier position available
           $query = array('in'=>array('id', $args['position']));
         }
-      } elseif ($options['sequenceId']==$attribute['typeId']) {
+      } elseif ($attribute['attrType']==='idn' && $options['sequenceId']==$attribute['typeId']) {
         $attr_name = 'sequence';
         $options['maxlength'] = $options['seq_maxlength'] ? $options['seq_maxlength'] : '';
         if ($options['seq_format_class']) {
           $options['class'] = empty($options['class']) ? $options['seq_format_class'] : 
             (strstr($options['class'], $options['seq_format_class']) ? $options['class'] : $options['class'].' '.$options['seq_format_class']);
         }
+      } elseif ($attribute['attrType']==='iso' && $options['conditionsId']==$attribute['typeId']) {
+        // filter the identifier conditions available
+        if ($options['identifierTypeId']==$args['neck_collar_type'] && !empty($args['neck_collar_conditions'])) {
+          $query = array('in'=>array('id', $args['neck_collar_conditions']));
+        } elseif ($options['identifierTypeId']==$args['enscribed_colour_ring_type'] && !empty($args['coloured_ring_conditions'])) {
+          $query = array('in'=>array('id', $args['coloured_ring_conditions']));
+        } elseif ($options['identifierTypeId']==$args['metal_ring_type'] && !empty($args['metal_ring_conditions'])) {
+          $query = array('in'=>array('id', $args['metal_ring_conditions']));
+        }
+        $attr_name = 'conditions';
       }
 
+      // add classes as identifiers
       $options['class'] = empty($options['class']) ? $options['classprefix'].$attr_name : 
         (strstr($options['class'], $options['classprefix'].$attr_name) ? $options['class'] : $options['class'].' '.$options['classprefix'].$attr_name);
       $options['class'] = $options['class'].' idn-'.$attr_name;
-      if ($args['use_colour_picker']) {
-        $options['class'] = empty($options['class']) ? 'select_colour' : 
-          (strstr($options['class'], 'select_colour') ? $options['class'] : $options['class'].' select_colour');
+      if ($attribute['attrType']==='idn' && ($options['baseColourId']==$attribute['typeId'] || $options['textColourId']==$attribute['typeId'])) {
+        $options['class'] = strstr($options['class'], 'select_colour') ? $options['class'] : $options['class'].' select_colour';
+        $options['class'] = strstr($options['class'], 'textAndBaseMustDiffer') ? $options['class'] : $options['class'].' textAndBaseMustDiffer';
+      }
+      if ($attribute['attrType']==='idn' && $options['sequenceId']==$attribute['typeId']) {
+        $options['class'] = strstr($options['class'], 'identifier_sequence') ? $options['class'] : $options['class'].' identifier_sequence';
       }
     
       if (!empty($attribute['hidden']) && $attribute['hidden']===true) {
@@ -2442,38 +2543,58 @@ class iform_wwt_colour_marked_report {
         case 'V':
           $r .= data_entry_helper::date_picker(array_merge(array(
             'label' => lang::get($attrType['caption']),
-            'fieldname' => $fieldPrefix.'idnAttr:'.$attrType['id'],
+            'fieldname' => $fieldPrefix.$attribute['attrType'].'Attr:'.$attrType['id'],
           ), $options));
           break;
         case 'L':
-          if (strstr($options['class'], 'select_colour')) {
-            $options['class'] = (strstr($options['class'], 'textAndBaseMustDiffer') ? $options['class'] : $options['class'].' textAndBaseMustDiffer');
-          }
           $filter = array('termlist_id'=>$attrType['termlist_id'],);
           if (!empty($query)) {
             $filter += array('query'=>json_encode($query),);
           }
           $extraParams = array_merge($filter, $auth['read']);
-          $r .= data_entry_helper::select(array_merge(array(
-            'label' => lang::get($attrType['caption']),
-            'fieldname' => $fieldPrefix.'idnAttr:'.$attrType['id'],
-            'table'=>'termlists_term',
-            'captionField'=>'term',
-            'valueField'=>'id',
-            'blankText' => '<Please select>',
-            'extraParams' => $extraParams,
-          ), $options));
+          if ($attribute['attrType']==='iso' && $options['conditionsId']==$attribute['typeId']) {
+            $fieldname = $fieldPrefix.$attribute['attrType'].'Attr:'.$attrType['id'];
+            $default = array();
+            // if this attribute exists on DB, we need to write a hidden with id appended to fieldname and set defaults for checkboxes
+            if (is_array(data_entry_helper::$entity_to_load)) {
+              $stored_keys = preg_grep('/^'.$fieldname.':[0-9]+$/', array_keys(data_entry_helper::$entity_to_load));
+              foreach ($stored_keys as $stored_key) {
+                $r .= '<input type="hidden" name="'.$stored_key.'" value="" />';
+                $default[] = array('fieldname' => $stored_key, 'default' => data_entry_helper::$entity_to_load[$stored_key]);
+                unset(data_entry_helper::$entity_to_load[$stored_key]);
+              }
+            }
+            $r .= data_entry_helper::checkbox_group(array_merge(array(
+              'label' => lang::get($attrType['caption']),
+              'fieldname' => $fieldname,
+              'table'=>'termlists_term',
+              'captionField'=>'term',
+              'valueField'=>'id',
+              'default'=>$default,
+              'extraParams' => $extraParams,
+            ), $options));
+          } else {
+            $r .= data_entry_helper::select(array_merge(array(
+              'label' => lang::get($attrType['caption']),
+              'fieldname' => $fieldPrefix.$attribute['attrType'].'Attr:'.$attrType['id'],
+              'table'=>'termlists_term',
+              'captionField'=>'term',
+              'valueField'=>'id',
+              'blankText' => '<Please select>',
+              'extraParams' => $extraParams,
+            ), $options));
+          }
           break;
         case 'B':
           $r .= data_entry_helper::checkbox(array_merge(array(
             'label' => lang::get($attrType['caption']),
-            'fieldname' => $fieldPrefix.'idnAttr:'.$attrType['id'],
+            'fieldname' => $fieldPrefix.$attribute['attrType'].'Attr:'.$attrType['id'],
           ), $options));
           break;
         case 'H':
           // Any multi-value attributes shown as hidden will be single-valued
           // so transform the array to a scalar
-          $fieldname = $fieldPrefix.'idnAttr:'.$attrType['id'];
+          $fieldname = $fieldPrefix.$attribute['attrType'].'Attr:'.$attrType['id'];
           if (!empty(data_entry_helper::$entity_to_load[$fieldname])
             && is_array(data_entry_helper::$entity_to_load[$fieldname])) {
             data_entry_helper::$entity_to_load[$fieldname]
@@ -2487,7 +2608,7 @@ class iform_wwt_colour_marked_report {
         default:
           $r .= data_entry_helper::text_input(array_merge(array(
             'label' => lang::get($attrType['caption']),
-            'fieldname' => $fieldPrefix.'idnAttr:'.$attrType['id'],
+            'fieldname' => $fieldPrefix.$attribute['attrType'].'Attr:'.$attrType['id'],
           ), $options));
       }
       $options['class'] = $classes;
@@ -2605,7 +2726,7 @@ class iform_wwt_colour_marked_report {
       $so['subModels'][] = array('fkId' => 'subject_observation_id', 'model' => $oso,);      
       // create submodel for each join to identifier (plus identifier models if new) and add it
       foreach (array('neck-collar', 'colour-left', 'colour-right', 'metal') as $identifier_type) {
-        $ident_keys = preg_grep('/^idn:'.$idx.':'.$identifier_type.':(identifier|identifiers_subject_observation|idnAttr):/', array_keys($values));
+        $ident_keys = preg_grep('/^idn:'.$idx.':'.$identifier_type.':(identifier|identifiers_subject_observation|idnAttr|isoAttr):/', array_keys($values));
         foreach ($ident_keys as $i_key) {
           $i_key_parts = explode(':', $i_key, 4);
           $values[$i_key_parts[3]] = $values[$i_key];
