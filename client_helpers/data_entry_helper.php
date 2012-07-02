@@ -191,7 +191,7 @@ class data_entry_helper extends helper_base {
       // Escape the ids for jQuery selectors
       'escaped_input_id' => self::jq_esc($options['inputId']),
       'escaped_id' => self::jq_esc($options['id']),
-      'defaultCaption' => self::check_default_value($options['inputId'],
+      'defaultCaption' => self::check_default_value('location:'.$options['inputId'],
           array_key_exists('defaultCaption', $options) ? $options['defaultCaption'] : ''),
       'max' => array_key_exists('numValues', $options) ? ', max : '.$options['numValues'] : ''
     ), $options);
@@ -988,11 +988,15 @@ class data_entry_helper extends helper_base {
   */
   public static function location_autocomplete($options) {
     $options = self::check_options($options);
+    $caption = isset(self::$entity_to_load['sample:location']) ? self::$entity_to_load['sample:location'] : null;
+    if (!$caption && !empty($options['useLocationName']) && $options['useLocationName'])
+      $caption = self::$entity_to_load['sample:location_name'];
     $options = array_merge(array(
         'table'=>'location',
         'fieldname'=>'sample:location_id',
         'valueField'=>'id',
         'captionField'=>'name',
+        'defaultCaption'=>$caption,
         'id'=>'imp-location',
         'useLocationName'=>false,
         'allowCreate'=>false,
