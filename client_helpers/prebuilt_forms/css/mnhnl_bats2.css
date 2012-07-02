@@ -120,7 +120,7 @@ div.olControlEditingToolbar div.olControlStartNewSiteItemInactive {
 }
 
 div.olControlEditingToolbar  {
-    width: 350px;
+    width: 500px;
 }
 #imp-srefX,#imp-srefY,.precision {
 	width: 60px;
@@ -164,4 +164,5 @@ div.olControlEditingToolbar  {
   background-color: #FFFFFF;
   float: right;
   margin-top: 7px;
+  margin-right: 20px;
 }
