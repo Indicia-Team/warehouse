@@ -106,7 +106,7 @@ class iform_mnhnl_bats2 extends iform_mnhnl_bats {
               "[place search]\r\n".
               "[map]\r\n".
               "@layers=[\"SiteAreaLayer\",\"SitePathLayer\",\"SitePointLayer\",\"SiteLabelLayer\"]\r\n".
-              "@scroll_wheel_zoom=false\r\n".
+              "@editLayer=false\r\n".
               "@searchUpdatesSref=true\r\n".
               "@maxZoom=13\r\n".
               "[point grid]\r\n".
