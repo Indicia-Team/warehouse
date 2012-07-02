@@ -64,6 +64,22 @@ class Subject_observation_attribute_Model extends ATTR_ORM {
         'title'=>'Alive or Dead',
         'description'=>'A text or lookup attribute where the value indicates if the observed organism was alive, dead or in an unknown state.',
       ),
+      'neck_collar_condition' => array(
+        'title'=>'Neck Collar Condition',
+        'description'=>'A text or lookup attribute where the value indicates the condition of any attached neck collar on this observed organism.',
+      ),
+      'left_coloured_ring_condition' => array(
+        'title'=>'Left Coloured Ring Condition',
+        'description'=>'A text or lookup attribute where the value indicates the condition of any attached coloured ring on the left leg of this observed organism.',
+      ),
+      'right_coloured_ring_condition' => array(
+        'title'=>'Right Coloured Ring Condition',
+        'description'=>'A text or lookup attribute where the value indicates the condition of any attached coloured ring on the right leg of this observed organism.',
+      ),
+      'metal_ring_condition' => array(
+        'title'=>'Metal Ring Condition',
+        'description'=>'A text or lookup attribute where the value indicates the condition of any attached metal ring on this observed organism.',
+      ),
     );
   }
 

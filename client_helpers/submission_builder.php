@@ -369,6 +369,9 @@ class submission_builder extends helper_config {
       case 'identifier':
         $prefix = 'idn';
         break;
+      case 'identifiers_subject_observation':
+        $prefix = 'iso';
+        break;
       default:
         if ($except) 
 		  throw new Exception('Unknown attribute type. ');
