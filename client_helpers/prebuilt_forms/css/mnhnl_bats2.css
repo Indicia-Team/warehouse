@@ -160,3 +160,8 @@ div.olControlEditingToolbar  {
   padding: 2px;
   border: solid silver 1px;
 }
+#mousePos {
+  background-color: #FFFFFF;
+  float: right;
+  margin-top: 7px;
+}

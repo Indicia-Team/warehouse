@@ -255,6 +255,14 @@ function iform_mnhnl_getParameters() {
           'type'=>'string',
           'required' => false,
           'group' => 'Locations'
+        ),
+        array(
+          'name'=>'mousePosControl',
+          'caption'=>'Mouse Position',
+          'description'=>'Choose whether to include a mouse position indicator on the main map, in the toolbar.',
+          'type'=>'boolean',
+          'required' => false,
+          'group' => 'Other Map Settings'
         )
         );
 }
@@ -313,6 +321,7 @@ function iform_mnhnl_locModTool($auth, $args, $node) {
        'Instructions2' => lang::get('LANG_LocModTool_Instructions2'),
        'mainFieldLabel' => lang::get('LANG_LocModTool_IDLabel'),
        'NameLabel' => lang::get('LANG_LocModTool_NameLabel'),
+       'FilterNameLabel' => lang::get('LANG_LocModTool_FilterNameLabel'),
        'canCreate'=>false
        ));
   $retVal .= "<label for=\"location-delete\">".lang::get("LANG_LocModTool_DeleteLabel").":</label> <input type=checkbox id=\"location-delete\" name=\"location:deleted\" value='t'><br />
@@ -398,6 +407,7 @@ function iform_mnhnl_lux5kgridControl($auth, $args, $node, $options) {
        'mainFieldLabel' => lang::get('LANG_DE_LocationIDLabel'),
        'parentFieldLabel' => lang::get('LANG_CommonParentLabel'),
        'NameLabel' => lang::get('LANG_CommonLocationNameLabel'),
+       'FilterNameLabel' => lang::get('LANG_CommonLocationNameLabel'),
        'CodeLabel' => lang::get('LANG_CommonLocationCodeLabel')
       ), $options);
     switch($args['locationMode']){
@@ -558,7 +568,8 @@ recalcNumSites = function(){
 recalcNumSites();
 clearLocation = function(hookArg){ // clears all the data in the fields.
   jQuery('#".$options['mainFieldID'].($args['locationMode']!='multi' ? ",#sample-location-name,#sample-location-id" : "").",#location-name,#centroid_sref,#imp-srefX,#imp-srefY,#centroid_geom,#boundary_geom,[name=location\\:comment],#location-code').val('');
-  jQuery('#location_location_type_id').val('$primary');
+".($args['locationMode']!='multi' ? "  jQuery('#location-name option').removeAttr('disabled').not('[value=]').not(':eq(0)').attr('disabled','disabled');\n  ":"").
+"  jQuery('#location_location_type_id').val('$primary');
   // first  to remove any hidden multiselect checkbox unclick fields
   var attrList=jQuery('[name^=locAttr\\:]').not('[name$=\\:term]');
   attrList.filter('.multiselect').remove();
@@ -928,7 +939,7 @@ populateExtensions = function(locids){
       function locBinarySearch(attList, location_id){ // this makes assumptions about the location attribute list contents and order.
         var startIndex = 0,
             stopIndex = attList.length - 1;
-        while(startIndex < stopIndex){ // This doesn't work for the top entry but multiple attributes mean this doesn't matter
+        while(startIndex <= stopIndex){
           var middle = Math.floor((stopIndex + startIndex)/2);
           if (attList[middle].location_id == location_id) {
             // there will be more than one attribute per location. Scan back.
@@ -964,8 +975,7 @@ populateExtensions = function(locids){
       );
     $locationAttributes = data_entry_helper::getAttributes($attrArgs, false);
     foreach($locationAttributes as $locAttr)
-      data_entry_helper::$javascript .= "        template = template.replace('{".$locAttr["untranslatedCaption"]."}','-');
-";
+      data_entry_helper::$javascript .= "\n        template = template.replace('{".$locAttr["untranslatedCaption"]."}','-');";
     data_entry_helper::$javascript .= "
         return template;
       };
@@ -1891,6 +1901,7 @@ lineDraw.events.on({'activate': lineDrawActivate});
 pointDraw = new OpenLayers.Control.DrawFeature(SitePointLayer,OpenLayers.Handler.Point,{'displayClass':'olControlDrawFeaturePoint', drawFeature: addDrawnPointToSelection, title: '".lang::get('LANG_PointTooltip')."'});
 pointDraw.events.on({'activate': pointDrawActivate, 'deactivate': pointDrawDeactivate});
 editControl = new MyEditingToolbar(SiteAreaLayer, {allowDepress: false, 'displayClass':'olControlEditingToolbar'});
+
 mapInitialisationHooks.push(function(mapdiv) {
 	mapdiv.map.addControl(modAreaFeature);
 	mapdiv.map.addControl(modPathFeature);
@@ -1899,7 +1910,17 @@ mapInitialisationHooks.push(function(mapdiv) {
 	modPathFeature.deactivate();
 	modPointFeature.deactivate();
 	mapdiv.map.addControl(editControl);
-    editControl.activate();
+".(isset($args['mousePosControl']) && $args['mousePosControl'] ? "	jQuery('.olControlEditingToolbar').append('<span id=\"mousePos\"></span>');
+	mousePos = new OpenLayers.Control.MousePosition({
+	  div: document.getElementById('mousePos'),
+	  prefix: 'LUREF:',
+	  displayProjection: new OpenLayers.Projection('EPSG:2169'),
+	  emptyString: '',
+	  numDigits: 0 
+	});
+	mapdiv.map.addControl(mousePos);
+" : "").
+"	editControl.activate();
   	if(SiteAreaLayer.map.editLayer){
 		SiteAreaLayer.map.editLayer.clickControl.deactivate();
 		SiteAreaLayer.map.editLayer.destroyFeatures();
@@ -2444,7 +2465,7 @@ hook_setSref_".$idx." = function(geom){
 				break;
 				
       		case "Name": //special case:
-      			$retVal .= '<label>'.$options['NameLabel'].':</label> '.
+      			$retVal .= '<label>'.$options['FilterNameLabel'].':</label> '.
       			  '<select id="'.$options['mainFieldID'].'" name="'.$options['mainFieldName'].'" disabled="disabled">'.
       			    '<option value="">'.lang::get("First choose a ").$prevAttr[0].'</option>'.
       			    (array_key_exists($options['mainFieldName'], data_entry_helper::$entity_to_load) && data_entry_helper::$entity_to_load[$options['mainFieldName']]!="" ?
@@ -2566,10 +2587,61 @@ filterReset".$idx." = function(){
       			}
 				$defaultsFunction .= "  jQuery('#locAttr\\\\:".$attr['attributeId']."').val(jQuery('#filterSelect".$idx."').val());\n";
 				$loadFunction .= "  filterLoad".$idx."(jQuery('#locAttr\\\\:".$attr['attributeId']."').val());\n";
+				if(count($filterAttr)>1) {
+				  data_entry_helper::add_resource('json');
+				  data_entry_helper::add_resource('autocomplete');
+				  data_entry_helper::$javascript .="
+jQuery('#locAttr\\\\:".$attr['attributeId']."').autocomplete('".data_entry_helper::$base_url."/index.php/services/data/termlists_term', {
+      extraParams : {
+        view : 'detail',
+        orderby : 'term',
+        mode : 'json',
+        qfield : 'term',
+        auth_token: '".$auth['read']['auth_token']."',
+        nonce: '".$auth['read']['nonce']."',
+        termlist_id: '".$filterAttr[1]."'
+      },
+      parse: function(data) {
+        var results = [];
+        jQuery.each(data, function(i, item) {
+          results[results.length] =
+          {
+            'data' : item,
+            'result' : item.term,
+            'value' : item.term
+          };
+        });
+        return results;
+      },
+      formatItem: function(item) {
+        return item.term;
+      }
+  });";
+				}
 				$prevAttr=$filterAttr;
 				break;
       	}
       }
+      $location_list_args=array(
+          'nocache'=>true,
+          'includeCodeField'=>true,
+          'label'=>lang::get('LANG_CommonLocationNameLabel'),
+          'NameBlankText'=>lang::get('LANG_Location_Name_Blank_Text'),
+          'fieldname'=>'location:id',
+          'id'=>$options['mainFieldID'],
+          'extraParams'=>array_merge(array(
+              'view'=>'detail',
+              'orderby'=>'name',
+              'website_id'=>$args['website_id'],
+              'location_type_id'=>$loctypeParam),
+            $auth['read']),
+          'table'=>'location',
+          'template' => 'select',
+          'itemTemplate' => 'select_item',
+          'filterField'=>'parent_id',
+          'size'=>3);
+      $responseRecords = data_entry_helper::get_population_data($location_list_args);
+      if (isset($responseRecords['error'])) return $responseRecords['error'];
       iform_mnhnl_set_editable($auth, $args, $node, $responseRecords, 'conditional');
       $retVal .= "</fieldset>";
       $creatorAttr=iform_mnhnl_getAttrID($auth, $args, 'location', 'Creator');
@@ -3071,7 +3143,8 @@ jQuery('[name=locAttr:".$creatorAttr."],[name^=locAttr:".$creatorAttr.":]').remo
               'language' => iform_lang_iso_639_2($args['language'])),$options);
    $r = '';
    foreach ($locationAttributes as $attribute) {
-   	if ($tabName=='' || strcasecmp($tabName,$attribute['inner_structure_block'])==0) {
+   	if (($tabName=='' && $attribute['inner_structure_block']!="Filter") ||
+          strcasecmp($tabName,$attribute['inner_structure_block'])==0) {
       $opt = $defAttrOptions + get_attr_validation($attribute, $args);
       $r .= data_entry_helper::outputAttribute($attribute, $opt);
     }
