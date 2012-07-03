@@ -475,7 +475,7 @@ class ORM extends ORM_Core {
     // them.
     foreach ($this->submission['fields'] as $field => $content) {
       if (isset($content['value']) && $content['value'] == '' && array_key_exists($field, $this->table_columns)) {
-        $type = $this->table_columns[$field];
+        $type = $this->table_columns[$field]['type'];
         switch ($type) {
           case 'int':
             $this->submission['fields'][$field]['value'] = null;
@@ -521,6 +521,7 @@ class ORM extends ORM_Core {
    * @return integer If successful, returns the id of the created/found record. If not, returns null - errors are embedded in the model.
    */
   public function submit() {
+DebugBreak();
     Kohana::log('debug', 'Commencing new transaction.');
     $this->db->query('BEGIN;');
     try {
