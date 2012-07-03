@@ -4589,6 +4589,20 @@ if (errors.length>0) {
               }
             } 
           }
+          if($ctrl=='autocomplete' && isset($attrOptions['default'])){
+            // two options: we could be using the id or the meaning_id.
+            if($lookUpKey=='id'){
+            	$attrOptions['defaultCaption'] = $item['displayValue'];
+            } else {
+              $termOptions = array(
+                    'table'=>'termlists_term',
+                    'extraParams'=> $options['extraParams'] + $dataSvcParams);
+              $termOptions['extraParams']['meaning_id']=$attrOptions['default'];
+              $response = self::get_population_data($termOptions);
+              if(count($response)>0)
+                $attrOptions['defaultCaption'] = $response[0]['term'];
+            }
+          }
           $output .= call_user_func(array('data_entry_helper', $ctrl), array_merge($attrOptions, array(
                   'table'=>'termlists_term',
                   'captionField'=>'term',
