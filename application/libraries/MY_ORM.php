@@ -521,7 +521,6 @@ class ORM extends ORM_Core {
    * @return integer If successful, returns the id of the created/found record. If not, returns null - errors are embedded in the model.
    */
   public function submit() {
-DebugBreak();
     Kohana::log('debug', 'Commencing new transaction.');
     $this->db->query('BEGIN;');
     try {
