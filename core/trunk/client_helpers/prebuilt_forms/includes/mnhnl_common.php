@@ -317,12 +317,13 @@ function iform_mnhnl_locModTool($auth, $args, $node) {
           "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />".
           "<input type=\"hidden\" id=\"survey_id\" name=\"survey_id\" value=\"".$args['survey_id']."\" />";
   $retVal .= iform_mnhnl_lux5kgridControl($auth, $args, $node, 
-      array('initLoadArgs' => '{}',
-       'Instructions2' => lang::get('LANG_LocModTool_Instructions2'),
-       'mainFieldLabel' => lang::get('LANG_LocModTool_IDLabel'),
+      array('Instructions2' => lang::get('LANG_LocModTool_Instructions2'),
+       'MainFieldLabel' => lang::get('LANG_LocModTool_IDLabel'),
        'NameLabel' => lang::get('LANG_LocModTool_NameLabel'),
+       'ParentLabel' => lang::get('LANG_LocModTool_ParentLabel'),
        'FilterNameLabel' => lang::get('LANG_LocModTool_FilterNameLabel'),
-       'canCreate'=>false
+       'canCreate'=>false,
+       'canEditParent'=>true
        ));
   $retVal .= "<label for=\"location-delete\">".lang::get("LANG_LocModTool_DeleteLabel").":</label> <input type=checkbox id=\"location-delete\" name=\"location:deleted\" value='t'><br />
   <p>".lang::get("LANG_LocModTool_DeleteInstructions")."</p>";
@@ -332,7 +333,7 @@ function iform_mnhnl_locModTool($auth, $args, $node) {
       'ide'=>'location-comment',
       'fieldname'=>'location:comment',
       'label'=>lang::get("LANG_LocationModTool_CommentLabel")))."<br />";
-  $laArgs = array("lookUpKey"=>"meaning_id", "sep"=>" ", "class"=>"wide","tabNameFilter"=>"");
+  $laArgs = array("lookUpKey"=>"meaning_id", "sep"=>" ","class"=>"wide","tabNameFilter"=>"","numValues"=>10000);
   $defs=array();
   if(isset($args['siteTabSplitAttrs']) && $args['siteTabSplitAttrs']!=""){
     $defs=explode(':',$args['siteTabSplitAttrs']);
@@ -362,7 +363,8 @@ function iform_mnhnl_locModTool($auth, $args, $node) {
   $retVal .= '<input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Submit').'">
   </form></div>';
   data_entry_helper::$javascript .= "
-jQuery(\"#location_parent_id\").val('').change();
+mapInitialisationHooks.push(function(mapdiv) {
+  jQuery(\"#dummy_parent_id\").val('').change();});
 ";
   return $retVal;
 }
@@ -404,25 +406,31 @@ function iform_mnhnl_lux5kgridControl($auth, $args, $node, $options) {
     $options = array_merge(array('initLoadArgs' => '{}',
        'Instructions1' => lang::get('LANG_CommonInstructions1'),
        'Instructions2' => lang::get('LANG_DE_Instructions2'),
-       'mainFieldLabel' => lang::get('LANG_DE_LocationIDLabel'),
-       'parentFieldLabel' => lang::get('LANG_CommonParentLabel'),
+       'MainFieldLabel' => lang::get('LANG_DE_LocationIDLabel'),
+       'ChooseParentLabel' => lang::get('LANG_CommonParentLabel'),
+       'ParentLabel' => lang::get('LANG_CommonParentLabel'),
        'NameLabel' => lang::get('LANG_CommonLocationNameLabel'),
        'FilterNameLabel' => lang::get('LANG_CommonLocationNameLabel'),
-       'CodeLabel' => lang::get('LANG_CommonLocationCodeLabel')
-      ), $options);
+       'CodeLabel' => lang::get('LANG_CommonLocationCodeLabel'),
+       'canCreate'=>true,
+       'canEditParent'=>false
+    ), $options);
+
     switch($args['locationMode']){
       case 'multi' :
-       $options = array_merge(array('parentFieldID' => 'sample_location_id',
-                                    'parentFieldName' => 'sample:location_id',
-                                    'mainFieldID' => 'dummy_location_id',
-                                    'mainFieldName' => 'dummy:location_id'
+       $options = array_merge(array('ChooseParentFieldID' => 'sample_location_id',
+                                    'ChooseParentFieldName' => 'sample:location_id',
+                                    'MainFieldID' => 'dummy_location_id',
+                                    'MainFieldName' => 'dummy:location_id'
                               ), $options);
        break;
       default : // parent, single, filtered
-       $options = array_merge(array('parentFieldID' => 'location_parent_id',
-                                    'parentFieldName' => 'location:parent_id',
-                                    'mainFieldID' => 'location_id',
-                                    'mainFieldName' => 'location:id'
+       $options = array_merge(array('ChooseParentFieldID' => 'dummy_parent_id',
+                                    'ChooseParentFieldName' => 'dummy:parent_id',
+                                    'ParentFieldID' => 'location_parent_id',
+                                    'ParentFieldName' => 'location:parent_id',
+                                    'MainFieldID' => 'location_id',
+                                    'MainFieldName' => 'location:id'
                               ), $options);
         break;
     }
@@ -567,7 +575,7 @@ recalcNumSites = function(){
 };
 recalcNumSites();
 clearLocation = function(hookArg){ // clears all the data in the fields.
-  jQuery('#".$options['mainFieldID'].($args['locationMode']!='multi' ? ",#sample-location-name,#sample-location-id" : "").",#location-name,#centroid_sref,#imp-srefX,#imp-srefY,#centroid_geom,#boundary_geom,[name=location\\:comment],#location-code').val('');
+  jQuery('#".$options['MainFieldID'].($args['locationMode']!='multi' ? ",#sample-location-name,#sample-location-id" : "").",#location-name,#centroid_sref,#imp-srefX,#imp-srefY,#centroid_geom,#boundary_geom,[name=location\\:comment],[name=location\\:parent_id],#location-code').val('');
 ".($args['locationMode']!='multi' ? "  jQuery('#location-name option').removeAttr('disabled').not('[value=]').not(':eq(0)').attr('disabled','disabled');\n  ":"").
 "  jQuery('#location_location_type_id').val('$primary');
   // first  to remove any hidden multiselect checkbox unclick fields
@@ -604,12 +612,13 @@ setPermissions = function(enableItems, disableItems){
 setPermissionsNoParent = function(){
   setPermissions([],
                  ['[name=locations_website\\:website_id]',
-                  '#".$options['mainFieldID']."',
+                  '#".$options['MainFieldID']."',
                   '[name=location\\:code]',
                   '[name=location\\:name]',
                   '[name=location\\:comment]',
                   '[name=location\\:location_type_id]',
                   '[name=location\\:deleted]',
+                  '[name=location\\:parent_id]',
                   '[name^=locAttr\\:]',
                   '#dummy-name',
                   '#imp-sref',
@@ -617,13 +626,14 @@ setPermissionsNoParent = function(){
                   '#imp-boundary-geom']);
 }
 setPermissionsNoSite = function(){
-  setPermissions(['#".$options['mainFieldID']."'], // can choose site from drop down.
+  setPermissions(['#".$options['MainFieldID']."'], // can choose site from drop down.
                  ['[name=locations_website\\:website_id]',
                   '[name=location\\:code]',
                   '[name=location\\:name]',
                   '[name=location\\:comment]',
                   '[name=location\\:location_type_id]',
                   '[name=location\\:deleted]',
+                  '[name=location\\:parent_id]',
                   '[name^=locAttr\\:]',
                   '#dummy-name',
                   '#imp-sref',
@@ -631,12 +641,13 @@ setPermissionsNoSite = function(){
                   '#imp-boundary-geom']);
 }
 setPermissionsOldEditableSite = function(){
-  setPermissions(['#".$options['mainFieldID']."',
+  setPermissions(['#".$options['MainFieldID']."',
                   '[name=location\\:code]',
                   '[name=location\\:name]',
                   '[name=location\\:comment]',
                   '[name=location\\:location_type_id]',
                   '[name=location\\:deleted]',
+                  '[name=location\\:parent_id]',
                   '[name^=locAttr\\:]',
                   '#dummy-name',
                   '#imp-sref',
@@ -645,13 +656,14 @@ setPermissionsOldEditableSite = function(){
                  ['[name=locations_website\\:website_id]']);
 }
 setPermissionsOldReadOnlySite = function(){
-  setPermissions(['#".$options['mainFieldID']."'],
+  setPermissions(['#".$options['MainFieldID']."'],
                  ['[name=locations_website\\:website_id]',
                   '[name=location\\:code]',
                   '[name=location\\:name]',
                   '[name=location\\:comment]',
                   '[name=location\\:location_type_id]',
                   '[name=location\\:deleted]',
+                  '[name=location\\:parent_id]',
                   '[name^=locAttr\\:]',
                   '#dummy-name',
                   '#imp-sref',
@@ -665,6 +677,7 @@ setPermissionsNewSite = function(){
                 '[name=location\\:name]',
                 '[name=location\\:comment]',
                 '[name=location\\:location_type_id]',
+                '[name=location\\:parent_id]',
                 '[name^=locAttr\\:]',
                 '#dummy-name',
                 '#imp-sref',
@@ -678,9 +691,9 @@ setPermissionsNewSite = function(){
       haveOld=true;
     }}
   if(haveOld){
-    enable.push('#".$options['mainFieldID']."');  // in case we want to change to an existing site.
+    enable.push('#".$options['MainFieldID']."');  // in case we want to change to an existing site.
   } else {
-    disable.push('#".$options['mainFieldID']."');
+    disable.push('#".$options['MainFieldID']."');
   }
   setPermissions(enable,disable);
 }
@@ -712,15 +725,16 @@ loadLocation = function(feature){ // loads all the data into the location fields
   }
 ".($args['locationMode']=='multi' ?
 "" : ";  // main field ID could be a select without an entry for me (in case of a filter) so add one if needed.
-  var amIaSelect = jQuery('#".$options['mainFieldID']."').filter('select');
+  var amIaSelect = jQuery('#".$options['MainFieldID']."').filter('select');
   if(amIaSelect.length>0 && amIaSelect.find('[value='+feature.attributes.data.id+']').length==0){
     amIaSelect.append('<option value=\"'+feature.attributes.data.id+'\">'+feature.attributes.data.name+'</option>');
   }
-  jQuery(\"#".$options['mainFieldID'].",#sample-location-id\").val(feature.attributes.data.id);
+  jQuery(\"#".$options['MainFieldID'].",#sample-location-id\").val(feature.attributes.data.id);
   // parent_id is left as is in drop down if present. Not multi so must be an existing site.
   jQuery('#location-name,#sample-location-name').val(feature.attributes.data.name);
   jQuery('#location_location_type_id').val(feature.attributes.data.location_type_id);
   jQuery('[name=location\\:comment]').val(feature.attributes.data.comment);
+  jQuery('[name=location\\:parent_id]').val(feature.attributes.data.parent_id);
   jQuery('#location-code').val(feature.attributes.data.code);
   jQuery('#imp-geom').val(feature.attributes.data.centroid_geom);
   jQuery('#imp-boundary-geom').val(feature.attributes.data.boundary_geom);
@@ -780,7 +794,7 @@ loadFeatures = function(parent_id, child_id, childArgs, loadParent, setSelectOpt
   SitePathLayer.destroyFeatures();
   SitePointLayer.destroyFeatures();
   if(setSelectOptions)
-    jQuery('#".$options['mainFieldID']."').find('option').remove();
+    jQuery('#".$options['MainFieldID']."').find('option').remove();
   if(child_id == ''){
     clearLocation(false);
   }
@@ -809,7 +823,7 @@ loadFeatures = function(parent_id, child_id, childArgs, loadParent, setSelectOpt
           setPermissionsNoSite();
           if(child_id=='') selectFeature.activate(); // we have things we can select
           if(setSelectOptions)
-            jQuery(\"#".$options['mainFieldID']."\").append('<option value=\"\">".lang::get("LANG_CommonEmptyLocationID")."</option>');
+            jQuery(\"#".$options['MainFieldID']."\").append('<option value=\"\">".lang::get("LANG_CommonEmptyLocationID")."</option>');
           var parser = new OpenLayers.Format.WKT();
           var locationList = [];
           for (var i=0;i<data.length;i++){
@@ -890,9 +904,9 @@ loadFeatures = function(parent_id, child_id, childArgs, loadParent, setSelectOpt
             locationList.push({id : data[i].id, feature : centreFeature});
             if(setSelectOptions){
               if(child_id != '' && data[i].id == child_id){
-                jQuery(\"#".$options['mainFieldID']."\").append('<option value=\"'+data[i].id+'\" selected=\"selected\">'+data[i].name+'</option>');
+                jQuery(\"#".$options['MainFieldID']."\").append('<option value=\"'+data[i].id+'\" selected=\"selected\">'+data[i].name+'</option>');
               } else {
-                jQuery(\"#".$options['mainFieldID']."\").append('<option value=\"'+data[i].id+'\">'+data[i].name+'</option>');
+                jQuery(\"#".$options['MainFieldID']."\").append('<option value=\"'+data[i].id+'\">'+data[i].name+'</option>');
               }
             }
             if(child_id==data[i].id){
@@ -908,13 +922,13 @@ loadFeatures = function(parent_id, child_id, childArgs, loadParent, setSelectOpt
           ".($args['locationMode']=='single'||$args['locationMode']=='filtered' ? "" : "if(setSelectOptions) ")."populateExtensions(locationList);
         } else if(setSelectOptions){
           setPermissionsNoParent();
-          jQuery('#".$options['mainFieldID']."').append('<option value=\"\">".lang::get("LANG_NoSitesInSquare")."</option>');
+          jQuery('#".$options['MainFieldID']."').append('<option value=\"\">".lang::get("LANG_NoSitesInSquare")."</option>');
         }
     });
   } else {
     setPermissionsNoParent();
     if(setSelectOptions)
-      jQuery('#".$options['mainFieldID']."').append('<option value=\"\">".lang::get("LANG_CommonChooseParentFirst")."</option>');
+      jQuery('#".$options['MainFieldID']."').append('<option value=\"\">".lang::get("LANG_CommonChooseParentFirst")."</option>');
   }
 };
 populateExtensions = function(locids){
@@ -985,7 +999,7 @@ populateExtensions = function(locids){
         locList[j].feature.style.label = locList[j].template;
         SiteLabelLayer.addFeatures([locList[j].feature]);\n".
 ($args['locationMode']!='filtered' ? 
-"        var myOption = jQuery(\"#".$options['mainFieldID']."\").find('option').filter('[value='+locList[j].id+']').empty();
+"        var myOption = jQuery(\"#".$options['MainFieldID']."\").find('option').filter('[value='+locList[j].id+']').empty();
 ".($args['SecondaryLocationTypeTerm']!='' ?
 "        if(locList[j].feature.attributes.data.location_type_id == $primary)
           myOption.css('color','red');
@@ -1086,6 +1100,9 @@ setDrawnGeom = function() {
   // need to leave the location parent id enabled. Don't need to set geometries as we are using an existing location.
   setPermissionsNewSite();
   clearLocation(true);
+  if(jQuery('#dummy_parent_id').length>0 && jQuery('[name=location\\:parent_id]').length>0 &&
+      jQuery('#dummy_parent_id').val() != jQuery('[name=location\\:parent_id]').val())
+    jQuery('[name=location\\:parent_id]').val(jQuery('#dummy_parent_id').val()).change();
 ".($creatorAttr ? "  jQuery('[name=locAttr:".$creatorAttr."],[name^=locAttr:".$creatorAttr.":]').val('".$user->name."');\n" : "").
 "};
 removeDrawnGeom = function(SiteNum){
@@ -1599,6 +1616,11 @@ RemoveNewSite = function(){
   }
 };
 StartNewSite = function(){
+".($args['locationMode']=='parent' ?
+"  if(jQuery('#".$options['ChooseParentFieldID']."').val()==''){
+    alert('".lang::get('LANG_MustSelectParentFirst')."');
+    return;
+  };":"")."
 ".($args['locationMode']=='multi' ?
 "  unhighlightAll();
 ".(isset($args['siteNameTermListID']) && $args['siteNameTermListID'] != '' ?
@@ -1606,7 +1628,7 @@ StartNewSite = function(){
 " :
 "  jQuery('#dummy-name').val('');
 ") : 
-"  jQuery('#".$options['mainFieldID']."').val('').change();
+"  jQuery('#".$options['MainFieldID']."').val('').change();
 ").
 "  setDrawnGeom();
   // No currently selected feature. Create a dummy label new one.
@@ -1881,7 +1903,7 @@ onFeatureSelect = function(evt) {
   else
     // Any highlighted existing features should be unhighlighted.
     unhighlightAll();
-  jQuery(\"#".$options['mainFieldID'].",#sample-location-id\").val(feature.attributes.data.id);
+  jQuery(\"#".$options['MainFieldID'].",#sample-location-id\").val(feature.attributes.data.id);
 ").
 "  ZoomToFeature(feature);
   // now highlight the new ones
@@ -1939,7 +1961,7 @@ mapInitialisationHooks.push(function(mapdiv) {
 	// If entity to load is set, then we are highlighting an existing location, can't modify, but can start drawing another site.
     if(isset(data_entry_helper::$entity_to_load['location:id'])){
       switch($args['locationMode']){
-        // TBD fieldname should be parentFieldName
+        // TBD fieldname should be ParentFieldName
         case 'multi':
     		data_entry_helper::$javascript .= "	loadFeatures(".data_entry_helper::$entity_to_load['sample:location_id'].",'',{initial: true}, true, true);\n";
     		break;
@@ -2055,7 +2077,7 @@ jQuery('#location-id').change(function(){
 // With a new site in progress, then the mod control allows modification of the new site or selection of an existing feature, or the draw controls allow the additional of elements to the new site.
 // With a existing site selected, then the mod control allows selection of a different existing feature, or the draw controls allow the creation of a new site.
 // the state of the mod and draw controls re enabling stays the same before and afterwards.
-jQuery('#".$options['mainFieldID']."').change(function(){
+jQuery('#".$options['MainFieldID']."').change(function(){
   // this is only used when not multisite.
   var highlighted = gethighlight();
   var found=false;
@@ -2102,7 +2124,7 @@ jQuery('#".$options['mainFieldID']."').change(function(){
       // multiple site: parent sample points to parent location in location_id, not parent_id. Each site has own subsample.
       // can not change the (parent) location of the main sample, as this will reset all the attached samples and sites, so redering entered data useless. Just delete.
       return $retVal."\n<input type=\"hidden\" name =\"sample:location_id\" value=\"".data_entry_helper::$entity_to_load["sample:location_id"]."\" >
-  <p>".$options['parentFieldLabel'].' : '.data_entry_helper::$entity_to_load["location:name"].'</p>
+  <p>".$options['ParentLabel'].' : '.data_entry_helper::$entity_to_load["location:name"].'</p>
 '.($args['includeNumSites'] ? "<label for=\"dummy-num-sites\" class=\"auto-width\">".lang::get('LANG_NumSites').":</label> <input id=\"dummy-num-sites\" name=\"dummy:num-sites\" class=\"checkNumSites narrow\" readonly=\"readonly\"><br />\n" : '').
 "<p>".$options['Instructions2']."</p>\n".
         ($args['siteNameTermListID']== '' ? "<label for=\"dummy-name\">".$options['NameLabel'].":</label> <input id=\"dummy-name\" name=\"dummy:name\" class='wide required'><br />\n" :
@@ -2126,10 +2148,10 @@ jQuery('#".$options['mainFieldID']."').change(function(){
       if (!isset($args['loctoolsLocTypeID'])) return "locationMode == parent, loctoolsLocTypeID not set.";
       iform_mnhnl_set_editable($auth, $args, $node, array(), !(isset($options['canCreate']) && $options['canCreate']));
       $locOptions = array('validation' => array('required'),
-    					'label'=>$options['parentFieldLabel'],
-    					'id'=>$options['parentFieldID'],
+    					'label'=>$options['ChooseParentLabel'],
+    					'id'=>$options['ChooseParentFieldID'],
     					'table'=>'location',
-    					'fieldname'=>$options['parentFieldName'],
+    					'fieldname'=>$options['ChooseParentFieldName'],
     					'valueField'=>'id',
     					'captionField'=>'name',
     					'template' => 'select',
@@ -2140,12 +2162,14 @@ jQuery('#".$options['mainFieldID']."').change(function(){
     								'orderby'=>'name',
     								'location_type_id'=>$args['loctoolsLocTypeID'],
     								'deleted'=>'f')));
-      $response = data_entry_helper::get_population_data($locOptions);
-      if (isset($response['error'])) return "PARENT LOOKUP ERROR:  ".$response['error'];
-      $opts .= str_replace(array('{value}', '{caption}', '{selected}'),
+      $locResponse = data_entry_helper::get_population_data($locOptions);
+      if (isset($locResponse['error'])) return "PARENT LOOKUP ERROR:  ".$locResponse['error'];
+      $opts = "";
+      if (!isset(data_entry_helper::$entity_to_load[$options['ParentFieldName']]))
+        $opts = str_replace(array('{value}', '{caption}', '{selected}'),
                          array('', htmlentities(lang::get('LANG_CommonParentBlank')), ''),
                          $indicia_templates[$locOptions['itemTemplate']]);
-      foreach ($response as $record) {
+      foreach ($locResponse as $record) {
         $include=false;
         if($locations == 'all') $include = true;
         else if(in_array($record["id"], $locations)) $include = true;
@@ -2153,7 +2177,7 @@ jQuery('#".$options['mainFieldID']."').change(function(){
           $opts .= str_replace(array('{value}', '{caption}', '{selected}'),
                              array($record[$locOptions['valueField']],
                                    htmlentities($record[$locOptions['captionField']]),
-                                   isset(data_entry_helper::$entity_to_load[$options['parentFieldName']]) ? (data_entry_helper::$entity_to_load[$options['parentFieldName']] == $record[$locOptions['valueField']] ? 'selected=selected' : '') : ''),
+                                   isset(data_entry_helper::$entity_to_load[$options['ParentFieldName']]) ? (data_entry_helper::$entity_to_load[$options['ParentFieldName']] == $record[$locOptions['valueField']] ? 'selected=selected' : '') : ''),
                              $indicia_templates[$locOptions['itemTemplate']]);
         }
       }
@@ -2166,22 +2190,37 @@ jQuery('#".$options['mainFieldID']."').change(function(){
     if($args['locationMode']=='parent'){
       $retVal .= "<input type='hidden' id=\"sample-location-id\" name=\"sample:location_id\" value='".data_entry_helper::$entity_to_load['sample:location_id']."' />";
       data_entry_helper::$javascript .= "
-jQuery(\"#".$options['parentFieldID']."\").change(function(){
-  jQuery(\"#imp-geom,#imp-boundary-geom,#imp-sref,#imp-srefX,#imp-srefY\").val('');
-  jQuery(\"#".$options['mainFieldID'].",#sample-location-id,#location-name,#sample-location-name\").val('');
+jQuery(\"#".$options['ChooseParentFieldID']."\").change(function(){
+  jQuery(\"#imp-geom,#imp-boundary-geom,#imp-sref,#imp-srefX,#imp-srefY,#".$options['MainFieldID'].",#".$options['ParentFieldID'].",#sample-location-id,#location-name,#sample-location-name\").val('');
   jQuery(\"#location_location_type_id\").val('$primary');
   loadFeatures(this.value, '', {initial: false}, true, true);
   if(typeof hook_mnhnl_parent_changed != 'undefined')
     hook_mnhnl_parent_changed();
 });
+jQuery(\"#".$options['ParentFieldID']."\").change(function(){
+  if(jQuery(this).val() != '')
+    jQuery.getJSON(\"".data_entry_helper::$base_url."/index.php/services/data/location/\"+jQuery(this).val()+\"?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?\",
+      function(data) {
+       if (data.length>0) {
+         var parser = new OpenLayers.Format.WKT();
+         if(data[0].boundary_geom){ // only one location if any
+           var feature = parser.read(data[0].boundary_geom)
+           ParentLocationLayer.destroyFeatures();
+           ParentLocationLayer.addFeatures([feature]);
+           ParentLocationLayer.map.zoomToExtent(ParentLocationLayer.getDataExtent());
+         }
+       }});
+  else
+    ParentLocationLayer.destroyFeatures();
+});
 ";
       // choose a single site from a parent, so built site selector drop down.
       // parent uses ID locModTool
       $opts = "";
-      $locOptions = array('label'=>$options['mainFieldLabel'],
-    					'id'=>$options['mainFieldID'],
+      $locOptions = array('label'=>$options['MainFieldLabel'],
+    					'id'=>$options['MainFieldID'],
     					'table'=>'location',
-    					'fieldname'=>$options['mainFieldName'], // 'sample:location_id'
+    					'fieldname'=>$options['MainFieldName'], // 'sample:location_id'
     					'valueField'=>'id',
     					'captionField'=>'name',
     					'template' => 'select',
@@ -2211,6 +2250,36 @@ jQuery(\"#".$options['parentFieldID']."\").change(function(){
       $locOptions['items'] = $opts;
       // single site requires all location data in main form. Mult site must have array: depends on implementation so left to actual form.
       $retVal .= data_entry_helper::apply_template($locOptions['template'], $locOptions)."<br />";
+      
+      if($options['canEditParent']){
+        $locOptions = array('validation' => array('required'),
+    					'label'=>$options['ParentLabel'],
+    					'id'=>$options['ParentFieldID'],
+    					'fieldname'=>$options['ParentFieldName'],
+    					'valueField'=>'id',
+    					'captionField'=>'name',
+    					'template' => 'select',
+    					'itemTemplate' => 'select_item');
+        $opts = str_replace(array('{value}', '{caption}', '{selected}'),
+                         array('', '', ''),
+                         $indicia_templates[$locOptions['itemTemplate']]);
+        foreach ($locResponse as $record) {
+          $include=false;
+          if($locations == 'all') $include = true;
+          else if(in_array($record["id"], $locations)) $include = true;
+          if($include == true){
+            $opts .= str_replace(array('{value}', '{caption}', '{selected}'),
+                             array($record[$locOptions['valueField']],
+                                   htmlentities($record[$locOptions['captionField']]),
+                                   isset(data_entry_helper::$entity_to_load[$options['ParentFieldName']]) ? (data_entry_helper::$entity_to_load[$options['ParentFieldName']] == $record[$locOptions['valueField']] ? 'selected=selected' : '') : ''),
+                             $indicia_templates[$locOptions['itemTemplate']]);
+          }
+        }
+        $locOptions['items'] = $opts;
+        $retVal .= data_entry_helper::apply_template($locOptions['template'], $locOptions);
+      } else {
+        $retVal .= "<input type='hidden' id=\"".$options['ParentFieldID']."\" name=\"".$options['ParentFieldName']."\" value=\"".(isset(data_entry_helper::$entity_to_load[$options['ParentFieldName']]) ? data_entry_helper::$entity_to_load[$options['ParentFieldName']] : "")."\" />";
+      }
       if($args['siteNameTermListID']== '') {
         $retVal .= "<label for=\"location-name\">".$options['NameLabel'].":</label> <input type='text' id=\"location-name\" name=\"location:name\" class='required wide' value=\"".htmlspecialchars(data_entry_helper::$entity_to_load['location:name'])."\" /><span class='deh-required'>*</span><br/>";
       } else {
@@ -2244,7 +2313,7 @@ jQuery(\"#".$options['parentFieldID']."\").change(function(){
         ));
       }
       data_entry_helper::$javascript .= "
-jQuery(\"#".$options['parentFieldID']."\").change(function(){
+jQuery(\"#".$options['ChooseParentFieldID']."\").change(function(){
   if(typeof hook_mnhnl_parent_changed != 'undefined')
     hook_mnhnl_parent_changed();
   loadFeatures(this.value, '', {initial : false}, true, true);
@@ -2257,7 +2326,7 @@ jQuery(\"#".$options['parentFieldID']."\").change(function(){
           'label'=>lang::get('LANG_CommonLocationNameLabel'),
           'NameBlankText'=>lang::get('LANG_Location_Name_Blank_Text'),
           'fieldname'=>'location:id',
-          'id'=>$options['mainFieldID'],
+          'id'=>$options['MainFieldID'],
           'extraParams'=>array_merge(array(
               'view'=>'detail',
               'orderby'=>'name',
@@ -2466,21 +2535,21 @@ hook_setSref_".$idx." = function(geom){
 				
       		case "Name": //special case:
       			$retVal .= '<label>'.$options['FilterNameLabel'].':</label> '.
-      			  '<select id="'.$options['mainFieldID'].'" name="'.$options['mainFieldName'].'" disabled="disabled">'.
+      			  '<select id="'.$options['MainFieldID'].'" name="'.$options['MainFieldName'].'" disabled="disabled">'.
       			    '<option value="">'.lang::get("First choose a ").$prevAttr[0].'</option>'.
-      			    (array_key_exists($options['mainFieldName'], data_entry_helper::$entity_to_load) && data_entry_helper::$entity_to_load[$options['mainFieldName']]!="" ?
-      			      '<option value="'.data_entry_helper::$entity_to_load[$options['mainFieldName']].'" selected="selected">'.data_entry_helper::$entity_to_load['location:name'].'</option>' : '').
+      			    (array_key_exists($options['MainFieldName'], data_entry_helper::$entity_to_load) && data_entry_helper::$entity_to_load[$options['MainFieldName']]!="" ?
+      			      '<option value="'.data_entry_helper::$entity_to_load[$options['MainFieldName']].'" selected="selected">'.data_entry_helper::$entity_to_load['location:name'].'</option>' : '').
       			  '</select><br/>';
 				// when a field is changed on the drop down, all following ones are reset.
 				data_entry_helper::$javascript .="
-// when ".$options['mainFieldID']." changes the location will be loaded, including ".$options['mainFieldName']."
+// when ".$options['MainFieldID']." changes the location will be loaded, including ".$options['MainFieldName']."
 filterLoad".$idx." = function(keep){
   if(jQuery('#filterSelect".($idx-1)."').val()==''){
     jQuery('#filterSelect".$idx."').empty().attr('disabled','disabled').append('<option value=\"\">".lang::get("First choose a ").$prevAttr[0]."</option>');
     return;
   }
   if(keep=='') keep=false;
-  jQuery('#".$options['mainFieldID']."').data('storedValue',keep ? jQuery('#".$options['mainFieldID']."').val() : '').empty();
+  jQuery('#".$options['MainFieldID']."').data('storedValue',keep ? jQuery('#".$options['MainFieldID']."').val() : '').empty();
   var query=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?reportSource=local&mode=json&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&location_type_id=".$primary."\";";
 				$idxN=1;
 				foreach($filterAttrs as $idx1=>$filterAttr1){
@@ -2498,18 +2567,18 @@ filterLoad".$idx." = function(keep){
     function(data) {
       if(data instanceof Array){
         if(data.length>0) {
-          jQuery('#".$options['mainFieldID']."').removeAttr('disabled').append('<option value=\"\">".lang::get("Please select...")."</option>');
+          jQuery('#".$options['MainFieldID']."').removeAttr('disabled').append('<option value=\"\">".lang::get("Please select...")."</option>');
           for (var i=0;i<data.length;i++)
-            jQuery('#".$options['mainFieldID']."').append('<option value=\"'+data[i].id+'\">'+data[i].name+'</option>');
-          jQuery('#".$options['mainFieldID']."').val(jQuery('#".$options['mainFieldID']."').data('storedValue'));
+            jQuery('#".$options['MainFieldID']."').append('<option value=\"'+data[i].id+'\">'+data[i].name+'</option>');
+          jQuery('#".$options['MainFieldID']."').val(jQuery('#".$options['MainFieldID']."').data('storedValue'));
         } else {
-          jQuery('#".$options['mainFieldID']."').empty().append('<option value=\"\">".lang::get("None found")."</option>');
+          jQuery('#".$options['MainFieldID']."').empty().append('<option value=\"\">".lang::get("None found")."</option>');
         }
       }
     });
 };
 filterReset".$idx." = function(){
-  jQuery('#".$options['mainFieldID']."').empty().attr('disabled','disabled').append('<option value=\"\">".lang::get("First choose a ").$prevAttr[0]."</option>');
+  jQuery('#".$options['MainFieldID']."').empty().attr('disabled','disabled').append('<option value=\"\">".lang::get("First choose a ").$prevAttr[0]."</option>');
 };";
       			if (array_key_exists('location:id', data_entry_helper::$entity_to_load) && data_entry_helper::$entity_to_load['location:id']!="") {
 				  data_entry_helper::$javascript .="\nfilterLoad".$idx."(true);";
@@ -2628,7 +2697,7 @@ jQuery('#locAttr\\\\:".$attr['attributeId']."').autocomplete('".data_entry_helpe
           'label'=>lang::get('LANG_CommonLocationNameLabel'),
           'NameBlankText'=>lang::get('LANG_Location_Name_Blank_Text'),
           'fieldname'=>'location:id',
-          'id'=>$options['mainFieldID'],
+          'id'=>$options['MainFieldID'],
           'extraParams'=>array_merge(array(
               'view'=>'detail',
               'orderby'=>'name',
@@ -2650,7 +2719,7 @@ jQuery('#locAttr\\\\:".$attr['attributeId']."').autocomplete('".data_entry_helpe
       data_entry_helper::$javascript .="
 SetFilterNewLocation = function(){
   setPermissionsNewSite();
-  if(jQuery('#".$options['mainFieldID']."').val()!='')
+  if(jQuery('#".$options['MainFieldID']."').val()!='')
     clearLocation(true);
 };
 ".$defaultsFunction."
@@ -2990,8 +3059,8 @@ function handleEnteredSref(value) {
     if($args['usePoints']=='single' && $args['useLines']=='none' && $args['usePolygons']=='none'){
     	$readOnly="";
     } else $readOnly=" readonly=\"readonly\" ";
-	$retVal .= "<label for=\"imp-srefX\" class=\"auto-width\" >".lang::get('LANG_Location_X_Label').":</label> <input type=\"text\" id=\"imp-srefX\" name=\"dummy:srefX\" value=\"".trim($dummy[0])."\" ".$readOnly."/>
-<label for=\"imp-srefY\" class=\"auto-width prepad\" >".lang::get('LANG_Location_Y_Label').":</label> <input type=\"text\" id=\"imp-srefY\" name=\"dummy:srefY\" value=\"".trim($dummy[1])."\" ".$readOnly."/>
+	$retVal .= "<label for=\"imp-srefX\" class=\"auto-width\" >".lang::get('LANG_Location_X_Label').":</label> <input type=\"text\" id=\"imp-srefX\" name=\"dummy:srefX\" class='required' value=\"".trim($dummy[0])."\" ".$readOnly."/>
+<label for=\"imp-srefY\" class=\"auto-width prepad\" >".lang::get('LANG_Location_Y_Label').":</label> <input type=\"text\" id=\"imp-srefY\" name=\"dummy:srefY\" class='required' value=\"".trim($dummy[1])."\" ".$readOnly."/>
 <span id=\"coords-text\" class=\"coords-text\">".lang::get('LANG_LatLong_Bumpf')."</span><br />
 ";
 	return $retVal;

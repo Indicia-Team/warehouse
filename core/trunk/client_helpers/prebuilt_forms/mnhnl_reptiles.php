@@ -343,10 +343,7 @@ deleteSurvey = function(sampleID){
    * Submission failed: holds the POST array.
    */
   protected static function get_control_lux5kgrid($auth, $args, $tabalias, $options) {
-    $ret = iform_mnhnl_lux5kgridControl($auth, $args, self::$node,
-      array_merge(array('initLoadArgs' => '{}',
-       'canCreate'=>true
-      ), $options));
+    $ret = iform_mnhnl_lux5kgridControl($auth, $args, self::$node, $options);
     return $ret;
   }
   protected static function get_control_locationspatialreference($auth, $args, $tabalias, $options) {
