@@ -577,9 +577,7 @@ jQuery('#smpAttr\\\\:$attrId').next().after(\"<span class='extra-text'>".lang::g
    */
   protected static function get_control_locationmodule($auth, $args, $tabalias, $options) {
     $retVal = iform_mnhnl_lux5kgridControl($auth, $args, self::$node, array_merge(
-      array('initLoadArgs' => '{initial: true}',
-       'canCreate'=>true
-       ), $options));
+      array('initLoadArgs' => '{initial: true}'), $options));
     $isAdmin = user_access('IForm n'.self::$node->nid.' admin');
     if(!$isAdmin)
       data_entry_helper::$javascript .= "

@@ -67,11 +67,12 @@ $custom_terms = array(
 	'LANG_LatLong_Bumpf' => '(LUREF geographical system, in metres)',
 	'LANG_CommonLocationNameLabel' => 'Site name',
 	'LANG_LocModTool_NameLabel'=>'New site name',
+	'LANG_LocModTool_ParentLabel'=>'New site square',
 	'LANG_LocModTool_DeleteLabel'=>'Delete site',
 	'LANG_LocModTool_DeleteInstructions'=>'When a site is deleted, any existing visit data will still be available in the reports. The visit data will not be available via the data entry form, and the site will no longer appear on the map. You will not be able to undelete the site using this form.',
 	'LANG_LocationModTool_CommentLabel'=>'Comment',
 	'LANG_Location_Name_Blank_Text' => 'Choose a location using its name',
-
+	'LANG_MustSelectParentFirst' => 'You must choose a square first, before creating a new location within it.',
 	'LANG_Locations'=>'Sites',
 
 	'LANG_TooFewPoints' => 'There are too few points in this polygon - there must be at least 3.',

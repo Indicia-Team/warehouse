@@ -388,9 +388,7 @@ hook_mnhnl_parent_changed = function(){
   jQuery('.sgCloneableRow').find('td:gt(1)').remove();
 };";
     $retVal = iform_mnhnl_lux5kgridControl($auth, $args, self::$node, array_merge(
-      array('initLoadArgs' => '{initial: true}',
-       'canCreate'=>true
-       ), $options));
+      array('initLoadArgs' => '{initial: true}'), $options));
     return $retVal;
   }
   protected static function get_control_pointgrid($auth, $args, $tabalias, $options) {

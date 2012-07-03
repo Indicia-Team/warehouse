@@ -118,6 +118,7 @@ $custom_terms = array(
 	'LANG_Tab_otherinformation' => 'Conditions',
 	'Target Species' => 'Target species - specify the species that was targeted by the survey, if any',
 	'LANG_Date' => 'Date',
+	'LANG_Date_Explanation' => '(Indicate the date of the beginning of the survey)',
 	'Recorder names' => 'Observer(s)',
 	'Accompanied By' => 'Accompanying people',
 	'Institution' => 'Institution(s)',

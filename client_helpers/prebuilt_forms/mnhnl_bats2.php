@@ -98,6 +98,7 @@ class iform_mnhnl_bats2 extends iform_mnhnl_bats {
               "@sep= \r\n".
               "@tabNameFilter=Site\r\n".
               "@class=wide\r\n".
+              "@numValues=10000\r\n".
               "[location attributes]\r\n".
               "@lookUpKey=meaning_id\r\n".
               "@sep= \r\n".
@@ -322,15 +323,9 @@ $.validator.addMethod('method-presence', function(value, element){
 	return valid;
 },
   \"".lang::get('validation_method-presence')."\");
-$.validator.addMethod('smg-endtime', function(value, element){
-  var assocStartTime = jQuery(element).closest('tr').find('.smg-starttime');
-  if(value=='' || assocStartTime.val() == '') return true;
-  return (value >= assocStartTime.val()); 
-},
-  \"".lang::get('validation_smg-endtime')."\");
 $.validator.addMethod('scNumDead', function(value, element){
   var assocNumAlive = jQuery(element).closest('tr').find('.scNumAlive');
-  var valid = true
+  var valid = true;
   if(jQuery(element).val()!='' || assocNumAlive.val()!='') {
     valid = ((jQuery(element).val()=='' ? 0 : jQuery(element).val()) + (assocNumAlive.val()=='' ? 0 : assocNumAlive.val()) > 0);
   }
