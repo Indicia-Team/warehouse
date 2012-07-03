@@ -1259,6 +1259,8 @@ class iform_mnhnl_dynamic_1 {
     }
     if($args['language'] != 'en')
       data_entry_helper::add_resource('jquery_ui_'.$args['language']); // this will autoload the jquery_ui resource. The date_picker does not have access to the args.
+    if(lang::get('LANG_Date_Explanation')!='LANG_Date_Explanation')
+      data_entry_helper::$javascript .= "\njQuery('[name=sample\\:date]').next().after('<span class=\"date-explanation\"> ".lang::get('LANG_Date_Explanation')."</span>');\n";
     return data_entry_helper::date_picker(array_merge(array(
       'label'=>lang::get('LANG_Date'),
       'fieldname'=>'sample:date',
