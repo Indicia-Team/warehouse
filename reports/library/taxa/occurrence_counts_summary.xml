@@ -22,9 +22,6 @@
       )
       AND o.record_status&lt;&gt;'R'
       </query>
-      <order_bys>
-            <order_by>value DESC</order_by>
-      </order_bys>
       <params>
         <param name='date_from' display='Date From' datatype='date' />
         <param name='date_to' display='Date To' datatype='date' />
@@ -35,9 +32,9 @@
       </params>
       <columns>
             <column name="id" visible="false" sql="cttl.id" unique="true" distincton="true" />
-            <column name="name" display="Taxon Name" style="background-color: #e7e7e7;" sql="cttl.taxon || COALESCE(' ' || cttl.authority, '')" />
+            <column name="name" display="Taxon Name" sql="cttl.taxon || COALESCE(' ' || cttl.authority, '')" />
+            <column name="preferred_taxon" display="Preferred Name" sql="cttl.preferred_taxon || COALESCE(' ' || cttl.preferred_authority, '')" />
+            <column name="default_common_name" display="Common Name" sql="cttl.default_common_name" />
             <column name="value" display="No. of Records" distincton="true" sql="count(distinct o.id)" aggregate="true" in_count="false"/>
-            <column name="minvalue" visible="false" sql="0" aggregate="true" />
-            <column name="maxvalue" visible="false" sql="max(count(distinct o.id)) OVER ()" aggregate="true"/>
       </columns>
 </report>
