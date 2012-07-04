@@ -7,9 +7,7 @@
   FROM occurrences o
   JOIN samples s ON s.id=o.sample_id AND s.deleted = FALSE
   JOIN samples parent ON parent.id=s.parent_id AND parent.deleted = FALSE
-  JOIN taxa_taxon_lists ttl ON ttl.id=o.taxa_taxon_list_id AND ttl.deleted=false
-  JOIN taxa_taxon_lists ttlpref ON ttlpref.taxon_meaning_id=ttl.taxon_meaning_id AND ttlpref.preferred='t' AND ttlpref.deleted=false
-  JOIN taxa tpref ON tpref.id=ttlpref.taxon_id AND tpref.deleted=false
+  JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
   JOIN (sample_attribute_values sav
     JOIN sample_attributes sa ON sa.id=sav.sample_attribute_id AND sa.deleted=false AND sa.caption='CMS User ID'
   ) ON sav.sample_id=parent.id AND sav.deleted=false
@@ -30,11 +28,12 @@
       s.date_start,
       s.date_end,
       s.date_type,
-      ttl.id as taxa_taxon_list_id,
-      tpref.taxon
+      cttl.id as taxa_taxon_list_id,
+      cttl.preferred_taxon as taxon,
+      coalesce(cttl.default_common_name, cttl.preferred_taxon) as common
   </field_sql>
   <order_bys>
-    <order_by>tpref.taxon, o.id DESC</order_by>
+    <order_by>cttl.default_common_name, cttl.preferred_taxon, o.id DESC</order_by>
   </order_bys>
   <params>
     <param name='survey_id' display='Survey' description='Select the survey, or leave for all surveys' datatype='lookup'
@@ -48,7 +47,8 @@
   <columns>
     <column name='occurrence_id' display='ID' />
     <column name='sample_id' visible='false' />
-    <column name='taxon' display='Species' />    
+    <column name='taxon' display='Latin Name' visible="false" />    
+    <column name='common' display='Common Name' /> 
     <column name='taxa_taxon_list_id' visible='false' />   
     <column name='location_id' visible='Site ID' />
     <column name='date' display='Date' />
