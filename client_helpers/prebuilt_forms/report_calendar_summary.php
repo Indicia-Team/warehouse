@@ -296,6 +296,15 @@ class iform_report_calendar_summary {
           'group' => 'Chart Options'
         ),
         array(
+          'name'=>'includeChartItemSeries',
+          'caption'=>'Include Item Series',
+          'description'=>'Choose whether to individual series for the counts of each species for each week.',
+          'type'=>'boolean',
+          'default' => true,
+          'required' => false,
+          'group' => 'Chart Options'
+        ),
+        array(
           'name' => 'width',
           'caption' => 'Chart Width',
           'description' => 'Width of the output chart in pixels: if not set then it will automatically to fill the space.',
@@ -412,7 +421,7 @@ class iform_report_calendar_summary {
           "markSize":{"type":"int","desc":"Length of the tick marks in pixels.  For �cross� style, length will be stoked above and below axis, so total length will be twice this."},
           "show":{"type":"bool"},
           "showLabel":{"type":"bool"},
-          "formatString":{"type":"bool","desc":"Text used to construct the tick labels, with %s being replaced by the label."},
+          "formatString":{"type":"str","desc":"Text used to construct the tick labels, with %s being replaced by the label."},
           "fontFamily":{"type":"str","desc":"CSS spec for the font-family css attribute."},
           "fontSize":{"type":"str","desc":"CSS spec for the font-size css attribute."},
           "textColor":{"type":"str","desc":"CSS spec for the color attribute."},
@@ -455,7 +464,7 @@ class iform_report_calendar_summary {
           "markSize":{"type":"int","desc":"Length of the tick marks in pixels.  For �cross� style, length will be stoked above and below axis, so total length will be twice this."},
           "show":{"type":"bool"},
           "showLabel":{"type":"bool"},
-          "formatString":{"type":"bool","desc":"Text used to construct the tick labels, with %s being replaced by the label."},
+          "formatString":{"type":"str","desc":"Text used to construct the tick labels, with %s being replaced by the label."},
           "fontFamily":{"type":"str","desc":"CSS spec for the font-family css attribute."},
           "fontSize":{"type":"str","desc":"CSS spec for the font-size css attribute."},
           "textColor":{"type":"str","desc":"CSS spec for the color attribute."},
@@ -767,7 +776,7 @@ jQuery('#".$ctrlid."').change(function(){
             'outputTable','outputChart','simultaneousOutput','defaultOutput',
             'tableHeaders','chartLabels','disableableSeries',
             'chartType','rowGroupColumn','width','height',
-            'includeTableTotalRow','includeTableTotalColumn','includeChartTotalSeries'));
+            'includeTableTotalRow','includeTableTotalColumn','includeChartTotalSeries','includeChartItemSeries'));
       
     // Advanced Chart options
     $rendererOptions = trim($args['renderer_options']);

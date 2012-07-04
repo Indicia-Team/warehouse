@@ -16,11 +16,14 @@ table td.multiLink {
   background-color: green;
 }
 tr.datarow td {
-	border: navy solid thin;
-	padding: 3px;
+  border: navy solid thin;
+  padding: 3px;
 }
 tr td.day {
-	border: navy solid thin;
-	padding: 3px;
+  border: navy solid thin;
+  padding: 3px;
+  width: 12%;
+  text-align: center;
+  font-weight: bold;
 }
 

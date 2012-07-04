@@ -354,12 +354,13 @@ class report_helper extends helper_base {
     $currentUrl = self::get_reload_link_parts();
     // automatic handling for Drupal clean urls.
     $pathParam = (function_exists('variable_get') && variable_get('clean_url', 0)=='0') ? 'q' : '';
+    $rootFolder = dirname($_SERVER['PHP_SELF']) . (empty($pathParam) ? '/' : "?$pathParam=");
     $r .= '<tfoot>';
     $r .= '<tr><td colspan="'.count($options['columns'])*$options['galleryColCount'].'">'.self::output_pager($options, $pageUrl, $sortAndPageUrlParams, $response).'</td></tr>'.
     $extraFooter = '';
     if (isset($options['footer']) && !empty($options['footer'])) {
       $footer = str_replace(array('{rootFolder}', '{currentUrl}'),
-          array(dirname($_SERVER['PHP_SELF']) . ($pathParam=='' ? '/' : "?$pathParam="), $currentUrl['path']), $options['footer']);
+          array($rootFolder, $currentUrl['path']), $options['footer']);
       $extraFooter .= '<div class="left">'.$footer.'</div>';
     }
     if (isset($options['downloadLink']) && $options['downloadLink'] && count($records)>0)
@@ -385,7 +386,7 @@ class report_helper extends helper_base {
           break;
         // Put some extra useful paths into the row data, so it can be used in the templating
         $row = array_merge($row, array(
-            'rootFolder'=>dirname($_SERVER['PHP_SELF']) . '/',
+            'rootFolder'=>$rootFolder,
             'imageFolder'=>$imagePath,
             // allow the current URL to be replaced into an action link. We extract url parameters from the url, not $_GET, in case
             // the url is being rewritten.
@@ -1670,8 +1671,6 @@ if (typeof(mapSettingsHooks)!=='undefined') {
       unset($currentUrl['params'][$pathParam]);
     }
     foreach ($actions as $action) {
-      if (!empty($pathParam) && strpos($action['url'], "?$pathParam=")===false)
-        $action['url'] .="?$pathParam=$pathParamValue";
       // skip any actions which are marked as invisible for this row.
       if (isset($action['visibility_field']) && $row[$action['visibility_field']]==='f')
         continue;
@@ -2203,6 +2202,12 @@ if (typeof(mapSettingsHooks)!=='undefined') {
   * <li><b>countColumn</b>
   * OPTIONAL: The column in the report which contains the count for this occurrence. If omitted then the default
   * is to assume one occurrence = count of 1</li>
+  * <li><b>includeChartItemSeries</b>
+  * Defaults to true. Include a series for each item in the report output?
+  * </li>
+  * <li><b>includeChartTotalSeries</b>
+  * Defaults to true. Include a series for the total of each item in the report output?
+  * </li?
   */
   // Future Enhancements? Allow restriction to month.
   public static function report_calendar_summary($options) {
@@ -2415,8 +2420,10 @@ jQuery('[name=simultaneousOutput]').filter('[value=".($checked?'table':'chart').
           }
         }
         // each series will occupy an entry in $seriesData
-        $seriesData[] = '['.implode(',', $values).']';
-        $seriesOptions[] = '{"show":true,"label":"'.$label.'","showlabel":true}';
+        if ($options['includeChartItemSeries']) {
+          $seriesData[] = '['.implode(',', $values).']';
+          $seriesOptions[] = '{"show":true,"label":"'.$label.'","showlabel":true}';
+        }
       }
       if(isset($options['includeChartTotalSeries']) && $options['includeChartTotalSeries']){
         array_unshift($seriesData, '['.implode(',', $totalRow).']');
@@ -2464,7 +2471,7 @@ function replot(){
       $r .= '<div id="'.$options['chartID'].'" style="height:'.$options['height'].'px;'.(isset($options['width']) && $options['width'] != '' ? 'width:'.$options['width'].'px;':'').'"></div>'."\n";
       if(isset($options['disableableSeries']) && $options['disableableSeries'] && count($summaryArray)>1){
         drupal_add_js('misc/collapse.js');
-        $r .= '<fieldset id="'.$options['chartID'].'-series" class="collapsible collapsed series-fieldset"><legend>'.lang::get('Display ').$options['rowGroupColumn']."</legend><span>\n";
+        $r .= '<fieldset id="'.$options['chartID'].'-series" class="collapsible collapsed series-fieldset"><legend>'.lang::get('Display Series')."</legend><span>\n";
         $idx=0;
         if(isset($options['includeChartTotalSeries']) && $options['includeChartTotalSeries']){
           $r .= '<span class="chart-series-span"><input type="checkbox" checked="checked" id="'.$options['chartID'].'-series-'.$idx.'" name="'.$options['chartID'].'-series" value="'.$idx.'"/><label for="'.$options['chartID'].'-series-'.$idx.'">'.lang::get('Total')."</label></span>\n";

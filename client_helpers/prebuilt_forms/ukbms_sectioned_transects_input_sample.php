@@ -648,7 +648,7 @@ indiciaData.speciesList1Subset = ".(isset($args['common_taxon_list_id'])&&$args[
       $filterLines = helper_base::explode_lines($args['second_taxon_filter']);
       data_entry_helper::$javascript .= "indiciaData.speciesList2FilterValues = '".json_encode($filterLines)."';\n";
     }
-    data_entry_helper::$javascript .= "bindSpeciesAutocomplete(\"taxonLookupControl2\",\"table#transect-input2\",\"".data_entry_helper::$base_url."index.php/services/data\", \"".$args['taxon_list_id']."\",
+    data_entry_helper::$javascript .= "bindSpeciesAutocomplete(\"taxonLookupControl2\",\"table#transect-input2\",\"".data_entry_helper::$base_url."index.php/services/data\", indiciaData.speciesList2,
   indiciaData.speciesList2FilterField, indiciaData.speciesList2FilterValues, {\"auth_token\" : \"".$auth['read']['auth_token']."\", \"nonce\" : \"".$auth['read']['nonce']."\"},
   \"".lang::get('LANG_Duplicate_Taxon')."\", 25);
   
@@ -659,7 +659,7 @@ indiciaData.speciesList3 = ".(isset($args['third_taxon_list_id'])&&$args['third_
       data_entry_helper::$javascript .= "indiciaData.speciesList3FilterValues = '".json_encode($filterLines)."';\n";
     }
     // allow js to do AJAX by passing in the information it needs to post forms
-    data_entry_helper::$javascript .= "bindSpeciesAutocomplete(\"taxonLookupControl3\",\"table#transect-input3\",\"".data_entry_helper::$base_url."index.php/services/data\", \"".$args['taxon_list_id']."\",
+    data_entry_helper::$javascript .= "bindSpeciesAutocomplete(\"taxonLookupControl3\",\"table#transect-input3\",\"".data_entry_helper::$base_url."index.php/services/data\", indiciaData.speciesList3,
   indiciaData.speciesList3FilterField, indiciaData.speciesList3FilterValues, {\"auth_token\" : \"".$auth['read']['auth_token']."\", \"nonce\" : \"".$auth['read']['nonce']."\"},
   \"".lang::get('LANG_Duplicate_Taxon')."\", 25);
 
