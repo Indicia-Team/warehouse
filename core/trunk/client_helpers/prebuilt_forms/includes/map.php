@@ -76,7 +76,8 @@ function iform_map_get_map_parameters() {
     array(
       'name'=>'remember_pos',
       'caption'=>'Remember Position',
-      'description'=>'Tick this box to get the map to remember it\'s last position when reloading the page.',
+      'description'=>'Tick this box to get the map to remember it\'s last position when reloading the page. This uses cookies so cookies must be enabled for it to work and '.
+          'you must notify your users to ensure you comply with European cookie law.',
       'type'=>'checkbox',
       'required'=>false,
       'group'=>'Initial Map View'
