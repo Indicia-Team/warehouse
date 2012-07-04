@@ -428,6 +428,12 @@ mapGeoreferenceHooks = [];
           $('#'+opts.srefLatId).val(refxy[0]);
           $('#'+opts.srefLongId).val(refxy[1]);
         }
+      } else {
+        // clear the sref so the user doesn't accidentally submit an old one.'
+        $('#'+opts.srefId).val('');
+        $('#'+opts.srefLatId).val('');
+        $('#'+opts.srefLongId).val('');
+        $('#'+opts.geomId).val('');
       }
       // call any hooks that need to know about georeferences
       $.each(mapGeoreferenceHooks, function(i, fn) {
@@ -854,7 +860,7 @@ mapGeoreferenceHooks = [];
       $('#imp-geom').val(evt.feature.geometry.toString());
       pointToSref(this.map.div, evt.feature.geometry.getCentroid(), _getSystem(), function(data) {
         if (typeof data.sref !== "undefined") {
-          $('#imp-sref').val(data.sref);
+          $('#'+this.map.div.settings.srefId).val(data.sref);
         }
       });
     }
