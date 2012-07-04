@@ -1842,10 +1842,11 @@ class data_entry_helper extends helper_base {
     }
     if (count($query))
       $filterArray['query'] = json_encode($query);
-    if (count($filterArray)) {
+    if (count($filterArray))
       $filterParam = json_encode($filterArray);
-      self::$javascript .= "indiciaData['taxonExtraParams-".$options['id']."'] = $filterParam;\n";
-    }
+    else
+      $filterParam = '{"query":"{}"}';
+    self::$javascript .= "indiciaData['taxonExtraParams-".$options['id']."'] = $filterParam;\n";
     if ($options['occurrenceImages']) {
       self::add_resource('plupload');
       // store some globals that we need later when creating uploaders
@@ -2074,10 +2075,7 @@ var applyFilterMode = function(type, group_id) {
   if (typeof group_id==='undefined') {
     group_id=null;
   }
-  var query={};
-  if (typeof indiciaData['taxonExtraParams-".$options['id']."']!=='undefined') {
-    query=JSON.parse(indiciaData['taxonExtraParams-".$options['id']."']['query']);
-  }
+  query=JSON.parse(indiciaData['taxonExtraParams-".$options['id']."']['query']);
   if (typeof indiciaData.originalTaxonQuery==='undefined') {
     indiciaData.originalTaxonQuery=$.extend({},query);
   }
