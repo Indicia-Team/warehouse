@@ -500,7 +500,8 @@ $.extend($.validator, {
 			for (var method in rules ) {
 				var rule = { method: method, parameters: rules[method] };
 				try {
-					var result = $.validator.methods[method].call( this, element.value.replace(/\r/g, ""), element, rule.parameters );
+          // For indicia, all data is trimmed before validation on the warehouse, so need to do this here as well.
+					var result = $.validator.methods[method].call( this, element.value.trim().replace(/\r/g, ""), element, rule.parameters );
 
 					// if a method indicates that the field is optional and therefore valid,
 					// don't mark it as valid when there are no other rules
