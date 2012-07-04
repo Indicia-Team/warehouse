@@ -252,6 +252,14 @@ class iform_ukbms_sectioned_transects_input_sample {
           'required'=>false,
           'siteSpecific'=>true
         ),
+        array(
+          'name'=>'my_walks_page',
+          'caption'=>'Path to My Walks',
+          'description'=>'Path used to access the My Walks page after a successful submission.',
+          'type'=>'text_input',
+          'required'=>true,
+          'siteSpecific'=>true
+        ),
       )
     );
   }
@@ -269,7 +277,7 @@ class iform_ukbms_sectioned_transects_input_sample {
   public static function get_form($args, $node, $response=null) {
     if (isset($response['error']))
       data_entry_helper::dump_errors($response);
-    if (isset($_REQUEST['page']) && $_REQUEST['page']=='grid' && !isset(data_entry_helper::$validation_errors)) {
+    if (isset($_REQUEST['page']) && $_REQUEST['page']==='transect' && !isset(data_entry_helper::$validation_errors)) {
       // we have just saved the sample page, so move on to the occurrences list
       return self::get_occurrences_form($args, $node, $response);
     } else {
@@ -306,7 +314,7 @@ class iform_ukbms_sectioned_transects_input_sample {
     }
     $r .= '<input type="hidden" name="sample:survey_id" value="'.$args['survey_id'].'"/>';
     // pass a param that sets the next page to display
-    $r .= '<input type="hidden" name="page" value="grid"/>';
+    $r .= '<input type="hidden" name="page" value="transect"/>';
     if ($locationId) {
       $site = data_entry_helper::get_population_data(array(
         'table' => 'location',
@@ -495,6 +503,7 @@ class iform_ukbms_sectioned_transects_input_sample {
     ));
     usort($sections, "ukbms_stis_sectionSort");
     $r = "<form method=\"post\"><div id=\"tabs\">\n";
+    $r .= $auth['write'];
     $r .= '<input type="hidden" name="sample:id" value="'.$parentSampleId.'" />';
     $r .= '<input type="hidden" name="website_id" value="'.$args['website_id'].'"/>';
     $r .= '<input type="hidden" name="survey_id" value="'.$args['survey_id'].'"/>';
@@ -709,6 +718,14 @@ indiciaData.indiciaSvc = '".data_entry_helper::$base_url."';\n";
     }
     $submission = submission_builder::build_submission($values, array('model' => 'sample'));
     return($submission);
+  }
+  
+  /**
+   * Override the form redirect to go back to My Walks after the grid is submitted. Leave default redirect (current page)
+   * for initial submission of the parent sample.
+   */
+  public static function get_redirect_on_success($values, $args) {
+    return  $values['page']==='grid' ? $args['my_walks_page'] : '';
   }
 
 }

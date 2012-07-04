@@ -249,7 +249,7 @@ function input_blur (evt) {
 };
 
 function loadSpeciesList() {
-  var currentCell=null, submittingSample='';
+  var currentCell=null, submittingSample='', existingTtlIds=[], secondTaxonData, query;
   // note we assume these lists are preferred=true. also need meaning_id to match the subset and the main 
   // list on the main grid.
   var mainTaxonData = {
@@ -295,6 +295,10 @@ function loadSpeciesList() {
         indiciaData.speciesList1SubsetList = data;
     }});
   }
+  // build a simple array of existing occurrence IDs for a webservice query
+  $.each(indiciaData.existingOccurrences, function(idx, obj) {
+    existingTtlIds.push(obj.ttl_id);
+  });
   // only add species 2 and 3 to grids if present: grids start empty, any new added from autocomplete.
   if(indiciaData.speciesList2>0){
     var secondTaxonData = {
@@ -303,12 +307,14 @@ function loadSpeciesList() {
             'auth_token': indiciaData.readAuth.auth_token,
             'nonce': indiciaData.readAuth.nonce,
             'mode': 'json',
-            'allow_data_entry': 't'
-            ,'view': 'detail'
+            'allow_data_entry': 't',
+            'view': 'detail'
     };
+    query = {"in":{"id":existingTtlIds}};
     if(typeof indiciaData.speciesList2FilterField != "undefined"){
-      secondTaxonData.query = '{"in":{"'+indiciaData.speciesList2FilterField+'":'+indiciaData.speciesList2FilterValues+"}}";
+      query['in'][indiciaData.speciesList2FilterField] = indiciaData.speciesList2FilterValues;
     };
+    secondTaxonData.query = JSON.stringify(query);
     $.ajax({
       'url': indiciaData.indiciaSvc+'index.php/services/data/taxa_taxon_list',
       'data': secondTaxonData,
@@ -318,18 +324,12 @@ function loadSpeciesList() {
       }});
   }
   if(indiciaData.speciesList3>0){
-    var secondTaxonData = {
-            'taxon_list_id': indiciaData.speciesList3,
-            'preferred': 't',
-            'auth_token': indiciaData.readAuth.auth_token,
-            'nonce': indiciaData.readAuth.nonce,
-            'mode': 'json',
-            'allow_data_entry': 't'
-            ,'view': 'detail'
-    };
+    secondTaxonData.taxon_list_id=indiciaData.speciesList3;
+    query = {"in":{"id":existingTtlIds}};
     if(typeof indiciaData.speciesList3FilterField != "undefined"){
-      secondTaxonData.query = '{"in":{"'+indiciaData.speciesList3FilterField+'":'+indiciaData.speciesList3FilterValues+"}}";
+      query['in'][indiciaData.speciesList3FilterField] = indiciaData.speciesList3FilterValues;
     };
+    secondTaxonData.query = JSON.stringify(query);
     $.ajax({
       'url': indiciaData.indiciaSvc+'index.php/services/data/taxa_taxon_list',
       'data': secondTaxonData,
