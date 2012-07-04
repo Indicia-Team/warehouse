@@ -2074,7 +2074,10 @@ var applyFilterMode = function(type, group_id) {
   if (typeof group_id==='undefined') {
     group_id=null;
   }
-  var query=JSON.parse(indiciaData['taxonExtraParams-".$options['id']."']['query']);
+  var query={};
+  if (typeof indiciaData['taxonExtraParams-".$options['id']."']!=='undefined') {
+    query=JSON.parse(indiciaData['taxonExtraParams-".$options['id']."']['query']);
+  }
   if (typeof indiciaData.originalTaxonQuery==='undefined') {
     indiciaData.originalTaxonQuery=$.extend({},query);
   }
