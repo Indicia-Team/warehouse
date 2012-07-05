@@ -21,30 +21,29 @@
   the newly added rows.
  */
 
-var selectVal=null;
+var selectVal = null;
 
 /**
  * A keyboard event handler for the grid.
  */
 function keyHandler(evt) {
-  var rows, row, rowIndex, cells, cell, cellIndex, caretPos, ctrl=this, deltaX=0, deltaY=0,
-      isTextbox=this.nodeName.toLowerCase()==='input' && $(this).attr('type')==='text',
-      isSelect = this.nodeName.toLowerCase()==='select';
-  if ((evt.keyCode>=37 && evt.keyCode<=40) || evt.keyCode===9) {
-    rows=$(this).parents('tbody').children();
-    row=$(this).parents('tr')[0];
-    rowIndex=rows.index(row);
-    cells=$(this).parents('tr').children();
-    cell=$(this).parents('td')[0];
-    cellIndex=cells.index(cell);
+  var rows, row, rowIndex, cells, cell, cellIndex, caretPos, ctrl = this, deltaX = 0, deltaY = 0,
+    isTextbox=this.nodeName.toLowerCase() === 'input' && $(this).attr('type') === 'text',
+    isSelect = this.nodeName.toLowerCase() === 'select';
+  if ((evt.keyCode >= 37 && evt.keyCode <= 40) || evt.keyCode === 9) {
+    rows = $(this).parents('tbody').children();
+    row = $(this).parents('tr')[0];
+    rowIndex = rows.index(row);
+    cells = $(this).parents('tr').children();
+    cell = $(this).parents('td')[0];
+    cellIndex = cells.index(cell);
     if (isTextbox) {
       if (typeof this.selectionStart !== 'undefined') {
         caretPos = this.selectionStart;
-      }
-      else {  // Internet Explorer before version 9
+      } else {  // Internet Explorer before version 9
         var inputRange = this.createTextRange();
         // Move selection start to 0 position
-        inputRange.moveStart ('character', -this.value.length);
+        inputRange.moveStart('character', -this.value.length);
         // The caret position is selection length
         caretPos = inputRange.text.length;
       }
@@ -56,50 +55,50 @@ function keyHandler(evt) {
       deltaX = evt.shiftKey ? -1 : 1;
       break;
     case 37: // left. Caret must be at left of text in the box
-      if (!isTextbox || caretPos===0) {
-        deltaX=-1;
+      if (!isTextbox || caretPos === 0) {
+        deltaX = -1;
       }
       break;
     case 38: // up. Doesn't work in select as this changes the value
-      if (!isSelect && rowIndex>0) {
-        deltaY=-1;
+      if (!isSelect && rowIndex > 0) {
+        deltaY = -1;
       }
       break;
     case 39: // right
-      if (!isTextbox || caretPos>=$(this).val().length) {
-        deltaX=1;
+      if (!isTextbox || caretPos >= $(this).val().length) {
+        deltaX = 1;
       }
       break;
     case 40: // down. Doesn't work in select as this changes the value
-      if (!isSelect && rowIndex<rows.length-1) { 
-        deltaY=1;
+      if (!isSelect && rowIndex < rows.length-1) { 
+        deltaY = 1;
       }
       break;
   }
-  if (deltaX!==0) {
+  if (deltaX !== 0) {
     var inputs = $(this).closest('table').find(':input:visible');
     // timeout necessary to allow keyup to occur on correct control
     setTimeout(function() {
-      inputs.eq(inputs.index(ctrl)+deltaX).focus();
+      inputs.eq(inputs.index(ctrl) + deltaX).focus();
     }, 200);
     evt.preventDefault();
     // see https://bugzilla.mozilla.org/show_bug.cgi?id=291082 - preventDefault bust in FF
     // so reset the value as arrow keys change the value
     if (isSelect) {
-      var select=this, val=$(this).val();
+      var select=this, val = $(this).val();
       setTimeout(function() {
         $(select).val(val);
       });
     }
     return false;
   }
-  if (deltaY!==0) {
-    $(rows[rowIndex+deltaY]).find('td[headers='+$(cell).attr('headers')+'] input').focus();
+  if (deltaY !== 0) {
+    $(rows[rowIndex+deltaY]).find('td[headers=' + $(cell).attr('headers') + '] input').focus();
   }
 }
     
 function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, cacheLookup) {
-	cacheLookup = typeof cacheLookup !== 'undefined' ? cacheLookup : false;
+  cacheLookup = typeof cacheLookup !== 'undefined' ? cacheLookup : false;
   // inner function to handle a selection of a taxon from the autocomplete
   var handleSelectedTaxon = function(event, data, value) {
     // on picking a result in the autocomplete, ensure we have a spare row
@@ -122,18 +121,32 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, cacheLooku
       // replace each field in the label template
       $.each(data, function(field, value) {
         regex = new RegExp('\\{' + field + '\\}', 'g');
-        label = label.replace(regex, value===null ? '' : value);
+        label = label.replace(regex, value === null ? '' : value);
       });
       $(taxonCell).html(label);
     }
-    // Replace the tags in the row template with the taxa_taxon_list_ID
+    // Replace the tags in the row template with a rowId consisting of the taxa_taxon_list_ID
+    // plus a suffix so that the same taxa may be recorded more than once with 
+    // differing attributes.
+    var rowId = -1;
     $.each($(row).children(), function(i, cell) {
       $.each($(cell).find('*'), function(idx, child) {
-        if (typeof $(child).attr('name')!=="undefined") {
-          $(child).attr('name', $(child).attr('name').replace(/-ttlId-/g, data.id));
-        }
-        if (typeof $(child).attr('id')!=="undefined") {
-          $(child).attr('id', $(child).attr('id').replace(/-ttlId-/g, data.id)) 
+        var oldName, oldId;
+        oldName = $(child).attr('name');
+        if (typeof oldName !== "undefined" && oldName.indexOf('-ttlId-') !== -1) {
+          // Update the name attribute if it contains the replacement tag
+          if (rowId === -1) {
+            rowId = getRowId(data.id, 'name');
+          }
+          $(child).attr('name', $(child).attr('name').replace(/-ttlId-/g, rowId));
+          }          
+        oldId = $(child).attr('id');
+        if (typeof oldId !== "undefined" && oldId.indexOf('-ttlId-') !== -1) {
+          // Update the id attribute if it contains the replacement tag
+          if (rowId === -1) {
+            rowId = getRowId(data.id, 'id');
+          }          
+          $(child).attr('id', $(child).attr('id').replace(/-ttlId-/g, rowId)); 
         }
       });
     });
@@ -142,8 +155,11 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, cacheLooku
     // auto-check the row
     var checkbox=$(row).find('.scPresenceCell input');
     checkbox.attr('checked', 'checked');
-    // and rename the controls so they post into the right species record
-    checkbox.attr('name', 'sc:' + data.id + '::present');
+    // and name the control so it posts into the right species record
+    if (rowId == -1) {
+      rowId = getRowId(data.id, 'name');
+    }
+    checkbox.attr('name', 'sc:' + rowId + '::present');
     // Finally, a blank row is added for the next record
     makeSpareRow(null, true);
     // Allow forms to hook into the event of a new row being added
@@ -152,6 +168,20 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, cacheLooku
     }
   };
   
+  /**
+   * Determines next available rowId for taxon defined by ttlId by searching
+   * the attr of existing controls.
+   */
+  var getRowId = function(ttlId, attr) {
+    var rowId, suffix = -1;
+    do {
+      suffix++;
+      rowId = ttlId + '_' + suffix;
+    }
+    while ($('[' + attr + '^="sc:' + rowId + '"]').length !== 0);
+    return rowId;
+  }
+
   /**
    * Ensure field names are consistent independent of whether we are using cached data
    * or not.
@@ -194,7 +224,7 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, cacheLooku
       return;
     }
     // get a copy of the new row template
-    var extraParams, newRow =$('tr#'+gridId + '-scClonableRow').clone(true);
+    var extraParams, newRow = $('tr#'+gridId + '-scClonableRow').clone(true);
     // build an auto-complete control for selecting the species to add to the bottom of the grid. 
     // The next line gets a unique id for the autocomplete.
     selectorId = gridId + '-' + $('#' + gridId +' tbody')[0].children.length;
@@ -215,7 +245,7 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, cacheLooku
       $.extend(extraParams, indiciaData['taxonExtraParams-'+gridId]);
     }
     if (cacheLookup) {
-      $.extend(extraParams, {"query":encodeURI('{"in":{"simplified":[true,null]}}')})
+      $.extend(extraParams, {"query":encodeURI('{"in":{"simplified":[true,null]}}')});
     }
     $(newRow).find('input,select').keydown(keyHandler);
     // Attach auto-complete code to the input
