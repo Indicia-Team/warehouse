@@ -286,6 +286,15 @@ mapGeoreferenceHooks = [];
       feature.attributes = {type:"clickPoint"};
       feature.style = new style(false);
       div.map.editLayer.addFeatures([feature]);
+      var helptext=[];
+      helptext.push('Click on the map again to correct your position if necessary.');
+      // Extra help for grid square precision, as long as the precision is not fixed.
+      if (feature.geometry.CLASS_NAME!=='OpenLayers.Geometry.Point' && (div.settings.clickedSrefPrecisionMin==='' 
+        || div.settings.clickedSrefPrecisionMin!==div.settings.clickedSrefPrecisionMax)) {
+        helptext.push('By zooming the map in or out before clicking you can alter the precision of the '+
+            'selected grid square.');
+      }
+      $('#map-help').html(helptext.join(' '));
     }
 
     function _georeference(div) {
@@ -929,6 +938,21 @@ mapGeoreferenceHooks = [];
         }
         this.settings.toolbarDiv='map-toolbar';
       }
+      if (this.settings.helpDiv==='bottom') {
+        var helpbar, helptext = [];
+        if ($.inArray('panZoom', this.settings.standardControls) || 
+            $.inArray('panZoomBar', this.settings.standardControls)) {
+          helptext.push('Pan and zoom the map to the required place using the navigation buttons or '+
+              'by dragging the map and double clicking or Shift-dragging to zoom.')    
+        } else {
+          helptext.push('Pan and zoom the map to the required place by dragging the map and double clicking or Shift-dragging to zoom.')
+        }
+        if (this.settings.clickForSpatialRef) {
+          helptext.push('Click once on the map to set your location.');
+        }
+        helpbar = '<div id="map-help" style="border: solid 1px">'+helptext.join(' ')+'</div>';
+        $(this).after(helpbar);
+      }
       
       this.settings.boundaryStyle=new style();
 
@@ -1356,6 +1380,7 @@ $.fn.indiciaMapPanel.defaults = {
     toolbarDiv: 'map', // map, top, bottom, or div ID
     toolbarPrefix: '', // content to prepend to the toolbarDiv content if not on the map
     toolbarSuffix: '', // content to append to the toolbarDiv content if not on the map
+    helpDiv: 'bottom', //false,
     editLayer: true,
     clickForSpatialRef: true, // if true, then enables the click to get spatial references control
     allowPolygonRecording: false,

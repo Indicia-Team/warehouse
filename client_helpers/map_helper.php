@@ -129,6 +129,10 @@ class map_helper extends helper_base {
   * <li><b>toolbarSuffix</b><br/>
   * Content to include at the end of the map toolbar. Not applicable when the toolbar is added directly to the map.
   * </li>
+  * <li><b>helpDiv</b><br/>
+  * Set to 'bottom' to add a div containing help hints below the map. Set to the name of a div to output help hints into that
+  * div. Otherwise no help hints are displayed.
+  * </li>
   * <li><b>clickForSpatialRef</b><br/>
   * Does clicking on the map set the spatial reference of the sample input controls on the form the map appears on (if any)?
   * Defaults to true.
