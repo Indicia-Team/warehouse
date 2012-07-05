@@ -1804,7 +1804,7 @@ class data_entry_helper extends helper_base {
         // Multi-column input does not work when image upload allowed
         $colIdx = $options['occurrenceImages'] ? 0 : floor($rowIdx / (count($taxonRows)/$options['columns']));
         // Find the taxon information for this row
-        $ttlId = strstr($id, '_', true);
+        $ttlId = substr($id, 0, strpos($id, '_'));
         $taxonIdx = 0;
         while ($taxalist[$taxonIdx]['id'] != $ttlId) {
           $taxonIdx += 1;
@@ -2230,7 +2230,8 @@ $('#".$options['id']."-filter').click(function(evt) {
           // If we haven't already seen this taxon row
           if (!in_array($taxonRow, $taxonRows)) {
             $taxonRows[] = $taxonRow;
-            $taxon = (strpos($taxonRow, '_') === false) ? $taxonRow : strstr($taxonRow, '_', true);          
+            $pos = strpos($taxonRow, '_');
+            $taxon = ($pos === false) ? $taxonRow : substr($taxonRow, 0, $pos);          
             // If this taxon is not already loaded
             if(!in_array($taxon, $taxaLoaded)) {
               $taxaLoaded[] = $taxon;
@@ -3739,7 +3740,8 @@ if (errors.length>0) {
         }
 
         // strip off <instance> suffix, if present, to obtain taxa_taxon_list_id
-        $record['taxa_taxon_list_id'] = (strpos($id, '_') === false) ? $id : strstr($id, '_', true);
+        $pos = strpos($id, '_');
+        $record['taxa_taxon_list_id'] = ($pos === false) ? $id : substr($id, 0, $pos);
         $record['website_id'] = $website_id;
         if (isset($determiner_id)) {
             $record['determiner_id'] = $determiner_id;
