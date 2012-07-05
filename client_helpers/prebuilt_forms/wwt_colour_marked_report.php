@@ -2015,6 +2015,20 @@ class iform_wwt_colour_marked_report {
       }
     }
     
+    // throw an exception if any of the required custom attributes is missing
+    $errorMessages = array();
+    foreach (array('baseColourId', 'textColourId', 'sequenceId', 'positionId', 
+      'attachmentId', 'genderId', 'stageId', 'lifeStatusId', 'conditionsId', ) as $attrId) {
+      if ($options[$attrId]===-1) {
+        $errorMessages[] = lang::get('Required custom attribute for '.$attrId.' has not been found. '
+        .'Please check this has been created on the warehouse and is associated with the correct system function.');
+      }
+    }
+    if (count($errorMessages)>0) {
+      $errorMessage = implode('<br />', $errorMessages);
+      throw new exception($errorMessage);
+    }
+    
     // configure the identifiers javascript
     // write it late so it happens after any locked values are applied
     if (!$options['inNewIndividual']) {
