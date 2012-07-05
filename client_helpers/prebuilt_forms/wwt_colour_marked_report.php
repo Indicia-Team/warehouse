@@ -738,6 +738,14 @@ class iform_wwt_colour_marked_report {
     self::getArgDefaults($args);
     self::$node = $node;
     
+    // if we use locks, we want them to be distinct for each drupal user
+    if (function_exists('profile_load_profile')) { // check we are in drupal
+      global $user;
+      data_entry_helper::$javascript .= "if (indicia && indicia.locks) {
+        indicia.locks.setUser ('".$user->uid."');
+      }\n";
+    }
+    
     // hard-wire some 'dynamic' options to simplify the form. Todo: take out the dynamic code for these
     $args['subjectAccordion'] = false;
     $args['emailShow'] = false;
@@ -954,7 +962,7 @@ class iform_wwt_colour_marked_report {
       .'onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'newSample')).'\'">';    
     // clear all padlocks button
     $r .= ' <input type="button" class="ui-state-default ui-corner-all" value="'.lang::get('Clear All Padlocks').'" '
-      .'onclick="indicia.locks.unlockRegion(\'body\');">';    
+      .'onclick="if (indicia && indicia.locks) indicia.locks.unlockRegion(\'body\');">';    
     // Get authorisation tokens to update the Warehouse, plus any other hidden data.
     $hiddens = $auth['write'].
           "<input type=\"hidden\" id=\"read_auth_token\" name=\"read_auth_token\" value=\"".$auth['read']['auth_token']."\" />\n".
