@@ -3482,6 +3482,9 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * Optional. Possible values are tabs (default) or wizard. If set to wizard, then the tab header
   * is not displayed and the navigation should be provided by the tab_button control. This
   * must be manually added to each tab page div.</li>
+  * <li><b>navButtons</b>
+  * Are Next and Previous buttons used to move between pages? Always true for wizard style otherwise
+  * navigation is impossible and defaults to false for tabs style.</li>
   * <li><b>progressBar</b><br/>
   * Optional. Set to true to output a progress header above the tabs/wizard which shows which
   * stage the user is on out of the sequence of steps in the wizard.</li>
@@ -3505,7 +3508,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       self::$javascript .= "\nscroll(0,0);";
 
       // Client-side validation only works on active tabs so validate on tab change
-      if (array_key_exists('style', $options) && $options['style']=='wizard') {
+      if (isset($options['style']) && $options['style']=='wizard' || 
+          isset($options['navButtons']) && $options['navButtons']) {
         //Add javascript for moving through wizard
         self::$javascript .= "\n$('.tab-submit').click(function() {\n";
         self::$javascript .= "  var current=$('#$divId').tabs('option', 'selected');\n";
