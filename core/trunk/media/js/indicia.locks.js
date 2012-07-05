@@ -41,6 +41,9 @@
     window.indicia.locks = {};
   }
 
+  // 'constant' for the base cookie name for locks
+  var COOKIE_NAME = 'indicia_locked_controls';
+  
   // variable to indicate if locking initialised.
   var initialised = false;
   
@@ -54,9 +57,12 @@
 
   // variable to hold simpleHash of title
   var hash = 0;
-  
+
   // variables to hold reference to map div and spatial ref input
   var mapDiv, srefId;
+  
+  // variable to hold user name, or empty string for anonymous
+  var user = '';
 
   // boolean variable to tell us if cookies are enabled in this browser. Note,
   // the anonymous function is invoked and cookiesEnabled is set to the result.
@@ -96,8 +102,8 @@
     // remove any locks for the page which don't exist on the page
     var pageHash = simpleHash(document.title);
     var lockedArray = [];
-    if ($.cookie('indicia_locked_controls')) {
-      lockedArray = JSON.parse($.cookie('indicia_locked_controls'));
+    if ($.cookie(COOKIE_NAME + user)) {
+      lockedArray = JSON.parse($.cookie(COOKIE_NAME + user));
     } else {
       return;
     }
@@ -121,15 +127,15 @@
         }
       }
     }
-    $.cookie('indicia_locked_controls', JSON.stringify(lockedArray));
+    $.cookie(COOKIE_NAME + user, JSON.stringify(lockedArray));
   };
 
   var getOtherLocks = function(controlId) {
     // gets an array of locks for all locked controls other than the one
     // supplied
     var lockedArray = [];
-    if ($.cookie('indicia_locked_controls')) {
-      lockedArray = JSON.parse($.cookie('indicia_locked_controls'));
+    if ($.cookie(COOKIE_NAME + user)) {
+      lockedArray = JSON.parse($.cookie(COOKIE_NAME + user));
     }
     var i;
     for (i = 0; i < lockedArray.length; i++) {
@@ -184,16 +190,16 @@
       }
     }
     lockedArray.push(locked);
-    $.cookie('indicia_locked_controls', JSON.stringify(lockedArray));
+    $.cookie(COOKIE_NAME + user, JSON.stringify(lockedArray));
   };
 
   var unlockControl = function(controlId) {
     // update or delete lock cookie to reflect removing this control
     var lockedArray = getOtherLocks(controlId);
     if (lockedArray.length > 0) {
-      $.cookie('indicia_locked_controls', JSON.stringify(lockedArray));
+      $.cookie(COOKIE_NAME + user, JSON.stringify(lockedArray));
     } else {
-      $.cookie('indicia_locked_controls', null);
+      $.cookie(COOKIE_NAME + user, null);
     }
   };
 
@@ -201,8 +207,8 @@
     // gets the locked value for the control id supplied, or returns false if
     // not found
     var value = false;
-    if ($.cookie('indicia_locked_controls')) {
-      var lockedArray = JSON.parse($.cookie('indicia_locked_controls'));
+    if ($.cookie(COOKIE_NAME + user)) {
+      var lockedArray = JSON.parse($.cookie(COOKIE_NAME + user));
       var i;
       for (i = 0; i < lockedArray.length; i++) {
         if (lockedArray[i].ctl_id && lockedArray[i].ctl_id === controlId
@@ -220,8 +226,8 @@
     // gets the locked caption for the control id supplied, or returns false if
     // not found. Only used for autocomplete.
     var caption = false;
-    if ($.cookie('indicia_locked_controls')) {
-      var lockedArray = JSON.parse($.cookie('indicia_locked_controls'));
+    if ($.cookie(COOKIE_NAME + user)) {
+      var lockedArray = JSON.parse($.cookie(COOKIE_NAME + user));
       var i;
       for (i = 0; i < lockedArray.length; i++) {
         if (lockedArray[i].ctl_id && lockedArray[i].ctl_id === controlId
@@ -369,6 +375,17 @@
     $('#' + escId).removeClass('unset-lock');
     setWriteStatus(id);
     setLockToolTip(id);
+  };
+
+  /**
+   * Forms can optionally call this to set a user name so the user has their own set of lock values.
+   * The user name is appended to the coockie name so there is a cookie for each user plus one for anonymous users.
+   * This should be called before initControls.
+   * @param pUser - any string to identify the user.
+   */
+  indicia.locks.setUser = function(pUser) {
+    // sets user name to be used in cookie name to make locks personal to this user
+    user = encodeURIComponent(pUser+'');
   };
 
   /**
