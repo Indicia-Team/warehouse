@@ -1770,13 +1770,13 @@ class data_entry_helper extends helper_base {
     }
     $occAttrControls = array();
     $occAttrs = array();
-    $taxaThatExist = array();
+    $taxonRows = array();
 
     // Load any existing sample's occurrence data into $entity_to_load
     if (isset(self::$entity_to_load['sample:id']))
       self::preload_species_checklist_occurrences(self::$entity_to_load['sample:id'], $options['readAuth'], $options['occurrenceImages']);
     // load the full list of species for the grid, including the main checklist plus any additional species in the reloaded occurrences.
-	  $taxalist = self::get_species_checklist_taxa_list($options, $taxaThatExist);
+    $taxalist = self::get_species_checklist_taxa_list($options, $taxonRows);
     // If we managed to read the species list data we can proceed
     if (! array_key_exists('error', $taxalist)) {
       $attributes = self::getAttributes(array(
@@ -1797,15 +1797,23 @@ class data_entry_helper extends helper_base {
       $grid .= '<table class="ui-widget ui-widget-content species-grid '.$options['class'].'" id="'.$options['id'].'">';
       $grid .= self::get_species_checklist_header($options, $occAttrs);
       $rows = array();
+      $taxonCounter = array();
       $rowIdx = 0;
-      foreach ($taxalist as $taxon) {
-        // multi-column input does not work when image upload allowed
-        $colIdx = $options['occurrenceImages'] ? 0 : floor($rowIdx / (count($taxalist)/$options['columns']));
-        $id = $taxon['id'];
+      // Loop through all the rows needed in the grid
+      foreach ($taxonRows as $id) {
+        // Multi-column input does not work when image upload allowed
+        $colIdx = $options['occurrenceImages'] ? 0 : floor($rowIdx / (count($taxonRows)/$options['columns']));
+        // Find the taxon information for this row
+        $ttlId = strstr($id, '_', true);
+        $taxonIdx = 0;
+        while ($taxalist[$taxonIdx]['id'] != $ttlId) {
+          $taxonIdx += 1;
+        }
+        $taxon = $taxalist[$taxonIdx];
         // Get the cell content from the taxon_label template
         $firstCell = self::mergeParamsIntoTemplate($taxon, 'taxon_label');
         // If the taxon label template is PHP, evaluate it.
-        if ($options['PHPtaxonLabel']) $firstCell=eval($firstCell);
+        if ($options['PHPtaxonLabel']) $firstCell = eval($firstCell);
         // Now create the table cell to contain this.
         $colspan = isset($options['lookupListId']) && $options['rowInclusionCheck']!='alwaysRemovable' ? ' colspan="2"' : '';
         $row = '';
@@ -1899,12 +1907,12 @@ class data_entry_helper extends helper_base {
         if ($colIdx===0) {
           $rows[$rowIdx]=$row;
         } else {
-          $rows[$rowIdx % (ceil(count($taxalist)/$options['columns']))] .= $row;
+          $rows[$rowIdx % (ceil(count($taxonRows)/$options['columns']))] .= $row;
         }
         $rowIdx++;
         if ($options['occurrenceImages']) {
           // If there are existing images for this row, display the image control
-          if (count($existingImages)>0) {
+          if (count($existingImages) > 0) {
             $totalCols = ($options['lookupListId'] ? 2 : 1) + 1 /*checkboxCol*/ + ($options['occurrenceImages'] ? 1 : 0) + count($occAttrControls);
             $rows[$rowIdx]='<td colspan="'.$totalCols.'">'.data_entry_helper::file_box(array(
               'table'=>"sc:$id:$existing_record_id:occurrence_image",
@@ -2061,31 +2069,43 @@ $('#".$options['id']."-filter').click(function(evt) {
   /**
    * Normally, the species checklist will handle loading the list of occurrences from the database automatically.
    * However, when a form needs access to occurrence data before loading the species checklist, this method
-   * can be called to preload the data. The data is loaded into data_entry_helper::$entity_to_load and the count
+   * can be called to preload the data. The data is loaded into data_entry_helper::$entity_to_load and an array
    * of occurrences loaded is returned.
    * @param int $sampleId ID of the sample to load
    * @param array $readAuth Read authorisation array
-   * @return int Number of occurrences that were loaded.
+   * @return array Array with key of occurrence_id and value of $taxonInstance.
    */
   public static function preload_species_checklist_occurrences($sampleId, $readAuth, $loadImages) {
     $occurrenceIds = array();
+    $taxonCounter = array();
     // don't load from the db if there are validation errors, since the $_POST will already contain all the
     // data we need.
     if (is_null(self::$validation_errors)) {
       $occurrences = self::get_population_data(array(
         'table' => 'occurrence',
-        'extraParams' => $readAuth + array('view'=>'detail','sample_id'=>$sampleId,'deleted'=>'f'),
+        'extraParams' => $readAuth + array('view'=>'detail','sample_id'=>$sampleId,'deleted'=>'f', 'orderby'=>'id', 'sortdir'=>'ASC' ),
         'nocache' => true
       ));
+      
       foreach($occurrences as $occurrence){
+        $ttlId = $occurrence['taxa_taxon_list_id'];
+        if (isset($taxonCounter[$ttlId])) {
+          $taxonCounter[$ttlId] += 1;
+        } else {
+          $taxonCounter[$ttlId] = 0;
+        }
+        // $taxonInstance allows for a sample with multiple occurrences of the same species
+        $taxonInstance = $ttlId .'_'. $taxonCounter[$ttlId];
+        self::$entity_to_load['sc:'.$taxonInstance.':'.$occurrence['id'].':present'] = true;
+        self::$entity_to_load['sc:'.$taxonInstance.':'.$occurrence['id'].':occurrence:comment'] = $occurrence['comment'];
+        self::$entity_to_load['sc:'.$taxonInstance.':'.$occurrence['id'].':occurrence:confidential'] = $occurrence['confidential'];
+        // Warning. I observe that, in cases where more than one occurrence is loaded, the following entries in 
+        // $entity_to_load will just take the value of the last loaded occurrence.
         self::$entity_to_load['occurrence:record_status']=$occurrence['record_status'];
-        self::$entity_to_load['sc:'.$occurrence['taxa_taxon_list_id'].':'.$occurrence['id'].':present'] = true;
-        self::$entity_to_load['sc:'.$occurrence['taxa_taxon_list_id'].':'.$occurrence['id'].':occurrence:comment'] = $occurrence['comment'];
-        self::$entity_to_load['sc:'.$occurrence['taxa_taxon_list_id'].':'.$occurrence['id'].':occurrence:confidential'] = $occurrence['confidential'];
         self::$entity_to_load['occurrence:taxa_taxon_list_id']=$occurrence['taxa_taxon_list_id'];
         self::$entity_to_load['occurrence:taxa_taxon_list_id:taxon']=$occurrence['taxon'];
         // Keep a list of all Ids
-        $occurrenceIds[$occurrence['id']] = $occurrence['taxa_taxon_list_id'];
+        $occurrenceIds[$occurrence['id']] = $taxonInstance;
       }
       // load the attribute values into the entity to load as well
       $attrValues = self::get_population_data(array(
@@ -2169,11 +2189,11 @@ $('#".$options['id']."-filter').click(function(evt) {
   /**
    * Private method to build the list of taxa to add to a species checklist grid.
    * @param array $options Options array for the control
-   * @param array $taxaThatExist Array that is modified by this method to contain a list of
-   * the taxa_taxon_list_ids for rows which have existing data to load.
-   * @return array The taxon list to store in the grid.
+   * @param array $taxonRows Array that is modified by this method to contain a list of
+   * the taxa_taxon_list_ids plus row suffix for rows in grid. Allows for multiple rows with same taxa.
+   * @return array The taxon list to use in the grid.
    */
-  private static function get_species_checklist_taxa_list($options, &$taxaThatExist) {
+  private static function get_species_checklist_taxa_list($options, &$taxonRows) {
     // Get the list of species that are always added to the grid, by first building a filter
     if (preg_match('/^(preferred_name|taxon_meaning_id|taxon_group)$/', $options['taxonFilterField']))  {
       $qry = array('in'=>array($options['taxonFilterField'], $options['taxonFilter']));
@@ -2181,12 +2201,15 @@ $('#".$options['id']."-filter').click(function(evt) {
     }
     if (isset($options['listId']) && !empty($options['listId'])) {
       $taxalist = self::get_population_data($options);
-    } else
+    } else {
       $taxalist = array();
-    // build a list of the ids we have got from the default list.
+    }
     $taxaLoaded = array();
-    foreach ($taxalist as $taxon)
+    foreach ($taxalist as $taxon) {
+      // build a list of the ids we have got from the default list so we don't load them again
       $taxaLoaded[] = $taxon['id'];
+      $taxonRows[] = $taxon['id'] .'_0';
+    }
     // If there are any extra taxa to add to the list from the lookup list/add rows feature, get their details
     if(self::$entity_to_load && !empty($options['lookupListId'])) {
       // copy the options array so we can modify it
@@ -2202,17 +2225,22 @@ $('#".$options['id']."-filter').click(function(evt) {
         $parts = explode(':', $key);
         // Is this taxon attribute data?
         if (count($parts) > 2 && $parts[0] == 'sc' && $parts[1]!='-ttlId-') {
-          // track that this taxon row has existing data to load
-          if (!in_array($parts[1], $taxaThatExist)) $taxaThatExist[] = $parts[1];
-          // If not already loaded
-          if(!in_array($parts[1], $taxaLoaded)) {
-            $taxaLoaded[] = $parts[1];
+          //different rows with the same taxon are distinguished by a suffix begining with an underscore
+          $taxonRow = $parts[1];
+          // If we haven't already seen this taxon row
+          if (!in_array($taxonRow, $taxonRows)) {
+            $taxonRows[] = $taxonRow;
+            $taxon = (strpos($taxonRow, '_') === false) ? $taxonRow : strstr($taxonRow, '_', true);          
+            // If this taxon is not already loaded
+            if(!in_array($taxon, $taxaLoaded)) {
+              $taxaLoaded[] = $taxon;
             // store the id of the taxon in the array, so we can load them all in one go later
-            $extraTaxonOptions['extraParams']['id'][]=$parts[1];
+              $extraTaxonOptions['extraParams']['id'][]=$taxon;
           }
         }
       }
-      // append the taxa to the list to load into the grid
+      }
+      // load and append the additional taxa  to use in the grid
       $taxalist = array_merge($taxalist, self::get_population_data($extraTaxonOptions));
     }
   	return $taxalist;
@@ -3682,12 +3710,13 @@ if (errors.length>0) {
     }
     // Set the default method of looking for rows to include - either using data, or the checkbox (which could be hidden)
     $include_if_any_data = $include_if_any_data || (isset($arr['rowInclusionCheck']) && $arr['rowInclusionCheck']=='hasData');
-    // Species checklist entries take the following format
-    // sc:<taxa_taxon_list_id>:[<occurrence_id>]:occAttr:<occurrence_attribute_id>[:<occurrence_attribute_value_id>]
+    // Species checklist entries take the following format where <instance> is a number that distinguishes different rows 
+    // referring to the same taxon.
+    // sc:<taxa_taxon_list_id>[_<instance>]:[<occurrence_id>]:occAttr:<occurrence_attribute_id>[:<occurrence_attribute_value_id>]
     // or
-    // sc:<taxa_taxon_list_id>:[<occurrence_id>]:occurrence:comment
+    // sc:<taxa_taxon_list_id>[_<instance>]:[<occurrence_id>]:occurrence:comment
     // or
-    // sc:<taxa_taxon_list_id>:[<occurrence_id>]:occurrence_image:fieldname:uniqueImageId
+    // sc:<taxa_taxon_list_id>[_<instance>]:[<occurrence_id>]:occurrence_image:fieldname:uniqueImageId
     $records = array();
     $subModels = array();
     foreach ($arr as $key=>$value){
@@ -3709,7 +3738,8 @@ if (errors.length>0) {
           $record['deleted'] = 't';
         }
 
-        $record['taxa_taxon_list_id'] = $id;
+        // strip off <instance> suffix, if present, to obtain taxa_taxon_list_id
+        $record['taxa_taxon_list_id'] = (strpos($id, '_') === false) ? $id : strstr($id, '_', true);
         $record['website_id'] = $website_id;
         if (isset($determiner_id)) {
             $record['determiner_id'] = $determiner_id;
