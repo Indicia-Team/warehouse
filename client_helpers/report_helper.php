@@ -355,6 +355,10 @@ class report_helper extends helper_base {
     // automatic handling for Drupal clean urls.
     $pathParam = (function_exists('variable_get') && variable_get('clean_url', 0)=='0') ? 'q' : '';
     $rootFolder = dirname($_SERVER['PHP_SELF']) . (empty($pathParam) ? '/' : "?$pathParam=");
+    // amend currentUrl path if we have drupal dirty URLs so javascript will work properly
+    if ($pathParam==='q' && isset($currentUrl['params']['q']) && strpos($currentUrl['path'], '?')===false) {
+      $currentUrl['path'] = $currentUrl['path'].'?q='.$currentUrl['params']['q'];
+    }
     $r .= '<tfoot>';
     $r .= '<tr><td colspan="'.count($options['columns'])*$options['galleryColCount'].'">'.self::output_pager($options, $pageUrl, $sortAndPageUrlParams, $response).'</td></tr>'.
     $extraFooter = '';
@@ -476,10 +480,6 @@ jQuery('#updateform-".$updateformID."').ajaxForm({
         $r .= '</tr>';
     }
     $r .= "</tbody></table>\n";
-    // amend currentUrl path if we have drupal dirty URLs so javascript will work properly
-    if ($pathParam==='q' && isset($currentUrl['params']['q']) && strpos($currentUrl['path'], '?')===false) {
-      $currentUrl['path'] = $currentUrl['path'].'?q='.$currentUrl['params']['q'];
-    }
     if($haveUpdates){
       self::$javascript .= "
 function checkErrors(data) {
@@ -1677,7 +1677,8 @@ if (typeof(mapSettingsHooks)!=='undefined') {
         continue;
       if (isset($action['url'])) {
         // Catch lazy cases where the URL does not contain the rootFolder so assumes a relative path
-        if (strcasecmp(substr($action['url'], 0, 12), '{rootfolder}')!==0 && strcasecmp(substr($action['url'], 0, 4), 'http')!==0)
+        if (strcasecmp(substr($action['url'], 0, 12), '{rootfolder}')!==0 && strcasecmp(substr($action['url'], 0, 12), '{currentUrl}')!==0 
+            && strcasecmp(substr($action['url'], 0, 4), 'http')!==0)
           $action['url']='{rootFolder}'.$action['url'];
         $actionUrl = self::mergeParamsIntoTemplate($row, $action['url'], true);
         // include any $_GET parameters to reload the same page, except the parameters that are specified by the action
