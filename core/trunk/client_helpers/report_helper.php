@@ -1667,7 +1667,8 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     $links = array();
     $currentUrl = self::get_reload_link_parts(); // needed for params
     if (!empty($pathParam)) {
-      $pathParamValue = isset($currentUrl['params'][$pathParam]) ? $currentUrl['params'][$pathParam] : '';
+      // If we are using a path parameter (like Drupal's q= dirty URLs), then we must ignore this part of the current URL's parameters
+      // so that it can be replaced by the path we are navigating to.
       unset($currentUrl['params'][$pathParam]);
     }
     foreach ($actions as $action) {
@@ -1675,6 +1676,9 @@ if (typeof(mapSettingsHooks)!=='undefined') {
       if (isset($action['visibility_field']) && $row[$action['visibility_field']]==='f')
         continue;
       if (isset($action['url'])) {
+        // Catch lazy cases where the URL does not contain the rootFolder so assumes a relative path
+        if (strcasecmp(substr($action['url'], 0, 12), '{rootfolder}')!==0 && strcasecmp(substr($action['url'], 0, 4), 'http')!==0)
+          $action['url']='{rootFolder}'.$action['url'];
         $actionUrl = self::mergeParamsIntoTemplate($row, $action['url'], true);
         // include any $_GET parameters to reload the same page, except the parameters that are specified by the action
         if (isset($action['urlParams']))
