@@ -131,6 +131,15 @@ function iform_report_get_report_parameters() {
         'required' => false,
         'group' => 'Report Settings'
       ), array(
+        'name' => 'row_class',
+        'caption' => 'Row Class',
+        'description' => 'A CSS class to add to each row in the grid. Can include field value replacements in braces, e.g. {certainty} to construct '.
+            'classes from field values, e.g. to colour rows in the grid according to the data.',
+        'type' => 'text_input',
+        'default' => '',
+        'required' => 'false',
+        'group' => 'Report Settings'
+      ), array(
         'name' => 'refresh_timer',
         'caption' => 'Automatic reload seconds',
         'description' => 'Set this value to the number of seconds you want to elapse before the report will be automatically reloaded, useful for '.
@@ -211,6 +220,9 @@ function iform_report_get_report_options($args, $readAuth) {
     $reportOptions['paramsOnly'] = true;
   } else {
     $reportOptions['autoParamsForm'] = false;
+  }
+  if (!empty($args['row_class'])) {
+    $reportOptions['rowClass'] = $args['row_class'];
   }
   // Set up a page refresh for dynamic update of the report at set intervals
   if ($args['refresh_timer']!==0 && is_numeric($args['refresh_timer'])) { // is_numeric prevents injection
