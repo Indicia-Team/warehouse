@@ -29,6 +29,11 @@ mapInitialisationHooks = [];
 mapGeoreferenceHooks = [];
 
 /**
+ * An array of drivers for handling sref clicks on client side in different systems
+ */
+srefHandlers = {};
+
+/**
 * Class: indiciaMapPanel
 * JavaScript & OpenLayers based map implementation class for Indicia data entry forms.
 * This code file supports read only maps. A separate plugin will then run on top of this to provide editing support
@@ -37,15 +42,21 @@ mapGeoreferenceHooks = [];
 
 (function($) {
   $.fn.indiciaMapPanel = function(options, olOptions) {
+    
+    // The ghost grid square drawn when hovering
+    var ghost=null;
         
     /**
-     * Remove all features except a boundary feature which is not controlled by the click point.
+     * Remove all features of a specific type or not of a specific type
      * This functionality allows a location to havea centroid and separate boundary.
      */
-    function _removeAllFeaturesExcept(layer, type) {
+    function _removeAllFeatures(layer, type, inverse) {
       var toRemove = [];
+      if (typeof inverse==="undefined") {
+        inverse=false;
+      }
       $.each(layer.features, function(idx, feature) {
-        if (feature.attributes.type!=="boundary") {
+        if ((!inverse && feature.attributes.type===type) || (inverse && feature.attributes.type!==type)) {
           toRemove.push(feature);
         }
       });
@@ -83,14 +94,20 @@ mapGeoreferenceHooks = [];
      * WKT is assumed to be in map projection.
      * @access private
      */
-    function _showWktFeature(div, wkt, layer, invisible, temporary) {
+    function _showWktFeature(div, wkt, layer, invisible, temporary, type, panzoom) {
       var parser = new OpenLayers.Format.WKT();
       var feature = parser.read(wkt);
       feature.style = new style(opts.searchLayer && layer == div.map.searchLayer);
+      feature.attributes.type=type;
       if (temporary) {
+        feature.style = new style(true);
+        feature.style.fillColor = '#777777';
+        feature.style.fillOpacity=0.3;
+        feature.style.strokeDashstyle='dash';
         feature.attributes.temp=true;
       }
-      _removeAllFeaturesExcept(layer, 'boundary');
+      // This replaces other features of the same type
+      _removeAllFeatures(layer, type);
       var features = [feature];
 
       if(invisible !== null){
@@ -117,15 +134,17 @@ mapGeoreferenceHooks = [];
           bounds.right = bounds.right + dx;
           bounds.left = bounds.left - dx;
       }
-
-      if (div.map.getZoomForExtent(bounds) > div.settings.maxZoom) {
-        // if showing something small, don't zoom in too far
-        div.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
+      if (typeof panzoom==="undefined" || panzoom) {
+        if (div.map.getZoomForExtent(bounds) > div.settings.maxZoom) {
+          // if showing something small, don't zoom in too far
+          div.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
+        }
+        else {
+          // Set the default view to show something triple the size of the grid square
+          div.map.zoomToExtent(bounds);
+        }
       }
-      else {
-        // Set the default view to show something triple the size of the grid square
-        div.map.zoomToExtent(bounds);
-      }
+      return feature;
     }
 
     /*
@@ -215,7 +234,7 @@ mapGeoreferenceHooks = [];
                   var feature = parser.read(wkt);
                   geomwkt = feature.geometry.transform(div.indiciaProjection, div.map.projection).toString();
                 }
-                _showWktFeature(div, geomwkt, div.map.editLayer, null, true);
+                _showWktFeature(div, geomwkt, div.map.editLayer, null, true, 'location');
               
                 if (typeof indiciaData.searchUpdatesSref !== "undefined" && indiciaData.searchUpdatesSref) {
                   // The location search box must fill in the sample sref box
@@ -266,33 +285,41 @@ mapGeoreferenceHooks = [];
      * Having clicked on the map, and asked warehouse services to transform this to a WKT, add the feature to the map editlayer.
      */
     function _setClickPoint(data, div) {
-      // data holds the sref in _getSystem format, wkt in indiciaProjection, mapwkt in mapProjection
+      // data holds the sref in _getSystem format, wkt in indiciaProjection, optional mapwkt in mapProjection
+      var feature, parts, helptext=[];
       if (div.settings.click_zoom)
        $('#'+opts.srefId).val(data.sref).change();
       else
         $('#'+opts.srefId).val(data.sref);
       // If the sref is in two parts, then we might need to split it across 2 input fields for lat and long
       if (data.sref.indexOf(' ')!==-1) {
-        var parts=data.sref.split(' ');
+        parts=data.sref.split(' ');
         // part 1 may have a comma at the end, so remove
         parts[0]=parts[0].split(',')[0];
         $('#'+opts.srefLatId).val(parts[0]);
         $('#'+opts.srefLongId).val(parts[1]);
       }
-      _removeAllFeaturesExcept(div.map.editLayer, 'boundary');
+      _removeAllFeatures(div.map.editLayer, 'boundary', true);
       $('#'+opts.geomId).val(data.wkt);
       var parser = new OpenLayers.Format.WKT();
+      // If mapwkt not provided, calculate it
+      if (typeof(data.mapwkt==="undefined")) {
+        if (div.indiciaProjection.getCode()===div.map.projection.getCode()) {
+          data.mapwkt=data.wkt;
+        } else {
+          feature = parser.read(data.wkt);
+          data.mapwkt = feature.geometry.transform(div.indiciaProjection, div.map.projection).toString();
+        }
+      }
       var feature = parser.read(data.mapwkt);
       feature.attributes = {type:"clickPoint"};
       feature.style = new style(false);
       div.map.editLayer.addFeatures([feature]);
-      var helptext=[];
-      helptext.push('Click on the map again to correct your position if necessary.');
+      helptext.push(div.settings.hlpClickAgainToCorrect);
       // Extra help for grid square precision, as long as the precision is not fixed.
       if (feature.geometry.CLASS_NAME!=='OpenLayers.Geometry.Point' && (div.settings.clickedSrefPrecisionMin==='' 
         || div.settings.clickedSrefPrecisionMin!==div.settings.clickedSrefPrecisionMax)) {
-        helptext.push('By zooming the map in or out before clicking you can alter the precision of the '+
-            'selected grid square.');
+        helptext.push(div.settings.hlpZoomChangesPrecision);
       }
       $('#map-help').html(helptext.join(' '));
     }
@@ -399,7 +426,7 @@ mapGeoreferenceHooks = [];
       var datac1 = new OpenLayers.Geometry.Point(corner1xy[1],corner1xy[0]).transform(epsg, div.map.projection).toString();
       var corner2xy = corner2.split(', ');
       var datac2 = new OpenLayers.Geometry.Point(corner2xy[1],corner2xy[0]).transform(epsg, div.map.projection).toString();
-      _showWktFeature(div, dataref, div.map.searchLayer, [datac1, datac2], true);
+      _showWktFeature(div, dataref, div.map.searchLayer, [datac1, datac2], true, 'georef');
       if(div.settings.searchUpdatesSref && !div.settings.searchLayer){ // if no separate search layer, ensure sref matches feature in editlayer, if requested.
         $('#'+opts.geomId).val(dataref);
         // Unfortunately there is no guarentee that the georeferencer will return the sref in the system required: eg it will usually be in
@@ -793,6 +820,36 @@ mapGeoreferenceHooks = [];
     }
     
     /**
+     * Gets the precision required for a grid square dependent on the map zoom.
+     * Precision parameter is the optional default, overridden by the clickedSrefPrecisionMin and 
+     * clickedSrefPrecisionMax settings.
+     */
+    function getPrecisionInfo(div, precision) {
+      // get approx metres accuracy we can expect from the mouse click - about 5mm accuracy.
+      var metres = div.map.getScale()/200;
+      if (typeof precision==="undefined") {
+        // now round to find appropriate square size
+        if (metres<30) {
+          precision=8;
+        } else if (metres<300) {
+          precision=6;
+        } else if (metres<3000) {
+          precision=4;
+        } else {
+          precision=2;
+        }
+      }
+      // enforce precision limits if specified in the settings
+      if (div.settings.clickedSrefPrecisionMin!=='') {
+        precision=Math.max(div.settings.clickedSrefPrecisionMin, precision);
+      }
+      if (div.settings.clickedSrefPrecisionMax!=='') {
+        precision=Math.min(div.settings.clickedSrefPrecisionMax, precision);
+      }
+      return {precision: precision, metres: metres};
+    }
+    
+    /**
      * Converts a point to a spatial reference, and also generates the indiciaProjection and mapProjection wkts.
      * The point should be a point geometry in the map projection or projection defined by pointSystem, system should hold the system we wish to
      * display the Sref. pointSystem is optional and defines the projection of the point if not the map projection. 
@@ -806,40 +863,37 @@ mapGeoreferenceHooks = [];
       if (typeof pointSystem==="undefined") {
         pointSystem=_projToSystem(div.map.projection, false);
       }
-      // because of issues with proj4 transformations, it is easiest to go to the services for all
-        // get approx metres accuracy we can expect from the mouse click - about 5mm accuracy.
-        var metres = div.map.getScale()/200;
-        if (typeof precision==="undefined") {
-          // now round to find appropriate square size
-          if (metres<30) {
-            precision=8;
-          } else if (metres<300) {
-            precision=6;
-          } else if (metres<3000) {
-            precision=4;
-          } else {
-            precision=2;
-          }
-        }
-        // enforce precision limits if specified in the settings
-        if (div.settings.clickedSrefPrecisionMin!=='') {
-          precision=Math.max(div.settings.clickedSrefPrecisionMin, precision);
-        }
-        if (div.settings.clickedSrefPrecisionMax!=='') {
-          precision=Math.min(div.settings.clickedSrefPrecisionMax, precision);
-        }
+      // get precision required dependent on map zoom
+      var precisionInfo=getPrecisionInfo(div, precision);
+      if (typeof srefHandlers[system.toLowerCase()]==="undefined" || 
+          srefHandlers[system.toLowerCase()].returns.indexOf('wkt')===-1|| 
+          srefHandlers[system.toLowerCase()].returns.indexOf('sref')===-1) {
         // next call also generates the wkt in map projection
         $.getJSON(opts.indiciaSvc + "index.php/services/spatial/wkt_to_sref"+
                 "?wkt=" + point +
                 "&system=" + system +
                 "&wktsystem=" + pointSystem +
                 "&mapsystem=" + _projToSystem(div.map.projection, false) +
-                "&precision=" + precision +
-                "&metresAccuracy=" + metres +
+                "&precision=" + precisionInfo.precision +
+                "&metresAccuracy=" + precisionInfo.metres +
                 "&output=" + div.settings.latLongFormat +
                 "&callback=?", callback
         );
+      } else {
+        // passing a point in the mapSystem. 
+        var r, pt, feature, parser,
+                ll = new OpenLayers.LonLat(point.x, point.y),
+                proj=new OpenLayers.Projection('EPSG:'+srefHandlers[_getSystem().toLowerCase()].srid),
+                precisionInfo=getPrecisionInfo(div);
+        ll.transform(div.map.projection, proj);
+        pt = {x:ll.lon, y:ll.lat};
+        r=srefHandlers[_getSystem().toLowerCase()].pointToSref(pt, precisionInfo);
+        parser = new OpenLayers.Format.WKT();
+        feature = parser.read(r.wkt);
+        r.wkt = feature.geometry.transform(proj, div.indiciaProjection).toString();
+        callback(r);
       }
+    }
     
     /**
      * Event handler for feature add/modify on the edit layer when polygon recording is enabled. Puts the geom in the hidden
@@ -847,17 +901,12 @@ mapGeoreferenceHooks = [];
      */
     function recordPolygon(evt) {
       // replace old features?
-      var oldFeatures=[], tempFeatures=[];
+      var oldFeatures=[], map=this.map;
       $.each(evt.feature.layer.features, function(idx, feature) {
         if (feature!==evt.feature) {
-          if (feature.attributes.temp) {
-            tempFeatures.push(feature);
-          } else {
-            oldFeatures.push(feature);
-          }
+          oldFeatures.push(feature);
         }
       });
-      evt.feature.layer.removeFeatures(tempFeatures, {});
       if (oldFeatures.length>0) {
         if (confirm(this.map.div.settings.msgReplaceBoundary)) {
           evt.feature.layer.removeFeatures(oldFeatures, {});
@@ -867,9 +916,9 @@ mapGeoreferenceHooks = [];
         }
       }
       $('#imp-geom').val(evt.feature.geometry.toString());
-      pointToSref(this.map.div, evt.feature.geometry.getCentroid(), _getSystem(), function(data) {
+      pointToSref(map.div, evt.feature.geometry.getCentroid(), _getSystem(), function(data) {
         if (typeof data.sref !== "undefined") {
-          $('#'+this.map.div.settings.srefId).val(data.sref);
+          $('#'+map.div.settings.srefId).val(data.sref);
         }
       });
     }
@@ -942,15 +991,14 @@ mapGeoreferenceHooks = [];
         var helpbar, helptext = [];
         if ($.inArray('panZoom', this.settings.standardControls) || 
             $.inArray('panZoomBar', this.settings.standardControls)) {
-          helptext.push('Pan and zoom the map to the required place using the navigation buttons or '+
-              'by dragging the map and double clicking or Shift-dragging to zoom.')    
+          helptext.push(this.settings.hlpPanZoomButtons);
         } else {
-          helptext.push('Pan and zoom the map to the required place by dragging the map and double clicking or Shift-dragging to zoom.')
+          helptext.push(this.settings.hlpPanZoom);
         }
-        if (this.settings.clickForSpatialRef) {
-          helptext.push('Click once on the map to set your location.');
+        if (this.settings.editLayer && this.settings.clickForSpatialRef) {
+          helptext.push(this.settings.hlpClickOnceSetSref);
         }
-        helpbar = '<div id="map-help" style="border: solid 1px">'+helptext.join(' ')+'</div>';
+        helpbar = '<div id="map-help" class="ui-widget ui-widget-content">'+helptext.join(' ')+'</div>';
         $(this).after(helpbar);
       }
       
@@ -1096,6 +1144,50 @@ mapGeoreferenceHooks = [];
         {
           _showWktFeature(this, this.settings.initialFeatureWkt, div.map.editLayer, null, false);
         }
+        
+        if (div.settings.clickForSpatialRef) {
+          div.map.events.register('mousemove', null, function(evt) {
+            if (div.map.editLayer.clickControl.active) {
+              if (div.map.dragging) {
+                _removeAllFeatures(div.map.editLayer, 'ghost');
+              } else {
+                var ll = div.map.getLonLatFromPixel({x: evt.layerX, y: evt.layerY});
+                // don't recalculate if mouse is still over the existing ghost
+                if (ghost===null || !ghost.atPoint(ll, 0, 0)) {
+                  if (typeof srefHandlers[_getSystem().toLowerCase()]!=="undefined" &&
+                    srefHandlers[_getSystem().toLowerCase()].returns.indexOf('wkt')!==-1) {
+                    // If we have a client-side handler for this system which can return the wkt then we can
+                    // draw a ghost of the proposed sref if they click
+                    var r, pt, feature, parser,
+                        proj=new OpenLayers.Projection('EPSG:'+srefHandlers[_getSystem().toLowerCase()].srid),
+                        precisionInfo=getPrecisionInfo(div);
+                    ll.transform(div.map.projection, proj);
+                    pt = {x:ll.lon, y:ll.lat};
+                    r=srefHandlers[_getSystem().toLowerCase()].pointToSref(pt, precisionInfo);
+                    if (typeof r.error!=="undefined") {
+                      _removeAllFeatures(div.map.editLayer, 'ghost');
+                    } else {
+                      parser = new OpenLayers.Format.WKT();
+                      feature = parser.read(r.wkt);
+                      r.wkt = feature.geometry.transform(proj, div.map.projection).toString();
+                      ghost=_showWktFeature(div, r.wkt, div.map.editLayer, null, true, 'ghost', false);
+                    }
+                  } else if (parseInt(_getSystem())==_getSystem()) {
+                    // also draw a selection ghost if using a point ref system we can simply transform client-side
+                    var ll = div.map.getLonLatFromPixel({x: evt.layerX, y: evt.layerY}),
+                        proj=new OpenLayers.Projection('EPSG:'+_getSystem());
+                    //ll.transform(div.map.projection, proj);
+                    ghost=_showWktFeature(div, 'POINT('+ll.lon+' '+ll.lat+')', div.map.editLayer, null, true, 'ghost', false);
+                  }
+                }
+              }
+            }
+          }); 
+          $('#map').mouseleave(function(evt) {
+            // clear ghost hover markers when mouse leaves the map
+            _removeAllFeatures(div.map.editLayer, 'ghost'); 
+          });
+        }
       }
       if (this.settings.searchLayer) {
           // Add an editable layer to the map
@@ -1185,10 +1277,11 @@ mapGeoreferenceHooks = [];
         // Setup a click event handler for the map
         OpenLayers.Control.Click = OpenLayers.Class(OpenLayers.Control, {
           defaultHandlerOptions: {'single': true, 'double': false, 'pixelTolerance': 0, 'stopSingle': false, 'stopDouble': false},
+          title: div.settings.hintClickSpatialRefTool,
           trigger: function(e) {
             clickOnMap(e.xy, div, function(data)
               {
-                if(typeof data.error != 'undefined') {
+                if(typeof data.error !== 'undefined') {
                   if(data.error == 'The spatial reference system is not set.') {
                       alert(div.settings.msgSrefSystemNotSet);                    
                   } else {
@@ -1442,13 +1535,21 @@ $.fn.indiciaMapPanel.defaults = {
     // Are we using the OpenLayers defaults, or are they all provided?
     useOlDefaults: true,
     rememberPos: false, // set to true to enable restoring the map position when the page is reloaded. Requires jquery.cookie plugin.
+    hintClickSpatialRefTool: 'Select this tool to enable clicking on the map to set your location',
     hintQueryDataPointsTool: 'Select this tool then click on or drag a box over data points on the map to view the underlying records.',
     hintDrawPolygonHint: 'Select this tool to draw a polygon, clicking on the map to draw the shape and double clicking to finish.',
     hintDrawLineHint: 'Select this tool to draw a line, clicking on the map to draw the shape and double clicking to finish.',
     hintDrawPointHint: 'Select this tool to draw points by clicking on the map.',
     hintDrawForReportingHint: 'You can then filter the report for intersecting records.',
     hintClearSelection: 'Clear the edit layer',
-    hintModifyFeature: 'Modify the selected feature. Grab and drag the handles or double click on lines to add new handles.'
+    hintModifyFeature: 'Modify the selected feature. Grab and drag the handles or double click on lines to add new handles.',
+    hlpClickOnceSetSref: 'Click once on the map to set your location.',
+    hlpClickAgainToCorrect: 'Click on the map again to correct your position if necessary.',
+    hlpPanZoom: 'Pan and zoom the map to the required place by dragging the map and double clicking or Shift-dragging to zoom.',
+    hlpPanZoomButtons: 'Pan and zoom the map to the required place using the navigation buttons or '+
+        'by dragging the map and double clicking or Shift-dragging to zoom.',
+    hlpZoomChangesPrecision: 'By zooming the map in or out before clicking you can alter the precision of the '+
+        'selected grid square.'
     
 };
 

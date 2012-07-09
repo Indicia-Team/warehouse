@@ -1571,6 +1571,7 @@ class data_entry_helper extends helper_base {
       // Hidden field for the system
       $keys = array_keys($options['systems']);
       $r .= "<input type=\"hidden\" id=\"imp-sref-system\" name=\"".$options['fieldname']."\" value=\"".$keys[0]."\" />\n";
+      self::include_sref_handler_js($options['systems']);
     }
     else {
       if (isset($options['defaultSystem']))
@@ -1620,6 +1621,7 @@ class data_entry_helper extends helper_base {
       );
     }
     $options['items'] = $opts;
+    self::include_sref_handler_js($options['systems']);
     return self::apply_template('select', $options);
   }
 
@@ -4866,6 +4868,28 @@ if (errors.length>0) {
     $options['checked'] = array_key_exists('indicia_remembered', $_COOKIE) ? ' checked="checked"' : '';
     $options['template'] = array_key_exists('template', $options) ? $options['template'] : 'checkbox';
     return self::apply_template($options['template'], $options);
+  }
+  
+  /**
+   * Includes any spatial reference handler JavaScript files that exist for the codes selected
+   * for picking spatial references. If a handler file does not exist then the transform is handled
+   * by a web-service request to the warehouse. Handlers are only required for grid systems, not for
+   * coordinate systems that are entirely described by an EPSG code.
+   * @param array $systems List of spatial reference system codes.
+   */
+  private static function include_sref_handler_js($systems) {
+    // extract the codes and make lowercase
+    $systems=unserialize(strtolower(serialize(array_keys($systems))));
+    // find the systems that have client-side JavaScript handlers
+    $handlers = array_intersect($systems, array('osgb'));
+    foreach ($handlers as $code) {
+      $file = strtolower(self::$js_path."drivers/sref/$code.js");
+      // dynamically build a resource to link us to the handler js file.
+      self::$required_resources[] = 'sref_handlers_'.$code;
+      self::$resource_list['sref_handlers_'.$code] = array(
+        'javascript' => array($file)
+      );
+    }
   }
 
 }
