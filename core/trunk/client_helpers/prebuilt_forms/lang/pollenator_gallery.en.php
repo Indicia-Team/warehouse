@@ -63,7 +63,6 @@ $custom_terms = array(
 	,'LANG_Flower_Species' => "Flower name"
 	,'LANG_Flower_Name' => "Flower name"
 	,'LANG_Insect_Species' => "Insect name"
-	,'LANG_Insect_Name' => "Insect name"
 	,'LANG_History_Title' => 'Prior identifications'
 	,'LANG_Last_ID' => 'Latest Identification'
 	,'LANG_Display' => 'Show'
@@ -106,7 +105,7 @@ $custom_terms = array(
 	,'LANG_Comment_By' => "by : "
 	,'LANG_Reset_Filter' => 'Reset Filter'
 	,'LANG_General' => 'General'
-	,'LANG_Created_Between' => 'Created Between'
+	,'LANG_Created_Between' => 'Created between '
 	,'LANG_And' => 'and'
 	,'LANG_Or' => 'or'
 	,'validation_required' => "Please provide a value"
@@ -130,7 +129,7 @@ $custom_terms = array(
 	,'LANG_Number_In_Front_Page' => 'Number of collections in the front page list: '
 	,'LANG_Location_Updated' => 'The location for this collection has been updated.'
 	
-	,'Foraging'=> "The insect was not photo'ed on the flower"
+	,'Foraging'=> "The insect was not photo'ed on the flower "
 	
 	,'LANG_Bad_Collection_ID' => 'You have tried to load a session as a collection: this ID is not a valid collection.'
 	,'LANG_Bad_Insect_ID' => 'You have tried to load a flower as an insect: this ID is not a valid insect.'

@@ -29,7 +29,7 @@ global $custom_terms;
 $custom_terms = array(
 	'LANG_Insufficient_Privileges' => "You do not have sufficient privileges to have access to the 'Create a Collection' page"
 	,'LANG_Please_Refresh_Page' => "An error has been detected which prevents further use of this page. Please refresh this page to continue."
-	,'LANG_Collection_Name_Label' => 'Name your Collection'
+	,'LANG_Collection_Name_Label' => 'Name your Collection '
 	,'LANG_Validate' => 'Save'
 	,'LANG_Modify' => 'Modify'
 	,'LANG_Reinitialise' => 'Reinitialise'

@@ -1,10 +1,56 @@
+/* Stuff from indicia.css */
+#main .poll-section-title { padding:7px 10px; text-transform:uppercase; font-size:0.9em; }
+#main .poll-section-body { padding:13px 15px; border-bottom:none; overflow:auto; }
+#main .poll-section-footer { border-top:none; padding:15px 13px 15px 13px; text-align:center; overflow:auto; }
+
+#main #cc-2-body { overflow:visible; }
+#main .poll-map-container { padding-top:10px; }
+#main .poll-session-title { background:none; border:none; border-bottom:1px dashed #FF6717; color:#FF6717; font-weight:bold; padding-bottom:5px;}
+.poll-session { padding-bottom:10px; }
+
+#main .add-button, #main .search-button, #main .delete-button, #main .complete-button, #main .reinit-button, #main .mod-button,
+#main .delete-button { background:#a6d633; border-color:#a6d633; padding:1px 10px; margin-left: 20px; cursor:pointer; text-transform:uppercase; font-size:0.9em; display:inline-block; width:auto; color:#fff; }
+
+#main .help-button { padding:1px 5px; font-size:0.9em; background:#ccc; border-color:#ccc; cursor:pointer; float:right; display: }
+
+#main .poll-break {
+	background:none;
+	border-top:1px dashed #FF6717;
+	clear: both;
+	margin-top: 10px;
+	margin-bottom: 10px;
+	height: 3px;
+}
+
+#cc-1-collection-details .control-box span { display:block; }
+#collection-details { margin-bottom:20px; border-top:1px solid #d5d5d5; }
+#collection-insects { overflow:auto; margin-bottom:15px; }
+
+div.olMap { clear:both; }
+
+#cc-2-location-entry span { display:block; font-size:0.8em; padding-bottom:10px; }
+.poll-dummy-form p { color:#5CA20A; font-size:0.9em; font-weight:normal; padding-bottom:10px; }
+.poll-dummy-form p strong { font-weight:normal; }
+#main .poll-dummy-form label { color:#6c6c6c; line-height:1.1em; display:block; padding-bottom:5px; } 
+
+#cc-1-valid-button { text-align: center; }
+
+p#cc-5-good { color:#999; }
+p#cc-5-bad { color:#ff0000; }
+
+.poll-section-body input.btn-submit, #main input.search-button { font-size:0.9em; }
+
+.insect-image, .flower-image, .environment-image { cursor:pointer; }
+
+/* End of indicia.css */
+
 .ui-accordion-header {
 	padding: 4px;
 }
 
 label {
   display: inline-block;
-  line-height: 1.8;
+  line-height: 1.4;
   vertical-align: top;
   width: 200px; /* Width of labels */
 }
@@ -38,16 +84,11 @@ label {
 	left: -10000px;
 }
 	
-.poll-help-button {
-	padding-left: 10px;
-	padding-right: 10px;
-}
-	
 .poll-image {
   height: 240px;
   width: 320px;
-  background-color:#878787;
-  border:black thin solid;
+  background-color:#f7f7f7;
+  border:#ababab thin solid;
 }
 .poll-latlong {
 	display: inline-block;
@@ -96,7 +137,7 @@ div#cc-1-summary {
   font-size: 0.85em;
 }
 
-#page .node-creer-une-collection .poll-section-trailer {
+#cc-1-trailer {
       border:1px solid #D5D5D5;
       border-bottom:medium none;
       border-top:medium none;
@@ -120,17 +161,9 @@ div#cc-1-summary {
 	clear: both;
 }
 
-.poll-break {
-	clear: both;
-	margin-top: 10px;
-	margin-bottom: 10px;
-	background-color:#c0c0c0;
-	height: 3px;
-}
 .latLongDiv{
 	display: inline-block;
 	width: 48%;
-	margin-left: 1%;
 	vertical-align: top;
 }
 
@@ -161,17 +194,59 @@ div#cc-1-summary {
    height: 100%; /* for IE 6 */
 }
 
-.thumb-text {
-   position: absolute;
-   top: 0%;
-   left: 30%;
-   color: red;
-   font-size: 35px;
-}
-
 .thumb {
   *display: inline;
 }
 #cc-1 div, #cc-1 label {
 	*zoom: 1;
+}
+.control-box span label {
+    margin-left: 0;
+}
+#cc-1-body .control-box span input {
+    margin-bottom: 4px;
+}
+#main .save-button, #main .poll-id-button, #main .poll-id-cancel,
+#main .link-button { background:#a6d633; border-color:#a6d633; padding:1px 10px; cursor:pointer; text-transform:uppercase; font-size:0.9em; display:inline-block; width:auto; color:#fff; text-decoration:none;}
+.button-container { text-align:center; }
+#cc-2-flower-title, #cc-2-environment-title, #cc-4-insect-title, .photo-blurb  { margin-bottom:10px; }
+.id-later-group {
+	margin-bottom:10px;
+	border-top: #a6d633 dashed 1px;
+	border-bottom: #a6d633 dashed 1px;
+	padding-bottom:10px;
+	padding-top:10px;
+}
+#cc-2-flower-identify .id-later-group label, #cc-2-flower-identify .id-specified-group label,
+#cc-4-insect-identify .id-later-group label, #cc-4-insect-identify .id-specified-group label  {
+	vertical-align: middle;
+	padding: 0;
+}
+#cc-2-flower-identify input.taxon-info, #cc-4-insect-identify input.taxon-info {
+	width: 150px;
+}
+.taxon-comment {
+  width: 590px;
+}
+.control-box span input {
+    margin-top: 4px;
+    margin-bottom: 4px;
+}
+p.inline-error {
+    font-size: 80%;
+}
+#main #cc-1-main-body #cc-5-body2 {
+	border-left-color: #85C302;
+	border-right-color: #85C302;
+	color:#999;
+}
+#main #cc-1-main-body #cc-6-footer, #main #cc-1-main-body #cc-5-trailer {
+	border-left-color: #85C302;
+	border-right-color: #85C302;
+	border-bottom-color: #85C302;
+}
+
+#cc-2-location-notes {
+    font-size: 0.95em;
+    margin-bottom: 10px;
 }

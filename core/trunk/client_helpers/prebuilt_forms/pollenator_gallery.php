@@ -318,6 +318,14 @@ class iform_pollenator_gallery {
           'default'=>1800000,
       ),
       array(
+          'name'=>'ID_tool_convert_strings',
+          'caption'=>'Convert Tool Output',
+          'description'=>'Choose whether to convert the output of the ID tool from ISO-8859-1 to UTF-8',
+          'type'=>'boolean',
+          'required'=>false,
+          'group'=>'ID Tool'
+      ),
+      array(
           'name'=>'Flower_Image_Ratio',
           'caption'=>'Flower image aspect ratio.',
           'description'=>'Expected Ratio of width to height for flower images - 4/3 is horizontal, 3/4 is vertical.',
@@ -466,6 +474,7 @@ class iform_pollenator_gallery {
 	if($args['language'] != 'en')
 		data_entry_helper::add_resource('jquery_ui_'.$args['language']);
 	data_entry_helper::enable_validation('new-comments-form'); // don't care about ID itself, just want resources
+	data_entry_helper::add_resource('autocomplete');
 	
 	$occID= '';
 	$smpID = '';
@@ -674,7 +683,7 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
 			<label for="start_date" >'.lang::get('LANG_Created_Between').':</label>
 			<input type="text" size="10" id="start_date" name="start_date" value="'.lang::get('click here').'" />
 			<input type="hidden" id="real_start_date" name="real_start_date" />
-			<label for="end_date" >'.lang::get('LANG_And').':</label>
+			<label for="end_date" >'.lang::get('LANG_And').'</label>
 			<input type="text" size="10" id="end_date" name="end_date" value="'.lang::get('click here').'" />
 			<input type="hidden" id="real_end_date" name="real_end_date" />
 		</div>
@@ -834,17 +843,13 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
 </div>
 <div id="focus-collection" class="ui-accordion ui-widget ui-helper-reset" style="display: none">
 	<div id="fc-header" class="ui-accordion-content ui-helper-reset ui-state-active ui-corner-top ui-accordion-content-active">
-	  <div id="fc-header-buttons">';
-    if(user_access('IForm n'.$node->nid.' add preferred collection')){
-    	$r .= '<span id="fc-add-preferred" class="ui-state-default ui-corner-all preferred-button">'.lang::get('LANG_Add_Preferred_Collection').'</span>';
-    }
-    $r .= '  
+	  <div id="fc-header-buttons">
 	    <span id="fc-prev-button" class="ui-state-default ui-corner-all previous-button">'.lang::get('LANG_Previous').'</span>
 	    <span id="fc-next-button" class="ui-state-default ui-corner-all next-button">'.lang::get('LANG_Next').'</span>
 	  	<span id="fc-filter-button" class="ui-state-default ui-corner-all collection-button">'.lang::get('LANG_List').'</span>
 	  </div>
 	</div>
-	<div id="collection-details" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active ui-corner-bottom">
+	<div id="collection-details" class="ui-accordion-content ui-helper-reset ui-widget-content '.(user_access('IForm n'.$node->nid.' add preferred collection') ? '' : 'ui-corner-bottom').' ui-accordion-content-active" '.(user_access('IForm n'.$node->nid.' add preferred collection') ? 'style="border-bottom:none;"' : '').'>
 	  <div id="flower-image-container" ><div id="flower-image" class="flower-image"></div>
         <div id="show-flower-button" class="ui-state-default ui-corner-all display-button">'.lang::get('LANG_Display').'</div>
       </div>
@@ -852,16 +857,26 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
       <div id="collection-description">
 	    <p id="collection-date"></p>
 	    <p id="collection-flower-name"></p>
-	    <p>'.lang::get($occurrence_attributes[$flowerTypeAttrID]['caption']).': <span id="collection-flower-type" class=\"collection-value\"></span></p>
-	    <p>'.lang::get($location_attributes[$habitatAttrID]['caption']).': <span id="collection-habitat" class=\"collection-value\"></span></p>
+	    <p>'.lang::get($occurrence_attributes[$flowerTypeAttrID]['caption']).': <span id="collection-flower-type" class="collection-value"></span></p>
+	    <p>'.lang::get($location_attributes[$habitatAttrID]['caption']).': <span id="collection-habitat" class="collection-value"></span></p>
 	    <br />
 	    <p id="collection-user-name"></p>
 	    <a id="collection-user-link">'.lang::get('LANG_User_Link').'</a>
-	    <br />
-	    <p>'.lang::get('LANG_INSEE_Localisation').'</p><p id="collection-locality"></p>
-        <div id="fc-new-location">
-          <p id="fc-new-location-desc">'.lang::get('LANG_Localisation_Desc').'</p>
-		  <form id="fc-new-location-form" action="'.iform_ajaxproxy_url($node, 'location').'" method="POST">
+	    <br /><br />
+	    <p>'.lang::get('LANG_INSEE_Localisation').': <span id="collection-locality"></span></p>
+        <br /><p id="fc-new-location-desc">'.lang::get('LANG_Localisation_Desc').'</p>
+	  </div>
+      <div id="map2_container">';
+    // this is a bit of a hack, because the apply_template method is not public in data entry helper.
+    $tempScript = data_entry_helper::$onload_javascript;
+    data_entry_helper::$onload_javascript = '';
+    $r .= data_entry_helper::map_panel($options2, $olOptions);
+    $map2JS = data_entry_helper::$onload_javascript;
+    data_entry_helper::$onload_javascript = $tempScript;
+    data_entry_helper::$javascript .= "\njQuery('#fc-new-location').find('br').remove();\n";
+    $r .= '</div>
+      <div id="fc-new-location">
+		<form id="fc-new-location-form" action="'.iform_ajaxproxy_url($node, 'location').'" method="POST">
     		<input type="hidden"                       name="website_id" value="'.$args['website_id'].'" />
     		<input type="hidden"                       name="survey_id" value="'.$args['survey_id'].'" />
     		<input type="hidden" id="imp-sref-system"  name="location:centroid_sref_system" value="4326" />
@@ -879,20 +894,13 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
     			'idLat'=>'imp-sref-lat',
         		'idLong'=>'imp-sref-long',
     			'suffixTemplate'=>'nosuffix')).'
-       		<input type="submit" id="fc_location_submit_button" class="ui-state-default ui-corner-all submit-button" value="'.lang::get('LANG_Submit_Location').'" />
-    	</form>
-       </div>
+            <input type="submit" id="fc_location_submit_button" class="ui-state-default ui-corner-all submit-button" value="'.lang::get('LANG_Submit_Location').'" />
+        </form>
 	  </div>
-      <div id="map2_container">';
-    // this is a bit of a hack, because the apply_template method is not public in data entry helper.
-    $tempScript = data_entry_helper::$onload_javascript;
-    data_entry_helper::$onload_javascript = '';
-    $r .= data_entry_helper::map_panel($options2, $olOptions);
-    $map2JS = data_entry_helper::$onload_javascript;
-    data_entry_helper::$onload_javascript = $tempScript;
-    $r .= '</div>
-      <div id="fc-new-location-message"></div>
-    </div>';
+      <div id="fc-new-location-message"></div></div>';
+    if(user_access('IForm n'.$node->nid.' add preferred collection')){
+    	$r .= '<div id="preferred-button-container" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active"><span id="fc-add-preferred" class="ui-state-default ui-corner-all preferred-button">'.lang::get('LANG_Add_Preferred_Collection').'</span></div>';
+    }
     if(user_access('IForm n'.$node->nid.' add to front page')){
     	$r .= '<div id="fc-front-page" class="ui-widget-content ui-corner-all">
     <form id="fc-front-page-form" action="'.iform_ajaxproxy_url($node, 'sample').'" method="POST">
@@ -920,11 +928,11 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
 		<form id="fc-new-comment-form" action="'.iform_ajaxproxy_url($node, 'smp-comment').'" method="POST">
 		    <input type="hidden" name="website_id" value="'.$args['website_id'].'" />
     		<input type="hidden" name="sample_comment:sample_id" value="" />
-    		<label for="sample_comment:person_name">'.lang::get('LANG_Username').':</label>
+    		<label for="sample_comment:person_name">'.lang::get('LANG_Username').' :</label>
 		    <input type="text" name="sample_comment:person_name" value="'.$username.'" readonly="readonly" />  
-    		<label for="sample_comment:email_address">'.lang::get('LANG_Email').':</label>
+    		<label for="sample_comment:email_address">'.lang::get('LANG_Email').' :</label>
 		    <input type="text" name="sample_comment:email_address" value="'.$email.'" readonly="readonly" />
-		    '.data_entry_helper::textarea(array('label'=>lang::get('LANG_Comment'), 'fieldname'=>'sample_comment:comment', 'class'=>'required', 'suffixTemplate'=>'nosuffix')).'
+		    '.data_entry_helper::textarea(array('label'=>lang::get('LANG_Comment').' ', 'fieldname'=>'sample_comment:comment', 'class'=>'required', 'suffixTemplate'=>'nosuffix')).'
     		<input type="submit" id="fc_comment_submit_button" class="ui-state-default ui-corner-all submit-button" value="'.lang::get('LANG_Submit_Comment').'" />
     	</form>
 	</div>
@@ -960,7 +968,7 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
     	<input type="hidden" name="determination:person_name" value="'.$username.'" />  
 		<input type="hidden" name="determination:email_address" value="'.$email.'" />';
 	if(user_access('IForm n'.$node->nid.' insect expert')){
-		$r .= '		<select id="fo-insect-expert-det-type" name="determination:determination_type" />
+		$r .= '		<label for="fo-insect-expert-det-type" class="follow-on">'.lang::get('Status').' : </label><select id="fo-insect-expert-det-type" name="determination:determination_type" />
 			<option value="C" selected>'.lang::get('LANG_Det_Type_C').'</option>
 			<option value="X">'.lang::get('LANG_Det_Type_X').'</option>
 		</select>';
@@ -975,12 +983,12 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
  	    </div>
  	    <div class="id-specified-group">
  	      '.data_entry_helper::select($focus_insect_ctrl_args).'
-          <label for="insect:taxon_extra_info" class="follow-on">'.lang::get('LANG_More_Precise').' </label> 
+          <label for="insect:taxon_extra_info" class="follow-on">'.lang::get('LANG_More_Precise').' : </label> 
           <input type="text" id="insect:taxon_extra_info" name="determination:taxon_extra_info" class="taxon-info" />
         </div>
  	    <div class="id-comment">
-          <label for="insect:comment" class="follow-on">'.lang::get('LANG_ID_Comment').' </label>
-          <textarea id="insect:comment" name="determination:comment" class="taxon-comment" rows="5" ></textarea>
+          <label for="insect:comment">'.lang::get('LANG_ID_Comment').' </label>
+          <textarea id="insect:comment" name="determination:comment" class="taxon-comment" rows="3" ></textarea>
         </div>
         <input type="submit" id="insect_id_submit_button" class="ui-state-default ui-corner-all submit-button" value="'.lang::get('LANG_Validate').'" />
       </form>
@@ -993,7 +1001,7 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
     	<input type="hidden" name="determination:person_name" value="'.$username.'" />  
 		<input type="hidden" name="determination:email_address" value="'.$email.'" />';
 	if(user_access('IForm n'.$node->nid.' flower expert')){
-		$r .= '		<select id="fo-flower-expert-det-type" name="determination:determination_type" />
+		$r .= '		<label for="fo-insect-expert-det-type" class="follow-on">'.lang::get('Status').' : </label><select id="fo-flower-expert-det-type" name="determination:determination_type" />
 			<option value="C" selected>'.lang::get('LANG_Det_Type_C').'</option>
 			<option value="X">'.lang::get('LANG_Det_Type_X').'</option>
 		</select>';
@@ -1008,12 +1016,12 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
  	    </div>
  	    <div class="id-specified-group">
  	      '.data_entry_helper::select($focus_flower_ctrl_args).'
-          <label for="flower:taxon_extra_info" class="follow-on">'.lang::get('LANG_More_Precise').' </label> 
+          <label for="flower:taxon_extra_info" class="follow-on">'.lang::get('LANG_More_Precise').' : </label> 
           <input type="text" id="flower:taxon_extra_info" name="determination:taxon_extra_info" class="taxon-info" />
         </div>
  	    <div class="id-comment">
-          <label for="flower:comment" class="follow-on">'.lang::get('LANG_ID_Comment').' </label>
-          <textarea id="flower:comment" name="determination:comment" class="taxon-comment" rows="5" ></textarea>
+          <label for="flower:comment">'.lang::get('LANG_ID_Comment').' </label>
+          <textarea id="flower:comment" name="determination:comment" class="taxon-comment" rows="3" ></textarea>
         </div>
         <input type="submit" id="flower_id_submit_button" class="ui-state-default ui-corner-all submit-button" value="'.lang::get('LANG_Validate').'" />
       </form>
@@ -1029,8 +1037,8 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
         <input type="hidden" name="determination:taxon_extra_info" />
         <input type="hidden" name="determination:taxa_taxon_list_id" />
  	    <div class="doubt-comment">
-          <label for="determination:comment" class="follow-on">'.lang::get('LANG_Doubt_Comment').' </label>
-          <textarea id="determination:comment" name="determination:comment" class="taxon-comment" rows="5" ></textarea>
+          <label for="determination:comment">'.lang::get('LANG_Doubt_Comment').' </label>
+          <textarea id="determination:comment" name="determination:comment" class="taxon-comment" rows="3" ></textarea>
         </div>
         <input type="submit" id="doubt_submit_button" class="ui-state-default ui-corner-all submit-button" value="'.lang::get('LANG_Validate').'" />
       </form>
@@ -1044,14 +1052,14 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
     </div>
 	<div id="fo-localisation-info" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active">
 	    <span class="addn-info-title">'.lang::get('LANG_INSEE_Localisation').'</span>
-	    <p>'.lang::get('LANG_Locality_Commune').' : <span id="fo-locality-commune">TEST - TBD REMOVE</span></p>
-	    <p>'.lang::get('LANG_Locality_Department').' : <span id="fo-locality-department">TEST - TBD REMOVE</span></p>
-	    <p>'.lang::get('LANG_Locality_Region').' : <span id="fo-locality-region">TEST - TBD REMOVE</span></p>
+	    <p>'.lang::get('LANG_Locality_Commune').' : <span id="fo-locality-commune"></span></p>
+	    <p>'.lang::get('LANG_Locality_Department').' : <span id="fo-locality-department"></span></p>
+	    <p>'.lang::get('LANG_Locality_Region').' : <span id="fo-locality-region"></span></p>
     </div>
 	<div id="fo-insect-addn-info" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active">
 	    <span class="addn-info-title">'.lang::get('LANG_Additional_Info_Title').'</span>
-	    <p>'.lang::get('LANG_Date').': <span id="fo-insect-date"></span></p>
-	    <p>'.lang::get('LANG_Time').': <span id="fo-insect-start-time"></span> '.lang::get('LANG_To').' <span id="fo-insect-end-time"></span></p>
+	    <p>'.lang::get('LANG_Date').' : <span id="fo-insect-date"></span></p>
+	    <p>'.lang::get('LANG_Time').' : <span id="fo-insect-start-time"></span> '.lang::get('LANG_To').' <span id="fo-insect-end-time"></span></p>
 	    <p>'.$sample_attributes[$skyAttrID]['caption'].': <span id="fo-insect-sky"></span></p>
 	    <p>'.$sample_attributes[$temperatureAttrID]['caption'].': <span id="fo-insect-temp"></span></p>
 	    <p>'.$sample_attributes[$windAttrID]['caption'].': <span id="fo-insect-wind"></span></p>
@@ -1059,6 +1067,7 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
 	    <p>'.$occurrence_attributes[$foragingAttrID]['caption'].': <span id="fo-insect-foraging">TEST - TBD REMOVE</span></p>
 	</div>
 	<div id="fo-flower-addn-info" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active">
+	    <span class="addn-info-title">'.lang::get('LANG_Additional_Info_Title').'</span>
 	    <p>'.$occurrence_attributes[$flowerTypeAttrID]['caption'].': <span id="focus-flower-type"></span></p>
 	    <p>'.$location_attributes[$habitatAttrID]['caption'].': <span id="focus-habitat"></span></p>
 	</div>
@@ -1070,11 +1079,11 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
 		<form id="fo-new-comment-form" action="'.iform_ajaxproxy_url($node, 'occ-comment').'" method="POST">
 		    <input type="hidden" name="website_id" value="'.$args['website_id'].'" />
     		<input type="hidden" name="occurrence_comment:occurrence_id" value="" />
-    		<label for="occurrence_comment:person_name">'.lang::get('LANG_Username').':</label>
+    		<label for="occurrence_comment:person_name">'.lang::get('LANG_Username').' :</label>
 		    <input type="text" name="occurrence_comment:person_name" value="'.$username.'" readonly="readonly" />  
-    		<label for="occurrence_comment:email_address">'.lang::get('LANG_Email').':</label>
+    		<label for="occurrence_comment:email_address">'.lang::get('LANG_Email').' :</label>
 		    <input type="text" name="occurrence_comment:email_address" value="'.$email.'" readonly="readonly" />
-		    '.data_entry_helper::textarea(array('label'=>lang::get('LANG_Comment'), 'fieldname'=>'occurrence_comment:comment', 'class'=>'required', 'suffixTemplate'=>'nosuffix')).'
+		    '.data_entry_helper::textarea(array('label'=>lang::get('LANG_Comment').' ', 'fieldname'=>'occurrence_comment:comment', 'class'=>'required', 'suffixTemplate'=>'nosuffix')).'
     		<input type="submit" id="comment_submit_button" class="ui-state-default ui-corner-all submit-button" value="'.lang::get('LANG_Submit_Comment').'" />
     	</form>
 	</div>
@@ -1293,7 +1302,7 @@ jQuery('form#bulk-validation-form').ajaxForm({
 	success:   function(data){
 		if(data.error == undefined){
 			var form = jQuery('form#bulk-validation-form');
-			jQuery('.filter-insect').filter('[occID='+form.find('[name=determination\\:occurrence_id]').val()+']').find('.insect-dubious,.insect-ok').removeClass('insect-dubious insect-ok').addClass('insect-valid');
+			jQuery('.filter-insect-container').filter('[occID='+form.find('[name=determination\\:occurrence_id]').val()+']').find('.occurrence-dubious,.insect-ok').removeClass('occurrence-dubious insect-ok').addClass('occurrence-valid');
 			jQuery('.collection-flower-determination').filter('[occID='+form.find('[name=determination\\:occurrence_id]').val()+']').find('.flower-dubious,.flower-ok').remove();
 			jQuery('.collection-flower-determination').filter('[occID='+form.find('[name=determination\\:occurrence_id]').val()+']').find('p').append('<span class=\"flower-valid\"><img src=\"/misc/watchdog-ok.png\" style=\"vertical-align: middle;\"></span>').find('.flower-dubious').remove();
 			uploadValidation();
@@ -1323,7 +1332,7 @@ uploadValidation = function(){
 		if(jQuery('#results-collections-results').filter(':visible').length > 0)
 			todolist =jQuery('.collection-flower-determination').find('.flower-dubious,.flower-ok').parent();
 		else
-			todolist =jQuery('.filter-insect').find('.insect-dubious,.insect-ok');
+			todolist =jQuery('.filter-insect-container').find('.occurrence-dubious,.insect-ok');
 		var completed = max - todolist.length;
 		jQuery('#validate-page-progress').progressbar('option','value',completed*100/max);
 		if(todolist.length>0){
@@ -1346,7 +1355,7 @@ uploadValidation = function(){
 					form.find('[name=determination\\:taxa_taxon_list_id]').val(detData[0].taxa_taxon_list_id);
 					form.data('taxa_taxon_list_id_list_string',detData[0].taxa_taxon_list_id_list);
 					form.find('[name=determination\\:taxon_details]').val(detData[0].taxon_details);
-					form.find('[name=determination\\:taxon_extra_info]').val(detData[0].taxon_extra_info);
+					form.find('[name=determination\\:taxon_extra_info]').val(detData[0].taxon_extra_info == null ? '' : detData[0].taxon_extra_info);
 					jQuery('form#bulk-validation-form').submit();
 				} else {
 					uploadValidation();
@@ -1378,12 +1387,12 @@ bulkValidateFinish=function(message){
 }
 jQuery('.cancel-validate-button').click(function(){bulkCancel=true;});
 jQuery('#validate-page-button').click(function(){
-	// first of all we only validate insect-ok and insect-dubious.
+	// first of all we only validate insect-ok and occurrence-dubious.
 	var max;
 	if(jQuery('#results-collections-results').filter(':visible').length > 0)
 		max =jQuery('.collection-flower-determination').find('.flower-dubious,.flower-ok').length;
 	else
-		max =jQuery('.filter-insect').find('.insect-dubious,.insect-ok').length;
+		max =jQuery('.filter-insect-container').find('.occurrence-dubious,.insect-ok').length;
 	bulkValidatePrep(true, max);
 	if(max==0){
 		bulkValidateFinish(\"".lang::get('LANG_Bulk_Page_Nothing_To_Do')."\");
@@ -1395,7 +1404,7 @@ jQuery('#validate-page-button').click(function(){
 	}
 });
 jQuery('#validate-taxon-button').click(function(){
-	// first of all we only validate insect-ok and insect-dubious.
+	// first of all we only validate insect-ok and occurrence-dubious.
 	var max=0;
 	if(searchResults!= null) max=searchResults.features.length;
 	bulkValidatePrep(false, max);
@@ -1444,7 +1453,7 @@ loadCollection = function(id, index){
 	collection_preferred_object.collection_id = id;
 	jQuery('#fc-new-comment-button').".(user_access('IForm n'.$node->nid.' create collection comment') ? "show()" : "hide()").";
 	jQuery('#fc-new-comment').removeClass('ui-accordion-content-active');
-	jQuery('#fc-new-location').".(user_access('IForm n'.$node->nid.' edit geolocation') ? "show()" : "hide()").";
+	jQuery('#fc-new-location,#fc-new-location-desc').".(user_access('IForm n'.$node->nid.' edit geolocation') ? "show()" : "hide()").";
 	jQuery('#focus-occurrence,#filter,#fc-next-button,#fc-prev-button').hide();
 	jQuery('#flower-image,#environment-image').empty().addClass('loading');
 	jQuery('#collection-insects,#collection-date,#collection-flower-name,#collection-flower-type,#collection-habitat,#collection-user-name').empty();
@@ -1511,7 +1520,7 @@ loadCollection = function(id, index){
 					  		}
 					  	}
 					}
-		  			if(detData[0].taxon_extra_info != '' && detData[0].taxon_extra_info != null){
+		  			if(detData[0].taxon_extra_info != '' && detData[0].taxon_extra_info != null && detData[0].taxon_extra_info != 'null'){
 						string = (string == '' ? '' : string + ' ') + '('+htmlspecialchars(detData[0].taxon_extra_info)+')';
 					}
 					jQuery('<span>".lang::get('LANG_Flower_Name').": <span class=\"collection-value\">'+string+'</span></span>').appendTo('#collection-flower-name');
@@ -1556,7 +1565,7 @@ loadCollection = function(id, index){
 							collection_preferred_object.user_id = attrdata[i].value
 			       		    jQuery('#collection-user-link').attr('href', '".url('node/'.$node->nid)."?user_id='+attrdata[i].value);
 							if(attrdata[i].value == ".$user->uid.") { // user can edit geolocation of own collections.
-								jQuery('#fc-new-location').show();
+								jQuery('#fc-new-location,#fc-new-location-desc').show();
 								jQuery('#map2')[0].map.editLayer.clickControl.activate();
 							}
 			       		    break;";
@@ -1624,7 +1633,7 @@ loadCollection = function(id, index){
 						if (attrdata[i].id){
 							switch(parseInt(attrdata[i].location_attribute_id)){
 								case ".$habitatAttrID.":
-									if (attrdata[i].raw_value > 0) habitat_string = (habitat_string == '' ? convertTerm(attrdata[i].raw_value) : (habitat_string + ', ' + convertTerm(attrdata[i].raw_value)));
+									if (attrdata[i].raw_value > 0) habitat_string = (habitat_string == '' ? convertTerm(attrdata[i].raw_value) : (habitat_string + ' / ' + convertTerm(attrdata[i].raw_value)));
 									break;
 					}}}
 					jQuery('<span>'+habitat_string+'</span>').appendTo('#collection-habitat');
@@ -1659,9 +1668,11 @@ loadCollection = function(id, index){
    						var insectIDs=[];
 						for (var j=0;j<20 && n<insectData.length; j++,n++){
 							insectIDs.push(insectData[n].id);
-							var insect=jQuery('<div class=\"ui-widget-content ui-corner-all collection-insect\" />').attr('occID', insectData[n].id).appendTo('#collection-insects');
+							var insect=jQuery('<div class=\"collection-insect-container\" />').attr('occID', insectData[n].id).appendTo('#collection-insects');
+							if(n/".$args['insectsPerRow']." == parseInt(n/".$args['insectsPerRow'].")) insect.addClass('start-of-row');
 							if((n+1)/".$args['insectsPerRow']." == parseInt((n+1)/".$args['insectsPerRow'].")) insect.addClass('end-of-row');
-							jQuery('<p class=\"insect-tag insect-unknown\" />').appendTo(insect);
+							insect = jQuery('<div class=\"ui-widget-content ui-corner-all collection-insect\" />').appendTo(insect);
+							jQuery('<p class=\"insect-tag occurrence-unknown\" />').appendTo(insect);
 							var image = jQuery('<div class=\"insect-image empty loading\" />').appendTo(insect).data('occID',insectData[n].id)
 									.data('collectionIndex',this.myIndex).click(function(){
 								loadInsect(jQuery(this).data('occID'),jQuery(this).data('collectionIndex'),null,'C');								
@@ -1681,7 +1692,7 @@ loadCollection = function(id, index){
 									alertIndiciaError(imageData);
 								} else if (imageData.length>0) {
 									for (var k=0;k<imageData.length;k++){
-										var target = jQuery('.collection-insect').filter('[occID='+imageData[k].occurrence_id+']').find('.insect-image');
+										var target = jQuery('.collection-insect-container').filter('[occID='+imageData[k].occurrence_id+']').find('.insect-image');
 										target.empty().removeClass('empty');
 										insertImage('med-', imageData[k].path, target, ".$args['Insect_Image_Ratio'].", false, false);
 										collection_preferred_object.insects.push({insect_id: imageData[k].occurrence_id, insect_image_path: imageData[k].path})
@@ -1695,7 +1706,7 @@ loadCollection = function(id, index){
 									} else {
 										if (detData.length>0) {
 											for (var k=0;k<detData.length;k++){
-												var insect = jQuery('.collection-insect').filter('[occID='+detData[k].occurrence_id+']');
+												var insect = jQuery('.collection-insect-container').filter('[occID='+detData[k].occurrence_id+']');
 												var det = insect.find('.insect-determination').filter('.empty');
 												if(det.length>0){
 													var string = '';
@@ -1715,11 +1726,11 @@ loadCollection = function(id, index){
 													det.empty().removeClass('empty');
 													if(string != '')
 														jQuery('<div><p>".lang::get('LANG_Last_ID').":</p><p><strong>'+string+'</strong></p></div>').addClass('insect-id').appendTo(det);
-													var tag = insect.find('.insect-tag').removeClass('insect-unknown');
+													var tag = insect.find('.insect-tag').removeClass('occurrence-unknown');
 													if(detData[k].determination_type == 'B' || detData[k].determination_type == 'I' || detData[k].determination_type == 'U'){
-														tag.addClass('insect-dubious');
+														tag.addClass('occurrence-dubious');
 													} else if(detData[k].determination_type == 'C'){
-														tag.addClass('insect-valid');
+														tag.addClass('occurrence-valid');
 													} else {
 														tag.addClass('insect-ok');
 													}
@@ -1814,13 +1825,13 @@ addCollection = function(index, attributes, geom, first){
 				  while(n<insectData.length){
    					var insectIDs=[];
 					for (var j=0;j<20 && n<insectData.length; j++,n++){
-						var container = jQuery('<div/>').addClass('thumb thumb-new loading').attr('occID', insectData[n].id.toString()).data('collectionIndex',index).click(function () {
+						var container = jQuery('<div/>').addClass('thumb loading').attr('occID', insectData[n].id.toString()).data('collectionIndex',index).data('determination',false).data('image',false).click(function () {
 							loadInsect(jQuery(this).attr('occID'),jQuery(this).data('collectionIndex'),null,'P');
 						});
-						jQuery('<span>".lang::get('LANG_Unknown')."</span>').addClass('thumb-text').appendTo(container);
 						jQuery('.photoreel-session').filter('[sessID='+insectData[n].sample_id+']').append(container);
 						insectIDs.push(insectData[n].id);
 					}
+					// Not all insects will have determinations, but they will all have images
 					$.getJSON(\"".$svcUrl."/data/determination\" + 
 							\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" + 
 							\"&orderby=id&sortdir=DESC&deleted=f&callback=?&query=\"+escape(escape(JSON.stringify({'in': {'occurrence_id': insectIDs}}))), function(detData) {
@@ -1828,26 +1839,71 @@ addCollection = function(index, attributes, geom, first){
    							alertIndiciaError(detData);
    						} else if (detData.length>0) {
 							for (var k=0;k<detData.length;k++){
-								var container = jQuery('.thumb-new').filter('[occID='+detData[k].occurrence_id.toString()+']');
+								var container = jQuery('.thumb').filter('[occID='+detData[k].occurrence_id.toString()+']');
 								if(container.length > 0){
-									container.removeClass('thumb-new').find('.thumb-text').remove();
-									if(detData[k].determination_type == 'B' || detData[k].determination_type == 'I' || detData[k].determination_type == 'U'){
-										jQuery('<span class=\"thumb-text\">".lang::get('LANG_Dubious')."</span>').appendTo(container);
+									if(container.data('determination')===false) {
+										container.data('determination',detData[k]);
+										if(container.data('image')!==false){
+											// image already loaded, but will have been flagged as unknown.
+											var img = new Image();
+											var src = '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."thumb-'+container.data('image').path;
+											var background = '';
+											switch(detData[k].determination_type){
+												case 'B':
+  												case 'I':
+  												case 'U':
+													background=src;
+													src = '".drupal_get_path('module', 'iform')."/client_helpers/prebuilt_forms/images/boundary-doubtful.png';
+												case 'A':
+												case 'C':
+												case 'R':
+													container.empty();  // loading class already removed.
+													img = jQuery(img).attr('src', src).attr('width', container.width()).attr('height', container.height()).addClass('thumb-image').appendTo(container);
+													if(background!='') img.css('background', 'url('+background+')').css('background-size','100% 100%');
+												case 'X': // unidentified, leave as is.
+													break;
+											}
+										}
 									}
 								}
 							}
   					}});
 					$.getJSON(\"".$svcUrl."/data/occurrence_image\" +
 							\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-   							\"&callback=?&query=\"+escape(escape(JSON.stringify({'in': {'occurrence_id': insectIDs}}))), function(imageData) {
+   							\"&orderby=id&sortdir=DESC&callback=?&query=\"+escape(escape(JSON.stringify({'in': {'occurrence_id': insectIDs}}))), function(imageData) {
 						if(!(imageData instanceof Array)){
    							alertIndiciaError(imageData);
    						} else if (imageData.length>0) { // thumbs are fixed in size, and small - dont worry about ratios
    							for (var j=0;j<imageData.length;j++){
 								var container = jQuery('.thumb').filter('[occID='+imageData[j].occurrence_id.toString()+']');
-								var img = new Image();
-								jQuery(img).load(function () {jQuery(this).parent().removeClass('loading');}).attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."thumb-'+imageData[j].path)
-			    					.attr('width', container.width()).attr('height', container.height()).addClass('thumb-image').appendTo(container);
+								if(container.length > 0){
+									if(container.data('image')===false){
+										container.empty().removeClass('loading').data('image',imageData[j]);
+										var img = new Image();
+										var background = '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."thumb-'+imageData[j].path;
+  										var src = '".drupal_get_path('module', 'iform')."/client_helpers/prebuilt_forms/images/boundary-unknown.png';
+  										if(container.data('determination')!==false){
+											switch(container.data('determination').determination_type){
+												case 'B':
+  												case 'I':
+  												case 'U':
+													src = '".drupal_get_path('module', 'iform')."/client_helpers/prebuilt_forms/images/boundary-doubtful.png';
+													break;
+												case 'A':
+												case 'C':
+												case 'R':
+													src=background;
+													background='';
+													break;
+												case 'X': // unidentified, leave as is.
+													break;
+											}
+										}
+										container.empty();  // loading class already removed.
+										img = jQuery(img).attr('src', src).attr('width', container.width()).attr('height', container.height()).addClass('thumb-image').appendTo(container);
+										if(background!='') img.css('background', 'url('+background+')').css('background-size','100% 100%');
+									}
+								}
 			    			}}})
 			      }; 
 			}});
@@ -1876,7 +1932,7 @@ addCollection = function(index, attributes, geom, first){
 												string = (string == '' ? '' : string + ', ') + htmlspecialchars(flowerTaxa[k].taxon);
 												break;
 							}}}}}
-							if(detData[i].taxon_extra_info != '' && detData[i].taxon_extra_info != null){
+							if(detData[i].taxon_extra_info != '' && detData[i].taxon_extra_info != null && detData[i].taxon_extra_info != 'null'){
 								string = (string == '' ? '' : string + ' ') + '('+htmlspecialchars(detData[i].taxon_extra_info)+')';
 							}
 							if(detData[i].determination_type == 'B' || detData[i].determination_type == 'I' || detData[i].determination_type == 'U'){
@@ -1889,9 +1945,10 @@ addCollection = function(index, attributes, geom, first){
 	}});
 };
 addInsect = function(index, attributes, endOfRow, first){
-	var container=jQuery('<div class=\"ui-widget-content ui-corner-all filter-insect\" />').attr('occID',attributes.insect_id).appendTo('#results-insects-results');
+	var container=jQuery('<div class=\"filter-insect-container\" />').attr('occID',attributes.insect_id).appendTo('#results-insects-results');
 	if(endOfRow) container.addClass('end-of-row');
-	jQuery('<div />').addClass('insect-unknown').appendTo(container); // flag
+	var container=jQuery('<div class=\"ui-widget-content ui-corner-all filter-insect\" />').appendTo(container);
+	jQuery('<div />').addClass('occurrence-unknown').appendTo(container); // flag
 	var insect = jQuery('<div class=\"insect-image empty\" />').data('occID',attributes.insect_id).data('insectIndex',index).click(function(){
 		loadInsect(jQuery(this).data('occID'), null, jQuery(this).data('insectIndex'), 'S');
 	}).appendTo(container);
@@ -1927,15 +1984,15 @@ addInsectDeterminations = function(insects){
 												string = (string == '' ? '' : string + ', ') + htmlspecialchars(insectTaxa[k].taxon);
 												break;
 							}}}}}
-							if(detData[i].taxon_extra_info != '' && detData[i].taxon_extra_info != null){
+							if(detData[i].taxon_extra_info != '' && detData[i].taxon_extra_info != null && detData[i].taxon_extra_info != 'null'){
 								string = (string == '' ? '' : string + ' ') + '('+htmlspecialchars(detData[i].taxon_extra_info)+')';
 							}
 							determination.empty().removeClass('empty').append('<p>'+string+'</p>');
-							var flag = determination.parent().find('.insect-unknown').removeClass('insect-unknown');
+							var flag = determination.parent().find('.occurrence-unknown').removeClass('occurrence-unknown');
 							if(detData[i].determination_type == 'B' || detData[i].determination_type == 'I' || detData[i].determination_type == 'U'){
-								flag.addClass('insect-dubious');
+								flag.addClass('occurrence-dubious');
 							} else if(detData[i].determination_type == 'C'){
-								flag.addClass('insect-valid');
+								flag.addClass('occurrence-valid');
 							} else 
 								flag.addClass('insect-ok');
 				}}}
@@ -2146,7 +2203,33 @@ flowerIDstruc = {
 	determinationType: '".(user_access('IForm n'.$node->nid.' flower expert') ? 'C' : 'A')."',
 	taxaList: flowerTaxa
 };
-
+// we have a problem if the ID tool broadcasts that it is outputting in 8859, but actually does utf-8
+// doff cap to php.js
+function utf8_decode (str_data) {
+    var tmp_arr = [],
+        i = 0,
+        ac = 0,
+        c1 = 0,
+        c2 = 0,
+        c3 = 0;
+ 
+    str_data += '';
+ 
+    while (i < str_data.length) {        c1 = str_data.charCodeAt(i);
+        if (c1 < 128) {
+            tmp_arr[ac++] = String.fromCharCode(c1);
+            i++;
+        } else if (c1 > 191 && c1 < 224) {            c2 = str_data.charCodeAt(i + 1);
+            tmp_arr[ac++] = String.fromCharCode(((c1 & 31) << 6) | (c2 & 63));
+            i += 2;
+        } else {
+            c2 = str_data.charCodeAt(i + 1);            c3 = str_data.charCodeAt(i + 2);
+            tmp_arr[ac++] = String.fromCharCode(((c1 & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63));
+            i += 3;
+        }
+    } 
+    return tmp_arr.join('');
+}
 toolPoller = function(toolStruct){
 	if(toolStruct.pollFile == '') return;
 	toolStruct.pollTimer = setTimeout('toolPoller('+toolStruct.name+');', ".$args['ID_tool_poll_interval'].");
@@ -2155,13 +2238,13 @@ toolPoller = function(toolStruct){
 	 toolStruct: toolStruct,
 	 success: function(data){
 	  pollReset(this.toolStruct);
-	  var da = data.split('\\n');
+".(isset($args['ID_tool_convert_strings']) && $args['ID_tool_convert_strings'] ? "	  data=utf8_decode(data);\n" : "" )."	  var da = data.split('\\n');
       jQuery(this.toolStruct.mainForm+' [name=determination\\:taxon_details]').val(da[2]); // Stores the state of identification, which details how the identification was arrived at within the tool.
 	  da[1] = da[1].replace(/\\\\i\{\}/g, '').replace(/\\\\i0\{\}/g, '').replace(/\\\\/g, '');
 	  var items = da[1].split(':');
 	  var count = items.length;
 	  if(items[count-1] == '') count--;
-	  if(items[count-1] == '') count--;
+	  if(items[count-1] == '') count--;	  
 	  if(count <= 0){
 	  	// no valid stuff so blank it all out.
 	  	jQuery('#'+this.toolStruct.type+'_taxa_list').append(\"".lang::get('LANG_Taxa_Unknown_In_Tool')."\");
@@ -2252,7 +2335,8 @@ taxonChosen = function(toolStruct){
 	jQuery(toolStruct.mainForm+' [name=determination\\:taxon_details]').val('');
 	jQuery('#'+toolStruct.type+'_taxa_list').empty();
 	jQuery(toolStruct.mainForm+' [name=determination\\:comment]').val('');
-  	jQuery(toolStruct.mainForm+' [name=determination\\:determination_type]').val(toolStruct.determinationType);
+	jQuery(toolStruct.mainForm+' [name=determination\\:taxon_extra_info]').val('');
+	jQuery(toolStruct.mainForm+' [name=determination\\:determination_type]').val(toolStruct.determinationType);
 };
 jQuery('form#fo-new-flower-id-form select[name=determination\\:taxa_taxon_list_id]').change(function(){
 	pollReset(flowerIDstruc);
@@ -2963,7 +3047,7 @@ jQuery('form#fo-express-doubt-form').ajaxForm({
 			insect_alert_object.insect_id == null ? ".(user_access('IForm n'.$node->nid.' flag dubious flower') ? '1' : '0')." : ".(user_access('IForm n'.$node->nid.' flag dubious insect') ? '1' : '0').",
 			insect_alert_object.insect_id == null ? flowerTaxa : insectTaxa,
 			insect_alert_object.insect_id == null ? 'F' : 'I');
-			jQuery('.filter-insect').filter('[occID='+jQuery('form#fo-express-doubt-form').find('[name=determination\\:occurrence_id]').val()+']').find('.insect-ok').removeClass('insect-ok').addClass('insect-dubious');
+			jQuery('.filter-insect-container').filter('[occID='+jQuery('form#fo-express-doubt-form').find('[name=determination\\:occurrence_id]').val()+']').find('.insect-ok').removeClass('insect-ok').addClass('occurrence-dubious');
 		} else {
 			alert(data.error);
 		}
@@ -3001,9 +3085,9 @@ jQuery('form#fo-new-insect-id-form').ajaxForm({
 	},
 	success:   function(data){
 		if(data.error == undefined){
-			jQuery('.filter-insect').filter('[occID='+jQuery('form#fo-express-doubt-form').find('[name=determination\\:occurrence_id]').val()+']')
+			jQuery('.filter-insect-container').filter('[occID='+jQuery('form#fo-express-doubt-form').find('[name=determination\\:occurrence_id]').val()+']')
 				.find('.insect-ok').removeClass('insect-ok')
-				.addClass(jQuery(insectIDstruc.mainForm+' [name=determination\\:determination_type]').val() == 'X' ? 'insect-dubious' : 'insect-valid');
+				.addClass(jQuery(insectIDstruc.mainForm+' [name=determination\\:determination_type]').val() == 'X' ? 'occurrence-dubious' : 'occurrence-valid');
 			jQuery(insectIDstruc.mainForm+' [name=determination\\:determination_type]').val(insectIDstruc.determinationType);
 			jQuery(insectIDstruc.mainForm+' [name=determination\\:taxa_taxon_list_id],[name=determination\\:comment],[name=determination\\:taxon_details],[name=determination\\:taxon_extra_info]').val('');
 			jQuery('#insect_taxa_list').empty();
@@ -3302,7 +3386,6 @@ insertImage = function(prepend, path, target, ratio, allowFull, callback){
 		item.click(function(){
 			window.open ('".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."'+path, 'newwindow', config='toolbar=no, menubar=no, location=no, directories=no, status=no')
 		});
-	
 }
 
 loadImage = function(imageTable, key, keyValue, target, imageRatio, callback, prepend, allowfull, imgCallback){
@@ -3385,11 +3468,11 @@ loadDeterminations = function(keyValue, historyID, currentID, lookup, callback, 
 			}
 			callbackArgs.push(callbackEntry);
 			jQuery('#poll-banner').append(string);
-			if(detData[i].taxon_extra_info != '' && detData[i].taxon_extra_info != null){
+			if(detData[i].taxon_extra_info != '' && detData[i].taxon_extra_info != null && detData[i].taxon_extra_info != 'null'){
 				string = (string == '' ? '' : string + ' ') + '('+htmlspecialchars(detData[i].taxon_extra_info)+')';
 			}
-			jQuery('#fo-express-doubt-form').find('[name=determination\\:taxon_extra_info]').val(detData[i].taxon_extra_info);
-			jQuery(this.myLookup).find('[name=determination:taxon_extra_info]').val(detData[i].taxon_extra_info);
+			jQuery('#fo-express-doubt-form').find('[name=determination\\:taxon_extra_info]').val(detData[i].taxon_extra_info==null ? '' : detData[i].taxon_extra_info);
+			jQuery(this.myLookup).find('[name=determination:taxon_extra_info]').val(detData[i].taxon_extra_info==null ? '' : detData[i].taxon_extra_info);
 			if(string != '')
 				jQuery('<p><strong>'+string+ '</strong> ".lang::get('LANG_Comment_By')."' + detData[i].person_name + ' ' + convertDate(detData[i].updated_on,false) + '</p>').appendTo(this.myCurrentID)
 			else
@@ -3442,7 +3525,7 @@ loadDeterminations = function(keyValue, historyID, currentID, lookup, callback, 
 							}
 					}
 				}
-				if(detData[i].taxon_extra_info != '' && detData[i].taxon_extra_info != null){
+				if(detData[i].taxon_extra_info != '' && detData[i].taxon_extra_info != null && detData[i].taxon_extra_info != 'null'){
 					string = (string == '' ? '' : string + ' ') + '('+htmlspecialchars(detData[i].taxon_extra_info)+')' ;
 				}
 				string = convertDate(detData[i].updated_on,false) + ' : ' + string;
@@ -3623,10 +3706,10 @@ loadInsect = function(insectID, collectionIndex, insectIndex, type){
 			jQuery('#fo-next-button').show().data('occID', searchResults.features[insectIndex+1].attributes.insect_id).data('collectionIndex', null).data('insectIndex', insectIndex+1).data('type', 'S');
 	} else if(type == 'C'){ // called from collection
 		jQuery('#fo-filter-button').hide();
-		var myThumb = jQuery('.collection-insect').filter('[occID='+insectID+']').prev();
+		var myThumb = jQuery('.collection-insect-container').filter('[occID='+insectID+']').prev();
 		if(myThumb.length > 0)
 			jQuery('#fo-prev-button').show().data('occID', myThumb.attr('occID')).data('collectionIndex', collectionIndex).data('insectIndex', null).data('type', 'C');
-		myThumb = jQuery('.collection-insect').filter('[occID='+insectID+']').next();
+		myThumb = jQuery('.collection-insect-container').filter('[occID='+insectID+']').next();
 		if(myThumb.length > 0)
 			jQuery('#fo-next-button').show().data('occID', myThumb.attr('occID')).data('collectionIndex', collectionIndex).data('insectIndex', null).data('type', 'C');		
   	} else if(type == 'P'){ // called from photoreel
@@ -3794,8 +3877,18 @@ jQuery('#fo-prev-button,#fo-next-button').click(function(){
 		jQuery(this).data('type') // type: 'P' from photoreel, 'S' from search, 'C' from collection, 'X' NA
 	);
 });
-  ";
 
+$('#username').autocomplete([";
+	/* warning Drupal specific code */
+    $userList = array();
+    $results = db_query('SELECT uid, name FROM {users} ORDER BY name');
+    while($result = db_fetch_object($results)){
+      $account = user_load($result->uid);
+      if($account->uid != 1) // && user_access('IForm loctools node '.$node->nid.' user', $account)){
+        $userList[] = "'".$account->name."'";
+    }
+    data_entry_helper::$javascript .= implode(',',$userList)."]);\n";
+    
     switch($mode){
     	case 'INSECT':
 		    data_entry_helper::$onload_javascript .= "loadInsect(".$occID.", null, null, 'X');";
