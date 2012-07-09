@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Species &amp; occurrence counts by user" description="Lists users and the number of species and occurrences entered by each of them.">
+      <query website_filter_field="o.website_id">
+      SELECT #columns#
+      FROM cache_occurrences o
+      JOIN users u on u.id=o.created_by_id
+      WHERE (o.zero_abundance='f' OR o.id IS NULL)
+      AND #website_filter#
+      AND (CAST(o.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
+      AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR o.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+      AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+      </query>
+  <params>
+    <param name='date_from' display='Date From' datatype='date' />
+    <param name='date_to' display='Date To' datatype='date' />
+    <param name='survey_id' display='Survey' description='Select the survey to return data for, or leave for all surveys' datatype='lookup'
+        query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title' />
+    <param name="currentUser" display="Current User ID" description="Current user's warehouse ID. Allows a column to be output indicating the current user." datatype="text" />
+  </params>
+      <order_bys>
+            <order_by>taxa DESC</order_by>
+      </order_bys>
+      <columns>
+            <column name="id" visible="false" display="User ID" sql="u.id" datatype="integer" />
+            <column name="username" display="User name" sql="u.username" datatype="text" />
+            <column name="me" visible="false" sql="case cast(u.id as character varying) when '#currentUser#' then 'me' else 'other' end" datatype="text|" />
+            <column name="taxa" display="No. of Species" sql="count(DISTINCT o.taxon_meaning_id)" datatype="integer" aggregate="true" />
+            <column name="occurrences" display="No. of Records" sql="count(DISTINCT o.id)" datatype="integer" aggregate="true" />
+            <column name="groups" display="No. of Taxon Groups" sql="COUNT(DISTINCT o.taxon_group_id)" datatype="integer" aggregate="true" />
+      </columns>
+</report>
