@@ -14,11 +14,20 @@
  */
 
 /**
- * A driver class to allow the georeference_lookup control to interface with the 
+ * A driver to allow the georeference_lookup control to interface with the 
  * Yahoo! GeoPlanet API. 
  */
 
-srefHandlers['osgb'] = {
+// Check IndiciaData setup, in case we are the first JS file to load
+if (typeof indiciaData==="undefined") {
+  indiciaData={onloadFns: []};
+}
+if (typeof indiciaData.srefHandlers==="undefined") {
+  indiciaData.srefHandlers={};
+}
+  
+
+indiciaData.srefHandlers['osgb'] = {
   
   srid: 27700,
   

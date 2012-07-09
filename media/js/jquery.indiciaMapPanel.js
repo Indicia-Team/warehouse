@@ -29,11 +29,6 @@ mapInitialisationHooks = [];
 mapGeoreferenceHooks = [];
 
 /**
- * An array of drivers for handling sref clicks on client side in different systems
- */
-srefHandlers = {};
-
-/**
 * Class: indiciaMapPanel
 * JavaScript & OpenLayers based map implementation class for Indicia data entry forms.
 * This code file supports read only maps. A separate plugin will then run on top of this to provide editing support
@@ -867,9 +862,10 @@ srefHandlers = {};
       }
       // get precision required dependent on map zoom
       var precisionInfo=getPrecisionInfo(div, precision);
-      if (typeof srefHandlers[system.toLowerCase()]==="undefined" || 
-          srefHandlers[system.toLowerCase()].returns.indexOf('wkt')===-1|| 
-          srefHandlers[system.toLowerCase()].returns.indexOf('sref')===-1) {
+      if (typeof indiciaData.srefHandlers==="undefined" || 
+          typeof indiciaData.srefHandlers[system.toLowerCase()]==="undefined" || 
+          indiciaData.srefHandlers[system.toLowerCase()].returns.indexOf('wkt')===-1|| 
+          indiciaData.srefHandlers[system.toLowerCase()].returns.indexOf('sref')===-1) {
         // next call also generates the wkt in map projection
         $.getJSON(opts.indiciaSvc + "index.php/services/spatial/wkt_to_sref"+
                 "?wkt=" + point +
@@ -885,11 +881,11 @@ srefHandlers = {};
         // passing a point in the mapSystem. 
         var r, pt, feature, parser,
                 ll = new OpenLayers.LonLat(point.x, point.y),
-                proj=new OpenLayers.Projection('EPSG:'+srefHandlers[_getSystem().toLowerCase()].srid),
+                proj=new OpenLayers.Projection('EPSG:'+indiciaData.srefHandlers[_getSystem().toLowerCase()].srid),
                 precisionInfo=getPrecisionInfo(div);
         ll.transform(div.map.projection, proj);
         pt = {x:ll.lon, y:ll.lat};
-        r=srefHandlers[_getSystem().toLowerCase()].pointToSref(pt, precisionInfo);
+        r=indiciaData.srefHandlers[_getSystem().toLowerCase()].pointToSref(pt, precisionInfo);
         parser = new OpenLayers.Format.WKT();
         feature = parser.read(r.wkt);
         r.wkt = feature.geometry.transform(proj, div.indiciaProjection).toString();
@@ -1157,16 +1153,17 @@ srefHandlers = {};
                 var ll = div.map.getLonLatFromPixel({x: evt.layerX, y: evt.layerY});
                 // don't recalculate if mouse is still over the existing ghost
                 if (ghost===null || !ghost.atPoint(ll, 0, 0)) {
-                  if (typeof srefHandlers[_getSystem().toLowerCase()]!=="undefined" &&
-                    srefHandlers[_getSystem().toLowerCase()].returns.indexOf('wkt')!==-1) {
+                  if (typeof indiciaData.srefHandlers!=="undefined" &&
+                    typeof indiciaData.srefHandlers[_getSystem().toLowerCase()]!=="undefined" &&
+                    indiciaData.srefHandlers[_getSystem().toLowerCase()].returns.indexOf('wkt')!==-1) {
                     // If we have a client-side handler for this system which can return the wkt then we can
                     // draw a ghost of the proposed sref if they click
                     var r, pt, feature, parser,
-                        proj=new OpenLayers.Projection('EPSG:'+srefHandlers[_getSystem().toLowerCase()].srid),
+                        proj=new OpenLayers.Projection('EPSG:'+indiciaData.srefHandlers[_getSystem().toLowerCase()].srid),
                         precisionInfo=getPrecisionInfo(div);
                     ll.transform(div.map.projection, proj);
                     pt = {x:ll.lon, y:ll.lat};
-                    r=srefHandlers[_getSystem().toLowerCase()].pointToSref(pt, precisionInfo);
+                    r=indiciaData.srefHandlers[_getSystem().toLowerCase()].pointToSref(pt, precisionInfo);
                     if (typeof r.error!=="undefined") {
                       _removeAllFeatures(div.map.editLayer, 'ghost');
                     } else {
