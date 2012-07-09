@@ -608,7 +608,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
     case when certainty.sort_order is null then null
         when certainty.sort_order <100 then 'C'
         when certainty.sort_order <200 then 'L'
-        else 'P'
+        else 'U'
     end,
     COALESCE(l.name, s.location_name)
   from occurrences o
