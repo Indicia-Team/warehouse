@@ -29,8 +29,13 @@ $custom_term_overrides[] = array(
 	,'LANG_DE_Instructions2'=>"To choose a site, either click the relevant site on the map (ensuring that the select tool on the map is active) or pick it from the drop down list (then the selected site is highlighted in blue on the map).<br />You may add a new site: click the 'Start a new site' button on the map, and click on the map. You can change the position by dragging the circle.<br />Selecting an existing site will remove any new site.<br />It is not possible to change a site name or position on this form once it has been saved - this can be done by an Admin user using their special tool."
 	,'LANG_Location_X_Label' => 'Site coordinates: X'
 	,'LANG_PointTooltip'=>'Click on map to set site position'
-	,'LANG_SpeciesInstructions'=>"Additional species may be added using the control under the grid.<br />Additional rows may be added using the control for existing taxa if a different combination of Type/Stage/Sex is to be added.<br />There are various combinations Type/Stage/Sex/Behaviour which are not allowed. Such banned combinations will be greyed out in the drop down lists. In addition, it is not possible to enter multiple rows for the same combination of Species/Type/Stage/Sex: again duplicate possiblities will be greyed out.<br />If you think a combination is valid, but you can not select it, first check that there is no other existing row with this combination.<br />Click the red 'X' to delete the relevant row."
-	,'validation_no_record' => "The <strong>Recording summary</strong> must reflect the table of species. When no data is recorded then either 'No records taken' or 'No observation' must be checked."
+	,'LANG_SpeciesInstructions'=>"Additional rows may be added using the control under the grid, including rows for species already entered as each row has a different location.<br />There are various combinations Type/Stage/Sex/Behaviour which are not allowed. Such banned combinations will be greyed out in the drop down lists.<br />Click the red 'X' to delete the relevant row."
+	,'Village' => 'Village/Locality'
+	,'Site name' => 'Site number'
+	,'LANG_LocModTool_IDLabel'=>'Old site number'
+	,'LANG_CommonLocationNameLabel' => 'Site number'
+	,'LANG_LocModTool_NameLabel'=>'New site number'
+	,'LANG_CommonFilterNameLabel'=>'Existing site number'
 	,'Amphibian Visit (Sites)'=>'Visit'
 	,'Amphibian Sites Survey Method'=>'Survey method'
 	,'Amphibian Visit (Squares)'=>'Visit'
@@ -46,5 +51,7 @@ $custom_term_overrides[] = array(
 	,'LANG_Data_Download' => 'These reports provide details of the collections and species data entered in the surveys which are tagged for a particular target species. The sites download is not dependant on the target species.'
 	,'LANG_SquareLookUpFailed' => 'Internal error: Lookup of the square for this location failed.'
 	,'LANG_PositionInDifferentSquare' => 'The position you have chosen is outside the selected square. Do you wish to change the square field to match the point?'
-);
+	,'LANG_Date_Explanation' => '(Indicate the date of the beginning of the survey)'
+	,'LANG_PositionOutsideParent' => 'Warning: this position is outside the available list of 5x5km squares'
+	);
 ?>

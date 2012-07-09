@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<report title="MNHNL Amphibian Download Report" description="Lists all occurrences associated with saved samples. Normally invoked from Reports tab on the form.">
+<report title="MNHNL Amphibian Conditions Download Report" description="Lists all conditions associated with saved samples. Normally invoked from Reports tab on the form.">
   <params>
     <param name='survey_id' display='Survey: ' description='Select the survey to return data for:' datatype='lookup'
         query='SELECT id, title as caption FROM surveys' />
