@@ -215,6 +215,9 @@ class map_helper extends helper_base {
   * Set to true to enable restoring the map position when the page is reloaded. Requires jquery.cookie plugin. As this feature
   * requires cookies, you should notify your users in compliance with European cookie law if you use this option.</li>
   * </ul>
+  * <li><b>helpDiv</b><br/>
+  * Set to bottom to output a help div under the map, or set to the ID of a div to output into.</li>
+  * </ul>
   * @param array $olOptions Optional array of settings for the OpenLayers map object. If overriding the projection or
   * displayProjection settings, just pass the EPSG number, e.g. 27700.
   */

@@ -1473,7 +1473,7 @@ $.fn.indiciaMapPanel.defaults = {
     toolbarDiv: 'map', // map, top, bottom, or div ID
     toolbarPrefix: '', // content to prepend to the toolbarDiv content if not on the map
     toolbarSuffix: '', // content to append to the toolbarDiv content if not on the map
-    helpDiv: 'bottom', //false,
+    helpDiv: false,
     editLayer: true,
     clickForSpatialRef: true, // if true, then enables the click to get spatial references control
     allowPolygonRecording: false,
