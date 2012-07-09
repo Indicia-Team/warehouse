@@ -568,7 +568,7 @@ $config['occurrences']['update'] = "update cache_occurrences co
       certainty=case when certainty.sort_order is null then null
         when certainty.sort_order <100 then 'C'
         when certainty.sort_order <200 then 'L'
-        else 'P'
+        else 'U'
       end,
       location_name=COALESCE(l.name, s.location_name)
     from occurrences o
