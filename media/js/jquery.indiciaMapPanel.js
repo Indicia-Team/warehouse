@@ -315,13 +315,15 @@ srefHandlers = {};
       feature.attributes = {type:"clickPoint"};
       feature.style = new style(false);
       div.map.editLayer.addFeatures([feature]);
-      helptext.push(div.settings.hlpClickAgainToCorrect);
-      // Extra help for grid square precision, as long as the precision is not fixed.
-      if (feature.geometry.CLASS_NAME!=='OpenLayers.Geometry.Point' && (div.settings.clickedSrefPrecisionMin==='' 
-        || div.settings.clickedSrefPrecisionMin!==div.settings.clickedSrefPrecisionMax)) {
-        helptext.push(div.settings.hlpZoomChangesPrecision);
+      if (div.settings.helpDiv) {
+        helptext.push(div.settings.hlpClickAgainToCorrect);
+        // Extra help for grid square precision, as long as the precision is not fixed.
+        if (feature.geometry.CLASS_NAME!=='OpenLayers.Geometry.Point' && (div.settings.clickedSrefPrecisionMin==='' 
+          || div.settings.clickedSrefPrecisionMin!==div.settings.clickedSrefPrecisionMax)) {
+          helptext.push(div.settings.hlpZoomChangesPrecision);
+        }
+        $('#'+div.settings.helpDiv).html(helptext.join(' '));
       }
-      $('#map-help').html(helptext.join(' '));
     }
 
     function _georeference(div) {
@@ -1000,6 +1002,7 @@ srefHandlers = {};
         }
         helpbar = '<div id="map-help" class="ui-widget ui-widget-content">'+helptext.join(' ')+'</div>';
         $(this).after(helpbar);
+        this.settings.helpDiv='map-help';
       }
       
       this.settings.boundaryStyle=new style();
