@@ -766,10 +766,12 @@ $('.ui-state-default').live('mouseout', function() {
     ), $options);
     $r = '';
     // Any ignored parameters will not be in the requested parameter form definition, but we do need hiddens
-    foreach($options['paramsToHide'] as $key) {
-      $default = isset($options['defaults'][$key]) ? $options['defaults'][$key] : '';
-      $fieldPrefix=(isset($options['fieldNamePrefix']) ? $options['fieldNamePrefix'].'-' : '');
-      $r .= "<input type=\"hidden\" name=\"$fieldPrefix$key\" value=\"$default\" class=\"test\"/>\n";
+    if(isset($options['paramsToHide'])){
+      foreach($options['paramsToHide'] as $key) {
+        $default = isset($options['defaults'][$key]) ? $options['defaults'][$key] : '';
+        $fieldPrefix=(isset($options['fieldNamePrefix']) ? $options['fieldNamePrefix'].'-' : '');
+        $r .= "<input type=\"hidden\" name=\"$fieldPrefix$key\" value=\"$default\" class=\"test\"/>\n";
+      }
     }
     foreach($options['form'] as $key=>$info) {
       $tools = array(); 
