@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<report title="MNHNL Amphibian Download Report" description="Lists all occurrences associated with saved samples. Normally invoked from Reports tab on the form.">
+<report title="MNHNL Amphibian Species Download Report" description="Lists all occurrences associated with saved samples. Normally invoked from Reports tab on the form.">
   <params>
     <param name='survey_id' display='Survey: ' description='Select the survey to return data for:' datatype='lookup'
         query='SELECT id, title as caption FROM surveys' />
-    <param name='taxon_list_id' display='Taxon_list_id: ' description='Select the taxon_list to look up taxa in:' datatype='lookup'
-        query='SELECT id, title as caption FROM taxon_lists' />
     <param name='target_species' display='Target Species: ' description='Select the target species to return data for:' datatype='int' />
   </params>
   <table tablename="samples" where="#this#.deleted = FALSE
@@ -31,20 +29,23 @@
       </subTable>
       <attributes separator='|' meaningIdLanguage='preferred'/>
     </subTable>
-    <subTable tablename="occurrences" parentKey="id" where=" #this#.deleted = FALSE" join="LEFT OUTER" >
-      <tabColumn name='id' visible='true' display='Occurrence ID' />
-      <tabColumn name='comment' display='Occurrence comment' />
-      <subTable tablename='taxa_taxon_lists' join="LEFT OUTER" >
-        <subTable tablename='taxa_taxon_lists' parentKey="taxon_meaning_id" tableKey="taxon_meaning_id" where="#this#.preferred = TRUE AND #this#.taxon_list_id = #taxon_list_id#" join="LEFT OUTER" >
-          <subTable tablename='taxa' join="LEFT OUTER" >
-            <tabColumn name='taxon' display='Species'/>
+    <subTable tablename="samples" tableKey="parent_id" parentKey="id" where="#this#.deleted = FALSE" >
+      <tabColumn name='taxon_xy' display='Taxon XY' func="(regexp_replace(#this#.entered_sref, ',|\\.[0-9]*' , '','g'))" />
+      <subTable tablename="occurrences" parentKey="id" where=" #this#.deleted = FALSE" >
+        <tabColumn name='id' visible='true' display='Occurrence ID' />
+        <tabColumn name='comment' display='Occurrence comment' />
+        <subTable tablename='taxa_taxon_lists' join="LEFT OUTER" >
+          <subTable tablename='taxa_taxon_lists' parentKey="taxon_meaning_id" tableKey="taxon_meaning_id" where="#this#.preferred = TRUE" join="LEFT OUTER" >
+            <subTable tablename='taxa' join="LEFT OUTER" >
+              <tabColumn name='taxon' display='Species'/>
+            </subTable>
           </subTable>
         </subTable>
+        <attributes separator='|'  meaningIdLanguage='preferred'/> 
       </subTable>
-      <attributes separator='|'  meaningIdLanguage='preferred'/> 
-    </subTable>    
+    </subTable>
   </table>
   <order_bys>
-    <order_by>lt0_id ASC, lt4_id ASC</order_by>
+    <order_by>lt0_id ASC, lt5_id ASC</order_by>
   </order_bys>
 </report>

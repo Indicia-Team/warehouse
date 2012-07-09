@@ -13,6 +13,7 @@
         lav_3.text_value as attr_3,
   		l.name as location_name,
   		savuser.text_value as creator,
+  		s.recorder_names as observers,
   		s.date_start,
   		s.date_end,
   		s.date_type
@@ -41,7 +42,6 @@
     <param name='userID_attr_id' display='CMS User ID Sample Attribute ID' description='Sample Attribute ID used to Identify User' datatype='int' />
     <param name='userID' display='CMS User ID' description='CMS User ID: use -1 for superusers' datatype='int' />
     <param name='userName_attr_id' display='CMS User Name Sample Attribute ID' description='Sample Attribute ID used to Identify User Name' datatype='int' />
-    <param name='userName' display='CMS User Name' description='CMS User Name' datatype='text' />
     <param name='target_species_attr_id' display='Target Species Attribute ID' description='Sample Attribute ID used to Identify the Reptile Target Species' datatype='int' />
     <param name='attr_id_1' display='Location Attribute ID' description='Location Attribute ID 1' datatype='int' />
     <param name='attr_id_2' display='Location Attribute ID' description='Location Attribute ID 2' datatype='int' />
@@ -55,6 +55,7 @@
     <column name='attr_3' display='attr_3' />
     <column name='location_name' display='Site' />
     <column name='creator' display='Entered By' />
+    <column name='observers' display='Observer(s)' />
     <column name='date' display='Date' />
   </columns>
 </report>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<report title="MNHNL Amphibian Download Report" description="Lists all occurrences associated with saved samples. Normally invoked from Reports tab on the form.">
+<report title="MNHNL Amphibian Sites Download Report" description="Lists all sites. Normally invoked from Reports tab on the form.">
   <params>
     <param name='location_type_id' display='Survey: ' description='Select the location_type_id to return data for:' datatype='int' />
   </params>
