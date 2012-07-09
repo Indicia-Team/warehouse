@@ -21,7 +21,7 @@
             <order_by>taxa DESC</order_by>
       </order_bys>
       <columns>
-            <column name="id" visible="false" display="User ID" sql="u.id" datatype="integer" />
+            <column name="id" visible="false" display="User ID" sql="u.id" datatype="integer" in_count="true"/>
             <column name="username" display="User name" sql="u.username" datatype="text" />
             <column name="me" visible="false" sql="case cast(u.id as character varying) when '#currentUser#' then 'me' else 'other' end" datatype="text|" />
             <column name="taxa" display="No. of Species" sql="count(DISTINCT o.taxon_meaning_id)" datatype="integer" aggregate="true" />
