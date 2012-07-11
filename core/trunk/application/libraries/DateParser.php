@@ -260,11 +260,13 @@ class DateParser_Core {
       $this->aResult['unparsed'] = $sDate;
 
     } // END while($sFormat != "")
-    return true;
+    return empty($this->aResult['unparsed']);
   }
 
   public function getIsoDate(){
     if ($this->aResult['tm_year'] == null) return null;
+    if (!checkdate($this->tm_mon + 1,$this->tm_mday,$this->tm_year))
+      throw new InvalidArgumentException('Invalid date');
     return date("Y-m-d", mktime(0,0,0,$this->tm_mon + 1,$this->tm_mday,$this->tm_year));
   }
 
