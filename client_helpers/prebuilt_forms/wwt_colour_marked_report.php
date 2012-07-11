@@ -741,7 +741,7 @@ class iform_wwt_colour_marked_report {
     // if we use locks, we want them to be distinct for each drupal user
     if (function_exists('profile_load_profile')) { // check we are in drupal
       global $user;
-      data_entry_helper::$javascript .= "if (indicia && indicia.locks) {
+      data_entry_helper::$javascript .= "if (indicia && indicia.locks && indicia.locks.setUser) {
         indicia.locks.setUser ('".$user->uid."');
       }\n";
     }
