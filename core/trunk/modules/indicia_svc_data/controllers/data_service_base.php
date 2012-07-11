@@ -93,6 +93,10 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
         $this->response =  $this->csv_encode($records);
         $this->content_type = 'Content-Type: text/comma-separated-values';
         break;
+      case 'nbn':
+        $this->response =  $this->nbn_encode($records);
+        $this->content_type = 'Content-Type: text/plain';
+        break;
       default:
         // Code to load from a view
         if (file_exists('views',"services/data/$entity/$mode"))
@@ -152,6 +156,22 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
   */
   protected function csv_encode($array)
   {
+    return $this->do_encode($array,'csv');
+  }
+  
+  /**
+  * Encode the results of a query array as an NBN exchange format string
+  */
+  protected function nbn_encode($array)
+  {
+    return $this->do_encode($array,'nbn');
+  }
+  
+  /**
+   * Encode an array using the supplied type of encoding.
+   */
+  protected function do_encode($array, $type) {
+    $fn = "get_$type";
     // Get the column titles in the first row
     if(!is_array($array) || !isset($array['records']) || !is_array($array['records']) || count($array['records']) == 0)
       return '';
@@ -174,7 +194,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
       }
       $headers = $newheaders;
     }
-    $result = $this->get_csv($headers);
+    $result = $this->$fn($headers);
     foreach ($array['records'] as $row) {
       if(isset($this->view_columns)){
         $newrow = array();
@@ -189,7 +209,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
         }
         $row = $newrow;
       }
-      $result .= $this->get_csv(array_values($row));
+      $result .= $this->$fn(array_values($row));
     }
     return $result;
   }
@@ -219,6 +239,30 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
       else
       {
         $output.=  $delimiter . $cell;
+      }
+    }
+    $output.=$newline;
+    return $output;
+  }
+  
+    /**
+  * Return a line of NBN exchange format data from an array. 
+  */
+  function get_nbn($data)
+  {
+    $newline="\r\n";
+    $output = '';
+    foreach ($data as $cell)
+    {
+      // NBN file format does not allow new lines or tabs in any cells. So replace with spaces.
+      $cell = str_replace(array("\n","\r","\t"),array(' ',' ','  '),$cell);
+      if ($output=='')
+      {
+        $output = $cell;
+      }
+      else
+      {
+        $output.=  "\t" . $cell;
       }
     }
     $output.=$newline;
