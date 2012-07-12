@@ -4,6 +4,12 @@
 COMMENT ON COLUMN cache_occurrences.recorders IS 'Recorder username, name or names';
 
 update cache_occurrences co
+set recorders=s.recorder_names
+from sampless
+where s.sample_id=co.sample_id and s.deleted=false
+and co.recorders is null;
+
+update cache_occurrences co
 set recorders=sav.text_value
 from sample_attribute_values sav
 join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = 'cms_username' and sa.deleted=false
