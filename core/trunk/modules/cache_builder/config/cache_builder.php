@@ -638,7 +638,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
 set recorders=s.recorder_names
 from needs_update_occurrences nuo, samples s
 where nuo.id=co.id 
-and s.sample_id=co.sample_id and s.deleted=false
+and s.id=co.sample_id and s.deleted=false
 and co.recorders is null',
     // CMS username
     'CMS Username' => 'update cache_occurrences co
