@@ -138,7 +138,6 @@ class cache_builder {
    * @param string $action Term describing the action, used for feedback only.
    */
   private static function run_statement($db, $table, $query, $action) {
-    if ($table==='taxon_searchterms')
     if (is_array($query)) {
       foreach ($query as $title => $sql) {
         $count = $db->query($sql)->count();
