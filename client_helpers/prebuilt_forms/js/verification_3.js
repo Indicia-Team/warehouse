@@ -422,12 +422,14 @@ $(document).ready(function () {
           '<p>The following options let you rapidly verify records. The only records affected are those in the grid but they can be on any page of the grid, '+
           'so please ensure you have set the grid\'s filter correctly before proceeding. You should only proceed if you are certain that data you are verifying '+
           'can be trusted without further investigation.</p>'+
-          '<label><input type="radio" name="quick-option" value="species" />Verify grid\'s records of <span class="quick-taxon">'+taxonVal+'</span></label><br/>';
+          '<label><input type="radio" name="quick-option" value="species" /> Verify grid\'s records of <span class="quick-taxon">'+taxonVal+'</span></label><br/>';
       if (userVal!=='') {
-        popupHtml += '<label><input type="radio" name="quick-option" value="recorder"/>Verify grid\'s records by <span class="quick-user">'+userVal+'</span></label><br/>'+          
-            '<label><input type="radio" name="quick-option" value="species-recorder" />Verify grid\'s records of <span class="quick-taxon">'+taxonVal+
+        popupHtml += '<label><input type="radio" name="quick-option" value="recorder"/> Verify grid\'s records by <span class="quick-user">'+userVal+'</span></label><br/>'+          
+            '<label><input type="radio" name="quick-option" value="species-recorder" /> Verify grid\'s records of <span class="quick-taxon">'+taxonVal+
             '</span> by <span class="quick-user">'+userVal+'</span></label><br/>';
       }
+      popupHtml += '<label><input type="checkbox" name="ignore-checks" /> Include failures?</label><p class="helpText">The records will only be verified if they do not fail '+
+          'any automated verification checks. If you <em>really</em> trust the records are correct then you can verify them even if they fail some checks by ticking this box.</p>';
       popupHtml += '<button type="button" class="default-button verify-button">Verify chosen records</button>'+
           '<button type="button" class="default-button cancel-button">Cancel</button>'+
           "</div>\n";
@@ -448,7 +450,7 @@ $(document).ready(function () {
             request = indiciaData.ajaxUrl + '/bulk_verify/'+indiciaData.nid;
             $.post(request,
                 'report='+encodeURI(indiciaData.reports.verification.grid_verification_grid[0].settings.dataSource)+'&params='+encodeURI(JSON.stringify(params))+
-                    '&user_id='+indiciaData.userId,
+                    '&user_id='+indiciaData.userId+'&ignore='+$('.quick-verify-popup input[name=ignore-checks]').attr('checked'),
                 function(response) {
                   indiciaData.reports.verification.grid_verification_grid.reload();
                   alert(response + ' records verified');

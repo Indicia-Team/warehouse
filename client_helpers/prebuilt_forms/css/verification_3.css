@@ -7,7 +7,7 @@
   *vertical-align: auto;
   vertical-align: middle;
 }
-/* line 7, C:/Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/compass/stylesheets/compass/css3/_inline-block.scss */
+/* line 7, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/compass/stylesheets/compass/css3/_inline-block.scss */
 #verification-params .report-param {
   *display: inline;
 }
@@ -53,7 +53,7 @@
   *vertical-align: auto;
   background: url("../images/nuvola/ok-16px.png") no-repeat 2px 2px;
 }
-/* line 7, C:/Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/compass/stylesheets/compass/css3/_inline-block.scss */
+/* line 7, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/compass/stylesheets/compass/css3/_inline-block.scss */
 #verification-grid .pass-icon {
   *display: inline;
 }
@@ -80,7 +80,7 @@
   *vertical-align: auto;
   background: url("../images/nuvola/help-16px.png") no-repeat 2px 2px;
 }
-/* line 7, C:/Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/compass/stylesheets/compass/css3/_inline-block.scss */
+/* line 7, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/compass/stylesheets/compass/css3/_inline-block.scss */
 #verification-grid .fail-icon {
   *display: inline;
 }
@@ -146,7 +146,7 @@ ul.gallery li {
   text-align: center;
   background: none;
 }
-/* line 7, C:/Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/compass/stylesheets/compass/css3/_inline-block.scss */
+/* line 7, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/compass/stylesheets/compass/css3/_inline-block.scss */
 ul.gallery li {
   *display: inline;
 }
@@ -350,4 +350,8 @@ ul.gallery li {
 /* line 204, sass/verification_3.scss */
 .quick-verify-popup button {
   margin-top: 1em;
+}
+/* line 207, sass/verification_3.scss */
+.quick-verify-popup .helpText {
+  margin-left: 45px;
 }
