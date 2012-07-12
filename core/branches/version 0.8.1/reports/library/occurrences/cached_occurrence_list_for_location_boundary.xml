@@ -5,10 +5,6 @@
   <query website_filter_field="o.website_id">
   SELECT #field_sql#
   FROM cache_occurrences o
-  LEFT JOIN (sample_attribute_values vuser
-    JOIN sample_attributes sauser on sauser.id=vuser.sample_attribute_id and sauser.deleted=false and sauser.system_function = 'cms_username'
-  ) on vuser.sample_id=o.sample_id and vuser.deleted=false
-  LEFT JOIN users ouser ON ouser.id=o.created_by_id AND ouser.id&lt;&gt;1 -- don't return records allocated by default to admin user
   #joins#
   WHERE #website_filter#
   AND (CAST(o.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
@@ -30,7 +26,7 @@
       o.preferred_taxon as taxon,
       o.default_common_name as common,
       o.taxon_group,
-      COALESCE(vuser.text_value, ouser.username) as recorder,
+      o.recorders as recorder,
       st_astext(o.public_geom) as geom,
       o.zero_abundance,
       o.certainty
