@@ -6,7 +6,7 @@ COMMENT ON COLUMN cache_occurrences.recorders IS 'Recorder username, name or nam
 update cache_occurrences co
 set recorders=s.recorder_names
 from samples s
-where s.sample_id=co.sample_id and s.deleted=false
+where s.id=co.sample_id and s.deleted=false
 and co.recorders is null;
 
 update cache_occurrences co
