@@ -633,6 +633,13 @@ $config['occurrences']['insert']="insert into cache_occurrences (
   // Additional update statements to pick up the recorder name from various possible custom attribute places. Faster than 
   // loads of left joins.
   $config['occurrences']['final_updates']=array(
+    // Sample recorder names
+    'Sample recorder names' => 'update cache_occurrences co
+set recorders=s.recorder_names
+from needs_update_occurrences nuo, samples s
+where nuo.id=co.id 
+and s.sample_id=co.sample_id and s.deleted=false
+and co.recorders is null',
     // CMS username
     'CMS Username' => 'update cache_occurrences co
 set recorders=sav.text_value
