@@ -6,21 +6,12 @@
   SELECT #columns#
   FROM cache_occurrences o
   JOIN websites w on w.id=o.website_id 
-  JOIN samples s on s.id=o.sample_id
-  LEFT JOIN samples sparent on sparent.id=s.parent_id and sparent.deleted=false
-  LEFT JOIN (sample_attribute_values vuser
-    JOIN sample_attributes sauser on sauser.id=vuser.sample_attribute_id and sauser.deleted=false and sauser.system_function = 'cms_username'
-  ) on vuser.sample_id =o.id  and vuser.deleted=false
-  LEFT JOIN (sample_attribute_values vuserp
-    JOIN sample_attributes sauserp on sauserp.id=vuserp.sample_attribute_id and sauserp.deleted=false and sauserp.system_function = 'cms_username'
-  ) on vuserp.sample_id =sparent.id and vuserp.deleted=false
-  JOIN users ouser ON ouser.id=o.created_by_id
   #agreements_join#
   #joins#
   WHERE #sharing_filter# 
   AND o.record_status not in ('D','I','R','T')
   AND ('#searchArea#'='' OR st_intersects(o.public_geom, st_geomfromtext('#searchArea#',900913)))
-  AND (#ownData#=0 OR CAST(ouser.id AS character varying)='#currentUser#')
+  AND (#ownData#=0 OR CAST(o.created_by_id AS character varying)='#currentUser#')
   #idlist#
   </query>
   <order_bys>
@@ -58,7 +49,7 @@
     <column name='date_end' sql='o.date_end' visible='false' />
     <column name='date_type' sql='o.date_type' visible='false' />
     <column name='date' display='Date' datatype='date' />
-    <column name='recorder' display='Recorder' sql="COALESCE(CASE w.id WHEN iwwa.from_website_id THEN COALESCE(vuser.text_value, vuserp.text_value) ELSE w.title || '-&gt;' || COALESCE(vuser.text_value, vuserp.text_value) END, CASE ouser.id WHEN 1 THEN null else ouser.username END)" datatype="text" />
+    <column name='recorder' display='Recorder' sql="CASE w.id WHEN iwwa.from_website_id THEN '' ELSE w.title || '-&gt;' END || o.recorders" datatype="text" />
     <column name='zero_abundance' display='Zero Abundance' sql='o.zero_abundance' visible="false" />
     <column name='record_status' display='State' sql='o.record_status' visible="false" />
     <column name='belongs_to_user' display='Belongs to User' sql="CASE CAST(o.created_by_id AS character varying) WHEN '#currentUser#' THEN true ELSE false END" visible="false" />
