@@ -43,6 +43,8 @@ class cache_builder {
       else 
         $queries['insert'] = str_replace('#insert_join_needs_update#', $queries['insert_join_needs_update'], $queries['insert']);
       cache_builder::run_statement($db, $table, $queries['insert'], 'insert');
+      if (isset($queries['final_updates']))
+        cache_builder::run_statement($db, $table, $queries['final_updates'], 'final update');
       if (!variable::get("populated-$table")) {
         $cacheQuery = $db->query("select count(*) from cache_$table")->result_array(false);
         if (isset($queries['count']))
@@ -94,7 +96,6 @@ class cache_builder {
     $db->query("create temporary table needs_update_$table as $query");
     
     if (!variable::get("populated-$table")) {
-      echo $db->last_query().'<br/>';
       // as well as the changed records, pick up max 5000 previous records, which is important for initial population. 
       // 5000 is an arbitrary number to compromise between performance and cache population.
       // of the cache
