@@ -1,5 +1,5 @@
-@import "sassy-buttons";
 @import "compass/css3";
+@import "sassy-buttons";
 @import "blueprint/form";
 
 $verify-color: #00a000;
@@ -8,6 +8,7 @@ $dubious-color: #c08000;
 $default-color: #4ba3cc;
 $hover-color: #ffffcc;
 $selected-color: #027AC6;
+$header-font-color: #027AC6;
 $selected-font-color: #ffffff;
 
 #verification-params {
@@ -111,41 +112,6 @@ ul.gallery li {
   background: none;
 }
 
-.status-V {
-  @include background(linear-gradient(top, darken($verify-color, 30%), $verify-color));
-  @include border-radius(4px, 4px);
-  color: #ffffff;
-}
-
-.status-R {
-  @include background(linear-gradient(top, darken($reject-color, 30%), $reject-color));
-  @include border-radius(4px, 4px);
-  color: #ffffff;
-}
-
-.status-S {
-  @include background(linear-gradient(top, darken($default-color, 30%), $default-color));
-  @include border-radius(4px, 4px);
-  color: #ffffff;
-}
-
-.status-D {
-  @include background(linear-gradient(top, darken($dubious-color, 30%), $dubious-color));
-  @include border-radius(4px, 4px);
-  color: #ffffff;
-}
-
-.zero-t {
-  font-style: italic;
-  text-decoration: line-through;
-}
-
-button {
-  margin: 0.25em;
-  @include sassy-button-structure(4px, 1px, 0.25em, 11px, 1em);
-  font-weight: bold; 
-}
-
 #btn-verify, #btn-verify-all {
   @include sassy-button-colors("simple", $verify-color, darken($verify-color, 20%), true, #ffffff, raised);
 }
@@ -158,10 +124,6 @@ button {
   @include sassy-button-colors("simple", $dubious-color, darken($dubious-color, 20%), true, #ffffff, raised);
 }
 
-button.default-button {
-  @include sassy-button-colors("simple", $default-color, darken($default-color, 20%), true, #ffffff, raised);
-}
-
 #comment-text {
   display: block;
   width: 100%;
@@ -170,7 +132,6 @@ button.default-button {
 .popup-form {
   width: 500px;
   @include blueprint-form-layout;
-  @include blueprint-form-borders;
   @include blueprint-form-sizes(360px, 360px);
   @include blueprint-inline-form;
 
@@ -212,6 +173,22 @@ button.default-button {
   }
 }
 
+#details-tab {
+  table {
+    td {
+      &.header {
+        color: $header-font-color;
+        font-weight: bold;
+        border-bottom: solid silver 1px;
+      }
+      &.caption {
+        padding: 0 1em 0 0.5em;
+        font-weight: bold;
+      }
+    }
+  }  
+}
+
 #phenology-tab {
   p {
     font-size: 80%;
@@ -227,5 +204,7 @@ button.default-button {
   button {
     margin-top: 1em;
   }
-  
+  .helpText {
+    margin-left: 45px;
+  }
 }

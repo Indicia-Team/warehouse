@@ -28,7 +28,8 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
   
   /**
    * Provides the services/data_utils/bulk_verify service. This takes a report plus params (json object) in the $_POST
-   * data and verifies all the records returned by the report according to the filter.
+   * data and verifies all the records returned by the report according to the filter. Pass ignore=true to allow this to 
+   * ignore any verification check rule failures (use with care!).
    */
   public function bulk_verify() {
     $db = new Database();
@@ -45,7 +46,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       $ids = array();
       $count=0;
       foreach ($data['content']['records'] as $record) {
-        if ($record['record_status']!=='V') {
+        if ($record['record_status']!=='V' && (!empty($record['pass'])||$_POST['ignore']==='true')) {
           $ids[] = $record['occurrence_id'];
           $db->insert('occurrence_comments', array(
               'occurrence_id'=>$record['occurrence_id'],
