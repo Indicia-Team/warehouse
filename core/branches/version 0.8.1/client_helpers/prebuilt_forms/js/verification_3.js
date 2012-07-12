@@ -430,8 +430,14 @@ $(document).ready(function () {
           visibleIdx++;
         }
       });
-      userVal = $(row).find('td:eq('+userColIdx+')').html();
-      taxonVal = $(row).find('td:eq('+taxonColIdx+')').html();
+      userVal = $(row).find('input.user-val').val();
+      if (typeof userVal==="undefined") {
+        userVal = $(row).find('td:eq('+userColIdx+')').html();
+      }
+      taxonVal = $(row).find('input.taxon-val').val();
+      if (typeof taxonVal==="undefined") {
+        taxonVal = $(row).find('td:eq('+taxonColIdx+')').html();
+      }
       $.fancybox('<div class="quick-verify-popup" style="width: 550px"><h2>Quick verification</h2>'+
           '<p>The following options let you rapidly verify records. The only records affected are those in the grid but they can be on any page of the grid, '+
           'so please ensure you have set the grid\'s filter correctly before proceeding. You should only proceed if you are certain that data you are verifying '+
@@ -449,10 +455,10 @@ $(document).ready(function () {
               radio=$('.quick-verify-popup input[name=quick-option]:checked');
           if (radio.length===1) {
             if ($(radio).val().indexOf('recorder')!==-1) {
-              params.user=$(row).find('td:eq('+userColIdx+')').html();
+              params.user=userVal;
             }
             if ($(radio).val().indexOf('species')!==-1) {
-              params.taxon=$(row).find('td:eq('+taxonColIdx+')').html();
+              params.taxon=taxonVal;
             }
             // We now have parameters that can be applied to a report and we know the report, so we can ask the warehouse
             // to verify the occurrences provided by the report that match the filter.

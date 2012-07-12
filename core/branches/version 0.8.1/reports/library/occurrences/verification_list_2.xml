@@ -47,10 +47,12 @@
     <column name='occurrence_id' display='ID' sql='o.id' datatype='integer' template="&lt;div class='status-{record_status}'&gt;{occurrence_id}&lt;/div&gt;" />
     <column name='website' display='Source' sql='w.title' datatype="text" />
     <column name='survey' display='Survey' sql='o.survey_title' datatype="text" visible="false"/>
+    <!-- the user col would need to store its untemplated value in a hidden with class user-val if it were templated. -->
     <column name='user' display='User' sql='o.recorders' datatype="text" />
     <column name='sample_id' visible='false' sql='o.sample_id' datatype='integer' />
+    <!-- the following col stores the original untemplated taxon val in a hidden, to be used as a filter during bulk verifications. -->
     <column name='taxon' display='Species' 
-      template="&lt;div class='zero-{zero_abundance}'&gt;{taxon}&lt;/div&gt;"
+      template='&lt;input type="hidden" class="taxon-val" value="{taxon}"/&gt;&lt;div class="zero-{zero_abundance}"&gt;{taxon}&lt;/div&gt;'
       sql="CASE WHEN o.preferred_taxon=o.default_common_name then o.preferred_taxon ELSE o.preferred_taxon || COALESCE(' | ' || o.default_common_name, '') END" datatype='text' />
     <column name='taxa_taxon_list_id' visible='false' sql='o.taxa_taxon_list_id' datatype='integer' />   
     <column name='location_name' display='Site name' sql='o.location_name' datatype='text' />
