@@ -38,44 +38,43 @@ if ($this->auth->logged_in('CoreAdmin')) {
 // sets the various control's to checked, unchecked, enabled or disabled where the agreement
 // specifies restrictions on what can be done. Once selected, you can't change the agreement
 // during edit of an existing websites_website_agreement.
-if ($this->uri->method(false)=='create')
-  data_entry_helper::$javascript .= "
-    $('#agreement-select').change(function(evt) {
-      jQuery.ajax({ 
-        type: 'GET', 
-        url: '".url::site()."services/data/website_agreement/'+evt.target.value+'?mode=json&view=detail'+
-          '&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&callback=?', 
-        data: {}, 
-        success: function(data) {
-          $.each(data[0], function(field, value) {
-            if (field.substr(0, 7)==='provide' || field.substr(0,7)==='receive') {
-              switch (value) {
-                case 'D':
-                  $('#div-'+field+' input').attr('checked','');
-                  $('#div-'+field).attr('enabled',false);
-                  $('#div-'+field).css('opacity',0.5);
-                  break;
-                case 'O':
-                  $('#div-'+field).attr('enabled',true);
-                  $('#div-'+field).css('opacity',1);
-                  break;
-                case 'A':
-                  $adminCase  
-                  break;
-                case 'R':
-                  $('#div-'+field+' input').attr('checked','checked');
-                  $('#div-'+field).attr('enabled',false);
-                  $('#div-'+field).css('opacity',0.5);
-                  break;
-              }
+data_entry_helper::$javascript .= "
+  $('#agreement-select').change(function(evt) {
+    jQuery.ajax({ 
+      type: 'GET', 
+      url: '".url::site()."services/data/website_agreement/'+evt.target.value+'?mode=json&view=detail'+
+        '&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&callback=?', 
+      data: {}, 
+      success: function(data) {
+        $.each(data[0], function(field, value) {
+          if (field.substr(0, 7)==='provide' || field.substr(0,7)==='receive') {
+            switch (value) {
+              case 'D':
+                $('#div-'+field+' input').attr('checked','');
+                $('#div-'+field).attr('enabled',false);
+                $('#div-'+field).css('opacity',0.3);
+                break;
+              case 'O':
+                $('#div-'+field).attr('enabled',true);
+                $('#div-'+field).css('opacity',1);
+                break;
+              case 'A':
+                $adminCase  
+                break;
+              case 'R':
+                $('#div-'+field+' input').attr('checked','checked');
+                $('#div-'+field).attr('enabled',false);
+                $('#div-'+field).css('opacity',0.3);
+                break;
             }
-          });
-        },
-        dataType: 'json' 
-      });
+          }
+        });
+      },
+      dataType: 'json' 
     });
-    $('#agreement-select').change();
-  ";
+  });
+  $('#agreement-select').change();
+";
 
 ?>
 <form class="cmxform" action="<?php echo url::site().'websites_website_agreement/save' ?>" method="post" id="websites-website-agreement-edit">
