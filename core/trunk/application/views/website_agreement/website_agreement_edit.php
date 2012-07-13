@@ -86,7 +86,7 @@ echo data_entry_helper::select(array(
       'by a website, other websites participating in the same agreement will be able to verify this data if they select to receive '.
       'data for verification.',
   'fieldname' => 'website_agreement:provide_for_verification',
-  'default' => html::initial_value($values, 'website_agreement:provide_for_verifiction'),
+  'default' => html::initial_value($values, 'website_agreement:provide_for_verification'),
   'lookupValues' => array('D' => 'Not allowed','O' => 'Optional','A' => 'Optional, but must be setup by an administrator','R' => 'Required')
 ));
 echo data_entry_helper::select(array(
