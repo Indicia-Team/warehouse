@@ -25,6 +25,7 @@
 <fieldset>
 <input type='checkbox' class="vnarrow" name="boundary"/>Select this checkbox if the data should be loaded into the boundary geometry in the location (as opposed to the centroid geometry).<br/>
 <input type='checkbox' class="vnarrow" name="use_parent"/>Select the checkbox if the locations are associated with a parent location.<br/>
+<input type='checkbox' class="vnarrow" name="use_parent_code"/>If so, use the code to join to the parent rather than the name?.<br/>
 <label for='SRID' class='wide' >SRID used in Shapefile</label>
 <select id='SRID' name='srid' >
   <option value="27700">EPSG:27700 British National Grid</option>
@@ -66,7 +67,7 @@
 You can also indicate a column to identify a parent location and a code field.</p>
 <table class="ui-widget ui-widget-content">
 <thead class="ui-widget-header">
-<tr><th>Column in DBF File</th><th>Name?</th><th>Parent Name?</th><th>Code?</th></tr>
+<tr><th>Column in DBF File</th><th>Name?</th><th>Parent Name/Code?</th><th>Code?</th></tr>
 </thead>
 <tbody>
 <?php $i=0;
