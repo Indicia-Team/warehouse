@@ -51,7 +51,7 @@ function data_cleaner_get_occurrence_list($db) {
   inner join samples s on s.id=o.sample_id and s.deleted=false
   inner join websites w on w.id=o.website_id and w.deleted=false and w.verification_checks_enabled=true
   inner join taxa_taxon_lists ttl on ttl.id = o.taxa_taxon_list_id and ttl.deleted=false
-  where o.deleted=false and o.record_status not in (\'V\',\'R\',\'D\')
+  where o.deleted=false and o.record_status not in (\'I\',\'V\',\'R\',\'D\')
   and (ttl.id <> o.last_verification_check_taxa_taxon_list_id
   or o.updated_on>o.last_verification_check_date
   or s.updated_on>o.last_verification_check_date
