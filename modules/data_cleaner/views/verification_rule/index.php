@@ -24,10 +24,10 @@
  
 echo $grid;
 ?>
-<!--<form action="<?php echo url::site().'verification_rule/create'; ?>">
+<form action="<?php echo url::site().'verification_rule/create'; ?>">
 <input type="submit" value="New verification_rule" class="ui-corner-all ui-state-default button" />
-</form>-->
-<p>Verification rule files are created by uploading files that are compatible with the NBN Record Cleaner. 
+</form>
+<p>Verification rules can be created by uploading files that are compatible with the NBN Record Cleaner. 
 For more information on creating these files, see 
 <a href="http://www.nbn.org.uk/Tools-Resources/Recording-Resources/NBN-Record-Cleaner/Creating-verification-rules.aspx">
 NBN Record Cleaner - creating verification rules</a>. You can either use the online file servers
