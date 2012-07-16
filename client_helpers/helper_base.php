@@ -151,10 +151,7 @@ $indicia_templates = array(
           });
           return results;
         },
-      formatItem: function(item)
-      {
-        return item.{captionField};
-      }
+      formatItem: {formatFunction}
       {max}
     });
     jQuery('input#{escaped_input_id}').result(function(event, data) {
