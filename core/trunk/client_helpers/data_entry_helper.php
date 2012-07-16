@@ -193,7 +193,8 @@ class data_entry_helper extends helper_base {
       'escaped_id' => self::jq_esc($options['id']),
       'defaultCaption' => self::check_default_value('location:'.$options['inputId'],
           array_key_exists('defaultCaption', $options) ? $options['defaultCaption'] : ''),
-      'max' => array_key_exists('numValues', $options) ? ', max : '.$options['numValues'] : ''
+      'max' => array_key_exists('numValues', $options) ? ', max : '.$options['numValues'] : '',
+      'formatFunction' => 'function(item) { return item.{captionField}; }'
     ), $options);
     self::add_resource('autocomplete');
     // Escape the id for jQuery selectors

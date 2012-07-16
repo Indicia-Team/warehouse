@@ -999,6 +999,7 @@ class iform_mnhnl_dynamic_1 {
         return '<input type="hidden" name="occurrence:taxa_taxon_list_id" value="'.$response[0]['id']."\"/>\n";
       }
     }
+    call_user_func(array(self::$called_class, 'build_grid_autocomplete_function'), $args);
     if (call_user_func(array(self::$called_class, 'getGridMode'), $args)) {      
       // multiple species being input via a grid      
       $species_ctrl_opts=array_merge(array(
@@ -1026,8 +1027,6 @@ class iform_mnhnl_dynamic_1 {
       }
       if (isset($args['col_widths']) && $args['col_widths']) $species_ctrl_opts['colWidths']=explode(',', $args['col_widths']);
       call_user_func(array(self::$called_class, 'build_grid_taxon_label_function'), $args);
-      call_user_func(array(self::$called_class, 'build_grid_autocomplete_function'), $args);
-      
       // Start by outputting a hidden value that tells us we are using a grid when the data is posted,
       // then output the grid control
       return '<input type="hidden" value="true" name="gridmode" />'.
@@ -1066,6 +1065,7 @@ class iform_mnhnl_dynamic_1 {
       }
       if (count($query)) 
         $extraParams['query'] = json_encode($query);
+      global $indicia_templates;
       $species_ctrl_opts=array_merge(array(
           'label'=>lang::get('occurrence:taxa_taxon_list_id'),
           'fieldname'=>'occurrence:taxa_taxon_list_id',
@@ -1075,12 +1075,14 @@ class iform_mnhnl_dynamic_1 {
           'columns'=>2,
           'parentField'=>'parent_id',
           'extraParams'=>$extraParams,
-          'blankText'=>'Please select'
+          'blankText'=>'Please select',
+          'formatFunction'=>$indicia_templates['format_species_autocomplete_fn']
       ), $options);
       if (isset($args['cache_lookup']) && $args['cache_lookup'])
         $species_ctrl_opts['extraParams']['view']='cache';
-      global $indicia_templates;
-      if (isset($args['species_include_both_names']) && $args['species_include_both_names']) {
+      // if using something other than an autocomplete, then set the caption template to include the appropriate names. Autocompletes
+      // use a JS function instead.
+      if ($args['species_ctrl']!=='autcomplete' && isset($args['species_include_both_names']) && $args['species_include_both_names']) {
         if ($args['species_names_filter']=='all')
           $indicia_templates['species_caption'] = '{taxon}';
         elseif ($args['species_names_filter']=='language')
