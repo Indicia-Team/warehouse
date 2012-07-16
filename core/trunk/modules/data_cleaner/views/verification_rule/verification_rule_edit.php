@@ -71,6 +71,7 @@ echo data_entry_helper::text_input(array(
   'label'=>'Error Message',
   'fieldname'=>'verification_rule:error_message',
   'class'=>'control-width-6',
+  'validation'=>array('required'),
   'default'=> html::initial_value($values, 'verification_rule:error_message')
 ));
 echo data_entry_helper::textarea(array(
