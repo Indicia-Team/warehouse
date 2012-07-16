@@ -424,7 +424,7 @@ idlist=';
       $olOptions
     );
     // give realistic performance on the map
-    $extraParams['limit']=1000;
+    $extraParams['limit']=3000;
     $r .= report_helper::report_map(array(
       'dataSource' => $args['report_name'],
       'mode' => 'report',
@@ -434,7 +434,8 @@ idlist=';
       'paramDefaults' => $paramDefaults,
       'reportGroup' => 'verification',
       'clickableLayersOutputMode' => 'report',
-      'rowId'=>'occurrence_id'
+      'rowId'=>'occurrence_id',
+      'sharing'=>'verification'
     ));
     $r .= '</div>';
     $r .= '<div id="record-details-wrap" class="ui-widget ui-widget-content">';
@@ -909,7 +910,7 @@ idlist=';
       'dataSource' => 'library/months/phenology',
       'readAuth' => $auth,
       'extraParams' => $extraParams,
-      'sharing'=>'reporting'
+      'sharing'=>'verification'
     ));
     // must output all months
     $output = array(array(1,0),array(2,0),array(3,0),array(4,0),array(5,10),array(6,0),array(7,0),array(8,0),array(9,0),array(10,0),array(11,0),array(12,0));
