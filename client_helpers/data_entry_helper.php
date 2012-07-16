@@ -4884,7 +4884,7 @@ if (errors.length>0) {
     // find the systems that have client-side JavaScript handlers
     $handlers = array_intersect($systems, array('osgb'));
     foreach ($handlers as $code) {
-      $file = strtolower(self::$js_path."drivers/sref/$code.js");
+      $file = self::$js_path.strtolower("drivers/sref/$code.js");
       // dynamically build a resource to link us to the handler js file.
       self::$required_resources[] = 'sref_handlers_'.$code;
       self::$resource_list['sref_handlers_'.$code] = array(
