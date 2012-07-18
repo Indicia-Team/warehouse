@@ -40,6 +40,29 @@ mapGeoreferenceHooks = [];
     
     // The ghost grid square drawn when hovering
     var ghost=null;
+    
+    /** 
+     * Adds the distribution point indicated by a record object to a list of features.
+     */
+    function addDistPoint(features, record, wktCol, opts, id) {
+      if (record[wktCol]!==null) {
+        var feature, geom=OpenLayers.Geometry.fromWKT(record[wktCol]);
+        if (this.map.projection.getCode() != this.indiciaProjection.getCode()) {
+          geom.transform(this.indiciaProjection, this.map.projection);
+        }
+        delete record[wktCol];
+        if (opts.type!=='vector') {
+          // render a point for symbols
+          geom = geom.getCentroid();
+        }
+        feature = new OpenLayers.Feature.Vector(geom, record);
+        if (typeof id!=='undefined') {
+          // store a supplied identifier against the feature
+          feature.id=id;
+        }
+        features.push(feature);
+      }
+    }
         
     /**
      * Remove all features of a specific type or not of a specific type
@@ -497,7 +520,8 @@ mapGeoreferenceHooks = [];
       var r={
         openlayers_wms : function() {return new OpenLayers.Layer.WMS('OpenLayers WMS', 'http://labs.metacarta.com/wms/vmap0', {layers: 'basic'}, {'sphericalMercator': true});},
         nasa_mosaic : function() {return new OpenLayers.Layer.WMS('NASA Global Mosaic', 'http://t1.hypercube.telascience.org/cgi-bin/landsat7', {layers: 'landsat7'}, {'sphericalMercator': true});},
-        virtual_earth : function() {return new OpenLayers.Layer.VirtualEarth('Virtual Earth', {'type': VEMapStyle.Aerial, 'sphericalMercator': true});},
+        // legacy support only
+        virtual_earth: function() {return new OpenLayers.Layer.Bing({name: 'Bing Aerial', 'type': 'Aerial', 'key': settings.bing_api_key, 'sphericalMercator': true});},
         bing_aerial : function() {return new OpenLayers.Layer.Bing({name: 'Bing Aerial', 'type': 'Aerial', 'key': settings.bing_api_key, 'sphericalMercator': true});},
         bing_hybrid : function() {return new OpenLayers.Layer.Bing({name: 'Bing Hybrid', 'type': 'AerialWithLabels', 'key': settings.bing_api_key, 'sphericalMercator': true});},
         bing_shaded : function() {return new OpenLayers.Layer.Bing({name: 'Bing Shaded', 'type': 'road', 'key': settings.bing_api_key, 'sphericalMercator': true});},
@@ -650,7 +674,7 @@ mapGeoreferenceHooks = [];
           },
           // handler for the click or bounding box action
           onGetInfo: function(position) {
-            var bounds, xy;
+            var bounds, xy, features, origFeatures;
             // we could have a point or a bounds
             if (position instanceof OpenLayers.Bounds) {
               bounds = position;
@@ -710,9 +734,14 @@ mapGeoreferenceHooks = [];
             }
             // now handle any vector clickable layers
             if (clickableVectorLayers.length>0) {
+              // build an array of all previuosly selected features in one
+              origfeatures = [];
+              $.each(clickableVectorLayers, function(idx, layer) {
+                origfeatures = origfeatures.concat(layer.selectedFeatures);
+              });
               // select all the features that were clicked or boxed.
               selectBox(bounds, clickableVectorLayers, div);
-              // build an array of all selected features in one
+              // build an array of all newly selected features in one
               features = [];
               $.each(clickableVectorLayers, function(idx, layer) {
                 features = features.concat(layer.selectedFeatures);
@@ -726,12 +755,14 @@ mapGeoreferenceHooks = [];
                   ids.push(feature.attributes[div.settings.featureIdField]);
                 });
                 $('.'+div.settings.reportGroup+'-idlist-param').val(ids.join(','));
-                // find the associated reports, charts etc and reload them to show the selected data
-                $.each(indiciaData.reports[div.settings.reportGroup], function(name, report) {
-                  report[0].settings.recordCount = features.length;
-                  report[0].settings.offset=0;
-                  report.reload();
-                });
+                // find the associated reports, charts etc and reload them to show the selected data. No need to if we started with no selection 
+                // and still have no selection.
+                if (origfeatures.length!==0 || features.length!==0) {
+                  $.each(indiciaData.reports[div.settings.reportGroup], function(name, report) {
+                    report[0].settings.offset=0;
+                    report.reload(true);
+                  });
+                }
               } else if (div.settings.clickableLayersOutputMode==='reportHighlight'
                   && typeof indiciaData.reports!=="undefined") {
                 // deselect existing selection in grid as well as on feature layer
@@ -963,6 +994,7 @@ mapGeoreferenceHooks = [];
       // expose public stuff
       this.settings = opts;
       this.pointToSref = pointToSref;
+      this.addDistPoint = addDistPoint;
       // wrap the map in a div container
       $(this).wrap('<div id="map-container" style="width:'+opts.width+'" >');
       

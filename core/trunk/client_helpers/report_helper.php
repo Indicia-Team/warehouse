@@ -417,7 +417,7 @@ class report_helper extends helper_base {
         foreach ($options['columns'] as $field) {
           $classes=array();
           if (isset($options['sendOutputToMap']) && $options['sendOutputToMap'] && isset($field['mappable']) && ($field['mappable']==='true' || $field['mappable']===true)) {
-            $addFeaturesJs.= "  addDistPoint(features, ".json_encode($row).", '".$field['fieldname']."', {}".
+            $addFeaturesJs.= "  div.addDistPoint(features, ".json_encode($row).", '".$field['fieldname']."', {}".
                 (empty($rowId) ? '' : ", '".$row[$options['rowId']]."'").");\n";
           }
           if (isset($field['visible']) && ($field['visible']==='false' || $field['visible']===false))
@@ -1316,7 +1316,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         $opts = json_encode(array('type'=>$options['displaySymbol']));
         $rowId = isset($options['rowId']) ? ' id="row'.$row[$options['rowId']].'"' : '';
         foreach ($records as $record) 
-          $addFeaturesJs.= "addDistPoint(features, ".json_encode($record).", '$wktCol', $opts".(empty($rowId) ? '' : ", '".$record[$options['rowId']]."'").");\n";
+          $addFeaturesJs.= "div.addDistPoint(features, ".json_encode($record).", '$wktCol', $opts".(empty($rowId) ? '' : ", '".$record[$options['rowId']]."'").");\n";
         if (!empty($styleFns)) {
           $styleFns = ", {context: {
   $styleFns
@@ -2131,25 +2131,6 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     var styleMap = new OpenLayers.StyleMap({'default' : defaultStyle, 'select' : selectStyle});
     indiciaData.reportlayer = new OpenLayers.Layer.Vector('Report output', {styleMap: styleMap, rendererOptions: {zIndexing: true}});
     mapInitialisationHooks.push(function(div) {
-      function addDistPoint(features, record, wktCol, opts, id) {
-        if (record[wktCol]!==null) {
-          var feature, geom=OpenLayers.Geometry.fromWKT(record[wktCol]);
-          if (div.map.projection.getCode() != div.indiciaProjection.getCode()) {
-            geom.transform(div.indiciaProjection, div.map.projection);
-          }
-          delete record[wktCol];
-          if (opts.type!=='vector') {
-            // render a point for symbols
-            geom = geom.getCentroid();
-          }
-          feature = new OpenLayers.Feature.Vector(geom, record);
-          if (typeof id!=='undefined') {
-            // store a supplied identifier against the feature
-            feature.id=id;
-          }
-          features.push(feature);
-        }
-      }
       features = [];
       $addFeaturesJs
       indiciaData.reportlayer.addFeatures(features);\n";

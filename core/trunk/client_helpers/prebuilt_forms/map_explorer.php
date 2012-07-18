@@ -220,7 +220,7 @@ class iform_map_explorer {
       else
         $reportOptions['extraParams']['ownGroups']=0;
     }
-    $reportOptions['extraParams']['limit']=500;
+    $reportOptions['extraParams']['limit']=3000;
     $r = report_helper::report_grid($reportOptions);
    
     $r .= report_helper::report_map(array(
@@ -244,7 +244,8 @@ class iform_map_explorer {
         'toolbarDiv'=>'top'
       )
     );
-    $r .= map_helper::map_panel($options);
+    $olOptions = iform_map_get_ol_options($args);
+    $r .= map_helper::map_panel($options, $olOptions);
     $allowDownload = !isset($args['downloadOwnDataOnly']) || !$args['downloadOwnDataOnly'] 
       || (isset($reportOptions['extraParams']['ownData']) && $reportOptions['extraParams']['ownData']===1)
       || (isset($_POST['explore-ownData']) && $_POST['explore-ownData']==='1')
