@@ -320,7 +320,8 @@ li.ui-state-error {
 .helpText, .helpTextLeft {
   color:gray;
   font-size:80%;
-  margin:-4px 0 8px 0px;
+  margin: 0 0 8px 0px;
+  line-height: 1.2em;
 }
 
 .helpText {

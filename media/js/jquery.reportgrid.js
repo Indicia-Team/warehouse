@@ -91,7 +91,7 @@ function simple_tooltip(target_items, name){
     }
     
     function getUrlParamsForAllRecords(div) {
-      request = {};
+      var request = {}, paramName;
       // Extract any parameters from the attached form as long as they are report parameters
       $('form#'+div.settings.reportGroup+'-params input, form#'+div.settings.reportGroup+'-params select').each(function(idx, input) {
         if (input.type!=='submit' && $(input).attr('name').indexOf(div.settings.reportGroup+'-')===0
@@ -403,20 +403,27 @@ function simple_tooltip(target_items, name){
     }
     
     /**
-     * Function to make a service call to load the grid data.
+     * Build the URL required for a report request, excluding the pagination (limit + offset) parameters.
      */
-    function load (div, recount) {
-      var paramName, request = getRequest(div), params=getUrlParamsForAllRecords(div);
+    function getFullRequestPathWithoutPaging(div) {
+      var request = getRequest(div), params=getUrlParamsForAllRecords(div);
       $.each(params, function(key, val) {
         request += '&' + key + '=' + val;
       });
-      
+      if (div.settings.orderby !== null) {
+        request += '&orderby=' + div.settings.orderby + '&sortdir=' + div.settings.sortdir;
+      }
+      return request;
+    }
+    
+    /**
+     * Function to make a service call to load the grid data.
+     */
+    function load (div, recount) {
+      var request = getFullRequestPathWithoutPaging(div);
       request += '&offset=' + div.settings.offset;
       if (recount) {
         request += '&wantCount=1';
-      }
-      if (div.settings.orderby !== null) {
-        request += '&orderby=' + div.settings.orderby + '&sortdir=' + div.settings.sortdir;
       }
       // Ask for one more row than we need so we know if the next page link is available
       if (div.settings.itemsPerPage !== null) {
@@ -518,10 +525,12 @@ function simple_tooltip(target_items, name){
       });
     };
     
-    this.reload = function() {
+    this.reload = function(recount) {
+      recount = (typeof recount==="undefined") ? false : recount;
       $.each($(this), function(idx, div) {
-        load(div, false);
+        load(div, recount);
       });
+      
     };
     
     /**
@@ -572,6 +581,21 @@ function simple_tooltip(target_items, name){
             div.settings.extraParams[fieldname] = $(e.target).val();
           }
           load(div, true);
+          if (div.settings.linkFeatures) {
+            // we need to reload the map layer
+            var request=getFullRequestPathWithoutPaging(div)+'&limit=3000';
+            $.getJSON(request,
+              null,
+              function(response) {
+                var features=[];
+                $.each(response, function (idx, obj) {
+                  indiciaData.mapdiv.addDistPoint(features, obj, 'geom', {"type":"vector"}, obj[div.settings.rowId]);
+                });
+                indiciaData.reportlayer.removeAllFeatures(); 
+                indiciaData.reportlayer.addFeatures(features);
+              }
+            );
+          }
           e.target.hasChanged = false;
         }
       };
