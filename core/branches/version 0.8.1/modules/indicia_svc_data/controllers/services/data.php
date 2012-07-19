@@ -94,17 +94,17 @@ class Data_Controller extends Data_Service_Base_Controller {
   );
   
   /**
-   * Provides the /services/data/cache_taxon_searchterms service.
-   * Retrieves details of a single taxon searchterm.
-   */
+  * Provides the /services/data/cache_taxon_searchterms service.
+  * Retrieves details of a single taxon searchterm.
+  */
   public function cache_taxon_searchterm()
   {
     $this->handle_call('cache_taxon_searchterm');
   }
-
+  
   /**
   * Provides the /services/data/index_websites_website_agreements service.
-  * Retrieves details of a single language.
+  * Retrieves details of a single index_websites_website_agreements record.
   */
   public function index_websites_website_agreement()
   {
@@ -122,7 +122,7 @@ class Data_Controller extends Data_Service_Base_Controller {
 
   /**
   * Provides the /services/data/location service.
-  * Retrieves details of a single survey.
+  * Retrieves details of a single location.
   */
   public function location()
   {
@@ -167,7 +167,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   
   /**
   * Provides the /services/data/occurrence service.
-  * Retrieves details of occurrences.
+  * Retrieves details of notifications.
   */
   public function notification()
   {
@@ -241,7 +241,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   
   /**
   * Provides the /service/data/person_attribute_value service.
-  * Retrieves details of occurrence attributes.
+  * Retrieves details of person attribute values.
   */
   public function person_attribute_value()
   {
@@ -282,30 +282,30 @@ class Data_Controller extends Data_Service_Base_Controller {
   */
   public function survey()
   {
-  $this->handle_call('survey');
+    $this->handle_call('survey');
   }
 
   /**
-   * Provides the /services/data/taxon_code service.
-   * Retrieves details of a single taxon code.
-   */
+  * Provides the /service/data/taxon_code service.
+  * Retrieves details of taxon codes.
+  */
   public function taxon_code()
   {
     $this->handle_call('taxon_code');
   }
-  
+
   /**
   * Provides the /services/data/taxon_group service.
   * Retrieves details of a single taxon_group.
   */
   public function taxon_group()
   {
-  $this->handle_call('taxon_group');
+    $this->handle_call('taxon_group');
   }
 
- /**
+  /**
   * Provides the /service/data/taxon_image service.
-  * Retrieves details of location images.
+  * Retrieves details of taxon images.
   */
   public function taxon_image()
   {
@@ -342,7 +342,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   
   /**
   * Provides the /service/data/occurrence_attribute service.
-  * Retrieves details of occurrence attributes.
+  * Retrieves details of taxa on taxon list attributes.
   */
   public function taxa_taxon_list_attribute()
   {
@@ -351,7 +351,7 @@ class Data_Controller extends Data_Service_Base_Controller {
 
   /**
   * Provides the /service/data/taxa_taxon_list_attribute_value service.
-  * Retrieves details of occurrence attribute values.
+  * Retrieves details of taxa on taxon list attribute values.
   */
   public function taxa_taxon_list_attribute_value()
   {
@@ -414,7 +414,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   
   /**
   * Provides the /services/data/user service.
-  * Retrieves details of a single user.
+  * Retrieves details of a single user identifier.
   */
   public function user_identifier()
   {
@@ -466,7 +466,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   }
 
   /**
-  * Provides the /services/data/occurrence_comments service.
+  * Provides the /services/data/sample_comments service.
   */
   public function sample_comment()
   {
@@ -809,11 +809,19 @@ class Data_Controller extends Data_Service_Base_Controller {
               $attrs = explode(',', $value);
               break;
             default:
-              Kohana::log('debug', 'Trying to fetch attributes for non sample/occurrence/location table. Ignoring.');
+              Kohana::log('alert', 'Trying to fetch attributes for non sample/occurrence/location table. Ignoring.');
           }
           break;
         case 'query':
           $this->apply_query_def_to_db($value);
+          break;
+        case 'mode':
+        case 'view': 
+        case 'nonce':
+        case 'auth_token':
+        case 'callback':
+        case 'timestamp':
+        case '_':
           break;
       default:
         if (array_key_exists(strtolower($param), $this->view_columns)) {
@@ -827,7 +835,8 @@ class Data_Controller extends Data_Service_Base_Controller {
           } else {
             $like[$param]=str_replace('*', '%', $value);
           }
-
+        } else {
+          Kohana::log('alert', "Trying to filter on unknown column $param. Ignoring.");
         }
       }
     }
@@ -875,19 +884,20 @@ class Data_Controller extends Data_Service_Base_Controller {
               elseif ($key===1) $foundvalue = $value;
               else throw new Exception("In clause statement for $key is not of the correct structure");
             } elseif (is_array($value)) {
-              $this->db->$cmd($key,$value);
+              $this->db->$cmd($this->viewname.'.'.$key,$value);
             } else {
               throw new Exception("In clause statement for $key is not of the correct structure");
             }
           }
           // if param was supplied in form "cmd = array(field, values)" then foundfield and foundvalue would be set.
           if (isset($foundfield) && isset($foundvalue))
-            $this->db->$cmd($foundfield,$foundvalue);
+            $this->db->$cmd($this->viewname.'.'.$foundfield,$foundvalue);
           break;
         case 'where':
         case 'orwhere':
         case 'like':
         case 'orlike':
+          $this_cmd=$cmd;
           unset($foundfield);
           unset($foundvalue);
           foreach($params as $key=>$value) {
