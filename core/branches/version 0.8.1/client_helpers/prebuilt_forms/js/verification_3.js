@@ -116,10 +116,12 @@ function postOccurrence(occ) {
 function buildVerifierEmail() {
   //Form to create email of record details
   var record = '';
-  $.each(current_record.data, function (idx, obj) {
-    if (obj.value !== null && obj.value !=='') {
-      record += obj.caption + ': ' + obj.value + "\n";
-    }
+  $.each(current_record.data, function (idx, section) {
+    $.each(section, function(idx, field) {
+      if (field.value !== null && field.value !=='') {
+        record += field.caption + ': ' + field.value + "\n";
+      }
+    });
   });
 
   record += "\n\n[Photos]\n\n[Comments]";
