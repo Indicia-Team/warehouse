@@ -336,7 +336,7 @@ class iform_verification_3 {
     // Set default values for the report
     foreach($r as &$param) {
       if ($param['name']=='report_name')
-        $param['default']='library/occurrences/verification_list_2';
+        $param['default']='library/occurrences/verification_list_3';
       elseif ($param['name']=='param_presets') {
         $param['default'] = 'survey_id=
 date_from=
@@ -546,6 +546,8 @@ idlist=';
         $args['param_presets'].="\nexpertise_location={profile_location_expertise}";
       if (strpos($args['param_presets'].$args['param_defaults'], 'expertise_taxon_groups')===false)
         $args['param_presets'].="\nexpertise_taxon_groups={profile_taxon_groups_expertise}";
+      if (strpos($args['param_presets'].$args['param_defaults'], 'expertise_surveys')===false)
+        $args['param_presets'].="\nexpertise_surveys={profile_surveys_expertise}";
     }
     $opts = array_merge(
         iform_report_get_report_options($args, $auth),
