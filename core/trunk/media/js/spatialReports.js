@@ -45,8 +45,18 @@ function storeGeomsInHiddenInput(layer, inputId) {
   }
 }
 
-function bufferFeature(feature) {
+function storeGeomsInForm(div) {
+  if (typeof bufferLayer==="undefined") {
+    storeGeomsInHiddenInput(div.map.editLayer, 'hidden-wkt');
+  } else {
+    storeGeomsInHiddenInput(div.map.editLayer, 'orig-wkt');
+    storeGeomsInHiddenInput(bufferLayer, 'hidden-wkt');
+  }
+}
+
+function bufferFeature(div, feature) {
   if (typeof feature.geometry!=="undefined" && feature.geometry!==null) {
+    indiciaData.buffering = true;
     $.ajax({
       url: indiciaData.mapdiv.settings.indiciaSvc + 'index.php/services/spatial/buffer'
           +'?wkt='+feature.geometry.toString()+'&buffer='+$('#geom_buffer').val()+'&callback=?',
@@ -56,8 +66,12 @@ function bufferFeature(feature) {
         // link the feature to its buffer, for easy removal
         feature.buffer = buffer;
         bufferLayer.addFeatures([buffer]);
-      },
-      async: false
+        indiciaData.buffering = false;
+        if (typeof indiciaData.submitting!=="undefined" && indiciaData.submitting) {
+          storeGeomsInForm(div);
+          $('#run-report').parents('form')[0].submit();
+        }
+      }
     });
   }
 }
@@ -69,17 +83,8 @@ function rebuildBuffer(div) {
   bufferLayer.removeAllFeatures();
   // re-add each object from the edit layer using the spatial buffering service
   $.each(div.map.editLayer.features, function(idx, feature) {
-    bufferFeature(feature);
+    bufferFeature(div, feature);
   });
-}
-
-function storeGeomsInForm(div) {
-  if (typeof bufferLayer==="undefined") {
-    storeGeomsInHiddenInput(div.map.editLayer, 'hidden-wkt');
-  } else {
-    storeGeomsInHiddenInput(div.map.editLayer, 'orig-wkt');
-    storeGeomsInHiddenInput(bufferLayer, 'hidden-wkt');
-  }
 }
 
 function enableBuffering() {
@@ -98,7 +103,7 @@ function enableBuffering() {
     div.map.editLayer.events.register('featureadded', div.map.editLayer, function(evt) {
       // don't buffer special polygons
       if (typeof evt.feature.tag==="undefined") {
-        bufferFeature(evt.feature);
+        bufferFeature(div, evt.feature);
       }
     });
     div.map.editLayer.events.register('featuresremoved', div.map.editLayer, function(evt) {
@@ -117,7 +122,13 @@ function enableBuffering() {
       if (document.activeElement.id==='geom_buffer') {
         rebuildBuffer(div);
       }
-      storeGeomsInForm(div);      
+      if (typeof indiciaData.buffering!=="undefined" && indiciaData.buffering) {
+        // when the buffering response comes back, submit the form
+        indiciaData.submitting=true;
+        evt.preventDefault();
+      } else {        
+        storeGeomsInForm(div);
+      }
     });
   });
 }
