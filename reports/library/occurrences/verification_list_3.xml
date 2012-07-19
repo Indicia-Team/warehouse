@@ -7,15 +7,7 @@
   FROM cache_occurrences o
   JOIN occurrences xo ON xo.id=o.id AND xo.deleted=false
   JOIN samples s on s.id=o.sample_id
-  LEFT JOIN samples sparent on sparent.id=s.parent_id and sparent.deleted=false
   JOIN websites w on w.id=o.website_id 
-  LEFT JOIN (sample_attribute_values vuser
-    JOIN sample_attributes sauser on sauser.id=vuser.sample_attribute_id and sauser.deleted=false and sauser.system_function = 'cms_username'
-  ) on vuser.sample_id =o.id  and vuser.deleted=false
-  LEFT JOIN (sample_attribute_values vuserp
-    JOIN sample_attributes sauserp on sauserp.id=vuserp.sample_attribute_id and sauserp.deleted=false and sauserp.system_function = 'cms_username'
-  ) on vuserp.sample_id =sparent.id  and vuserp.deleted=false
-  LEFT JOIN users ouser ON ouser.id=o.created_by_id AND ouser.id&lt;&gt;1 -- don't return records allocated by default to admin user
   LEFT JOIN occurrence_comments oc 
       ON oc.occurrence_id=o.id 
       AND oc.implies_manual_check_required=true 
@@ -53,16 +45,17 @@
     <param name='expertise_surveys' display='Survey IDs list' description='Comma separated list of surveys IDs to include' datatype='text'>
       <join>JOIN surveys su on su.id=s.survey_id and su.deleted=false and su.id in (#expertise_surveys#)</join>  
     </param>
-    
   </params>
   <columns>
     <column name='occurrence_id' display='ID' sql='o.id' datatype='integer' template="&lt;div class='status-{record_status}'&gt;{occurrence_id}&lt;/div&gt;" />
     <column name='website' display='Source' sql='w.title' datatype="text" />
     <column name='survey' display='Survey' sql='o.survey_title' datatype="text" visible="false"/>
-    <column name='user' display='User' sql='COALESCE(vuser.text_value, vuserp.text_value, ouser.username)' datatype="text" />
+    <!-- the user col would need to store its untemplated value in a hidden with class user-val if it were templated. -->
+    <column name='user' display='User' sql='o.recorders' datatype="text" />
     <column name='sample_id' visible='false' sql='o.sample_id' datatype='integer' />
+    <!-- the following col stores the original untemplated taxon val in a hidden, to be used as a filter during bulk verifications. -->
     <column name='taxon' display='Species' 
-      template="&lt;div class='zero-{zero_abundance}'&gt;{taxon}&lt;/div&gt;"
+      template='&lt;input type="hidden" class="taxon-val" value="{taxon}"/&gt;&lt;div class="zero-{zero_abundance}"&gt;{taxon}&lt;/div&gt;'
       sql="CASE WHEN o.preferred_taxon=o.default_common_name then o.preferred_taxon ELSE o.preferred_taxon || COALESCE(' | ' || o.default_common_name, '') END" datatype='text' />
     <column name='taxa_taxon_list_id' visible='false' sql='o.taxa_taxon_list_id' datatype='integer' />   
     <column name='location_name' display='Site name' sql='o.location_name' datatype='text' />
