@@ -903,14 +903,14 @@ class Data_Controller extends Data_Service_Base_Controller {
               elseif ($key===1) $foundvalue = $value;
               else throw new Exception("In clause statement for $key is not of the correct structure");
             } elseif (is_array($value)) {
-              $this->db->$cmd($key,$value);
+              $this->db->$cmd($this->viewname.'.'.$key,$value);
             } else {
               throw new Exception("In clause statement for $key is not of the correct structure");
             }
           }
           // if param was supplied in form "cmd = array(field, values)" then foundfield and foundvalue would be set.
           if (isset($foundfield) && isset($foundvalue))
-            $this->db->$cmd($foundfield,$foundvalue);
+            $this->db->$cmd($this->viewname.'.'.$foundfield,$foundvalue);
           break;
         case 'where':
         case 'orwhere':
