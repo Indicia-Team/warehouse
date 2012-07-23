@@ -37,13 +37,14 @@ class cache_builder {
     try {
       cache_builder::do_delete($db, $table);
       cache_builder::run_statement($db, $table, $queries['update'], 'update');
+      // preprocess some of the tags in the queries
       if (is_array($queries['insert']))
         foreach($queries['insert'] as $key=>&$sql)
           $sql = str_replace('#insert_join_needs_update#', $queries['insert_join_needs_update'], $sql);
       else 
         $queries['insert'] = str_replace('#insert_join_needs_update#', $queries['insert_join_needs_update'], $queries['insert']);
       cache_builder::run_statement($db, $table, $queries['insert'], 'insert');
-      if (isset($queries['final_updates']))
+      if (isset($queries['final_updates'])) 
         cache_builder::run_statement($db, $table, $queries['final_updates'], 'final update');
       if (!variable::get("populated-$table")) {
         $cacheQuery = $db->query("select count(*) from cache_$table")->result_array(false);
@@ -77,6 +78,17 @@ class cache_builder {
     $insertSql = str_replace('#insert_join_needs_update#', '', $queries['insert']);
     $insertSql .= ' and '.$queries['insert_key_field']."=$id";
     $db->query($insertSql);
+    if (is_array($queries['final_inserts'])) 
+      foreach($queries['final_inserts'] as $key=>&$sql) {
+        $result=$db->query(str_replace('#id#', $id, $sql));
+        if ($result->count()) 
+          break; // we've done an update. So can drop out.
+      }
+    else {
+      $queries['final_updates'] = str_replace(array('#needs_update_table#', '#occurrences_filter#'), 
+          array('', "and co.id=$id"), $queries['final_updates']);
+      $db->query($queries['final_updates']);
+    }
   }
 
   /**
