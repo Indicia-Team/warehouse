@@ -287,6 +287,11 @@ class XMLReportReader_Core implements ReportReader
           if (!isset($def['in_count']) || $def['in_count']=='true') {
             $countSql[] = $def['sql'];
           }
+        } else {
+          // if the column is not distinct on, then it defaults to not in the count
+          if (isset($def['in_count']) && $def['in_count']=='true') {
+            $countSql[] = $def['sql'];
+          }
         }
       }
     }
