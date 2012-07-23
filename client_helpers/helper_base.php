@@ -686,6 +686,20 @@ $('.ui-state-default').live('mouseout', function() {
       return dirname(__FILE__).'/'.self::$final_image_folder;
     }
   }
+  
+  /**
+   * Returns the client helper folder path, relative to the root folder.
+   */
+  public static function client_helper_path() {
+    // allow integration modules to control path handling, e.g. Drupal).
+    if (function_exists('iform_client_helpers_path')) 
+      return iform_client_helpers_path();
+    else {
+      $fullpath = str_replace('\\', '/', realpath(__FILE__));
+      $root = $_SERVER['DOCUMENT_ROOT'] . self::getRootFolder();
+      return dirname(str_replace($root, '', $fullpath)).'/';
+    }
+  }
 
   /**
    * Calculates the relative path to the client_helpers folder from wherever the current PHP script is.
@@ -1092,10 +1106,12 @@ $('.ui-state-default').live('mouseout', function() {
   * Internal function to find the path to the root of the site, including the trailing slash.
   */
   public static function getRootFolder() {
-    $rootFolder = dirname($_SERVER['PHP_SELF']);
-    if ($rootFolder =='\\') $rootFolder = '/'; // if no directory, then on windows may just return a single backslash.
-    if (substr($rootFolder, -1)!='/') $rootFolder .= '/';
-    return $rootFolder;
+    // $_SERVER['SCRIPT_NAME'] can, in contrast to $_SERVER['PHP_SELF'], not
+    // be modified by a visitor.
+    if ($dir = trim(dirname($_SERVER['SCRIPT_NAME']), '\,/'))
+      return "/$dir/";
+    else
+      return '/';    
   }
 
   /**

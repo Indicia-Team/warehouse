@@ -654,7 +654,7 @@ class data_entry_helper extends helper_base {
     global $indicia_templates;
     // Upload directory defaults to client_helpers/upload, but can be overriden.
     $interim_image_folder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
-    $relpath = self::getRootFolder() . self::relative_client_helper_path();
+    $relpath = self::getRootFolder() . self::client_helper_path();
     // Allow options to be defaulted and overridden
     $defaults = array(
       'caption' => lang::get('Files'),
@@ -769,7 +769,7 @@ class data_entry_helper extends helper_base {
       }
       return $warehouseUrl.(isset(self::$indicia_upload_path) ? self::$indicia_upload_path : 'upload/');
     } else {
-      return self::getRootFolder() . self::relative_client_helper_path() . self::$final_image_folder;
+      return self::getRootFolder() . self::client_helper_path() . self::$final_image_folder;
     }
   }
 
@@ -849,7 +849,7 @@ class data_entry_helper extends helper_base {
     // If the lookup service driver uses cross domain JavaScript, this setting provides
     // a path to a simple PHP proxy script on the server.
     self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.proxy='".
-        self::getRootFolder() . self::relative_client_helper_path() . "proxy.php';\n\n";
+        self::getRootFolder() . self::client_helper_path() . "proxy.php';\n\n";
     self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.autoCollapseResults='".($options['autoCollapseResults'] ? 't' : 'f')."';\n";
     // for the indicia_locations driver, pass through the read auth and url
     if ($options['driver']==='indicia_locations') {
@@ -1853,7 +1853,7 @@ class data_entry_helper extends helper_base {
     if ($options['occurrenceImages']) {
       self::add_resource('plupload');
       // store some globals that we need later when creating uploaders
-      $relpath = self::getRootFolder() . self::relative_client_helper_path();
+      $relpath = self::getRootFolder() . self::client_helper_path();
       $interim_image_folder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
       self::$javascript .= "uploadSettings = {\n";
       self::$javascript .= "  uploadScript: '" . $relpath . "upload.php',\n";
