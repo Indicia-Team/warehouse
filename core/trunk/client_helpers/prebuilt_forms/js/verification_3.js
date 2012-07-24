@@ -124,7 +124,10 @@ function postOccurrence(occ) {
   $('#add-comment').remove();
 }
 
-function buildVerifierEmail() {
+/**
+ * Build an email to send to a verifier or the original recorder, containing the record details.
+ */
+function setupRecordCheckEmail(subject, body) {
   //Form to create email of record details
   var record = '';
   $.each(current_record.data, function (idx, section) {
@@ -134,9 +137,7 @@ function buildVerifierEmail() {
       }
     });
   });
-
   record += "\n\n[Photos]\n\n[Comments]";
-
   email.subject = indiciaData.email_subject_send_to_verifier
       .replace('%taxon%', current_record.additional.taxon)
       .replace('%id%', occurrence_id);
@@ -145,31 +146,25 @@ function buildVerifierEmail() {
       .replace('%id%', occurrence_id)
       .replace('%record%', record);
   $('#record-details-tabs').tabs('load', 0);
-  email.to = '';
   email.type = 'recordCheck';
+}
+
+/**
+ * Build an email for sending to another expert.
+ */ 
+function buildVerifierEmail() {
+  setupRecordCheckEmail(indiciaData.email_subject_send_to_verifier, indiciaData.email_body_send_to_verifier);
+  // Let the user pick the recipient
+  email.to = '';
   popupEmail();
 }
 
+/**
+ * Build an email for sending to the recorder to request more details.
+ */
 function buildRecorderConfirmationEmail() {
-  //Form to create email of record details
-  var record = '';
-  $.each(current_record.data, function (idx, obj) {
-    if (obj.value !== null && obj.value !=='') {
-      record += obj.caption + ': ' + obj.value + "\n";
-    }
-  });
-
-  record += "\n\n[Photos]\n\n[Comments]";
-  email.subject = indiciaData.email_subject_send_to_recorder
-      .replace('%taxon%', current_record.additional.taxon)
-      .replace('%id%', occurrence_id);
-  email.body = indiciaData.email_body_send_to_recorder
-      .replace('%taxon%', current_record.additional.taxon)
-      .replace('%id%', occurrence_id)
-      .replace('%record%', record);
-  $('#record-details-tabs').tabs('load', 0);
+  setupRecordCheckEmail(indiciaData.email_subject_send_to_recorder, indiciaData.email_body_send_to_recorder); 
   email.to=current_record.additional.recorder_email;
-  email.type = 'recordCheck';
   popupEmail();
 }
 
