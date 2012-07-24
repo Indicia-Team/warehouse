@@ -661,6 +661,9 @@ class iform_mnhnl_dynamic_1 {
       }
       if ($loadedSampleId)
         data_entry_helper::load_existing_record($auth['read'], 'sample', $loadedSampleId);
+      // Ensure that if we are used to load a different survey's data, then we get the correct survey attributes.
+      $args['survey_id']=data_entry_helper::$entity_to_load['sample:survey_id'];
+      $args['sample_method_id']=data_entry_helper::$entity_to_load['sample:sample_method_id'];
     }
     // attributes must be fetched after the entity to load is filled in - this is because the id gets filled in then!
     $attrOpts = array(
