@@ -1,6 +1,6 @@
 <report
-    title="Samples list"
-    description="A general purpose list of samples."
+    title="Samples list for parent sample"
+    description="A general purpose list of samples filtered to those which belong to a parent sample."
 >
 <query website_filter_field="su.website_id">
   SELECT #field_sql#
