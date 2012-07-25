@@ -205,13 +205,13 @@ class iform_mnhnl_dynamic_2 extends iform_mnhnl_dynamic_1 {
    * Next the functions which relate to the main front page.
    */
   protected static function getExtraGridModeTabs($retTabs, $readAuth, $args, $attributes) {
-    if(!user_access('IForm n'.self::$node->nid.' admin')) return('');
+    if(!user_access('IForm n'.parent::$node->nid.' admin')) return('');
     if(!$retTabs) return array('#downloads' => lang::get('LANG_Download'), '#locations' => lang::get('LANG_Locations'));
     if($args['LocationTypeTerm']=='' && isset($args['loctoolsLocTypeID'])) $args['LocationTypeTerm']=$args['loctoolsLocTypeID'];
     $primary = iform_mnhnl_getTermID(array('read'=>$readAuth), $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
     $r= '<div id="downloads" >';
     if(isset($args['targetSpeciesAttr']) && $args['targetSpeciesAttr']!="") {
-      $targetSpeciesAttr=iform_mnhnl_getAttr(self::$auth, $args, 'sample', $args['targetSpeciesAttr']);
+      $targetSpeciesAttr=iform_mnhnl_getAttr(parent::$auth, $args, 'sample', $args['targetSpeciesAttr']);
       if(!$targetSpeciesAttr) return lang::get('This form must be used with a survey that has the '.$args['targetSpeciesAttr'].' sample attribute associated with it.');
       data_entry_helper::$javascript .= "
 jQuery('[name=targetSpecies]').change(function(){
@@ -249,7 +249,7 @@ jQuery('[name=targetSpecies]').change();
     <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "location_type_id":'.$primary.'}\' />
     <label>'.lang::get('Species report').':</label><input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
   </form>
-</div>'.iform_mnhnl_locModTool(self::$auth, $args, self::$node);
+</div>'.iform_mnhnl_locModTool(parent::$auth, $args, parent::$node);
   }
   /*
    * When viewing the list of samples for this user, get the grid to insert into the page.
@@ -261,7 +261,7 @@ jQuery('[name=targetSpecies]').change();
     if (!$userIdAttr) return lang::get('This form must be used with a survey that has the CMS User ID sample attribute associated with it, so records can be tagged against their creator.');
     $extraParams = array('survey_id'=>$args['survey_id'], 
         'userID_attr_id'=>$userIdAttr,
-        'userID'=>(user_access('IForm n'.self::$node->nid.' admin') ? -1 :  $user->uid)); // use -1 if admin - non logged in will not get this far.
+        'userID'=>(user_access('IForm n'.parent::$node->nid.' admin') ? -1 :  $user->uid)); // use -1 if admin - non logged in will not get this far.
     $userNameAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'CMS Username');
     if ($userNameAttr) $extraParams['userName_attr_id']=$userNameAttr;
     if(isset($args['targetSpeciesAttr']) && $args['targetSpeciesAttr']!="") {
@@ -329,7 +329,7 @@ deleteSurvey = function(sampleID){
   
   protected static function getSampleListGridPreamble() {
     global $user;
-    $r = '<p>'.lang::get('LANG_SampleListGrid_Preamble').(user_access('IForm n'.self::$node->nid.' admin') ? lang::get('LANG_All_Users') : $user->name).'</p>';
+    $r = '<p>'.lang::get('LANG_SampleListGrid_Preamble').(user_access('IForm n'.parent::$node->nid.' admin') ? lang::get('LANG_All_Users') : $user->name).'</p>';
     return $r;
   }
   protected function getReportActions() {
@@ -358,7 +358,7 @@ deleteSurvey = function(sampleID){
    * Note the Dynamic 2 Species control is overridden by the local one.
    */
   protected static function get_control_locationmodule($auth, $args, $tabalias, $options) {
-    $ret = iform_mnhnl_lux5kgridControl($auth, $args, self::$node,
+    $ret = iform_mnhnl_lux5kgridControl($auth, $args, parent::$node,
       array_merge(array('initLoadArgs' => '{}'), $options));
     return $ret;
   }
@@ -372,7 +372,7 @@ deleteSurvey = function(sampleID){
     return iform_mnhnl_PointGrid($auth, $args, $options); 
   }
   protected static function get_control_pickrecordernames($auth, $args, $tabalias, $options) {
-    return iform_mnhnl_recordernamesControl(self::$node, $auth, $args, $tabalias, $options);
+    return iform_mnhnl_recordernamesControl(parent::$node, $auth, $args, $tabalias, $options);
   }
   protected static function get_control_locationcomment($auth, $args, $tabalias, $options) {
     return data_entry_helper::textarea(array_merge(array(
@@ -782,8 +782,8 @@ hook_species_checklist_pre_delete_row=function(e) {
     $php = '$taxa_list_args=array('."\n".
         '  "extraParams"=>array("website_id"=>'.$args['website_id'].','."\n".
         '    "view"=>"detail",'."\n".
-        '    "auth_token"=>"'.self::$auth['read']['auth_token'].'",'."\n".
-        '    "nonce"=>"'.self::$auth['read']['nonce'].'"),'."\n".
+        '    "auth_token"=>"'.parent::$auth['read']['auth_token'].'",'."\n".
+        '    "nonce"=>"'.parent::$auth['read']['nonce'].'"),'."\n".
         '  "table"=>"taxa_taxon_list");'."\n".
         '$responseRecords = data_entry_helper::get_population_data($taxa_list_args);'."\n".
         '$taxaList = "";'."\n".

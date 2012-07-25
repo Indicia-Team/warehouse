@@ -41,7 +41,9 @@ $custom_term_overrides[] = array(
 	,'Amphibian Visit (Squares)'=>'Visit'
 	,'Amphibian Squares Survey Method'=>'Survey method'
 	,'Amphibian Type (Sites)'=>'Type'
+	,'Amphibian Type'=>'Type'
 	,'Amphibian Stage (Sites)'=>'Stage'
+	,'Amphibian Stage'=>'Stage'
 	,'Amphibian Behaviour'=>'Behaviour'
 	,'Amphibian Recording Summary'=>'Recording summary'
 	,'LANG_CommuneLookUpFailed' => 'Internal error: Lookup of the Commune for this location failed.'
@@ -49,9 +51,9 @@ $custom_term_overrides[] = array(
 	,'LANG_PositionInDifferentCommune' => 'The position you have chosen is outside the selected Commune. Do you wish to change the Commune field to match the point?'
 	,'LANG_NumSites'=>'Number of sites in this square'
 	,'LANG_Data_Download' => 'These reports provide details of the collections and species data entered in the surveys which are tagged for a particular target species. The sites download is not dependant on the target species.'
-	,'LANG_SquareLookUpFailed' => 'Internal error: Lookup of the square for this location failed.'
 	,'LANG_PositionInDifferentSquare' => 'The position you have chosen is outside the selected square. Do you wish to change the square field to match the point?'
 	,'LANG_Date_Explanation' => '(Indicate the date of the beginning of the survey)'
 	,'LANG_PositionOutsideParent' => 'Warning: this position is outside the available list of 5x5km squares'
+	,'LANG_ParentLookUpFailed' => 'Internal error: Lookup of the square for this location failed.'
 	);
 ?>
