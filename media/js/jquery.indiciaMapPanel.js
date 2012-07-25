@@ -560,7 +560,7 @@ mapGeoreferenceHooks = [];
      * Selects the features in the contents of a bounding box
      */
     function selectBox(position, layers, div) {
-      var testGeom, testPointGeom, layer, bounds, xy, minXY, maxXY, layer;
+      var testGeom, tolerantGeom, layer, bounds, xy, minXY, maxXY, layer, tolerance, testGeoms={};
       if (position instanceof OpenLayers.Bounds) {
         if (position.left===position.right && position.top===position.bottom) {
           // point clicked
@@ -581,7 +581,6 @@ mapGeoreferenceHooks = [];
           );
           testGeom = bounds.toGeometry();
         }
-        testPointGeom = testGeom; // default for testing against point features
         for(var l=0; l<layers.length; ++l) {
           layer = layers[l];
           // when testing against points, use a circle drawn around the click point so the 
@@ -592,19 +591,51 @@ mapGeoreferenceHooks = [];
             // Convert point to an approx circle so we can test the click using it. We convert the click
             // point rather than individual tested points, as it has the same effect but only needs to be
             // done once.
-            var radius = div.map.getResolution() * layer.styleMap.styles['default'].defaultStyle.pointRadius;
-            testPointGeom = OpenLayers.Geometry.Polygon.createRegularPolygon(testGeom, radius, 20, 0);
+            var radius = layer.styleMap.styles['default'].defaultStyle.pointRadius, 
+                strokeWidth=layer.styleMap.styles['default'].defaultStyle.strokeWidth,
+                match, fnRadius=null;
+            if (typeof radius === "string") {
+              match=radius.match(/^\${(.+)}/);
+              if (match!==null && match.length>1) {
+                fnRadius=layer.styleMap.styles['default'].context[match[1]];
+              }
+            }
+            if (typeof strokeWidth === "string") {
+              match=strokeWidth.match(/^\${(.+)}/);
+              if (match!==null && match.length>1) {
+                fnStrokeWidth=layer.styleMap.styles['default'].context[match[1]];
+              }
+            }
           }
           var featuresToSelect = [];
           for(var i=0, len = layer.features.length; i<len; ++i) {
             var feature = layer.features[i];
             // check if the feature is displayed
-            if (!feature.getVisibility()) {
+            if (!feature.onScreen()) {
               continue;
             }
+            if (fnRadius!==null) {
+              radius = fnRadius(feature);
+            }
+            if (fnStrokeWidth!==null) {
+              // div 2 because half the stroke width is inside the perimeter
+              strokeWidth = fnStrokeWidth(feature);
+            }
             var geom = feature.geometry;
-            if (testGeom.intersects(geom) || 
-                (geom.CLASS_NAME==='OpenLayers.Geometry.Point' && testPointGeom.intersects(geom))) {
+            if (geom.CLASS_NAME === 'OpenLayers.Geometry.Point') {
+              tolerance = div.map.getResolution() * (radius + (strokeWidth/2));
+            } else {
+              tolerance = div.map.getResolution() * (strokeWidth/2);
+            }
+            tolerance=Math.round(tolerance);
+            // keep geoms we create so we don't keep rebuilding them
+            if (typeof testGeoms['geom-'+Math.round(tolerance/100)]!=="undefined") {
+              tolerantGeom = testGeoms['geom-'+Math.round(tolerance/100)];
+            } else {
+              tolerantGeom = OpenLayers.Geometry.Polygon.createRegularPolygon(testGeom, tolerance, 20, 0);
+              testGeoms['geom-'+Math.round(tolerance/100)] = tolerantGeom;
+            }
+            if (tolerantGeom.intersects(geom)) {
               if (OpenLayers.Util.indexOf(layer.selectedFeatures, feature) == -1) {
                 featuresToSelect.push(feature);
               }
