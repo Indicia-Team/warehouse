@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<report title="Record counts by taxon" description="Lists taxa and the number of records of each. ">
+<report title="Record counts by taxon external key" description="Lists taxa and the number of records of each. Uses the external key to identify each unique taxon">
       <query website_filter_field="o.website_id">
       SELECT #columns#
       FROM cache_taxa_taxon_lists cttl
@@ -35,7 +35,7 @@
             lookup_values='V:Data must be verified,C:Data must be verified or certain,L:Data must be at least likely,!D:Include anything not dubious or rejected,!R:Include anything not rejected' />
       </params>
       <columns>
-            <column name="id" visible="false" sql="cttl.id" unique="true" distincton="true" datatype="int"/>
+            <column name="external_key"  sql="cttl.external_key" unique="true" distincton="true" datatype="text"/>
             <column name="name" display="Taxon Name" sql="cttl.taxon || COALESCE(' ' || cttl.authority, '')" datatype="text"/>
             <column name="preferred_taxon" display="Preferred Name" sql="cttl.preferred_taxon || COALESCE(' ' || cttl.preferred_authority, '')" datatype="text"/>
             <column name="default_common_name" display="Common Name" sql="cttl.default_common_name" datatype="text"/>
