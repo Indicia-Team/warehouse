@@ -31,7 +31,6 @@
 /* Development Stream: TBD
  * 
  * TODO documentation
- * TODO SVN & Deploy to Live
  * 
  * Future possibles:
  * add map to main grid, Populate with positions of samples?
@@ -94,11 +93,10 @@ class iform_mnhnl_bats2 extends iform_mnhnl_bats {
               "[custom JS]\r\n".
               "[location module]\r\n".
               "[location attributes]\r\n".
-              "@lookUpKey=meaning_id\r\n".
-              "@sep= \r\n".
               "@tabNameFilter=Site\r\n".
               "@class=wide\r\n".
               "@numValues=10000\r\n".
+              "@lookUpKey=meaning_id\r\n".
               "[location attributes]\r\n".
               "@lookUpKey=meaning_id\r\n".
               "@sep= \r\n".
@@ -108,8 +106,8 @@ class iform_mnhnl_bats2 extends iform_mnhnl_bats {
               "[map]\r\n".
               "@layers=[\"SiteAreaLayer\",\"SitePathLayer\",\"SitePointLayer\",\"SiteLabelLayer\"]\r\n".
               "@editLayer=false\r\n".
-              "@searchUpdatesSref=true\r\n".
-              "@maxZoom=13\r\n".
+              "@searchLayer=true\r\n".
+              "@searchUpdatesSref=false\r\n".
               "[point grid]\r\n".
               "@srefs=2169,LUREF (m),X,Y,;4326,Lat/Long Deg,Lat,Long,D;4326,Lat/Long Deg:Min,Lat,Long,DM;4326,Lat/Long Deg:Min:Sec,Lat,Long,DMS\r\n".
               "[location comment]\r\n".
