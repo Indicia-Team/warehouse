@@ -93,6 +93,9 @@ label.prepad {
   margin-top: 4px;
   margin-left: 20px;	
 }
+#pointgridtable input[type='text'] {
+  width: 100px;
+}
 div.olControlEditingToolbar div.olControlCancelSketchItemInactive {
   background-image: url("../images/mnhnl-mod-toolbar.png");
   background-position: 0px 0px;

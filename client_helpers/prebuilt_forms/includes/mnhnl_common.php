@@ -725,7 +725,9 @@ loadLocation = function(feature){ // loads all the data into the location fields
         jQuery('#dummy-name').val(SiteLabelLayer.features[i].style.label);
       }
 ".($args['siteNameTermListID']!="" ? "      else {
-        jQuery(mySelector).find('option').filter('[value='+SiteLabelLayer.features[i].style.label+']').attr('disabled','disabled');
+        // At the moment the allowable options are integers: if the old data is dodgy it may not hold an integer
+        if(SiteLabelLayer.features[i].style.label == parseInt(SiteLabelLayer.features[i].style.label))
+          jQuery(mySelector).find('option').filter('[value='+SiteLabelLayer.features[i].style.label+']').attr('disabled','disabled');
       }
 " : "").
 "    }
@@ -2207,7 +2209,7 @@ jQuery(\"#".$options['ChooseParentFieldID']."\").change(function(){
     hook_mnhnl_parent_changed();
 });
 jQuery(\"#".$options['ParentFieldID']."\").change(function(){
-  if(jQuery(this).val() != '')
+  if(jQuery(this).val() != '') {
     jQuery.getJSON(\"".data_entry_helper::$base_url."/index.php/services/data/location/\"+jQuery(this).val()+\"?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?\",
       function(data) {
        if (data.length>0) {
@@ -2219,7 +2221,24 @@ jQuery(\"#".$options['ParentFieldID']."\").change(function(){
            ParentLocationLayer.map.zoomToExtent(ParentLocationLayer.getDataExtent());
          }
        }});
-  else
+".($options['AdminMode'] ? 
+"    jQuery('#location-name').find('option').removeAttr('disabled');
+    jQuery.getJSON(\"".data_entry_helper::$base_url."/index.php/services/data/location?parent_id=\"+jQuery(this).val()+\"&mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?\",
+      function(data) {
+       if (data.length>0) {
+         for(var di=0; di<data.length; di++){
+".(isset($args['duplicateNameCheck']) && $args['duplicateNameCheck'] ?
+"           if(jQuery('#location-name').val() == data[di].name && jQuery('#".$options['MainFieldID']."').val() != data[di].id)
+             alert(\"".lang::get('This site name is already in use in the new square. Please choose another.')."\");
+" : "").
+(isset($args['siteNameTermListID']) && $args['siteNameTermListID']!="" ? 
+"           if(data[di].name == parseInt(data[di].name) && jQuery('#".$options['MainFieldID']."').val() != data[di].id)
+             jQuery('#location-name').find('option').filter('[value='+data[di].name+']').attr('disabled','disabled');
+" : "").
+"         }
+       }});
+": "").
+"  } else
     ParentLocationLayer.destroyFeatures();
 });
 ";

@@ -98,6 +98,9 @@ div.olControlEditingToolbar  {
 #imp-srefX,#imp-srefY,.precision {
 	width: 60px;
 }
+#pointgridtable input[type='text'] {
+  width: 100px;
+}
 .target-species-grid label {
 	width: auto;
 }

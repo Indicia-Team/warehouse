@@ -19,6 +19,9 @@
 .control-box {
   display:inline  !important;
 }
+#pointgridtable input[type='text'] {
+  width: 100px;
+}
 .scOccAttrCell label {
   margin-top: 4px;
   margin-right: 15px;

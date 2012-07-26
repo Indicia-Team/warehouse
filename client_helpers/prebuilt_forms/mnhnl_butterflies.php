@@ -65,7 +65,7 @@ class iform_mnhnl_butterflies extends iform_mnhnl_dynamic_1 {
   }
 
   public static function get_parameters() {    
-    $retVal = array_merge(
+    $parentVal = array_merge(
       parent::get_parameters(),
       array(
         array(
@@ -133,6 +133,29 @@ class iform_mnhnl_butterflies extends iform_mnhnl_dynamic_1 {
         )		
       )
     );
+    $retVal=array();
+    foreach($parentVal as $param){
+      if($param['name'] == 'structure'){
+        $param['default'] =
+             "=General Information=\r\n".
+              "[transect]\r\n".
+              "[date]\r\n".
+              "?Setting this date field automatically fills in the Month field below. This field must be between April and September, otherwise the Month field will not be filled in, and you will not be able to proceed.?\r\n".
+              "[sectionnumber]\r\n".
+              "[*]\r\n".
+              "[sample comment]\r\n".
+             "=Grid-based species records=\r\n".
+              "[display transect and date]\r\n".
+              "[transectgrid]\r\n".
+             "=Section-based species records=\r\n".
+              "[display transect and date]\r\n".
+              "?The number of sections in this list is selected on the first page?\r\n".
+              "[sectionlist]\r\n".
+              "@smpAttr=[TBD]\r\n";
+      }
+      $retVal[] = $param;
+    }
+    
     return $retVal;
   }
   
