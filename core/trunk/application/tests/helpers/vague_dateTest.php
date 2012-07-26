@@ -45,6 +45,8 @@ class Helper_Vague_Date_Test extends PHPUnit_Framework_TestCase {
   public function testBadDate34373() {
     $vd = vague_date::string_to_vague_date('34/3/73');
     $this->assertFalse($vd, "Date '34/3/73' should not be accepted");
+    $vd = vague_date::string_to_vague_date('34 march 73');
+    $this->assertFalse($vd, "Date '34 march 73' should not be accepted");
   }
   
   public function testConvertVagueDate_To_DayRange() {
