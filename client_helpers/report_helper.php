@@ -1263,8 +1263,9 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         // The following function uses the strokeWidth to pad out the squares which go too small when zooming the map out. Points 
         // always display the same size so are no problem.
         $styleFns = array("getstrokewidth: function(feature) {          
-          var width=feature.geometry.getBounds().right - feature.geometry.getBounds().left;
-          return (width===0) ? 1 : 6 - (width / feature.layer.map.getResolution());
+          var width=feature.geometry.getBounds().right - feature.geometry.getBounds().left,
+            strokeWidth=6 - (width / feature.layer.map.getResolution());
+          return (strokeWidth<1) ? 1 : strokeWidth;
         }");
         if (isset($options['valueOutput'])) {
           foreach($options['valueOutput'] as $type => $outputdef) {
