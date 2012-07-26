@@ -207,8 +207,8 @@ class iform_mnhnl_reptiles extends iform_mnhnl_dynamic_1 {
   }
   
   protected static function getExtraGridModeTabs($retTabs, $readAuth, $args, $attributes) {
-    if(!user_access('IForm n'.self::$node->nid.' admin')) return('');
-    $targetSpeciesAttr=iform_mnhnl_getAttr(self::$auth, $args, 'sample', $args['targetSpeciesAttr']);
+    if(!user_access('IForm n'.parent::$node->nid.' admin')) return('');
+    $targetSpeciesAttr=iform_mnhnl_getAttr(parent::$auth, $args, 'sample', $args['targetSpeciesAttr']);
     if(!$targetSpeciesAttr) return lang::get('This form must be used with a survey that has the '.$args['targetSpeciesAttr'].' attribute associated with it.');
     if(!$retTabs) return array('#downloads' => lang::get('LANG_Download'), '#locations' => lang::get('LANG_Locations'));
     if($args['LocationTypeTerm']=='' && isset($args['loctoolsLocTypeID'])) $args['LocationTypeTerm']=$args['loctoolsLocTypeID'];
@@ -230,7 +230,7 @@ jQuery('.downloadreportparams').val('{\"survey_id\":".$args['survey_id'].", \"lo
     <input type="hidden" name="params" class="downloadreportparams" value="" />
     <label>'.lang::get('Species report').':</label><input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
   </form>
-</div>'.iform_mnhnl_locModTool(self::$auth, $args, self::$node);
+</div>'.iform_mnhnl_locModTool(parent::$auth, $args, parent::$node);
 	
   }
   /**
@@ -331,7 +331,7 @@ deleteSurvey = function(sampleID){
    * Submission failed: holds the POST array.
    */
   protected static function get_control_lux5kgrid($auth, $args, $tabalias, $options) {
-    $ret = iform_mnhnl_lux5kgridControl($auth, $args, self::$node, $options);
+    $ret = iform_mnhnl_lux5kgridControl($auth, $args, parent::$node, $options);
     return $ret;
   }
   protected static function get_control_locationspatialreference($auth, $args, $tabalias, $options) {
@@ -348,7 +348,7 @@ deleteSurvey = function(sampleID){
    * Get the recorder names control
    */
   protected static function get_control_recordernames($auth, $args, $tabalias, $options) {
-    return iform_mnhnl_recordernamesControl(self::$node, $auth, $args, $tabalias, $options);
+    return iform_mnhnl_recordernamesControl(parent::$node, $auth, $args, $tabalias, $options);
   }
   
   protected static function get_control_customJS($auth, $args, $tabalias, $options) {
@@ -591,7 +591,7 @@ jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:
   
   protected static function getSampleListGridPreamble() {
     global $user;
-    $r = '<p>'.lang::get('LANG_SampleListGrid_Preamble').(iform_loctools_checkaccess(self::$node,'superuser') ? lang::get('LANG_All_Users') : $user->name).'</p>';
+    $r = '<p>'.lang::get('LANG_SampleListGrid_Preamble').(iform_loctools_checkaccess(parent::$node,'superuser') ? lang::get('LANG_All_Users') : $user->name).'</p>';
     return $r;
   }
   
@@ -800,7 +800,7 @@ hook_species_checklist_pre_delete_row=function(e) {
       $rowIdx = 0;
       foreach ($occList as $occ) {
         $ttlid = $occ['taxon']['id'];
-        $firstCell = data_entry_helper::mergeParamsIntoTemplate($occ['taxon'], 'taxon_label');
+        $firstCell = data_entry_helper::mergeParamsIntoTemplate($occ['taxon'], 'taxon_label', false, true);
         if ($options['PHPtaxonLabel']) $firstCell=eval($firstCell);
         $colspan = ' colspan="'.count($attributes).'"';
         // assume always removeable and presence is hidden.
@@ -817,7 +817,7 @@ hook_species_checklist_pre_delete_row=function(e) {
         $secondrow = "<td class=\"scPresenceCell\"$hidden>".($options['rowInclusionCheck']!='hasData' ? "<input type=\"hidden\" class=\"scPresence\" name=\"sc:$ttlid:$existing_record_id:present\" value=\"0\"/><input type=\"checkbox\" class=\"scPresence\" name=\"sc:$ttlid:$existing_record_id:present\" $checked />" : '')."</td>";
         foreach ($occAttrControls as $attrId => $control) {
           if ($existing_record_id) {
-            $search = preg_grep("/^sc:$ttlid:$existing_record_id:occAttr:$attrId".'[:[0-9]*]?$/', array_keys(data_entry_helper::$entity_to_load));
+            $search = preg_grep("/^sc:".$ttlid."[_[0-9]*]?:$existing_record_id:occAttr:$attrId".'[:[0-9]*]?$/', array_keys(data_entry_helper::$entity_to_load));
             $ctrlId = (count($search)===1) ? implode('', $search) : "sc:$ttlid:$existing_record_id:occAttr:$attrId";
           } else {
             $ctrlId = "sc:$ttlid:x$rowIdx:occAttr:$attrId";
@@ -1007,9 +1007,13 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
         if($parts[2]=='') $occList['error'] = 'ERROR PROCESSING entity_to_load: found name '.$key.' with no sequence/id number in part 2';
         else if(!isset($occList[$parts[2]])){
           $occ['id'] = $parts[2];
+          $pos = strpos($parts[1], '_');
+          $txID = ($pos === false) ? $parts[1] : substr($parts[1], 0, $pos); 
           foreach($fullTaxalist as $taxon){
-            if($parts[1] == $taxon['id']) $occ['taxon'] = $taxon;
-            $taxaLoaded[] = $parts[1];
+            if($txID == $taxon['id']){
+              $occ['taxon'] = $taxon;
+              $taxaLoaded[] = $txID;
+            }
           }
           $occList[$parts[2]] = $occ;
           if(!is_numeric($parts[2])) $maxgensequence = intval(max(substr($parts[2],1),$maxgensequence));
@@ -1121,7 +1125,8 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
         // Don't explode the last element for occurrence attributes
         $a = explode(':', $key, 4);
         if($a[2]){
-          $records[$a[2]]['taxa_taxon_list_id'] = $a[1];
+          $pos = strpos($a[1], '_');
+          $records[$a[2]]['taxa_taxon_list_id'] = ($pos === false) ? $a[1] : substr($a[1], 0, $pos);
           $records[$a[2]][$a[3]] = $value;
           // store any id so update existing record
           if(is_numeric($a[2])) $records[$a[2]]['id'] = $a[2];
@@ -1177,8 +1182,8 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
         '$taxa_list_args=array('."\n".
         '  "extraParams"=>array("website_id"=>'.$args['website_id'].','."\n".
         '    "view"=>"detail",'."\n".
-        '    "auth_token"=>"'.self::$auth['read']['auth_token'].'",'."\n".
-        '    "nonce"=>"'.self::$auth['read']['nonce'].'"),'."\n".
+        '    "auth_token"=>"'.parent::$auth['read']['auth_token'].'",'."\n".
+        '    "nonce"=>"'.parent::$auth['read']['nonce'].'"),'."\n".
         '  "table"=>"taxa_taxon_list");'."\n".
         '$responseRecords = data_entry_helper::get_population_data($taxa_list_args);'."\n".
         '$taxaList = "";'."\n".
