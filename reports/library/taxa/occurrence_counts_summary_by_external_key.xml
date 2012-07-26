@@ -35,10 +35,11 @@
             lookup_values='V:Data must be verified,C:Data must be verified or certain,L:Data must be at least likely,!D:Include anything not dubious or rejected,!R:Include anything not rejected' />
       </params>
       <columns>
-            <column name="external_key"  sql="cttl.external_key" unique="true" distincton="true" datatype="text"/>
-            <column name="name" display="Taxon Name" sql="cttl.taxon || COALESCE(' ' || cttl.authority, '')" datatype="text"/>
-            <column name="preferred_taxon" display="Preferred Name" sql="cttl.preferred_taxon || COALESCE(' ' || cttl.preferred_authority, '')" datatype="text"/>
-            <column name="default_common_name" display="Common Name" sql="cttl.default_common_name" datatype="text"/>
+            <column name="external_key"  sql="cttl.external_key" unique="true" distincton="true" datatype="text" visible="false"/>
+            <column name='taxon' display='Species' 
+              template="&lt;div class='zero-{zero_abundance}'&gt;{taxon}&lt;/div&gt;"
+              sql="CASE WHEN o.preferred_taxon=o.default_common_name then o.preferred_taxon ELSE o.preferred_taxon || COALESCE(' | ' || o.default_common_name, '') END" datatype='text' />
+            <column name='taxon_group' display='Taxon Group' sql='o.taxon_group' datatype='text' />
             <column name="value" display="No. of Records" distincton="true" sql="count(distinct o.id)" aggregate="true" in_count="false" datatype="int"/>
       </columns>
 </report>
