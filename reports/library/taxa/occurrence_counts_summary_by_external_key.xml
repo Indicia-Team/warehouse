@@ -22,6 +22,7 @@
       )
       AND o.record_status&lt;&gt;'R'
       AND cttl.preferred=true
+      AND (#ownData#=0 OR CAST(o.created_by_id AS character varying)='#currentUser#')
       </query>
       <order_by>
         count(distinct o.id) desc
@@ -33,13 +34,19 @@
             query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title' />
         <param name='quality' display='Data quality' description='Quality level required of data to be included in the report.' datatype='lookup' 
             lookup_values='V:Data must be verified,C:Data must be verified or certain,L:Data must be at least likely,!D:Include anything not dubious or rejected,!R:Include anything not rejected' />
+        <param name="currentUser" display="Current User ID" description="Current user's warehouse ID. Allows a column to be output indicating that the user owns the record." datatype="text" />
+        <param name="ownData" display="My data only?" datatype="checkbox" />
+        <param name="taxon_groups" display="Taxon Groups" description="List of taxon group IDs to view data for" datatype="text" emptyvalue="0"/>
+        <param name="ownGroups" display="My species groups only?" datatype="checkbox">      
+          <join value="1">JOIN taxon_groups tgfilter ON tgfilter.id=o.taxon_group_id AND tgfilter.id IN (#taxon_groups#)</join>
+        </param>
       </params>
       <columns>
-            <column name="external_key"  sql="cttl.external_key" unique="true" distincton="true" datatype="text" visible="false"/>
+            <column name="external_key"  sql="cttl.external_key" unique="true" incount="true" datatype="text" visible="false"/>
             <column name='taxon' display='Species' 
               template="&lt;div class='zero-{zero_abundance}'&gt;{taxon}&lt;/div&gt;"
               sql="CASE WHEN o.preferred_taxon=o.default_common_name then o.preferred_taxon ELSE o.preferred_taxon || COALESCE(' | ' || o.default_common_name, '') END" datatype='text' />
             <column name='taxon_group' display='Taxon Group' sql='o.taxon_group' datatype='text' />
-            <column name="value" display="No. of Records" distincton="true" sql="count(distinct o.id)" aggregate="true" in_count="false" datatype="int"/>
+            <column name="value" display="No. of Records" sql="count(distinct o.id)" aggregate="true" in_count="false" datatype="int"/>
       </columns>
 </report>
