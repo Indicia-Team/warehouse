@@ -165,7 +165,7 @@ class report_helper extends helper_base {
   *  - fieldname: name of the field to output in this column. Does not need to be specified when using the template option.
   *  - display: caption of the column, which defaults to the fieldname if not specified
   *  - actions: list of action buttons to add to each grid row. Each button is defined by a sub-array containing
-  *      values for caption, visibility_field, url, urlParams, class and javascript. The visibility field is an optional
+  *      values for caption, visibility_field, url, urlParams, class, img and javascript. The visibility field is an optional
   *      name of a field in the data which contains true or false to define the visibility of this action. The javascript, url
   *      and urlParams values can all use the field names from the report in braces as substitutions, for example {id} is replaced
   *      by the value of the field called id in the respective row. In addition, the url can use {currentUrl} to represent the
@@ -174,7 +174,10 @@ class report_helper extends helper_base {
   *      there are escaped versions of each of the replacements available for the javascript action type. Add -escape-quote or
   *      -escape-dblquote to the fieldname for quote escaping, or -escape-htmlquote/-escape-htmldblquote for escaping quotes in HTML
   *      attributes. For example this would be valid in the action javascript: foo("{bar-escape-dblquote}");
-  *      even if the field value contains a double quote which would have broken the syntax.
+  *      even if the field value contains a double quote which would have broken the syntax. Set img to the path to an image to use an 
+  *      image for the action instead of a text caption - the caption then becomes the image's title. The image path can contain 
+  *      {rootFolder} to be replaced by the root folder of the site, in this case it excludes the path parameter used in Drupal when 
+  *      dirty URLs are used (since this is a direct link to a URL). 
   *  - visible: true or false, defaults to true
   *  - template: allows you to create columns that contain dynamic content using a template, rather than just the output
   *      of a field. The template text can contain fieldnames in braces, which will be replaced by the respective field values.
@@ -273,6 +276,9 @@ class report_helper extends helper_base {
   * <li><b>rowClass</b>
   * A CSS class to add to each row in the grid. Can include field value replacements in braces, e.g. {certainty} to construct classes from
   * field values, e.g. to colour rows in the grid according to the data.
+  * </li>
+  * <li><b>callback</b>
+  * Set to the name of a JavaScript function that should already exist which will be called each time the grid reloads (e.g. when paginating or sorting).
   * </li>
   * </ul>
   * @todo Allow additional params to filter by table column or report parameters
@@ -1703,7 +1709,12 @@ if (typeof(mapSettingsHooks)!=='undefined') {
         $onclick = '';
       }
       $class=(isset($action['class'])) ? ' '.$action['class'] : '';
-      $links[] = "<a class=\"action-button$class\"$href$onclick>".$action['caption'].'</a>';
+      if (isset($action['img'])) {
+        $img=str_replace(array('{rootFolder}'), array(self::getRootfolder()), $action['img']);
+        $content = '<img src="'.$img.'" title="'.$action['caption'].'" />';
+      } elseif (isset($action['caption']))
+        $content = $action['caption'];
+      $links[] = "<a class=\"action-button$class\"$href$onclick>".$content.'</a>';
     }
     return implode('<br/>', $links);
   }

@@ -193,33 +193,7 @@ class iform_map_explorer {
         'rowId'=>'occurrence_id',
       )
     );    
-    $allParams = array_merge($reportOptions['paramDefaults'], $reportOptions['extraParams']);
-    global $user;
-    profile_load_profile($user);
-    // Unless ownData explicitly set, we either default it to unchecked, or we set it unchecked and hidden if the user account
-    // is not on the warehouse
-    if (!array_key_exists('ownData', $allParams)) {
-      if (!empty($user->profile_indicia_user_id))
-        $reportOptions['paramDefaults']['ownData']=0;
-      else
-        $reportOptions['extraParams']['ownData']=0;
-    }
-    // Unless ownLocality explicitly set, we either default it to checked, or we set it unchecked and hidden if the user account
-    // has no location preferences set
-    if (!array_key_exists('ownLocality', $allParams)) {
-      if (!empty($user->profile_location))
-        $reportOptions['paramDefaults']['ownLocality']=1;
-      else
-        $reportOptions['extraParams']['ownLocality']=0;
-    }
-    // Unless ownGroups explicitly set, we either default it to checked, or we set it unchecked and hidden if the user account
-    // has no taxon groups set
-    if (!array_key_exists('ownGroups', $allParams)) {
-      if (!empty($user->profile_taxon_groups))
-        $reportOptions['paramDefaults']['ownGroups']=1;
-      else
-        $reportOptions['extraParams']['ownGroups']=0;
-    }
+    iform_report_apply_explore_user_own_preferences($reportOptions);
     $reportOptions['extraParams']['limit']=3000;
     $r = report_helper::report_grid($reportOptions);
    
