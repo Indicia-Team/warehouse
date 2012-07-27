@@ -217,11 +217,11 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
   }
   
   protected static function getExtraGridModeTabsSub($retTabs, $readAuth, $args, $attributes, $rep1, $rep2, $rep3) {
-  	$isAdmin = user_access('IForm n'.self::$node->nid.' admin');
+  	$isAdmin = user_access('IForm n'.parent::$node->nid.' admin');
   	if(!$isAdmin) return('');
     if(!$retTabs) return array('#downloads' => lang::get('LANG_Download'), '#locations' => lang::get('LANG_Locations'));
-    $confirmedLocationTypeID = iform_mnhnl_getTermID(self::$auth, $args['locationTypeTermListExtKey'],$args['SecondaryLocationTypeTerm']);
-    $submittedLocationTypeID = iform_mnhnl_getTermID(self::$auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
+    $confirmedLocationTypeID = iform_mnhnl_getTermID(parent::$auth, $args['locationTypeTermListExtKey'],$args['SecondaryLocationTypeTerm']);
+    $submittedLocationTypeID = iform_mnhnl_getTermID(parent::$auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
     // When a location is created it is created as the Primary location type: this is the new Submitted location for bats.
     // When the location is checked by an admin, or is flagged as such in the initial upload, it is changed to the Secondary Location type: this is the old Confirmed type.
     $r = '<div id="downloads" >
@@ -240,9 +240,9 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
       <input type="hidden" name="params" value=\'{"website_id":'.$args['website_id'].', "survey_id":'.$args['survey_id'].', "primary_loc_type_id":'.$submittedLocationTypeID.', "primary_name":"'.lang::get('LANG_Location_Type_Primary').'", "secondary_loc_type_id":'.$confirmedLocationTypeID.', "secondary_name":"'.lang::get('LANG_Location_Type_Secondary').'"}\' />
       <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
     </form>
-  </div>'.iform_mnhnl_locModTool(self::$auth, $args, self::$node);
-    $r .= self::getSiteTypeJS(self::$auth, $args);
-    self::communeJS(self::$auth, $args);
+  </div>'.iform_mnhnl_locModTool(parent::$auth, $args, parent::$node);
+    $r .= self::getSiteTypeJS(parent::$auth, $args);
+    self::communeJS(parent::$auth, $args);
     return $r;
   }
   
@@ -337,7 +337,7 @@ myTerms_change();
     }
     $r .= "</form>
 <div style=\"display:none\" />
-    <form id=\"form-delete-survey\" action=\"".iform_mnhnl_getReloadPath()."\" method=\"POST\">".self::$auth['write']."
+    <form id=\"form-delete-survey\" action=\"".iform_mnhnl_getReloadPath()."\" method=\"POST\">".parent::$auth['write']."
        <input type=\"hidden\" name=\"website_id\" value=\"".$args['website_id']."\" />
        <input type=\"hidden\" name=\"survey_id\" value=\"".$args['survey_id']."\" />
        <input type=\"hidden\" name=\"sample:id\" value=\"\" />
@@ -576,9 +576,9 @@ jQuery('#smpAttr\\\\:$attrId').next().after(\"<span class='extra-text'>".lang::g
    * Get the location module control
    */
   protected static function get_control_locationmodule($auth, $args, $tabalias, $options) {
-    $retVal = iform_mnhnl_lux5kgridControl($auth, $args, self::$node, array_merge(
+    $retVal = iform_mnhnl_lux5kgridControl($auth, $args, parent::$node, array_merge(
       array('initLoadArgs' => '{initial: true}'), $options));
-    $isAdmin = user_access('IForm n'.self::$node->nid.' admin');
+    $isAdmin = user_access('IForm n'.parent::$node->nid.' admin');
     if(!$isAdmin)
       data_entry_helper::$javascript .= "
 jQuery('#location-code').attr('readonly','readonly');
@@ -666,7 +666,7 @@ hook_setSref = function(geom){
    * Get the recorder names control
    */
   protected static function get_control_recordernames($auth, $args, $tabalias, $options) {
-    return iform_mnhnl_recordernamesControl(self::$node, $auth, $args, $tabalias, $options);
+    return iform_mnhnl_recordernamesControl(parent::$node, $auth, $args, $tabalias, $options);
   }
 
 
@@ -726,8 +726,8 @@ hook_setSref = function(geom){
         '$taxa_list_args=array('."\n".
         '  "extraParams"=>array("website_id"=>'.$args['website_id'].','."\n".
         '    "view"=>"detail",'."\n".
-        '    "auth_token"=>"'.self::$auth['read']['auth_token'].'",'."\n".
-        '    "nonce"=>"'.self::$auth['read']['nonce'].'"),'."\n".
+        '    "auth_token"=>"'.parent::$auth['read']['auth_token'].'",'."\n".
+        '    "nonce"=>"'.parent::$auth['read']['nonce'].'"),'."\n".
         '  "table"=>"taxa_taxon_list");'."\n".
         '$responseRecords = data_entry_helper::get_population_data($taxa_list_args);'."\n".
         '$taxaList = "";'."\n".
@@ -833,7 +833,7 @@ hook_species_checklist_pre_delete_row=function(e) {
       $rowIdx = 0;
       foreach ($occList as $occ) {
         $ttlid = $occ['taxon']['id'];
-        $firstCell = data_entry_helper::mergeParamsIntoTemplate($occ['taxon'], 'taxon_label');
+        $firstCell = data_entry_helper::mergeParamsIntoTemplate($occ['taxon'], 'taxon_label', false, true);
         if ($options['PHPtaxonLabel']) $firstCell=eval($firstCell);
         $colspan = ' colspan="'.count($attributes).'"';
         // assume always removeable and presence is hidden.
@@ -851,7 +851,7 @@ hook_species_checklist_pre_delete_row=function(e) {
         $secondrow = "";
         foreach ($occAttrControls as $attrId => $control) {
           if ($existing_record_id) {
-            $search = preg_grep("/^sc:$ttlid:$existing_record_id:occAttr:$attrId".'[:[0-9]*]?$/', array_keys(data_entry_helper::$entity_to_load));
+            $search = preg_grep("/^sc:".$ttlid."[_[0-9]*]?:$existing_record_id:occAttr:$attrId".'[:[0-9]*]?$/', array_keys(data_entry_helper::$entity_to_load));
             $ctrlId = (count($search)===1) ? implode('', $search) : "sc:$ttlid:$existing_record_id:occAttr:$attrId";
           } else {
             $ctrlId = "sc:$ttlid::occAttr:$attrId";
@@ -1059,9 +1059,13 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
         if($parts[2]=='') $occList['error'] = 'ERROR PROCESSING entity_to_load: found name '.$key.' with no sequence/id number in part 2';
         else if(!isset($occList[$parts[2]])){
           $occ['id'] = $parts[2];
+          $pos = strpos($parts[1], '_');
+          $txID = ($pos === false) ? $parts[1] : substr($parts[1], 0, $pos); 
           foreach($fullTaxalist as $taxon){
-            if($parts[1] == $taxon['id']) $occ['taxon'] = $taxon;
-            $taxaLoaded[] = $parts[1];
+            if($txID == $taxon['id']){
+              $occ['taxon'] = $taxon;
+              $taxaLoaded[] = $txID;
+            }
           }
           $occList[$parts[2]] = $occ;
           if(!is_numeric($parts[2])) $maxgensequence = intval(max(substr($parts[2],1),$maxgensequence));

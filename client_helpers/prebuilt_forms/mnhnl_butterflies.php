@@ -172,14 +172,14 @@ class iform_mnhnl_butterflies extends iform_mnhnl_dynamic_1 {
     $indicia_templates['zilch'] = ''; // can't have the CR on the end
     self::$locations = iform_loctools_listlocations($node);
     $retVal = parent::get_form($args, $node, $response);
-    if(self::$mode != 0){
+    if(parent::$mode != 0){
       iform_mnhnl_addCancelButton($args['interface']);
       data_entry_helper::$javascript .= "
 $.validator.messages.required = \"".lang::get('validation_required')."\";";
       if(!iform_loctools_checkaccess($node,'superuser')){
         data_entry_helper::$javascript .= "
 jQuery('[name=smpAttr\\:".$args['observer_attr_id']."],[name^=smpAttr\\:".$args['observer_attr_id']."\\:]').attr('readonly',true)";
-        if(self::$mode == 1){
+        if(parent::$mode == 1){
           data_entry_helper::$javascript .= ".val(\"".$user->name."\");";
         } else {
           data_entry_helper::$javascript .= ";";
@@ -253,7 +253,7 @@ jQuery('.tab-submit').click(function() {
       
     } else {
     $retVal .= "<div style=\"display:none\" />
-    <form id=\"form-delete-survey\" action=\"".iform_mnhnl_getReloadPath()."\" method=\"POST\">".self::$auth['write']."
+    <form id=\"form-delete-survey\" action=\"".iform_mnhnl_getReloadPath()."\" method=\"POST\">".parent::$auth['write']."
        <input type=\"hidden\" name=\"website_id\" value=\"".$args['website_id']."\" />
        <input type=\"hidden\" name=\"survey_id\" value=\"".$args['survey_id']."\" />
        <input type=\"hidden\" name=\"sample:id\" value=\"\" />
@@ -266,7 +266,7 @@ jQuery('.tab-submit').click(function() {
 deleteSurvey = function(sampleID){
   if(confirm(\"Are you sure you wish to delete survey \"+sampleID)){
     jQuery.getJSON(\"".self::$svcUrl."/data/sample/\"+sampleID +
-            \"?mode=json&view=detail&auth_token=".self::$auth['read']['auth_token']."&nonce=".self::$auth['read']["nonce"]."\" +
+            \"?mode=json&view=detail&auth_token=".parent::$auth['read']['auth_token']."&nonce=".parent::$auth['read']["nonce"]."\" +
             \"&callback=?\", function(data) {
         if (data.length>0) {
           jQuery('#form-delete-survey').find('[name=sample\\:id]').val(data[0].id);
@@ -1012,7 +1012,7 @@ jQuery('input#sectionlist_taxa_taxon_list_id\\\\:taxon').result(function(event, 
 
   protected static function getSampleListGridPreamble() {
     global $user;
-    $r = '<p>'.lang::get('LANG_SampleListGrid_Preamble').(iform_loctools_checkaccess(self::$node,'superuser') ? lang::get('LANG_All_Users') : $user->name).'</p>';
+    $r = '<p>'.lang::get('LANG_SampleListGrid_Preamble').(iform_loctools_checkaccess(parent::$node,'superuser') ? lang::get('LANG_All_Users') : $user->name).'</p>';
     return $r;
   }
   

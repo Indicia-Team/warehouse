@@ -143,10 +143,10 @@ class iform_mnhnl_butterflies2 extends iform_mnhnl_dynamic_1 {
   protected static function getExtraGridModeTabs($retTabs, $readAuth, $args, $attributes) {
   	// TBD add check for loctools 
     global $indicia_templates;
-  	$isAdmin = user_access('IForm n'.self::$node->nid.' admin');
+  	$isAdmin = user_access('IForm n'.parent::$node->nid.' admin');
   	if(!$isAdmin) return('');
   	if(!$retTabs) return array('#downloads' => lang::get('LANG_Download'), '#locations' => lang::get('LANG_Locations'));
-    $LocationTypeID = iform_mnhnl_getTermID(self::$auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
+    $LocationTypeID = iform_mnhnl_getTermID(parent::$auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
     $retVal = '<div id="downloads" >
     <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_butterflies2_sites_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=downloadsites">
       <p>'.lang::get('LANG_Sites_Report_Download').'</p>
@@ -163,7 +163,7 @@ class iform_mnhnl_butterflies2 extends iform_mnhnl_dynamic_1 {
       <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].'}\' />
       <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
     </form>
-  </div>'.iform_mnhnl_locModTool(self::$auth, $args, self::$node);
+  </div>'.iform_mnhnl_locModTool(parent::$auth, $args, parent::$node);
     return $retVal;
   }
   /**
@@ -209,7 +209,7 @@ class iform_mnhnl_butterflies2 extends iform_mnhnl_dynamic_1 {
     }
     $r .= "</form>
 <div style=\"display:none\" />
-    <form id=\"form-delete-survey\" method=\"POST\">".self::$auth['write']."
+    <form id=\"form-delete-survey\" method=\"POST\">".parent::$auth['write']."
        <input type=\"hidden\" name=\"website_id\" value=\"".$args['website_id']."\" />
        <input type=\"hidden\" name=\"survey_id\" value=\"".$args['survey_id']."\" />
        <input type=\"hidden\" name=\"sample:id\" value=\"\" />
@@ -387,7 +387,7 @@ hook_mnhnl_parent_changed = function(){
   jQuery('#species-grid').find('td').not(':eq(0)').remove();
   jQuery('.sgCloneableRow').find('td:gt(1)').remove();
 };";
-    $retVal = iform_mnhnl_lux5kgridControl($auth, $args, self::$node, array_merge(
+    $retVal = iform_mnhnl_lux5kgridControl($auth, $args, parent::$node, array_merge(
       array('initLoadArgs' => '{initial: true}'), $options));
     return $retVal;
   }
@@ -399,7 +399,7 @@ hook_mnhnl_parent_changed = function(){
    * Get the recorder names control
    */
   protected static function get_control_recordernames($auth, $args, $tabalias, $options) {
-    return iform_mnhnl_recordernamesControl(self::$node, $auth, $args, $tabalias, $options);
+    return iform_mnhnl_recordernamesControl(parent::$node, $auth, $args, $tabalias, $options);
   }
     
   /**
@@ -433,7 +433,7 @@ jQuery("#fieldset-'.$options['boltTo'].'").find("legend").after("'.$retVal.'");'
       curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
       $sampleEntities = json_decode(curl_exec($session), true);
       // primary only location type: not secondary
-      $LocationTypeID = iform_mnhnl_getTermID(self::$auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
+      $LocationTypeID = iform_mnhnl_getTermID(parent::$auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
       $url = data_entry_helper::$base_url."/index.php/services/data/location?parent_id=".data_entry_helper::$entity_to_load['sample:location_id']."&mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&location_type_id=".$LocationTypeID;
       $session = curl_init($url);
       curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
@@ -704,7 +704,7 @@ jQuery('.remove-sgnewrow').live('click', function() {
     $tabName = (isset($options['tabNameFilter']) ? $options['tabNameFilter'] : null);
     $ret = '<p>'.lang::get("LANG_ConditionsGridInstructions")."</p>\n<table id=\"cgCloneableTable\" style='display:none' >";
     $cloneprefix='CG:--rownum--:--sampleid--:';
-    $LocationTypeID = iform_mnhnl_getTermID(self::$auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
+    $LocationTypeID = iform_mnhnl_getTermID(parent::$auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
     unset($attrArgs['id']);
     $attrArgs['fieldprefix']=$cloneprefix.'smpAttr';
     // have to disabled averything in the cloneable grid due to validation issues.
@@ -1070,7 +1070,7 @@ hook_new_site_added = function(feature) {
   
   protected static function getSampleListGridPreamble() {
     global $user;
-    $r = '<p>'.lang::get('LANG_SampleListGrid_Preamble').(iform_loctools_checkaccess(self::$node,'superuser') ? lang::get('LANG_All_Users') : $user->name).'</p>';
+    $r = '<p>'.lang::get('LANG_SampleListGrid_Preamble').(iform_loctools_checkaccess(parent::$node,'superuser') ? lang::get('LANG_All_Users') : $user->name).'</p>';
     return $r;
   }
 

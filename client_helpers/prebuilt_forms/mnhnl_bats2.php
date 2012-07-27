@@ -204,7 +204,7 @@ $.validator.messages.digits = $.validator.format(\"".lang::get('validation_digit
 $.validator.messages.integer = $.validator.format(\"".lang::get('validation_integer')."\");";
     iform_mnhnl_addCancelButton($args['interface']);
     
-    $r .= self::getSiteTypeJS(self::$auth, $args);
+    $r .= self::getSiteTypeJS(parent::$auth, $args);
     // Move the date after the Institution
     $institutionAttrID=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Institution');
     if($institutionAttrID) {
@@ -692,7 +692,7 @@ hook_species_checklist_pre_delete_row=function(e) {
           }
           $retVal .= '<tr class="scMeaning-'.$ttlList[$ttlid]['taxon_meaning_id'].' scDataRow sg-tr-'.$method['meaning_id'].' '.($id=='1'?'scFirstRow':'').'">';
           if($id=='1'){
-          	$firstCell = data_entry_helper::mergeParamsIntoTemplate($ttlList[$ttlid], 'taxon_label');
+          	$firstCell = data_entry_helper::mergeParamsIntoTemplate($ttlList[$ttlid], 'taxon_label', false, true);
             if ($options['PHPtaxonLabel']) $firstCell=eval($firstCell);
             // assume always removeable and scPresence is hidden.
             $retVal .= '<td class="ui-state-default remove-row" style="width: 1%" rowspan="'.(count($attrsPerRow)).'">X</td>';
@@ -787,8 +787,8 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
         '$taxa_list_args=array('."\n".
         '  "extraParams"=>array("website_id"=>'.$args['website_id'].','."\n".
         '    "view"=>"detail",'."\n".
-        '    "auth_token"=>"'.self::$auth['read']['auth_token'].'",'."\n".
-        '    "nonce"=>"'.self::$auth['read']['nonce'].'"),'."\n".
+        '    "auth_token"=>"'.parent::$auth['read']['auth_token'].'",'."\n".
+        '    "nonce"=>"'.parent::$auth['read']['nonce'].'"),'."\n".
         '  "table"=>"taxa_taxon_list");'."\n".
         '$responseRecords = data_entry_helper::get_population_data($taxa_list_args);'."\n".
         '$taxaList = "";'."\n".
