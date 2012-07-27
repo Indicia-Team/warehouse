@@ -190,7 +190,7 @@ $('#load-params').click(function(evt) {
     if (typeof prebuilt_forms[$('#form-category-picker').val()][$('#form-picker').val()] !== \"undefined\") {
       // now use an Ajax request to get the form params
       $.post(
-        '".self::getRootFolder() . self::relative_client_helper_path()."prebuilt_forms_ajax.php',
+        '".self::getRootFolder() . self::client_helper_path()."prebuilt_forms_ajax.php',
         {form: $('#form-picker').val(),
             website_id: $('#website_id').val(),
             password: $('#password').val(),

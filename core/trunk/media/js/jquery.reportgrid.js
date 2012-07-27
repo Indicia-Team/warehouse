@@ -34,7 +34,7 @@ function simple_tooltip(target_items, name){
       $(this).removeAttr("title").mouseover(function(){
         my_tooltip.css({opacity:0.8, display:"none"}).fadeIn(400);
       }).mousemove(function(kmouse){
-        var border_top = $(window).scrollTop(); 
+        var border_top = $(window).scrollTop();
         var border_right = $(window).width();
         var left_pos;
         var top_pos;
@@ -49,10 +49,10 @@ function simple_tooltip(target_items, name){
           top_pos = border_top +offset;
         } else {
           top_pos = kmouse.pageY-offset;
-        }	
+        }
         my_tooltip.css({left:left_pos, top:top_pos});
       }).mouseout(function(){
-        my_tooltip.css({left:"-9999px"});				  
+        my_tooltip.css({left:"-9999px"});
       });
 
     }
@@ -73,7 +73,7 @@ function simple_tooltip(target_items, name){
     var opts = $.extend({}, $.fn.reportgrid.defaults, options),
         // flag to prevent double clicks
         loading=false;
-        
+
     function getRequest(div) {
       var serviceCall, request;
       if (div.settings.mode==='report') {
@@ -85,11 +85,11 @@ function simple_tooltip(target_items, name){
           serviceCall +
           'mode=json&nonce=' + div.settings.nonce +
           '&auth_token=' + div.settings.auth_token +
-          '&view=' + div.settings.view +          
+          '&view=' + div.settings.view +
           '&callback=?';
       return request;
     }
-    
+
     function getUrlParamsForAllRecords(div) {
       var request = {}, paramName;
       // Extract any parameters from the attached form as long as they are report parameters
@@ -111,7 +111,7 @@ function simple_tooltip(target_items, name){
       $.extend(request, getQueryParam(div));
       return request;
     };
-    
+
     function mergeParamsIntoTemplate (div, params, template) {
       var regex, regexEsc, regexEscDbl, r;
       $.each(params, function(param) {
@@ -136,9 +136,9 @@ function simple_tooltip(target_items, name){
       template = template.replace(regex, div.settings.currentUrl);
       return template;
     }
-    
+
     function getActions (div, row, actions) {
-      var result='', onclick, href;
+      var result='', onclick, href, content, img;
       $.each(actions, function(idx, action) {
         if (typeof action.visibility_field === "undefined" || row[action.visibility_field]!=='f') {
           if (typeof action.javascript !== "undefined") {
@@ -164,10 +164,10 @@ function simple_tooltip(target_items, name){
             }
             link = mergeParamsIntoTemplate(div, row, link);
             if (typeof action.urlParams !== "undefined") {
-              if (link.indexOf('?')===-1) { 
+              if (link.indexOf('?')===-1) {
                 link += '?';
-              } else { 
-                link += '&'; 
+              } else {
+                link += '&';
               }
               $.each(action.urlParams, function(name, value) {
                 linkParams.push(name + '=' + value);
@@ -181,12 +181,17 @@ function simple_tooltip(target_items, name){
           if (result !== '') {
             result += '<br/>';
           }
-          result += '<a class="action-button"'+onclick+href+'>'+action.caption+'</a>';
+          if (typeof action.img!=="undefined") {
+            img=action.img.replace('/{rootFolder}/g', div.settings.rootFolder);
+            content = '<img src="'+img+'" title="'+action.caption+'" />';
+          } else
+            content = action.caption;
+          result += '<a class="action-button"'+onclick+href+'>'+content+'</a>';
         }
       });
       return result;
     }
-    
+
     function simplePager (pager, div, hasMore) {
       var pagerContent='';
       if (div.settings.offset!==0) {
@@ -194,7 +199,7 @@ function simple_tooltip(target_items, name){
       } else {
         pagerContent += '<span class="pag-prev pager-button ui-state-disabled">previous</span> ';
       }
-      
+
       if (hasMore) {
         pagerContent += '<a class="pag-next pager-button" rel="nofollow" href="#">next</a>';
       } else {
@@ -204,7 +209,7 @@ function simple_tooltip(target_items, name){
         pager.append(pagerContent);
       }
     }
-    
+
     function advancedPager (pager, div, hasMore) {
       var pagerContent=div.settings.pagingTemplate, pagelist = '', page, showing = div.settings.langShowing;
       if (div.settings.offset!==0) {
@@ -214,7 +219,7 @@ function simple_tooltip(target_items, name){
        pagerContent = pagerContent.replace('{prev}', '<span class="pag-prev pager-button ui-state-disabled">'+div.settings.langPrev+'</span> ');
        pagerContent = pagerContent.replace('{first}', '<span class="pag-first pager-button ui-state-disabled">'+div.settings.langFirst+'</span> ');
       }
-      
+
       if (hasMore)  {
         pagerContent = pagerContent.replace('{next}', '<a class="pag-next pager-button" rel="nofollow" href="#">'+div.settings.langNext+'</a> ');
         pagerContent = pagerContent.replace('{last}', '<a class="pag-last pager-button" rel="nofollow" href="#">'+div.settings.langLast+'</a> ');
@@ -223,8 +228,8 @@ function simple_tooltip(target_items, name){
         pagerContent = pagerContent.replace('{last}', '<span class="pag-last pager-button ui-state-disabled">'+div.settings.langLast+'</span> ');
       }
 
-      for (page=Math.max(1, div.settings.offset/div.settings.itemsPerPage-4); 
-          page<=Math.min(div.settings.offset/div.settings.itemsPerPage+6, Math.ceil(div.settings.recordCount / div.settings.itemsPerPage)); 
+      for (page=Math.max(1, div.settings.offset/div.settings.itemsPerPage-4);
+          page<=Math.min(div.settings.offset/div.settings.itemsPerPage+6, Math.ceil(div.settings.recordCount / div.settings.itemsPerPage));
           page += 1) {
         if (page===div.settings.offset/div.settings.itemsPerPage+1) {
           pagelist += '<span class="pag-page pager-button ui-state-disabled" id="page-' + div.settings.id+ '-'+page+'">'+page+'</span> ';
@@ -240,7 +245,7 @@ function simple_tooltip(target_items, name){
 
       pager.append(pagerContent);
     }
-        
+
     // recreate the pagination footer
     function updatePager (div, hasMore) {
       var pager=$(div).find('.pager');
@@ -251,7 +256,7 @@ function simple_tooltip(target_items, name){
         advancedPager(pager, div, hasMore);
       }
     }
-    
+
     /**
      * Returns the query parameter, which filters the output based on the filters and filtercol/filtervalue.
      */
@@ -285,12 +290,12 @@ function simple_tooltip(target_items, name){
         return {};
       }
     }
-    
-    function loadGridFrom (div, request, clearExistingRows) {      
+
+    function loadGridFrom (div, request, clearExistingRows) {
       $.getJSON(request,
           null,
           function(response) {
-            var tbody = $(div).find('tbody'), row, rows, rowclass, rowclasses, hasMore=false, 
+            var tbody = $(div).find('tbody'), row, rows, rowclass, rowclasses, hasMore=false,
                 value, rowInProgress=false, rowOutput, rowId, features=[],
                 feature, geom, map, valueData;
             // if we get a count back, then update the stored count
@@ -338,7 +343,7 @@ function simple_tooltip(target_items, name){
                   }
                 });
                 $.each(div.settings.columns, function(idx, col) {
-                  if (div.settings.sendOutputToMap && typeof indiciaData.reportlayer!=="undefined" && 
+                  if (div.settings.sendOutputToMap && typeof indiciaData.reportlayer!=="undefined" &&
                       typeof col.mappable!=="undefined" && (col.mappable==="true" || col.mappable==true)) {
                     geom=OpenLayers.Geometry.fromWKT(row[col.fieldname]);
                     if (map.projection.getCode() != map.div.indiciaProjection.getCode()) {
@@ -383,7 +388,7 @@ function simple_tooltip(target_items, name){
             if (features.length>0) {
               indiciaData.reportlayer.addFeatures(features);
             }
-            
+
             // Set a class to indicate the sorted column
             $('#' + div.id + ' th').removeClass('asc');
             $('#' + div.id + ' th').removeClass('desc');
@@ -401,7 +406,7 @@ function simple_tooltip(target_items, name){
           }
       );
     }
-    
+
     /**
      * Build the URL required for a report request, excluding the pagination (limit + offset) parameters.
      */
@@ -415,7 +420,7 @@ function simple_tooltip(target_items, name){
       }
       return request;
     }
-    
+
     /**
      * Function to make a service call to load the grid data.
      */
@@ -431,7 +436,7 @@ function simple_tooltip(target_items, name){
       }
       loadGridFrom(div, request, true);
     }
-    
+
     // Sets up various clickable things like the filter button on a direct report, or the pagination links.
     function setupReloadLinks (div) {
       // Define pagination clicks.
@@ -443,7 +448,7 @@ function simple_tooltip(target_items, name){
           div.settings.offset += div.settings.itemsPerPage;
           load(div, false);
         });
-        
+
         $(div).find('.pager .pag-prev').click(function(e) {
           e.preventDefault();
           if (div.loading) {return;}
@@ -453,7 +458,7 @@ function simple_tooltip(target_items, name){
           if (div.settings.offset<0) {div.settings.offset=0;}
           load(div, false);
         });
-        
+
         $(div).find('.pager .pag-first').click(function(e) {
           e.preventDefault();
           if (div.loading) {return;}
@@ -461,7 +466,7 @@ function simple_tooltip(target_items, name){
           div.settings.offset = 0;
           load(div, false);
         });
-        
+
         $(div).find('.pager .pag-last').click(function(e) {
           e.preventDefault();
           if (div.loading) {return;}
@@ -469,7 +474,7 @@ function simple_tooltip(target_items, name){
           div.settings.offset = Math.floor((div.settings.recordCount-1) / div.settings.itemsPerPage)*div.settings.itemsPerPage;
           load(div, false);
         });
-        
+
         $(div).find('.pager .pag-page').click(function(e) {
           e.preventDefault();
           if (div.loading) {return;}
@@ -479,7 +484,7 @@ function simple_tooltip(target_items, name){
           load(div, false);
         });
       }
-        
+
       if (div.settings.mode==='direct' && div.settings.autoParamsForm) {
         // define a filter form click
         $(div).find('.run-filter').click(function(e) {
@@ -504,7 +509,7 @@ function simple_tooltip(target_items, name){
         });
       }
     }
-    
+
     this.getUrlParamsForAllRecords = function() {
       // loop, though we only return 1.
       $.each($(this), function(idx, div) {
@@ -512,7 +517,7 @@ function simple_tooltip(target_items, name){
       });
       return r;
     };
-    
+
     /**
      * Public function which adds a list of records to the bottom of the grid, loaded according to a filter.
      * Typical usage might be to specify an id to add a single record.
@@ -524,15 +529,15 @@ function simple_tooltip(target_items, name){
         loadGridFrom(div, request, false);
       });
     };
-    
+
     this.reload = function(recount) {
       recount = (typeof recount==="undefined") ? false : recount;
       $.each($(this), function(idx, div) {
         load(div, recount);
       });
-      
+
     };
-    
+
     /**
      * Public method to be called after deleting rows from the grid - to keep paginator updated
      */
@@ -542,14 +547,14 @@ function simple_tooltip(target_items, name){
         updatePager(div, true);
       });
     };
-    
+
     return this.each(function() {
       this.settings = opts;
-      
+
       // Make this accessible inside functions
       var div=this;
-      
-      // Define clicks on column headers to apply sort 
+
+      // Define clicks on column headers to apply sort
       $(this).find('th.sortable').click(function(e) {
         e.preventDefault();
         if (div.loading) {return;}
@@ -571,7 +576,7 @@ function simple_tooltip(target_items, name){
         // reload the data
         load(div, false);
       });
-      
+
       var doFilter = function(e) {
         if (e.target.hasChanged) {
           var fieldname = e.target.id.substr(11);
@@ -591,7 +596,7 @@ function simple_tooltip(target_items, name){
                 $.each(response, function (idx, obj) {
                   indiciaData.mapdiv.addDistPoint(features, obj, 'geom', {"type":"vector"}, obj[div.settings.rowId]);
                 });
-                indiciaData.reportlayer.removeAllFeatures(); 
+                indiciaData.reportlayer.removeAllFeatures();
                 indiciaData.reportlayer.addFeatures(features);
               }
             );
@@ -613,7 +618,7 @@ function simple_tooltip(target_items, name){
       });
 
       setupReloadLinks(div);
-      
+
       if (div.settings.rowId && div.settings.linkFeatures) {
         // Setup highlighting of features on an associated map when rows are clicked
         $(div).find('tbody').click(function(evt) {
@@ -647,7 +652,7 @@ function simple_tooltip(target_items, name){
       if (div.settings.callback !== "") {
         window[div.settings.callback]();
       }
-     
+
     });
   }
 }(jQuery));
@@ -661,7 +666,7 @@ $.fn.reportgrid.defaults = {
   auth_token : '',
   nonce : '',
   dataSource : '',
-  view: 'list', 
+  view: 'list',
   columns : null,
   orderby : null,
   sortdir : 'ASC',

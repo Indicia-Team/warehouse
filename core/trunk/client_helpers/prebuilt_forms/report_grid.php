@@ -79,6 +79,7 @@ class iform_report_grid {
             "desc":"List of actions to make available for each row in the grid.",
             "mapping": {
               "caption": {"type":"str","desc":"Display caption for the action\'s link."},
+              "img": {"type":"str","desc":"Path to the image shown for the action. The caption becomes the images\'s title."},
               "visibility_field": {"type":"str","desc":"Optional name of a field in the data which contains true or false to define the visibility of this action."},
               "url": {"type":"str","desc":"A url that the action link will point to, unless overridden by JavaScript. The url can contain tokens which '.
                   'will be subsituted for field values, e.g. for http://www.example.com/image/{id} the {id} is replaced with a field called id in the current row. '.

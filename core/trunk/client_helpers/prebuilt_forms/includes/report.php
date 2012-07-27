@@ -233,3 +233,38 @@ function iform_report_get_report_options($args, $readAuth) {
   }
   return $reportOptions;
 }
+
+/** 
+ * Takes a set of report parameters and applies preferences from the user's EasyLogin profile to the report parameters. Assumes
+ * parameters called ownData, ownLocality, ownGroups. See the library/occurrences/explore_list report for an example.
+ */
+function iform_report_apply_explore_user_own_preferences(&$reportOptions) {
+  $allParams = array_merge($reportOptions['paramDefaults'], $reportOptions['extraParams']);
+  global $user;
+  if (!isset($user->profile_indicia_user_id))
+    profile_load_profile($user);
+  // Unless ownData explicitly set, we either default it to unchecked, or we set it unchecked and hidden if the user account
+  // is not on the warehouse
+  if (!array_key_exists('ownData', $allParams)) {
+    if (!empty($user->profile_indicia_user_id))
+      $reportOptions['paramDefaults']['ownData']=0;
+    else
+      $reportOptions['extraParams']['ownData']=0;
+  }
+  // Unless ownLocality explicitly set, we either default it to checked, or we set it unchecked and hidden if the user account
+  // has no location preferences set
+  if (!array_key_exists('ownLocality', $allParams)) {
+    if (!empty($user->profile_location))
+      $reportOptions['paramDefaults']['ownLocality']=1;
+    else
+      $reportOptions['extraParams']['ownLocality']=0;
+  }
+  // Unless ownGroups explicitly set, we either default it to checked, or we set it unchecked and hidden if the user account
+  // has no taxon groups set
+  if (!array_key_exists('ownGroups', $allParams)) {
+    if (!empty($user->profile_taxon_groups))
+      $reportOptions['paramDefaults']['ownGroups']=1;
+    else
+      $reportOptions['extraParams']['ownGroups']=0;
+  }
+}
