@@ -89,7 +89,7 @@ class iform_quick_species_maps {
       elseif ($param['name']==='indicia_species_layer_filter_field')
         $param['default'] = 'taxa_taxon_list_external_key';
       elseif ($param['name']==='param_presets')
-        $param['default'] = "date_from=\ndate_to=\nsurvey_id=\nquality=!Rlocation_id={profile_location}\ntaxon_groups={profile_taxon_groups}\ncurrentUser={profile_indicia_user_id}";
+        $param['default'] = "date_from=\ndate_to=\nsurvey_id=\nquality=C\nlocation_id={profile_location}\ntaxon_groups={profile_taxon_groups}\ncurrentUser={profile_indicia_user_id}";
     }
     return $r;
     
@@ -146,15 +146,30 @@ class iform_quick_species_maps {
     $r .= '</div>';
     $r .= map_helper::map_panel($mapOptions, $olOptions);
     $r .= '</div>';
-    $websites = data_entry_helper::get_population_data(array(
-      'table'=>'index_websites_website_agreement',
-      'extraParams'=>$readAuth+array('receive_for_reporting'=>'t'),
-    ));
-    $websiteIds = array();
-    foreach ($websites as $website) 
-      $websiteIds[] = $website['to_website_id'];
+    $websiteIds = iform_get_allowed_website_ids($readAuth);
     if (!empty($args['indicia_species_layer_feature_type']) && !empty(report_helper::$geoserver_url)) {
-      $cql='website_id IN ('.implode(',',$websiteIds).') AND '.$args['indicia_species_layer_filter_field']."='{filterValue}'";
+      $cql='website_id IN ('.implode(',',$websiteIds).') AND '.$args['indicia_species_layer_filter_field']."='{filterValue}' AND record_status NOT IN ('R', 'I', 'T')";
+      if (isset($_POST[$reportOptions['reportGroup'].'-quality']))
+        $quality=$_POST[$reportOptions['reportGroup'].'-quality'];
+      else 
+        $quality=$reportOptions['extraParams']['quality'];
+      // logic here must match the quality_check function logic on the database.
+      switch($quality) {
+        case 'V': 
+          $cql .= " AND record_status='V'";
+          break;
+        case 'C':
+          $cql .= " AND (record_status='V' OR certainty='C')";
+          break;
+        case 'L':
+          $cql .= " AND (record_status='V' OR ((certainty <> 'U' OR certainty IS NULL) AND record_status <> 'D'))";
+          break;
+        case '!D':
+          $cql .= " AND record_status<>'D'";
+          break;
+        case '!R':
+          // nothing to add - rejects are always excluded
+      }
       report_helper::$javascript .= "indiciaData.indiciaSpeciesLayer = {\n".
           '  "title":"'.lang::get('{1}')."\",\n".
           '  "myRecords":"'.lang::get('my records')."\",\n".
