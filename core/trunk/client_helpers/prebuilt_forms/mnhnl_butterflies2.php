@@ -74,8 +74,9 @@ class iform_mnhnl_butterflies2 extends iform_mnhnl_dynamic_1 {
           'name'=>'max_species_ids',
           'caption'=>'max number of species to be returned by a search',
           'description'=>'The maximum number of species to be returned by the drop downs at any one time.',
-          'default'=>25,
-          'type'=>'int'
+          'default'=>100,
+          'type'=>'int',
+          'group' => 'Species'
         ),
         array(
           'name'=>'attributeValidation',
@@ -313,16 +314,16 @@ createGridEntries = function(feature, isnew) {
     insertPoint=jQuery(Row).children(':eq('+insertCount+')');
     var newNoObCell = jQuery('<td class=\"smp-'+cgRowNum+'\">'+
       '<input type=\"hidden\" name=\"CG:'+cgRowNum+':--sampleid--:smpAttr:".$noObAttr."\" value=\"0\" \"/>'+
-      '<input type=\"checkbox\" name=\"CG:'+cgRowNum+':--sampleid--:smpAttr:".$noObAttr."\" value=\"1\" class=\"cgAttr\" disabled=\"disabled\" />'+
+      '<input type=\"checkbox\" name=\"CG:'+cgRowNum+':--sampleid--:smpAttr:".$noObAttr."\" value=\"1\" class=\"narrow\" disabled=\"disabled\" />'+
       '</td>').css('opacity',0.25).insertAfter(insertPoint);
     newNoObCell.find(':checkbox').rules('add', {no_observation: cgRowNum});
   });
   insertCount++;// double cells at start for these rows.
   insertPoint=jQuery('.sgCloneableRow').children(':eq('+insertCount+')');
-  jQuery('<td class=\"smp-'+cgRowNum+'\"><input class=\"digits narrow\" name=\"SG:--sgrownum--:'+cgRowNum+':--sampleid--:--ttlid--:--occid--:occAttr:".$countAttr."\" disabled=\"disabled\" min=\"1\"></td>').css('opacity',0.25).insertAfter(insertPoint);
+  jQuery('<td class=\"smp-'+cgRowNum+'\"><input class=\"digits narrow disabled\" name=\"SG:--sgrownum--:'+cgRowNum+':--sampleid--:--ttlid--:--occid--:occAttr:".$countAttr."\" disabled=\"disabled\" min=\"1\"></td>').css('opacity',0.25).insertAfter(insertPoint);
   jQuery('.sgAddedRow,.sgOrigRow').each(function(i, Row) {
     insertPoint=jQuery(Row).children(':eq('+insertCount+')');
-    jQuery('<td class=\"smp-'+cgRowNum+'\"><input class=\"digits narrow\" name=\"SG:'+jQuery(Row).data('taxonRow')+':'+cgRowNum+':--sampleid--:'+jQuery(Row).data('ttlid')+':--occid--:occAttr:".$countAttr."\" disabled=\"disabled\" min=\"1\"></td>').css('opacity',0.25).insertAfter(insertPoint);
+    jQuery('<td class=\"smp-'+cgRowNum+'\"><input class=\"digits narrow disabled\" name=\"SG:'+jQuery(Row).data('taxonRow')+':'+cgRowNum+':--sampleid--:'+jQuery(Row).data('ttlid')+':--occid--:occAttr:".$countAttr."\" disabled=\"disabled\" min=\"1\"></td>').css('opacity',0.25).insertAfter(insertPoint);
   });
   return name;
 };
@@ -475,9 +476,10 @@ jQuery("#fieldset-'.$options['boltTo'].'").find("legend").after("'.$retVal.'");'
     $fullOccList = array();
     if (isset($subsamples))
       foreach($subsamples as $key => $entity){
+        // have to disabled averything in the cloneable grid due to validation issues.
         $ret .= str_replace(array('--cgrownum--', '--sampleid--'),
                          array($key+1, $entity['sample_id']),
-                         '<td class="smp---cgrownum--" '.(isset($entity['date']) ? '' : 'style="opacity: 0.25"').'><input class="digits narrow" name="'.$cloneprefix.'occAttr:'.$countAttr.'" '.(isset($entity['date']) ? '' : 'disabled="disabled"').' min="1" ></td>');
+                         '<td class="smp---cgrownum--" '.(isset($entity['date']) ? '' : 'style="opacity: 0.25"').' disabled="disabled"><input class="digits narrow '.(isset($entity['date']) ? '' : 'disabled').'" name="'.$cloneprefix.'occAttr:'.$countAttr.'" disabled="disabled" min="1" ></td>');
         if(isset($entity['sample_id'])){
           $url = data_entry_helper::$base_url."/index.php/services/data/occurrence?sample_id=".$entity['sample_id']."&mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"];
           $session = curl_init($url);
@@ -531,12 +533,12 @@ jQuery("#fieldset-'.$options['boltTo'].'").find("legend").after("'.$retVal.'");'
     if ($args['species_ctrl']=='tree_browser')
       return '<p>Can not use tree browser in this context</p>';
     $ret .= '<div>'.call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_list_args).'</div>';
-    $ret .= '<table id="species-grid"><tr id="species-grid-header"><th colSpan=2>'.lang::get('Species').'</th>';
+    $ret .= '<table id="species-grid-head"><thead id="species-grid-head-head"><tr></tr></thead></table><div id="species-grid-container"><table id="species-grid"><thead><tr id="species-grid-header"><th></th><th>'.lang::get('Species').'</th>';
     if (isset($subsamples))
       foreach($subsamples as $key => $entity){
         $ret .= '<th class="smp-'.($key+1).'" '.(isset($entity['date']) ? '' : 'style="opacity: 0.25"').'>'.$entity['name'].'</th>';
       }
-    $ret .= '</tr>';
+    $ret .= '</tr></thead><tbody>';
     $taxonRow=0;
     ksort($fullOccList);
     $taxonList=array();
@@ -561,7 +563,7 @@ jQuery("#fieldset-'.$options['boltTo'].'").find("legend").after("'.$retVal.'");'
       }
       $taxonRow++;
       data_entry_helper::$javascript .= "
-jQuery('#species-grid').find('tr:eq(".$taxonRow.")').data('taxonRow', ".$taxonRow.").data('ttlid', ".$ttlid.").data('meaning_id', ".$taxon[0]['taxon_meaning_id'].");";
+jQuery('#species-grid').find('tr:eq(".($taxonRow-1).")').data('taxonRow', ".$taxonRow.").data('ttlid', ".$ttlid.").data('meaning_id', ".$taxon[0]['taxon_meaning_id'].");";
       $ret .= '
 <tr class="sgOrigRow"><td class="ui-state-default clear-sgrow" style="width: 1%">X</td><td class="sggrid-namecell">'.$name.'</td>';
       foreach($subsamples as $key => $entity){
@@ -592,7 +594,7 @@ jQuery('#species-grid').find('tr:eq(".$taxonRow.")').data('taxonRow', ".$taxonRo
         );
         $defAttrOptions = array_merge(
               array('cellClass' => 'smp-'.($key+1),
-                'class' => 'cgAttr',
+                'class' => 'narrow',
                 'extraParams' => array_merge($auth['read'], array('view'=>'detail')),
                 'language' => 'eng'), //force english
               $options);
@@ -604,7 +606,7 @@ jQuery('#species-grid').find('tr:eq(".$taxonRow.")').data('taxonRow', ".$taxonRo
        data_entry_helper::$late_javascript .= "
 jQuery('.sgNoObRow').find(':checkbox:eq(".$key.")').rules('add', {no_observation: ".($key+1)."});";
       }
-    $ret .= '</tr></table>';
+    $ret .= '</tr></tbody></table></div>';
     // remembering that validation for checkbox is actually called on the hidden element, not the checkbox itself.
     data_entry_helper::$late_javascript .= "
 $.validator.addMethod('no_observation', function(value, element, params){
@@ -616,9 +618,22 @@ $.validator.addMethod('no_observation', function(value, element, params){
     return(numFilledIn>0);
 }, \"".lang::get('validation_no_observation')."\");
 ";
-    // have to disabled averything in the cloneable grid due to validation issues.
   data_entry_helper::$javascript .= "
-jQuery('#sgCloneableTable').find('td').attr('disabled','disabled').find('input,select').attr('disabled','disabled');
+reset-species-grid-header = function(){
+  // easiest way to get a scrollable table body
+  $('#species-grid td').each(function(){ $(this).css('width', ''); });
+  jQuery('#species-grid > thead').show();
+  var columnWidths = new Array();
+  $('#species-grid > thead').find('td').each(function (index) {columnWidths[index] = $(this).width();});
+  $('#species-grid tr').each(function(){
+    $(this).find('td').each(function(index){
+      $(this).css('width', columnWidths[index]);
+    });
+  });
+  jQuery('#species-grid-head-head').empty().html(jQuery('#species-grid > thead').find('tr').html());
+  jQuery('#species-grid > thead').hide();
+}
+reset-species-grid-header();
 sgRowIndex = ".$taxonRow.";
 jQuery('#speciesgrid_taxa_taxon_list_id').change(function(){
   jQuery.getJSON(\"".data_entry_helper::$base_url."/index.php/services/data/taxa_taxon_list/\" +jQuery('#speciesgrid_taxa_taxon_list_id').val()+
@@ -637,7 +652,8 @@ jQuery('#speciesgrid_taxa_taxon_list_id').change(function(){
         }
         sgRowIndex++;
         newSGrow = jQuery('.sgCloneableRow').clone().removeClass('sgCloneableRow').addClass('sgAddedRow');
-        newSGrow.find('*').removeAttr('disabled');
+        newSGrow.find('td').removeAttr('disabled');
+        newSGrow.find('input').not('.disabled').removeAttr('disabled');
         jQuery.each(newSGrow.children(), function(i, cell) {
           cell.innerHTML = cell.innerHTML.replace(/--ttlid--/g, tdata[0].id).replace(/--sgrownum--/g, sgRowIndex);
         });
@@ -657,6 +673,7 @@ jQuery('#speciesgrid_taxa_taxon_list_id').change(function(){
               jQuery('#species-grid').find('tr').each(function(i, row){
                 if(ldata[0].taxon_meaning_id == jQuery(row).data('meaning_id'))
                   jQuery(row).find('.sggrid-namecell').empty().append(name);});
+              reset-species-grid-header();
             }});
         }});
 });
@@ -671,7 +688,13 @@ jQuery('.remove-sgnewrow').live('click', function() {
   var thisRow=jQuery(this).closest('tr');
   if(!confirm(\"".lang::get('LANG_speciesgrid:removeconfirm')."\")) return;
   thisRow.remove();
-});";
+  reset-species-grid-header();
+});
+jQuery(jQuery('#species').parent()).bind('tabsshow', function(e, ui){
+  if (ui.panel.id=='species') {
+    reset-species-grid-header();
+  }
+}";
     return $ret;
   }
   
@@ -842,7 +865,7 @@ jQuery('.cggrid-row').each(function(index, Element) {  // initial rows: don't ne
 jQuery('.cggrid-date').live('change', function() {
   var myRow = jQuery(this).closest('tr');
   var myRowNum = myRow.data('cgRowNum');
-  jQuery('.smp-'+myRowNum).css('opacity','').find('input').removeAttr('disabled');";
+  jQuery('.smp-'+myRowNum).css('opacity','').find('input').removeAttr('disabled').removeClass('disabled');";
     for($i=0; $i<$numRows; $i++){
       $query = "  myRow";
       for($j=0; $j<$i; $j++) $query.=".next()";
@@ -883,7 +906,7 @@ jQuery('.clear-cgrow').live('click', function() { // existing location - no name
     }
     data_entry_helper::$javascript .= "
   var myRowNum = thisRow.data('cgRowNum');
-  jQuery('.smp-'+myRowNum).css('opacity',0.25).find(':text').attr('disabled','disabled').val('');
+  jQuery('.smp-'+myRowNum).css('opacity',0.25).find(':text').attr('disabled','disabled').addClass('disabled').val('');
   jQuery('.smp-'+myRowNum).css('opacity',0.25).find(':checkbox').attr('disabled','disabled').attr('checked','');
 });
 setNameDropDowns(true, false);

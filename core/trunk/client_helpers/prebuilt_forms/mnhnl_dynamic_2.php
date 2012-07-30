@@ -101,6 +101,14 @@ class iform_mnhnl_dynamic_2 extends iform_mnhnl_dynamic_1 {
           'group' => 'User Interface',
           'required' => false
         ),
+      	array(
+      	  'name'=>'targetSpeciesAttrList',
+      	  'caption'=>'Target Species Attribute List',
+      	  'description'=>'Comma separated list of sample attribute IDs used in the target species grid. This is used in the control and the reporting.',
+      	  'type'=>'text_input',
+      	  'group' => 'User Interface',
+          'required' => false
+      	),
         array(
           'name' => 'language',
           'caption' => 'Language Override',
@@ -210,32 +218,14 @@ class iform_mnhnl_dynamic_2 extends iform_mnhnl_dynamic_1 {
     if($args['LocationTypeTerm']=='' && isset($args['loctoolsLocTypeID'])) $args['LocationTypeTerm']=$args['loctoolsLocTypeID'];
     $primary = iform_mnhnl_getTermID(array('read'=>$readAuth), $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
     $r= '<div id="downloads" >';
+    $r .= '<p>'.lang::get('LANG_Data_Download').'</p>';
     if(isset($args['targetSpeciesAttr']) && $args['targetSpeciesAttr']!="") {
       $targetSpeciesAttr=iform_mnhnl_getAttr(parent::$auth, $args, 'sample', $args['targetSpeciesAttr']);
       if(!$targetSpeciesAttr) return lang::get('This form must be used with a survey that has the '.$args['targetSpeciesAttr'].' sample attribute associated with it.');
       data_entry_helper::$javascript .= "
-jQuery('[name=targetSpecies]').change(function(){
-  jQuery('[name=params]').val('{\"survey_id\":".$args['survey_id'].", \"location_type_id\":".$primary.", \"target_species\":'+jQuery(this).val()+'}');
-  var filename=jQuery(this).find('[selected]')[0].text.replace(/ /g, \"\");
-  jQuery('#sitesReportRequestForm').attr('action',
-    '".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=".$args['sites_download_report'].".xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv&filename=".$args['reportFilenamePrefix']."Sites');
-  jQuery('#conditionsReportRequestForm').attr('action',
-    '".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=".$args['conditions_download_report'].".xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv&filename=".$args['reportFilenamePrefix']."Conditions'+filename);
-  jQuery('#speciesReportRequestForm').attr('action',
-    '".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=".$args['species_download_report'].".xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv&filename=".$args['reportFilenamePrefix']."Species'+filename);
-});
-jQuery('[name=targetSpecies]').change();
+jQuery('[name=params]').val('{\"survey_id\":".$args['survey_id'].", \"location_type_id\":".$primary.", \"taxon_list_id\":".$args['extra_list_id'].", \"target_species_attr\":".$targetSpeciesAttr['attributeId'].", \"target_species_termlist\":".$targetSpeciesAttr['termlist_id'].(isset($args['targetSpeciesAttrList']) ? ", \"target_species_attr_list\":\"".$args['targetSpeciesAttrList']."\"":"")."}');
 ";
-      $r .= '<p>'.lang::get('LANG_Data_Download_TS').'</p>'.data_entry_helper::select(array(
-          'label'=>lang::get("LANG_TargetSpecies"),
-          'fieldname'=>'targetSpecies',
-          'table'=>'termlists_term',
-          'captionField'=>'term',
-          'valueField'=>'meaning_id',
-          'extraParams' => $readAuth + array('view'=>'detail', 'termlist_id'=>$targetSpeciesAttr['termlist_id'], 'orderby'=>'id')
-        ));
-    } else
-      $r .= '<p>'.lang::get('LANG_Data_Download').'</p>';
+    };
     return $r.($args['sites_download_report']!=''?'
   <form id="sitesReportRequestForm" method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report='.$args['sites_download_report'].'.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename='.$args['reportFilenamePrefix'].'Sites">
     <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "location_type_id":'.$primary.'}\' />
@@ -605,7 +595,7 @@ jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:
        ,'survey_id'=>$args['survey_id']
     ), true);
     $retval = '<br /><input type="hidden" name="includeTargetSpeciesGrid" value="true" ><table class="target-species-grid"><tr><th colspan=2>'.lang::get('Target Species').'</th>';
-    $attrList = explode(',', $options['defaultAttrs']);
+    $attrList = explode(',', $args['targetSpeciesAttrList']);
     $attrIDs = array();
     foreach($attrList as $attr){
       $cell = "";
