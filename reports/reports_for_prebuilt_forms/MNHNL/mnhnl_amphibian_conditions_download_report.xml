@@ -4,7 +4,9 @@
   <params>
     <param name='survey_id' display='Survey: ' description='Select the survey to return data for:' datatype='lookup'
         query='SELECT id, title as caption FROM surveys' />
-    <param name='target_species' display='Target Species: ' description='Select the target species to return data for:' datatype='int' />
+    <param name='target_species_attr' display='Target Species Attribute ID : ' description='Enter the attribute ID for the target species attribute:' datatype='int' />
+    <param name='target_species_termlist' display='Target Species Termlist ID : ' description='Enter the ID for the target species termlist:' datatype='int' />
+    <param name='target_species_attr_list' display='Target Species Attribute List : ' description='Enter a comma separated List of attribute ID used in the target species grid:' datatype='text' />
   </params>
   <table tablename="samples" where="#this#.deleted = FALSE
       and #this#.parent_id IS NULL
@@ -15,20 +17,38 @@
     <tabColumn name='date_end' visible='false'/>
     <tabColumn name='date_type' visible='false'/>
     <tabColumn name='date' func="''" display='Visit date'/> // dummy field for the vague date processing, here so appears at logical position and with reasonable description in the report
+    <tabColumn name='target_species' func="(regexp_replace(array(SELECT CASE WHEN sX.id IS NULL THEN '' ELSE term||'|'||
+    regexp_replace(array(select 
+      CASE WHEN sav.id IS NULL THEN CASE sa.data_type WHEN 'B' THEN 'N'  ELSE ''  END
+      ELSE
+        CASE sa.data_type
+        WHEN 'L' THEN (select tt2.term from detail_termlists_terms tt2 where tt2.preferred='t' and tt2.meaning_id=sav.int_value)
+        WHEN 'I' THEN sav.int_value::text
+        WHEN 'B' THEN CASE int_value WHEN 0 THEN 'N' ELSE 'Y' END
+        ELSE text_value
+        END
+      END
+    FROM sample_attributes sa 
+    LEFT JOIN sample_attribute_values sav ON (sav.sample_id=sX.id AND sav.sample_attribute_id = sa.id and sav.deleted='f')
+    WHERE sa.id in (#target_species_attr_list#)
+    and sa.deleted= 'f'
+    ORDER BY SA.ID ASC)::text, ',', '|', 'g')
+  END 
+  FROM detail_termlists_terms tt
+  LEFT JOIN samples sX ON (sX.parent_id = #this#.id and sX.deleted='f' AND EXISTS (SELECT 1 from sample_attribute_values sav2 where sav2.sample_attribute_id = #target_species_attr# and sav2.int_value= tt.meaning_id and sav2.sample_id=sX.id and sav2.deleted='f'))
+  WHERE tt.termlist_id = #target_species_termlist#)::text, '[{}\x22]', '', 'g'))" display='Target species'/>
     <tabColumn name='comment' display='Conditions comment'/>
     <subTable tablename="locations" > // allow deleted Sites!
       <tabColumn name='id' visible='true' display='Location ID' />
       <tabColumn name='name' display='Site'/>
       <tabColumn name='xy' display='XY' func="(regexp_replace(#this#.centroid_sref, ',|\\.[0-9]*' , '','g'))" />
       <tabColumn name='comment' display='Site comment'/>
-      <attributes separator='|' meaningIdLanguage='preferred'/>
+      <attributes separator='|' meaningIdLanguage='peferred'/>
+      <subTable tablename="locations" parentKey="parent_id" where="#this#.deleted = FALSE" join="LEFT OUTER" >
+        <tabColumn name='name' display='Square'/>
+      </subTable>
     </subTable>
     <attributes separator='|' meaningIdLanguage='preferred'/>
-    <subTable tablename="samples" tableKey="parent_id" parentKey="id" where="#this#.deleted = FALSE" >
-      <subTable tablename="sample_attribute_values" tableKey="sample_id" parentKey="id" where="#this#.deleted = FALSE and #this#.int_value = #target_species# " >
-      </subTable>
-      <attributes separator='|' meaningIdLanguage='preferred'/>
-    </subTable>
   </table>
   <order_bys>
     <order_by>lt0_id ASC</order_by>

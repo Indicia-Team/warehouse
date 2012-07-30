@@ -77,7 +77,7 @@ function iform_mnhnl_getParameters() {
             'single' => 'Single',
             'multi' => 'Multiple'
           ),
-          'default' => 'None',
+          'default' => 'single',
           'group' => 'Locations'
         ),
         array(
@@ -90,7 +90,7 @@ function iform_mnhnl_getParameters() {
             'single' => 'Single',
             'multi' => 'Multiple'
           ),
-          'default' => 'None',
+          'default' => 'none',
           'group' => 'Locations'
         ),
         array(
@@ -103,7 +103,7 @@ function iform_mnhnl_getParameters() {
             'single' => 'Single',
             'multi' => 'Multiple'
           ),
-          'default' => 'None',
+          'default' => 'none',
           'group' => 'Locations'
         ),
         // we use the locTools location type ID for the parent
@@ -176,10 +176,14 @@ function iform_mnhnl_getParameters() {
         array(
           'name'=>'duplicateNameCheck',
           'caption'=>'Duplicate name check',
-          'description'=>'Include a duplicate name check',
-          'type'=>'boolean',
-          'default' => true,
-          'required' => false,
+          'description'=>'Duplicate name check',
+          'type'=>'select',
+       	  'options' => array(
+       			'none' => 'None',
+ 				'check' => 'Warning only',
+        		'enforce' => 'Enforce'
+        		),
+          'default' => 'check',
           'group' => 'Locations'
         ),
         array(
@@ -2066,13 +2070,15 @@ hook_ChildFeatureLoad = function(feature, data, child_id, childArgs){
 //  setGeomFields();
 };
 jQuery('#location-name').change(function(){";
-      if(isset($args['duplicateNameCheck']) && $args['duplicateNameCheck'])
+      if(isset($args['duplicateNameCheck']) && ($args['duplicateNameCheck']==true || $args['duplicateNameCheck']=='check' || $args['duplicateNameCheck']=='enforce'))
         data_entry_helper::$javascript .= "
   for(var i=0; i< SiteLabelLayer.features.length; i++){
     if(SiteLabelLayer.features[i].attributes.new == false){
       if(jQuery(this).val() == SiteLabelLayer.features[i].attributes.data.name){
         alert(\"".lang::get('LANG_DuplicateName')."\");
-      }
+".($args['duplicateNameCheck']=='enforce' ?
+"		 jQuery(this).val('');\n" : "").
+"      }
     }
   }";
       data_entry_helper::$javascript .= "
@@ -2227,9 +2233,12 @@ jQuery(\"#".$options['ParentFieldID']."\").change(function(){
       function(data) {
        if (data.length>0) {
          for(var di=0; di<data.length; di++){
-".(isset($args['duplicateNameCheck']) && $args['duplicateNameCheck'] ?
-"           if(jQuery('#location-name').val() == data[di].name && jQuery('#".$options['MainFieldID']."').val() != data[di].id)
+".(isset($args['duplicateNameCheck']) && ($args['duplicateNameCheck']==true || $args['duplicateNameCheck']=='check' || $args['duplicateNameCheck']=='enforce') ?
+"           if(jQuery('#location-name').val() == data[di].name && jQuery('#".$options['MainFieldID']."').val() != data[di].id){
              alert(\"".lang::get('This site name is already in use in the new square. Please choose another.')."\");
+".($args['duplicateNameCheck']=='enforce' ?
+"		     jQuery('#location-name').val('');\n" : "").
+"		   }
 " : "").
 (isset($args['siteNameTermListID']) && $args['siteNameTermListID']!="" ? 
 "           if(data[di].name == parseInt(data[di].name) && jQuery('#".$options['MainFieldID']."').val() != data[di].id)

@@ -149,3 +149,10 @@ div.olControlEditingToolbar  {
   margin-top: 7px;
   margin-right: 20px;
 }
+.ac_input {
+	width: 400px;
+}
+#species-grid-container{
+ overflow-y: scroll; 
+ height: 450px;
+}
