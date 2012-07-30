@@ -534,13 +534,7 @@ idlist=';
     $indicia_user_id=self::get_indicia_user_id($args);
     $auth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
     // Find a list of websites we are allowed verify
-    $websites = data_entry_helper::get_population_data(array(
-      'table'=>'index_websites_website_agreement',
-      'extraParams'=>$auth+array('receive_for_verification'=>'t'),
-    ));
-    $websiteIds = array();
-    foreach ($websites as $website) 
-      $websiteIds[] = $website['to_website_id'];
+    $websiteIds = iform_get_allowed_website_ids($auth, 'verification');
     if (function_exists('module_exists') && module_exists('easy_login')) {
       if (strpos($args['param_presets'].$args['param_defaults'], 'expertise_location')===false)
         $args['param_presets'].="\nexpertise_location={profile_location_expertise}";
