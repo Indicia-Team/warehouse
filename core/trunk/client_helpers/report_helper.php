@@ -103,21 +103,26 @@ class report_helper extends helper_base {
    * Returns a simple HTML link to download the contents of a report defined by the options. The options arguments supported are the same as for the
    * report_grid method. Pagination information will be ignored (e.g. itemsPerPage).
    * If this download link is to be displayed alongside a report_grid to provide a download of the same data, set the id
-   * option to the same value for both the report_download_link and report_grid controls to link them together.
+   * option to the same value for both the report_download_link and report_grid controls to link them together. Use the itemsPerPage parameter
+   * to control how many records are downloaded. The following additional options are supported:<ul>
+   * <li><b>format</b><br/>
+   * Default to csv. Specify the download format, one of csv, json, xml, nbn.
+   * </li>
    */
   public static function report_download_link($options) {
     $options = array_merge(array(
-      'caption' => 'Download this report', // a reasonable maximum
+      'caption' => 'Download this report', 
+      'format' => 'csv',
+      'itemsPerPage' => 10000
     ), $options);
     $options = self::get_report_grid_options($options);
-    $options['itemsPerPage'] = 10000;
     $options['linkOnly'] = true;
     $currentParamValues = self::get_report_grid_current_param_values($options);
     $sortAndPageUrlParams = self::get_report_grid_sort_page_url_params($options);
     // don't want to paginate the download link
     unset($sortAndPageUrlParams['page']);
     $extras = self::get_report_sorting_paging_params($options, $sortAndPageUrlParams);
-    $link = self::get_report_data($options, $extras.'&'.self::array_to_query_string($currentParamValues, true), true). '&mode=csv';
+    $link = self::get_report_data($options, $extras.'&'.self::array_to_query_string($currentParamValues, true), true);
     global $indicia_templates;
     return str_replace(array('{link}','{caption}'), array($link, lang::get($options['caption'])), $indicia_templates['report_download_link']);
   }
@@ -1409,6 +1414,7 @@ mapSettingsHooks.push(function(opts) {
   public static function get_report_data($options, $extra='') {
     $query = array();
     if (!isset($options['mode'])) $options['mode']='report';
+    if (!isset($options['format'])) $options['format']='json';
     if ($options['mode']=='report') {
       $serviceCall = 'report/requestReport?report='.$options['dataSource'].'.xml&reportSource=local&';
     } elseif ($options['mode']=='direct') {
@@ -1420,13 +1426,13 @@ mapSettingsHooks.push(function(opts) {
         $query['like'] = $assoc;
       }
     } else {
-      throw new Exception('Invalid mode parameter for call to report_grid');
+      throw new Exception('Invalid mode parameter for call to report_grid - '.$options['mode']);
     }
     if (!empty($extra) && substr($extra, 0, 1)!=='&')
       $extra = '&'.$extra;
     $request = 'index.php/services/'.
         $serviceCall.
-        'mode=json&nonce='.$options['readAuth']['nonce'].
+        'mode='.$options['format'].'&nonce='.$options['readAuth']['nonce'].
         '&auth_token='.$options['readAuth']['auth_token'].
         $extra;
     if (isset($options['filters'])) {
