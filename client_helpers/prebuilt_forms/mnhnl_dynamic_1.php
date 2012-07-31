@@ -1059,9 +1059,12 @@ class iform_mnhnl_dynamic_1 {
           case 'preferred' :
             $extraParams += array('preferred'=>'t');
             break;
-          case 'currentLanguage' :
-            if (isset($options['language']))
+          case 'language' :
+            if (isset($options['language'])) {
               $extraParams += array($languageFieldName=>$options['language']);
+            } else {
+              $extraParams += array($languageFieldName=>iform_lang_iso_639_2($user->lang));
+            }
             break;
           case 'excludeSynonyms':
             $query['where'] = array("(preferred='t' OR $languageFieldName<>'lat')");
