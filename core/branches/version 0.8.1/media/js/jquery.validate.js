@@ -525,8 +525,13 @@ $.extend($.validator, {
 					throw e;
 				}
 			}
+			// GvB: added 2012/04/30.
+                        // When an optional field has validation rules and no value is supplied, then it gets flagged as dependencyMismatch.
+                        // In this case the field is valid, but is not included in the success list. We still need to return true though,
+                        // as returning no value will result in 'undefined' being used which messes up any comparisons, e.g. in function element
+                        // this will result in the element being flagged as invalid.			if (dependencyMismatch)
 			if (dependencyMismatch)
-				return;
+				return true;
 			if ( this.objectLength(rules) )
 				this.successList.push(element);
 			return true;
