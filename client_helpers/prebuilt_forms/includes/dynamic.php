@@ -439,6 +439,7 @@ class iform_dynamic {
 
   /** 
    * Get the spatial reference control.
+   * Defaults to sample:entered_sref. Supply $options['fieldname'] for submission to other database fields.
    */
   protected static function get_control_spatialreference($auth, $args, $tabalias, $options) {
     // Build the array of spatial reference systems into a format Indicia can use.

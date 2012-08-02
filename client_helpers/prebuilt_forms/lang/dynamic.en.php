@@ -35,6 +35,8 @@ $custom_terms = array(
 	// The search button may be changed by adding an entry for 'search'
 	'LANG_Date' => 'Date',
 	'LANG_Image_Label' => 'Upload Image',
-	'LANG_Save' => 'Save',  
+        'LANG_Comment' => 'Comment',
+	'LANG_Save' => 'Save',
+        'LANG_Blank_Text' => 'Select...',
 	'validation_required' => 'Please enter a value for this field'
 );
