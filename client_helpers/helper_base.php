@@ -381,9 +381,11 @@ class helper_base extends helper_config {
    * Warehouse.
    */
   public static $default_validation_rules = array(
-    'sample:date'=>array('required','date'),
-    'sample:entered_sref'=>array('required'),
-    'occurrence:taxa_taxon_list_id'=>array('required')
+    'sample:date' => array('required','date'),
+    'sample:entered_sref' => array('required'),
+    'occurrence:taxa_taxon_list_id' => array('required'),
+    'location:name' => array('required'),
+    'location:centroid_sref' => array('required'),
   );
 
   /**
