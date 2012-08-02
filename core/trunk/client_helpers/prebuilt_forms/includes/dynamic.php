@@ -348,6 +348,8 @@ class iform_dynamic {
             $html .= $attrHtml;
           } else {         
             $html .= "The form structure includes a control called $component which is not recognised.<br/>";
+            //ensure $hasControls is true so that the error message is shown
+            $hasControls = true;
           }      
         } else {
           // output anything else as is. This allow us to add html to the form structure.
@@ -448,9 +450,10 @@ class iform_dynamic {
    */
   Protected static function get_control_placesearch($auth, $args, $tabalias, $options) {
     $georefOpts = iform_map_get_georef_options($args, $auth['read']);
-    if ($georefOpts['driver']=='geoplanet' && empty(helper_config::$geoplanet_api_key))
+    if ($georefOpts['driver']=='geoplanet' && empty(helper_config::$geoplanet_api_key)) {
       // can't use place search without the driver API key
-      return '';
+      return 'The form structure includes a [place search] control but needs a geoplanet api key.<br/>';
+    }
     return data_entry_helper::georeference_lookup(array_merge(
       $georefOpts,
       $options
