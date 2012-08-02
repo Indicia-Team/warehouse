@@ -940,6 +940,7 @@ class data_entry_helper extends helper_base {
     global $indicia_templates;
     $oldTemplate = $indicia_templates['select'];
     $indicia_templates['select'] = '<div class="hierarchical-select control-box">'.$indicia_templates['select'].'</div>';
+    $options['class']='hierarchy-select';
     $r = self::select($options);
     $indicia_templates['select'] = $oldTemplate;
     // jQuery safe version of the Id. 
@@ -956,7 +957,7 @@ class data_entry_helper extends helper_base {
   function pickHierarchySelectNode$id(select) {
     select.nextAll().remove();
     if (typeof indiciaData.selectData$id [select.val()] !== 'undefined') {
-      var html='<select><option>".$options['blankText']."</option>', obj;
+      var html='<select class=\"hierarchy-select\"><option>".$options['blankText']."</option>', obj;
       $.each(indiciaData.selectData$id [select.val()], function(idx, item) {
         html += '<option value=\"'+item.id+'\">' + item.caption + '</option>';
       });
