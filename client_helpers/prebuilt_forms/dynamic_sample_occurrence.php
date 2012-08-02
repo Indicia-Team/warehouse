@@ -571,7 +571,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       $hiddens .= '<input type="hidden" name="sample:sample_method_id" value="'.$args['sample_method_id'].'"/> . PHP_EOL';
     }
     if (isset(data_entry_helper::$entity_to_load['sample:id'])) {
-      $hiddens .= '<input type="hidden" id="sample:id\ name="sample:id" value="' . data_entry_helper::$entity_to_load['sample:id'] . '" />' . PHP_EOL;    
+      $hiddens .= '<input type="hidden" id="sample:id" name="sample:id" value="' . data_entry_helper::$entity_to_load['sample:id'] . '" />' . PHP_EOL;    
     }
     if (isset(data_entry_helper::$entity_to_load['occurrence:id'])) {
       $hiddens .= '<input type="hidden" id="occurrence:id" name="occurrence:id" value="' . data_entry_helper::$entity_to_load['occurrence:id'] . '\" />' . PHP_EOL;    
