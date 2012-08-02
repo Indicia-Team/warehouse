@@ -27,6 +27,9 @@ include_once 'dynamic.en.php';
  * @package	Client
  */
 $custom_terms = array_merge($custom_terms, array(
+  'LANG_Location_Name' => 'Location Name',
+  'LANG_Location_Code' => 'Location Code',
+  'LANG_Location_Type' => 'Location Type',
   'LANG_Add_Location' => 'Add New Location',
   'LANG_No_User_Id' => 'This form is configured to show the user a grid of their existing records which they can add to or edit. ' .
     'To do this, the form requires that a function hostsite_get_user_field exists and returns their Indicia User ID' .

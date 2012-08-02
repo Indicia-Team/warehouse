@@ -67,6 +67,8 @@ class iform_dynamic_location extends iform_dynamic {
                 "&nbsp;&nbsp;<strong>[place search]</strong><br/>".
                 "&nbsp;&nbsp;<strong>[spatial reference]</strong><br/>".
                 "&nbsp;&nbsp;<strong>[location name]</strong><br/>".
+                "&nbsp;&nbsp;<strong>[location code]</strong><br/>".
+                "&nbsp;&nbsp;<strong>[location type]</strong><br/>".
                 "&nbsp;&nbsp;<strong>[location comment]</strong>. <br/>".
             "<strong>@option=value</strong> on the line(s) following any control allows you to override one of the options passed to the control. The options ".
             "available depend on the control. For example @label=Abundance would set the untranslated label of a control to Abundance. Where the ".
@@ -85,6 +87,8 @@ class iform_dynamic_location extends iform_dynamic {
               "=Place=\r\n".
               "?Please provide the spatial reference of the location. You can enter the reference directly, or search for a place then click on the map to set it.?\r\n".
               "[location name]\r\n".
+              "[location code]\r\n".
+              "[location type]\r\n".
               "[spatial reference]\r\n".
               "[place search]\r\n".
               "[map]\r\n".
@@ -122,7 +126,7 @@ class iform_dynamic_location extends iform_dynamic {
               'For date fields, use today to dynamically default to today\'s date. NOTE, currently only supports occurrence:record_status and '.
               'sample:date but will be extended in future.',
           'type'=>'textarea',
-          'default'=>''
+          'required' => false,
         ),
       )
     );
@@ -200,6 +204,68 @@ class iform_dynamic_location extends iform_dynamic {
     return $hiddens;
   }
   
+  protected static function get_control_locationname($auth, $args, $tabalias, $options) {
+    return data_entry_helper::text_input(array_merge(array(
+      'label' => lang::get('LANG_Location_Name'),
+      'fieldname' => 'location:name',
+      'class' => 'control-width-5'
+    ), $options));
+  }
+
+  protected static function get_control_locationcode($auth, $args, $tabalias, $options) {
+    return data_entry_helper::text_input(array_merge(array(
+      'label' => lang::get('LANG_Location_Code'),
+      'fieldname' => 'location:code',
+      'class' => 'control-width-5'
+    ), $options));
+  }
+
+  protected static function get_control_locationtype($auth, $args, $tabalias, $options) {
+    // To limit the terms listed add a terms option to the Form Structure as a JSON array.
+    // The terms must exist in the termlist that has external key indidia:location_types
+    // e.g.
+    // [location type]
+    // @terms=["City","Town","Village"]
+    
+    // get the list of terms
+    $filter = null;
+    if (array_key_exists('terms', $options)) {
+      $filter = $options['terms'];
+    }
+    $terms = helper_base::get_termlist_terms($auth, 'indicia:location_types', $filter);
+          
+    if (count($terms) == 1) {
+      //only one location type so output as hidden control
+      return '<input type="hidden" id="location:location_type_id" name="location:location_type_id" value="' . $terms[0]['id'] . '" />' . PHP_EOL;
+    }
+    elseif (count($terms) > 1) {
+      // convert the $terms to an array of id => term
+      $lookup = array();
+      foreach ($terms as $term) {
+        $lookup[$term['id']] = $term['term'];
+      }
+      return data_entry_helper::select(array_merge(array(
+        'label' => lang::get('LANG_Location_Type'),
+        'fieldname' => 'location:location_type_id',
+        'lookupValues' => $lookup,
+        'blankText' => lang::get('LANG_Blank_Text'),
+      ), $options));
+    }
+  }
+
+    protected static function get_control_locationcomment($auth, $args, $tabalias, $options) {
+    return data_entry_helper::textarea(array_merge(array(
+      'fieldname'=>'location:comment',
+      'label'=>lang::get('LANG_Comment')
+    ), $options)); 
+  }
+ 
+    protected static function get_control_spatialreference($auth, $args, $tabalias, $options) {
+      $options = array_merge($options, array('fieldname' => 'location:centroid_sref'));
+      return parent::get_control_spatialreference($auth, $args, $tabalias, $options);
+    }
+
+
   /**
    * Handles the construction of a submission array from a set of form values.
    * @param array $values Associative array of form data values. 
@@ -259,7 +325,7 @@ class iform_dynamic_location extends iform_dynamic {
       'itemsPerPage' =>(isset($args['grid_num_rows']) ? $args['grid_num_rows'] : 10),
       'autoParamsForm' => true,
       'extraParams' => array(
-        'survey_id' => $args['survey_id'], 
+        'website_id' => $args['website_id'], 
         'iUserID' => $iUserId
       )
     ));    
@@ -281,6 +347,8 @@ class iform_dynamic_location extends iform_dynamic {
               "=Place=\r\n".
               "?Please provide the spatial reference of the location. You can enter the reference directly, or search for a place then click on the map to set it.?\r\n".
               "[location name]\r\n".
+              "[location code]\r\n".
+              "[location type]\r\n".
               "[spatial reference]\r\n".
               "[place search]\r\n".
               "[map]\r\n".
