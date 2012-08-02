@@ -283,7 +283,7 @@ class iform_dynamic {
     foreach ($attributes as $key => $attrib){
       $attribNames[$key] = $attrib['id'];
     }
-
+    $columnsOpen=0;
     $tabHtml = array();
     foreach ($tabs as $tab=>$tabContent) {
       // keep track on if the tab actually has real content, so we can avoid floating instructions if all the controls 
@@ -351,11 +351,19 @@ class iform_dynamic {
             //ensure $hasControls is true so that the error message is shown
             $hasControls = true;
           }      
+        } elseif (trim($component)==='|') {
+          // a splitter in the structure so put the stuff so far in a 50% width left float div, and the stuff that follows in a 50% width right float div.
+          $html = '<div class="two columns"><div class="column">'.$html.'</div><div class="column">';
+          // need to close the div
+          $columnsOpen++; 
         } else {
           // output anything else as is. This allow us to add html to the form structure.
           $html .= $component;
         }
       }
+      // close any column layout divs.
+      if ($columnsOpen) 
+        $html .= str_repeat('</div>',$columnsOpen);
       if (!empty($html) && $hasControls) {
         $tabHtml[$tab] = $html;
       }
