@@ -65,8 +65,10 @@ function get_attribute_html(&$attributes, $args, $defAttrOptions, $outerFilter=n
       $lastInnerBlock=$attribute['inner_structure_block'];
       $lastOuterBlock=$attribute['outer_structure_block'];
       $options = $defAttrOptions + get_attr_validation($attribute, $args);
-      if (isset($blockOptions[$attribute['fieldname']])) {
-        $options = array_merge($options, $blockOptions[$attribute['fieldname']]);
+      // when getting the options, only use the first 2 parts of the fieldname as any further imply an existing record ID so would differ.
+      $fieldNameParts=explode(':',$attribute['fieldname']);
+      if (isset($blockOptions[$fieldNameParts[0].':'.$fieldNameParts[1]])) {
+        $options = array_merge($options, $blockOptions[$fieldNameParts[0].':'.$fieldNameParts[1]]);
       }
       $r .= data_entry_helper::outputAttribute($attribute, $options);
       $attribute['handled']=true;
