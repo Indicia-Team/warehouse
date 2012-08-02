@@ -254,8 +254,8 @@ function get_user_profile_hidden_inputs(&$attributes, $args, $exists, $readAuth)
 }
 
 /**
-   * Variant on the profile modules profile_load_profile, that also gets empty profile values. 
-   */
+ * Variant on the profile modules profile_load_profile, that also gets empty profile values. 
+ */
 function profile_load_all_profile(&$user) {
   // don't do anything unless in Drupal, with the profile module enabled, and the user logged in.
   if ($user->uid>0 && function_exists('profile_load_profile')) {

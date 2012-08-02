@@ -19,20 +19,18 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
-include_once 'dynamic_sample_occurrence.en.php';
+include_once 'dynamic.en.php';
 
 /**
- * Additional language terms or overrides for mnhnl_dynamic_1 form.
+ * Additional language terms or overrides for dynamic_sample_occurrence form.
  *
  * @package	Client
  */
 $custom_terms = array_merge($custom_terms, array(
-	// Below gives an example of setting the biotope and voucher attribute captions used in this tab.
-	// Note these do not have LANG_ prefixes.
-	'MNHNL Collaborators 1 Biotope' => 'Biotope',
-	'Voucher' => 'Voucher Specimen taken?',
-	// Can also add entries for 'Yes' and 'No' for the voucher attribute
-        'LANG_Trailer_Text' => 'Define trailer text in mnhnl_dynamic_1.en.php'
-    
+  'LANG_Add_Location' => 'Add New Location',
+  'LANG_No_User_Id' => 'This form is configured to show the user a grid of their existing records which they can add to or edit. ' .
+    'To do this, the form requires that a function hostsite_get_user_field exists and returns their Indicia User ID' .
+    'In Drupal, the Easy Login module in conjuction with the iForm module achieves this. '.
+    'Alternatively you can tick the box "Skip initial grid of data" in the "User Interface" section of the Edit page for the form.'
   )
 );
