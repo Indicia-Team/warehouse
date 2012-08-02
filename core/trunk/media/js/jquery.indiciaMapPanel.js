@@ -106,6 +106,19 @@ mapGeoreferenceHooks = [];
     function _diffProj(proj1, proj2) {
     	return (_projToSystem(proj1, true) != _projToSystem(proj2, true));
     }
+    
+    /**
+     * Adds a buffer around a boundary so you can zoom to the boundary without zooming too tight.
+     */
+    function _extendBounds(bounds, buffer) {
+      var dy = (bounds.top-bounds.bottom) * buffer;
+      var dx = (bounds.right-bounds.left) * buffer;
+      bounds.top = bounds.top + dy;
+      bounds.bottom = bounds.bottom - dy;
+      bounds.right = bounds.right + dx;
+      bounds.left = bounds.left - dx;
+      return bounds;
+    }
 
     /**
      * Add a well known text definition of a feature to the map.
@@ -145,12 +158,7 @@ mapGeoreferenceHooks = [];
 
       if(invisible === null) {
         // extend the boundary to include a buffer, so the map does not zoom too tight.
-        var dy = (bounds.top-bounds.bottom) * div.settings.maxZoomBuffer;
-        var dx = (bounds.right-bounds.left) * div.settings.maxZoomBuffer;
-          bounds.top = bounds.top + dy;
-          bounds.bottom = bounds.bottom - dy;
-          bounds.right = bounds.right + dx;
-          bounds.left = bounds.left - dx;
+        bounds = _extendBounds(bounds, div.settings.maxZoomBuffer);
       }
       if (typeof panzoom==="undefined" || panzoom) {
         if (div.map.getZoomForExtent(bounds) > div.settings.maxZoom) {
@@ -273,6 +281,47 @@ mapGeoreferenceHooks = [];
         }
       });
     }
+    
+    function _getPrecisionHelp(div, value) {
+      var helptext = [],info;
+      if (div.settings.helpToPickPrecisionMin && typeof indiciaData.srefHandlers!=="undefined" &&
+          typeof indiciaData.srefHandlers[_getSystem().toLowerCase()]!=="undefined" &&
+          indiciaData.srefHandlers[_getSystem().toLowerCase()].returns.indexOf('precisions')!==-1) {
+        info=indiciaData.srefHandlers[_getSystem().toLowerCase()].srefToPrecision(value);
+        if (info.metres>div.settings.helpToPickPrecisionMin) {
+          helptext.push(div.settings.hlpImproveResolution1.replace('{size}', info.display));
+        } else if (info.metres>div.settings.helpToPickPrecisionMax) {
+          helptext.push(div.settings.hlpImproveResolution2.replace('{size}', info.display));
+        } else {
+          helptext.push(div.settings.hlpImproveResolution3.replace('{size}', info.display));
+        }
+        // switch layer?
+        if (div.settings.helpToPickPrecisionSwitchAt && info.metres<=div.settings.helpToPickPrecisionSwitchAt) {
+          $.each(div.map.layers, function(idx, layer) {
+            if (layer.isBaseLayer && layer.name.indexOf('Satellite')!==-1 && div.map.baseLayer!==layer) {
+              div.map.setBaseLayer(layer);
+              helptext.push(div.settings.hlpImproveResolutionSwitch);
+            }
+          });
+        }
+        // zoom in if need more precision
+        if (info.metres>div.settings.helpToPickPrecisionMax) {
+          if (typeof panzoom==="undefined" || panzoom) {
+            var bounds=div.map.editLayer.features[0].geometry.getBounds();
+            bounds=_extendBounds(bounds, div.settings.maxZoomBuffer);
+            if (div.map.getZoomForExtent(bounds) > div.settings.maxZoom) {
+              // if showing something small, don't zoom in too far
+              div.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
+            }
+            else {
+              // Set the default view to show something triple the size of the grid square
+              div.map.zoomToExtent(bounds);
+            }
+          }
+        }
+      }
+      return helptext.join(' ');
+    }
 
     function _handleEnteredSref(value, div) {
       if (value!='') {
@@ -304,9 +353,9 @@ mapGeoreferenceHooks = [];
      */
     function _setClickPoint(data, div) {
       // data holds the sref in _getSystem format, wkt in indiciaProjection, optional mapwkt in mapProjection
-      var feature, parts, helptext=[];
+      var feature, parts, helptext=[], helpitem;
       if (div.settings.click_zoom)
-       $('#'+opts.srefId).val(data.sref).change();
+        $('#'+opts.srefId).val(data.sref).change();
       else
         $('#'+opts.srefId).val(data.sref);
       // If the sref is in two parts, then we might need to split it across 2 input fields for lat and long
@@ -334,13 +383,18 @@ mapGeoreferenceHooks = [];
       feature.style = new style(false);
       div.map.editLayer.addFeatures([feature]);
       if (div.settings.helpDiv) {
-        helptext.push(div.settings.hlpClickAgainToCorrect);
-        // Extra help for grid square precision, as long as the precision is not fixed.
-        if (feature.geometry.CLASS_NAME!=='OpenLayers.Geometry.Point' && (div.settings.clickedSrefPrecisionMin==='' 
-          || div.settings.clickedSrefPrecisionMin!==div.settings.clickedSrefPrecisionMax)) {
-          helptext.push(div.settings.hlpZoomChangesPrecision);
+        helpitem=_getPrecisionHelp(div, data.sref);
+        if (helpitem!=='') {
+          $('#'+div.settings.helpDiv).html(helpitem);
+        } else {
+          helptext.push(div.settings.hlpClickAgainToCorrect);
+          // Extra help for grid square precision, as long as the precision is not fixed.
+          if (feature.geometry.CLASS_NAME!=='OpenLayers.Geometry.Point' && (div.settings.clickedSrefPrecisionMin==='' 
+            || div.settings.clickedSrefPrecisionMin!==div.settings.clickedSrefPrecisionMax)) {
+            helptext.push(div.settings.hlpZoomChangesPrecision);
+          }
+          $('#'+div.settings.helpDiv).html(helptext.join(' '));
         }
-        $('#'+div.settings.helpDiv).html(helptext.join(' '));
       }
     }
 
@@ -1612,7 +1666,14 @@ $.fn.indiciaMapPanel.defaults = {
     hlpPanZoomButtons: 'Pan and zoom the map to the required place using the navigation buttons or '+
         'by dragging the map and double clicking or Shift-dragging to zoom.',
     hlpZoomChangesPrecision: 'By zooming the map in or out before clicking you can alter the precision of the '+
-        'selected grid square.'
+        'selected grid square.',
+    helpToPickPrecisionMin: false,
+    helpToPickPrecisionMax: 10,
+    helpToPickPrecisionSwitchAt: false,
+    hlpImproveResolution1: "{size} square selected. Please click on the map again to provide a more accurate location.",
+    hlpImproveResolution2: "Good. {size} square selected.",
+    hlpImproveResolution3: "Excellent! {size} square selected. If your position is wrong, either click your actual position again or zoom out until your position comes to view, then retry.",
+    hlpImproveResolutionSwitch: "We've switched to a satellite view to allow you to locate your position even better."
     
 };
 
