@@ -869,6 +869,149 @@ class data_entry_helper extends helper_base {
     }
     return self::apply_template('georeference_lookup', $options);
   }
+  
+ /**
+  * A version of the select control which supports hierarchical termlist data by adding new selects to the next line
+  * populated with the child terms when a parent term is selected.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldname</b><br/>
+  * Required. The name of the database field this control is bound to.</li>
+  * <li><b>id</b><br/>
+  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+  * <li><b>default</b><br/>
+  * Optional. The default value to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * <li><b>class</b><br/>
+  * Optional. CSS class names to add to the control.</li>  *
+  * <li><b>table</b><br/>
+  * Table name to get data from for the select options. Should be termlists_term for termlist data.</li>
+  * <li><b>report</b><br/>
+  * Report name to get data from for the select options if the select is being populated by a service call using a report.
+  * Mutually exclusive with the table option. The report should return a parent_id field.</li>
+  * <li><b>captionField</b><br/>
+  * Field to draw values to show in the control from if the select is being populated by a service call.</li>
+  * <li><b>valueField</b><br/>
+  * Field to draw values to return from the control from if the select is being populated by a service call. Defaults
+  * to the value of captionField.</li>
+  * <li><b>extraParams</b><br/>
+  * Optional. Associative array of items to pass via the query string to the service. This
+  * should at least contain the read authorisation array if the select is being populated by a service call. It can also contain
+  * view=cache to use the cached termlists entries or view=detail for the uncached version.</li>
+  * </ul>
+  */
+  public static function hierarchical_select($options) {
+    $options = array_merge(array(
+      'id'=>'select-'.rand(0,10000),
+      'blankText'=>'<please select>'
+    ), $options);
+    // Get the data for the control. Not Ajax populated at the moment. We either populate the lookupValues for the top level control
+    // or store in the childData for output into JavaScript
+    $values = self::get_population_data($options);
+    $lookupValues=array();
+    $childData=array();
+    foreach ($values as $value) {
+      if (empty($value['parent_id']))
+        $lookupValues[$value[$options['valueField']]]=$value[$options['captionField']];
+      else {
+        // not a top level item, so put in a data array we can store in JSON.
+        if (!isset($childData[$value['parent_id']]))
+          $childData[$value['parent_id']]=array();
+        $childData[$value['parent_id']][] = array('id'=>$value[$options['valueField']], 'caption'=>$value[$options['captionField']]);
+      }
+    }
+    // build an ID with just alphanumerics, that we can use to keep JavaScript function and data names unique
+    $id = preg_replace('/[^a-zA-Z0-9]/', '', $options['id']);
+    // dump the control population data out for JS to use
+    self::$javascript .= "indiciaData.selectData$id=".json_encode($childData).";\n";
+    // Convert the options so that the top-level select uses the lookupValues we've already loaded rather than reloads its own.
+    unset($options['table']);
+    unset($options['report']);
+    unset($options['captionField']);
+    unset($options['valueField']);
+    $options['lookupValues']=$lookupValues;
+    
+    // as we are going to output a select using the options, but will use a hidden field for the form value for the selected item, 
+    // grab the fieldname and prevent the topmost select having the same name.
+    $fieldname = $options['fieldname'];
+    $options['fieldname'] = 'parent-'.$options['fieldname'];
+    
+    // Output a select. Use templating to add a wrapper div, so we can keep all the hierarchical selects together,
+    global $indicia_templates;
+    $oldTemplate = $indicia_templates['select'];
+    $indicia_templates['select'] = '<div class="hierarchical-select control-box">'.$indicia_templates['select'].'</div>';
+    $r = self::select($options);
+    $indicia_templates['select'] = $oldTemplate;
+    // jQuery safe version of the Id. 
+    $safeId = preg_replace('/[:]/', '\\\\\\:', $options['id']);
+    // output a hidden input that contains the value to post.
+    $hiddenOptions = array('id'=>'fld-'.$options['id'], 'fieldname'=>$fieldname, 'default'=>self::check_default_value($options['fieldname']));
+    if (isset($options['default']))
+      $hiddenOptions['default'] = $options['default'];
+    $r .= self::hidden_text($hiddenOptions);
+    $options['blankText']=htmlspecialchars($options['blankText']);
+    // Now output JavaScript that creates and populates child selects as each option is selected. There is also code for 
+    // reloading existing values.    
+    self::$javascript .= "
+  function pickHierarchySelectNode$id(select) {
+    select.nextAll().remove();
+    if (typeof indiciaData.selectData$id [select.val()] !== 'undefined') {
+      var html='<select><option>".$options['blankText']."</option>', obj;
+      $.each(indiciaData.selectData$id [select.val()], function(idx, item) {
+        html += '<option value=\"'+item.id+'\">' + item.caption + '</option>';
+      });
+      html += '</select>';
+      obj=$(html);
+      obj.change(function(evt) { 
+        $('#fld-$safeId').val($(evt.target).val());
+        pickHierarchySelectNode$id($(evt.target));
+      });
+      select.after(obj);
+    }    
+  }
+  
+  $('#$safeId').change(function(evt) {
+    $('#fld-$safeId').val($(evt.target).val());
+    pickHierarchySelectNode$id($(evt.target));
+  });
+  
+  pickHierarchySelectNode$id($('#$safeId')); 
+  
+  // Code from here on is to reload existing values.
+  function findItemParent(idToFind) {
+    var found=false;
+    $.each(indiciaData.selectData$id, function(parentId, items) {
+      $.each(items, function(idx, item) {
+        if (item.id===idToFind) {
+          found=parentId;
+        }
+      });
+    });
+    return found;
+  }
+  var found=true, last=$('#fld-$safeId').val(), tree=[last], toselect, thisselect;
+  while (found) {
+    found=findItemParent(last);
+    if (found) {
+      tree.push(found);
+      last=found;
+    }
+  }
+  // now we have the tree, work backwards to select each item
+  thisselect = $('#$safeId');
+  while (tree.length>0) {
+    toselect=tree.pop();
+    $.each(thisselect.find('option'), function(idx, option) {
+      if ($(option).val()===toselect) {
+        $(option).attr('selected',true);
+        thisselect.trigger('change');
+      }
+    });
+    thisselect = thisselect.next();
+  }
+    ";
+    return $r;
+  }
 
  /**
   * Simple file upload control suitable for uploading images to attach to occurrences.
