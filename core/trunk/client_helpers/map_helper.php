@@ -217,6 +217,14 @@ class map_helper extends helper_base {
   * </ul>
   * <li><b>helpDiv</b><br/>
   * Set to bottom to output a help div under the map, or set to the ID of a div to output into.</li>
+  * <li><b>helpToPickPrecisionMin</b><br/>
+  * Set to a precision in metres (e.g. 10, 100, 1000) to provide help guiding the recorder to pick a grid square of at least that precision. Ensure that helpDiv is 
+  * set when using this option.</li>
+  * <li><b>helpToPickPrecisionMax</b><br/>
+  * Set to a precision in metres (e.g. 10, 100, 1000) that the help system will accept as not requiring further refinement when a grid square of this precision is picked.</li>  
+  * <li><b>helpToPickPrecisionSwitchAt</b><br/>
+  * Set to a precision in metres (e.g. 10, 100, 1000) that the map will switch to the satellite layer (if Google or Bing satellite layers active) when
+  * the recorder picks a grid square of at least that precision.</li>
   * </ul>
   * @param array $olOptions Optional array of settings for the OpenLayers map object. If overriding the projection or
   * displayProjection settings, just pass the EPSG number, e.g. 27700.
