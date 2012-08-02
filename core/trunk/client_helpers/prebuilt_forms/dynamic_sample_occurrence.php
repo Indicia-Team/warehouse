@@ -135,6 +135,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
             "For example, if a control is for smpAttr:4 then you can update it's label by specifying @smpAttr:4|label=New Label on the line after the [*].<br/>".
             "<strong>[smpAttr:<i>n</i>]</strong> is used to insert a particular custom attribute identified by its ID number<br/>".
             "<strong>?help text?</strong> is used to define help text to add to the tab, e.g. ?Enter the name of the site.? <br/>".
+            "<strong>|</strong> is used insert a split so that controls before the split go into a left column and controls after the split go into a right column.<br/>".
             "<strong>all else</strong> is copied to the output html so you can add structure for styling.",
           'type'=>'textarea',
           'default' => "=Species=\r\n".
