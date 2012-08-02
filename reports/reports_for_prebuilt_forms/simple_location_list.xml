@@ -1,0 +1,31 @@
+<report
+    title="Simple Location List"
+    description=": Used by the Dynamic Location Form to retrieve the locations associated with a survey and user."
+>
+  <query>
+  SELECT l.id,
+    l.name,
+    l.centroid_sref,
+    (select count(*) from samples s where s.location_id = l.id and s.deleted = FALSE) as num_samples
+  FROM locations l
+  JOIN locations_websites lw on lw.location_id = l.id and lw.deleted = false
+  WHERE CAST(l.created_by_id AS character varying)='#iUserID#'
+  AND l.deleted = FALSE
+  AND lw.website_id = '#website_id#'  
+  #order_by#
+  </query>
+  <order_bys>
+    <order_by>l.id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='website_id' display='Website: ' description='Select the website to return data for?' datatype='lookup'
+        query='SELECT id, title as caption FROM websites' />
+    <param name='iUserID' display='Indicia User ID' description='Something has gone wrong as you are logged in to the system but do not have an ID' datatype='int' />
+  </params>
+  <columns>
+    <column name='id' display='ID' />
+    <column name='name' display='Site name' />
+    <column name='centroid_sref' display='Grid Ref' />
+    <column name='num_samples' display='No. samples' />
+  </columns>
+</report>
