@@ -995,7 +995,7 @@ $('.ui-state-default').live('mouseout', function() {
    * Takes an associative array and converts it to a list of params for a query string. This is like
    * http_build_query but it does not url encode the & separator, and gives control over urlencoding the array values.
    */
-  public static function array_to_query_string($array, $encodeValues=false) {
+  protected static function array_to_query_string($array, $encodeValues=false) {
     $params = array();
     if(is_array($array)) {
       arsort($array);
@@ -1517,7 +1517,11 @@ indiciaData.windowLoaded=false;
     $trim = create_function('&$val', '$val = trim($val);');
     array_walk($pairs[1], $trim);
     array_walk($pairs[2], $trim);
-    return array_combine($pairs[1], $pairs[2]); 
+    if (count($pairs[1]) == count($pairs[2]) && count($pairs[1]) != 0) {
+      return array_combine($pairs[1], $pairs[2]); 
+    } else {
+      return array();
+    }
   }
   
   /**
