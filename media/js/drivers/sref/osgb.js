@@ -14,8 +14,8 @@
  */
 
 /**
- * A driver to allow the georeference_lookup control to interface with the 
- * Yahoo! GeoPlanet API. 
+ * A driver to allow the georeference_lookup control to interface with the
+ * Yahoo! GeoPlanet API.
  */
 
 // Check IndiciaData setup, in case we are the first JS file to load
@@ -25,14 +25,14 @@ if (typeof indiciaData==="undefined") {
 if (typeof indiciaData.srefHandlers==="undefined") {
   indiciaData.srefHandlers={};
 }
-  
+
 
 indiciaData.srefHandlers['osgb'] = {
-  
+
   srid: 27700,
-  
-  returns: ['wkt'], // sref
-  
+
+  returns: ['wkt','precisions'], // sref
+
   /**
    * Receives a point after a click on the map and converts to a grid square
    */
@@ -42,7 +42,7 @@ indiciaData.srefHandlers['osgb'] = {
         y=Math.floor(point.y/sqrSize)*sqrSize;
     if (x>=0 && x<=700000-sqrSize && y>=0 && y<=1300000-sqrSize) {
       return {
-        // @todo: sref: 
+        // @todo: sref:
         wkt: 'POLYGON(('+
           x+' '+y+','+
           (x+sqrSize)+' '+y+','+
@@ -56,5 +56,18 @@ indiciaData.srefHandlers['osgb'] = {
         error: 'Out of bounds'
       }
     }
+  },
+
+  srefToPrecision: function(sref) {
+    switch(sref.length) {
+      case 2: return {display:'100km',metres:100000};
+      case 4: return {display:'10km',metres:10000};
+      case 5: return {display:'2km',metres:2000};
+      case 6: return {display:'1km',metres:1000};
+      case 8: return {display:'100m',metres:100};
+      case 10: return {display:'10m',metres:10};
+      case 12: return {display:'1m',metres:1};
+    }
+    return false;
   }
 };
