@@ -283,9 +283,9 @@ class iform_dynamic {
     foreach ($attributes as $key => $attrib){
       $attribNames[$key] = $attrib['id'];
     }
-    $columnsOpen=0;
     $tabHtml = array();
     foreach ($tabs as $tab=>$tabContent) {
+      $columnsOpen=0;
       // keep track on if the tab actually has real content, so we can avoid floating instructions if all the controls 
       // were removed by user profile integration for example.
       $hasControls = false;
@@ -360,10 +360,10 @@ class iform_dynamic {
           // output anything else as is. This allow us to add html to the form structure.
           $html .= $component;
         }
+        // close any column layout divs. extra closure for the outer container of the columns
+        if ($columnsOpen>0) 
+          $html .= str_repeat('</div>',$columnsOpen);
       }
-      // close any column layout divs.
-      if ($columnsOpen) 
-        $html .= str_repeat('</div>',$columnsOpen);
       if (!empty($html) && $hasControls) {
         $tabHtml[$tab] = $html;
       }
