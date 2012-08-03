@@ -415,6 +415,12 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     return $retVal;
   }
   
+  /** 
+   * Determine whether to show a gird of existing records or a form for either adding a new record or editing an existing one.
+   * @param array $args iform parameters. 
+   * @param object $node node being shown. 
+   * @return const The mode [MODE_GRID|MODE_NEW|MODE_EXISTING].
+   */
   protected static function getMode($args, $node) {
     // Default to mode MODE_GRID or MODE_NEW depending on no_grid parameter
     $mode = (isset($args['no_grid']) && $args['no_grid']) ? MODE_NEW : MODE_GRID;                 
@@ -451,6 +457,13 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     return $mode;
   }
 
+  /** 
+   * Construct a grid of existing records.
+   * @param array $args iform parameters. 
+   * @param object $node node being shown. 
+   * @param array $auth authentication tokens for accessing the warehouse. 
+   * @return string HTML for grid.
+   */
   protected static function getGrid($args, $node, $auth) {
     $r = '';
     $attributes = data_entry_helper::getAttributes(array(
