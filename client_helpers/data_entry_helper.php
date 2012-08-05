@@ -2386,7 +2386,6 @@ $('#".$options['id']."-filter').click(function(evt) {
         'extraParams' => $readAuth + array('view'=>'detail','sample_id'=>$sampleId,'deleted'=>'f', 'orderby'=>'id', 'sortdir'=>'ASC' ),
         'nocache' => true
       ));
-      
       foreach($occurrences as $occurrence){
         $ttlId = $occurrence['taxa_taxon_list_id'];
         if (isset($taxonCounter[$ttlId])) {
@@ -2518,6 +2517,7 @@ $('#".$options['id']."-filter').click(function(evt) {
       unset($extraTaxonOptions['extraParams']['taxon_list_id']);
       unset($extraTaxonOptions['extraParams']['preferred']);
       unset($extraTaxonOptions['extraParams']['language_iso']);
+      unset($extraTaxonOptions['extraParams']['query']);
       // create an array to hold the IDs, so that get_population_data can construct a single IN query, faster
       // than multiple requests.
       $extraTaxonOptions['extraParams']['id'] = array();
