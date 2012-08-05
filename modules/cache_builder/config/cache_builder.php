@@ -326,7 +326,8 @@ $config['taxon_searchterms']['update']['standard terms'] = "update cache_taxon_s
       end,
       simplified=false, 
       code_type_id=null,
-      source_id=null
+      source_id=null,
+      preferred=cttl.preferred
     from cache_taxa_taxon_lists cttl
     join needs_update_taxon_searchterms nuts on nuts.id=cttl.id
     where cts.taxa_taxon_list_id=cttl.id and cts.name_type in ('L','S','V') and cts.simplified=false";
@@ -349,7 +350,8 @@ $config['taxon_searchterms']['update']['abbreviations'] = "update cache_taxon_se
       name_type='A',
       simplified=null, 
       code_type_id=null,
-      source_id=null
+      source_id=null,
+      preferred=cttl.preferred
     from cache_taxa_taxon_lists cttl
     join needs_update_taxon_searchterms nuts on nuts.id=cttl.id
     where cts.taxa_taxon_list_id=cttl.id and cts.name_type='A' and cttl.language_iso='lat'";
@@ -373,7 +375,8 @@ $config['taxon_searchterms']['update']['simplified terms'] = "update cache_taxon
       end,
       simplified=true,
       code_type_id=null,
-      source_id=null
+      source_id=null,
+      preferred=cttl.preferred
     from cache_taxa_taxon_lists cttl
     join needs_update_taxon_searchterms nuts on nuts.id=cttl.id
     where cts.taxa_taxon_list_id=cttl.id and cts.name_type in ('L','S','V') and cts.simplified=true";
@@ -393,7 +396,8 @@ $config['taxon_searchterms']['update']['codes'] = "update cache_taxon_searchterm
       name_type='C',
       simplified=null,
       code_type_id=tc.code_type_id,
-      source_id=tc.id
+      source_id=tc.id,
+      preferred=cttl.preferred
     from cache_taxa_taxon_lists cttl
     join needs_update_taxon_searchterms nuts on nuts.id=cttl.id
     join taxon_codes tc on tc.taxon_meaning_id=cttl.taxon_meaning_id 
@@ -405,7 +409,7 @@ $config['taxon_searchterms']['update']['codes'] = "update cache_taxon_searchterm
 $config['taxon_searchterms']['insert']['standard terms']="insert into cache_taxon_searchterms (
       taxa_taxon_list_id, taxon_list_id, searchterm, original, taxon_group_id, taxon_group, taxon_meaning_id, preferred_taxon,
       default_common_name, preferred_authority, language_iso,
-      name_type, simplified, code_type_id
+      name_type, simplified, code_type_id, preferred
     )
     select distinct on (cttl.id) cttl.id, cttl.taxon_list_id, cttl.taxon, cttl.taxon, cttl.taxon_group_id, cttl.taxon_group, cttl.taxon_meaning_id, cttl.preferred_taxon,
       cttl.default_common_name, cttl.authority, cttl.language_iso, 
@@ -413,7 +417,7 @@ $config['taxon_searchterms']['insert']['standard terms']="insert into cache_taxo
         when cttl.language_iso='lat' and cttl.id=cttl.preferred_taxa_taxon_list_id then 'L' 
         when cttl.language_iso='lat' and cttl.id<>cttl.preferred_taxa_taxon_list_id then 'S' 
         else 'V'
-      end, false, null
+      end, false, null, cttl.preferred
     from cache_taxa_taxon_lists cttl
     left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type in ('L','S','V') and cts.simplified='f'
     #insert_join_needs_update#
@@ -422,11 +426,11 @@ $config['taxon_searchterms']['insert']['standard terms']="insert into cache_taxo
 $config['taxon_searchterms']['insert']['abbreviations']="insert into cache_taxon_searchterms (
       taxa_taxon_list_id, taxon_list_id, searchterm, original, taxon_group_id, taxon_group, taxon_meaning_id, preferred_taxon,
       default_common_name, preferred_authority, language_iso,
-      name_type, simplified, code_type_id
+      name_type, simplified, code_type_id, preferred
     )
     select distinct on (cttl.id) cttl.id, cttl.taxon_list_id, taxon_abbreviation(cttl.taxon), cttl.taxon, cttl.taxon_group_id, cttl.taxon_group, cttl.taxon_meaning_id, cttl.preferred_taxon,
       cttl.default_common_name, cttl.authority, cttl.language_iso, 
-      'A', null, null
+      'A', null, null, cttl.preferred
     from cache_taxa_taxon_lists cttl
     left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type='A'
     #insert_join_needs_update#
@@ -435,7 +439,7 @@ $config['taxon_searchterms']['insert']['abbreviations']="insert into cache_taxon
 $config['taxon_searchterms']['insert']['simplified terms']="insert into cache_taxon_searchterms (
       taxa_taxon_list_id, taxon_list_id, searchterm, original, taxon_group_id, taxon_group, taxon_meaning_id, preferred_taxon,
       default_common_name, preferred_authority, language_iso,
-      name_type, simplified, code_type_id
+      name_type, simplified, code_type_id, preferred
     )
     select distinct on (cttl.id) cttl.id, cttl.taxon_list_id, 
       regexp_replace(regexp_replace(regexp_replace(lower(cttl.taxon), E'\\\\(.+\\\\)', '', 'g'), 'ae', 'e', 'g'), E'[^a-z0-9\\\\?\\\\+]', '', 'g'), 
@@ -445,7 +449,7 @@ $config['taxon_searchterms']['insert']['simplified terms']="insert into cache_ta
         when cttl.language_iso='lat' and cttl.id=cttl.preferred_taxa_taxon_list_id then 'L' 
         when cttl.language_iso='lat' and cttl.id<>cttl.preferred_taxa_taxon_list_id then 'S' 
         else 'V'
-      end, true, null
+      end, true, null, cttl.preferred
     from cache_taxa_taxon_lists cttl
     left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type in ('L','S','V') and cts.simplified=true
     #insert_join_needs_update#
@@ -454,10 +458,10 @@ $config['taxon_searchterms']['insert']['simplified terms']="insert into cache_ta
 $config['taxon_searchterms']['insert']['codes']="insert into cache_taxon_searchterms (
       taxa_taxon_list_id, taxon_list_id, searchterm, original, taxon_group_id, taxon_group, taxon_meaning_id, preferred_taxon,
       default_common_name, preferred_authority, language_iso,
-      name_type, simplified, code_type_id, source_id
+      name_type, simplified, code_type_id, source_id, preferred
     )
     select distinct on (tc.id) cttl.id, cttl.taxon_list_id, tc.code, tc.code, cttl.taxon_group_id, cttl.taxon_group, cttl.taxon_meaning_id, cttl.preferred_taxon,
-      cttl.default_common_name, cttl.authority, null, 'C', null, tc.code_type_id, tc.id
+      cttl.default_common_name, cttl.authority, null, 'C', null, tc.code_type_id, tc.id, cttl.preferred
     from cache_taxa_taxon_lists cttl
     join taxon_codes tc on tc.taxon_meaning_id=cttl.taxon_meaning_id and tc.deleted=false
     left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type='C' and cts.source_id=tc.id
