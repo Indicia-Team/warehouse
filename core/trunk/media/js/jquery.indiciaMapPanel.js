@@ -1267,7 +1267,9 @@ mapGeoreferenceHooks = [];
               if (div.map.dragging) {
                 _removeAllFeatures(div.map.editLayer, 'ghost');
               } else {
-                var ll = div.map.getLonLatFromPixel({x: evt.layerX, y: evt.layerY});
+                var x=(typeof evt.offsetX==="undefined" ? evt.layerX : evt.offsetX),
+                  y=(typeof evt.offsetY==="undefined" ? evt.layerY : evt.offsetY),
+                  ll = div.map.getLonLatFromPixel({x:x,y:y});
                 // don't recalculate if mouse is still over the existing ghost
                 if (ghost===null || !ghost.atPoint(ll, 0, 0)) {
                   if (typeof indiciaData.srefHandlers!=="undefined" &&
