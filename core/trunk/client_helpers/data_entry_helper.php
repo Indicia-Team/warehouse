@@ -167,6 +167,12 @@ class data_entry_helper extends helper_base {
   * Optional. Name of the template entry used to build the HTML for the control. Defaults to autocomplete.</li>
   * <li><b>numValues</b><br/>
   * Optional. Number of returned values in the drop down list. Defaults to 10.</li>
+  * <li><b>duplicateCheckFields</b><br/>
+  * Optional. Provide an array of field names from the dataset returned from the warehouse. Any duplicates
+  * based  values from this list of fields will not be added to the output.</li>
+  * <li><b>simplify</b><br/>
+  * Set to true to simplify the search term by removing punctuation and spaces. Use when the field 
+  * being searched against is also simplified.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the autocomplete control.
@@ -194,7 +200,8 @@ class data_entry_helper extends helper_base {
       'defaultCaption' => self::check_default_value('location:'.$options['inputId'],
           array_key_exists('defaultCaption', $options) ? $options['defaultCaption'] : ''),
       'max' => array_key_exists('numValues', $options) ? ', max : '.$options['numValues'] : '',
-      'formatFunction' => 'function(item) { return item.{captionField}; }'
+      'formatFunction' => 'function(item) { return item.{captionField}; }',
+      'simplify' => (isset($options['simplify']) && $options['simplify']) ? 'true' : 'false'
     ), $options);
     self::add_resource('autocomplete');
     // Escape the id for jQuery selectors
@@ -208,13 +215,21 @@ class data_entry_helper extends helper_base {
     }
     // lop the comma off the end
     $options['sParams'] = substr($sParams, 0, -1);
+    $options['extraParams']=null;
+    if (!empty($options['duplicateCheckFields'])) {
+      $duplicateCheckFields = 'item.'.implode(" + '#' + data.", $options['duplicateCheckFields']);
+      $options['duplicateCheck']="$.inArray($duplicateCheckFields, done)===-1";
+      $options['storeDuplicates']="done.push($duplicateCheckFields);";
+    } else {
+      // disable duplicate checking
+      $options['duplicateCheck']='true';
+      $options['storeDuplicates']='';
+    }
     $replaceTags=array();
     foreach(array_keys($options) as $option) {
       array_push($replaceTags, '{'.$option.'}');
     }
-    $options['extraParams']=null;
     self::$javascript .= str_replace($replaceTags, $options, $indicia_templates['autocomplete_javascript']);
-
     $r = self::apply_template($options['template'], $options);
     return $r;
   }
@@ -1832,6 +1847,37 @@ class data_entry_helper extends helper_base {
       $r = self::apply_template('sref_textbox', $options);
     return $r;
   }
+  
+  /**
+   *
+   * @param type $options
+   * <ul>
+   * <li><b>cache_lookup</b>
+   * </li>
+   * <li><b>extraParams</b>
+   * Should contain the read authorisation array and taxon_list_id to filter against. 
+   * </li>
+   * @return type 
+   */   
+  public function species_autocomplete($options) {
+    global $indicia_templates;
+    if (!isset($options['cacheLookup']))
+      $options['cacheLookup']=false;
+    $db = data_entry_helper::get_species_lookup_db_definition($options['cacheLookup']);
+    // get local vars for the array
+    extract($db);
+    $options = array_merge(array(
+      'fieldname'=>'occurrence:taxa_taxon_list_id',
+      'table'=>$tblTaxon,
+      'captionField'=>$colSearch,
+      'valueField'=>'id',
+      'formatFunction'=>$indicia_templates['format_species_autocomplete_fn'],
+      'simplify'=>$options['cacheLookup'] ? 'true' : 'false'
+    ), $options);
+    if (isset($duplicateCheckFields))
+      $options['duplicateCheckFields']=$duplicateCheckFields;
+    return self::autocomplete($options);
+  }
 
  /**
   * Helper function to generate a species checklist from a given taxon list.
@@ -1869,7 +1915,7 @@ class data_entry_helper extends helper_base {
   * attribute control (i.e. there is a one to one match with occAttrs). If this array is shorter than
   * occAttrs then all remaining controls re-use the last class.</li>
   * <li><b>extraParams</b><br/>
-  * Associative array of items to pass via the query string to the service. This
+  * Associative array of items to pass via the query string to the service calls used for taxon names lookup. This
   * should at least contain the read authorisation array.</li>
   * <li><b>lookupListId</b><br/>
   * Optional. The ID of the taxon_lists record which is to be used to select taxa from when adding
@@ -3021,6 +3067,37 @@ $('div#$escaped_divId').indiciaTreeBrowser({
 /********************************/
 /* End of main controls section */
 /********************************/
+  
+  /**
+   * Returns an array defining various database object names and values required for the species
+   * lookup filtering, depending on whether this is a cached lookup or a standard lookup. Used for 
+   * both species checklist and species autocompletes.
+   */
+  public function get_species_lookup_db_definition($cached) {
+    if ($cached) {
+      return array (
+        'tblTaxon'=>'cache_taxon_searchterm',
+        'colLanguage'=>'language_iso',
+        'colSearch'=>'searchterm',
+        'colTaxon'=>'original',
+        'colCommon'=>'default_common_name',
+        'colPreferred'=>'preferred_taxon',
+        'valLatinLanguage'=>'latin',
+        'duplicateCheckFields'=>array('original','taxa_taxon_list_id')
+      );
+    } else {
+      return array (
+        'tblTaxon'=>'taxa_taxon_list',
+        'colLanguage'=>'language',
+        'colSearch'=>'taxon',
+        'colTaxon'=>'taxon',
+        'colCommon'=>'common',
+        'colPreferred'=>'preferred_name',
+        'valLatinLanguage'=>'lat'
+      );
+    }
+  }
+  
 
   /**
    * Returns the browser name and version information
