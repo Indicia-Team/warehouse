@@ -537,7 +537,6 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     // Displaying an existing sample. If we know the occurrence ID, and don't know the sample ID or are displaying just one occurrence
     // rather than a grid of occurrences then we must load the occurrence data to get the sample id.
     if (self::$loadedOccurrenceId && (!self::$loadedSampleId || !self::getGridMode($args))) {
-
       data_entry_helper::load_existing_record($auth['read'], 'occurrence', self::$loadedOccurrenceId);
       // Get the sample ID for the occurrence. This overwrites it if supply in GET but did not match the occurrence's sample
       self::$loadedSampleId = data_entry_helper::$entity_to_load['occurrence:sample_id'];
@@ -547,7 +546,10 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       }
     }
     if (self::$loadedSampleId)
-      data_entry_helper::load_existing_record($auth['read'], 'sample', self::$loadedSampleId);    
+      data_entry_helper::load_existing_record($auth['read'], 'sample', self::$loadedSampleId);
+    // Ensure that if we are used to load a different survey's data, then we get the correct survey attributes.
+    $args['survey_id']=data_entry_helper::$entity_to_load['sample:survey_id'];
+    $args['sample_method_id']=data_entry_helper::$entity_to_load['sample:sample_method_id'];
   }
   
   protected static function getAttributes($args, $auth) {
@@ -638,7 +640,73 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    */
   protected static function get_control_species($auth, $args, $tabalias, $options) {
     global $user;
+    if ($hidden=self::get_single_species_hidden_input($auth, $args))
+      return $hidden;
     $extraParams = $auth['read'];
+    $gridmode = call_user_func(array(self::$called_class, 'getGridMode'), $args);
+    // Cache lookups only useful for autocomplete controls
+    if ($args['species_ctrl']!=='autocomplete' && !$gridmode)
+      $args['cache_lookup']=false;
+    // Get any configured filter for a set of taxon groups, external keys or taxon names.
+    if (!empty($args['taxon_filter_field']) && !empty($args['taxon_filter']))
+        // filter the taxa available to record
+      $query = array('in'=>array($args['taxon_filter_field'], helper_base::explode_lines($args['taxon_filter'])));
+    else 
+      $query = array();
+    // Apply the species name type filter to the species picker control. $wheres is an array
+    // for building of the filter query
+    $wheres = array();
+    if (isset($args['cache_lookup']) && $args['cache_lookup']) {
+      $wheres[] = "(simplified='t' or simplified is null)";
+      $colLanguage='language_iso';
+    } else
+      $colLanguage='language';
+    if (isset($args['species_names_filter'])) {
+      switch($args['species_names_filter']) {
+        case 'preferred' :
+          if (isset($args['cache_lookup']) && $args['cache_lookup'])
+            $extraParams += array('name_type'=>'L');
+          else
+            $extraParams += array('preferred'=>'t');
+          break;
+        case 'language' :
+          if (isset($options['language'])) {
+            $extraParams += array($colLanguage=>$options['language']);
+          } elseif (isset($user)) {
+            // if in Drupal we can use the user's language
+            $extraParams += array($colLanguage=>iform_lang_iso_639_2($user->lang));
+          }
+          break;
+        case 'excludeSynonyms':
+          if (isset($args['cache_lookup']) && $args['cache_lookup'])
+            $wheres[] = "(preferred='t' or language_iso<>'lat')";
+          else
+            $wheres[] = "(preferred='t' or language<>'lat')";
+          break;
+      }
+    }
+    if (count($wheres)) {
+      $query = array_merge(
+        $query,
+        array('where'=>array(implode(' and ', $wheres)))
+      );
+      $extraParams['query'] = json_encode($query);
+    }
+    call_user_func(array(self::$called_class, 'build_grid_autocomplete_function'), $args);
+    if ($gridmode)
+      return self::get_control_species_checklist($auth, $args, $extraParams, $options);
+    else 
+      return self::get_control_species_single($auth, $args, $extraParams, $options);
+  }
+  
+  /** 
+   * If the form is for single-species recording, then returns the hidden input which outputs
+   * that species' taxa_taxon_list_id as there is no need for a species picker of any kind.
+   * @param array $auth Read authorisation
+   * @param array $args Form configuration arguments
+   * @return string Returns the HTML for the hidden control, or false if a multi-species recording form. 
+   */
+  private static function get_single_species_hidden_input($auth, $args) {
     if (!empty($args['taxon_filter_field']) && !empty($args['taxon_filter'])) {
       $filterLines = helper_base::explode_lines($args['taxon_filter']);
       if ($args['taxon_filter_field']!=='taxon_group' && count($filterLines)===1) {
@@ -667,110 +735,97 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         return '<input type="hidden" name="occurrence:taxa_taxon_list_id" value="'.$response[0]['id']."\"/>\n";
       }
     }
-    call_user_func(array(self::$called_class, 'build_grid_autocomplete_function'), $args);
-    if (call_user_func(array(self::$called_class, 'getGridMode'), $args)) {      
-      // multiple species being input via a grid      
-      $species_ctrl_opts=array_merge(array(
-          'listId'=>$args['list_id'],
-          'label'=>lang::get('occurrence:taxa_taxon_list_id'),
-          'columns'=>1,          
-          'extraParams'=>$extraParams,
-          'survey_id'=>$args['survey_id'],
-          'occurrenceComment'=>$args['occurrence_comment'],
-          'occurrenceConfidential'=>(isset($args['occurrence_confidential']) ? $args['occurrence_confidential'] : false),
-          'occurrenceImages'=>$args['occurrence_images'],
-          'PHPtaxonLabel' => true,
-          'language' => iform_lang_iso_639_2($user->lang), // used for termlists in attributes
-          'cacheLookup' => isset($args['cache_lookup']) && $args['cache_lookup'],
-          'speciesNameFilterMode' => self::getSpeciesNameFilterMode($args), 
-          'userControlsTaxonFilter' => isset($args['user_controls_taxon_filter']) ? $args['user_controls_taxon_filter'] : false
-      ), $options);
-      if ($groups=hostsite_get_user_field('taxon_groups')) {
-        $species_ctrl_opts['usersPreferredGroups'] = unserialize($groups);
-      }
-      if ($args['extra_list_id']) $species_ctrl_opts['lookupListId']=$args['extra_list_id'];
-      if (!empty($args['taxon_filter_field']) && !empty($args['taxon_filter'])) {
-        $species_ctrl_opts['taxonFilterField']=$args['taxon_filter_field'];
-        $species_ctrl_opts['taxonFilter']=$filterLines;
-      }
-      if (isset($args['col_widths']) && $args['col_widths']) $species_ctrl_opts['colWidths']=explode(',', $args['col_widths']);
-      call_user_func(array(self::$called_class, 'build_grid_taxon_label_function'), $args);
-      // Start by outputting a hidden value that tells us we are using a grid when the data is posted,
-      // then output the grid control
-      return '<input type="hidden" value="true" name="gridmode" />'.
-          data_entry_helper::species_checklist($species_ctrl_opts);
+    return false;
+  }
+  
+  /**
+   * Returns the species checklist input control. 
+   * @param array $auth Read authorisation tokens
+   * @param array $args Form configuration
+   * @param array $extraParams Extra parameters array, pre-configured with filters for taxa and name types.
+   * @param array $options additional options for the control, e.g. those configured in the form structure.
+   * @return HTML for the species_checklist control. 
+   */
+  private static function get_control_species_checklist($auth, $args, $extraParams, $options) {
+    // Build the configuration options    
+    $species_ctrl_opts=array_merge(array(
+        'listId'=>$args['list_id'],
+        'label'=>lang::get('occurrence:taxa_taxon_list_id'),
+        'columns'=>1,          
+        'extraParams'=>$extraParams,
+        'survey_id'=>$args['survey_id'],
+        'occurrenceComment'=>$args['occurrence_comment'],
+        'occurrenceConfidential'=>(isset($args['occurrence_confidential']) ? $args['occurrence_confidential'] : false),
+        'occurrenceImages'=>$args['occurrence_images'],
+        'PHPtaxonLabel' => true,
+        'language' => iform_lang_iso_639_2($user->lang), // used for termlists in attributes
+        'cacheLookup' => isset($args['cache_lookup']) && $args['cache_lookup'],
+        'speciesNameFilterMode' => self::getSpeciesNameFilterMode($args), 
+        'userControlsTaxonFilter' => isset($args['user_controls_taxon_filter']) ? $args['user_controls_taxon_filter'] : false
+    ), $options);
+    if ($groups=hostsite_get_user_field('taxon_groups')) {
+      $species_ctrl_opts['usersPreferredGroups'] = unserialize($groups);
     }
-    else {
-      // A single species entry control of some kind
-      if ($args['extra_list_id']=='')
-        $extraParams['taxon_list_id'] = $args['list_id'];
-      // @todo At the moment the autocomplete control does not support 2 lists. So use just the extra list. Should 
-      // update to support 2 lists.
-      elseif ($args['species_ctrl']=='autocomplete')
-        $extraParams['taxon_list_id'] = empty($args['extra_list_id']) ? $args['list_id'] : $args['extra_list_id'];
+    if ($args['extra_list_id']) $species_ctrl_opts['lookupListId']=$args['extra_list_id'];
+    if (!empty($args['taxon_filter_field']) && !empty($args['taxon_filter'])) {
+      $species_ctrl_opts['taxonFilterField']=$args['taxon_filter_field'];
+      $species_ctrl_opts['taxonFilter']=$filterLines;
+    }
+    if (isset($args['col_widths']) && $args['col_widths']) $species_ctrl_opts['colWidths']=explode(',', $args['col_widths']);
+    call_user_func(array(self::$called_class, 'build_grid_taxon_label_function'), $args);
+    // Start by outputting a hidden value that tells us we are using a grid when the data is posted,
+    // then output the grid control
+    return '<input type="hidden" value="true" name="gridmode" />'.
+        data_entry_helper::species_checklist($species_ctrl_opts);
+  }
+  
+  /**
+   * Returns a control for picking a single species
+   * @global type $indicia_templates
+   * @param array $auth Read authorisation tokens
+   * @param array $args Form configuration
+   * @param array $extraParams Extra parameters pre-configured with taxon and taxon name type filters.
+   * @param array $options additional options for the control, e.g. those configured in the form structure.
+   * @return string HTML for the control. 
+   */
+  private static function get_control_species_single($auth, $args, $extraParams, $options) {
+    if ($args['extra_list_id']=='')
+      $extraParams['taxon_list_id'] = $args['list_id'];
+    // @todo At the moment the autocomplete control does not support 2 lists. So use just the extra list. Should 
+    // update to support 2 lists.
+    elseif ($args['species_ctrl']=='autocomplete')
+      $extraParams['taxon_list_id'] = empty($args['extra_list_id']) ? $args['list_id'] : $args['extra_list_id'];
+    else
+      $extraParams['taxon_list_id'] = array($args['list_id'], $args['extra_list_id']);
+    global $indicia_templates;
+    $species_ctrl_opts=array_merge(array(
+        'label'=>lang::get('occurrence:taxa_taxon_list_id'),
+        'extraParams'=>$extraParams,
+        'columns'=>2, // applies to radio buttons
+        'parentField'=>'parent_id', // applies to tree browsers
+        'blankText'=>lang::get('Please select'), // applies to selects
+        'cacheLookup'=>isset($args['cache_lookup']) && $args['cache_lookup'] // applies to selects
+    ), $options);
+    // if using something other than an autocomplete, then set the caption template to include the appropriate names. Autocompletes
+    // use a JS function instead.
+    if ($args['species_ctrl']!=='autcomplete' && isset($args['species_include_both_names']) && $args['species_include_both_names']) {
+      if ($args['species_names_filter']=='all')
+        $indicia_templates['species_caption'] = '{'.$colTaxon.'}';
+      elseif ($args['species_names_filter']=='language')
+        $indicia_templates['species_caption'] = '{'.$colTaxon.'} - {'.$colPreferred.'}';
       else
-        $extraParams['taxon_list_id'] = array($args['list_id'], $args['extra_list_id']);
-      if (!empty($args['taxon_filter_field']) && !empty($args['taxon_filter']))
-        // filter the taxa available to record
-        $query = array('in'=>array($args['taxon_filter_field'], helper_base::explode_lines($args['taxon_filter'])));
-      else 
-        $query = array();
-      // Apply the species names filter to the single species picker control
-      if (isset($args['species_names_filter'])) {
-        $languageFieldName = isset($args['cache_lookup']) && $args['cache_lookup'] ? 'language_iso' : 'language';
-        switch($args['species_names_filter']) {
-          case 'preferred' :
-            $extraParams += array('preferred'=>'t');
-            break;
-          case 'language' :
-            if (isset($options['language'])) {
-              $extraParams += array($languageFieldName=>$options['language']);
-            } else {
-              $extraParams += array($languageFieldName=>iform_lang_iso_639_2($user->lang));
-            }
-            break;
-          case 'excludeSynonyms':
-            $query['where'] = array("(preferred='t' OR $languageFieldName<>'lat')");
-            break;
-        }
-      }
-      if (count($query)) 
-        $extraParams['query'] = json_encode($query);
-      global $indicia_templates;
-      $species_ctrl_opts=array_merge(array(
-          'label'=>lang::get('occurrence:taxa_taxon_list_id'),
-          'fieldname'=>'occurrence:taxa_taxon_list_id',
-          'table'=>'taxa_taxon_list',
-          'captionField'=>'taxon',
-          'valueField'=>'id',
-          'columns'=>2,
-          'parentField'=>'parent_id',
-          'extraParams'=>$extraParams,
-          'blankText'=>'Please select',
-          'formatFunction'=>$indicia_templates['format_species_autocomplete_fn']
-      ), $options);
-      if (isset($args['cache_lookup']) && $args['cache_lookup'])
-        $species_ctrl_opts['extraParams']['view']='cache';
-      // if using something other than an autocomplete, then set the caption template to include the appropriate names. Autocompletes
-      // use a JS function instead.
-      if ($args['species_ctrl']!=='autcomplete' && isset($args['species_include_both_names']) && $args['species_include_both_names']) {
-        if ($args['species_names_filter']=='all')
-          $indicia_templates['species_caption'] = '{taxon}';
-        elseif ($args['species_names_filter']=='language')
-          $indicia_templates['species_caption'] = '{taxon} - {preferred_name}';
-        else
-          $indicia_templates['species_caption'] = '{taxon} - {common}';
-        $species_ctrl_opts['captionTemplate'] = 'species_caption';
-      }
-      if ($args['species_ctrl']=='tree_browser') {
-        // change the node template to include images
-        $indicia_templates['tree_browser_node']='<div>'.
-            '<img src="'.data_entry_helper::$base_url.'/upload/thumb-{image_path}" alt="Image of {caption}" width="80" /></div>'.
-            '<span>{caption}</span>';
-      }
-      // Dynamically generate the species selection control required.
-      return call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_ctrl_opts);
+        $indicia_templates['species_caption'] = '{'.$colTaxon.'} - {'.$colCommon.'}';
+      $species_ctrl_opts['captionTemplate'] = 'species_caption';
     }
+    if ($args['species_ctrl']=='tree_browser') {
+      // change the node template to include images
+      $indicia_templates['tree_browser_node']='<div>'.
+          '<img src="'.data_entry_helper::$base_url.'/upload/thumb-{image_path}" alt="Image of {caption}" width="80" /></div>'.
+          '<span>{caption}</span>';
+    }
+    $ctrl = $args['species_ctrl'] === 'autocomplete' ? 'species_autocomplete' : $args['species_ctrl'];
+    // Dynamically generate the species selection control required.
+    return call_user_func(array('data_entry_helper', $ctrl), $species_ctrl_opts);
   }
   
   /**
@@ -796,20 +851,25 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    */
   protected static function build_grid_autocomplete_function($args) {
     global $indicia_templates;  
-    // always include the searched name
+    // always include the searched name. In this JavaScript we need to behave slightly differently
+    // if using the cached as opposed to the standard versions of taxa_taxon_list.
+    $db = data_entry_helper::get_species_lookup_db_definition(isset($args['cache_lookup']) && $args['cache_lookup']);
+    // get local vars for the array
+    extract($db);
+
     $fn = "function(item) { \n".
         "  var r;\n".
-        "  if (item.language=='lat') {\n".
-        "    r = '<em>'+item.taxon+'</em>';\n".
+        "  if (item.$colLanguage.toLowerCase()==='$valLatinLanguage') {\n".
+        "    r = '<em>'+item.$colTaxon+'</em>';\n".
         "  } else {\n".
-        "    r = item.taxon;\n".
+        "    r = item.$colTaxon;\n".
         "  }\n";
     // This bit optionally adds '- common' or '- latin' depending on what was being searched
     if (isset($args['species_include_both_names']) && $args['species_include_both_names']) {
-      $fn .= "  if (item.preferred='t' && item.common!=item.taxon && item.common) {\n".
-        "    r += ' - ' + item.common;\n".
-        "  } else if (item.preferred='f' && item.preferred_name!=item.taxon && item.preferred_name) {\n".
-        "    r += ' - <em>' + item.preferred_name + '</em>';\n".
+      $fn .= "  if (item.preferred='t' && item.$colCommon!=item.$colTaxon && item.$colCommon) {\n".
+        "    r += ' - ' + item.$colCommon;\n".
+        "  } else if (item.preferred='f' && item.$colPreferred!=item.$colTaxon && item.$colPreferred) {\n".
+        "    r += ' - <em>' + item.$colPreferred + '</em>';\n".
         "  }\n";
     }
     // this bit optionally adds the taxon group
@@ -823,8 +883,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   }
   
   /**
-   * Build a JavaScript function  to format the autocomplete item list according to the form parameters
-   * autocomplete_include_both_names and autocomplete_include_taxon_group.
+   * Build a JavaScript function  to format the display of existing taxa added to the species input grid
+   * when an existing sample is loaded.
    */
   protected static function build_grid_taxon_label_function($args) {
     global $indicia_templates;  
