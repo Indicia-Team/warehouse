@@ -136,18 +136,21 @@ $indicia_templates = array(
           qfield : '{captionField}',
           {sParams}
         },
+        simplify: {simplify},
         parse: function(data)
         {
           // Clear the current selected key as the user has changed the search text
           jQuery('input#{escaped_id}').val('');
-          var results = [];
+          var results = [], done = [];
           jQuery.each(data, function(i, item) {
-            results[results.length] =
-            {
-              'data' : item,
-              'result' : item.{captionField},
-              'value' : item.{valueField}
-            };
+            if ({duplicateCheck}) {
+              results.push({
+                'data' : item,
+                'result' : item.{captionField},
+                'value' : item.{valueField}
+              });
+              {storeDuplicates}
+            }
           });
           return results;
         },
