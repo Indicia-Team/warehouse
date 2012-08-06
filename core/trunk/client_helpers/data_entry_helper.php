@@ -2000,7 +2000,16 @@ class data_entry_helper extends helper_base {
   * Language used to filter lookup list items in attributes. ISO 639:3 format. </li>
   * <li><b>PHPtaxonLabel</b></li>
   * If set to true, then the taxon_label template should contain a PHP statement that returns the HTML to display for each
-  * taxon's label. Otherwise the template should be plain HTML. Defaults to false.
+  * taxon's label. Otherwise the template should be plain HTML. Defaults to false.</li>
+  * <li><b>useLoadedExistingRecords</b></li>
+  * Optional. Defaults to false. Set to true to prevent a grid from making a web service call to load existing occurrence
+  * data when reloading a sample. This can be useful if there are more than one species checklist on the page such as when
+  * species input is split across several tabs - the first can load all the data and subsequent grids just display 
+  * the appropriate records depending on the species they are configured to show.</li>
+  * <li><b>reloadExtraParams</b></li>
+  * Set to an array of additional parameters such as filter criteria to pass to the service request used to load 
+  * existing records into the grid when reloading a sample. Especially useful when there are more than one species checklist
+  * on a single form, so that each grid can display the appropriate output.</li>
   * </ul>
   */
   public static function species_checklist()
@@ -2072,8 +2081,9 @@ class data_entry_helper extends helper_base {
     $taxonRows = array();
 
     // Load any existing sample's occurrence data into $entity_to_load
-    if (isset(self::$entity_to_load['sample:id']))
-      self::preload_species_checklist_occurrences(self::$entity_to_load['sample:id'], $options['readAuth'], $options['occurrenceImages']);
+    if (isset(self::$entity_to_load['sample:id']) && $options['useLoadedExistingRecords']===false)
+      self::preload_species_checklist_occurrences(self::$entity_to_load['sample:id'], $options['readAuth'], 
+          $options['occurrenceImages'], $options['reloadExtraParams']);
     // load the full list of species for the grid, including the main checklist plus any additional species in the reloaded occurrences.
     $taxalist = self::get_species_checklist_taxa_list($options, $taxonRows);
     // If we managed to read the species list data we can proceed
@@ -2119,8 +2129,8 @@ class data_entry_helper extends helper_base {
         // Add a X button if the user can remove rows
         if ($options['rowInclusionCheck']=='alwaysRemovable')
           $row .= '<td class="ui-state-default remove-row" style="width: 1%">X</td>';
-        $row .= str_replace(array('{content}','{colspan}','{tableId}'), 
-            array($firstCell,$colspan,$options['id']), $indicia_templates['taxon_label_cell']);
+        $row .= str_replace(array('{content}','{colspan}','{tableId}','{idx}'), 
+            array($firstCell,$colspan,$options['id'],$colIdx), $indicia_templates['taxon_label_cell']);
 
         $existing_record_id = false;
         if (is_array(self::$entity_to_load)) {
@@ -2375,15 +2385,24 @@ $('#".$options['id']."-filter').click(function(evt) {
    * @param array $readAuth Read authorisation array
    * @return array Array with key of occurrence_id and value of $taxonInstance.
    */
-  public static function preload_species_checklist_occurrences($sampleId, $readAuth, $loadImages) {
+  public static function preload_species_checklist_occurrences($sampleId, $readAuth, $loadImages, $extraParams) {
     $occurrenceIds = array();
     $taxonCounter = array();
     // don't load from the db if there are validation errors, since the $_POST will already contain all the
     // data we need.
+    $extraParams += $readAuth + array('view'=>'detail','sample_id'=>$sampleId,'deleted'=>'f', 'orderby'=>'id', 'sortdir'=>'ASC' );
     if (is_null(self::$validation_errors)) {
+      // strip out any occurrences we've already loaded into the entity_to_load, in case there are other
+      // checklist grids on the same page. Otherwise we'd double up the record data.
+      foreach(data_entry_helper::$entity_to_load as $key => $value) {
+        $parts = explode(':', $key);
+        if (count($parts) > 2 && $parts[0] == 'sc' && $parts[1]!='-ttlId-') {
+          unset(data_entry_helper::$entity_to_load[$key]);
+        }
+      }
       $occurrences = self::get_population_data(array(
         'table' => 'occurrence',
-        'extraParams' => $readAuth + array('view'=>'detail','sample_id'=>$sampleId,'deleted'=>'f', 'orderby'=>'id', 'sortdir'=>'ASC' ),
+        'extraParams' => $extraParams,
         'nocache' => true
       ));
       foreach($occurrences as $occurrence){
@@ -2580,7 +2599,9 @@ $('#".$options['id']."-filter').click(function(evt) {
         'id' => 'species-grid-'.rand(0,1000),
         'colWidths' => array(),
         'taxonFilterField' => 'none',
-        'cacheLookup' => false
+        'cacheLookup' => false,
+        'reloadExtraParams' => array(),
+        'useLoadedExistingRecords' => false
     ), $options);
     // If filtering for a language, then use any taxa of that language. Otherwise, just pick the preferred names.
     if (!isset($options['extraParams']['language_iso']))
@@ -2659,7 +2680,7 @@ $('#".$options['id']."-filter').click(function(evt) {
     // Because the clonable row always goes in the first col, this can be always left to 0.
     $r = '<table style="display: none"><tbody><tr class="scClonableRow" id="'.$options['id'].'-scClonableRow">';
     $colspan = isset($options['lookupListId']) || $options['rowInclusionCheck']=='alwaysRemovable' ? ' colspan="2"' : '';
-    $r .= str_replace(array('{colspan}','{tableId}'), array($colspan, $options['id']), $indicia_templates['taxon_label_cell']);
+    $r .= str_replace(array('{colspan}','{tableId}','{idx}'), array($colspan, $options['id'],0), $indicia_templates['taxon_label_cell']);
     $hidden = ($options['rowInclusionCheck']=='checkbox' ? '' : ' style="display:none"');
     $r .= '<td class="scPresenceCell" headers="'.$options['id'].'-present-0"'.$hidden.'><input type="checkbox" class="scPresence" name="" value="" /></td>';
     $idx = 0;
