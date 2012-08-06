@@ -325,6 +325,7 @@ class iform_dynamic_location extends iform_dynamic {
    */
   protected static function getLocationListGrid($args, $node, $auth, $attributes) {
     global $user;
+    // User must be logged in before we can access their records.
     if ($user->uid===0) {
       // Return a login link that takes you back to this form when done.
       return lang::get('Before using this facility, please <a href="'.url('user/login', array('query'=>'destination=node/'.($node->nid))).'">login</a> to the website.');
