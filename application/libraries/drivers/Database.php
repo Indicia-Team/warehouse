@@ -170,9 +170,13 @@ abstract class Database_Driver {
     }
     /**
      * Indicia Change:
-     * This change forces the use of PostgreSQL ilike
+     * This change forces the use of PostgreSQL ilike, but not for certain fields we know to be lowercased,
+     * as ilike does not use indexes.
      */
-    return $prefix.' '.$this->escape_column($field).' ILIKE \''.$match.'\'';
+    if ($field==='searchterm')
+      return $prefix.' '.$this->escape_column($field).' LIKE \''.strtolower($match).'\'';
+    else
+      return $prefix.' '.$this->escape_column($field).' ILIKE \''.$match.'\'';
   }
 
   /**
