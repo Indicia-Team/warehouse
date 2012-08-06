@@ -234,7 +234,7 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, cacheLooku
     // add the row to the bottom of the grid
     newRow.appendTo('table#' + gridId +' > tbody').removeAttr('id');
     extraParams = {
-      orderby : 'taxon',
+      orderby : cacheLookup ? 'original' : 'taxon',
       mode : 'json',
       qfield : cacheLookup ? 'searchterm' : 'taxon',
       auth_token: readAuth.auth_token,
