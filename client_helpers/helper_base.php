@@ -1000,7 +1000,7 @@ $('.ui-state-default').live('mouseout', function() {
    * Takes an associative array and converts it to a list of params for a query string. This is like
    * http_build_query but it does not url encode the & separator, and gives control over urlencoding the array values.
    */
-  protected static function array_to_query_string($array, $encodeValues=false) {
+  public static function array_to_query_string($array, $encodeValues=false) {
     $params = array();
     if(is_array($array)) {
       arsort($array);
