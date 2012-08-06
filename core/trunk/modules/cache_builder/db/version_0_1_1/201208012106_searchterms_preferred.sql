@@ -1,4 +1,4 @@
-ALTER TABLE cache_taxon_searchterms ADD COLUMN preferred boolean;
+ALTER TABLE cache_taxon_searchterms ADD COLUMN preferred boolean NULL;
 COMMENT ON COLUMN cache_taxon_searchterms.preferred IS 'Does this entry represent a list-preferred name?';
 
 UPDATE cache_taxon_searchterms
