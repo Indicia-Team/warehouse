@@ -163,11 +163,11 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           'name' => 'grid_report',
           'caption' => 'Grid Report',
           'description' => 'Name of the report to use to populate the grid for selecting existing data from. The report must return a sample_id '.
-              'field or occurrence_id field for linking to the data entry form. As a starting point, try reports_for_prebuilt_forms/simple_occurrence_list_1 or '.
-              'reports_for_prebuilt_forms/simple_sample_list_1 for a list of occurrences or samples respectively.',
+              'field or occurrence_id field for linking to the data entry form. As a starting point, try ' .
+              'reports_for_prebuilt_forms/dynamic_sample_occurrence_samples for a list of samples.',
           'type'=>'string',
           'group' => 'User Interface',
-          'default' => 'reports_for_prebuilt_forms/simple_sample_list_1'
+          'default' => 'reports_for_prebuilt_forms/dynamic_sample_occurrence_samples'
         ),
         array(
           'name'=>'users_manage_own_sites',
@@ -474,20 +474,31 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       ,'extraParams' => $auth['read']
       ,'survey_id' => $args['survey_id']
     ), false);
+    
     $tabs = array('#sampleList'=>lang::get('LANG_Main_Samples_Tab'));
+    
+    // Add in a tab for the allocation of locations if this option was selected
     if($args['includeLocTools'] && function_exists('iform_loctools_checkaccess') && iform_loctools_checkaccess($node,'admin')){
       $tabs['#setLocations'] = lang::get('LANG_Allocate_Locations');
     }
+    
+    // An option for derived classes to add in extra tabs
     if (method_exists(self::$called_class, 'getExtraGridModeTabs')) {
       $extraTabs = call_user_func(array(self::$called_class, 'getExtraGridModeTabs'), false, $auth['read'], $args, $attributes);
       if(is_array($extraTabs))
         $tabs = $tabs + $extraTabs;
     }
+    
+    // Only actually need to show tabs if there is more than one
     if(count($tabs) > 1){
       $r .= "<div id=\"controls\">".(data_entry_helper::enable_tabs(array('divId'=>'controls','active'=>'#sampleList')))."<div id=\"temp\"></div>";
       $r .= data_entry_helper::tab_header(array('tabs'=>$tabs));
     }
+ 
+    // Here is where we get the table of samples
     $r .= "<div id=\"sampleList\">".call_user_func(array(self::$called_class, 'getSampleListGrid'), $args, $node, $auth, $attributes)."</div>";
+
+    // Add content to the Allocate Locations tab if this option was selected
     if($args['includeLocTools'] && function_exists('iform_loctools_checkaccess') && iform_loctools_checkaccess($node,'admin')){
       $r .= '
 <div id="setLocations">
@@ -523,10 +534,14 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   </form>
 </div>";
     }
+    
+    // Add content to extra tabs that derived classes may have added
     if (method_exists(self::$called_class, 'getExtraGridModeTabs')) {
       $r .= call_user_func(array(self::$called_class, 'getExtraGridModeTabs'), true, $auth['read'], $args, $attributes);
     }
-    if(count($tabs) > 1){ // close tabs div if present
+    
+    // Close tabs div if present
+    if(count($tabs) > 1){ 
       $r .= "</div>";
     }
     return $r;  
@@ -1124,26 +1139,45 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    */
   protected static function getSampleListGrid($args, $node, $auth, $attributes) {
     global $user;
-    // get the CMS User ID attribute so we can filter the grid to this user
+    // User must be logged in before we can access their records.
+    if ($user->uid===0) {
+      // Return a login link that takes you back to this form when done.
+      return lang::get('Before using this facility, please <a href="'.url('user/login', array('query'=>'destination=node/'.($node->nid))).'">login</a> to the website.');
+    }
+
+    // Get the CMS User ID attribute so we can filter the grid to this user
     foreach($attributes as $attrId => $attr) {
       if (strcasecmp($attr['caption'],'CMS User ID')==0) {
         $userIdAttr = $attr['attributeId'];
         break;
       }
+      if (isset($userIdAttr)) $filter = array ( 
+          'survey_id' => $args['survey_id'], 
+          'userID_attr_id' => $userIdAttr, 
+          'userID' => $user->uid,
+          'iUserID' => 0);
     }
-    if ($user->uid===0) {
-      // Return a login link that takes you back to this form when done.
-      return lang::get('Before using this facility, please <a href="'.url('user/login', array('query'=>'destination=node/'.($node->nid))).'">login</a> to the website.');
+    // Alternatively get the Indicia User ID and use that instead
+    if (function_exists('hostsite_get_user_field')) {
+      $iUserId = hostsite_get_user_field('indicia_user_id');
+      if (isset($iUserId)) $filter = array (
+          'survey_id'=>$args['survey_id'], 
+          'userID_attr_id' => 0, 
+          'userID' => 0,
+          'iUserID' => $iUserId);
     }
-    if (!isset($userIdAttr)) {
-      return lang::get('This form is configured to show the user a grid of their existing records which they can add to or edit. To do this, the form requires that '.
-          'it must be used with a survey that includes the CMS User ID attribute in the list of attributes configured for the survey on the warehouse. This allows records to '.
-          'be tagged against the user. Alternatively you can tick the box "Skip initial grid of data" in the "User Interface" section of the Edit page for the form.');
+        
+    // Return with error message if we cannot identify the user records
+    if (!isset($filter)) {
+      return lang::get('LANG_No_User_Id');
     }
+    
+    // An option for derived classes to add in extra html before the grid
     if(method_exists(self::$called_class, 'getSampleListGridPreamble'))
       $r = call_user_func(array(self::$called_class, 'getSampleListGridPreamble'));
     else
       $r = '';
+    
     $r .= data_entry_helper::report_grid(array(
       'id' => 'samples-grid',
       'dataSource' => $args['grid_report'],
@@ -1152,11 +1186,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       'columns' => call_user_func(array(self::$called_class, 'getReportActions')),
       'itemsPerPage' =>(isset($args['grid_num_rows']) ? $args['grid_num_rows'] : 10),
       'autoParamsForm' => true,
-      'extraParams' => array(
-        'survey_id'=>$args['survey_id'], 
-        'userID_attr_id'=>$userIdAttr,
-        'userID'=>$user->uid
-      )
+      'extraParams' => $filter
     ));    
     $r .= '<form>';    
     if (isset($args['multiple_occurrence_mode']) && $args['multiple_occurrence_mode']=='either') {
