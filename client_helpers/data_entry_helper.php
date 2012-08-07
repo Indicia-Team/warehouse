@@ -1849,10 +1849,17 @@ class data_entry_helper extends helper_base {
   }
   
   /**
-   *
+   * A version of the autocomplete control preconfigured for species lookups.
    * @param type $options
    * <ul>
    * <li><b>cache_lookup</b>
+   * Defaults to false. Set to true to lookup species against cache_taxon_searchterms rather than detail_taxa_taxon_lists.
+   * </li>
+   * <li><b>speciesNameFilterMode</b><br/>
+   * Optional. Method of filtering the available species names (both for initial population into the grid and additional rows). Options are
+   *   preferred - only preferred names
+   *   currentLanguage - only names in the language identified by the language option are included
+   *   excludeSynonyms - all names except synonyms (non-preferred latin names) are included.
    * </li>
    * <li><b>extraParams</b>
    * Should contain the read authorisation array and taxon_list_id to filter against. 
@@ -1866,6 +1873,7 @@ class data_entry_helper extends helper_base {
     $db = data_entry_helper::get_species_lookup_db_definition($options['cacheLookup']);
     // get local vars for the array
     extract($db);
+    $options['extraParams']['orderby'] = ($options['cacheLookup']) ? 'original' : 'taxon';
     $options = array_merge(array(
       'fieldname'=>'occurrence:taxa_taxon_list_id',
       'table'=>$tblTaxon,
@@ -1876,6 +1884,7 @@ class data_entry_helper extends helper_base {
     ), $options);
     if (isset($duplicateCheckFields))
       $options['duplicateCheckFields']=$duplicateCheckFields;
+    $options['extraParams'] += self::get_species_names_filter($options);
     return self::autocomplete($options);
   }
 
@@ -2022,33 +2031,12 @@ class data_entry_helper extends helper_base {
           'at the same time has having the occurrenceImages option enabled.');
     self::add_resource('json');
     self::add_resource('autocomplete');
-    $filterArray = array();
-    $query = array();
-    // Code in the species checklist filter configuration button assumes that the query in clause is the taxonFilter.
-    if (preg_match('/^(preferred_name|taxon_meaning_id|taxon_group)$/', $options['taxonFilterField']))
-      $query['in'] = array($options['taxonFilterField'], $options['taxonFilter']);
-    if (isset($options['speciesNameFilterMode'])) {
-      $languageFieldName = isset($options['cacheLookup']) && $options['cacheLookup'] ? 'language_iso' : 'language';
-      switch($options['speciesNameFilterMode']) {
-        case 'preferred' :
-          $filterArray['preferred']='t';
-          break;
-        case 'currentLanguage' :
-          if (isset($options['language']))
-            $filterArray[$languageFieldName]=$options['language'];
-          break;
-        case 'excludeSynonyms':
-          $query['where'] = array("(preferred='t' OR $languageFieldName<>'lat')");
-          break;
-      }
-    }
-    if (count($query))
-      $filterArray['query'] = json_encode($query);
-    if (count($filterArray))
+    $filterArray = self::get_species_names_filter($options);
+    if (count($filterArray)) {
       $filterParam = json_encode($filterArray);
-    else
-      $filterParam = '{"query":"{}"}';
-    self::$javascript .= "indiciaData['taxonExtraParams-".$options['id']."'] = $filterParam;\n";
+      self::$javascript .= "indiciaData['taxonExtraParams-".$options['id']."'] = $filterParam;\n";
+    }
+    
     if ($options['occurrenceImages']) {
       self::add_resource('plupload');
       // store some globals that we need later when creating uploaders
@@ -2267,6 +2255,48 @@ class data_entry_helper extends helper_base {
     } else {
       return $taxalist['error'];
     }
+  }
+  
+  /** 
+   * Builds an array to filter for the appropriate selection of species names, e.g. how it accepts searches for 
+   * common names and synonyms.
+   */
+  private static function get_species_names_filter($options) {
+    // $wheres is an array for building of the filter query
+    $wheres = array();
+    $r = array();
+    if (isset($options['cacheLookup']) && $options['cacheLookup']) {
+      $wheres[] = "(simplified='t' or simplified is null)";
+      $colLanguage='language_iso';
+    } else
+      $colLanguage='language';
+    if (isset($options['speciesNameFilterMode'])) {
+      switch($options['speciesNameFilterMode']) {
+        case 'preferred' :
+          if (isset($options['cacheLookup']) && $options['cacheLookup'])
+            $r += array('name_type'=>'L');
+          else
+            $r += array('preferred'=>'t');
+          break;
+        case 'language' :
+          if (isset($options['language'])) {
+            $r += array($colLanguage=>$options['language']);
+          } elseif (isset($user)) {
+            // if in Drupal we can use the user's language
+            $r += array($colLanguage=>iform_lang_iso_639_2($user->lang));
+          }
+          break;
+        case 'excludeSynonyms':
+          if (isset($options['cacheLookup']) && $options['cacheLookup'])
+            $wheres[] = "(preferred='t' or language_iso<>'lat')";
+          else
+            $wheres[] = "(preferred='t' or language<>'lat')";
+          break;
+      }
+    }
+    if (!empty($wheres))
+      $r += array('query'=>json_encode(array('where'=>array(implode(' AND ', $wheres)))));
+    return $r;
   }
   
   /**
@@ -3103,7 +3133,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         'colTaxon'=>'original',
         'colCommon'=>'default_common_name',
         'colPreferred'=>'preferred_taxon',
-        'valLatinLanguage'=>'latin',
+        'valLatinLanguage'=>'lat',
         'duplicateCheckFields'=>array('original','taxa_taxon_list_id')
       );
     } else {
