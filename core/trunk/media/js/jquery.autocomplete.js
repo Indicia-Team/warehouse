@@ -202,8 +202,8 @@ $.Autocompleter = function(input, options) {
   
   
   function selectCurrent(keycode) {
-    var selected = select.selected();
-    if( !selected )
+    var selected = select.selected(), simplified=simplify($input.val());
+    if( !selected || simplified.toLowerCase()!==selected.result.substr(0,simplified.length).toLowerCase())
       return false;
     
     var v = selected.result;
