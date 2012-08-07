@@ -1850,7 +1850,7 @@ class data_entry_helper extends helper_base {
   
   /**
    * A version of the autocomplete control preconfigured for species lookups.
-   * @param type $options
+   * @param type $options Array of configuration options with the following possible entries.
    * <ul>
    * <li><b>cache_lookup</b>
    * Defaults to false. Set to true to lookup species against cache_taxon_searchterms rather than detail_taxa_taxon_lists.
@@ -1864,7 +1864,7 @@ class data_entry_helper extends helper_base {
    * <li><b>extraParams</b>
    * Should contain the read authorisation array and taxon_list_id to filter against. 
    * </li>
-   * @return type 
+   * @return string Html for the species autocomplete control.
    */   
   public function species_autocomplete($options) {
     global $indicia_templates;
