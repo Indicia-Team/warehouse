@@ -21,7 +21,7 @@
   the newly added rows.
  */
 
-var selectVal = null;
+var selectVal = null, cacheLookup=false;
 
 /**
  * A keyboard event handler for the grid.
@@ -97,8 +97,8 @@ function keyHandler(evt) {
   }
 }
     
-function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, cacheLookup) {
-  cacheLookup = typeof cacheLookup !== 'undefined' ? cacheLookup : false;
+function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, useLookupCache) {
+  cacheLookup = typeof useLookupCache !== 'undefined' ? useLookupCache : false;
   // inner function to handle a selection of a taxon from the autocomplete
   var handleSelectedTaxon = function(event, data, value) {
     // on picking a result in the autocomplete, ensure we have a spare row
@@ -243,9 +243,6 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, cacheLooku
     };
     if (typeof indiciaData['taxonExtraParams-'+gridId]!=="undefined") {
       $.extend(extraParams, indiciaData['taxonExtraParams-'+gridId]);
-    }
-    if (cacheLookup) {
-      $.extend(extraParams, {"query":encodeURI('{"in":{"simplified":[true,null]}}')});
     }
     $(newRow).find('input,select').keydown(keyHandler);
     // Attach auto-complete code to the input

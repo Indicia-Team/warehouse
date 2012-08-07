@@ -156,7 +156,7 @@ $.Autocompleter = function(input, options) {
         break;
     }
   }).blur(function() {
-    if (!config.mouseDownOnSelect && !options.continueOnBlur) {
+    if (!config.mouseDownOnSelect && !options.continueOnBlur) {    
       hideResults();
     }
   }).click(function() {
@@ -205,8 +205,9 @@ $.Autocompleter = function(input, options) {
     var selected = select.selected(), simplified=simplify($input.val());
     if( !selected || simplified.toLowerCase()!==selected.result.substr(0,simplified.length).toLowerCase())
       return false;
-    
-    var v = selected.result;
+    // If searching against a searchterm field in a table with an original field, we actually need to display the original field. 
+    var v = (typeof selected.data.searchterm !== "undefined" && selected.data.searchterm===selected.result && typeof selected.data.original!=="undefined") ?
+        selected.data.original : selected.result;
     previousValue = v;
     
     if ( options.multiple ) {
@@ -266,7 +267,7 @@ $.Autocompleter = function(input, options) {
   function simplify(value) {
     // use same regexp as used to populate cache_taxon_searchterms to simplify the search string
     if (options.simplify) {
-      return value.replace(/\. /g, '* ').replace(/\(.+\)/g,'').replace(/[^a-z0-9\+\?*]/g,'').replace(/ae/g,'e').toLowerCase();
+      return value.replace(/\. /g, '* ').replace(/\(.+\)/g,'').replace(/[^a-zA-Z0-9\+\?*]/g,'').replace(/ae/g,'e').toLowerCase();
     } else {
       return value;
     }
@@ -298,11 +299,13 @@ $.Autocompleter = function(input, options) {
     timeout = setTimeout(hideResultsNow, 200);
   };
 
-  function hideResultsNow() {
+  function hideResultsNow(cancelTimeout) {
     var hasFocus = $input[0].id===document.activeElement.id;
     var wasFocused = hasFocus;
     select.hide();
-    clearTimeout(timeout);
+    if (typeof cancelTimeout==="undefined" || cancelTimeout) {
+      clearTimeout(timeout);
+    }
     stopLoading();
     if (options.mustMatch) {
       // call search and run callback
@@ -354,7 +357,7 @@ $.Autocompleter = function(input, options) {
         $input.addClass('error');
         $input.effect("shake", { times:2, distance:3 }, 150);
       }
-      hideResultsNow();
+      hideResultsNow(false);
     }
   };
 
