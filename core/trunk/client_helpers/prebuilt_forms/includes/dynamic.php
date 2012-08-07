@@ -181,13 +181,11 @@ class iform_dynamic {
       $r = call_user_func(array(self::$called_class, 'getGrid'), $args, $node, $auth);
     } else {
       if ($mode == MODE_EXISTING && is_null(data_entry_helper::$entity_to_load)) { 
-        // only load if not in error situation. Pass $args by reference so they can be updated if loading an existing record.
-        call_user_func(array(self::$called_class, 'getEntity'), &$args, $auth);
+        // only load if not in error situation. 
+        call_user_func_array(array(self::$called_class, 'getEntity'), array(&$args, $auth));
       }
-    
       // attributes must be fetched after the entity to load is filled in - this is because the id gets filled in then!
       $attributes = call_user_func(array(self::$called_class, 'getAttributes'), $args, $auth);
-      
       $r = call_user_func(array(self::$called_class, 'get_form_html'), $args, $auth, $attributes);      
     }
     return $r;

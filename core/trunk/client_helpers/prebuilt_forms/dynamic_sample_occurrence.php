@@ -562,7 +562,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     }
     if (self::$loadedSampleId)
       data_entry_helper::load_existing_record($auth['read'], 'sample', self::$loadedSampleId);
-    // Ensure that if we are used to load a different survey's data, then we get the correct survey attributes.
+    // Ensure that if we are used to load a different survey's data, then we get the correct survey attributes. We can change args
+    // because the caller passes by reference.
     $args['survey_id']=data_entry_helper::$entity_to_load['sample:survey_id'];
     $args['sample_method_id']=data_entry_helper::$entity_to_load['sample:sample_method_id'];
   }
