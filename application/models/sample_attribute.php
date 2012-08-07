@@ -64,11 +64,15 @@ class Sample_Attribute_Model extends ATTR_ORM {
       ),
       'first_name' => array(
         'title' => 'First name',
-        'description'=>'A text attribute corresponding to the user\'s first name.'
+        'description'=>'A text attribute corresponding to the recorder\'s first name.'
       ),
       'last_name' => array(
         'title' => 'Last name',
-        'description'=>'A text attribute corresponding to the user\'s last name.'
+        'description'=>'A text attribute corresponding to the recorder\'s last name.'
+      ),
+      'full_name' => array(
+        'title' => 'Full name',
+        'description'=>'A text attribute corresponding to the recorder\'s full name.'
       ),
       'biotope' => array(
         'title' => 'Biotope',
