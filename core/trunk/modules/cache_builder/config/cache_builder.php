@@ -665,9 +665,27 @@ join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
 join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'cms_username\' and sa.deleted=false
 where co.recorders is null and s.id=co.sample_id and s.deleted=false
 and nuo.id=co.id;',
-    // firstname and surname
+    // full recorder name
+    'Full name' => 'update cache_occurrences co
+set recorders=sav.text_value
+from needs_update_occurrences nuo, sample_attribute_values sav
+join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'full_name\' and sa.deleted=false
+where co.recorders is null  
+and sav.sample_id=co.sample_id and sav.deleted=false
+and nuo.id=co.id;',
+    // full recorder name in parent sample
+     'Parent full name' => 'update cache_occurrences co
+set recorders=sav.text_value
+from needs_update_occurrences nuo, samples s
+join samples sp on sp.id=s.parent_id and sp.deleted=false
+join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
+join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'full_name\' and sa.deleted=false
+where co.recorders is null
+and s.id=co.sample_id and s.deleted=false
+and nuo.id=co.id;',
+    // surname, firstname
     'First name/surname' => 'update cache_occurrences co
-set recorders=coalesce(savf.text_value || \' \', \'\') || sav.text_value
+set recorders=sav.text_value || coalesce(\', \' || savf.text_value, \'\')
 from needs_update_occurrences nuo, sample_attribute_values sav
 join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'last_name\' and sa.deleted=false
 left join (sample_attribute_values savf 
@@ -676,7 +694,7 @@ join sample_attributes saf on saf.id=savf.sample_attribute_id and saf.system_fun
 where co.recorders is null and savf.sample_id=co.sample_id
 and sav.sample_id=co.sample_id and sav.deleted=false
 and nuo.id=co.id;',
-    // CMS firstname and surname in parent sample
+    // firstname and surname in parent sample
     'Parent first name/surname' => 'update cache_occurrences co
 set recorders=coalesce(savf.text_value || \' \', \'\') || sav.text_value
 from needs_update_occurrences nuo, samples s
@@ -721,6 +739,22 @@ join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
 join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'cms_username\' and sa.deleted=false
 where s.id=co.sample_id and s.deleted=false
 and co.id=#id#;',
+    // Full name
+    'full name' => 'update cache_occurrences co
+set recorders=sav.text_value
+from sample_attribute_values sav 
+join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'full_name\' and sa.deleted=false
+where sav.sample_id=co.sample_id and sav.deleted=false
+and co.id=#id#;',
+    // Full name in parent sample
+    'Parent full name' => 'update cache_occurrences co
+set recorders=sav.text_value
+from samples s
+join samples sp on sp.id=s.parent_id and sp.deleted=false
+join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
+join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'full_name\' and sa.deleted=false
+where s.id=co.sample_id and s.deleted=false
+and co.id=#id#;',
     // firstname and surname
     'First name/surname' => 'update cache_occurrences co
 set recorders=coalesce(savf.text_value || \' \', \'\') || sav.text_value
@@ -732,7 +766,7 @@ join sample_attributes saf on saf.id=savf.sample_attribute_id and saf.system_fun
 where savf.sample_id=co.sample_id
 and sav.sample_id=co.sample_id and sav.deleted=false
 and co.id=#id#;',
-    // CMS firstname and surname in parent sample
+    // Firstname and surname in parent sample
     'Parent first name/surname' => 'update cache_occurrences co
 set recorders=coalesce(savf.text_value || \' \', \'\') || sav.text_value
 from samples s
