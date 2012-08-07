@@ -655,56 +655,19 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    */
   protected static function get_control_species($auth, $args, $tabalias, $options) {
     global $user;
+    if (!isset($args['cache_lookup']) || ($args['species_ctrl']!=='autocomplete' && !$gridmode))
+      $args['cache_lookup']=false; // default for old form configurations or when not using an autocomplete
     if ($hidden=self::get_single_species_hidden_input($auth, $args))
       return $hidden;
     $extraParams = $auth['read'];
-    $gridmode = call_user_func(array(self::$called_class, 'getGridMode'), $args);
-    // Cache lookups only useful for autocomplete controls
-    if ($args['species_ctrl']!=='autocomplete' && !$gridmode)
-      $args['cache_lookup']=false;
+    $gridmode = call_user_func(array(self::$called_class, 'getGridMode'), $args);    
     // Get any configured filter for a set of taxon groups, external keys or taxon names.
-    if (!empty($args['taxon_filter_field']) && !empty($args['taxon_filter']))
-        // filter the taxa available to record
+    if (!empty($args['taxon_filter_field']) && !empty($args['taxon_filter'])) {
+      // filter the taxa available to record
+      // switch field to filter by if using cached lookup
+        if ($args['cache_lookup'] && $args['taxon_filter_field']==='preferred_name')
+          $args['taxon_filter_field']='preferred_taxon';
       $query = array('in'=>array($args['taxon_filter_field'], helper_base::explode_lines($args['taxon_filter'])));
-    else 
-      $query = array();
-    // Apply the species name type filter to the species picker control. $wheres is an array
-    // for building of the filter query
-    $wheres = array();
-    if (isset($args['cache_lookup']) && $args['cache_lookup']) {
-      $wheres[] = "(simplified='t' or simplified is null)";
-      $colLanguage='language_iso';
-    } else
-      $colLanguage='language';
-    if (isset($args['species_names_filter'])) {
-      switch($args['species_names_filter']) {
-        case 'preferred' :
-          if (isset($args['cache_lookup']) && $args['cache_lookup'])
-            $extraParams += array('name_type'=>'L');
-          else
-            $extraParams += array('preferred'=>'t');
-          break;
-        case 'language' :
-          if (isset($options['language'])) {
-            $extraParams += array($colLanguage=>$options['language']);
-          } elseif (isset($user)) {
-            // if in Drupal we can use the user's language
-            $extraParams += array($colLanguage=>iform_lang_iso_639_2($user->lang));
-          }
-          break;
-        case 'excludeSynonyms':
-          if (isset($args['cache_lookup']) && $args['cache_lookup'])
-            $wheres[] = "(preferred='t' or language_iso<>'lat')";
-          else
-            $wheres[] = "(preferred='t' or language<>'lat')";
-          break;
-      }
-    }
-    if (count($wheres)) {
-      $query = array_merge(
-        $query,
-        array('where'=>array(implode(' and ', $wheres)))
-      );
       $extraParams['query'] = json_encode($query);
     }
     call_user_func(array(self::$called_class, 'build_grid_autocomplete_function'), $args);
@@ -734,10 +697,11 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           'preferred'=>'t',
           'taxon_list_id'=>$args['list_id']
         );
-        if ($args['taxon_filter_field']=='preferred_name')
+        if ($args['taxon_filter_field']=='preferred_name') {
           $filter['taxon']=$filterLines[0];
-        else
+        } else {
           $filter[$args['taxon_filter_field']]=$filterLines[0];
+        }
         $options = array(
           'table' => 'taxa_taxon_list',
           'extraParams' => $auth['read'] + $filter
@@ -774,7 +738,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         'occurrenceImages'=>$args['occurrence_images'],
         'PHPtaxonLabel' => true,
         'language' => iform_lang_iso_639_2($user->lang), // used for termlists in attributes
-        'cacheLookup' => isset($args['cache_lookup']) && $args['cache_lookup'],
+        'cacheLookup' => $args['cache_lookup'],
         'speciesNameFilterMode' => self::getSpeciesNameFilterMode($args), 
         'userControlsTaxonFilter' => isset($args['user_controls_taxon_filter']) ? $args['user_controls_taxon_filter'] : false
     ), $options);
@@ -819,7 +783,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         'columns'=>2, // applies to radio buttons
         'parentField'=>'parent_id', // applies to tree browsers
         'blankText'=>lang::get('Please select'), // applies to selects
-        'cacheLookup'=>isset($args['cache_lookup']) && $args['cache_lookup'] // applies to selects
+        'cacheLookup'=>$args['cache_lookup'], // applies to selects,
+        'speciesNameFilterMode' => self::getSpeciesNameFilterMode($args)
     ), $options);
     // if using something other than an autocomplete, then set the caption template to include the appropriate names. Autocompletes
     // use a JS function instead.
@@ -868,7 +833,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     global $indicia_templates;  
     // always include the searched name. In this JavaScript we need to behave slightly differently
     // if using the cached as opposed to the standard versions of taxa_taxon_list.
-    $db = data_entry_helper::get_species_lookup_db_definition(isset($args['cache_lookup']) && $args['cache_lookup']);
+    $db = data_entry_helper::get_species_lookup_db_definition($args['cache_lookup']);
     // get local vars for the array
     extract($db);
 
@@ -881,7 +846,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         "  }\n";
     // This bit optionally adds '- common' or '- latin' depending on what was being searched
     if (isset($args['species_include_both_names']) && $args['species_include_both_names']) {
-      $fn .= "  if (item.preferred='t' && item.$colCommon!=item.$colTaxon && item.$colCommon) {\n".
+      $fn .= "  if (item.preferred==='t' && item.$colCommon!=item.$colTaxon && item.$colCommon) {\n".
         "    r += ' - ' + item.$colCommon;\n".
         "  } else if (item.preferred='f' && item.$colPreferred!=item.$colTaxon && item.$colPreferred) {\n".
         "    r += ' - <em>' + item.$colPreferred + '</em>';\n".
