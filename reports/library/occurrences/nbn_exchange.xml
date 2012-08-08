@@ -5,23 +5,17 @@
   <query>
 select #columns#
 from cache_occurrences co
-join occurrences o on o.id=co.id
+join occurrences o on o.id=co.id -- ensure we have the latest status. Would not be needed if cache_occurrences reflects updated immediately
 join samples s on s.id=o.sample_id
 #agreements_join#
 #joins#
 where #sharing_filter# 
 and co.date_type in ('D','DD','O','OO','Y','YY','-Y','U') 
+and (#ownData#=0 or CAST(co.created_by_id as character varying)='#currentUser#')
 and lower(s.entered_sref_system) in ('osgb', 'osni', '4326', '27700')
-and (cast(co.survey_id as character varying)='#survey_id#' or '#survey_id#'='')
 and (trim('#date_from#')='' or '#date_from#'='Click here' or co.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
 and (trim('#date_to#')='' or '#date_to#'='Click here' or co.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))            
-and ( 
-    (o.record_status='V') or
-    ('#quality#'='C' and co.certainty='C') or
-    ('#quality#'='L' and co.certainty in ('C', 'L')) or
-    ('#quality#'='!D' and co.record_status&lt;&gt;'D') or
-    ('#quality#'='!R')
-)
+and quality_check('#quality#', co.record_status, co.certainty)=true
 and co.taxa_taxon_list_external_key is not null
  
   </query>
@@ -30,16 +24,27 @@ and co.taxa_taxon_list_external_key is not null
     <order_by>o.id ASC</order_by>
   </order_bys>
   <params>
-    <param name='survey_id' display='Survey' description='Select the survey, or leave for all surveys' datatype='lookup'
-        population_call='direct:survey:id:title' />
     <param name='date_from' display='Date From' datatype='date' description="Filter by record added or updated date" />
     <param name='date_to' display='Date To' datatype='date' description="Filter by record added or updated date" />
-    <param name='taxon_group_id' display='Taxon Group' description='Select the taxon group to return data for, or leave for all groups' datatype='lookup'
-        query='SELECT id, title as caption FROM taxon_groups' population_call='direct:taxon_group:id:title' />
     <param name='quality' display='Data quality' description='Quality level required of data to be included in the map.' datatype='lookup' 
             lookup_values='V:Data must be verified,C:Data must be verified or certain,L:Data must be at least likely,!D:Include anything not dubious or rejected,!R:Include anything not rejected' />
     <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
     <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
+    <param name="currentUser" display="Current User ID" description="Current user's warehouse ID. Allows a column to be output indicating that the user owns the record." datatype="text" />
+    <param name="ownData" display="My data only?" datatype="checkbox" />
+    <param name='location_id' display='Location' description='Provide the location to display records for' datatype='lookup' emptyvalue="0"
+        population_call='direct:location:id:name' />
+    <param name="ownLocality" display="My locality only?" datatype="checkbox">
+      <join value="1">JOIN locations lfilter ON st_intersects(lfilter.boundary_geom, co.public_geom) AND lfilter.id=#location_id#</join>  
+    </param>
+    <param name="taxon_groups" display="Taxon Groups" description="List of taxon group IDs to view data for" datatype="text" emptyvalue="0"/>
+    <param name="ownGroups" display="My species groups only?" datatype="checkbox">      
+      <join value="1">JOIN taxon_groups tgfilter ON tgfilter.id=co.taxon_group_id AND tgfilter.id IN (#taxon_groups#)</join>
+    </param>
+    <param name="surveys" display="Surveys" description="List of survey IDs to view data for" datatype="text" emptyvalue="0"/>
+    <param name="ownSurveys" display="My surveys only?" datatype="checkbox">      
+      <join value="1">JOIN surveys su ON su.id=co.survey_id AND su.id IN (#surveys#)</join>
+    </param>
   </params>
   <columns>
     <column name='recordkey' display='RecordKey' sql='co.id' datatype="integer" />
