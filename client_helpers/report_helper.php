@@ -1266,7 +1266,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
           'strokeWidth'=>"\${getstrokewidth}",
           'fillOpacity'=>0.4,
           'strokeOpacity'=>0.4,
-          'pointRadius'=>4,
+          'pointRadius'=>2,
           'graphicZIndex'=>0
         ), $settings);
         if ($options['displaySymbol']!=='vector')
@@ -1275,7 +1275,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         // always display the same size so are no problem.
         $styleFns = array("getstrokewidth: function(feature) {          
           var width=feature.geometry.getBounds().right - feature.geometry.getBounds().left,
-            strokeWidth=6 - (width / feature.layer.map.getResolution());
+            strokeWidth=(width===0) ? 1 : 6 - (width / feature.layer.map.getResolution());
           return (strokeWidth<1) ? 1 : strokeWidth;
         }");
         if (isset($options['valueOutput'])) {
