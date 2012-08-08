@@ -1314,13 +1314,13 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
           }
         }
         $styleFns = implode(",\n", $styleFns);
-        // selected features are color blue by default
-        $selsettings = array_merge($defsettings, array(
-          'strokeWidth'=>9,
+        // selected features are made larger
+        $selsettings = array(
+          'strokeWidth'=>15,
+          'strokeColor'=>'red',
           'strokeOpacity'=>0.8,
-          'fillOpacity'=>0.8,
-          'pointRadius'=>8
-        ));
+          'fillOpacity'=>0.8
+        );
         // convert these styles into a JSON definition ready to feed into JS.
         $defsettings = json_encode($defsettings);
         $selsettings = json_encode($selsettings);
