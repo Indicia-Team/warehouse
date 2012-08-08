@@ -286,7 +286,7 @@ mapGeoreferenceHooks = [];
       var helptext = [],info;
       if (div.settings.helpToPickPrecisionMin && typeof indiciaData.srefHandlers!=="undefined" &&
           typeof indiciaData.srefHandlers[_getSystem().toLowerCase()]!=="undefined" &&
-          indiciaData.srefHandlers[_getSystem().toLowerCase()].returns.indexOf('precisions')!==-1) {
+          $.inArray('precisions', indiciaData.srefHandlers[_getSystem().toLowerCase()].returns)!==-1) {
         info=indiciaData.srefHandlers[_getSystem().toLowerCase()].srefToPrecision(value);
         if (info.metres>div.settings.helpToPickPrecisionMin) {
           helptext.push(div.settings.hlpImproveResolution1.replace('{size}', info.display));
@@ -980,8 +980,8 @@ mapGeoreferenceHooks = [];
       var precisionInfo=getPrecisionInfo(div, precision);
       if (typeof indiciaData.srefHandlers==="undefined" || 
           typeof indiciaData.srefHandlers[system.toLowerCase()]==="undefined" || 
-          indiciaData.srefHandlers[system.toLowerCase()].returns.indexOf('wkt')===-1|| 
-          indiciaData.srefHandlers[system.toLowerCase()].returns.indexOf('sref')===-1) {
+          $.inArray('wkt', indiciaData.srefHandlers[_getSystem().toLowerCase()].returns)===-1|| 
+          $.inArray('sref', indiciaData.srefHandlers[_getSystem().toLowerCase()].returns)===-1) {
         // next call also generates the wkt in map projection
         $.getJSON(opts.indiciaSvc + "index.php/services/spatial/wkt_to_sref"+
                 "?wkt=" + point +
@@ -1267,14 +1267,12 @@ mapGeoreferenceHooks = [];
               if (div.map.dragging) {
                 _removeAllFeatures(div.map.editLayer, 'ghost');
               } else {
-                var x=(typeof evt.offsetX==="undefined" ? evt.layerX : evt.offsetX),
-                  y=(typeof evt.offsetY==="undefined" ? evt.layerY : evt.offsetY),
-                  ll = div.map.getLonLatFromPixel({x:x,y:y});
+                var ll = div.map.getLonLatFromPixel(evt.xy);
                 // don't recalculate if mouse is still over the existing ghost
                 if (ghost===null || !ghost.atPoint(ll, 0, 0)) {
                   if (typeof indiciaData.srefHandlers!=="undefined" &&
                     typeof indiciaData.srefHandlers[_getSystem().toLowerCase()]!=="undefined" &&
-                    indiciaData.srefHandlers[_getSystem().toLowerCase()].returns.indexOf('wkt')!==-1) {
+                    $.inArray('wkt', indiciaData.srefHandlers[_getSystem().toLowerCase()].returns)!==-1) {
                     // If we have a client-side handler for this system which can return the wkt then we can
                     // draw a ghost of the proposed sref if they click
                     var r, pt, feature, parser,
