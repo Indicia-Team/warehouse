@@ -132,7 +132,10 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
             "classes to the control such as control-width-3). <br/>".
             "<strong>[*]</strong> is used to make a placeholder for putting any custom attributes that should be inserted into the current tab. When this option is ".
             "used, you can change any of the control options for an individual custom attribute control by putting @control|option=value on the subsequent line(s). ".
-            "For example, if a control is for smpAttr:4 then you can update it's label by specifying @smpAttr:4|label=New Label on the line after the [*].<br/>".
+            "For example, if a control is for smpAttr:4 then you can update it's label by specifying @smpAttr:4|label=New Label on the line after the [*]. ".
+            "You can define the value for a control using the standard replacement tokens for user data, namely {user_id}, {username}, {email} and {profile_*}; ".
+            "replace * in the latter to construct an existing profile field name. For example you could set the default value of an email input using @smpAttr:n|default={email} ".
+            "where n is the attribute ID.<br/>".
             "<strong>[smpAttr:<i>n</i>]</strong> is used to insert a particular custom attribute identified by its ID number<br/>".
             "<strong>?help text?</strong> is used to define help text to add to the tab, e.g. ?Enter the name of the site.? <br/>".
             "<strong>|</strong> is used insert a split so that controls before the split go into a left column and controls after the split go into a right column.<br/>".
