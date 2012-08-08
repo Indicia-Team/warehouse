@@ -77,7 +77,7 @@ function iform_user_get_hidden_inputs($args) {
 
 /**
  * Method to read a parameter from the arguments of a form that contains a list of key=value pairs on separate lines. 
- * Eavh value is checked for references to the user's data (either {user_id}, {username}, {email} or {profile_*})
+ * Each value is checked for references to the user's data (either {user_id}, {username}, {email} or {profile_*})
  * and if found these substitutions are replaced.
  * @param string $listData Form argument data, with each key value pair on a separate line.
  * @return array Associative array.
@@ -85,41 +85,75 @@ function iform_user_get_hidden_inputs($args) {
 function get_options_array_with_user_data($listData) {
   global $user;
   $r = array();
-  $replace=array('{user_id}', '{username}', '{email}');
-  $replaceWith=array($user->uid, $user->name, $user->mail);
-  $profileLoaded = false;
   if ($listData != ''){
     $params = helper_base::explode_lines($listData);
     foreach ($params as $param) {
       if (!empty($param)) {
         $tokens = explode('=', $param);
         if (count($tokens)==2) {
-          // perform any replacements on the initial values and copy to the output array
-          if (preg_match('/^\{(?P<field>profile_(.)+)\}$/', $tokens[1], $matches)) {
-            $profileField=$matches['field'];
-            // got a request for a user profile field, so copy it's value across into the report parameters
-            if (!$profileLoaded) {
-              profile_load_profile($user);
-              $profileLoaded = true;
-            }
-            // unserialise the data if it is serialised, e.g. when using profile_checkboxes to store a list of values.
-            $value = @unserialize($user->$profileField);
-            // arrays are returned as a comma separated list
-            if (is_array($value))
-              $value = implode(',',$value);
-            $value = $value ? $value : $user->$profileField;
-            // nulls must be passed as empty string params.
-            $value = ($value===null ? '' : $value);
-            $r[$tokens[0]]=$value;
-          } else {
-            // this handles the user id, email and username replacements
-            $r[$tokens[0]]=trim(str_replace($replace, $replaceWith, $tokens[1]));
-          }
+          $tokens[1] = apply_user_replacements($tokens[1]);
         } else {
           throw new Exception('Some of the preset or default parameters defined for this page are not of the form param=value.');
         }
+        $r[$tokens[0]]=$tokens[1];
       }
     }
+  }
+  return $r;
+}
+
+/**
+ * Takes a piece of configuration text and replaces tokens with the relevant user profile information. The following
+ * replacements are applied:
+ * {user_id} - the content management system User ID.
+ * {username} - the content management system username.
+ * {email} - the email address stored for the user in the content management system.
+ * {profile_*} - the respective field from the user profile stored in the content management system.
+ */
+function apply_user_replacements($text) {
+  global $user;
+  $replace=array('{user_id}', '{username}', '{email}');
+  $replaceWith=array($user->uid, $user->name, $user->mail);
+  // Do basic replacements and trim the data
+  $text=trim(str_replace($replace, $replaceWith, $text));  
+  // Look for any profile field replacments
+  if (preg_match_all('/{([^}]*)}/', $text, $matches)) {
+    $profileLoaded=false;
+    foreach($matches[1] as $profileField) {
+      // got a request for a user profile field, so copy it's value across into the report parameters
+      if (!$profileLoaded) {
+        profile_load_profile($user);
+        $profileLoaded = true;
+      }
+      if (isset($user->$profileField)) {
+        // unserialise the data if it is serialised, e.g. when using profile_checkboxes to store a list of values.
+        $value = @unserialize($user->$profileField);
+        // arrays are returned as a comma separated list
+        if (is_array($value))
+          $value = implode(',',$value);
+        $value = $value ? $value : $user->$profileField;
+        // nulls must be passed as empty string params.
+        $value = ($value===null ? '' : $value);
+        $text=str_replace('{'.$profileField.'}', $value, $text);  
+      }
+    }
+  }
+  return $text;
+}
+
+/**
+ * Function similar to get_options_array_with_user_data, but accepts input data in a format read from the form structure
+ * definition for a block of attributes in a dynamic form and returns data in a format ready for passing to the code which
+ * builds the attribute html.
+ */
+function get_attr_options_array_with_user_data($listData) {
+  $r = array();
+  $data=get_options_array_with_user_data($listData);
+  drupal_set_message('Interim input data: '.print_r($listData, true));
+  drupal_set_message('Interim data: '.print_r($data, true));
+  foreach ($data as $key=>$value) {
+    $tokens = explode('|', $key);
+    $r[$tokens[0]][$tokens[1]] = $value;
   }
   return $r;
 }

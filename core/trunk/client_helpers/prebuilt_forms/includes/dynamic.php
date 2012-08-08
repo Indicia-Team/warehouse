@@ -29,6 +29,7 @@
  */
 
 require_once('map.php');
+require_once('user.php');
 require_once('language_utils.php');
 require_once('form_generation.php');
 
@@ -334,7 +335,7 @@ class iform_dynamic {
               // split the id of the option into the control name and option name.
               $optionId = explode('|', $option);
               if (!isset($blockOptions[$optionId[0]])) $blockOptions[$optionId[0]]=array();
-              $blockOptions[$optionId[0]][$optionId[1]] = $value;
+              $blockOptions[$optionId[0]][$optionId[1]] = apply_user_replacements($value);
             }
             $defAttrOptions = array_merge($defAttrOptions, $options);
             $attrHtml = get_attribute_html($attributes, $args, $defAttrOptions, $tab, $blockOptions);
