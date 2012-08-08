@@ -18,6 +18,8 @@ function selectRow(tr) {
   if (tr.id.substr(3)===occurrence_id) {
     return;
   }
+  // while we are loading, disable the toolbar
+  $('#record-details-toolbar *').attr('disabled', 'disabled');
   occurrence_id = tr.id.substr(3);
   // make it clear things are loading
   $('#chart-div').css('opacity',0.15);
@@ -390,7 +392,6 @@ $(document).ready(function () {
   $('table.report-grid tbody').click(function (evt) {
     // Find the appropriate separator for AJAX url params - depends on clean urls setting.
     urlSep = indiciaData.ajaxUrl.indexOf('?') === -1 ? '?' : '&';
-    $('#record-details-toolbar *').attr('disabled', 'disabled');
     selectRow($(evt.target).parents('tr')[0]);
     if ($(evt.target).hasClass('quick-verify')) {
       var visibleIdx=0, userColIdx, taxonColIdx, userVal, taxonVal, row=$(evt.target).parents('tr:first')[0], popupHtml;
