@@ -117,6 +117,10 @@ class map_helper extends helper_base {
   * clicked on location. Ensure that the feature type is styled on GeoServer to appear as required, though it will be added to the map with semi-transparency. To use
   * this feature ensure that a proxy is set, e.g. by using the Indicia Proxy module in Drupal.
   * </li>
+  * <li><b>locationLayerFilter</b><br/>
+  * If using a location layer, then set this to a cql filter in order to select e.g. locations for a website or locations of a type.
+  * The filter can act on any fields in the feature type that locationLayerName refers to.
+  * </li>
   * <li><b>controls</b><br/>
   * </li>
   * <li><b>toolbarDiv</b><br/>
