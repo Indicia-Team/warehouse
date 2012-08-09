@@ -9,7 +9,7 @@
   #agreements_join#
   #joins#
   WHERE #sharing_filter# 
-  AND o.record_status not in ('D','I','R','T')
+  AND o.record_status not in ('I','T') AND (#ownData#=1 OR o.record_status not in ('D','R'))
   AND ('#searchArea#'='' OR st_intersects(o.public_geom, st_geomfromtext('#searchArea#',900913)))
   AND (#ownData#=0 OR CAST(o.created_by_id AS character varying)='#currentUser#')
   #idlist#
