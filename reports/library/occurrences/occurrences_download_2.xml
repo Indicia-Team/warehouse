@@ -54,6 +54,7 @@
       template="&lt;div class='zero-{zero_abundance}'&gt;{taxon}&lt;/div&gt;"
       sql="CASE WHEN co.preferred_taxon=co.default_common_name then co.preferred_taxon ELSE co.preferred_taxon || COALESCE(' | ' || co.default_common_name, '') END" datatype='text' />
     <column name='taxon_group' display='Taxon Group' sql='co.taxon_group' datatype='text' />
+    <column name='taxonversionkey' display='TaxonVersionKey' sql='co.taxa_taxon_list_external_key' datatype="text" />
     <column name='taxa_taxon_list_id' visible='false' sql='co.taxa_taxon_list_id' datatype='integer' />
     <column name='record_comment' display='Comment' sql="o.comment" datatype="text" />
     <column name='location_name' display='Site name' sql='co.location_name' datatype='text' />
@@ -64,7 +65,7 @@
     <column name='date' display='Date' datatype='date' />
     <column name='recorder' display='Recorder' sql="CASE w.id WHEN iwwa.from_website_id THEN '' ELSE w.title || '-&gt;' END || co.recorders" datatype="text" />
     <column name='sample_comment' display='Sample comment' sql="s.comment" datatype="text" />
-    <column name='zero_abundance' display='Zero Abundance' sql='co.zero_abundance' />
+    <column name='zeroabundance' display='ZeroAbundance' sql='upper(cast (co.zero_abundance as character))' datatype="text" />
     <column name='record_status' display='State' 
         sql="CASE co.record_status WHEN 'V' THEN 'Verified' WHEN 'D' THEN 'Dubious' WHEN 'R' THEN 'Rejected' WHEN 'I' THEN 'In progress' WHEN 'C' THEN 'Complete' WHEN 'S' THEN 'Awaiting check' ELSE co.record_status END" />
     <column name='belongs_to_user' display='Belongs to User' sql="CASE CAST(co.created_by_id AS character varying) WHEN '#currentUser#' THEN true ELSE false END" visible="false" />
