@@ -1878,7 +1878,7 @@ class data_entry_helper extends helper_base {
       'fieldname'=>'occurrence:taxa_taxon_list_id',
       'table'=>$tblTaxon,
       'captionField'=>$colSearch,
-      'valueField'=>'id',
+      'valueField'=>$colId,
       'formatFunction'=>$indicia_templates['format_species_autocomplete_fn'],
       'simplify'=>$options['cacheLookup'] ? 'true' : 'false'
     ), $options);
@@ -3128,6 +3128,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     if ($cached) {
       return array (
         'tblTaxon'=>'cache_taxon_searchterm',
+        'colId'=>'taxa_taxon_list_id',
         'colLanguage'=>'language_iso',
         'colSearch'=>'searchterm',
         'colTaxon'=>'original',
@@ -3139,6 +3140,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     } else {
       return array (
         'tblTaxon'=>'taxa_taxon_list',
+        'colId'=>'id',
         'colLanguage'=>'language',
         'colSearch'=>'taxon',
         'colTaxon'=>'taxon',
