@@ -1326,7 +1326,8 @@ mapGeoreferenceHooks = [];
       if (div.settings.locationLayerName) {
         var layer = new OpenLayers.Layer.WMS('Locations', div.settings.indiciaGeoSvc + 'wms', {
             layers: div.settings.locationLayerName,
-            transparent: true
+            transparent: true,
+            cql_filter: div.settings.locationLayerFilter
           }, {
             singleTile: true,
             isBaseLayer: false,
@@ -1585,6 +1586,7 @@ $.fn.indiciaMapPanel.defaults = {
     clickPixelTolerance: 5,
     reportGroup: null, // name of the collection of report outputs that this map is linked to when doing dashboard reporting
     locationLayerName: '', // define a feature type that can be used to auto-populate the location control when clicking on a location
+    locationLayerFilter: '', // a cql filter that can be used to limit locations shown on the location layer
     controls: [],
     standardControls: ['layerSwitcher','panZoom'],
     toolbarDiv: 'map', // map, top, bottom, or div ID
