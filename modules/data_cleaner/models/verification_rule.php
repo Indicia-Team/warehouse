@@ -48,9 +48,9 @@ class Verification_rule_Model extends ORM {
     $array->pre_filter('trim');
     $array->add_rules('title', 'required', 'length[1,100]');
     $array->add_rules('test_type', 'required');
-    $array->add_rules('source_url ', 'url');
     $array->add_rules('error_message', 'required');
-    $this->unvalidatedFields = array('description', 'source_filename', 'deleted');
+    // sourcr_url is not validated as a url because the NBN zip file paths don't validate but must be accepted.
+    $this->unvalidatedFields = array('description', 'source_filename', 'deleted', 'source_url');
     return parent::validate($array, $save);
   }
 
@@ -80,7 +80,7 @@ class Verification_rule_Model extends ORM {
     // find existing or new verification rule record. Empty string stored in db as null.
     if (empty($source_url))
       $source_url=null;  
-    $this->where(array('source_url'=>null, 'source_filename'=>$filename))->find();
+    $this->where(array('source_url'=>$source_url, 'source_filename'=>$filename))->find();
     if (isset($metadata['shortname']))
       $title = $metadata['shortname'];
     else {
@@ -97,7 +97,7 @@ class Verification_rule_Model extends ORM {
     $submission = array(
       'verification_rule:title'=>$title,
       'verification_rule:test_type'=>$metadata['testtype'],
-      'verification_rule:source_url'=>$source_url,
+      'verification_rule:source_url'=>'SOURCE!', //$source_url,
       'verification_rule:source_filename'=>$filename,
       'verification_rule:error_message'=>$errorMsg,
       // The error message gives us a useful description in the absence of a specific one
@@ -109,6 +109,8 @@ class Verification_rule_Model extends ORM {
       $submission['verification_rule:id']=$this->id;
     $this->set_submission_data($submission);
     $this->submit();
+    $vr = ORM::factory('verification_rule', $this->id);
+    kohana::log('debug', 'Saved as: '.print_r($vr->as_array(), true));
     // remove things from the metadata which we have put in the verification_rule record
     // so they don't get processed again later
     unset($metadata['testtype']);
@@ -117,6 +119,7 @@ class Verification_rule_Model extends ORM {
     unset($metadata['organisation']);
     unset($metadata['errormsg']);
     unset($metadata['group']);
+    unset($metadata['lastchanged']);
     if (count($this->getAllErrors())>0)
       throw new exception("Errors saving $filename to database - ".print_r($this->getAllErrors(), true));
   }
@@ -141,9 +144,8 @@ class Verification_rule_Model extends ORM {
       // force keys lowercase for case-insensitive lookup
       $metadata = array_change_key_case($metadata, CASE_LOWER);
       foreach ($fields['Metadata'] as $idx=>$field) {
-        if (array_key_exists(strtolower($field), $metadata)) {
+        if (array_key_exists(strtolower($field), $metadata) && !empty($metadata[strtolower($field)])) {
           $recordsInSubmission[] = "(verification_rule_id='".$this->id."' and key='".$field."')";
-          echo "Inserting ".$metadata[strtolower($field)]." into $field<br/>";
           $vrm = ORM::Factory('verification_rule_metadatum')->where(array(
               'verification_rule_id'=>$this->id, 'key'=>$field
           ))->find();
@@ -190,12 +192,14 @@ class Verification_rule_Model extends ORM {
     }
     foreach($fields as $dataSection=>$dataContent) {
       if (isset($data[strtolower($dataSection)])) {
-        // A quick test to ensure we don't have keys in the data we shouldn't.
-        $got = array_keys(array_change_key_case($data[strtolower($dataSection)]));
-        $expect = array_map('strtolower', $dataContent);
-        $dontWant = array_diff($got, $expect);
-        if (count($dontWant))
-          throw new exception('The following data keys are not recognised for this rule type: '.implode(',', $dontWant));
+        if (!in_array('*', $dataContent)) {
+          // A quick test to ensure we don't have keys in the data we shouldn't. Test not required if we have a wildcard key allowed.
+          $got = array_keys(array_change_key_case($data[strtolower($dataSection)]));
+          $expect = array_map('strtolower', $dataContent);
+          $dontWant = array_diff($got, $expect);
+          if (count($dontWant))
+            throw new exception('The following data keys are not recognised for this rule type: '.implode(',', $dontWant).print_r($dataContent, true));
+        }
       
         foreach ($dataContent as $key) {
           if ($key==='*') {

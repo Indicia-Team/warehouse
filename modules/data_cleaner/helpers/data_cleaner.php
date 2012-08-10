@@ -99,8 +99,8 @@ class data_cleaner {
         // reset for the next section
         $currentSection = strtolower($matches['section']);
         $currentSectionData=array();
-      } elseif (preg_match('/^(?P<key>.+)=(?P<value>.+)$/', $line, $matches)) 
-        $currentSectionData[strtolower($matches['key'])]=$matches['value'];
+      } elseif (preg_match('/^([^=\r\n]+)=([^\r\n]*)$/', $line, $matches)) 
+        $currentSectionData[strtolower($matches[1])]=$matches[2];
       elseif (preg_match('/^(?P<key>.+)$/', $line, $matches)) 
         $currentSectionData[strtolower($matches['key'])]='-';
     }
