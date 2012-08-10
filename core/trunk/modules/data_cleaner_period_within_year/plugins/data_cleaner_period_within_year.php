@@ -27,7 +27,7 @@
 function data_cleaner_period_within_year_data_cleaner_rules() {
   return array(
     'testType' => 'periodWithinYear',
-    'optional' => array('Metadata'=>array('Tvk','TaxonMeaningId','Taxon','StartDate','EndDate'), 'Data'=>array('Stage','StartDate','EndDate')),
+    'optional' => array('Metadata'=>array('Tvk','TaxonMeaningId','Taxon','StartDate','EndDate','DataFieldName'), 'Data'=>array('Stage','StartDate','EndDate')),
     'queries' => array(
       // Slightly convoluted logic required in this test to get it to work with ranges in middle of year as well as ranges that span the end of the year.
       // Also note in these queries we use 2012 as the year for expanding dates that have just a month and day, as it is a leap
