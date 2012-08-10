@@ -29,7 +29,7 @@ function data_cleaner_without_polygon_data_cleaner_rules() {
   return array(
     'testType' => 'WithoutPolygon',
     'required' => array('Metadata'=>array('DataFieldName','DataRecordId')),
-    'optional' => array('10km_GB'=>array('*')),
+    'optional' => array('10km_GB'=>array('*'), '10km_Ireland'=>array('*'), '10km_CI'=>array('*'), '1km_GB'=>array('*'), '1km_Ireland'=>array('*'), '1km_CI'=>array('*')),
     'queries' => array(
       array(
         'joins' => 
@@ -48,14 +48,34 @@ function data_cleaner_without_polygon_data_cleaner_rules() {
 function data_cleaner_without_polygon_data_cleaner_postprocess($id, $db) {
   $db->query('create temporary table geoms_without_polygon (geom geometry)');
   try {
-    $r = $db->select('key')
+    $r = $db->select('key, header_name')
       ->from('verification_rule_data')
-      ->where(array('verification_rule_id'=>$id, 'header_name'=>'10km_GB'))
+      ->where('verification_rule_id', $id)
+      ->in('header_name', array('10km_GB', '10km_Ireland', '1km_GB', '1km_Ireland', '10km_CI', '1km_CI'))
       ->get()->result();
     foreach($r as $gridSquare) {
-      $wkt = spatial_ref::sref_to_internal_wkt($gridSquare->key, 'osgb');
-      kohana::log('debug', "wkt $wkt");
-      $db->query("insert into geoms_without_polygon values(st_geomfromtext('".$wkt."', ".kohana::config('sref_notations.internal_srid')."))");
+      switch ($gridSquare->header_name) {
+        case '10km_GB':
+        case '1km_GB':
+          $system='osgb';
+          break;
+        case '10km_Ireland':
+        case '1km_Ireland':
+          $system='osie';
+          break;
+        case '10km_CI':
+        case '1km_CI':
+          $system='utm30ed50';
+          break;
+        default:
+          continue; // we don't know this grid square type - should not have come back from the query
+      }
+      try {
+        $wkt = spatial_ref::sref_to_internal_wkt($gridSquare->key, $system);
+        $db->query("insert into geoms_without_polygon values(st_geomfromtext('".$wkt."', ".kohana::config('sref_notations.internal_srid')."))");
+      } catch (InvalidArgumentException $e) {
+        kohana::log('alert', 'Skipping import of grid square '.$gridSquare->key.': '.$e->getMessage());
+      }
     }
     $date=date("Ymd H:i:s");
     $uid=$_SESSION['auth_user']->id;
