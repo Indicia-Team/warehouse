@@ -141,7 +141,7 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
             "containing Record Cleaner compatible rule files or a CSV file containing rule definitions.");
       }
     } else {
-      $this->load_from_server();
+      $this->display_progress_template_for_server_fetch();
     }
   }
   
@@ -176,74 +176,86 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
     //  show a progress view.
     $view = new View('verification_rule/upload_rule_files');
     $view->uploadId = $uploadId;
+    $view->requiresFetch='false';
     $this->template->content = $view;
     $this->template->title = 'Uploading rule files';
+  }
+   
+  private function display_progress_template_for_server_fetch() {
+    //  show a progress view.
+    $view = new View('verification_rule/upload_rule_files');
+    // generate a unique ID for the upload
+    $uploadId = time() . md5($_POST['server']);
+    $view->uploadId = $uploadId;
+    $view->requiresFetch='true';
+    $this->template->content = $view;    
+    $this->template->title = 'Fetching rule files from server';
+    $zipfiles = $this->fetch_server_file_list($_POST['server']);
+    $cacheHandle = fopen(DOCROOT . "extract/$uploadId.txt", "w");
+    fwrite($cacheHandle, json_encode(array('zipfiles'=>$zipfiles, 'done'=>0, 'paths'=>array(), 'files'=>array())));
+    fclose($cacheHandle);
   }
   
   /**
    * Controller action for loading rule files from the verification rule server.
    */
-  public function load_from_server() {
-    try {
-      $serverList = $this->get_server_list();
-      $uniqueUploadKey='';
-      $files = array();
-      foreach($_POST as $key=>$value) {
-        $idx = substr($key, 4);
-        $session = curl_init($serverList[$idx]['file']);
-        curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-        foreach(helper_base::explode_lines(curl_exec($session)) as $line) {
-          $tokens = explode('#', $line);
-          $files[] = array(
-            'file' => $tokens[0],
-            'title' => $tokens[1],
-            'date' => $tokens[2]
-          );
-        }
-        // build a string we can use to create an upload identifier
-        $uniqueUploadKey.=$serverList[$idx]['file'];
-      }
-      // extract all the rule files to get a set of temp paths, each of which contains
-      // an extract folder with the files in it
-      $paths = array();
-      foreach($files as $file)
-        $paths[] = array(
-          'file'=>$this->process_rule_zip_file($file['file']),
-          'source_url'=>$file['file'],
-          'title'=>$file['title']
+  public function fetch_file_chunk() {
+    $this->auto_render=false;
+    // load our cached status
+    $uploadId = $_GET['uploadId'];
+    $cacheHandle = fopen(DOCROOT . "extract/$uploadId.txt", "r");
+    $cacheData = fread($cacheHandle,10000000);
+    fclose($cacheHandle);
+    $cacheArr = json_decode($cacheData,true);
+    $file = $cacheArr['zipfiles'][$cacheArr['done']];
+    $path = array(
+      'file'=>$this->process_rule_zip_file($file['file']),
+      'source_url'=>$file['file'],
+      'title'=>$file['title']
+    );
+    // unzip the file at the path and work out what files it contains
+    $ruleFiles=array();
+    $dir_iterator = new RecursiveDirectoryIterator($path['file'].'/extract');
+    $iterator = new RecursiveIteratorIterator($dir_iterator, RecursiveIteratorIterator::SELF_FIRST);
+    foreach ($iterator as $file) {
+      if ($file->isFile()) {
+        $relativePath = substr($file->getRealPath(), strlen(realpath($path['file'].'/extract')));
+        $ruleFiles[] = array(
+          'file'=>$file->__toString(),
+          'source_url'=>$path['source_url'],
+          'display'=>$path['title'].$relativePath
         );
-      $ruleFiles = array();
-      foreach ($paths as $path) {
-        $dir_iterator = new RecursiveDirectoryIterator($path['file'].'/extract');
-        $iterator = new RecursiveIteratorIterator($dir_iterator, RecursiveIteratorIterator::SELF_FIRST);
-        foreach ($iterator as $file) {
-          if ($file->isFile()) {
-            $relativePath = substr($file->getRealPath(), strlen(realpath($path['file'].'/extract')));
-            $ruleFiles[] = array(
-              'file'=>$file->__toString(),
-              'source_url'=>$path['source_url'].$relativePath,
-              'display'=>$path['title'].' '.$relativePath
-            );
-          }
-        }
       }
-      // Save the rule file list to a cached list, so we can preserve it across http requests
-      $uploadId = time() . md5($uniqueUploadKey);
-      $cacheHandle = fopen(DOCROOT . "extract/$uploadId.txt", "w");
-      fwrite($cacheHandle, json_encode(array('paths'=>$paths, 'files'=>$ruleFiles)));
-      fclose($cacheHandle);
-      //  show a progress view.
-      $view = new View('verification_rule/upload_rule_files');
-      $view->uploadId = $uploadId;
-      $this->template->content = $view;
-      $this->template->title = 'Uploading rule files';
-    } catch (Exception $e) {
-      error::log_error('Error occurred during Record Cleaner rule file upload', $e);
-      $view = new View('templates/error_message');
-      $view->message=$e->getMessage();
-      $this->template->content = $view;
-      $this->template->title = 'Error occurred during upload';
     }
+    $cacheArr['paths'][]=$path;
+    $cacheArr['files']=array_merge(
+      $cacheArr['files'],
+      $ruleFiles
+    );
+    $cacheArr['done']++;
+    // Save the rule file list to a cached list, so we can preserve it across http requests
+    $cacheHandle = fopen(DOCROOT . "extract/$uploadId.txt", "w");
+    fwrite($cacheHandle, json_encode($cacheArr));
+    fclose($cacheHandle);
+    echo json_encode(array('progress'=>$cacheArr['done']*100/count($cacheArr['zipfiles'])));
+  }
+  
+  /**
+   * Finds a record cleaner server index page and returns the list of files it refers to.
+   */
+  private function fetch_server_file_list($server) {
+    $session = curl_init($server);
+    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+    $files = array();
+    foreach(helper_base::explode_lines(curl_exec($session)) as $line) {
+      $tokens = explode('#', $line);
+      $files[] = array(
+        'file' => $tokens[0],
+        'title' => $tokens[1],
+        'date' => $tokens[2]
+      );
+    }
+    return $files;
   }
   
   /**
@@ -328,7 +340,7 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
     }
     $filecontent = fread($resource,1000000);
     $settings = data_cleaner::parse_test_file($filecontent);
-    $this->read_rule_content($settings, basename($filepath), $cacheArr['files'][$_GET['totaldone']]['source_url']);
+    $this->read_rule_content($settings, basename($filepath), $cacheArr['files'][$totaldone]['source_url']);
     return $cacheArr['files'][$totaldone]['display'];
   }
   
@@ -366,11 +378,12 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
     $currentRule = data_cleaner::get_rule($rulesettings['metadata']['testtype']);
     // Ensure that the required key/value pairs for this rule type are all present.
     foreach($currentRule['required'] as $category=>$keys) {
+      $category = strtolower($category);
       foreach($keys as $key) {
         // every key must exist. A * key means that anything is accepted.
         if ($key='*') {
           if (!isset($rulesettings[$category]))
-            throw new exception("Missing content for $category section in $filename");
+            throw new exception("Missing content for $category section in $filename. ".print_r($rulesettings, true));
         } elseif (!isset($rulesettings[$category][$key]))
           throw new exception("Missing $category $key value in $filename");
       }
