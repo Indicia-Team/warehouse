@@ -24,7 +24,7 @@ function data_cleaner_extend_data_services() {
  */
 function data_cleaner_scheduled_task() {
   $db = new Database();
-  $rules = data_cleaner_get_rules();
+  $rules = data_cleaner::get_rules();
   $count = data_cleaner_get_occurrence_list($db);
   try {
     if ($count>0) {
@@ -36,34 +36,6 @@ function data_cleaner_scheduled_task() {
   } catch (Exception $e) {
     $db->query('drop table occlist');
   }
-}
-
-/**
- * Build a list of all the rules that are exposed by enabled data cleaner rule modules.
- * @return array List of rules
- */
-function data_cleaner_get_rules() {
-  $cacheId = 'data-cleaner-rules';
-  $cache = Cache::instance();
-  // use cached rules if available
-  if (!($rules = $cache->get($cacheId))) {
-    // need to build the set of rules from plugin modules
-    $rules = array();
-    foreach (Kohana::config('config.modules') as $path) {
-      $plugin = basename($path);
-      if (file_exists("$path/plugins/$plugin.php")) {
-        require_once("$path/plugins/$plugin.php");
-        if (function_exists($plugin.'_data_cleaner_rules')) {
-          $pluginRules = call_user_func($plugin.'_data_cleaner_rules');
-          // mark each rule with the plugin name that generated it.
-          $pluginRules['plugin'] = $plugin;
-          $rules[] = $pluginRules;
-        }
-      }
-    }
-    $cache->set($cacheId, $rules);
-  }
-  return $rules;
 }
 
 /**
@@ -79,7 +51,7 @@ function data_cleaner_get_occurrence_list($db) {
   inner join samples s on s.id=o.sample_id and s.deleted=false
   inner join websites w on w.id=o.website_id and w.deleted=false and w.verification_checks_enabled=true
   inner join taxa_taxon_lists ttl on ttl.id = o.taxa_taxon_list_id and ttl.deleted=false
-  where o.deleted=false and o.record_status not in (\'V\',\'R\',\'D\')
+  where o.deleted=false and o.record_status not in (\'I\',\'V\',\'R\',\'D\')
   and (ttl.id <> o.last_verification_check_taxa_taxon_list_id
   or o.updated_on>o.last_verification_check_date
   or s.updated_on>o.last_verification_check_date
@@ -121,15 +93,16 @@ function data_cleaner_run_rules($rules, $db) {
   $count=0;
   foreach ($rules as $rule) {
     if (isset($rule['errorMsgField'])) 
-      // rules are able to specify a different field (e.g. from the verificaiton rule data to provide the error message.
+      // rules are able to specify a different field (e.g. from the verification rule data to provide the error message.
       $errorField = $rule['errorMsgField'];
     else
       $errorField = 'error_message';
     foreach ($rule['queries'] as $query) {
       $implies_manual_check_required = isset($query['implies_manual_check_required']) && !$query['implies_manual_check_required'] ? 'false' : 'true';
+      $errorMsgSuffix = isset($rule['errorMsgSuffix']) ? $rule['errorMsgSuffix'] : '';
       $sql = 'insert into occurrence_comments (comment, created_by_id, created_on,  
       updated_by_id, updated_on, occurrence_id, auto_generated, generated_by, implies_manual_check_required) 
-  select distinct '.$errorField.', 1, now(), 1, now(), occlist.occurrence_id, true, \''.$rule['plugin'].'\', '.$implies_manual_check_required.'
+  select distinct '.$errorField.$errorMsgSuffix.', 1, now(), 1, now(), occlist.occurrence_id, true, \''.$rule['plugin'].'\', '.$implies_manual_check_required.'
   from occlist
   join cache_occurrences co on co.id=occlist.occurrence_id';
       if (isset($query['joins']))

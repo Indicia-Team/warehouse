@@ -43,6 +43,7 @@ class Verification_rule_datum_Model extends ORM {
     $array->add_rules('header_name', 'required');
     $array->add_rules('data_group', 'required');
     $array->add_rules('verification_rule_id', 'required');
+    $this->unvalidatedFields = array('deleted');
     return parent::validate($array, $save);
   }
 

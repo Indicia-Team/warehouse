@@ -25,8 +25,39 @@
 
 $(document).ready(function() {
   
-var totaldone=0;
-var totalerrors=0;
+var totaldone=0, 
+  totalerrors=0, 
+  uploadId='<?php echo $uploadId; ?>',
+  requiresFetch=<?php echo $requiresFetch; ?>;
+  
+function dumpErrors(response) {
+  if (typeof response.errors!=="undefined") {
+    $.each(response.errors, function(idx, error) {
+      $('#messages > div').append('<div class="error">' + error + '</div>');
+    });
+  }  
+}
+
+function fetchFileChunk() {
+  $.ajax({
+    url: '<?php echo url::base(); ?>index.php/verification_rule/fetch_file_chunk?uploadId='+uploadId,
+    dataType: 'json',
+    success: function(response) {
+      $('#progress-bar').progressbar ('option', 'value', response.progress);
+      dumpErrors(response);
+      // can't go on if we fail to even load a file
+      if (typeof response.errors==="undefined") {
+        if (response.progress===100) {
+          $('h1').html('Processing rule files');
+          $('#progress-bar').progressbar ('option', 'value', 0);
+          uploadChunk();
+        } else {
+          fetchFileChunk();
+        }
+      }
+    }
+  });
+}
 
 /**
 * Upload a single chunk of files, by doing an AJAX get. If there is more, then on receiving the response upload the
@@ -34,12 +65,10 @@ var totalerrors=0;
 */
 uploadChunk = function() {
   $.ajax({
-    url: '<?php echo url::base(); ?>index.php/verification_rule/upload_rule_file?uploadId=<?php echo $uploadId; ?>&totaldone='+totaldone,
+    url: '<?php echo url::base(); ?>index.php/verification_rule/upload_rule_file?uploadId='+uploadId+'&totaldone='+totaldone,
     dataType: 'json',
     success: function(response) {
-      $.each(response.errors, function(idx, error) {
-        $('#messages > div').append('<div class="error">' + error + '</div>');
-      });
+      dumpErrors(response);
       totalerrors += response.errors;
       if (totalerrors>0) {
         $('#errors-notice span').html(totalerrors);
@@ -66,7 +95,12 @@ uploadChunk = function() {
 };
 
 jQuery('#progress-bar').progressbar ({value: 0});
-uploadChunk();
+if (requiresFetch) {
+  fetchFileChunk();
+} else {
+  uploadChunk();
+}
+
 });
 // ]]>
 </script>
