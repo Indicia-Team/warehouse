@@ -66,7 +66,10 @@ class postgreSQL {
     return $db->query("select case when o.verified_on>'2012-06-19' and o.record_status not in ('I','T','C') then 'V' else 'C' end as source_type,
     co.id, co.created_by_id, co.taxon, co.date_start, co.date_end, co.date_type, co.public_entered_sref, u.username, 
     coalesce(
-      oc.comment,
+      case oc.auto_generated 
+        when true then 'This record was identified by the automated checking system as requiring expert confirmation. The following reason was given. <br/>' 
+        else '' 
+      end || oc.comment,
       'The record was ' || case o.record_status when 'V' then 'verified' when 'R' then 'rejected' when 'D' then 'marked dubious' when 'S' then 'emailed for checking' end
     ) as comment, 
     oc.auto_generated, o.record_status, o.updated_on
