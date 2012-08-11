@@ -41,7 +41,7 @@ function data_cleaner_period_data_cleaner_rules() {
             "left join verification_rule_metadata vrmstart on vrmstart.verification_rule_id=vr.id and vrmstart.key='StartDate' ".
             "left join verification_rule_metadata vrmend on vrmend.verification_rule_id=vr.id and vrmend.key='EndDate' ",
         'where' =>
-            "((vrmstart is null or vrmend.value is null or vrmstart.value <= vrmend.value) ".
+            "vr.reverse_rule<>((vrmstart is null or vrmend.value is null or vrmstart.value <= vrmend.value) ".
             "and ((vrmstart.value is not null and co.date_start < cast(vrmstart.value as date)) ".
             "or (vrmend.value is not null and co.date_start > cast(vrmend.value as date))))"
       )
