@@ -50,7 +50,7 @@ class Verification_rule_Model extends ORM {
     $array->add_rules('test_type', 'required');
     $array->add_rules('error_message', 'required');
     // sourcr_url is not validated as a url because the NBN zip file paths don't validate but must be accepted.
-    $this->unvalidatedFields = array('description', 'source_filename', 'deleted', 'source_url');
+    $this->unvalidatedFields = array('description', 'source_filename', 'deleted', 'source_url', 'reverse_rule');
     return parent::validate($array, $save);
   }
 
@@ -94,15 +94,17 @@ class Verification_rule_Model extends ORM {
       $errorMsg = $metadata['errormsg'];
     else
       $errorMsg = 'Test failed';
+    $reverseRule = isset($metadata['reverserule']) && $metadata['reverserule']==='true' ? 't' : 'f';
+    
     $submission = array(
       'verification_rule:title'=>$title,
       'verification_rule:test_type'=>$metadata['testtype'],
-      'verification_rule:source_url'=>'SOURCE!', //$source_url,
+      'verification_rule:source_url'=>$source_url,
       'verification_rule:source_filename'=>$filename,
       'verification_rule:error_message'=>$errorMsg,
       // The error message gives us a useful description in the absence of a specific one
-      'verification_rule:description'=>isset($metadata['description']) ?
-          $metadata['description'] : $errorMsg
+      'verification_rule:description'=>isset($metadata['description']) ? $metadata['description'] : $errorMsg,
+      'verification_rule:reverse_rule'=>$reverseRule
     );
     $this->isNewRule = $this->id===0;
     if (!$this->isNewRule)
@@ -120,6 +122,7 @@ class Verification_rule_Model extends ORM {
     unset($metadata['errormsg']);
     unset($metadata['group']);
     unset($metadata['lastchanged']);
+    unset($metadata['reverserule']);
     if (count($this->getAllErrors())>0)
       throw new exception("Errors saving $filename to database - ".print_r($this->getAllErrors(), true));
   }
@@ -179,6 +182,8 @@ class Verification_rule_Model extends ORM {
     // at the moment but we are likely to need this e.g. for periodInYear checks with multiple stages.
     $dataGroup=1;
     $rows = array();
+    // unset geom, as we auto-calculate it for withoutPolygons, not really part of the rule definition
+    unset($data['geom']);
     // A quick test to ensure we don't have sections in the data we shouldn't.
     $got = array_keys(array_change_key_case($data));
     $expect = array_keys(array_change_key_case($fields));
