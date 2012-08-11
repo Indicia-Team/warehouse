@@ -55,7 +55,7 @@ function data_cleaner_get_occurrence_list($db) {
   and (ttl.id <> o.last_verification_check_taxa_taxon_list_id
   or o.updated_on>o.last_verification_check_date
   or s.updated_on>o.last_verification_check_date
-  or o.last_verification_check_date is null)';
+  or o.last_verification_check_date is null) limit 200';
   $db->query($query);
   $r = $db->query('select count(*) as count from occlist')->result_array(false);
   echo "Data cleaning ".$r[0]['count']." record(s).<br/>";
