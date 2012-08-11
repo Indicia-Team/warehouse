@@ -74,6 +74,13 @@ echo data_entry_helper::text_input(array(
   'validation'=>array('required'),
   'default'=> html::initial_value($values, 'verification_rule:error_message')
 ));
+echo data_entry_helper::checkbox(array(
+  'label'=>'Reverse Rule',
+  'fieldname'=>'metaFields:reverse_rule',
+  'default'=>html::initial_value($values, 'verification_rule:reverse_rule'),
+  'helpText'=>'Tick this box to reverse the rule logic - i.e. items that pass the test are flagged as failures.'
+));
+
 echo data_entry_helper::textarea(array(
   'label'=>'Metadata',
   'fieldname'=>'metaFields:metadata',
