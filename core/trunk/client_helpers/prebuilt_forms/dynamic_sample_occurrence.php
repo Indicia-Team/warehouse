@@ -124,6 +124,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
                 "&nbsp;&nbsp;<strong>[recorder names]</strong><br/>".
                 "&nbsp;&nbsp;<strong>[record status]</strong><br/>".
                 "&nbsp;&nbsp;<strong>[sample comment]</strong>. <br/>".
+                "&nbsp;&nbsp;<strong>[sample photo]</strong>. <br/>".
             "<strong>@option=value</strong> on the line(s) following any control allows you to override one of the options passed to the control. The options ".
             "available depend on the control. For example @label=Abundance would set the untranslated label of a control to Abundance. Where the ".
             "option value is an array, use valid JSON to encode the value. For example an array of strings could be passed as @occAttrClasses=[\"class1\",\"class2\"] ".
@@ -904,6 +905,16 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     return data_entry_helper::textarea(array_merge(array(
       'fieldname'=>'sample:comment',
       'label'=>lang::get('Overall Comment')
+    ), $options)); 
+  }
+  
+  /**
+   * Get the sample photo control
+   */
+  protected static function get_control_samplephoto($auth, $args, $tabalias, $options) {
+    return data_entry_helper::file_box(array_merge(array(
+      'table'=>'sample_image',
+      'caption'=>lang::get('Overall Photo')
     ), $options)); 
   }
   
