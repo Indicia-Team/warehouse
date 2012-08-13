@@ -4334,8 +4334,12 @@ if (errors.length>0) {
     $occurrences = data_entry_helper::wrap_species_checklist($values, $include_if_any_data,
         $zero_attrs, $zero_values);
 
-    // Add the occurrences in as subModels
-    $sampleMod['subModels'] = $occurrences;
+    // Add the occurrences in as subModels without overwriting others such as a sample image
+    if (array_key_exists('subModels', $sampleMod)) {
+      $sampleMod['subModels'] = array_merge($sampleMod['subModels'], $occurrences);
+    } else {
+      $sampleMod['subModels'] = $occurrences;
+    }
 
     return $sampleMod;
   }
