@@ -2,7 +2,9 @@
 
 <report title="MNHNL Amphibian Sites Download Report" description="Lists all sites. Normally invoked from Reports tab on the form.">
   <params>
-    <param name='location_type_id' display='Survey: ' description='Select the location_type_id to return data for:' datatype='int' />
+    <param name='location_type_id' display='Location type' description='Select the location_type_id to return data for:' datatype='int' />
+    <param name='survey_id' display='Survey' description='Select the survey to return data for (needed for the attributes):' datatype='lookup'
+        query='SELECT id, title as caption FROM surveys' />
   </params>
   <table tablename="locations" where="#this#.deleted = FALSE
       and #this#.location_type_id = #location_type_id#" >

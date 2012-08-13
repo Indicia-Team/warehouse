@@ -154,5 +154,12 @@ div.olControlEditingToolbar  {
 }
 #species-grid-container{
  overflow-y: scroll; 
- height: 450px;
+ max-height: 450px;
+}
+#species-grid {
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+#species-grid-head {
+  margin-bottom: 0px;
 }

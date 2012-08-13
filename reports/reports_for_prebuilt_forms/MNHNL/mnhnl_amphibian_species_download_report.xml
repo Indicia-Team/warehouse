@@ -66,6 +66,6 @@
     </subTable>
   </table>
   <order_bys>
-    <order_by>lt0_id ASC, lt5_id ASC</order_by>
+    <order_by>lt0_id ASC, lt4_id ASC</order_by>
   </order_bys>
 </report>

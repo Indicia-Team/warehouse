@@ -4,6 +4,8 @@
   <params>
     <param name='survey_id' display='Survey: ' description='Select the survey to return data for:' datatype='lookup'
         query='SELECT id, title as caption FROM surveys' />
+    <param name='taxon_list_id' display='Taxon_list_id: ' description='Select the taxon_list to look up taxa in:' datatype='lookup'
+        query='SELECT id, title as caption FROM taxon_lists' />
     <param name='target_species_attr' display='Target Species Attribute ID : ' description='Enter the attribute ID for the target species attribute:' datatype='int' />
     <param name='target_species_termlist' display='Target Species Termlist ID : ' description='Enter the ID for the target species termlist:' datatype='int' />
     <param name='target_species_attr_list' display='Target Species Attribute List : ' description='Enter a comma separated List of attribute ID used in the target species grid:' datatype='text' />
@@ -78,7 +80,7 @@ END)" />
       <tabColumn name='id' visible='true' display='Occurrence ID' />
       <tabColumn name='comment' display='Occurrence comment' />
       <subTable tablename='taxa_taxon_lists' join="LEFT OUTER" >
-        <subTable tablename='taxa_taxon_lists' parentKey="taxon_meaning_id" tableKey="taxon_meaning_id" where="#this#.preferred = TRUE" join="LEFT OUTER" >
+        <subTable tablename='taxa_taxon_lists' parentKey="taxon_meaning_id" tableKey="taxon_meaning_id" where="#this#.preferred = TRUE AND #this#.taxon_list_id = #taxon_list_id#" join="LEFT OUTER" >
           <subTable tablename='taxa' join="LEFT OUTER" >
             <tabColumn name='taxon' display='Species'/>
           </subTable>

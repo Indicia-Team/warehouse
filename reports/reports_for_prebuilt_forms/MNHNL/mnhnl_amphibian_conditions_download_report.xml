@@ -43,7 +43,7 @@
       <tabColumn name='name' display='Site'/>
       <tabColumn name='xy' display='XY' func="(regexp_replace(#this#.centroid_sref, ',|\\.[0-9]*' , '','g'))" />
       <tabColumn name='comment' display='Site comment'/>
-      <attributes separator='|' meaningIdLanguage='peferred'/>
+      <attributes separator='|' meaningIdLanguage='preferred'/>
       <subTable tablename="locations" parentKey="parent_id" where="#this#.deleted = FALSE" join="LEFT OUTER" >
         <tabColumn name='name' display='Square'/>
       </subTable>

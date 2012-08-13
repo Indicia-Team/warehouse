@@ -470,7 +470,7 @@ jQuery("#fieldset-'.$options['boltTo'].'").find("legend").after("'.$retVal.'");'
     $ret = '<p>'.lang::get("LANG_SpeciesGridInstructions").'</p><table id="sgCloneableTable" style="display:none">';
     $cloneprefix='SG:--sgrownum--:--cgrownum--:--sampleid--:--ttlid--:--occid--:';
     $ret .= "<tr class=\"sgCloneableRow\">
-<td class=\"ui-state-default remove-sgnewrow\" style=\"width: 1%\">X</td><td class=\"sggrid-namecell\"></td>";
+<td class=\"ui-state-default remove-sgnewrow\" >X</td><td class=\"sggrid-namecell\"></td>";
     // ordering is the order they are initially created.
     // need to get a sorted list of occurrence IDs; then generate a list of ttls in order set by occurrences.
     $fullOccList = array();
@@ -565,7 +565,7 @@ jQuery("#fieldset-'.$options['boltTo'].'").find("legend").after("'.$retVal.'");'
       data_entry_helper::$javascript .= "
 jQuery('#species-grid').find('tr:eq(".($taxonRow-1).")').data('taxonRow', ".$taxonRow.").data('ttlid', ".$ttlid.").data('meaning_id', ".$taxon[0]['taxon_meaning_id'].");";
       $ret .= '
-<tr class="sgOrigRow"><td class="ui-state-default clear-sgrow" style="width: 1%">X</td><td class="sggrid-namecell">'.$name.'</td>';
+<tr class="sgOrigRow"><td class="ui-state-default clear-sgrow" >X</td><td class="sggrid-namecell">'.$name.'</td>';
       foreach($subsamples as $key => $entity){
         $template = '<td class="smp---cgrownum--" '.(isset($entity['date']) ? '' : 'style="opacity: 0.25"').'><input class="digits narrow" name="'.$cloneprefix.'occAttr:'.$countAttr.'--attrid--" '.(isset($entity['date']) ? '' : 'disabled="disabled"').' value="--value--" min="1"></td>';
         if(isset($entity['occurrences'][$ttlid])){
@@ -580,7 +580,7 @@ jQuery('#species-grid').find('tr:eq(".($taxonRow-1).")').data('taxonRow', ".$tax
       }
       $ret .= '</tr>';
     }
-    $ret .= '<tr class="sgNoObRow" ><td colspan=2>'.lang::get('No observation').'</td>';
+    $ret .= '<tr class="sgNoObRow" ><td></td><td>'.lang::get('No observation').'</td>';
     if (isset($subsamples))
       foreach($subsamples as $key => $entity){
       // pretend that the no observations are actually part of the conditions grid.
@@ -619,12 +619,34 @@ $.validator.addMethod('no_observation', function(value, element, params){
 }, \"".lang::get('validation_no_observation')."\");
 ";
   data_entry_helper::$javascript .= "
-reset-species-grid-header = function(){
+resetSpeciesGridHeader = function(){
+  // easiest way to get a scrollable table body
+  $('#species-grid').find('th,td').each(function(){ $(this).css('width', ''); });
+  jQuery('#species-grid > thead').show();
+  var headerWidths = new Array(); // treat separately as may have different CSS
+  var columnWidths = new Array();
+  $('#species-grid > thead').find('th').each(function (index) {
+    headerWidths[index] = $(this).width();
+  });
+  $('#species-grid > tbody').find('tr:eq(0)').find('td').each(function (index) {
+    columnWidths[index] = $(this).width();
+  });
+  $('#species-grid th').each(function(index){
+      $(this).css('width', headerWidths[index]);
+  });
+  $('#species-grid tr').each(function(){
+    $(this).find('td').each(function(index){
+      $(this).css('width', columnWidths[index]);
+    });
+  });
+  jQuery('#species-grid-head-head').empty().append(jQuery('#species-grid > thead').find('tr').clone());
+  jQuery('#species-grid > thead').hide();
+
   // easiest way to get a scrollable table body
   $('#species-grid td').each(function(){ $(this).css('width', ''); });
   jQuery('#species-grid > thead').show();
   var columnWidths = new Array();
-  $('#species-grid > thead').find('td').each(function (index) {columnWidths[index] = $(this).width();});
+  $('#species-grid > thead').find('th').each(function (index) {columnWidths[index] = $(this).width();});
   $('#species-grid tr').each(function(){
     $(this).find('td').each(function(index){
       $(this).css('width', columnWidths[index]);
@@ -633,7 +655,7 @@ reset-species-grid-header = function(){
   jQuery('#species-grid-head-head').empty().html(jQuery('#species-grid > thead').find('tr').html());
   jQuery('#species-grid > thead').hide();
 }
-reset-species-grid-header();
+resetSpeciesGridHeader();
 sgRowIndex = ".$taxonRow.";
 jQuery('#speciesgrid_taxa_taxon_list_id').change(function(){
   jQuery.getJSON(\"".data_entry_helper::$base_url."/index.php/services/data/taxa_taxon_list/\" +jQuery('#speciesgrid_taxa_taxon_list_id').val()+
@@ -673,7 +695,7 @@ jQuery('#speciesgrid_taxa_taxon_list_id').change(function(){
               jQuery('#species-grid').find('tr').each(function(i, row){
                 if(ldata[0].taxon_meaning_id == jQuery(row).data('meaning_id'))
                   jQuery(row).find('.sggrid-namecell').empty().append(name);});
-              reset-species-grid-header();
+              resetSpeciesGridHeader();
             }});
         }});
 });
@@ -688,13 +710,13 @@ jQuery('.remove-sgnewrow').live('click', function() {
   var thisRow=jQuery(this).closest('tr');
   if(!confirm(\"".lang::get('LANG_speciesgrid:removeconfirm')."\")) return;
   thisRow.remove();
-  reset-species-grid-header();
+  resetSpeciesGridHeader();
 });
 jQuery(jQuery('#species').parent()).bind('tabsshow', function(e, ui){
   if (ui.panel.id=='species') {
-    reset-species-grid-header();
+    resetSpeciesGridHeader();
   }
-}";
+})";
     return $ret;
   }
   
