@@ -422,8 +422,9 @@ class report_helper extends helper_base {
         }
         // first decode any json data
         foreach ($options['columns'] as $field) {
-          if (isset($field['json']) && $field['json'] && isset($row[$field['fieldname']]))
-            $row = array_merge($row, json_decode($row[$field['fieldname']], true));
+          if (isset($field['json']) && $field['json'] && isset($row[$field['fieldname']])) {
+            $row = array_merge(json_decode($row[$field['fieldname']], true), $row);
+          }
         }
         foreach ($options['columns'] as $field) {
           $classes=array();
@@ -1753,7 +1754,7 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     if (function_exists('hostsite_get_user_field')) {
       // If the host environment (e.g. Drupal module) can tell us which Indicia user is logged in, pass that
       // to the report call as it might be required for filters.
-      if ($indiciaUserId = hostsite_get_user_field('indicia_user_id'))
+      if (!isset($options['extraParams']['user_id']) && $indiciaUserId = hostsite_get_user_field('indicia_user_id'))
         $options['extraParams']['user_id'] = $indiciaUserId;
     }
     return $options;
