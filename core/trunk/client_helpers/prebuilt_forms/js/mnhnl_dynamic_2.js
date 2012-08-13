@@ -166,7 +166,7 @@ function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth
       row.find('.scUnits').width('auto');
       row.find('input,select').bind('focus', handleFocus);
     }); 
-    newRows[0].find('.scPresenceCell input').attr('name', 'sc:' + data.id + '::present').val('true');
+    newRows[0].find('.scPresenceCell input').attr('name', 'sc:'+scRow+'::' + data.id + '::present').val('true');
     newRows[0].data('feature',null);
     // Allow forms to hook into the event of a new row being added
     if (typeof hook_species_grid_changed !== "undefined") {

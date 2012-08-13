@@ -223,7 +223,7 @@ class iform_mnhnl_dynamic_2 extends iform_mnhnl_dynamic_1 {
       $targetSpeciesAttr=iform_mnhnl_getAttr(parent::$auth, $args, 'sample', $args['targetSpeciesAttr']);
       if(!$targetSpeciesAttr) return lang::get('This form must be used with a survey that has the '.$args['targetSpeciesAttr'].' sample attribute associated with it.');
       data_entry_helper::$javascript .= "
-jQuery('[name=params]').val('{\"survey_id\":".$args['survey_id'].", \"location_type_id\":".$primary.", \"taxon_list_id\":".$args['extra_list_id'].", \"target_species_attr\":".$targetSpeciesAttr['attributeId'].", \"target_species_termlist\":".$targetSpeciesAttr['termlist_id'].(isset($args['targetSpeciesAttrList']) ? ", \"target_species_attr_list\":\"".$args['targetSpeciesAttrList']."\"":"")."}');
+jQuery('[name=params]').val('{\"survey_id\":".$args['survey_id'].", \"location_type_id\":".$primary.", \"target_species_attr\":".$targetSpeciesAttr['attributeId'].", \"target_species_termlist\":".$targetSpeciesAttr['termlist_id'].(isset($args['targetSpeciesAttrList']) ? ", \"target_species_attr_list\":\"".$args['targetSpeciesAttrList']."\"":"")."}');
 ";
     };
     return $r.($args['sites_download_report']!=''?'
@@ -803,7 +803,6 @@ hook_species_checklist_pre_delete_row=function(e) {
     // NB this does not cope with multivalues.
     if ($ctrlArr[4]!="") {
       $search = preg_grep("/^sc:".'[0-9]*'.":$ctrlArr[2]:$ctrlArr[3]:$ctrlArr[4]:$ctrlArr[5]".'[:[0-9]*]?$/', array_keys(data_entry_helper::$entity_to_load));
-      var_dump($search);
       if(count($search)===1){
         $oldCtrlName = implode('', $search);
         $ctrlName = explode(':',$oldCtrlName);
@@ -1417,7 +1416,7 @@ jQuery(jQuery('#".$mapOptions['tabDiv']."').parent()).bind('tabsshow', ".$mapOpt
       // Don't explode the last element for attributes
       $a = explode(':', $key, 6);
       // sc:--GroupID--:--SampleID--:--TTLID--:--OccurrenceID--
-      if ($a[0]=='sc'){
+      if ($a[0]=='sc' && $a[1]!='' && $a[1]!='--GroupID--'){
         $b = explode(':', $a[5]);
         if($a[1]){ // key on the Group ID
           $occurrences[$a[1]]['taxa_taxon_list_id'] = $a[3];
