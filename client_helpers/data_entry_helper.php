@@ -1207,6 +1207,10 @@ class data_entry_helper extends helper_base {
   * rather than use a locally stored (cached) copy of the previous request. This speeds things up
   * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
   * if this is not specified then 1 hour.</li>
+  * <li><b>searchUpdatesSref</b>
+  * Optional. If true, then when a location is selected, the location's centroid spatial 
+  * reference is loaded into the spatial_ref control on the form if any exists. Defaults to false.
+  * </li>
   * </ul>
   *
   * @return string HTML to insert into the page for the location select control.
@@ -1222,8 +1226,11 @@ class data_entry_helper extends helper_base {
         'fieldname'=>'sample:location_id',
         'valueField'=>'id',
         'captionField'=>'name',
-        'id'=>'imp-location'
+        'id'=>'imp-location',
+        'searchUpdatesSref'=>false
         ), $options);
+    if ($options['searchUpdatesSref'])
+      self::$javascript .= "indiciaData.searchUpdatesSref=true;\n";
     return self::select($options);
   }
 
