@@ -1856,6 +1856,60 @@ class data_entry_helper extends helper_base {
   }
   
   /**
+  * Outputs hidden controls for entered_sref and sref_system. This is intended for use when
+  * sample positions are to be selected from predefined locations and they are automatically 
+  * populated when a location shown on a map_panel is clicked or a selection is made in a location control. 
+  * Use in conjunction with a map_panel with, e.g.
+  *   clickForSpatialRef=false
+  *   locationLayerName=indicia:detail_locations
+  *   locationLayerFilter=website_id=n
+  * and a location_select with e.g.
+  *   searchUpdatesSref=true
+  *   validation="required"
+  *   blankText="Select..." 
+  *   
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldame</b><br/>
+  * Required. The name of the database field the sref control is bound to. Defaults to sample:entered_sref.
+  * The system field and geom field is automatically constructed from this.</li>
+  * <li><b>default</b><br/>
+  * Optional. The default spatial reference to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * <li><b>defaultSys</b><br/>
+  * Optional. The default spatial reference system to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * </ul>  
+  * @return string HTML to insert into the page for the location sref control.
+  */
+  public static function sref_hidden($options) {
+
+    $options = array_merge(array(
+      'id' => 'imp-sref',
+      'fieldname' => 'sample:entered_sref',
+      'default' => self::check_default_value($options['fieldname']),
+    ), $options);
+    
+    // remove validation as field will be hidden
+    if (array_key_exists($options['fieldname'], self::$default_validation_rules)) {
+      unset(self::$default_validation_rules[$options['fieldname']]);
+    }
+    if (array_key_exists('validation', $options)) {
+      unset($options['validation']);
+    }
+       
+    $r = self::hidden_text($options);
+    
+    $sysOptions['id'] = $options['id'] . '-system';
+    $sysOptions['fieldname'] = $options['fieldname'] . '_system';
+    if (!isset($options['defaultSys']))
+      $sysOptions['default']=self::check_default_value($options['sysFieldname']);
+
+    $r .= self::hidden_text($sysOptions);
+        
+    return $r;    
+  }
+
+  /**
    * A version of the autocomplete control preconfigured for species lookups.
    * @param type $options Array of configuration options with the following possible entries.
    * <ul>
