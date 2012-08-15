@@ -641,19 +641,6 @@ resetSpeciesGridHeader = function(){
   });
   jQuery('#species-grid-head-head').empty().append(jQuery('#species-grid > thead').find('tr').clone());
   jQuery('#species-grid > thead').hide();
-
-  // easiest way to get a scrollable table body
-  $('#species-grid td').each(function(){ $(this).css('width', ''); });
-  jQuery('#species-grid > thead').show();
-  var columnWidths = new Array();
-  $('#species-grid > thead').find('th').each(function (index) {columnWidths[index] = $(this).width();});
-  $('#species-grid tr').each(function(){
-    $(this).find('td').each(function(index){
-      $(this).css('width', columnWidths[index]);
-    });
-  });
-  jQuery('#species-grid-head-head').empty().html(jQuery('#species-grid > thead').find('tr').html());
-  jQuery('#species-grid > thead').hide();
 }
 resetSpeciesGridHeader();
 sgRowIndex = ".$taxonRow.";
