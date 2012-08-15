@@ -1382,7 +1382,7 @@ mapGeoreferenceHooks = [];
 
           onResponse: function(response) {
             if (response.features.length>0) {
-              $('#imp-location').val(response.features[0].data.id);
+              $('#imp-location').val(response.features[0].data.id).change();
               $('#imp-location\\:name').val(response.features[0].data.name);
             }
           }
