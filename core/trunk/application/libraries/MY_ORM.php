@@ -785,7 +785,13 @@ class ORM extends ORM_Core {
         // Set the correct parent key in the subModel
         $fkId = $a['fkId'];
         $a['model']['fields'][$fkId]['value'] = $this->id;
-
+        // copy any request fields
+        if(isset($a['copyFields'])){
+          foreach($a['copyFields'] as $from => $to){
+            Kohana::log("debug", "Setting ".$to." field (from parent record ".$from." field) to value ".$this->$from);
+            $a['model']['fields'][$to]['value'] = $this->$from;
+          }
+        }
         // Call the submit method for that model and
         // check whether it returns correctly
         $m->submission = $a['model'];
