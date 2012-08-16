@@ -97,12 +97,12 @@ class data_cleaner {
         if (!empty($currentSectionData))
           $r[$currentSection]=$currentSectionData;
         // reset for the next section
-        $currentSection = strtolower($matches['section']);
+        $currentSection = trim(strtolower($matches['section']));
         $currentSectionData=array();
       } elseif (preg_match('/^([^=\r\n]+)=([^\r\n]*)$/', $line, $matches)) 
-        $currentSectionData[strtolower($matches[1])]=$matches[2];
+        $currentSectionData[trim(strtolower($matches[1]))]=trim($matches[2]);
       elseif (preg_match('/^(?P<key>.+)$/', $line, $matches)) 
-        $currentSectionData[strtolower($matches['key'])]='-';
+        $currentSectionData[trim(strtolower($matches['key']))]='-';
     }
     // set the final section content
     if (!empty($currentSectionData))
