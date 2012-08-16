@@ -293,12 +293,12 @@ class iform_dynamic {
         $html .= $hiddens;
       // Now output the content of the tab. Use a for loop, not each, so we can treat several rows as one object
       for ($i = 0; $i < count($tabContent); $i++) {
-        $component = $tabContent[$i];
-        if (preg_match('/\A\?[^�]*\?\z/', trim($component))===1) {
+        $component = trim($tabContent[$i]);
+        if (preg_match('/\A\?[^�]*\?\z/', $component) === 1) {          
           // Component surrounded by ? so represents a help text
-          $helpText = substr(trim($component), 1, -1);
+          $helpText = substr($component, 1, -1);
           $html .= '<div class="page-notice ui-state-highlight ui-corner-all">'.lang::get($helpText)."</div>";
-        } elseif (preg_match('/\A\[[^�]*\]\z/', trim($component))===1) {
+        } elseif (preg_match('/\A\[[^�]*\]\z/', $component) === 1) {
           // Component surrounded by [] so represents a control or control block
           $method = 'get_control_'.preg_replace('/[^a-zA-Z0-9]/', '', strtolower($component));
           // Anything following the component that starts with @ is an option to pass to the control
@@ -326,7 +326,7 @@ class iform_dynamic {
             $html .= data_entry_helper::outputAttribute($attributes[$attribKey], $options);
             $attributes[$attribKey]['handled'] = true;
             $hasControls = true;
-          } elseif (trim($component)==='[*]'){
+          } elseif ($component === '[*]'){
             // this outputs any custom attributes that remain for this tab. The custom attributes can be configured in the 
             // settings text using something like @smpAttr:4|label=My label. The next bit of code parses these out into an 
             // array used when building the html.
@@ -347,7 +347,7 @@ class iform_dynamic {
             //ensure $hasControls is true so that the error message is shown
             $hasControls = true;
           }      
-        } elseif (trim($component)==='|') {
+        } elseif ($component === '|') {
           // a splitter in the structure so put the stuff so far in a 50% width left float div, and the stuff that follows in a 50% width right float div.
           $html = '<div class="two columns"><div class="column">'.$html.'</div><div class="column">';
           // need to close the div
