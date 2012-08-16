@@ -566,10 +566,12 @@ class ORM extends ORM_Core {
       $return = $this->validateAndSubmit();
       $return = $this->checkRequiredAttributes() ? $return : null;
       if ($this->id) {
-        // Make sure we got a record to save against before attempting to post children
+        // Make sure we got a record to save against before attempting to post children. Post attributes first
+        // before child records because the parent (e.g. Sample) attribute values sometimes affect the cached data 
+        // (e.g. the recorders stored in cache_occurrences)
+        $return = $this->createAttributes() ? $return : null;
         $return = $this->createChildRecords() ? $return : null;
         $return = $this->createJoinRecords() ? $return : null;
-        $return = $this->createAttributes() ? $return : null;
       }
       // Call postSubmit
       if ($return) {
