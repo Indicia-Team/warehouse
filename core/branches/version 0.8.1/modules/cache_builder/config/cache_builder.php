@@ -326,7 +326,8 @@ $config['taxon_searchterms']['update']['standard terms'] = "update cache_taxon_s
       end,
       simplified=false, 
       code_type_id=null,
-      source_id=null
+      source_id=null,
+      preferred=cttl.preferred
     from cache_taxa_taxon_lists cttl
     join needs_update_taxon_searchterms nuts on nuts.id=cttl.id
     where cts.taxa_taxon_list_id=cttl.id and cts.name_type in ('L','S','V') and cts.simplified=false";
@@ -349,7 +350,8 @@ $config['taxon_searchterms']['update']['abbreviations'] = "update cache_taxon_se
       name_type='A',
       simplified=null, 
       code_type_id=null,
-      source_id=null
+      source_id=null,
+      preferred=cttl.preferred
     from cache_taxa_taxon_lists cttl
     join needs_update_taxon_searchterms nuts on nuts.id=cttl.id
     where cts.taxa_taxon_list_id=cttl.id and cts.name_type='A' and cttl.language_iso='lat'";
@@ -373,7 +375,8 @@ $config['taxon_searchterms']['update']['simplified terms'] = "update cache_taxon
       end,
       simplified=true,
       code_type_id=null,
-      source_id=null
+      source_id=null,
+      preferred=cttl.preferred
     from cache_taxa_taxon_lists cttl
     join needs_update_taxon_searchterms nuts on nuts.id=cttl.id
     where cts.taxa_taxon_list_id=cttl.id and cts.name_type in ('L','S','V') and cts.simplified=true";
@@ -393,7 +396,8 @@ $config['taxon_searchterms']['update']['codes'] = "update cache_taxon_searchterm
       name_type='C',
       simplified=null,
       code_type_id=tc.code_type_id,
-      source_id=tc.id
+      source_id=tc.id,
+      preferred=cttl.preferred
     from cache_taxa_taxon_lists cttl
     join needs_update_taxon_searchterms nuts on nuts.id=cttl.id
     join taxon_codes tc on tc.taxon_meaning_id=cttl.taxon_meaning_id 
@@ -405,7 +409,7 @@ $config['taxon_searchterms']['update']['codes'] = "update cache_taxon_searchterm
 $config['taxon_searchterms']['insert']['standard terms']="insert into cache_taxon_searchterms (
       taxa_taxon_list_id, taxon_list_id, searchterm, original, taxon_group_id, taxon_group, taxon_meaning_id, preferred_taxon,
       default_common_name, preferred_authority, language_iso,
-      name_type, simplified, code_type_id
+      name_type, simplified, code_type_id, preferred
     )
     select distinct on (cttl.id) cttl.id, cttl.taxon_list_id, cttl.taxon, cttl.taxon, cttl.taxon_group_id, cttl.taxon_group, cttl.taxon_meaning_id, cttl.preferred_taxon,
       cttl.default_common_name, cttl.authority, cttl.language_iso, 
@@ -413,7 +417,7 @@ $config['taxon_searchterms']['insert']['standard terms']="insert into cache_taxo
         when cttl.language_iso='lat' and cttl.id=cttl.preferred_taxa_taxon_list_id then 'L' 
         when cttl.language_iso='lat' and cttl.id<>cttl.preferred_taxa_taxon_list_id then 'S' 
         else 'V'
-      end, false, null
+      end, false, null, cttl.preferred
     from cache_taxa_taxon_lists cttl
     left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type in ('L','S','V') and cts.simplified='f'
     #insert_join_needs_update#
@@ -422,11 +426,11 @@ $config['taxon_searchterms']['insert']['standard terms']="insert into cache_taxo
 $config['taxon_searchterms']['insert']['abbreviations']="insert into cache_taxon_searchterms (
       taxa_taxon_list_id, taxon_list_id, searchterm, original, taxon_group_id, taxon_group, taxon_meaning_id, preferred_taxon,
       default_common_name, preferred_authority, language_iso,
-      name_type, simplified, code_type_id
+      name_type, simplified, code_type_id, preferred
     )
     select distinct on (cttl.id) cttl.id, cttl.taxon_list_id, taxon_abbreviation(cttl.taxon), cttl.taxon, cttl.taxon_group_id, cttl.taxon_group, cttl.taxon_meaning_id, cttl.preferred_taxon,
       cttl.default_common_name, cttl.authority, cttl.language_iso, 
-      'A', null, null
+      'A', null, null, cttl.preferred
     from cache_taxa_taxon_lists cttl
     left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type='A'
     #insert_join_needs_update#
@@ -435,7 +439,7 @@ $config['taxon_searchterms']['insert']['abbreviations']="insert into cache_taxon
 $config['taxon_searchterms']['insert']['simplified terms']="insert into cache_taxon_searchterms (
       taxa_taxon_list_id, taxon_list_id, searchterm, original, taxon_group_id, taxon_group, taxon_meaning_id, preferred_taxon,
       default_common_name, preferred_authority, language_iso,
-      name_type, simplified, code_type_id
+      name_type, simplified, code_type_id, preferred
     )
     select distinct on (cttl.id) cttl.id, cttl.taxon_list_id, 
       regexp_replace(regexp_replace(regexp_replace(lower(cttl.taxon), E'\\\\(.+\\\\)', '', 'g'), 'ae', 'e', 'g'), E'[^a-z0-9\\\\?\\\\+]', '', 'g'), 
@@ -445,7 +449,7 @@ $config['taxon_searchterms']['insert']['simplified terms']="insert into cache_ta
         when cttl.language_iso='lat' and cttl.id=cttl.preferred_taxa_taxon_list_id then 'L' 
         when cttl.language_iso='lat' and cttl.id<>cttl.preferred_taxa_taxon_list_id then 'S' 
         else 'V'
-      end, true, null
+      end, true, null, cttl.preferred
     from cache_taxa_taxon_lists cttl
     left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type in ('L','S','V') and cts.simplified=true
     #insert_join_needs_update#
@@ -454,10 +458,10 @@ $config['taxon_searchterms']['insert']['simplified terms']="insert into cache_ta
 $config['taxon_searchterms']['insert']['codes']="insert into cache_taxon_searchterms (
       taxa_taxon_list_id, taxon_list_id, searchterm, original, taxon_group_id, taxon_group, taxon_meaning_id, preferred_taxon,
       default_common_name, preferred_authority, language_iso,
-      name_type, simplified, code_type_id, source_id
+      name_type, simplified, code_type_id, source_id, preferred
     )
     select distinct on (tc.id) cttl.id, cttl.taxon_list_id, tc.code, tc.code, cttl.taxon_group_id, cttl.taxon_group, cttl.taxon_meaning_id, cttl.preferred_taxon,
-      cttl.default_common_name, cttl.authority, null, 'C', null, tc.code_type_id, tc.id
+      cttl.default_common_name, cttl.authority, null, 'C', null, tc.code_type_id, tc.id, cttl.preferred
     from cache_taxa_taxon_lists cttl
     join taxon_codes tc on tc.taxon_meaning_id=cttl.taxon_meaning_id and tc.deleted=false
     left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type='C' and cts.source_id=tc.id
@@ -546,9 +550,9 @@ $config['occurrences']['update'] = "update cache_occurrences co
       date_start=s.date_start, 
       date_end=s.date_end, 
       date_type=s.date_type,
-      public_entered_sref=case when o.confidential=true then null else s.entered_sref end,
-      entered_sref_system=s.entered_sref_system,
-      public_geom=case when o.confidential=true then null else s.geom end,
+      public_entered_sref=case when o.confidential=true then null else coalesce(s.entered_sref, l.centroid_sref) end,
+      entered_sref_system=case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end,
+      public_geom=case when o.confidential=true then null else coalesce(s.geom, l.centroid_geom) end,
       sample_method=tmethod.term,
       taxa_taxon_list_id=cttl.id, 
       preferred_taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id, 
@@ -598,9 +602,9 @@ $config['occurrences']['insert']="insert into cache_occurrences (
   select distinct on (o.id) o.id, o.record_status, o.downloaded_flag, o.zero_abundance,
     su.website_id as website_id, su.id as survey_id, s.id as sample_id, su.title as survey_title,
     s.date_start, s.date_end, s.date_type,
-    case when o.confidential=true then null else s.entered_sref end as public_entered_sref,
-    s.entered_sref_system,
-    case when o.confidential=true then null else s.geom end as public_geom,
+    case when o.confidential=true then null else coalesce(s.entered_sref, l.centroid_sref) end as public_entered_sref,
+    case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end as entered_sref_system,
+    case when o.confidential=true then null else coalesce(s.geom, l.centroid_geom) end as public_geom,
     tmethod.term as sample_method,
     cttl.id as taxa_taxon_list_id, cttl.preferred_taxa_taxon_list_id, cttl.taxonomic_sort_order, 
     cttl.taxon, cttl.authority, cttl.preferred_taxon, cttl.preferred_authority, cttl.default_common_name, 
@@ -633,114 +637,155 @@ $config['occurrences']['insert']="insert into cache_occurrences (
   // Additional update statements to pick up the recorder name from various possible custom attribute places. Faster than 
   // loads of left joins.
   $config['occurrences']['final_updates']=array(
-  // warehouse username. No null filter in this one as it is the first update attempt
+    // warehouse username. No null filter in this one as it is the first update attempt
+    'Warehouse username' => 'update cache_occurrences co
+      set recorders=p.surname || coalesce(\', \' || p.first_name, \'\')
+      from needs_update_occurrences nuo, users u, people p
+      where co.recorders is null and u.id=co.created_by_id and p.id=u.person_id and p.deleted=false
+      and nuo.id=co.id;',
+    // surname, firstname
+    'First name/surname' => 'update cache_occurrences co
+      set recorders=sav.text_value || coalesce(\', \' || savf.text_value, \'\')
+      from needs_update_occurrences nuo, sample_attribute_values sav
+      join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'last_name\' and sa.deleted=false
+      left join (sample_attribute_values savf 
+      join sample_attributes saf on saf.id=savf.sample_attribute_id and saf.system_function = \'first_name\' and saf.deleted=false
+      ) on savf.deleted=false
+      where co.recorders is null and savf.sample_id=co.sample_id
+      and sav.sample_id=co.sample_id and sav.deleted=false
+      and nuo.id=co.id;',
+    // full recorder name
+    'Full name' => 'update cache_occurrences co
+      set recorders=sav.text_value
+      from needs_update_occurrences nuo, sample_attribute_values sav
+      join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'full_name\' and sa.deleted=false
+      where co.recorders is null  
+      and sav.sample_id=co.sample_id and sav.deleted=false
+      and nuo.id=co.id;',
+    // firstname and surname in parent sample
+    'Parent first name/surname' => 'update cache_occurrences co
+      set recorders=coalesce(savf.text_value || \' \', \'\') || sav.text_value
+      from needs_update_occurrences nuo, samples s
+      join samples sp on sp.id=s.parent_id and sp.deleted=false
+      join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
+      join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'last_name\' and sa.deleted=false
+      left join (sample_attribute_values savf 
+      join sample_attributes saf on saf.id=savf.sample_attribute_id and saf.system_function = \'first_name\' and saf.deleted=false
+      ) on savf.deleted=false
+      where co.recorders is null and savf.sample_id=sp.id
+      and s.id=co.sample_id and s.deleted=false
+      and nuo.id=co.id;',
+    // full recorder name in parent sample
+    'Parent full name' => 'update cache_occurrences co
+      set recorders=sav.text_value
+      from needs_update_occurrences nuo, samples s
+      join samples sp on sp.id=s.parent_id and sp.deleted=false
+      join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
+      join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'full_name\' and sa.deleted=false
+      where co.recorders is null
+      and s.id=co.sample_id and s.deleted=false
+      and nuo.id=co.id;',
+    // CMS username
+    'CMS Username' => 'update cache_occurrences co
+      set recorders=sav.text_value
+      from needs_update_occurrences nuo, sample_attribute_values sav
+      join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'cms_username\' and sa.deleted=false
+      where co.recorders is null and sav.sample_id=co.sample_id and sav.deleted=false
+      and nuo.id=co.id;',
+    // CMS username in parent sample
+    'Parent CMS Username' => 'update cache_occurrences co
+      set recorders=sav.text_value
+      from needs_update_occurrences nuo, samples s
+      join samples sp on sp.id=s.parent_id and sp.deleted=false
+      join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
+      join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'cms_username\' and sa.deleted=false
+      where co.recorders is null and s.id=co.sample_id and s.deleted=false
+      and nuo.id=co.id;',
+    // warehouse username
     'Warehouse username' => 'update cache_occurrences co
       set recorders=case u.id when 1 then null else u.username end
       from needs_update_occurrences nuo, users u
-      where u.id=co.created_by_id
+      where co.recorders is null and u.id=co.created_by_id
       and nuo.id=co.id;',
     // Sample recorder names
     'Sample recorder names' => 'update cache_occurrences co
-set recorders=s.recorder_names
-from samples s, needs_update_occurrences nuo
-where co.recorders is null and s.id=co.sample_id and s.deleted=false
-and nuo.id=co.id;',
-    // CMS username
-    'CMS Username' => 'update cache_occurrences co
-set recorders=sav.text_value
-from needs_update_occurrences nuo, sample_attribute_values sav
-join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'cms_username\' and sa.deleted=false
-where co.recorders is null and sav.sample_id=co.sample_id and sav.deleted=false
-and nuo.id=co.id;',
-    // CMS username in parent sample
-    'Parent CMS Username' => 'update cache_occurrences co
-set recorders=sav.text_value
-from needs_update_occurrences nuo, samples s
-join samples sp on sp.id=s.parent_id and sp.deleted=false
-join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
-join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'cms_username\' and sa.deleted=false
-where co.recorders is null and s.id=co.sample_id and s.deleted=false
-and nuo.id=co.id;',
-    // firstname and surname
-    'First name/surname' => 'update cache_occurrences co
-set recorders=coalesce(savf.text_value || \' \', \'\') || sav.text_value
-from needs_update_occurrences nuo, sample_attribute_values sav
-join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'last_name\' and sa.deleted=false
-left join (sample_attribute_values savf 
-join sample_attributes saf on saf.id=savf.sample_attribute_id and saf.system_function = \'first_name\' and saf.deleted=false
-) on savf.deleted=false
-where co.recorders is null and savf.sample_id=co.sample_id
-and sav.sample_id=co.sample_id and sav.deleted=false
-and nuo.id=co.id;',
-    // CMS firstname and surname in parent sample
-    'Parent first name/surname' => 'update cache_occurrences co
-set recorders=coalesce(savf.text_value || \' \', \'\') || sav.text_value
-from needs_update_occurrences nuo, samples s
-join samples sp on sp.id=s.parent_id and sp.deleted=false
-join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
-join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'last_name\' and sa.deleted=false
-left join (sample_attribute_values savf 
-join sample_attributes saf on saf.id=savf.sample_attribute_id and saf.system_function = \'first_name\' and saf.deleted=false
-) on savf.deleted=false
-where co.recorders is null and savf.sample_id=sp.id
-and s.id=co.sample_id and s.deleted=false
-and nuo.id=co.id;'
+      set recorders=s.recorder_names
+      from samples s, needs_update_occurrences nuo
+      where co.recorders is null and s.id=co.sample_id and s.deleted=false
+      and nuo.id=co.id;'
   );
   
   // Final statements to pick up after an insert. As soon as one of these succeeds, no more will run.
   $config['occurrences']['final_inserts']=array(
-  // warehouse username. No null filter in this one as it is the first update attempt
-    'Warehouse username' => 'update cache_occurrences co
-      set recorders=u.username
+    // warehouse surname, firstname
+    'Warehouse first name/surname' => 'update cache_occurrences co
+      set recorders=p.surname || coalesce(\', \' || p.first_name, \'\')
       from users u
+      join people p on p.id=u.person_id and p.deleted=false
       where u.id=co.created_by_id and u.id<>1
       and co.id=#id#;',
-    // Sample recorder names
-    'Sample recorder names' => "update cache_occurrences co
-set recorders=s.recorder_names
-from samples s
-where s.id=co.sample_id and s.deleted=false and s.recorder_names is not null and s.recorder_names<>''
-and co.id=#id#;",
+    // surname, firstname
+    'First name/surname' => 'update cache_occurrences co
+      set recorders=sav.text_value || coalesce(\', \' || savf.text_value, \'\')
+      from sample_attribute_values sav 
+      join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'last_name\' and sa.deleted=false
+      left join (sample_attribute_values savf 
+      join sample_attributes saf on saf.id=savf.sample_attribute_id and saf.system_function = \'first_name\' and saf.deleted=false
+      ) on savf.deleted=false
+      where savf.sample_id=co.sample_id
+      and sav.sample_id=co.sample_id and sav.deleted=false
+      and co.id=#id#;',
+    // Full recorder name
+    'full name' => 'update cache_occurrences co
+      set recorders=sav.text_value
+      from sample_attribute_values sav 
+      join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'full_name\' and sa.deleted=false
+      where sav.sample_id=co.sample_id and sav.deleted=false
+      and co.id=#id#;',
+    // surname, firstname in parent sample
+    'Parent first name/surname' => 'update cache_occurrences co
+      set recorders=sav.text_value || coalesce(\', \' || savf.text_value, \'\')
+      from samples s
+      join samples sp on sp.id=s.parent_id and sp.deleted=false
+      join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
+      join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'last_name\' and sa.deleted=false
+      left join (sample_attribute_values savf 
+      join sample_attributes saf on saf.id=savf.sample_attribute_id and saf.system_function = \'first_name\' and saf.deleted=false
+      ) on savf.deleted=false
+      where savf.sample_id=sp.id
+      and s.id=co.sample_id and s.deleted=false
+      and co.id=#id#;',
+    // Full recorder name in parent sample
+    'Parent full name' => 'update cache_occurrences co
+      set recorders=sav.text_value
+      from samples s
+      join samples sp on sp.id=s.parent_id and sp.deleted=false
+      join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
+      join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'full_name\' and sa.deleted=false
+      where s.id=co.sample_id and s.deleted=false
+      and co.id=#id#;',    
     // CMS username
     'CMS Username' => 'update cache_occurrences co
-set recorders=sav.text_value
-from sample_attribute_values sav
-join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'cms_username\' and sa.deleted=false
-where sav.sample_id=co.sample_id and sav.deleted=false
-and co.id=#id#;',
+      set recorders=sav.text_value
+      from sample_attribute_values sav
+      join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'cms_username\' and sa.deleted=false
+      where sav.sample_id=co.sample_id and sav.deleted=false
+      and co.id=#id#;',
     // CMS username in parent sample
     'Parent CMS Username' => 'update cache_occurrences co
-set recorders=sav.text_value
-from samples s
-join samples sp on sp.id=s.parent_id and sp.deleted=false
-join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
-join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'cms_username\' and sa.deleted=false
-where s.id=co.sample_id and s.deleted=false
-and co.id=#id#;',
-    // firstname and surname
-    'First name/surname' => 'update cache_occurrences co
-set recorders=coalesce(savf.text_value || \' \', \'\') || sav.text_value
-from sample_attribute_values sav 
-join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'last_name\' and sa.deleted=false
-left join (sample_attribute_values savf 
-join sample_attributes saf on saf.id=savf.sample_attribute_id and saf.system_function = \'first_name\' and saf.deleted=false
-) on savf.deleted=false
-where savf.sample_id=co.sample_id
-and sav.sample_id=co.sample_id and sav.deleted=false
-and co.id=#id#;',
-    // CMS firstname and surname in parent sample
-    'Parent first name/surname' => 'update cache_occurrences co
-set recorders=coalesce(savf.text_value || \' \', \'\') || sav.text_value
-from samples s
-join samples sp on sp.id=s.parent_id and sp.deleted=false
-join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
-join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'last_name\' and sa.deleted=false
-left join (sample_attribute_values savf 
-join sample_attributes saf on saf.id=savf.sample_attribute_id and saf.system_function = \'first_name\' and saf.deleted=false
-) on savf.deleted=false
-where savf.sample_id=sp.id
-and s.id=co.sample_id and s.deleted=false
-and co.id=#id#;'
+      set recorders=sav.text_value
+      from samples s
+      join samples sp on sp.id=s.parent_id and sp.deleted=false
+      join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
+      join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'cms_username\' and sa.deleted=false
+      where s.id=co.sample_id and s.deleted=false
+      and co.id=#id#;',    
+    // Sample recorder names
+    'Sample recorder names' => "update cache_occurrences co
+      set recorders=s.recorder_names
+      from samples s
+      where s.id=co.sample_id and s.deleted=false and s.recorder_names is not null and s.recorder_names<>''
+      and co.id=#id#;"
   );
 
 ?>
