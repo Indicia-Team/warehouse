@@ -217,7 +217,7 @@ class data_entry_helper extends helper_base {
     $options['sParams'] = substr($sParams, 0, -1);
     $options['extraParams']=null;
     if (!empty($options['duplicateCheckFields'])) {
-      $duplicateCheckFields = 'item.'.implode(" + '#' + data.", $options['duplicateCheckFields']);
+      $duplicateCheckFields = 'item.'.implode(" + '#' + item.", $options['duplicateCheckFields']);
       $options['duplicateCheck']="$.inArray($duplicateCheckFields, done)===-1";
       $options['storeDuplicates']="done.push($duplicateCheckFields);";
     } else {
