@@ -40,10 +40,13 @@ class iform_dynamic {
 
   // The class called by iform.module which may be a subclass of iform_location_dynamic
   protected static $called_class;
-  
+
   // The authorisation tokens for accessing the warehouse
   protected static $auth = array();
-  
+
+  // The form mode. Stored in case other inheriting forms need it.
+  protected static $mode;
+
   // Values that $mode can take
   const MODE_GRID = 0; // default mode when no grid set to false - display grid of existing data
   const MODE_NEW = 1; // default mode when no_grid set to true - display new sample
@@ -176,7 +179,9 @@ class iform_dynamic {
     self::$auth = $auth;
     
     // Determine how the form was requested and therefore what to output
-    $mode = call_user_func(array(self::$called_class, 'getMode'), $args, $node);    
+    $mode = call_user_func(array(self::$called_class, 'getMode'), $args, $node);
+    self::$mode = $mode;
+
     if($mode ==  MODE_GRID) {
       // Output a grid of existing records
       $r = call_user_func(array(self::$called_class, 'getGrid'), $args, $node, $auth);
