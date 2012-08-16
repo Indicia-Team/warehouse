@@ -82,7 +82,7 @@ class iform_mnhnl_bird_transect_walks {
   	// openlayers options needs to be filled in with projection {"projection":"900913"}
     return array_merge(
       iform_map_get_map_parameters(),      
-      iform_user_get_user_parameters(), array(
+      array(
       array(
         'name'=>'survey_id',
         'caption'=>'Survey ID',
@@ -107,121 +107,9 @@ class iform_mnhnl_bird_transect_walks {
 	    'group'=>'Maps'
       ),
       array(
-        'name'=>'sample_walk_direction_id',
-        'caption'=>'Sample Walk Direction Custom Attribute ID',
-        'description'=>'The Indicia ID for the Sample Custom Attribute for the Walk Direction.',
-        'group'=>'Sample Attributes',
-        'type'=>'int'
-      ),
-      array(
-        'name'=>'sample_reliability_id',
-        'caption'=>'Sample Data Reliability Custom Attribute ID',
-        'description'=>'The Indicia ID for the Sample Custom Attribute for the Data Reliability.',
-        'group'=>'Sample Attributes',
-        'type'=>'int'
-      ),
-      array(
-        'name'=>'sample_visit_number_id',
-        'caption'=>'Sample Visit Number Custom Attribute ID',
-        'description'=>'The Indicia ID for the Sample Custom Attribute for the Visit Number.',
-        'group'=>'Sample Attributes',
-        'type'=>'int'
-      ),
-      array(
-        'name'=>'sample_wind_id',
-        'caption'=>'Sample Wind Force Custom Attribute ID',
-        'description'=>'The Indicia ID for the Sample Custom Attribute for the Wind Force.',
-        'group'=>'Sample Attributes',
-        'type'=>'int'
-      ),
-      array(
-        'name'=>'sample_precipitation_id',
-        'caption'=>'Sample Precipitation Custom Attribute ID',
-        'description'=>'The Indicia ID for the Sample Custom Attribute for the Precipitation.',
-        'group'=>'Sample Attributes',
-        'type'=>'int'
-      ),
-      array(
-        'name'=>'sample_temperature_id',
-        'caption'=>'Sample Temperature Custom Attribute ID',
-        'description'=>'The Indicia ID for the Sample Custom Attribute for the Temperature.',
-        'group'=>'Sample Attributes',
-        'type'=>'int'
-      ),
-      array(
-        'name'=>'sample_cloud_id',
-        'caption'=>'Sample Cloud Cover Custom Attribute ID',
-        'description'=>'The Indicia ID for the Sample Custom Attribute for the Cloud Cover.',
-        'group'=>'Sample Attributes',
-        'type'=>'int'
-      ),
-      array(
-        'name'=>'sample_start_time_id',
-        'caption'=>'Sample Start Time Custom Attribute ID',
-        'description'=>'The Indicia ID for the Sample Custom Attribute for the Start Time.',
-        'group'=>'Sample Attributes',
-        'type'=>'int'
-      ),
-      array(
-        'name'=>'sample_end_time_id',
-        'caption'=>'Sample End Time Custom Attribute ID',
-        'description'=>'The Indicia ID for the Sample Custom Attribute for the End Time.',
-        'group'=>'Sample Attributes',
-        'type'=>'int'
-      ),
-      array(
-        'name'=>'sample_closure_id',
-        'caption'=>'Sample Closed Custom Attribute ID',
-        'description'=>'The Indicia ID for the Sample Custom Attribute for Closure: this is used to determine whether the sample is editable.',
-        'group'=>'Sample Attributes',
-        'type'=>'int'
-      ),
-      array(
         'name'=>'list_id',
         'caption'=>'Species List ID',
         'description'=>'The Indicia ID for the species list that species can be selected from.',
-        'type'=>'int'
-      ),
-      array(
-        'name'=>'occurrence_confidence_id',
-        'caption'=>'Occurrence Confidence Custom Attribute ID',
-        'description'=>'The Indicia ID for the Occurrence Custom Attribute for the Data Confidence.',
-        'group'=>'Occurrence Attributes',
-        'type'=>'int'
-      ),
-      array(
-        'name'=>'occurrence_count_id',
-        'caption'=>'Occurrence Count Custom Attribute ID',
-        'description'=>'The Indicia ID for the Occurrence Custom Attribute for the Count of the particular species.',
-        'group'=>'Occurrence Attributes',
-        'type'=>'int'
-      ),
-      array(
-        'name'=>'occurrence_approximation_id',
-        'caption'=>'Occurrence Approximation Custom Attribute ID',
-        'description'=>'The Indicia ID for the Occurrence Custom Attribute for whether the count is approximate.',
-        'group'=>'Occurrence Attributes',
-        'type'=>'int'
-      ),
-      array(
-        'name'=>'occurrence_territorial_id',
-        'caption'=>'Occurrence Territorial Custom Attribute ID',
-        'description'=>'The Indicia ID for the Occurrence Custom Attribute for whether the species is territorial.',
-        'group'=>'Occurrence Attributes',
-        'type'=>'int'
-      ),
-      array(
-        'name'=>'occurrence_atlas_code_id',
-        'caption'=>'Occurrence Atlas Code Custom Attribute ID',
-        'description'=>'The Indicia ID for the Occurrence Custom Attribute for Altas Code.',
-        'group'=>'Occurrence Attributes',
-        'type'=>'int'
-      ),
-      array(
-        'name'=>'occurrence_overflying_id',
-        'caption'=>'Occurrence Overflying Custom Attribute ID',
-        'description'=>'The Indicia ID for the Occurrence Custom Attribute for whether this sighting was flying overhead.',
-        'group'=>'Occurrence Attributes',
         'type'=>'int'
       ),
       array(
@@ -255,6 +143,36 @@ class iform_mnhnl_bird_transect_walks {
     return array('IForm n'.$nid.' admin', 'IForm n'.$nid.' user');
   }
 
+  // Values that $mode can take
+  const MODE_GRID = 0; // default mode : output survey selector
+  const MODE_NEW_SAMPLE = 1; // mode 1: output the main Data Entry page: occurrence list or add/edit occurrence tabs hidden. "Survey" tab active
+  const MODE_EXISTING_SAMPLE = 2; // mode 2: output the main Data Entry page, display existing sample. Active tab determined by iform params. No occurence details filled in.
+        // mode 2.1: sample 2 has all its occurrences merged into sample 1. sample 2 is then flagged as deleted. sample 1 is then viewed as in normal mode 2.
+  const MODE_EXISTING_OCCURRENCE = 3; // mode 3: output the main Data Entry page, display existing occurrence. "Edit Occurrence" tab active. Occurence details filled in.
+  
+  const ATTR_WALK = 'Walk started at end';
+  const ATTR_RELIABILITY = 'Reliability of this data';
+  const ATTR_TEMP = 'Temperature';
+//	Bird Monitoring		Email	Text	edit
+//	Bird Monitoring		CMS User ID	Integer	edit
+//	Bird Monitoring		CMS Username	Text	edit
+  const ATTR_VISIT = 'Visit number in year';
+  const ATTR_WIND = 'Wind Force';
+  const ATTR_RAIN = 'Precipitation';
+  const ATTR_CLOUD = 'Cloud Cover';
+  const ATTR_START_TIME = 'Start time';
+  const ATTR_END_TIME = 'End time';
+  const ATTR_CLOSED = 'Closed';
+  const ATTR_UID = 'CMS User ID';
+  const ATTR_EMAIL = 'Email';
+  const ATTR_USERNAME = 'CMS Username';
+  const ATTR_CONFIDENCE = 'Confidence';
+  const ATTR_COUNT = 'Count';
+  const ATTR_APPROXIMATION = 'Approximation?';
+  const ATTR_TERRITORIAL = 'Territorial';
+  const ATTR_ATLAS_CODE = 'Atlas Code';
+  const ATTR_OVERFLYING = 'Overflying';
+    
   /**
    * Return the generated form output.
    * @return Form HTML.
@@ -307,6 +225,46 @@ class iform_mnhnl_bird_transect_walks {
       return lang::get('LANG_no_permissions');
     }
 
+    // Load up attribute details
+    $sample_walk_direction_id = self::getAttrID($auth, $args, 'sample', self::ATTR_WALK);
+    $sample_reliability_id = self::getAttrID($auth, $args, 'sample', self::ATTR_RELIABILITY);
+    $sample_visit_number_id = self::getAttrID($auth, $args, 'sample', self::ATTR_VISIT);
+    $sample_wind_id = self::getAttrID($auth, $args, 'sample', self::ATTR_WIND);
+    $sample_precipitation_id = self::getAttrID($auth, $args, 'sample', self::ATTR_RAIN);
+    $sample_temperature_id = self::getAttrID($auth, $args, 'sample', self::ATTR_TEMP);
+    $sample_cloud_id = self::getAttrID($auth, $args, 'sample', self::ATTR_CLOUD);
+    $sample_start_time_id = self::getAttrID($auth, $args, 'sample', self::ATTR_START_TIME);
+    $sample_end_time_id = self::getAttrID($auth, $args, 'sample', self::ATTR_END_TIME);
+    $sample_end_time_id = self::getAttrID($auth, $args, 'sample', self::ATTR_END_TIME);
+    $sample_closure_id = self::getAttrID($auth, $args, 'sample', self::ATTR_CLOSED);
+    $uid_attr_id = self::getAttrID($auth, $args, 'sample', self::ATTR_UID);
+    $email_attr_id = self::getAttrID($auth, $args, 'sample', self::ATTR_EMAIL);
+    $username_attr_id = self::getAttrID($auth, $args, 'sample', self::ATTR_USERNAME);
+    $occurrence_confidence_id = self::getAttrID($auth, $args, 'occurrence', self::ATTR_CONFIDENCE);
+    $occurrence_count_id = self::getAttrID($auth, $args, 'occurrence', self::ATTR_COUNT);
+    $occurrence_approximation_id = self::getAttrID($auth, $args, 'occurrence', self::ATTR_APPROXIMATION);
+    $occurrence_territorial_id = self::getAttrID($auth, $args, 'occurrence', self::ATTR_TERRITORIAL);
+    $occurrence_atlas_code_id = self::getAttrID($auth, $args, 'occurrence', self::ATTR_ATLAS_CODE);
+    $occurrence_overflying_id = self::getAttrID($auth, $args, 'occurrence', self::ATTR_OVERFLYING);
+    
+    if(!$sample_closure_id)
+      return '<p>This form must be used with a survey which has the "'.self::ATTR_CLOSED.'" sample attribute allocated to it. Survey_id = '.$args['survey_id'];
+    if(!$uid_attr_id)
+      return '<p>This form must be used with a survey which has the "'.self::ATTR_UID.'" sample attribute allocated to it. Survey_id = '.$args['survey_id'];
+    if(!$email_attr_id)
+      return '<p>This form must be used with a survey which has the "'.self::ATTR_EMAIL.'" sample attribute allocated to it. Survey_id = '.$args['survey_id'];
+    if(!$username_attr_id)
+      return '<p>This form must be used with a survey which has the "'.self::ATTR_USERNAME.'" sample attribute allocated to it. Survey_id = '.$args['survey_id'];
+    if(!$sample_walk_direction_id)
+      return '<p>This form must be used with a survey which has the "'.self::ATTR_WALK.'" sample attribute allocated to it. Survey_id = '.$args['survey_id'];
+    if(!$sample_visit_number_id)
+      return '<p>This form must be used with a survey which has the "'.self::ATTR_VISIT.'" sample attribute allocated to it. Survey_id = '.$args['survey_id'];
+    if(!$occurrence_count_id)
+      return '<p>This form must be used with a survey which has the "'.self::ATTR_COUNT.'" occurrence attribute allocated to it. Survey_id = '.$args['survey_id'];
+    if(!$occurrence_territorial_id)
+      return '<p>This form must be used with a survey which has the "'.self::ATTR_TERRITORIAL.'" occurrence attribute allocated to it. Survey_id = '.$args['survey_id'];
+    if(!$occurrence_atlas_code_id)
+      return '<p>This form must be used with a survey which has the "'.self::ATTR_ATLAS_CODE.'" occurrence attribute allocated to it. Survey_id = '.$args['survey_id'];
     if ($_POST) {
       if(!array_key_exists('website_id', $_POST)) { // non Indicia POST, in this case must be the location allocations. add check to ensure we don't corrept the data by accident
         if(iform_loctools_checkaccess($node,'admin') && array_key_exists('mnhnlbtw', $_POST)){
@@ -500,7 +458,7 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
     reportColumnTitles: {location_name : '".lang::get('LANG_Transect')."', date : '".lang::get('LANG_Date')."', num_visit : '".lang::get('LANG_Visit_No')."', num_occurrences : '".lang::get('LANG_Num_Occurrences')."', num_taxa : '".lang::get('LANG_Num_Species')."'},
     actionColumns: {".lang::get('LANG_Show')." : \"".url('node/'.($node->nid), array('query' => 'sample_id=£id£'))."\"},
     auth : { nonce : '".$readAuth['nonce']."', auth_token : '".$readAuth['auth_token']."'},
-    parameters : { survey_id : '".$args['survey_id']."', visit_attr_id : '".$args['sample_visit_number_id']."', closed_attr_id : '".$args['sample_closure_id']."', use_location_list : '".$useloclist."', locations : '".$loclist."'},
+    parameters : { survey_id : '".$args['survey_id']."', visit_attr_id : '".$sample_visit_number_id."', closed_attr_id : '".$sample_closure_id."', use_location_list : '".$useloclist."', locations : '".$loclist."'},
     itemsPerPage : 12,
     condCss : {field : 'closed', value : '0', css: 'mnhnl-btw-highlight'},
     cssOdd : ''
@@ -544,22 +502,22 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
   <div id="downloads" class="mnhnl-btw-datapanel">
     <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_transect_direction_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
       <p>'.lang::get('LANG_Direction_Report').'</p>
-      <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "direction_attr_id":'.$args['sample_walk_direction_id'].', "closed_attr_id":'.$args['sample_closure_id'].'}\' />
+      <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "direction_attr_id":'.$sample_walk_direction_id.', "closed_attr_id":'.$sample_closure_id.'}\' />
       <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Direction_Report_Button').'">
     </form>
     <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
       <p>'.lang::get('LANG_Initial_Download').'</p>
-      <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "closed_attr_id":'.$args['sample_closure_id'].', "download": "INITIAL"}\' />
+      <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "closed_attr_id":'.$sample_closure_id.', "download": "INITIAL"}\' />
       <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Initial_Download_Button').'">
     </form>
     <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
       <p>'.lang::get('LANG_Confirm_Download').'</p>
-      <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "closed_attr_id":'.$args['sample_closure_id'].', "download": "CONFIRM"}\' />
+      <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "closed_attr_id":'.$sample_closure_id.', "download": "CONFIRM"}\' />
       <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Confirm_Download_Button').'">
     </form>
     <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
       <p>'.lang::get('LANG_Final_Download').'</p>
-      <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "closed_attr_id":'.$args['sample_closure_id'].', "download": "FINAL"}\' />
+      <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "closed_attr_id":'.$sample_closure_id.', "download": "FINAL"}\' />
       <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Final_Download_Button').'">
     </form>
   </div>';
@@ -665,8 +623,8 @@ $('#controls').bind('tabsshow', function(event, ui) {
        ,'fieldprefix'=>'smpAttr'
        ,'extraParams'=>$readAuth
     ));
-    $closedFieldName = $attributes[$args['sample_closure_id']]['fieldname'];
-    $closedFieldValue = data_entry_helper::check_default_value($closedFieldName, array_key_exists('default', $attributes[$args['sample_closure_id']]) ? $attributes[$args['sample_closure_id']]['default'] : '0'); // default is not closed
+    $closedFieldName = $attributes[$sample_closure_id]['fieldname'];
+    $closedFieldValue = data_entry_helper::check_default_value($closedFieldName, array_key_exists('default', $attributes[$sample_closure_id]) ? $attributes[$sample_closure_id]['default'] : '0'); // default is not closed
     if($closedFieldValue == '1' && !user_access($adminPerm)){
       // sample has been closed, no admin perms. Everything now set to read only.
       $surveyReadOnly = true;
@@ -680,7 +638,7 @@ $('#controls').bind('tabsshow', function(event, ui) {
     }
 
     // with the AJAX code, we deal with the validation semi manually: Form name is meant be invalid as we only want code included.
-    data_entry_helper::enable_validation('DummyForm');
+    data_entry_helper::enable_validation(null);
     $r .= "<div id=\"controls\">\n";
     $activeTab = 'survey'; // mode 1 = new Sample, display sample. 
     if($mode == 2){ // have specified a sample ID
@@ -734,14 +692,14 @@ $('#controls').bind('tabsshow', function(event, ui) {
       $r .= "<input type=\"hidden\" id=\"sample:id\" name=\"sample:id\" value=\"\" disabled=\"disabled\" />\n";
     }
 
-    $fieldName = $attributes[$args['uid_attr_id']]['fieldname'];
-    $fieldValue = data_entry_helper::check_default_value($fieldName, array_key_exists('default', $attributes[$args['uid_attr_id']]) ? $attributes[$args['uid_attr_id']]['default'] : $user->uid); // default is not closed
+    $fieldName = $attributes[$uid_attr_id]['fieldname'];
+    $fieldValue = data_entry_helper::check_default_value($fieldName, array_key_exists('default', $attributes[$uid_attr_id]) ? $attributes[$uid_attr_id]['default'] : $user->uid); // default is not closed
     $r .= "<input type=\"hidden\" name=\"".$fieldName."\" value=\"".$fieldValue."\" />\n";
-    $fieldName = $attributes[$args['email_attr_id']]['fieldname'];
-    $fieldValue = data_entry_helper::check_default_value($fieldName, array_key_exists('default', $attributes[$args['email_attr_id']]) ? $attributes[$args['email_attr_id']]['default'] : $user->mail); // default is not closed
+    $fieldName = $attributes[$email_attr_id]['fieldname'];
+    $fieldValue = data_entry_helper::check_default_value($fieldName, array_key_exists('default', $attributes[$email_attr_id]) ? $attributes[$email_attr_id]['default'] : $user->mail); // default is not closed
     $r .= "<input type=\"hidden\" name=\"".$fieldName."\" value=\"".$fieldValue."\" />\n";
-    $fieldName = $attributes[$args['username_attr_id']]['fieldname'];
-    $fieldValue = data_entry_helper::check_default_value($fieldName, array_key_exists('default', $attributes[$args['username_attr_id']]) ? $attributes[$args['username_attr_id']]['default'] : $user->name); // default is not closed
+    $fieldName = $attributes[$username_attr_id]['fieldname'];
+    $fieldValue = data_entry_helper::check_default_value($fieldName, array_key_exists('default', $attributes[$username_attr_id]) ? $attributes[$username_attr_id]['default'] : $user->name); // default is not closed
     $r .= "<input type=\"hidden\" name=\"".$fieldName."\" value=\"".$fieldValue."\" />\n";
       
     $defAttrOptions['validation'] = array('required');
@@ -772,9 +730,9 @@ $('#controls').bind('tabsshow', function(event, ui) {
       $r .= "</select><span class=\"deh-required\">*</span><br />";
     }
 	$languageFilteredAttrOptions = $defAttrOptions + array('language' => iform_lang_iso_639_2($args['language']));
-    $r .= data_entry_helper::outputAttribute($attributes[$args['sample_walk_direction_id']], $languageFilteredAttrOptions).
-          data_entry_helper::outputAttribute($attributes[$args['sample_reliability_id']], $languageFilteredAttrOptions).
-          data_entry_helper::outputAttribute($attributes[$args['sample_visit_number_id']], array_merge($languageFilteredAttrOptions, array('default'=>1, 'noBlankText'=>true)));
+    $r .= data_entry_helper::outputAttribute($attributes[$sample_walk_direction_id], $languageFilteredAttrOptions).
+          ($sample_reliability_id ?    data_entry_helper::outputAttribute($attributes[$sample_reliability_id], $languageFilteredAttrOptions) :    "<span style=\"display: none;\">Sample attribute '".self::ATTR_RELIABILITY."' not assigned to this survey</span>").
+          data_entry_helper::outputAttribute($attributes[$sample_visit_number_id], array_merge($languageFilteredAttrOptions, array('default'=>1, 'noBlankText'=>true)));
     if (isset(data_entry_helper::$entity_to_load['sample:date']) && preg_match('/^(\d{4})/', data_entry_helper::$entity_to_load['sample:date'])) {
       // Date has 4 digit year first (ISO style) - convert date to expected output format
       $d = new DateTime(data_entry_helper::$entity_to_load['sample:date']);
@@ -787,12 +745,15 @@ $('#controls').bind('tabsshow', function(event, ui) {
     } else {
       $r .= data_entry_helper::date_picker(array('label' => lang::get('LANG_Date'), 'fieldname' => 'sample:date', 'class' => 'vague-date-picker', 'suffixTemplate'=>'requiredsuffix'));
     }
-    $r .= data_entry_helper::outputAttribute($attributes[$args['sample_wind_id']], $languageFilteredAttrOptions).
-          data_entry_helper::outputAttribute($attributes[$args['sample_precipitation_id']], $languageFilteredAttrOptions).
-          data_entry_helper::outputAttribute($attributes[$args['sample_temperature_id']], array_merge($defAttrOptions, array('suffixTemplate'=>'nosuffix')))." degC<span class=\"deh-required\">*</span><br />".
-          data_entry_helper::outputAttribute($attributes[$args['sample_cloud_id']], $defAttrOptions).
-          data_entry_helper::outputAttribute($attributes[$args['sample_start_time_id']], array_merge($defAttrOptions, array('suffixTemplate'=>'nosuffix')))." hh:mm<span class=\"deh-required\">*</span><br />".
-          data_entry_helper::outputAttribute($attributes[$args['sample_end_time_id']], array_merge($defAttrOptions, array('suffixTemplate'=>'nosuffix')))." hh:mm<span class=\"deh-required\">*</span><br />";
+    $r .= ($sample_wind_id ?          data_entry_helper::outputAttribute($attributes[$sample_wind_id], $languageFilteredAttrOptions) :                                                                                                "<span style=\"display: none;\">Sample attribute '".self::ATTR_WIND."' not assigned to this survey</span>").
+          ($sample_precipitation_id ? data_entry_helper::outputAttribute($attributes[$sample_precipitation_id], $languageFilteredAttrOptions) :                                                                                       "<span style=\"display: none;\">Sample attribute '".self::ATTR_RAIN."' not assigned to this survey</span>").
+          ($sample_temperature_id ?   data_entry_helper::outputAttribute($attributes[$sample_temperature_id], array_merge($defAttrOptions, array('suffixTemplate'=>'nosuffix')))."<span class=\"attr-trailer\"> &deg;C</span><br />": "<span style=\"display: none;\">Sample attribute '".self::ATTR_TEMP."' not assigned to this survey</span>").
+          ($sample_cloud_id ?         data_entry_helper::outputAttribute($attributes[$sample_cloud_id], $defAttrOptions) :                                                                                                            "<span style=\"display: none;\">Sample attribute '".self::ATTR_CLOUD."' not assigned to this survey</span>").
+          ($sample_start_time_id ?    data_entry_helper::outputAttribute($attributes[$sample_start_time_id], array_merge($defAttrOptions, array('suffixTemplate'=>'nosuffix')))."<span class=\"attr-trailer\"> hh:mm</span><br />" :  "<span style=\"display: none;\">Sample attribute '".self::ATTR_START_TIME."' not assigned to this survey</span>").
+          ($sample_end_time_id ?      data_entry_helper::outputAttribute($attributes[$sample_end_time_id], array_merge($defAttrOptions, array('suffixTemplate'=>'nosuffix')))."<span class=\"attr-trailer\"> hh:mm</span><br />" :    "<span style=\"display: none;\">Sample attribute '".self::ATTR_END_TIME."' not assigned to this survey</span>");
+    data_entry_helper::$javascript .= "
+jQuery('.attr-trailer').prev('br').remove();
+";
     unset($defAttrOptions['suffixTemplate']);
     unset($defAttrOptions['validation']);
     if(user_access($adminPerm)) { //  users with admin permissions can override the closing of the
@@ -800,7 +761,7 @@ $('#controls').bind('tabsshow', function(event, ui) {
       // Because this is attached to the sample, we have to include the sample required fields in the
       // the post. This means they can't be disabled, so we enable all fields in this case.
       // Normal users can only set this to closed, and they do this using a button/hidden field.
-      $r .= data_entry_helper::outputAttribute($attributes[$args['sample_closure_id']], $defAttrOptions);
+      $r .= data_entry_helper::outputAttribute($attributes[$sample_closure_id], $defAttrOptions);
       // In addition admin users can delete a survey/sample.
       $r .= data_entry_helper::checkbox(array('label'=>lang::get('Deleted'), 'fieldname'=>'sample:deleted', 'id'=>'main-sample-deleted'));
     } else {
@@ -812,7 +773,6 @@ $.validator.messages.required = \"".lang::get('validation_required')."\";
 $.validator.defaults.onsubmit = false; // override default - so that we handle all submission validation.
 ";
 
-    
     if(!$surveyReadOnly){
       // NB that we don't even include the buttons when readonly.
       data_entry_helper::$javascript .= "
@@ -1082,14 +1042,14 @@ jQuery('#ro-occ-occ-warn').hide();
     <input type=\"hidden\" id=\"occurrence:record_status\" name=\"occurrence:record_status\" value=\"C\" />
     <input type=\"hidden\" id=\"occurrence:downloaded_flag\" name=\"occurrence:downloaded_flag\" value=\"N\" />
     ".data_entry_helper::autocomplete($species_ctrl_args)."
-    ".data_entry_helper::outputAttribute($attributes[$args['occurrence_confidence_id']], array_merge($languageFilteredAttrOptions, array('noBlankText'=>'')))."
+    ".($occurrence_confidence_id ? data_entry_helper::outputAttribute($attributes[$occurrence_confidence_id], array_merge($languageFilteredAttrOptions, array('noBlankText'=>''))) :  "<span style=\"display: none;\">Occurrence attribute '".self::ATTR_CONFIDENCE."' not assigned to this survey</span>")."
     ".data_entry_helper::sref_and_system(array('label'=>lang::get('LANG_Spatial_ref'), 'systems'=>array('2169'=>'Luref (Gauss Luxembourg)'), 'suffixTemplate'=>'requiredsuffix'))."
     <p>".lang::get('LANG_Click_on_map')."</p>
-    ".data_entry_helper::outputAttribute($attributes[$args['occurrence_count_id']], array_merge($defAttrOptions, array('default'=>1, 'suffixTemplate'=>'requiredsuffix')))."
-    ".data_entry_helper::outputAttribute($attributes[$args['occurrence_approximation_id']], $defAttrOptions)."
-    ".data_entry_helper::outputAttribute($attributes[$args['occurrence_territorial_id']], array_merge($defAttrOptions, array('default'=>1, 'id' => 'occ-territorial')))."
-    ".data_entry_helper::outputAttribute($attributes[$args['occurrence_atlas_code_id']], $languageFilteredAttrOptions)."
-    ".data_entry_helper::outputAttribute($attributes[$args['occurrence_overflying_id']], $defAttrOptions)."
+    ".data_entry_helper::outputAttribute($attributes[$occurrence_count_id], array_merge($defAttrOptions, array('default'=>1, 'suffixTemplate'=>'requiredsuffix')))."
+    ".($occurrence_approximation_id ? data_entry_helper::outputAttribute($attributes[$occurrence_approximation_id], $defAttrOptions) :  "<span style=\"display: none;\">Occurrence attribute '".self::ATTR_APPROXIMATION."' not assigned to this survey</span>")."
+    ".data_entry_helper::outputAttribute($attributes[$occurrence_territorial_id], array_merge($defAttrOptions, array('default'=>1, 'id' => 'occ-territorial')))."
+    ".data_entry_helper::outputAttribute($attributes[$occurrence_atlas_code_id], $languageFilteredAttrOptions)."
+    ".($occurrence_overflying_id ? data_entry_helper::outputAttribute($attributes[$occurrence_overflying_id], $defAttrOptions) :  "<span style=\"display: none;\">Occurrence attribute '".self::ATTR_OVERFLYING."' not assigned to this survey</span>")."
     ".data_entry_helper::textarea(array('label'=>lang::get('LANG_Comment'), 'fieldname'=>'occurrence:comment', 'disabled'=>$disabledText));
     if(!$surveyReadOnly && !$occReadOnly){
       if($mode == 3)
@@ -1114,8 +1074,8 @@ retriggerGrid = function(){
     auth : { nonce : '".$readAuth['nonce']."', auth_token : '".$readAuth['auth_token']."'},
     parameters : { survey_id : '".$args['survey_id']."',
             parent_id : jQuery('#SurveyForm [name=sample\\:id]').val(),
-            territorial_attr_id : '".$args['occurrence_territorial_id']."',
-            count_attr_id : '".$args['occurrence_count_id']."'},
+            territorial_attr_id : '".$occurrence_territorial_id."',
+            count_attr_id : '".$occurrence_count_id."'},
     itemsPerPage : 12,
     callback : addListFeature ,
     cssOdd : ''
@@ -1149,9 +1109,9 @@ jQuery('#occ-form').ajaxForm({
 			});
 			jQuery('form#occ-form').find('[name=occurrence\\:id],[name=sample\\:id]').val('').attr('disabled', 'disabled');
 			jQuery('form#occ-form').find('[name=occurrence\\:taxa_taxon_list_id],[name=occurrence\\:taxa_taxon_list_id\\:taxon],[name=sample\\:entered_sref],[name=sample\\:geom],[name=occurrence\\:comment]').val('');
-			jQuery('form#occ-form').find('[name=occAttr\\:".$args['occurrence_confidence_id']."]').find('option').removeAttr('selected');
-			jQuery('form#occ-form').find('[name=occAttr\\:".$args['occurrence_count_id']."]').val('1');
-			jQuery('form#occ-form').find('input[name=occAttr\\:".$args['occurrence_approximation_id']."],input[name=occAttr\\:".$args['occurrence_overflying_id']."]').removeAttr('checked','checked');
+			jQuery('form#occ-form').find('[name=occAttr\\:".$occurrence_confidence_id."]').find('option').removeAttr('selected');
+			jQuery('form#occ-form').find('[name=occAttr\\:".$occurrence_count_id."]').val('1');
+			jQuery('form#occ-form').find('input[name=occAttr\\:".$occurrence_approximation_id."],input[name=occAttr\\:".$occurrence_overflying_id."]').removeAttr('checked','checked');
 			jQuery('form#occ-form').find('#occ-territorial').attr('checked','checked');
 			jQuery('label[for=occ-sample-deleted]').remove(); // sample deleted only applicable when editing an existing occurrence. After saving reverts to Add Occurreence: no delete. Remove label then actual checkbox
 			jQuery('form#occ-form').find('[name=sample\\:deleted]').remove(); // This removes both parts of the checkbox.
@@ -1196,18 +1156,18 @@ jQuery('#occ-form').ajaxForm({
 });
 setAtlasStatus = function() {
   if (jQuery(\"#occ-territorial:checked\").length == 0) {
-      jQuery(\"select[name=occAttr\\:".$args['occurrence_atlas_code_id']."],select[name^=occAttr\\:".$args['occurrence_atlas_code_id']."\\:]\").val('');
+      jQuery(\"select[name=occAttr\\:".$occurrence_atlas_code_id."],select[name^=occAttr\\:".$occurrence_atlas_code_id."\\:]\").val('');
   } else {
-      if(jQuery(\"select[name=occAttr\\:".$args['occurrence_atlas_code_id']."],select[name^=occAttr\\:".$args['occurrence_atlas_code_id']."\\:]\").val() == '') {
+      if(jQuery(\"select[name=occAttr\\:".$occurrence_atlas_code_id."],select[name^=occAttr\\:".$occurrence_atlas_code_id."\\:]\").val() == '') {
         // Find the BB02 option (depends on the language what val it has)
         var bb02;
-        jQuery.each(jQuery(\"select[name=occAttr\\:".$args['occurrence_atlas_code_id']."],select[name^=occAttr\\:".$args['occurrence_atlas_code_id']."\\:]\").find('option'), function(index, option) {
+        jQuery.each(jQuery(\"select[name=occAttr\\:".$occurrence_atlas_code_id."],select[name^=occAttr\\:".$occurrence_atlas_code_id."\\:]\").find('option'), function(index, option) {
           if (option.text.substr(0,4)=='BB02') {
             bb02 = option.value;
             return; // just from the each loop
           }
         });
-        jQuery(\"select[name=occAttr\\:".$args['occurrence_atlas_code_id']."],select[name^=occAttr\\:".$args['occurrence_atlas_code_id']."\\:]\").val(bb02);
+        jQuery(\"select[name=occAttr\\:".$occurrence_atlas_code_id."],select[name^=occAttr\\:".$occurrence_atlas_code_id."\\:]\").val(bb02);
       }
   }
 };
@@ -1412,8 +1372,8 @@ $('div#occ_grid').indiciaDataGrid('rpt:mnhnl_btw_list_occurrences', {
     auth : { nonce : '".$readAuth['nonce']."', auth_token : '".$readAuth['auth_token']."'},
     parameters : { survey_id : '".$args['survey_id']."',
             parent_id : '".$parentSample['sample:id']."',
-            territorial_attr_id : '".$args['occurrence_territorial_id']."',
-            count_attr_id : '".$args['occurrence_count_id']."'},
+            territorial_attr_id : '".$occurrence_territorial_id."',
+            count_attr_id : '".$occurrence_count_id."'},
     itemsPerPage : 12,
     callback : addListFeature ,
     cssOdd : ''
@@ -1462,6 +1422,39 @@ $('div#occ_grid').indiciaDataGrid('rpt:mnhnl_btw_list_occurrences', {
   protected static function getTrailerHTML($args) {
     $r = '<p id="iform-trailer">'.lang::get('LANG_Trailer_Text').'</p>';
     return $r;
+  }
+
+  private static function getAttr($auth, $args, $table, $caption){
+    switch($table){
+    	case 'occurrence':
+    		$prefix = 'occAttr';
+    		break;
+    	case 'sample':
+    		$prefix = 'smpAttr';
+    		break;
+    	case 'location':
+    		$prefix = 'locAttr';
+    		break;
+    	default: return false;
+    }
+    $myAttributes = data_entry_helper::getAttributes(array(
+        'valuetable'=>$table.'_attribute_value'
+       ,'attrtable'=>$table.'_attribute'
+       ,'key'=>$table.'_id'
+       ,'fieldprefix'=>$prefix
+       ,'extraParams'=>$auth['read']
+       ,'survey_id'=>$args['survey_id']
+      ), false);
+    foreach($myAttributes as $attr)
+      if (strcasecmp($attr['untranslatedCaption'],$caption)==0)
+        return $attr;
+    return false;
+  }
+
+  private static function getAttrID($auth, $args, $table, $caption){
+    $attr = self::getAttr($auth, $args, $table, $caption);
+    if($attr) return $attr['attributeId'];
+    return false;
   }
   
   /**
