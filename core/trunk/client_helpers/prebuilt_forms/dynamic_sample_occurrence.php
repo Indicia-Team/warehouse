@@ -114,17 +114,18 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
                 "&nbsp;&nbsp;<strong>[species]</strong> - a species grid or input control<br/>".
                 "&nbsp;&nbsp;<strong>[species attributes]</strong> - any custom attributes for the occurrence, if not using the grid. Also includes a file upload ".
                 "box if relevant. The attrubutes @resizeWidth and @resizeHeight can specified on subsequent lines, otherwise they default to 1600.<br/>".
-                "&nbsp;&nbsp;<strong>[date]</strong><br/>".
-                "&nbsp;&nbsp;<strong>[map]</strong><br/>".
-                "&nbsp;&nbsp;<strong>[spatial reference]</strong><br/>".
-                "&nbsp;&nbsp;<strong>[location name]</strong><br/>".
-                "&nbsp;&nbsp;<strong>[location autocomplete]</strong><br/>".
-                "&nbsp;&nbsp;<strong>[location select]</strong><br/>".
-                "&nbsp;&nbsp;<strong>[place search]</strong><br/>".
-                "&nbsp;&nbsp;<strong>[recorder names]</strong><br/>".
-                "&nbsp;&nbsp;<strong>[record status]</strong><br/>".
-                "&nbsp;&nbsp;<strong>[sample comment]</strong>. <br/>".
-                "&nbsp;&nbsp;<strong>[sample photo]</strong>. <br/>".
+                "&nbsp;&nbsp;<strong>[date]</strong> - a sample must always have a date.<br/>".
+                "&nbsp;&nbsp;<strong>[map]</strong> - a map that links to the spatial reference and location select/autocomplete controls<br/>".
+                "&nbsp;&nbsp;<strong>[spatial reference]</strong> - a sample must always have a spatial reference.<br/>".
+                "&nbsp;&nbsp;<strong>[location name]</strong> - a text box to enter a place name.<br/>".
+                "&nbsp;&nbsp;<strong>[location autocomplete]</strong> - an autocomplete control for picking a stored location. A spatial reference is still required.<br/>".
+                "&nbsp;&nbsp;<strong>[location select]</strong> - a select control for picking a stored location. A spatial reference is still required.<br/>".
+                "&nbsp;&nbsp;<strong>[location map]</strong> - combines location select, map and spatial reference controls for recording only at stored locations.<br/>".
+                "&nbsp;&nbsp;<strong>[place search]</strong> - zooms the map to the entered location.<br/>".
+                "&nbsp;&nbsp;<strong>[recorder names]</strong> - a text box for names. The logged-in user's id is always stored with the record.<br/>".
+                "&nbsp;&nbsp;<strong>[record status]</strong> - allow recorder to mark record as in progress or complete<br/>".
+                "&nbsp;&nbsp;<strong>[sample comment]</strong> - a text box for sample level comment. (Each occurrence may also have a comment.) <br/>".
+                "&nbsp;&nbsp;<strong>[sample photo]</strong>. - a photo upload for sample level images. (Each occurrence may also have photos.) <br/>".
             "<strong>@option=value</strong> on the line(s) following any control allows you to override one of the options passed to the control. The options ".
             "available depend on the control. For example @label=Abundance would set the untranslated label of a control to Abundance. Where the ".
             "option value is an array, use valid JSON to encode the value. For example an array of strings could be passed as @occAttrClasses=[\"class1\",\"class2\"] ".
@@ -1026,6 +1027,32 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     return data_entry_helper::location_select($location_list_args);
   }
   
+  /** 
+   * Get the sref by way of choosing a location.
+   */
+  protected static function get_control_locationmap($auth, $args, $tabalias, $options) {
+    // add a location select control
+    $options = array_merge(array(
+        'searchUpdatesSref' => true,
+        'validation' => "required",
+        'blankText' => "Select...",
+    ), $options);
+    $r = self::get_control_locationselect($auth, $args, $tabalias, $options);
+    
+    // add hidden sref controls
+    $r .= data_entry_helper::sref_hidden($options);
+    
+    // add a map control
+    $options = array_merge(array(
+        'locationLayerName' => 'indicia:detail_locations',
+        'locationLayerFilter' => "website_id=" . $args['website_id'],
+        'clickForSpatialRef' => false,
+    ), $options);
+    $r .= self::get_control_map($auth, $args, $tabalias, $options);
+    
+    return $r;
+  }
+//  
   /** 
    * Get the location name control.
    */
