@@ -1646,10 +1646,10 @@ indiciaData.windowLoaded=false;
       } else if ($rule=='numeric') {
         $converted[] = 'number:true';
       // the next test uses a regexp named expression to find the digit in a maximum rule (maximum[10])
-      } elseif (preg_match('/maximum\[(?P<val>\d+)\]/', $rule, $matches)) {
+      } elseif (preg_match('/maximum\[(?P<val>-?\d+)\]/', $rule, $matches)) {
         $converted[] = 'max:'.$matches['val'];
       // and again for minimum rules
-      } elseif (preg_match('/minimum\[(?P<val>\d+)\]/', $rule, $matches)) {
+      } elseif (preg_match('/minimum\[(?P<val>-?\d+)\]/', $rule, $matches)) {
         $converted[] = 'min:'.$matches['val'];
       } elseif (preg_match('/regex\[(?P<val>.+)\]/', $rule, $matches)) {
         $converted[] = 'pattern:'. $matches['val'];
