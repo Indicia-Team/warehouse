@@ -510,8 +510,8 @@ class data_entry_helper extends helper_base {
     $escaped_id=str_replace(':','\\\\:',$options['id']);
     // Don't set js up for the datepicker in the clonable row for the species checklist grid
     if ($escaped_id!='{fieldname}') {
-      if (self::$validated_form_id!==null) {
-        if (!$options['allowVagueDates']) {
+      // should include even if validated_form_id is null, as could be doing this via AJAX.
+      if (!$options['allowVagueDates']) {
           self::$javascript .= "if (typeof jQuery.validator !== \"undefined\") {
   jQuery.validator.addMethod('customDate',
     function(value, element) {
@@ -521,7 +521,6 @@ class data_entry_helper extends helper_base {
     }, '".lang::get('Please enter a valid date')."'
   );
 }\n";
-        }
       }
       if ($options['showButton']) {
         $imgPath = empty(self::$images_path) ? self::relative_client_helper_path()."../media/images/" : self::$images_path;
