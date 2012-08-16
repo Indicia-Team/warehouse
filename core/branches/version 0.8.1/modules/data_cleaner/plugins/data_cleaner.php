@@ -93,16 +93,18 @@ function data_cleaner_run_rules($rules, $db) {
   $count=0;
   foreach ($rules as $rule) {
     if (isset($rule['errorMsgField'])) 
-      // rules are able to specify a different field (e.g. from the verification rule data to provide the error message.
+      // rules are able to specify a different field (e.g. from the verification rule data) to provide the error message.
       $errorField = $rule['errorMsgField'];
     else
       $errorField = 'error_message';
     foreach ($rule['queries'] as $query) {
+      // queries can override the error message field.
+      $ruleErrorField = isset($query['errorMsgField']) ? $query['errorMsgField'] : $errorField;
       $implies_manual_check_required = isset($query['implies_manual_check_required']) && !$query['implies_manual_check_required'] ? 'false' : 'true';
       $errorMsgSuffix = isset($rule['errorMsgSuffix']) ? $rule['errorMsgSuffix'] : '';
       $sql = 'insert into occurrence_comments (comment, created_by_id, created_on,  
       updated_by_id, updated_on, occurrence_id, auto_generated, generated_by, implies_manual_check_required) 
-  select distinct '.$errorField.$errorMsgSuffix.', 1, now(), 1, now(), occlist.occurrence_id, true, \''.$rule['plugin'].'\', '.$implies_manual_check_required.'
+  select distinct '.$ruleErrorField.$errorMsgSuffix.', 1, now(), 1, now(), occlist.occurrence_id, true, \''.$rule['plugin'].'\', '.$implies_manual_check_required.'
   from occlist
   join cache_occurrences co on co.id=occlist.occurrence_id';
       if (isset($query['joins']))
@@ -112,6 +114,7 @@ function data_cleaner_run_rules($rules, $db) {
       // we now have the query ready to run which will return a list of the occurrence ids that fail the check.
       try {
         $count += $db->query($sql)->count();
+        echo "<br/>$sql<br/>";
       } catch (Exception $e) {
         echo "Query failed<br/>";
         echo $e->getMessage().'<br/>';
