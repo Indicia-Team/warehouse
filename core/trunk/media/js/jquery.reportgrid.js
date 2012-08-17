@@ -555,7 +555,7 @@ function simple_tooltip(target_items, name){
       var div=this;
 
       // Define clicks on column headers to apply sort
-      $(this).find('th.sortable').click(function(e) {
+      $(div).find('th.sortable').click(function(e) {
         e.preventDefault();
         if (div.loading) {return;}
         div.loading = true;
@@ -577,6 +577,18 @@ function simple_tooltip(target_items, name){
         load(div, false);
       });
 
+      $(div).find('.report-download-link').click(function(e) {
+        e.preventDefault();
+        var url=$(e.target).attr('href'), field;
+        $.each($(div).find('tr.filter-row input'), function(idx, input) {
+          if ($(input).val()!=='') {
+            field=input.id.replace('col-filter-', '');
+            url += '&' + field + '=' + $(input).val();
+          }
+        });
+        window.location=url;
+      });
+      
       var doFilter = function(e) {
         if (e.target.hasChanged) {
           var fieldname = e.target.id.substr(11);
