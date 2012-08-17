@@ -3509,7 +3509,7 @@ function iform_mnhnl_getReloadPath(){
   $reload = data_entry_helper::get_reload_link_parts();
   unset($reload['params']['sample_id']);
   unset($reload['params']['occurrence_id']);
-  unset($reload['params']['newSample']);
+  unset($reload['params']['new']);
   $reloadPath = $reload['path'];
   if(count($reload['params'])) $reloadPath .= '?'.http_build_query($reload['params']);
   return $reloadPath;

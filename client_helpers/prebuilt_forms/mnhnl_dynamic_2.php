@@ -223,7 +223,7 @@ class iform_mnhnl_dynamic_2 extends iform_mnhnl_dynamic_1 {
       $targetSpeciesAttr=iform_mnhnl_getAttr(parent::$auth, $args, 'sample', $args['targetSpeciesAttr']);
       if(!$targetSpeciesAttr) return lang::get('This form must be used with a survey that has the '.$args['targetSpeciesAttr'].' sample attribute associated with it.');
       data_entry_helper::$javascript .= "
-jQuery('[name=params]').val('{\"survey_id\":".$args['survey_id'].", \"location_type_id\":".$primary.", \"target_species_attr\":".$targetSpeciesAttr['attributeId'].", \"target_species_termlist\":".$targetSpeciesAttr['termlist_id'].(isset($args['targetSpeciesAttrList']) ? ", \"target_species_attr_list\":\"".$args['targetSpeciesAttrList']."\"":"")."}');
+jQuery('[name=params]').val('{\"survey_id\":".$args['survey_id'].", \"location_type_id\":".$primary.", \"target_species_attr\":".$targetSpeciesAttr['attributeId'].", \"target_species_termlist\":".$targetSpeciesAttr['termlist_id'].(isset($args['targetSpeciesAttrList']) && $args['targetSpeciesAttrList']!='' ? ", \"target_species_attr_list\":\"".$args['targetSpeciesAttrList']."\"":"")."}');
 ";
     };
     return $r.($args['sites_download_report']!=''?'
@@ -292,7 +292,7 @@ jQuery('[name=params]').val('{\"survey_id\":".$args['survey_id'].", \"location_t
       'autoParamsForm' => true,
       'extraParams' => $extraParams));	
     $r .= '<form>';    
-    $r .= '<input type="button" value="'.lang::get('LANG_Add_Sample').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'newSample')).'\'">';    
+    $r .= '<input type="button" value="'.lang::get('LANG_Add_Sample').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'new')).'\'">';    
     $r .= '</form>
 <div style="display:none" />
     <form id="form-delete-survey" action="'.iform_mnhnl_getReloadPath().'" method="POST">'.$auth['write'].'
@@ -877,7 +877,7 @@ hook_species_checklist_pre_delete_row=function(e) {
         $ttlid = $rec['taxon']['id'];
         $occ_existing_record_id = $rec['occurrence']['id'];
         $smp_existing_record_id = $options['includeSubSample'] ? $rec['sample']['id'] : '';
-        $firstCell = data_entry_helper::mergeParamsIntoTemplate($rec['taxon'], 'taxon_label');
+        $firstCell = data_entry_helper::mergeParamsIntoTemplate($rec['taxon'], 'taxon_label', false, true);
         $prefix="sc:$rowIdx:$smp_existing_record_id:$ttlid:$occ_existing_record_id";
         if ($options['PHPtaxonLabel']) $firstCell=eval($firstCell);
         $colspan = ' colspan="'.$maxCellsPerRow.'"';
