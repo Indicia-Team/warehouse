@@ -2242,7 +2242,7 @@ class data_entry_helper extends helper_base {
           $headers = $options['id']."-attr$attrId-$colIdx";
           $class = self::species_checklist_occ_attr_class($options, $idx, $attributes[$attrId]['untranslatedCaption']);
           $class = $class . 'Cell';
-          $row .= str_replace(array('{class}', '{content}', '{headers}'), array($class, $oc, $headers), 
+          $row .= str_replace(array('{label}', '{class}', '{content}', '{headers}'), array(lang::get($attributes[$attrId]['caption']), $class, $oc, $headers), 
               $indicia_templates[$options['attrCellTemplate']]);
           $idx++;
         }
