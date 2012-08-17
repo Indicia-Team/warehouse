@@ -111,7 +111,7 @@ class report_helper extends helper_base {
    */
   public static function report_download_link($options) {
     $options = array_merge(array(
-      'caption' => 'Download this report', 
+      'caption' => lang::get('Download this report'), 
       'format' => 'csv',
       'itemsPerPage' => 10000
     ), $options);
@@ -378,8 +378,11 @@ class report_helper extends helper_base {
           array($rootFolder, $currentUrl['path']), $options['footer']);
       $extraFooter .= '<div class="left">'.$footer.'</div>';
     }
-    if (isset($options['downloadLink']) && $options['downloadLink'] && count($records)>0)
-      $extraFooter .= '<div class="right">'.self::report_download_link($options).'</div>';
+    if (isset($options['downloadLink']) && $options['downloadLink'] && count($records)>0) {
+      $downloadOpts = array_merge($options);
+      unset($downloadOpts['itemsPerPage']);
+      $extraFooter .= '<div class="right">'.self::report_download_link($downloadOpts).'</div>';
+    }
     if (!empty($extraFooter))
       $r .= '<tr><td colspan="'.count($options['columns']).'">'.$extraFooter.'</td></tr>';
     $r .= '</tfoot>';
@@ -1601,7 +1604,7 @@ mapSettingsHooks.push(function(opts) {
         if (!empty($param['alias']) && $param['datatype']=='idlist') {
           $alias = $param['alias'];
           data_entry_helper::$javascript .= "
-if (typeof(mapSettingsHooks)!=='undefined') {
+if (typeof mapSettingsHooks!=='undefined') {
   mapSettingsHooks.push(function(opts) {
     opts.featureIdField='$alias';
   });

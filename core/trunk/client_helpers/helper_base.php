@@ -796,11 +796,13 @@ $('.ui-state-default').live('mouseout', function() {
         $r .= self::get_params_form_control($key, $info, $options, $tools);
       // If the form has defined any tools to add to the map, we need to create JavaScript to add them to the map.
       if (count($tools)) {
+        // wrap JavaScript in a test that the map is on the page
+        if (isset($info['allow_buffer']) && $info['allow_buffer']=='true')
+          data_entry_helper::$javascript .= "if (typeof $.fn.indiciaMapPanel!=='undefined') {\n";
         $fieldname=(isset($options['fieldNamePrefix']) ? $options['fieldNamePrefix'].'-' : '') .$key;
         self::add_resource('spatialReports');
         self::add_resource('clearLayer');
-        if (isset($info['allow_buffer']) && $info['allow_buffer']=='true')
-          data_entry_helper::$javascript .= "enableBuffering();\n";
+        data_entry_helper::$javascript .= "  enableBuffering();\n";
         if ($options['inlineMapTools']) {
           $r .= '<label>'.$info['display'].':</label>';
           $r .= '<div class="control-box">Use the following tools to define the query area.<br/>'.
@@ -860,7 +862,9 @@ $('.ui-state-default').live('mouseout', function() {
         }
         data_entry_helper::$javascript .= "  opts.standardControls.push('clearEditLayer');
   }
-  mapSettingsHooks.push(add_map_tools);\n";
+  mapSettingsHooks.push(add_map_tools);\n";      
+        if (isset($info['allow_buffer']) && $info['allow_buffer']=='true') 
+          data_entry_helper::$javascript .= "}\n";       
       }
     }
     return $r;
