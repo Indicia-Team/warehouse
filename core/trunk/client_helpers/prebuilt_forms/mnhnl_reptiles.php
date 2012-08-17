@@ -773,7 +773,7 @@ hook_species_checklist_pre_delete_row=function(e) {
     $occAttrs = array();
     // Load any existing sample's occurrence data into $entity_to_load
     if (isset(data_entry_helper::$entity_to_load['sample:id']))
-      data_entry_helper::preload_species_checklist_occurrences(data_entry_helper::$entity_to_load['sample:id'], $options['readAuth'], false);
+      data_entry_helper::preload_species_checklist_occurrences(data_entry_helper::$entity_to_load['sample:id'], $options['readAuth'], false, array());
     // load the full list of species for the grid, including the main checklist plus any additional species in the reloaded occurrences.
     $options['extraParams']['view'] = 'detail';
     $occList = self::get_species_checklist_occ_list($options);
