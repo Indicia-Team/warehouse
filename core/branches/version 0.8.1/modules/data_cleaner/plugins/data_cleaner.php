@@ -40,22 +40,21 @@ function data_cleaner_scheduled_task() {
 
 /**
  * Build a temporary table with the list of occurrences we will process, so that we have
- * consistency if changes are happening concurrently.
+ * consistency if changes are happening concurrently. Uses cache_occurrences as a template for this
+ * as the columns it contains are most likely to be useful in the rule checks.
  * @param type $db 
  */
 function data_cleaner_get_occurrence_list($db) {
-  $query = 'create temporary table occlist as 
-  select o.id as occurrence_id, s.id as sample_id, w.id as website_id, 
-  ttl.id as taxa_taxon_list_id, ttl.taxon_id, now() as timepoint
-  from occurrences o
-  inner join samples s on s.id=o.sample_id and s.deleted=false
-  inner join websites w on w.id=o.website_id and w.deleted=false and w.verification_checks_enabled=true
-  inner join taxa_taxon_lists ttl on ttl.id = o.taxa_taxon_list_id and ttl.deleted=false
-  where o.deleted=false and o.record_status not in (\'I\',\'V\',\'R\',\'D\')
-  and (ttl.id <> o.last_verification_check_taxa_taxon_list_id
-  or o.updated_on>o.last_verification_check_date
-  or s.updated_on>o.last_verification_check_date
-  or o.last_verification_check_date is null) limit 200';
+  $query = 'select co.*, now() as timepoint into temporary occlist 
+from cache_occurrences co
+join occurrences o on o.id=co.id
+inner join samples s on s.id=o.sample_id and s.deleted=false
+inner join websites w on w.id=o.website_id and w.deleted=false and w.verification_checks_enabled=true
+where o.deleted=false and o.record_status not in (\'I\',\'V\',\'R\',\'D\')
+and (o.last_verification_check_taxa_taxon_list_id<>o.taxa_taxon_list_id
+or o.updated_on>o.last_verification_check_date
+or s.updated_on>o.last_verification_check_date
+or o.last_verification_check_date is null) limit 200';
   $db->query($query);
   $r = $db->query('select count(*) as count from occlist')->result_array(false);
   echo "Data cleaning ".$r[0]['count']." record(s).<br/>";
@@ -77,7 +76,7 @@ function data_cleaner_cleanout_old_messages($rules, $db) {
       $query = 'update occurrence_comments oc
   set deleted=true
   from occlist
-  where oc.occurrence_id=occlist.occurrence_id
+  where oc.occurrence_id=occlist.id
   and oc.generated_by=\''.$rule['plugin'].'\'';
       $db->query($query);
       $modulesDone[]=$rule['plugin'];
@@ -104,9 +103,8 @@ function data_cleaner_run_rules($rules, $db) {
       $errorMsgSuffix = isset($rule['errorMsgSuffix']) ? $rule['errorMsgSuffix'] : '';
       $sql = 'insert into occurrence_comments (comment, created_by_id, created_on,  
       updated_by_id, updated_on, occurrence_id, auto_generated, generated_by, implies_manual_check_required) 
-  select distinct '.$ruleErrorField.$errorMsgSuffix.', 1, now(), 1, now(), occlist.occurrence_id, true, \''.$rule['plugin'].'\', '.$implies_manual_check_required.'
-  from occlist
-  join cache_occurrences co on co.id=occlist.occurrence_id';
+  select distinct '.$ruleErrorField.$errorMsgSuffix.', 1, now(), 1, now(), co.id, true, \''.$rule['plugin'].'\', '.$implies_manual_check_required.'
+  from occlist co';
       if (isset($query['joins']))
         $sql .= "\n" . $query['joins'];
       if (isset($query['where']))
@@ -114,7 +112,6 @@ function data_cleaner_run_rules($rules, $db) {
       // we now have the query ready to run which will return a list of the occurrence ids that fail the check.
       try {
         $count += $db->query($sql)->count();
-        echo "<br/>$sql<br/>";
       } catch (Exception $e) {
         echo "Query failed<br/>";
         echo $e->getMessage().'<br/>';
@@ -137,7 +134,7 @@ function data_cleaner_update_occurrence_metadata($db) {
 set last_verification_check_date=occlist.timepoint, 
     last_verification_check_taxa_taxon_list_id=occlist.taxa_taxon_list_id
 from occlist
-where occlist.occurrence_id=o.id';
+where occlist.id=o.id';
   $db->query($query);
 }
 
