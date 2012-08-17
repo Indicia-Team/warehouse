@@ -59,7 +59,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
           $count++;
         }
       }
-      $db->from('occurrences')->set(array('record_status'=>'V'))->in('id', $ids)->update();
+      $db->from('occurrences')->set(array('record_status'=>'V','updated_by_id'=>$this->user_id,'updated_on'=>date('Y-m-d H:i:s')))->in('id', $ids)->update();
       echo $count;
     } catch (Exception $e) {
       echo $e->getMessage();
