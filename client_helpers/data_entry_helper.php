@@ -2202,6 +2202,7 @@ class data_entry_helper extends helper_base {
           // this includes a control to force out a 0 value when the checkbox is unchecked.
           $row .= "<input type=\"hidden\" class=\"scPresence\" name=\"sc:$id:$existing_record_id:present\" value=\"0\"/><input type=\"checkbox\" class=\"scPresence\" name=\"sc:$id:$existing_record_id:present\" $checked />";
         $row .= "</td>";  
+        $idx = 0;
         foreach ($occAttrControls as $attrId => $control) {
           if ($existing_record_id) {
             $search = preg_grep("/^sc:$id:$existing_record_id:occAttr:$attrId".'[:[0-9]*]?$/', array_keys(self::$entity_to_load));
@@ -2238,9 +2239,12 @@ class data_entry_helper extends helper_base {
               $oc .= $error;
             }
           }
-          $headers=$options['id']."-attr$attrId-$colIdx";
-          $row .= str_replace(array('{label}', '{content}','{headers}'), array(lang::get($attributes[$attrId]['caption']), $oc, $headers), 
+          $headers = $options['id']."-attr$attrId-$colIdx";
+          $class = self::species_checklist_occ_attr_class($options, $idx, $attributes[$attrId]['untranslatedCaption']);
+          $class = $class . 'Cell';
+          $row .= str_replace(array('{class}', '{content}', '{headers}'), array($class, $oc, $headers), 
               $indicia_templates[$options['attrCellTemplate']]);
+          $idx++;
         }
         if ($options['occurrenceComment']) {
           $row .= "\n<td class=\"ui-widget-content scCommentCell\" headers=\"".$options['id']."-comment-$colIdx\"><input class=\"scComment\" type=\"text\" name=\"sc:$id:$existing_record_id:occurrence:comment\" ".
