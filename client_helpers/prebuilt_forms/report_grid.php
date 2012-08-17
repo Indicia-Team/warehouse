@@ -106,6 +106,8 @@ class iform_report_grid {
         "template": {"type":"txt","desc":"Allows you to create columns that contain dynamic content using a template, rather than just the output '.
           'of a field. The template text can contain fieldnames in braces, which will be replaced by the respective field values. '.
           'Note that template columns cannot be sorted by clicking grid headers." },
+        "json": {"type":"bool","desc":"Set to true if the column contains a json string object with properties that can be decoded to give strings that '.
+          'can be used as replacements in a template."},
         "update": {
           "type":"map",
           "title":"Update Specification",
