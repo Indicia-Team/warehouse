@@ -806,7 +806,7 @@ hook_species_checklist_pre_delete_row=function(e) {
     $occAttrs = array();
     // Load any existing sample's occurrence data into $entity_to_load
     if (isset(data_entry_helper::$entity_to_load['sample:id']))
-      data_entry_helper::preload_species_checklist_occurrences(data_entry_helper::$entity_to_load['sample:id'], $options['readAuth'], false);
+      data_entry_helper::preload_species_checklist_occurrences(data_entry_helper::$entity_to_load['sample:id'], $options['readAuth'], false, array());
     // load the full list of species for the grid, including the main checklist plus any additional species in the reloaded occurrences.
     $options['extraParams']['view'] = 'detail';
     $occList = self::get_species_checklist_occ_list($options);
@@ -832,7 +832,6 @@ hook_species_checklist_pre_delete_row=function(e) {
       $rows = array();
       $rowIdx = 0;
       foreach ($occList as $occ) {
-        $ttlid = $occ['taxon']['id'];
         $firstCell = data_entry_helper::mergeParamsIntoTemplate($occ['taxon'], 'taxon_label', false, true);
         if ($options['PHPtaxonLabel']) $firstCell=eval($firstCell);
         $colspan = ' colspan="'.count($attributes).'"';
@@ -840,21 +839,26 @@ hook_species_checklist_pre_delete_row=function(e) {
         $firstrow = '<td class="ui-state-default remove-row" style="width: 1%" rowspan="'.($options['occurrenceComment']?"3":"2").'" >X</td>';
         $firstrow .= str_replace('{content}', $firstCell, str_replace('{colspan}', $colspan, $indicia_templates['taxon_label_cell']));
         $existing_record_id = $occ['id'];
+        $search = preg_grep("/^sc:".$occ['taxon']['id']."[_[0-9]*]?:$existing_record_id:present$/", array_keys(data_entry_helper::$entity_to_load));
+        if(count($search)===1){
+          $parts=explode(':',implode('', $search));
+          $ttlid_and_row = $parts[1];
+        } else $ttlid_and_row = $occ['taxon']['id'];
         $hidden = ($options['rowInclusionCheck']=='checkbox' ? '' : ' style="display:none"');
         if ($options['rowInclusionCheck']=='alwaysFixed' || $options['rowInclusionCheck']=='alwaysRemovable' ||
-            (data_entry_helper::$entity_to_load!=null && array_key_exists("sc:$ttlid:$existing_record_id:present", data_entry_helper::$entity_to_load))) {
+            (data_entry_helper::$entity_to_load!=null && array_key_exists("sc:$ttlid_and_row:$existing_record_id:present", data_entry_helper::$entity_to_load))) {
           $checked = ' checked="checked"';
         } else {
           $checked='';
         }
-        $firstrow .= "<td class=\"scPresenceCell\"$hidden>".($options['rowInclusionCheck']!='hasData' ? "<input type=\"hidden\" class=\"scPresence\" name=\"sc:$ttlid:$existing_record_id:present\" value=\"0\"/><input type=\"checkbox\" class=\"scPresence\" name=\"sc:$ttlid:$existing_record_id:present\" $checked />" : '')."</td>";
+        $firstrow .= "<td class=\"scPresenceCell\"$hidden>".($options['rowInclusionCheck']!='hasData' ? "<input type=\"hidden\" class=\"scPresence\" name=\"sc:$ttlid_and_row:$existing_record_id:present\" value=\"0\"/><input type=\"checkbox\" class=\"scPresence\" name=\"sc:$ttlid_and_row:$existing_record_id:present\" $checked />" : '')."</td>";
         $secondrow = "";
         foreach ($occAttrControls as $attrId => $control) {
           if ($existing_record_id) {
-            $search = preg_grep("/^sc:".$ttlid."[_[0-9]*]?:$existing_record_id:occAttr:$attrId".'[:[0-9]*]?$/', array_keys(data_entry_helper::$entity_to_load));
-            $ctrlId = (count($search)===1) ? implode('', $search) : "sc:$ttlid:$existing_record_id:occAttr:$attrId";
+            $search = preg_grep("/^sc:".$ttlid_and_row.":$existing_record_id:occAttr:$attrId".'[:[0-9]*]?$/', array_keys(data_entry_helper::$entity_to_load));
+            $ctrlId = (count($search)===1) ? implode('', $search) : "sc:$ttlid_and_row:$existing_record_id:occAttr:$attrId";
           } else {
-            $ctrlId = "sc:$ttlid::occAttr:$attrId";
+            $ctrlId = "sc:$ttlid_and_row::occAttr:$attrId";
           }
           if (isset(data_entry_helper::$entity_to_load[$ctrlId])) {
             $existing_value = data_entry_helper::$entity_to_load[$ctrlId];
@@ -888,10 +892,10 @@ hook_species_checklist_pre_delete_row=function(e) {
   <table class=\"scCommentTable\">
     <tbody class=\"scCommentTableBody\" ><tr>
       <td class=\"scCommentLabelCell\">
-        <label for=\"sc:$ttlid:$existing_record_id:occurrence:comment\" class=\"auto-width\">".lang::get("Comment").":</label>
+        <label for=\"sc:$ttlid_and_row:$existing_record_id:occurrence:comment\" class=\"auto-width\">".lang::get("Comment").":</label>
       </td>
       <td>
-        <input type=\"text\" class=\"scComment\" name=\"sc:$ttlid:$existing_record_id:occurrence:comment\" id=\"sc:$ttlid:$existing_record_id:occurrence:comment\" value=\"".htmlspecialchars(data_entry_helper::$entity_to_load["sc:$ttlid:$existing_record_id:occurrence:comment"])."\">
+        <input type=\"text\" class=\"scComment\" name=\"sc:$ttlid_and_row:$existing_record_id:occurrence:comment\" id=\"sc:$ttlid_and_row:$existing_record_id:occurrence:comment\" value=\"".htmlspecialchars(data_entry_helper::$entity_to_load["sc:$ttlid_and_row:$existing_record_id:occurrence:comment"])."\">
       </td>
     </tr></tbody>
   </table>
@@ -1116,7 +1120,7 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
         }
         return $locationMod;
       }
-      $values['sample:location_id'] = $values['location:id'];
+//      $values['sample:location_id'] = $values['location:id'];
       if(count($occurrences)>0) 
             $sampleMod['subModels'] = $occurrences;
     }
@@ -1138,8 +1142,9 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
    * parameters unless the Edit and Save button is clicked. So, apply some defaults to keep those old forms
    * working.
    */
-  protected function getArgDefaults(&$args) {
+  protected function getArgDefaults($args) {
     $args['includeLocTools'] == false; 
+    return $args;      
   }
 
   protected function getReportActions() {
