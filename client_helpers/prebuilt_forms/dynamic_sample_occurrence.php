@@ -1039,6 +1039,9 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     ), $options);
     $r = self::get_control_locationselect($auth, $args, $tabalias, $options);
     
+    //only show helpText once
+    unset($options['helpText']);
+    
     // add hidden sref controls
     $r .= data_entry_helper::sref_hidden($options);
     
