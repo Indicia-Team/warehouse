@@ -357,8 +357,9 @@ li.ui-state-error {
   background: url(../images/desc.gif) no-repeat right;
 }
 
-tr.odd {
+table tr.odd {
   background-color: #eeeeee;
+  border: none;
 }
 
 .report-grid .ui-widget td {
