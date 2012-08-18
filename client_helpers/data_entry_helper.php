@@ -1715,24 +1715,29 @@ class data_entry_helper extends helper_base {
     $options = array_merge(array(
       'fieldname'=>'sample:entered_sref'
     ), $options);
-    // If helpText set, only use this for the 2nd control so it appears once on the next line
-    if (isset($options['helpText'])) {
-      $helpText = $options['helpText'];
-      unset($options['helpText']);
-    }
-    // Force no separate lines for the 2 controls
-    if (!array_key_exists('systems',$options) || count($options['systems'])!=1) {
+    
+    if (array_key_exists('systems',$options) && count($options['systems']) == 1) {
+      // The system select will be hidden since there is only one system
+      $srefOptions = $options;
+    } else {
+      // Keep the two controls on the same line
       $srefOptions = array_merge($options, array('suffixTemplate'=>'nosuffix'));
       $srefOptions = array_merge($srefOptions, array('requiredsuffixTemplate'=>'requirednosuffix'));
-    } else {
-      $srefOptions = $options;
+      // Show the help text after the 2nd control
+      if (isset($srefOptions['helpText'])) {
+        unset($srefOptions['helpText']);
+      }
     }
+    // Output the sref control
     $r = self::sref_textbox($srefOptions);
+    
     // tweak the options passed to the system selector
     $options['fieldname']=$options['fieldname']."_system";
     unset($options['label']);
-    if (isset($helpText))
-      $options['helpText']=$helpText;
+    if (isset($options['defaultSystem'])) {
+      $options['default']=$options['defaultSystem'];
+    }
+    // Output the system control
     if (array_key_exists('systems', $options) && count($options['systems']) == 1) {
       // Hidden field for the system
       $keys = array_keys($options['systems']);
@@ -1740,8 +1745,6 @@ class data_entry_helper extends helper_base {
       self::include_sref_handler_js($options['systems']);
     }
     else {
-      if (isset($options['defaultSystem']))
-        $options['default']=$options['defaultSystem'];
       $r .= self::sref_system_select($options);
     }
     return $r;
