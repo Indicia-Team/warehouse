@@ -217,6 +217,32 @@ class iform_dynamic_location extends iform_dynamic {
     return $hiddens;
   }
   
+  /** 
+   * Get the map control.
+   */
+  protected static function get_control_map($auth, $args, $tabalias, $options) {
+    $options = array_merge(
+      iform_map_get_map_options($args, $auth['read']),
+      $options
+    );
+    if (isset(data_entry_helper::$entity_to_load['location:geom'])) {
+      // The geom field is WKB representing the boundary, if defined, else the centroid
+      if (isset(data_entry_helper::$entity_to_load['location:boundary_geom'])) {
+        // The boundary_geom field is WKT
+        $options['initialFeatureWkt'] = data_entry_helper::$entity_to_load['location:boundary_geom'];
+      } else {
+        // The centroid_geom field is WKT
+        $options['initialFeatureWkt'] = data_entry_helper::$entity_to_load['location:centroid_geom'];
+      }
+    }
+    if ($args['interface']!=='one_page')
+      $options['tabDiv'] = $tabalias;
+    $olOptions = iform_map_get_ol_options($args);
+    if (!isset($options['standardControls']))
+      $options['standardControls']=array('layerSwitcher','panZoom');
+    return data_entry_helper::map_panel($options, $olOptions);
+  }
+
   protected static function get_control_locationname($auth, $args, $tabalias, $options) {
     return data_entry_helper::text_input(array_merge(array(
       'label' => lang::get('LANG_Location_Name'),
