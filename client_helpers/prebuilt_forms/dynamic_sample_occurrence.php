@@ -656,6 +656,25 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     return $r;
   }
   
+  /** 
+   * Get the map control.
+   */
+  protected static function get_control_map($auth, $args, $tabalias, $options) {
+    $options = array_merge(
+      iform_map_get_map_options($args, $auth['read']),
+      $options
+    );
+    if (isset(data_entry_helper::$entity_to_load['sample:geom'])) {
+      $options['initialFeatureWkt'] = data_entry_helper::$entity_to_load['sample:wkt'];
+    }
+    if ($args['interface']!=='one_page')
+      $options['tabDiv'] = $tabalias;
+    $olOptions = iform_map_get_ol_options($args);
+    if (!isset($options['standardControls']))
+      $options['standardControls']=array('layerSwitcher','panZoom');
+    return data_entry_helper::map_panel($options, $olOptions);
+  }
+
   /**
    * Get the control for species input, either a grid or a single species input control.
    */
