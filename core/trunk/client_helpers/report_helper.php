@@ -1328,7 +1328,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         // convert these styles into a JSON definition ready to feed into JS.
         $defsettings = json_encode($defsettings);
         $selsettings = json_encode($selsettings);
-        $addFeaturesJs = "";
+        $addFeaturesJs = "";        
         // No need to pass the default type of vector display, so use empty obj to keep JavaScript size down
         $opts = $options['displaySymbol']='vector' ? '{}' : json_encode(array('type'=>$options['displaySymbol']));
         $rowId = isset($options['rowId']) ? ' id="row'.$row[$options['rowId']].'"' : '';
@@ -1340,8 +1340,15 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
               $colsToInclude[$name] = '';
           }
         }
+        $geoms = array();
         foreach ($records as $record) {        
           $record[$wktCol]=preg_replace('/\.(\d+)/', '', $record[$wktCol]);
+          // rather than output every geom separately, do a list of distinct geoms to minify the JS
+          if (!$geomIdx = array_search('"'.$record[$wktCol].'"', $geoms)) {          
+            $geoms[] = '"'.$record[$wktCol].'"';
+            $geomIdx = count($geoms)-1;
+          }
+          $record[$wktCol] = $geomIdx;
           if (isset($colsToInclude))
             $record = array_intersect_key($record, $colsToInclude); 
           $addFeaturesJs.= "div.addPt(features, ".json_encode($record).", '$wktCol', $opts".(empty($rowId) ? '' : ", '".$record[$options['rowId']]."'").");\n";
@@ -1351,7 +1358,9 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   $styleFns
 }}";
         }
+        self::$javascript .= 'indiciaData.geoms=['.implode(',',$geoms)."];\n";
         self::addFeaturesLoadingJs($addFeaturesJs, $defsettings, $selsettings, $styleFns);
+        
       } else {
         // doing WMS reporting via GeoServer
         $replacements = array();
