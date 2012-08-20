@@ -3886,22 +3886,18 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         //Add javascript for moving through wizard
         self::$javascript .= "\n$('.tab-submit').click(function() {\n";
         self::$javascript .= "  var current=$('#$divId').tabs('option', 'selected');\n";
-        // Use a selector to find the inputs and selects on the current tab and validate them.
-        if (isset(self::$validated_form_id)) {
-          self::$javascript .= "  var tabinputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select,textarea').not(':disabled');\n";
-          self::$javascript .= "  if (tabinputs.length>0 && !tabinputs.valid()) {\n";
-          self::$javascript .= "    return;";
-          self::$javascript .= "  }\n";
-        }
+        self::validate_inputs_on_current_tab();
         // If all is well, submit.
         self::$javascript .= "      var form = $(this).parents('form:first');
         form.submit();
       });";
         self::$javascript .= "\n$('.tab-next').click(function() {\n";
         self::$javascript .= "  var current=$('#$divId').tabs('option', 'selected');\n";
+        self::validate_inputs_on_current_tab('Before going to the next step, some of the values in the input boxes on this step need checking. '.
+            'They have been highlighted on the form for you.');
         // Use a selector to find the inputs and selects on the current tab and validate them.
         if (isset(self::$validated_form_id)) {
-          self::$javascript .= "  var tabinputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select').not(':disabled');\n";
+          self::$javascript .= "  var tabinputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select,textarea').not(':disabled,[name=]');\n";
           self::$javascript .= "  if (!tabinputs.valid()) {\n";
           self::$javascript .= "    alert('".lang::get('Before going to the next step, some of the values in the input boxes on this step need checking. '.
                   'They have been highlighted on the form for you.')."')\n";
@@ -3976,6 +3972,22 @@ if (errors.length>0) {
       data_entry_helper::$javascript .= "wizardProgressIndicator({divId:'$divId'});\n";
     } else {
       data_entry_helper::add_resource('tabs');
+    }
+  }
+  
+  /**
+   * Validates the inputs on the current tab and prevents going to the next tab if not all valid.
+   * @param string $msg Message to display if a failure to validate occurs
+   */
+  private static function validate_inputs_on_current_tab($msg='') {
+    // Use a selector to find the inputs and selects on the current tab and validate them.
+    if (isset(self::$validated_form_id)) {
+      self::$javascript .= "  var tabinputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select,textarea').not(':disabled,[name=]');\n";
+      self::$javascript .= "  if (tabinputs.length>0 && !tabinputs.valid()) {\n";
+      if ($msg)
+        self::$javascript .= "    alert('".lang::get($js)."');\n";
+      self::$javascript .= "    return;\n";
+      self::$javascript .= "  }\n";
     }
   }
 
