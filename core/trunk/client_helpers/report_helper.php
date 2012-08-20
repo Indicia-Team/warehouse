@@ -432,7 +432,7 @@ class report_helper extends helper_base {
         foreach ($options['columns'] as $field) {
           $classes=array();
           if (isset($options['sendOutputToMap']) && $options['sendOutputToMap'] && isset($field['mappable']) && ($field['mappable']==='true' || $field['mappable']===true)) {
-            $addFeaturesJs.= "  div.addDistPoint(features, ".json_encode($row).", '".$field['fieldname']."', {}".
+            $addFeaturesJs.= "div.addPt(features, ".json_encode($row).", '".$field['fieldname']."', {}".
                 (empty($rowId) ? '' : ", '".$row[$options['rowId']]."'").");\n";
           }
           if (isset($field['visible']) && ($field['visible']==='false' || $field['visible']===false))
@@ -1329,10 +1329,23 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         $defsettings = json_encode($defsettings);
         $selsettings = json_encode($selsettings);
         $addFeaturesJs = "";
-        $opts = json_encode(array('type'=>$options['displaySymbol']));
+        // No need to pass the default type of vector display, so use empty obj to keep JavaScript size down
+        $opts = $options['displaySymbol']='vector' ? '{}' : json_encode(array('type'=>$options['displaySymbol']));
         $rowId = isset($options['rowId']) ? ' id="row'.$row[$options['rowId']].'"' : '';
-        foreach ($records as $record) 
-          $addFeaturesJs.= "div.addDistPoint(features, ".json_encode($record).", '$wktCol', $opts".(empty($rowId) ? '' : ", '".$record[$options['rowId']]."'").");\n";
+        if ($options['clickableLayersOutputMode']<>'popup' && $options['clickableLayersOutputMode']<>'div') {
+          // If we don't need record data for every row for feature clicks, then only include necessary columns to minimise JS
+          $colsToInclude=array('occurrence_id'=>'',$wktCol=>'');
+          foreach ($response['columns'] as $name=>$def) {
+            if (isset($def['feature_style']))
+              $colsToInclude[$name] = '';
+          }
+        }
+        foreach ($records as $record) {        
+          $record[$wktCol]=preg_replace('/\.(\d+)/', '', $record[$wktCol]);
+          if (isset($colsToInclude))
+            $record = array_intersect_key($record, $colsToInclude); 
+          $addFeaturesJs.= "div.addPt(features, ".json_encode($record).", '$wktCol', $opts".(empty($rowId) ? '' : ", '".$record[$options['rowId']]."'").");\n";
+        }
         if (!empty($styleFns)) {
           $styleFns = ", {context: {
   $styleFns
