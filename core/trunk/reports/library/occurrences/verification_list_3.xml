@@ -65,14 +65,14 @@
     <column name='taxon_group' display='Taxon Group' sql='o.taxon_group' datatype='text' visible="false" />
     <column name='record_status' display='State' sql='xo.record_status' visible="false" />
     <column name='geom' visible='false' mappable="true" sql='st_astext(coalesce(s.geom, o.public_geom))' />
-    <column name='fillopacity' visible='false' feature_style="fillOpacity" sql='length(o.public_entered_sref) / 24.0' />
-    <column name='strokecolor' visible='false' feature_style="strokeColor" sql="case xo.record_status when 'C' then 
+    <column name='fo' visible='false' feature_style="fillOpacity" sql='round(length(o.public_entered_sref) / 24.0, 2)' />
+    <column name='sc' visible='false' feature_style="strokeColor" sql="case xo.record_status when 'C' then 
       case o.certainty when 'C' then 'green' when 'L' then 'orange' when 'U' then 'red' else 'blue' end
     when 'V' then 'green'
     when 'D' then 'orange'
     when 'R' then 'red'
     else 'black' end" />
-    <column name='fillcolor' visible='false' feature_style="fillColor" sql="case xo.record_status when 'V' then 'green' when 'D' then 'orange' when 'R' then 'red' else 'blue' end" />
+    <column name='fc' visible='false' feature_style="fillColor" sql="case xo.record_status when 'V' then 'green' when 'D' then 'orange' when 'R' then 'red' else 'blue' end" />
     <column name='pass' visible='false' sql="CASE WHEN oc.id IS NULL AND o.last_verification_check_date IS NOT NULL THEN '&lt;div class=&quot;pass-icon&quot; title=&quot;This record passes all automated verification checks.&quot;/&gt;&lt;/div&gt;' END" />
     <column name='fails' display='Check' 
         sql="array_to_string(array_agg('&lt;div class=&quot;fail-icon ' || oc.generated_by || '&quot; title=&quot;' || oc.comment || '&quot;&gt;&lt;/div&gt;'),' ')" aggregate='true' 

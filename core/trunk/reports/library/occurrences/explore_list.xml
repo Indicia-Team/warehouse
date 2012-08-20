@@ -54,14 +54,14 @@
     <column name='record_status' display='State' sql='o.record_status' visible="false" />
     <column name='belongs_to_user' display='Belongs to User' sql="CASE CAST(o.created_by_id AS character varying) WHEN '#currentUser#' THEN true ELSE false END" visible="false" />
     <column name='certainty' sql="o.certainty" visible='false' />
-    <column name='fillopacity' visible='false' feature_style="fillOpacity" sql='length(o.public_entered_sref) / 24.0' />
-    <column name='strokecolor' visible='false' feature_style="strokeColor" sql="case o.record_status when 'C' then 
+    <column name='fo' visible='false' feature_style="fillOpacity" sql='round(length(o.public_entered_sref) / 24.0, 2)' />
+    <column name='sc' visible='false' feature_style="strokeColor" sql="case o.record_status when 'C' then 
       case o.certainty when 'C' then 'green' when 'L' then 'orange' when 'U' then 'red' else 'blue' end
     when 'V' then 'green'
     when 'D' then 'orange'
     when 'R' then 'red'
     else 'black' end" />
-    <column name='fillcolor' visible='false' feature_style="fillColor" sql="case o.record_status when 'V' then 'green' when 'D' then 'orange' when 'R' then 'red' else 'blue' end" />
+    <column name='fc' visible='false' feature_style="fillColor" sql="case o.record_status when 'V' then 'green' when 'D' then 'orange' when 'R' then 'red' else 'blue' end" />
     <column name='geom' visible='false' mappable="true" sql='st_astext(o.public_geom)' />
   </columns>
 </report>
