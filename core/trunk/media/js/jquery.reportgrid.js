@@ -606,7 +606,7 @@ function simple_tooltip(target_items, name){
               function(response) {
                 var features=[];
                 $.each(response, function (idx, obj) {
-                  indiciaData.mapdiv.addDistPoint(features, obj, 'geom', {"type":"vector"}, obj[div.settings.rowId]);
+                  indiciaData.mapdiv.addPt(features, obj, 'geom', {"type":"vector"}, obj[div.settings.rowId]);
                 });
                 indiciaData.reportlayer.removeAllFeatures();
                 indiciaData.reportlayer.addFeatures(features);
