@@ -50,11 +50,32 @@ class iform_easy_download {
     return array(
       array(
         'name'=>'permission',
-        'caption'=>'Permission required for downloading other people\'s data',
-        'description'=>'Set to the name of a permission which is required in order to be able to download other people\'s data.',
+        'caption'=>'Permission required for downloading other people\'s data if you have expertise',
+        'description'=>'Set to the name of a permission which is required in order to be able to download other people\'s data. Also enables the NBN download format.',
         'type'=>'text_input',
         'required'=>true,
         'default'=>'verification'
+      ),
+      array(
+        'name'=>'allow_my_data',
+        'caption'=>'Allow my data download?',
+        'description'=>'Does this page include an option to download your own personal data?',
+        'type'=>'checkbox',
+        'required'=>false,
+        'default'=>1
+      ),
+      array(
+        'name'=>'survey_id',
+        'caption'=>'Survey for download',
+        'description'=>'Select the survey to download data for, or leave blank to allow user selection.',
+        'type'=>'select',
+        'required'=>false,
+        'table'=>'survey',
+        'valueField'=>'id',
+        'captionField'=>'title',
+        'sharing'=>'data_flow',
+        'default'=>'library/occurrences/occurrences_download_2',
+        'siteSpecific'=>true
       ),
       array(
         'name'=>'report_csv',
@@ -112,8 +133,8 @@ class iform_easy_download {
     if(count($reload['params'])) $reloadPath .= '?'.helper_base::array_to_query_string($reload['params']);
     $r = '<form method="POST" action="'.$reloadPath.'">';
     $r .= '<fieldset><legend>'.lang::get('Filters').'</legend>';
-    $expert = (function_exists('user_access') && user_access($args['verification']));
-    if ($expert) {
+    $expert = (function_exists('user_access') && user_access($args['permission']));
+    if ($expert && $args['allow_my_data']) {
       $r .= data_entry_helper::radio_group(array(
         'label' => lang::get('User filter'),
         'fieldname'=>'user-filter',
@@ -123,48 +144,50 @@ class iform_easy_download {
         ),
         'default'=>(empty($_POST['user-filter']) ? 'mine' : $_POST['user-filter'])
       ));
-    } elseif (function_exists('drupal_set_title')) 
+    } elseif (function_exists('drupal_set_title') && $args['allow_my_data']) 
       // Only allowed to download your own data, so subtly tell them 
       drupal_set_title(lang::get('Download my records'));
     else
       $r .= '<p>'.lang::get('Use this form to download your own records.').'</p>';
-    // A survey picker when downloading my data
-    $r .= '<div id="survey_mine">';
-    $r .= data_entry_helper::select(array(
-      'fieldname' => 'survey_id_mine',
-      'label' => lang::get('Survey to include'),
-      'table' => 'survey',
-      'valueField' => 'id',
-      'captionField' => 'title',
-      'helpText' => 'Choose a survey, or <all> to not filter by survey.',
-      'blankText' => '<all>',
-      'class' => 'control-width-4',
-      'extraParams' => $readAuth + array('sharing' => 'data_flow')
-    ));
-    $r .= '</div>';
-    // A survey picker when downloading data you are an expert for
-    $surveys_expertise=hostsite_get_user_field('surveys_expertise');
-    if ($surveys_expertise) {
-      $surveys_expertise = unserialize($surveys_expertise);
-      $surveysFilter = array('query'=>json_encode(array('in'=>array('id' => $surveys_expertise))));
-    } else {
-      // no filter as there are no specific surveys this user is an expert for
-      $surveysFilter=array();
+    if (empty($args['survey_id'])) {
+      // A survey picker when downloading my data
+      $r .= '<div id="survey_mine">';
+      $r .= data_entry_helper::select(array(
+        'fieldname' => 'survey_id_mine',
+        'label' => lang::get('Survey to include'),
+        'table' => 'survey',
+        'valueField' => 'id',
+        'captionField' => 'title',
+        'helpText' => 'Choose a survey, or <all> to not filter by survey.',
+        'blankText' => '<all>',
+        'class' => 'control-width-4',
+        'extraParams' => $readAuth + array('sharing' => 'data_flow')
+      ));
+      $r .= '</div>';
+      // A survey picker when downloading data you are an expert for
+      $surveys_expertise=hostsite_get_user_field('surveys_expertise');
+      if ($surveys_expertise) {
+        $surveys_expertise = unserialize($surveys_expertise);
+        $surveysFilter = array('query'=>json_encode(array('in'=>array('id' => $surveys_expertise))));
+      } else {
+        // no filter as there are no specific surveys this user is an expert for
+        $surveysFilter=array();
+      }
+      $r .= '<div id="survey_expertise">';
+      $r .= data_entry_helper::select(array(
+        'fieldname' => 'survey_id_expertise',
+        'label' => lang::get('Survey to include'),
+        'table' => 'survey',
+        'valueField' => 'id',
+        'captionField' => 'title',
+        'helpText' => 'Choose a survey, or <all> to not filter by survey.',
+        'blankText' => '<all>',
+        'class' => 'control-width-4',
+        'extraParams' => $readAuth + array('sharing' => 'data_flow') + $surveysFilter
+      ));
+      $r .= '</div>';
     }
-    $r .= '<div id="survey_expertise">';
-    $r .= data_entry_helper::select(array(
-      'fieldname' => 'survey_id_expertise',
-      'label' => lang::get('Survey to include'),
-      'table' => 'survey',
-      'valueField' => 'id',
-      'captionField' => 'title',
-      'helpText' => 'Choose a survey, or <all> to not filter by survey.',
-      'blankText' => '<all>',
-      'class' => 'control-width-4',
-      'extraParams' => $readAuth + array('sharing' => 'data_flow') + $surveysFilter
-    ));
-    $r .= '</div>';
-    // Put the available 
+    // Let the user pick the date range to download.
     $r .= data_entry_helper::date_picker(array(
       'fieldname' => 'date_from',
       'label' => lang::get('Start Date'),
@@ -221,12 +244,16 @@ class iform_easy_download {
     $location_expertise=hostsite_get_user_field('location_expertise');
     $taxon_groups_expertise=hostsite_get_user_field('taxon_groups_expertise');
     $taxon_groups_expertise = $taxon_groups_expertise ? unserialize($taxon_groups_expertise) : null;
-    $ownData = isset($_POST['user-filter']) && $_POST['user-filter'] === 'all' ? 0 : 1;
+    $ownData = (isset($_POST['user-filter']) && $_POST['user-filter'] === 'all') || !$args['allow_my_data'] ? 0 : 1;
     $surveys_expertise=hostsite_get_user_field('surveys_expertise');
     $surveys_expertise = $surveys_expertise ? unserialize($surveys_expertise) : null;
     // either a selected survey, or the surveys the user can see. The field name used will depend on which of the 2 survey selects were active.
-    $surveyFieldName=$ownData ? 'survey_id_mine' : 'survey_id_expertise';
-    $surveys = empty($_POST[$surveyFieldName]) ? implode(',', $surveys_expertise) : $_POST[$surveyFieldName];
+    if (empty($args['survey_id'])) {
+      $surveyFieldName=$ownData ? 'survey_id_mine' : 'survey_id_expertise';
+      $surveys = empty($_POST[$surveyFieldName]) ? implode(',', $surveys_expertise) : $_POST[$surveyFieldName];
+    } else 
+      // survey to load is preconfigured for the form
+      $surveys = $args['survey_id'];
     $filters = array_merge(
       array(
         'currentUser'=>hostsite_get_user_field('indicia_user_id'),
@@ -236,7 +263,7 @@ class iform_easy_download {
         'taxon_groups'=>implode(',', $taxon_groups_expertise),
         'ownGroups'=>!empty($taxon_groups_expertise) && $taxon_groups_expertise && !$ownData ? 1 : 0,
         'surveys'=>$surveys,
-        'ownSurveys'=>((empty($surveys_expertise) || $ownData) && empty($_POST[$surveyFieldName])) ? 0 : 1
+        'ownSurveys'=>((empty($surveys_expertise) || $ownData) && empty($_POST[$surveyFieldName])) && empty($args['survey_id']) ? 0 : 1
       ), get_options_array_with_user_data($args["report_params_$format"])
     );
     if (!empty($_POST['date_from']) && $_POST['date_from']!==lang::get('Click here'))
