@@ -134,8 +134,9 @@ function apply_user_replacements($text) {
         $value = $value ? $value : $user->$profileField;
         // nulls must be passed as empty string params.
         $value = ($value===null ? '' : $value);
-        $text=str_replace('{'.$profileField.'}', $value, $text);  
-      }
+      } else
+        $value='';
+      $text=str_replace('{'.$profileField.'}', $value, $text);  
     }
   }
   return $text;
