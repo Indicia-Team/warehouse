@@ -52,11 +52,11 @@
     <column name='certainty' sql="o.certainty" visible='false' />
     <column name='path' sql="oi.path" display='Photo' img='true' />
     <column name='caption' sql="oi.caption" display='Caption' datatype='text' />
-    <column name='fillopacity' visible='false' feature_style="fillOpacity" sql='length(o.public_entered_sref) / 24.0' />
-    <column name='strokecolor' visible='false' feature_style="strokeColor" sql="case o.record_status when 'C' then 
+    <column name='fo' visible='false' feature_style="fillOpacity" sql='round(length(o.public_entered_sref) / 24.0, 2)' />
+    <column name='sc' visible='false' feature_style="strokeColor" sql="case o.record_status when 'C' then 
       case o.certainty when 'C' then 'green' when 'L' then 'orange' when 'U' then 'red' else 'blue' end
     else 'black' end" />
-    <column name='fillcolor' visible='false' feature_style="fillColor" sql="case o.record_status when 'V' then 'green' when 'D' then 'orange' when 'R' then 'red' else 'blue' end" />
+    <column name='fc' visible='false' feature_style="fillColor" sql="case o.record_status when 'V' then 'green' when 'D' then 'orange' when 'R' then 'red' else 'blue' end" />
     <column name='geom' visible='false' mappable="true" sql='st_astext(o.public_geom)' />
   </columns>
 </report>
