@@ -44,14 +44,14 @@ mapGeoreferenceHooks = [];
     /** 
      * Adds the distribution point indicated by a record object to a list of features.
      */
-    function addDistPoint(features, record, wktCol, opts, id) {
+    function addPt(features, record, wktCol, opts, id) {
       if (record[wktCol]!==null) {
         var feature, geom=OpenLayers.Geometry.fromWKT(record[wktCol]);
         if (this.map.projection.getCode() != this.indiciaProjection.getCode()) {
           geom.transform(this.indiciaProjection, this.map.projection);
         }
         delete record[wktCol];
-        if (opts.type!=='vector') {
+        if (typeof opts.type!=="undefined" && opts.type!=='vector') {
           // render a point for symbols
           geom = geom.getCentroid();
         }
@@ -614,7 +614,8 @@ mapGeoreferenceHooks = [];
      * Selects the features in the contents of a bounding box
      */
     function selectBox(position, layers, div) {
-      var testGeom, tolerantGeom, layer, bounds, xy, minXY, maxXY, layer, tolerance, testGeoms={};
+      var testGeom, tolerantGeom, layer, bounds, xy, minXY, maxXY, layer, tolerance, testGeoms={},
+          fnRadius=null, fnStrokeWidth=null;
       if (position instanceof OpenLayers.Bounds) {
         if (position.left===position.right && position.top===position.bottom) {
           // point clicked
@@ -647,7 +648,7 @@ mapGeoreferenceHooks = [];
             // done once.
             var radius = layer.styleMap.styles['default'].defaultStyle.pointRadius, 
                 strokeWidth=layer.styleMap.styles['default'].defaultStyle.strokeWidth,
-                match, fnRadius=null;
+                match;
             if (typeof radius === "string") {
               match=radius.match(/^\${(.+)}/);
               if (match!==null && match.length>1) {
@@ -1079,7 +1080,7 @@ mapGeoreferenceHooks = [];
       // expose public stuff
       this.settings = opts;
       this.pointToSref = pointToSref;
-      this.addDistPoint = addDistPoint;
+      this.addPt = addPt;
       // wrap the map in a div container
       $(this).wrap('<div id="map-container" style="width:'+opts.width+'" >');
       
