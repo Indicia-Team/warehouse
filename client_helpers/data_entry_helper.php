@@ -3985,7 +3985,7 @@ if (errors.length>0) {
       self::$javascript .= "  var tabinputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select,textarea').not(':disabled,[name=]');\n";
       self::$javascript .= "  if (tabinputs.length>0 && !tabinputs.valid()) {\n";
       if ($msg)
-        self::$javascript .= "    alert('".lang::get($js)."');\n";
+        self::$javascript .= "    alert('".lang::get($msg)."');\n";
       self::$javascript .= "    return;\n";
       self::$javascript .= "  }\n";
     }
