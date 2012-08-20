@@ -592,7 +592,7 @@ function simple_tooltip(target_items, name){
       var doFilter = function(e) {
         if (e.target.hasChanged) {
           var fieldname = e.target.id.substr(11);
-          if ($(e.target).val().trim()==='') {
+          if ($.trim($(e.target).val())==='') {
             delete div.settings.extraParams[fieldname];
           } else {
             div.settings.extraParams[fieldname] = $(e.target).val();

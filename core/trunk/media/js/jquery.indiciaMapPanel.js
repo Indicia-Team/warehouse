@@ -47,7 +47,7 @@ mapGeoreferenceHooks = [];
     function addPt(features, record, wktCol, opts, id) {
       if (record[wktCol]!==null) {
         // if an int supplied instead of a geom, this must be an index into the indiciaData.geoms array.
-        if (parseInt(record[wktCol])!=="Na") {
+        if (!isNaN(record[wktCol])) {
           record[wktCol] = indiciaData.geoms[record[wktCol]];
         }
         var feature, geom=OpenLayers.Geometry.fromWKT(record[wktCol]);
