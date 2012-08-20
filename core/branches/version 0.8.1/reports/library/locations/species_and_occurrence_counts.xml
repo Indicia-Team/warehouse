@@ -48,7 +48,7 @@
         <param name='locattrs' display='Location attribute list' description='Comma separated list of location attribute IDs to include' datatype='locattrs' />
       </params>
       <columns>
-            <column name="id" visible="false" sql="l.id" unique="true" />
+            <column name="id" visible="false" sql="l.id" unique="true" in_count="true" />
             <column name="name" display="Site Name" style="background-color: #e7e7e7;" sql="l.name" />
             <column name="occurrences" display="No. of Occurrences" sql="COUNT(DISTINCT o.id)" aggregate="true" />
             <column name="taxa" display="No. of Taxa" sql="COUNT(DISTINCT ttl.taxon_meaning_id)" aggregate="true" />
