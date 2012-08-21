@@ -32,9 +32,9 @@ function data_cleaner_designated_taxa_data_cleaner_rules() {
     'queries' => array(
       array(
         'joins' => 
-            "join taxa_taxon_lists ttl on ttl.taxon_meaning_id=co.taxon_meaning_id ".
-            "join taxa_taxon_designations ttd on ttd.taxon_id=ttl.taxon_id ".
-            "join taxon_designations td on td.id=ttd.taxon_designation_id"
+            "join taxa_taxon_lists ttl on ttl.taxon_meaning_id=co.taxon_meaning_id and ttl.deleted=false ".
+            "join taxa_taxon_designations ttd on ttd.taxon_id=ttl.taxon_id and ttd.deleted=false ".
+            "join taxon_designations td on td.id=ttd.taxon_designation_id and td.deleted=false"
       )            
     )
   );
