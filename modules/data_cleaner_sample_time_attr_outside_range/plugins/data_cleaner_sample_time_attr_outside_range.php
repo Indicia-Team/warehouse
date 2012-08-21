@@ -49,10 +49,10 @@ function data_cleaner_sample_time_attr_outside_range_data_cleaner_rules() {
             join verification_rule_metadata vrmendattr on vrmendattr.value = cast(endtime.sample_attribute_id as character varying) and vrmendattr.key='EndTimeAttr'             
                 and vrmendattr.verification_rule_id=vrmstartattr.verification_rule_id and vrmendattr.deleted=false
             join verification_rule_metadata vrmstart on vrmstart.verification_rule_id=vrmstartattr.verification_rule_id and vrmstart.key='StartTime' and vrmstart.deleted=false
-            join verification_rule_metadata vrmend on vrmend.verification_rule_id=vrmstartattr.verification_rule_id and vrmend.key='EndTime' and vrmend.deleted=false
-            join verification_rule_metadata vrsurvey on vrsurvey.verification_rule_id=vrmstartattr.verification_rule_id and vrsurvey.key='SurveyId' 
-                and vrsurvey.value=cast(co.sample_id as character varying) and vrsurvey.deleted=false
-            join verification_rules vr on vr.id=vrmstartattr.verification_rule_id and vr.test_type='SampleTimeAttrOutsideRange' and vr.deleted=false",
+            join verification_rule_metadata vrmend on vrmend.verification_rule_id=vrmstartattr.verification_rule_id and vrmend.key='EndTime' and vrmend.deleted=false            
+            join verification_rules vr on vr.id=vrmstartattr.verification_rule_id and vr.test_type='SampleTimeAttrOutsideRange' and vr.deleted=false
+            join verification_rule_metadata vrsurvey on vrsurvey.verification_rule_id=vr.id and vrsurvey.key='SurveyId' 
+                and vrsurvey.value=cast(co.survey_id as character varying) and vrsurvey.deleted=false",
         'where' =>
           "cast(starttime.text_value as time)<cast(vrmstart.value as time) or cast(endtime.text_value as time)>cast(vrmend.value as time)"
       )
