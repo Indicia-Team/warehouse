@@ -35,12 +35,12 @@ function data_cleaner_period_within_year_data_cleaner_rules() {
       array(
         'joins' => 
             "join verification_rule_metadata vrm ".
-            "  on (vrm.value=co.taxa_taxon_list_external_key and vrm.key='Tvk')".
-            "  or (vrm.value=co.preferred_taxon and vrm.key='Taxon') ".
+            "  on (upper(vrm.value)=upper(co.taxa_taxon_list_external_key) and upper(vrm.key)='TVK')".
+            "  or (upper(vrm.value)=upper(co.preferred_taxon) and vrm.key='TAXON') ".
             "  or (vrm.value=cast(co.taxon_meaning_id as character varying) and vrm.key='TaxonMeaningId') ".
             "join verification_rules vr on vr.id=vrm.verification_rule_id and vr.test_type='PeriodWithinYear' ".
-            "left join verification_rule_metadata vrmstart on vrmstart.verification_rule_id=vr.id and vrmstart.key='StartDate' ".
-            "left join verification_rule_metadata vrmend on vrmend.verification_rule_id=vr.id and vrmend.key='EndDate' ",
+            "left join verification_rule_metadata vrmstart on vrmstart.verification_rule_id=vr.id and vrmstart.key='StartDate' and length(vrmstart.value)=4 ".
+            "left join verification_rule_metadata vrmend on vrmend.verification_rule_id=vr.id and vrmend.key='EndDate' and length(vrmend.value)=4 ",
         'where' =>
             "vr.reverse_rule<>(((vrmstart is null or vrmend.value is null or vrmstart.value <= vrmend.value) ".
             "and ((vrmstart.value is not null and extract(doy from co.date_start) < extract(doy from cast('2012' || vrmstart.value as date))) ".
