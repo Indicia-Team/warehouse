@@ -45,7 +45,9 @@ function data_cleaner_sample_number_attr_outside_range_data_cleaner_rules() {
             join verification_rule_metadata vrmattr on vrmattr.value = cast(val.sample_attribute_id as character varying) and vrmattr.key='Attr' and vrmattr.deleted=false
             left join verification_rule_metadata vrmlow on vrmlow.verification_rule_id=vrmattr.verification_rule_id and vrmlow.key='Low' and vrmlow.deleted=false
             left join verification_rule_metadata vrmhigh on vrmhigh.verification_rule_id=vrmattr.verification_rule_id and vrmhigh.key='High' and vrmhigh.deleted=false
-            join verification_rules vr on vr.id=vrmattr.verification_rule_id and vr.test_type='SampleNumberAttrOutsideRange' and vr.deleted=false",
+            join verification_rules vr on vr.id=vrmattr.verification_rule_id and vr.test_type='SampleNumberAttrOutsideRange' and vr.deleted=false
+            join verification_rule_metadata vrsurvey on vrsurvey.verification_rule_id=vr.id and vrsurvey.key='SurveyId' 
+                and vrsurvey.value=cast(co.survey_id as character varying) and vrsurvey.deleted=false",
         'where' =>
           "coalesce(val.int_value, val.float_value)<cast(vrmlow.value as float) or coalesce(val.int_value, val.float_value)>cast(vrmhigh.value as float)"
       )

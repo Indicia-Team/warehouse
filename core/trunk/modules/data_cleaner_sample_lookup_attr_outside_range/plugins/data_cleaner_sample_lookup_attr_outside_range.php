@@ -45,14 +45,15 @@ function data_cleaner_sample_lookup_attr_outside_range_data_cleaner_rules() {
           "join samples s  on s.id=co.sample_id and s.deleted=false
             left join samples sparent on sparent.id=s.parent_id and sparent.deleted=false
             join sample_attribute_values val on val.sample_id in (sparent.id, s.id) and val.deleted=false
-            join termlists_terms tlt on tlt.id=val.int_value and tlt.deleted=false
             join verification_rule_metadata vrmattr on vrmattr.value = cast(val.sample_attribute_id as character varying) and vrmattr.key='Attr' and vrmattr.deleted=false
             left join verification_rule_metadata vrmjoinmethod on vrmjoinmethod.verification_rule_id=vrmattr.verification_rule_id 
-              and vrmjoinmethod.key='JoinMethod' and vrmjoinmethod.value='meaning_id' and vrmlow.deleted=false
+              and vrmjoinmethod.key='JoinMethod' and vrmjoinmethod.value='meaning_id' and vrmjoinmethod.deleted=false
             left join verification_rule_metadata vrmlow on vrmlow.verification_rule_id=vrmattr.verification_rule_id and vrmlow.key='Low' and vrmlow.deleted=false
             left join verification_rule_metadata vrmhigh on vrmhigh.verification_rule_id=vrmattr.verification_rule_id and vrmhigh.key='High' and vrmhigh.deleted=false
-            join termlists_terms tlt on ((tlt.id=val.int_value and vrmjoinmethod.id is null) || (tlt.meaning_id=val.int_value and vrmjoinmethod.id is not null)) and tlt.deleted=false
-            join verification_rules vr on vr.id=vrmattr.verification_rule_id and vr.test_type='SampleLookupAttrOutsideRange' and vr.deleted=false",
+            join termlists_terms tlt on ((tlt.id=val.int_value and vrmjoinmethod.id is null) or (tlt.meaning_id=val.int_value and vrmjoinmethod.id is not null)) and tlt.deleted=false
+            join verification_rules vr on vr.id=vrmattr.verification_rule_id and vr.test_type='SampleLookupAttrOutsideRange' and vr.deleted=false
+            join verification_rule_metadata vrsurvey on vrsurvey.verification_rule_id=vr.id and vrsurvey.key='SurveyId' 
+                and vrsurvey.value=cast(co.survey_id as character varying) and vrsurvey.deleted=false",
         'where' =>
           "tlt.sort_order<cast(vrmlow.value as float) or tlt.sort_order>cast(vrmhigh.value as float)"
       )
