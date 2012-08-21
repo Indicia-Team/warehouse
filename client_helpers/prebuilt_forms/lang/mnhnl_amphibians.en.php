@@ -55,5 +55,7 @@ $custom_term_overrides[] = array(
 	,'LANG_Date_Explanation' => '(Indicate the date of the beginning of the survey)'
 	,'LANG_PositionOutsideParent' => 'Warning: this position is outside the available list of 5x5km squares'
 	,'LANG_ParentLookUpFailed' => 'Internal error: Lookup of the square for this location failed.'
+	,'LANG_FirstChooseParentFilter' => 'First choose a square'
+	,'LANG_ZoomToParent'=>'Zoom to parent (square or Commune)'
 	);
 ?>

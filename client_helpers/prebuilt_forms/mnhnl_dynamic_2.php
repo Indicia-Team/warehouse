@@ -262,6 +262,12 @@ jQuery('[name=params]').val('{\"survey_id\":".$args['survey_id'].", \"location_t
       global $custom_terms;
       $filterAttrs = explode(',',$args['filterAttrs']);
       $idxN=1;
+      $communeAttr=iform_mnhnl_getAttrID($auth, $args, 'location', 'Commune');
+      if($communeAttr){
+        $extraParams['attr_id_'.$idxN]=$communeAttr;
+        $custom_terms['attr_'.$idxN]=lang::get('Commune');
+        $idxN++;
+      }
       foreach($filterAttrs as $idx=>$filterAttr){
         $filterAttr=explode(':',$filterAttr);
         switch($filterAttr[0]){
@@ -269,9 +275,11 @@ jQuery('[name=params]').val('{\"survey_id\":".$args['survey_id'].", \"location_t
               $custom_terms['location name']=lang::get('location name');
               break;
             case 'Shape':
-              $extraParams['attr_id_'.$idxN]=iform_mnhnl_getAttrID($auth, $args, 'location', $filterAttr[1]);
-              $custom_terms['attr_'.$idxN]=lang::get($filterAttr[1]);
-              $idxN++;
+              if($filterAttr[1]!='Commune'){
+                $extraParams['attr_id_'.$idxN]=iform_mnhnl_getAttrID($auth, $args, 'location', $filterAttr[1]);
+                $custom_terms['attr_'.$idxN]=lang::get($filterAttr[1]);
+                $idxN++;
+              }
             break;
               default:
               $extraParams['attr_id_'.$idxN]=iform_mnhnl_getAttrID($auth, $args, 'location', $filterAttr[0]);
@@ -730,9 +738,31 @@ $.validator.addMethod('targ-presence', function(value, element){
 speciesRows = jQuery('.species-grid > tbody').find('tr');
 for(var j=0; j<speciesRows.length; j++){
 	occAttrs = jQuery(speciesRows[j]).find('.scOccAttrCell');
-	occAttrs.find('.scCount,.scNumber').addClass('required').attr('min',1).after('<span class=\"deh-required\">*</span>');
-	occAttrs.find('select').not('.scUnits').addClass('required').width('auto').after('<span class=\"deh-required\">*</span>');
-	occAttrs.find('.scUnits').width('auto');
+	occAttrs.find('.scCount,.scNumber').addClass('number').addClass('integer').addClass('required').attr('min',1).after('<span class=\"deh-required\">*</span>');
+	occAttrs.find('select').addClass('required').width('auto').after('<span class=\"deh-required\">*</span>');\n";
+    if(isset($options['unitSpeciesMeaning']))
+      data_entry_helper::$javascript .= "
+	if(jQuery(speciesRows[j]).hasClass('scMeaning-".$options['unitSpeciesMeaning']."')){
+		var units = occAttrs.find('.scUnits');
+		if(units.length > 0){
+		  if(units.find('option').filter(':selected')[0].text=='m2')
+		    occAttrs.find('.scNumber').removeClass('integer').attr('min',0);
+		  units.change(function(){
+		    jQuery('.ui-state-error').removeClass('ui-state-error');
+		    jQuery('.inline-error').remove();
+		    if(jQuery(this).find('option').filter(':selected')[0].text=='m2')
+		      jQuery(this).closest('tr').find('.scNumber').removeClass('integer').attr('min',0);
+		    else
+		      jQuery(this).closest('tr').find('.scNumber').addClass('integer').attr('min',1);
+		  });
+		}
+	} else {
+		occAttrs.find('.scNumber').addClass('integer');
+		occAttrs.find('.scUnits').find('option').each(function(index, elem){
+		  if(elem.text == 'm2' || elem.value == '') jQuery(elem).remove();
+		});
+	}\n";
+    data_entry_helper::$javascript .= "
 }
 hook_species_checklist_pre_delete_row=function(e) {
     return confirm(\"".lang::get('Are you sure you want to delete this row?')."\");
@@ -985,9 +1015,18 @@ var formatter = function(rowData,taxonCell) {
         });
     }})
 }  
-bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url."index.php/services/data\", \"".$options['id']."\", \"".$options['speciesListID']."\", {\"auth_token\" : \"".
-            $options['readAuth']['auth_token']."\", \"nonce\" : \"".$options['readAuth']['nonce']."\"}, formatter, \"".lang::get('LANG_Duplicate_Taxon')."\", ".(isset($options['max_species_ids'])?$options['max_species_ids']:25).");
+bindSpeciesAutocompleteOptions = {selectorID: \"taxonLookupControl\",
+              url: \"".data_entry_helper::$base_url."index.php/services/data\",
+              gridId: \"".$options['id']."\",
+              lookupListId: \"".$options['speciesListID']."\",
+              auth_token : \"".$options['readAuth']['auth_token']."\",
+              nonce : \"".$options['readAuth']['nonce']."\",
+              formatter: formatter,
+              max: ".(isset($options['max_species_ids'])?$options['max_species_ids']:25)."};
 ";
+      if(isset($options['unitSpeciesMeaning']))
+        data_entry_helper::$javascript .= "bindSpeciesAutocompleteOptions.unitSpeciesMeaning=\"".$options['unitSpeciesMeaning']."\";\n";
+      data_entry_helper::$javascript .= "bindSpeciesAutocomplete(bindSpeciesAutocompleteOptions);\n";
       // No help text
       $mapOptions = iform_map_get_map_options($options['args'],$options['readAuth']);
       $olOptions = iform_map_get_ol_options($options['args']);
@@ -1447,7 +1486,7 @@ jQuery(jQuery('#".$mapOptions['tabDiv']."').parent()).bind('tabsshow', ".$mapOpt
           $smp = data_entry_helper::wrap($samples[$id], 'sample');
           $smp['subModels'] = array(array('fkId' => 'sample_id', 'model' => $occ));
           $smp = array('fkId' => 'parent_id', 'model' => $smp);
-          if(!isset($samples[$id]['date'])) $smp['copyFields'] = array('date'=>'date'); // from parent->to child
+          if(!isset($samples[$id]['date'])) $smp['copyFields'] = array('date_start'=>'date_start','date_end'=>'date_end','date_type'=>'date_type'); // from parent->to child
           $subModels[] = $smp;
         } else {
           $subModels[] = array('fkId' => 'sample_id', 'model' => $occ);

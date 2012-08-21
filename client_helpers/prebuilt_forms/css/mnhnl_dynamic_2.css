@@ -19,6 +19,10 @@
 .control-box {
   display:inline  !important;
 }
+.species-grid input, .species-grid select 
+{
+  margin-top: 4px;
+}
 .scOccAttrCell label {
   margin-right: 15px;
   width: auto;
@@ -27,19 +31,15 @@
   width: auto;
 }
 input.scNumAlive {
-  margin-top: 4px;
   width: 30px;
 }
 input.scNumDead {
-  margin-top: 4px;
   width: 30px;
 }
 input.scExcrement {
-  margin-top: 4px;
   width: auto;
 }
 select.scOccurrenceReliability {
-  margin-top: 4px;
   width: auto;
 }
 .scCommentTable {

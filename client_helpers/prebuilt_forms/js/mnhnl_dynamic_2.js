@@ -30,16 +30,12 @@ selectOccurrenceStyleHash={pointRadius:6,fillColor:'Fuchsia',fillOpacity:0.3,str
  */
 var scRow = 0;
 
-function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth, formatter, duplicateMsg, max) {
-  var handleFocus = function(event, data) {
+function bindSpeciesAutocomplete(options){
+  var setHighlight = function(myRow) {
 	var map = jQuery('#map2');
 	if(map.length==0) return;
 	map = map[0];
-    $(event.target).closest('table').find('tr').removeClass('highlight');
-    var myRow = $(event.target).closest('tr');
-    while(!myRow.hasClass('first')) {
-    	myRow = myRow.prev();
-    }
+	myRow.closest('table').find('tr').removeClass('highlight');
 	var firstRow = myRow;
     myRow.addClass('highlight');
     while(!myRow.hasClass('last')) {
@@ -57,7 +53,7 @@ function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth
     };
 	map.map.editLayer.destroyFeatures();
 	occurrencePointLayer.removeAllFeatures();
-	$(event.target).closest('table').find('.first').each(function(idx, elem){
+	myRow.closest('table').find('.first').each(function(idx, elem){
 		if(jQuery(elem).data('feature')!=null){
 			if(firstRow[0]==elem){
 				jQuery(elem).data('feature').style=selectOccurrenceStyleHash;
@@ -79,8 +75,16 @@ function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth
       jQuery('#map2').parent().css("margin-top", offset+"px"); 
       map.map.events.triggerEvent('zoomend');
     }
-
   };
+
+  var handleFocus = function(event, data) {
+    var myRow = $(event.target).closest('tr');
+    while(!myRow.hasClass('first')) {
+      myRow = myRow.prev();
+    }
+    setHighlight(myRow);
+  };
+
   // inner function to handle a selection of a taxon from the autocomplete
   // dynamic 2 is occurrence location driven we therefore can enter more than one of each taxa.
   var handleSelectedTaxon = function(event, data) {
@@ -127,7 +131,7 @@ function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth
         });
     }
     
-    var rows=$('#'+gridId + '-scClonable > tbody > tr');
+    var rows=$('#'+options.gridId + '-scClonable > tbody > tr');
     var newRows=[];
     rows.each(function(){newRows.push($(this).clone(true))})
     var taxonCell=newRows[0].find('td:eq(1)');
@@ -138,7 +142,7 @@ function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth
       $.each(row.children(), function(j, cell) {
         cell.innerHTML = cell.innerHTML.replace(/--TTLID--/g, data.id).replace(/--GroupID--/g, scRow).replace(/--SampleID--/g, '').replace(/--OccurrenceID--/g, '');
       }); 
-      row.appendTo('#'+gridId);
+      row.appendTo('#'+options.gridId);
       if(row.find('[id$=imp-srefX]').length>0)
         row.find('[id$=imp-srefX]').addClass('required').after('<span class=\"deh-required\">*</span>').change(function() {
           // Only do something if the long is also populated
@@ -161,11 +165,34 @@ function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth
       row.find('.scCommentLabelCell').each(function(idx,elem){
           jQuery(this).css('width',jQuery(this).find('label').css('width'));
       });
-      row.find('.scCount').addClass('required').attr('min',1).after('<span class=\"deh-required\">*</span>');
-      row.find('.scOccAttrCell').find('select').not('.scUnits').addClass('required').width('auto').after('<span class=\"deh-required\">*</span>');
-      row.find('.scUnits').width('auto');
+      row.find('.scCount,.scNumber').addClass('number').addClass('integer').addClass('required').attr('min',1).after('<span class=\"deh-required\">*</span>');
+      row.find('.scOccAttrCell').find('select').addClass('required').width('auto').after('<span class=\"deh-required\">*</span>');
       row.find('input,select').bind('focus', handleFocus);
+      if(typeof options.unitSpeciesMeaning != 'undefined'){
+    	if(row.hasClass('scMeaning-'+options.unitSpeciesMeaning)){
+    	  var units = row.find('.scUnits');
+    	  if(units.length > 0){
+  			// initially units will not be m2,  but set min to 0: will be set correctly when units selected.
+      		row.find('.scNumber').attr('min',0);
+    		units.change(function(){
+    		  jQuery('.ui-state-error').removeClass('ui-state-error');
+    		  jQuery('.inline-error').remove();
+    		  if(jQuery(this).find('option').filter(':selected')[0].text=='m2')
+    		    jQuery(this).closest('tr').find('.scNumber').removeClass('integer').attr('min',0);
+    		  else
+    		    jQuery(this).closest('tr').find('.scNumber').addClass('integer').attr('min',1);
+    		});
+    	  }
+    	} else {
+    		row.find('.scNumber').addClass('integer');
+    		row.find('.scUnits').find('option').each(function(index, elem){
+    		  if(elem.text == 'm2' || elem.value == '') jQuery(elem).remove();
+    		});
+    	}
+      }
+
     }); 
+    // sc:--GroupID--:--SampleID--:--TTLID--:--OccurrenceID--
     newRows[0].find('.scPresenceCell input').attr('name', 'sc:'+scRow+'::' + data.id + '::present').val('true');
     newRows[0].data('feature',null);
     // Allow forms to hook into the event of a new row being added
@@ -173,22 +200,23 @@ function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth
     	hook_species_grid_changed();
     }
     $(event.target).val('');
-    formatter(data,taxonCell);
+    options.formatter(data,taxonCell);
+    setHighlight(newRows[0]);
   };
-  $('#'+gridId+' tbody').find('input,select').bind('focus', handleFocus);
+  $('#'+options.gridId+' tbody').find('input,select').bind('focus', handleFocus);
 
     // Attach auto-complete code to the input
-  ctrl = $('#' + selectorID).autocomplete(url+'/taxa_taxon_list', {
+  ctrl = $('#' + options.selectorID).autocomplete(options.url+'/taxa_taxon_list', {
       extraParams : {
         view : 'detail',
         orderby : 'taxon',
         mode : 'json',
         qfield : 'taxon',
-        auth_token: readAuth.auth_token,
-        nonce: readAuth.nonce,
-        taxon_list_id: lookupListId
+        auth_token: options.auth_token,
+        nonce: options.nonce,
+        taxon_list_id: options.lookupListId
       },
-      max : max,
+      max : options.max,
       parse: function(data) {
         var results = [];
         jQuery.each(data, function(i, item) {
