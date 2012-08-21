@@ -149,9 +149,9 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
    * Uploading from a zipped batch of rule files. Displays 
    * the upload template with progress bar and status message, which then initiates the actual import.
    */
-  private function upload_rule_zip($file) {
+  private function upload_rule_zip($zipfile) {
     $ruleFiles = array();
-    $dir = $this->process_rule_zip_file($file['tmp_name'], true);
+    $dir = $this->process_rule_zip_file($zipfile['tmp_name'], true);
     $dir_iterator = new RecursiveDirectoryIterator($dir);
     $iterator = new RecursiveIteratorIterator($dir_iterator, RecursiveIteratorIterator::SELF_FIRST);
     foreach ($iterator as $file) {
@@ -159,18 +159,18 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
         $relativePath = substr($file->getRealPath(), strlen(realpath("$dir/extract")));
         $ruleFiles[] = array(
           'file'=>$file->__toString(),
-          'source_url'=>$file['name'],
-          'display'=>basename($file['name']).' '.$relativePath
+          'source_url'=>$zipfile['name'],
+          'display'=>basename($zipfile['name']).' '.$relativePath
         );
       }
     }
     // Save the rule file list to a cached list, so we can preserve it across http requests
-    $uploadId = time() . md5($file['tmp_name']);
+    $uploadId = time() . md5($zipfile['tmp_name']);
     $cacheHandle = fopen(DOCROOT . "extract/$uploadId.txt", "w");
     fwrite($cacheHandle, json_encode(array('paths'=>array(array(
         'file'=>$dir,
-        'source_url'=>$file['name'],
-        'title'=>basename($file['name'])
+        'source_url'=>$zipfile['name'],
+        'title'=>basename($zipfile['name'])
       )), 'files'=>$ruleFiles)));
     fclose($cacheHandle);
     //  show a progress view.
@@ -551,6 +551,14 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
     $csvTempFile = DOCROOT . "upload/" . $_GET['uploaded_csv'];
     unlink($csvTempFile);
     url::redirect('verification_rule/index'); 
+  }
+  
+  /**
+   * Enforce that a user must be at least a website admin to see the list of verification rules.
+   */
+  public function page_authorised()
+  {
+    return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('admin');
   }
   
 }
