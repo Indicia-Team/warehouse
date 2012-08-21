@@ -39,7 +39,8 @@ function data_cleaner_ancillary_species_data_cleaner_rules() {
         'joins' => 
             "join verification_rules vr on vr.test_type='AncillarySpecies' and vr.deleted=false ".
             "left join verification_rule_data vrd on vrd.verification_rule_id=vr.id and vrd.deleted=false ".
-            "  and ((vrd.key=co.taxa_taxon_list_external_key and vrd.header_name='Data') or (vrd.key=lower(co.preferred_taxon) and vrd.header_name='Taxa')) ".
+            "  and ((upper(vrd.key)=upper(co.taxa_taxon_list_external_key) and upper(vrd.header_name)='DATA') ".
+            "or (upper(vrd.key)=upper(co.preferred_taxon) and upper(vrd.header_name)='TAXA')) ".
             "left join verification_rule_metadata vrms on vrms.verification_rule_id=vr.id and vrms.key='SurveyId' and vrms.deleted=false ".
             "left join verification_rule_data vrdini on vrdini.verification_rule_id=vr.id and vrdini.header_name='INI' and vrdini.key=vrd.value and vrdini.deleted=false",
         'where' =>
