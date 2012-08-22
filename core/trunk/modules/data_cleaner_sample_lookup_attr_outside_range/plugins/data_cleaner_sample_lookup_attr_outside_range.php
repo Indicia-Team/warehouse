@@ -28,7 +28,7 @@
  * - verification checks enabled for the website
  * - metadata for Low and High (optional, numbers. Will be compared with the term sort_orders to define the passing and failing terms.)
  * - metadata for JoinMethod - either meaning_id or termlists_term_id to join to the term via the meaning_id or the termlists_term_id. Default
- * - is termlists_term_id as meaning_id is only used in some special case multi-lingual surveys to simplify localisation of terms. 
+ *     is termlists_term_id as meaning_id is only used in some special case multi-lingual surveys to simplify localisation of terms. 
  * - metadata for Attr (pointing to attribute ID, attribute must be lookup).
  * - metadata for SurveyId
  * @return type array of rules.
