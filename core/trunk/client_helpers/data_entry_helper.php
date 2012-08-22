@@ -4893,7 +4893,7 @@ if (errors.length>0) {
         'id'=>$item['id'],
         'disabled'=>'');
     if (isset($item['caption']))
-      $attrOptions['label']=lang::get($item['caption']);
+      $attrOptions['label']=$item['caption']; // no need to translate, as that has already been done by getAttributes. Untranslated caption is in field untranslatedCaption
     $attrOptions = array_merge($attrOptions, $options);
     // build validation rule classes from the attribute data
     if (isset($item['validation_rules'])) {
