@@ -533,11 +533,13 @@ $config['occurrences']['get_changed_items_query'] = "
     join surveys su on su.id=s.survey_id 
     join cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
     left join cache_termlists_terms tmethod on tmethod.id=s.sample_method_id
+    left join occurrence_images oi on oi.occurrence_id=o.id
     where o.created_on>'#date#' or o.updated_on>'#date#' 
       or s.created_on>'#date#' or s.updated_on>'#date#' 
       or su.created_on>'#date#' or su.updated_on>'#date#'
       or cttl.cache_updated_on>'#date#'
-      or tmethod.cache_updated_on>'#date#' ";
+      or tmethod.cache_updated_on>'#date#'
+      or oi.created_on>'#date#' or oi.updated_on>'#date#'";
 
 $config['occurrences']['update'] = "update cache_occurrences co
     set record_status=o.record_status, 
@@ -575,7 +577,9 @@ $config['occurrences']['update'] = "update cache_occurrences co
         else 'U'
       end,
       location_name=COALESCE(l.name, s.location_name),
-      recorders = s.recorder_names
+      recorders = s.recorder_names,
+      verifier = pv.surname || ', ' || pv.first_name,
+      images=images.list
     from occurrences o
     join needs_update_occurrences nuo on nuo.id=o.id
     join samples s on s.id=o.sample_id and s.deleted=false
@@ -587,6 +591,13 @@ $config['occurrences']['update'] = "update cache_occurrences co
       join termlists_terms certainty on certainty.id=oav.int_value
       join occurrence_attributes oa on oa.id=oav.occurrence_attribute_id and oa.deleted='f' and oa.system_function='certainty'
     ) on oav.occurrence_id=o.id and oav.deleted='f'
+    left join users uv on uv.id=o.verified_by_id and uv.deleted=false
+    left join people pv on pv.id=uv.person_id and pv.deleted=false
+    left join (select occurrence_id, 
+    array_to_string(array_agg(path), ',')) as list
+    from occurrence_images
+    where deleted=false
+    group by occurrence_id) as images on images.occurrence_id=o.id
     where co.id=o.id";
 
 $config['occurrences']['insert']="insert into cache_occurrences (
@@ -597,7 +608,8 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       sample_method, taxa_taxon_list_id, preferred_taxa_taxon_list_id, taxonomic_sort_order, 
       taxon, authority, preferred_taxon, preferred_authority, default_common_name, 
       search_name, taxa_taxon_list_external_key, taxon_meaning_id, taxon_group_id, taxon_group,
-      created_by_id, cache_created_on, cache_updated_on, certainty, location_name, recorders
+      created_by_id, cache_created_on, cache_updated_on, certainty, location_name, recorders, 
+      verifier, images
     )
   select distinct on (o.id) o.id, o.record_status, o.downloaded_flag, o.zero_abundance,
     su.website_id as website_id, su.id as survey_id, s.id as sample_id, su.title as survey_title,
@@ -616,7 +628,9 @@ $config['occurrences']['insert']="insert into cache_occurrences (
         else 'U'
     end,
     COALESCE(l.name, s.location_name),
-    s.recorder_names
+    s.recorder_names,
+    pv.surname || ', ' || pv.first_name,
+    images.list
   from occurrences o
   left join cache_occurrences co on co.id=o.id
   join samples s on s.id=o.sample_id 
@@ -628,6 +642,13 @@ $config['occurrences']['insert']="insert into cache_occurrences (
     join termlists_terms certainty on certainty.id=oav.int_value
     join occurrence_attributes oa on oa.id=oav.occurrence_attribute_id and oa.deleted='f' and oa.system_function='certainty'
   ) on oav.occurrence_id=o.id and oav.deleted='f'
+  left join users uv on uv.id=o.verified_by_id and uv.deleted=false
+  left join people pv on pv.id=uv.person_id and pv.deleted=false
+  left join (select occurrence_id, 
+    array_to_string(array_agg(path), ',')) as list
+    from occurrence_images
+    where deleted=false
+    group by occurrence_id) as images on images.occurrence_id=o.id
   #insert_join_needs_update#
   where co.id is null";
   
