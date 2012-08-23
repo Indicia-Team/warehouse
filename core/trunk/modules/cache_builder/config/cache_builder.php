@@ -658,12 +658,17 @@ $config['occurrences']['insert']="insert into cache_occurrences (
   // Additional update statements to pick up the recorder name from various possible custom attribute places. Faster than 
   // loads of left joins.
   $config['occurrences']['final_updates']=array(
-    // warehouse username. No null filter in this one as it is the first update attempt
-    'Warehouse username' => 'update cache_occurrences co
+    // nullify the recorders field so it gets an update
+    'Nullify recorders' => 'update cache_occurrences co
+      set recorders=null
+      from needs_update_occurrences nuo
+      where nuo.id=co.id;',
+    // warehouse surname, first name
+    'Warehouse surname, first name' => 'update cache_occurrences co
       set recorders=p.surname || coalesce(\', \' || p.first_name, \'\')
       from needs_update_occurrences nuo, users u, people p
       where co.recorders is null and u.id=co.created_by_id and p.id=u.person_id and p.deleted=false
-      and nuo.id=co.id;',
+      and nuo.id=co.id and u.id<>1;',
     // surname, firstname
     'First name/surname' => 'update cache_occurrences co
       set recorders=sav.text_value || coalesce(\', \' || savf.text_value, \'\')
