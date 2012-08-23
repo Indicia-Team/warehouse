@@ -83,7 +83,7 @@
   left join cache_termlists_terms lookup on lookup.id=av.int_value 
   where o.id=#occurrence_id#
   and o.deleted=false
-  and a.system_function&lt;&gt;'cms_user_id'
+  and (a.system_function&lt;&gt;'cms_user_id' or a.system_function is null)
 
   union
 
@@ -125,7 +125,7 @@
   left join cache_termlists_terms lookup on lookup.id=av.int_value 
   where o.id=#occurrence_id#
   and o.deleted=false
-  and a.system_function&lt;&gt;'cms_user_id'
+  and (a.system_function&lt;&gt;'cms_user_id' or a.system_function is null)
   </query>
   <params>
     <param name='occurrence_id' display='Occurrence ID' description='ID of the occurrence to load' datatype='text' />
