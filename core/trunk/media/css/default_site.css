@@ -366,6 +366,16 @@ table tr.odd {
   padding: 0 0.3em;
 }
 
+.report-grid .single img {
+  width: 100px;
+  margin: 2px;
+}
+
+.report-grid .multi img {
+  width: 50px;
+  margin: 1px;
+}
+
 .remove-row {
   cursor: pointer;
   width: 8px;
