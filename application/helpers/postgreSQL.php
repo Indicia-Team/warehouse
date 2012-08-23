@@ -63,14 +63,25 @@ class postgreSQL {
   public static function selectVerificationAndCommentNotifications($last_run_date, $db=null) {
     if (!$db)
       $db = new Database();
-    return $db->query("select case when o.verified_on>'2012-06-19' and o.record_status not in ('I','T','C') then 'V' else 'C' end as source_type,
+    return $db->query("select case when o.verified_on>'$last_run_date' and o.record_status not in ('I','T','C') then 'V' else 'C' end as source_type,
     co.id, co.created_by_id, co.taxon, co.date_start, co.date_end, co.date_type, co.public_entered_sref, u.username, 
     coalesce(
       case oc.auto_generated 
-        when true then 'This record was identified by the automated checking system as requiring expert confirmation. The following reason was given. <br/>' 
-        else '' 
-      end || oc.comment,
-      'The record was ' || case o.record_status when 'V' then 'verified' when 'R' then 'rejected' when 'D' then 'marked dubious' when 'S' then 'emailed for checking' end
+        when true then 'An automated check using the <a target="_blank" href=\"http://www.nbn.org.uk/Tools-Resources/Recording-Resources/NBN-Record-Cleaner.aspx\" target=\"_blank\">NBN Record Cleaner</a> rules ' ||
+          'has highlighted your record of ' || co.taxon || ' at ' || co.public_entered_sref || ' on ' || coalesce(co.date_start, co.date_end) || '. The following information was given: <br/><em>' 
+        else 
+          case when o.verified_on>'$last_run_date' and o.record_status not in ('I','T','C') then 
+            'Your record of ' || co.taxon || ' at ' || co.public_entered_sref || ' on ' || coalesce(co.date_start, co.date_end) || ' was examined by an expert.<br/>\"' 
+          else 
+            'A comment was added to your record of ' || co.taxon || ' at ' || co.public_entered_sref || ' on ' || coalesce(co.date_start, co.date_end) || '.<br/>\"' 
+          end 
+      end || oc.comment || 
+      case oc.auto_generated
+      when true then '</em><br/>You may be contacted by an expert to confirm this important record so if you can supply any more information or photographs it would be useful.'
+      else '\"<br/>'
+      end,
+      'The record of ' || co.taxon || ' at ' || co.public_entered_sref || ' on ' || coalesce(co.date_start, co.date_end) || ' was ' 
+          || case o.record_status when 'V' then 'verified' when 'R' then 'rejected' when 'D' then 'marked dubious' when 'S' then 'emailed for checking' end
     ) as comment, 
     oc.auto_generated, o.record_status, o.updated_on
 from occurrences o
