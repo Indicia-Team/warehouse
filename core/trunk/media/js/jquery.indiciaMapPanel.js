@@ -374,7 +374,7 @@ mapGeoreferenceHooks = [];
       $('#'+opts.geomId).val(data.wkt);
       var parser = new OpenLayers.Format.WKT();
       // If mapwkt not provided, calculate it
-      if (typeof(data.mapwkt==="undefined")) {
+      if (typeof data.mapwkt ==="undefined") {
         if (div.indiciaProjection.getCode()===div.map.projection.getCode()) {
           data.mapwkt=data.wkt;
         } else {
