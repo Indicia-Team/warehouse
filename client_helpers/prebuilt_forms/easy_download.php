@@ -233,7 +233,8 @@ class iform_easy_download {
       'readAuth'=>$readAuth,
       'dataSource'=>$args["report_$format"],
       'extraParams'=>$filter,
-      'format'=>$format
+      'format'=>$format,
+      'sharing'=>'data_flow'
     ));
     //drupal_set_message($url);
     header("Location: $url");
