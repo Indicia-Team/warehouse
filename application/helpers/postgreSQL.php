@@ -67,7 +67,7 @@ class postgreSQL {
     co.id, co.created_by_id, co.taxon, co.date_start, co.date_end, co.date_type, co.public_entered_sref, u.username, 
     coalesce(
       case oc.auto_generated 
-        when true then 'An automated check using the <a target="_blank" href=\"http://www.nbn.org.uk/Tools-Resources/Recording-Resources/NBN-Record-Cleaner.aspx\" target=\"_blank\">NBN Record Cleaner</a> rules ' ||
+        when true then 'An automated check using the <a target=\"_blank\" href=\"http://www.nbn.org.uk/Tools-Resources/Recording-Resources/NBN-Record-Cleaner.aspx\" target=\"_blank\">NBN Record Cleaner</a> rules ' ||
           'has highlighted your record of ' || co.taxon || ' at ' || co.public_entered_sref || ' on ' || coalesce(co.date_start, co.date_end) || '. The following information was given: <br/><em>' 
         else 
           case when o.verified_on>'$last_run_date' and o.record_status not in ('I','T','C') then 

@@ -594,7 +594,7 @@ $config['occurrences']['update'] = "update cache_occurrences co
     left join users uv on uv.id=o.verified_by_id and uv.deleted=false
     left join people pv on pv.id=uv.person_id and pv.deleted=false
     left join (select occurrence_id, 
-    array_to_string(array_agg(path), ',')) as list
+    array_to_string(array_agg(path), ',') as list
     from occurrence_images
     where deleted=false
     group by occurrence_id) as images on images.occurrence_id=o.id
@@ -645,7 +645,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
   left join users uv on uv.id=o.verified_by_id and uv.deleted=false
   left join people pv on pv.id=uv.person_id and pv.deleted=false
   left join (select occurrence_id, 
-    array_to_string(array_agg(path), ',')) as list
+    array_to_string(array_agg(path), ',') as list
     from occurrence_images
     where deleted=false
     group by occurrence_id) as images on images.occurrence_id=o.id
