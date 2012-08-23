@@ -308,6 +308,7 @@ createGridEntries = function(feature, isnew) {
   jQuery(newCGRows[0]).find('.cggrid-date').datepicker({dateFormat : 'dd/mm/yy', changeMonth: true, changeYear: true, constrainInput: false, maxDate: '0', onClose: function() { $(this).valid(); }});
   recalcNumSites();
   // Species grid 1) add to header, 2) add to cloneable row, 3) add to existing rows
+  insertCount++;// double cells at start for these rows.
   insertPoint=jQuery('#species-grid-header').children(':eq('+insertCount+')');
   jQuery('<th class=\"smp-'+cgRowNum+'\">'+name+'</th>').css('opacity',0.25).insertAfter(insertPoint);
   jQuery('.sgNoObRow').each(function(i, Row) {
@@ -318,18 +319,19 @@ createGridEntries = function(feature, isnew) {
       '</td>').css('opacity',0.25).insertAfter(insertPoint);
     newNoObCell.find(':checkbox').rules('add', {no_observation: cgRowNum});
   });
-  insertCount++;// double cells at start for these rows.
   insertPoint=jQuery('.sgCloneableRow').children(':eq('+insertCount+')');
   jQuery('<td class=\"smp-'+cgRowNum+'\"><input class=\"digits narrow disabled\" name=\"SG:--sgrownum--:'+cgRowNum+':--sampleid--:--ttlid--:--occid--:occAttr:".$countAttr."\" disabled=\"disabled\" min=\"1\"></td>').css('opacity',0.25).insertAfter(insertPoint);
   jQuery('.sgAddedRow,.sgOrigRow').each(function(i, Row) {
     insertPoint=jQuery(Row).children(':eq('+insertCount+')');
     jQuery('<td class=\"smp-'+cgRowNum+'\"><input class=\"digits narrow disabled\" name=\"SG:'+jQuery(Row).data('taxonRow')+':'+cgRowNum+':--sampleid--:'+jQuery(Row).data('ttlid')+':--occid--:occAttr:".$countAttr."\" disabled=\"disabled\" min=\"1\"></td>').css('opacity',0.25).insertAfter(insertPoint);
   });
+  resetSpeciesGridHeader();
   return name;
 };
 moveGridEntries = function(cgRowNum) {
   var oldPosition=-1;
   var newPosition=-1;
+  var numCGRows = jQuery('#cgCloneableTable').find('tr').length;
   var name;
   jQuery('#conditions-grid > tbody').find('tr:.cggrid-row,.cgAddedRow').each(function(index,elem){
     if(jQuery(elem).data('cgRowNum')==cgRowNum){
@@ -341,25 +343,23 @@ moveGridEntries = function(cgRowNum) {
       newPosition=index; // points to row we insert after.
     }});
   if(newPosition==oldPosition-1) return;
-  var row1 = jQuery('#conditions-grid > tbody').find('tr:eq('+(2*oldPosition)+')');
-  var row2 = jQuery('#conditions-grid > tbody').find('tr:eq('+(2*oldPosition+1)+')');
+  var rows=[];
+  for(var i=0; i< numCGRows; i++)
+    rows.push(jQuery('#conditions-grid > tbody').find('tr:eq('+(numCGRows*oldPosition+i)+')'));
   if(newPosition < 0){
-    jQuery('#conditions-grid > tbody').prepend(row2);
-    jQuery('#conditions-grid > tbody').prepend(row1);
+    for(var i=numCGRows-1; i>=0; i--)
+      jQuery('#conditions-grid > tbody').prepend(rows[i]);
   } else {
-    var insertPoint=jQuery('#conditions-grid > tbody').find('tr:eq('+(2*newPosition+1)+')');  // = item after which we insert
-    row2.insertAfter(insertPoint);
-    row1.insertAfter(insertPoint);
+    var insertPoint=jQuery('#conditions-grid > tbody').find('tr:eq('+(numCGRows*(newPosition+1)-1)+')');  // = item after which we insert
+    for(var i=numCGRows-1; i>=0; i--)
+      rows[i].insertAfter(insertPoint);
   }
   // Species grid 1) add to header, 2) add to cloneable row, 3) add to existing rows
-  jQuery('#species-grid-header,.sgNoObRow').each(function(i, Row) {
-    insertPoint=jQuery(Row).children(':eq('+(newPosition+1)+')');
-    jQuery(Row).children(':eq('+(oldPosition+1)+')').insertAfter(insertPoint);
-  });
-  jQuery('.sgCloneableRow,.sgAddedRow,.sgOrigRow').each(function(i, Row) {
+  jQuery('#species-grid-header,.sgNoObRow,.sgCloneableRow,.sgAddedRow,.sgOrigRow').each(function(i, Row) {
     insertPoint=jQuery(Row).children(':eq('+(newPosition+2)+')');
     jQuery(Row).children(':eq('+(oldPosition+2)+')').insertAfter(insertPoint);
   });
+  resetSpeciesGridHeader();
 };
 
 hook_ChildFeatureLoad = function(feature, data, child_id, options){
@@ -639,7 +639,7 @@ resetSpeciesGridHeader = function(){
       $(this).css('width', columnWidths[index]);
     });
   });
-  jQuery('#species-grid-head-head').empty().append(jQuery('#species-grid > thead').find('tr').clone());
+  jQuery('#species-grid-head-head').empty().append(jQuery('#species-grid > thead').find('tr').clone().removeAttr('id'));
   jQuery('#species-grid > thead').hide();
 }
 resetSpeciesGridHeader();
@@ -1023,6 +1023,7 @@ jQuery('#dummy-name').change(function() {
   });
   moveGridEntries(myRowNum);
   jQuery('#species-grid-header').find('.smp-'+myRowNum).empty().append(jQuery(this).val());
+  resetSpeciesGridHeader();
   for(var i=SiteLabelLayer.features.length-1; i>=0; i--){ // Row may not be selected on map
     if(typeof SiteLabelLayer.features[i].attributes.cgRowNum != 'undefined'
         && SiteLabelLayer.features[i].attributes.cgRowNum == myRowNum
