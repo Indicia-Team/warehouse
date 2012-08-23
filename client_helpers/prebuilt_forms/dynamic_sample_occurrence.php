@@ -686,15 +686,6 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       return $hidden;
     $extraParams = $auth['read'];
     $gridmode = call_user_func(array(self::$called_class, 'getGridMode'), $args);    
-    // Get any configured filter for a set of taxon groups, external keys or taxon names.
-    if (!empty($args['taxon_filter_field']) && !empty($args['taxon_filter'])) {
-      // filter the taxa available to record
-      // switch field to filter by if using cached lookup
-        if ($args['cache_lookup'] && $args['taxon_filter_field']==='preferred_name')
-          $args['taxon_filter_field']='preferred_taxon';
-      $query = array('in'=>array($args['taxon_filter_field'], helper_base::explode_lines($args['taxon_filter'])));
-      $extraParams['query'] = json_encode($query);
-    }
     call_user_func(array(self::$called_class, 'build_grid_autocomplete_function'), $args);
     if ($gridmode)
       return self::get_control_species_checklist($auth, $args, $extraParams, $options);
@@ -772,7 +763,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     }
     if ($args['extra_list_id']) $species_ctrl_opts['lookupListId']=$args['extra_list_id'];
     if (!empty($args['taxon_filter_field']) && !empty($args['taxon_filter'])) {
-      $species_ctrl_opts['taxonFilterField']=$args['taxon_filter_field'];
+      $species_ctrl_opts['taxonFilterField']=$args['taxon_filter_field'];      
+      $filterLines = helper_base::explode_lines($args['taxon_filter']);
       $species_ctrl_opts['taxonFilter']=$filterLines;
     }
     if (isset($args['col_widths']) && $args['col_widths']) $species_ctrl_opts['colWidths']=explode(',', $args['col_widths']);
@@ -801,6 +793,15 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       $extraParams['taxon_list_id'] = empty($args['extra_list_id']) ? $args['list_id'] : $args['extra_list_id'];
     else
       $extraParams['taxon_list_id'] = array($args['list_id'], $args['extra_list_id']);
+    // Get any configured filter for a set of taxon groups, external keys or taxon names.
+    if (!empty($args['taxon_filter_field']) && !empty($args['taxon_filter'])) {
+      // filter the taxa available to record
+      // switch field to filter by if using cached lookup
+        if ($args['cache_lookup'] && $args['taxon_filter_field']==='preferred_name')
+          $args['taxon_filter_field']='preferred_taxon';
+      $query = array('in'=>array($args['taxon_filter_field'], helper_base::explode_lines($args['taxon_filter'])));
+      $extraParams['query'] = json_encode($query);
+    }
     global $indicia_templates;
     $species_ctrl_opts=array_merge(array(
         'label'=>lang::get('occurrence:taxa_taxon_list_id'),
