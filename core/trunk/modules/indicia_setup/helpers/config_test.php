@@ -318,14 +318,6 @@ class config_test {
     $bad_dirs=array();
     $readonly=true;
     $writeable=false;
-    if (glob(dirname(dirname(dirname(dirname(__file__ )))) . '/application/cache/nofile*')===false)
-        array_push($messages, array(
-          'title' => 'PHP bug detected',
-          'description' => '<p>A bug in PHP has been detected which prevents the Kohana framework used by the Indicia Warehouse from running. '.
-              'This bug can be fixed by upgrading to PHP 5.3 or higher or by disabling safe mode on the server. For more information see '.
-              '<a target="_blank" href="https://bugs.php.net/bug.php?id=43530">https://bugs.php.net/bug.php?id=43530</a>.</p>',
-          'success' => false
-        ));
     self::check_dir_permission($writeable, $good_dirs, $bad_dirs, 'configuration',
           dirname(dirname(dirname(dirname(__file__ )))) . '/application/config',
           'the installation settings to be stored correctly',
