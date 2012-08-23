@@ -2783,7 +2783,7 @@ filterLoad".$idx." = function(){
   for(i=0, newName = 1; i<locations.length; i++){
     match=true;
     for(j=0; j<location_attrs.length; j++)
-      if(location_attrs[i].shape==false && jQuery('#locAttr\\\\:'+location_attrs[j].id).val()!=locations[i].attrs[location_attrs[j].id]) match=false;
+      if(location_attrs[j].shape==false && jQuery('#locAttr\\\\:'+location_attrs[j].id).val()!=locations[i].attrs[location_attrs[j].id]) match=false;
     if(match && parseInt(locations[i].name)>=newName) newName=parseInt(locations[i].name)+1;
     jQuery('#location-name').data('newValue',newName);
     if(jQuery('#location-id').val()=='' || jQuery('#location-id').val()==null) jQuery('#location-name').val(newName);

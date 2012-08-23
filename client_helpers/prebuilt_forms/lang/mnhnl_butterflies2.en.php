@@ -102,7 +102,7 @@ $custom_terms = array(
 	"LANG_EmptyLocationID"=>'Choose an existing site',
 	'Recorder names' => 'Observer(s)',
 	'LANG_RecorderInstructions'=>"To select more than one observer, keep the CTRL button down.",
-	'LANG_ConditionsGridInstructions'=>'Before any data can be entered onto a row of the grid below, and entered into the equivalent column in the species grid, the date for the visit to that site must be filled in. Additional sites may be added by drawing on the Map. Clicking on the Red X will either clear the data for that site, if the site was pre-existing, or the site will be deleted if you have added it during this session.',
+	'LANG_ConditionsGridInstructions'=>'Before any data can be entered onto a row of the grid below, and entered into the equivalent column in the species grid, the date for the visit to that site must be filled in. Additional sites may be added by drawing on the Map.<br />Clicking on the red X at the start of each group will either clear the conditions data for that site (if the site was pre-existing) or the site will be deleted if you have added it during this session.',
 	'LANG_SpeciesGridInstructions'=>"Note species observed at each site and estimate their abundance.<br />Before any data can be entered into the grid below, the conditions for the visit to that site must be entered in the Conditions section. Additional sites may be added by drawing on the map in the Sites section. Additional species may be added by entering the name in the box below.  Clicking on the red 'X' will either clear the data for that species (if data has previously been entered for the species), or the species will be removed (if you have added it during this session).",
 // Date
 	'Butterfly2 Target Species'=>'Target species',
@@ -115,10 +115,10 @@ $custom_terms = array(
 	'Cloud cover'=>'Cloud cover (%)',
 // 'Reliability'=>'Reliability',
 // No observation
-	'LANG_conditionsgrid:clearconfirm' => 'You are about to clear the data for a site. If you do this any previously saved data (including species data for that site) will be lost. Do you still wish to continue?',
-	'LANG_conditionsgrid:removeconfirm' => 'You are about to remove a newly created site. If you do this all entered data (including species data for that site) will be lost. Do you still wish to continue?',
-	'LANG_speciesgrid:clearconfirm' => 'You are about to clear all the data for a species. If you do this all previously saved data will be lost. Do you still wish to continue?',
-	'LANG_speciesgrid:removeconfirm' => 'You are about to remove a newly created species entry. If you do this all entered data for that species will be lost. Do you still wish to continue?',
+	'LANG_conditionsgrid:clearconfirm' => 'You are about to remove the condition and species data associated with this site from this survey. Do you wish to continue?',
+	'LANG_conditionsgrid:removeconfirm' => 'You are about to remove a newly created site. If you do this all conditions and species data you have entered against the site will be lost. Do you wish to continue?',
+	'LANG_speciesgrid:clearconfirm' => 'You are about to clear all the data for a species on this survey. Do you wish to continue?',
+	'LANG_speciesgrid:removeconfirm' => 'You are about to remove a newly created species entry from this survey. Do you wish to continue?',
 
 	'LANG_Location_Label' => 'Location',
 	'LANG_Location_Name' => 'Site Name',
