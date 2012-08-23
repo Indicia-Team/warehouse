@@ -3,7 +3,7 @@
       <query website_filter_field="o.website_id">
       SELECT #columns#
       FROM cache_occurrences o
-      JOIN users u on u.id=o.created_by_id
+      JOIN users u on u.id=o.created_by_id and u.id&lt;&gt;1
       WHERE (o.zero_abundance='f' OR o.id IS NULL)
       AND #website_filter#
       AND (CAST(o.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')

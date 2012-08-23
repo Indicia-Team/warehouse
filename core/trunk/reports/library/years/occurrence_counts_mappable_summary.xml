@@ -13,8 +13,8 @@
         AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
         AND ( 
             (o.record_status='V') OR
-            ('#quality#'='C' AND o.certainty='C') OR
-            ('#quality#'='L' AND o.certainty in ('C', 'L')) OR
+            ('#quality#'='C' AND o.certainty='C' AND o.record_status&lt;&gt;'D') OR
+            ('#quality#'='L' AND o.certainty in ('C', 'L') AND o.record_status&lt;&gt;'D') OR
             ('#quality#'='!D' AND o.record_status&lt;&gt;'D') OR
             ('#quality#'='!R')
         )
