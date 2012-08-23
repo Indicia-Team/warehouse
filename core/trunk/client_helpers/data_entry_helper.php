@@ -2361,8 +2361,19 @@ class data_entry_helper extends helper_base {
           break;
       }
     }
+    $query=array();
+    if (!empty($options['taxonFilterField']) && $options['taxonFilterField']!=='none' && !empty($options['taxonFilter'])) {
+      // filter the taxa available to record
+      // switch field to filter by if using cached lookup
+      if ($options['cache_lookup'] && $options['taxonFilterField']==='preferred_name')
+        $options['taxonFilterField']='preferred_taxon';
+      $query = array('in'=>array($options['taxonFilterField'], $options['taxonFilter']));
+      $extraParams['query'] = json_encode($query);
+    }
     if (!empty($wheres))
-      $r += array('query'=>json_encode(array('where'=>array(implode(' AND ', $wheres)))));
+      $query['where']=array(implode(' AND ', $wheres));
+    if (!empty($query))
+      $r += array('query'=>json_encode($query));
     return $r;
   }
   
