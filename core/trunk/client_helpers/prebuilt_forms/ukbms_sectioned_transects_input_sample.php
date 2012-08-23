@@ -21,6 +21,7 @@
  */
 
 require_once 'includes/map.php';
+require_once 'includes/user.php';
 require_once 'includes/form_generation.php';
 
 
@@ -383,15 +384,11 @@ class iform_ukbms_sectioned_transects_input_sample {
       ));
     }
     // are there any option overrides for the custom attributes?
-    $blockOptions = array();
-    if (isset($args['custom_attribute_options']) && $args['custom_attribute_options']) {
-      $blockOptionList = explode("\n", $args['custom_attribute_options']);
-      foreach($blockOptionList as $opt) {
-        $tokens = explode('|', $opt);
-        $optvalue = explode('=', $tokens[1]);
-        $blockOptions[$tokens[0]][$optvalue[0]] = $optvalue[1];
-      }
-    }
+    
+    if (isset($args['custom_attribute_options']) && $args['custom_attribute_options']) 
+      $blockOptions = get_attr_options_array_with_user_data($args['custom_attribute_options']);
+    else 
+      $blockOptions=array();
     $r .= get_attribute_html($attributes, $args, array('extraParams'=>$auth['read']), null, $blockOptions);
     $r .= '<input type="hidden" name="sample:sample_method_id" value="'.$sampleMethods[0]['id'].'" />';
     $r .= '<input type="submit" value="'.lang::get('Next').'" class="ui-state-default ui-corner-all" />';
