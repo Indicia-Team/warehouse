@@ -137,7 +137,9 @@ class Cache_File_Driver implements Cache_Driver {
 		{
 			// Convert the tags into a string list
 			$tags = implode('+', $tags);
-		}
+		} else 
+      // Indicia chaneg - fix to support PHP 5.4.3 which raises a notice for array to string conversion in a couple of lines.
+      $tags='';
 		$files = $this->all_exists($id, false);
 		$newFile = $id.'~'.$tags.'~'.$lifetime;
 		// create new file before deleting old ones.
