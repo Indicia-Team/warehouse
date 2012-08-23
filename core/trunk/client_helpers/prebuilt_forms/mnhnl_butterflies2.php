@@ -383,9 +383,9 @@ hook_ChildFeatureLoad = function(feature, data, child_id, options){
 }
 hook_mnhnl_parent_changed = function(){
   jQuery('#conditions-grid > tbody').find('tr').remove();
-  jQuery('#species-grid').find('tr').not(':eq(0)').not('.sgNoObRow').remove();
-  jQuery('#species-grid').find('th').not(':eq(0)').remove();
-  jQuery('#species-grid').find('td').not(':eq(0)').remove();
+  jQuery('#species-grid > tbody').find('tr').not('.sgNoObRow').remove();
+  jQuery('#species-grid').find('th:gt(1)').remove();
+  jQuery('#species-grid').find('td:gt(1)').remove();
   jQuery('.sgCloneableRow').find('td:gt(1)').remove();
 };";
     $retVal = iform_mnhnl_lux5kgridControl($auth, $args, parent::$node, array_merge(
