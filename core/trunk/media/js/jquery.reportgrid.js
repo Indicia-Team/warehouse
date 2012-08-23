@@ -368,7 +368,11 @@ function simple_tooltip(target_items, name){
                     // clear null value cells
                     value = (value===null || typeof value==="undefined") ? '' : value;
                     if ((col.img === true || col.img==='true') && value!=='') {
-                      value = '<a href="'+div.settings.imageFolder+value+'" class="fancybox"><img src="'+div.settings.imageFolder+'thumb-'+value+'" /></a>';
+                      var imgs = value.split(','), imgclass=imgs.length>1 ? 'multi' : 'single';
+                      value='';
+                      $.each(imgs, function(idx, img) {
+                        value += '<a href="'+div.settings.imageFolder+img+'" class="fancybox ' + imgclass + '"><img src="'+div.settings.imageFolder+'thumb-'+img+'" /></a>';
+                      });
                     }
                     rowOutput += '<td>' + value + '</td>';
                   }
