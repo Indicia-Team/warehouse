@@ -204,6 +204,9 @@ class report_helper extends helper_base {
   *      available in the template replacements, so the output is set to
   *      '<div>Arnice montana was recorded on 14/04/2004.<br/>Growing on a mountain pasture</div>'
   *      template
+  *  - img: set to true if the column contains a path to an image (relative to the warehouse upload folder). If so then the
+  *      path is replaced by an image thumbnail with a fancybox zoom to the full image. Multiple images can be included by
+  *      separating each path with a comma. 
   * </li>
   * <li><b>rowId</b>
   * Optional. Names the field in the data that contains the unique identifier for each row. If set, then the &lt;tr&gt; elements have their id attributes
@@ -480,8 +483,13 @@ jQuery('#updateform-".$updateformID."').ajaxForm({
             $class = ' class="'.implode(' ', $classes).'"';
           else
             $class = '';
-          if (isset($field['img']) && $field['img']=='true' && !empty($value))
-            $value = "<a href=\"$imagePath$value\" class=\"fancybox\"><img src=\"$imagePath"."thumb-$value\" /></a>";
+          if (isset($field['img']) && $field['img']=='true' && !empty($value)) {
+            $imgs = explode(',',$value);
+            $value='';
+            $imgclass=count($imgs)>1 ? 'multi' : 'single';
+            foreach($imgs as $img)
+              $value .= "<a href=\"$imagePath$img\" class=\"fancybox $imgclass\"><img src=\"$imagePath"."thumb-$img\" /></a>";
+          }
           $r .= "<td$class>$value</td>\n";
         }
         if ($rowIdx % $options['galleryColCount']==$options['galleryColCount']-1) {
