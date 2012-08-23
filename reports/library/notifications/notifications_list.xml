@@ -21,14 +21,16 @@
         JOIN notifications n2 on n2.id=n.id and n2.source_type in (#source_types#)
       </join>
     </param>
+    <param name="system_name" display="System Name" description="Name to display instead of admin for system generated notifications" datatype="text" />
   </params>
   <columns>
     <column name="notification_id" visible="false" sql="n.id" />
     <column name="source" display='Source' visible="false" datatype="text" sql="n.source" />
     <column name="source_type" display='Source type' visible="false" datatype="text" sql="n.source_type" />
-    <column name="data" display="Message" datatype="text" sql="n.data" />
+    <column name="data" display="Message" datatype="text" sql="replace(n.data, '&quot;username&quot;:&quot;admin&quot;', '&quot;username&quot;:&quot;#system_name#&quot;')" />
     <column name="acknowledged" display="Acknowledged" datatype="boolean" sql="n.acknowledged" visible="false" />
     <column name="user_id" display="User ID" visible="false" datatype="integer" sql="n.user_id" />
     <column name="triggered_on" display="Notification date" datatype="date" sql="n.triggered_on" visible="false" />    
+    <column name="triggered_date" display="Notification date" datatype="date" sql="to_char(n.triggered_on, 'DD/MM/YYYY')" orderby="triggered_on" /> 
   </columns>
 </report>
