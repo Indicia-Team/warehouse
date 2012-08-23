@@ -515,7 +515,7 @@ select count(distinct(ttl.id)) as count
 ';
 
 $config['occurrences']['get_missing_items_query'] = "
-  select o.id, o.deleted or s.deleted or su.deleted or (cttl.id is null) as deleted
+  select distinct o.id, o.deleted or s.deleted or su.deleted or (cttl.id is null) as deleted
     from occurrences o
     join samples s on s.id=o.sample_id 
     join surveys su on su.id=s.survey_id 
@@ -527,7 +527,7 @@ $config['occurrences']['get_missing_items_query'] = "
     and (o.deleted or s.deleted or su.deleted or (cttl.id is null)) = false";
     
 $config['occurrences']['get_changed_items_query'] = "
-  select o.id, o.deleted or s.deleted or su.deleted or (cttl.id is null) as deleted
+  select distinct o.id, o.deleted or s.deleted or su.deleted or (cttl.id is null) as deleted
     from occurrences o
     join samples s on s.id=o.sample_id 
     join surveys su on su.id=s.survey_id 
