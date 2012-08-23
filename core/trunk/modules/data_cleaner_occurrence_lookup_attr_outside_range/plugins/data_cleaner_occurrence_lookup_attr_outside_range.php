@@ -36,7 +36,7 @@
 function data_cleaner_occurrence_lookup_attr_outside_range_data_cleaner_rules() {
   return 
     array(
-    'testType' => 'SampleLookupAttrOutsideRange',
+    'testType' => 'OccurrenceLookupAttrOutsideRange',
     'required' => array('Metadata'=>array('SurveyId','Attr','JoinMethod')),
     'optional' => array('Metadata'=>array('Low','High')),
     'queries' => array(
