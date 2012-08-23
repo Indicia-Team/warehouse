@@ -435,7 +435,7 @@ class report_helper extends helper_base {
         foreach ($options['columns'] as $field) {
           $classes=array();
           if (isset($options['sendOutputToMap']) && $options['sendOutputToMap'] && isset($field['mappable']) && ($field['mappable']==='true' || $field['mappable']===true)) {
-            $addFeaturesJs.= "div.addPt(features, ".json_encode($row).", '".$field['fieldname']."', {}".
+            $addFeaturesJs.= "div.addPt(features, ".json_encode($row).", '".$field['fieldname']."', {\"type\":\"circle\"}".
                 (empty($rowId) ? '' : ", '".$row[$options['rowId']]."'").");\n";
           }
           if (isset($field['visible']) && ($field['visible']==='false' || $field['visible']===false))
