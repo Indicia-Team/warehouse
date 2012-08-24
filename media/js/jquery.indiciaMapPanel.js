@@ -147,6 +147,8 @@ mapGeoreferenceHooks = [];
         $.each(invisible, function(i,corner){
           feature = parser.read(corner);
           feature.style = new style('invisible');
+          //give the invisible features a type so that they are replaced too
+          feature.attributes.type = type;
           if (temporary) {
             feature.attributes.temp=true;
           }
