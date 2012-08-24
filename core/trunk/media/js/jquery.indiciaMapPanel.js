@@ -132,15 +132,12 @@ mapGeoreferenceHooks = [];
     function _showWktFeature(div, wkt, layer, invisible, temporary, type, panzoom) {
       var parser = new OpenLayers.Format.WKT();
       var feature = parser.read(wkt);
-      feature.style = new style(opts.searchLayer && layer == div.map.searchLayer);
-      feature.attributes.type=type;
+      var styletype = (typeof type !== 'undefined') ? styletype = type : styletype = 'default';
+      feature.style = new style(styletype);
+      feature.attributes.type = type;
       if (temporary) {
-        feature.style = new style(true);
-        feature.style.fillColor = '#777777';
-        feature.style.fillOpacity=0.3;
-        feature.style.strokeDashstyle='dash';
-        feature.attributes.temp=true;
-      }
+        feature.attributes.temp = true;
+      } 
       // This replaces other features of the same type
       _removeAllFeatures(layer, type);
       var features = [feature];
@@ -149,8 +146,7 @@ mapGeoreferenceHooks = [];
         //there are invisible features that define the map extent
         $.each(invisible, function(i,corner){
           feature = parser.read(corner);
-          feature.style = new style(true);
-          feature.style.pointRadius = 0;
+          feature.style = new style('invisible');
           if (temporary) {
             feature.attributes.temp=true;
           }
@@ -180,12 +176,14 @@ mapGeoreferenceHooks = [];
     /*
      * An OpenLayers vector style object
      */
-    function style(isSearch) {
-      this.fillColor = isSearch ? opts.fillColorSearch : opts.fillColor;
-      this.fillOpacity = isSearch ? opts.fillOpacitySearch : opts.fillOpacity;
+    function style(styletype) {
+      styletype = (typeof styletype !== 'undefined') ? styletype : 'default';
+      
+      this.fillColor = opts.fillColor;
+      this.fillOpacity = opts.fillOpacity;
       this.hoverFillColor = opts.hoverFillColor;
       this.hoverFillOpacity = opts.hoverFillOpacity;
-      this.strokeColor = isSearch ? opts.strokeColorSearch : opts.strokeColor;
+      this.strokeColor = opts.strokeColor;
       this.strokeOpacity = opts.strokeOpacity;
       this.strokeWidth = opts.strokeWidth;
       this.strokeLinecap = opts.strokeLinecap;
@@ -198,6 +196,25 @@ mapGeoreferenceHooks = [];
       this.hoverPointUnit = opts.hoverPointUnit;
       this.pointerEvents = opts.pointerEvents;
       this.cursor = opts.cursor;
+
+      switch(styletype) {
+        case "georef":
+          this.fillColor = opts.fillColorSearch;
+          this.fillOpacity = opts.fillOpacitySearch;
+          this.strokeColor = opts.strokeColorSearch;
+          break;
+        case "ghost":
+        case "location":
+          this.fillColor = opts.fillColorGhost;
+          this.fillOpacity= opts.fillOpacityGhost;
+          this.strokeColor = opts.strokeColorGhost;
+          this.strokeOpacity = opts.strokeOpacityGhost;
+          this.strokeDashstyle = opts.strokeDashstyleGhost;
+          break;
+        case "invisible":
+          this.pointRadius = 0;
+          break;
+      }
     }
 
     /**
@@ -384,7 +401,7 @@ mapGeoreferenceHooks = [];
       }
       var feature = parser.read(data.mapwkt);
       feature.attributes = {type:"clickPoint"};
-      feature.style = new style(false);
+      feature.style = new style('default');
       div.map.editLayer.addFeatures([feature]);
       if (div.settings.helpDiv) {
         helpitem=_getPrecisionHelp(div, data.sref);
@@ -1656,6 +1673,12 @@ $.fn.indiciaMapPanel.defaults = {
     fillColorSearch: '#ee0000',
     fillOpacitySearch: 0.5,
     strokeColorSearch: '#ee0000',
+    // Additional options for OpenLayers.Feature.Vector.style for the ghost
+    fillColorGhost: '#777777',
+    fillOpacityGhost: 0.3,
+    strokeColorGhost: '#ee9900',
+    strokeOpacityGhost: 1,
+    strokeDashstyleGhost: 'dash',
 
     // Are we using the OpenLayers defaults, or are they all provided?
     useOlDefaults: true,
