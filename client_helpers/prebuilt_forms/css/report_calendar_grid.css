@@ -1,29 +1,51 @@
-#report-grid td {
+/* line 4, sass/report_calendar_grid.scss */
+table#report-grid td {
   font-size: 80%;
   line-height: 1.3em;
 }
-
+/* line 9, sass/report_calendar_grid.scss */
 table td.future {
   background-color: grey;
 }
+/* line 12, sass/report_calendar_grid.scss */
 table td.existingLink {
   background-color: #00e7e7;
 }
+/* line 15, sass/report_calendar_grid.scss */
 table td.otherSite {
   background-color: yellow;
 }
+/* line 18, sass/report_calendar_grid.scss */
 table td.multiLink {
   background-color: green;
 }
-tr.datarow td {
-  border: navy solid thin;
-  padding: 3px;
-}
-tr td.day {
+/* line 21, sass/report_calendar_grid.scss */
+table td.day {
   border: navy solid thin;
   padding: 3px;
   width: 12%;
   text-align: center;
   font-weight: bold;
 }
-
+/* line 28, sass/report_calendar_grid.scss */
+table td.year-picker {
+  text-align: center;
+}
+/* line 30, sass/report_calendar_grid.scss */
+table td.year-picker > * {
+  display: -moz-inline-box;
+  -moz-box-orient: vertical;
+  display: inline-block;
+  vertical-align: middle;
+  *vertical-align: auto;
+  margin: 0 1em;
+}
+/* line 7, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/compass/stylesheets/compass/css3/_inline-block.scss */
+table td.year-picker > * {
+  *display: inline;
+}
+/* line 36, sass/report_calendar_grid.scss */
+table tr.datarow td {
+  border: navy solid thin;
+  padding: 3px;
+}

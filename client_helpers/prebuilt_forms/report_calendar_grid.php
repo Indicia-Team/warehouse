@@ -263,9 +263,9 @@ class iform_report_calendar_grid {
       return $locationList['error'];
     }
     $ctrlid='calendar-location-select-'.$node->nid;
-    $ctrl='<label for="'.$ctrlid.'" class="location-select-label">'.lang::get('Filter by location').
+    $ctrl='<label for="'.$ctrlid.'" class="location-select-label">'.lang::get('Filter by site').
           ' :</label><select id="'.$ctrlid.'" class="location-select">'.
-          '<option value="" class="location-select-option" '.($siteUrlParams[$locationKey]['value']==null ? 'selected=\"selected\" ' : '').'>'.lang::get('All locations').'</option>';
+          '<option value="" class="location-select-option" '.($siteUrlParams[$locationKey]['value']==null ? 'selected=\"selected\" ' : '').'>'.lang::get('All sites').'</option>';
     foreach($locationList as $location){
       $ctrl .= '<option value='.$location['id'].' class="location-select-option" '.($siteUrlParams[$locationKey]['value']==$location['id'] ? 'selected=\"selected\" ' : '').'>'.
                $location['name'].(isset($args['includeSrefInLocationFilter']) && $args['includeSrefInLocationFilter'] ? ' ('.$location['centroid_sref'].')' : '').

@@ -1970,14 +1970,15 @@ if (typeof mapSettingsHooks!=='undefined') {
     $pageUrl .= (strpos($pageUrl , '?')===false) ? '?' : '&';
     $thClass = $options['thClass'];
     $r .= "\n<table class=\"".$options['class']."\">";
-    $r .= "\n<thead class=\"$thClass\"><tr>".($options['includeWeekNumber'] ? "<td>".lang::get("Week Number")."</td>" : "")."<td></td><td>
-  <a title=\"".($options["year"]-1)."\" rel=\"\nofollow\" href=\"".$pageUrl.$pageUrlParams['year']['name']."=".($options["year"]-1)."\" class=\"ui-datepicker-prev ui-corner-all\">
-    <span class=\"ui-icon ui-icon-circle-triangle-w\">Prev</span></a></td><td></td><td colspan=3><span class=\"thisYear\">".$options["year"]."</span></td><td></td><td>";
+    $r .= "\n<thead class=\"$thClass\"><tr>".($options['includeWeekNumber'] ? "<td>".lang::get("Week Number")."</td>" : "")."<td></td><td></td><td></td>".
+        "<td colspan=\"3\" class=\"year-picker\"><a title=\"".($options["year"]-1)."\" rel=\"\nofollow\" href=\"".$pageUrl.$pageUrlParams['year']['name']."=".($options["year"]-1).
+        "\" class=\"ui-datepicker-prev ui-corner-all\"><span class=\"ui-icon ui-icon-circle-triangle-w\">Prev</span></a>".
+        "<span class=\"thisYear\">".$options["year"]."</span>";
     if($options["year"]<date('Y')){
       $r .= "  <a title=\"".($options["year"]+1)."\" rel=\"\nofollow\" href=\"".$pageUrl.$pageUrlParams['year']['name']."=".($options["year"]+1)."\" class=\"ui-datepicker-next ui-corner-all\">
         <span class=\"ui-icon ui-icon-circle-triangle-e\">Next</span></a>";
     }
-    $r .= "</td></tr></thead>\n";
+    $r .= "</td><td></td><td></td></tr></thead>\n";
     // don't need a separate "Add survey" button as they just need to click the day....
     // Not implementing a download.
     $r .= "<tbody>\n";
