@@ -328,7 +328,7 @@ class iform_ukbms_sectioned_transects_input_sample {
     }
     if ($locationId && (isset(data_entry_helper::$entity_to_load['sample:id']) || isset($_GET['site']))) {
       // for reload of existing or the the site is specified in the URL, don't let the user switch the transect as that would mess everything up.
-      $r .= '<label>'.lang::get('Transect').':</label><span>'.$site['name'].'</span><br/>';
+      $r .= '<label>'.lang::get('Transect').':</label> <span class="value-label">'.$site['name'].'</span><br/>';
     } else {
       // Output only the locations for this website and transect type. Note we load both transects and sections, just so that
       // we always use the same warehouse call and therefore it uses the cache.
@@ -376,15 +376,20 @@ class iform_ukbms_sectioned_transects_input_sample {
     $r .= get_user_profile_hidden_inputs($attributes, $args, '', $auth['read']);
     if(isset($_GET['date'])){
       $r .= '<input type="hidden" name="sample:date" value="'.$_GET['date'].'"/>';
-      $r .= '<label>'.lang::get('Date').':</label><span>'.$_GET['date'].'</span><br/>';
+      $r .= '<label>'.lang::get('Date').':</label> <span class="value-label">'.$_GET['date'].'</span><br/>';
     } else {
+      if (isset(data_entry_helper::$entity_to_load['sample:date']) && preg_match('/^(\d{4})/', data_entry_helper::$entity_to_load['sample:date'])) {
+        // Date has 4 digit year first (ISO style) - convert date to expected output format
+        // @todo The date format should be a global configurable option. It should also be applied to reloading of custom date attributes.
+        $d = new DateTime(data_entry_helper::$entity_to_load['sample:date']);
+        data_entry_helper::$entity_to_load['sample:date'] = $d->format('d/m/Y');
+      }
       $r .= data_entry_helper::date_picker(array(
         'label' => lang::get('Date'),
         'fieldname' => 'sample:date',
       ));
     }
     // are there any option overrides for the custom attributes?
-    
     if (isset($args['custom_attribute_options']) && $args['custom_attribute_options']) 
       $blockOptions = get_attr_options_array_with_user_data($args['custom_attribute_options']);
     else 
