@@ -196,7 +196,7 @@ function input_change (evt) {
 
 function input_blur (evt) {        
   var selector = '#'+evt.target.id.replace(/:/g, '\\:');
-  currentCell = evt.target.id;
+  indiciaData.currentCell = evt.target.id;
   getTotal(evt.target);
   if ($(selector).hasClass('edited')) {
     $(selector).addClass('saving');
@@ -249,7 +249,8 @@ function input_blur (evt) {
 };
 
 function loadSpeciesList() {
-  var currentCell=null, submittingSample='', existingTtlIds=[], secondTaxonData, query;
+  var submittingSample='', existingTtlIds=[], secondTaxonData, query;
+  indiciaData.currentCell=null;
   // note we assume these lists are preferred=true. also need meaning_id to match the subset and the main 
   // list on the main grid.
   var mainTaxonData = {
@@ -553,13 +554,13 @@ function loadSpeciesList() {
     async: false,
     dataType:  'json',
     complete: function() {
-      var selector = '#'+currentCell.replace(/:/g, '\\:');
+      var selector = '#'+indiciaData.currentCell.replace(/:/g, '\\:');
       $(selector).removeClass('saving');
     },
     success: function(data){
       if (checkErrors(data)) {
         // get the sample code from the id of the cell we are editing, so we can remember the sample id.
-        parts = currentCell.split(':');
+        parts = indiciaData.currentCell.split(':');
         // remember the ID
         indiciaData.samples[parts[2]] = data.outer_id;
         // find out if any of our sample controls in the grid are for new attribute values
