@@ -70,7 +70,7 @@
     when 'R' then 'red'
     else 'black' end" />
     <column name='fillcolor' visible='false' feature_style="fillColor" sql="case xo.record_status when 'V' then 'green' when 'D' then 'orange' when 'R' then 'red' else 'blue' end" />
-    <column name='pass' visible='false' sql="CASE WHEN oc.id IS NULL THEN '&lt;div class=&quot;pass-icon&quot; title=&quot;This record passes all automated verification checks.&quot;/&gt;&lt;/div&gt;' END" />
+    <column name='pass' visible='false' sql="CASE WHEN oc.id IS NULL AND xo.last_verification_check_date IS NOT NULL THEN '&lt;div class=&quot;pass-icon&quot; title=&quot;This record passes all automated verification checks.&quot;/&gt;&lt;/div&gt;' END" />
     <column name='fails' display='Check' 
         sql="array_to_string(array_agg('&lt;div class=&quot;fail-icon ' || oc.generated_by || '&quot; title=&quot;' || oc.comment || '&quot;&gt;&lt;/div&gt;'),' ')" aggregate='true' 
         template="{pass}{fails}"/>

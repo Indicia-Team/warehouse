@@ -77,5 +77,6 @@
     <column name='fails' display='Check' 
         sql="array_to_string(array_agg('&lt;div class=&quot;fail-icon ' || oc.generated_by || '&quot; title=&quot;' || oc.comment || '&quot;&gt;&lt;/div&gt;'),' ')" aggregate='true' 
         template="{pass}{fails}"/>
+    <column name='images' display='Images' sql='o.images' img='true' />
   </columns>
 </report>
