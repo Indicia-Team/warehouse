@@ -2242,11 +2242,11 @@ if (typeof mapSettingsHooks!=='undefined') {
   * OPTIONAL: The column in the report which contains the count for this occurrence. If omitted then the default
   * is to assume one occurrence = count of 1</li>
   * <li><b>includeChartItemSeries</b>
-  * Defaults to true. Include a series for each item in the report output?
+  * Defaults to true. Include a series for each item in the report output.
   * </li>
   * <li><b>includeChartTotalSeries</b>
-  * Defaults to true. Include a series for the total of each item in the report output?
-  * </li?
+  * Defaults to true. Include a series for the total of each item in the report output.
+  * </li>
   */
   // Future Enhancements? Allow restriction to month.
   public static function report_calendar_summary($options) {
@@ -2351,7 +2351,8 @@ if (typeof mapSettingsHooks!=='undefined') {
       }
     }
     if(count($summaryArray)==0)
-      return $warnings.'<p>'.lang::get('No data returned for this period.').'</p>';
+      return $warnings.'<p>'.lang::get('No data returned for this period.').'</p>'.
+          '<input type="hidden" name="simultaneousOutput" id="simultaneousOutput" value="'.$options['defaultOutput'].'"/>';
     $year_start = date_create(substr($options['date_start'],0,4).'-Jan-01');
     $year_end = date_create(substr($options['date_start'],0,4).'-Dec-25'); // don't want to go beyond the end of year: this is 1st Jan minus 1 week: it is the start of the last full week
     $firstWeek_date = clone $weekOne_date;
@@ -2431,8 +2432,12 @@ if (typeof mapSettingsHooks!=='undefined') {
     }
     if(count($format)>1 && !(isset($options['simultaneousOutput']) && $options['simultaneousOutput'])){
       $checked = !isset($options['defaultOutput']) || $options['defaultOutput']=='' || $options['defaultOutput']=='table';
-      $r .= "\n".'<div class="simultaneousOutputGroup"><input type="radio" name="simultaneousOutput" id="simultaneousOutput:table" '.($checked?'checked="checked"':'').' value="table"/><label for="simultaneousOutput:table" >'.lang::get('View data as a table').'</label>'.
-            '<input type="radio" name="simultaneousOutput" '.(!$checked?'checked="checked"':'').' id="simultaneousOutput:chart" value="chart"/><label for="simultaneousOutput:chart" >'.lang::get('View data as a chart').'</label></div>'."\n";
+      $r .= "\n<div class=\"inline-control simultaneousOutputGroup\">";
+      $r .= '<input type="radio" name="simultaneousOutput" id="simultaneousOutput:table" '.($checked?'checked="checked"':'').' value="table"/>'.
+          '<label for="simultaneousOutput:table" >'.lang::get('View data as a table').'</label>';
+      $r .= '<input type="radio" name="simultaneousOutput" '.(!$checked?'checked="checked"':'').' id="simultaneousOutput:chart" value="chart"/>'.
+          '<label for="simultaneousOutput:chart" >'.lang::get('View data as a chart').'</label>';
+      $r .= "</div>\n";
       data_entry_helper::$javascript .= "jQuery('[name=simultaneousOutput]').change(function(){
   jQuery('#".$options['tableID'].",#".$options['chartContainerID']."').toggle();
   // TODO global variable prevents more than one on a page.

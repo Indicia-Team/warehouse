@@ -39,6 +39,19 @@ require_once('includes/user.php');
  */
 class iform_report_calendar_summary {
 
+  /* This is the URL parameter used to pass the user_id filter through */
+  private static $userKey = 'userID';
+  
+  /* This is the URL parameter used to pass the location_id filter through */
+  private static $locationKey = 'locationID';
+  
+  /* This is the URL parameter used to pass the location_id filter through */
+  private static $yearKey = 'year';
+  
+  private static $removableParams = array();
+  
+  private static $siteUrlParams = array();
+  
   /** 
    * Return the form metadata.
    * @return string The definition of the form.
@@ -72,6 +85,17 @@ class iform_report_calendar_summary {
           'description' => 'To provide preset values for any report parameter and avoid the user having to enter them, enter each parameter into this '.
               'box one per line. Each parameter is followed by an equals then the value, e.g. survey_id=6. You can use {user_id} as a value which will be replaced by the '.
               'user ID from the CMS logged in user or {username} as a value replaces with the logged in username.',
+          'type' => 'textarea',
+          'required' => false,
+          'group'=>'Report Settings'
+        ),
+        array(
+          'name'=>'removable_params',
+          'caption'=>'Removable report parameters',
+          'description' => 'Provide a list of any report parameters from the Preset Parameter Values list that can be set to a "blank" value by '.
+              'use of a checkbox. For example the report might allow a taxon_list_id parameter to filter for a taxon list or to return all taxon list data '.
+              'if an empty value is provided, so the taxon_list_id parameter can be listed here to provide a checkbox to remove this filter. Provide each '.
+              'parameter on one line, followed by an equals then the caption of the check box, e.g. taxon_list_id=Check this box to include all species.',
           'type' => 'textarea',
           'required' => false,
           'group'=>'Report Settings'
@@ -532,20 +556,15 @@ class iform_report_calendar_summary {
       'dataSource' => $args['report_name'],
       'mode' => 'report',
       'readAuth' => $readAuth,
-      'extraParams' => $presets);
+      'extraParams' => $presets
+    );
     return $reportOptions;
   }
-
-  /* This is the URL parameter used to pass the location_id filter through */
-  private static $locationKey = 'locationID';
   
   private function location_control($args, $readAuth, $node, &$options)
   {
     global $user;
-    $siteUrlParams = array(
-      self::$locationKey => array(
-        'name' => self::$locationKey,
-        'value' => isset($_GET[self::$locationKey]) ? $_GET[self::$locationKey] : ''));
+    $siteUrlParams = self::get_site_url_params();
     // loctools is not appropriate here as it is based on a node, for which this is a very simple one, invoking other nodes for the sample creation
     if(!isset($args['includeLocationFilter']) || !$args['includeLocationFilter'])
       return '';
@@ -599,114 +618,146 @@ class iform_report_calendar_summary {
     if (isset($locationList['error']))
       return $locationList['error'];
     $ctrlid='calendar-location-select-'.$node->nid;
-    $ctrl='<label for="'.$ctrlid.'" class="location-select-label">'.lang::get('Filter by location').
+    $ctrl='<label for="'.$ctrlid.'" class="location-select-label">'.lang::get('Filter by site').
           ': </label><select id="'.$ctrlid.'" class="location-select">'.
-          '<option value="" class="location-select-option" '.($siteUrlParams[self::$locationKey]['value']=='' ? 'selected="selected" ' : '').'>'.lang::get('All locations').'</option>';
+          '<option value="" class="location-select-option" '.($siteUrlParams[self::$locationKey]['value']=='' ? 'selected="selected" ' : '').'>'.lang::get('All sites').'</option>';
     foreach($locationList as $location){
       $ctrl .= '<option value='.$location['id'].' class="location-select-option" '.($siteUrlParams[self::$locationKey]['value']==$location['id'] ? 'selected="selected" ' : '').'>'.
                $location['name'].(isset($args['includeSrefInLocationFilter']) && $args['includeSrefInLocationFilter'] ? ' ('.$location['centroid_sref'].')' : '').
                '</option>';
     }
     $ctrl.='</select>';
-    self::set_up_control_change($ctrlid, self::$locationKey, $siteUrlParams);
+    self::set_up_control_change($ctrlid, self::$locationKey, array());
     return $ctrl;
   }
 
-  /* This is the URL parameter used to pass the user_id filter through */
-  private static $userKey = 'userID';
-  
   private function user_control($args, $readAuth, $node, &$options)
   {
     // we don't use the userID option as the user_id can be blank, and will force the parameter request if left as a blank
     global $user;
     if(!isset($args['includeUserFilter']) || !$args['includeUserFilter'])
       return '';
-    if(!isset($args['managerPermission']) || $args['managerPermission']=="" || !user_access($args['managerPermission'])) {
-      $options['extraParams']['user_id'] = $user->uid;
-      return lang::get('User').': '.$user->name;
-    }
     // if the user is changed then we must reset the location
-    $siteUrlParams = array(
-      self::$userKey => array(
-        'name' => self::$userKey,
-        'value' => isset($_GET[self::$userKey]) ? $_GET[self::$userKey] : ''),
-      self::$locationKey => array(
-        'name' => self::$locationKey,
-        'value' => ''));
+    $siteUrlParams = self::get_site_url_params();
     $options['extraParams']['user_id'] = $siteUrlParams[self::$userKey]['value'];    
     $userList=array();
-    if(!isset($args['cmsUserLookpUp']) || !$args['cmsUserLookpUp']) {
-      $results = db_query('SELECT uid, name FROM {users}');
-      while($result = db_fetch_object($results)){
-        if($result->uid){ // ignore unauthorised user, uid zero
-          $account = user_load($result->uid);
-          $userList[$account->uid] = $account;
-        }
-      }
+    if(!isset($args['managerPermission']) || $args['managerPermission']=="" || !user_access($args['managerPermission'])) {
+      // user is a normal user
+      $userList[$user->uid]=$user;
     } else {
-      // need to scan param_presets for survey_id.
-      $presets = get_options_array_with_user_data($args['param_presets']);
-      if(!isset($presets['survey_id']) || $presets['survey_id']=='')
-        return(lang::get('User control: survey_id missing from presets.'));
-      $attrArgs = array(
-        'valuetable'=>'sample_attribute_value',
-        'attrtable'=>'sample_attribute',
-        'key'=>'sample_id',
-        'fieldprefix'=>'smpAttr',
-        'extraParams'=>$readAuth,
-        'survey_id'=>$presets['survey_id']);
-      if(isset($args['cmsUserLookpUpSampleMethod']) && $args['cmsUserLookpUpSampleMethod']!="") {
-        $sampleMethods = helper_base::get_termlist_terms(array('read'=>$readAuth), 'indicia:sample_methods', array(trim($args['cmsUserLookpUpSampleMethod'])));
-        $attrArgs['sample_method_id']=$sampleMethods[0]['id'];
-      }
-      $sampleAttributes = data_entry_helper::getAttributes($attrArgs, false);
-      if (false== ($cmsAttr = extract_cms_user_attr($sampleAttributes)))
-        return(lang::get('User control: CMS User ID missing.'));
-      $attrListArgs=array('nocache'=>true,
-        'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
-                           'sample_attribute_id'=>$cmsAttr['attributeId']),
-                     $readAuth),
-        'table'=>'sample_attribute_value');
-      $attrList = data_entry_helper::get_population_data($attrListArgs);
-      if (isset($attrList['error']))
-        return $attrList['error'];
-      foreach($attrList as $attr)
-        if($attr['id']!=null)
-          $userList[intval($attr['raw_value'])] = true;
-      // This next bit is DRUPAL specific
-      $results = db_query('SELECT uid, name FROM {users}');
-      while($result = db_fetch_object($results)){
-        $account = user_load($result->uid);
-        if($result->uid && isset($userList[$account->uid]) && $userList[$account->uid])
-          $userList[$account->uid] = $account;
+      // user is manager, so need to load the list of users they can choose to report against 
+      if(!isset($args['cmsUserLookpUp']) || !$args['cmsUserLookpUp']) {
+        $results = db_query('SELECT uid, name FROM {users}');
+        while($result = db_fetch_object($results)){
+          if($result->uid){ // ignore unauthorised user, uid zero
+            $account = user_load($result->uid);
+            $userList[$account->uid] = $account;
+          }
+        }
+      } else {
+        // need to scan param_presets for survey_id.
+        $presets = get_options_array_with_user_data($args['param_presets']);
+        if(!isset($presets['survey_id']) || $presets['survey_id']=='')
+          return(lang::get('User control: survey_id missing from presets.'));
+        $attrArgs = array(
+          'valuetable'=>'sample_attribute_value',
+          'attrtable'=>'sample_attribute',
+          'key'=>'sample_id',
+          'fieldprefix'=>'smpAttr',
+          'extraParams'=>$readAuth,
+          'survey_id'=>$presets['survey_id']);
+        if(isset($args['cmsUserLookpUpSampleMethod']) && $args['cmsUserLookpUpSampleMethod']!="") {
+          $sampleMethods = helper_base::get_termlist_terms(array('read'=>$readAuth), 'indicia:sample_methods', array(trim($args['cmsUserLookpUpSampleMethod'])));
+          $attrArgs['sample_method_id']=$sampleMethods[0]['id'];
+        }
+        $sampleAttributes = data_entry_helper::getAttributes($attrArgs, false);
+        if (false== ($cmsAttr = extract_cms_user_attr($sampleAttributes)))
+          return(lang::get('User control: CMS User ID missing.'));
+        $attrListArgs=array('nocache'=>true,
+          'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
+                             'sample_attribute_id'=>$cmsAttr['attributeId']),
+                       $readAuth),
+          'table'=>'sample_attribute_value');
+        $attrList = data_entry_helper::get_population_data($attrListArgs);
+        if (isset($attrList['error']))
+          return $attrList['error'];
+        foreach($attrList as $attr)
+          if($attr['id']!=null)
+            $userList[intval($attr['raw_value'])] = true;
+        // This next bit is DRUPAL specific
+        $results = db_query('SELECT uid, name FROM {users}');
+        while($result = db_fetch_object($results)){
+          $account = user_load($result->uid);
+          if($result->uid && isset($userList[$account->uid]) && $userList[$account->uid])
+            $userList[$account->uid] = $account;
+        }
       }
     }
     $ctrlid='calendar-user-select-'.$node->nid;
-    $ctrl='<label for="'.$ctrlid.'" class="user-select-label">'.lang::get('Filter by user').
+    $ctrl='<label for="'.$ctrlid.'" class="user-select-label">'.lang::get('Filter by recorder').
           ': </label><select id="'.$ctrlid.'" class="user-select">'.
-          '<option value="" class="user-select-option" '.($siteUrlParams[self::$userKey]['value']=='' ? 'selected="selected" ' : '').'>'.lang::get('All Users').'</option>';
-    foreach($userList as $id => $account)
-      $ctrl .= '<option value='.$id.' class="user-select-option" '.($siteUrlParams[self::$userKey]['value']==$id ? 'selected="selected" ' : '').'>'.$account->name.'</option>';
+          '<option value="" class="user-select-option" '.($siteUrlParams[self::$userKey]['value']=='' ? 'selected="selected" ' : '').'>'.lang::get('All recorders').'</option>';
+    foreach($userList as $id => $account) {
+      $name=$account->uid===$user->uid ? lang::get('My data') : $account->name;
+      $ctrl .= '<option value='.$id.' class="user-select-option" '.($siteUrlParams[self::$userKey]['value']==$id ? 'selected="selected" ' : '').'>'.$name.'</option>';
+    }
     $ctrl.='</select>';
-    self::set_up_control_change($ctrlid, self::$userKey, $siteUrlParams);
+    self::set_up_control_change($ctrlid, self::$userKey, array('locationID'));
     return $ctrl;
   }
+  
+  /**
+   * Get the parameters required for the current filter.
+   */
+  private function get_site_url_params() {
+    if (!self::$siteUrlParams) {
+      self::$siteUrlParams = array(
+        self::$userKey => array(
+          'name' => self::$userKey,
+          'value' => isset($_GET[self::$userKey]) ? $_GET[self::$userKey] : ''
+        ),
+        self::$locationKey => array(
+          'name' => self::$locationKey,
+          'value' => isset($_GET[self::$locationKey]) ? $_GET[self::$locationKey] : ''
+        ),
+        self::$yearKey => array(
+              'name' => self::$yearKey,
+              'value' => isset($_GET[self::$yearKey]) ? $_GET[self::$yearKey] : date('Y')
+        )
+      );
+      foreach (self::$removableParams as $param=>$caption) {
+        $siteUrlParams[$param] = array(
+          'name' => $param,
+          'value' => isset($_GET[$param]) ? $_GET[$param] : ''
+        );
+      }
+    }
+    return self::$siteUrlParams;
+  }
 
-  private function set_up_control_change($ctrlid, $urlparam, $siteUrlParams) {
+  private function set_up_control_change($ctrlid, $urlparam, $skipParams, $checkBox=false) {
     // get the url parameters. Don't use $_GET, because it contains any parameters that are not in the
     // URL when search friendly URLs are used (e.g. a Drupal path node/123 is mapped to index.php?q=node/123
     // using Apache mod_alias but we don't want to know about that)
     $reloadUrl = data_entry_helper::get_reload_link_parts();
     // find the names of the params we must not include
     foreach ($reloadUrl['params'] as $key => $value) {
-      if (!array_key_exists($key, $siteUrlParams)){
+      if ($key!==$urlparam && !in_array($key, $skipParams)){
         $reloadUrl['path'] .= (strpos($reloadUrl['path'],'?')===false ? '?' : '&')."$key=$value";
       }
     }
     $param=(strpos($reloadUrl['path'],'?')===false ? '?' : '&').$urlparam.'=';
+    $prop = ($checkBox) ? 'attr("checked")' : 'val()';
+      
     data_entry_helper::$javascript .="
 jQuery('#".$ctrlid."').change(function(){
-  window.location = '".$reloadUrl['path'].$param."'+jQuery(this).val();
+  var modeParam;
+  if ($('#simultaneousOutput\\\\:chart').length>0) {
+    modeParam=($('#simultaneousOutput\\\\:chart').attr('checked')) ? '&defaultOutput=chart' : '&defaultOutput=table';
+  } else {
+    modeParam='&defaultOutput='+$('#simultaneousOutput').val();
+  }
+  window.location = '".$reloadUrl['path'].$param."'+jQuery(this).$prop+modeParam;
 });
 ";
   }
@@ -730,25 +781,22 @@ jQuery('#".$ctrlid."').change(function(){
         return '<th>'.lang::get('Data for ').date('Y').'</th>';
       default: // case year
         // Add year paginator where it can have an impact for both tables and plots.
-        $yearKey = 'year';
-        $siteUrlParams = array(
-          $yearKey => array(
-            'name' => $yearKey,
-            'value' => isset($_GET[$yearKey]) ? $_GET[$yearKey] : date('Y')));
-              $reloadUrl = data_entry_helper::get_reload_link_parts();
+        $siteUrlParams = self::get_site_url_params();
+        $reloadUrl = data_entry_helper::get_reload_link_parts();
         // find the names of the params we must not include
         foreach ($reloadUrl['params'] as $key => $value) {
           if (!array_key_exists($key, $siteUrlParams)){
             $reloadUrl['path'] .= (strpos($reloadUrl['path'],'?')===false ? '?' : '&')."$key=$value";
           }
         }
-        $param=(strpos($reloadUrl['path'],'?')===false ? '?' : '&').$yearKey.'=';
-        $r .= "<th><a title=\"".($siteUrlParams[$yearKey]['value']-1)."\" rel=\"nofollow\" href=\"".$reloadUrl['path'].$param.($siteUrlParams[$yearKey]['value']-1)."\" class=\"ui-datepicker-prev ui-corner-all\"><span class=\"ui-icon ui-icon-circle-triangle-w\">Prev</span></a></th><th><span class=\"thisYear\">".$siteUrlParams[$yearKey]['value']."</span></th>";
-        if($siteUrlParams[$yearKey]['value']<date('Y')){
-          $r .= "<th><a title=\"".($siteUrlParams[$yearKey]['value']+1)."\" rel=\"nofollow\" href=\"".$reloadUrl['path'].$param.($siteUrlParams[$yearKey]['value']+1)."\" class=\"ui-datepicker-next ui-corner-all\"><span class=\"ui-icon ui-icon-circle-triangle-e\">Next</span></a></th>";
+        $param=(strpos($reloadUrl['path'],'?')===false ? '?' : '&').self::$yearKey.'=';
+        $r .= "<th><a title=\"".($siteUrlParams[self::$yearKey]['value']-1)."\" rel=\"nofollow\" href=\"".$reloadUrl['path'].$param.($siteUrlParams[self::$yearKey]['value']-1)."\" class=\"ui-datepicker-prev ui-corner-all\"><span class=\"ui-icon ui-icon-circle-triangle-w\">Prev</span></a></th><th><span class=\"thisYear\">".$siteUrlParams[$yearKey]['value']."</span></th>";
+        $r .= '<th>'.$siteUrlParams[self::$yearKey]['value'].'</th>';
+        if($siteUrlParams[self::$yearKey]['value']<date('Y')){
+          $r .= "<th><a title=\"".($siteUrlParams[self::$yearKey]['value']+1)."\" rel=\"nofollow\" href=\"".$reloadUrl['path'].$param.($siteUrlParams[self::$yearKey]['value']+1)."\" class=\"ui-datepicker-next ui-corner-all\"><span class=\"ui-icon ui-icon-circle-triangle-e\">Next</span></a></th>";
         }
-        $options['date_start'] = $siteUrlParams[$yearKey]['value'].'-Jan-01';
-        $options['date_end'] = $siteUrlParams[$yearKey]['value'].'-Dec-31';
+        $options['date_start'] = $siteUrlParams[self::$yearKey]['value'].'-Jan-01';
+        $options['date_end'] = $siteUrlParams[self::$yearKey]['value'].'-Dec-31';
         return $r;
     }
   }
@@ -771,13 +819,16 @@ jQuery('#".$ctrlid."').change(function(){
     // survey_id should be set in param_presets $args entry. This is then fetched by iform_report_get_report_options 
     $reportOptions = self::get_report_calendar_options($args, $auth);
     $reportOptions['id']='calendar-summary-'.$node->nid;
+    if (!empty($args['removable_params']))
+      self::$removableParams = get_options_array_with_user_data($args['removable_params']);
     self::copy_args($args, $reportOptions,
       array('weekstart','weekOneContains','weekNumberFilter',
             'outputTable','outputChart','simultaneousOutput','defaultOutput',
             'tableHeaders','chartLabels','disableableSeries',
             'chartType','rowGroupColumn','width','height',
             'includeTableTotalRow','includeTableTotalColumn','includeChartTotalSeries','includeChartItemSeries'));
-      
+    if (isset($_GET['defaultOutput']))
+      $reportOptions['defaultOutput']=$_GET['defaultOutput'];
     // Advanced Chart options
     $rendererOptions = trim($args['renderer_options']);
     if (!empty($rendererOptions))
@@ -800,8 +851,22 @@ jQuery('#".$ctrlid."').change(function(){
     $retVal .= self::date_control($args, $auth, $node, $reportOptions);
     $retVal .= '<th></th><th>'.self::user_control($args, $auth, $node, $reportOptions).'</th>';
     $retVal .= '<th></th><th>'.self::location_control($args, $auth, $node, $reportOptions).'</th>';
+    $siteUrlParams = self::get_site_url_params();
+    if (!empty($args['removable_params'])) {      
+      foreach(self::$removableParams as $param=>$caption) {
+        $checked=(isset($_GET[$param]) && $_GET[$param]==='true') ? ' checked="checked"' : '';
+        $retVal .= '<th><input type="checkbox" name="removeParam-'.$param.'" id="removeParam-'.$param.'" class="removableParam"'.$checked.'/>'.
+            '<label for="removeParam-'.$param.'" >'.lang::get($caption).'</label></th>';
+      }
+      self::set_up_control_change('removeParam-'.$param, $param, array(), true);
+    }
     $retVal.= '</tr></thead></table>';
-//    $retVal .= print_r($reportOptions,true);
+    // are there any params that should be set to blank using one of the removable params tickboxes?
+    foreach (self::$removableParams as $param=>$caption)
+      if (isset($_GET[$param]) && $_GET[$param]==='true')    
+        $reportOptions['extraParams'][$param]='';
+     
+     
     $retVal .= report_helper::report_calendar_summary($reportOptions);
     return $retVal;
   }
