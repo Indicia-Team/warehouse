@@ -222,8 +222,14 @@ class iform_sectioned_transects_input_sample {
     $r .= get_user_profile_hidden_inputs($attributes, $args, '', $auth['read']);
     if(isset($_GET['date'])){
       $r .= '<input type="hidden" name="sample:date" value="'.$_GET['date'].'"/>';
-      $r .= '<label>'.lang::get('Date').':</label><span>'.$_GET['date'].'</span><br/>';
+      $r .= '<label>'.lang::get('Date').':</label> <span class="date-label">'.$_GET['date'].'</span><br/>';
     } else {
+      if (isset(data_entry_helper::$entity_to_load['sample:date']) && preg_match('/^(\d{4})/', data_entry_helper::$entity_to_load['sample:date'])) {
+        // Date has 4 digit year first (ISO style) - convert date to expected output format
+        // @todo The date format should be a global configurable option. It should also be applied to reloading of custom date attributes.
+        $d = new DateTime(data_entry_helper::$entity_to_load['sample:date']);
+        data_entry_helper::$entity_to_load['sample:date'] = $d->format('d/m/Y');
+      }
       $r .= data_entry_helper::date_picker(array(
         'label' => lang::get('Date'),
         'fieldname' => 'sample:date',
