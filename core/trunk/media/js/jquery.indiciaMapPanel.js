@@ -1174,6 +1174,7 @@ mapGeoreferenceHooks = [];
           $.cookie('mapzoom', div.map.zoom, {expires: 7});
           $.cookie('maplon', div.map.center.lon, {expires: 7});
           $.cookie('maplat', div.map.center.lat, {expires: 7});
+          $.cookie('mapbase', div.map.baseLayer.name, {expires: 7})
         });
       }
       
@@ -1217,19 +1218,19 @@ mapGeoreferenceHooks = [];
       div.map.addLayers(this.settings.layers);
 
       // Centre the map, using cookie if remembering position, otherwise default setting.
-      var zoom=null;
+      var zoom = null;
       var center = {};
+      var baseLayerName = null;
       if (typeof $.cookie !== "undefined" && div.settings.rememberPos!==false) {
-        zoom=$.cookie('mapzoom');
+        zoom = $.cookie('mapzoom');
         center.lon = $.cookie('maplon');
         center.lat = $.cookie('maplat');
         if (center.lon!==null && center.lat!==null) {
           center = new OpenLayers.LonLat(center.lon, center.lat);
-        } else {
-          center = {};
         }
+        baseLayerName = $.cookie('mapbase')
       }
-      if (zoom===null) {
+      if (zoom === null) {
         zoom = this.settings.initial_zoom;
       }
       if (typeof center.lat === "undefined") {
@@ -1239,6 +1240,15 @@ mapGeoreferenceHooks = [];
         }
       }
       div.map.setCenter(center, zoom);
+      
+      // Set the base layer using cookie if remembering
+      if (baseLayerName !== null) {
+          $.each(div.map.layers, function(idx, layer) {
+            if (layer.isBaseLayer && layer.name == baseLayerName && div.map.baseLayer !== layer) {
+              div.map.setBaseLayer(layer);
+            }
+          });
+      }
       
       /**
        * Public function to change selection of features on a layer.
