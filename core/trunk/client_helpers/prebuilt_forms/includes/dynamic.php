@@ -199,7 +199,7 @@ class iform_dynamic {
   
   protected static function get_form_html($args, $auth, $attributes) {
     // Make sure the form action points back to this page
-    $reloadPath .= call_user_func(array(self::$called_class, 'getReloadPath'));    
+    $reloadPath = call_user_func(array(self::$called_class, 'getReloadPath'));    
     $r = "<form method=\"post\" id=\"entry_form\" action=\"$reloadPath\">\n";
 
     // Get authorisation tokens to update the Warehouse, plus any other hidden data.
@@ -274,6 +274,24 @@ class iform_dynamic {
     return $r;    
   }
 
+  protected static function getReloadPath () {
+    $reload = data_entry_helper::get_reload_link_parts();
+    unset($reload['params']['sample_id']);
+    unset($reload['params']['occurrence_id']);
+    unset($reload['params']['location_id']);
+    unset($reload['params']['new']);
+    unset($reload['params']['newLocation']);
+    $reloadPath = $reload['path'];
+    if(count($reload['params'])) {
+      // decode params prior to encoding to prevent double encoding.
+      foreach ($reload['params'] as $key => $param) {
+        $reload['params'][$key] = urldecode($param);
+      }
+      $reloadPath .= '?'.http_build_query($reload['params']);
+    }
+    return $reloadPath;
+  }
+  
   protected static function get_tab_html($tabs, $auth, $args, $attributes, $hiddens) {
     $defAttrOptions = array('extraParams'=>$auth['read']);
     if(isset($args['attribute_termlist_language_filter']) && $args['attribute_termlist_language_filter'])

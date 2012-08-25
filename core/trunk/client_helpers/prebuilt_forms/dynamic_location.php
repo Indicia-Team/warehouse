@@ -200,15 +200,6 @@ class iform_dynamic_location extends iform_dynamic {
     return $attributes;
   }
   
-  protected static function getReloadPath () {
-    $reload = data_entry_helper::get_reload_link_parts();
-    unset($reload['params']['location_id']);
-    unset($reload['params']['newLocation']);
-    $reloadPath = $reload['path'];
-    if(count($reload['params'])) $reloadPath .= '?'.http_build_query($reload['params']);
-    return $reloadPath;
-  }
-  
   protected static function getHidden ($args) {
     $hiddens = '';
     if (isset(data_entry_helper::$entity_to_load['location:id'])) {
