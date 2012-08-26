@@ -1,15 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<report title="Summary species counts by location" description="Lists locations with mappable boundary output and the number of species within them. ">
+<report title="Summary species counts by location" description="Lists locations with mappable boundary output and the number of species within them. Requires the spatial_index_builder warehouse module to be enabled.">
       <query website_filter_field="o.website_id">
       SELECT #columns#
       FROM (SELECT l.id as id, count(distinct o.taxon_meaning_id) as value
           FROM locations l
           LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false 
-          JOIN cache_occurrences o ON st_intersects(o.public_geom, l.boundary_geom) 
+          JOIN index_locations_samples ils on ils.location_id=l.id
+          JOIN cache_occurrences o ON o.sample_id=ils.sample_id 
           #agreements_join# 
           #joins#
-          WHERE l.deleted=false AND l.boundary_geom IS NOT NULL
+          WHERE l.deleted=false 
           AND (lw.website_id in (#website_ids#) OR l.public=true)
           AND (o.id IS NULL or (
             o.zero_abundance='f'
