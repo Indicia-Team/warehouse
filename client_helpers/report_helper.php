@@ -2068,26 +2068,23 @@ if (typeof mapSettingsHooks!=='undefined') {
       $cellContents=$consider_date->format('j');  // day in month.
       $cellclass="";
       if($now < $consider_date){
-        $cellclass="future";
-      } else if($consider_date->format('Y') == $options["year"]){
-      	if(isset($dateRecords[$consider_date->format('d/m/Y')])){
-          if(isset($options['buildLinkFunc'])){
-            $callbackVal = call_user_func_array($options['buildLinkFunc'], array($dateRecords[$consider_date->format('d/m/Y')], $options, $cellContents));
-            $cellclass=$callbackVal['cellclass'];
-            $cellContents=$callbackVal['cellContents'];
-          } else {
-            $cellclass="existingLink";
-            if(count($dateRecords[$consider_date->format('d/m/Y')])==1){
-              $cellContents='<a href="'.$options["existingURL"].'sample_id='.$dateRecords[$consider_date->format('d/m/Y')][0]["sample_id"].'" title="View existing sample for '.$dateRecords[$consider_date->format('d/m/Y')][0]["location_name"].' on this date" >'.$cellContents.'</a>';
-            } else {
-              foreach($dateRecords[$consider_date->format('d/m/Y')] as $record){
-                $cellContents.='<br/><a href="'.$options["existingURL"].'sample_id='.$record["sample_id"].'" title="View existing sample for '.$record["location_name"].' on this date" >'.$record["location_name"].'</a>';
-              }
-            }
-          }
+        $cellclass="future"; // can't enter data in the future.
+      } else if($consider_date->format('Y') == $options["year"]){ // only allow data to be entered for the year being considered.
+        if(isset($options['buildLinkFunc'])){
+          $options['consider_date'] = $consider_date->format('d/m/Y');
+          $callbackVal = call_user_func_array($options['buildLinkFunc'],
+              array(isset($dateRecords[$consider_date->format('d/m/Y')]) ? $dateRecords[$consider_date->format('d/m/Y')] : array(),
+                    $options, $cellContents));
+          $cellclass=$callbackVal['cellclass'];
+          $cellContents=$callbackVal['cellContents'];
+        } else if(isset($dateRecords[$consider_date->format('d/m/Y')])){ // check if there is a record on this date
+          $cellclass="existingLink";
+          $cellContents .= ' <a href="'.$options["newURL"].'date='.$consider_date->format('d/m/Y').'" class="newLink" title="Create a new sample on '.$consider_date->format('d/m/Y').'" ><div class="ui-state-default add-button">&nbsp;</div></a> ';
+          foreach($dateRecords[$consider_date->format('d/m/Y')] as $record)
+            $cellContents.='<a href="'.$options["existingURL"].'sample_id='.$record["sample_id"].'" title="View existing sample for '.$record["location_name"].' on '.$consider_date->format('d/m/Y').'" ><div class="ui-state-default view-button">&nbsp;</div></a>';
         } else {
           $cellclass="newLink";
-          $cellContents='<a href="'.$options["newURL"].'date='.$consider_date->format('d/m/Y').'" class="newLink" title="Create a new sample for this date" >'.$cellContents.'</a>';
+          $cellContents .= ' <a href="'.$options["newURL"].'date='.$consider_date->format('d/m/Y').'" class="newLink" title="Create a new sample on '.$consider_date->format('d/m/Y').'" ><div class="ui-state-default add-button">&nbsp;</div></a>';
         }
       }
       $r .= "<td class=\"".$cellclass." ".($consider_date->format('N')>=6 ? "weekend" : "weekday")."\" >".$cellContents."</td>";
