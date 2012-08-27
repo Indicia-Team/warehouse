@@ -401,7 +401,7 @@ class Indicia_Controller extends Template_Controller {
   {
     Kohana::log("debug", "Submitted record ".$id." successfully.");
     $action = $deletion ? "deleted" : "saved";
-    $this->session->set_flash('flash_info', "The record was $action successfully.");
+    $this->session->set_flash('flash_info', "The record was $action successfully. <a href=\"".url::site().$this->model->object_name."/edit/$id\">Click here to edit</a>.");
     $this->redirectToIndex();
   }
   
