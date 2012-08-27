@@ -304,7 +304,8 @@ function loadSpeciesList() {
   if(indiciaData.speciesList2>0){
     var secondTaxonData = {
             'taxon_list_id': indiciaData.speciesList2,
-            'preferred': 't',
+            // Data may have been entered using synonyms, so can't just look up preferred
+            // 'preferred': 't',
             'auth_token': indiciaData.readAuth.auth_token,
             'nonce': indiciaData.readAuth.nonce,
             'mode': 'json',
@@ -325,6 +326,7 @@ function loadSpeciesList() {
       }});
   }
   if(indiciaData.speciesList3>0){
+    // This assumes that there is a list 2!
     secondTaxonData.taxon_list_id=indiciaData.speciesList3;
     query = {"in":{"id":existingTtlIds}};
     if(typeof indiciaData.speciesList3FilterField != "undefined"){
