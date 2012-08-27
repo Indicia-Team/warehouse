@@ -397,7 +397,26 @@ class iform_ukbms_sectioned_transects_input_sample {
     $r .= get_attribute_html($attributes, $args, array('extraParams'=>$auth['read']), null, $blockOptions);
     $r .= '<input type="hidden" name="sample:sample_method_id" value="'.$sampleMethods[0]['id'].'" />';
     $r .= '<input type="submit" value="'.lang::get('Next').'" class="ui-state-default ui-corner-all" />';
+    $r .= '<a href="'.$args['my_walks_page'].'"><button type="button" class="ui-state-default ui-corner-all" />'.lang::get('Cancel').'</button></a>';
+    if (isset(data_entry_helper::$entity_to_load['sample:id']))
+      $r .= '<button id="delete-button" type="button" class="ui-state-default ui-corner-all" />'.lang::get('Delete').'</button>';
     $r .= '</form>';
+    if (isset(data_entry_helper::$entity_to_load['sample:id'])){
+      // allow deletes if sample id is present.
+      data_entry_helper::$javascript .= "jQuery('#delete-button').click(function(){
+  if(confirm(\"".lang::get('Are you sure you want to delete this walk?')."\")){
+    jQuery('#delete-form').submit();
+  } // else do nothing.
+});\n";
+      // note we only require bare minimum in order to flag a sample as deleted.
+      $r .= '<form method="post" id="delete-form" style="display: none;">';
+      $r .= $auth['write'];
+      $r .= '<input type="hidden" name="page" value="delete"/>';
+      $r .= '<input type="hidden" name="website_id" value="'.$args['website_id'].'"/>';
+      $r .= '<input type="hidden" name="sample:id" value="'.data_entry_helper::$entity_to_load['sample:id'].'"/>';
+      $r .= '<input type="hidden" name="sample:deleted" value="t"/>';
+      $r .= '</form>';
+    }
     data_entry_helper::enable_validation('sample');
     return $r;
   }
@@ -699,7 +718,7 @@ indiciaData.indiciaSvc = '".data_entry_helper::$base_url."';\n";
    * @todo: Implement this method
    */
   public static function get_submission($values, $args) {
-    if (!isset($values['page']) || $values['page']!='grid') {
+    if (!isset($values['page']) || ($values['page']!='grid' && $values['page']!='delete')) {
       // submitting the first page, with top level sample details
       if (!isset($values['sample:entered_sref'])) {
         // the sample does not have sref data, as the user has just picked a transect site at this point. Copy the
@@ -727,7 +746,7 @@ indiciaData.indiciaSvc = '".data_entry_helper::$base_url."';\n";
    * for initial submission of the parent sample.
    */
   public static function get_redirect_on_success($values, $args) {
-    return  $values['page']==='grid' ? $args['my_walks_page'] : '';
+    return  ($values['page']==='grid' || $values['page']==='delete') ? $args['my_walks_page'] : '';
   }
 
 }
