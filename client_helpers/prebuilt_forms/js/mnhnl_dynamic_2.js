@@ -30,83 +30,73 @@ selectOccurrenceStyleHash={pointRadius:6,fillColor:'Fuchsia',fillOpacity:0.3,str
  */
 var scRow = 0;
 
-function bindSpeciesAutocomplete(options){
-  var setHighlight = function(myRow) {
-	var map = jQuery('#map2');
-	if(map.length==0) return;
-	map = map[0];
-	myRow.closest('table').find('tr').removeClass('highlight');
-	var firstRow = myRow;
+var _setHighlight = function(myRow) {
+  myRow.closest('table').find('tr').removeClass('highlight');
+  var map = jQuery('#map2');
+  if(map.length==0) return;
+  map = map[0];
+  var firstRow = myRow;
+  myRow.addClass('highlight');
+  while(!myRow.hasClass('last')) {
+    myRow = myRow.next();
+    if(myRow.length==0) break;
     myRow.addClass('highlight');
-    while(!myRow.hasClass('last')) {
-      myRow = myRow.next();
-      if(myRow.length==0) break;
-      myRow.addClass('highlight');
-      if(myRow.find('[id$=imp-sref]').length>0)
-          map.settings.srefId=myRow.find('[id$=imp-sref]').attr('id').replace(/:/g,'\\:');
-      if(myRow.find('[id$=imp-srefX]').length>0)
-          map.settings.srefLatId=myRow.find('[id$=imp-srefX]').attr('id').replace(/:/g,'\\:');
-      if(myRow.find('[id$=imp-srefY]').length>0)
-          map.settings.srefLongId=myRow.find('[id$=imp-srefY]').attr('id').replace(/:/g,'\\:');
-      if(myRow.find('[id$=imp-geom]').length>0)
-          map.settings.geomId=myRow.find('[id$=imp-geom]').attr('id').replace(/:/g,'\\:');
-    };
-	map.map.editLayer.destroyFeatures();
-	occurrencePointLayer.removeAllFeatures();
-	myRow.closest('table').find('.first').each(function(idx, elem){
-		if(jQuery(elem).data('feature')!=null){
-			if(firstRow[0]==elem){
-				jQuery(elem).data('feature').style=selectOccurrenceStyleHash;
-				map.map.editLayer.addFeatures([jQuery(elem).data('feature')]);
-			}else{
-				jQuery(elem).data('feature').style=null;
-				occurrencePointLayer.addFeatures([jQuery(elem).data('feature')]);
-			}
-		}
-	});
-	if(map.map.editLayer.features.length>0){
-	  var bounds=map.map.editLayer.features[0].geometry.bounds.clone();
-	  map.map.setCenter(bounds.getCenterLonLat());
-	}
-	if(jQuery('.sideMap-container').length>0){
-      var offset = jQuery('#map2').parent().parent().offset().top;
-      offset = (myRow.offset().top+firstRow.offset().top+myRow.height())/2 - offset - jQuery('#map2').height()/2;
-      if(offset<0) offset=0;
-      jQuery('#map2').parent().css("margin-top", offset+"px"); 
-      map.map.events.triggerEvent('zoomend');
-    }
+    if(myRow.find('[id$=imp-sref]').length>0)  map.settings.srefId=myRow.find('[id$=imp-sref]').attr('id').replace(/:/g,'\\:');
+    if(myRow.find('[id$=imp-srefX]').length>0) map.settings.srefLatId=myRow.find('[id$=imp-srefX]').attr('id').replace(/:/g,'\\:');
+    if(myRow.find('[id$=imp-srefY]').length>0) map.settings.srefLongId=myRow.find('[id$=imp-srefY]').attr('id').replace(/:/g,'\\:');
+    if(myRow.find('[id$=imp-geom]').length>0)  map.settings.geomId=myRow.find('[id$=imp-geom]').attr('id').replace(/:/g,'\\:');
   };
+  map.map.editLayer.destroyFeatures();
+  occurrencePointLayer.removeAllFeatures();
+  myRow.closest('table').find('.first').each(function(idx, elem){
+    if(jQuery(elem).data('feature')!=null){
+      if(firstRow[0]==elem){
+        jQuery(elem).data('feature').style=selectOccurrenceStyleHash;
+        map.map.editLayer.addFeatures([jQuery(elem).data('feature')]);
+      }else{
+        jQuery(elem).data('feature').style=null;
+        occurrencePointLayer.addFeatures([jQuery(elem).data('feature')]);
+      }
+    }
+  });
+  if(map.map.editLayer.features.length>0){
+    // keep zoom same, just move to centre location we are intested in
+    var bounds=map.map.editLayer.features[0].geometry.bounds.clone();
+    map.map.setCenter(bounds.getCenterLonLat());
+  }
+  if(jQuery('.sideMap-container').length>0){
+    var offset = jQuery('#map2').parent().parent().offset().top;
+    offset = (myRow.offset().top+firstRow.offset().top+myRow.height())/2 - offset - jQuery('#map2').height()/2;
+    if(offset<0) offset=0;
+    jQuery('#map2').parent().css("margin-top", offset+"px"); 
+    map.map.events.triggerEvent('zoomend');
+  }
+};
 
-  var handleFocus = function(event, data) {
+var _bindSpeciesGridControls = function(row,rowNum,options){
+
+  function handleFocus(event, data) {
     var myRow = $(event.target).closest('tr');
     while(!myRow.hasClass('first')) {
       myRow = myRow.prev();
     }
-    setHighlight(myRow);
+    _setHighlight(myRow);
   };
 
-  // inner function to handle a selection of a taxon from the autocomplete
-  // dynamic 2 is occurrence location driven we therefore can enter more than one of each taxa.
-  var handleSelectedTaxon = function(event, data) {
-    var map = jQuery('#map2')[0];
+  function _handleEnteredSref(value, div) {
+
+    function _projToSystem(proj, convertGoogle) {
+      var system = ((typeof proj != "string") ? proj.getCode() : proj);
+      if(system.substring(0,5)=='EPSG:') system = system.substring(5);
+      if(convertGoogle && system=="900913") system="3857";
+      return system;
+    }
     function _getSystem() {
       var selector=$('#'+map.settings.srefSystemId);
       if (selector.length===0)
         return map.settings.defaultSystem;
       else
         return selector.val();
-    }
-    function _projToSystem(proj, convertGoogle) {
-    	var system;
-    	if(typeof proj != "string")
-    		system = proj.getCode();
-    	else
-    		system = proj;
-    	if(system.substring(0,5)=='EPSG:')
-    		system = system.substring(5);
-    	if(convertGoogle && system=="900913")
-    		system="3857";
-    	return system;
     }
     function _showWktFeature(div, wkt, layer) {
       var parser = new OpenLayers.Format.WKT();
@@ -117,95 +107,154 @@ function bindSpeciesAutocomplete(options){
       div.map.setCenter(bounds.getCenterLonLat());
     }
 
-    function _handleEnteredSref(value, div) {
-      if (value!='')
-        $.getJSON(div.settings.indiciaSvc + "index.php/services/spatial/sref_to_wkt?sref=" + value +
-            "&system=" + _getSystem() + "&mapsystem=" + _projToSystem(div.map.projection, false) + "&callback=?", function(data) {
-          if(typeof data.error != 'undefined')
-            alert(data.error);
-          else {
-            if (div.map.editLayer)
-              _showWktFeature(div, data.mapwkt, div.map.editLayer);
-            $('#'+div.settings.geomId).val(data.wkt);
-          }
-        });
-    }
-    
-    var rows=$('#'+options.gridId + '-scClonable > tbody > tr');
-    var newRows=[];
-    rows.each(function(){newRows.push($(this).clone(true))})
-    var taxonCell=newRows[0].find('td:eq(1)');
-    scRow++;
-    // Replace the tags in the row template with the taxa_taxon_list_ID
-    $.each(newRows, function(i, row) {
-      row.addClass('added-row').removeClass('scClonableRow').attr('id','').addClass('scMeaning-'+data.taxon_meaning_id);;
-      $.each(row.children(), function(j, cell) {
-        cell.innerHTML = cell.innerHTML.replace(/--TTLID--/g, data.id).replace(/--GroupID--/g, scRow).replace(/--SampleID--/g, '').replace(/--OccurrenceID--/g, '');
-      }); 
-      row.appendTo('#'+options.gridId);
-      if(row.find('[id$=imp-srefX]').length>0)
-        row.find('[id$=imp-srefX]').addClass('required').after('<span class=\"deh-required\">*</span>').change(function() {
-          // Only do something if the long is also populated
-          if ($('#'+map.settings.srefLongId).val()!='') {
-            // copy the complete sref into the sref field
-            $('#'+map.settings.srefId).val($(this).val() + ', ' + $('#'+map.settings.srefLongId).val());
-            _handleEnteredSref($('#'+map.settings.srefId).val(), map);
-          }
-        });
-      if(row.find('[id$=imp-srefY]').length>0)
-        row.find('[id$=imp-srefY]').addClass('required').after('<span class=\"deh-required\">*</span>').change(function() {
-          // Only do something if the lat is also populated
-          if ($('#'+map.settings.srefLatId).val()!='') {
-            // copy the complete sref into the sref field
-            $('#'+map.settings.srefId).val($('#'+map.settings.srefLatId).val() + ', ' + $(this).val());
-            _handleEnteredSref($('#'+map.settings.srefId).val(), map);
-          }
-        });
-      // TBD put in hook call to change any fields?
-      row.find('.scCommentLabelCell').each(function(idx,elem){
-          jQuery(this).css('width',jQuery(this).find('label').css('width'));
+    if (value!='')
+      $.getJSON(div.settings.indiciaSvc + "index.php/services/spatial/sref_to_wkt?sref=" + value +
+          "&system=" + _getSystem() + "&mapsystem=" + _projToSystem(div.map.projection, false) + "&callback=?", function(data) {
+        if(typeof data.error != 'undefined')
+          alert(data.error);
+        else {
+          if (div.map.editLayer)
+            _showWktFeature(div, data.mapwkt, div.map.editLayer);
+          $('#'+div.settings.geomId).val(data.wkt);
+        }
       });
-      row.find('.scCount,.scNumber').addClass('number').addClass('integer').addClass('required').attr('min',1).after('<span class=\"deh-required\">*</span>');
-      row.find('.scOccAttrCell').find('select').addClass('required').width('auto').after('<span class=\"deh-required\">*</span>');
-      row.find('input,select').bind('focus', handleFocus);
-      if(typeof options.unitSpeciesMeaning != 'undefined'){
-    	if(row.hasClass('scMeaning-'+options.unitSpeciesMeaning)){
-    	  var units = row.find('.scUnits');
-    	  if(units.length > 0){
-  			// initially units will not be m2,  but set min to 0: will be set correctly when units selected.
-      		row.find('.scNumber').attr('min',0);
-    		units.change(function(){
-    		  jQuery('.ui-state-error').removeClass('ui-state-error');
-    		  jQuery('.inline-error').remove();
-    		  if(jQuery(this).find('option').filter(':selected')[0].text=='m2')
-    		    jQuery(this).closest('tr').find('.scNumber').removeClass('integer').attr('min',0);
-    		  else
-    		    jQuery(this).closest('tr').find('.scNumber').addClass('integer').attr('min',1);
-    		});
-    	  }
-    	} else {
-    		row.find('.scNumber').addClass('integer');
-    		row.find('.scUnits').find('option').each(function(index, elem){
-    		  if(elem.text == 'm2' || elem.value == '') jQuery(elem).remove();
-    		});
-    	}
+  }
+
+  if(row.find('[id$=imp-srefX]').length>0)
+    row.find('[id$=imp-srefX]').change(function() {
+      // Only do something if the long is also populated
+      if ($('#'+map.settings.srefLongId).val()!='') {
+        // copy the complete sref into the sref field
+        $('#'+map.settings.srefId).val($(this).val() + ', ' + $('#'+map.settings.srefLongId).val());
+        _handleEnteredSref($('#'+map.settings.srefId).val(), map);
       }
-
-    }); 
-    // sc:--GroupID--:--SampleID--:--TTLID--:--OccurrenceID--
-    newRows[0].find('.scPresenceCell input').attr('name', 'sc:'+scRow+'::' + data.id + '::present').val('true');
-    newRows[0].data('feature',null);
-    // Allow forms to hook into the event of a new row being added
-    if (typeof hook_species_grid_changed !== "undefined") {
-    	hook_species_grid_changed();
+    });
+  if(row.find('[id$=imp-srefY]').length>0)
+    row.find('[id$=imp-srefY]').change(function() {
+      // Only do something if the lat is also populated
+      if ($('#'+map.settings.srefLatId).val()!='') {
+        // copy the complete sref into the sref field
+        $('#'+map.settings.srefId).val($('#'+map.settings.srefLatId).val() + ', ' + $(this).val());
+        _handleEnteredSref($('#'+map.settings.srefId).val(), map);
+      }
+    });
+  row.find('.scCommentLabelCell').each(function(idx,elem){
+      jQuery(this).css('width',jQuery(this).find('label').css('width'));
+  });
+  // normal validation is taken from the database.
+  row.find('input,select').bind('focus', handleFocus);
+  if(typeof options.rowControl != 'undefined'){
+    function setControl(control,row,j){
+        control.change(function(){
+          if(jQuery(this).filter(':checked').length>0){
+            $('.group-'+row+'-'+j).css('opacity','').find('input,select').removeAttr('disabled');
+            $('.group-'+row+'-'+j).find('.deh-required').show();
+            $('.group-'+row+'-'+j).find('.required').addClass('XrequiredX').removeClass('required');
+          } else {
+            $('.group-'+row+'-'+j).css('opacity',0.25).find('input,select').attr('disabled','disabled');
+            $('.group-'+row+'-'+j).find('.deh-required').hide();
+            $('.group-'+row+'-'+j).find('.XrequiredX').addClass('required').removeClass('XrequiredX');
+            $('.group-'+row+'-'+j).find('select,:text').val('');
+            $('.group-'+row+'-'+j).find(':radio').removeAttr('checked');
+            $('.group-'+row+'-'+j).find('.ui-state-error').removeClass('ui-state-error');
+            $('.group-'+row+'-'+j).find('.inline-error').remove();
+          }
+        });
+        control.change();
+    };
+    for(var i = 0; i< options.rowControl.length; i++){
+      var control = row.find('.'+options.rowControl[i].selector).filter(':checkbox');
+      if(control.length > 0){
+        for(var j=0; j< options.rowControl[i].rows.length; j++){
+          setControl(control,rowNum,options.rowControl[i].rows[j]);
+        }
+      }
     }
-    $(event.target).val('');
-    options.formatter(data,taxonCell);
-    setHighlight(newRows[0]);
-  };
-  $('#'+options.gridId+' tbody').find('input,select').bind('focus', handleFocus);
+  }
+  if(typeof options.unitSpeciesMeaning != 'undefined'){
+    if(row.hasClass('scMeaning-'+options.unitSpeciesMeaning)){
+      var units = row.find('.scUnits');
+      if(units.length > 0){
+        // initially units will not be m2,  but set min to 0: will be set correctly when units selected.
+        row.find('.scNumber').attr('min',0);
+        units.change(function(){
+          jQuery('.ui-state-error').removeClass('ui-state-error');
+          jQuery('.inline-error').remove();
+          if(jQuery(this).find('option').filter(':selected')[0].text=='m2')
+            jQuery(this).closest('tr').find('.scNumber').removeClass('integer').attr('min',0);
+          else
+            jQuery(this).closest('tr').find('.scNumber').addClass('integer').attr('min',1);
+        });
+      }
+    } else {
+      row.find('.scNumber').addClass('integer');
+      row.find('.scUnits').find('option').each(function(index, elem){
+        if(elem.text == 'm2' || elem.value == '') jQuery(elem).remove();
+      });
+    }
+  }
+}
 
+function _addNewSpeciesGridRow(data,options){
+  var map = jQuery('#map2')[0];
+  var rows=$('#'+options.gridId + '-scClonable > tbody > tr');
+  var newRows=[];
+  rows.each(function(){newRows.push($(this).clone(true))})
+  var taxonCell=newRows[0].find('td:eq(1)');
+  scRow++;
+  // Replace the tags in the row template with the taxa_taxon_list_ID
+  $.each(newRows, function(i, row) {
+    row.addClass('added-row').removeClass('scClonableRow').attr('id','').addClass('scMeaning-'+data.taxon_meaning_id);;
+    $.each(row.children(), function(j, cell) {
+      cell.innerHTML = cell.innerHTML.replace(/--TTLID--/g, data.id).replace(/--GroupID--/g, scRow).replace(/--SampleID--/g, '').replace(/--OccurrenceID--/g, '');
+    }); 
+    row.addClass('group-'+scRow+'-'+i).appendTo('#'+options.gridId);
+  });
+  // sc:--GroupID--:--SampleID--:--TTLID--:--OccurrenceID--
+  newRows[0].find('.scPresenceCell input').attr('name', 'sc:'+scRow+'::' + data.id + '::present').val('true');
+  newRows[0].data('feature',null);
+  // now bolt all functionality in: deliberately separated from above so all rows are deployed into table first.
+  $.each(newRows, function(i, row){
+    _bindSpeciesGridControls(row,scRow,options);
+  });
+  // Allow forms to hook into the event of a new row being added
+  if (typeof hook_species_grid_changed !== "undefined") {
+    hook_species_grid_changed();
+  }
+  options.formatter(data,taxonCell);
+  _setHighlight(newRows[0]);
+};
+
+function _addExistingSpeciesGridRow(index,row,options){
+  var map = jQuery('#map2')[0];
+  var rows=[];
+  var myRow = $(row);
+  while(!myRow.hasClass('last')) {
+    rows.push(myRow);
+    myRow = myRow.next();
+    if(myRow.length==0) break;
+  };
+  $.each(rows, function(i, row){row.addClass('group-'+index+'-'+i)});
+  // now bolt all functionality in: deliberately separated from above so all rows are deployed into table first.
+  $.each(rows, function(i, row){
+    _bindSpeciesGridControls(row,index,options);
+  });
+};
+	
+function bindSpeciesButton(options){
+  $('#' + options.selectorID).click(function(){
+    _addNewSpeciesGridRow(options.speciesData, options)
+  });
+  $('#'+options.gridId+' tbody').find('.first').each(function(idx,elem){_addExistingSpeciesGridRow(idx+1,elem,options);});
+}
+
+function bindSpeciesAutocomplete(options){
     // Attach auto-complete code to the input
+  var handleSelectedTaxon = function(event, data) {
+    _addNewSpeciesGridRow(data, options)
+    $(event.target).val('');
+  };
+
   ctrl = $('#' + options.selectorID).autocomplete(options.url+'/taxa_taxon_list', {
       extraParams : {
         view : 'detail',
@@ -235,7 +284,10 @@ function bindSpeciesAutocomplete(options){
   });
   ctrl.bind('result', handleSelectedTaxon);
   setTimeout(function() { $('#' + ctrl.attr('id')).focus(); });
+
+  $('#'+options.gridId+' tbody').find('.first').each(function(idx,elem){_addExistingSpeciesGridRow(idx+1,elem,options);});
 }
+
 $('.remove-row').live('click', function(e) {
   e.preventDefault();
   // Allow forms to hook into the event of a row being deleted, most likely use would be to have a confirmation dialog
@@ -246,6 +298,14 @@ $('.remove-row').live('click', function(e) {
   // @TBD unbind all event handlers
   var row = $(e.target.parentNode);
   var numRows = $(e.target).attr('rowspan');
+  // row is first in group, as this holds the delete button.
+  if(row.data('feature')!=null){
+    if(row.data('feature').layer==occurrencePointLayer)
+      occurrencePointLayer.destroyFeatures([row.data('feature')]);
+    else
+      map.map.editLayer.destroyFeatures([row.data('feature')]);
+  }
+
   if (row.hasClass('added-row')) {
     for(var i=1;i<numRows;i++) row.next().remove();
     row.remove();
@@ -282,7 +342,6 @@ mapInitialisationHooks.push(function(mapdiv) {
 	// try to identify if this map is the secondary small one
   	if(mapdiv.id=='map2'){
   		mapdiv.map.editLayer.events.on({featureadded: _featureAdded});
-
 	}
   	// TBD load existing features
 });

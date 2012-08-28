@@ -1,0 +1,46 @@
+<report
+    title="MNHNL Dormouse Samples List"
+    description="Form Internal Report: Used by the Samples grid to retrieve the samples associated with a survey and user."
+>
+  <query>
+  SELECT s.id as sample_id,
+        parent.name as parent,
+  		l.name as location_name,
+  		savuser.text_value as creator,
+  		s.recorder_names as observers,
+  		s.date_start,
+  		s.date_end,
+  		s.date_type
+  FROM samples s
+  INNER JOIN locations l ON l.id = s.location_id
+  LEFT JOIN locations parent ON parent.id = l.parent_id
+  INNER JOIN sample_attribute_values savuser
+  		ON savuser.sample_id = s.id AND savuser.sample_attribute_id = #userName_attr_id# and savuser.deleted = FALSE
+  WHERE s.survey_id=#survey_id# AND s.deleted = FALSE AND s.parent_id IS NULL
+  AND ((#userID# > 0 AND (EXISTS (SELECT id FROM sample_attribute_values sav2
+  								WHERE sav2.sample_id = s.id
+  								AND sav2.sample_attribute_id = #userID_attr_id#
+  								AND sav2.int_value = #userID#
+  								AND sav2.deleted = FALSE)))
+  		OR (#userID# &lt;= 0))
+  #order_by#
+  </query>
+  <order_bys>
+    <order_by>s.id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='survey_id' display='Survey: ' description='Select the survey to return data for?' datatype='lookup'
+        query='SELECT id, title as caption FROM surveys' />
+    <param name='userID_attr_id' display='CMS User ID Sample Attribute ID' description='Sample Attribute ID used to Identify User' datatype='int' />
+    <param name='userID' display='CMS User ID' description='CMS User ID: use -1 for superusers' datatype='int' />
+    <param name='userName_attr_id' display='CMS User Name Sample Attribute ID' description='Sample Attribute ID used to Identify User Name' datatype='int' />
+  </params>
+  <columns>
+    <column name='sample_id' display='ID' />
+    <column name='parent' display='Square (1x1 km)' />
+    <column name='location_name' display='Site' />
+    <column name='creator' display='Entered By' />
+    <column name='observers' display='Observer(s)' />
+    <column name='date' display='Date' />
+  </columns>
+</report>

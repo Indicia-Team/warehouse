@@ -19,28 +19,37 @@
 .control-box {
   display:inline  !important;
 }
-.species-grid input, .species-grid select 
+.species-grid input 
 {
   margin-top: 4px;
 }
-.scOccAttrCell label {
-  margin-right: 15px;
+.species-grid select 
+{
+  margin-top: 4px;
   width: auto;
+}
+.scOccAttrCell label {
+  margin-right: 5px;
+  width: auto;
+  max-width: 200px;
+}
+.scOccAttrCell .control-box label {
+  margin-left: 0;
 }
 .scOccAttrCell input[type='radio'] {
+  margin-top: 6px;
+  margin-left: 0;
   width: auto;
 }
-input.scNumAlive {
-  width: 30px;
-}
-input.scNumDead {
-  width: 30px;
-}
-input.scExcrement {
+.scOccAttrCell input[type='checkbox'] {
+  margin-top: 6px;
+  margin-left: 0;
   width: auto;
 }
-select.scOccurrenceReliability {
-  width: auto;
+input.scCount, input.scNumber, input.scNumAlive, input.scNumDead, input.scDormouseDistanceToSupport,
+input.scDormouseNestHeight, input.scDormouseNestDiameter, input.scDormouseDistanceToStand 
+{
+	width: 30px;
 }
 .scCommentTable {
   margin: 0;
@@ -74,7 +83,7 @@ span.extra-text {
   margin: 0;
 }
 .data {
-  margin-right: 15px;	
+  margin-right: 10px;	
 }
 .remove-row {
   color:red !important;
@@ -157,12 +166,6 @@ div.olControlEditingToolbar  {
 input.scComment  {
 	width: 720px;
 	margin-top: 4px;
-}
-input.scCount, input.scNumber  {
-	width: 30px;
-}
-input.scAmphibianBehaviour  {
-	width: auto;
 }
 .targ-grid-cell {
   padding-left: 20px;	
