@@ -104,13 +104,17 @@ $(document).ready(function() {
     }
   });  
   
-  $('.section-select li').live('click', function(evt) {
+  $('#section-select li').click(function(evt) {
     var parts = evt.target.id.split('-');
     selectSection(parts[parts.length-1], true);
   });
   
   mapInitialisationHooks.push(function(div) {
     if (div.id==='route-map') {
+      $('#section-select-route li').click(function(evt) {
+        var parts = evt.target.id.split('-');
+        selectSection(parts[parts.length-1], true);
+      });
       // find the selectFeature control so we can interact with it later
       $.each(div.map.controls, function(idx, control) {
         if (control.CLASS_NAME==='OpenLayers.Control.SelectFeature') {
@@ -176,57 +180,60 @@ $(document).ready(function() {
       }
       
       function featureChangeEvent(evt) {
-        var current, oldSection = [];
-        // Find section attribute if existing, or selected section button if new
-        current = (typeof evt.feature.attributes.section==="undefined") ? $('#section-select-route li.selected').html() : evt.feature.attributes.section;
-        // label a new feature properly (and remove the undefined that appears)
-        evt.feature.attributes = {section:current, type:"boundary"};
-        evt.feature.renderIntent = 'select';        
-        div.map.editLayer.redraw();
-        $.each(evt.feature.layer.features, function(idx, feature) {
-          if (feature.attributes.section===current && feature !== evt.feature) {
-            oldSection.push(feature);
-          }
-        });
-        if (oldSection.length>0) {
-          if (!confirm('Would you like to replace the existing section with the new one?')) {
-            evt.feature.layer.removeFeatures([evt.feature], {});
-            return;
-          } else {
-            evt.feature.layer.removeFeatures(oldSection, {});
-          }
-        }
-        // post the new or edited section to the db
-        var data = {
-          'location:code':current,
-          'location:name':$('#location\\:name').val() + ' - ' + current,
-          'location:parent_id':$('#location\\:id').val(),
-          'location:boundary_geom':evt.feature.geometry.toString(),
-          'location:location_type_id':indiciaData.sectionTypeId,
-          'website_id':indiciaData.website_id
-        };
-        if (typeof indiciaData.sections[current]!=="undefined") {
-          data['location:id']=indiciaData.sections[current].id;
-        } else {
-          data['locations_website:website_id']=indiciaData.website_id;
-        }
-        $.post(
-          indiciaData.ajaxFormPostUrl,
-          data,
-          function(data) {
-            if (typeof(data.error)!=="undefined") {
-              alert(data.error);
-            } else {
-              // Better way of doing this?
-              var id = data.outer_id;
-              indiciaData.sections[current] = {id:id, geom: evt.feature.geometry.toString()};
-              $('#section-location-id').val(id);
-              $('#section-select-route-'+current).removeClass('missing');
-              $('#section-select-'+current).removeClass('missing');
+        // Only handle lines - as things like the sref control also trigger feature change events
+        if (evt.feature.geometry.CLASS_NAME==="OpenLayers.Geometry.LineString") {
+          var current, oldSection = [];
+          // Find section attribute if existing, or selected section button if new
+          current = (typeof evt.feature.attributes.section==="undefined") ? $('#section-select-route li.selected').html() : evt.feature.attributes.section;
+          // label a new feature properly (and remove the undefined that appears)
+          evt.feature.attributes = {section:current, type:"boundary"};
+          evt.feature.renderIntent = 'select';        
+          div.map.editLayer.redraw();
+          $.each(evt.feature.layer.features, function(idx, feature) {
+            if (feature.attributes.section===current && feature !== evt.feature) {
+              oldSection.push(feature);
             }
-          },
-          'json'
-        );
+          });
+          if (oldSection.length>0) {
+            if (!confirm('Would you like to replace the existing section with the new one?')) {
+              evt.feature.layer.removeFeatures([evt.feature], {});
+              return;
+            } else {
+              evt.feature.layer.removeFeatures(oldSection, {});
+            }
+          }
+          // post the new or edited section to the db
+          var data = {
+            'location:code':current,
+            'location:name':$('#location\\:name').val() + ' - ' + current,
+            'location:parent_id':$('#location\\:id').val(),
+            'location:boundary_geom':evt.feature.geometry.toString(),
+            'location:location_type_id':indiciaData.sectionTypeId,
+            'website_id':indiciaData.website_id
+          };
+          if (typeof indiciaData.sections[current]!=="undefined") {
+            data['location:id']=indiciaData.sections[current].id;
+          } else {
+            data['locations_website:website_id']=indiciaData.website_id;
+          }
+          $.post(
+            indiciaData.ajaxFormPostUrl,
+            data,
+            function(data) {
+              if (typeof(data.error)!=="undefined") {
+                alert(data.error);
+              } else {
+                // Better way of doing this?
+                var id = data.outer_id;
+                indiciaData.sections[current] = {id:id, geom: evt.feature.geometry.toString()};
+                $('#section-location-id').val(id);
+                $('#section-select-route-'+current).removeClass('missing');
+                $('#section-select-'+current).removeClass('missing');
+              }
+            },
+            'json'
+          );
+        }
       }
       
       div.map.editLayer.events.on({'featureadded': featureChangeEvent, 'afterfeaturemodified': featureChangeEvent}); 
