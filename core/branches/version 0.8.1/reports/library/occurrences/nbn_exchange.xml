@@ -68,7 +68,7 @@ and co.taxa_taxon_list_external_key is not null
         sql="case s.entered_sref_system
     when '4326' then 50 
     when '27700' then 1
-    else pow(10, (12-length(s.entered_sref))/2)
+    else pow(10, (12-length(replace(s.entered_sref, ' ', '')))/2)
   end" 
         datatype="text" />    
     <column name='recorder' display='Recorder' sql='co.recorders' datatype="text" />
