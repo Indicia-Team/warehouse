@@ -42,7 +42,7 @@ function data_cleaner_sample_attribute_changes_for_site_data_cleaner_rules() {
                   coalesce(savprev.date_end_value, '1000-01-01')<>coalesce(sav.date_end_value, '1000-01-01') or
                   coalesce(savprev.date_type_value, '')<>coalesce(sav.date_type_value, ''))
             join samples sprev on sprev.id=savprev.sample_id and sprev.survey_id=s.survey_id and sprev.location_id=s.location_id
-            join verification_rules vr on vr.id=vrm.verification_rule_id and vr.test_type='SampleAttributeChangesForSite' 
+            join verification_rules vr on vr.id=vrm.verification_rule_id and vr.test_type='SampleAttributeChangesForSite' and vr.deleted=false
             join verification_rule_metadata vrsurvey on vrsurvey.verification_rule_id=vr.id and vrsurvey.key='SurveyId' 
                 and vrsurvey.value=cast(co.survey_id as character varying) and vrsurvey.deleted=false"
       )
