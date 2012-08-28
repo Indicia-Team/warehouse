@@ -2,6 +2,7 @@
  * Creates the sample required for a section, if it does not exist yet. Otherwise updates it.
  */
 function createNewSample(code, force) {
+  var parts, id;
   if (typeof indiciaData.samples[code] !== "undefined") {
     // if saving a change to an occurrence and the sample already exists, don't update it.
     if (!force) {
@@ -16,8 +17,11 @@ function createNewSample(code, force) {
     if (section.code==code) {
       // copy the fieldname and value into the sample submission form for each sample custom attribute
       $.each($('.smpAttr-' + section.code), function(idx, src) {
-        $('#'+src.id.substr(0, src.id.length-3).replace(/:/g, '\\:')).val($(src).val());
-        $('#'+src.id.substr(0, src.id.length-3).replace(/:/g, '\\:')).attr('name', $(src).attr('name'));
+        parts=src.id.split(':');
+        parts.pop();
+        id=parts.join('\\:');
+        $('#'+id).val($(src).val());
+        $('#'+id).attr('name', $(src).attr('name'));
       });
       $('#smpsref').val(section.centroid_sref);
       $('#smpsref_system').val(section.centroid_sref_system);
