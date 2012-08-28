@@ -262,12 +262,6 @@ jQuery('[name=params]').val('{\"survey_id\":".$args['survey_id'].", \"location_t
       global $custom_terms;
       $filterAttrs = explode(',',$args['filterAttrs']);
       $idxN=1;
-      $communeAttr=iform_mnhnl_getAttrID($auth, $args, 'location', 'Commune');
-      if($communeAttr){
-        $extraParams['attr_id_'.$idxN]=$communeAttr;
-        $custom_terms['attr_'.$idxN]=lang::get('Commune');
-        $idxN++;
-      }
       foreach($filterAttrs as $idx=>$filterAttr){
         $filterAttr=explode(':',$filterAttr);
         switch($filterAttr[0]){
@@ -275,11 +269,9 @@ jQuery('[name=params]').val('{\"survey_id\":".$args['survey_id'].", \"location_t
               $custom_terms['location name']=lang::get('location name');
               break;
             case 'Shape':
-              if($filterAttr[1]!='Commune'){
-                $extraParams['attr_id_'.$idxN]=iform_mnhnl_getAttrID($auth, $args, 'location', $filterAttr[1]);
-                $custom_terms['attr_'.$idxN]=lang::get($filterAttr[1]);
-                $idxN++;
-              }
+              $extraParams['attr_id_'.$idxN]=iform_mnhnl_getAttrID($auth, $args, 'location', $filterAttr[1]);
+              $custom_terms['attr_'.$idxN]=lang::get($filterAttr[1]);
+              $idxN++;
             break;
               default:
               $extraParams['attr_id_'.$idxN]=iform_mnhnl_getAttrID($auth, $args, 'location', $filterAttr[0]);
@@ -714,13 +706,47 @@ $.validator.addMethod('targ-presence', function(value, element){
 ";
     return $retval;
   }
-  
+
+  protected static function get_control_moveotherfields($auth, $args, $tabalias, $options) {
+    // We assume that the key is meaning_id.
+    $groups=explode(';',$options['groups']);
+    foreach($groups as $group){
+      $parts=explode(',',$group);
+      $attr=iform_mnhnl_getAttr($auth, $args, $parts[0], $parts[1]);
+      $other=helper_base::get_termlist_terms($auth, intval($attr['termlist_id']), array('Other'));
+      $attr2=iform_mnhnl_getAttrID($auth, $args, $parts[0], $parts[2]);
+      switch($parts[0]){
+        case 'sample': $prefix='smpAttr';
+          break;
+        default: break;
+      }
+      data_entry_helper::$javascript .= "
+var other = jQuery('[name=".$prefix."\\:".$attr2."],[name^=".$prefix."\\:".$attr2."\\:]');
+other.next().remove(); // remove break
+other.prev().remove(); // remove legend
+other.removeClass('wide').remove(); // remove Other field, then bolt in after the other radio button.
+jQuery('[name=".str_replace(':','\\:',$attr['id'])."],[name^=".str_replace(':','\\:',$attr['id'])."\\:],[name=".str_replace(':','\\:',$attr['id'])."\\[\\]]').filter('[value=".$other[0]['meaning_id']."]').parent().append(other);
+jQuery('[name=".str_replace(':','\\:',$attr['id'])."],[name^=".str_replace(':','\\:',$attr['id'])."\\:],[name=".str_replace(':','\\:',$attr['id'])."\\[\\]]').change(function(){
+  jQuery('[name=".str_replace(':','\\:',$attr['id'])."],[name^=".str_replace(':','\\:',$attr['id'])."\\:],[name=".str_replace(':','\\:',$attr['id'])."\\[\\]]').filter('[value=".$other[0]['meaning_id']."]').each(function(){
+    if(this.checked)
+      jQuery('[name=".$prefix."\\:".$attr2."],[name^=".$prefix."\\:".$attr2."\\:]').addClass('required').removeAttr('readonly');
+    else
+      jQuery('[name=".$prefix."\\:".$attr2."],[name^=".$prefix."\\:".$attr2."\\:]').removeClass('required').val('').attr('readonly',true);
+  });
+});
+jQuery('[name=".str_replace(':','\\:',$attr['id'])."],[name^=".str_replace(':','\\:',$attr['id'])."\\:],[name=".str_replace(':','\\:',$attr['id'])."\\[\\]]').filter('[value=".$other[0]['meaning_id']."]').change();
+";
+    }
+    return '';
+  }
+
 /*
   Whole thing is based on Dynamic_1, but the submission array is more complicated.
   TBD: zoom to session location, also includes display of all occurrences so far.
   Assume grid based input: TBD remove this option.
   No confidential and no images.
-  
+  TBD Add Select (and draw?) controls to the map.
+  TBD allow hiding of species not being entered.
   TBD add switch to allow X/Y to be optional: initially mandatory
   TBD add switch to enable field for date: initially not available.
   */
@@ -737,9 +763,7 @@ $.validator.addMethod('targ-presence', function(value, element){
 // Main table existing entries
 speciesRows = jQuery('.species-grid > tbody').find('tr');
 for(var j=0; j<speciesRows.length; j++){
-	occAttrs = jQuery(speciesRows[j]).find('.scOccAttrCell');
-	occAttrs.find('.scCount,.scNumber').addClass('number').addClass('integer').addClass('required').attr('min',1).after('<span class=\"deh-required\">*</span>');
-	occAttrs.find('select').addClass('required').width('auto').after('<span class=\"deh-required\">*</span>');\n";
+	occAttrs = jQuery(speciesRows[j]).find('.scOccAttrCell');\n";
     if(isset($options['unitSpeciesMeaning']))
       data_entry_helper::$javascript .= "
 	if(jQuery(speciesRows[j]).hasClass('scMeaning-".$options['unitSpeciesMeaning']."')){
@@ -960,6 +984,8 @@ hook_species_checklist_pre_delete_row=function(e) {
               // For select controls, specify which option is selected from the existing value
               if (strpos($oc, '<select') !== false) {
                 $oc = str_replace('value="'.$existing_value.'"', 'value="'.$existing_value.'" selected="selected"', $oc);
+              } else if(strpos($oc, 'radio') !== false) {
+                $oc = str_replace('value="'.$existing_value.'"','value="'.$existing_value.'" checked="checked"', $oc);
               } else if(strpos($oc, 'checkbox') !== false) {
                 if($existing_value=="1") $oc = str_replace('type="checkbox"', 'type="checkbox" checked="checked"', $oc);
               } else {
@@ -991,8 +1017,7 @@ hook_species_checklist_pre_delete_row=function(e) {
       $grid .= "\n<tbody>\n";
       if (count($rows)>0) $grid .= implode("\n", $rows)."\n";
       else $grid .= "<tr style=\"display: none\"><td></td></tr>\n";
-      $grid .= "</tbody>\n</table>
-<label for='taxonLookupControl' class='auto-width'>".lang::get('Add species to list').":</label> <input id='taxonLookupControl' name='taxonLookupControl' >";
+      $grid .= "</tbody>\n</table>\n";
       // Javascript to add further rows to the grid
       data_entry_helper::$javascript .= "scRow=".$rowIdx.";
 var formatter = function(rowData,taxonCell) {
@@ -1014,8 +1039,8 @@ var formatter = function(rowData,taxonCell) {
           taxonCell.html(taxaList).removeClass('extraCommonNames');
         });
     }})
-}  
-bindSpeciesAutocompleteOptions = {selectorID: \"taxonLookupControl\",
+};
+bindSpeciesOptions = {selectorID: \"addTaxonControl\",
               url: \"".data_entry_helper::$base_url."index.php/services/data\",
               gridId: \"".$options['id']."\",
               lookupListId: \"".$options['speciesListID']."\",
@@ -1025,8 +1050,34 @@ bindSpeciesAutocompleteOptions = {selectorID: \"taxonLookupControl\",
               max: ".(isset($options['max_species_ids'])?$options['max_species_ids']:25)."};
 ";
       if(isset($options['unitSpeciesMeaning']))
-        data_entry_helper::$javascript .= "bindSpeciesAutocompleteOptions.unitSpeciesMeaning=\"".$options['unitSpeciesMeaning']."\";\n";
-      data_entry_helper::$javascript .= "bindSpeciesAutocomplete(bindSpeciesAutocompleteOptions);\n";
+          data_entry_helper::$javascript .= "bindSpeciesOptions.unitSpeciesMeaning=\"".$options['unitSpeciesMeaning']."\";\n";
+      if(isset($options['rowControl'])){
+        $rowControls = explode(':',$options['rowControl']);
+        data_entry_helper::$javascript .= "bindSpeciesOptions.rowControl = [";
+        foreach($rowControls as $rowControl){
+          $parts=explode(',',$rowControl,2);
+          data_entry_helper::$javascript .= "{selector: \"".$parts[0]."\" , rows: [".$parts[1]."]},";
+        }
+        data_entry_helper::$javascript .= "];\n";
+      }
+      if(isset($options['singleSpeciesID'])){
+        $fetchOpts = array(
+          'table' => 'taxa_taxon_list',
+          'extraParams' => array(
+            'auth_token'=>$options['readAuth']['auth_token'],
+            'nonce'=> $options['readAuth']['nonce'],
+            'id'=>$options['singleSpeciesID'],
+            'view' => 'detail',
+            'taxon_list_id' => $options['speciesListID']));
+        $speciesRecord = data_entry_helper::get_population_data($fetchOpts);
+        $grid .= "<input id='addTaxonControl' type='button' value='".lang::get('Add another record')."'>";
+        data_entry_helper::$javascript .= "
+bindSpeciesOptions.speciesData = {id : \"".$options['singleSpeciesID']."\"},
+bindSpeciesButton(bindSpeciesOptions);\n";
+      } else {
+        $grid .= "<label for='addTaxonControl' class='auto-width'>".lang::get('Add species to list').":</label> <input id='addTaxonControl' name='addTaxonControl' >";
+        data_entry_helper::$javascript .= "bindSpeciesAutocomplete(bindSpeciesOptions);\n";
+      }
       // No help text
       $mapOptions = iform_map_get_map_options($options['args'],$options['readAuth']);
       $olOptions = iform_map_get_ol_options($options['args']);
@@ -1084,6 +1135,10 @@ bindSpeciesAutocompleteOptions = {selectorID: \"taxonLookupControl\",
     }
   }
 };
+// move the cloneable table outside the form, so allowing the validatrion to ignore it.
+var cloneableDiv = $('<div style=\"display: none;\">');
+cloneableDiv.append($('#".$options['id']."-scClonable'));
+$('#entry_form').before(cloneableDiv);
 jQuery(jQuery('#".$mapOptions['tabDiv']."').parent()).bind('tabsshow', ".$mapOptions['tabDiv']."TabHandler);\n";
       return $r.'</div>';
     } else {
@@ -1129,6 +1184,11 @@ jQuery(jQuery('#".$mapOptions['tabDiv']."').parent()).bind('tabsshow', ".$mapOpt
   
   public static function species_checklist_prepare_attributes($options, $attributes, &$occAttrControls, &$occAttrs) {
     $idx=0;
+    // this sets up client side only required validation
+    if (array_key_exists('required', $options))
+      $requiredAttrs = explode(',',$options['required']);
+    else $requiredAttrs = array();
+    
     if (array_key_exists('occAttrs', $options))
       $attrs = $options['occAttrs'];
     else
@@ -1145,9 +1205,11 @@ jQuery(jQuery('#".$mapOptions['tabDiv']."').parent()).bind('tabsshow', ".$mapOpt
         'class'=>self::species_checklist_occ_attr_class($options, $idx, $attrDef['untranslatedCaption']) .
             (isset($attrDef['class']) ? ' '.$attrDef['class'] : ''),
         'extraParams' => $options['readAuth'],
+        'cols' => 20,
         'suffixTemplate' => 'nosuffix',
         'language' => $options['language'] // required for lists eg radio boxes: kept separate from options extra params as that is used to indicate filtering of species list by language
       );
+      if(in_array($occAttrId,$requiredAttrs)) $ctrlOptions['validation'] = array('required');
       if(isset($options['lookUpKey'])) $ctrlOptions['lookUpKey']=$options['lookUpKey'];
       if(isset($options['blankText'])) $ctrlOptions['blankText']=$options['blankText'];
       if($options['useCaptionsInHeader']) unset($attrDef['caption']);
@@ -1261,9 +1323,8 @@ jQuery(jQuery('#".$mapOptions['tabDiv']."').parent()).bind('tabsshow', ".$mapOpt
       }
       $r .= "<td class='ui-widget-content'><input type=\"$hiddenCTRL\" id=\"sg---GroupID---imp-sref\" name=\"$prefix:sample:entered_sref\" value=\"\" />
 <input type=\"$hiddenCTRL\" id=\"sg---GroupID---imp-geom\" name=\"$prefix:sample:geom\" value=\"\" />
-<label class=\"auto-width\" for=\"sg---GroupID---imp-srefX\">".lang::get('LANG_Species_X_Label').":</label> <input type=\"text\" id=\"sg---GroupID---imp-srefX\" class=\"imp-srefX integer\" name=\"dummy:srefX\" value=\"\" /></td>
-<td class='ui-widget-content'><label class=\"auto-width\" for=\"sg---GroupID---imp-srefY\">".lang::get('LANG_Species_Y_Label').":</label> <input type=\"text\" id=\"sg---GroupID---imp-srefY\" class=\"imp-srefY integer\" name=\"dummy:srefY\" value=\"\"/>
-</td>";
+<label class=\"auto-width\" for=\"sg---GroupID---imp-srefX\">".lang::get('LANG_Species_X_Label').":</label> <input type=\"text\" id=\"sg---GroupID---imp-srefX\" class=\"imp-srefX integer required\" name=\"dummy:srefX\" value=\"\" /><span class='deh-required'>*</span></td>
+<td class='ui-widget-content'><label class=\"auto-width\" for=\"sg---GroupID---imp-srefY\">".lang::get('LANG_Species_Y_Label').":</label> <input type=\"text\" id=\"sg---GroupID---imp-srefY\" class=\"imp-srefY integer required\" name=\"dummy:srefY\" value=\"\"/><span class='deh-required'>*</span></td>";
       if($maxCellsPerRow>($options['displaySampleDate']?3:2))
         $r .= "<td class='ui-widget-content' colspan=".($maxCellsPerRow-($options['displaySampleDate']?3:2))."></td>";
       $row.="</tr>";
@@ -1280,9 +1341,15 @@ jQuery(jQuery('#".$mapOptions['tabDiv']."').parent()).bind('tabsshow', ".$mapOpt
         $oc = str_replace('{fieldname}', $ctrlId, $control);
         if (isset($attributes[$attrId]['default']) && !empty($attributes[$attrId]['default'])) {
           $existing_value=$attributes[$attrId]['default'];
-          if (substr($oc, 0, 7)=='<select') // For select controls, specify which option is selected from the existing value
+          if (substr($oc, 0, 7)=='<select') { // For select controls, specify which option is selected from the existing value
             $oc = str_replace('value="'.$existing_value.'"', 'value="'.$existing_value.'" selected="selected"', $oc);
-          else $oc = str_replace('value=""', 'value="'.$existing_value.'"', $oc);
+          } else if(strpos($oc, 'radio') !== false) {
+            $oc = str_replace('value="'.$existing_value.'"','value="'.$existing_value.'" checked="checked"', $oc);
+          } else if(strpos($oc, 'checkbox') !== false) {
+            if($existing_value=="1") $oc = str_replace('type="checkbox"', 'type="checkbox" checked="checked"', $oc);
+          } else {
+            $oc = str_replace('value=""', 'value="'.$existing_value.'"', $oc);
+          }
         }
         $numCtrls++;
         $row .= str_replace(array('{label}', '{content}', '{class}'),

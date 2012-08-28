@@ -71,6 +71,10 @@ $custom_terms = array(
 	'LANG_LocModTool_DeleteInstructions'=>'When a site is deleted, any existing visit data will still be available in the reports. The visit data will not be available via the data entry form, and the site will no longer appear on the map. You will not be able to undelete the site using this form.',
 	'LANG_LocationModTool_CommentLabel'=>'Comment',
 	'LANG_Location_Name_Blank_Text' => 'Choose a location using its name',
+	'LANG_Outside_Square_Reports'=>'Outside Square Checks',
+	'LANG_Outside_Square_Download_1'=> 'This report provides a list of locations whose centres are outside their parent square',
+	'LANG_Outside_Square_Download_2'=> 'This report provides a list of locations which have any part of their boundaries outside the boundaries of their parent square',
+	'LANG_LocModTool_ParentLabel'=>'New site square',
 
 	'LANG_TooFewPoints' => 'There are too few points in this polygon - there must be at least 3.',
 	'LANG_TooFewLinePoints' => 'There are too few points in this line - there must be at least 2.',
