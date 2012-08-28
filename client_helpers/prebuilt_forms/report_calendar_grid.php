@@ -170,13 +170,10 @@ class iform_report_calendar_grid {
   public static function build_link($records, $options, $cellContents){
     // siteIDFilter not present if all selected.
     $retval['cellContents'] = $cellContents;
-    if(isset($options['siteIDFilter']) && $records[0]['location_id']!=$options['siteIDFilter'])
-      $cellContents .= ' <a href="'.$options["newURL"].'date='.$options['consider_date'].'" class="newLink" title="Create a new sample on '.$options['consider_date'].' for the selected location." ><div class="ui-state-default add-button">&nbsp;</div></a> ';
-    else
-      $cellContents .= ' <a href="'.$options["newURL"].'date='.$options['consider_date'].'" class="newLink" title="Create a new sample on '.$options['consider_date'].'" ><div class="ui-state-default add-button">&nbsp;</div></a> ';
     $cellclass="newLink";
     foreach($records as $record){
-      $cellContents .= '<a href="'.$options["existingURL"].'sample_id='.$record["sample_id"].'" title="View existing sample for '.$record["location_name"].' on '.$options['consider_date'].' (ID='.$records[0]["sample_id"].')" ><div class="ui-state-default view-button">&nbsp;</div></a>';
+      $location=empty($record["location_name"]) ? $record["entered_sref"] : $record["location_name"];
+      $cellContents .= '<a href="'.$options["existingURL"].'sample_id='.$record["sample_id"].'" title="View existing sample for '.$location.' on '.$options['consider_date'].' (ID='.$records[0]["sample_id"].')" >'.$location.'</a> ';
       if(isset($options['siteIDFilter'])){
         if($record['location_id']==$options['siteIDFilter']){
           switch($cellclass){
@@ -199,6 +196,11 @@ class iform_report_calendar_grid {
         $cellclass='existingLink';
       }
     }
+    if(isset($options['siteIDFilter']) && $records[0]['location_id']!=$options['siteIDFilter'])
+      $cellContents .= ' <a href="'.$options["newURL"].'date='.$options['consider_date'].'" class="newLink" title="Create a new sample on '.$options['consider_date'].
+          ' for the selected location."></a> ';
+    else
+      $cellContents .= ' <a href="'.$options["newURL"].'date='.$options['consider_date'].'" class="newLink" title="Create a new sample on '.$options['consider_date'].'" ></a> ';
     return array('cellclass'=>$cellclass, 'cellContents'=>$cellContents);
   }
 
