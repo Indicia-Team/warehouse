@@ -32,11 +32,12 @@ function data_cleaner_period_within_year_data_cleaner_rules() {
       // Slightly convoluted logic required in this test to get it to work with ranges in middle of year as well as ranges that span the end of the year.
       // Also note in these queries we use 2012 as the year for expanding dates that have just a month and day, as it is a leap
       // year so all dates are covered.
+      // Also a warning - these queries are case-sensitive, but performance is miserable if they are made insensitive since this kills the use of indexes.
       array(
         'joins' => 
             "join verification_rule_metadata vrm ".
-            "  on (upper(vrm.value)=upper(co.taxa_taxon_list_external_key) and upper(vrm.key)='TVK')".
-            "  or (upper(vrm.value)=upper(co.preferred_taxon) and vrm.key='TAXON') ".
+            "  on (vrm.value=co.taxa_taxon_list_external_key and vrm.key='Tvk')".
+            "  or (vrm.value=co.preferred_taxon and vrm.key='Taxon') ".
             "  or (vrm.value=cast(co.taxon_meaning_id as character varying) and vrm.key='TaxonMeaningId') ".
             "join verification_rules vr on vr.id=vrm.verification_rule_id and vr.test_type='PeriodWithinYear' ".
             "left join verification_rule_metadata vrmstart on vrmstart.verification_rule_id=vr.id and vrmstart.key='StartDate' and length(vrmstart.value)=4 ".
@@ -80,6 +81,13 @@ function data_cleaner_period_within_year_data_cleaner_rules() {
       )
     )
   );
+}
+
+/** 
+ * Taxon version keys should really be uppercase, so enforce this. Otherwise the query needs to be case insensitive which makes it slow.
+ */
+function data_cleaner_period_within_year_data_cleaner_postprocess($id, $db) {
+  $db->query("update verification_rule_metadata set value=upper(value) where key ilike 'Tvk' and value<>upper(value) and verification_rule_id=$id");
 }
 
 ?>
