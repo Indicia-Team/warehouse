@@ -73,11 +73,8 @@ and s.updated_on>'$last_run_date'";
  * @param type $db 
  */
 function spatial_index_builder_get_location_list($last_run_date, $db) {
-  $config=kohana::config_load('spatial_index_builder', false);
-  if (array_key_exists('location_types', $config)) {
-    $join='join cache_termlists_terms t on t.id=l.location_type_id';
-    $where="and t.preferred_term in ('".implode("','", $config['location_types'])."')";
-  }
+  $filter=spatial_index_builder_get_type_filter();
+  list($join, $where)=$filter;
   $query = "select l.id, now() as timepoint into temporary loclist 
 from locations l
 $join
@@ -88,6 +85,23 @@ $where";
   $r = $db->query('select count(*) as count from loclist')->result_array(false);
   echo "Building spatial index for ".$r[0]['count']." locations(s).<br/>";
   return $r[0]['count'];
+}
+
+/** 
+ * Reads the config file, if any, and returns details of the join and where clause that must be added
+ * to the indexing query to respect the location type filter in the config file.
+ * @return array Array containing the join SQL in the first entry and where SQL in the second.
+ */
+function spatial_index_builder_get_type_filter() {
+  $config=kohana::config_load('spatial_index_builder', false);
+  if (array_key_exists('location_types', $config)) {
+    $join='join cache_termlists_terms t on t.id=l.location_type_id';
+    $where="and t.preferred_term in ('".implode("','", $config['location_types'])."')";
+  } else {
+    $join='';
+    $where='';
+  }
+  return array($join, $where);
 }
 
 /** 
@@ -103,11 +117,8 @@ function spatial_index_builder_populate($db) {
     );";
   $db->query($query);
   // are we filtering by location type?
-  $config=kohana::config_load('spatial_index_builder', false);
-  if (array_key_exists('location_types', $config)) {
-    $join='join cache_termlists_terms t on t.id=l.location_type_id';
-    $where="and t.preferred_term in ('".implode("','", $config['location_types'])."')";
-  }
+  $filter=spatial_index_builder_get_type_filter();
+  list($join, $where)=$filter;
   // Now the actual population
   $query = "insert into index_locations_samples (location_id, sample_id, contains)
     select l.id, s.id, st_contains(l.boundary_geom, s.geom)
