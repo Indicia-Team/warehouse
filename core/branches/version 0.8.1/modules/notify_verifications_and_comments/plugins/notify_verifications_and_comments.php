@@ -34,11 +34,47 @@ function notify_verifications_and_comments_scheduled_task($last_run_date) {
     foreach ($notifications as $notification) {
       $vd = array($notification->date_start, $notification->date_end, $notification->date_type);
       $date = vague_date::vague_date_to_string($vd);
+      if (empty($notification->comment)) {
+        switch ($notification->record_status) {
+          case 'V': 
+            $action='verified'; 
+            break;
+          case 'R': 
+            $action='rejected'; 
+            break;
+          case 'D': 
+            $action='marked dubious'; 
+            break;
+          case 'S': 
+            $action='emailed for checking'; 
+            break;
+        }
+        $comment = 'The record of '.$notification->taxon.' at '.$notification->public_entered_sref." on $date was $action.";
+      } else {
+        if ($notification->auto_generated==='t') {
+          $comment = 'An automated check using the <a target="_blank" href="http://www.nbn.org.uk/Tools-Resources/Recording-Resources/NBN-Record-Cleaner.aspx" target="_blank">'.
+              'NBN Record Cleaner</a> rules has highlighted your record of '.$notification->taxon.' at '.$notification->public_entered_sref.' on '.$date;
+          $comment .= ($notification->generated_by==='data_cleaner_identification_difficulty') 
+            ? ' as being of a species for which identification is not always trivial. <br/><em>'
+            : '. The following information was given: <br/><em>';
+        }
+        elseif ($notification->verified_on>$last_run_date and $notification->record_status!=='I' and $notification->record_status!=='T' and $notification->record_status!=='C')
+          $comment = 'Your record of '.$notification->taxon.' at '.$notification->public_entered_sref.' on '.$date.' was examined by an expert.<br/>\"';
+        else
+          $comment = 'A comment was added to your record of '.$notification->taxon.' at '.$notification->public_entered_sref.' on '.$date.'.<br/>\"';
+        $comment .= $notification->comment;
+        if ($notification->auto_generated==='t') {
+          // a difficult ID record is not necessarily important...
+          $thing = ($notification->generated_by==='data_cleaner_identification_difficulty') ? 'identification' : 'important record';
+          $comment .= "</em><br/>You may be contacted by an expert to confirm this $thing so if you can supply any more information or photographs it would be useful.";
+        } else 
+          $comment .= '\"<br/>';
+      }
       $db->insert('notifications', array(
                 'source' => 'Verifications and comments',
                 'source_type' => $notification->source_type,
                 'data' => json_encode(array(
-                    'username'=>$notification->username,'occurrence_id'=>$notification->id,'comment'=>$notification->comment,
+                    'username'=>$notification->username,'occurrence_id'=>$notification->id,'comment'=>$comment,
                     'taxon'=>$notification->taxon,'date'=>$date,'entered_sref'=>$notification->public_entered_sref,
                     'auto_generated'=>$notification->auto_generated, 'record_status'=>$notification->record_status, 'updated_on'=>$notification->updated_on
                 )),
