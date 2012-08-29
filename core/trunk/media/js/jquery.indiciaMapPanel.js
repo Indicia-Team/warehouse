@@ -1225,15 +1225,16 @@ mapGeoreferenceHooks = [];
         zoom = $.cookie('mapzoom');
         center.lon = $.cookie('maplon');
         center.lat = $.cookie('maplat');
-        if (center.lon!==null && center.lat!==null) {
-          center = new OpenLayers.LonLat(center.lon, center.lat);
-        }
         baseLayerName = $.cookie('mapbase')
-      }
+     }
+        
+      // Missing cookies result in null variables
       if (zoom === null) {
         zoom = this.settings.initial_zoom;
       }
-      if (typeof center.lat === "undefined") {
+      if (center.lon !== null && center.lat !== null) {
+        center = new OpenLayers.LonLat(center.lon, center.lat);
+      } else {
         center = new OpenLayers.LonLat(this.settings.initial_long, this.settings.initial_lat);
         if (div.map.displayProjection.getCode()!=div.map.projection.getCode()) {
           center.transform(div.map.displayProjection, div.map.projection);
@@ -1243,11 +1244,11 @@ mapGeoreferenceHooks = [];
       
       // Set the base layer using cookie if remembering
       if (baseLayerName !== null) {
-          $.each(div.map.layers, function(idx, layer) {
-            if (layer.isBaseLayer && layer.name == baseLayerName && div.map.baseLayer !== layer) {
-              div.map.setBaseLayer(layer);
-            }
-          });
+        $.each(div.map.layers, function(idx, layer) {
+          if (layer.isBaseLayer && layer.name == baseLayerName && div.map.baseLayer !== layer) {
+            div.map.setBaseLayer(layer);
+          }
+        });
       }
       
       /**
