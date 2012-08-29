@@ -74,10 +74,17 @@ function data_cleaner_cleanout_old_messages($rules, $db) {
     if (!in_array($rule['plugin'], $modulesDone)) {
       // mark delete any previous occurrence comments for this plugin for taxa we are rechecking
       $query = 'update occurrence_comments oc
-  set deleted=true
-  from occlist
-  where oc.occurrence_id=occlist.id
-  and oc.generated_by=\''.$rule['plugin'].'\'';
+        set deleted=true
+        from occlist
+        where oc.occurrence_id=occlist.id
+        and oc.generated_by=\''.$rule['plugin'].'\'';
+      $db->query($query);
+      // and cleanup the notifications generated previously
+      $query = "delete 
+        from notifications
+        using occlist o 
+        where source='Verifications and comments'
+        and data like '%\"occurrence_id\":\"' || cast(o.id as varchar) || '\"%'";
       $db->query($query);
       $modulesDone[]=$rule['plugin'];
     }
