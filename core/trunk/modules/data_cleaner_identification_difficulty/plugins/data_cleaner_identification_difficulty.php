@@ -33,13 +33,20 @@ function data_cleaner_identification_difficulty_data_cleaner_rules() {
     'queries' => array(
       array(
         'joins' => 
-            "join verification_rule_data vrd on ((upper(vrd.key)=upper(co.taxa_taxon_list_external_key) and upper(vrd.header_name)='DATA') ".
-            "or (upper(vrd.key)=upper(co.preferred_taxon) and upper(vrd.header_name)='TAXA')) and vrd.deleted=false ".
+            "join verification_rule_data vrd on ((vrd.header_name='Data' and vrd.key = co.taxa_taxon_list_external_key) ".
+            "or (vrd.header_name='Taxa' and vrd.key = co.preferred_taxon)) and vrd.deleted=false ".
             "join verification_rules vr on vr.id=vrd.verification_rule_id and vr.test_type='IdentificationDifficulty' and vr.deleted=false ".
             "join verification_rule_data vrdini on vrdini.verification_rule_id=vr.id and vrdini.header_name='INI' and vrdini.key=vrd.value and cast(vrdini.key as int)>1 and vrdini.deleted=false"
       )
     )
   );
+}
+
+/** 
+ * Taxon version keys should really be uppercase, so enforce this. Otherwise the query needs to be case insensitive which makes it slow.
+ */
+function data_cleaner_identification_difficulty_data_cleaner_postprocess($id, $db) {
+  $db->query("update verification_rule_data set key=upper(key) where header_name='Data' and key<>upper(key) and verification_rule_id=$id");
 }
 
 ?>
