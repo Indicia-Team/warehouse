@@ -1219,7 +1219,7 @@ mapGeoreferenceHooks = [];
 
       // Centre the map, using cookie if remembering position, otherwise default setting.
       var zoom = null;
-      var center = {};
+      var center = {"lat":null, "lon":null};
       var baseLayerName = null;
       if (typeof $.cookie !== "undefined" && div.settings.rememberPos!==false) {
         zoom = $.cookie('mapzoom');
