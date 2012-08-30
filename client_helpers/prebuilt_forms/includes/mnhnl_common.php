@@ -2145,7 +2145,7 @@ jQuery('#".$options['MainFieldID']."').change(function(){
 ";
     }
     if($args['locationMode']=='multi' && isset(data_entry_helper::$entity_to_load["sample:updated_by_id"])){ // only set if data loaded from db, not error condition
-      iform_mnhnl_set_editable($auth, $args, $node, array(), $options['AdminMode']);
+      iform_mnhnl_set_editable($auth, $args, $node, array(), $options['AdminMode'], $loctypeParam);
       // multiple site: parent sample points to parent location in location_id, not parent_id. Each site has own subsample.
       // can not change the (parent) location of the main sample, as this will reset all the attached samples and sites, so redering entered data useless. Just delete.
       return $retVal."\n<input type=\"hidden\" name =\"sample:location_id\" value=\"".data_entry_helper::$entity_to_load["sample:location_id"]."\" >
@@ -2171,7 +2171,7 @@ jQuery('#".$options['MainFieldID']."').change(function(){
     $locations = iform_loctools_listlocations($node);
     if($args['locationMode'] == 'parent' || $args['locationMode'] == 'multi'){
       if (!isset($args['loctoolsLocTypeID'])) return "locationMode == parent, loctoolsLocTypeID not set.";
-      iform_mnhnl_set_editable($auth, $args, $node, array(), $options['AdminMode']);
+      iform_mnhnl_set_editable($auth, $args, $node, array(), $options['AdminMode'], $loctypeParam);
       $locOptions = array('validation' => array('required'),
     					'label'=>$options['ChooseParentLabel'],
     					'id'=>$options['ChooseParentFieldID'],
@@ -2386,7 +2386,7 @@ jQuery(\"#".$options['ChooseParentFieldID']."\").change(function(){
       // Idea here is to get a list of all locations in order to build drop downs.
       $responseRecords = data_entry_helper::get_population_data($location_list_args);
       if (isset($responseRecords['error'])) return $responseRecords['error'];
-      iform_mnhnl_set_editable($auth, $args, $node, $responseRecords, 'conditional');
+      iform_mnhnl_set_editable($auth, $args, $node, $responseRecords, 'conditional', $loctypeParam);
       $NameOpts = '';
       foreach ($responseRecords as $record){
         if($record['name']!=''){
@@ -2411,7 +2411,7 @@ jQuery(\"#".$options['ChooseParentFieldID']."\").change(function(){
       <input type='hidden' id=\"sample-location-id\" name=\"sample:location_id\" value='".data_entry_helper::$entity_to_load['sample:location_id']."' />";
     } else { // single location, filtered.
       data_entry_helper::$javascript .="indiciaData.filterMode=true;\n";
-      iform_mnhnl_set_editable($auth, $args, $node, $responseRecords, 'conditional');
+      iform_mnhnl_set_editable($auth, $args, $node, array(), 'conditional', $loctypeParam);
       $retVal .= '<p>'.$options['Instructions2'].'</p>';
       $filterAttrs = explode(',',$args['filterAttrs']);
       // filter attributes are assumed to be text (could extend later)
@@ -3345,7 +3345,7 @@ function handleEnteredSref(value) {
 	return $retVal;
 }
 
-function iform_mnhnl_set_editable($auth, $args, $node, $locList, $force){
+function iform_mnhnl_set_editable($auth, $args, $node, $locList, $force, $loctypeParam){
   global $user;
   if($force === true || $force === false){
     data_entry_helper::$javascript .= "\ncanEditExistingSites = ".($force ? "true" : "false").";\n";
