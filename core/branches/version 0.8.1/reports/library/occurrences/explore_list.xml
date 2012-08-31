@@ -63,5 +63,6 @@
     else 'black' end" />
     <column name='fc' visible='false' feature_style="fillColor" sql="case o.record_status when 'V' then 'green' when 'D' then 'orange' when 'R' then 'red' else 'blue' end" />
     <column name='geom' visible='false' mappable="true" sql='st_astext(o.public_geom)' />
+    <column name='images' display='Images' sql='o.images' img='true' />
   </columns>
 </report>
