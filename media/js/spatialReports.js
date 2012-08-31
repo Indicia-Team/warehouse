@@ -21,7 +21,7 @@ function storeGeomsInHiddenInput(layer, inputId) {
   $.each(layer.features, function(i, feature) {
     // ignore features with a special purpose, e.g. the selected record when verifying
     if (typeof feature.tag==="undefined") {
-      if (feature.geometry.CLASS_NAME.contains('Multi')) {
+      if (feature.geometry.CLASS_NAME.indexOf('Multi')!==-1) {
         geoms = geoms.concat(feature.geometry.components);
       } else {
         geoms.push(feature.geometry);
