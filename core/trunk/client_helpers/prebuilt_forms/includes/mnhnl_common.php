@@ -539,10 +539,9 @@ SitePointStyleMap = new OpenLayers.StyleMap({\"default\": defaultPointStyle, \"s
 SiteStyleMap = new OpenLayers.StyleMap({\"default\": defaultStyle, \"select\": selectStyle});
 //SiteLabelStyleMap = new OpenLayers.StyleMap({\"default\": defaultLabelStyle});
 
-".($args['SecondaryLocationTypeTerm'] != '' ?
+".($args['SecondaryLocationTypeTerm'] != '' && $options['AdminMode'] ?
 "SiteListPrimaryLabelStyleHash={fontColor: \"Red\", labelAlign: \"".$args['labelAlign']."\", labelXOffset: ".$args['labelXOffset'].", labelSelect: true, fontSize: \"1.2em\", fontWeight: \"bold\"};
 SiteListSecondaryLabelStyleHash" : "
-SiteListSecondaryLabelStyleHash={};
 SiteListPrimaryLabelStyleHash")."={fontColor: \"Yellow\", labelAlign: \"".$args['labelAlign']."\", labelXOffset: ".$args['labelXOffset'].", labelSelect: true};
 
 //SitePointLayer = new OpenLayers.Layer.Vector('Site Points',{styleMap: SitePointStyleMap, displayInLayerSwitcher: false});
@@ -923,7 +922,7 @@ loadFeatures = function(parent_id, child_id, childArgs, loadParent, setSelectOpt
               SitePointLayer.addFeatures([feature]);
             }
             centreFeature.attributes = {highlighted: false, new: false, canEdit: checkEditable(false, data[i].id), SiteNum: SiteNum, data: data[i]};
-".($args['SecondaryLocationTypeTerm'] != '' ?
+".($args['SecondaryLocationTypeTerm'] != '' && $options['AdminMode'] ?
 "            if(data[i].location_type_id == $secondary){
               centreFeature.style = jQuery.extend({}, SiteListSecondaryLabelStyleHash);
             } else 
@@ -1030,7 +1029,7 @@ populateExtensions = function(locids){
         SiteLabelLayer.addFeatures([locList[j].feature]);\n".
 ($args['locationMode']!='filtered' ? 
 "        var myOption = jQuery(\"#".$options['MainFieldID']."\").find('option').filter('[value='+locList[j].id+']').empty();
-".($args['SecondaryLocationTypeTerm']!='' ?
+".($args['SecondaryLocationTypeTerm']!='' && $options['AdminMode']  ?
 "        if(locList[j].feature.attributes.data.location_type_id == $primary)
           myOption.css('color','red');
 " : "")."        myOption.append(locList[j].template);" : "")."
@@ -2160,7 +2159,7 @@ jQuery('#".$options['MainFieldID']."').change(function(){
       return $retVal."\n<input type=\"hidden\" name =\"sample:location_id\" value=\"".data_entry_helper::$entity_to_load["sample:location_id"]."\" >
   <p>".$options['ParentLabel'].' : '.data_entry_helper::$entity_to_load["location:name"].'</p>
 '.($args['includeNumSites'] ? "<label for=\"dummy-num-sites\" class=\"auto-width\">".lang::get('LANG_NumSites').":</label> <input id=\"dummy-num-sites\" name=\"dummy:num-sites\" class=\"checkNumSites narrow\" readonly=\"readonly\"><br />\n" : '').
-"<p>".$options['Instructions2']."</p>\n".
+"<p>".$options['Instructions2']."</p>\n".($options['AdminMode'] && (!isset($args['adminsCanCreate']) || !$args['adminsCanCreate']) ? '<p>'.lang::get('LANG_LocModTool_CantCreate').'</p>' : '' ).
         ($args['siteNameTermListID']== '' ? "<label for=\"dummy-name\">".$options['NameLabel'].":</label> <input id=\"dummy-name\" name=\"dummy:name\" class='wide required'><br />\n" :
           data_entry_helper::select(array(
             'label'=>$options['NameLabel'],
@@ -2219,7 +2218,8 @@ jQuery('#".$options['MainFieldID']."').change(function(){
       $retVal .= '<p>'.$options['Instructions1'].'</p>'.
         data_entry_helper::apply_template($locOptions['template'], $locOptions).
         ($args['includeNumSites'] ? '<label for="dummy-num-sites" class=\"auto-width\">'.lang::get('LANG_NumSites').':</label> <input id="dummy-num-sites" name="dummy:num-sites" class="checkNumSites narrow" readonly="readonly"><br />
-' : '').'<p>'.$options['Instructions2'].'</p>';
+' : '').'<p>'.$options['Instructions2'].'</p>'.
+      ($options['AdminMode'] && (!isset($args['adminsCanCreate']) || !$args['adminsCanCreate']) ? '<p>'.lang::get('LANG_LocModTool_CantCreate').'</p>' : '' );
     }
     if($args['locationMode']=='parent'){
       $retVal .= "<input type='hidden' id=\"sample-location-id\" name=\"sample:location_id\" value='".data_entry_helper::$entity_to_load['sample:location_id']."' />";
@@ -2405,13 +2405,13 @@ jQuery(\"#".$options['ChooseParentFieldID']."\").change(function(){
           $NameOpts .= data_entry_helper::mergeParamsIntoTemplate($item, $location_list_args['itemTemplate']);
         }
       }
-      $retVal .= '<p>'.$options['Instructions2'].'</p><fieldset><legend>'.lang::get('Existing locations').'</legend>';
+      $retVal .= '<p>'.$options['Instructions2'].'</p>'.($options['AdminMode'] && (!isset($args['adminsCanCreate']) || !$args['adminsCanCreate']) ? '<p>'.lang::get('LANG_LocModTool_CantCreate').'</p>' : '' ).'<fieldset><legend>'.lang::get('Existing locations').'</legend>';
       if($NameOpts != ''){
         $location_list_args['items'] = str_replace(array('{value}', '{caption}', '{selected}'),
           array('', htmlentities($location_list_args['NameBlankText']), ''),
           $indicia_templates[$location_list_args['itemTemplate']]).$NameOpts;
         $retVal .= data_entry_helper::apply_template($location_list_args['template'], $location_list_args);
-        if($args['SecondaryLocationTypeTerm'] != ''){
+        if($args['SecondaryLocationTypeTerm'] != '' && $options['AdminMode']){
           $retVal .= '<p>'.lang::get("LANG_Multiple_Location_Types").'</p>';
         }
       } else
@@ -2421,7 +2421,7 @@ jQuery(\"#".$options['ChooseParentFieldID']."\").change(function(){
     } else { // single location, filtered.
       data_entry_helper::$javascript .="indiciaData.filterMode=true;\n";
       iform_mnhnl_set_editable($auth, $args, $node, array(), 'conditional', $loctypeParam);
-      $retVal .= '<p>'.$options['Instructions2'].'</p>';
+      $retVal .= '<p>'.$options['Instructions2'].'</p>'.($options['AdminMode'] && (!isset($args['adminsCanCreate']) || !$args['adminsCanCreate']) ? '<p>'.lang::get('LANG_LocModTool_CantCreate').'</p>' : '' );
       $filterAttrs = explode(',',$args['filterAttrs']);
       // filter attributes are assumed to be text (could extend later)
       $attrArgs = array(
