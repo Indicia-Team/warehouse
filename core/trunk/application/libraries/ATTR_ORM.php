@@ -93,8 +93,11 @@ abstract class ATTR_ORM extends Valid_ORM {
    * @return boolean Returns true to indicate success. 
    */
   protected function postSubmit($isInsert) {
-    // Record has saved correctly or is being reused
-    $websites = ORM::factory('website')->find_all();
+    // Only save for the websites we have access to
+    if (empty($_POST['restricted-to-websites']))
+      $websites = ORM::factory('website')->find_all();
+    else
+      $websites = ORM::factory('website')->in('id',explode(',', $_POST['restricted-to-websites']))->find_all();
     foreach ($websites as $website) {
       // First check for non survey specific checkbox
       $this->set_attribute_website_record($this->id, $website->id, null, isset($_POST['website_'.$website->id]));
