@@ -59,8 +59,8 @@ and co.taxa_taxon_list_external_key is not null
     <column name='sitekey' display='SiteKey' sql='s.location_id' datatype="integer" />
     <column name='sitename' display='SiteName' sql='co.location_name' datatype="text" />
     <column name='gridreference' display='GridReference' sql="case s.entered_sref_system when '4326' then null else replace(s.entered_sref, ' ', '') end" datatype="text" />
-    <column name='east' display='East' sql="substring(st_astext(st_transform(geom, 4326)) from E'POINT\\((.+) ')" datatype="text" />
-    <column name='north' display='North' sql="substring(st_astext(st_transform(geom, 4326)) from E'POINT\\(.+ (.+)\\)')" datatype="text" />
+    <column name='east' display='East' sql="case when s.entered_sref_system in ('4326', '27700') then substring(st_astext(st_transform(st_centroid(geom), s.entered_sref_system::int)) from E'POINT\\((.+) ') else null end" datatype="text" />
+    <column name='north' display='North' sql="case when s.entered_sref_system in ('4326', '27700') then substring(st_astext(st_transform(st_centroid(geom), s.entered_sref_system::int)) from E'POINT\\(.+ (.+)\\)') else null end" datatype="text" />
     <column name='projection' display='Projection' 
         sql="case s.entered_sref_system when '4326' then 'WGS84' when '27700' then 'OSGB36' else upper(s.entered_sref_system) end" 
         datatype="text" />
