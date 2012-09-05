@@ -47,7 +47,7 @@ and co.taxa_taxon_list_external_key is not null
     </param>
   </params>
   <columns>
-    <column name='recordkey' display='RecordKey' sql="'iBRC' || co.id" datatype="integer" />
+    <column name='recordkey' display='RecordKey' sql="'iBRC' || co.id" datatype="text" />
     <column name='surveykey' display='SurveyKey' sql='co.survey_id' datatype="integer" />
     <column name='samplekey' display='SampleKey' sql='co.sample_id' datatype="integer" />
     <column name='taxonversionkey' display='TaxonVersionKey' sql='co.taxa_taxon_list_external_key' datatype="text" />
@@ -59,8 +59,8 @@ and co.taxa_taxon_list_external_key is not null
     <column name='sitekey' display='SiteKey' sql='s.location_id' datatype="integer" />
     <column name='sitename' display='SiteName' sql='co.location_name' datatype="text" />
     <column name='gridreference' display='GridReference' sql="case s.entered_sref_system when '4326' then null else replace(s.entered_sref, ' ', '') end" datatype="text" />
-    <column name='easting' display='Easting' sql="substring(st_astext(st_transform(geom, 4326)) from E'POINT\\((.+) ')" datatype="text" />
-    <column name='northing' display='Northing' sql="substring(st_astext(st_transform(geom, 4326)) from E'POINT\\(.+ (.+)\\)')" datatype="text" />
+    <column name='east' display='East' sql="substring(st_astext(st_transform(geom, 4326)) from E'POINT\\((.+) ')" datatype="text" />
+    <column name='north' display='North' sql="substring(st_astext(st_transform(geom, 4326)) from E'POINT\\(.+ (.+)\\)')" datatype="text" />
     <column name='projection' display='Projection' 
         sql="case s.entered_sref_system when '4326' then 'WGS84' when '27700' then 'OSGB36' else upper(s.entered_sref_system) end" 
         datatype="text" />
