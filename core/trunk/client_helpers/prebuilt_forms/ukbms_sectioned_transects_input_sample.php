@@ -396,7 +396,7 @@ class iform_ukbms_sectioned_transects_input_sample {
       $blockOptions=array();
     $r .= get_attribute_html($attributes, $args, array('extraParams'=>$auth['read']), null, $blockOptions);
     $r .= '<input type="hidden" name="sample:sample_method_id" value="'.$sampleMethods[0]['id'].'" />';
-    $r .= '<input type="submit" value="'.lang::get('Next').'" class="ui-state-default ui-corner-all" />';
+    $r .= '<input type="submit" value="'.lang::get('Next').'" />';
     $r .= '<a href="'.$args['my_walks_page'].'"><button type="button" class="ui-state-default ui-corner-all" />'.lang::get('Cancel').'</button></a>';
     if (isset(data_entry_helper::$entity_to_load['sample:id']))
       $r .= '<button id="delete-button" type="button" class="ui-state-default ui-corner-all" />'.lang::get('Delete').'</button>';
@@ -435,6 +435,7 @@ class iform_ukbms_sectioned_transects_input_sample {
       $parentLocId = $_POST['sample:location_id'];
       $date = $_POST['sample:date'];
       $existing=true;
+      data_entry_helper::load_existing_record($auth['read'], 'sample', $parentSampleId);
     } else {
       if (isset($response['outer_id']))
         // have just posted a new parent sample, so can use it to get the parent location id.
@@ -523,12 +524,7 @@ class iform_ukbms_sectioned_transects_input_sample {
       'extraParams' => $auth['read'] + array('view'=>'detail','parent_id'=>$parentLocId,'deleted'=>'f')
     ));
     usort($sections, "ukbms_stis_sectionSort");
-    $r = "<form method=\"post\"><div id=\"tabs\">\n";
-    $r .= $auth['write'];
-    $r .= '<input type="hidden" name="sample:id" value="'.$parentSampleId.'" />';
-    $r .= '<input type="hidden" name="website_id" value="'.$args['website_id'].'"/>';
-    $r .= '<input type="hidden" name="survey_id" value="'.$args['survey_id'].'"/>';
-    $r .= '<input type="hidden" name="page" value="grid"/>';
+    $r = "<div id=\"tabs\">\n";
     $tabs = array('#grid1'=>lang::get('Enter Transect Species Data 1'));
     if(isset($args['second_taxon_list_id']) && $args['second_taxon_list_id']!='')
       $tabs['#grid2']=lang::get('Enter Transect Species Data 2');
@@ -619,13 +615,20 @@ class iform_ukbms_sectioned_transects_input_sample {
     }
 
     $r .= "<div id=\"notes\">\n";
+    $r .= "<form method=\"post\">\n";
+    $r .= $auth['write'];
+    $r .= '<input type="hidden" name="sample:id" value="'.$parentSampleId.'" />';
+    $r .= '<input type="hidden" name="website_id" value="'.$args['website_id'].'"/>';
+    $r .= '<input type="hidden" name="survey_id" value="'.$args['survey_id'].'"/>';
+    $r .= '<input type="hidden" name="page" value="grid"/>';
     $r .= data_entry_helper::textarea(array(
       'fieldname'=>'sample:comment',
       'label'=>lang::get('Notes'),
       'helpText'=>"Use this space to input comments about this week's walk."
-    ));
-    $r .= '<input type="submit" value="'.lang::get('Save').'"/>';
-    $r .= '</div></div></form>';
+    ));    
+    $r .= '<input type="submit" value="'.lang::get('Submit').'" id="save-button"/>';
+    $r .= '</form>';
+    $r .= '</div></div>';
     // A stub form for AJAX posting when we need to create an occurrence
     $r .= '<form style="display: none" id="occ-form" method="post" action="'.iform_ajaxproxy_url($node, 'occurrence').'">';
     $r .= '<input name="website_id" value="'.$args['website_id'].'"/>';
