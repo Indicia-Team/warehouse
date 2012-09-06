@@ -88,13 +88,32 @@ label {
   opacity: 0.7;
 }
 
+/* line 40, sass/sectioned_transects_edit_transect.scss */
+.section-delete {
+  display: -moz-inline-box;
+  -moz-box-orient: vertical;
+  display: inline-block;
+  vertical-align: middle;
+  *vertical-align: auto;
+  margin: 0;
+}
+/* line 7, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/compass/stylesheets/compass/css3/_inline-block.scss */
+.section-delete {
+  *display: inline;
+}
+
+/* line 45, sass/sectioned_transects_edit_transect.scss */
+.waiting-button {
+  background: transparent url(/misc/throbber.gif) no-repeat 50% -18px !important;
+}
+
 /* Hide the sections that still need to be drawn on the details tab as they are not in DB yet. */
-/* line 42, sass/sectioned_transects_edit_transect.scss */
+/* line 50, sass/sectioned_transects_edit_transect.scss */
 #section-details .missing {
   display: none;
 }
 
-/* line 46, sass/sectioned_transects_edit_transect.scss */
+/* line 54, sass/sectioned_transects_edit_transect.scss */
 .form-button {
   display: inline-block;
   width: auto;
