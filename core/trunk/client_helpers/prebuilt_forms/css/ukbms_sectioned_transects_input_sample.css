@@ -43,5 +43,7 @@ input.edited[type="text"], input.edited[type="password"], select.edited {
 }
 
 input.saving[type="text"], input.saving[type="password"], select.saving {
-  border: solid yellow 1px;
+  background: url(../../../../media/images/ajax-loader.gif) no-repeat right;
+  font-style: italic;
+  
 }
