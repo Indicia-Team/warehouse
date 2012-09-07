@@ -25,11 +25,12 @@ global $custom_term_overrides;
 $custom_term_overrides[] = array(
 	// 'Edit' is left unchanged
 	'LANG_Shapefile_Download'=> 'This download provides a zipped up shape file for the locations - there is a single point per site. Click to select:'
-	,'LANG_LocModTool_Instructions2'=>"Either click on the map (ensuring that the select tool on the map is active) to select the site you wish to modify, or choose from the drop down list. You may then change its name, or modify or add Points, Lines, or Polygons to define the site shape. You must choose the correct draw tool on the map for each of these. You may drag the highlighted vertices. To delete a vertex, place the mouse over the vertex and press the 'd' or 'Delete' buttons.<br />You can't create a new site using this tool - that has to be done within the survey data entry itself."
+	,'LANG_LocModTool_Instructions2'=>"Either click on the map (ensuring that the select tool on the map is active) to select the site you wish to modify, or choose from the drop down list. You may then change its name, or modify or add Points, Lines, or Polygons to define the site shape. You must choose the correct draw tool on the map for each of these. You may drag the highlighted vertices. To delete a vertex, place the mouse over the vertex and press the 'd' or 'Delete' buttons."
+	,'LANG_LocModTool_CantCreate' => "You can't create a new site using this tool - that has to be done within the survey data entry itself."
 	,'LANG_DE_Instructions2'=>"To choose a site, either click the relevant site on the map (ensuring that the select tool on the map is active) or pick it from the drop down list (then the selected site is highlighted in blue on the map).<br />You may add a new site: click the 'Start a new site' button on the map, and click on the map. You can change the position by dragging the circle.<br />Selecting an existing site will remove any new site.<br />It is not possible to change a site name or position on this form once it has been saved - this can be done by an Admin user using their special tool."
 	,'LANG_Location_X_Label' => 'Site coordinates: X'
 	,'LANG_PointTooltip'=>'Click on map to set site position'
-	,'LANG_SpeciesInstructions'=>"Additional rows may be added using the control under the grid, including rows for species already entered as each row has a different location.<br />There are various combinations Type/Stage/Sex/Behaviour which are not allowed. Such banned combinations will be greyed out in the drop down lists.<br />Click the red 'X' to delete the relevant row."
+	,'LANG_SpeciesInstructions'=>"Species records may be added using the control under the grid, including rows for species already entered as each row has a different location.<br />There are various combinations Type/Stage/Sex/Behaviour which are not allowed. Such banned combinations will be greyed out in the drop down lists.<br />Click the red 'X' to delete the relevant row."
 	,'Village' => 'Village/Locality'
 	,'Site name' => 'Site number'
 	,'LANG_LocModTool_IDLabel'=>'Old site number'
@@ -51,11 +52,12 @@ $custom_term_overrides[] = array(
 	,'LANG_PositionInDifferentCommune' => 'The position you have chosen is outside the selected Commune. Do you wish to change the Commune field to match the point?'
 	,'LANG_NumSites'=>'Number of sites in this square'
 	,'LANG_Data_Download' => 'These reports provide details of the collections and species data entered in the surveys which are tagged for a particular target species. The sites download is not dependant on the target species.'
-	,'LANG_PositionInDifferentSquare' => 'The position you have chosen is outside the selected square. Do you wish to change the square field to match the point?'
+	,'LANG_PositionInDifferentParent' => 'The position you have chosen is outside the selected square. Do you wish to change the square field to match the point?'
 	,'LANG_Date_Explanation' => '(Indicate the date of the beginning of the survey)'
 	,'LANG_PositionOutsideParent' => 'Warning: this position is outside the available list of 5x5km squares'
 	,'LANG_ParentLookUpFailed' => 'Internal error: Lookup of the square for this location failed.'
 	,'LANG_FirstChooseParentFilter' => 'First choose a square'
 	,'LANG_ZoomToParent'=>'Zoom to parent (square or Commune)'
+	,'Add species to list'=>'Add species record to list'
 	);
 ?>

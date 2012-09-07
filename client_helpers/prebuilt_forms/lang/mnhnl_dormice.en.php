@@ -30,10 +30,10 @@ global $custom_terms;
 // this file should be copied to the file 'node.<nid>.en.php';
 global $custom_term_overrides;
 $custom_term_overrides[] = array(
-	'LANG_MustSelectParentFirst' => 'You must choose a square first, before creating a new location within it.'
-	,'Dormice habitat type' => 'Habitat type'
+	'Dormice habitat type' => 'Habitat type'
 	,'Dormice succession' => 'Succession'
 	,'Dormice bordering habitat type' => 'Bordering habitat type'
+	,'Dormice shrub diversity' => 'Shrub diversity'
 	,'Start time' => 'Start time (HH:MM)'
 	,'End time' => 'End time (HH:MM)'
 	,'Temperature' => 'Temperature (&degC)'
@@ -52,4 +52,6 @@ $custom_term_overrides[] = array(
 	,'Dormouse nest composition'=>'Nest composition'
 	,'Dormouse nest status'=>'Nest status'
 	,'Dormouse tree layer'=>'Tree layer above the nest'
+	,'LANG_SpeciesInstructions'=>"It is only possible to record occurrences for the Hazel Dormouse on this form. Records may be added using the button under the grid.<br />The 'No observation' can only be selected when there are no undeleted rows in the grid (when it must be selected) - otherwise it is disabled. Click the red 'X' to delete the relevant row.",
+	
 );
