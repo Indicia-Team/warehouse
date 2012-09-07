@@ -27,6 +27,7 @@ global $custom_terms;
  * @package	Client
  */
 $custom_terms = array(
+	'LANG_MustSelectParentFirst' => 'You must choose a square first, before creating a new location within it.',
 	'LANG_no_permissions' => 'You must be either a registered User or a registered Admin of this form in order to access this form.',
 	'LANG_Edit' => 'Edit',
 	'LANG_SampleListGrid_Preamble' => 'Previously encoded survey list for ',

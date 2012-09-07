@@ -53,7 +53,8 @@ $custom_terms = array(
 	'LANG_CommonInstructions1'=>'Choose a square (5x5km). This square will then be displayed on the map, along with all existing sites associated with that square.',
 	'LANG_CommonParentLabel'=>'Square (5x5km)',
 	'LANG_CommonParentBlank'=>'Choose a square',
-	'LANG_LocModTool_Instructions2'=>"Either click on the map (ensuring that the select tool on the map is active) to select the site you wish to modify, or choose from the drop down list. You may then change its name, or modify or add Points, Lines, or Polygons to define the site shape. You must choose the correct draw tool on the map for each of these. You may drag the highlighted vertices. To delete a vertex, place the mouse over the vertex and press the 'd' or 'Delete' buttons.<br />You can't create a new site using this tool - that has to be done within the survey data entry itself.",
+	'LANG_LocModTool_Instructions2'=>"Either click on the map (ensuring that the select tool on the map is active) to select the site you wish to modify, or choose from the drop down list. You may then change its name, or modify or add Points, Lines, or Polygons to define the site shape. You must choose the correct draw tool on the map for each of these. You may drag the highlighted vertices. To delete a vertex, place the mouse over the vertex and press the 'd' or 'Delete' buttons.",
+	'LANG_LocModTool_CantCreate' => "You can't create a new site using this tool - that has to be done within the survey data entry itself.",
 	'LANG_DE_Instructions2'=>"To choose a site, either click the relevant site on the map (ensuring that the select tool on the map is active) or pick it from the drop down list (then the selected site is highlighted in blue on the map).<br />You may add a new site: ensure a square has been selected, click the 'Start a new site' button on the map, select the map tool for the type of item you wish to draw, and draw on the map, clicking on each point. Double click on the final point of a line or polygon to complete it. At this point you will notice some small red circles appear around the newly drawn feature: you can change the boundary by dragging these circles. To delete a point, place the mouse over the red circle, and press the 'd' or 'Delete' buttons on the keyboard.<br />Selecting an existing site will remove any new site.<br />It is not possible to change a site name or boundary on this form once it has been saved - this can be done by an Admin user using their special tool.",
 	'LANG_LocModTool_IDLabel'=>'Old site name',
 	'LANG_DE_LocationIDLabel'=>'Site',
@@ -76,6 +77,8 @@ $custom_terms = array(
 	'LANG_Outside_Square_Download_2'=> 'This report provides a list of locations which have any part of their boundaries outside the boundaries of their parent square',
 	'LANG_LocModTool_ParentLabel'=>'New site square',
 
+	'LANG_PositionInDifferentParent' => 'The position you have chosen is outside the selected parent. Do you wish to change the parent field to match the point?',
+	'LANG_MustSelectParentFirst' => 'You must choose a square first, before creating a new location within it.',
 	'LANG_TooFewPoints' => 'There are too few points in this polygon - there must be at least 3.',
 	'LANG_TooFewLinePoints' => 'There are too few points in this line - there must be at least 2.',
 	'LANG_CentreOutsideParent'=>'Warning: the centre of your new site is outside the square.',
@@ -107,6 +110,12 @@ $custom_terms = array(
 	'LANG_HighlightPoint'=>'Highlight this point',
 	'Location Comment' => 'Comment',
 
+// Georeferencing
+	'search' => 'Search',
+	'LANG_Georef_Label'=>'Search for place on map',
+	'LANG_Georef_SelectPlace' => 'Select the correct one from the following places that were found matching your search. (Click on the list items to see them on the map.)',
+	'LANG_Georef_NothingFound' => 'No place found with that name. Try a nearby town name.',
+
 	'LANG_Tab_otherinformation' => 'Conditions',
 	'LANG_Date' => 'Date',
 	'Overall Comment' => 'Comments',
@@ -125,8 +134,9 @@ $custom_terms = array(
 	'LANG_Tab_species' => 'Species',
 	'LANG_SpeciesInstructions'=>"Additional species may be added using the control under the grid.<br />Additional rows may be added using the control for existing taxa if a different combination of Type/Stage/Sex/Behaviour is to be added.<br />There are various combinations Type/Stage/Sex/Behaviour which are not allowed (eg an 'egg' can not be a 'dead specimen'). Such banned combinations will be greyed out in the drop down lists. In addition, it is not possible to enter multiple rows for the same combination of Species/Type/Stage/Sex/Behaviour: again duplicate possiblities will be greyed out.<br />If you think a combination is valid, but you can not select it, first check that there is no other existing row with this combination.<br />The 'No observation' can only be selected when there are no undeleted rows in the grid (when it must be selected) - otherwise it is disabled. Click the red 'X' to delete the relevant row.",
 	'species_checklist.species'=>'Species',
-	'Count'=>'No.',
+	'Count'=>'Number',
 	'Occurrence reliability'=>'Reliability',
+	'Reliability'=>'Survey reliability',
 
 	// Can also add entries for 'Yes' and 'No' for the voucher attribute
 	'LANG_Record_Status_Label' => 'Record Status',
