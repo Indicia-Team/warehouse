@@ -161,7 +161,7 @@ class iform_easy_download {
         'helpText' => 'Choose a survey, or <all> to not filter by survey.',
         'blankText' => '<all>',
         'class' => 'control-width-4',
-        'extraParams' => $readAuth + array('sharing' => 'data_flow')
+        'extraParams' => $readAuth + array('sharing' => 'data_flow', 'orderby'=>'title')
       ));
       $r .= '</div>';
       // A survey picker when downloading data you are an expert for
@@ -183,7 +183,7 @@ class iform_easy_download {
         'helpText' => 'Choose a survey, or <all> to not filter by survey.',
         'blankText' => '<all>',
         'class' => 'control-width-4',
-        'extraParams' => $readAuth + array('sharing' => 'data_flow') + $surveysFilter
+        'extraParams' => $readAuth + array('sharing' => 'data_flow', 'orderby'=>'title') + $surveysFilter
       ));
       $r .= '</div>';
     }
