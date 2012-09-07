@@ -698,7 +698,8 @@ jQuery('.targ-presence').change(function(){
         data_entry_helper::$javascript .= "').attr('disabled','disabled');\n";
       }
     }    
-    data_entry_helper::$late_javascript .= "// JS for target species grid control.
+    if(!isset($options['optional']))
+      data_entry_helper::$late_javascript .= "// JS for target species grid control.
 $.validator.addMethod('targ-presence', function(value, element){
 	return jQuery('.targ-presence')[0]!=element || jQuery('.targ-presence').filter('[checked]').length > 0;
 },

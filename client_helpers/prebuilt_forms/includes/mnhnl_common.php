@@ -115,6 +115,14 @@ function iform_mnhnl_getParameters() {
           'default' => 'none',
           'group' => 'Locations'
         ),
+        array(
+          'name'=>'oneTypeAtATime',
+          'caption'=>'Single Type Only',
+          'description'=>'Choose whether to allow only one geometry type at a time: e.g. if above has points, lines, and polygons active, and this is selected, adding a point will remove any any lines or polygons.',
+          'type'=>'boolean',
+          'required' => false,
+          'group' => 'Locations'
+        ),
         // we use the locTools location type ID for the parent
         array(
           'name'=>'locationTypeTermListExtKey',
@@ -292,7 +300,6 @@ function iform_mnhnl_locModTool($auth, $args, $node) {
   if (!isset($args['clientSideValidation']) || $args['clientSideValidation'])
       data_entry_helper::enable_validation('entry_form');
   if($args['locationMode']=='multi') $args['locationMode']='parent';
-//  if($args['locationMode']=='filtered') $args['locationMode']='single';
   data_entry_helper::$entity_to_load=array();
   $retVal = "<div id=\"locations\">";
   if($args['shpFileDownloadURL']!=""){
@@ -368,10 +375,21 @@ function iform_mnhnl_locModTool($auth, $args, $node) {
     $laArgs["class"]=$defs1[1];
     $retVal .= iform_mnhnl_locationattributes($auth, $args, '', $laArgs);
   }
-  // For main page we force to Tabs to ensure map drawn correctly
   $args['interface']='Tabs';
   $mapOptions = iform_map_get_map_options($args,$auth['read']);
   $olOptions = iform_map_get_ol_options($args);
+  if($args['locationMode']!='parent') { // this includes multi as well (see above)
+    // can't call the protested control function
+    $georefOpts = iform_map_get_georef_options($args, $auth['read']);
+    // can't use place search without the driver API key
+    if ($georefOpts['driver']=='geoplanet' && empty(helper_config::$geoplanet_api_key))
+      $retVal .= '<p>The form structure includes a [place search] control but needs a geoplanet api key.</p>';
+    else
+      $retVal .=  data_entry_helper::georeference_lookup($georefOpts);
+    $mapOptions['searchLayer']=true;
+    $mapOptions['searchUpdatesSref']=false;
+  }
+  // For main page we force to Tabs to ensure map drawn correctly
   $mapOptions['tabDiv'] = 'locations';
   $mapOptions['standardControls']=array('layerSwitcher','panZoomBar');
   $mapOptions['layers']=array("ParentLocationLayer","SiteLabelLayer","SiteAreaLayer","SitePathLayer","SitePointLayer");
@@ -595,7 +613,7 @@ recalcNumSites = function(){
 recalcNumSites();
 clearLocation = function(hookArg){ // clears all the data in the fields.
   jQuery('#".$options['MainFieldID'].($args['locationMode']!='multi' ? ",#sample-location-name,#sample-location-id" : "").",#location-name,#centroid_sref,#imp-srefX,#imp-srefY,#centroid_geom,#boundary_geom,[name=location\\:comment],[name=location\\:parent_id],#location-code').val('');
-".($args['locationMode']!='multi' ? "  jQuery('#location-name option').removeAttr('disabled').not('[value=]').not(':eq(0)').attr('disabled','disabled');\n  ":"").
+".($args['locationMode']!='multi' ? "  jQuery('#location-name option').removeAttr('disabled');\n  ":"").
 "  jQuery('#location_location_type_id').val('$primary');
   // first  to remove any hidden multiselect checkbox unclick fields
   var attrList=jQuery('[name^=locAttr\\:]').not('[name$=\\:term]');
@@ -1279,6 +1297,12 @@ addDrawnPointToSelection = function(geometry) {
   if(!ParentLocationLayer.features[0].geometry.intersects(geometry))
     alert(\"".lang::get('LANG_PointOutsideParent')."\");
 " : "").
+(isset($args['oneTypeAtATime']) && $args['oneTypeAtATime'] ?
+"  if(modPathFeature.feature) modPathFeature.unselectFeature(modPathFeature.feature);
+  if(modAreaFeature.feature) modAreaFeature.unselectFeature(modAreaFeature.feature);
+  SitePathLayer.destroyFeatures();
+  SiteAreaLayer.destroyFeatures();
+" : "").
 "  var highlightedFeatures = gethighlight();
 ".(!$options['AdminMode'] || (isset($args['adminsCanCreate']) && $args['adminsCanCreate']) ? 
 "  if(highlightedFeatures.length == 0){
@@ -1291,15 +1315,15 @@ addDrawnPointToSelection = function(geometry) {
   }
 " : 
 "  if(highlightedFeatures.length == 0) return true;
-")."
-  var selectedFeature = false;
+").
+"  var selectedFeature = false;
   // a site is already selected so the Drawn/Specified state stays unaltered
+  for(var i=0; i<SitePointLayer.features.length; i++){
+    if(SitePointLayer.features[i].attributes.highlighted == true){
+      selectedFeature = SitePointLayer.features[i];
+      break;
+    }}
   if(highlightedFeatures[0].attributes.new == true){
-    for(var i=0; i<SitePointLayer.features.length; i++){
-      if(SitePointLayer.features[i].attributes.highlighted == true){
-        selectedFeature = SitePointLayer.features[i];
-        break;
-      }}
     if(!selectedFeature) {
       addToExistingFeatureSet(highlightedFeatures, SitePointLayer, modPointFeature, geometry, false);
       if(typeof addPGPoint != 'undefined') addPGPoint(geometry);
@@ -1307,12 +1331,6 @@ addDrawnPointToSelection = function(geometry) {
     }
   } else { // highlighted is existing
     if(highlightedFeatures[0].attributes.canEdit){
-      for(var i=0; i<SitePointLayer.features.length; i++){
-        if(SitePointLayer.features[i].attributes.highlighted == true){
-          selectedFeature = SitePointLayer.features[i];
-          break;
-        }
-      }
       if(!selectedFeature) {
         addToExistingFeatureSet(highlightedFeatures, SitePointLayer, modPointFeature, geometry, false);
         if(typeof addPGPoint != 'undefined') addPGPoint(geometry);
@@ -1354,6 +1372,12 @@ addDrawnLineToSelection = function(geometry) {
   if(!ParentLocationLayer.features[0].geometry.intersects(centre))
     alert(\"".lang::get('LANG_LineOutsideParent')."\");
 " : "").
+(isset($args['oneTypeAtATime']) && $args['oneTypeAtATime'] ?
+"  if(modPointFeature.feature) modPointFeature.unselectFeature(modPointFeature.feature);
+  if(modAreaFeature.feature) modAreaFeature.unselectFeature(modAreaFeature.feature);
+  SitePointLayer.destroyFeatures();
+  SiteAreaLayer.destroyFeatures();
+" : "").
 "  var highlightedFeatures = gethighlight();
 ".(!$options['AdminMode'] || (isset($args['adminsCanCreate']) && $args['adminsCanCreate']) ? 
 "  if(highlightedFeatures.length == 0){
@@ -1367,27 +1391,20 @@ addDrawnLineToSelection = function(geometry) {
 "  if(highlightedFeatures.length == 0) return true;
 ")."
   var selectedFeature = false;
+  for(var i=0; i<highlightedFeatures.length; i++){
+    if(highlightedFeatures[i].geometry.CLASS_NAME == \"OpenLayers.Geometry.LineString\" ||
+        highlightedFeatures[i].geometry.CLASS_NAME == \"OpenLayers.Geometry.MultiLineString\") {
+      selectedFeature = highlightedFeatures[i];
+      break;
+    }}
   // a site is already selected so the Drawn/Specified state stays unaltered
   if(highlightedFeatures[0].attributes.new == true){
-    for(var i=0; i<highlightedFeatures.length; i++){
-      if(highlightedFeatures[i].geometry.CLASS_NAME == \"OpenLayers.Geometry.LineString\" ||
-          highlightedFeatures[i].geometry.CLASS_NAME == \"OpenLayers.Geometry.MultiLineString\") {
-        selectedFeature = highlightedFeatures[i];
-        break;
-      }}
     if(!selectedFeature) {
       addToExistingFeatureSet(highlightedFeatures, SitePathLayer, modPathFeature, geometry, true);
       return true;
     }
   } else { // highlighted is existing
     if(highlightedFeatures[0].attributes.canEdit){
-      for(var i=0; i<highlightedFeatures.length; i++){
-        if(highlightedFeatures[i].geometry.CLASS_NAME == \"OpenLayers.Geometry.LineString\" ||
-            highlightedFeatures[i].geometry.CLASS_NAME == \"OpenLayers.Geometry.MultiLineString\") {
-          selectedFeature = highlightedFeatures[i];
-          break;
-        }
-      }
       if(!selectedFeature) {
         addToExistingFeatureSet(highlightedFeatures, SitePathLayer, modPathFeature, geometry, true);
         return true;
@@ -1426,6 +1443,12 @@ addDrawnPolygonToSelection = function(geometry) {
   if(!ParentLocationLayer.features[0].geometry.intersects(centre))
     alert(\"".lang::get('LANG_PolygonOutsideParent')."\");
 " : "").
+(isset($args['oneTypeAtATime']) && $args['oneTypeAtATime'] ?
+"  if(modPointFeature.feature) modPointFeature.unselectFeature(modPointFeature.feature);
+  if(modPathFeature.feature) modPathFeature.unselectFeature(modPathFeature.feature);
+  SitePointLayer.destroyFeatures();
+  SitePathLayer.destroyFeatures();
+" : "").
 "  var highlightedFeatures = gethighlight();
 ".(!$options['AdminMode'] || (isset($args['adminsCanCreate']) && $args['adminsCanCreate']) ? 
 "  if(highlightedFeatures.length == 0){
@@ -1439,27 +1462,20 @@ addDrawnPolygonToSelection = function(geometry) {
 "  if(highlightedFeatures.length == 0) return true;
 ")."
   var selectedFeature = false;
+  for(var i=0; i<highlightedFeatures.length; i++){
+    if(highlightedFeatures[i].geometry.CLASS_NAME == \"OpenLayers.Geometry.Polygon\" ||
+        highlightedFeatures[i].geometry.CLASS_NAME == \"OpenLayers.Geometry.MultiPolygon\") {
+      selectedFeature = highlightedFeatures[i];
+      break;
+    }}
   // a site is already selected so the Drawn/Specified state stays unaltered
   if(highlightedFeatures[0].attributes.new == true){
-    for(var i=0; i<highlightedFeatures.length; i++){
-      if(highlightedFeatures[i].geometry.CLASS_NAME == \"OpenLayers.Geometry.Polygon\" ||
-          highlightedFeatures[i].geometry.CLASS_NAME == \"OpenLayers.Geometry.MultiPolygon\") {
-        selectedFeature = highlightedFeatures[i];
-        break;
-      }}
     if(!selectedFeature) {
       addToExistingFeatureSet(highlightedFeatures, SiteAreaLayer, modAreaFeature, geometry, true);
       return true;
     }
   } else { // highlighted is existing
     if(highlightedFeatures[0].attributes.canEdit){
-      for(var i=0; i<highlightedFeatures.length; i++){
-        if(highlightedFeatures[i].geometry.CLASS_NAME == \"OpenLayers.Geometry.Polygon\" ||
-            highlightedFeatures[i].geometry.CLASS_NAME == \"OpenLayers.Geometry.MultiPolygon\") {
-          selectedFeature = highlightedFeatures[i];
-          break;
-        }
-      }
       if(!selectedFeature) {
         addToExistingFeatureSet(highlightedFeatures, SiteAreaLayer, modAreaFeature, geometry, true);
         return true;
