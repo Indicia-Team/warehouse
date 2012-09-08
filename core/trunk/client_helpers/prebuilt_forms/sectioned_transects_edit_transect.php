@@ -193,10 +193,12 @@ class iform_sectioned_transects_edit_transect {
         'nocache' => true
       ));
       // only set cantEdit if you can't, otherwise is not present
-      if(!(isset($args['managerPermission']) && $args['managerPermission']!="" && user_access($args['managerPermission'])) && (count($settings['walks']) > 0)){
+      if(!(
+           (isset($args['managerPermission']) && $args['managerPermission']!="" && user_access($args['managerPermission'])) ||
+           (count($settings['walks']) == 0)
+          )){
         $settings['cantEdit'] = true;
       }
-//      $settings['cantEdit'] = true; // TODO remove
     } else {
       foreach($settings['attributes'] as $attr) {
         if ($attr['caption']==='No. of sections') {
