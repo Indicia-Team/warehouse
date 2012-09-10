@@ -190,7 +190,7 @@ class iform_sectioned_transects_edit_transect {
       }
       $settings['walks'] = data_entry_helper::get_population_data(array(
         'table' => 'sample',
-        'extraParams' => $auth['read'] + array('view'=>'detail','sample_id'=>$settings['locationId'],'deleted'=>'f'),
+        'extraParams' => $auth['read'] + array('view'=>'detail','location_id'=>$settings['locationId'],'deleted'=>'f'),
         'nocache' => true
       ));
       // only set cantEdit if you can't, otherwise is not present
