@@ -96,13 +96,16 @@ div.olMap { clear:both; }
 .collection-value, p#collection-user-name { color: black; }
 
 #fo-header,#fc-header { background: #F8FDEE; border-color:#d5d5d5; border-bottom:none; margin-bottom:0; border-top-style:solid; border-width:1px; font-size:0.8em; }
-#fo-id-buttons { background:#f8fdee; }
-/*#fo-warning { float:none; width:auto; border-bottom:none; }*/
+#fo-id-buttons,#fo-new-insect-id-buttons,#fo-new-flower-id-buttons,#fo-express-doubt-buttons { background:#f8fdee; }
 
 #fo-insect-addn-info .addn-info-title, #fo-flower-addn-info .addn-info-title{ color:#85c302; border-color:#d5d5d5; font-weight:bold; text-transform:uppercase; display:block; padding-bottom:5px; font-size:0.8em; }
 #fo-insect-addn-info p, #fo-flower-addn-info p { font-size:0.8em; color:#999;}
 #fo-insect-addn-info p span, #fo-flower-addn-info p span { color:#333;}
 #fo-insect-addn-info, #fo-flower-addn-info { margin-bottom:20px; }
+#fo-localisation-info,#fo-new-insect-id,#fo-new-flower-id,#fo-express-doubt,#fo-edit-insect-id,#fo-edit-flower-id {
+  margin-top:20px;
+  border-top: #D5D5D5 solid 1px;
+}
 #fo-picture { margin-bottom:20px; }
 
 .insect-id { padding-bottom:10px; }
@@ -212,14 +215,16 @@ input.search-button { font-size:0.9em; }
    font-size: 35px;
 }
 
-.insect-ok {
+.determination-flag {
     margin-top:0px;
     margin-bottom:0px;
-    margin-left: auto ;
-    margin-right: auto ;
     padding:0px;
     width: 24px;
     height: 24px;
+}
+.centre-flag {
+    margin-left: auto ;
+    margin-right: auto ;
 }
 .fold-button {
 	float: right;
@@ -232,33 +237,12 @@ input.search-button { font-size:0.9em; }
     background: url(/misc/arrow-asc.png);
 }
 .occurrence-unknown {
-    margin-top:0px;
-    margin-bottom:0px;
-    margin-left: auto ;
-    margin-right: auto ;
-    padding:0px;
-    width: 24px;
-    height: 24px;
     background: url("../images/occ_unknown.png");
 }
 .occurrence-dubious {
-    margin-top:0px;
-    margin-bottom:0px;
-    margin-left: auto ;
-    margin-right: auto ;
-    padding:0px;
-    width: 24px;
-    height: 24px;
     background: url("../images/occ_doubtful.png");
 }
 .occurrence-valid {
-    margin-top:0px;
-    margin-bottom:0px;
-    margin-left: auto ;
-    margin-right: auto ;
-    padding:0px;
-    width: 24px;
-    height: 24px;
     background: url(/misc/watchdog-ok.png) no-repeat ;
 }
 .display-button {
@@ -281,11 +265,16 @@ input.search-button { font-size:0.9em; }
 .ui-progressbar {
     height: 1em;
 }
-#fo-localisation-info .addn-info-title {
+#fo-localisation-info .addn-info-title,
+#fo-new-insect-id .title,
+#fo-new-flower-id .title,
+#fo-express-doubt .title,
+#fo-edit-insect-id .title,
+#fo-edit-flower-id .title {
     color: #85C302;
     font-size: 0.8em;
     font-weight: bold;
-    padding-bottom: 5px;
+    padding-bottom: 10px;
     text-transform: uppercase;
 }
 #fo-localisation-info p {
@@ -325,4 +314,7 @@ input[type="checkbox"] {
 }
 #imp-sref-lat {
 	margin-right: 20px;
+}
+.species-select {
+	width: 600px;
 }
