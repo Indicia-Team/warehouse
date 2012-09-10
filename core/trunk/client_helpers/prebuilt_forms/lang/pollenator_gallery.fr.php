@@ -54,6 +54,7 @@ $custom_terms = array(
 	,'LANG_ID_Unrecognised' => 'Les suivants ne sont pas reconnus: '
 	,'LANG_Taxa_Unknown_In_Tool' => 'Taxon inconnu de la clé'
 	,'LANG_Det_Type_Label' => 'Identification'
+	,'LANG_Det_Type_A' => 'Initial, Unvalidated'
 	,'LANG_Det_Type_C' => 'Correct, validé'
 	,'LANG_Det_Type_X' => 'Non identifié'
 	,'LANG_Choose_Taxon' => "Choisissez un taxon dans la liste"
@@ -67,7 +68,7 @@ $custom_terms = array(
 	,'LANG_History_Title' => 'Ancienne identification'
 	,'LANG_Last_ID' => 'Dernière(s) identification(s)'
 	,'LANG_Display' => 'Afficher'
-	,'LANG_No_Determinations' => 'Aucun identification enregistrée.'
+	,'LANG_No_Determinations' => 'Aucune identification enregistrée.'
 	,'LANG_No_Comments' => 'Aucun commentaire enregistré.'
 	
 	,'LANG_Filter_Title' => 'Filtres'

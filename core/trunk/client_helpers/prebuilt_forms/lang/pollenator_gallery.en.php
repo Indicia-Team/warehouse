@@ -53,6 +53,7 @@ $custom_terms = array(
 	,'LANG_ID_Unrecognised' => 'The following were returned by the ID tool but are unrecognised: '
 	,'LANG_Taxa_Unknown_In_Tool' => 'Taxa not known in ID tool'
 	,'LANG_Det_Type_Label' => 'Determination Status'
+	,'LANG_Det_Type_A' => 'Initial, Unvalidated'
 	,'LANG_Det_Type_C' => 'Correct, Validated'
 	,'LANG_Det_Type_X' => 'Unidentified'
 	,'LANG_Choose_Taxon' => "Choose a taxon from the list"
