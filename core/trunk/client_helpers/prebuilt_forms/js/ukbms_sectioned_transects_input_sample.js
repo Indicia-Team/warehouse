@@ -541,13 +541,13 @@ function loadSpeciesList() {
       if (checkErrors(data)) {
         var selector = '#'+data.transaction_id.replace(/:/g, '\\:');
         $(selector).removeClass('saving');
-        if ($(data.transaction_id +'\\:id').length===0) {
+        if ($(selector +'\\:id').length===0) {
           // this is a new occurrence, so keep a note of the id in a hidden input
-          $(selector).after('<input type="hidden" id="'+data.transaction_id +'\\:id" value="'+data.outer_id+'"/>');
+          $(selector).after('<input type="hidden" id="'+data.transaction_id +':id" value="'+data.outer_id+'"/>');
         }
         if ($(selector +'\\:attrId').length===0) {
           // this is a new attribute, so keep a note of the id in a hidden input
-          $(selector).after('<input type="hidden" id="'+data.transaction_id +'\\:attrId" value="'+data.struct.children[0].id+'"/>');
+          $(selector).after('<input type="hidden" id="'+data.transaction_id +':attrId" value="'+data.struct.children[0].id+'"/>');
         }
 
         $(selector).removeClass('edited');
