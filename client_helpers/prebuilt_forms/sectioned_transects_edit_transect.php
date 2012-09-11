@@ -61,8 +61,6 @@ class iform_sectioned_transects_edit_transect {
    * @todo: Implement this method
    */
   public static function get_parameters() {
-    // Need this or the lang class is not loaded
-    iform_load_helpers(array('data_entry_helper'));
     return array_merge(
         iform_map_get_map_parameters(),
         iform_map_get_georef_parameters(),
@@ -75,9 +73,9 @@ class iform_sectioned_transects_edit_transect {
             'required' => false
           ), array(
             'name' => 'maxSectionCount',
-            'label' => lang::get('Max. Section Count'),
+            'label' => 'Max. Section Count',
             'type' => 'text_input',
-            'description' => lang::get('The maximum number of sections a user is allowed to create for a transect site.'),
+            'description' => 'The maximum number of sections a user is allowed to create for a transect site.',
             'group' => 'Transects Editor Settings'
           ), array(
             'name'=>'survey_id',
