@@ -569,36 +569,33 @@ function loadSpeciesList() {
         parts = indiciaData.currentCell.split(':');
         // remember the ID
         indiciaData.samples[parts[2]] = data.outer_id;
-        // find out if any of our sample controls in the grid are for new attribute values
-        var needIdsForNewAttrs = false;
+        // we cant just check if we are going to create new attributes and fetch in this case to get the attribute ids -
+        // there is a possibility we have actually deleted an existing attribute, in which the id must be removed. This can only be
+        // found out by going to the database. We can't keep using the deleted attribute as it stays deleted (ie does not undelete)
+        // if a new value is saved into it.
         $.each($('.smpAttr-'+parts[2]), function(idx, input) {
           // an attr value that is not saved yet is of form smpAttr:attrId, whereas one that is saved
           // is of form smpAttr:attrId:attrValId. Wo we can count colons to know if it exists already.
           if ($(input).attr('name').split(':').length<=2) {
-            needIdsForNewAttrs = true;
-            $(input).removeClass('edited');
+            $(input).removeClass('edited'); // deliberately left in place for changed old attributes.
           }
         });
-        if (needIdsForNewAttrs) {
-          // this is a new sample. So we need to copy over the information so that future changes update the existing record rather than
-          // create new ones. The response from the warehouse only includes the IDs of the attributes it created.
-          var children=[], query;
-          $.each(data.struct.children, function(idx, child) {
-            children.push(child.id);
-          });
-          query = encodeURIComponent('{"in":{"id":['+children.join(',')+']}}');
-          $.getJSON(indiciaData.indiciaSvc + "index.php/services/data/sample_attribute_value" +
-              "?mode=json&view=list&query=" + query + "&auth_token=" + indiciaData.readAuth.auth_token + "&nonce=" + indiciaData.readAuth.nonce + "&callback=?", function(data) {
+        // We need to copy over the information so that future changes update the existing record rather than
+        // create new ones, or creates a new one if we have deleted the attribute
+        // The response from the warehouse (data parameter) only includes the IDs of the attributes it created.
+        // We need all the attributes.
+        $.getJSON(indiciaData.indiciaSvc + "index.php/services/data/sample_attribute_value" +
+              "?mode=json&view=list&sample_id=" + data.outer_id + "&auth_token=" + indiciaData.readAuth.auth_token + "&nonce=" + indiciaData.readAuth.nonce + "&callback=?", function(data) {
+              // There is a possibility that we have just deleted an attribute (in which case it will not be in the data), so reset all the names first.
                 $.each(data, function(idx, attr) {
-                  $('#smpAttr\\:'+attr.sample_attribute_id+'\\:'+parts[2]).attr('name', 'smpAttr:'+attr.sample_attribute_id+':'+attr.id);
+                  $('#smpAttr\\:'+attr.sample_attribute_id+'\\:'+parts[2]).attr('name', 'smpAttr:'+attr.sample_attribute_id+(parseInt(attr.id)==attr.id ? ':'+attr.id : ''));
                   // we know - parts[2] = S2
                   // attr.sample_attribute_id & attr.id
                   // src control id=smpAttr:1:S2 (smpAttr:sample_attribute_id:sectioncode)
                   // need to change src control name to
                 });
               }
-          );
-        }
+        );
       }
     }
   });

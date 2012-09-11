@@ -485,7 +485,6 @@ class iform_ukbms_sectioned_transects_input_sample {
         'extraParams' => $auth['read'] + array('sample_id'=>$parentSampleId,'date_from'=>'','date_to'=>'', 'sample_method_id'=>'', 'smpattrs'=>implode(',', array_keys($attributes))),
         'nocache'=>true
       ));
-
       // transcribe the response array into a couple of forms that are useful elsewhere - one for outputting JSON so the JS knows about
       // the samples, and another for lookup of sample data by code later.
       $subSampleJson = array();
@@ -560,8 +559,12 @@ class iform_ukbms_sectioned_transects_input_sample {
         );
         // if there is an existing value, set it and also ensure the attribute name reflects the attribute value id.
         if (isset($subSamplesByCode[$section['code']])) {
-          $attrOpts['fieldname'] = $attr['fieldname'] . ':' . $subSamplesByCode[$section['code']]['attr_id_sample_'.$attr['attributeId']];
-          $attr['default'] = $subSamplesByCode[$section['code']]['attr_sample_'.$attr['attributeId']];
+          // but have to take into account possibility that this field has been blanked out, so deleting the attribute.
+          if(isset($subSamplesByCode[$section['code']]['attr_id_sample_'.$attr['attributeId']]) && $subSamplesByCode[$section['code']]['attr_id_sample_'.$attr['attributeId']] != ''){
+            $attrOpts['fieldname'] = $attr['fieldname'] . ':' . $subSamplesByCode[$section['code']]['attr_id_sample_'.$attr['attributeId']];
+            $attr['default'] = $subSamplesByCode[$section['code']]['attr_sample_'.$attr['attributeId']];
+          } else
+            $attr['default']=isset($_POST[$attr['fieldname']]) ? $_POST[$attr['fieldname']] : '';
         } else {
           $attr['default']=isset($_POST[$attr['fieldname']]) ? $_POST[$attr['fieldname']] : '';
         }
