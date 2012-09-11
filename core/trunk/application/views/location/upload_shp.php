@@ -36,8 +36,8 @@
 <label for='type' class='wide' >Location type for all</label>
 <select id='type' name='type' >
 <?php 
-  $termlist = ORM::factory('termlist')->where('title', 'Location types')->find();
-  $terms = $termlist->orderby('term', 'asc')->terms;
+  $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:location_types')->orderby('term', 'asc')->get()->result();
+  
   echo '<option value="" >&lt;Not applicable&gt;</option>';
   foreach ($terms as $term) {
     echo '<option value="'.$term->id.'" >'.$term->term.'</option>';

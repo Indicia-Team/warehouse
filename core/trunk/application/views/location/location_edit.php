@@ -34,7 +34,6 @@ require_once(DOCROOT.'client_helpers/form_helper.php');
 if (isset($_POST))
   data_entry_helper::dump_errors(array('errors'=>$this->model->getAllErrors()));
 ?>
-<script type="text/javascript" src="http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1"></script>
 <script type="text/javascript">
 
 function setAsBoundaryFeature(feature) {
@@ -65,7 +64,7 @@ jQuery(document).ready(function() {
     mapdiv.map.editLayer.redraw();
 <?php endif; ?>
     mapdiv.map.editLayer.events.on({'featureadded': function(evt) {
-      if (evt.feature.attributes.type!=='clickPoint') {
+      if (evt.feature.state===OpenLayers.State.INSERT) {
         var toRemove = [];
         $.each(mapdiv.map.editLayer.features, function(idx, feature) {
           if (feature.attributes.type=="boundary") {
@@ -156,7 +155,7 @@ This page allows you to specify the details of a location.
   $readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
   echo map_helper::map_panel(array(
     'readAuth' => $readAuth,
-    'presetLayers' => array('virtual_earth'),
+    'presetLayers' => array('osm'),
     'editLayer' => true,
     'layers' => array(),
     'initial_lat'=>52,
@@ -165,7 +164,7 @@ This page allows you to specify the details of a location.
     'width'=>870,
     'height'=>400,
     'initialFeatureWkt' => $centroid_geom,
-    'standardControls' => ($disabled_input==='YES') ? array('layerSwitcher','panZoom'): array('layerSwitcher','panZoom','drawPolygon','drawLine','modifyFeature'),
+    'standardControls' => ($disabled_input==='YES') ? array('layerSwitcher','panZoomBar'): array('layerSwitcher','panZoomBar','drawPolygon','drawLine','modifyFeature'),
   ));
   echo data_entry_helper::autocomplete(array(
     'label' => 'Parent location',
