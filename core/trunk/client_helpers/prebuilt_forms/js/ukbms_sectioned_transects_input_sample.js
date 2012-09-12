@@ -1,18 +1,9 @@
 /**
- * Creates the sample required for a section, if it does not exist yet. Otherwise updates it.
+ * Updates the sample for a section, including attributes.
  */
-function createNewSample(code, force) {
+function saveSample(code) {
   var parts, id;
-  if (typeof indiciaData.samples[code] !== "undefined") {
-    // if saving a change to an occurrence and the sample already exists, don't update it.
-    if (!force) {
-      return;
-    }
-    $('#smpid').val(indiciaData.samples[code]);
-  } else {
-    $('#smpid').val('');
-  }
-  
+  $('#smpid').val(indiciaData.samples[code]);
   $.each(indiciaData.sections, function(idx, section) {
     if (section.code==code) {
       // copy the fieldname and value into the sample submission form for each sample custom attribute
@@ -212,11 +203,10 @@ function input_blur (evt) {
         setTimeout("$('#"+evt.target.id+"').focus(); $('#"+evt.target.id+"').select()", 100);
         return;
       }
-      // need to save the sample/occurrence for the current cell
+      // need to save the occurrence for the current cell
       // set the taxa_taxon_list_id, which we can extract from part of the id of the input.
       var parts=evt.target.id.split(':');
       $('#ttlid').val(parts[1]);
-      createNewSample(parts[2], false);
       if (typeof indiciaData.samples[parts[2]] !== "undefined") {
         $('#occ_sampleid').val(indiciaData.samples[parts[2]]);
       } else {
@@ -247,7 +237,7 @@ function input_blur (evt) {
     } else if ($(selector).hasClass('smp-input')) {
       // change to just a sample attribute.
       var parts=evt.target.id.split(':');
-      createNewSample(parts[2], true);
+      saveSample(parts[2]);
     }
   }
 };
@@ -565,10 +555,8 @@ function loadSpeciesList() {
     },
     success: function(data){
       if (checkErrors(data)) {
-        // get the sample code from the id of the cell we are editing, so we can remember the sample id.
+        // get the sample code from the id of the cell we are editing.
         parts = indiciaData.currentCell.split(':');
-        // remember the ID
-        indiciaData.samples[parts[2]] = data.outer_id;
         // we cant just check if we are going to create new attributes and fetch in this case to get the attribute ids -
         // there is a possibility we have actually deleted an existing attribute, in which the id must be removed. This can only be
         // found out by going to the database. We can't keep using the deleted attribute as it stays deleted (ie does not undelete)

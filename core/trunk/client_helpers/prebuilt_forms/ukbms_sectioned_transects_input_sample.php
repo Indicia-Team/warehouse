@@ -308,7 +308,7 @@ class iform_ukbms_sectioned_transects_input_sample {
     // we pass through the read auth. This makes it possible for the get_submission method to authorise against the warehouse
     // without an additional (expensive) warehouse call, so it can get location details.
     $r .= '<input type="hidden" name="read_nonce" value="'.$auth['read']['nonce'].'"/>';
-    $r .= '<input type="hidden" name="read_auth_token" value="'.$auth['read']['auth_  token'].'"/>';
+    $r .= '<input type="hidden" name="read_auth_token" value="'.$auth['read']['auth_token'].'"/>';
     $r .= '<input type="hidden" name="website_id" value="'.$args['website_id'].'"/>';
     if (isset(data_entry_helper::$entity_to_load['sample:id'])) {
       $r .= '<input type="hidden" name="sample:id" value="'.data_entry_helper::$entity_to_load['sample:id'].'"/>';
@@ -520,7 +520,8 @@ class iform_ukbms_sectioned_transects_input_sample {
     }
     $sections = data_entry_helper::get_population_data(array(
       'table' => 'location',
-      'extraParams' => $auth['read'] + array('view'=>'detail','parent_id'=>$parentLocId,'deleted'=>'f')
+      'extraParams' => $auth['read'] + array('view'=>'detail','parent_id'=>$parentLocId,'deleted'=>'f'),
+      'nocache' => true
     ));
     usort($sections, "ukbms_stis_sectionSort");
     $r = "<div id=\"tabs\">\n";
@@ -641,7 +642,7 @@ class iform_ukbms_sectioned_transects_input_sample {
     $r .= '<input name="occAttr:' . $args['occurrence_attribute_id'] . '" id="occattr"/>';
     $r .= '<input name="transaction_id" id="transaction_id"/>';
     $r .= '</form>';
-    // A stub form for AJAX posting when we need to create a sample
+    // A stub form for AJAX posting when we need to update a sample
     $r .= '<form style="display: none" id="smp-form" method="post" action="'.iform_ajaxproxy_url($node, 'sample').'">';
     $r .= '<input name="website_id" value="'.$args['website_id'].'"/>';
     $r .= '<input name="sample:id" id="smpid" />';
@@ -715,24 +716,22 @@ indiciaData.indiciaSvc = '".data_entry_helper::$base_url."';\n";
 
   /**
    * Handles the construction of a submission array from a set of form values.
-   * For example, the following represents a submission structure for a simple
-   * sample and 1 occurrence submission
-   * return data_entry_helper::build_sample_occurrence_submission($values);
    * @param array $values Associative array of form data values.
    * @param array $args iform parameters.
    * @return array Submission structure.
    * @todo: Implement this method
    */
   public static function get_submission($values, $args) {
+    $subsampleModels = array();
     if (!isset($values['page']) || ($values['page']!='grid' && $values['page']!='delete')) {
       // submitting the first page, with top level sample details
+      $read = array(
+        'nonce' => $values['read_nonce'],
+        'auth_token' => $values['read_auth_token']
+      );
       if (!isset($values['sample:entered_sref'])) {
         // the sample does not have sref data, as the user has just picked a transect site at this point. Copy the
-        // site's centroid across to the sample.
-        $read = array(
-          'nonce' => $values['read_nonce'],
-          'auth_token' => $values['read_auth_token']
-        );
+        // site's centroid across to the sample. Should this be cached?
         $site = data_entry_helper::get_population_data(array(
           'table' => 'location',
           'extraParams' => $read + array('view'=>'detail','id'=>$values['sample:location_id'],'deleted'=>'f')
@@ -740,10 +739,65 @@ indiciaData.indiciaSvc = '".data_entry_helper::$base_url."';\n";
         $site = $site[0];
         $values['sample:entered_sref'] = $site['centroid_sref'];
         $values['sample:entered_sref_system'] = $site['centroid_sref_system'];
-
+      }
+      // Build the subsamples
+      $sections = data_entry_helper::get_population_data(array(
+        'table' => 'location',
+        'extraParams' => $read + array('view'=>'detail','parent_id'=>$values['sample:location_id'],'deleted'=>'f'),
+        'nocache' => true // may have recently added or removed a section
+      ));
+      if(isset($values['sample:id'])){
+        $existingSubSamples = data_entry_helper::get_population_data(array(
+          'table' => 'sample',
+          'extraParams' => $read + array('view'=>'detail','parent_id'=>$values['sample:id'],'deleted'=>'f'),
+          'nocache' => true  // may have recently added or removed a section
+        ));
+      } else $existingSubSamples = array();
+      $sampleMethods = helper_base::get_termlist_terms(array('read'=>$read), 'indicia:sample_methods', array('Transect Section'));
+      $attributes = data_entry_helper::getAttributes(array(
+        'valuetable'=>'sample_attribute_value',
+        'attrtable'=>'sample_attribute',
+        'key'=>'sample_id',
+        'fieldprefix'=>'smpAttr',
+        'extraParams'=>$read,
+        'survey_id'=>$values['sample:survey_id'],
+        'sample_method_id'=>$sampleMethods[0]['id'],
+        'multiValue'=>false // ensures that array_keys are the list of attribute IDs.
+      ));
+      foreach($sections as $section){
+        $exists=false;
+        foreach($existingSubSamples as $existingSubSample){
+          if($existingSubSample['location_id'] == $section['id']){
+            $exists = true;
+            break;
+          }
+        }
+        if(!$exists){
+          $smp = array('fkId' => 'parent_id',
+                   'model' => array('id' => 'sample',
+                     'fields' => array('survey_id' => array('value' => $values['sample:survey_id']),
+                                       'website_id' => array('value' => $values['website_id']),
+                                       'location_id' => array('value' => $section['id']),
+                                       'entered_sref' => array('value' => $section['centroid_sref']),
+                                       'entered_sref_system' => array('value' => $section['centroid_sref_system']),
+                                       'sample_method_id' => array('value' => $sampleMethods[0]['id'])
+                     )),
+                   'copyFields' => array('date_start'=>'date_start','date_end'=>'date_end','date_type'=>'date_type'));
+          foreach ($attributes as $attr) {
+            foreach ($values as $key => $value){
+              $parts = explode(':',$key);
+              if(count($parts)>1 && $parts[0]=='smpAttr' && $parts[1]==$attr['attributeId']){
+                $smp['model']['fields']['smpAttr:'.$attr['attributeId']] = array('value' => $value);
+              }
+            }
+          }
+          $subsampleModels[] = $smp;
+        }
       }
     }
     $submission = submission_builder::build_submission($values, array('model' => 'sample'));
+    if(count($subsampleModels)>0)
+      $submission['subModels'] = $subsampleModels;
     return($submission);
   }
   
