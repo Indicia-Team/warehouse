@@ -478,22 +478,23 @@ class iform_ukbms_sectioned_transects_input_sample {
       'sample_method_id'=>$sampleMethods[0]['id'],
       'multiValue'=>false // ensures that array_keys are the list of attribute IDs.
     ));
+    //  the parent sample and sub-samples have already been created: can't cache in case a new section added.
+    $subSamples = data_entry_helper::get_population_data(array(
+      'report' => 'library/samples/samples_list_for_parent_sample',
+      'extraParams' => $auth['read'] + array('sample_id'=>$parentSampleId,'date_from'=>'','date_to'=>'', 'sample_method_id'=>'', 'smpattrs'=>implode(',', array_keys($attributes))),
+      'nocache'=>true
+    ));
+    // transcribe the response array into a couple of forms that are useful elsewhere - one for outputting JSON so the JS knows about
+    // the samples, and another for lookup of sample data by code later.
+    $subSampleJson = array();
+    $subSamplesByCode = array();
+    foreach ($subSamples as $subSample) {
+      $subSampleJson[] = '"'.$subSample['code'].'": '.$subSample['sample_id'];
+      $subSamplesByCode[$subSample['code']] = $subSample;
+    }
+    data_entry_helper::$javascript .= "indiciaData.samples = { ".implode(', ', $subSampleJson)."};\n";
     if ($existing) {
-      // as the parent sample exists, we need to load the sub-samples and occurrences
-      $subSamples = data_entry_helper::get_population_data(array(
-        'report' => 'library/samples/samples_list_for_parent_sample',
-        'extraParams' => $auth['read'] + array('sample_id'=>$parentSampleId,'date_from'=>'','date_to'=>'', 'sample_method_id'=>'', 'smpattrs'=>implode(',', array_keys($attributes))),
-        'nocache'=>true
-      ));
-      // transcribe the response array into a couple of forms that are useful elsewhere - one for outputting JSON so the JS knows about
-      // the samples, and another for lookup of sample data by code later.
-      $subSampleJson = array();
-      $subSamplesByCode = array();
-      foreach ($subSamples as $subSample) {
-        $subSampleJson[] = '"'.$subSample['code'].'": '.$subSample['sample_id'];
-        $subSamplesByCode[$subSample['code']] = $subSample;
-      }
-      data_entry_helper::$javascript .= "indiciaData.samples = { ".implode(', ', $subSampleJson)."};\n";
+      // Only need to load the occurrences for a pre-existing sample
       $o = data_entry_helper::get_population_data(array(
         'report' => 'library/occurrences/occurrences_list_for_parent_sample',
         'extraParams' => $auth['read'] + array('view'=>'detail','sample_id'=>$parentSampleId,'survey_id'=>'','date_from'=>'','date_to'=>'','taxon_group_id'=>'',
@@ -515,7 +516,6 @@ class iform_ukbms_sectioned_transects_input_sample {
       // store it in data for JS to read when populating the grid
       data_entry_helper::$javascript .= "indiciaData.existingOccurrences = ".json_encode($occurrences).";\n";
     } else {
-      data_entry_helper::$javascript .= "indiciaData.samples = {};\n";
       data_entry_helper::$javascript .= "indiciaData.existingOccurrences = {};\n";
     }
     $sections = data_entry_helper::get_population_data(array(
