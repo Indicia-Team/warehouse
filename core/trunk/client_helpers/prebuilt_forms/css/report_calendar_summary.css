@@ -58,3 +58,6 @@ tr td.week {
 .chart-series-span {
     white-space: nowrap; 
 }
+.highlight-estimates {
+    color: red; 
+}
