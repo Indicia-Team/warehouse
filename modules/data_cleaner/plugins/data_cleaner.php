@@ -107,7 +107,7 @@ function data_cleaner_run_rules($rules, $db) {
       // queries can override the error message field.
       $ruleErrorField = isset($query['errorMsgField']) ? $query['errorMsgField'] : $errorField;
       $implies_manual_check_required = isset($query['implies_manual_check_required']) && !$query['implies_manual_check_required'] ? 'false' : 'true';
-      $errorMsgSuffix = isset($rule['errorMsgSuffix']) ? $rule['errorMsgSuffix'] : '';
+      $errorMsgSuffix = isset($query['errorMsgSuffix']) ? $query['errorMsgSuffix'] : (isset($rule['errorMsgSuffix']) ? $rule['errorMsgSuffix'] : '');
       $sql = 'insert into occurrence_comments (comment, created_by_id, created_on,  
       updated_by_id, updated_on, occurrence_id, auto_generated, generated_by, implies_manual_check_required) 
   select distinct '.$ruleErrorField.$errorMsgSuffix.', 1, now(), 1, now(), co.id, true, \''.$rule['plugin'].'\', '.$implies_manual_check_required.'
