@@ -23,7 +23,8 @@
   </query>
   <field_sql>
       o.id as occurrence_id, 
-      s.id as sample_id,
+      parent.id as sample_id,
+      s.id as subsample_id,
       parent.location_id,
       s.date_start,
       s.date_end,
@@ -33,7 +34,7 @@
       coalesce(cttl.default_common_name, cttl.preferred_taxon) as common
   </field_sql>
   <order_bys>
-    <order_by>cttl.taxonomic_sort_order, cttl.default_common_name, cttl.preferred_taxon, o.id DESC</order_by>
+    <order_by>cttl.taxonomic_sort_order, cttl.default_common_name, cttl.preferred_taxon, parent.location_id, sample_id, o.id DESC</order_by>
   </order_bys>
   <params>
     <param name='survey_id' display='Survey' description='Select the survey, or leave for all surveys' datatype='lookup'

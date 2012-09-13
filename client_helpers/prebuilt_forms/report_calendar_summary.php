@@ -538,10 +538,111 @@ class iform_report_calendar_summary {
           'type'=>'string',
           'required' => false,
           'group' => 'Report Settings'
+        ),
+
+        array(
+          'name' => 'includeData',
+          'caption' => 'Include data types:',
+          'description' => 'Define which types of data to output.',
+          'type' => 'select',
+          'lookupValues' => array('raw'=>'Raw only'
+            ,'estimates'=>'Data including estimates'
+            ,'both'=>'Both raw data and data including estimates: user switchable.'
+          ),
+          'required' => true,
+          'default' => 'yes',
+          'group' => 'Data Handling'
+        ),
+        array(
+          'name'=>'rawDataCombining',
+          'caption'=>'Raw Data Combination method',
+          'description'=>'When data is aggregated for a location/week combination, this determines how.',
+          'type' => 'select',
+          'lookupValues' => array('add'=>'Add all occurrences together',
+            'max'=>'Choose the value from the sample with the greatest count',
+            'sample'=>'Average over samples with data for the occurrence',
+            'location'=>'Average over all samples for that location during that week'),
+          'required' => true,
+          'default' => 'add',
+          'group' => 'Data Handling'
+        ),
+        array(
+          'name'=>'dataRound',
+          'caption'=>'Data Rounding',
+          'description'=>'When data is averaged, this determines what rounding is carried out.',
+          'type' => 'select',
+          'lookupValues' => array('none'=>'None (may result in non-integer values)',
+            'nearest'=>'To the nearest integer, .5 rounds up',
+//            'nearest_odd'=>'To the nearest integer, .5 rounds to nearest odd number'
+//            'nearest_even'=>'To the nearest integer, .5 rounds to nearest even number'
+            'up'=>'To the integer greater than or equal to the value',
+            'down'=>'To the integer less than or equal to the value'),
+          'required' => true,
+          'default' => 'none',
+          'group' => 'Data Handling'
+        ),
+        array(
+          'name'=>'zeroPointAnchor',
+          'caption'=>'Season Limit',
+          'description'=>'This is a comma separated list of the week numbers for the start and end of the season. When provided, and data is not entered for these weeks, the value is taken as zero, irrespective of the First or Last value processing. Unentered values before or after these limits are set to zero.',
+          'type' => 'string',
+          'required' => true,
+          'default' => ',',
+          'group' => 'Data Handling'
+        ),
+        array(
+          'name'=>'interpolation',
+          'caption'=>'Interpolation method',
+          'description'=>'When data is estimated between two entered values, this determines how.',
+          'type' => 'select',
+          'lookupValues' => array('linear'=>'Linear interpolation'),
+          'required' => true,
+          'default' => 'linear',
+          'group' => 'Data Handling'
+        ),
+        array(
+          'name'=>'firstValue',
+          'caption'=>'First Value Processing',
+          'description'=>'When encountering the first entered value, this determines what happens.',
+          'type' => 'select',
+          'lookupValues' => array('nothing'=>'No special processing',
+            'half'=>'The entry for the previous week is half the entered value'),
+          'required' => true,
+          'default' => 'nothing',
+          'group' => 'Data Handling'
+        ),
+        array(
+          'name'=>'lastValue',
+          'caption'=>'Last Value Processing',
+          'description'=>'When encountering the last entered value, this determines what happens.',
+          'type' => 'select',
+          'lookupValues' => array('nothing'=>'No special processing',
+            'half'=>'The entry for the next week is half the entered value'),
+          'required' => true,
+          'default' => 'nothing',
+          'group' => 'Data Handling'
         )
     );
   }
 
+    /**
+   * When a form version is upgraded introducing new parameters, old forms will not get the defaults for the 
+   * parameters unless the Edit and Save button is clicked. So, apply some defaults to keep those old forms
+   * working.
+   */
+  protected function getArgDefaults($args) {
+      
+    if (!isset($args['includeData'])) $args['includeData'] = 'raw';
+    if (!isset($args['rawDataCombining'])) $args['rawDataCombining'] = 'add';
+    if (!isset($args['dataRound'])) $args['dataRound'] = 'none';
+    if (!isset($args['zeroPointAnchor'])) $args['zeroPointAnchor'] = ',';
+    if (!isset($args['interpolation'])) $args['interpolation'] = 'linear';
+    if (!isset($args['firstValue'])) $args['firstValue'] = 'nothing';
+    if (!isset($args['lastValue'])) $args['lastValue'] = 'nothing';
+      
+    return $args;
+  }
+  
   /**
    * Retreives the options array required to set up a report according to the default
    * report parameters.
@@ -826,7 +927,9 @@ jQuery('#".$ctrlid."').change(function(){
             'outputTable','outputChart','simultaneousOutput','defaultOutput',
             'tableHeaders','chartLabels','disableableSeries',
             'chartType','rowGroupColumn','width','height',
-            'includeTableTotalRow','includeTableTotalColumn','includeChartTotalSeries','includeChartItemSeries'));
+            'includeTableTotalRow','includeTableTotalColumn','includeChartTotalSeries','includeChartItemSeries',
+            'includeData', 'rawDataCombining', 'dataRound', 'zeroPointAnchor',  'interpolation',  'firstValue',  'lastValue'
+      ));
     if (isset($_GET['defaultOutput']))
       $reportOptions['defaultOutput']=$_GET['defaultOutput'];
     // Advanced Chart options
@@ -865,9 +968,11 @@ jQuery('#".$ctrlid."').change(function(){
     foreach (self::$removableParams as $param=>$caption)
       if (isset($_GET[$param]) && $_GET[$param]==='true')    
         $reportOptions['extraParams'][$param]='';
-     
+    if ($siteUrlParams[self::$locationKey]['value']!='')
+      $reportOptions['highlightEstimates']=true;
      
     $retVal .= report_helper::report_calendar_summary($reportOptions);
     return $retVal;
   }
+
 }
