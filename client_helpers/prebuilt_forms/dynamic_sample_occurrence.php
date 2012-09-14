@@ -669,13 +669,12 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    * Get the control for species input, either a grid or a single species input control.
    */
   protected static function get_control_species($auth, $args, $tabalias, $options) {
-    global $user;
-    if (!isset($args['cache_lookup']) || ($args['species_ctrl']!=='autocomplete' && !$gridmode))
+    $gridmode = call_user_func(array(self::$called_class, 'getGridMode'), $args);    
+    if (!isset($args['cache_lookup']) || ($args['species_ctrl'] !== 'autocomplete' && !$gridmode))
       $args['cache_lookup']=false; // default for old form configurations or when not using an autocomplete
-    if ($hidden=self::get_single_species_hidden_input($auth, $args))
+    if ($hidden = self::get_single_species_hidden_input($auth, $args))
       return $hidden;
     $extraParams = $auth['read'];
-    $gridmode = call_user_func(array(self::$called_class, 'getGridMode'), $args);    
     call_user_func(array(self::$called_class, 'build_grid_autocomplete_function'), $args);
     if ($gridmode)
       return self::get_control_species_checklist($auth, $args, $extraParams, $options);
@@ -732,6 +731,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    * @return HTML for the species_checklist control. 
    */
   private static function get_control_species_checklist($auth, $args, $extraParams, $options) {
+    global $user;
     // Build the configuration options    
     $species_ctrl_opts=array_merge(array(
         'listId'=>$args['list_id'],
