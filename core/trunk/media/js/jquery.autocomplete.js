@@ -11,7 +11,7 @@
  *
  */
 
-;(function($) {
+(function($) {
   
 $.fn.extend({
   autocomplete: function(urlOrData, options) {
@@ -202,9 +202,13 @@ $.Autocompleter = function(input, options) {
   
   
   function selectCurrent(keycode) {
-    var selected = select.selected(), simplified=simplify($input.val());
-    if( !selected || simplified.toLowerCase()!==selected.result.substr(0,simplified.length).toLowerCase())
+    var selected = select.selected(), simplified=simplify($input.val()), value, regexp;
+    // escape special characters in regexp
+    value = simplified.toLowerCase().replace(/[\[\]\\\^\$\.\|\?\+\(\)]/g, "\\$&");
+    regexp = new RegExp('^'+value.replace('*','.*')); 
+    if (!selected || !selected.result.toLowerCase().match(regexp)) {
       return false;
+    }
     // If searching against a searchterm field in a table with an original field, we actually need to display the original field. 
     var v = (typeof selected.data.searchterm !== "undefined" && selected.data.searchterm===selected.result && typeof selected.data.original!=="undefined") ?
         selected.data.original : selected.result;
@@ -757,7 +761,7 @@ $.Autocompleter.Select = function (options, input, select, config) {
           overflow: 'auto'
         });
         
-                if($.browser.msie && typeof document.body.style.maxHeight === "undefined") {
+        if($.browser.msie && typeof document.body.style.maxHeight === "undefined") {
           var listHeight = 0;
           listItems.each(function() {
             listHeight += this.offsetHeight;
