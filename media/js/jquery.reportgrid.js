@@ -602,7 +602,7 @@ function simple_tooltip(target_items, name){
             div.settings.extraParams[fieldname] = $(e.target).val();
           }
           load(div, true);
-          if (div.settings.linkFeatures) {
+          if (div.settings.linkFeatures && typeof indiciaData.reportlayer!=="undefined") {
             // we need to reload the map layer
             var request=getFullRequestPathWithoutPaging(div)+'&limit=3000';
             $.getJSON(request,
