@@ -578,7 +578,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   pagingTemplate: '".$indicia_templates['paging']."',
   pathParam: '".$pathParam."',
   sendOutputToMap: ".((isset($options['sendOutputToMap']) && $options['sendOutputToMap']) ? 'true' : 'false').",
-  linkFeatures: ".(!empty($options['rowId']) && !empty($addFeaturesJs) ? 'true' : 'false').",
+  linkFeatures: ".(!empty($options['rowId']) ? 'true' : 'false').",
   msgRowLinkedToMapHint: '".lang::get('Click the row to highlight the record on the map. Double click to zoom in.')."',
   altRowClass: '".$options['altRowClass']."'";
       if (isset($options['sharing'])) {
@@ -1276,8 +1276,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
           'fillColor'=> '#ff0000',
           'strokeColor'=> '#ff0000',
           'strokeWidth'=>"\${getstrokewidth}",
-          'fillOpacity'=>0.4,
-          'strokeOpacity'=>0.4,
+          'fillOpacity'=>0.8,
+          'strokeOpacity'=>0.8,
           'pointRadius'=>2,
           'graphicZIndex'=>0
         ), $settings);
@@ -1305,18 +1305,18 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
             $to = $outputdef['to'];
             if (substr($type, -5)==='Color')
               $styleFns[] = "get$type: function(feature) { \n".
-                  "var from_r, from_g, from_b, to_r, to_g, to_b, ratio = (feature.data.$value - $minvalue) / ($maxvalue - $minvalue); \n".
+                  "var from_r, from_g, from_b, to_r, to_g, to_b, r, g, b, ratio = Math.pow((feature.data.$value - $minvalue) / ($maxvalue - $minvalue), .2); \n".
                   "from_r = parseInt('$from'.substring(1,3),16);\n".
                   "from_g = parseInt('$from'.substring(3,5),16);\n".
                   "from_b = parseInt('$from'.substring(5,7),16);\n".
                   "to_r = parseInt('$to'.substring(1,3),16);\n".
                   "to_g = parseInt('$to'.substring(3,5),16);\n".
                   "to_b = parseInt('$to'.substring(5,7),16);\n".
-
-                  "return 'rgb('+(from_r + (to_r-from_r)*ratio) + ', '+".
-                     "(from_g + (to_g-from_g)*ratio) + ', '+".
-                     "(from_b + (to_b-from_b)*ratio) + ')'; \n".
-                  '}';
+                  "r=Math.round(from_r + (to_r-from_r)*ratio);\n".
+                  "g=Math.round(from_g + (to_g-from_g)*ratio);\n".
+                  "b=Math.round(from_b + (to_b-from_b)*ratio);\n".
+                  "return 'rgb('+r+','+g+','+b+')';\n".
+                '}';
             else
               $styleFns[] = "get$type: function(feature) { \n".
                   "var ratio = (feature.data.$value - $minvalue) / ($maxvalue - $minvalue); \n".
