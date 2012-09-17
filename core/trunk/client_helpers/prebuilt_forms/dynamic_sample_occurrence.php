@@ -689,7 +689,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    * @param array $args Form configuration arguments
    * @return string Returns the HTML for the hidden control, or false if a multi-species recording form. 
    */
-  private static function get_single_species_hidden_input($auth, $args) {
+  protected static function get_single_species_hidden_input($auth, $args) {
     if (!empty($args['taxon_filter_field']) && !empty($args['taxon_filter'])) {
       $filterLines = helper_base::explode_lines($args['taxon_filter']);
       if ($args['taxon_filter_field']!=='taxon_group' && count($filterLines)===1) {
@@ -730,7 +730,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    * @param array $options additional options for the control, e.g. those configured in the form structure.
    * @return HTML for the species_checklist control. 
    */
-  private static function get_control_species_checklist($auth, $args, $extraParams, $options) {
+  protected static function get_control_species_checklist($auth, $args, $extraParams, $options) {
     global $user;
     // Build the configuration options    
     $species_ctrl_opts=array_merge(array(
@@ -774,7 +774,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    * @param array $options additional options for the control, e.g. those configured in the form structure.
    * @return string HTML for the control. 
    */
-  private static function get_control_species_single($auth, $args, $extraParams, $options) {
+  protected static function get_control_species_single($auth, $args, $extraParams, $options) {
     if ($args['extra_list_id']=='')
       $extraParams['taxon_list_id'] = $args['list_id'];
     // @todo At the moment the autocomplete control does not support 2 lists. So use just the extra list. Should 
