@@ -452,7 +452,6 @@ class iform_ukbms_sectioned_transects_input_sample {
       $parentLocId = $sample['location_id'];
       $date=$sample['date_start'];
     }
-    
     $sampleMethods = helper_base::get_termlist_terms($auth, 'indicia:sample_methods', array('Transect'));
     $attributes = data_entry_helper::getAttributes(array(
       'valuetable'=>'sample_attribute_value',
@@ -524,7 +523,11 @@ class iform_ukbms_sectioned_transects_input_sample {
       'nocache' => true
     ));
     usort($sections, "ukbms_stis_sectionSort");
-    $r = "<div id=\"tabs\">\n";
+    $location = data_entry_helper::get_population_data(array(
+      'table' => 'location',
+      'extraParams' => $auth['read'] + array('view'=>'detail','id'=>$parentLocId)
+    ));
+    $r = "<h2>".$location[0]['name']." on ".$date."</h2><div id=\"tabs\">\n";
     $tabs = array('#grid1'=>lang::get('Enter Transect Species Data 1'));
     if(isset($args['second_taxon_list_id']) && $args['second_taxon_list_id']!='')
       $tabs['#grid2']=lang::get('Enter Transect Species Data 2');
