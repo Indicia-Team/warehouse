@@ -1,0 +1,41 @@
+<report
+    title="MNHNL Observations in a parent sample"
+    description="Form Internal Report: Used by the Occurrence List grid to retrieve the occurrences associated with a parent sample. Most recently entered is top of list."
+>
+  <query>
+  SELECT o.id,
+    s.entered_sref,
+    s.entered_sref_system,
+    ST_AsText(s.geom) as geom,
+  	lttl.taxon,
+  	(select CASE int_value
+            	WHEN 0 THEN 'No'::text
+            	ELSE 'Yes'::text
+        	END AS territorial
+ 		from occurrence_attribute_values oav
+  		where oav.occurrence_id = o.id and oav.deleted = FALSE and oav.occurrence_attribute_id = #territorial_attr_id#) as territorial,
+  	(select int_value from occurrence_attribute_values oav
+  		where oav.occurrence_id = o.id and oav.deleted = FALSE and oav.occurrence_attribute_id = #count_attr_id#) as count
+  FROM samples s
+  JOIN occurrences o ON o.sample_id=s.id
+  JOIN list_taxa_taxon_lists lttl ON lttl.id=o.taxa_taxon_list_id
+  WHERE s.survey_id=#survey_id# AND s.deleted = FALSE AND o.deleted = FALSE AND s.parent_id = #parent_id#
+  #order_by#
+  </query>
+  <order_bys>
+    <order_by>id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='survey_id' display='Survey: ' description='Select the survey to return data for:' datatype='lookup'
+        query='SELECT id, title as caption FROM surveys' />
+    <param name='parent_id' display='Parent Sample ID: ' description='Enter the parent sample ID' datatype='int' />
+    <param name='territorial_attr_id' display='Occurrence Attribute ID for Territorial: ' description='ID of occurrence_attribute for Territorial' datatype='int' />
+    <param name='count_attr_id' display='Occurrence Attribute ID for Count: ' description='ID of occurrence_attribute for Count' datatype='int' />
+  </params>
+  <columns>
+    <column name='id' display='ID' />
+    <column name='taxon' display='Species' />
+    <column name='territorial' display='Territorial' />
+    <column name='count' display='Count' />
+  </columns>
+</report>

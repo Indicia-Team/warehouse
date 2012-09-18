@@ -1,0 +1,26 @@
+#report-grid td {
+  font-size: 80%;
+  line-height: 1.3em;
+}
+
+table td.future {
+  background-color: grey;
+}
+table td.existingLink {
+  background-color: #00e7e7;
+}
+table td.otherSite {
+  background-color: yellow;
+}
+table td.multiLink {
+  background-color: green;
+}
+tr.datarow td {
+	border: navy solid thin;
+	padding: 3px;
+}
+tr td.day {
+	border: navy solid thin;
+	padding: 3px;
+}
+
