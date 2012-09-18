@@ -93,9 +93,6 @@ label.prepad {
   margin-top: 4px;
   margin-left: 20px;	
 }
-#pointgridtable input[type='text'] {
-  width: 100px;
-}
 div.olControlEditingToolbar div.olControlCancelSketchItemInactive {
   background-image: url("../images/mnhnl-mod-toolbar.png");
   background-position: 0px 0px;
@@ -131,7 +128,7 @@ div.olControlEditingToolbar div.olControlStartNewSiteItemInactive {
 }
 
 div.olControlEditingToolbar  {
-    width: 500px;
+    width: 350px;
 }
 #imp-srefX {
 	width: 60px;
@@ -139,27 +136,4 @@ div.olControlEditingToolbar  {
 #imp-srefY {
 	width: 60px;
 }
-#samples-grid td {
-  padding: 2px;
-  border: solid silver 1px;
-}
-#mousePos {
-  background-color: #FFFFFF;
-  float: right;
-  margin-top: 7px;
-  margin-right: 20px;
-}
-.ac_input {
-	width: 400px;
-}
-#species-grid-container{
- overflow-y: scroll; 
- max-height: 450px;
-}
-#species-grid {
-  margin-top: 0px;
-  margin-bottom: 0px;
-}
-#species-grid-head {
-  margin-bottom: 0px;
-}
+

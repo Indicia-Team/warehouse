@@ -65,10 +65,8 @@ function get_attribute_html(&$attributes, $args, $defAttrOptions, $outerFilter=n
       $lastInnerBlock=$attribute['inner_structure_block'];
       $lastOuterBlock=$attribute['outer_structure_block'];
       $options = $defAttrOptions + get_attr_validation($attribute, $args);
-      // when getting the options, only use the first 2 parts of the fieldname as any further imply an existing record ID so would differ.
-      $fieldNameParts=explode(':',$attribute['fieldname']);
-      if (isset($blockOptions[$fieldNameParts[0].':'.$fieldNameParts[1]])) {
-        $options = array_merge($options, $blockOptions[$fieldNameParts[0].':'.$fieldNameParts[1]]);
+      if (isset($blockOptions[$attribute['fieldname']])) {
+        $options = array_merge($options, $blockOptions[$attribute['fieldname']]);
       }
       $r .= data_entry_helper::outputAttribute($attribute, $options);
       $attribute['handled']=true;
@@ -124,9 +122,8 @@ function get_fieldset_id($outerBlock, $innerBlock='', $idPrefix='') {
   if (!empty($innerBlock)) 
     $parts[]=substr($innerBlock, 0, 20);
   $r = implode('-', $parts);
-  // Make it lowercase and no whitespace or other special chars
-  $r = strtolower(preg_replace('/[\s\'()]+/', '-', $r));
-  $r = strtolower(preg_replace('/[()]+/', '', $r));
+  // Make it lowercase and no whitespace
+  $r = strtolower(preg_replace('/\s+/', '-', $r));
   return $r;
 }
 
@@ -256,8 +253,8 @@ function get_user_profile_hidden_inputs(&$attributes, $args, $exists, $readAuth)
 }
 
 /**
- * Variant on the profile modules profile_load_profile, that also gets empty profile values. 
- */
+   * Variant on the profile modules profile_load_profile, that also gets empty profile values. 
+   */
 function profile_load_all_profile(&$user) {
   // don't do anything unless in Drupal, with the profile module enabled, and the user logged in.
   if ($user->uid>0 && function_exists('profile_load_profile')) {

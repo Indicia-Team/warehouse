@@ -25,21 +25,15 @@ function Georeferencer(mapdiv, callback) {
   this.localSearch = new google.search.LocalSearch();
   this.localSearch.setResultSetSize(google.search.Search.LARGE_RESULTSET);
   // make the place search near the chosen location
-  var tokens = [], near;
-  if (this.mapdiv.georefOpts.georefPreferredArea!=='') {
-    tokens.push(this.mapdiv.georefOpts.georefPreferredArea);
-  }
-  if (this.mapdiv.georefOpts.georefCountry!=='') {
-    tokens.push(this.mapdiv.georefOpts.georefCountry);
-  }
-  near=tokens.join(', ');
+  var near= this.mapdiv.georefOpts.georefPreferredArea == '' ? '' : this.mapdiv.georefOpts.georefPreferredArea + ', ';
+  near = near + this.mapdiv.georefOpts.georefCountry;
   this.localSearch.setCenterPoint(near);
   
   this.callback = callback;
   
   this.localSearch.setSearchCompleteCallback(this,
         function() {
-          // an array to store the responses in the required country, because Google search will not limit to a country
+          // an array to store the responses in the required country, because GeoPlanet will not limit to a country
           var places = [];
           var converted={};
           jQuery.each(this.localSearch.results, function(i,place) {
@@ -60,8 +54,7 @@ function Georeferencer(mapdiv, callback) {
                   x: parseFloat(place.lng)+0.01, 
                   y: parseFloat(place.lat)+0.01 
                 }
-              },
-              obj: place
+              }
             }
             places.push(converted);
           });

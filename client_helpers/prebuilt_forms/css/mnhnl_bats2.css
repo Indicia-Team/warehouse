@@ -19,9 +19,6 @@
 .control-box {
   display:inline  !important;
 }
-#pointgridtable input[type='text'] {
-  width: 100px;
-}
 .scOccAttrCell label {
   margin-top: 4px;
   margin-right: 15px;
@@ -77,10 +74,6 @@ span.extra-text {
 label.auto-width {
 	width: auto;
 }
-.survey-method-grid label {
-	width: auto;
-	padding-left: 10px;	
-}
 label.prepad {
   padding-left: 20px;	
 }
@@ -123,49 +116,11 @@ div.olControlEditingToolbar div.olControlStartNewSiteItemInactive {
 }
 
 div.olControlEditingToolbar  {
-    width: 500px;
+    width: 350px;
 }
-#imp-srefX,#imp-srefY,.precision {
+#imp-srefX {
 	width: 60px;
 }
-.hasDatepicker {
-	width: 100px;
-}
-.smg-starttime,.smg-endtime {
+#imp-srefY {
 	width: 60px;
-}
-.species-grid label {
-	width: auto;
-}
-#fieldset-extras label {
-	width: auto;
-}
-.species-grid input {
-	width: 40px;
-	margin-right: 20px;
-}
-.species-grid input.sgCheckbox{
-	width: auto;
-	margin-top: 5px;
-}
-.scFirstRow {
-  border-top: solid silver 1px;
-}
-.data,.actions {
-  border: solid silver 1px;
-  padding-left: 4px;	
-  padding-right: 4px;	
-}
-.scKeepTogether {
-    white-space: nowrap; 
-}
-#samples-grid td {
-  padding: 2px;
-  border: solid silver 1px;
-}
-#mousePos {
-  background-color: #FFFFFF;
-  float: right;
-  margin-top: 7px;
-  margin-right: 20px;
 }

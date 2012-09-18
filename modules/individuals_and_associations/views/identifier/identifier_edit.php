@@ -24,6 +24,22 @@ require_once(DOCROOT.'client_helpers/data_entry_helper.php');
 if (isset($_POST))
   data_entry_helper::dump_errors(array('errors'=>$this->model->getAllErrors()));
 ?>
+<?php $tabs = false;
+if (!empty($values['identifier:id']) 
+  && is_numeric($values['identifier:id'])
+  && $values['identifier:id'] > 0) : // edit so show tabs 
+  $tabs = true;
+?>
+<div id="tabs">
+<?php
+data_entry_helper::enable_tabs(array('divId'=>'tabs')); 
+echo data_entry_helper::tab_header(array('tabs'=>array(
+  '#details'=>'Identifier',
+  '#observations'=>'Observations',
+)));
+?>
+<div id="details">
+<?php  endif; ?>
 <form class="iform" action="<?php echo url::site(); ?>identifier/save" method="post">
 <?php ///echo '$values: '.print_r($values, true).'<br />'; ?>
 <?php //echo '$other_data: '.print_r($other_data, true); ?>
@@ -35,7 +51,7 @@ if (isset($values['identifier:id'])) : ?>
 <?php endif; ?>
 <input type="hidden" name="website_id" value="<?php echo html::initial_value($values, 'website_id'); ?>" />
 <fieldset>
-<legend>Identifier details</legend>
+<legend>Known subject details</legend>
 <?php 
 $readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 echo data_entry_helper::select(array(
@@ -79,14 +95,6 @@ echo data_entry_helper::select(array(
   'fieldname' => 'identifier:identifier_type_id',
   'default'=>html::initial_value($values, 'identifier:identifier_type_id'),
   'lookupValues' => $other_data['identifier_type_terms'],
-  'blankText' => '<Please select>',
-  'extraParams' => $readAuth,
-));
-echo data_entry_helper::select(array(
-  'label' => 'Identifier Status',
-  'fieldname' => 'identifier:status',
-  'default'=>html::initial_value($values, 'identifier:status'),
-  'lookupValues' => $other_data['status_options'],
   'blankText' => '<Please select>',
   'extraParams' => $readAuth,
 ));
@@ -169,3 +177,10 @@ data_entry_helper::link_default_stylesheet();
 echo data_entry_helper::dump_javascript();
 ?>
 </form>
+<?php if ($tabs) : ?>
+</div>
+<div id="observations">
+TODO - will link to grid view of identifier observations filtered on this identifier
+</div>
+</div>
+<?php endif; ?>

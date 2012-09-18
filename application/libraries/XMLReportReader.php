@@ -26,7 +26,6 @@
 */
 class XMLReportReader_Core implements ReportReader
 {
-  public $columns = array();
   private $name;
   private $title;
   private $description;
@@ -37,6 +36,7 @@ class XMLReportReader_Core implements ReportReader
   private $field_sql;
   private $order_by;
   private $params = array();
+  private $columns = array();
   private $tables = array();
   private $attributes = array();
   private $automagic = false;
@@ -244,10 +244,9 @@ class XMLReportReader_Core implements ReportReader
         if (strpos($this->query, '#order_by#')!==false)
           $this->query = str_replace('#order_by#', "#filters#\n#order_by#", $this->query);
         else
-          $this->query .= '#filters#';
+            $this->query .= '#filters#';
       }
-      // cleanup some of the tokens in the SQL if they haven't already been done
-      $this->query = str_replace(array('#agreements_join#','#sharing_filter#'), array('','1=1'), $this->query);
+
       if ($this->hasColumnsSql) {
         // column sql is defined in the list of column elements, so autogenerate the query.
         $this->autogenColumns();

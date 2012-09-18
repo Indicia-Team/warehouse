@@ -54,15 +54,6 @@ class iform_distribution_map_1 {
       iform_map_get_map_parameters(),
       array(
         array(
-          'name' => 'include_layer_list',
-          'caption' => 'Include Legend',
-          'description' => 'Should a legend be shown on the page?',
-          'type' => 'boolean',
-          'required'=>false,
-          'default'=>true,
-          'group' => 'Other Map Settings'
-        ),
-        array(
           'name' => 'layer_title',
           'caption' => 'Layer Caption',
           'description' => 'Caption to display for the species distribution map layer. Can contain replacement strings {species} or {survey}.',
@@ -139,6 +130,16 @@ class iform_distribution_map_1 {
           'required' => false
         ),
         array(
+          'fieldname'=>'taxon_list_id',
+          'label'=>'Species List',
+          'helpText'=>'The species list that species can be selected from.',
+          'type'=>'select',
+          'table'=>'taxon_list',
+          'valueField'=>'id',
+          'captionField'=>'title',
+          'group' => 'Distribution Layer'
+        ),
+        array(
           'fieldname' => 'external_key',
           'label' => 'External Key',
           'helpText' => 'Check this box if the taxon is to be identified using the external key instead of the Meaning ID, either through the Taxon ID ' .
@@ -146,19 +147,7 @@ class iform_distribution_map_1 {
           'type' => 'checkbox',
           'group' => 'Distribution Layer',
           'required' => 'false'
-        ), 
-        array(
-          'fieldname'=>'taxon_list_id',
-          'label'=>'Species List used to find external key',
-          'helpText'=>'If External Key is ticked, then choose the list which has the external key set for each of the taxa that might be displayed.',
-          'type'=>'select',
-          'table'=>'taxon_list',
-          'valueField'=>'id',
-          'captionField'=>'title',
-          'group' => 'Distribution Layer',
-          'required' => false
-        ),
-        array(
+        ), array(
           'name' => 'refresh_timer',
           'caption' => 'Automatic reload seconds',
           'description' => 'Set this value to the number of seconds you want to elapse before the report will be automatically reloaded, useful for '.
@@ -199,9 +188,6 @@ class iform_distribution_map_1 {
         return lang::get("The distribution map cannot be displayed without a taxon identifier");
       }
       if ($args['external_key']==true) {
-        if (empty($args['taxon_list_id']))
-          return lang::get('This form is configured with the Distribution Layer - External Key option ticked, but no species list has been configured to '.
-              'lookup the external keys against.');
         // the taxon identifier is an external key, so we need to translate to a meaning ID.
         $fetchOpts = array(
         'table' => 'taxa_taxon_list',
@@ -282,11 +268,10 @@ class iform_distribution_map_1 {
       $options['proxy'] = $base_url . '?q=' . variable_get('iform_proxy_path', 'proxy') . '&url=';
     }
     // output a legend
-    if (!isset($args['include_layer_list']) || $args['include_layer_list'])
-      $r .= map_helper::layer_list(array(
-        'includeSwitchers' => true,
-        'includeHiddenLayers' => true
-      ));
+    $r .= map_helper::layer_list(array(
+      'includeSwitchers' => true,
+      'includeHiddenLayers' => true
+    ));
     // output a map    
     $r .= map_helper::map_panel($options, $olOptions);
     // add an empty div for the output of getinfo requests

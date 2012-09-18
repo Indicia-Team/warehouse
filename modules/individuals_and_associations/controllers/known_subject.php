@@ -51,11 +51,9 @@ class Known_subject_Controller extends Gridview_Base_Controller {
   
   protected function getModelValues() {
     $r = parent::getModelValues();
-    $r['joinsTo:taxa_taxon_list:id'] = $this->reformatTaxaJoinsForList($r, 'taxa_taxon_list');
-    $identifiers=array();
-    foreach ($this->model->identifiers as $identifier)
-      $identifiers[$identifier->id]=$identifier->coded_value;
-    $r['metaFields:identifiers']=$identifiers;
+    $r['joinsTo:taxa_taxon_list:id'] = 
+      $this->reformatTaxaJoinsForList($r, 'taxa_taxon_list', true);
+    // load data for attributes, TODO, fix this
     $websiteId = $r['known_subject:website_id'];
     $this->loadAttributes($r, array(
         'website_id'=>$websiteId,
@@ -70,7 +68,7 @@ class Known_subject_Controller extends Gridview_Base_Controller {
   protected function getDefaults() {
     $r = parent::getDefaults();
     $r['joinsTo:taxa_taxon_list:id'] = 
-      $this->reformatTaxaJoinsForList($r, 'taxa_taxon_list');
+      $this->reformatTaxaJoinsForList($r, 'taxa_taxon_list', true);
     if (array_key_exists('known_subject:id', $_POST)) {
       $websiteId = $r['known_subject:website_id'];
       $this->loadAttributes($r, array(
@@ -106,19 +104,6 @@ class Known_subject_Controller extends Gridview_Base_Controller {
       }
     }              
     return $join_ids;      
-  }
-  
-    /**
-   * Return a list of the tabs to display for this controller's actions.
-   */
-  protected function getTabs($name) {
-    return array(
-      array(
-        'controller' => 'known_subject_comment',
-        'title' => 'Comments',
-        'actions'=>array('edit')
-      )      
-    );
   }
 }
 ?>

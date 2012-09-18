@@ -27,37 +27,8 @@ tr.datarow td {
 	border: navy solid thin;
 	padding: 3px;
 }
-tr.totalrow td {
-	font-weight:bold;
-	border: navy solid thin;
-	padding: 3px;
-}
 tr td.week {
 	border: navy solid thin;
 	padding: 3px;
 }
-#controls-table,#chartdiv-container {
-	margin-bottom: 3px;
-}
-.controls-table label {
-	width: auto;
-}
-.series-fieldset label {
-	width: auto;
-	margin-right: 20px;
-	margin-left: 5px;
-}
-.inline-control label {
-	width: auto;
-	margin-right: 30px;
-	margin-left: 5px;
-}
-.disable-button {
-	margin-right: 20px;
-}
-.chart-series-span {
-    white-space: nowrap; 
-}
-.highlight-estimates {
-    color: red; 
-}
+

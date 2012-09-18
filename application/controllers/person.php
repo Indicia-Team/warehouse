@@ -92,7 +92,7 @@ class Person_Controller extends Gridview_Base_Controller {
     // after the person has been saved. Therefore no need to call loadAttributes.
     // We do when editing after a validation failure though.
     if ($this->model->id!==0) {
-      $websiteIds = $this->getWebsiteIds($this->model->id);
+      $websiteIds = $this->getWebsiteIds($_POST['person:id']);
       $this->loadAttributes($r, array(
         'website_id'=>$websiteIds
       ));

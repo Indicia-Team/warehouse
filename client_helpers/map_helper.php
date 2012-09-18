@@ -51,7 +51,6 @@ class map_helper extends helper_base {
   * <li><b>indiciaGeoSvc</b><br/>
   * </li>
   * <li><b>readAuth</b><br/>
-  * Provides read authentication tokens for the warehouse. Only required when there is a location control linked to the warehouse associated with this map.
   * </li>
   * <li><b>height</b><br/>
   * Height of the map panel, in pixels.
@@ -117,10 +116,6 @@ class map_helper extends helper_base {
   * clicked on location. Ensure that the feature type is styled on GeoServer to appear as required, though it will be added to the map with semi-transparency. To use
   * this feature ensure that a proxy is set, e.g. by using the Indicia Proxy module in Drupal.
   * </li>
-  * <li><b>locationLayerFilter</b><br/>
-  * If using a location layer, then set this to a cql filter in order to select e.g. locations for a website or locations of a type.
-  * The filter can act on any fields in the feature type that locationLayerName refers to.
-  * </li>
   * <li><b>controls</b><br/>
   * </li>
   * <li><b>toolbarDiv</b><br/>
@@ -132,10 +127,6 @@ class map_helper extends helper_base {
   * </li>
   * <li><b>toolbarSuffix</b><br/>
   * Content to include at the end of the map toolbar. Not applicable when the toolbar is added directly to the map.
-  * </li>
-  * <li><b>helpDiv</b><br/>
-  * Set to 'bottom' to add a div containing help hints below the map. Set to the name of a div to output help hints into that
-  * div. Otherwise no help hints are displayed.
   * </li>
   * <li><b>clickForSpatialRef</b><br/>
   * Does clicking on the map set the spatial reference of the sample input controls on the form the map appears on (if any)?
@@ -216,19 +207,7 @@ class map_helper extends helper_base {
   * <li><b>graticuleBounds</b><br/>
   * Array of the bounding box coordinates for the graticule(W,S,E,N).</li>
   * <li><b>rememberPos</b><br/>
-  * Set to true to enable restoring the map position when the page is reloaded. Requires jquery.cookie plugin. As this feature
-  * requires cookies, you should notify your users in compliance with European cookie law if you use this option.</li>
-  * </ul>
-  * <li><b>helpDiv</b><br/>
-  * Set to bottom to output a help div under the map, or set to the ID of a div to output into.</li>
-  * <li><b>helpToPickPrecisionMin</b><br/>
-  * Set to a precision in metres (e.g. 10, 100, 1000) to provide help guiding the recorder to pick a grid square of at least that precision. Ensure that helpDiv is 
-  * set when using this option.</li>
-  * <li><b>helpToPickPrecisionMax</b><br/>
-  * Set to a precision in metres (e.g. 10, 100, 1000) that the help system will accept as not requiring further refinement when a grid square of this precision is picked.</li>  
-  * <li><b>helpToPickPrecisionSwitchAt</b><br/>
-  * Set to a precision in metres (e.g. 10, 100, 1000) that the map will switch to the satellite layer (if Google or Bing satellite layers active) when
-  * the recorder picks a grid square of at least that precision.</li>
+  * Set to true to enable restoring the map position when the page is reloaded. Requires jquery.cookie plugin.</li>
   * </ul>
   * @param array $olOptions Optional array of settings for the OpenLayers map object. If overriding the projection or
   * displayProjection settings, just pass the EPSG number, e.g. 27700.
@@ -278,16 +257,6 @@ class map_helper extends helper_base {
         // Convert the readAuth into a query string so it can pass straight to the JS class.
         $options['readAuth']='&'.self::array_to_query_string($options['readAuth']);
         str_replace('&', '&amp;', $options['readAuth']);
-      }
-
-      // convert textual true/false to boolean equivalents.
-      if (array_key_exists('editLayer', $options)) {
-        if($options['editLayer']==="false") $options['editLayer']=false;
-        else if($options['editLayer']==="true") $options['editLayer']=true;
-      }
-      if (array_key_exists('searchLayer', $options)) {
-        if($options['searchLayer']==="false") $options['searchLayer']=false;
-        else if($options['searchLayer']==="true") $options['searchLayer']=true;
       }
 
       // Autogenerate the links to the various mapping libraries as required
@@ -351,28 +320,24 @@ class map_helper extends helper_base {
         $mapSetupJs .= $options['setupJs']."\n";
       }
       $mapSetupJs .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
-      // trigger a change event on the sref if it's set in case locking in use. This will draw the polygon on the map.
-      $srefId = !empty($options['srefId']) ? $options['srefId'] : '';
-      $mapSetupJs .= "      var srefId = '$srefId'!=='' ? '$srefId' : $.fn.indiciaMapPanel.defaults.srefId;\n".
-                     "      if (srefId && srefId.value!=='') {jQuery('#'+srefId).change();}\n";
       // If the map is displayed on a tab, so we must only generate it when the tab is displayed as creating the 
       // map on a hidden div can cause problems. Also, the map must not be created until onload or later. So 
       // we have to set use the mapTabLoaded and windowLoaded to track when these events are fired, and only
       // load the map when BOTH the events have fired.
       if (isset($options['tabDiv'])) {
-        $divId = preg_replace('/[^a-zA-Z0-9]/', '', $options['divId']);
-        $javascript .= "var mapTabHandler = function(event, ui) { \n";
+        
+        $javascript .= "var tabHandler = function(event, ui) { \n";
         $javascript .= "  if (ui.panel.id=='".$options['tabDiv']."') {\n";
-        $javascript .= "    indiciaData.".$divId."TabLoaded=true;\n";
+        $javascript .= "    indiciaData.mapTabLoaded=true;\n";
         $javascript .= "    if (indiciaData.windowLoaded) {\n      ";
         $javascript .= $mapSetupJs;
         $javascript .= "    }\n    $(this).unbind(event);\n";
         $javascript .= "  }\n\n};\n";
-        $javascript .= "jQuery(jQuery('#".$options['tabDiv']."').parent()).bind('tabsshow', mapTabHandler);\n";
+        $javascript .= "jQuery(jQuery('#".$options['tabDiv']."').parent()).bind('tabsshow', tabHandler);\n";
         // Insert this script at the beginning, because it must be done before the tabs are initialised or the 
         // first tab cannot fire the event
         self::$javascript = $javascript . self::$javascript;
-        self::$onload_javascript .= "if (typeof indiciaData.".$divId."TabLoaded!==\"undefined\") {\n$mapSetupJs\n}\n";
+        self::$onload_javascript .= "if (typeof indiciaData.mapTabLoaded!==\"undefined\") {\n$mapSetupJs\n}\n";
       } else {
         self::$onload_javascript .= $mapSetupJs;
       }
@@ -444,7 +409,7 @@ class map_helper extends helper_base {
     }
     if ($options['includeIcons']) 
       self::$javascript .= "if (layer.isBaseLayer) {
-    layerHtml += '<img src=\"".self::getRootFolder() . self::client_helper_path()."../media/images/map.png\" width=\"16\" height=\"16\"/>';
+    layerHtml += '<img src=\"".self::getRootFolder() . self::relative_client_helper_path()."../media/images/map.png\" width=\"16\" height=\"16\"/>';
   } else if (layer instanceof OpenLayers.Layer.WMS) {
     layerHtml += '<img src=\"' + layer.url + '?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&WIDTH=16&HEIGHT=16&LAYER='+layer.params.LAYERS+'&Format=image/jpeg'+
       '&STYLE='+layer.params.STYLES +'\" alt=\"'+layer.name+'\"/>';

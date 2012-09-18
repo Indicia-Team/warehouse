@@ -40,7 +40,7 @@ class Taxon_image_Controller extends Gridview_Base_Controller
   }
 
  /**
-  * Override the default index functionality to filter by taxon_meaning_id.
+  * Override the default index functionality to filter by sample_id.
   */
   public function index()
   { 
@@ -87,7 +87,7 @@ class Taxon_image_Controller extends Gridview_Base_Controller
     return $r;
   }
   
-  /**
+/**
    * Override the default return page behaviour so that after saving an image you
    * are returned to the taxa_taxon_list entry which has the image.
    */

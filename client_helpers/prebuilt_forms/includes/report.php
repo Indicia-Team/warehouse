@@ -40,7 +40,7 @@ function iform_report_get_minimal_report_parameters() {
       'group'=>'Report Settings'
     ), array(
       'name' => 'param_presets',
-      'caption' => 'Preset parameter values',
+      'caption' => 'Preset Parameter Values',
       'description' => 'To provide preset values for any report parameter and avoid the user having to enter them, enter each parameter into this '.
           'box one per line. Each parameter is followed by an equals then the value, e.g. survey_id=6. You can use {user_id} as a value which will be replaced by the '.
           'user ID from the CMS logged in user or {username} as a value replaces with the logged in username. If you have installed the Profile module then you can also '.
@@ -51,7 +51,7 @@ function iform_report_get_minimal_report_parameters() {
       'group'=>'Report Settings'
     ), array(
       'name' => 'param_defaults',
-      'caption' => 'Default parameter values',
+      'caption' => 'Default Parameter Values',
       'description' => 'To provide default values for any report parameter which allow the report to run initially but can be overridden, enter each parameter into this '.
           'box one per line. Each parameter is followed by an equals then the value, e.g. survey_id=6. You can use {user_id} as a value which will be replaced by the '.
           'user ID from the CMS logged in user or {username} as a value replaces with the logged in username. If you have installed the Profile module then you can also '.
@@ -60,16 +60,7 @@ function iform_report_get_minimal_report_parameters() {
       'type' => 'textarea',
       'required' => false,
       'group'=>'Report Settings'
-    ), array(
-      'name' => 'param_ignores',
-      'caption' => 'Default params to exclude from the form',
-      'description' => 'Provide a list of the parameter names which are in the Default Parameter Values but should not appear in the parameters form. An example usage of this '.
-          'is to provide parameters that can be overridden via a URL parameter.',
-      'type' => 'textarea',
-      'required' => false,
-      'group'=>'Report Settings'
-    ), 
-      array(
+    ),array(
       'name' => 'items_per_page',
       'caption' => 'Items per page',
       'description' => 'Maximum number of rows shown on each page of the table',
@@ -112,32 +103,12 @@ function iform_report_get_report_parameters() {
         'default' => 'report',
         'group' => 'Report Settings'
       ), array(
-        'name' => 'remember_params_report_group',
-        'caption' => 'Remember report parameters group',
-        'description' => 'Enter any value in this parameter to allow the report to save its parameters for the next time the report is loaded. '.
-          'The parameters are saved site wide, so if several reports share the same value and the same report group then the parameter '.
-          'settings will be shared across the reports even if they are on different pages of the site. This functionality '.
-          'requires cookies to be enabled on the browser.',
-        'type'=>'text_input',
-        'required'=>false,
-        'default' => '',
-        'group'=>'Report Settings'
-      ), array(
         'name' => 'params_in_map_toolbar',
         'caption' => 'Params in map toolbar',
         'description' => 'Should the report input parameters be inserted into a map toolbar instead of displaying a panel of input parameters at the top? '.
             'This is only useful when there is a map output onto the page which has a toolbar in the top or bottom position.',
         'type' => 'checkbox',
         'required' => false,
-        'group' => 'Report Settings'
-      ), array(
-        'name' => 'row_class',
-        'caption' => 'Row Class',
-        'description' => 'A CSS class to add to each row in the grid. Can include field value replacements in braces, e.g. {certainty} to construct '.
-            'classes from field values, e.g. to colour rows in the grid according to the data.',
-        'type' => 'text_input',
-        'default' => '',
-        'required' => 'false',
         'group' => 'Report Settings'
       ), array(
         'name' => 'refresh_timer',
@@ -180,7 +151,6 @@ function iform_report_get_report_options($args, $readAuth) {
   require_once('user.php');
   $presets = get_options_array_with_user_data($args['param_presets']);
   $defaults = get_options_array_with_user_data($args['param_defaults']);
-  $ignores = isset($args['param_ignores']) ? report_helper::explode_lines($args['param_ignores']) : array();
   // default columns behaviour is to just include anything returned by the report
   $columns = array();
   // this can be overridden
@@ -188,8 +158,7 @@ function iform_report_get_report_options($args, $readAuth) {
     $columns = json_decode($args['columns_config'], true);
   $reportOptions = array(
     'id' => 'report-grid',
-    'reportGroup' => isset($args['report_group']) ? $args['report_group'] : '',
-    'remeberParamsReportGroup' => isset($args['remember_params_report_group']) ? $args['remember_params_report_group'] : '',
+    'reportGroup' => $args['report_group'],
     'dataSource' => $args['report_name'],
     'mode' => 'report',
     'readAuth' => $readAuth,
@@ -197,7 +166,6 @@ function iform_report_get_report_options($args, $readAuth) {
     'itemsPerPage' => empty($args['items_per_page']) ? 20 : $args['items_per_page'],
     'extraParams' => $presets,
     'paramDefaults' => $defaults,
-    'ignoreParams' => $ignores,
     'galleryColCount' => isset($args['gallery_col_count']) ? $args['gallery_col_count'] : 1,
     'headers' => isset($args['gallery_col_count']) && $args['gallery_col_count']>1 ? false : true,
     'paramsInMapToolbar'=>isset($args['params_in_map_toolbar']) ? $args['params_in_map_toolbar'] : false    
@@ -221,9 +189,6 @@ function iform_report_get_report_options($args, $readAuth) {
   } else {
     $reportOptions['autoParamsForm'] = false;
   }
-  if (!empty($args['row_class'])) {
-    $reportOptions['rowClass'] = $args['row_class'];
-  }
   // Set up a page refresh for dynamic update of the report at set intervals
   if ($args['refresh_timer']!==0 && is_numeric($args['refresh_timer'])) { // is_numeric prevents injection
     if (isset($args['load_on_refresh']) && !empty($args['load_on_refresh']))
@@ -232,39 +197,4 @@ function iform_report_get_report_options($args, $readAuth) {
       report_helper::$javascript .= "setTimeout('window.location.reload( false );', ".$args['refresh_timer']."*1000 );\n";
   }
   return $reportOptions;
-}
-
-/** 
- * Takes a set of report parameters and applies preferences from the user's EasyLogin profile to the report parameters. Assumes
- * parameters called ownData, ownLocality, ownGroups. See the library/occurrences/explore_list report for an example.
- */
-function iform_report_apply_explore_user_own_preferences(&$reportOptions) {
-  $allParams = array_merge($reportOptions['paramDefaults'], $reportOptions['extraParams']);
-  global $user;
-  if (!isset($user->profile_indicia_user_id))
-    profile_load_profile($user);
-  // Unless ownData explicitly set, we either default it to unchecked, or we set it unchecked and hidden if the user account
-  // is not on the warehouse
-  if (!array_key_exists('ownData', $allParams)) {
-    if (!empty($user->profile_indicia_user_id))
-      $reportOptions['paramDefaults']['ownData']=0;
-    else
-      $reportOptions['extraParams']['ownData']=0;
-  }
-  // Unless ownLocality explicitly set, we either default it to checked, or we set it unchecked and hidden if the user account
-  // has no location preferences set
-  if (!array_key_exists('ownLocality', $allParams)) {
-    if (!empty($user->profile_location))
-      $reportOptions['paramDefaults']['ownLocality']=1;
-    else
-      $reportOptions['extraParams']['ownLocality']=0;
-  }
-  // Unless ownGroups explicitly set, we either default it to checked, or we set it unchecked and hidden if the user account
-  // has no taxon groups set
-  if (!array_key_exists('ownGroups', $allParams)) {
-    if (!empty($user->profile_taxon_groups))
-      $reportOptions['paramDefaults']['ownGroups']=1;
-    else
-      $reportOptions['extraParams']['ownGroups']=0;
-  }
 }

@@ -11,7 +11,7 @@
  *
  */
 
-(function($) {
+;(function($) {
   
 $.fn.extend({
   autocomplete: function(urlOrData, options) {
@@ -156,7 +156,7 @@ $.Autocompleter = function(input, options) {
         break;
     }
   }).blur(function() {
-    if (!config.mouseDownOnSelect && !options.continueOnBlur) {    
+    if (!config.mouseDownOnSelect && !options.continueOnBlur) {
       hideResults();
     }
   }).click(function() {
@@ -202,16 +202,11 @@ $.Autocompleter = function(input, options) {
   
   
   function selectCurrent(keycode) {
-    var selected = select.selected(), simplified=simplify($input.val()), value, regexp;
-    // escape special characters in regexp
-    value = simplified.toLowerCase().replace(/[\[\]\\\^\$\.\|\?\+\(\)]/g, "\\$&");
-    regexp = new RegExp('^'+value.replace('*','.*')); 
-    if (!selected || !selected.result.toLowerCase().match(regexp)) {
+    var selected = select.selected();
+    if( !selected )
       return false;
-    }
-    // If searching against a searchterm field in a table with an original field, we actually need to display the original field. 
-    var v = (typeof selected.data.searchterm !== "undefined" && selected.data.searchterm===selected.result && typeof selected.data.original!=="undefined") ?
-        selected.data.original : selected.result;
+    
+    var v = selected.result;
     previousValue = v;
     
     if ( options.multiple ) {
@@ -271,7 +266,7 @@ $.Autocompleter = function(input, options) {
   function simplify(value) {
     // use same regexp as used to populate cache_taxon_searchterms to simplify the search string
     if (options.simplify) {
-      return value.replace(/\. /g, '* ').replace(/\(.+\)/g,'').replace(/[^a-zA-Z0-9\+\?*]/g,'').replace(/ae/g,'e').toLowerCase();
+      return value.replace(/\. /g, '* ').replace(/\(.+\)/g,'').replace(/[^a-z0-9\+\?*]/g,'').replace(/ae/g,'e').toLowerCase();
     } else {
       return value;
     }
@@ -303,13 +298,11 @@ $.Autocompleter = function(input, options) {
     timeout = setTimeout(hideResultsNow, 200);
   };
 
-  function hideResultsNow(cancelTimeout) {
+  function hideResultsNow() {
     var hasFocus = $input[0].id===document.activeElement.id;
     var wasFocused = hasFocus;
     select.hide();
-    if (typeof cancelTimeout==="undefined" || cancelTimeout) {
-      clearTimeout(timeout);
-    }
+    clearTimeout(timeout);
     stopLoading();
     if (options.mustMatch) {
       // call search and run callback
@@ -361,7 +354,7 @@ $.Autocompleter = function(input, options) {
         $input.addClass('error');
         $input.effect("shake", { times:2, distance:3 }, 150);
       }
-      hideResultsNow(false);
+      hideResultsNow();
     }
   };
 
@@ -761,7 +754,7 @@ $.Autocompleter.Select = function (options, input, select, config) {
           overflow: 'auto'
         });
         
-        if($.browser.msie && typeof document.body.style.maxHeight === "undefined") {
+                if($.browser.msie && typeof document.body.style.maxHeight === "undefined") {
           var listHeight = 0;
           listItems.each(function() {
             listHeight += this.offsetHeight;

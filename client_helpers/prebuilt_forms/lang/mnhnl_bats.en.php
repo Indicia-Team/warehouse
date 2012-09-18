@@ -28,7 +28,6 @@ global $custom_terms;
  */
 $custom_terms = array(
 // Tab Titles
-	'LANG_no_permissions' => 'You must be either a registered User or a registered Admin of this form in order to access this form.',
 	'LANG_Main_Samples_Tab' => 'Surveys',
 	'LANG_Download' => 'Reports',
 	'LANG_Locations' => 'Sites',
@@ -61,7 +60,6 @@ $custom_terms = array(
 	'LANG_Location_Name' => 'Site name',
 	// 'Create New Location' is unchanged in English
 	'LANG_Location_Name_Blank_Text' => 'Choose a location using its name',
-	'LANG_Multiple_Location_Types' => 'Some sites are highlighted in red because they are not yet confirmed by an Admin user.',
 	'SRef' => 'Coordinates',
 	'LANG_SRef_Label' => 'Coordinates',
 	'LANG_Location_X_Label' => 'Site centre coordinates: X',
@@ -72,9 +70,8 @@ $custom_terms = array(
 	'LANG_CommonInstructions1'=>'Choose a square (5x5km). This square will then be displayed on the map, along with all existing sites associated with that square.',
 	'LANG_CommonParentLabel'=>'Square (5x5km)',
 	'LANG_CommonParentBlank'=>'Choose a square',
-	'LANG_LocModTool_Instructions2'=>"Either click on the map (ensuring that the select tool on the map is active) to select the site you wish to modify, or choose from the drop down list. You may then change its name, or modify or add points to define the site. You may drag the highlighted points. To delete a point, place the mouse over the point and press the 'd' or 'Delete' buttons.",
-	'LANG_LocModTool_CantCreate' => "You can't create a new site using this tool - that has to be done within the survey data entry itself.",
-	'LANG_DE_Instructions2'=>"To choose a site, either click the relevant site on the map (ensuring that the select tool on the map is active) or pick it from the drop down list (then the selected site is highlighted in blue on the map).<br />You may add a new site: click the 'Start a new site' button on the map, select the point draw tool, and draw on the map, clicking on each point. You may drag the highlighted points. To delete a point, place the mouse over the point, and press the 'd' or 'Delete' buttons on the keyboard.<br />Selecting an existing site will remove any other new site.<br />It is only possible to change the details for a site (e.g. name or boundary) on this form once it has been saved if you are either an Admin user or are the only person to have registered a survey at this site.",
+	'LANG_LocModTool_Instructions2'=>"Either click on the map (ensuring that the select tool on the map is active) to select the site you wish to modify, or choose from the drop down list. You may then change its name, or modify or add points to define the site. You may drag the highlighted points. To delete a point, place the mouse over the point and press the 'd' or 'Delete' buttons.<br />You can't create a new site using this tool - that has to be done within the survey data entry itself.",
+	'LANG_DE_Instructions2'=>"To choose a site, either click the relevant site on the map (ensuring that the select tool on the map is active) or pick it from the drop down list.<br />You may add a new site: click the 'Start a new site' button on the map, select the point draw tool, and draw on the map, clicking on each point. You may drag the highlighted points. To delete a point, place the mouse over the point, and press the 'd' or 'Delete' buttons on the keyboard.<br />Selecting an existing site will remove any other new site.<br />It is only possible to change the details for a site (e.g. name or boundary) on this form once it has been saved if you are either an Admin user or are the only person to have registered a survey at this site.",
 	'LANG_LocModTool_IDLabel'=>'Old site name',
 	'LANG_DE_LocationIDLabel'=>'Site',
 	'LANG_CommonChooseParentFirst'=>'Choose a square first, before picking a site.',
@@ -124,7 +121,7 @@ $custom_terms = array(
 	'LANG_Georef_Label'=>'Search for place on map',
 	'LANG_Georef_SelectPlace' => 'Select the correct one from the following places that were found matching your search. (Click on the list items to see them on the map.)',
 	'LANG_Georef_NothingFound' => 'No place found with that name. Try a nearby town name.',
-	'LANG_PositionOutsideCommune' => 'The position you have chosen is outside the set of allowable Communes. You will not be able to save this position.',
+	'LANG_PositionOutsideCommune' => 'The position you have choosen is outside the set of allowable Communes. You will not be able to save this position.',
 	'LANG_CommuneLookUpFailed' => 'Commune Lookup Failed',
 // Conditions
 	// 'General'  is unchanged in English

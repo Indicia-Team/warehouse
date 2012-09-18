@@ -92,15 +92,7 @@ class iform_pollenator_gallery {
          'group'=>'Initial Map View',
          'default'=>300
        ),
-       array(
-         'name'=>'2nd_map_zoom',
-         'caption'=>'Second Map Zoom',
-         'description'=>'Default Zoom when displaying a collection.',
-         'type'=>'int',
-         'group'=>'Initial Map View',
-         'required'=>false
-       ),
-       array(
+      array(
         'name'=>'survey_id',
         'caption'=>'Survey ID',
         'description'=>'The Indicia ID of the survey that data will be posted into.',
@@ -270,14 +262,6 @@ class iform_pollenator_gallery {
           'group'=>'Insect Attributes'
       ),
       array(
-          'name'=>'deleteable_user_id',
-          'caption'=>'Deleteable User ID',
-          'description'=>'The Drupal User ID of the user who can delete determinations.',
-          'required'=>false,
-          'type'=>'int',
-          'group'=>'User Interface'
-      ),
-      array(
           'name'=>'ID_tool_flower_url',
           'caption'=>'Flower ID Tool URL',
           'description'=>'The URL to call which triggers the Flower Identification Tool functionality.',
@@ -324,14 +308,6 @@ class iform_pollenator_gallery {
           'type'=>'int',
           'group'=>'ID Tool',
           'default'=>1800000,
-      ),
-      array(
-          'name'=>'ID_tool_convert_strings',
-          'caption'=>'Convert Tool Output',
-          'description'=>'Choose whether to convert the output of the ID tool from ISO-8859-1 to UTF-8',
-          'type'=>'boolean',
-          'required'=>false,
-          'group'=>'ID Tool'
       ),
       array(
           'name'=>'Flower_Image_Ratio',
@@ -482,7 +458,6 @@ class iform_pollenator_gallery {
 	if($args['language'] != 'en')
 		data_entry_helper::add_resource('jquery_ui_'.$args['language']);
 	data_entry_helper::enable_validation('new-comments-form'); // don't care about ID itself, just want resources
-	data_entry_helper::add_resource('autocomplete');
 	
 	$occID= '';
 	$smpID = '';
@@ -615,8 +590,7 @@ class iform_pollenator_gallery {
     
 	$options2['divId'] = "map2";
     $options2['height'] = $args['2nd_map_height'];
-    if(isset($args['2nd_map_zoom']) && $args['2nd_map_zoom']!="")
-      $options2['maxZoom'] = $args['2nd_map_zoom'];
+
 	// we are using meaning_ids: services now use ids, so can't just output value - convert raw value
     data_entry_helper::$javascript .= "var terms = {";
 	$extraParams = $readAuth + array('view'=>'detail', 'iso'=>$language, 'orderby'=>'meaning_id');
@@ -638,21 +612,21 @@ var flowerTaxa = [";
 	$taxa = data_entry_helper::get_population_data($species_data_def);
 	$first = true;
 	foreach ($taxa as $taxon) {
-		data_entry_helper::$javascript .= ($first ? '' : ',')."{id: ".$taxon['id'].", taxon: \"".str_replace('"','\\"',$taxon['taxon'])."\"}\n";
+		data_entry_helper::$javascript .= ($first ? '' : ',')."{id: ".$taxon['id'].", taxon: \"".htmlSpecialChars($taxon['taxon'])."\"}\n";
 		$first=false;
 	}
     data_entry_helper::$javascript .= "];\nvar insectTaxa = [";
     $extraParams['taxon_list_id'] = $args['insect_list_id'];
     $species_data_def['extraParams']=$extraParams;
-    $taxa = data_entry_helper::get_population_data($species_data_def);
+	$taxa = data_entry_helper::get_population_data($species_data_def);
 	$first = true;
 	foreach ($taxa as $taxon) {
-		data_entry_helper::$javascript .= ($first ? '' : ',')."{id: ".$taxon['id'].", taxon: \"".str_replace('"','\\"',$taxon['taxon'])."\"}\n";
+		data_entry_helper::$javascript .= ($first ? '' : ',')."{id: ".$taxon['id'].", taxon: \"".htmlSpecialChars($taxon['taxon'])."\"}\n";
 		$first=false;
 	}
     data_entry_helper::$javascript .= "];";
     // TBD Breadcrumb
- 	$r .= '<h1 id="poll-banner"></h1>
+ 	$r .= '<h1 id="poll-banner">'.lang::get('LANG_Main_Title').'</h1>
 <div id="refresh-message" style="display:none" ><p>'.lang::get('LANG_Please_Refresh_Page').'</p></div>
 <div id="filter" class="ui-accordion ui-widget ui-helper-reset">
 	<div id="filter-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-accordion-content-active ui-corner-top">
@@ -691,7 +665,7 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
 			<label for="start_date" >'.lang::get('LANG_Created_Between').':</label>
 			<input type="text" size="10" id="start_date" name="start_date" value="'.lang::get('click here').'" />
 			<input type="hidden" id="real_start_date" name="real_start_date" />
-			<label for="end_date" >'.lang::get('LANG_And').'</label>
+			<label for="end_date" >'.lang::get('LANG_And').':</label>
 			<input type="text" size="10" id="end_date" name="end_date" value="'.lang::get('click here').'" />
 			<input type="hidden" id="real_end_date" name="real_end_date" />
 		</div>
@@ -851,13 +825,17 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
 </div>
 <div id="focus-collection" class="ui-accordion ui-widget ui-helper-reset" style="display: none">
 	<div id="fc-header" class="ui-accordion-content ui-helper-reset ui-state-active ui-corner-top ui-accordion-content-active">
-	  <div id="fc-header-buttons">
+	  <div id="fc-header-buttons">';
+    if(user_access('IForm n'.$node->nid.' add preferred collection')){
+    	$r .= '<span id="fc-add-preferred" class="ui-state-default ui-corner-all preferred-button">'.lang::get('LANG_Add_Preferred_Collection').'</span>';
+    }
+    $r .= '  
 	    <span id="fc-prev-button" class="ui-state-default ui-corner-all previous-button">'.lang::get('LANG_Previous').'</span>
 	    <span id="fc-next-button" class="ui-state-default ui-corner-all next-button">'.lang::get('LANG_Next').'</span>
 	  	<span id="fc-filter-button" class="ui-state-default ui-corner-all collection-button">'.lang::get('LANG_List').'</span>
 	  </div>
 	</div>
-	<div id="collection-details" class="ui-accordion-content ui-helper-reset ui-widget-content '.(user_access('IForm n'.$node->nid.' add preferred collection') ? '' : 'ui-corner-bottom').' ui-accordion-content-active" '.(user_access('IForm n'.$node->nid.' add preferred collection') ? 'style="border-bottom:none;"' : '').'>
+	<div id="collection-details" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active ui-corner-bottom">
 	  <div id="flower-image-container" ><div id="flower-image" class="flower-image"></div>
         <div id="show-flower-button" class="ui-state-default ui-corner-all display-button">'.lang::get('LANG_Display').'</div>
       </div>
@@ -865,26 +843,16 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
       <div id="collection-description">
 	    <p id="collection-date"></p>
 	    <p id="collection-flower-name"></p>
-	    <p>'.lang::get($occurrence_attributes[$flowerTypeAttrID]['caption']).': <span id="collection-flower-type" class="collection-value"></span></p>
-	    <p>'.lang::get($location_attributes[$habitatAttrID]['caption']).': <span id="collection-habitat" class="collection-value"></span></p>
+	    <p>'.lang::get($occurrence_attributes[$flowerTypeAttrID]['caption']).': <span id="collection-flower-type" class=\"collection-value\"></span></p>
+	    <p>'.lang::get($location_attributes[$habitatAttrID]['caption']).': <span id="collection-habitat" class=\"collection-value\"></span></p>
 	    <br />
 	    <p id="collection-user-name"></p>
 	    <a id="collection-user-link">'.lang::get('LANG_User_Link').'</a>
-	    <br /><br />
-	    <p>'.lang::get('LANG_INSEE_Localisation').': <span id="collection-locality"></span></p>
-        <br /><p id="fc-new-location-desc">'.lang::get('LANG_Localisation_Desc').'</p>
-	  </div>
-      <div id="map2_container">';
-    // this is a bit of a hack, because the apply_template method is not public in data entry helper.
-    $tempScript = data_entry_helper::$onload_javascript;
-    data_entry_helper::$onload_javascript = '';
-    $r .= data_entry_helper::map_panel($options2, $olOptions);
-    $map2JS = data_entry_helper::$onload_javascript;
-    data_entry_helper::$onload_javascript = $tempScript;
-    data_entry_helper::$javascript .= "\njQuery('#fc-new-location').find('br').remove();\n";
-    $r .= '</div>
-      <div id="fc-new-location">
-		<form id="fc-new-location-form" action="'.iform_ajaxproxy_url($node, 'location').'" method="POST">
+	    <br />
+	    <p>'.lang::get('LANG_INSEE_Localisation').'</p><p id="collection-locality"></p>
+        <div id="fc-new-location">
+          <p id="fc-new-location-desc">'.lang::get('LANG_Localisation_Desc').'</p>
+		  <form id="fc-new-location-form" action="'.iform_ajaxproxy_url($node, 'location').'" method="POST">
     		<input type="hidden"                       name="website_id" value="'.$args['website_id'].'" />
     		<input type="hidden"                       name="survey_id" value="'.$args['survey_id'].'" />
     		<input type="hidden" id="imp-sref-system"  name="location:centroid_sref_system" value="4326" />
@@ -902,13 +870,20 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
     			'idLat'=>'imp-sref-lat',
         		'idLong'=>'imp-sref-long',
     			'suffixTemplate'=>'nosuffix')).'
-            <input type="submit" id="fc_location_submit_button" class="ui-state-default ui-corner-all submit-button" value="'.lang::get('LANG_Submit_Location').'" />
-        </form>
+       		<input type="submit" id="fc_location_submit_button" class="ui-state-default ui-corner-all submit-button" value="'.lang::get('LANG_Submit_Location').'" />
+    	</form>
+       </div>
 	  </div>
-      <div id="fc-new-location-message"></div></div>';
-    if(user_access('IForm n'.$node->nid.' add preferred collection')){
-    	$r .= '<div id="preferred-button-container" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active"><span id="fc-add-preferred" class="ui-state-default ui-corner-all preferred-button">'.lang::get('LANG_Add_Preferred_Collection').'</span></div>';
-    }
+      <div id="map2_container">';
+    // this is a bit of a hack, because the apply_template method is not public in data entry helper.
+    $tempScript = data_entry_helper::$onload_javascript;
+    data_entry_helper::$onload_javascript = '';
+    $r .= data_entry_helper::map_panel($options2, $olOptions);
+    $map2JS = data_entry_helper::$onload_javascript;
+    data_entry_helper::$onload_javascript = $tempScript;
+    $r .= '</div>
+      <div id="fc-new-location-message"></div>
+    </div>';
     if(user_access('IForm n'.$node->nid.' add to front page')){
     	$r .= '<div id="fc-front-page" class="ui-widget-content ui-corner-all">
     <form id="fc-front-page-form" action="'.iform_ajaxproxy_url($node, 'sample').'" method="POST">
@@ -936,11 +911,11 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
 		<form id="fc-new-comment-form" action="'.iform_ajaxproxy_url($node, 'smp-comment').'" method="POST">
 		    <input type="hidden" name="website_id" value="'.$args['website_id'].'" />
     		<input type="hidden" name="sample_comment:sample_id" value="" />
-    		<label for="sample_comment:person_name">'.lang::get('LANG_Username').' :</label>
+    		<label for="sample_comment:person_name">'.lang::get('LANG_Username').':</label>
 		    <input type="text" name="sample_comment:person_name" value="'.$username.'" readonly="readonly" />  
-    		<label for="sample_comment:email_address">'.lang::get('LANG_Email').' :</label>
+    		<label for="sample_comment:email_address">'.lang::get('LANG_Email').':</label>
 		    <input type="text" name="sample_comment:email_address" value="'.$email.'" readonly="readonly" />
-		    '.data_entry_helper::textarea(array('label'=>lang::get('LANG_Comment').' ', 'fieldname'=>'sample_comment:comment', 'class'=>'required', 'suffixTemplate'=>'nosuffix')).'
+		    '.data_entry_helper::textarea(array('label'=>lang::get('LANG_Comment'), 'fieldname'=>'sample_comment:comment', 'class'=>'required', 'suffixTemplate'=>'nosuffix')).'
     		<input type="submit" id="fc_comment_submit_button" class="ui-state-default ui-corner-all submit-button" value="'.lang::get('LANG_Submit_Comment').'" />
     	</form>
 	</div>
@@ -957,6 +932,7 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
 	  </div>
 	</div>
 	<div id="fo-picture" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active">
+	  <div id="fo-warning"></div>
 	  <div id="fo-image">
       </div>
     </div>
@@ -967,122 +943,54 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
     </div>
 	<div id="fo-current-id" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active">
 	</div>
-	<div id="fo-id-buttons" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active">
-		<div id="fo-new-insect-id-button" class="ui-state-default ui-corner-all new-id-button">'.lang::get('LANG_New_ID').'</div>
-		<div id="fo-new-flower-id-button" class="ui-state-default ui-corner-all new-id-button">'.lang::get('LANG_New_ID').'</div>
-		<div id="fo-doubt-button" class="ui-state-default ui-corner-all doubt-button">'.lang::get('LANG_Doubt').'</div>
-    </div>
-	<div id="fo-id-history" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active"></div>
-    ';
-    if(isset($args['deleteable_user_id']) && $args['deleteable_user_id']!='' && $args['deleteable_user_id']==$user->uid){
-     // need two as they use different species lists.
-     $r .= '	<div id="fo-edit-insect-id" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-all">
-	  <p class="title">Modify Existing Insect Determination</p>
-	  <form id="fo-edit-insect-id-form" action="'.iform_ajaxproxy_url($node, 'determination').'" method="POST">
-		<input type="hidden" name="website_id" value="'.$args['website_id'].'" />
-		<label class="follow-on">Determination ID : </label><input type="text" name="determination:id" value="" readonly="readonly" /><br />
-		<label class="follow-on">Deleted : </label><input type="checkbox" name="determination:deleted" value="t" /><br />
-		<label class="follow-on">Occurrence ID : </label><input type="text" name="determination:occurrence_id" value="" readonly="readonly" /><br />
-		<label class="follow-on">CMS User Ref ID : </label><input type="text" name="determination:cms_ref" value="" readonly="readonly" /><br />
-    	<label class="follow-on">CMS Person Name : </label><input type="text" name="determination:person_name" value="" readonly="readonly" /><br />
-		<label class="follow-on">CMS Email : </label><input type="text" name="determination:email_address" value="" readonly="readonly" /><br />
-		<label class="follow-on">Type : </label><select name="determination:determination_type" /><option value="A">'.lang::get('LANG_Det_Type_A').'</option><option value="C" selected>'.lang::get('LANG_Det_Type_C').'</option><option value="X">'.lang::get('LANG_Det_Type_X').'</option></select><br />
-		<label class="follow-on">Taxon Details : </label><input type="text" name="determination:taxon_details" value="" /><br />
- 	    <label class="follow-on">Extra Info : </label><input type="text" name="determination:taxon_extra_info" value="" /><br />
-		';
-     $edit_insect_ctrl_args = $focus_insect_ctrl_args;
-     $edit_insect_ctrl_args['class']='species-select';
-     $edit_insect_ctrl_args['blankText']='';
-     $edit_insect_ctrl_args['label']='Main Species';
-     $edit_insect_ctrl_args['id']='dummy_tag';
-     $r .= data_entry_helper::select($edit_insect_ctrl_args);
-     unset($edit_insect_ctrl_args['id']);
-     for($j=0; $j<10; $j++){
-       $edit_insect_ctrl_args['label']='Species Array '.$j;
-       $edit_insect_ctrl_args['fieldname']='fo-edit-insect-id-list-'.$j;
-       $r .= data_entry_helper::select($edit_insect_ctrl_args);
-     }
-     $r .= '        <label >Comment : </label><textarea name="determination:comment" class="taxon-comment" rows="3" ></textarea><br />
-        <input type="submit" class="ui-state-default ui-corner-all submit-button" value="'.lang::get('LANG_Validate').'" />
-      </form>
-	</div>
-	<div id="fo-edit-flower-id" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-all">
-	  <p class="title">Modify Existing Flower Determination</p>
-	  <form id="fo-edit-flower-id-form" action="'.iform_ajaxproxy_url($node, 'determination').'" method="POST">
-		<input type="hidden" name="website_id" value="'.$args['website_id'].'" />
-		<label class="follow-on">Determination ID : </label><input type="text" name="determination:id" value="" readonly="readonly" /><br />
-		<label class="follow-on">Deleted : </label><input type="checkbox" name="determination:deleted" value="t" /><br />
-		<label class="follow-on">Occurrence ID : </label><input type="text" name="determination:occurrence_id" value="" readonly="readonly" /><br />
-		<label class="follow-on">CMS User Ref ID : </label><input type="text" name="determination:cms_ref" value="" readonly="readonly" /><br />
-    	<label class="follow-on">CMS Person Name : </label><input type="text" name="determination:person_name" value="" readonly="readonly" /><br />
-		<label class="follow-on">CMS Email : </label><input type="text" name="determination:email_address" value="" readonly="readonly" /><br />
-		<label class="follow-on">Type : </label><select name="determination:determination_type" /><option value="A">'.lang::get('LANG_Det_Type_A').'</option><option value="C" selected>'.lang::get('LANG_Det_Type_C').'</option><option value="X">'.lang::get('LANG_Det_Type_X').'</option></select><br />
-		<label class="follow-on">Taxon Details : </label><input type="text" name="determination:taxon_details" value="" /><br />
- 	    <label class="follow-on">Extra Info : </label><input type="text" name="determination:taxon_extra_info" value="" /><br />
-		';
-     $edit_flower_ctrl_args = $focus_flower_ctrl_args;
-     $edit_flower_ctrl_args['class']='species-select';
-     $edit_flower_ctrl_args['blankText']='';
-     $edit_flower_ctrl_args['label']='Main Species';
-     $edit_flower_ctrl_args['id']='dummy_tag';
-     $r .= data_entry_helper::select($edit_flower_ctrl_args);
-     unset($edit_flower_ctrl_args['id']);
-     for($j=0; $j<10; $j++){
-       $edit_flower_ctrl_args['label']='Species Array '.$j;
-       $edit_flower_ctrl_args['fieldname']='fo-edit-flower-id-list-'.$j;
-       $r .= data_entry_helper::select($edit_flower_ctrl_args);
-     }
-     $r .= '        <label >Comment : </label><textarea name="determination:comment" class="taxon-comment" rows="3" ></textarea><br />
-        <input type="submit" class="ui-state-default ui-corner-all submit-button" value="'.lang::get('LANG_Validate').'" />
-      </form>
-	</div>';
-    }
-    $r .= '	<form id="fo-new-insect-id-form" action="'.iform_ajaxproxy_url($node, 'determination').'" method="POST" style="display: none;">
-      <div id="fo-new-insect-id" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-top ui-accordion-content-active">
-        <p class="title">'.lang::get('LANG_New_ID').'</p>  
+	<div id="fo-new-insect-id" class="ui-accordion-content ui-helper-reset ui-widget-content">
+	  <form id="fo-new-insect-id-form" action="'.iform_ajaxproxy_url($node, 'determination').'" method="POST">
 		<input type="hidden" name="website_id" value="'.$args['website_id'].'" />
     	<input type="hidden" name="determination:occurrence_id" value="" />
 		<input type="hidden" name="determination:cms_ref" value="'.$uid.'" />  
     	<input type="hidden" name="determination:person_name" value="'.$username.'" />  
 		<input type="hidden" name="determination:email_address" value="'.$email.'" />';
-		if(user_access('IForm n'.$node->nid.' insect expert')){
-			$r .= '		<label for="fo-insect-expert-det-type" class="follow-on">'.lang::get('Status').' : </label><select id="fo-insect-expert-det-type" name="determination:determination_type" /><option value="C" selected>'.lang::get('LANG_Det_Type_C').'</option><option value="X">'.lang::get('LANG_Det_Type_X').'</option></select>';
-		} else {
-			$r .= '		<input type="hidden" name="determination:determination_type" value="A" />';
-		}
+	if(user_access('IForm n'.$node->nid.' insect expert')){
+		$r .= '		<select id="fo-insect-expert-det-type" name="determination:determination_type" />
+			<option value="C" selected>'.lang::get('LANG_Det_Type_C').'</option>
+			<option value="X">'.lang::get('LANG_Det_Type_X').'</option>
+		</select>';
+	} else {
+		$r .= '		<input type="hidden" name="determination:determination_type" value="A" />';
+	}
 		$r .= '		<div class="id-tool-group">
           <input type="hidden" name="determination:taxon_details" />
           <span id="insect-id-button" class="ui-state-default ui-corner-all poll-id-button" >'.lang::get('LANG_Launch_ID_Key').'</span>
 		  <span id="insect-id-cancel" class="ui-state-default ui-corner-all poll-id-cancel" >'.lang::get('LANG_Cancel_ID').'</span>
- 	      <p id="insect_taxa_list" class="taxa_list"></p>
+ 	      <p id="insect_taxa_list"></p>
  	    </div>
  	    <div class="id-specified-group">
  	      '.data_entry_helper::select($focus_insect_ctrl_args).'
-          <label for="insect:taxon_extra_info" class="follow-on">'.lang::get('LANG_More_Precise').' : </label> 
+          <label for="insect:taxon_extra_info" class="follow-on">'.lang::get('LANG_More_Precise').' </label> 
           <input type="text" id="insect:taxon_extra_info" name="determination:taxon_extra_info" class="taxon-info" />
         </div>
  	    <div class="id-comment">
-          <label for="insect:comment">'.lang::get('LANG_ID_Comment').' </label>
-          <textarea id="insect:comment" name="determination:comment" class="taxon-comment" rows="3" ></textarea>
+          <label for="insect:comment" class="follow-on">'.lang::get('LANG_ID_Comment').' </label>
+          <textarea id="insect:comment" name="determination:comment" class="taxon-comment" rows="5" ></textarea>
         </div>
-	  </div>
-      <div id="fo-new-insect-id-buttons" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active">
         <input type="submit" id="insect_id_submit_button" class="ui-state-default ui-corner-all submit-button" value="'.lang::get('LANG_Validate').'" />
-      </div>
-    </form>
-    <form id="fo-new-flower-id-form" action="'.iform_ajaxproxy_url($node, 'determination').'" method="POST" style="display: none;">
-	  <div id="fo-new-flower-id" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-top ui-accordion-content-active">
-		<p class="title">'.lang::get('LANG_New_ID').'</p>
+      </form>
+	</div>
+    <div id="fo-new-flower-id" class="ui-accordion-content ui-helper-reset ui-widget-content">
+	  <form id="fo-new-flower-id-form" action="'.iform_ajaxproxy_url($node, 'determination').'" method="POST">
 		<input type="hidden" name="website_id" value="'.$args['website_id'].'" />
-		<input type="hidden" name="determination:occurrence_id" value="" />
+    	<input type="hidden" name="determination:occurrence_id" value="" />
 		<input type="hidden" name="determination:cms_ref" value="'.$uid.'" />  
-		<input type="hidden" name="determination:person_name" value="'.$username.'" />  
+    	<input type="hidden" name="determination:person_name" value="'.$username.'" />  
 		<input type="hidden" name="determination:email_address" value="'.$email.'" />';
-		if(user_access('IForm n'.$node->nid.' flower expert')){
-			$r .= '		<label for="fo-flower-expert-det-type" class="follow-on">'.lang::get('Status').' : </label><select id="fo-flower-expert-det-type" name="determination:determination_type" /><option value="C" selected>'.lang::get('LANG_Det_Type_C').'</option><option value="X">'.lang::get('LANG_Det_Type_X').'</option></select>';
-		} else {
-			$r .= '		<input type="hidden" name="determination:determination_type" value="A" />';
-		}
+	if(user_access('IForm n'.$node->nid.' flower expert')){
+		$r .= '		<select id="fo-flower-expert-det-type" name="determination:determination_type" />
+			<option value="C" selected>'.lang::get('LANG_Det_Type_C').'</option>
+			<option value="X">'.lang::get('LANG_Det_Type_X').'</option>
+		</select>';
+	} else {
+		$r .= '		<input type="hidden" name="determination:determination_type" value="A" />';
+	}
 		$r .= '		<div class="id-tool-group">
           <input type="hidden" name="determination:taxon_details" />
           <span id="flower-id-button" class="ui-state-default ui-corner-all poll-id-button" >'.lang::get('LANG_Launch_ID_Key').'</span>
@@ -1091,21 +999,18 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
  	    </div>
  	    <div class="id-specified-group">
  	      '.data_entry_helper::select($focus_flower_ctrl_args).'
-          <label for="flower:taxon_extra_info" class="follow-on">'.lang::get('LANG_More_Precise').' : </label> 
+          <label for="flower:taxon_extra_info" class="follow-on">'.lang::get('LANG_More_Precise').' </label> 
           <input type="text" id="flower:taxon_extra_info" name="determination:taxon_extra_info" class="taxon-info" />
         </div>
  	    <div class="id-comment">
-          <label for="flower:comment">'.lang::get('LANG_ID_Comment').' </label>
-          <textarea id="flower:comment" name="determination:comment" class="taxon-comment" rows="3" ></textarea>
+          <label for="flower:comment" class="follow-on">'.lang::get('LANG_ID_Comment').' </label>
+          <textarea id="flower:comment" name="determination:comment" class="taxon-comment" rows="5" ></textarea>
         </div>
-	  </div>
-      <div id="fo-new-flower-id-buttons" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active">
         <input type="submit" id="flower_id_submit_button" class="ui-state-default ui-corner-all submit-button" value="'.lang::get('LANG_Validate').'" />
-      </div>
-	</form>
-	<form id="fo-express-doubt-form" action="'.iform_ajaxproxy_url($node, 'determination').'" method="POST" style="display: none;">
-	  <div id="fo-express-doubt" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-top ui-accordion-content-active">
-	    <p class="title">'.lang::get('LANG_Doubt').'</p>
+      </form>
+	</div>
+	<div id="fo-express-doubt" class="ui-accordion-content ui-helper-reset ui-widget-content">
+	  <form id="fo-express-doubt-form" action="'.iform_ajaxproxy_url($node, 'determination').'" method="POST">
 		<input type="hidden" name="website_id" value="'.$args['website_id'].'" />
     	<input type="hidden" name="determination:occurrence_id" value="" />
 		<input type="hidden" name="determination:cms_ref" value="'.$uid.'" />  
@@ -1115,38 +1020,39 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
         <input type="hidden" name="determination:taxon_extra_info" />
         <input type="hidden" name="determination:taxa_taxon_list_id" />
  	    <div class="doubt-comment">
-          <label for="determination:comment">'.lang::get('LANG_Doubt_Comment').' </label>
-          <textarea id="determination:comment" name="determination:comment" class="taxon-comment" rows="3" ></textarea>
+          <label for="determination:comment" class="follow-on">'.lang::get('LANG_Doubt_Comment').' </label>
+          <textarea id="determination:comment" name="determination:comment" class="taxon-comment" rows="5" ></textarea>
         </div>
-      </div>
-      <div id="fo-express-doubt-buttons" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active">
         <input type="submit" id="doubt_submit_button" class="ui-state-default ui-corner-all submit-button" value="'.lang::get('LANG_Validate').'" />
-      </div>
-    </form>
+      </form>
+	</div>
 	
-	<div id="fo-localisation-info" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-top ui-accordion-content-active">
+	<div id="fo-id-history" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active"></div>
+	<div id="fo-id-buttons" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active">
+		<div id="fo-new-insect-id-button" class="ui-state-default ui-corner-all new-id-button">'.lang::get('LANG_New_ID').'</div>
+		<div id="fo-new-flower-id-button" class="ui-state-default ui-corner-all new-id-button">'.lang::get('LANG_New_ID').'</div>
+		<div id="fo-doubt-button" class="ui-state-default ui-corner-all doubt-button">'.lang::get('LANG_Doubt').'</div>
+    </div>
+	<div id="fo-localisation-info" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active">
 	    <span class="addn-info-title">'.lang::get('LANG_INSEE_Localisation').'</span>
-	    <p>'.lang::get('LANG_Locality_Commune').' : <span id="fo-locality-commune"></span></p>
-	    <p>'.lang::get('LANG_Locality_Department').' : <span id="fo-locality-department"></span></p>
-	    <p>'.lang::get('LANG_Locality_Region').' : <span id="fo-locality-region"></span></p>
+	    <p>'.lang::get('LANG_Locality_Commune').' : <span id="fo-locality-commune">TEST - TBD REMOVE</span></p>
+	    <p>'.lang::get('LANG_Locality_Department').' : <span id="fo-locality-department">TEST - TBD REMOVE</span></p>
+	    <p>'.lang::get('LANG_Locality_Region').' : <span id="fo-locality-region">TEST - TBD REMOVE</span></p>
     </div>
 	<div id="fo-insect-addn-info" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active">
 	    <span class="addn-info-title">'.lang::get('LANG_Additional_Info_Title').'</span>
-	    <p>'.lang::get('LANG_Date').' : <span id="fo-insect-date"></span></p>
-	    <p>'.lang::get('LANG_Time').' : <span id="fo-insect-start-time"></span> '.lang::get('LANG_To').' <span id="fo-insect-end-time"></span></p>
+	    <p>'.lang::get('LANG_Date').': <span id="fo-insect-date"></span></p>
+	    <p>'.lang::get('LANG_Time').': <span id="fo-insect-start-time"></span> '.lang::get('LANG_To').' <span id="fo-insect-end-time"></span></p>
 	    <p>'.$sample_attributes[$skyAttrID]['caption'].': <span id="fo-insect-sky"></span></p>
 	    <p>'.$sample_attributes[$temperatureAttrID]['caption'].': <span id="fo-insect-temp"></span></p>
 	    <p>'.$sample_attributes[$windAttrID]['caption'].': <span id="fo-insect-wind"></span></p>
 	    <p>'.$sample_attributes[$shadeAttrID]['caption'].': <span id="fo-insect-shade"></span></p>
 	    <p>'.$occurrence_attributes[$foragingAttrID]['caption'].': <span id="fo-insect-foraging">TEST - TBD REMOVE</span></p>
 	</div>
-
 	<div id="fo-flower-addn-info" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active">
-	    <span class="addn-info-title">'.lang::get('LANG_Additional_Info_Title').'</span>
 	    <p>'.$occurrence_attributes[$flowerTypeAttrID]['caption'].': <span id="focus-flower-type"></span></p>
 	    <p>'.$location_attributes[$habitatAttrID]['caption'].': <span id="focus-habitat"></span></p>
 	</div>
-
 	<div id="fo-comments-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top">
 	    <div id="fo-new-comment-button" class="ui-state-default ui-corner-all new-comment-button">'.lang::get('LANG_New_Comment').'</div>
 		<span>'.lang::get('LANG_Comments_Title').'</span>
@@ -1155,11 +1061,11 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
 		<form id="fo-new-comment-form" action="'.iform_ajaxproxy_url($node, 'occ-comment').'" method="POST">
 		    <input type="hidden" name="website_id" value="'.$args['website_id'].'" />
     		<input type="hidden" name="occurrence_comment:occurrence_id" value="" />
-    		<label for="occurrence_comment:person_name">'.lang::get('LANG_Username').' :</label>
+    		<label for="occurrence_comment:person_name">'.lang::get('LANG_Username').':</label>
 		    <input type="text" name="occurrence_comment:person_name" value="'.$username.'" readonly="readonly" />  
-    		<label for="occurrence_comment:email_address">'.lang::get('LANG_Email').' :</label>
+    		<label for="occurrence_comment:email_address">'.lang::get('LANG_Email').':</label>
 		    <input type="text" name="occurrence_comment:email_address" value="'.$email.'" readonly="readonly" />
-		    '.data_entry_helper::textarea(array('label'=>lang::get('LANG_Comment').' ', 'fieldname'=>'occurrence_comment:comment', 'class'=>'required', 'suffixTemplate'=>'nosuffix')).'
+		    '.data_entry_helper::textarea(array('label'=>lang::get('LANG_Comment'), 'fieldname'=>'occurrence_comment:comment', 'class'=>'required', 'suffixTemplate'=>'nosuffix')).'
     		<input type="submit" id="comment_submit_button" class="ui-state-default ui-corner-all submit-button" value="'.lang::get('LANG_Submit_Comment').'" />
     	</form>
 	</div>
@@ -1328,21 +1234,9 @@ jQuery('#flower-image,#show-flower-button').click(function(){
 });
 
 jQuery('#fo-doubt-button').click(function(){
-	jQuery('#fo-new-insect-id-form,#fo-new-flower-id-form').hide();
-	jQuery('#fo-express-doubt-form [name=determination\\:comment]').val(\"".lang::get('LANG_Default_Doubt_Comment')."\");
-	if(jQuery('#fo-express-doubt-form').filter(':visible').length>0) {
-	  jQuery('#fo-express-doubt-form').hide();
-	  if(!jQuery('#fo-id-history').hasClass('empty')){
-		jQuery('#fo-id-history').addClass('ui-accordion-content-active');
-		jQuery('#fo-id-buttons').removeClass('ui-corner-bottom');
-	  }
-	} else {
-	  jQuery('#fo-express-doubt-form').show();
-	  if(!jQuery('#fo-id-history').hasClass('empty')){
-		jQuery('#fo-id-history').removeClass('ui-accordion-content-active');
-		jQuery('#fo-id-buttons').addClass('ui-corner-bottom');
-	  }
-	}
+	jQuery('#fo-new-insect-id,#fo-new-flower-id').removeClass('ui-accordion-content-active');
+	jQuery('#fo-express-doubt [name=determination\\:comment]').val(\"".lang::get('LANG_Default_Doubt_Comment')."\");
+	jQuery('#fo-express-doubt').toggleClass('ui-accordion-content-active');
 });
 
 jQuery('#fc-next-button,#fc-prev-button').click(function(){
@@ -1353,8 +1247,7 @@ jQuery('#fc-next-button,#fc-prev-button').click(function(){
 
 jQuery('#fc-filter-button,#fo-filter-button').click(function(){
     jQuery('#filter').show();
-    jQuery('#poll-banner').empty();
-    jQuery('#focus-occurrence,#focus-collection,#results-insects-header,#results-collections-header,#results-insects-results,#results-collections-results').hide();
+	jQuery('#focus-occurrence,#focus-collection,#results-insects-header,#results-collections-header,#results-insects-results,#results-collections-results').hide();
     loadFilter();
     if(searchResults != null){
     	if(searchResults.type == 'C')
@@ -1390,7 +1283,7 @@ jQuery('form#bulk-validation-form').ajaxForm({
 	success:   function(data){
 		if(data.error == undefined){
 			var form = jQuery('form#bulk-validation-form');
-			jQuery('.filter-insect-container').filter('[occID='+form.find('[name=determination\\:occurrence_id]').val()+']').find('.occurrence-dubious,.insect-ok').removeClass('occurrence-dubious insect-ok').addClass('occurrence-valid');
+			jQuery('.filter-insect').filter('[occID='+form.find('[name=determination\\:occurrence_id]').val()+']').find('.insect-dubious,.insect-ok').removeClass('insect-dubious insect-ok').addClass('insect-valid');
 			jQuery('.collection-flower-determination').filter('[occID='+form.find('[name=determination\\:occurrence_id]').val()+']').find('.flower-dubious,.flower-ok').remove();
 			jQuery('.collection-flower-determination').filter('[occID='+form.find('[name=determination\\:occurrence_id]').val()+']').find('p').append('<span class=\"flower-valid\"><img src=\"/misc/watchdog-ok.png\" style=\"vertical-align: middle;\"></span>').find('.flower-dubious').remove();
 			uploadValidation();
@@ -1420,7 +1313,7 @@ uploadValidation = function(){
 		if(jQuery('#results-collections-results').filter(':visible').length > 0)
 			todolist =jQuery('.collection-flower-determination').find('.flower-dubious,.flower-ok').parent();
 		else
-			todolist =jQuery('.filter-insect-container').find('.occurrence-dubious,.insect-ok');
+			todolist =jQuery('.filter-insect').find('.insect-dubious,.insect-ok');
 		var completed = max - todolist.length;
 		jQuery('#validate-page-progress').progressbar('option','value',completed*100/max);
 		if(todolist.length>0){
@@ -1443,7 +1336,7 @@ uploadValidation = function(){
 					form.find('[name=determination\\:taxa_taxon_list_id]').val(detData[0].taxa_taxon_list_id);
 					form.data('taxa_taxon_list_id_list_string',detData[0].taxa_taxon_list_id_list);
 					form.find('[name=determination\\:taxon_details]').val(detData[0].taxon_details);
-					form.find('[name=determination\\:taxon_extra_info]').val(detData[0].taxon_extra_info == null ? '' : detData[0].taxon_extra_info);
+					form.find('[name=determination\\:taxon_extra_info]').val(detData[0].taxon_extra_info);
 					jQuery('form#bulk-validation-form').submit();
 				} else {
 					uploadValidation();
@@ -1475,12 +1368,12 @@ bulkValidateFinish=function(message){
 }
 jQuery('.cancel-validate-button').click(function(){bulkCancel=true;});
 jQuery('#validate-page-button').click(function(){
-	// first of all we only validate insect-ok and occurrence-dubious.
+	// first of all we only validate insect-ok and insect-dubious.
 	var max;
 	if(jQuery('#results-collections-results').filter(':visible').length > 0)
 		max =jQuery('.collection-flower-determination').find('.flower-dubious,.flower-ok').length;
 	else
-		max =jQuery('.filter-insect-container').find('.occurrence-dubious,.insect-ok').length;
+		max =jQuery('.filter-insect').find('.insect-dubious,.insect-ok').length;
 	bulkValidatePrep(true, max);
 	if(max==0){
 		bulkValidateFinish(\"".lang::get('LANG_Bulk_Page_Nothing_To_Do')."\");
@@ -1492,7 +1385,7 @@ jQuery('#validate-page-button').click(function(){
 	}
 });
 jQuery('#validate-taxon-button').click(function(){
-	// first of all we only validate insect-ok and occurrence-dubious.
+	// first of all we only validate insect-ok and insect-dubious.
 	var max=0;
 	if(searchResults!= null) max=searchResults.features.length;
 	bulkValidatePrep(false, max);
@@ -1541,7 +1434,7 @@ loadCollection = function(id, index){
 	collection_preferred_object.collection_id = id;
 	jQuery('#fc-new-comment-button').".(user_access('IForm n'.$node->nid.' create collection comment') ? "show()" : "hide()").";
 	jQuery('#fc-new-comment').removeClass('ui-accordion-content-active');
-	jQuery('#fc-new-location,#fc-new-location-desc').".(user_access('IForm n'.$node->nid.' edit geolocation') ? "show()" : "hide()").";
+	jQuery('#fc-new-location').".(user_access('IForm n'.$node->nid.' edit geolocation') ? "show()" : "hide()").";
 	jQuery('#focus-occurrence,#filter,#fc-next-button,#fc-prev-button').hide();
 	jQuery('#flower-image,#environment-image').empty().addClass('loading');
 	jQuery('#collection-insects,#collection-date,#collection-flower-name,#collection-flower-type,#collection-habitat,#collection-user-name').empty();
@@ -1601,14 +1494,13 @@ loadCollection = function(id, index){
 							for(var j=0; j < resultsIDs.length; j++){
 								for(k = 0; k< flowerTaxa.length; k++){
 									if(flowerTaxa[k].id == resultsIDs[j]){
-										string = (string == '' ? '' : string + ', ') + htmlspecialchars(flowerTaxa[k].taxon);
-										break;
+										string = (string == '' ? '' : string + ', ') + flowerTaxa[k].taxon; // already specialchared
 									}
 								};
 					  		}
 					  	}
 					}
-		  			if(detData[0].taxon_extra_info != '' && detData[0].taxon_extra_info != null && detData[0].taxon_extra_info != 'null'){
+		  			if(detData[0].taxon_extra_info != '' && detData[0].taxon_extra_info != null){
 						string = (string == '' ? '' : string + ' ') + '('+htmlspecialchars(detData[0].taxon_extra_info)+')';
 					}
 					jQuery('<span>".lang::get('LANG_Flower_Name').": <span class=\"collection-value\">'+string+'</span></span>').appendTo('#collection-flower-name');
@@ -1653,7 +1545,7 @@ loadCollection = function(id, index){
 							collection_preferred_object.user_id = attrdata[i].value
 			       		    jQuery('#collection-user-link').attr('href', '".url('node/'.$node->nid)."?user_id='+attrdata[i].value);
 							if(attrdata[i].value == ".$user->uid.") { // user can edit geolocation of own collections.
-								jQuery('#fc-new-location,#fc-new-location-desc').show();
+								jQuery('#fc-new-location').show();
 								jQuery('#map2')[0].map.editLayer.clickControl.activate();
 							}
 			       		    break;";
@@ -1666,8 +1558,6 @@ loadCollection = function(id, index){
 								.attr('checked', 'checked');
 							break;";
     }
-    $base = base_path();
-    if(substr($base, -1)!='/') $base.='/';
 	data_entry_helper::$javascript .= "
     }}}}}));
 	ajaxStack.push($.getJSON(\"".$svcUrl."/data/sample/\" +id+
@@ -1721,7 +1611,7 @@ loadCollection = function(id, index){
 						if (attrdata[i].id){
 							switch(parseInt(attrdata[i].location_attribute_id)){
 								case ".$habitatAttrID.":
-									if (attrdata[i].raw_value > 0) habitat_string = (habitat_string == '' ? convertTerm(attrdata[i].raw_value) : (habitat_string + ' / ' + convertTerm(attrdata[i].raw_value)));
+									if (attrdata[i].raw_value > 0) habitat_string = (habitat_string == '' ? convertTerm(attrdata[i].raw_value) : (habitat_string + ', ' + convertTerm(attrdata[i].raw_value)));
 									break;
 					}}}
 					jQuery('<span>'+habitat_string+'</span>').appendTo('#collection-habitat');
@@ -1742,7 +1632,7 @@ loadCollection = function(id, index){
    			// code has been changed to fetch all insects at once, so we can now go async
 			for (var i=0;i<sessiondata.length;i++)
 				sessList.push(sessiondata[i].id);
-				ajaxStack.push(jQuery.ajax({
+			ajaxStack.push(jQuery.ajax({
 					url: \"".$svcUrl."/data/occurrence?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&deleted=f&orderby=id&REMOVEABLEJSONP&callback=?&query=\"+escape(escape(JSON.stringify({'in': {'sample_id': sessList}}))),
 					dataType: 'json',
 					myIndex: this.myIndex,
@@ -1750,25 +1640,20 @@ loadCollection = function(id, index){
 					  if(!(insectData instanceof Array)){
    						alertIndiciaError(insectData);
    		  			  } else if (insectData.length>0) {
-					   var n=0;
-					   // there seems to be an upper limit on how many can be done at one time - so restrict to 20 at a time
-				 	   while(n<insectData.length){
-   						var insectIDs=[];
-						for (var j=0;j<20 && n<insectData.length; j++,n++){
-							insectIDs.push(insectData[n].id);
-							var insect=jQuery('<div class=\"collection-insect-container\" />').attr('occID', insectData[n].id).appendTo('#collection-insects');
-							if(n/".$args['insectsPerRow']." == parseInt(n/".$args['insectsPerRow'].")) insect.addClass('start-of-row');
-							if((n+1)/".$args['insectsPerRow']." == parseInt((n+1)/".$args['insectsPerRow'].")) insect.addClass('end-of-row');
-							insect = jQuery('<div class=\"ui-widget-content ui-corner-all collection-insect\" />').appendTo(insect);
-							jQuery('<p class=\"insect-tag determination-flag centre-flag occurrence-unknown\" />').appendTo(insect);
-							var image = jQuery('<div class=\"insect-image empty loading\" />').appendTo(insect).data('occID',insectData[n].id)
+   		  				var insectIDs=[];
+						for (var j=0;j<insectData.length;j++){
+							insectIDs.push(insectData[j].id);
+							var insect=jQuery('<div class=\"ui-widget-content ui-corner-all collection-insect\" />').attr('occID', insectData[j].id).appendTo('#collection-insects');
+							if((j+1)/".$args['insectsPerRow']." == parseInt((j+1)/".$args['insectsPerRow'].")) insect.addClass('end-of-row');
+							jQuery('<p class=\"insect-tag insect-unknown\" />').appendTo(insect);
+							var image = jQuery('<div class=\"insect-image empty loading\" />').appendTo(insect).data('occID',insectData[j].id)
 									.data('collectionIndex',this.myIndex).click(function(){
 								loadInsect(jQuery(this).data('occID'),jQuery(this).data('collectionIndex'),null,'C');								
 							});
 							image.height(image.width()/(".$args['Insect_Image_Ratio']."));
 							jQuery('<p class=\"insect-determination empty\" />').appendTo(insect);
 							jQuery('<div class=\"ui-state-default ui-corner-all display-button\">".lang::get('LANG_Display')."</div>')
-									.appendTo(insect).attr('occID',insectData[n].id).data('collectionIndex',this.myIndex).data('collectionInsectIndex',j).click(function(){
+									.appendTo(insect).attr('occID',insectData[j].id).data('collectionIndex',this.myIndex).data('collectionInsectIndex',j).click(function(){
 								loadInsect(jQuery(this).attr('occID'),jQuery(this).data('collectionIndex'),null,'C');								
 							});
 						}
@@ -1780,7 +1665,7 @@ loadCollection = function(id, index){
 									alertIndiciaError(imageData);
 								} else if (imageData.length>0) {
 									for (var k=0;k<imageData.length;k++){
-										var target = jQuery('.collection-insect-container').filter('[occID='+imageData[k].occurrence_id+']').find('.insect-image');
+										var target = jQuery('.collection-insect').filter('[occID='+imageData[k].occurrence_id+']').find('.insect-image');
 										target.empty().removeClass('empty');
 										insertImage('med-', imageData[k].path, target, ".$args['Insect_Image_Ratio'].", false, false);
 										collection_preferred_object.insects.push({insect_id: imageData[k].occurrence_id, insect_image_path: imageData[k].path})
@@ -1794,7 +1679,7 @@ loadCollection = function(id, index){
 									} else {
 										if (detData.length>0) {
 											for (var k=0;k<detData.length;k++){
-												var insect = jQuery('.collection-insect-container').filter('[occID='+detData[k].occurrence_id+']');
+												var insect = jQuery('.collection-insect').filter('[occID='+detData[k].occurrence_id+']');
 												var det = insect.find('.insect-determination').filter('.empty');
 												if(det.length>0){
 													var string = '';
@@ -1807,35 +1692,31 @@ loadCollection = function(id, index){
 															for(var j=0; j < resultsIDs.length; j++){
 																for(var m = 0; m< insectTaxa.length; m++){
 																	if(insectTaxa[m].id == resultsIDs[j]){
-																		string = (string == '' ? '' : string + ', ') + htmlspecialchars(insectTaxa[m].taxon);
-																		break;
+																		string = (string == '' ? '' : string + ', ') + insectTaxa[m].taxon;
 																	}}}}}
 													// we use the short determination data here - no extra info
 													det.empty().removeClass('empty');
 													if(string != '')
 														jQuery('<div><p>".lang::get('LANG_Last_ID').":</p><p><strong>'+string+'</strong></p></div>').addClass('insect-id').appendTo(det);
-													var tag = insect.find('.insect-tag').removeClass('occurrence-unknown');
+													var tag = insect.find('.insect-tag').removeClass('insect-unknown');
 													if(detData[k].determination_type == 'B' || detData[k].determination_type == 'I' || detData[k].determination_type == 'U'){
-														tag.addClass('occurrence-dubious');
+														tag.addClass('insect-dubious');
 													} else if(detData[k].determination_type == 'C'){
-														tag.addClass('occurrence-valid');
+														tag.addClass('insect-valid');
 													} else {
 														tag.addClass('insect-ok');
 													}
 												}
 											}
 										}
+										var group = jQuery('#collection-insects').find('.collection-insect');
+										var tallest = 0;
+										group.each(function(){ tallest = Math.max($(this).height(), tallest); });
+										group.each(function(){ $(this).height(Math.max($(this).height(), tallest)); }); // have synchronicity problems.
 						}}));
-					  }}
+					  }
 					}
-				}));
-				jQuery('#collection-insects').ajaxStop(function(event){
-					var group = jQuery('#collection-insects').find('.collection-insect');
-					var tallest = 0;
-					group.each(function(){ tallest = Math.max($(this).height(), tallest); });
-					group.each(function(){ $(this).height(Math.max($(this).height(), tallest)); }); // have synchronicity problems.
-					$(this).unbind(event);
-				});
+				})); 
 			}}
 	    }));
 	myScrollTo('#poll-banner');
@@ -1908,18 +1789,15 @@ addCollection = function(index, attributes, geom, first){
 		    	if(!(insectData instanceof Array)){
    					alertIndiciaError(insectData);
    				} else if (insectData.length>0) {
-				  var n=0;
-				  // there seems to be an upper limit on how many can be done at one time - so restrict to 20 at a time
-				  while(n<insectData.length){
    					var insectIDs=[];
-					for (var j=0;j<20 && n<insectData.length; j++,n++){
-						var container = jQuery('<div/>').addClass('thumb loading').attr('occID', insectData[n].id.toString()).data('collectionIndex',index).data('determination',false).data('image',false).click(function () {
+					for (var j=0;j<insectData.length;j++){
+						var container = jQuery('<div/>').addClass('thumb thumb-new loading').attr('occID', insectData[j].id.toString()).data('collectionIndex',index).click(function () {
 							loadInsect(jQuery(this).attr('occID'),jQuery(this).data('collectionIndex'),null,'P');
 						});
-						jQuery('.photoreel-session').filter('[sessID='+insectData[n].sample_id+']').append(container);
-						insectIDs.push(insectData[n].id);
+						jQuery('<span>".lang::get('LANG_Unknown')."</span>').addClass('thumb-text').appendTo(container);
+						jQuery('.photoreel-session').filter('[sessID='+insectData[j].sample_id+']').append(container);
+						insectIDs.push(insectData[j].id);
 					}
-					// Not all insects will have determinations, but they will all have images
 					$.getJSON(\"".$svcUrl."/data/determination\" + 
 							\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" + 
 							\"&orderby=id&sortdir=DESC&deleted=f&callback=?&query=\"+escape(escape(JSON.stringify({'in': {'occurrence_id': insectIDs}}))), function(detData) {
@@ -1927,78 +1805,32 @@ addCollection = function(index, attributes, geom, first){
    							alertIndiciaError(detData);
    						} else if (detData.length>0) {
 							for (var k=0;k<detData.length;k++){
-								var container = jQuery('.thumb').filter('[occID='+detData[k].occurrence_id.toString()+']');
+								var container = jQuery('.thumb-new').filter('[occID='+detData[k].occurrence_id.toString()+']');
 								if(container.length > 0){
-									if(container.data('determination')===false) {
-										container.data('determination',detData[k]);
-										if(container.data('image')!==false){
-											// image already loaded, but will have been flagged as unknown.
-											var img = new Image();
-											var src = '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."thumb-'+container.data('image').path;
-											var background = '';
-											switch(detData[k].determination_type){
-												case 'B':
-  												case 'I':
-  												case 'U':
-													background=src;
-													src = '".drupal_get_path('module', 'iform')."/client_helpers/prebuilt_forms/images/boundary-doubtful.png';
-												case 'A':
-												case 'C':
-												case 'R':
-													container.empty();  // loading class already removed.
-													img = jQuery(img).attr('src', src).attr('width', container.width()).attr('height', container.height()).addClass('thumb-image').appendTo(container);
-													if(background!='') img.css('background', 'url('+background+')').css('background-size','100% 100%');
-												case 'X': // unidentified, leave as is.
-													break;
-											}
-										}
+									container.removeClass('thumb-new').find('.thumb-text').remove();
+									if(detData[k].determination_type == 'B' || detData[k].determination_type == 'I' || detData[k].determination_type == 'U'){
+										jQuery('<span class=\"thumb-text\">".lang::get('LANG_Dubious')."</span>').appendTo(container);
 									}
 								}
 							}
   					}});
 					$.getJSON(\"".$svcUrl."/data/occurrence_image\" +
 							\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-   							\"&orderby=id&sortdir=DESC&callback=?&query=\"+escape(escape(JSON.stringify({'in': {'occurrence_id': insectIDs}}))), function(imageData) {
+   							\"&callback=?&query=\"+escape(escape(JSON.stringify({'in': {'occurrence_id': insectIDs}}))), function(imageData) {
 						if(!(imageData instanceof Array)){
    							alertIndiciaError(imageData);
    						} else if (imageData.length>0) { // thumbs are fixed in size, and small - dont worry about ratios
    							for (var j=0;j<imageData.length;j++){
 								var container = jQuery('.thumb').filter('[occID='+imageData[j].occurrence_id.toString()+']');
-								if(container.length > 0){
-									if(container.data('image')===false){
-										container.empty().removeClass('loading').data('image',imageData[j]);
-										var img = new Image();
-										var background = '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."thumb-'+imageData[j].path;
-  										var src = '".drupal_get_path('module', 'iform')."/client_helpers/prebuilt_forms/images/boundary-unknown.png';
-  										if(container.data('determination')!==false){
-											switch(container.data('determination').determination_type){
-												case 'B':
-  												case 'I':
-  												case 'U':
-													src = '".drupal_get_path('module', 'iform')."/client_helpers/prebuilt_forms/images/boundary-doubtful.png';
-													break;
-												case 'A':
-												case 'C':
-												case 'R':
-													src=background;
-													background='';
-													break;
-												case 'X': // unidentified, leave as is.
-													break;
-											}
-										}
-										container.empty();  // loading class already removed.
-										img = jQuery(img).attr('src', src).attr('width', container.width()).attr('height', container.height()).addClass('thumb-image').appendTo(container);
-										if(background!='') img.css('background', 'url('+background+')').css('background-size','100% 100%');
-									}
-								}
-			    			}}})
-			      }; 
+								var img = new Image();
+								jQuery(img).load(function () {jQuery(this).parent().removeClass('loading');}).attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."thumb-'+imageData[j].path)
+			    					.attr('width', container.width()).attr('height', container.height()).addClass('thumb-image').appendTo(container);
+			    			}}}); 
 			}});
 		}});
 	$.getJSON(\"".$svcUrl."/data/determination\" + 
 			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" + 
-			\"&reset_timeout=true&deleted=f&orderby=id&sortdir=DESC&deleted=f&callback=?&occurrence_id=\"+attributes.flower_id,
+			\"&reset_timeout=true&orderby=id&sortdir=DESC&deleted=f&callback=?&occurrence_id=\"+attributes.flower_id,
 		function(detData) {
 			if(!(detData instanceof Array)){
 				alertIndiciaError(detData);
@@ -2017,14 +1849,13 @@ addCollection = function(index, attributes, geom, first){
 									for(var j=0; j < resultsIDs.length; j++){
 										for(var k = 0; k< flowerTaxa.length; k++){
 											if(flowerTaxa[k].id == resultsIDs[j]){
-												string = (string == '' ? '' : string + ', ') + htmlspecialchars(flowerTaxa[k].taxon);
-												break;
+												string = (string == '' ? '' : string + ', ') + flowerTaxa[k].taxon;
 							}}}}}
-							if(detData[i].taxon_extra_info != '' && detData[i].taxon_extra_info != null && detData[i].taxon_extra_info != 'null'){
+							if(detData[i].taxon_extra_info != '' && detData[i].taxon_extra_info != null){
 								string = (string == '' ? '' : string + ' ') + '('+htmlspecialchars(detData[i].taxon_extra_info)+')';
 							}
 							if(detData[i].determination_type == 'B' || detData[i].determination_type == 'I' || detData[i].determination_type == 'U'){
-								string='<span class=\"flower-dubious\"><img src=\"".$base.drupal_get_path('module', 'iform')."/client_helpers/prebuilt_forms/images/occ_doubtful.png\" style=\"vertical-align: middle;\"></span>'+string;
+								string=string+'<span class=\"flower-dubious\"><img src=\"/misc/occ_doubtful.png\" style=\"vertical-align: middle;\"></span>';
 							} else if(detData[i].determination_type == 'C'){
 								string=string+'<span class=\"flower-valid\"><img src=\"/misc/watchdog-ok.png\" style=\"vertical-align: middle;\"></span>';
 							} else string=string+'<span class=\"flower-ok\"></span>';
@@ -2033,10 +1864,9 @@ addCollection = function(index, attributes, geom, first){
 	}});
 };
 addInsect = function(index, attributes, endOfRow, first){
-	var container=jQuery('<div class=\"filter-insect-container\" />').attr('occID',attributes.insect_id).appendTo('#results-insects-results');
+	var container=jQuery('<div class=\"ui-widget-content ui-corner-all filter-insect\" />').attr('occID',attributes.insect_id).appendTo('#results-insects-results');
 	if(endOfRow) container.addClass('end-of-row');
-	var container=jQuery('<div class=\"ui-widget-content ui-corner-all filter-insect\" />').appendTo(container);
-	jQuery(\"<div class='determination-flag centre-flag occurrence-unknown'/>\").appendTo(container); // flag
+	jQuery('<div />').addClass('insect-unknown').appendTo(container); // flag
 	var insect = jQuery('<div class=\"insect-image empty\" />').data('occID',attributes.insect_id).data('insectIndex',index).click(function(){
 		loadInsect(jQuery(this).data('occID'), null, jQuery(this).data('insectIndex'), 'S');
 	}).appendTo(container);
@@ -2069,18 +1899,17 @@ addInsectDeterminations = function(insects){
 									for(var j=0; j < resultsIDs.length; j++){
 										for(var k = 0; k< insectTaxa.length; k++){
 											if(insectTaxa[k].id == resultsIDs[j]){
-												string = (string == '' ? '' : string + ', ') + htmlspecialchars(insectTaxa[k].taxon);
-												break;
+												string = (string == '' ? '' : string + ', ') + insectTaxa[k].taxon;
 							}}}}}
-							if(detData[i].taxon_extra_info != '' && detData[i].taxon_extra_info != null && detData[i].taxon_extra_info != 'null'){
+							if(detData[i].taxon_extra_info != '' && detData[i].taxon_extra_info != null){
 								string = (string == '' ? '' : string + ' ') + '('+htmlspecialchars(detData[i].taxon_extra_info)+')';
 							}
 							determination.empty().removeClass('empty').append('<p>'+string+'</p>');
-							var flag = determination.parent().find('.occurrence-unknown').removeClass('occurrence-unknown');
+							var flag = determination.parent().find('.insect-unknown').removeClass('insect-unknown');
 							if(detData[i].determination_type == 'B' || detData[i].determination_type == 'I' || detData[i].determination_type == 'U'){
-								flag.addClass('occurrence-dubious');
+								flag.addClass('insect-dubious');
 							} else if(detData[i].determination_type == 'C'){
-								flag.addClass('occurrence-valid');
+								flag.addClass('insect-valid');
 							} else 
 								flag.addClass('insect-ok');
 				}}}
@@ -2291,33 +2120,7 @@ flowerIDstruc = {
 	determinationType: '".(user_access('IForm n'.$node->nid.' flower expert') ? 'C' : 'A')."',
 	taxaList: flowerTaxa
 };
-// we have a problem if the ID tool broadcasts that it is outputting in 8859, but actually does utf-8
-// doff cap to php.js
-function utf8_decode (str_data) {
-    var tmp_arr = [],
-        i = 0,
-        ac = 0,
-        c1 = 0,
-        c2 = 0,
-        c3 = 0;
- 
-    str_data += '';
- 
-    while (i < str_data.length) {        c1 = str_data.charCodeAt(i);
-        if (c1 < 128) {
-            tmp_arr[ac++] = String.fromCharCode(c1);
-            i++;
-        } else if (c1 > 191 && c1 < 224) {            c2 = str_data.charCodeAt(i + 1);
-            tmp_arr[ac++] = String.fromCharCode(((c1 & 31) << 6) | (c2 & 63));
-            i += 2;
-        } else {
-            c2 = str_data.charCodeAt(i + 1);            c3 = str_data.charCodeAt(i + 2);
-            tmp_arr[ac++] = String.fromCharCode(((c1 & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63));
-            i += 3;
-        }
-    } 
-    return tmp_arr.join('');
-}
+
 toolPoller = function(toolStruct){
 	if(toolStruct.pollFile == '') return;
 	toolStruct.pollTimer = setTimeout('toolPoller('+toolStruct.name+');', ".$args['ID_tool_poll_interval'].");
@@ -2326,34 +2129,33 @@ toolPoller = function(toolStruct){
 	 toolStruct: toolStruct,
 	 success: function(data){
 	  pollReset(this.toolStruct);
-".(isset($args['ID_tool_convert_strings']) && $args['ID_tool_convert_strings'] ? "	  data=utf8_decode(data);\n" : "" )."	  var da = data.split('\\n');
+	  var da = data.split('\\n');
       jQuery(this.toolStruct.mainForm+' [name=determination\\:taxon_details]').val(da[2]); // Stores the state of identification, which details how the identification was arrived at within the tool.
 	  da[1] = da[1].replace(/\\\\i\{\}/g, '').replace(/\\\\i0\{\}/g, '').replace(/\\\\/g, '');
 	  var items = da[1].split(':');
 	  var count = items.length;
 	  if(items[count-1] == '') count--;
-	  if(items[count-1] == '') count--;	  
+	  if(items[count-1] == '') count--;
 	  if(count <= 0){
 	  	// no valid stuff so blank it all out.
 	  	jQuery('#'+this.toolStruct.type+'_taxa_list').append(\"".lang::get('LANG_Taxa_Unknown_In_Tool')."\");
 	  	jQuery(this.toolStruct.mainForm+' [name=determination\\:determination_type]').val('X'); // Unidentified.
-		jQuery('#'+this.toolStruct.type+'-id-button').data('toolRetValues', []);
       } else {
       	var resultsIDs = [];
       	var resultsText = \"".lang::get('LANG_Taxa_Returned')."<br />{ \";
       	var notFound = '';
 		for(var j=0; j < count; j++){
 			var found = false;
+			itemText = items[j].replace(/</g, '&lt;').replace(/>/g, '&gt;');
 			for(i = 0; i< this.toolStruct.taxaList.length; i++){
-				if(this.toolStruct.taxaList[i].taxon == items[j]){
+				if(this.toolStruct.taxaList[i].taxon == itemText){
 					resultsIDs.push(this.toolStruct.taxaList[i].id);
-					resultsText = resultsText + (j == 0 ? '' : '<br />&nbsp;&nbsp;') + htmlspecialchars(items[j]);
+					resultsText = resultsText + (j == 0 ? '' : '<br />&nbsp;&nbsp;') + itemText;
 					found = true;
-					break;
   				}
   			};
   			if(!found){
-  				notFound = (notFound == '' ? '' : notFound + ', ') + items[j]; // going into a input field - no special characterisation required.
+  				notFound = (notFound == '' ? '' : notFound + ', ') + itemText;
   			}
   		}
 		jQuery('#'+this.toolStruct.type+'_taxa_list').append(resultsText+ ' }');
@@ -2409,11 +2211,11 @@ expertSetUnidentified = function(toolStruct){
 	jQuery(toolStruct.mainForm+' [name=determination\\:taxa_taxon_list_id]').val('');
 	jQuery(toolStruct.mainForm+' [name=determination\\:comment]').val(\"".lang::get('LANG_Default_ID_Comment')."\");
   };
-jQuery('#fo-flower-expert-det-type').change(function(){
-	if(jQuery(this).val()=='X') expertSetUnidentified(flowerIDstruc);
+jQuery('#fo-flower-expert-det-type').click(function(){
+	expertSetUnidentified(flowerIDstruc);
 });
-jQuery('#fo-insect-expert-det-type').change(function(){
-	if(jQuery(this).val()=='X') expertSetUnidentified(insectIDstruc);
+jQuery('#fo-insect-expert-det-type').click(function(){
+	expertSetUnidentified(insectIDstruc);
 });
 
 jQuery('#flower-id-cancel').hide();
@@ -2423,8 +2225,7 @@ taxonChosen = function(toolStruct){
 	jQuery(toolStruct.mainForm+' [name=determination\\:taxon_details]').val('');
 	jQuery('#'+toolStruct.type+'_taxa_list').empty();
 	jQuery(toolStruct.mainForm+' [name=determination\\:comment]').val('');
-	jQuery(toolStruct.mainForm+' [name=determination\\:taxon_extra_info]').val('');
-	jQuery(toolStruct.mainForm+' [name=determination\\:determination_type]').val(toolStruct.determinationType);
+  	jQuery(toolStruct.mainForm+' [name=determination\\:determination_type]').val(toolStruct.determinationType);
 };
 jQuery('form#fo-new-flower-id-form select[name=determination\\:taxa_taxon_list_id]').change(function(){
 	pollReset(flowerIDstruc);
@@ -2576,7 +2377,7 @@ jQuery('#search-insee-button').click(function(){
 	place = place.toUpperCase();
 	while(place!='' && place.substring(0,1)=='*'){place=place.substring(1);}
 	while(place!='' && place.substring(place.length-1)=='*'){place=place.substring(0,place.length-1);}
-	if(place == \"".lang::get('LANG_Enter_Location')."\") return;
+	if(place.length < 3 || place == \"".lang::get('LANG_Enter_Location')."\") return;
 	jQuery('#search-insee-button').addClass('loading-button');
 	switch(jQuery('[name=place\\:INSEE_Type]').val()){";
 	$searches=explode(';',trim($args['Localisation_spec']));
@@ -2995,7 +2796,7 @@ runSearch = function(forCollections){
 		  filter: new OpenLayers.Filter.Logical({type: OpenLayers.Filter.Logical.AND, filters: filters})
 	});
 	if(forCollections) {
-		jQuery('#results-collections-results').empty().append('<div class=\"collection-loading-panel\" ><img src=\"".$base.drupal_get_path('module', 'iform')."/media/images/ajax-loader2.gif\" />".lang::get('loading')."...</div>');
+		jQuery('#results-collections-results').empty().append('<div class=\"collection-loading-panel\" ><img src=\"".helper_config::$base_url."media/images/ajax-loader2.gif\" />".lang::get('loading')."...</div>');
 		searchResultsLayer.events.register('featuresadded', {}, function(a1){
 			searchResultsLayer.events.remove('featuresadded');
 			searchResults = clusterStrategy;
@@ -3009,7 +2810,7 @@ runSearch = function(forCollections){
 			}
 		});
 	} else {
-		jQuery('#results-insects-results').empty().append('<div class=\"insect-loading-panel\" ><img src=\"".$base.drupal_get_path('module', 'iform')."/media/images/ajax-loader2.gif\" />".lang::get('loading')."...</div>');
+		jQuery('#results-insects-results').empty().append('<div class=\"insect-loading-panel\" ><img src=\"".helper_config::$base_url."media/images/ajax-loader2.gif\" />".lang::get('loading')."...</div>');
 		searchResultsLayer.events.register('featuresadded', {}, function(a1){
 			searchResultsLayer.events.remove('featuresadded');
 			searchResults = clusterStrategy;
@@ -3107,8 +2908,8 @@ jQuery('form#fo-express-doubt-form').ajaxForm({
 	},
 	success:   function(data){
 		if(data.error == undefined){
-			jQuery('#fo-express-doubt-form').hide();
-			loadDeterminations(jQuery('[name=determination\\:occurrence_id]').val(), insect_alert_object.insect_id == null ? 'form#fo-new-flower-id-form' : 'form#fo-new-insect-id-form', function(args, type){
+			jQuery('#fo-express-doubt').removeClass('ui-accordion-content-active');
+			loadDeterminations(jQuery('[name=determination\\:occurrence_id]').val(), '#fo-id-history', '#fo-current-id', insect_alert_object.insect_id == null ? 'form#fo-new-flower-id-form' : 'form#fo-new-insect-id-form', function(args, type){
 			";
 	if($args['alert_js_function'] != '') {
 		data_entry_helper::$javascript .= "
@@ -3135,7 +2936,7 @@ jQuery('form#fo-express-doubt-form').ajaxForm({
 			insect_alert_object.insect_id == null ? ".(user_access('IForm n'.$node->nid.' flag dubious flower') ? '1' : '0')." : ".(user_access('IForm n'.$node->nid.' flag dubious insect') ? '1' : '0').",
 			insect_alert_object.insect_id == null ? flowerTaxa : insectTaxa,
 			insect_alert_object.insect_id == null ? 'F' : 'I');
-			jQuery('.filter-insect-container').filter('[occID='+jQuery('form#fo-express-doubt-form').find('[name=determination\\:occurrence_id]').val()+']').find('.insect-ok').removeClass('insect-ok').addClass('occurrence-dubious');
+			jQuery('.filter-insect').filter('[occID='+jQuery('form#fo-express-doubt-form').find('[name=determination\\:occurrence_id]').val()+']').find('.insect-ok').removeClass('insect-ok').addClass('insect-dubious');
 		} else {
 			alert(data.error);
 		}
@@ -3143,68 +2944,6 @@ jQuery('form#fo-express-doubt-form').ajaxForm({
 	complete: function (){
   		jQuery('.loading-button').removeClass('loading-button');
   	} 
-});
-
-jQuery('form#fo-edit-insect-id-form').ajaxForm({ // no tool attached, no alerts
-	async: false,
-	dataType:  'json', 
-	beforeSubmit:   function(data, obj, options){
-		clearErrors('form#fo-edit-insect-id-form');
-		if (!jQuery('form#fo-edit-insect-id-form input').valid()) {
-			myScrollToError();
-			return false;
-		};
-		var found=false;
-		for(var i = 0; i<10; i++){
-			if(jQuery('#fo-edit-insect-id-list-'+i).val() != ''){
-				found=true;
-				data.push({name: 'determination\\:taxa_taxon_list_id_list[]', value: jQuery('#fo-edit-insect-id-list-'+i).val()});
-			}			
-		}
-		jQuery('form#fo-edit-insect-id-form').find('[name=determination\\:deleted]').removeAttr('checked');
-		if(!found)
-			data.push({name: 'determination\\:taxa_taxon_list_id_list[]', value: ''});
-   		return true;
-	},
-	success:   function(data){
-		if(data.error == undefined){
-			loadDeterminations(jQuery('[name=determination\\:occurrence_id]').val(), 'form#fo-new-insect-id-form', function(args, type){
-  			}, ".(user_access('IForm n'.$node->nid.' insect expert') ? '1' : '0').", ".(user_access('IForm n'.$node->nid.' flag dubious insect') ? '1' : '0').", insectTaxa, 'I');
-		} else {
-			alert(data.error);
-		}
-	}
-});
-
-jQuery('form#fo-edit-flower-id-form').ajaxForm({ // no tool attached, no alerts
-	async: false,
-	dataType:  'json', 
-	beforeSubmit:   function(data, obj, options){
-		clearErrors('form#fo-edit-flower-id-form');
-		if (!jQuery('form#fo-edit-flower-id-form input').valid()) {
-			myScrollToError();
-			return false;
-		};
-		var found=false;
-		for(var i = 0; i<10; i++){
-			if(jQuery('#fo-edit-flower-id-list-'+i).val() != ''){
-				found=true;
-				data.push({name: 'determination\\:taxa_taxon_list_id_list[]', value: jQuery('#fo-edit-flower-id-list-'+i).val()});
-			}			
-		}
-		jQuery('form#fo-edit-flower-id-form').find('[name=determination\\:deleted]').removeAttr('checked');
-		if(!found)
-			data.push({name: 'determination\\:taxa_taxon_list_id_list[]', value: ''});
-   		return true;
-	},
-	success:   function(data){
-		if(data.error == undefined){
-			loadDeterminations(jQuery('[name=determination\\:occurrence_id]').val(), 'form#fo-new-flower-id-form', function(args, type){
-  			}, ".(user_access('IForm n'.$node->nid.' flower expert') ? '1' : '0').", ".(user_access('IForm n'.$node->nid.' flag dubious flower') ? '1' : '0').", flowerTaxa, 'F');
-		} else {
-			alert(data.error);
-		}
-	}
 });
 
 jQuery('form#fo-new-insect-id-form').ajaxForm({ 
@@ -3235,14 +2974,14 @@ jQuery('form#fo-new-insect-id-form').ajaxForm({
 	},
 	success:   function(data){
 		if(data.error == undefined){
-			jQuery('.filter-insect-container').filter('[occID='+jQuery('form#fo-express-doubt-form').find('[name=determination\\:occurrence_id]').val()+']')
+			jQuery('.filter-insect').filter('[occID='+jQuery('form#fo-express-doubt-form').find('[name=determination\\:occurrence_id]').val()+']')
 				.find('.insect-ok').removeClass('insect-ok')
-				.addClass(jQuery(insectIDstruc.mainForm+' [name=determination\\:determination_type]').val() == 'X' ? 'occurrence-dubious' : 'occurrence-valid');
+				.addClass(jQuery(insectIDstruc.mainForm+' [name=determination\\:determination_type]').val() == 'X' ? 'insect-dubious' : 'insect-valid');
 			jQuery(insectIDstruc.mainForm+' [name=determination\\:determination_type]').val(insectIDstruc.determinationType);
 			jQuery(insectIDstruc.mainForm+' [name=determination\\:taxa_taxon_list_id],[name=determination\\:comment],[name=determination\\:taxon_details],[name=determination\\:taxon_extra_info]').val('');
 			jQuery('#insect_taxa_list').empty();
-			jQuery('#fo-new-insect-id-form').hide();
-			loadDeterminations(jQuery('[name=determination\\:occurrence_id]').val(), 'form#fo-new-insect-id-form', function(args, type){
+			jQuery('#fo-new-insect-id').removeClass('ui-accordion-content-active');
+			loadDeterminations(jQuery('[name=determination\\:occurrence_id]').val(), '#fo-id-history', '#fo-current-id', 'form#fo-new-insect-id-form', function(args, type){
 			";
 	if($args['alert_js_function'] != '') {
 		data_entry_helper::$javascript .= "
@@ -3296,8 +3035,8 @@ jQuery('form#fo-new-flower-id-form').ajaxForm({
 			jQuery(flowerIDstruc.mainForm+' [name=determination\\:determination_type]').val(flowerIDstruc.determinationType);
 			jQuery(flowerIDstruc.mainForm+' [name=determination\\:taxa_taxon_list_id],[name=determination\\:comment],[name=determination\\:taxon_details],[name=determination\\:taxon_extra_info]').val('');
 			jQuery('#flower_taxa_list').empty();
-			jQuery('#fo-new-flower-id-form').hide();
-			loadDeterminations(jQuery('[name=determination\\:occurrence_id]').val(), 'form#fo-new-flower-id-form', function(args, type){
+			jQuery('#fo-new-flower-id').removeClass('ui-accordion-content-active');
+			loadDeterminations(jQuery('[name=determination\\:occurrence_id]').val(), '#fo-id-history', '#fo-current-id', 'form#fo-new-flower-id-form', function(args, type){
 			";
 	if($args['alert_js_function'] != '') {
 		data_entry_helper::$javascript .= "
@@ -3536,6 +3275,7 @@ insertImage = function(prepend, path, target, ratio, allowFull, callback){
 		item.click(function(){
 			window.open ('".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."'+path, 'newwindow', config='toolbar=no, menubar=no, location=no, directories=no, status=no')
 		});
+	
 }
 
 loadImage = function(imageTable, key, keyValue, target, imageRatio, callback, prepend, allowfull, imgCallback){
@@ -3562,61 +3302,24 @@ loadImage = function(imageTable, key, keyValue, target, imageRatio, callback, pr
 	}));
 }
 
-setIDButtons = function (expert, owner, reidentifiable, can_doubt, type){
-  if(expert === true) jQuery('#fo-id-buttons').addClass('expert');
-  else if(expert===false) jQuery('#fo-id-buttons').removeClass('expert'); // leave possiblity of 'other' which does nothing
-
-  if(owner === true) jQuery('#fo-id-buttons').addClass('owner');
-  else if(owner===false) jQuery('#fo-id-buttons').removeClass('owner'); // leave possiblity of 'other' which does nothing
-
-  if(reidentifiable === true) jQuery('#fo-id-buttons').addClass('reidentifiable');
-  else if(reidentifiable===false) jQuery('#fo-id-buttons').removeClass('reidentifiable'); // leave possiblity of 'other' which does nothing
-
-  if(can_doubt === true) {
-    jQuery('#fo-id-buttons').addClass('can_doubt');
-    jQuery('#fo-doubt-button').show();
-  } else if(can_doubt === false) {
-    jQuery('#fo-id-buttons').removeClass('can_doubt');
-    jQuery('#fo-doubt-button').hide();
-  }  // leave possiblity of 'other' which does nothing
-
-  if(jQuery('#fo-id-buttons').hasClass('expert') ||
-      (jQuery('#fo-id-buttons').hasClass('owner') && jQuery('#fo-id-buttons').hasClass('reidentifiable'))){
-    jQuery(type=='I'?'#fo-new-insect-id-button':'#fo-new-flower-id-button').show();
-  } else {
-    jQuery(type=='I'?'#fo-new-insect-id-button':'#fo-new-flower-id-button').hide();
-  }
-
-  if(jQuery('#fo-id-buttons').hasClass('expert') ||
-      jQuery('#fo-id-buttons').hasClass('can_doubt') || 
-      (jQuery('#fo-id-buttons').hasClass('owner') && jQuery('#fo-id-buttons').hasClass('reidentifiable'))){
-    if(jQuery('#fo-id-history:visible').length>0)
-      jQuery('#fo-id-buttons').show().removeClass('ui-corner-bottom'); // history is visible so current ID will not have this class
-    else {
-      jQuery('#fo-id-buttons').show().addClass('ui-corner-bottom'); // history is visible
-      jQuery('#fo-current-id').removeClass('ui-corner-bottom');
-    }
-  } else {
-    jQuery('#fo-id-buttons').hide();
-    if(jQuery('#fo-id-history:visible').length==0)
-      jQuery('#fo-current-id').addClass('ui-corner-bottom');
-  }
-}
-
-// this function is called to reset the page after a doubt is emitted, an insect or flower is reidentified, a determination is changed, 
-loadDeterminations = function(keyValue, lookup, callback, expert, can_doubt, taxaList, type){
-    jQuery('#fo-id-history').show().empty().append('<strong>".lang::get('LANG_History_Title')."</strong>').addClass('empty');
-	jQuery('#fo-current-id').empty().removeClass('ui-corner-bottom');
+loadDeterminations = function(keyValue, historyID, currentID, lookup, callback, expert, can_doubt, taxaList, type){
+    jQuery(historyID).empty().append('<strong>".lang::get('LANG_History_Title')."</strong>');
+	jQuery(currentID).empty();
 	jQuery('#poll-banner').empty();
-	setIDButtons(null, null, null, false, type);
-	jQuery('#fo-express-doubt-form').find('[name=determination\\:taxon_extra_info]').val('');
-	jQuery('#fo-express-doubt-form').find('[name=determination\\:taxa_taxon_list_id]').val('');
-	jQuery('#fo-doubt-button').data('toolRetValues',[]).hide();
+	if(can_doubt || expert) {jQuery('#fo-id-buttons').show();
+	} else {jQuery('#fo-id-buttons').hide();}
+	jQuery('#fo-doubt-button').hide();
+	jQuery('#fo-express-doubt-form').find('[name=determination:taxon_extra_info]').val('');
+	jQuery('#fo-express-doubt-form').find('[name=determination:taxa_taxon_list_id]').val('');
+	jQuery('#fo-doubt-button').data('toolRetValues',[]);
 	jQuery('.poll-id-button').data('toolRetValues',[]);
+	jQuery('#fo-warning').addClass('occurrence-ok').removeClass('occurrence-dubious').removeClass('occurrence-unknown');
 	jQuery('.taxa_list').empty();
     ajaxStack.push(jQuery.ajax({ 
         type: \"GET\", 
-        url: \"".$svcUrl."/data/determination?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&reset_timeout=true&deleted=f&orderby=id&REMOVEABLEJSONP&callback=?&occurrence_id=\" + keyValue,
+        url: \"".$svcUrl."/data/determination?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&reset_timeout=true&orderby=id&REMOVEABLEJSONP&callback=?&occurrence_id=\" + keyValue,
+        myCurrentID: currentID,
+        myHistoryID: historyID,
         myCallback: callback,
         myLookup: lookup,
 		dataType: 'json',
@@ -3625,25 +3328,8 @@ loadDeterminations = function(keyValue, lookup, callback, expert, can_doubt, tax
    		  if(!(detData instanceof Array)){
    			alertIndiciaError(detData);
    		  } else if (detData.length>0) {
-			if(detData.length==1){
-				jQuery('#fo-id-history').hide();
-				jQuery(jQuery('#fo-id-buttons:visible').length>0?'#fo-id-buttons':'#fo-current-id').addClass('ui-corner-bottom');
-			}
-			var i = detData.length-1;\n".(
-isset($args['deleteable_user_id']) && $args['deleteable_user_id']!='' && $args['deleteable_user_id']==$user->uid ?
-"			jQuery(type=='I'?'#fo-edit-insect-id':'#fo-edit-flower-id').find('[name=determination\\:id]').val(detData[i].id);
-		jQuery(type=='I'?'#fo-edit-insect-id':'#fo-edit-flower-id').find('[name=determination\\:deleted]').removeAttr('checked');
-		jQuery(type=='I'?'#fo-edit-insect-id':'#fo-edit-flower-id').find('[name=determination\\:occurrence_id]').val(detData[i].occurrence_id);
-		jQuery(type=='I'?'#fo-edit-insect-id':'#fo-edit-flower-id').find('[name=determination\\:cms_ref]').val(detData[i].cms_ref);
-		jQuery(type=='I'?'#fo-edit-insect-id':'#fo-edit-flower-id').find('[name=determination\\:person_name]').val(detData[i].person_name);
-		jQuery(type=='I'?'#fo-edit-insect-id':'#fo-edit-flower-id').find('[name=determination\\:email_address]').val(detData[i].email_address);
-		jQuery(type=='I'?'#fo-edit-insect-id':'#fo-edit-flower-id').find('[name=determination\\:determination_type]').val(detData[i].determination_type);
-		jQuery(type=='I'?'#fo-edit-insect-id':'#fo-edit-flower-id').find('[name=determination\\:taxon_details]').val(detData[i].taxon_details==null?'':detData[i].taxon_details);
-		jQuery(type=='I'?'#fo-edit-insect-id':'#fo-edit-flower-id').find('[name=determination\\:taxon_extra_info]').val(detData[i].taxon_extra_info==null?'':detData[i].taxon_extra_info);
-		jQuery(type=='I'?'#fo-edit-insect-id':'#fo-edit-flower-id').find('[name=determination\\:comment]').val(detData[i].comment==null?'':detData[i].comment);
-		jQuery(type=='I'?'#fo-edit-insect-id':'#fo-edit-flower-id').find('[name=determination\\:taxa_taxon_list_id]').val(detData[i].taxa_taxon_list_id==null?'':detData[i].taxa_taxon_list_id);
-		for(j=0; j < 10; j++) jQuery((type=='I'?'#fo-edit-insect-id':'#fo-edit-flower-id')+'-list-'+j).val('');":""
-)."\n			var callbackEntry = {date: detData[i].updated_on, user_id: detData[i].cms_ref, taxa: []};
+			var i = detData.length-1;
+			var callbackEntry = {date: detData[i].updated_on, user_id: detData[i].cms_ref, taxa: []};
    			jQuery('#fo-express-doubt-form').find('[name=determination\\:occurrence_id]').val(detData[i].occurrence_id);
    			var string = '';
    			var resultsText = \"".lang::get('LANG_Taxa_Returned')."<br />{ \";
@@ -3656,13 +3342,11 @@ isset($args['deleteable_user_id']) && $args['deleteable_user_id']!='' && $args['
 			if(detData[i].taxa_taxon_list_id_list != null && detData[i].taxa_taxon_list_id_list != '' && detData[i].taxa_taxon_list_id_list != '{}'){
 			  	resultsIDs = detData[i].taxa_taxon_list_id_list.substring(1, detData[i].taxa_taxon_list_id_list.length - 1).split(',');
 			  	for(j=0; j < resultsIDs.length; j++){
-					jQuery((type=='I'?'#fo-edit-insect-id':'#fo-edit-flower-id')+'-list-'+j).val(resultsIDs[j]);
 					for(k = 0; k< taxaList.length; k++)
 						if(taxaList[k].id == resultsIDs[j]) {
-							string = (string == '' ? '' : string + ', ') + htmlspecialchars(taxaList[k].taxon);
+							string = (string == '' ? '' : string + ', ') + taxaList[k].taxon;
 							callbackEntry.taxa.push(taxaList[k].taxon);
-							resultsText = resultsText + (j == 0 ? '' : '<br />&nbsp;&nbsp;') + htmlspecialchars(taxaList[k].taxon);
-							break;
+							resultsText = resultsText + (j == 0 ? '' : '<br />&nbsp;&nbsp;') + taxaList[k].taxon;
   						}
 		  		}
 	  			if(resultsIDs.length>1 || resultsIDs[0] != '') {
@@ -3673,48 +3357,42 @@ isset($args['deleteable_user_id']) && $args['deleteable_user_id']!='' && $args['
 			}
 			callbackArgs.push(callbackEntry);
 			jQuery('#poll-banner').append(string);
-			if(detData[i].taxon_extra_info != '' && detData[i].taxon_extra_info != null && detData[i].taxon_extra_info != 'null'){
+			if(detData[i].taxon_extra_info != '' && detData[i].taxon_extra_info != null){
 				string = (string == '' ? '' : string + ' ') + '('+htmlspecialchars(detData[i].taxon_extra_info)+')';
 			}
-			jQuery('#fo-express-doubt-form').find('[name=determination\\:taxon_extra_info]').val(detData[i].taxon_extra_info==null ? '' : detData[i].taxon_extra_info);
-			jQuery(this.myLookup).find('[name=determination:taxon_extra_info]').val(detData[i].taxon_extra_info==null ? '' : detData[i].taxon_extra_info);
+			jQuery('#fo-express-doubt-form').find('[name=determination\\:taxon_extra_info]').val(detData[i].taxon_extra_info);
+			jQuery(this.myLookup).find('[name=determination:taxon_extra_info]').val(detData[i].taxon_extra_info);
 			if(string != '')
-				jQuery('<p><strong>'+string+ '</strong> ".lang::get('LANG_Comment_By')."' + detData[i].person_name + ' ' + convertDate(detData[i].updated_on,false) + '</p>').appendTo('#fo-current-id');
+				jQuery('<p><strong>'+string+ '</strong> ".lang::get('LANG_Comment_By')."' + detData[i].person_name + ' ' + convertDate(detData[i].updated_on,false) + '</p>').appendTo(this.myCurrentID)
 			else
-				jQuery('<p>".lang::get('LANG_Comment_By')."' + detData[i].person_name + ' ' + convertDate(detData[i].updated_on,false) + '</p>').appendTo('#fo-current-id');
-			setIDButtons(null, null, detData[i].determination_type != 'C', can_doubt && detData[i].determination_type == 'A', type);
-			// Type 'A' - do nothing
-			if(detData[i].determination_type == 'B'){
-				jQuery(\"<p>".lang::get('LANG_Doubt_Expressed')."</p>\").appendTo('#fo-current-id');
-				jQuery('#fo-current-id').prepend(\"<div class='determination-flag occurrence-dubious'></div>\");
+				jQuery('<p>".lang::get('LANG_Comment_By')."' + detData[i].person_name + ' ' + convertDate(detData[i].updated_on,false) + '</p>').appendTo(this.myCurrentID)
+			if(detData[i].determination_type == 'A' && (expert || can_doubt)){
+				jQuery('#fo-doubt-button').show();
+			} else if(detData[i].determination_type == 'B'){
+				jQuery(\"<p>".lang::get('LANG_Doubt_Expressed')."</p>\").appendTo(this.myCurrentID);
+				jQuery('#fo-warning').removeClass('occurrence-ok').addClass('occurrence-dubious');
 			} else if(detData[i].determination_type == 'C'){
-				// This has been set by an expert. If it is the same as the previous determination, then it has been confirmed,
-				// If different then it is has been corrected. Use different messages.
-				// Ideally could be able to tell if bulk validation - but cant!
-				jQuery('#fo-current-id').prepend(\"<div class='determination-flag occurrence-valid'></div>\");
-				if(i==0 || (detData[i].taxon == detData[i-1].taxon && detData[i].taxa_taxon_list_id_list == detData[i-1].taxa_taxon_list_id_list))
-				  jQuery(\"<p>".lang::get('LANG_Determination_Valid')."</p>\").appendTo('#fo-current-id');
-				else
-				  jQuery(\"<p>".lang::get('LANG_Determination_Corrected')."</p>\").appendTo('#fo-current-id');
+				jQuery(\"<p>".lang::get('LANG_Determination_Valid')."</p>\").appendTo(this.myCurrentID);
+				if(!expert)
+					jQuery('.new-id-button').hide();
 			} else if(detData[i].determination_type == 'I'){
-				jQuery(\"<p>".lang::get('LANG_Determination_Incorrect')."</p>\").appendTo('#fo-current-id');
-				jQuery('#fo-current-id').prepend(\"<div class='determination-flag occurrence-dubious'></div>\");
+				jQuery(\"<p>".lang::get('LANG_Determination_Incorrect')."</p>\").appendTo(this.myCurrentID);
+				jQuery('#fo-warning').removeClass('occurrence-ok').addClass('occurrence-dubious');
 			} else if(detData[i].determination_type == 'U'){
-				jQuery(\"<p>".lang::get('LANG_Determination_Unconfirmed')."</p>\").appendTo('#fo-current-id');
-				jQuery('#fo-current-id').prepend(\"<div class='determination-flag occurrence-dubious'></div>\");
+				jQuery(\"<p>".lang::get('LANG_Determination_Unconfirmed')."</p>\").appendTo(this.myCurrentID);
+				jQuery('#fo-warning').removeClass('occurrence-ok').addClass('occurrence-dubious');
 			} else if(detData[i].determination_type == 'X'){
-				jQuery(\"<p>".lang::get('LANG_Determination_Unknown')."</p>\").appendTo('#fo-current-id');
-//				jQuery('#fo-current-id').prepend(\"<div class='determination-flag occurrence-unknown'></div>\");
+				jQuery(\"<p>".lang::get('LANG_Determination_Unknown')."</p>\").appendTo(this.myCurrentID);
+//				jQuery('#fo-warning').removeClass('occurrence-ok').addClass('occurrence-unknown');
 			}
 			if(detData[i].comment != '' && detData[i].comment != null){
-				jQuery('<p>'+detData[i].comment+'</p>').appendTo('#fo-current-id');
+				jQuery('<p>'+detData[i].comment+'</p>').appendTo(this.myCurrentID);
 			}
 			
 			for(i=detData.length - 2; i >= 0; i--){ // deliberately miss last one, in reverse order
 				callbackEntry = {date: detData[i].updated_on, user_id: detData[i].cms_ref, taxa: []};
 				string = '';
-				jQuery('#fo-id-history').removeClass('empty');
-				var item = jQuery('<div></div>').addClass('history-item').appendTo('#fo-id-history');
+				var item = jQuery('<div></div>').addClass('history-item').appendTo(this.myHistoryID);
 				if(detData[i].taxon != '' && detData[i].taxon != null){
 					string = htmlspecialchars(detData[i].taxon);
 		  			callbackEntry.taxa.push(detData[i].taxon);
@@ -3724,13 +3402,12 @@ isset($args['deleteable_user_id']) && $args['deleteable_user_id']!='' && $args['
 					for(j=0; j < resultsIDs.length; j++){
 						for(k = 0; k< taxaList.length; k++)
 							if(taxaList[k].id == resultsIDs[j]) {
-								string = (string == '' ? '' : string + ', ') + htmlspecialchars(taxaList[k].taxon);
+								string = (string == '' ? '' : string + ', ') + taxaList[k].taxon;
 								callbackEntry.taxa.push(taxaList[k].taxon);
-								break;
 							}
 					}
 				}
-				if(detData[i].taxon_extra_info != '' && detData[i].taxon_extra_info != null && detData[i].taxon_extra_info != 'null'){
+				if(detData[i].taxon_extra_info != '' && detData[i].taxon_extra_info != null){
 					string = (string == '' ? '' : string + ' ') + '('+htmlspecialchars(detData[i].taxon_extra_info)+')' ;
 				}
 				string = convertDate(detData[i].updated_on,false) + ' : ' + string;
@@ -3751,12 +3428,12 @@ isset($args['deleteable_user_id']) && $args['deleteable_user_id']!='' && $args['
   			}
 			
 		  } else {
-			jQuery('#fo-id-history').hide();
-			jQuery(jQuery('#fo-id-buttons:visible').length>0?'#fo-id-buttons':'#fo-current-id').addClass('ui-corner-bottom');
-			jQuery(type=='I'?'#fo-edit-insect-id':'#fo-edit-flower-id').removeClass('ui-accordion-content-active');
-			jQuery('#fo-current-id').append(\"<div class='determination-flag occurrence-unknown'></div><p>".lang::get('LANG_No_Determinations')."</p>\");
-			setIDButtons(null, null, true, false, type); // can re-identify unidentified species 
-			jQuery('#poll-banner').append(\"".lang::get('LANG_No_Determinations')."\");
+			jQuery('#fo-doubt-button').hide();
+			jQuery('#fo-warning').removeClass('occurrence-ok').addClass('occurrence-unknown');
+			jQuery('<p>".lang::get('LANG_No_Determinations')."</p>')
+					.appendTo(this.myHistoryID);
+			jQuery('<p>".lang::get('LANG_No_Determinations')."</p>')
+					.appendTo(this.myCurrentID);
 		  }
 		  if(this.myCallback) this.myCallback(callbackArgs, type);
 		}  
@@ -3798,7 +3475,7 @@ loadComments = function(keyValue, block, table, key, blockClass, bodyClass, rese
     }));
 };
 
-collectionProcessing = function(keyValue, type){
+collectionProcessing = function(keyValue, expert){
     ajaxStack.push($.getJSON(\"".$svcUrl."/data/sample_attribute_value\"  +
    			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
    			\"&sample_id=\" + keyValue + \"&REMOVEABLEJSONP&callback=?\", function(attrdata) {
@@ -3811,7 +3488,8 @@ collectionProcessing = function(keyValue, type){
 						case ".$uidAttrID.":
 							insect_alert_object.collection_user_id = attrdata[i].value;
 							flower_alert_object.collection_user_id = attrdata[i].value;
-							setIDButtons(null, parseInt(attrdata[i].value) == ".$uid.", null, null, type);
+							if(!expert && parseInt(attrdata[i].value) != ".$uid.")
+								jQuery('.new-id-button').hide();
 							break;
   					}
 				}
@@ -3845,7 +3523,7 @@ loadInsectAddnInfo = function(keyValue, collectionIndex){
    						return;
 		   			}
    					collection = smpData[0].parent_id;
-					collectionProcessing(collection, 'I');
+					collectionProcessing(collection, ".(user_access('IForm n'.$node->nid.' insect expert') ? "true" : "false").");
 					jQuery('#fo-insect-date').empty().append(convertDate(smpData[0].date_start,false));
 					loadSampleAttributes(smpData[0].id);
 					jQuery('#fo-collection-button').data('smpID',smpData[0].parent_id).data('collectionIndex', collectionIndex).show();
@@ -3880,7 +3558,7 @@ loadFlowerAddnInfo = function(keyValue, collectionIndex){
    			alertIndiciaError(occData);
    		} else if (occData.length > 0) {
 			jQuery('#fo-collection-button').data('smpID',occData[0].sample_id).data('collectionIndex',collectionIndex).show();
-			collectionProcessing(occData[0].sample_id, 'F');
+			collectionProcessing(occData[0].sample_id, ".(user_access('IForm n'.$node->nid.' flower expert') ? "true" : "false").");
             ajaxStack.push($.getJSON(\"".$svcUrl."/data/sample/\" + occData[0].sample_id +
    					\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
    					\"&REMOVEABLEJSONP&callback=?\", function(collection) {
@@ -3892,24 +3570,8 @@ loadFlowerAddnInfo = function(keyValue, collectionIndex){
    						return;
 		   			}
    					loadLocationAttributes(collection[0].location_id);
-   					ajaxStack.push($.getJSON(\"".$svcUrl."/data/location/\" +collection[0].location_id +
-							\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-							\"&REMOVEABLEJSONP&callback=?\", function(locationData) {
-						if(!(locationData instanceof Array)){
-							alertIndiciaError(locationData);
-						} else if (locationData.length>0) {
-							var parser = new OpenLayers.Format.WKT();
-							var feature = parser.read(locationData[0].centroid_geom);
-							var filter = new OpenLayers.Filter.Spatial({
-  								type: OpenLayers.Filter.Spatial.CONTAINS ,
-    							property: 'the_geom',
-    							value: feature.geometry
-							});
-							inseeProtocol.read({filter: filter, callback: fillOccurrenceLocationDetails});
-						}
-					}));
-				}
-			}));
+  				}
+   		   	  }));
    		}
     }));
 }
@@ -3926,10 +3588,10 @@ loadInsect = function(insectID, collectionIndex, insectIndex, type){
 			jQuery('#fo-next-button').show().data('occID', searchResults.features[insectIndex+1].attributes.insect_id).data('collectionIndex', null).data('insectIndex', insectIndex+1).data('type', 'S');
 	} else if(type == 'C'){ // called from collection
 		jQuery('#fo-filter-button').hide();
-		var myThumb = jQuery('.collection-insect-container').filter('[occID='+insectID+']').prev();
+		var myThumb = jQuery('.collection-insect').filter('[occID='+insectID+']').prev();
 		if(myThumb.length > 0)
 			jQuery('#fo-prev-button').show().data('occID', myThumb.attr('occID')).data('collectionIndex', collectionIndex).data('insectIndex', null).data('type', 'C');
-		myThumb = jQuery('.collection-insect-container').filter('[occID='+insectID+']').next();
+		myThumb = jQuery('.collection-insect').filter('[occID='+insectID+']').next();
 		if(myThumb.length > 0)
 			jQuery('#fo-next-button').show().data('occID', myThumb.attr('occID')).data('collectionIndex', collectionIndex).data('insectIndex', null).data('type', 'C');		
   	} else if(type == 'P'){ // called from photoreel
@@ -3945,18 +3607,15 @@ loadInsect = function(insectID, collectionIndex, insectIndex, type){
 	flower_alert_object.flower_id = null;
 	jQuery('#focus-collection,#filter,#fo-flower-addn-info').hide();
 	jQuery('#fo-image').empty();
-    jQuery('#focus-occurrence,#fo-addn-info-header,#fo-insect-addn-info').show();
-	jQuery('#fo-edit-insect-id').addClass('ui-accordion-content-active');
-	jQuery('#fo-edit-flower-id').removeClass('ui-accordion-content-active');
+    jQuery('#focus-occurrence,#fo-addn-info-header,#fo-insect-addn-info,#fo-localisation-info').show();
 	jQuery('#fo-image').height(jQuery('#fo-image').width()/(".$args['Insect_Image_Ratio']."));
     jQuery('[name=determination\\:occurrence_id]').val(insectID);
 	jQuery('[name=occurrence_comment\\:occurrence_id]').val(insectID);
-	jQuery('#fo-new-comment').removeClass('ui-accordion-content-active');
-	jQuery('#fo-new-insect-id-form,#fo-new-flower-id-form,#fo-express-doubt-form').hide();
+	jQuery('#fo-new-comment,#fo-new-insect-id,#fo-new-flower-id,#fo-express-doubt').removeClass('ui-accordion-content-active');
+	jQuery('#fo-new-insect-id-button').show();
 	jQuery('#fo-new-flower-id-button').hide();
-	setIDButtons(".(user_access('IForm n'.$node->nid.' insect expert') ? 'true' : 'false').", false, false, false, 'I');
 	jQuery('#fo-new-comment-button').".((user_access('IForm n'.$node->nid.' insect expert') || user_access('IForm n'.$node->nid.' create insect comment')) ? "show()" : "hide()").";
-	loadDeterminations(insectID, 'form#fo-new-insect-id-form', null, ".(user_access('IForm n'.$node->nid.' insect expert') ? '1' : '0').", ".(user_access('IForm n'.$node->nid.' flag dubious insect') ? '1' : '0').", insectTaxa, 'I');
+	loadDeterminations(insectID, '#fo-id-history', '#fo-current-id', 'form#fo-new-insect-id-form', null, ".(user_access('IForm n'.$node->nid.' insect expert') ? '1' : '0').", ".(user_access('IForm n'.$node->nid.' flag dubious insect') ? '1' : '0').", insectTaxa, 'I');
 	loadImage('occurrence_image', 'occurrence_id', insectID, '#fo-image', ".$args['Insect_Image_Ratio'].", function(imageRecord){insect_alert_object.insect_image_path = imageRecord.path}, '', true, false);
 	loadInsectAddnInfo(insectID, collectionIndex);
 	loadComments(insectID, '#fo-comment-list', 'occurrence_comment', 'occurrence_id', 'occurrence-comment-block', 'occurrence-comment-body', false);
@@ -3969,20 +3628,17 @@ loadFlower = function(flowerID, collectionIndex){
 	flower_alert_object.user_id = \"".$uid."\";
 	jQuery('#fo-filter-button').show();
 	jQuery('#fo-prev-button,#fo-next-button').hide(); // only one flower per collection, and don't search flowers: no next or prev buttons.
-	jQuery('#focus-collection,#filter,#fo-insect-addn-info').hide();
+	jQuery('#focus-collection,#filter,#fo-insect-addn-info,#fo-localisation-info').hide();
 	jQuery('#fo-image').empty();
-	jQuery('#fo-edit-flower-id').addClass('ui-accordion-content-active');
-	jQuery('#fo-edit-insect-id').removeClass('ui-accordion-content-active');
 	jQuery('#focus-occurrence,#fo-addn-info-header,#fo-flower-addn-info').show();
 	jQuery('#fo-image').height(jQuery('#fo-image').width()/(".$args['Flower_Image_Ratio']."));
-	jQuery('#fo-new-comment').removeClass('ui-accordion-content-active');
-	jQuery('#fo-new-insect-id-form,#fo-new-flower-id-form,#fo-express-doubt-form').hide();
+	jQuery('#fo-new-comment,#fo-new-insect-id,#fo-new-flower-id,#fo-express-doubt').removeClass('ui-accordion-content-active');
 	jQuery('[name=determination\\:occurrence_id]').val(flowerID);
 	jQuery('[name=occurrence_comment\\:occurrence_id]').val(flowerID);
+	jQuery('#fo-new-flower-id-button').show();
 	jQuery('#fo-new-insect-id-button').hide();
-	setIDButtons(".(user_access('IForm n'.$node->nid.' flower expert') ? 'true' : 'false').", false, false, false, 'F');
 	jQuery('#fo-new-comment-button').".((user_access('IForm n'.$node->nid.' flower expert') || user_access('IForm n'.$node->nid.' create flower comment')) ? "show()" : "hide()").";
-	loadDeterminations(flowerID, 'form#fo-new-flower-id-form', null, ".(user_access('IForm n'.$node->nid.' flower expert') ? '1' : '0').", ".(user_access('IForm n'.$node->nid.' flag dubious flower') ? '1' : '0').", flowerTaxa, 'F');
+	loadDeterminations(flowerID, '#fo-id-history', '#fo-current-id', 'form#fo-new-flower-id-form', null, ".(user_access('IForm n'.$node->nid.' flower expert') ? '1' : '0').", ".(user_access('IForm n'.$node->nid.' flag dubious flower') ? '1' : '0').", flowerTaxa, 'F');
 	loadImage('occurrence_image', 'occurrence_id', flowerID, '#fo-image', ".$args['Flower_Image_Ratio'].", function(imageRecord){flower_alert_object.flower_image_path = imageRecord.path}, '', true, false);
 	loadFlowerAddnInfo(flowerID, collectionIndex);
 	loadComments(flowerID, '#fo-comment-list', 'occurrence_comment', 'occurrence_id', 'occurrence-comment-block', 'occurrence-comment-body', false);
@@ -4084,38 +3740,14 @@ jQuery('#fo-new-comment-button').click(function(){
 	jQuery('#fo-new-comment').toggleClass('ui-accordion-content-active');
 });
 jQuery('#fo-new-insect-id-button').click(function(){ 
-	jQuery('#fo-express-doubt-form').hide();
-	jQuery('#fo-new-insect-id-form [name=determination\\:comment]').val(\"".lang::get('LANG_Default_ID_Comment')."\");
-	if(jQuery('#fo-new-insect-id-form').filter(':visible').length>0) {
-	  jQuery('#fo-new-insect-id-form').hide();
-	  if(!jQuery('#fo-id-history').hasClass('empty')){
-		jQuery('#fo-id-history').addClass('ui-accordion-content-active');
-		jQuery('#fo-id-buttons').removeClass('ui-corner-bottom');
-	  }
-	} else {
-	  jQuery('#fo-new-insect-id-form').show();
-	  if(!jQuery('#fo-id-history').hasClass('empty')){
-		jQuery('#fo-id-history').removeClass('ui-accordion-content-active');
-		jQuery('#fo-id-buttons').addClass('ui-corner-bottom');
-	  }
-	}
+	jQuery('#fo-express-doubt').removeClass('ui-accordion-content-active');
+	jQuery('#fo-new-insect-id [name=determination\\:comment]').val(\"".lang::get('LANG_Default_ID_Comment')."\");
+	jQuery('#fo-new-insect-id').toggleClass('ui-accordion-content-active');
 });
 jQuery('#fo-new-flower-id-button').click(function(){ 
-	jQuery('#fo-express-doubt-form').hide();
-	jQuery('#fo-new-flower-id-form [name=determination\\:comment]').val(\"".lang::get('LANG_Default_ID_Comment')."\");
-	if(jQuery('#fo-new-flower-id-form').filter(':visible').length>0) {
-	  jQuery('#fo-new-flower-id-form').hide();
-	  if(!jQuery('#fo-id-history').hasClass('empty')){
-		jQuery('#fo-id-history').addClass('ui-accordion-content-active');
-		jQuery('#fo-id-buttons').removeClass('ui-corner-bottom');
-	  }
-	} else {
-	  jQuery('#fo-new-flower-id-form').show();
-	  if(!jQuery('#fo-id-history').hasClass('empty')){
-		jQuery('#fo-id-history').removeClass('ui-accordion-content-active');
-		jQuery('#fo-id-buttons').addClass('ui-corner-bottom');
-	  }
-	}
+	jQuery('#fo-express-doubt').removeClass('ui-accordion-content-active');
+	jQuery('#fo-new-flower-id [name=determination\\:comment]').val(\"".lang::get('LANG_Default_ID_Comment')."\");
+	jQuery('#fo-new-flower-id').toggleClass('ui-accordion-content-active');
 });
 jQuery('#fo-collection-button').click(function(){
 	loadCollection(jQuery(this).data('smpID'), jQuery(this).data('collectionIndex'));
@@ -4127,18 +3759,8 @@ jQuery('#fo-prev-button,#fo-next-button').click(function(){
 		jQuery(this).data('type') // type: 'P' from photoreel, 'S' from search, 'C' from collection, 'X' NA
 	);
 });
+  ";
 
-$('#username').autocomplete([";
-	/* warning Drupal specific code */
-    $userList = array();
-    $results = db_query('SELECT uid, name FROM {users} ORDER BY name');
-    while($result = db_fetch_object($results)){
-      $account = user_load($result->uid);
-      if($account->uid != 1) // && user_access('IForm loctools node '.$node->nid.' user', $account)){
-        $userList[] = "'".$account->name."'";
-    }
-    data_entry_helper::$javascript .= implode(',',$userList)."]);\n";
-    
     switch($mode){
     	case 'INSECT':
 		    data_entry_helper::$onload_javascript .= "loadInsect(".$occID.", null, null, 'X');";

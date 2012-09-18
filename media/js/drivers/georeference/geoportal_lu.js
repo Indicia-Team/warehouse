@@ -25,7 +25,7 @@ function Georeferencer(mapdiv, callback) {
         '?url=http://map.geoportal.lu/locationsearch&query=' + searchtext + '&lang=' + mapdiv.georefOpts.georefLang +
             '&subtype=Commune,Localite';
     $.getJSON(request, function(data){
-          // an array to store the responses in the required country
+          // an array to store the responses in the required country, because GeoPlanet will not limit to a country
           var places = [];
           var converted={};
           jQuery.each(data.results, function(i,place) {
@@ -46,8 +46,7 @@ function Georeferencer(mapdiv, callback) {
                   x: place.bbox[2], 
                   y: place.bbox[3]
                 }
-              },
-              obj: place
+              }
             };
             places.push(converted);
           });

@@ -19,7 +19,7 @@
  * @license	http://www.gnu.org/licenses/gpl.html GPL 3.0
  * @link 	http://code.google.com/p/indicia/
  */
-
+ 
 /**
  * Link in other required php files.
  */
@@ -54,8 +54,6 @@ class report_helper extends helper_base {
         $options['readAuth']['nonce'].'&auth_token='.$options['readAuth']['auth_token']);
     if (isset($response['output'])) {
       $output = json_decode($response['output'], true);
-      if (isset($output['error']))
-        return $output['error'];
       $reports .= self::get_report_list_level($options['fieldname'], $options['default'], $output);
     }
     self::$javascript .= '$("#'.$options['id'].' > ul").treeview({collapsed: true});'."\n";
@@ -94,39 +92,34 @@ class report_helper extends helper_base {
         $r .= "</li>\n";
       }
     }
-    if (!empty($r))
+    if (!empty($r)) 
       $r = "<ul>\n$r\n</ul>\n";
     return $r;
   }
 
   /**
-   * Returns a simple HTML link to download the contents of a report defined by the options. The options arguments supported are the same as for the
+   * Returns a simple HTML link to download the contents of a report defined by the options. The options arguments supported are the same as for the 
    * report_grid method. Pagination information will be ignored (e.g. itemsPerPage).
    * If this download link is to be displayed alongside a report_grid to provide a download of the same data, set the id
-   * option to the same value for both the report_download_link and report_grid controls to link them together. Use the itemsPerPage parameter
-   * to control how many records are downloaded. The following additional options are supported:<ul>
-   * <li><b>format</b><br/>
-   * Default to csv. Specify the download format, one of csv, json, xml, nbn.
-   * </li>
+   * option to the same value for both the report_download_link and report_grid controls to link them together.
    */
   public static function report_download_link($options) {
     $options = array_merge(array(
-      'caption' => lang::get('Download this report'), 
-      'format' => 'csv',
-      'itemsPerPage' => 10000
+      'caption' => 'Download this report', // a reasonable maximum
     ), $options);
     $options = self::get_report_grid_options($options);
+    $options['itemsPerPage'] = 10000;
     $options['linkOnly'] = true;
     $currentParamValues = self::get_report_grid_current_param_values($options);
     $sortAndPageUrlParams = self::get_report_grid_sort_page_url_params($options);
     // don't want to paginate the download link
     unset($sortAndPageUrlParams['page']);
-    $extras = self::get_report_sorting_paging_params($options, $sortAndPageUrlParams);
-    $link = self::get_report_data($options, $extras.'&'.self::array_to_query_string($currentParamValues, true), true);
+    $extras = self::get_report_sorting_paging_params($options, $sortAndPageUrlParams);    
+    $link = self::get_report_data($options, $extras.'&'.self::array_to_query_string($currentParamValues, true), true). '&mode=csv';
     global $indicia_templates;
-    return str_replace(array('{link}','{caption}'), array($link, lang::get($options['caption'])), $indicia_templates['report_download_link']);
+    return str_replace(array('{link}','{caption}'), array($link, lang::get($options['caption'])), $indicia_templates['report_download_link']);;
   }
-
+  
   /**
   * <p>Outputs a grid that loads the content of a report or Indicia table.</p>
   * <p>The grid supports a simple pagination footer as well as column title sorting through PHP. If
@@ -142,14 +135,8 @@ class report_helper extends helper_base {
   * generated.</li>
   * <li><b>reportGroup</b><br/>
   * When joining multiple reports together, this can be used on a report that has autoParamsForm set to false to bind the report to the
-  * parameters form from a different report by giving both report controls the same reportGroup string. This will only work when all
+  * parameters form from a different report by giving both report controls the same reportGroup string. This will only work when all 
   * parameters required by this report are covered by the other report's parameters form.</li>
-  * <li><b>rememberParamsReportGroup</b><br/>
-  * Enter any value in this parameter to allow the report to save its parameters for the next time the report is loaded.
-  * The parameters are saved site wide, so if several reports share the same value and the same report group then the parameter
-  * settings will be shared across the reports even if they are on different pages of the site. For example if several reports on the
-  * site have an ownData boolean parameter which filters the data to the user's own data, this can be set so that the reports all
-  * share the setting. This functionality requires cookies to be enabled on the browser.</li>
   * <li><b>mode</b><br/>
   * Pass report for a report, or direct for an Indicia table or view. Default is report.</li>
   * <li><b>readAuth</b><br/>
@@ -170,24 +157,19 @@ class report_helper extends helper_base {
   *  - fieldname: name of the field to output in this column. Does not need to be specified when using the template option.
   *  - display: caption of the column, which defaults to the fieldname if not specified
   *  - actions: list of action buttons to add to each grid row. Each button is defined by a sub-array containing
-  *      values for caption, visibility_field, url, urlParams, class, img and javascript. The visibility field is an optional
-  *      name of a field in the data which contains true or false to define the visibility of this action. The javascript, url
+  *      values for caption, visibility_field, url, urlParams, class and javascript. The visibibility field is an optional
+  *      name of a field in the data which contains true or false to define the visibility of this action. The javascript, url 
   *      and urlParams values can all use the field names from the report in braces as substitutions, for example {id} is replaced
-  *      by the value of the field called id in the respective row. In addition, the url can use {currentUrl} to represent the
-  *      current page's URL, {rootFolder} to represent the folder on the server that the current PHP page is running from, and
-  *      {imageFolder} for the image upload folder. Because the javascript may pass the field values as parameters to functions,
-  *      there are escaped versions of each of the replacements available for the javascript action type. Add -escape-quote or
-  *      -escape-dblquote to the fieldname for quote escaping, or -escape-htmlquote/-escape-htmldblquote for escaping quotes in HTML
-  *      attributes. For example this would be valid in the action javascript: foo("{bar-escape-dblquote}");
-  *      even if the field value contains a double quote which would have broken the syntax. Set img to the path to an image to use an 
-  *      image for the action instead of a text caption - the caption then becomes the image's title. The image path can contain 
-  *      {rootFolder} to be replaced by the root folder of the site, in this case it excludes the path parameter used in Drupal when 
-  *      dirty URLs are used (since this is a direct link to a URL). 
+  *      by the value of the field called id in the respective row. In addition, the url can use {currentUrl} to represent the 
+  *      current page's URL, {rootFolder} to represent the folder on the server that the current PHP page is running from, and 
+  *      {imageFolder} for the image upload folder. Because the javascript may pass the field values as parameters to functions, 
+  *      there are escaped versions of each of the replacements available for the javascript action type. Add -escape-quote or 
+  *      -escape-dblquote to the fieldname. For example this would be valid in the action javascript: foo("{bar-escape-dblquote}"); 
+  *      even if the field value contains a double quote which would have broken the syntax.
   *  - visible: true or false, defaults to true
   *  - template: allows you to create columns that contain dynamic content using a template, rather than just the output
   *      of a field. The template text can contain fieldnames in braces, which will be replaced by the respective field values.
-  *      Add -escape-quote or -escape-dblquote to the fieldname for quote escaping, or -escape-htmlquote/-escape-htmldblquote
-  *      for escaping quotes in HTML attributes. Note that template columns cannot be sorted by clicking grid headers.
+  *      Note that template columns cannot be sorted by clicking grid headers.
   *     An example array for the columns option is:
   *     array(
   *       array('fieldname' => 'survey', 'display' => 'Survey Title'),
@@ -196,21 +178,18 @@ class report_helper extends helper_base {
   *         array('caption' => 'edit', 'url'=>'{currentUrl}', 'urlParams'=>array('survey_id'=>'{id}'))
   *       ))
   *     )
-  *  - json: set to true if the column contains a json string object with properties that can be decoded to give strings that
+  *  - json: set to true if the column contains a json string object with properties that can be decoded to give strings that 
   *      can be used as replacements in a template. For example, a column is returned from a report with fieldname='data', json=true
-  *      and containing a data value '{"species":"Arnica montana","date":"14/04/2004"}'. A second column with fieldname='comment'
-  *      contains the value 'Growing on a mountain pasture'. A third column is setup in the report with template set to
+  *      and containing a data value '{"species":"Arnica montana","date":"14/04/2004"}'. A second column with fieldname='comment' 
+  *      contains the value 'Growing on a mountain pasture'. A third column is setup in the report with template set to 
   *      '<div>{species} was recorded on {date}.<br/>{comment}</div>'. The json data and the second column's raw value are all
-  *      available in the template replacements, so the output is set to
+  *      available in the template replacements, so the output is set to 
   *      '<div>Arnice montana was recorded on 14/04/2004.<br/>Growing on a mountain pasture</div>'
   *      template
-  *  - img: set to true if the column contains a path to an image (relative to the warehouse upload folder). If so then the
-  *      path is replaced by an image thumbnail with a fancybox zoom to the full image. Multiple images can be included by
-  *      separating each path with a comma. 
   * </li>
   * <li><b>rowId</b>
   * Optional. Names the field in the data that contains the unique identifier for each row. If set, then the &lt;tr&gt; elements have their id attributes
-  * set to row + this field value, e.g. row37. This is used to allow synchronisation of the selected table rows with a report map output showing the same data.</li>
+  * set to row + this field value, e.g. row37.</li>
   * <li><b>includeAllColumns</b>
   * Defaults to true. If true, then any columns in the report, view or table which are not in the columns
   * option array are automatically added to the grid after any columns specified in the columns option array.
@@ -239,7 +218,7 @@ class report_helper extends helper_base {
   * Array of key value pairs to include as a filter against the data.
   * </li>
   * <li><b>extraParams</b><br/>
-  * Array of additional key value pairs to attach to the request. This should include fixed values which cannot be changed by the
+  * Array of additional key value pairs to attach to the request. This should include fixed values which cannot be changed by the 
   * user and therefore are not needed in the parameters form.
   * </li>
   * <li><b>paramDefaults</b>
@@ -250,8 +229,7 @@ class report_helper extends helper_base {
   * <li><b>ignoreParams</b>
   * Array that can be set to a list of the report parameter names that should not be included in the parameters form. Useful
   * when using paramsOnly=true to display a parameters entry form, but the system has default values for some of the parameters
-  * which the user does not need to be asked about. Can also be used to provide parameter values that can be overridden only via
-  * a URL parameter.</li>
+  * which the user does not need to be asked about.</li>
   * <li><b>completeParamsForm</b>
   * Defaults to true. If false, the control HTML is returned for the params form without being wrapped in a <form> and
   * without the Run Report button, allowing it to be embedded into another form.</li>
@@ -264,29 +242,26 @@ class report_helper extends helper_base {
   * </li>
   * <li><b>footer</b>
   * Additional HTML to include in the report footer area. {currentUrl} is replaced by the
-  * current page's URL, {rootFolder} is replaced by the folder on the server that the current PHP page
+  * current page's URL, {rootFolder} is replaced by the folder on the server that the current PHP page 
   * is running from.</li>
   * </li>
   * <li><b>downloadLink</b>
   * Should a download link be included in the report footer? Defaults to false.</li>
   * <li><b>sharing</b>
-  * Assuming the report has been written to take account of website sharing agreements, set this to define the task
-  * you are performing with the report and therefore the type of sharing to allow. Options are reporting (default),
+  * Assuming the report has been written to take account of website sharing agreements, set this to define the task 
+  * you are performing with the report and therefore the type of sharing to allow. Options are reporting (default), 
   * verification, moderation, peer_review, data_flow, website (this website only) or me (my data only).</li>
   * <li><b>UserId</b>
   * If sharing=me, then this must contain the Indicia user ID of the user to return data for.
   * </li>
   * <li><b>sendOutputToMap</b>
-  * Default false. If set to true, then the records visible on the current page are drawn onto a map. This is different to the
+  * Default false. If set to true, then the records visible on the current page are drawn onto a map. This is different to the 
   * report_map method when linked to a report_grid, which loads its own report data for display on a map, just using the same input parameters
   * as other reports. In this case the report_grid's report data is used to draw the features on the map, so only 1 report request is made.
   * </li>
   * <li><b>rowClass</b>
-  * A CSS class to add to each row in the grid. Can include field value replacements in braces, e.g. {certainty} to construct classes from
+  * A CSS class to add to each row in the grid. Can include field value replacements in braces, e.g. {certainty} to construct classes from 
   * field values, e.g. to colour rows in the grid according to the data.
-  * </li>
-  * <li><b>callback</b>
-  * Set to the name of a JavaScript function that should already exist which will be called each time the grid reloads (e.g. when paginating or sorting).
   * </li>
   * </ul>
   * @todo Allow additional params to filter by table column or report parameters
@@ -296,16 +271,19 @@ class report_helper extends helper_base {
   */
   public static function report_grid($options) {
     self::add_resource('fancybox');
+    self::$javascript .= "jQuery('a.fancybox').fancybox();\n";
     $sortAndPageUrlParams = self::get_report_grid_sort_page_url_params($options);
     $options = self::get_report_grid_options($options);
     $extras = self::get_report_sorting_paging_params($options, $sortAndPageUrlParams);
     self::request_report($response, $options, $currentParamValues, true, $extras);
-    if (isset($response['error'])) return $response['error'];
+    if (isset($response['error'])) return $response['error'];   
     $r = self::params_form_if_required($response, $options, $currentParamValues);
     // return the params form, if that is all that is being requested, or the parameters are not complete.
     if ($options['paramsOnly'] || !isset($response['records'])) return $r;
     $records = $response['records'];
+    
     self::report_grid_get_columns($response, $options);
+    
     $pageUrl = self::report_grid_get_reload_url($sortAndPageUrlParams);
     $thClass = $options['thClass'];
     $r .= "\n<table class=\"".$options['class']."\">";
@@ -346,7 +324,7 @@ class report_helper extends helper_base {
           $r .= "<th$fieldId class=\"$thClass$orderStyle\">$captionLink</th>\n";
           if (isset($field['datatype'])) {
             switch ($field['datatype']) {
-              case 'text':
+              case 'text': 
                 $title=lang::get("$caption search. Use * as a wildcard.");
                 break;
               case 'date':
@@ -368,24 +346,16 @@ class report_helper extends helper_base {
     $currentUrl = self::get_reload_link_parts();
     // automatic handling for Drupal clean urls.
     $pathParam = (function_exists('variable_get') && variable_get('clean_url', 0)=='0') ? 'q' : '';
-    $rootFolder = dirname($_SERVER['PHP_SELF']) . (empty($pathParam) ? '/' : "?$pathParam=");
-    // amend currentUrl path if we have drupal dirty URLs so javascript will work properly
-    if ($pathParam==='q' && isset($currentUrl['params']['q']) && strpos($currentUrl['path'], '?')===false) {
-      $currentUrl['path'] = $currentUrl['path'].'?q='.$currentUrl['params']['q'];
-    }
     $r .= '<tfoot>';
     $r .= '<tr><td colspan="'.count($options['columns'])*$options['galleryColCount'].'">'.self::output_pager($options, $pageUrl, $sortAndPageUrlParams, $response).'</td></tr>'.
     $extraFooter = '';
     if (isset($options['footer']) && !empty($options['footer'])) {
-      $footer = str_replace(array('{rootFolder}', '{currentUrl}'),
-          array($rootFolder, $currentUrl['path']), $options['footer']);
+      $footer = str_replace(array('{rootFolder}', '{currentUrl}'), 
+          array(dirname($_SERVER['PHP_SELF']) . ($pathParam=='' ? '/' : "?$pathParam="), $currentUrl['path']), $options['footer']);
       $extraFooter .= '<div class="left">'.$footer.'</div>';
     }
-    if (isset($options['downloadLink']) && $options['downloadLink'] && count($records)>0) {
-      $downloadOpts = array_merge($options);
-      unset($downloadOpts['itemsPerPage']);
-      $extraFooter .= '<div class="right">'.self::report_download_link($downloadOpts).'</div>';
-    }
+    if (isset($options['downloadLink']) && $options['downloadLink'] && count($records)>0)
+      $extraFooter .= '<div class="right">'.self::report_download_link($options).'</div>';
     if (!empty($extraFooter))
       $r .= '<tr><td colspan="'.count($options['columns']).'">'.$extraFooter.'</td></tr>';
     $r .= '</tfoot>';
@@ -395,11 +365,9 @@ class report_helper extends helper_base {
     $imagePath = self::get_uploaded_image_folder();
     $relpath = self::relative_client_helper_path();
     $addFeaturesJs = '';
-    $haveUpdates=false;
-    $updateformID=0;
     if (count($records)>0) {
       $rowInProgress=false;
-      $rowTitle = !empty($options['rowId']) ?
+      $rowTitle = (isset($options['sendOutputToMap']) && $options['sendOutputToMap']) ?
           ' title="'.lang::get('Click the row to highlight the record on the map. Double click to zoom in.').'"' : '';
       foreach ($records as $rowIdx => $row) {
         // Don't output the additional row we requested just to check if the next page link is required.
@@ -407,7 +375,7 @@ class report_helper extends helper_base {
           break;
         // Put some extra useful paths into the row data, so it can be used in the templating
         $row = array_merge($row, array(
-            'rootFolder'=>$rootFolder,
+            'rootFolder'=>dirname($_SERVER['PHP_SELF']) . '/',
             'imageFolder'=>$imagePath,
             // allow the current URL to be replaced into an action link. We extract url parameters from the url, not $_GET, in case
             // the url is being rewritten.
@@ -420,7 +388,7 @@ class report_helper extends helper_base {
           if ($altRowClass)
             $classes[]=$altRowClass;
           if (isset($options['rowClass']))
-            $classes[]=self::mergeParamsIntoTemplate($row, $options['rowClass'], true, true);
+            $classes[]=self::mergeParamsIntoTemplate($row, $options['rowClass'], true, true);;
           $classes=implode(' ',$classes);
           $class = empty($classes) ? '' : "class=\"$classes\" ";
           $r .= "<tr $class$rowId$rowTitle>";
@@ -428,48 +396,22 @@ class report_helper extends helper_base {
         }
         // first decode any json data
         foreach ($options['columns'] as $field) {
-          if (isset($field['json']) && $field['json'] && isset($row[$field['fieldname']])) {
-            $row = array_merge(json_decode($row[$field['fieldname']], true), $row);
-          }
+          if (isset($field['json']) && $field['json'] && isset($row[$field['fieldname']]))
+            $row = array_merge($row, json_decode($row[$field['fieldname']], true));
         }
         foreach ($options['columns'] as $field) {
           $classes=array();
-          if (isset($options['sendOutputToMap']) && $options['sendOutputToMap'] && isset($field['mappable']) && ($field['mappable']==='true' || $field['mappable']===true)) {
-            $addFeaturesJs.= "div.addPt(features, ".json_encode($row).", '".$field['fieldname']."', {\"type\":\"circle\"}".
+          if (isset($options['sendOutputToMap']) && $options['sendOutputToMap'] && isset($field['mappable']) && $field['mappable']==='true') {
+            $addFeaturesJs.= "  addDistPoint(features, ".json_encode($row).", '".$field['fieldname']."', {}".
                 (empty($rowId) ? '' : ", '".$row[$options['rowId']]."'").");\n";
-          }
+          }          
           if (isset($field['visible']) && ($field['visible']==='false' || $field['visible']===false))
             continue; // skip this column as marked invisible
           if (isset($field['actions'])) {
             $value = self::get_report_grid_actions($field['actions'],$row, $pathParam);
             $classes[]='actions';
           } elseif (isset($field['template'])) {
-            $value = self::mergeParamsIntoTemplate($row, $field['template'], true, true, true);
-          } else if (isset($field['update']) &&(!isset($field['update']['permission']) || user_access($field['update']['permission']))){
-          	// TODO include checks to ensure method etc are included in structure -
-          	$updateformID++;
-          	$value="<form id=\"updateform-".$updateformID."\" method=\"post\" action=\"".iform_ajaxproxy_url($node, $field['update']['method'])."\"><input type=\"hidden\" name=\"website_id\" value=\"".$field['update']['website_id']."\"><input type=\"hidden\" name=\"transaction_id\" value=\"updateform-".$updateformID."-field\"><input id=\"updateform-".$updateformID."-field\" name=\"".$field['update']['tablename'].":".$field['update']['fieldname']."\" class=\"update-input ".(isset($field['update']['class']) ? $field['update']['class'] : "")."\" value=\"".(isset($field['fieldname']) && isset($row[$field['fieldname']]) ? $row[$field['fieldname']] : '')."\">";
-          	if(isset($field['update']['parameters'])){
-              foreach($field['update']['parameters'] as $pkey=>$pvalue){
-                $value.="<input type=\"hidden\" name=\"".$field['update']['tablename'].":".$pkey."\" value=\"".$pvalue."\">";
-              }
-            }
-            $value.="</form>";
-          	$value=self::mergeParamsIntoTemplate($row, $value, true);
-          	$haveUpdates = true;
-            self::$javascript .= "
-jQuery('#updateform-".$updateformID."').ajaxForm({
-    async: true,
-    dataType:  'json',
-    success:   function(data, status, form){
-      if (checkErrors(data)) {
-        var selector = '#'+data.transaction_id.replace(/:/g, '\\:');
-        $(selector).removeClass('input-saving');
-        $(selector).removeClass('input-edited');
-      }
-    }
-  });
-";
+            $value = self::mergeParamsIntoTemplate($row, $field['template'], true, true);
           }
           else {
             $value = isset($field['fieldname']) && isset($row[$field['fieldname']]) ? $row[$field['fieldname']] : '';
@@ -483,13 +425,8 @@ jQuery('#updateform-".$updateformID."').ajaxForm({
             $class = ' class="'.implode(' ', $classes).'"';
           else
             $class = '';
-          if (isset($field['img']) && $field['img']=='true' && !empty($value)) {
-            $imgs = explode(',',$value);
-            $value='';
-            $imgclass=count($imgs)>1 ? 'multi' : 'single';
-            foreach($imgs as $img)
-              $value .= "<a href=\"$imagePath$img\" class=\"fancybox $imgclass\"><img src=\"$imagePath"."thumb-$img\" /></a>";
-          }
+          if (isset($field['img']) && $field['img']=='true' && !empty($value))
+            $value = "<a href=\"$imagePath$value\" class=\"fancybox\"><img src=\"$imagePath"."thumb-$value\" /></a>";
           $r .= "<td$class>$value</td>\n";
         }
         if ($rowIdx % $options['galleryColCount']==$options['galleryColCount']-1) {
@@ -503,41 +440,9 @@ jQuery('#updateform-".$updateformID."').ajaxForm({
         $r .= '</tr>';
     }
     $r .= "</tbody></table>\n";
-    if($haveUpdates){
-      self::$javascript .= "
-function checkErrors(data) {
-  if (typeof data.error!==\"undefined\") {
-    if (typeof data.errors!==\"undefined\") {
-      $.each(data.errors, function(idx, error) {
-        alert(error);
-      });
-    } else {
-      alert('An error occured when trying to save the data: '+data.error);
-    }
-    // data.transaction_id stores the last cell at the time of the post.
-    var selector = '#'+data.transaction_id.replace(/:/g, '\\\\:');
-    $(selector).focus();
-    $(selector).select();
-    return false;
-  } else {
-    return true;
-  }
-}
-$('.update-input').focus(function(evt) {
-  $(evt.target).addClass('input-selected');
-}).change(function(evt) {
-  $(evt.target).addClass('input-edited');
-}).blur(function(evt) {
-  var selector = '#'+evt.target.id.replace(/:/g, '\\:');
-  currentCell = evt.target.id;
-  $(selector).removeClass('input-selected');
-  if ($(selector).hasClass('input-edited')) {
-    $(selector).addClass('input-saving');
-    // WARNING No validation currently applied...
-    $(selector).parent().submit();
-  }
-});
-";
+    // amend currentUrl path if we have drupal dirty URLs so javascript will work properly
+    if ($pathParam==='q' && isset($currentUrl['params']['q']) && strpos($currentUrl['path'], '?')===false) {
+      $currentUrl['path'] = $currentUrl['path'].'?q='.$currentUrl['params']['q'];
     }
     self::addFeaturesLoadingJs($addFeaturesJs);
     // $r may be empty if a spatial report has put all its controls on the map toolbar, when using params form only mode.
@@ -550,10 +455,6 @@ $('.update-input').focus(function(evt) {
       $uniqueName = 'grid_' . preg_replace( "/[^a-z0-9]+/", "_", $options['id']);
       $group = preg_replace( "/[^a-zA-Z0-9]+/", "_", $options['reportGroup']);
       global $indicia_templates;
-      if (!empty(parent::$warehouse_proxy))
-        $warehouseUrl = parent::$warehouse_proxy;
-      else
-        $warehouseUrl = parent::$base_url;
       self::$javascript .= "
 if (typeof indiciaData.reports==='undefined') { indiciaData.reports={}; }
 if (typeof indiciaData.reports.$group==='undefined') { indiciaData.reports.$group={}; }
@@ -567,7 +468,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   auth_token: '".$options['readAuth']['auth_token']."',
   nonce: '".$options['readAuth']['nonce']."',
   callback: '".$options['callback']."',
-  url: '".$warehouseUrl."',
+  url: '".parent::$base_url."',
   reportGroup: '".$options['reportGroup']."',
   autoParamsForm: '".$options['autoParamsForm']."',
   rootFolder: '".dirname($_SERVER['PHP_SELF'])."/',
@@ -578,7 +479,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   pagingTemplate: '".$indicia_templates['paging']."',
   pathParam: '".$pathParam."',
   sendOutputToMap: ".((isset($options['sendOutputToMap']) && $options['sendOutputToMap']) ? 'true' : 'false').",
-  linkFeatures: ".(!empty($options['rowId']) ? 'true' : 'false').",
+  linkFeatures: ".((!empty($options['rowId']) && isset($options['sendOutputToMap']) && $options['sendOutputToMap']) ? 'true' : 'false').",
   msgRowLinkedToMapHint: '".lang::get('Click the row to highlight the record on the map. Double click to zoom in.')."',
   altRowClass: '".$options['altRowClass']."'";
       if (isset($options['sharing'])) {
@@ -586,8 +487,6 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
           $options['extraParams']=array();
         $options['extraParams']['sharing']=$options['sharing'];
       }
-      if (!empty($options['rowClass']))
-        self::$javascript .= ",\n  rowClass: '".$options['rowClass']."'";
       if (isset($options['extraParams']))
         self::$javascript .= ",\n  extraParams: ".json_encode($options['extraParams']);
       if (isset($options['filters']))
@@ -610,21 +509,19 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     }
     return $r;
   }
-
+  
   private static function request_report(&$response, &$options, &$currentParamValues, $wantCount, $extras='') {
     $extras .= '&wantColumns=1&wantParameters=1';
-    if ($wantCount)
+    if ($wantCount) 
       $extras .= '&wantCount=1';
-    // any extraParams are fixed values that don't need to be available in the params form, so they can be added to the
-    // list of parameters to exclude from the params form.
-    if (array_key_exists('extraParams', $options) && array_key_exists('ignoreParams', $options))
-      $options['paramsToExclude'] = array_merge($options['ignoreParams'], array_keys($options['extraParams']));
+    // any extraParams are fixed values that don't need to be available in the params form, so they can be added to the 
+    // list of ignorable parameters.
+    if (array_key_exists('extraParams', $options) && array_key_exists('ignoreParams', $options)) 
+      $options['ignoreParams'] = array_merge($options['ignoreParams'], array_keys($options['extraParams']));
     elseif (array_key_exists('extraParams', $options))
-      $options['paramsToExclude'] = array_keys($options['extraParams']);
-    elseif (array_key_exists('ignoreParams', $options))
-      $options['paramsToExclude'] = array_merge($options['ignoreParams']);
-    if (array_key_exists('paramsToExclude', $options))
-      $extras .= '&paramsFormExcludes='.json_encode($options['paramsToExclude']);
+      $options['ignoreParams'] = array_keys($options['extraParams']);    
+    if (array_key_exists('ignoreParams', $options))
+      $extras .= '&paramsFormExcludes='.json_encode($options['ignoreParams']);
     // specify the view variant to load, if loading from a view
     if ($options['mode']=='direct') $extras .= '&view='.$options['view'];
     $currentParamValues = self::get_report_grid_current_param_values($options);
@@ -636,11 +533,11 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       $extras .= '&'.self::array_to_query_string($currentParamValues, true);
     $response = self::get_report_data($options, $extras);
   }
-
+  
   private static function params_form_if_required($response, $options, $currentParamValues) {
     if (isset($response['parameterRequest'])) {
       // We put report param controls into their own divs, making layout easier. Unless going in the
-      // map toolbar as they will then be inline.
+      // map toolbar as they will then be inline. 
       global $indicia_templates;
       $oldprefix = $indicia_templates['prefix'];
       $oldsuffix = $indicia_templates['suffix'];
@@ -656,10 +553,10 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       // loading records from a view (not a report), so we can put a simple filter parameter form at the top.
       return self::get_direct_mode_params_form($options);
     }
-
+    
     return ''; // no form required
   }
-
+  
   /**
    * Output pagination links
    */
@@ -675,7 +572,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     $r = str_replace('{paging}', $r, $indicia_templates['paging_container']);
     return $r;
   }
-
+  
   /**
    * Creates the HTML for the simple version of the pager.
    */
@@ -689,18 +586,18 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       if ($sortAndPageUrlParams['page']['value']>0) {
         $prev = max(0, $sortAndPageUrlParams['page']['value']-1);
         $r .= "<a class=\"pag-prev pager-button\" rel=\"nofollow\" href=\"$pagLinkUrl".$sortAndPageUrlParams['page']['name']."=$prev\">".lang::get('previous')."</a> \n";
-      } else
+      } else 
         $r .= "<span class=\"pag-prev ui-state-disabled pager-button\">".lang::get('previous')."</span> \n";
       // if the service call returned more records than we are displaying (because we asked for 1 more), then we can go forward
       if (count($response['records'])>$options['itemsPerPage']) {
         $next = $sortAndPageUrlParams['page']['value'] + 1;
         $r .= "<a class=\"pag-next pager-button\" rel=\"nofollow\" href=\"$pagLinkUrl".$sortAndPageUrlParams['page']['name']."=$next\">".lang::get('next')." &#187</a> \n";
-      } else
+      } else 
         $r .= "<span class=\"pag-next ui-state-disabled pager-button\">".lang::get('next')."</span> \n";
       return $r;
     }
   }
-
+  
   /**
    * Creates the HTML for the advanced version of the pager.
    */
@@ -722,7 +619,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     $pagelist = '';
     $page = ($sortAndPageUrlParams['page']['value'] ? $sortAndPageUrlParams['page']['value'] : 0)+1;
     for ($i=max(1, $page-5); $i<=min(ceil($response['count']/$options['itemsPerPage']), $page+5); $i++) {
-      if ($i===$page)
+      if ($i===$page) 
         $pagelist .= "<span class=\"pag-page pager-button ui-state-disabled\" id=\"page-".$options['id']."-$i\">$i</span>\n";
       else
         $pagelist .= "<a class=\"pag-page pager-button\" rel=\"nofollow\" href=\"$pagLinkUrl=".($i-1)."\" id=\"page-".$options['id']."-$i\">$i</a>\n";
@@ -738,8 +635,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       $replacements['last'] = "<span class=\"pag-last pager-button ui-state-disabled\">".lang::get('last')."</span>\n";
     }
     if ($response['count']) {
-      $replacements['showing'] = '<span class="pag-showing">'.lang::get('Showing records {1} to {2} of {3}',
-          ($page-1)*$options['itemsPerPage']+1,
+      $replacements['showing'] = '<span class="pag-showing">'.lang::get('Showing records {1} to {2} of {3}', 
+          ($page-1)*$options['itemsPerPage']+1, 
           min($page*$options['itemsPerPage'], $response['count']),
           $response['count']).'</span>';
     } else {
@@ -783,14 +680,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * CSS class to apply to the box containing the header.</li>
   * <li><b>reportGroup</b><br/>
   * When joining multiple reports together, this can be used on a report that has autoParamsForm set to false to bind the report to the
-  * parameters form from a different report by giving both report controls the same reportGroup string. This will only work when all
+  * parameters form from a different report by giving both report controls the same reportGroup string. This will only work when all 
   * parameters required by this report are covered by the other report's parameters form.</li>
-  * <li><b>rememberParamsReportGroup</b><br/>
-  * Enter any value in this parameter to allow the report to save its parameters for the next time the report is loaded.
-  * The parameters are saved site wide, so if several reports share the same value and the same report group then the parameter
-  * settings will be shared across the reports even if they are on different pages of the site. For example if several reports on the
-  * site have an ownData boolean parameter which filters the data to the user's own data, this can be set so that the reports all
-  * share the setting. This functionality requires cookies to be enabled on the browser.</li>
   * <li><b>height</b><br/>
   * Chart height in pixels.</li>
   * <li><b>width</b><br/>
@@ -824,8 +715,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * field(s) which contains the labels. Also used for pie chart segment names. Can be an array for multi-series
   * charts.</li>
   * <li><b>sharing</b>
-  * Assuming the report has been written to take account of website sharing agreements, set this to define the task
-  * you are performing with the report and therefore the type of sharing to allow. Options are reporting (default),
+  * Assuming the report has been written to take account of website sharing agreements, set this to define the task 
+  * you are performing with the report and therefore the type of sharing to allow. Options are reporting (default), 
   * verification, moderation, peer_review, data_flow, website (this website only) or me (my data only).</li>
   * <li><b>UserId</b>
   * If sharing=me, then this must contain the Indicia user ID of the user to return data for.
@@ -958,10 +849,10 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       self::add_resource('jqplot_category_axis_renderer');
     }
   }
-
+  
   /**
    * When loading records from a view, put a simple filter parameters form at the top as the view does not specify any
-   * parameters.
+   * parameters. 
    */
   private static function get_direct_mode_params_form($options) {
     $reloadUrl = self::get_reload_link_parts();
@@ -970,7 +861,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     $value = (isset($_GET['filters'])) ? ' value="'.$_GET['filters'].'"' : '';
     $r .= '<input type="text" name="filters" id="filters" class="filterInput"'.$value.'/> ';
     $r .= '<label for="columns" class="auto">'.lang::get('in').'</label> <select name="columns" class="filterSelect" id="columns">';
-
+    
     foreach ($options['columns'] as $column) {
       if (isset($column['fieldname']) && isset($column['display']) && (!isset($column['visible']) || $column['visible']===false)) {
         $selected = (isset($_GET['columns']) && $_GET['columns']==$column['fieldname']) ? ' selected="selected"' : '';
@@ -1006,14 +897,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * CSS class to apply to the outer div. Default is banded-report.</li>
   * <li><b>reportGroup</b><br/>
   * When joining multiple reports together, this can be used on a report that has autoParamsForm set to false to bind the report to the
-  * parameters form from a different report by giving both report controls the same reportGroup string. This will only work when all
+  * parameters form from a different report by giving both report controls the same reportGroup string. This will only work when all 
   * parameters required by this report are covered by the other report's parameters form.</li>
-  * <li><b>rememberParamsReportGroup</b><br/>
-  * Enter any value in this parameter to allow the report to save its parameters for the next time the report is loaded.
-  * The parameters are saved site wide, so if several reports share the same value and the same report group then the parameter
-  * settings will be shared across the reports even if they are on different pages of the site. For example if several reports on the
-  * site have an ownData boolean parameter which filters the data to the user's own data, this can be set so that the reports all
-  * share the setting. This functionality requires cookies to be enabled on the browser.</li>
   * <li><b>header</b><br/>
   * Text to output as the header of the report.</li>
   * <li><b>footer</b><br/>
@@ -1029,8 +914,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * each time one of the named trigger fields' values change. Therefore when using
   * trigger fields the band acts as a group header band.</li>
   * <li><b>sharing</b>
-  * Assuming the report has been written to take account of website sharing agreements, set this to define the task
-  * you are performing with the report and therefore the type of sharing to allow. Options are reporting (default),
+  * Assuming the report has been written to take account of website sharing agreements, set this to define the task 
+  * you are performing with the report and therefore the type of sharing to allow. Options are reporting (default), 
   * verification, moderation, peer_review, data_flow, website (this website only) or me (my data only).</li>
   * <li><b>UserId</b>
   * If sharing=me, then this must contain the Indicia user ID of the user to return data for.
@@ -1038,13 +923,13 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * </ul>
   */
   public static function freeform_report($options) {
-    $options = self::get_report_grid_options($options);
+    $options = self::get_report_grid_options($options);    
     self::request_report($response, $options, $currentParamValues, false);
-    if (isset($response['error'])) return $response['error'];
+    if (isset($response['error'])) return $response['error'];   
     $r = self::params_form_if_required($response, $options, $currentParamValues);
     // return the params form, if that is all that is being requested, or the parameters are not complete.
     if ($options['paramsOnly'] || !isset($response['records'])) return $r;
-    $records = $response['records'];
+    $records = $response['records'];    
 
     $options = array_merge(array(
       'header' => '',
@@ -1090,7 +975,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     }
     return $r;
   }
-
+  
  /**
   * Function to output a report onto a map rather than a grid.
   * Because there are many options for the map, this method does not generate the
@@ -1110,14 +995,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * generated.</li>
   * <li><b>reportGroup</b><br/>
   * When joining multiple reports together, this can be used on a report that has autoParamsForm set to false to bind the report to the
-  * parameters form from a different report by giving both report controls the same reportGroup string. This will only work when all
+  * parameters form from a different report by giving both report controls the same reportGroup string. This will only work when all 
   * parameters required by this report are covered by the other report's parameters form.</li>
-  * <li><b>rememberParamsReportGroup</b><br/>
-  * Enter any value in this parameter to allow the report to save its parameters for the next time the report is loaded.
-  * The parameters are saved site wide, so if several reports share the same value and the same report group then the parameter
-  * settings will be shared across the reports even if they are on different pages of the site. For example if several reports on the
-  * site have an ownData boolean parameter which filters the data to the user's own data, this can be set so that the reports all
-  * share the setting. This functionality requires cookies to be enabled on the browser.</li>
   * <li><b>mode</b><br/>
   * Pass report for a report, or direct for an Indicia table or view. Default is report.</li>
   * <li><b>readAuth</b><br/>
@@ -1181,16 +1060,16 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * <li>clickableLayersOutputDiv<br/>
   * Set to the id of a div to display the clicked data in, or leave blank to display a popup.</li>
   * <li>clickableLayersOutputColumns<br/>
-  * An associated array of column field names with column titles as the values which defines the columns that are output when clicking on a data point.
+  * An associated array of column field names with column titles as the values which defines the columns that are output when clicking on a data point. 
   * If ommitted, then all available columns are output using their original field names.</li>
   * <li>displaySymbol</li>
   * Symbol to display instead of the actual polygon. The symbol is displayed at the centre of the polygon.
-  * If not set then defaults to output the original polygon. Allowed values are circle,
+  * If not set then defaults to output the original polygon. Allowed values are circle, 
   * square, star, x, cross, triangle.</li>
   * <li>valueOutput
   * Allows definition of how a data value in the report output is used to change the output of each symbol.
   * This allows symbol size, colour and/or opacity to be used to provide an indication of data values.
-  * Provide an array of entries. The key of the entries should match the style parameter you want to
+  * Provide an array of entries. The key of the entries should match the style parameter you want to 
   * control which should be one of fillOpacity, fillColor, strokeOpacity, strokeWidth or strokeColor. If using
   * displaySymbol to render symbols rather than polygons then pointRadius (the symbol size) and rotation are also
   * available. If the report defines labels (using the feature_style attribute of a column to define a
@@ -1198,10 +1077,10 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * Each array entry is a sub-array with associative array values set for the following:
   *   "from" is the start value of the range of output values (e.g. the minimum opacity or first colour in a range).
   *   "to" is the end value of the range of output values (e.g. the maximum opacity or last colour in a range).
-  *   "valueField" is the name of the numeric field in the report output to be used to control display.
-  *   "minValue" is the data value that equates to the output value specified by "from". This can be a
+  *   "valueField" is the name of the numeric field in the report output to be used to control display. 
+  *   "minValue" is the data value that equates to the output value specified by "from". This can be a 
   *     fieldname if wrapped in braces.
-  *   "maxValue" is the data value that equates to the output value specified by "from". This can be a
+  *   "maxValue" is the data value that equates to the output value specified by "from". This can be a 
   *     fieldname if wrapped in braces.
   * The following example maps a field called value (with minvalue and maxvalue also output by the report)
   * to a range of colours from blue to red.
@@ -1216,16 +1095,11 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * )
   * </li>
   * <li><b>sharing</b>
-  * Assuming the report has been written to take account of website sharing agreements, set this to define the task
-  * you are performing with the report and therefore the type of sharing to allow. Options are reporting (default),
+  * Assuming the report has been written to take account of website sharing agreements, set this to define the task 
+  * you are performing with the report and therefore the type of sharing to allow. Options are reporting (default), 
   * verification, moderation, peer_review, data_flow, website (this website only) or me (my data only).</li>
   * <li><b>UserId</b>
   * If sharing=me, then this must contain the Indicia user ID of the user to return data for.
-  * </li>
-  * <li><b>rowId</b>
-  * Optional. Set this to the name of a field in the report to define which field is being used to define the feature ID created on the map
-  * layer. For example this can be used in conjunction with rowId on a report grid to allow a report's rows to be linked to the associated
-  * features.
   * </li>
   * </ul>
   */
@@ -1239,7 +1113,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     $options = self::get_report_grid_options($options);
     if (empty($options['geoserverLayer'])) {
       self::request_report($response, $options, $currentParamValues, false, '');
-      if (isset($response['error'])) return $response['error'];
+      if (isset($response['error'])) return $response['error'];   
       $r = self::params_form_if_required($response, $options, $currentParamValues);
       // return the params form, if that is all that is being requested, or the parameters are not complete.
       if ($options['paramsOnly'] || !isset($response['records'])) return $r;
@@ -1254,14 +1128,14 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       if (!isset($wktCol))
         $r .= "<p>".lang::get("The report's configuration does not output any mappable data")."</p>";
     } else {
-      // using geoserver, so we just need to know the param values.
+      // using geoserver, so we just need to know the param values. 
       $response = self::get_report_data($options, self::array_to_query_string($currentParamValues, true).'&wantRecords=0&wantParameters=1');
       $currentParamValues = self::get_report_grid_current_param_values($options);
       $r .= self::get_report_grid_parameters_form($response, $options, $currentParamValues);
     }
     // don't load the report layer if not all parameters are filled in
     if (!isset($response['parameterRequest']) || count(array_intersect_key($currentParamValues, $response['parameterRequest']))==count($response['parameterRequest'])) {
-      if (empty($options['geoserverLayer'])) {
+      if (empty($options['geoserverLayer'])) {  
         // we are doing vector reporting via indicia services
         // first we need to build a style object which respects columns in the report output that define style settings for each vector.
         $settings=array();
@@ -1275,22 +1149,14 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         $defsettings = array_merge(array(
           'fillColor'=> '#ff0000',
           'strokeColor'=> '#ff0000',
-          'strokeWidth'=>"\${getstrokewidth}",
-          'fillOpacity'=>0.8,
-          'strokeOpacity'=>0.8,
-          'pointRadius'=>2,
-          'graphicZIndex'=>0
+          'strokeWidth'=>1,
+          'fillOpacity'=>0.5,
+          'pointRadius'=>5
         ), $settings);
         if ($options['displaySymbol']!=='vector')
           $defsettings['graphicName']=$options['displaySymbol'];
-        // The following function uses the strokeWidth to pad out the squares which go too small when zooming the map out. Points 
-        // always display the same size so are no problem.
-        $styleFns = array("getstrokewidth: function(feature) {          
-          var width=feature.geometry.getBounds().right - feature.geometry.getBounds().left,
-            strokeWidth=(width===0) ? 1 : 6 - (width / feature.layer.map.getResolution());
-          return (strokeWidth<1) ? 1 : strokeWidth;
-        }");
         if (isset($options['valueOutput'])) {
+          $styleFns = array();
           foreach($options['valueOutput'] as $type => $outputdef) {
             $value = $outputdef['valueField'];
             if (preg_match('/{(?P<name>.+)}/', $outputdef['minValue'], $matches))
@@ -1303,20 +1169,20 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
               $maxvalue = $outputdef['maxValue'];
             $from = $outputdef['from'];
             $to = $outputdef['to'];
-            if (substr($type, -5)==='Color')
+            if (substr($type, -5)==='Color') 
               $styleFns[] = "get$type: function(feature) { \n".
-                  "var from_r, from_g, from_b, to_r, to_g, to_b, r, g, b, ratio = Math.pow((feature.data.$value - $minvalue) / ($maxvalue - $minvalue), .2); \n".
+                  "var from_r, from_g, from_b, to_r, to_g, to_b, ratio = (feature.data.$value - $minvalue) / ($maxvalue - $minvalue); \n".
                   "from_r = parseInt('$from'.substring(1,3),16);\n".
                   "from_g = parseInt('$from'.substring(3,5),16);\n".
                   "from_b = parseInt('$from'.substring(5,7),16);\n".
                   "to_r = parseInt('$to'.substring(1,3),16);\n".
                   "to_g = parseInt('$to'.substring(3,5),16);\n".
                   "to_b = parseInt('$to'.substring(5,7),16);\n".
-                  "r=Math.round(from_r + (to_r-from_r)*ratio);\n".
-                  "g=Math.round(from_g + (to_g-from_g)*ratio);\n".
-                  "b=Math.round(from_b + (to_b-from_b)*ratio);\n".
-                  "return 'rgb('+r+','+g+','+b+')';\n".
-                '}';
+
+                  "return 'rgb('+(from_r + (to_r-from_r)*ratio) + ', '+".
+                     "(from_g + (to_g-from_g)*ratio) + ', '+".
+                     "(from_b + (to_b-from_b)*ratio) + ')'; \n".
+                  '}';
             else
               $styleFns[] = "get$type: function(feature) { \n".
                   "var ratio = (feature.data.$value - $minvalue) / ($maxvalue - $minvalue); \n".
@@ -1324,51 +1190,27 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
                   '}';
             $defsettings[$type]="\${get$type}";
           }
+          $styleFns = implode(",\n", $styleFns);
         }
-        $styleFns = implode(",\n", $styleFns);
-        // selected features are made larger
-        $selsettings = array(
-          'strokeWidth'=>15,
-          'strokeColor'=>'red',
-          'strokeOpacity'=>0.8,
-          'fillOpacity'=>0.8
-        );
+        // selected features are color blue by default
+        $selsettings = array_merge($defsettings, array(
+          'fillColor'=> '#0000ff',
+          'strokeColor'=> '#0000ff',
+        ));
         // convert these styles into a JSON definition ready to feed into JS.
         $defsettings = json_encode($defsettings);
         $selsettings = json_encode($selsettings);
-        $addFeaturesJs = "";        
-        // No need to pass the default type of vector display, so use empty obj to keep JavaScript size down
-        $opts = $options['displaySymbol']='vector' ? '{}' : json_encode(array('type'=>$options['displaySymbol']));
-        $rowId = isset($options['rowId']) ? ' id="row'.$row[$options['rowId']].'"' : '';
-        if ($options['clickableLayersOutputMode']<>'popup' && $options['clickableLayersOutputMode']<>'div') {
-          // If we don't need record data for every row for feature clicks, then only include necessary columns to minimise JS
-          $colsToInclude=array('occurrence_id'=>'',$wktCol=>'');
-          foreach ($response['columns'] as $name=>$def) {
-            if (isset($def['feature_style']))
-              $colsToInclude[$name] = '';
-          }
-        }
-        $geoms = array();
-        foreach ($records as $record) {        
-          $record[$wktCol]=preg_replace('/\.(\d+)/', '', $record[$wktCol]);
-          // rather than output every geom separately, do a list of distinct geoms to minify the JS
-          if (!$geomIdx = array_search('"'.$record[$wktCol].'"', $geoms)) {          
-            $geoms[] = '"'.$record[$wktCol].'"';
-            $geomIdx = count($geoms)-1;
-          }
-          $record[$wktCol] = $geomIdx;
-          if (isset($colsToInclude))
-            $record = array_intersect_key($record, $colsToInclude); 
-          $addFeaturesJs.= "div.addPt(features, ".json_encode($record).", '$wktCol', $opts".(empty($rowId) ? '' : ", '".$record[$options['rowId']]."'").");\n";
+        $addFeaturesJs = "";
+        $opts = json_encode(array('type'=>$options['displaySymbol']));
+        foreach ($records as $record) {
+          $addFeaturesJs.= "addDistPoint(features, ".json_encode($record).", '$wktCol', $opts);\n";
         }
         if (!empty($styleFns)) {
-          $styleFns = ", {context: {
+          $styleFns = ", {context: { 
   $styleFns
 }}";
         }
-        self::$javascript .= 'indiciaData.geoms=['.implode(',',$geoms)."];\n";
         self::addFeaturesLoadingJs($addFeaturesJs, $defsettings, $selsettings, $styleFns);
-        
       } else {
         // doing WMS reporting via GeoServer
         $replacements = array();
@@ -1393,16 +1235,16 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
           $filter, $style},
       {singleTile: true, isBaseLayer: false, sphericalMercator: true});\n";
       }
-
+      
       report_helper::$javascript.= "
 mapSettingsHooks.push(function(opts) {
   opts.reportGroup = '".$options['reportGroup']."';
   if (typeof indiciaData.reportlayer!=='undefined') {
-    opts.layers.push(indiciaData.reportlayer);\n";
+    opts.layers.push(indiciaData.reportlayer);
+  }\n";
       if ($options['clickable'])
-        report_helper::$javascript .= "    opts.clickableLayers.push(indiciaData.reportlayer);\n";
-
-      report_helper::$javascript .= "}\n  opts.clickableLayersOutputMode='".$options['clickableLayersOutputMode']."';\n";
+        report_helper::$javascript .= "  opts.clickableLayers.push(indiciaData.reportlayer);\n";
+      report_helper::$javascript .= "  opts.clickableLayersOutputMode='".$options['clickableLayersOutputMode']."';\n";
       if ($options['clickableLayersOutputDiv'])
         report_helper::$javascript .= "  opts.clickableLayersOutputDiv='".$options['clickableLayersOutputDiv']."';\n";
       if (isset($options['clickableLayersOutputColumns']))
@@ -1411,7 +1253,7 @@ mapSettingsHooks.push(function(opts) {
     }
     return $r;
   }
-
+  
   /**
    * Method that retrieves the data from a report or a table/view, ready to display in a chart or grid.
    * Respects the filters and columns $_GET variables generated by a grid's filter form when JavaScript is disabled.
@@ -1421,6 +1263,9 @@ mapSettingsHooks.push(function(opts) {
    * </li>
    * <li><b>dataSource</b><br/>
    * Name of the report or entity being queried.
+   * <li><b>mode</b><br/>
+   * Pass report for a report, or direct for an Indicia table or view. Default is report.</li>
+   * </li>
    * <li><b>readAuth</b><br/>
    * Read authentication tokens.
    * </li>
@@ -1434,21 +1279,20 @@ mapSettingsHooks.push(function(opts) {
    * Pass true to return a link to the report data request rather than the data itself. Default false.
    * </li>
    * <li><b>sharing</b>
-   * Assuming the report has been written to take account of website sharing agreements, set this to define the task
-   * you are performing with the report and therefore the type of sharing to allow. Options are reporting (default),
+   * Assuming the report has been written to take account of website sharing agreements, set this to define the task 
+   * you are performing with the report and therefore the type of sharing to allow. Options are reporting (default), 
    * verification, moderation, peer_review, data_flow, website (this website only) or me (my data only).</li>
    * <li><b>UserId</b>
    * If sharing=me, then this must contain the Indicia user ID of the user to return data for.
    * </li>
    * </ul>
-
+   
    * @param string $extra Any additional parameters to append to the request URL, for example orderby, limit or offset.
-   * @return object If linkOnly is set in the options, returns the link string, otherwise returns the response as an array.
+   * @return object If linkOnly is set in the options, returns the link string, otherwise returns the response as an array. 
    */
   public static function get_report_data($options, $extra='') {
     $query = array();
     if (!isset($options['mode'])) $options['mode']='report';
-    if (!isset($options['format'])) $options['format']='json';
     if ($options['mode']=='report') {
       $serviceCall = 'report/requestReport?report='.$options['dataSource'].'.xml&reportSource=local&';
     } elseif ($options['mode']=='direct') {
@@ -1460,13 +1304,13 @@ mapSettingsHooks.push(function(opts) {
         $query['like'] = $assoc;
       }
     } else {
-      throw new Exception('Invalid mode parameter for call to report_grid - '.$options['mode']);
+      throw new Exception('Invalid mode parameter for call to report_grid');
     }
     if (!empty($extra) && substr($extra, 0, 1)!=='&')
       $extra = '&'.$extra;
-    $request = 'index.php/services/'.
+    $request = parent::$base_url.'index.php/services/'.
         $serviceCall.
-        'mode='.$options['format'].'&nonce='.$options['readAuth']['nonce'].
+        'mode=json&nonce='.$options['readAuth']['nonce'].
         '&auth_token='.$options['readAuth']['auth_token'].
         $extra;
     if (isset($options['filters'])) {
@@ -1482,7 +1326,7 @@ mapSettingsHooks.push(function(opts) {
     }
     if (!empty($query))
       $request .= "&query=".urlencode(json_encode($query));
-    if (isset($options['extraParams'])) {
+    if (isset($options['extraParams'])) { 
       foreach ($options['extraParams'] as $key=>$value)
         // Must urlencode the keys and parameters, as things like spaces cause curl to hang.
         $request .= '&'.urlencode($key).'='.urlencode($value);
@@ -1493,29 +1337,27 @@ mapSettingsHooks.push(function(opts) {
     if (isset($options['userId']))
       $request .= '&user_id='.$options['userId'];
     if (isset($options['linkOnly']) && $options['linkOnly']) {
-      // a link must be proxied as can be used client-site 
-      return (empty(parent::$warehouse_proxy) ? parent::$base_url : parent::$warehouse_proxy).$request;
+      return $request;
     }
     else {
-      // no need to proxy the request, as coming from server-side
-      $response = self::http_post(parent::$base_url.$request, null);
+      $response = self::http_post($request, null);
       $decoded = json_decode($response['output'], true);
-      if (!is_array($decoded))
+      if (empty($decoded)) 
         return array('error'=>print_r($response, true));
       else
         return $decoded;
     }
   }
-
+  
   /**
-   * Generates the extra URL parameters that need to be appended to a report service call request, in order to
+   * Generates the extra URL parameters that need to be appended to a report service call request, in order to 
    * include the sorting and pagination parameters.
    * @param array @options Options array sent to the report.
    * @param array @sortAndPageUrlParams Paging and sorting info returned from a call to get_report_grid_sort_page_url_params.
    * @return string Snippet of URL containing the required URL parameters.
    */
   private static function get_report_sorting_paging_params($options, $sortAndPageUrlParams) {
-    // Work out the names and current values of the params we expect in the report request URL for sort and pagination
+    // Work out the names and current values of the params we expect in the report request URL for sort and pagination    
     $page = ($sortAndPageUrlParams['page']['value'] ? $sortAndPageUrlParams['page']['value'] : 0);
     // set the limit to one higher than we need, so the extra row can trigger the pagination next link
     $extraParams = '&limit='.($options['itemsPerPage']+1);
@@ -1602,7 +1444,7 @@ mapSettingsHooks.push(function(opts) {
         if (!empty($options['fieldsetClass']))
           $cls .= ' '.$options['fieldsetClass'];
         $r .= '<form action="'.$_SERVER['REQUEST_URI'].'" method="post" id="'.$options['reportGroup'].'-params">'."\n<fieldset class=\"$cls\">";
-        if (!$options['paramsInMapToolbar'])
+        if (!$options['paramsInMapToolbar']) 
           // don't use the fieldset legend in toolbar mode
           $r .= '<legend>'.lang::get('Report Parameters').'</legend>';
       }
@@ -1618,34 +1460,31 @@ mapSettingsHooks.push(function(opts) {
       }
       if ($options['paramsInMapToolbar'])
         $options['helpText']=false;
-      if (isset($options['ignoreParams']))
-        // tell the params form builder to hide the ignored parameters.
-        $options['paramsToHide']=$options['ignoreParams'];
       $r .= self::build_params_form(array_merge($options, array('form'=>$response['parameterRequest'], 'defaults'=>$params)));
       if ($options['completeParamsForm']==true) {
         $suffix = '<input type="submit" value="'.lang::get($options['paramsFormButtonCaption']).'" id="run-report"/>'.
             '</fieldset></form>';
-      } else
+      } else 
         $suffix = '';
-      // look for idlist parameters with an alias. If we find one, we need to pass this information to any map panel, because the
+      // look for idlist parameters with an alias. If we find one, we need to pass this information to any map panel, because the 
       // alias provides the name of the key field in the features loaded onto the map. E.g. if you click on the feature, the alias
       // allows the map to find the primary key value and therefore filter the report to show the matching feature.
-      foreach($response['parameterRequest'] as $key=>$param)
+      foreach($response['parameterRequest'] as $key=>$param) 
         if (!empty($param['alias']) && $param['datatype']=='idlist') {
           $alias = $param['alias'];
           data_entry_helper::$javascript .= "
-if (typeof mapSettingsHooks!=='undefined') {
+if (typeof(mapSettingsHooks)!=='undefined') {
   mapSettingsHooks.push(function(opts) {
     opts.featureIdField='$alias';
   });
 }\n";
         }
       if ($options['paramsInMapToolbar']) {
-        $toolbarControls = str_replace(array('<br/>', "\n", "'"), array('', '', "\'"), $r);
+        $toolbarControls = str_replace(array('<br/>', "\n"), '', $r);
         data_entry_helper::$javascript .= "$.fn.indiciaMapPanel.defaults.toolbarPrefix+='$toolbarControls';\n";
         data_entry_helper::$javascript .= "$.fn.indiciaMapPanel.defaults.toolbarSuffix+='$suffix';\n";
         return '';
-      } else
+      } else      
         return "$r$suffix\n";
     } else {
       return '';
@@ -1701,21 +1540,18 @@ if (typeof mapSettingsHooks!=='undefined') {
    * @param array $row
    * @param string $dirtyUrlParam Set to the name of a URL param used to pass the path to this page. E.g. in Drupal
    * with clean urls disabled, this is set to q. Otherwise leave empty.
-   */
+   */   
   private static function get_report_grid_actions($actions, $row, $pathParam='') {
     $jsReplacements = array();
     foreach ($row as $key=>$value) {
       $jsReplacements[$key]=$value;
       $jsReplacements["$key-escape-quote"]=str_replace("'", "\'", $value);
       $jsReplacements["$key-escape-dblquote"]=str_replace('"', '\"', $value);
-      $jsReplacements["$key-escape-htmlquote"]=str_replace("'", "&#39;", $value);
-      $jsReplacements["$key-escape-htmldblquote"]=str_replace('"', '&quot;', $value);
     }
     $links = array();
     $currentUrl = self::get_reload_link_parts(); // needed for params
     if (!empty($pathParam)) {
-      // If we are using a path parameter (like Drupal's q= dirty URLs), then we must ignore this part of the current URL's parameters
-      // so that it can be replaced by the path we are navigating to.
+      $pathParamValue = isset($currentUrl['params'][$pathParam]) ? $currentUrl['params'][$pathParam] : '';
       unset($currentUrl['params'][$pathParam]);
     }
     foreach ($actions as $action) {
@@ -1723,10 +1559,10 @@ if (typeof mapSettingsHooks!=='undefined') {
       if (isset($action['visibility_field']) && $row[$action['visibility_field']]==='f')
         continue;
       if (isset($action['url'])) {
-        // Catch lazy cases where the URL does not contain the rootFolder so assumes a relative path
-        if (strcasecmp(substr($action['url'], 0, 12), '{rootfolder}')!==0 && strcasecmp(substr($action['url'], 0, 12), '{currentUrl}')!==0 
-            && strcasecmp(substr($action['url'], 0, 4), 'http')!==0)
-          $action['url']='{rootFolder}'.$action['url'];
+        if (!empty($pathParam) && strpos($action['url'], "?$pathParam=")===false) {
+          $row['rootFolder'] .="?$pathParam=";
+          $action['url'] .="?$pathParam=$pathParamValue";
+        }
         $actionUrl = self::mergeParamsIntoTemplate($row, $action['url'], true);
         // include any $_GET parameters to reload the same page, except the parameters that are specified by the action
         if (isset($action['urlParams']))
@@ -1749,12 +1585,7 @@ if (typeof mapSettingsHooks!=='undefined') {
         $onclick = '';
       }
       $class=(isset($action['class'])) ? ' '.$action['class'] : '';
-      if (isset($action['img'])) {
-        $img=str_replace(array('{rootFolder}'), array(self::getRootfolder()), $action['img']);
-        $content = '<img src="'.$img.'" title="'.$action['caption'].'" />';
-      } elseif (isset($action['caption']))
-        $content = $action['caption'];
-      $links[] = "<a class=\"action-button$class\"$href$onclick>".$content.'</a>';
+      $links[] = "<a class=\"action-button$class\"$href$onclick>".$action['caption'].'</a>';
     }
     return implode('<br/>', $links);
   }
@@ -1785,9 +1616,9 @@ if (typeof mapSettingsHooks!=='undefined') {
     if (!isset($options['reportGroup'])) $options['reportGroup'] = $options['id'];
     if (!isset($options['fieldNamePrefix'])) $options['fieldNamePrefix'] = $options['reportGroup'];
     if (function_exists('hostsite_get_user_field')) {
-      // If the host environment (e.g. Drupal module) can tell us which Indicia user is logged in, pass that
+      // If the host environment (e.g. Drupal module) can tell us which Indicia user is logged in, pass that 
       // to the report call as it might be required for filters.
-      if (!isset($options['extraParams']['user_id']) && $indiciaUserId = hostsite_get_user_field('indicia_user_id'))
+      if ($indiciaUserId = hostsite_get_user_field('indicia_user_id'))
         $options['extraParams']['user_id'] = $indiciaUserId;
     }
     return $options;
@@ -1816,7 +1647,7 @@ if (typeof mapSettingsHooks!=='undefined') {
   }
 
   /**
-   * Returns the parameters for the report grid data services call which are embedded in the query string or
+   * Returns the parameters for the report grid data services call which are embedded in the query string or 
    * default param value data.
    * @param $options
    * @return Array Associative array of parameters.
@@ -1834,40 +1665,9 @@ if (typeof mapSettingsHooks!=='undefined') {
           $params[$key]=$value;
       }
     }
-    // Are there any parameters embedded in the request data, e.g. after submitting the params form?
-    $providedParams = $_REQUEST;
-    if (isset($_COOKIE['providedParams']) && !empty($options['rememberParamsReportGroup'])) {
-      $savedParams = json_decode($_COOKIE['providedParams'], true);
-      if (!empty($savedParams[$options['rememberParamsReportGroup']]))
-        $savedParams = $savedParams[$options['rememberParamsReportGroup']];
-        // We shouldn't use the cookie values to overwrite any parameters that are hidden in the form as this is confusing.
-        $ignoreParamNames = array();
-        foreach($options['paramsToExclude'] as $param)
-          $ignoreParamNames[$options['reportGroup']."-$param"] = '';
-        $savedParams = array_diff_key($savedParams, $ignoreParamNames);
-        $providedParams = array_merge(
-          $savedParams,
-          $providedParams
-        );
-    }
-    if (!empty($options['rememberParamsReportGroup'])) {
-      // need to store the current set of saved params. These need to be merged into an array to go in
-      // the single stored cookie with the array key being the rememberParamsReportGroup and the value being
-      // an associative array of params.
-      if (!isset($savedParams))
-        $savedParams=array($options['rememberParamsReportGroup']=>array());
-      elseif (!isset($savedParams[$options['rememberParamsReportGroup']]))
-        $savedParams[$options['rememberParamsReportGroup']]=array();
-      // merge the params with any others stored under the same rememberParamsReportGroup name
-      $savedParams[$options['rememberParamsReportGroup']] = array_merge(
-        $savedParams[$options['rememberParamsReportGroup']],
-        $providedParams
-      );
-      setcookie('providedParams', json_encode($savedParams));
-    }
-    // Get the report group prefix required for each relevant parameter
+    // Are there any parameters embedded in the post data, e.g. after submitting the params form?
     $paramKey = (isset($options['reportGroup']) ? $options['reportGroup'] : '').'-';
-    foreach ($providedParams as $key=>$value) {
+    foreach ($_POST as $key=>$value) {
       if (substr($key, 0, strlen($paramKey))==$paramKey) {
         // We have found a parameter, so put it in the request to the report service
         $param = substr($key, strlen($paramKey));
@@ -1901,7 +1701,7 @@ if (typeof mapSettingsHooks!=='undefined') {
   * When loading from a view, specify list, gv or detail to determine which view variant is loaded. Default is list.
   * </li>
   * <li><b>extraParams</b><br/>
-  * Array of additional key value pairs to attach to the request. This should include fixed values which cannot be changed by the
+  * Array of additional key value pairs to attach to the request. This should include fixed values which cannot be changed by the 
   * user and therefore are not needed in the parameters form.
   * </li>
   * <li><b>paramDefaults</b>
@@ -1953,7 +1753,7 @@ if (typeof mapSettingsHooks!=='undefined') {
     }
     // We're not even going to bother with asking the user to populate a partially filled in report parameter set.
     if (isset($response['parameterRequest'])) {
-      return '<p>Internal Error: Report request parameters not set up correctly.<p>';
+      return '<p>Internal Error: Report request parameters not set up correctly.<p>';    
     }
     // convert records to a date based array so it can be used when generating the grid.
     $records = $response['records'];
@@ -1970,15 +1770,14 @@ if (typeof mapSettingsHooks!=='undefined') {
     $pageUrl .= (strpos($pageUrl , '?')===false) ? '?' : '&';
     $thClass = $options['thClass'];
     $r .= "\n<table class=\"".$options['class']."\">";
-    $r .= "\n<thead class=\"$thClass\"><tr>".($options['includeWeekNumber'] ? "<td>".lang::get("Week Number")."</td>" : "")."<td></td><td></td><td></td>".
-        "<td colspan=\"3\" class=\"year-picker\"><a title=\"".($options["year"]-1)."\" rel=\"\nofollow\" href=\"".$pageUrl.$pageUrlParams['year']['name']."=".($options["year"]-1).
-        "\" class=\"ui-datepicker-prev ui-corner-all\"><span class=\"ui-icon ui-icon-circle-triangle-w\">Prev</span></a>".
-        "<span class=\"thisYear\">".$options["year"]."</span>";
+    $r .= "\n<thead class=\"$thClass\"><tr>".($options['includeWeekNumber'] ? "<td>".lang::get("Week Number")."</td>" : "")."<td></td><td>
+  <a title=\"".($options["year"]-1)."\" rel=\"\nofollow\" href=\"".$pageUrl.$pageUrlParams['year']['name']."=".($options["year"]-1)."\" class=\"ui-datepicker-prev ui-corner-all\">
+    <span class=\"ui-icon ui-icon-circle-triangle-w\">Prev</span></a></td><td></td><td colspan=3><span class=\"thisYear\">".$options["year"]."</span></td><td></td><td>";
     if($options["year"]<date('Y')){
       $r .= "  <a title=\"".($options["year"]+1)."\" rel=\"\nofollow\" href=\"".$pageUrl.$pageUrlParams['year']['name']."=".($options["year"]+1)."\" class=\"ui-datepicker-next ui-corner-all\">
         <span class=\"ui-icon ui-icon-circle-triangle-e\">Next</span></a>";
     }
-    $r .= "</td><td></td><td></td></tr></thead>\n";
+    $r .= "</td></tr></thead>\n";
     // don't need a separate "Add survey" button as they just need to click the day....
     // Not implementing a download.
     $r .= "<tbody>\n";
@@ -2036,7 +1835,7 @@ if (typeof mapSettingsHooks!=='undefined') {
         $warnings .= "Week one month-day combination unrecognised {".$options['weekOneContains']."} defaulting to Jan-01<br />";
         $weekOne_date = date_create($date_from['year'].'-Jan-01');
       }
-    } else
+    } else 
       $weekOne_date = date_create($date_from['year'].'-Jan-01');
     while($weekOne_date->format('N')!=$weekstart[1]){
       $weekOne_date->modify('-1 day'); // scan back to start of week
@@ -2059,7 +1858,7 @@ if (typeof mapSettingsHooks!=='undefined') {
     }
     $options["newURL"] .= (strpos($options["newURL"] , '?')===false) ? '?' : '&';
     $options["existingURL"] .= (strpos($options["existingURL"] , '?')===false) ? '?' : '&';
-
+    
     while($consider_date->format('Y') <= $options["year"] && ($weeknumberfilter[1]=='' || $consider_date->format('N')!=$weekstart[1] || $weekno < $weeknumberfilter[1])){
       if($consider_date->format('N')==$weekstart[1]) {
         $weekno++;
@@ -2068,23 +1867,26 @@ if (typeof mapSettingsHooks!=='undefined') {
       $cellContents=$consider_date->format('j');  // day in month.
       $cellclass="";
       if($now < $consider_date){
-        $cellclass="future"; // can't enter data in the future.
-      } else if($consider_date->format('Y') == $options["year"]){ // only allow data to be entered for the year being considered.
-        if(isset($options['buildLinkFunc'])){
-          $options['consider_date'] = $consider_date->format('d/m/Y');
-          $callbackVal = call_user_func_array($options['buildLinkFunc'],
-              array(isset($dateRecords[$consider_date->format('d/m/Y')]) ? $dateRecords[$consider_date->format('d/m/Y')] : array(),
-                    $options, $cellContents));
-          $cellclass=$callbackVal['cellclass'];
-          $cellContents=$callbackVal['cellContents'];
-        } else if(isset($dateRecords[$consider_date->format('d/m/Y')])){ // check if there is a record on this date
-          $cellclass="existingLink";
-          $cellContents .= ' <a href="'.$options["newURL"].'date='.$consider_date->format('d/m/Y').'" class="newLink" title="Create a new sample on '.$consider_date->format('d/m/Y').'" ><div class="ui-state-default add-button">&nbsp;</div></a> ';
-          foreach($dateRecords[$consider_date->format('d/m/Y')] as $record)
-            $cellContents.='<a href="'.$options["existingURL"].'sample_id='.$record["sample_id"].'" title="View existing sample for '.$record["location_name"].' on '.$consider_date->format('d/m/Y').'" ><div class="ui-state-default view-button">&nbsp;</div></a>';
+        $cellclass="future";
+      } else if($consider_date->format('Y') == $options["year"]){
+      	if(isset($dateRecords[$consider_date->format('d/m/Y')])){
+          if(isset($options['buildLinkFunc'])){
+            $callbackVal = call_user_func_array($options['buildLinkFunc'], array($dateRecords[$consider_date->format('d/m/Y')], $options, $cellContents));
+            $cellclass=$callbackVal['cellclass'];
+            $cellContents=$callbackVal['cellContents'];
+          } else {
+            $cellclass="existingLink";
+            if(count($dateRecords[$consider_date->format('d/m/Y')])==1){
+              $cellContents='<a href="'.$options["existingURL"].'sample_id='.$dateRecords[$consider_date->format('d/m/Y')][0]["sample_id"].'" title="View existing sample for '.$dateRecords[$consider_date->format('d/m/Y')][0]["location_name"].' on this date" >'.$cellContents.'</a>';
+            } else {
+              foreach($dateRecords[$consider_date->format('d/m/Y')] as $record){
+                $cellContents.='<br/><a href="'.$options["existingURL"].'sample_id='.$record["sample_id"].'" title="View existing sample for '.$record["location_name"].' on this date" >'.$record["location_name"].'</a>';
+              }
+            }
+          }
         } else {
           $cellclass="newLink";
-          $cellContents .= ' <a href="'.$options["newURL"].'date='.$consider_date->format('d/m/Y').'" class="newLink" title="Create a new sample on '.$consider_date->format('d/m/Y').'" ><div class="ui-state-default add-button">&nbsp;</div></a>';
+          $cellContents='<a href="'.$options["newURL"].'date='.$consider_date->format('d/m/Y').'" class="newLink" title="Create a new sample for this date" >'.$cellContents.'</a>';
         }
       }
       $r .= "<td class=\"".$cellclass." ".($consider_date->format('N')>=6 ? "weekend" : "weekday")."\" >".$cellContents."</td>";
@@ -2101,7 +1903,7 @@ if (typeof mapSettingsHooks!=='undefined') {
     $r .= "</tbody></table>\n";
     return $warnings.$r;
   }
-
+  
   private static function get_report_calendar_grid_options($options) {
     global $user;
     $options = array_merge(array(
@@ -2167,11 +1969,11 @@ if (typeof mapSettingsHooks!=='undefined') {
     }
     return $reloadUrl['path'];
   }
-
-  /**
+  
+  /** 
    * Inserts into the page javascript a function for loading features onto the map as a result of report output.
    */
-  private static function addFeaturesLoadingJs($addFeaturesJs, $defsettings='',
+  private static function addFeaturesLoadingJs($addFeaturesJs, $defsettings='', 
       $selsettings='{"strokeColor":"#ff0000","fillColor":"#ff0000","strokeWidth":2}', $styleFns='', $zoomToExtent=true) {
     if (!empty($addFeaturesJs)) {
       report_helper::$javascript.= "
@@ -2179,12 +1981,31 @@ if (typeof mapSettingsHooks!=='undefined') {
     var defaultStyle = new OpenLayers.Style($defsettings$styleFns);
     var selectStyle = new OpenLayers.Style($selsettings$styleFns);
     var styleMap = new OpenLayers.StyleMap({'default' : defaultStyle, 'select' : selectStyle});
-    indiciaData.reportlayer = new OpenLayers.Layer.Vector('Report output', {styleMap: styleMap, rendererOptions: {zIndexing: true}});
+    indiciaData.reportlayer = new OpenLayers.Layer.Vector('Report output', {styleMap: styleMap}); 
     mapInitialisationHooks.push(function(div) {
+      function addDistPoint(features, record, wktCol, opts, id) {
+        if (record[wktCol]!==null) {
+          var feature, geom=OpenLayers.Geometry.fromWKT(record[wktCol]);
+          if (div.map.projection.getCode() != div.indiciaProjection.getCode()) {
+            geom.transform(div.indiciaProjection, div.map.projection);
+          }
+          delete record[wktCol];
+          if (opts.type!=='vector') {
+            // render a point for symbols
+            geom = geom.getCentroid();
+          }
+          feature = new OpenLayers.Feature.Vector(geom, record);
+          if (typeof id!=='undefined') {
+            // store a supplied identifier against the feature
+            feature.id=id;
+          }
+          features.push(feature);
+        }
+      } 
       features = [];
       $addFeaturesJs
       indiciaData.reportlayer.addFeatures(features);\n";
-        if ($zoomToExtent)
+        if ($zoomToExtent) 
           self::$javascript .= "  div.map.zoomToExtent(indiciaData.reportlayer.getDataExtent());\n";
         self::$javascript .= "  div.map.addLayer(indiciaData.reportlayer);
     });
@@ -2193,11 +2014,14 @@ if (typeof mapSettingsHooks!=='undefined') {
   }
 
  /**
-  * <p>Outputs a calendar based summary grid that loads the content of a report.</p>
-  * <p>If you need 2 grids on one page, then you must define a different id in the options for each grid.</p>
-  * <p>The grid operation has NOT been AJAXified. There is no download option.</p>
+  * <p>Outputs a calendar grid that loads the content of a report.</p>
+  * <p>The grid supports a pagination header (year by year). If you need 2 grids on one page, then you must
+  * define a different id in the options for each grid.</p>
+  * <p>The grid operation has NOT been AJAXified.</p>
   *
   * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>year</b><br/>
+  * The year to output the calendar for. Default is this year.</li>
   * <li><b>id</b><br/>
   * Optional unique identifier for the grid's container div. This is required if there is more than
   * one grid on a single web page to allow separation of the page and sort $_GET parameters in the URLs
@@ -2213,12 +2037,12 @@ if (typeof mapSettingsHooks!=='undefined') {
   * When loading from a view, specify list, gv or detail to determine which view variant is loaded. Default is list.
   * </li>
   * <li><b>extraParams</b><br/>
-  * Array of additional key value pairs to attach to the request. This should include fixed values which cannot be changed by the
+  * Array of additional key value pairs to attach to the request. This should include fixed values which cannot be changed by the 
   * user and therefore are not needed in the parameters form.
   * </li>
   * <li><b>paramDefaults</b>
   * Optional associative array of parameter default values. Default values appear in the parameter form and can be overridden.</li>
-  * <li><b>tableHeaders</b>
+  * <li><b>weekHeaders</b>
   * Defines which week column headers should be included: date, number or both
   * <li><b>weekstart</b>
   * Defines the first day of the week. There are 2 options.<br/>'.
@@ -2238,20 +2062,12 @@ if (typeof mapSettingsHooks!=='undefined') {
   * <li><b>countColumn</b>
   * OPTIONAL: The column in the report which contains the count for this occurrence. If omitted then the default
   * is to assume one occurrence = count of 1</li>
-  * <li><b>includeChartItemSeries</b>
-  * Defaults to true. Include a series for each item in the report output.
-  * </li>
-  * <li><b>includeChartTotalSeries</b>
-  * Defaults to true. Include a series for the total of each item in the report output.
-  * </li>
   */
   // Future Enhancements? Allow restriction to month.
   public static function report_calendar_summary($options) {
     // I know that there are better ways to approach some of the date manipulation, but they are PHP 5.3+.
     // We support back to PHP 5.2
     // TODO : i8n
-    // TODO invariant IDs and names prevents more than one on a page.
-    // TODO convert to tabs when switching between chart and table.
     $warnings="";
     data_entry_helper::add_resource('jquery_ui');
     // there are some report parameters that we can assume for a calendar based request...
@@ -2265,13 +2081,15 @@ if (typeof mapSettingsHooks!=='undefined') {
     }
     // We're not even going to bother with asking the user to populate a partially filled in report parameter set.
     if (isset($response['parameterRequest'])) {
-      return '<p>Internal Error: Report request parameters not set up correctly.<br />'.(print_r($response,true)).'<p>';
+      return '<p>Internal Error: Report request parameters not set up correctly.<br />'.(print_r($response,true)).'<p>';    
     }
     // convert records to a date based array so it can be used when generating the grid.
     $records = $response['records'];
     $pageUrlParams = self::get_report_calendar_grid_page_url_params($options);
     $pageUrl = self::report_calendar_grid_get_reload_url($pageUrlParams);
     $pageUrl .= (strpos($pageUrl , '?')===false) ? '?' : '&';
+    $date_from = array('year'=>$options["year"], 'month'=>1, 'day'=>1);
+    $date_to = array('year'=>$options["year"], 'month'=>12, 'day'=>31);
     // ISO Date - Mon=1, Sun=7
     // Week 1 = the week with date_from in
     if(!isset($options['weekstart']) || $options['weekstart']=="") {
@@ -2296,7 +2114,7 @@ if (typeof mapSettingsHooks!=='undefined') {
     }
     $weekstart=explode('=',$options['weekstart']);
     if($weekstart[0]=='date'){
-      $weekstart_date = date_create(substr($options['date_start'],0,4)."-".$weekstart[1]);
+      $weekstart_date = date_create($date_from['year']."-".$weekstart[1]);
       if(!$weekstart_date){
         $warnings .= "Weekstart month-day combination unrecognised {".$weekstart[1]."} defaulting to weekday=7 - Sunday<br />";
         $weekstart[1]=7;
@@ -2307,59 +2125,20 @@ if (typeof mapSettingsHooks!=='undefined') {
       $weekstart[1]=7;
     }
     if(isset($options['weekOneContains']) && $options['weekOneContains']!=""){
-      $weekOne_date = date_create(substr($options['date_start'],0,4).'-'.$options['weekOneContains']);
+      $weekOne_date = date_create($date_from['year'].'-'.$options['weekOneContains']);
       if(!$weekOne_date){
         $warnings .= "Week one month-day combination unrecognised {".$options['weekOneContains']."} defaulting to Jan-01<br />";
-        $weekOne_date = date_create(substr($options['date_start'],0,4).'-Jan-01');
+        $weekOne_date = date_create($date_from['year'].'-Jan-01');
       }
-    } else
-      $weekOne_date = date_create(substr($options['date_start'],0,4).'-Jan-01');
+    } else 
+      $weekOne_date = date_create($date_from['year'].'-Jan-01');
     while($weekOne_date->format('N')!=$weekstart[1]){
       $weekOne_date->modify('-1 day'); // scan back to start of week
     }
-    $year_start = date_create(substr($options['date_start'],0,4).'-Jan-01');
-    $year_end = date_create(substr($options['date_start'],0,4).'-Dec-25'); // don't want to go beyond the end of year: this is 1st Jan minus 1 week: it is the start of the last full week
-    $firstWeek_date = clone $weekOne_date;
-    if($weeknumberfilter[0]!=''){
-      $minWeekNo = 1;
-      while($firstWeek_date > $year_start && $minWeekNo>$weeknumberfilter[0]){
-        $firstWeek_date->modify('-7 days');
-        $minWeekNo--;
-      }
-      while($firstWeek_date < $year_end && $minWeekNo<$weeknumberfilter[0]){
-        $firstWeek_date->modify('+7 days');
-        $minWeekNo++;
-      }
-    } else {
-      $minWeekNo = 1;
-      while($firstWeek_date > $year_start){
-        $firstWeek_date->modify('-7 days');
-        $minWeekNo--;
-      }
-    }
-    if($weeknumberfilter[1]!=''){
-      $maxWeekNo = $weeknumberfilter[1];
-    } else {
-      $maxWeekNo = 1;
-      $lastWeek_date = clone $weekOne_date;
-      $year_end = date_create(substr($options['date_start'],0,4).'-Dec-25'); // don't want to go beyond the end of year: this is 1st Jan minus 1 week: it is the start of the last full week
-      while($lastWeek_date <= $year_end){
-        $lastWeek_date->modify('+7 days');
-        $maxWeekNo++;
-      }
-    }
-
-    $summaryArray=array(); // this is used for the table output format
-    // In order to apply the data combination and estmation processing, we assume that the the records are in taxon, location_id, sample_id order.
-    $locationArray=array(); // this is for a single species at a time.
-    $lastLocation=false;
-    $lastTaxon=false;
-    $lastSample=false;
-    $locationSamples = array();
-    // we are assuming that there can be more than one occurrence of a given taxon per sample.
-    foreach($records as $recid => $record){
-      // If the taxon has changed
-      $this_date = date_create(str_replace('/','-',$record['date'])); // prevents day/month ordering issues
+    $summaryArray=array();
+    foreach($records as $record){
+    	// first work out the week number
+      $this_date = date_create(str_replace('/','-',$record['date'])); // prevents day/month orderinfg issues
       while($this_date->format('N')!=$weekstart[1]){
         $this_date->modify('-1 day'); // scan back to start of week
       }
@@ -2372,467 +2151,104 @@ if (typeof mapSettingsHooks!=='undefined') {
         $this_date->modify('+7 days');
         $weekno--;
       }
-      $records[$recid]['weekno']=$weekno;
-      if(isset($locationSamples[$record['location_id']])){
-        if(isset($locationSamples[$record['location_id']][$weekno])) {
-          if(!in_array($record['sample_id'], $locationSamples[$record['location_id']][$weekno]))
-            $locationSamples[$record['location_id']][$weekno][] = $record['sample_id'];
-        } else $locationSamples[$record['location_id']][$weekno] = array($record['sample_id']);
-      } else $locationSamples[$record['location_id']] = array($weekno => array($record['sample_id']));
-    }
-    foreach($records as $record){
-      // If the taxon has changed
-      if(($lastTaxon && $lastTaxon!=$record[$options['rowGroupColumn']]) ||
-         ($lastLocation && $lastLocation!=$record['location_id'])) {
-        foreach($locationArray as $weekno => $data){
-          if($locationArray[$weekno]['max'] < $locationArray[$weekno]['sampleTotal'])
-            $locationArray[$weekno]['max'] = $locationArray[$weekno]['sampleTotal'];
-        }
-        self::report_calendar_summary_processEstimates($summaryArray, $locationArray, $locationSamples[$lastLocation], $minWeekNo, $maxWeekNo, $lastTaxon, $options);
-        $locationArray=array();
-      }
-      $lastTaxon=$record[$options['rowGroupColumn']];
-      $lastLocation=$record['location_id'];
-      $lastSample=$record['sample_id'];
-      $weekno = $record['weekno'];
-      if(isset($options['countColumn']) && $options['countColumn']!=''){
-        $count = (isset($record[$options['countColumn']])?$record[$options['countColumn']]:0);
+      if(isset($options['countColumn'])){
+        if(!isset($record[$options['countColumn']]))
+          return "Error: can't find ".$options['countColumn']." in record keys ".implode(',',array_keys($record));
+      	$count = $record[$options['countColumn']];
       } else
         $count = 1; // default to single row = single occurrence
-      if(isset($locationArray[$weekno])){
-        if($locationArray[$weekno]['this_sample'] != $record['sample_id']) {
-          if($locationArray[$weekno]['max'] < $locationArray[$weekno]['sampleTotal'])
-            $locationArray[$weekno]['max'] = $locationArray[$weekno]['sampleTotal'];
-          $locationArray[$weekno]['this_sample'] = $record['sample_id'];
-          $locationArray[$weekno]['numSamples']++;
-          $locationArray[$weekno]['sampleTotal'] = $count;
-        } else
-          $locationArray[$weekno]['sampleTotal'] += $count;
-        $locationArray[$weekno]['total'] += $count;
+      if(isset($summaryArray[$record[$options['rowGroupColumn']]])) {
+        if(isset($summaryArray[$record[$options['rowGroupColumn']]][$weekno])){
+          $summaryArray[$record[$options['rowGroupColumn']]][$weekno] += $count; //todo count in report
+        } else {
+          $summaryArray[$record[$options['rowGroupColumn']]][$weekno] = $count;
+        }
       } else {
-        $locationArray[$weekno] = array('this_sample'=>$record['sample_id'], 'total'=>$count, 'sampleTotal'=>$count, 'max'=>$count, 'numSamples'=>1);
+        $summaryArray[$record[$options['rowGroupColumn']]] = array($weekno => $count);
       }
     }
-    if($lastTaxon || $lastLocation) {
-      foreach($locationArray as $weekno => $data){
-        if($locationArray[$weekno]['max'] < $locationArray[$weekno]['sampleTotal'])
-          $locationArray[$weekno]['max'] = $locationArray[$weekno]['sampleTotal'];
+    $year_start = date_create($date_from['year'].'-Jan-01');
+    $year_end = date_create($date_from['year'].'-Dec-12');
+    if($weeknumberfilter[0]!=''){
+      $minWeekNo = 1;
+      $firstWeek_date = clone $weekOne_date;
+      while($firstWeek_date > $year_start && $minWeekNo>$weeknumberfilter[0]){
+        $firstWeek_date->modify('-7 days');
+        $minWeekNo--;
       }
-      self::report_calendar_summary_processEstimates($summaryArray, $locationArray, $locationSamples[$lastLocation], $minWeekNo, $maxWeekNo, $lastTaxon, $options);
+      while($firstWeek_date < $year_end && $minWeekNo<$weeknumberfilter[0]){
+        $firstWeek_date->modify('+7 days');
+        $minWeekNo++;
+      }
+    } else {
+      $minWeekNo = 1;
+      $firstWeek_date = clone $weekOne_date;
+      $year_start = date_create($date_from['year'].'-Jan-01');
+      while($firstWeek_date > $year_start){
+        $firstWeek_date->modify('-7 days');
+        $minWeekNo--;
+      }
     }
-    if(count($summaryArray)==0)
-      return $warnings.'<p>'.lang::get('No data returned for this period.').'</p>'.
-          '<input type="hidden" name="simultaneousOutput" id="simultaneousOutput" value="'.$options['defaultOutput'].'"/>';
-    $r="";
+    if($weeknumberfilter[1]!=''){
+      $maxWeekNo = $weeknumberfilter[1];
+    } else {
+      $maxWeekNo = 1;
+      $lastWeek_date = clone $weekOne_date;
+      $year_end = date_create($date_from['year'].'-Dec-12');
+      while($lastWeek_date <= $year_end){
+        $lastWeek_date->modify('+7 days');
+        $maxWeekNo++;
+      }
+    }
     // will storedata in an array[Y][X]
-    $format= array();
-    if(isset($options['outputTable']) && $options['outputTable']){
-      $format['table'] = array('include'=>true,
-          'display'=>(isset($options['simultaneousOutput']) && $options['simultaneousOutput'])||(isset($options['defaultOutput']) && $options['defaultOutput']=='table')||!isset($options['defaultOutput']));
+    $thClass = $options['thClass'];
+    $r = "\n<table class=\"".$options['class']."\">";
+    $r .= "\n<thead class=\"$thClass\"><tr><td></td><td>
+  <a title=\"".($options["year"]-1)."\" rel=\"\nofollow\" href=\"".$pageUrl.$pageUrlParams['year']['name']."=".($options["year"]-1)."\" class=\"ui-datepicker-prev ui-corner-all\">
+    <span class=\"ui-icon ui-icon-circle-triangle-w\">Prev</span></a></td><td></td><td colspan=3><span class=\"thisYear\">".$options["year"]."</span></td><td></td><td>";
+    if($options["year"]<date('Y')){
+      $r .= "  <a title=\"".($options["year"]+1)."\" rel=\"\nofollow\" href=\"".$pageUrl.$pageUrlParams['year']['name']."=".($options["year"]+1)."\" class=\"ui-datepicker-next ui-corner-all\">
+        <span class=\"ui-icon ui-icon-circle-triangle-e\">Next</span></a>";
     }
-    if(isset($options['outputChart']) && $options['outputChart']){
-      $format['chart'] = array('include'=>true,
-          'display'=>(isset($options['simultaneousOutput']) && $options['simultaneousOutput'])||(isset($options['defaultOutput']) && $options['defaultOutput']=='chart'));
-      data_entry_helper::add_resource('jqplot');
-      switch ($options['chartType']) {
-        case 'bar' :
-          self::add_resource('jqplot_bar');
-          $renderer='$.jqplot.BarRenderer';
-          break;
-        // default is line
-      }
-      self::add_resource('jqplot_category_axis_renderer');
-      $opts = array();
-      $options['legendOptions']["show"]=true;
-      $opts[] = "seriesDefaults:{\n".(isset($renderer) ? "  renderer:$renderer,\n" : '')."  rendererOptions:".json_encode($options['rendererOptions'])."}";
-      $opts[] = 'legend:'.json_encode($options['legendOptions']);
-    }
-    if(count($format)==0) $format['table'] = array('include'=>true);
-    $defaultSet=false;
-    foreach($format as $type=>$info){
-      if($info['display']==true)
-        $defaultSet=true;
-    }
-    if(!$defaultSet){
-      if(isset($format['table'])) $format['table']['display']=true;
-      else if(isset($format['chart'])) $format['chart']['display']=true;
-    }
-    $chartDateLabels=array();
-    $chartNumberLabels=array();
-    $tableDateHeaderRow = "";
-    $tableNumberHeaderRow = "";
-    $seriesData=array();
+    $dateRow = "";
+    $numberRow = "";
+    // Not implementing a download.
+    $r.= '</td><td colspan='.($maxWeekNo-$minWeekNo-5).'></td></tr>';
     for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
-      $tableNumberHeaderRow.= '<td class="week">'.$i.'</td>';
-      $tableDateHeaderRow.= '<td class="week">'.$firstWeek_date->format('M').'<br/>'.$firstWeek_date->format('d').'</td>';
-      $chartNumberLabels[] = $i;
-      $chartDateLabels[] = $firstWeek_date->format('M').'-'.$firstWeek_date->format('d');
+      $numberRow.= '<td class="week">'.$i.'</td>';
+      $dateRow.= '<td class="week">'.$firstWeek_date->format('M').'<br/>'.$firstWeek_date->format('d').'</td>';
       $firstWeek_date->modify('+7 days');
     }
-    $r .= "\n<div class=\"inline-control simultaneousOutputGroup\">";
-    if(count($format)>1 && !(isset($options['simultaneousOutput']) && $options['simultaneousOutput'])){
-      $checked = !isset($options['defaultOutput']) || $options['defaultOutput']=='' || $options['defaultOutput']=='table';
-      $r .= '<input type="radio" name="simultaneousOutput" id="simultaneousOutput:table" '.($checked?'checked="checked"':'').' value="table"/>'.
-          '<label for="simultaneousOutput:table" >'.lang::get('View data as a table').'</label>';
-      $r .= '<input type="radio" name="simultaneousOutput" '.(!$checked?'checked="checked"':'').' id="simultaneousOutput:chart" value="chart"/>'.
-          '<label for="simultaneousOutput:chart" >'.lang::get('View data as a chart').'</label>';
-      data_entry_helper::$javascript .= "jQuery('[name=simultaneousOutput]').change(function(){
-  jQuery('#".$options['tableID'].",#".$options['chartContainerID']."').toggle();
-  if(jQuery('#".$options['chartContainerID'].":visible').length>0) replot();
-});
-jQuery('[name=simultaneousOutput]').filter('[value=".($checked?'table':'chart')."]').attr('checked','checked');
-";
+    if(isset($options['weekHeaders']) && ($options['weekHeaders'] == 'both' || $options['weekHeaders'] == 'number')){
+    	$r .= '<tr><td>Week</td>'.$numberRow.'<td>Total</td></tr>';
     }
-    if($options['includeData']=='both'){
-      $r .= '<input type="radio" name="viewData" id="viewDataRaw" value="raw"/><label for="viewDataRaw" >'.lang::get('View raw data').'</label>';
-      $r .= '<input type="radio" name="viewData" checked="checked" id="viewDataEstimates" value="estimates"/><label for="viewDataEstimates" >'.lang::get('View data with estimates').'</label>';
-      data_entry_helper::$javascript .= "jQuery('[name=viewData]').change(function(){
-  if(jQuery(this).val()=='raw'){
-    jQuery('.raw,#".$options['chartID']."-raw').show();
-    jQuery('.estimates,#".$options['chartID']."-estimates').hide();
-  } else {
-    jQuery('.raw,#".$options['chartID']."-raw').hide();
-    jQuery('.estimates,#".$options['chartID']."-estimates').show();
-  }
-  replot();
-});
-jQuery('.raw,#".$options['chartID']."-raw').hide();
-jQuery('#viewDataEstimates').attr('checked','checked');
-";
-    } else $r .= '<input type="hidden" id="viewData" name="viewData" value="'.$options['includeData'].'"/>';
-    $r .= "</div>\n";
-    if(isset($format['chart'])){
-      $seriesData=array();
-      $rawSeriesData=array();
-      $seriesOptions=array();
-      // Series options are not configurable as we need to setup for ourselves...
-      // we need show, label and show label filled in. rest are left to defaults
-      $totalRow = array();
-      $rawTotalRow = array();
-      for($i= $minWeekNo; $i <= $maxWeekNo; $i++) $totalRow[$i] = 0;
-      foreach($summaryArray as $label => $summaryRow){
-        $rawValues=array();
-      	$values=array();
-        for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
-          if(isset($summaryRow[$i])){
-            $values[]=$summaryRow[$i]['estimates'];
-            $totalRow[$i] += $summaryRow[$i]['estimates'];
-            if($summaryRow[$i]['raw']!==false){
-              $rawValues[]=$summaryRow[$i]['raw'];
-              $rawTotalRow[$i] += $summaryRow[$i]['raw'];
-            } else {
-              $rawValues[]=0;
-              $rawTotalRow[$i]+=0;
-            }
-          } else {
-            $rawValues[]=0;
-            $values[]=0;
-          }
-        }
-        // each series will occupy an entry in $seriesData
-        if ($options['includeChartItemSeries']) {
-          $seriesData[] = '['.implode(',', $values).']';
-          $rawSeriesData[] = '['.implode(',', $rawValues).']';
-          $seriesOptions[] = '{"show":true,"label":"'.$label.'","showlabel":true}';
-        }
-      }
-      if(isset($options['includeChartTotalSeries']) && $options['includeChartTotalSeries']){
-        array_unshift($seriesData, '['.implode(',', $totalRow).']');
-        array_unshift($rawSeriesData, '['.implode(',', $rawTotalRow).']');
-        array_unshift($seriesOptions, '{"show":true,"label":"'.lang::get('Total').'","showlabel":true}');
-      }
-      $opts[] = 'series:['.implode(',', $seriesOptions).']';
-      $options['axesOptions']['xaxis']['renderer'] = '$.jqplot.CategoryAxisRenderer';
-      if(isset($options['chartLabels']) && $options['chartLabels'] == 'number')
-        $options['axesOptions']['xaxis']['ticks'] = $chartNumberLabels;
-      else
-        $options['axesOptions']['xaxis']['ticks'] = $chartDateLabels;
-      // We need to fudge the json so the renderer class is not a string
-      $axesOpts = str_replace('"$.jqplot.CategoryAxisRenderer"', '$.jqplot.CategoryAxisRenderer',
-        'axes:'.json_encode($options['axesOptions']));
-      $opts[] = $axesOpts;
-      data_entry_helper::$javascript .= "\nvar axesOpts = {".$axesOpts."};\naxesOpts.resetAxes=['yaxis'];\n";
-      // Finally, dump out the Javascript with our constructed parameters.
-      // width stuff is a bit weird, but jqplot requires a fixed width, so this just stretches it to fill the space.
-      data_entry_helper::$javascript .= "\nvar plotRaw;\nvar plotEstimates;
-function replot(){
-  var max=0;
-  if(jQuery('#viewDataRaw:checked').length>0 || jQuery('#viewData').val()=='raw'){
-    if(typeof plotRaw=='undefined'){";
-      if(!isset($options['width']) || $options['width'] == '')
-        data_entry_helper::$javascript .= "\n      jQuery(\"#".$options['chartID']."-raw\").width(jQuery(\"#".$options['chartID']."-raw\").width());";
-      data_entry_helper::$javascript .= "
-      var opts = {".implode(",\n", $opts)."};
-      // this may be generated after the Estimates, and after some series have been switched off...
-      if(typeof plotEstimates!='undefined')
-        for(var i=0; i<opts.series.length; i++) // series lengths are the same.
-          opts.series[i].show = plotEstimates.series[i].show;
-      plotRaw = $.jqplot('".$options['chartID']."-raw',  [".implode(',', $rawSeriesData)."], opts);
-    } else {
-      for(var i=0; i<plotRaw.series.length; i++)
-        if(plotRaw.series[i].show)
-          for(var j=0; j<plotRaw.series[i].data.length; j++)
-            max=(max>plotRaw.series[i].data[j][1]?max:plotRaw.series[i].data[j][1]);
-      axesOpts.axes.yaxis.max=max+1;
-      plotRaw.replot(axesOpts);
+    if(!isset($options['weekHeaders']) || $options['weekHeaders'] != 'number'){
+    	$r .= '<tr><td>Date</td>'.$dateRow.(!isset($options['weekHeaders']) || $options['weekHeaders'] == 'both' || $options['weekHeaders'] == 'number'?'<td></td>':'<td>Total</td>').'</tr>';
     }
-  } else {
-    if(typeof plotEstimates=='undefined'){";
-      if(!isset($options['width']) || $options['width'] == '')
-        data_entry_helper::$javascript .= "\n      jQuery(\"#".$options['chartID']."-estimates\").width(jQuery(\"#".$options['chartID']."-estimates\").width());";
-      data_entry_helper::$javascript .= "
-      plotEstimates = $.jqplot('".$options['chartID']."-estimates',  [".implode(',', $seriesData)."], \n{".implode(",\n", $opts)."});
-    } else {
-      for(var i=0; i<plotEstimates.series.length; i++)
-        if(plotEstimates.series[i].show)
-          for(var j=0; j<plotEstimates.series[i].data.length; j++)
-            max=(max>plotEstimates.series[i].data[j][1]?max:plotEstimates.series[i].data[j][1]);
-      axesOpts.axes.yaxis.max=max+1;
-      plotEstimates.replot(axesOpts);
+    $r.= "</thead>\n";
+    $r .= "<tbody>\n";
+    $altRow=false;
+    foreach($summaryArray as $label => $summaryRow){
+      $total=0;
+      $r .= "<tr class=\"datarow ".($altRow?$options['altRowClass']:'')."\">";
+      $r.= '<td>'.$label.'</td>';
+      for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
+        if(isset($summaryRow[$i])){
+          $r.= '<td>'.$summaryRow[$i].'</td>';
+          $total += $summaryRow[$i];
+        } else {
+          $r.= '<td></td>';
+        }
+      }
+      $r.= '<td>'.$total.'</td>';
+      // TODO total is optional
+      $r .= "</tr>";
+      $altRow=!$altRow;
     }
-  }
-};\n";
-      if($format['chart']['display']){
-        data_entry_helper::$javascript .= "replot();\n";
-      }
-      // div are full width.
-      $r .= '<div id="'.$options['chartContainerID'].'" class="'.$options['chartClass'].'" style="'.(isset($options['width']) && $options['width'] != '' ? 'width:'.$options['width'].'px;':'').($format['chart']['display']?'':'display:none;').'">';
-      if (isset($options['title']))
-        $r .= '<div class="'.$options['headerClass'].'">'.$options['title'].'</div>';
-      if($options['includeData']=='raw' || $options['includeData']=='both')
-        $r .= '<div id="'.$options['chartID'].'-raw" style="height:'.$options['height'].'px;'.(isset($options['width']) && $options['width'] != '' ? 'width:'.$options['width'].'px;':'').($options['includeData']=='both' ? ' display:none;':'').'"></div>'."\n";
-      if($options['includeData']=='estimates' || $options['includeData']=='both')
-        $r .= '<div id="'.$options['chartID'].'-estimates" style="height:'.$options['height'].'px;'.(isset($options['width']) && $options['width'] != '' ? 'width:'.$options['width'].'px;':'').'"></div>'."\n";
-      if(isset($options['disableableSeries']) && $options['disableableSeries'] &&
-           (count($summaryArray)>(isset($options['includeChartTotalSeries']) && $options['includeChartTotalSeries'] ? 0 : 1)) && 
-           isset($options['includeChartItemSeries']) && $options['includeChartItemSeries']){
-        drupal_add_js('misc/collapse.js');
-        $r .= '<fieldset id="'.$options['chartID'].'-series" class="collapsible collapsed series-fieldset"><legend>'.lang::get('Display Series')."</legend><span>\n";
-        $idx=0;
-        if(isset($options['includeChartTotalSeries']) && $options['includeChartTotalSeries']){
-          $r .= '<span class="chart-series-span"><input type="checkbox" checked="checked" id="'.$options['chartID'].'-series-'.$idx.'" name="'.$options['chartID'].'-series" value="'.$idx.'"/><label for="'.$options['chartID'].'-series-'.$idx.'">'.lang::get('Total')."</label></span>\n";
-          $idx++;
-        }
-        $r .= '<input type="button" class="disable-button" id="'.$options['chartID'].'-series-disable" value="'.lang::get('Hide all ').$options['rowGroupColumn']."\"/>\n";
-        foreach($summaryArray as $label => $summaryRow){
-          $r .= '<span class="chart-series-span"><input type="checkbox" checked="checked" id="'.$options['chartID'].'-series-'.$idx.'" name="'.$options['chartID'].'-series" value="'.$idx.'"/><label for="'.$options['chartID'].'-series-'.$idx.'">'.$label."</label></span>\n";
-          $idx++;
-        }
-        $r .= "</span></fieldset>\n";
-        // Known issue: jqplot considers the min and max of all series when drawing on the screen, even those which are not displayed
-        // so replotting doesn't scale to the displayed series!
-        data_entry_helper::$javascript .= "
-// initially all are displayed: need to ensure get around field caching on browser refresh.
-jQuery('[name=".$options['chartID']."-series]').attr('checked','checked');
-jQuery('[name=".$options['chartID']."-series]').change(function(){
-  if(jQuery(this).filter('[checked]').length){
-    if(typeof plotRaw != 'undefined') plotRaw.series[jQuery(this).val()].show = true;
-    if(typeof plotEstimates != 'undefined') plotEstimates.series[jQuery(this).val()].show = true;
-  } else {
-    if(typeof plotRaw != 'undefined') plotRaw.series[jQuery(this).val()].show = false;
-    if(typeof plotEstimates != 'undefined') plotEstimates.series[jQuery(this).val()].show = false;
-  }
-  replot();
-});
-jQuery('#".$options['chartID']."-series-disable').click(function(){
-  if(jQuery(this).is('.cleared')){ // button is to show all
-    jQuery('[name=".$options['chartID']."-series]')".(isset($options['includeChartTotalSeries']) && $options['includeChartTotalSeries']?".not('[value=0]')":"").".attr('checked','checked').each(function(){
-      if(typeof plotRaw != 'undefined') plotRaw.series[jQuery(this).val()].show = true;
-      if(typeof plotEstimates != 'undefined') plotEstimates.series[jQuery(this).val()].show = true;
-    });
-    jQuery(this).removeClass('cleared').val(\"".lang::get('Hide all ').$options['rowGroupColumn']."\");
-  } else {
-    jQuery('[name=".$options['chartID']."-series]')".(isset($options['includeChartTotalSeries']) && $options['includeChartTotalSeries']?".not('[value=0]')":"").".removeAttr('checked').each(function(){
-      if(typeof plotRaw != 'undefined') plotRaw.series[jQuery(this).val()].show = false;
-      if(typeof plotEstimates != 'undefined') plotEstimates.series[jQuery(this).val()].show = false;
-    });
-    jQuery(this).addClass('cleared').val(\"".lang::get('Show all ').$options['rowGroupColumn']."\");
-  }
-  replot();
-});
-";
-      }
-      $r .= "</div>\n";
-    }
-    if(isset($format['table'])){
-      $thClass = $options['thClass'];
-      $r .= "\n<table id=\"".$options['tableID']."\" class=\"".$options['tableClass']."\" style=\"".($format['table']['display']?'':'display:none;')."\">";
-      $r .= "\n<thead class=\"$thClass\">";
-      if(isset($options['tableHeaders']) && ($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number')){
-        $r .= '<tr><td>Week</td>'.$tableNumberHeaderRow.(isset($options['includeTableTotalColumn']) && $options['includeTableTotalColumn']?($options['includeData']=='raw' || $options['includeData']=='both' ? '<td>Total</td>' : '').($options['includeData']=='estimates' || $options['includeData']=='both' ? '<td>Total with<br />estimates</td>' : ''):'').'</tr>';
-      }
-      if(!isset($options['tableHeaders']) || $options['tableHeaders'] != 'number'){
-        $r .= '<tr><td>Date</td>'.$tableDateHeaderRow.(isset($options['includeTableTotalColumn']) && $options['includeTableTotalColumn']?(!isset($options['tableHeaders']) || $options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number'?($options['includeData']=='both'?'<td></td><td></td>':'<td></td>'):($options['includeData']=='raw' || $options['includeData']=='both' ? '<td>Total</td>' : '').($options['includeData']=='estimates' || $options['includeData']=='both' ? '<td>Total with<br />estimates</td>' : '')):'').'</tr>';
-      }
-      $r.= "</thead>\n";
-      $r .= "<tbody>\n";
-      $altRow=false;
-      $grandTotal=0;
-      $totalRow = array();
-      $estimatesGrandTotal=0;
-      $totalEstimatesRow = array();
-      for($i= $minWeekNo; $i <= $maxWeekNo; $i++) $totalRow[$i] = 0;
-      foreach($summaryArray as $label => $summaryRow){
-        $total=0;  // row total
-        $estimatesTotal=0;  // row total
-        $r .= "<tr class=\"datarow ".($altRow?$options['altRowClass']:'')."\">";
-        $r.= '<td>'.$label.'</td>';
-        for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
-          if(isset($summaryRow[$i])){
-            // TODO highlight estimates toggle
-            if($summaryRow[$i]['raw'] && $summaryRow[$i]['raw'] == $summaryRow[$i]['estimates'])
-              $r.= '<td>'.$summaryRow[$i]['raw'].'</td>';
-            else $r.= '<td>'.
-              ($options['includeData']=='raw' || $options['includeData']=='both' ? ($summaryRow[$i]['raw'] ? '<span class="raw">'.$summaryRow[$i]['raw'].'</span>' : '' ) : '').
-              ($options['includeData']=='estimates' || $options['includeData']=='both' ? '<span class="estimates'.($options['highlightEstimates'] ? " highlight-estimates" : '').'">'.$summaryRow[$i]['estimates'].'<span>' : '').
-              '</td>';
-            if($summaryRow[$i]['raw']){
-              $total += $summaryRow[$i]['raw'];
-              $totalRow[$i] += $summaryRow[$i]['raw'];
-              $grandTotal += $summaryRow[$i]['raw'];
-            }
-            $estimatesTotal += $summaryRow[$i]['estimates'];
-            $totalEstimatesRow[$i] += $summaryRow[$i]['estimates'];
-            $estimatesGrandTotal += $summaryRow[$i]['estimates'];
-          } else {
-            $r.= '<td></td>';
-          }
-        }
-        if(isset($options['includeTableTotalColumn']) && $options['includeTableTotalColumn']){
-          if($options['includeData']=='raw' || $options['includeData']=='both')
-            $r.= '<td class="total-column">'.$total.'</td>';
-          if($options['includeData']=='estimates' || $options['includeData']=='both')
-            $r.= '<td class="total-column">'.$estimatesTotal.'</td>';
-        }
-        $r .= "</tr>";
-        $altRow=!$altRow;
-      }
-      if(isset($options['includeTableTotalRow']) && $options['includeTableTotalRow']){
-        if($options['includeData']=='raw' || $options['includeData']=='both'){
-          $r .= "<tr class=\"totalrow\"><td>".lang::get('Total (Raw)').'</td>';
-          for($i= $minWeekNo; $i <= $maxWeekNo; $i++) $r .= '<td>'.$totalRow[$i].'</td>';
-          if(isset($options['includeTableTotalColumn']) && $options['includeTableTotalColumn'])
-            $r .= '<td class="total-column grand-total">'.$grandTotal.'</td>'.($options['includeData']=='both' ? '<td></td>' : '');
-          $r .= "</tr>";
-        }
-        if($options['includeData']=='estimates' || $options['includeData']=='both'){
-          $r .= "<tr class=\"totalrow\"><td>".lang::get('Total inc Estimates').'</td>';
-          for($i= $minWeekNo; $i <= $maxWeekNo; $i++) $r.= '<td>'.$totalEstimatesRow[$i].'</td>';
-          if(isset($options['includeTableTotalColumn']) && $options['includeTableTotalColumn'])
-            $r .= ($options['includeData']=='both' ? '<td></td>' : '').'<td class="total-column grand-total">'.$estimatesGrandTotal.'</td>';
-          $r .= "</tr>";
-        }
-      }
-      $r .= "</tbody></table>\n";
-    }
+    $r .= "</tbody></table>\n";
     if(count($summaryArray)==0)
       $r .= '<p>'.lang::get('No data returned for this period.').'</p>';
     return $warnings.$r;
-  }
-
-  private static function report_calendar_summary_processEstimates(&$summaryArray, $locationArray, $numSamples, $minWeekNo, $maxWeekNo, $taxon, $options) {
-    for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
-      if(isset($locationArray[$i])){
-        switch($options['rawDataCombining']){
-          case 'max': $locationArray[$i]['raw'] = $locationArray[$i]['max'];
-            break;
-          case 'sample': $locationArray[$i]['raw'] = ($locationArray[$i]['total'].'.0')/$locationArray[$i]['numSamples'];
-            break;
-          case 'location': $locationArray[$i]['raw'] = ($locationArray[$i]['total'].'.0')/count($numSamples[$i]);
-            break;
-          default : 
-          case 'add': $locationArray[$i]['raw'] = $locationArray[$i]['total'];
-            break;
-        }
-        if($locationArray[$i]['raw']>0 && $locationArray[$i]['raw']<1) $locationArray[$i]['raw']=1;
-      }
-    }
-    switch($options['dataRound']){
-      case 'nearest':
-        for($i= $minWeekNo, $foundFirst=false; $i <= $maxWeekNo; $i++)
-          if($locationArray[$i]['raw']) $locationArray[$i]['raw'] = round($locationArray[$i]['raw']);
-        break;
-      case 'up':
-        for($i= $minWeekNo, $foundFirst=false; $i <= $maxWeekNo; $i++)
-          if($locationArray[$i]['raw']) $locationArray[$i]['raw'] = ceil($locationArray[$i]['raw']);
-        break;
-      case 'down':
-        for($i= $minWeekNo, $foundFirst=false; $i <= $maxWeekNo; $i++)
-          if($locationArray[$i]['raw']) $locationArray[$i]['raw'] = floor($locationArray[$i]['raw']);
-        break;
-      default : 
-      case 'none': break;
-    }
-    $anchors=explode(',',$options['zeroPointAnchor']);
-    $firstAnchor = false;
-    $lastAnchor = false;
-    if(count($anchors)>0)
-      $firstAnchor = $anchors[0]!='' ? $anchors[0] : false;
-    if(count($anchors)>1)
-      $lastAnchor = $anchors[1]!='' ? $anchors[1] : false;
-    for($i= $minWeekNo, $foundFirst=false; $i <= $maxWeekNo; $i++){
-      if(!$foundFirst) {
-        if(isset($locationArray[$i])){
-          $locationArray[$i]['estimates'] = $locationArray[$i]['raw'];
-          if(($firstAnchor===false || $i-1>$firstAnchor) && $options['firstValue']=='half')
-            $locationArray[$i-1]['estimates'] = $locationArray[$i]['raw']/2;
-          $foundFirst=true;
-        } else
-          $locationArray[$i]= array('estimates'=>0, 'raw'=>false);
-      }
-      if($foundFirst){
-       $locationArray[$i]['estimates'] = $locationArray[$i]['raw'];
-       if(!isset($locationArray[$i+1])) {
-        for($j= $i+2; $j <= $maxWeekNo; $j++)
-          if(isset($locationArray[$j])) break;
-        if($j <= $maxWeekNo) { // have found another value later on, so interpolate between them
-          for($m=1; $m<($j-$i); $m++)
-            $locationArray[$i+$m] = array('raw'=>false, 'estimates'=>$locationArray[$i]['raw']+$m*($locationArray[$j]['raw']-$locationArray[$i]['raw'])/($j-$i));
-          $i = $j-1;
-        } else {
-          if(($lastAnchor===false || $i+1<$lastAnchor) && $options['lastValue']=='half'){
-            $locationArray[$i+1] = array('estimates'=>$locationArray[$i]['raw']/2, 'raw'=>false);;
-            $i++;
-          }
-          for($i++; $i <= $maxWeekNo; $i++)
-            $locationArray[$i]= array('estimates'=>0, 'raw'=>false);
-        }
-       }
-      }
-    }
-    switch($options['dataRound']){
-      case 'nearest':
-        for($i= $minWeekNo, $foundFirst=false; $i <= $maxWeekNo; $i++)
-          $locationArray[$i]['estimates'] = round($locationArray[$i]['estimates']);
-        break;
-      case 'up':
-        for($i= $minWeekNo, $foundFirst=false; $i <= $maxWeekNo; $i++)
-          $locationArray[$i]['estimates'] = ceil($locationArray[$i]['estimates']);
-        break;
-      case 'down':
-        for($i= $minWeekNo, $foundFirst=false; $i <= $maxWeekNo; $i++)
-          $locationArray[$i]['estimates'] = floor($locationArray[$i]['estimates']);
-        break;
-      default : 
-      case 'none': break;
-    }
-    // add the location array into the summary data.
-    foreach($locationArray as $weekno => $data){
-      if(isset($summaryArray[$taxon])) {
-        if(isset($summaryArray[$taxon][$weekno])){
-          if($locationArray[$weekno]['raw']){
-            if($summaryArray[$taxon][$weekno]['raw'])
-              $summaryArray[$taxon][$weekno]['raw'] += $locationArray[$weekno]['raw'];
-            else $summaryArray[$taxon][$weekno]['raw'] = $locationArray[$weekno]['raw'];
-          }
-          $summaryArray[$taxon][$weekno]['estimates'] += $locationArray[$weekno]['estimates'];
-        } else {
-          $summaryArray[$taxon][$weekno] = array('raw'=>$locationArray[$weekno]['raw'], 'estimates'=>$locationArray[$weekno]['estimates']);
-        }
-      } else {
-        $summaryArray[$taxon] = array($weekno => array('raw'=>$locationArray[$weekno]['raw'], 'estimates'=>$locationArray[$weekno]['estimates']));
-      }
-    }
   }
   
   private static function get_report_calendar_summary_options($options) {
@@ -2840,40 +2256,22 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
     $options = array_merge(array(
       'mode' => 'report',
       'id' => 'calendar-report-output', // this needs to be set explicitly when more than one report on a page
-      'tableID' => 'report-table',
-      'tableClass' => 'ui-widget ui-widget-content report-grid',
+      'class' => 'ui-widget ui-widget-content report-grid',
       'thClass' => 'ui-widget-header',
-      'altRowClass' => 'odd',
+      'altRowClass' => 'odd',  
       'extraParams' => array(),
+      'year' => date('Y'),
       'viewPreviousIfTooEarly' => true, // if today is before the start of the calendar, display last year.
         // it is possible to create a partial calendar.
       'includeWeekNumber' => false,
       'weekstart' => 'weekday=7', // Default Sunday
       'weekNumberFilter' => ':',
-      'rowGroupColumn'=>'taxon',
-      'chartContainerID' => 'chartdiv-container',
-      'chartID' => 'chartdiv',
-      'chartClass' => 'ui-widget ui-widget-content ui-corner-all',
-      'headerClass' => 'ui-widget-header ui-corner-all',
-      'height' => 400,
-      // 'width' is optional
-      'chartType' => 'line', // bar, pie
-      'rendererOptions' => array(),
-      'legendOptions' => array(),
-      'axesOptions' => array(),
-      'includeData' => 'raw',
-      'rawDataCombining' => 'add',
-      'dataRound' => 'nearest',
-      'zeroPointAnchor' => ',',
-      'interpolation' => 'linear',
-      'firstValue' => 'none',
-      'lastValue' => 'none',
-      'highlightEstimates' => false
+      'rowGroupColumn'=>'taxon'
     ), $options);
     $options["extraParams"] = array_merge(array(
-      'date_from' => $options['date_start'],
-      'date_to' => $options['date_end'],
-//      'user_id' => '', // CMS User, not Indicia User.
+      'date_from' => $options["year"].'-01-01',
+      'date_to' => $options["year"].'-12-31',
+      'user_id' => $user->uid, // CMS User, not Indicia User.
 //      'smpattrs' => '',
       'occattrs' => ''), $options["extraParams"]);
     // Note for the calendar reports, the user_id is assumed to be the CMS user id as recorded in the CMS User ID attribute,

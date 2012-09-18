@@ -43,13 +43,7 @@ input.scComment  {
 	width: 750px;
 	margin-top: 4px;
 }
-input.scCount  {
-	width: 30px;
-}
-input.scAmphibianBehaviour  {
-	width: auto;
-}
-.targ-grid-cell {
+td.targ-grid-cell {
   padding-left: 20px;	
 }
 div.olControlEditingToolbar div.olControlCancelSketchItemInactive {
@@ -87,7 +81,7 @@ div.olControlEditingToolbar div.olControlStartNewSiteItemInactive {
 }
 
 div.olControlEditingToolbar  {
-    width: 500px;
+    width: 350px;
 }
 .species-grid td {
   padding: 1px;
@@ -95,22 +89,11 @@ div.olControlEditingToolbar  {
 .ui-widget-header th {
   padding-right: 8px;
 }
-#imp-srefX,#imp-srefY,.precision {
+#imp-srefX {
 	width: 60px;
 }
-#pointgridtable input[type='text'] {
-  width: 100px;
+#imp-srefY {
+	width: 60px;
 }
-.target-species-grid label {
-	width: auto;
-}
-#samples-grid td {
-  padding: 2px;
-  border: solid silver 1px;
-}
-#mousePos {
-  background-color: #FFFFFF;
-  float: right;
-  margin-top: 7px;
-  margin-right: 20px;
-}
+
+

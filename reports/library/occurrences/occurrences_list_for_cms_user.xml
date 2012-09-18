@@ -67,6 +67,6 @@
     <column name='date' display='Date' />
     <column name='zero_abundance' display='Zero Abundance' />
     <column name='taxon_group' display='Taxon Group' />
-    <column name='comment' visible='false' />   
+    <column name='comment'  visible='false'/>
   </columns>
 </report>

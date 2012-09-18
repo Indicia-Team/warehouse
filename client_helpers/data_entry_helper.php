@@ -167,12 +167,6 @@ class data_entry_helper extends helper_base {
   * Optional. Name of the template entry used to build the HTML for the control. Defaults to autocomplete.</li>
   * <li><b>numValues</b><br/>
   * Optional. Number of returned values in the drop down list. Defaults to 10.</li>
-  * <li><b>duplicateCheckFields</b><br/>
-  * Optional. Provide an array of field names from the dataset returned from the warehouse. Any duplicates
-  * based  values from this list of fields will not be added to the output.</li>
-  * <li><b>simplify</b><br/>
-  * Set to true to simplify the search term by removing punctuation and spaces. Use when the field 
-  * being searched against is also simplified.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the autocomplete control.
@@ -197,11 +191,9 @@ class data_entry_helper extends helper_base {
       // Escape the ids for jQuery selectors
       'escaped_input_id' => self::jq_esc($options['inputId']),
       'escaped_id' => self::jq_esc($options['id']),
-      'defaultCaption' => self::check_default_value('location:'.$options['inputId'],
+      'defaultCaption' => self::check_default_value($options['inputId'],
           array_key_exists('defaultCaption', $options) ? $options['defaultCaption'] : ''),
-      'max' => array_key_exists('numValues', $options) ? ', max : '.$options['numValues'] : '',
-      'formatFunction' => 'function(item) { return item.{captionField}; }',
-      'simplify' => (isset($options['simplify']) && $options['simplify']) ? 'true' : 'false'
+      'max' => array_key_exists('numValues', $options) ? ', max : '.$options['numValues'] : ''
     ), $options);
     self::add_resource('autocomplete');
     // Escape the id for jQuery selectors
@@ -215,21 +207,13 @@ class data_entry_helper extends helper_base {
     }
     // lop the comma off the end
     $options['sParams'] = substr($sParams, 0, -1);
-    $options['extraParams']=null;
-    if (!empty($options['duplicateCheckFields'])) {
-      $duplicateCheckFields = 'item.'.implode(" + '#' + item.", $options['duplicateCheckFields']);
-      $options['duplicateCheck']="$.inArray($duplicateCheckFields, done)===-1";
-      $options['storeDuplicates']="done.push($duplicateCheckFields);";
-    } else {
-      // disable duplicate checking
-      $options['duplicateCheck']='true';
-      $options['storeDuplicates']='';
-    }
     $replaceTags=array();
     foreach(array_keys($options) as $option) {
       array_push($replaceTags, '{'.$option.'}');
     }
+    $options['extraParams']=null;
     self::$javascript .= str_replace($replaceTags, $options, $indicia_templates['autocomplete_javascript']);
+
     $r = self::apply_template($options['template'], $options);
     return $r;
   }
@@ -261,7 +245,7 @@ class data_entry_helper extends helper_base {
   * Optional. The id to assign to the HTML control. Base value defaults to fieldname, but 
   * this is a compound control and the many sub-controls have id values with additiobnal suffixes.</li>
   * <li><b>default</b><br/>
-  * Optional. An associative array of default keys and captions. This is overridden when reloading a
+  * Optional. An array of default captions. This is overridden when reloading a
   * record with existing data for this control.</li>
   * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
@@ -483,13 +467,6 @@ class data_entry_helper extends helper_base {
   * <li><b>dateFormat</b><br/>
   * Optional. Allows the date format string to be set, which must match a date format that can be parsed by the JavaScript Date object.
   * Default is dd/mm/yy.</li>
-  * <li><b>allowVagueDates</b><br/>
-  * Optional. Set to true to enable vague date input, which disables client side validation for standard date input formats.</li>
-  * <li><b>showButton</b><br/>
-  * Optional. Set to true to show a button which must be clicked to drop down the picker. Defaults to false unless allowVagueDates is true
-  * as inputting a vague date without the button is confusing.</li>
-  * <li><b>buttonText</b><br/>
-  * Optional. if showButton is true, this text will be shown as the 'alt' text for the buttom image.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the date picker control.
@@ -497,22 +474,16 @@ class data_entry_helper extends helper_base {
   public static function date_picker() {
     $options = self::check_arguments(func_get_args(), array('fieldname', 'default'));
     $options = array_merge(array(
-      'dateFormat'=>'dd/mm/yy',
-      'allowVagueDates'=>false,
-      'default'=>''
+      'dateFormat'=>'dd/mm/yy'
     ), $options);
-    if (!isset($options['showButton']))
-      // vague dates best with the button
-      $options['showButton']=$options['allowVagueDates'];
-    if (!isset($options['placeholder']))
-      $options['placeholder'] = $options['allowVagueDates'] ? lang::get('Pick or type a vague date') : lang::get('Click here');
     self::add_resource('jquery_ui');
     $escaped_id=str_replace(':','\\\\:',$options['id']);
     // Don't set js up for the datepicker in the clonable row for the species checklist grid
     if ($escaped_id!='{fieldname}') {
-      // should include even if validated_form_id is null, as could be doing this via AJAX.
-      if (!$options['allowVagueDates']) {
-          self::$javascript .= "if (typeof jQuery.validator !== \"undefined\") {
+      if (self::$validated_form_id!==null) {
+        if (!isset($options['default']) || $options['default']=='')
+          $options['default']=lang::get('click here');
+        self::$javascript .= "if (typeof jQuery.validator !== \"undefined\") {
   jQuery.validator.addMethod('customDate',
     function(value, element) {
       // parseDate throws exception if the value is invalid
@@ -522,23 +493,11 @@ class data_entry_helper extends helper_base {
   );
 }\n";
       }
-      if ($options['showButton']) {
-        $imgPath = empty(self::$images_path) ? self::relative_client_helper_path()."../media/images/" : self::$images_path;
-        $imgPath .= 'nuvola/date-16px.png';
-        if ($options['buttonText']) {
-          $buttonText = $options['buttonText'];
-        } else {
-          $buttonText = $options['allowVagueDates'] ? lang::get('To enter an exact date, click here. To enter a vague date, type it into the text box') : lang::get('Click here to pick a date');
-        }
-        $button = ",\n    showOn: 'button',\n    buttonImage: '$imgPath',\n    buttonText: '$buttonText'";
-      } else
-        $button='';
       self::$javascript .= "jQuery('#$escaped_id').datepicker({
     dateFormat : '".$options['dateFormat']."',
     changeMonth: true,
     changeYear: true,
-    constrainInput: false $button
-    ";
+    constrainInput: false";
       // Filter out future dates
       if (!array_key_exists('allow_future', $options) || $options['allow_future']==false) {
         self::$javascript .= ",
@@ -552,7 +511,6 @@ class data_entry_helper extends helper_base {
     }";
       }
       self::$javascript .= "\n});\n";
-      self::$javascript .= "$('button.ui-datepicker-trigger').addClass('ui-state-default');\n";
     }
     // Check for the special default value of today
     if (isset($options['default']) && $options['default']=='today')
@@ -668,7 +626,7 @@ class data_entry_helper extends helper_base {
     global $indicia_templates;
     // Upload directory defaults to client_helpers/upload, but can be overriden.
     $interim_image_folder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
-    $relpath = self::getRootFolder() . self::client_helper_path();
+    $relpath = self::getRootFolder() . self::relative_client_helper_path();
     // Allow options to be defaulted and overridden
     $defaults = array(
       'caption' => lang::get('Files'),
@@ -677,7 +635,7 @@ class data_entry_helper extends helper_base {
       'maxFileCount' => 4,
       'autoupload' => false,
       'flickr' => false,
-      'uploadSelectBtnCaption' => lang::get('Upload photo(s)'),
+      'uploadSelectBtnCaption' => lang::get('Select file(s)'),
       'flickrSelectBtnCaption' => lang::get('Choose photo from Flickr'),
       'startUploadBtnCaption' => lang::get('Start upload'),
       'msgUploadError' => lang::get('upload error'),
@@ -749,12 +707,12 @@ class data_entry_helper extends helper_base {
       if (isset($options['tabDiv'])) {
         // The file box is displayed on a tab, so we must only generate it when the tab is displayed.
         $javascript =
-            "var uploaderTabHandler = function(event, ui) { \n".
+            "var tabHandler = function(event, ui) { \n".
             "  if (ui.panel.id=='".$options['tabDiv']."') {\n    ".
         $javascript.
-            "    jQuery(jQuery('#".$options['tabDiv']."').parent()).unbind('tabsshow', uploaderTabHandler);\n".
+            "    jQuery(jQuery('#".$options['tabDiv']."').parent()).unbind('tabsshow', tabHandler);\n".
             "  }\n};\n".
-            "jQuery(jQuery('#".$options['tabDiv']."').parent()).bind('tabsshow', uploaderTabHandler);\n";
+            "jQuery(jQuery('#".$options['tabDiv']."').parent()).bind('tabsshow', tabHandler);\n";
         // Insert this script at the beginning, because it must be done before the tabs are initialised or the
         // first tab cannot fire the event
         self::$javascript = $javascript . self::$javascript;
@@ -765,7 +723,7 @@ class data_entry_helper extends helper_base {
     // version.
     return '<div class="file-box" id="'.$containerId.'"></div><noscript>'.self::image_upload(array(
       'label' => $options['caption'],
-      // Convert table into a psuedo field name for the images
+	  // Convert table into a psuedo field name for the images
       'id' => $options['id'],
       'fieldname' => str_replace('_', ':', $options['table'])
     )).'</noscript>';
@@ -775,15 +733,10 @@ class data_entry_helper extends helper_base {
    * Calculates the folder that submitted images end up in according to the helper_config.
    */
   public static function get_uploaded_image_folder() {
-    if (!isset(self::$final_image_folder) || self::$final_image_folder=='warehouse') {
-      if (!empty(self::$warehouse_proxy)) {
-        $warehouseUrl = self::$warehouse_proxy;
-      } else {
-        $warehouseUrl = self::$base_url;
-      }
-      return $warehouseUrl.(isset(self::$indicia_upload_path) ? self::$indicia_upload_path : 'upload/');
-    } else {
-      return self::getRootFolder() . self::client_helper_path() . self::$final_image_folder;
+    if (!isset(self::$final_image_folder) || self::$final_image_folder=='warehouse')
+      return self::$base_url.(isset(self::$indicia_upload_path) ? self::$indicia_upload_path : 'upload/');
+    else {
+      return self::getRootFolder() . self::relative_client_helper_path() . self::$final_image_folder;
     }
   }
 
@@ -805,23 +758,12 @@ class data_entry_helper extends helper_base {
   * Optional. Hint provided to the locality search service as to which country to look for the place name in. Defaults to United Kingdom.</li>
   * <li><b>georefLang</b><br/>
   * Optional. Language to request place names in. Defaults to en-EN for English place names.</li>
-  * <li><b>readAuth</b><br/>
-  * Optional. Read authentication tokens for the Indicia warehouse if using the indicia_locations driver setting.</li>
   * <li><b>driver</b><br/>
   * Optional. Driver to use for the georeferencing operation. Supported options are:<br/>
   *   geoplanet - uses the Yahoo! GeoPlanet place search. This is the default.<br/>
   *   google_search_api - uses the Google AJAX API LocalSearch service. This method requires both a
-  *       georefPreferredArea and georefCountry to work correctly. Note that the Google AJAX API is deprecated
-  *       so its future support is not guaranteed.<br/>
+  *       georefPreferredArea and georefCountry to work correctly.<br/>
   *   geoportal_lu - Use the Luxembourg specific place name search provided by geoportal.lu.
-  *   indicia_locations - Use the list of locations available to the current website in Indicia as a search list.
-  * </li>
-  * <li><b>public</b><br/>
-  * Optional. If using the indicia_locations driver, then set this to true to include public (non-website specific)
-  * locations in the search results. Defaults to false.
-  * </li>
-  * <li><b>autoCollapseResults</b><br/>
-  * Optional. If a list of possible matches are found, does selecting a match automatically fold up the results? Defaults to false.
   * </li>
   * </ul>
   * @link http://code.google.com/apis/ajaxsearch/terms.html Google AJAX Search API Terms of Use.
@@ -830,14 +772,13 @@ class data_entry_helper extends helper_base {
   */
   public static function georeference_lookup($options) {
     $options = self::check_options($options);
-    global $indicia_templates;
     $options = array_merge(array(
       'id' => 'imp-georef-search',
       'driver' => 'geoplanet',
-      'searchButton' => self::apply_replacements_to_template($indicia_templates['button'], 
-          array('href'=>'#', 'id'=>'imp-georef-search-btn', 'class' => 'inline-control', 'caption'=>lang::get('Search'))),
-      'public' => false,
-      'autoCollapseResults' => false
+      // Internationalise the labels here, because if we do this directly in the template setup code it is too early for any custom
+      // language files to be loaded.
+      'search' => lang::get('search'),
+      'close' => lang::get('close'),
     ), $options);
     self::add_resource('indiciaMapPanel');
     // dynamically build a resource to link us to the driver js file.
@@ -863,169 +804,8 @@ class data_entry_helper extends helper_base {
     // If the lookup service driver uses cross domain JavaScript, this setting provides
     // a path to a simple PHP proxy script on the server.
     self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.proxy='".
-        self::getRootFolder() . self::client_helper_path() . "proxy.php';\n\n";
-    self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.autoCollapseResults='".($options['autoCollapseResults'] ? 't' : 'f')."';\n";
-    // for the indicia_locations driver, pass through the read auth and url
-    if ($options['driver']==='indicia_locations') {
-      self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.warehouseUrl='".self::$base_url."';\n";
-      self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.auth_token='".$options['readAuth']['auth_token']."';\n";
-      self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.nonce='".$options['readAuth']['nonce']."';\n";
-      self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.public='".($options['public'] ? 't' : 'f')."';\n";
-      self::add_resource('json');
-    }
-    if ($options['autoCollapseResults']) {
-      // no need for close button on results list
-      $options['closeButton']='';
-    } else {
-      // want a close button on the results list
-      $options['closeButton'] = self::apply_replacements_to_template($indicia_templates['button'], 
-          array('href'=>'#', 'id'=>'imp-georef-close-btn', 'class' => '', 'caption'=>lang::get('Close the search results')));
-    }
+        self::getRootFolder() . self::relative_client_helper_path() . "proxy.php';\n\n";
     return self::apply_template('georeference_lookup', $options);
-  }
-  
- /**
-  * A version of the select control which supports hierarchical termlist data by adding new selects to the next line
-  * populated with the child terms when a parent term is selected.
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>  *
-  * <li><b>table</b><br/>
-  * Table name to get data from for the select options. Should be termlists_term for termlist data.</li>
-  * <li><b>report</b><br/>
-  * Report name to get data from for the select options if the select is being populated by a service call using a report.
-  * Mutually exclusive with the table option. The report should return a parent_id field.</li>
-  * <li><b>captionField</b><br/>
-  * Field to draw values to show in the control from if the select is being populated by a service call.</li>
-  * <li><b>valueField</b><br/>
-  * Field to draw values to return from the control from if the select is being populated by a service call. Defaults
-  * to the value of captionField.</li>
-  * <li><b>extraParams</b><br/>
-  * Optional. Associative array of items to pass via the query string to the service. This
-  * should at least contain the read authorisation array if the select is being populated by a service call. It can also contain
-  * view=cache to use the cached termlists entries or view=detail for the uncached version.</li>
-  * </ul>
-  */
-  public static function hierarchical_select($options) {
-    $options = array_merge(array(
-      'id'=>'select-'.rand(0,10000),
-      'blankText'=>'<please select>'
-    ), $options);
-    // Get the data for the control. Not Ajax populated at the moment. We either populate the lookupValues for the top level control
-    // or store in the childData for output into JavaScript
-    $values = self::get_population_data($options);
-    $lookupValues=array();
-    $childData=array();
-    foreach ($values as $value) {
-      if (empty($value['parent_id']))
-        $lookupValues[$value[$options['valueField']]]=$value[$options['captionField']];
-      else {
-        // not a top level item, so put in a data array we can store in JSON.
-        if (!isset($childData[$value['parent_id']]))
-          $childData[$value['parent_id']]=array();
-        $childData[$value['parent_id']][] = array('id'=>$value[$options['valueField']], 'caption'=>$value[$options['captionField']]);
-      }
-    }
-    // build an ID with just alphanumerics, that we can use to keep JavaScript function and data names unique
-    $id = preg_replace('/[^a-zA-Z0-9]/', '', $options['id']);
-    // dump the control population data out for JS to use
-    self::$javascript .= "indiciaData.selectData$id=".json_encode($childData).";\n";
-    // Convert the options so that the top-level select uses the lookupValues we've already loaded rather than reloads its own.
-    unset($options['table']);
-    unset($options['report']);
-    unset($options['captionField']);
-    unset($options['valueField']);
-    $options['lookupValues']=$lookupValues;
-    
-    // as we are going to output a select using the options, but will use a hidden field for the form value for the selected item, 
-    // grab the fieldname and prevent the topmost select having the same name.
-    $fieldname = $options['fieldname'];
-    $options['fieldname'] = 'parent-'.$options['fieldname'];
-    
-    // Output a select. Use templating to add a wrapper div, so we can keep all the hierarchical selects together,
-    global $indicia_templates;
-    $oldTemplate = $indicia_templates['select'];
-    $indicia_templates['select'] = '<div class="hierarchical-select control-box">'.$indicia_templates['select'].'</div>';
-    $options['class']='hierarchy-select';
-    $r = self::select($options);
-    $indicia_templates['select'] = $oldTemplate;
-    // jQuery safe version of the Id. 
-    $safeId = preg_replace('/[:]/', '\\\\\\:', $options['id']);
-    // output a hidden input that contains the value to post.
-    $hiddenOptions = array('id'=>'fld-'.$options['id'], 'fieldname'=>$fieldname, 'default'=>self::check_default_value($options['fieldname']));
-    if (isset($options['default']))
-      $hiddenOptions['default'] = $options['default'];
-    $r .= self::hidden_text($hiddenOptions);
-    $options['blankText']=htmlspecialchars($options['blankText']);
-    // Now output JavaScript that creates and populates child selects as each option is selected. There is also code for 
-    // reloading existing values.    
-    self::$javascript .= "
-  function pickHierarchySelectNode$id(select) {
-    select.nextAll().remove();
-    if (typeof indiciaData.selectData$id [select.val()] !== 'undefined') {
-      var html='<select class=\"hierarchy-select\"><option>".$options['blankText']."</option>', obj;
-      $.each(indiciaData.selectData$id [select.val()], function(idx, item) {
-        html += '<option value=\"'+item.id+'\">' + item.caption + '</option>';
-      });
-      html += '</select>';
-      obj=$(html);
-      obj.change(function(evt) { 
-        $('#fld-$safeId').val($(evt.target).val());
-        pickHierarchySelectNode$id($(evt.target));
-      });
-      select.after(obj);
-    }    
-  }
-  
-  $('#$safeId').change(function(evt) {
-    $('#fld-$safeId').val($(evt.target).val());
-    pickHierarchySelectNode$id($(evt.target));
-  });
-  
-  pickHierarchySelectNode$id($('#$safeId')); 
-  
-  // Code from here on is to reload existing values.
-  function findItemParent(idToFind) {
-    var found=false;
-    $.each(indiciaData.selectData$id, function(parentId, items) {
-      $.each(items, function(idx, item) {
-        if (item.id===idToFind) {
-          found=parentId;
-        }
-      });
-    });
-    return found;
-  }
-  var found=true, last=$('#fld-$safeId').val(), tree=[last], toselect, thisselect;
-  while (found) {
-    found=findItemParent(last);
-    if (found) {
-      tree.push(found);
-      last=found;
-    }
-  }
-  // now we have the tree, work backwards to select each item
-  thisselect = $('#$safeId');
-  while (tree.length>0) {
-    toselect=tree.pop();
-    $.each(thisselect.find('option'), function(idx, option) {
-      if ($(option).val()===toselect) {
-        $(option).attr('selected',true);
-        thisselect.trigger('change');
-      }
-    });
-    thisselect = thisselect.next();
-  }
-    ";
-    return $r;
   }
 
  /**
@@ -1125,59 +905,21 @@ class data_entry_helper extends helper_base {
   * rather than use a locally stored (cached) copy of the previous request. This speeds things up
   * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
   * if this is not specified then 1 hour.</li>
-  * <li><b>useLocationName</b>
-  * Optional. If true, then inputting a place name which does not match to an existing place
-  * gets stored in the location_name field. Defaults to false.
-  * </li>
-  * <li><b>searchUpdatesSref</b>
-  * Optional. If true, then when a location is found in the autocomplete, the location's centroid spatial 
-  * reference is loaded into the spatial_ref control on the form if any exists. Defaults to false.
-  * </li>
-  * <li><b>allowcreate</b>
-  * Optional. If true, if the user has typed in a non-existing location name and also supplied
-  * a spatial reference, a button is displayed which lets them save a location for future
-  * personal use. Defaults to false. For this to work, you must either allow the standard Indicia
-  * code to handle the submission for you, or your code must handle the presence of a value called
-  * save-site-flag in the form submission data and if true, it must first save the site information
-  * to the locations table database then attach the location_id returned to the submitted sample data.
-  * </li>
   * </ul>
   *
   * @return string HTML to insert into the page for the location select control.
   */
   public static function location_autocomplete($options) {
     $options = self::check_options($options);
-    $caption = isset(self::$entity_to_load['sample:location']) ? self::$entity_to_load['sample:location'] : null;
-    if (!$caption && !empty($options['useLocationName']) && $options['useLocationName'])
-      $caption = self::$entity_to_load['sample:location_name'];
     $options = array_merge(array(
         'table'=>'location',
         'fieldname'=>'sample:location_id',
         'valueField'=>'id',
         'captionField'=>'name',
-        'defaultCaption'=>$caption,
-        'id'=>'imp-location',
-        'useLocationName'=>false,
-        'allowCreate'=>false,
-        'searchUpdatesSref'=>false
-    ), $options);
-    $r = self::autocomplete($options);
-    // put a hidden input in the form to indicate that the location value should be 
-    // copied to the location_name field if not linked to a location id.
-    if ($options['useLocationName']) 
-      $r = '<input type="hidden" name="useLocationName" value="true"/>'.$r;
-    if ($options['allowCreate'] || $options['searchUpdatesSref']) {
-      self::add_resource('createPersonalSites');
-      if ($options['allowCreate']) {
-        self::$javascript .= "indiciaData.msgRememberSite='".lang::get('Remember site')."';\n";
-        self::$javascript .= "indiciaData.msgRememberSiteHint='".lang::get('Remember details of this site so you can enter records at the same location in future.')."';\n";
-        self::$javascript .= "indiciaData.msgSiteWillBeRemembered='".lang::get('The site will be available to search for next time you input some records.')."';\n";
-        self::$javascript .= "allowCreateSites();\n";
-      }
-      if ($options['searchUpdatesSref'])
-        self::$javascript .= "indiciaData.searchUpdatesSref=true;\n";
-    }
-    return $r;
+        'id'=>'imp-location'
+        ), $options);
+
+    return self::autocomplete($options);
   }
 
  /**
@@ -1206,10 +948,6 @@ class data_entry_helper extends helper_base {
   * rather than use a locally stored (cached) copy of the previous request. This speeds things up
   * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
   * if this is not specified then 1 hour.</li>
-  * <li><b>searchUpdatesSref</b>
-  * Optional. If true, then when a location is selected, the location's centroid spatial 
-  * reference is loaded into the spatial_ref control on the form if any exists. Defaults to false.
-  * </li>
   * </ul>
   *
   * @return string HTML to insert into the page for the location select control.
@@ -1225,11 +963,8 @@ class data_entry_helper extends helper_base {
         'fieldname'=>'sample:location_id',
         'valueField'=>'id',
         'captionField'=>'name',
-        'id'=>'imp-location',
-        'searchUpdatesSref'=>false
+        'id'=>'imp-location'
         ), $options);
-    if ($options['searchUpdatesSref'])
-      self::$javascript .= "indiciaData.searchUpdatesSref=true;\n";
     return self::select($options);
   }
 
@@ -1505,8 +1240,8 @@ class data_entry_helper extends helper_base {
   * @return string HTML to insert into the page for the postcode control.
   */
   public static function postcode_textbox($options) {
-    // The id must be set to imp-postcode otherwise the search does not work
-    $options = array_merge($options, array('id'=>'imp-postcode'));
+    // The id field default must take precedence over using the fieldname as the id
+    $options = array_merge(array('id'=>'imp-postcode'), $options);
     $options = self::check_options($options);
     // Merge in the defaults
     $options = array_merge(array(
@@ -1715,36 +1450,25 @@ class data_entry_helper extends helper_base {
     $options = array_merge(array(
       'fieldname'=>'sample:entered_sref'
     ), $options);
-    
-    if (array_key_exists('systems',$options) && count($options['systems']) == 1) {
-      // The system select will be hidden since there is only one system
-      $srefOptions = $options;
-    } else {
-      // Keep the two controls on the same line
+    // Force no separate lines for the 2 controls
+    if (!array_key_exists('systems',$options) || count($options['systems'])!=1) {
       $srefOptions = array_merge($options, array('suffixTemplate'=>'nosuffix'));
-      $srefOptions = array_merge($srefOptions, array('requiredsuffixTemplate'=>'requirednosuffix'));
-      // Show the help text after the 2nd control
-      if (isset($srefOptions['helpText'])) {
-        unset($srefOptions['helpText']);
-      }
+      $srefOptions = array_merge($options, array('requiredsuffixTemplate'=>'requirednosuffix'));
+    } else {
+      $srefOptions = $options;
     }
-    // Output the sref control
     $r = self::sref_textbox($srefOptions);
-    
     // tweak the options passed to the system selector
     $options['fieldname']=$options['fieldname']."_system";
     unset($options['label']);
-    if (isset($options['defaultSystem'])) {
-      $options['default']=$options['defaultSystem'];
-    }
-    // Output the system control
     if (array_key_exists('systems', $options) && count($options['systems']) == 1) {
       // Hidden field for the system
       $keys = array_keys($options['systems']);
       $r .= "<input type=\"hidden\" id=\"imp-sref-system\" name=\"".$options['fieldname']."\" value=\"".$keys[0]."\" />\n";
-      self::include_sref_handler_js($options['systems']);
     }
     else {
+      if (isset($options['defaultSystem']))
+        $options['default']=$options['defaultSystem'];
       $r .= self::sref_system_select($options);
     }
     return $r;
@@ -1790,7 +1514,6 @@ class data_entry_helper extends helper_base {
       );
     }
     $options['items'] = $opts;
-    self::include_sref_handler_js($options['systems']);
     return self::apply_template('select', $options);
   }
 
@@ -1800,7 +1523,7 @@ class data_entry_helper extends helper_base {
   * box is automatically linked to a map_panel if one is added to the page.
   *
   * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldName</b><br/>
+  * <li><b>fieldname</b><br/>
   * Required. The name of the database field this control is bound to. Defaults to sample:entered_sref.</li>
   * <li><b>id</b><br/>
   * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
@@ -1826,7 +1549,8 @@ class data_entry_helper extends helper_base {
     $tokens=explode(':', $options['fieldname']);
     // Merge the default parameters
     $options = array_merge(array(
-        'fieldname'=>'sample:entered_sref',
+        'srefField'=>'sample:entered_sref',
+        'systemfield'=>'sample:entered_sref_system',
         'hiddenFields'=>true,
         'id'=>'imp-sref',
         'geomFieldname'=>$tokens[0].':geom',
@@ -1855,100 +1579,6 @@ class data_entry_helper extends helper_base {
     } else
       $r = self::apply_template('sref_textbox', $options);
     return $r;
-  }
-  
-  /**
-  * Outputs hidden controls for entered_sref and sref_system. This is intended for use when
-  * sample positions are to be selected from predefined locations and they are automatically 
-  * populated when a location shown on a map_panel is clicked or a selection is made in a location control. 
-  * Use in conjunction with a map_panel with, e.g.
-  *   clickForSpatialRef=false
-  *   locationLayerName=indicia:detail_locations
-  *   locationLayerFilter=website_id=n
-  * and a location_select with e.g.
-  *   searchUpdatesSref=true
-  *   validation="required"
-  *   blankText="Select..." 
-  *   
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldame</b><br/>
-  * Required. The name of the database field the sref control is bound to. Defaults to sample:entered_sref.
-  * The system field and geom field is automatically constructed from this.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default spatial reference to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>defaultSys</b><br/>
-  * Optional. The default spatial reference system to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * </ul>  
-  * @return string HTML to insert into the page for the location sref control.
-  */
-  public static function sref_hidden($options) {
-
-    $options = array_merge(array(
-      'id' => 'imp-sref',
-      'fieldname' => 'sample:entered_sref',
-      'default' => self::check_default_value($options['fieldname']),
-    ), $options);
-    
-    // remove validation as field will be hidden
-    if (array_key_exists($options['fieldname'], self::$default_validation_rules)) {
-      unset(self::$default_validation_rules[$options['fieldname']]);
-    }
-    if (array_key_exists('validation', $options)) {
-      unset($options['validation']);
-    }
-       
-    $r = self::hidden_text($options);
-    
-    $sysOptions['id'] = $options['id'] . '-system';
-    $sysOptions['fieldname'] = $options['fieldname'] . '_system';
-    if (!isset($options['defaultSys']))
-      $sysOptions['default']=self::check_default_value($options['sysFieldname']);
-
-    $r .= self::hidden_text($sysOptions);
-        
-    return $r;    
-  }
-
-  /**
-   * A version of the autocomplete control preconfigured for species lookups.
-   * @param type $options Array of configuration options with the following possible entries.
-   * <ul>
-   * <li><b>cache_lookup</b>
-   * Defaults to false. Set to true to lookup species against cache_taxon_searchterms rather than detail_taxa_taxon_lists.
-   * </li>
-   * <li><b>speciesNameFilterMode</b><br/>
-   * Optional. Method of filtering the available species names (both for initial population into the grid and additional rows). Options are
-   *   preferred - only preferred names
-   *   currentLanguage - only names in the language identified by the language option are included
-   *   excludeSynonyms - all names except synonyms (non-preferred latin names) are included.
-   * </li>
-   * <li><b>extraParams</b>
-   * Should contain the read authorisation array and taxon_list_id to filter against. 
-   * </li>
-   * @return string Html for the species autocomplete control.
-   */   
-  public function species_autocomplete($options) {
-    global $indicia_templates;
-    if (!isset($options['cacheLookup']))
-      $options['cacheLookup']=false;
-    $db = data_entry_helper::get_species_lookup_db_definition($options['cacheLookup']);
-    // get local vars for the array
-    extract($db);
-    $options['extraParams']['orderby'] = ($options['cacheLookup']) ? 'original' : 'taxon';
-    $options = array_merge(array(
-      'fieldname'=>'occurrence:taxa_taxon_list_id',
-      'table'=>$tblTaxon,
-      'captionField'=>$colSearch,
-      'valueField'=>$colId,
-      'formatFunction'=>$indicia_templates['format_species_autocomplete_fn'],
-      'simplify'=>$options['cacheLookup'] ? 'true' : 'false'
-    ), $options);
-    if (isset($duplicateCheckFields))
-      $options['duplicateCheckFields']=$duplicateCheckFields;
-    $options['extraParams'] += self::get_species_names_filter($options);
-    return self::autocomplete($options);
   }
 
  /**
@@ -1987,7 +1617,7 @@ class data_entry_helper extends helper_base {
   * attribute control (i.e. there is a one to one match with occAttrs). If this array is shorter than
   * occAttrs then all remaining controls re-use the last class.</li>
   * <li><b>extraParams</b><br/>
-  * Associative array of items to pass via the query string to the service calls used for taxon names lookup. This
+  * Associative array of items to pass via the query string to the service. This
   * should at least contain the read authorisation array.</li>
   * <li><b>lookupListId</b><br/>
   * Optional. The ID of the taxon_lists record which is to be used to select taxa from when adding
@@ -2072,16 +1702,7 @@ class data_entry_helper extends helper_base {
   * Language used to filter lookup list items in attributes. ISO 639:3 format. </li>
   * <li><b>PHPtaxonLabel</b></li>
   * If set to true, then the taxon_label template should contain a PHP statement that returns the HTML to display for each
-  * taxon's label. Otherwise the template should be plain HTML. Defaults to false.</li>
-  * <li><b>useLoadedExistingRecords</b></li>
-  * Optional. Defaults to false. Set to true to prevent a grid from making a web service call to load existing occurrence
-  * data when reloading a sample. This can be useful if there are more than one species checklist on the page such as when
-  * species input is split across several tabs - the first can load all the data and subsequent grids just display 
-  * the appropriate records depending on the species they are configured to show.</li>
-  * <li><b>reloadExtraParams</b></li>
-  * Set to an array of additional parameters such as filter criteria to pass to the service request used to load 
-  * existing records into the grid when reloading a sample. Especially useful when there are more than one species checklist
-  * on a single form, so that each grid can display the appropriate output.</li>
+  * taxon's label. Otherwise the template should be plain HTML. Defaults to false.
   * </ul>
   */
   public static function species_checklist()
@@ -2094,16 +1715,36 @@ class data_entry_helper extends helper_base {
           'at the same time has having the occurrenceImages option enabled.');
     self::add_resource('json');
     self::add_resource('autocomplete');
-    $filterArray = self::get_species_names_filter($options);
+    $filterArray = array();
+    $query = array();
+    // Code in the species checklist filter configuration button assumes that the query in clause is the taxonFilter.
+    if (preg_match('/^(preferred_name|taxon_meaning_id|taxon_group)$/', $options['taxonFilterField']))
+      $query['in'] = array($options['taxonFilterField'], $options['taxonFilter']);
+    if (isset($options['speciesNameFilterMode'])) {
+      $languageFieldName = isset($options['cacheLookup']) && $options['cacheLookup'] ? 'language_iso' : 'language';
+      switch($options['speciesNameFilterMode']) {
+        case 'preferred' :
+          $filterArray['preferred']='t';
+          break;
+        case 'currentLanguage' :
+          if (isset($options['language']))
+            $filterArray[$languageFieldName]=$options['language'];
+          break;
+        case 'excludeSynonyms':
+          $query['where'] = array("(preferred='t' OR $languageFieldName<>'lat')");
+          break;
+      }
+    }
+    if (count($query))
+      $filterArray['query'] = json_encode($query);
     if (count($filterArray)) {
       $filterParam = json_encode($filterArray);
       self::$javascript .= "indiciaData['taxonExtraParams-".$options['id']."'] = $filterParam;\n";
     }
-    
     if ($options['occurrenceImages']) {
       self::add_resource('plupload');
       // store some globals that we need later when creating uploaders
-      $relpath = self::getRootFolder() . self::client_helper_path();
+      $relpath = self::getRootFolder() . self::relative_client_helper_path();
       $interim_image_folder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
       self::$javascript .= "uploadSettings = {\n";
       self::$javascript .= "  uploadScript: '" . $relpath . "upload.php',\n";
@@ -2132,9 +1773,8 @@ class data_entry_helper extends helper_base {
     $taxonRows = array();
 
     // Load any existing sample's occurrence data into $entity_to_load
-    if (isset(self::$entity_to_load['sample:id']) && $options['useLoadedExistingRecords']===false)
-      self::preload_species_checklist_occurrences(self::$entity_to_load['sample:id'], $options['readAuth'], 
-          $options['occurrenceImages'], $options['reloadExtraParams']);
+    if (isset(self::$entity_to_load['sample:id']))
+      self::preload_species_checklist_occurrences(self::$entity_to_load['sample:id'], $options['readAuth'], $options['occurrenceImages']);
     // load the full list of species for the grid, including the main checklist plus any additional species in the reloaded occurrences.
     $taxalist = self::get_species_checklist_taxa_list($options, $taxonRows);
     // If we managed to read the species list data we can proceed
@@ -2180,8 +1820,8 @@ class data_entry_helper extends helper_base {
         // Add a X button if the user can remove rows
         if ($options['rowInclusionCheck']=='alwaysRemovable')
           $row .= '<td class="ui-state-default remove-row" style="width: 1%">X</td>';
-        $row .= str_replace(array('{content}','{colspan}','{tableId}','{idx}'), 
-            array($firstCell,$colspan,$options['id'],$colIdx), $indicia_templates['taxon_label_cell']);
+        $row .= str_replace(array('{content}','{colspan}','{tableId}'), 
+            array($firstCell,$colspan,$options['id']), $indicia_templates['taxon_label_cell']);
 
         $existing_record_id = false;
         if (is_array(self::$entity_to_load)) {
@@ -2205,7 +1845,6 @@ class data_entry_helper extends helper_base {
           // this includes a control to force out a 0 value when the checkbox is unchecked.
           $row .= "<input type=\"hidden\" class=\"scPresence\" name=\"sc:$id:$existing_record_id:present\" value=\"0\"/><input type=\"checkbox\" class=\"scPresence\" name=\"sc:$id:$existing_record_id:present\" $checked />";
         $row .= "</td>";  
-        $idx = 0;
         foreach ($occAttrControls as $attrId => $control) {
           if ($existing_record_id) {
             $search = preg_grep("/^sc:$id:$existing_record_id:occAttr:$attrId".'[:[0-9]*]?$/', array_keys(self::$entity_to_load));
@@ -2242,12 +1881,9 @@ class data_entry_helper extends helper_base {
               $oc .= $error;
             }
           }
-          $headers = $options['id']."-attr$attrId-$colIdx";
-          $class = self::species_checklist_occ_attr_class($options, $idx, $attributes[$attrId]['untranslatedCaption']);
-          $class = $class . 'Cell';
-          $row .= str_replace(array('{label}', '{class}', '{content}', '{headers}'), array(lang::get($attributes[$attrId]['caption']), $class, $oc, $headers), 
+          $headers=$options['id']."-attr$attrId-$colIdx";
+          $row .= str_replace(array('{label}', '{content}','{headers}'), array(lang::get($attributes[$attrId]['caption']), $oc, $headers), 
               $indicia_templates[$options['attrCellTemplate']]);
-          $idx++;
         }
         if ($options['occurrenceComment']) {
           $row .= "\n<td class=\"ui-widget-content scCommentCell\" headers=\"".$options['id']."-comment-$colIdx\"><input class=\"scComment\" type=\"text\" name=\"sc:$id:$existing_record_id:occurrence:comment\" ".
@@ -2324,59 +1960,6 @@ class data_entry_helper extends helper_base {
     }
   }
   
-  /** 
-   * Builds an array to filter for the appropriate selection of species names, e.g. how it accepts searches for 
-   * common names and synonyms.
-   */
-  private static function get_species_names_filter($options) {
-    // $wheres is an array for building of the filter query
-    $wheres = array();
-    $r = array();
-    if (isset($options['cacheLookup']) && $options['cacheLookup']) {
-      $wheres[] = "(simplified='t' or simplified is null)";
-      $colLanguage='language_iso';
-    } else
-      $colLanguage='language';
-    if (isset($options['speciesNameFilterMode'])) {
-      switch($options['speciesNameFilterMode']) {
-        case 'preferred' :
-          if (isset($options['cacheLookup']) && $options['cacheLookup'])
-            $r += array('name_type'=>'L');
-          else
-            $r += array('preferred'=>'t');
-          break;
-        case 'language' :
-          if (isset($options['language'])) {
-            $r += array($colLanguage=>$options['language']);
-          } elseif (isset($user)) {
-            // if in Drupal we can use the user's language
-            $r += array($colLanguage=>iform_lang_iso_639_2($user->lang));
-          }
-          break;
-        case 'excludeSynonyms':
-          if (isset($options['cacheLookup']) && $options['cacheLookup'])
-            $wheres[] = "(preferred='t' or language_iso<>'lat')";
-          else
-            $wheres[] = "(preferred='t' or language<>'lat')";
-          break;
-      }
-    }
-    $query=array();
-    if (!empty($options['taxonFilterField']) && $options['taxonFilterField']!=='none' && !empty($options['taxonFilter'])) {
-      // filter the taxa available to record
-      // switch field to filter by if using cached lookup
-      if ($options['cache_lookup'] && $options['taxonFilterField']==='preferred_name')
-        $options['taxonFilterField']='preferred_taxon';
-      $query = array('in'=>array($options['taxonFilterField'], $options['taxonFilter']));
-      $extraParams['query'] = json_encode($query);
-    }
-    if (!empty($wheres))
-      $query['where']=array(implode(' AND ', $wheres));
-    if (!empty($query))
-      $r += array('query'=>json_encode($query));
-    return $r;
-  }
-  
   /**
    * Adds javascript to popup a config box for the current filter on the species you can add to the grid.
    */
@@ -2394,25 +1977,24 @@ var applyFilterMode = function(type, group_id) {
   if (typeof group_id==='undefined') {
     group_id=null;
   }
-  query=JSON.parse(indiciaData['taxonExtraParams-".$options['id']."']['query']);
+  var query=JSON.parse(indiciaData['taxonExtraParams-".$options['id']."']['query']);
   if (typeof indiciaData.originalTaxonQuery==='undefined') {
     indiciaData.originalTaxonQuery=$.extend({},query);
   }
-  switch (type) {\n";
-      if (!empty($options['usersPreferredGroups'])) 
-        self::$javascript .= "    case 'user':
+  switch (type) {
+    case 'user':
       query['in']={\"taxon_group_id\":[".implode(',', $options['usersPreferredGroups'])."]};
-      break;\n";
-      self::$javascript .= "    case 'selected':
+      break;
+    case 'selected':
       query['in']={\"taxon_group_id\":[group_id]};
       break;
     default:
       query=indiciaData.originalTaxonQuery;
   }
   if (type==='default') {
-    $('#".$options['id']."-filter').removeClass('button-active');
+    $('#".$options['id']."-filter').removeClass('ui-state-active');
   } else {
-    $('#".$options['id']."-filter').addClass('button-active');
+    $('#".$options['id']."-filter').addClass('ui-state-active');
   }
   indiciaData['taxonExtraParams-".$options['id']."']['query']=JSON.stringify(query);
   // store in cookie
@@ -2451,12 +2033,12 @@ $('#".$options['id']."-filter').click(function(evt) {
       self::$javascript .= "        '<label class=\"auto\"><input type=\"radio\" name=\"filter-mode\" id=\"filter-mode-selected\"'+selectedChecked+'/>".
           lang::get('Input species from the following species group:')."</label><br/>' +
         '<select name=\"filter-group\" id=\"filter-group\"></select>' +
-        '</fieldset><button type=\"button\" class=\"default-button\" id=\"filter-popup-apply\">".lang::get('Apply')."</button><button type=\"button\" class=\"default-button\" id=\"filter-popup-cancel\">".lang::get('Cancel')."</button></div>');
+        '</fieldset><button type=\"button\" id=\"filter-popup-apply\">".lang::get('Apply')."</button><button type=\"button\" id=\"filter-popup-cancel\">".lang::get('Cancel')."</button></div>');
   $.getJSON(\"".self::$base_url."index.php/services/report/requestReport?report=library/taxon_groups/taxon_groups_used_in_checklist.xml&reportSource=local&mode=json".
       "&taxon_list_id=".$options['lookupListId']."&auth_token=".$options['readAuth']['auth_token']."&nonce=".$options['readAuth']['nonce']."&callback=?\", function(data) {
     var checked;
     $.each(data, function(idx, item) {
-      selected = userFilter!==null && (item.id===userFilter.group_id) ? ' selected=\"selected\"' : '';
+      selected = (item.id===userFilter.group_id) ? ' selected=\"selected\"' : '';
       $('#filter-group').append('<option value=\"'+item.id+'\"' + selected + '>'+item.title+'</option>');
     });
   });
@@ -2468,12 +2050,12 @@ $('#".$options['id']."-filter').click(function(evt) {
   $('#filter-popup-apply').click(function() {       
     if ($('#filter-mode-default').attr('checked')==true) {
       applyFilterMode('default');
-    } else if ($('#filter-mode-selected').attr('checked')==true) {
-      applyFilterMode('selected', $('#filter-group').val()); 
+    } else if ($('#filter-mode-user').attr('checked')==true) {
+      applyFilterMode('user');
     }";
     if (!empty($options['usersPreferredGroups']))
-      self::$javascript .= " else if ($('#filter-mode-user').attr('checked')==true) {
-      applyFilterMode('user');
+      self::$javascript .= " else if ($('#filter-mode-selected').attr('checked')==true) {
+      applyFilterMode('selected', $('#filter-group').val()); 
     }";
     self::$javascript .= "\n    $.fancybox.close(); 
   });
@@ -2493,26 +2075,18 @@ $('#".$options['id']."-filter').click(function(evt) {
    * @param array $readAuth Read authorisation array
    * @return array Array with key of occurrence_id and value of $taxonInstance.
    */
-  public static function preload_species_checklist_occurrences($sampleId, $readAuth, $loadImages, $extraParams) {
+  public static function preload_species_checklist_occurrences($sampleId, $readAuth, $loadImages) {
     $occurrenceIds = array();
     $taxonCounter = array();
     // don't load from the db if there are validation errors, since the $_POST will already contain all the
     // data we need.
-    $extraParams += $readAuth + array('view'=>'detail','sample_id'=>$sampleId,'deleted'=>'f', 'orderby'=>'id', 'sortdir'=>'ASC' );
     if (is_null(self::$validation_errors)) {
-      // strip out any occurrences we've already loaded into the entity_to_load, in case there are other
-      // checklist grids on the same page. Otherwise we'd double up the record data.
-      foreach(data_entry_helper::$entity_to_load as $key => $value) {
-        $parts = explode(':', $key);
-        if (count($parts) > 2 && $parts[0] == 'sc' && $parts[1]!='-ttlId-') {
-          unset(data_entry_helper::$entity_to_load[$key]);
-        }
-      }
       $occurrences = self::get_population_data(array(
         'table' => 'occurrence',
-        'extraParams' => $extraParams,
+        'extraParams' => $readAuth + array('view'=>'detail','sample_id'=>$sampleId,'deleted'=>'f', 'orderby'=>'id', 'sortdir'=>'ASC' ),
         'nocache' => true
       ));
+      
       foreach($occurrences as $occurrence){
         $ttlId = $occurrence['taxa_taxon_list_id'];
         if (isset($taxonCounter[$ttlId])) {
@@ -2578,10 +2152,10 @@ $('#".$options['id']."-filter').click(function(evt) {
         $speciesColTitle = lang::get('species_checklist.species');
         if ($options['userControlsTaxonFilter'] && !empty($options['lookupListId'])) {
           global $indicia_templates;
-          $imgPath = empty(self::$images_path) ? self::relative_client_helper_path()."../media/images/" : self::$images_path;
-          $speciesColTitle .= '<button type="button" id="'.$options['id'].'-filter" class="default-button"><img src="'.
+          $imgPath = empty(self::$images_path) ? self::relative_client_helper_path()."../media/images" : self::$images_path;
+          $speciesColTitle .= '<a id="'.$options['id'].'-filter" class="ui-state-default ui-corner-all"><img src="'.
               $imgPath.'/filter.png" alt="'.lang::get('Filter').'" style="vertical-align: middle" title="'.
-              lang::get('Filter the list of species you can search').'" width="16" height="16"/></button>';
+              lang::get('Filter the list of species you can search').'" width="16" height="16"/></a>';
         }
         $r .= self::get_species_checklist_col_header($options['id']."-species-$i", $speciesColTitle, $visibleColIdx, $options['colWidths'], $colspan);
         $hidden = ($options['rowInclusionCheck']=='checkbox' ? '' : ' style="display:none"');
@@ -2644,7 +2218,6 @@ $('#".$options['id']."-filter').click(function(evt) {
       unset($extraTaxonOptions['extraParams']['taxon_list_id']);
       unset($extraTaxonOptions['extraParams']['preferred']);
       unset($extraTaxonOptions['extraParams']['language_iso']);
-      unset($extraTaxonOptions['extraParams']['query']);
       // create an array to hold the IDs, so that get_population_data can construct a single IN query, faster
       // than multiple requests.
       $extraTaxonOptions['extraParams']['id'] = array();
@@ -2662,16 +2235,16 @@ $('#".$options['id']."-filter').click(function(evt) {
             // If this taxon is not already loaded
             if(!in_array($taxon, $taxaLoaded)) {
               $taxaLoaded[] = $taxon;
-              // store the id of the taxon in the array, so we can load them all in one go later
+            // store the id of the taxon in the array, so we can load them all in one go later
               $extraTaxonOptions['extraParams']['id'][]=$taxon;
-            }
           }
         }
+      }
       }
       // load and append the additional taxa  to use in the grid
       $taxalist = array_merge($taxalist, self::get_population_data($extraTaxonOptions));
     }
-    return $taxalist;
+  	return $taxalist;
   }
 
   /**
@@ -2707,9 +2280,7 @@ $('#".$options['id']."-filter').click(function(evt) {
         'id' => 'species-grid-'.rand(0,1000),
         'colWidths' => array(),
         'taxonFilterField' => 'none',
-        'cacheLookup' => false,
-        'reloadExtraParams' => array(),
-        'useLoadedExistingRecords' => false
+        'cacheLookup' => false
     ), $options);
     // If filtering for a language, then use any taxa of that language. Otherwise, just pick the preferred names.
     if (!isset($options['extraParams']['language_iso']))
@@ -2726,7 +2297,7 @@ $('#".$options['id']."-filter').click(function(evt) {
       );
     }
     $options['table']='taxa_taxon_list';
-    return $options;
+  	return $options;
   }
 
   /**
@@ -2747,7 +2318,7 @@ $('#".$options['id']."-filter').click(function(evt) {
       $occAttrs[$occAttrId] = $attrDef['caption'];
       // Get the control class if available. If the class array is too short, the last entry gets reused for all remaining.
       $ctrlOptions = array(
-        'class'=>self::species_checklist_occ_attr_class($options, $idx, $attrDef['untranslatedCaption']) .
+        'class'=>self::species_checklist_occ_attr_class($options, $idx, $attrDef['caption']) .
             (isset($attrDef['class']) ? ' '.$attrDef['class'] : ''),
         'extraParams' => $options['readAuth'],
         'suffixTemplate' => 'nosuffix',
@@ -2788,7 +2359,7 @@ $('#".$options['id']."-filter').click(function(evt) {
     // Because the clonable row always goes in the first col, this can be always left to 0.
     $r = '<table style="display: none"><tbody><tr class="scClonableRow" id="'.$options['id'].'-scClonableRow">';
     $colspan = isset($options['lookupListId']) || $options['rowInclusionCheck']=='alwaysRemovable' ? ' colspan="2"' : '';
-    $r .= str_replace(array('{colspan}','{tableId}','{idx}'), array($colspan, $options['id'],0), $indicia_templates['taxon_label_cell']);
+    $r .= str_replace(array('{colspan}','{tableId}'), array($colspan, $options['id']), $indicia_templates['taxon_label_cell']);
     $hidden = ($options['rowInclusionCheck']=='checkbox' ? '' : ' style="display:none"');
     $r .= '<td class="scPresenceCell" headers="'.$options['id'].'-present-0"'.$hidden.'><input type="checkbox" class="scPresence" name="" value="" /></td>';
     $idx = 0;
@@ -2873,8 +2444,6 @@ $('#".$options['id']."-filter').click(function(evt) {
   * record with existing data for this control.</li>
   * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
-  * <li><b>readonly</b><br/>
-  * Optional. can be set to 'readonly="readonly"' to set this control as read only.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the text input control.
@@ -2885,33 +2454,6 @@ $('#".$options['id']."-filter').click(function(evt) {
       'default'=>''
     ), $options);
     return self::apply_template('text_input', $options);
-  }
-
- /**
-  * Helper function to output an HTML hidden text input. This includes re-loading of existing values.
-  * Hidden fields should not have any validation.
-  * No Labels allowed, no suffix.
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the hidden text control.
-  */
-  public static function hidden_text() {
-    $options = self::check_arguments(func_get_args(), array('fieldname'));
-    $options = array_merge(array(
-      'default'=>''
-    ), $options);
-    unset($options['label']);
-    $options['suffixTemplate'] = 'nosuffix';
-    return self::apply_template('hidden_text', $options);
   }
 
  /**
@@ -2945,7 +2487,7 @@ $('#".$options['id']."-filter').click(function(evt) {
     ), $options);
     self::add_resource('timeentry');
     $steps = implode(', ', $options['timeSteps']);
-    $imgPath = empty(self::$images_path) ? self::relative_client_helper_path()."../media/images/" : self::$images_path;
+    $imgPath = empty(self::$images_path) ? self::relative_client_helper_path()."../media/images" : self::$images_path;
     // build a list of options to pass through to the jQuery widget
     $jsOpts = array(
       "timeSteps: [$steps]",
@@ -3196,39 +2738,6 @@ $('div#$escaped_divId').indiciaTreeBrowser({
 /********************************/
 /* End of main controls section */
 /********************************/
-  
-  /**
-   * Returns an array defining various database object names and values required for the species
-   * lookup filtering, depending on whether this is a cached lookup or a standard lookup. Used for 
-   * both species checklist and species autocompletes.
-   */
-  public function get_species_lookup_db_definition($cached) {
-    if ($cached) {
-      return array (
-        'tblTaxon'=>'cache_taxon_searchterm',
-        'colId'=>'taxa_taxon_list_id',
-        'colLanguage'=>'language_iso',
-        'colSearch'=>'searchterm',
-        'colTaxon'=>'original',
-        'colCommon'=>'default_common_name',
-        'colPreferred'=>'preferred_taxon',
-        'valLatinLanguage'=>'lat',
-        'duplicateCheckFields'=>array('original','taxa_taxon_list_id')
-      );
-    } else {
-      return array (
-        'tblTaxon'=>'taxa_taxon_list',
-        'colId'=>'id',
-        'colLanguage'=>'language',
-        'colSearch'=>'taxon',
-        'colTaxon'=>'taxon',
-        'colCommon'=>'common',
-        'colPreferred'=>'preferred_name',
-        'valLatinLanguage'=>'lat'
-      );
-    }
-  }
-  
 
   /**
    * Returns the browser name and version information
@@ -3734,7 +3243,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
             else
               $caption = $record[$options['captionField']];
             if(isset($options['listCaptionSpecialChars'])) {
-              $caption=htmlspecialchars($caption);
+            	$caption=htmlspecialchars($caption);
             }
             $item = str_replace(
                 array('{value}', '{caption}'),
@@ -3769,11 +3278,9 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     if (array_key_exists('extraParams', $options)) {
       $request .= '&'.self::array_to_query_string($options['extraParams']);
     }
-    $query = urlencode(json_encode(array('in'=>array($options['filterField'], array(null, 'val')))));
-    $query = str_replace('%22val%22', '"+$(this).val()+"', $query);
     self::$javascript .= str_replace(
-        array('{fn}','{escapedId}','{request}','{query}','{valueField}','{captionField}','{filterField}','{parentControlId}', '{instruct}'),
-        array($fn, $escapedId, $request,$query,$options['valueField'],$options['captionField'],$options['filterField'],$parentControlId, $instruct),
+        array('{fn}','{escapedId}','{request}','{filterField}','{valueField}','{captionField}','{parentControlId}', '{instruct}'),
+        array($fn, $escapedId, $request,$options['filterField'],$options['valueField'],$options['captionField'],$parentControlId, $instruct),
         $indicia_templates['linked_list_javascript']
     );
   }
@@ -3866,9 +3373,6 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * Optional. Possible values are tabs (default) or wizard. If set to wizard, then the tab header
   * is not displayed and the navigation should be provided by the tab_button control. This
   * must be manually added to each tab page div.</li>
-  * <li><b>navButtons</b>
-  * Are Next and Previous buttons used to move between pages? Always true for wizard style otherwise
-  * navigation is impossible and defaults to false for tabs style.</li>
   * <li><b>progressBar</b><br/>
   * Optional. Set to true to output a progress header above the tabs/wizard which shows which
   * stage the user is on out of the sequence of steps in the wizard.</li>
@@ -3886,43 +3390,45 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     // Only do anything if the id of the div to be tabified is specified
     if (array_key_exists('divId', $options)) {
       $divId = $options['divId'];
+      
       // Scroll to the top of the page. This may be required if subsequent tab pages are longer than the first one, meaning the
         // browser scroll bar is too long making it possible to load the bottom blank part of the page if the user accidentally
       // drags the scroll bar while the page is loading.
       self::$javascript .= "\nscroll(0,0);";
 
       // Client-side validation only works on active tabs so validate on tab change
-      if (isset($options['style']) && $options['style']=='wizard' || 
-          isset($options['navButtons']) && $options['navButtons']) {
+      if (array_key_exists('style', $options) && $options['style']=='wizard') {
         //Add javascript for moving through wizard
-        self::$javascript .= "\n$('.tab-submit').click(function() {\n";
-        self::$javascript .= "  var current=$('#$divId').tabs('option', 'selected');\n";
-        self::validate_inputs_on_current_tab();
-        // If all is well, submit.
-        self::$javascript .= "      var form = $(this).parents('form:first');
+      self::$javascript .= "\n$('.tab-submit').click(function() {\n";
+      self::$javascript .= "  var current=$('#$divId').tabs('option', 'selected');\n";
+      // Use a selector to find the inputs and selects on the current tab and validate them.
+      if (isset(self::$validated_form_id)) {
+        self::$javascript .= "  var tabinputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select').not(':disabled');\n";
+        self::$javascript .= "  if (!tabinputs.valid()) {\n";
+        self::$javascript .= "    return;";
+        self::$javascript .= "  }\n";
+      }
+      // If all is well, submit.
+      self::$javascript .= "      var form = $(this).parents('form:first');
         form.submit();
       });";
-        self::$javascript .= "\n$('.tab-next').click(function() {\n";
-        self::$javascript .= "  var current=$('#$divId').tabs('option', 'selected');\n";
-        self::validate_inputs_on_current_tab('Before going to the next step, some of the values in the input boxes on this step need checking. '.
-            'They have been highlighted on the form for you.');
-        // Use a selector to find the inputs and selects on the current tab and validate them.
-        if (isset(self::$validated_form_id)) {
-          self::$javascript .= "  var tabinputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select,textarea').not(':disabled,[name=]');\n";
-          self::$javascript .= "  if (!tabinputs.valid()) {\n";
-          self::$javascript .= "    alert('".lang::get('Before going to the next step, some of the values in the input boxes on this step need checking. '.
-                  'They have been highlighted on the form for you.')."')\n";
-          self::$javascript .= "    return;\n";
-          self::$javascript .= "  }\n";
-        }
-        // If all is well, move to the next tab. Note the code detects if the top of the tabset is not visible, if so
-        // it forces it into view. This helps a lot when the tabs vary in height.
-        self::$javascript .= "  var a = $('ul.ui-tabs-nav a')[current+1];
+      self::$javascript .= "\n$('.tab-next').click(function() {\n";
+      self::$javascript .= "  var current=$('#$divId').tabs('option', 'selected');\n";
+      // Use a selector to find the inputs and selects on the current tab and validate them.
+      if (isset(self::$validated_form_id)) {
+        self::$javascript .= "  var tabinputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select').not(':disabled');\n";
+        self::$javascript .= "  if (!tabinputs.valid()) {\n";
+        self::$javascript .= "    return;";
+        self::$javascript .= "  }\n";
+      }
+      // If all is well, move to the next tab. Note the code detects if the top of the tabset is not visible, if so
+      // it forces it into view. This helps a lot when the tabs vary in height.
+      self::$javascript .= "  var a = $('ul.ui-tabs-nav a')[current+1];
   $(a).click();
   scrollTopIntoView('$topSelector');
 });";
 
-        self::$javascript .= "\n$('.tab-prev').click(function() {
+      self::$javascript .= "\n$('.tab-prev').click(function() {
   var current=$('#$divId').tabs('option', 'selected');
   var a = $('ul.ui-tabs-nav a')[current-1];
   $(a).click();
@@ -3946,7 +3452,7 @@ $('#$divId').tabs({
       //restore the clonable row
       clonableRow.css('display', display);
     } else {
-    var isValid = $('#". self::$validated_form_id ."').valid();
+      var isValid = $('#". self::$validated_form_id ."').valid();
     }
     return isValid;
   }
@@ -3983,22 +3489,6 @@ if (errors.length>0) {
       data_entry_helper::$javascript .= "wizardProgressIndicator({divId:'$divId'});\n";
     } else {
       data_entry_helper::add_resource('tabs');
-    }
-  }
-  
-  /**
-   * Validates the inputs on the current tab and prevents going to the next tab if not all valid.
-   * @param string $msg Message to display if a failure to validate occurs
-   */
-  private static function validate_inputs_on_current_tab($msg='') {
-    // Use a selector to find the inputs and selects on the current tab and validate them.
-    if (isset(self::$validated_form_id)) {
-      self::$javascript .= "  var tabinputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select,textarea').not(':disabled,[name=]');\n";
-      self::$javascript .= "  if (tabinputs.length>0 && !tabinputs.valid()) {\n";
-      if ($msg)
-        self::$javascript .= "    alert('".lang::get($msg)."');\n";
-      self::$javascript .= "    return;\n";
-      self::$javascript .= "  }\n";
     }
   }
 
@@ -4203,16 +3693,10 @@ if (errors.length>0) {
   * @param array $arr Array of data generated by data_entry_helper::species_checklist method.
   * @param boolean $include_if_any_data If true, then any list entry which has any data
   * set will be included in the submission. This defaults to false, unless the grid was
-  * created with rowInclusionCheck=hasData in the grid options.
-  * @param array $zero_attrs Set to an array of abundance attribute field IDs that can be
-  * treated as abundances. Alternatively set to true to treat all occurrence custom attributes
-  * as possible zero abundance indicators.
-  * @param array $zero_values Set to an array of values which are considered to indicate a 
-  * zero abundance record if found for one of the zero_attrs. Values are case-insensitive. Defaults to 
-  * array('0','None','Absent').
+  * created with rowInclusionCheck=hasData.
+  * in the grid.
   */
-  public static function wrap_species_checklist($arr, $include_if_any_data=false,
-      $zero_attrs = array(), $zero_values=array('0','None','Absent')){
+  public static function wrap_species_checklist($arr, $include_if_any_data=false){
     if (array_key_exists('website_id', $arr)){
       $website_id = $arr['website_id'];
     } else {
@@ -4237,7 +3721,7 @@ if (errors.length>0) {
     $records = array();
     $subModels = array();
     foreach ($arr as $key=>$value){
-      if (substr($key, 0, 3)=='sc:'){ 
+      if (substr($key, 0, 3)=='sc:'){
         // Don't explode the last element for occurrence attributes
         $a = explode(':', $key, 4);
         $records[$a[1]][$a[3]] = $value;
@@ -4248,14 +3732,12 @@ if (errors.length>0) {
       }
     }
     foreach ($records as $id => $record) {
-      $present = self::wrap_species_checklist_record_present($record, $include_if_any_data,
-          $zero_attrs, $zero_values);
-      if (array_key_exists('id', $record) || $present!==null) { // must always handle row if already present in the db
-        if ($present===null)
+      $present = self::wrap_species_checklist_record_present($record, $include_if_any_data);
+      if (array_key_exists('id', $record) || $present) { // must always handle row if already present in the db
+        if (!$present) {
           // checkboxes do not appear if not checked. If uncheck, delete record.
           $record['deleted'] = 't';
-        else
-          $record['zero_abundance']=$present ? 'f' : 't';
+        }
 
         // strip off <instance> suffix, if present, to obtain taxa_taxon_list_id
         $pos = strpos($id, '_');
@@ -4281,40 +3763,13 @@ if (errors.length>0) {
   /**
    * Test whether the data extracted from the $_POST for a species_checklist grid row refers to an occurrence record.
    * @access Private
-   * @return boolean True if present, false if absent (zero abundance record), null if not defined in the data (no occurrence).
    */
-  private static function wrap_species_checklist_record_present($record, $include_if_any_data, $zero_attrs, $zero_values) {
+  private static function wrap_species_checklist_record_present($record, $include_if_any_data) {
     // as we are working on a copy of the record, discard the ID so it is easy to check if there is any other data for the row.
     unset($record['id']);
-    // if zero attrs not an empty array, we must proceed to check for zeros
-    if ($zero_attrs) {
-      // check for zero abundance records. First build a regexp that will match the attr IDs to check. Attrs can be
-      // just set to true, which means any attr will do.
-      if (is_array($zero_attrs))
-        $ids='['.implode('|',$zero_attrs).']';
-      else
-        $ids = '\d+';
-      $zeroCount=0;
-      $nonZeroCount=0;
-      foreach ($record as $field=>$value) {
-        // Is this a field used to trap zero abundance data, with a zero value
-        if (preg_match("/occAttr:$ids$/", $field)) {
-          if (in_array($value, $zero_values))
-            $zeroCount++;
-          else 
-            $nonZeroCount++;
-        }
-      }
-      // return false (zero) if there are no non-zero abundance data, and at least one zero abundance indicators
-      if ($zeroCount && !$nonZeroCount) {
-        return false;
-      }
-    }
     $recordData=implode('',$record);
-    $record = ($include_if_any_data && $recordData!='' && !preg_match("/^[0]*$/", $recordData)) ||       // inclusion of record is detected from having a non-zero value in any cell
+    return ($include_if_any_data && $recordData!='' && !preg_match("/^[0]*$/", $recordData)) ||       // inclusion of record is detected from having a non-zero value in any cell
       (!$include_if_any_data && array_key_exists('present', $record) && $record['present']!='0'); // inclusion of record detected from the presence checkbox
-    // return null if no record to create
-    return $record ? true : null;
   }
 
   /**
@@ -4406,30 +3861,15 @@ if (errors.length>0) {
    * @param boolean $include_if_any_data If true, then any list entry which has any data
    * set will be included in the submission. Set this to true when hiding the select checkbox
    * in the grid.
-   * @param array $zero_attrs Set to an array of abundance attribute field IDs that can be
-   * treated as abundances. Alternatively set to true to treat all occurrence custom attributes
-   * as possible zero abundance indicators.
-   * @param array $zero_values Set to an array of values which are considered to indicate a 
-   * zero abundance record if found for one of the zero_attrs. Values are case-insensitive. Defaults to 
-   * array('0','None','Absent').
-   * of values that can be treated as meaning a zero abundance record. E.g.
-   * array('
-
    * @return array Sample submission array
    */
-  public static function build_sample_occurrences_list_submission($values, $include_if_any_data=false,
-      $zero_attrs = array(), $zero_values=array('0','None','Absent')) {
+  public static function build_sample_occurrences_list_submission($values, $include_if_any_data=false) {
     // We're mainly submitting to the sample model
     $sampleMod = submission_builder::wrap_with_images($values, 'sample');
-    $occurrences = data_entry_helper::wrap_species_checklist($values, $include_if_any_data,
-        $zero_attrs, $zero_values);
+    $occurrences = data_entry_helper::wrap_species_checklist($values, $include_if_any_data);
 
-    // Add the occurrences in as subModels without overwriting others such as a sample image
-    if (array_key_exists('subModels', $sampleMod)) {
-      $sampleMod['subModels'] = array_merge($sampleMod['subModels'], $occurrences);
-    } else {
-      $sampleMod['subModels'] = $occurrences;
-    }
+    // Add the occurrences in as subModels
+    $sampleMod['subModels'] = $occurrences;
 
     return $sampleMod;
   }
@@ -4877,10 +4317,9 @@ if (errors.length>0) {
   }
 
   /**
-  * Helper function to output an attribute.
+  * Helper function to output an attribute
   *
-  * @param array $item Attribute definition as returned by a call to getAttributes. The caption of the attribute
-  * will be translated then output as the label.
+  * @param array $item Attribute definition as returned by a call to getAttributes.
   * @param array $options Additional options for the attribute to be output. Array entries can be:
   *    disabled
   *    suffixTemplate
@@ -4904,7 +4343,7 @@ if (errors.length>0) {
         'id'=>$item['id'],
         'disabled'=>'');
     if (isset($item['caption']))
-      $attrOptions['label']=$item['caption']; // no need to translate, as that has already been done by getAttributes. Untranslated caption is in field untranslatedCaption
+      $attrOptions['label']=$item['caption'];
     $attrOptions = array_merge($attrOptions, $options);
     // build validation rule classes from the attribute data
     if (isset($item['validation_rules'])) {
@@ -4918,8 +4357,7 @@ if (errors.length>0) {
         case 'T':
           if (isset($item['control_type']) &&
               ($item['control_type']=='text_input' || $item['control_type']=='textarea'
-              || $item['control_type']=='postcode_textbox' || $item['control_type']=='time_input'
-              || $item['control_type']=='hidden_text' )) {
+              || $item['control_type']=='postcode_textbox' || $item['control_type']=='time_input')) {
             $ctrl = $item['control_type'];
           } else {
             $ctrl = 'text_input';
@@ -4997,20 +4435,6 @@ if (errors.length>0) {
               }
             } 
           }
-          if($ctrl=='autocomplete' && isset($attrOptions['default'])){
-            // two options: we could be using the id or the meaning_id.
-            if($lookUpKey=='id'){
-            	$attrOptions['defaultCaption'] = $item['displayValue'];
-            } else {
-              $termOptions = array(
-                    'table'=>'termlists_term',
-                    'extraParams'=> $options['extraParams'] + $dataSvcParams);
-              $termOptions['extraParams']['meaning_id']=$attrOptions['default'];
-              $response = self::get_population_data($termOptions);
-              if(count($response)>0)
-                $attrOptions['defaultCaption'] = $response[0]['term'];
-            }
-          }
           $output .= call_user_func(array('data_entry_helper', $ctrl), array_merge($attrOptions, array(
                   'table'=>'termlists_term',
                   'captionField'=>'term',
@@ -5066,10 +4490,6 @@ if (errors.length>0) {
             'path' => $value,
             'caption' => isset($values[$prefix.':caption'.$uniqueId]) ? utf8_encode($values[$prefix.':caption'.$uniqueId]) : ''
           );
-          // if deleted = 't', add it to array so image is marked deleted
-          if (isset($values[$prefix.':deleted'.$uniqueId]) && $values[$prefix.':deleted'.$uniqueId]==='t') {
-            $r[count($r)-1]['deleted'] = 't';
-          }
         }
       }
     }
@@ -5237,28 +4657,6 @@ if (errors.length>0) {
     $options['checked'] = array_key_exists('indicia_remembered', $_COOKIE) ? ' checked="checked"' : '';
     $options['template'] = array_key_exists('template', $options) ? $options['template'] : 'checkbox';
     return self::apply_template($options['template'], $options);
-  }
-  
-  /**
-   * Includes any spatial reference handler JavaScript files that exist for the codes selected
-   * for picking spatial references. If a handler file does not exist then the transform is handled
-   * by a web-service request to the warehouse. Handlers are only required for grid systems, not for
-   * coordinate systems that are entirely described by an EPSG code.
-   * @param array $systems List of spatial reference system codes.
-   */
-  private static function include_sref_handler_js($systems) {
-    // extract the codes and make lowercase
-    $systems=unserialize(strtolower(serialize(array_keys($systems))));
-    // find the systems that have client-side JavaScript handlers
-    $handlers = array_intersect($systems, array('osgb'));
-    foreach ($handlers as $code) {
-      $file = self::$js_path.strtolower("drivers/sref/$code.js");
-      // dynamically build a resource to link us to the handler js file.
-      self::$required_resources[] = 'sref_handlers_'.$code;
-      self::$resource_list['sref_handlers_'.$code] = array(
-        'javascript' => array($file)
-      );
-    }
   }
 
 }

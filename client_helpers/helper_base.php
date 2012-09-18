@@ -39,8 +39,6 @@ $indicia_templates = array(
   'nosuffix' => " \n",
   'requiredsuffix' => '<span class="deh-required">*</span><br/>'."\n",
   'requirednosuffix' => '<span class="deh-required">*</span>'."\n",
-  'button' => '<input type=\"button\" id=\"{id}\" class=\"ui-corner-all ui-widget-content ui-state-default indicia-button {class}\" value=\"{caption}\" />',
-  'anchorButton' => '<a class=\"ui-corner-all ui-widget-content ui-state-default indicia-button {class}\" href=\"{href}\" id=\"{id}\">{caption}</a>',
   'lock_icon' => '<span id="{id}_lock" class="unset-lock">&nbsp;</span>',
   'lock_javascript' => "indicia.locks.initControls (
       \"".lang::get('locked tool-tip')."\", 
@@ -51,27 +49,13 @@ $indicia_templates = array(
   'validation_icon' => '<span class="ui-state-error ui-corner-all validation-icon">'.
       '<span class="ui-icon ui-icon-alert"></span></span>',
   'error_class' => 'inline-error',
-  'invalid_handler_javascript' => "function(form, validator) {
-          var tabselected=false;
-          jQuery.each(validator.errorMap, function(ctrlId, error) {
-            // select the tab containing the first error control
-            var ctrl = jQuery('[name=' + ctrlId.replace(/:/g, '\\\\:').replace(/\[/g, '\\\\[').replace(/]/g, '\\\\]') + ']');
-            if (!tabselected && typeof(tabs)!=='undefined') {
-              tabs.tabs('select',ctrl.filter('input,select').parents('.ui-tabs-panel')[0].id);
-              tabselected = true;
-            }
-            ctrl.parents('fieldset').removeClass('collapsed');
-            ctrl.parents('.fieldset-wrapper').show();
-          });
-        }",
   'image_upload' => '<input type="file" id="{id}" name="{fieldname}" accept="png|jpg|gif|jpeg" {title}/>'."\n".
       '<input type="hidden" id="{pathFieldName}" name="{pathFieldName}" value="{pathFieldValue}"/>'."\n",
-  'text_input' => '<input type="text" id="{id}" name="{fieldname}"{class} {disabled} {readonly} value="{default}" {title} {maxlength} />'."\n",
-  'hidden_text' => '<input type="hidden" id="{id}" name="{fieldname}" {disabled} value="{default}" />',
+  'text_input' => '<input type="text" id="{id}" name="{fieldname}"{class} {disabled} value="{default}" {title} />'."\n",
   'password_input' => '<input type="password" id="{id}" name="{fieldname}"{class} {disabled} value="{default}" {title} />'."\n",
   'textarea' => '<textarea id="{id}" name="{fieldname}"{class} {disabled} cols="{cols}" rows="{rows}" {title}>{default}</textarea>'."\n",
   'checkbox' => '<input type="hidden" name="{fieldname}" value="0"/><input type="checkbox" id="{id}" name="{fieldname}" value="1"{class}{checked}{disabled} {title} />'."\n",
-  'date_picker' => '<input type="text" placeholder="{placeholder}" size="30"{class} id="{id}" name="{fieldname}" value="{default}" {title}/>',
+  'date_picker' => '<input type="text" size="30"{class} id="{id}" name="{fieldname}" value="{default}" {title}/>',
   'select' => '<select id="{id}" name="{fieldname}"{class} {disabled} {title}>{items}</select>',
   'select_item' => '<option value="{value}" {selected} >{caption}</option>',
   'select_species' => '<option value="{value}" {selected} >{caption} - {common}</option>',
@@ -84,10 +68,12 @@ $indicia_templates = array(
     "document.write('<div id=\"{divId}\" style=\"width: {width}; height: {height};\"{class}></div>');\n".
     "/* ]]> */</script>",
   'georeference_lookup' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
-    "document.write('<input type=\"text\" id=\"imp-georef-search\"{class} />{searchButton}');\n".
+    "document.write('<input id=\"imp-georef-search\"{class} />');\n".
+    "document.write('<input type=\"button\" id=\"imp-georef-search-btn\" class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" value=\"{search}\" />');\n".
     "document.write('<div id=\"imp-georef-div\" class=\"ui-corner-all ui-widget-content ui-helper-hidden\">');\n".
     "document.write('  <div id=\"imp-georef-output-div\">');\n".
-    "document.write('  </div>  {closeButton}');\n".
+    "document.write('  </div>');\n".
+    "document.write('  <a class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" href=\"#\" id=\"imp-georef-close-btn\">{close}</a>');\n".
     "document.write('</div>');".
     "\n/* ]]> */</script>",
   'tab_header' => '<script type="text/javascript">/* <![CDATA[ */'."\n".
@@ -136,25 +122,25 @@ $indicia_templates = array(
           qfield : '{captionField}',
           {sParams}
         },
-        simplify: {simplify},
         parse: function(data)
         {
           // Clear the current selected key as the user has changed the search text
           jQuery('input#{escaped_id}').val('');
-          var results = [], done = [];
+          var results = [];
           jQuery.each(data, function(i, item) {
-            if ({duplicateCheck}) {
-              results.push({
-                'data' : item,
-                'result' : item.{captionField},
-                'value' : item.{valueField}
-              });
-              {storeDuplicates}
-            }
+            results[results.length] =
+            {
+              'data' : item,
+              'result' : item.{captionField},
+              'value' : item.{valueField}
+            };
           });
           return results;
         },
-      formatItem: {formatFunction}
+      formatItem: function(item)
+      {
+        return item.{captionField};
+      }
       {max}
     });
     jQuery('input#{escaped_input_id}').result(function(event, data) {
@@ -224,7 +210,7 @@ $indicia_templates = array(
     'linked_list_javascript' => '
 {fn} = function() {
   $("#{escapedId}").addClass("ui-state-disabled").html("<option>Loading...</option>");
-  $.getJSON("{request}&query={query}", function(data){
+  $.getJSON("{request}&{filterField}=" + $(this).val(), function(data){
     var $control = $("#{escapedId}");
     $control.html("");
     if (data.length>0) {
@@ -251,7 +237,7 @@ $("#{parentControlId}").trigger("change.indicia");'."\n",
         '<input type="hidden" id="imp-geom" name="geomFieldname" value="{defaultGeom}" />'.
         '<input type="hidden" id="{id}" name="{fieldname}" value="{default}" />',
   'attribute_cell' => "\n<td class=\"scOccAttrCell ui-widget-content {class}\" headers=\"{headers}\">{content}</td>",
-  'taxon_label_cell' => "\n<td class=\"scTaxonCell ui-state-default\" headers=\"{tableId}-species-{idx}\" {colspan}>{content}</td>",
+  'taxon_label_cell' => "\n<td class=\"scTaxonCell ui-state-default\" headers=\"{tableId}-species\" {colspan}>{content}</td>",
   'helpText' => "\n<p class=\"{helpTextClass}\">{helpText}</p>",
   'button' => '<div class="indicia-button ui-state-default ui-corner-all" id="{id}"><span>{caption}</span></div>',
   'file_box' => '',                   // the JQuery plugin default will apply, this is just a placeholder for template overrides.
@@ -384,11 +370,9 @@ class helper_base extends helper_config {
    * Warehouse.
    */
   public static $default_validation_rules = array(
-    'sample:date' => array('required','date'),
-    'sample:entered_sref' => array('required'),
-    'occurrence:taxa_taxon_list_id' => array('required'),
-    'location:name' => array('required'),
-    'location:centroid_sref' => array('required'),
+    'sample:date'=>array('required','date'),
+    'sample:entered_sref'=>array('required'),
+    'occurrence:taxa_taxon_list_id'=>array('required')
   );
 
   /**
@@ -443,7 +427,6 @@ class helper_base extends helper_config {
    * <li>georeference_google_search_api</li>
    * <li>google_search</li>
    * <li>locationFinder</li>
-   * <li>createPersonalSites</li>
    * <li>autocomplete</li>
    * <li>indicia_locks</li>
    * <li>jquery_cookie</li>
@@ -535,7 +518,6 @@ class helper_base extends helper_config {
         // For any other usage of google search, e.g. postcode textbox
         'google_search' => array('deps' =>array('georeference_google_search_api'), 'javascript' => array(self::$js_path."google_search.js")),
         'locationFinder' => array('deps' =>array('indiciaMapEdit'), 'javascript' => array(self::$js_path."jquery.indiciaMap.edit.locationFinder.js")),
-        'createPersonalSites' => array('deps' => array('jquery'), 'javascript' => array(self::$js_path."createPersonalSites.js")),
         'autocomplete' => array('deps' => array('jquery'), 'stylesheets' => array(self::$css_path."jquery.autocomplete.css"), 'javascript' => array(self::$js_path."jquery.autocomplete.js")),
         'indicia_locks' => array('deps' =>array('jquery_cookie', 'json'), 'javascript' => array(self::$js_path."indicia.locks.js")),
         'jquery_cookie' => array('deps' =>array('jquery'), 'javascript' => array(self::$js_path."jquery.cookie.js")),
@@ -546,7 +528,7 @@ class helper_base extends helper_config {
         'reportPicker' => array('deps' => array('treeview'), 'javascript' => array(self::$js_path."reportPicker.js")),
         'treeview' => array('deps' => array('jquery'), 'stylesheets' => array(self::$css_path."jquery.treeview.css"), 'javascript' => array(self::$js_path."jquery.treeview.js")),
         'treeview_async' => array('deps' => array('treeview'), 'javascript' => array(self::$js_path."jquery.treeview.async.js", self::$js_path."jquery.treeview.edit.js")),
-        'googlemaps' => array('javascript' => array("http://maps.google.com/maps/api/js?v=3.6&amp;sensor=false")),
+        'googlemaps' => array('javascript' => array("http://maps.google.com/maps/api/js?v=3.5&amp;sensor=false")),
         'virtualearth' => array('javascript' => array('http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1')),
         'fancybox' => array('deps' => array('jquery'), 'stylesheets' => array(self::$js_path.'fancybox/jquery.fancybox.css'), 'javascript' => array(self::$js_path.'fancybox/jquery.fancybox.pack.js')),
         'flickr' => array('deps' => array('fancybox'), 'javascript' => array(self::$js_path."jquery.flickr.js")),
@@ -556,8 +538,8 @@ class helper_base extends helper_config {
         'plupload' => array('deps' => array('jquery_ui','fancybox'), 'javascript' => array(
             self::$js_path.'jquery.uploader.js', self::$js_path.'/plupload/js/plupload.full.js')),
         'jqplot' => array('stylesheets' => array(self::$js_path.'jqplot/jquery.jqplot.css'), 'javascript' => array(                
-                self::$js_path.'jqplot/jquery.jqplot.js',
-                '[IE]'.self::$js_path.'jqplot/excanvas.js')),
+                self::$js_path.'jqplot/jquery.jqplot.min.js',
+                '[IE]'.self::$js_path.'jqplot/excanvas.min.js')),
         'jqplot_bar' => array('javascript' => array(self::$js_path.'jqplot/plugins/jqplot.barRenderer.min.js')),
         'jqplot_pie' => array('javascript' => array(self::$js_path.'jqplot/plugins/jqplot.pieRenderer.min.js')),
         'jqplot_category_axis_renderer' => array('javascript' => array(self::$js_path.'jqplot/plugins/jqplot.categoryAxisRenderer.min.js')),
@@ -680,29 +662,10 @@ $('.ui-state-default').live('mouseout', function() {
    * Calculates the folder that submitted images end up in according to the helper_config.
    */
   public static function get_uploaded_image_folder() {
-    if (!isset(self::$final_image_folder) || self::$final_image_folder=='warehouse') {
-      if (!empty(self::$warehouse_proxy)) {
-        $warehouseUrl = self::$warehouse_proxy;
-      } else {
-        $warehouseUrl = self::$base_url;
-      }
-      return $warehouseUrl.(isset(self::$indicia_upload_path) ? self::$indicia_upload_path : 'upload/');
-    } else {
-      return dirname(__FILE__).'/'.self::$final_image_folder;
-    }
-  }
-  
-  /**
-   * Returns the client helper folder path, relative to the root folder.
-   */
-  public static function client_helper_path() {
-    // allow integration modules to control path handling, e.g. Drupal).
-    if (function_exists('iform_client_helpers_path')) 
-      return iform_client_helpers_path();
+    if (!isset(self::$final_image_folder) || self::$final_image_folder=='warehouse')
+      return self::$base_url.(isset(self::$indicia_upload_path) ? self::$indicia_upload_path : 'upload/');
     else {
-      $fullpath = str_replace('\\', '/', realpath(__FILE__));
-      $root = $_SERVER['DOCUMENT_ROOT'] . self::getRootFolder();
-      return dirname(str_replace($root, '', $fullpath)).'/';
+      return dirname(__FILE__).'/'.self::$final_image_folder;
     }
   }
 
@@ -752,9 +715,7 @@ $('.ui-state-default').live('mouseout', function() {
    * <li><b>defaults</b><br/>
    * Associative array of default values for each form element.
    * </li>
-   * <li><b>paramsToHide</b><br/>
-   * An optional array of parameter names for parameters that should be added to the form output as hidden inputs rather than visible controls.
-   * <li><b>paramsToExclude</b><br/>
+   * <li><b>ignoreParams</b><br/>
    * An optional array of parameter names for parameters that should be skipped in the form output despite being in the form definition.
    * </li>
    * <li><b>presetParams</b><br/>
@@ -781,28 +742,18 @@ $('.ui-state-default').live('mouseout', function() {
       'helpText' => true
     ), $options);
     $r = '';
-    // Any ignored parameters will not be in the requested parameter form definition, but we do need hiddens
-    if(isset($options['paramsToHide'])){
-      foreach($options['paramsToHide'] as $key) {
-        $default = isset($options['defaults'][$key]) ? $options['defaults'][$key] : '';
-        $fieldPrefix=(isset($options['fieldNamePrefix']) ? $options['fieldNamePrefix'].'-' : '');
-        $r .= "<input type=\"hidden\" name=\"$fieldPrefix$key\" value=\"$default\" class=\"test\"/>\n";
-      }
-    }
     foreach($options['form'] as $key=>$info) {
       $tools = array(); 
       // Skip parameters if we have been asked to ignore them
-      if (!isset($options['paramsToExclude']) || !in_array($key, $options['paramsToExclude'])) 
+      if (!isset($options['ignoreParams']) || !in_array($key, $options['ignoreParams'])) 
         $r .= self::get_params_form_control($key, $info, $options, $tools);
       // If the form has defined any tools to add to the map, we need to create JavaScript to add them to the map.
       if (count($tools)) {
-        // wrap JavaScript in a test that the map is on the page
-        if (isset($info['allow_buffer']) && $info['allow_buffer']=='true')
-          data_entry_helper::$javascript .= "if (typeof $.fn.indiciaMapPanel!=='undefined') {\n";
         $fieldname=(isset($options['fieldNamePrefix']) ? $options['fieldNamePrefix'].'-' : '') .$key;
         self::add_resource('spatialReports');
         self::add_resource('clearLayer');
-        data_entry_helper::$javascript .= "  enableBuffering();\n";
+        if (isset($info['allow_buffer']) && $info['allow_buffer']=='true')
+          data_entry_helper::$javascript .= "enableBuffering();\n";
         if ($options['inlineMapTools']) {
           $r .= '<label>'.$info['display'].':</label>';
           $r .= '<div class="control-box">Use the following tools to define the query area.<br/>'.
@@ -837,10 +788,12 @@ $('.ui-state-default').live('mouseout', function() {
         data_entry_helper::$javascript .= "
   $.fn.indiciaMapPanel.defaults.toolbarDiv='$toolbarDiv';
   mapInitialisationHooks.push(function(div) {
+    // keep a global reference to the map, so we can get it later when Run Report is clicked
+    mapDiv = div;
     var styleMap = new OpenLayers.StyleMap(OpenLayers.Util.applyDefaults(
           {fillOpacity: 0.05},
           OpenLayers.Feature.Vector.style['default']));
-    div.map.editLayer.styleMap = styleMap;\n";
+    mapDiv.map.editLayer.styleMap = styleMap;\n";
         
         if (isset($info['allow_buffer']) && $info['allow_buffer']=='true')
           $origWkt = empty($_POST['orig-wkt']) ? '' : $_POST['orig-wkt'];
@@ -849,10 +802,10 @@ $('.ui-state-default').live('mouseout', function() {
 
         if (!empty($origWkt)) {
           data_entry_helper::$javascript .= "  var geom=OpenLayers.Geometry.fromWKT('$origWkt');\n";
-          data_entry_helper::$javascript .= "  if (div.map.projection.getCode() !== div.indiciaProjection.getCode()) {\n";
-          data_entry_helper::$javascript .= "    geom.transform(div.indiciaProjection, div.map.projection);\n";
+          data_entry_helper::$javascript .= "  if (mapDiv.map.projection.getCode() !== mapDiv.indiciaProjection.getCode()) {\n";
+          data_entry_helper::$javascript .= "    geom.transform(mapDiv.indiciaProjection, mapDiv.map.projection);\n";
           data_entry_helper::$javascript .= "  }\n";
-          data_entry_helper::$javascript .= "  div.map.editLayer.addFeatures([new OpenLayers.Feature.Vector(geom)]);\n";
+          data_entry_helper::$javascript .= "  mapDiv.map.editLayer.addFeatures([new OpenLayers.Feature.Vector(geom)]);\n";
         }
         data_entry_helper::$javascript .= "
   });
@@ -862,24 +815,10 @@ $('.ui-state-default').live('mouseout', function() {
         }
         data_entry_helper::$javascript .= "  opts.standardControls.push('clearEditLayer');
   }
-  mapSettingsHooks.push(add_map_tools);\n";      
-        if (isset($info['allow_buffer']) && $info['allow_buffer']=='true') 
-          data_entry_helper::$javascript .= "}\n";       
+  mapSettingsHooks.push(add_map_tools);\n";
       }
     }
     return $r;
-  }
-  
-  /** 
-   * Internal method to safely find the value of a preset parameter. Returns empty string if not defined.
-   */
-  private static function get_preset_param($options, $name) {
-    if (!isset($options['presetParams']))
-      return '';
-    else if (!isset($options['presetParams'][$name]))
-      return '';
-    else
-      return $options['presetParams'][$name];
   }
   
   private static function get_params_form_control($key, $info, $options, &$tools) {
@@ -899,9 +838,9 @@ $('.ui-state-default').live('mouseout', function() {
       $ctrlOptions['default'] = $info['default'];
     if ($info['datatype']=='idlist') {
       // idlists are not for human input so use a hidden. 
-      $r .= "<input type=\"hidden\" name=\"$fieldPrefix$key\" value=\"".self::get_preset_param($options, $key)."\" class=\"".$fieldPrefix."idlist-param\" />\n";
+      $r .= "<input type=\"hidden\" name=\"$fieldPrefix$key\" value=\"".$options['presetParams'][$key]."\" class=\"".$fieldPrefix."idlist-param\" />\n";
     } elseif (isset($options['presetParams']) && array_key_exists($key, $options['presetParams'])) {
-      $r .= "<input type=\"hidden\" name=\"$fieldPrefix$key\" value=\"".self::get_preset_param($options, $key)."\" />\n";
+      $r .= "<input type=\"hidden\" name=\"$fieldPrefix$key\" value=\"".$options['presetParams'][$key]."\" />\n";
     } elseif ($info['datatype']=='lookup' && isset($info['population_call'])) {
       // population call is colon separated, of the form direct|report:table|view|report:idField:captionField:params(key=value,key=value,...)
       $popOpts = explode(':', $info['population_call']);
@@ -968,12 +907,7 @@ $('.ui-state-default').live('mouseout', function() {
     } elseif ($info['datatype']=='point') {
       $tools = array('Point');
     } else {
-      if (method_exists('data_entry_helper', $info['datatype'])) {
-        $ctrl = $info['datatype'];
-        $r .= data_entry_helper::$ctrl($ctrlOptions);
-      } else {
-        $r .= data_entry_helper::text_input($ctrlOptions);
-      }
+      $r .= data_entry_helper::text_input($ctrlOptions);
     }
     return $r;
   }
@@ -1004,7 +938,7 @@ $('.ui-state-default').live('mouseout', function() {
    * Takes an associative array and converts it to a list of params for a query string. This is like
    * http_build_query but it does not url encode the & separator, and gives control over urlencoding the array values.
    */
-  public static function array_to_query_string($array, $encodeValues=false) {
+  protected static function array_to_query_string($array, $encodeValues=false) {
     $params = array();
     if(is_array($array)) {
       arsort($array);
@@ -1028,11 +962,9 @@ $('.ui-state-default').live('mouseout', function() {
    * template text, otherwise it is the name of a template in the $indicia_templates array. Default false.
    * @param boolean $allowHtml If true then HTML is emitted as is from the parameter values inserted into the template,
    * otherwise they are escaped.
-   * @param boolean $allowEscapeQuotes If true then parameter names can be suffixes -esape-quote, -escape-dblquote, 
-   * -escape-htmlquote or -escape-htmldblquote to insert backslashes or html entities into the replacements for string escaping. 
    * @return string HTML for the item label
    */
-  public static function mergeParamsIntoTemplate($params, $template, $useTemplateAsIs=false, $allowHtml=false, $allowEscapeQuotes=false) {
+  public static function mergeParamsIntoTemplate($params, $template, $useTemplateAsIs=false, $allowHtml=false) {
     global $indicia_templates;
     // Build an array of all the possible tags we could replace in the template.
     $replaceTags=array();
@@ -1040,24 +972,12 @@ $('.ui-state-default').live('mouseout', function() {
     foreach ($params as $param=>$value) {
       if (!is_array($value) && !is_object($value)) {
         array_push($replaceTags, '{'.$param.'}');
-        if ($allowEscapeQuotes) {
-          array_push($replaceTags, '{'.$param.'-escape-quote}');
-          array_push($replaceTags, '{'.$param.'-escape-dblquote}');
-          array_push($replaceTags, '{'.$param.'-escape-htmlquote}');
-          array_push($replaceTags, '{'.$param.'-escape-htmldblquote}');
-        }
         // allow sep to have <br/>
         $value = ($param == 'sep' || $allowHtml) ? $value : htmlentities($value);
         // HTML attributes get automatically wrapped
         if (in_array($param, self::$html_attributes) && !empty($value))
           $value = " $param=\"$value\"";
         array_push($replaceValues, $value);
-        if ($allowEscapeQuotes) {
-          array_push($replaceValues, str_replace("'","\'",$value));
-          array_push($replaceValues, str_replace('"','\"',$value));
-          array_push($replaceValues, str_replace("'","&#39;",$value));
-          array_push($replaceValues, str_replace('"','&quot;',$value));
-        }
       }
     }
     if (!$useTemplateAsIs) $template = $indicia_templates[$template];
@@ -1114,13 +1034,11 @@ $('.ui-state-default').live('mouseout', function() {
  /**
   * Internal function to find the path to the root of the site, including the trailing slash.
   */
-  public static function getRootFolder() {
-    // $_SERVER['SCRIPT_NAME'] can, in contrast to $_SERVER['PHP_SELF'], not
-    // be modified by a visitor.
-    if ($dir = trim(dirname($_SERVER['SCRIPT_NAME']), '\,/'))
-      return "/$dir/";
-    else
-      return '/';    
+  protected static function getRootFolder() {
+    $rootFolder = dirname($_SERVER['PHP_SELF']);
+    if ($rootFolder =='\\') $rootFolder = '/'; // if no directory, then on windows may just return a single backslash.
+    if (substr($rootFolder, -1)!='/') $rootFolder .= '/';
+    return $rootFolder;
   }
 
   /**
@@ -1255,13 +1173,10 @@ $('.ui-state-default').live('mouseout', function() {
           }
           if (isset($resourceList[$resource]['javascript'])) {
             foreach ($resourceList[$resource]['javascript'] as $j) {
-              // if enabling fancybox, link it up
-              if (strpos($j, 'fancybox.')!==false)
-                self::$javascript .= "jQuery('a.fancybox').fancybox();\n";
               // look out for a condition that this script is IE only.
-              if (substr($j, 0, 4)=='[IE]'){
-              	$libraries .= "<!--[if IE]><script type=\"text/javascript\" src=\"".substr($j, 4)."\"></script><![endif]-->\n";
-              } else
+              if (substr($j, 0, 4)=='[IE]')
+                $libraries .= "<!--[if IE]><script type=\"text/javascript\" src=\"".substr($j, 4)."\"></script><![endif]-->\n";
+              else
                 $libraries .= "<script type=\"text/javascript\" src=\"$j\"></script>\n";
             }
           }
@@ -1359,7 +1274,19 @@ indiciaData.windowLoaded=false;
             jqElement.removeClass('ui-state-error');
           }
         },
-        invalidHandler: ".$indicia_templates['invalid_handler_javascript'].",
+        invalidHandler: function(form, validator) {
+          var tabselected=false;
+          jQuery.each(validator.errorMap, function(ctrlId, error) {
+            // select the tab containing the first error control
+            var ctrl = jQuery('[name=' + ctrlId.replace(/:/g, '\\\\:').replace(/\[/g, '\\\\[').replace(/]/g, '\\\\]') + ']');
+            if (!tabselected && typeof(tabs)!=='undefined') {
+              tabs.tabs('select',ctrl.filter('input,select').parents('.ui-tabs-panel')[0].id);
+              tabselected = true;
+            }
+            ctrl.parents('fieldset').removeClass('collapsed');
+            ctrl.parents('.fieldset-wrapper').show();
+          });
+        },
         messages: ".json_encode(self::$validation_messages) .
         // Do not place errors if 'message' not in validation_mode
         (in_array('message', self::$validation_mode) ? "" : ",
@@ -1403,14 +1330,6 @@ indiciaData.windowLoaded=false;
     }
     if (!array_key_exists('disabled', $options)) {
       $options['disabled']='';
-    }
-    if (!array_key_exists('readonly', $options)) {
-      $options['readonly']='';
-    }
-    if (array_key_exists('maxlength', $options)) {
-      $options['maxlength']='maxlength="'.$options['maxlength'].'"';
-    } else {
-      $options['maxlength']='';
     }
     // Add an error class to colour the control if there is an error and this option is set
     if ($error && in_array('colour', $options['validation_mode'])) {
@@ -1461,8 +1380,7 @@ indiciaData.windowLoaded=false;
       if (!self::$using_locking) {
         self::$using_locking = true;
         $options['lock_form_mode'] = self::$form_mode ? self::$form_mode : 'NEW';
-        // write lock javascript at the start of the late javascript so after control setup but before any other late javascript
-        self::$late_javascript = self::apply_replacements_to_template($indicia_templates['lock_javascript'], $options).self::$late_javascript;
+        self::$javascript .= self::apply_replacements_to_template($indicia_templates['lock_javascript'], $options);
         self::add_resource('indicia_locks');
       }
     }
@@ -1526,11 +1444,7 @@ indiciaData.windowLoaded=false;
     $trim = create_function('&$val', '$val = trim($val);');
     array_walk($pairs[1], $trim);
     array_walk($pairs[2], $trim);
-    if (count($pairs[1]) == count($pairs[2]) && count($pairs[1]) != 0) {
-      return array_combine($pairs[1], $pairs[2]); 
-    } else {
-      return array();
-    }
+    return array_combine($pairs[1], $pairs[2]); 
   }
   
   /**
@@ -1588,7 +1502,7 @@ indiciaData.windowLoaded=false;
           lang::get($options['fieldname']));
     }
     // Convert these rules into jQuery format.
-    return self::convert_to_jquery_val_metadata($rules, $options);
+    return self::convert_to_jquery_val_metadata($rules);
   }
 
   /**
@@ -1626,11 +1540,10 @@ indiciaData.windowLoaded=false;
   * Takes a list of validation rules in Kohana/Indicia format, and converts them to the jQuery validation
   * plugin metadata format.
   * @param array $rules List of validation rules to be converted.
-  * @param array $options Options passed to the validated control.
   * @return string Validation metadata classes to add to the input element.
   * @todo Implement a more complete list of validation rules.
   */
-  protected static function convert_to_jquery_val_metadata($rules, $options) {
+  protected static function convert_to_jquery_val_metadata($rules) {
     $converted = array();
     foreach ($rules as $rule) {
       // Detect the rules that can simply be passed through
@@ -1643,17 +1556,17 @@ indiciaData.windowLoaded=false;
           || $rule=='integer') {
         $converted[] = $rule.':true';
       // Now any rules which need parsing or conversion
-      } else if ($rule=='date' && !isset($options['allowVagueDates']) || $options['allowVagueDates']===false) {
+      } else if ($rule=='date') {
         $converted[] = 'customDate:true';
       } else if ($rule=='digit') {
         $converted[] = 'digits:true';
       } else if ($rule=='numeric') {
         $converted[] = 'number:true';
       // the next test uses a regexp named expression to find the digit in a maximum rule (maximum[10])
-      } elseif (preg_match('/maximum\[(?P<val>-?\d+)\]/', $rule, $matches)) {
+      } elseif (preg_match('/maximum\[(?P<val>\d+)\]/', $rule, $matches)) {
         $converted[] = 'max:'.$matches['val'];
       // and again for minimum rules
-      } elseif (preg_match('/minimum\[(?P<val>-?\d+)\]/', $rule, $matches)) {
+      } elseif (preg_match('/minimum\[(?P<val>\d+)\]/', $rule, $matches)) {
         $converted[] = 'min:'.$matches['val'];
       } elseif (preg_match('/regex\[(?P<val>.+)\]/', $rule, $matches)) {
         $converted[] = 'pattern:'. $matches['val'];

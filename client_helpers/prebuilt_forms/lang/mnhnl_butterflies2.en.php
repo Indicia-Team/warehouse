@@ -27,8 +27,6 @@ global $custom_terms;
  * @package	Client
  */
 $custom_terms = array(
-	'LANG_MustSelectParentFirst' => 'You must choose a square first, before creating a new location within it.',
-	'LANG_no_permissions' => 'You must be either a registered User or a registered Admin of this form in order to access this form.',
 	'LANG_Edit' => 'Edit',
 	'LANG_SampleListGrid_Preamble' => 'Previously encoded survey list for ',
 	'LANG_All_Users' => 'all users',
@@ -54,16 +52,11 @@ $custom_terms = array(
 	'LANG_CommonLocationNameLabel' => 'Site number',
 	'LANG_LocModTool_DeleteLabel'=>'Delete site',
 	'LANG_LocModTool_DeleteInstructions'=>'When a site is deleted, any existing visit data will still be available in the reports. New surveys for this square will not feature the site.',
-	'LANG_Outside_Square_Reports'=>'Outside Square Checks',
-	'LANG_Outside_Square_Download_1'=> 'This report provides a list of locations whose centres are outside their parent square',
-	'LANG_Outside_Square_Download_2'=> 'This report provides a list of locations which have any part of their boundaries outside the boundaries of their parent square',
 
 	'LANG_LocModTool_NameLabel'=>'New site number',
 	'LANG_DE_Instructions2'=>"You may add new sites by choosing either the polygon or line control and then drawing the new sites' boundaries on the map, clicking on each point, and double clicking on the final point in each element to complete it. You may then add another line or polygon. The new sites will be added to the list of sites for this square, and given a default number. You can change the number of a new site using the 'Site number' field below. After adding a drawn element, you will notice some small red circles appear around the boundary you have just drawn: you can change the element by dragging these circles. To delete a point, place the mouse over the red circle, and press the 'd' or 'Delete' buttons on the keyboard. Further new sites may be added by first clicking on the 'Start a new site' button, and then repeating the process.<br />Only one site's boundary will be modifiable at any one time. Should you wish to modify another new site, select the 'Click on the map to select a site' control, and then click on the site on the map. Pick the control for the type of drawn element you wish to modify. You will see the small red circles appear around the relevant elements for that site.<br />If you create a site, but do not save any data against it, it will NOT be recorded in the database.<br />It is not possible to change a site name or boundary on this form once it has been saved - this can be done by an Admin user using their special tool.",
-	'LANG_LocModTool_Instructions2'=>"Either click on the map to select the site you wish to modify, or choose from the drop down list. You may then change its name, or its extent on the map by dragging the red vertices. To delete a vertex, place the mouse over the vertex and press the 'd' or 'Delete' buttons.",
-	'LANG_LocModTool_CantCreate' => "You can't create a new site using this tool - that has to be done within the survey data entry itself.",
+	'LANG_LocModTool_Instructions2'=>"Either click on the map to select the site you wish to modify, or choose from the drop down list. You may then change its name, or its extent on the map by dragging the red vertices. To delete a vertex, place the mouse over the vertex and press the 'd' or 'Delete' buttons. You can't create a new site using this tool - that has to be done within the survey data entry itself.",
 	'LANG_LocationModTool_CommentLabel'=>'Comment',
-	'LANG_LocModTool_ParentLabel'=>'New site square',
 
 	'LANG_TooFewPoints' => 'There are too few points in this polygon - there must be at least 3.',
 	'LANG_TooFewLinePoints' => 'There are too few points in this line - there must be at least 2.',
@@ -104,7 +97,7 @@ $custom_terms = array(
 	"LANG_EmptyLocationID"=>'Choose an existing site',
 	'Recorder names' => 'Observer(s)',
 	'LANG_RecorderInstructions'=>"To select more than one observer, keep the CTRL button down.",
-	'LANG_ConditionsGridInstructions'=>'Before any data can be entered onto a row of the grid below, and entered into the equivalent column in the species grid, the date for the visit to that site must be filled in. Additional sites may be added by drawing on the Map.<br />Clicking on the red X at the start of each group will either clear the conditions data for that site (if the site was pre-existing) or the site will be deleted if you have added it during this session.',
+	'LANG_ConditionsGridInstructions'=>'Before any data can be entered onto a row of the grid below, and entered into the equivalent column in the species grid, the date for the visit to that site must be filled in. Additional sites may be added by drawing on the Map. Clicking on the Red X will either clear the data for that site, if the site was pre-existing, or the site will be deleted if you have added it during this session.',
 	'LANG_SpeciesGridInstructions'=>"Note species observed at each site and estimate their abundance.<br />Before any data can be entered into the grid below, the conditions for the visit to that site must be entered in the Conditions section. Additional sites may be added by drawing on the map in the Sites section. Additional species may be added by entering the name in the box below.  Clicking on the red 'X' will either clear the data for that species (if data has previously been entered for the species), or the species will be removed (if you have added it during this session).",
 // Date
 	'Butterfly2 Target Species'=>'Target species',
@@ -117,10 +110,10 @@ $custom_terms = array(
 	'Cloud cover'=>'Cloud cover (%)',
 // 'Reliability'=>'Reliability',
 // No observation
-	'LANG_conditionsgrid:clearconfirm' => 'You are about to remove the condition and species data associated with this site from this survey. Do you wish to continue?',
-	'LANG_conditionsgrid:removeconfirm' => 'You are about to remove a newly created site. If you do this all conditions and species data you have entered against the site will be lost. Do you wish to continue?',
-	'LANG_speciesgrid:clearconfirm' => 'You are about to clear all the data for a species on this survey. Do you wish to continue?',
-	'LANG_speciesgrid:removeconfirm' => 'You are about to remove a newly created species entry from this survey. Do you wish to continue?',
+	'LANG_conditionsgrid:clearconfirm' => 'You are about to clear the data for a site. If you do this any previously saved data (including species data for that site) will be lost. Do you still wish to continue?',
+	'LANG_conditionsgrid:removeconfirm' => 'You are about to remove a newly created site. If you do this all entered data (including species data for that site) will be lost. Do you still wish to continue?',
+	'LANG_speciesgrid:clearconfirm' => 'You are about to clear all the data for a species. If you do this all previously saved data will be lost. Do you still wish to continue?',
+	'LANG_speciesgrid:removeconfirm' => 'You are about to remove a newly created species entry. If you do this all entered data for that species will be lost. Do you still wish to continue?',
 
 	'LANG_Location_Label' => 'Location',
 	'LANG_Location_Name' => 'Site Name',

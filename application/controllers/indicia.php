@@ -401,7 +401,7 @@ class Indicia_Controller extends Template_Controller {
   {
     Kohana::log("debug", "Submitted record ".$id." successfully.");
     $action = $deletion ? "deleted" : "saved";
-    $this->session->set_flash('flash_info', "The record was $action successfully. <a href=\"".url::site().$this->model->object_name."/edit/$id\">Click here to edit</a>.");
+    $this->session->set_flash('flash_info', "The record was $action successfully.");
     $this->redirectToIndex();
   }
   
@@ -514,10 +514,9 @@ class Indicia_Controller extends Template_Controller {
    *
    * @param string $termlist ID of the termlist or name of the termlist, from the 
    * termlist's external_key field.
-   * @param array $where Associative array of field values to filter for.
    * @return array Associative array of terms, with each entry being id => term.
    */
-  protected function get_termlist_terms($termlist, $where=null) {
+  protected function get_termlist_terms($termlist) {
     $arr=array();
     if (!is_numeric($termlist)) {
       // termlist is a string so check the termlist from the external key field
@@ -539,10 +538,8 @@ class Indicia_Controller extends Template_Controller {
         ->from('termlists_terms')
         ->join('terms', 'terms.id', 'termlists_terms.term_id')
         ->where(array('termlists_terms.termlist_id' => $termlist, 'termlists_terms.deleted' => 'f', 'terms.deleted' => 'f'))
-        ->orderby(array('termlists_terms.sort_order'=>'ASC', 'terms.term'=>'ASC'));
-    if ($where) 
-      $terms = $terms->where($where);
-    $terms = $terms->get();
+        ->orderby(array('termlists_terms.sort_order'=>'ASC', 'terms.term'=>'ASC'))
+        ->get();
     foreach ($terms as $term) {
       $arr[$term->id] = $term->term;
     }

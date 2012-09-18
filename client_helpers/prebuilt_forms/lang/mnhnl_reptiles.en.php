@@ -28,22 +28,18 @@ global $custom_terms;
  */
 $custom_terms = array(
 	// 'Edit' is left unchanged
-	'LANG_no_permissions' => 'You must be either a registered User or a registered Admin of this form in order to access this form.',
 	'LANG_Main_Samples_Tab' => 'Surveys',
 	'LANG_Download' => 'Reports',
 	'LANG_SampleListGrid_Preamble' => 'Previously encoded survey list for ',
 	'LANG_All_Users' => 'all users',
 	'LANG_Allocate_Locations' => 'Allocate squares',
 	'LANG_Save_Location_Allocations' => 'Save',
-	'LANG_Data_Download' => 'This Report provides details of the data entered in the surveys.',
+	'LANG_Data_Download' => 'This Report provides details of the data entered in the surveys which are tagged for a particular target species.',
 	'LANG_Download_Button' => 'Download',
 	'LANG_TargetSpecies'=> 'Target species',
 	'Target Species'=>'Target species',
 	'LANG_SHP_Download_Legend'=> 'SHP File Downloads',
 	'LANG_Shapefile_Download'=> 'These downloads provide zipped up shape files for the locations; due to the restrictions of the SHP file format, there are separate downloads for each of points, lines and polygons. Click to select:',
-	'LANG_Outside_Square_Reports'=>'Outside Square Checks',
-	'LANG_Outside_Square_Download_1'=> 'This report provides a list of locations whose centres are outside their parent square',
-	'LANG_Outside_Square_Download_2'=> 'This report provides a list of locations which have any part of their boundaries outside the boundaries of their parent square',
 	'LANG_Edit' => 'Edit',
 	'LANG_Add_Sample' => 'Add new sample',
 	'LANG_Add_Sample_Single' => 'Add single occurrence',
@@ -54,9 +50,8 @@ $custom_terms = array(
 	'LANG_CommonInstructions1'=>'Choose a square (5x5km). This square will then be displayed on the map, along with all existing sites associated with that square.',
 	'LANG_CommonParentLabel'=>'Square (5x5km)',
 	'LANG_CommonParentBlank'=>'Choose a square',
-	'LANG_LocModTool_Instructions2'=>"Either click on the map (ensuring that the select tool on the map is active) to select the site you wish to modify, or choose from the drop down list. You may then change its name, or modify or add Points, Lines, or Polygons to define the site shape. You must choose the correct draw tool on the map for each of these. You may drag the highlighted vertices. To delete a vertex, place the mouse over the vertex and press the 'd' or 'Delete' buttons.",
-	'LANG_LocModTool_CantCreate' => "You can't create a new site using this tool - that has to be done within the survey data entry itself.",
-	'LANG_DE_Instructions2'=>"To choose a site, either click the relevant site on the map (ensuring that the select tool on the map is active) or pick it from the drop down list (then the selected site is highlighted in blue on the map).<br />You may add a new site: ensure a square has been selected, click the 'Start a new site' button on the map, select the map tool for the type of item you wish to draw, and draw on the map, clicking on each point. Double click on the final point of a line or polygon to complete it. At this point you will notice some small red circles appear around the newly drawn feature: you can change the boundary by dragging these circles. To delete a point, place the mouse over the red circle, and press the 'd' or 'Delete' buttons on the keyboard.<br />Selecting an existing site will remove any new site.<br />It is not possible to change a site name or boundary on this form once it has been saved - this can be done by an Admin user using their special tool.",
+	'LANG_LocModTool_Instructions2'=>"Either click on the map (ensuring that the select tool on the map is active) to select the site you wish to modify, or choose from the drop down list. You may then change its name, or modify or add Points, Lines, or Polygons to define the site shape. You must choose the correct draw tool on the map for each of these. You may drag the highlighted vertices. To delete a vertex, place the mouse over the vertex and press the 'd' or 'Delete' buttons.<br />You can't create a new site using this tool - that has to be done within the survey data entry itself.",
+	'LANG_DE_Instructions2'=>"To choose a site, either click the relevant site on the map (ensuring that the select tool on the map is active) or pick it from the drop down list.<br />You may add a new site: ensure a square has been selected, click the 'Start a new site' button on the map, select the map tool for the type of item you wish to draw, and draw on the map, clicking on each point. Double click on the final point of a line or polygon to complete it. At this point you will notice some small red circles appear around the newly drawn feature: you can change the boundary by dragging these circles. To delete a point, place the mouse over the red circle, and press the 'd' or 'Delete' buttons on the keyboard.<br />Selecting an existing site will remove any new site.<br />It is not possible to change a site name or boundary on this form once it has been saved - this can be done by an Admin user using their special tool.",
 	'LANG_LocModTool_IDLabel'=>'Old site name',
 	'LANG_DE_LocationIDLabel'=>'Site',
 	'LANG_CommonChooseParentFirst'=>'Choose a square first, before picking a site.',
@@ -68,12 +63,9 @@ $custom_terms = array(
 	'LANG_LatLong_Bumpf' => '(LUREF geographical system, in metres)',
 	'LANG_CommonLocationNameLabel' => 'Site name',
 	'LANG_LocModTool_NameLabel'=>'New site name',
-	'LANG_LocModTool_ParentLabel'=>'New site square',
 	'LANG_LocModTool_DeleteLabel'=>'Delete site',
 	'LANG_LocModTool_DeleteInstructions'=>'When a site is deleted, any existing visit data will still be available in the reports. The visit data will not be available via the data entry form, and the site will no longer appear on the map. You will not be able to undelete the site using this form.',
-	'LANG_LocationModTool_CommentLabel'=>'Comment',
-	'LANG_Location_Name_Blank_Text' => 'Choose a location using its name',
-	'LANG_MustSelectParentFirst' => 'You must choose a square first, before creating a new location within it.',
+
 	'LANG_Locations'=>'Sites',
 
 	'LANG_TooFewPoints' => 'There are too few points in this polygon - there must be at least 3.',
@@ -139,5 +131,5 @@ $custom_terms = array(
 	'validation_targ-presence'=>'At least one target species must be selected.',
 	'next step'=>'Next step',
 	'prev step'=>'Previous step'
-
+	
 );

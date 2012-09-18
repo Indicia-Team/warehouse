@@ -85,6 +85,21 @@ span.extra-text {
 .remove-row {
   color:red !important;
 }
+.locgrid-code {
+  width: 40px;
+}
+.locgrid-precision {
+  width: 40px;
+}
+.locgrid-codegsl {
+  width: 40px;
+}
+.locgrid-depth {
+  width: 40px;
+}
+.locgrid-development {
+  width: 40px;
+}
 .narrow {
   width: 30px;
 }
@@ -135,21 +150,11 @@ div.olControlEditingToolbar div.olControlStartNewSiteItemInactive {
 }
 
 div.olControlEditingToolbar  {
-    width: 500px;
+    width: 350px;
 }
 #imp-srefX {
 	width: 60px;
 }
 #imp-srefY {
 	width: 60px;
-}
-#samples-grid td {
-  padding: 2px;
-  border: solid silver 1px;
-}
-#mousePos {
-  background-color: #FFFFFF;
-  float: right;
-  margin-top: 7px;
-  margin-right: 20px;
 }

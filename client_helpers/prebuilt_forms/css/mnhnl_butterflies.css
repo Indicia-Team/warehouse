@@ -17,10 +17,7 @@
 label.narrow {
   width: 30px;
 }
-#samples-grid td {
-  padding: 2px;
-  border: solid silver 1px;
-}
+
 .trSpeciesContainer {
 	display: inline-block;
 	width: 48%;

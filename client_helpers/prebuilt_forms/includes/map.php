@@ -36,7 +36,7 @@ function iform_map_get_map_parameters() {
       'name'=>'map_centroid_lat',
       'caption'=>'Centre of Map Latitude',
       'description'=>'WGS84 Latitude of the initial map centre point, in decimal form. Set to "default" to use the settings '.
-          'defined in the IForm Settings page.',
+          'defined in the ">IForm Settings page.',
       'type'=>'text_input',
       'group'=>'Initial Map View',
       'default'=>'default'
@@ -76,8 +76,7 @@ function iform_map_get_map_parameters() {
     array(
       'name'=>'remember_pos',
       'caption'=>'Remember Position',
-      'description'=>'Tick this box to get the map to remember it\'s last position when reloading the page. This uses cookies so cookies must be enabled for it to work and '.
-          'you must notify your users to ensure you comply with European cookie law.',
+      'description'=>'Tick this box to get the map to remember it\'s last position when reloading the page.',
       'type'=>'checkbox',
       'required'=>false,
       'group'=>'Initial Map View'
@@ -190,23 +189,20 @@ function iform_map_get_georef_parameters() {
     array(
       'name'=>'georefPreferredArea',
       'caption'=>'Preferred area for georeferencing.',
-      'description'=>'Preferred area to look within when trying to resolve a place name. For example set this to the region name you are recording within. Can be left blank to not specify '.
-          'in which case users can add a comma plus the region to search if needed, e.g. "wimborne, Dorset".',
+      'description'=>'Preferred area to look within when trying to resolve a place name. For example set this to the region name you are recording within.',
       'type'=>'string',
-      'default'=>'',
+      'default'=>'gb',
       'group'=>'Georeferencing',
-      'siteSpecific'=>true,
-      'required'=>false
+      'siteSpecific'=>true
     ),
     array(
       'name'=>'georefCountry',
       'caption'=>'Preferred country for georeferencing.',
-      'description'=>'Preferred country to look within when trying to resolve a place name. Can be left blank to not specify, in which case users can add a comma then the country to search. ',
+      'description'=>'Preferred country to look within when trying to resolve a place name.',
       'type'=>'string',
       'default'=>'United Kingdom',
       'group'=>'Georeferencing',
-      'siteSpecific'=>true,
-      'required'=>false
+      'siteSpecific'=>true
     ),
     array(
       'name'=>'georefDriver',
@@ -217,9 +213,8 @@ function iform_map_get_georef_parameters() {
       'default'=>'geoplanet',
       'options' => array(
         'geoplanet' => 'Yahoo! GeoPlanet (all round place search)',
-        'google_search_api' => 'Google AJAX Search API (works well with postcodes or for places near the preferred area). Note this API is deprecated and may not be supported in future.',
-        'geoportal_lu' => 'ACT Geoportal Luxembourg (for places in Luxumbourg)',
-        'indicia_locations' => 'Search the Indicia locations list.'
+        'google_search_api' => 'Google AJAX Search API (works well with postcodes or for places near the preferred area)',
+        'geoportal_lu' => 'ACT Geoportal Luxembourg (for places in Luxumbourg)'
       ),
       'group'=>'Georeferencing'
     )
@@ -358,15 +353,14 @@ function iform_map_get_ol_options($args) {
  * form arguments.
  * @param $args
  * @param $readAuth
- * @return array Options array for the georeferencer.
+ * @return array Options array for the map.
  */
-function iform_map_get_georef_options($args, $readAuth) {
+function iform_map_get_georef_options($args) {
   return array(
     'driver'=>$args['georefDriver'],
     'label' => lang::get('LANG_Georef_Label'),
     'georefPreferredArea' => $args['georefPreferredArea'],
     'georefCountry' => $args['georefCountry'],
-    'georefLang' => $args['language'],
-    'readAuth' => $readAuth
+    'georefLang' => $args['language']
   );
 }

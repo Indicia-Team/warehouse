@@ -132,14 +132,13 @@ class DateParser_Core {
           sscanf($sDate, "%2d%[^\\n]", $nValue, $sDateAfter);
 
           if (strlen($nValue) != 2) return false;
-          // Get the century as %C not supported on Windows
-          $c=substr(strftime("%Y"),0,2);
+
           if ($nValue <= strftime("%y")) {
             // This century.
-            $nValue = "$c$nValue";
+            $nValue = strftime("%C").$nValue;
           } else {
             // Last century.
-            $nValue = ($c - 1).$nValue;
+            $nValue = (strftime("%C") - 1).$nValue;
           }
 
           $this->aResult['tm_year'] = $nValue;
@@ -154,7 +153,7 @@ class DateParser_Core {
             $weekdays[$a] = $i;
             $dayStr .= ($i == 0) ? Kohana::lang('dates.days.'.$i) : "|".Kohana::lang('dates.days.'.$i);
           }
-          $a = preg_match("/^(".$dayStr.")(.*)/i",$sDate,$refs);
+          $a = preg_match("/(".$dayStr.")(.*)/i",$sDate,$refs);
           if ($a){
             $nValue = $weekdays[strtolower($refs[1])];
             $this->aResult['tm_wday'] = $nValue;
@@ -171,7 +170,7 @@ class DateParser_Core {
             $weekdays[strtolower(Kohana::lang('dates.abbrDays.'.$i))] = $i;
             $dayStr .= ($i == 0) ? Kohana::lang('dates.abbrDays.'.$i) : "|".Kohana::lang('dates.abbrDays.'.$i);
           }
-          $a = preg_match("/^(".$dayStr.")(.*)/i",$sDate,$refs);
+          $a = preg_match("/(".$dayStr.")(.*)/i",$sDate,$refs);
           if ($a){
             $nValue = $weekdays[strtolower($refs[1])];
             $this->aResult['tm_wday'] = $nValue;
@@ -194,8 +193,7 @@ class DateParser_Core {
             $weekdays[strtolower(Kohana::lang('dates.months.'.$i))] = $i;
             $dayStr .= ($i == 0) ? Kohana::lang('dates.months.'.$i) : "|".Kohana::lang('dates.months.'.$i);
           }
-          
-          $a = preg_match("/^(".$dayStr.")(.*)/i",$sDate,$refs);
+          $a = preg_match("/(".$dayStr.")(.*)/i",$sDate,$refs);
           if ($a){
             $nValue = $weekdays[strtolower($refs[1])];
             $this->aResult['tm_mon'] = $nValue;
@@ -212,7 +210,7 @@ class DateParser_Core {
             $weekdays[strtolower(Kohana::lang('dates.abbrMonths.'.$i))] = $i;
             $dayStr .= ($i == 0) ? Kohana::lang('dates.abbrMonths.'.$i) : "|".Kohana::lang('dates.abbrMonths.'.$i);
           }
-          $a = preg_match("/^(".$dayStr.")(.*)/i",$sDate,$refs);
+          $a = preg_match("/(".$dayStr.")(.*)/i",$sDate,$refs);
           if ($a){
             $nValue = $weekdays[strtolower($refs[1])];
             $this->aResult['tm_mon'] = $nValue;
@@ -230,7 +228,7 @@ class DateParser_Core {
             $sRegex .= ($first) ? $season : "|".$season;
             $first = false;
           }
-          $a = preg_match("/^(".$sRegex.")(.*)/i", $sDate, $refs);
+          $a = preg_match("/(".$sRegex.")(.*)/i", $sDate, $refs);
           if ($a){
             $nValue = strtolower($refs[1]);
             $this->aResult['tm_season'] = $seasons[strtolower($nValue)];
@@ -243,7 +241,7 @@ class DateParser_Core {
           break;
         case '%C': // Century
           //Use a regex for this
-          $a = preg_match("/^(\d{1,2})c(.*)/i", $sDate, $refs);
+          $a = preg_match("/(\d{1,2})c(.*)/i", $sDate, $refs);
           if ($a) {
             $nValue = $refs[1];
             $this->aResult['tm_century'] = $nValue;
@@ -262,13 +260,11 @@ class DateParser_Core {
       $this->aResult['unparsed'] = $sDate;
 
     } // END while($sFormat != "")
-    return empty($this->aResult['unparsed']);
+    return true;
   }
 
   public function getIsoDate(){
     if ($this->aResult['tm_year'] == null) return null;
-    if (!checkdate($this->tm_mon + 1,$this->tm_mday,$this->tm_year))
-      throw new InvalidArgumentException('Invalid date');
     return date("Y-m-d", mktime(0,0,0,$this->tm_mon + 1,$this->tm_mday,$this->tm_year));
   }
 
@@ -280,8 +276,6 @@ class DateParser_Core {
       $aStart['tm_year'] = 100*($a-1);
       $aStart['tm_mon'] = 0;
       $aStart['tm_mday'] = 1;
-      if (!checkdate($this->tm_mon + 1,$this->tm_mday,$this->tm_year))
-        throw new InvalidArgumentException('Invalid date');
       return date("Y-m-d", mktime(0,0,0,$aStart['tm_mon'] + 1, $aStart['tm_mday'], $aStart['tm_year']));
     }
 

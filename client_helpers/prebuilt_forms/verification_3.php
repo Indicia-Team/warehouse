@@ -58,22 +58,6 @@ class iform_verification_3 {
       iform_map_get_map_parameters(),
       iform_report_get_minimal_report_parameters(),
       array(
-         array(
-          'name'=>'record_details_report',
-          'caption'=>'Report for record details',
-          'description'=>'Report used to obtain the details of a record. See reports_for_prebuilt_forms/verification_3/record_data.xml for an example.',
-          'type'=>'report_helper::report_picker',
-          'group'=>'Report Settings',
-          'default'=>'reports_for_prebuilt_forms/verification_3/record_data'
-        ),
-        array(
-          'name'=>'record_attrs_report',
-          'caption'=>'Report for record attributes',
-          'description'=>'Report used to obtain the custom attributes of a record. See reports_for_prebuilt_forms/verification_3/record_data_attributes.xml for an example.',
-          'type'=>'report_helper::report_picker',
-          'group'=>'Report Settings',
-          'default'=>'reports_for_prebuilt_forms/verification_3/record_data_attributes'
-        ),
         array(
             'name' => 'columns_config',
             'caption' => 'Columns Configuration',
@@ -336,7 +320,7 @@ class iform_verification_3 {
     // Set default values for the report
     foreach($r as &$param) {
       if ($param['name']=='report_name')
-        $param['default']='library/occurrences/verification_list_3';
+        $param['default']='library/occurrences/verification_list_2';
       elseif ($param['name']=='param_presets') {
         $param['default'] = 'survey_id=
 date_from=
@@ -424,7 +408,7 @@ idlist=';
       $olOptions
     );
     // give realistic performance on the map
-    $extraParams['limit']=3000;
+    $extraParams['limit']=1000;
     $r .= report_helper::report_map(array(
       'dataSource' => $args['report_name'],
       'mode' => 'report',
@@ -433,13 +417,11 @@ idlist=';
       'extraParams' => $extraParams,
       'paramDefaults' => $paramDefaults,
       'reportGroup' => 'verification',
-      'clickableLayersOutputMode' => 'report',
-      'rowId'=>'occurrence_id',
-      'sharing'=>'verification'
+      'clickableLayersOutputMode' => 'report'
     ));
     $r .= '</div>';
     $r .= '<div id="record-details-wrap" class="ui-widget ui-widget-content">';
-    $r .= self::instructions('grid on the left');    
+    $r .= self::instructions('grid below');    
     $r .= '<div id="record-details-content" style="display: none">';
     $r .= '<div id="record-details-toolbar">';
     $r .= '<label>Set status:</label>';
@@ -480,13 +462,12 @@ idlist=';
    */
   private static function instructions($gridpos) {
     $r = '<div id="instructions">'.lang::get('You can').":\n<ul>\n";
-    $r .= '<li>'.lang::get('Select the records to include in the list of records to verify using the drop-down box above the grid.')."</li>\n";
-    $r .= '<li>'.lang::get('Fine tune the list of records by entering search criteria into the boxes at the top of each grid column.')."</li>\n";
+    $r .= '<li>'.lang::get('Use the <strong>Report Parameters</strong> box to filter the list of records to verify.')."</li>\n";
     $r .= '<li>'.lang::get("Click on a record in the $gridpos to view the details.")."</li>\n";
-    $r .= '<li>'.lang::get('When viewing the record details, verify, reject, mark as dubious or email the record details for confirmation.')."</li>\n";
+    $r .= '<li>'.lang::get('When viewing the record details, verify, reject, mark as dubious or email the record to someone for checking.')."</li>\n";
     $r .= '<li>'.lang::get('When viewing the record details, view and add comments on the record.')."</li>\n";    
-    $r .= '<li>'.lang::get('Use the ... button to the left of each record to view bulk-verification options for similar records.')."</li>\n";
-    $r .= '<li>'.lang::get('Use the map tool buttons to draw lines, polygons or points then reload the report using the <strong>Filter</strong> button above the grid.')."</li>\n";
+    $r .= '<li>'.lang::get('When viewing a list of clean records with no verification rule violations, click the <strong>Verify all visible</strong> button to quickly verify records.')."</li>\n";
+    $r .= '<li>'.lang::get('Use the map tool buttons to draw lines, polygons or points then reload the report using the <strong>Run Report</strong> button in the <strong>Report Parameters</strong> box.')."</li>\n";
     $r .= '<li>'.lang::get('Use the <strong>Buffer (m)</strong> input box to buffer your lines, polygons or points to search against.')."</li>\n";
     $r .= '<li>'.lang::get('Use the <strong>Query Map</strong> tool to click on points on the map and view them in the grid. You can also drag boxes to select multiple records.')."</li>\n";
     $r .= '</ul></div>';
@@ -534,14 +515,18 @@ idlist=';
     $indicia_user_id=self::get_indicia_user_id($args);
     $auth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
     // Find a list of websites we are allowed verify
-    $websiteIds = iform_get_allowed_website_ids($auth, 'verification');
+    $websites = data_entry_helper::get_population_data(array(
+      'table'=>'index_websites_website_agreement',
+      'extraParams'=>$auth+array('receive_for_verification'=>'t'),
+    ));
+    $websiteIds = array();
+    foreach ($websites as $website) 
+      $websiteIds[] = $website['to_website_id'];
     if (function_exists('module_exists') && module_exists('easy_login')) {
       if (strpos($args['param_presets'].$args['param_defaults'], 'expertise_location')===false)
         $args['param_presets'].="\nexpertise_location={profile_location_expertise}";
       if (strpos($args['param_presets'].$args['param_defaults'], 'expertise_taxon_groups')===false)
         $args['param_presets'].="\nexpertise_taxon_groups={profile_taxon_groups_expertise}";
-      if (strpos($args['param_presets'].$args['param_defaults'], 'expertise_surveys')===false)
-        $args['param_presets'].="\nexpertise_surveys={profile_surveys_expertise}";
     }
     $opts = array_merge(
         iform_report_get_report_options($args, $auth),
@@ -549,7 +534,7 @@ idlist=';
           'id' => 'verification-grid',
           'reportGroup' => 'verification',
           'rowId' => 'occurrence_id',
-          'paramsFormButtonCaption' => lang::get('Filter'),
+          'paramsFormButtonCaption' => lang::get('Reload Records'),
           'paramPrefix'=>'<div class="report-param">',
           'paramSuffix'=>'</div>',
           'sharing'=>'verification'
@@ -588,7 +573,7 @@ idlist=';
           '  "wmsUrl":"'.data_entry_helper::$geoserver_url."wms\",\n".
           '  "cqlFilter":"website_id IN ('.implode(',',$websiteIds).') AND '.$args['indicia_species_layer_filter_field']."='{filterValue}'\",\n".
           '  "filterField":"'.$args['indicia_species_layer_ds_filter_field']."\",\n".
-          '  "sld":"'.(isset($args['indicia_species_layer_sld']) ? $args['indicia_species_layer_sld'] : '')."\"\n".
+          '  "sld":"'.(isset($args['indicia_species_layer_sld']) ? $args['indicia_species_layer_sld'] : '')."\",\n".
           "};\n";
     }
     if (!empty($args['additional_wms_species_layer_title'])) {
@@ -684,79 +669,80 @@ idlist=';
   /**
    * Ajax handler to provide the content for the details of a single record.
    */
-  public static function ajax_details($website_id, $password, $node) {
-    
-    $details_report = empty($node->params['record_details_report']) ? 'reports_for_prebuilt_forms/verification_3/record_data' : $node->params['record_details_report'];
-    $attrs_report = empty($node->params['record_attrs_report']) ? 'reports_for_prebuilt_forms/verification_3/record_data_attributes' : $node->params['record_attrs_report'];
-    iform_load_helpers(array('report_helper'));
-    $auth = report_helper::get_read_auth($website_id, $password);
-    $options = array(
-      'dataSource' => $details_report,
-      'readAuth' => $auth,
-      'sharing' => 'verification',
-      'extraParams' => array('occurrence_id'=>$_GET['occurrence_id'], 'wantColumns'=>1)
-    );
-    $reportData = report_helper::get_report_data($options);
-    // set some values which must exist in the record
-    $record = array_merge(array(
-        'wkt'=>'','taxon'=>'','sample_id'=>'','date'=>'','entered_sref'=>'','taxon_external_key'=>'','taxon_meaning_id'=>'','record_status'=>'','zero_abundance'=>''
-    ), $reportData['records'][0]);
+  public static function ajax_details($website_id, $password) {
+    iform_load_helpers(array('data_entry_helper'));
+    $auth = data_entry_helper::get_read_auth($website_id, $password);
+    data_entry_helper::load_existing_record($auth, 'occurrence', $_GET['occurrence_id'], 'detail', 'verification');
+    data_entry_helper::load_existing_record($auth, 'sample', data_entry_helper::$entity_to_load['occurrence:sample_id'], 'detail', 'verification');
+    $siteLabels = array();
+    if (!empty(data_entry_helper::$entity_to_load['sample:location'])) $siteLabels[] = data_entry_helper::$entity_to_load['sample:location'];
+    if (!empty(data_entry_helper::$entity_to_load['sample:location_name'])) $siteLabels[] = data_entry_helper::$entity_to_load['sample:location_name'];
     // build an array of all the data. This allows the JS to insert the data into emails etc. Note we
     // use an array rather than an assoc array to build the JSON, so that order is guaranteed.
-    $data = array();
-    foreach($reportData['columns'] as $col=>$def) {
-      if ($def['visible']!=='false' && !empty($record[$col])) {
-        $caption = explode(':', $def['display']);
-        // is this a new heading?
-        if (!isset($data[$caption[0]]))
-          $data[$caption[0]]=array();
-        $data[$caption[0]][] = array('caption'=>$caption[1], 'value'=>$record[$col]);
-      }
-    }
-    
-    // Do the custom attributes
-     $options = array(
-      'dataSource' => $attrs_report,
-      'readAuth' => $auth,
-      'sharing' => 'verification',
-      'extraParams' => array('occurrence_id'=>$_GET['occurrence_id'])
+    $data = array(
+      array('caption'=>lang::get('Species'), 'value'=>data_entry_helper::$entity_to_load['occurrence:taxon']),
+      array('caption'=>lang::get('Date'), 'value'=>data_entry_helper::$entity_to_load['sample:date']),
+      array('caption'=>lang::get('Grid Ref.'), 'value'=>data_entry_helper::$entity_to_load['sample:entered_sref']),
+      array('caption'=>lang::get('Site'), 'value'=>implode(' | ', $siteLabels)),
+      array('caption'=>lang::get('Comment'), 'value'=>data_entry_helper::$entity_to_load['sample:comment']),
+      array('caption'=>lang::get('Record Comment'), 'value'=>data_entry_helper::$entity_to_load['occurrence:comment'])
     );
-    $reportData = report_helper::get_report_data($options);
-    foreach ($reportData as $attribute) {
-      if (!empty($attribute['value'])) {
-        if (!isset($data[$attribute['attribute_type']]))
-          $data[$attribute['attribute_type']]=array();
-        $data[$attribute['attribute_type']][] = array('caption'=>$attribute['caption'], 'value'=>$attribute['value']);
-      }
+    $smpAttrs = data_entry_helper::getAttributes(array(
+        'id' => data_entry_helper::$entity_to_load['sample:id'],
+        'valuetable'=>'sample_attribute_value',
+        'attrtable'=>'sample_attribute',
+        'key'=>'sample_id',
+        'extraParams'=>$auth,
+        'survey_id'=>data_entry_helper::$entity_to_load['occurrence:survey_id']
+    ), true, 'verification');
+    if (!empty(data_entry_helper::$entity_to_load['sample:parent_id'])) {
+      $parentAttrs = data_entry_helper::getAttributes(array(
+        'id' => data_entry_helper::$entity_to_load['sample:parent_id'],
+        'valuetable'=>'sample_attribute_value',
+        'attrtable'=>'sample_attribute',
+        'key'=>'sample_id',
+        'extraParams'=>$auth,
+        'survey_id'=>data_entry_helper::$entity_to_load['occurrence:survey_id']
+      ), true, 'verification');
+    } else
+      $parentAttrs = array();
+    $occAttrs = data_entry_helper::getAttributes(array(
+        'id' => $_GET['occurrence_id'],
+        'valuetable'=>'occurrence_attribute_value',
+        'attrtable'=>'occurrence_attribute',
+        'key'=>'occurrence_id',
+        'extraParams'=>$auth,
+        'survey_id'=>data_entry_helper::$entity_to_load['occurrence:survey_id']
+    ), true, 'verification');
+    $attributes = array_merge($parentAttrs, $smpAttrs, $occAttrs);
+    foreach($attributes as $attr) {
+      $data[] = array('caption'=>lang::get($attr['caption']), 'value'=>$attr['displayValue']);
     }
     
     $r = "<table>\n";
-    $r .= '<tr><td class="caption">'.lang::get('Status').'</td><td class="status status-'.$record['record_status'].'">';
-    $r .= self::statusLabel($record['record_status']);
-    if ($record['zero_abundance']==='t')
+    $status = data_entry_helper::$entity_to_load['occurrence:record_status'];
+    $r .= '<tr><td><strong>'.lang::get('Status').'</strong></td><td class="status status-'.$status.'">';
+    $r .= self::statusLabel($status);
+    if (data_entry_helper::$entity_to_load['occurrence:zero_abundance']==='t')
       $r .= '<br/>' . lang::get('This is a record indicating absence.');
     $r .= "</td></tr>\n";
     $email='';
-    foreach($data as $heading=>$items) {
-      $r .= "<tr><td colspan=\"2\" class=\"header\">$heading</td></tr>\n";
-      foreach ($items as $item) {
-        if (!is_null($item['value']) && $item['value'] != '') {
-          $r .= "<tr><td class=\"caption\">".$item['caption']."</td><td>".$item['value'] ."</td></tr>\n";
-          if (strtolower($item['caption'])==='email' || strtolower($item['caption'])==='email address')
-            $email=$item['value'];
-        }
+    foreach($data as $item) {
+      if (!is_null($item['value']) && $item['value'] != '') {
+        $r .= "<tr><td><strong>".$item['caption']."</strong></td><td>".$item['value'] ."</td></tr>\n";
+        if (strtolower($item['caption'])==='email' || strtolower($item['caption'])==='email address')
+          $email=$item['value'];
       }
     }
     $r .= "</table>\n";
-    
     $additional=array();
-    $additional['wkt'] = $record['wkt'];
-    $additional['taxon'] = $record['taxon'];
-    $additional['sample_id'] = $record['sample_id'];
-    $additional['date'] = $record['date'];
-    $additional['entered_sref'] = $record['entered_sref'];
-    $additional['taxon_external_key'] = $record['taxon_external_key'];
-    $additional['taxon_meaning_id'] = $record['taxon_meaning_id'];
+    $additional['wkt'] = data_entry_helper::$entity_to_load['occurrence:wkt'];
+    $additional['taxon'] = data_entry_helper::$entity_to_load['occurrence:taxon'];
+    $additional['sample_id'] = data_entry_helper::$entity_to_load['occurrence:sample_id'];
+    $additional['date'] = data_entry_helper::$entity_to_load['sample:date'];
+    $additional['entered_sref'] = data_entry_helper::$entity_to_load['sample:entered_sref'];
+    $additional['taxon_external_key'] = data_entry_helper::$entity_to_load['occurrence:taxon_external_key'];
+    $additional['taxon_meaning_id'] = data_entry_helper::$entity_to_load['occurrence:taxon_meaning_id'];
     $additional['recorder_email'] = $email;
     header('Content-type: application/json');
     echo json_encode(array(
@@ -803,7 +789,7 @@ idlist=';
     ));
     $r = '';
     if (count($images)===0) 
-      $r .= lang::get('No images found for this record');
+      $r .= lang::get('No images found for this record '.$_GET['occurrence_id']);
     else {
       $path = data_entry_helper::get_uploaded_image_folder();
       $r .= '<ul class="gallery">';
@@ -812,7 +798,6 @@ idlist=';
             $image['path'].'"/>'.'<br/>'.$image['caption'].'</a></li>';
       }
       $r .= '</ul>';
-      $r .= '<p>'.lang::get('Click on image thumbnails to view full size').'</p>';
     }
     $r .= '<script type="text/javascript">$("a.fancybox").fancybox();</script>';
     return $r;
@@ -906,12 +891,12 @@ idlist=';
       'dataSource' => 'library/months/phenology',
       'readAuth' => $auth,
       'extraParams' => $extraParams,
-      'sharing'=>'verification'
+      'sharing'=>'reporting'
     ));
     // must output all months
-    $output = array(array(1,0),array(2,0),array(3,0),array(4,0),array(5,10),array(6,0),array(7,0),array(8,0),array(9,0),array(10,0),array(11,0),array(12,0));
+    $output = array(0,0,0,0,0,0,0,0,0,0,0,0);
     foreach ($data as $month)
-      $output[$month['name']][1] = intval($month['value']);
+      $output[$month['name']] = intval($month['value']);
     echo json_encode($output);
   } 
   
@@ -925,6 +910,7 @@ idlist=';
     $url = data_entry_helper::$base_url."index.php/services/data_utils/bulk_verify";
     $params = array_merge($_POST, $auth['write_tokens']);
     $response = data_entry_helper::http_post($url, $params);
+    watchdog('response', print_r($response, true));
     echo $response['output'];
   }
   

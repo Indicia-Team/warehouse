@@ -30,7 +30,6 @@ global $custom_terms;
 // TBD translations for report grid headings.
 $custom_terms = array(
 // Tab Titles
-	'LANG_no_permissions' => "Vous devez être un utilisateur enregistré ou d'un administrateur agréé de ce formulaire pour voir ce contenu.",
 	'LANG_Main_Samples_Tab' => 'Echantillons',
 	'LANG_Download' => 'Reports',
 	'LANG_Locations' => 'Sites',
@@ -62,7 +61,6 @@ $custom_terms = array(
 	'Existing locations' => 'Sites existants',
 	'LANG_Location_Label' => 'Location',
 	'LANG_Location_Name' => 'Nom du site',
-	'LANG_Multiple_Location_Types' => 'Certains sites sont mis en évidence en rouge car ils ne sont pas encore confirmée par un utilisateur Admin.',
 	'Create New Location' => 'Créer un nouvel emplacement',
 	'LANG_Location_Name_Blank_Text' => 'Choisissez un site',
 	'SRef'=>'Coordonnées',
@@ -75,8 +73,7 @@ $custom_terms = array(
 	'LANG_CommonInstructions1'=>'Choose a square (5x5km). This square will then be displayed on the map, along with all existing sites associated with that square.',
 	'LANG_CommonParentLabel'=>'Square (5x5km)',
 	'LANG_CommonParentBlank'=>'Choose a square',
-	'LANG_LocModTool_Instructions2'=>"Pour choisir un site, sélectionnez l'outil de sélection et cliquez sur le site sur la carte ou sélectionnez le site dans la liste ci-dessous. Vous pouvez ensuite modifier des attributs de ce site ou les références spatiales de ce site. Vous pouvez déplacer les points sélectionnés. Pour supprimer un point, placez la souris sur le point et pressez sur la touche « Delete » ou « d » de votre clavier.",
-	'LANG_LocModTool_CantCreate' => "Vous ne pouvez pas créer de nouveaux sites via ce formulaire, mais uniquement modifier des sites existant.",
+	'LANG_LocModTool_Instructions2'=>"Pour choisir un site, sélectionnez l'outil de sélection et cliquez sur le site sur la carte ou sélectionnez le site dans la liste ci-dessous. Vous pouvez ensuite modifier des attributs de ce site ou les références spatiales de ce site. Vous pouvez déplacer les points sélectionnés. Pour supprimer un point, placez la souris sur le point et pressez sur la touche « Delete » ou « d » de votre clavier.<br />Vous ne pouvez pas créer de nouveaux sites via ce formulaire, mais uniquement modifier des sites existant.",
 	'LANG_DE_Instructions2'=>"Pour choisir un site, sélectionnez l'outil de sélection et cliquez sur le site sur la carte ou sélectionnez le site dans la liste ci-dessous.<br />Vous pouvez ajouter un nouveau site : cliquez sur le bouton « Créer un nouveau site » sur la carte, sélectionnez l'outil « Ajouter un/des point(s) au site » et dessinez le site sur la carte. Chaque site peut être composé de plusieurs points. Vous pouvez également déplacer les points sélectionnés. Pour supprimer un point, placez la souris sur le point et pressez sur la touche « Delete » ou « d » de votre clavier.<br />Le fait de sélectionner un site existant supprimera toutes les informations relatives à un nouveau site.<br />Il n'est possible de modifier les détails d'un site existant via ce formulaire d'encodage que si vous êtes administrateur ou si vous êtes la seule personne à avoir encodé des données relatives à ce site.",
 	'LANG_LocModTool_IDLabel'=>'Ancien nom du site',
 	'LANG_DE_LocationIDLabel'=>'Site',

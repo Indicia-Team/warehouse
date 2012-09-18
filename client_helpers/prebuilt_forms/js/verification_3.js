@@ -1,25 +1,11 @@
-var occurrence_id = null, current_record = null, urlSep, validator, speciesLayers = [];
+var mapDiv = null, occurrence_id = null, current_record = null, urlSep, validator, speciesLayers = [];
 var email = {to:'', subject:'', body:'', type:''};
-
-// IE7 compatability
-if(!Array.indexOf){
-  Array.prototype.indexOf = function(obj){
-    var i;
-    for(i=0; i<this.length; i++){
-      if(this[i]===obj){
-        return i;
-      }
-    }
-  };
-}
 
 function selectRow(tr) {
   // The row ID is row1234 where 1234 is the occurrence ID. 
   if (tr.id.substr(3)===occurrence_id) {
     return;
   }
-  // while we are loading, disable the toolbar
-  $('#record-details-toolbar *').attr('disabled', 'disabled');
   occurrence_id = tr.id.substr(3);
   // make it clear things are loading
   $('#chart-div').css('opacity',0.15);
@@ -42,22 +28,22 @@ function selectRow(tr) {
         showTab();
         // remove any wms layers for species or the gateway data
         $.each(speciesLayers, function(idx, layer) {
-          indiciaData.mapdiv.map.removeLayer(layer);
+          mapDiv.map.removeLayer(layer);
         });
         speciesLayers = [];
-        var layer, thisSpLyrSettings, filter, skip;
+        var layer, thisSpSettings, filter, skip;
         if (typeof indiciaData.wmsSpeciesLayers!=="undefined" && data.additional.taxon_external_key!==null) {
           $.each(indiciaData.wmsSpeciesLayers, function(idx, layerDef) {
             thisSpLyrSettings = $.extend({}, layerDef.settings);
             // replace values with the extrnal key if the token is used
             $.each(thisSpLyrSettings, function(prop, value) {
-              if (typeof(value)==='string' && $.trim(value)==='{external_key}') {
+              if (typeof(value)=='string' && $.trim(value)==='{external_key}') {
                 thisSpLyrSettings[prop]=data.additional.taxon_external_key;
               }
             });
             layer = new OpenLayers.Layer.WMS(layerDef.title, layerDef.url.replace('{external_key}', data.additional.taxon_external_key), 
                 thisSpLyrSettings, layerDef.olSettings);
-            indiciaData.mapdiv.map.addLayer(layer);
+            mapDiv.map.addLayer(layer);
             speciesLayers.push(layer);
           });
         }
@@ -66,7 +52,7 @@ function selectRow(tr) {
           layer = new OpenLayers.Layer.WMS(indiciaData.indiciaSpeciesLayer.title, indiciaData.indiciaSpeciesLayer.wmsUrl, 
               {layers: indiciaData.indiciaSpeciesLayer.featureType, transparent: true, CQL_FILTER: filter, STYLES: indiciaData.indiciaSpeciesLayer.sld},
               {isBaseLayer: false, sphericalMercator: true, singleTile: true, opacity: 0.5});
-          indiciaData.mapdiv.map.addLayer(layer);
+          mapDiv.map.addLayer(layer);
           speciesLayers.push(layer);
         }
       }
@@ -78,13 +64,13 @@ function getAttributeValue(caption) {
   //returns the value of the attribute in the current_record.data with the caption supplied
  var r = '';
  $.each(current_record.data, function(){
-    if (this.caption === caption) {
+    if (this.caption == caption) {
       //found attribute
-      r = this.value;
+      r = this.value
       return false;
     }
   });
-  return r;
+  return r
 }
 
 /** 
@@ -92,7 +78,8 @@ function getAttributeValue(caption) {
  * visual indicators of the record's status.
  */
 function postOccurrence(occ) {
-  var status = occ['occurrence:record_status'], id=occ['occurrence:id'];
+  var status = occ['occurrence:record_status'];
+  var id=occ['occurrence:id'];
   $.post(
     indiciaData.ajaxFormPostUrl,
     occ,
@@ -103,14 +90,14 @@ function postOccurrence(occ) {
       $('#row' + id + ' td:first div, #details-tab td').removeClass('status-I');
       $('#row' + id + ' td:first div, #details-tab td').removeClass('status-T');
       $('#row' + id + ' td:first div, #details-tab td.status').addClass('status-' + status);
-      var text = indiciaData.statusTranslations[status], nextRow;
+      var text = indiciaData.statusTranslations[status];
       $('#details-tab td.status').html(text);
-      if (indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] === 'details' ||
-          indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] === 'comments') {
+      if (indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] == 'details' ||
+          indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] == 'comments') {
         $('#record-details-tabs').tabs('load', $('#record-details-tabs').tabs('option', 'selected'));
       }
       if (indiciaData.autoDiscard) {
-        nextRow = $('#row' + id).next();
+        var nextRow = $('#row' + id).next();
         $('#row' + id).remove();
         if (nextRow.length>0) {
           selectRow(nextRow[0]);
@@ -172,15 +159,15 @@ function buildRecorderConfirmationEmail() {
 
 function buildRecorderEmail(status, comment)
 {
-  if (status === 'V') {
+  if (status == 'V') {
     email.subject = indiciaData.email_subject_verified;
     email.body = indiciaData.email_body_verified;
   }
-  else if (status === 'R') {
+  else if (status == 'R') {
     email.subject = indiciaData.email_subject_rejected;
     email.body = indiciaData.email_body_rejected;
   }
-  else if (status === 'D') {
+  else if (status == 'D') {
     email.subject = indiciaData.email_subject_dubious;
     email.body = indiciaData.email_body_dubious;
   }
@@ -223,10 +210,10 @@ function processEmail(){
     email.subject = $('#email-subject').val();
     email.body = $('#email-body').val();
 
-    if (email.type === 'recordCheck') {
+    if (email.type == 'recordCheck') {
     // ensure images are loaded
     $.ajax({
-      url: indiciaData.ajaxUrl + '/imagesAndComments/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id,
+      url: indiciaData.ajaxUrl + '/imagesAndComments' + urlSep + 'occurrence_id=' + occurrence_id,
       async: false,
       dataType: 'json',
       success: function (response) {
@@ -306,7 +293,7 @@ function saveComment() {
 function saveVerifyComment() {
   var status = $('#set-status').val(),
     comment = indiciaData.statusTranslations[status],
-    data, sendEmail = false;
+    data;
   if ($('#verify-comment').val()!=='') {
     comment += ".\n" + $('#verify-comment').val();
   }  
@@ -321,14 +308,15 @@ function saveVerifyComment() {
   postOccurrence(data);
   
   //Does the recorder email option exist?
+  var sendEmail = false
   if (indiciaData.email_request_attribute !== '') {
     //Find attribute to see if recorder wants email confirmation
-    if (getAttributeValue(indiciaData.email_request_attribute) === 1) {
+    if (getAttributeValue(indiciaData.email_request_attribute) == 1) {
       sendEmail = true;
       buildRecorderEmail(status, comment);
     }
   }
-  if (!sendEmail) {$.fancybox.close();}
+  if (!sendEmail) $.fancybox.close();
 
 }
 
@@ -345,19 +333,48 @@ function showTab() {
         function (data) {
           $('#chart-div').empty();
           $.jqplot('chart-div', [data], {
-            seriesDefaults:{renderer:$.jqplot.LineRenderer, rendererOptions:[]}, legend:[], series:[],
-            axes:{
-              "xaxis":{"label":indiciaData.str_month,"showLabel":true,"renderer":$.jqplot.CategoryAxisRenderer,"ticks":["1","2","3","4","5","6","7","8","9","10","11","12"]},
-              "yaxis":{"min":0}
-            }
+            seriesDefaults:{renderer:$.jqplot.BarRenderer, rendererOptions:[]}, legend:[], series:[],
+            axes:{"xaxis":{"label":indiciaData.str_month,"showLabel":true,"renderer":$.jqplot.CategoryAxisRenderer,"ticks":["1","2","3","4","5","6","7","8","9","10","11","12"]},"yaxis":{"min":0}}
           });
           $('#chart-div').css('opacity',1);
         }
       );
     }
-    // make it clear things are loading
-    if (indiciaData.mapdiv !== null) {
-      $(indiciaData.mapdiv).css('opacity', current_record.additional.wkt===null ? 0.1 : 1);
+    if (mapDiv !== null) {
+      // Ensure the current record is centred and highlighted on the map.
+      if (current_record.additional.wkt!==null) {
+        var parser = new OpenLayers.Format.WKT(),
+          feature = parser.read(current_record.additional.wkt),
+          c,
+          lastFeature;
+        if (mapDiv.map.projection.getCode() != 'EPSG:3857') {
+          feature.geometry = feature.geometry.transform(new OpenLayers.Projection('EPSG:3857'), mapDiv.map.projection);
+        }
+        // Make the current record marker obvious
+        var style = $.extend({}, mapDiv.map.editLayer.styleMap.styles['default']['defaultStyle'], {fillOpacity: 0.5, fillColor: '#0000FF'});
+        feature.style=style;
+        feature.tag='currentRecord';
+        mapDiv.map.editLayer.addFeatures([feature]);
+        c = feature.geometry.getCentroid();
+        mapDiv.map.setCenter(new OpenLayers.LonLat(c.x, c.y));
+        // default is to show approx 100m of map
+        var maxDimension=100;
+        if (feature.geometry.CLASS_NAME!=='OpenLayers.Geometry.Point') {
+          var bounds = feature.geometry.bounds;
+          maxDimension = Math.max(bounds.right-bounds.left, bounds.top-bounds.bottom)*4;
+        }
+        mapDiv.map.zoomTo(mapDiv.map.getZoomForExtent(new OpenLayers.Bounds(0, 0, maxDimension, maxDimension)));
+        $(mapDiv).css('opacity', 1);
+      } else {
+        $(mapDiv).css('opacity', 0.1);
+      }
+      var toRemove=[];
+      $.each(mapDiv.map.editLayer.features, function(idx, feature) {
+        if (feature.tag==='currentRecord') {
+          toRemove.push(feature);
+        }
+      });
+      mapDiv.map.editLayer.removeFeatures(toRemove, {});
     }
   }
 }
@@ -373,6 +390,7 @@ function setStatus(status) {
 }
 
 mapInitialisationHooks.push(function (div) {
+  mapDiv = div;
   div.map.editLayer.style = null;
   div.map.editLayer.styleMap = new OpenLayers.StyleMap({
     'default': {
@@ -392,6 +410,7 @@ $(document).ready(function () {
   $('table.report-grid tbody').click(function (evt) {
     // Find the appropriate separator for AJAX url params - depends on clean urls setting.
     urlSep = indiciaData.ajaxUrl.indexOf('?') === -1 ? '?' : '&';
+    $('#record-details-toolbar *').attr('disabled', 'disabled');
     selectRow($(evt.target).parents('tr')[0]);
     if ($(evt.target).hasClass('quick-verify')) {
       var visibleIdx=0, userColIdx, taxonColIdx, userVal, taxonVal, row=$(evt.target).parents('tr:first')[0], popupHtml;

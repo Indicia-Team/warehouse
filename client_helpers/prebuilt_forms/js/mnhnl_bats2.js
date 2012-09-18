@@ -21,7 +21,7 @@
   the newly added rows.
  */
 var addRowToGridSequence = 1000; // this should be more than the length of the initial taxon list
-function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth, formatter, duplicateMsg, max) {
+function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth, formatter, duplicateMsg) {
   // inner function to handle a selection of a taxon from the autocomplete
   var handleSelectedTaxon = function(event, data) {
     var myClass='scMeaning-'+data.taxon_meaning_id;
@@ -30,24 +30,22 @@ function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth
       $(event.target).val('');
       return;
     }
+    addRowToGridSequence++;
     var rows=$('#'+gridId + '-scClonable').find('tr');
     var newRows=[];
     rows.each(function(){newRows.push($(this).clone(true))})
     var taxonCell=newRows[0].find('td:eq(1)');
     // Replace the tags in the row template with the taxa_taxon_list_ID
     $.each(newRows, function(i, row) {
-      addRowToGridSequence++;
       row.addClass('added-row').addClass(myClass).removeClass('scClonableRow').attr('id','');
-      row.find('.scPresence').val('1');
       $.each(row.children(), function(j, cell) {
         cell.innerHTML = cell.innerHTML.replace(/-ttlId-:/g, data.id+':y'+addRowToGridSequence);
       }); 
       row.appendTo('#'+gridId);
     }); 
+    newRows[0].find('.scPresenceCell input').attr('name', 'sc:' + data.id + ':y'+addRowToGridSequence+':present').attr('checked', 'checked');
     $(event.target).val('');
     formatter(data,taxonCell);
-    // we have added a row, so no_record is no longer applicable.
-    $('.no_record').removeAttr('checked').attr('disabled','disabled').next().filter('.inline-error').remove();
   };
 
     // Attach auto-complete code to the input
@@ -61,7 +59,6 @@ function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth
         nonce: readAuth.nonce,
         taxon_list_id: lookupListId
       },
-      max : max,
       parse: function(data) {
         var results = [];
         jQuery.each(data, function(i, item) {
@@ -95,22 +92,19 @@ $('.remove-row').live('click', function(e) {
     for(var i=1;i<numRows;i++) row.next().remove();
     row.remove();
   } else {
-    // This was a pre-existing occurrence so we can't just delete the row from the grid.
+    // This was a pre-existing occurrence so we can't just delete the row from the grid. Grey it out
+    // Use the presence checkbox to remove the taxon, even if the checkbox is hidden.
+    // Hide the checkbox so this can't be undone
+    row.find('.scPresence').attr('checked',false).css('display','none');
     var considerRow = row;
     for(var i=0;i<numRows;i++){
       // disable or remove all other active controls from the row.
       // Do NOT disable the presence checkbox or the container td, otherwise it is not submitted.
-      considerRow.find('.scPresence').val('0');
+      considerRow.addClass('deleted-row').css('opacity',0.25);
       considerRow.find('*:not(.scPresence,.scPresenceCell)').attr('disabled','disabled').removeClass('required ui-state-error').filter('input,select').val('').width('');
       considerRow.find('a').remove();
       considerRow.find('.deh-required,.inline-error').remove();
-      considerRow.addClass('deleted-row').hide();
       considerRow= considerRow.next();
     }
   }
-  // now update the no_record checkbox if none left.
-  if(jQuery('.scPresence').filter('[value=1]').length == 0){
-    jQuery('.no_record').filter(':checkbox').removeAttr('disabled');
-  }
-
 });

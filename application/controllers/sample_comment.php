@@ -60,6 +60,8 @@ class Sample_comment_Controller extends Gridview_Base_Controller
   protected function getDefaults() {
     $r = parent::getDefaults();
     if ($this->uri->method(false)=='create') {
+      // occurrence id is passed as first argument in URL when creating. But the image
+      // gets linked by meaning, so fetch the meaning_id.
       $r['sample:id'] = $this->uri->argument(1);
       $r['sample_comment:sample_id'] = $this->uri->argument(1);
     }
@@ -90,7 +92,7 @@ class Sample_comment_Controller extends Gridview_Base_Controller
       // creating a new one so our argument is the sample id
       $sample_id = $this->uri->argument(1);
     }
-    $sampleTitle = ORM::Factory('sample', $sample_id)->caption();
+    $occurrenceTitle = ORM::Factory('sample', $sample_id)->caption();
     $this->page_breadcrumbs[] = html::anchor('sample/edit/'.$sample_id.'?tab=Comments', $sampleTitle);
     $this->page_breadcrumbs[] = $this->model->caption();
   }

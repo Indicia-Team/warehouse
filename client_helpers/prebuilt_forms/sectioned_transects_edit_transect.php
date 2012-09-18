@@ -41,7 +41,6 @@ class iform_sectioned_transects_edit_transect {
    * @var string The Url to post AJAX form saves to.
    */
   private static $ajaxFormUrl = null;
-  private static $ajaxFormSampleUrl = null;
   
   /** 
    * Return the form metadata. 
@@ -66,16 +65,10 @@ class iform_sectioned_transects_edit_transect {
         iform_map_get_georef_parameters(),
         array(
           array(
-            'name'=>'managerPermission',
-            'caption'=>'Drupal Permission for Manager mode',
-            'description'=>'Enter the Drupal permission name to be used to determine if this user is a manager. Entering this will allow the identified users to delete or modify the site even there are walks (samples) associated with it.',
-            'type'=>'string',
-            'required' => false
-          ), array(
             'name' => 'maxSectionCount',
-            'label' => 'Max. Section Count',
+            'label' => lang::get('Max. Section Count'),
             'type' => 'text_input',
-            'description' => 'The maximum number of sections a user is allowed to create for a transect site.',
+            'description' => lang::get('The maximum number of sections a user is allowed to create for a transect site.'),
             'group' => 'Transects Editor Settings'
           ), array(
             'name'=>'survey_id',
@@ -100,13 +93,14 @@ class iform_sectioned_transects_edit_transect {
             'group'=>'Transects Editor Settings',
             'siteSpecific'=>true,
             'required'=>false
-          ), array(
+          ),
+          array(
             'name'=>'spatial_systems',
             'caption'=>'Allowed Spatial Ref Systems',      
             'description'=>'List of allowable spatial reference systems, comma separated. Use the spatial ref system code (e.g. OSGB or the EPSG code number such as 4326).',
             'type'=>'string',
             'group'=>'Other Map Settings'
-          )
+          ),
         )
     );
   }
@@ -128,7 +122,6 @@ class iform_sectioned_transects_edit_transect {
     iform_load_helpers(array('map_helper'));
     data_entry_helper::add_resource('jquery_form');
     self::$ajaxFormUrl = iform_ajaxproxy_url($node, 'location');
-    self::$ajaxFormSampleUrl = iform_ajaxproxy_url($node, 'sample');
     if (function_exists('url')) {
       $args['section_edit_path'] = url($args['section_edit_path']);
     }
@@ -158,10 +151,6 @@ class iform_sectioned_transects_edit_transect {
         'location_type_id' => $settings['locationTypes'][1]['id'],
         'multiValue' => true
     ));
-    if (false==$settings['cmsUserAttr'] = extract_cms_user_attr($settings['attributes']))
-      return 'This form is designed to be used with the CMS User ID attribute setup for locations in the survey.';
-    // keep a copy of the location_attribute_id so we can use it later.
-    self::$cmsUserAttrId = $settings['cmsUserAttr']['attributeId'];
     data_entry_helper::$javascript .= "indiciaData.sections = {};\n";
     $settings['sections']=array();
     if ($settings['locationId']) {
@@ -169,11 +158,9 @@ class iform_sectioned_transects_edit_transect {
       // find the number of sections attribute.
       foreach($settings['attributes'] as $attr) {
         if ($attr['caption']==='No. of sections') {
-          $settings['numSectionsAttr'] = $attr['fieldname'];
           for ($i=1; $i<=$attr['displayValue']; $i++) {
             $settings['sections']["S$i"]=null;
           }
-          data_entry_helper::$javascript .= "$('#".str_replace(':','\\\\:',$attr['id'])."').attr('min',".$attr['displayValue'].").attr('max',".$args['maxSectionCount'].");\n";
         }
       }
       $sections = data_entry_helper::get_population_data(array(
@@ -186,26 +173,11 @@ class iform_sectioned_transects_edit_transect {
         data_entry_helper::$javascript .= "indiciaData.sections.$code = {'geom':'".$section['boundary_geom']."','id':'".$section['id']."'};\n";
         $settings['sections'][$code]=$section;
       }
-      $settings['walks'] = data_entry_helper::get_population_data(array(
-        'table' => 'sample',
-        'extraParams' => $auth['read'] + array('view'=>'detail','location_id'=>$settings['locationId'],'deleted'=>'f'),
-        'nocache' => true
-      ));
-      // only set cantEdit if you can't, otherwise is not present
-      if(!(
-           (isset($args['managerPermission']) && $args['managerPermission']!="" && user_access($args['managerPermission'])) ||
-           (count($settings['walks']) == 0)
-          )){
-        $settings['cantEdit'] = true;
-      }
-    } else {
-      foreach($settings['attributes'] as $attr) {
-        if ($attr['caption']==='No. of sections') {
-          $settings['numSectionsAttr'] = $attr['fieldname'];
-          data_entry_helper::$javascript .= "$('#".str_replace(':','\\\\:',$attr['id'])."').attr('min',1).attr('max',".$args['maxSectionCount'].");\n";
-        }
-      }
     }
+    if (false==$settings['cmsUserAttr'] = extract_cms_user_attr($settings['attributes']))
+      return 'This form is designed to be used with the CMS User ID attribute setup for locations in the survey.';
+    // keep a copy of the location_attribute_id so we can use it later.
+    self::$cmsUserAttrId = $settings['cmsUserAttr']['attributeId'];
     $r .= '<div id="controls">';
     $headerOptions = array('tabs'=>array('#site-details'=>lang::get('Site Details')));
     if ($settings['locationId']) {
@@ -239,14 +211,11 @@ class iform_sectioned_transects_edit_transect {
     }
     // Inform JS where to post data to for AJAX form saving
     data_entry_helper::$javascript .= 'indiciaData.ajaxFormPostUrl="'.self::$ajaxFormUrl."\";\n";
-    data_entry_helper::$javascript .= 'indiciaData.ajaxFormPostSampleUrl="'.self::$ajaxFormSampleUrl."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.website_id="'.$args['website_id']."\";\n";
     data_entry_helper::$javascript .= "indiciaData.indiciaSvc = '".data_entry_helper::$base_url."';\n";
     data_entry_helper::$javascript .= "indiciaData.readAuth = {nonce: '".$auth['read']['nonce']."', auth_token: '".$auth['read']['auth_token']."'};\n";    
     data_entry_helper::$javascript .= "indiciaData.currentSection = '';\n";
     data_entry_helper::$javascript .= "indiciaData.sectionTypeId = '".$settings['locationTypes'][1]['id']."';\n";
-    data_entry_helper::$javascript .= "indiciaData.sectionDeleteConfirm = \"".lang::get('Are you sure you wish to delete section')."\";\n";
-    data_entry_helper::$javascript .= "indiciaData.numSectionsAttrName = \"".$settings['numSectionsAttr']."\";\n";
     data_entry_helper::$javascript .= "selectSection('S1', true);\n";
     return $r;
   }
@@ -288,14 +257,8 @@ class iform_sectioned_transects_edit_transect {
     $r .= data_entry_helper::text_input(array(
       'fieldname' => 'location:name',
       'label' => lang::get('Transect Name'),
-      'class' => 'control-width-4 required',
-      'disabled' => isset($settings['cantEdit']) ? ' disabled="disabled" ' : ''
+      'class' => 'control-width-4 required'
     ));
-    if (isset($settings['cantEdit'])){
-      $r .= '<p>'.lang::get('This site cannot be edited because there are walks recorded on it. Please contact the site administrator if you think there are details which need changing.').'</p>';
-    } else if(count($settings['walks']) > 0 && (isset($args['managerPermission']) && $args['managerPermission']!="" && user_access($args['managerPermission']))) {
-      $r .= '<p>'.lang::get('This site has walks recorded on it. Please do not change the site details without considering the impact on the existing data.').'</p>';
-    }
     $list = explode(',', str_replace(' ', '', $args['spatial_systems']));
     foreach($list as $system) {
       $systems[$system] = lang::get($system);
@@ -306,14 +269,7 @@ class iform_sectioned_transects_edit_transect {
       'label' => 'Grid Ref.',
       'systems' => $systems,
       'class' => 'required',
-      'helpText' => lang::get('Click on the map to set the central grid reference.'),
-      'disabled' => isset($settings['cantEdit']) ? ' disabled="disabled" ' : ''
-    ));
-    $r .= data_entry_helper::text_input(array(
-      'fieldname' => 'location:code',
-      'label' => lang::get('Site Code'),
-      'class' => 'control-width-4',
-      'disabled' => ' readonly="readonly" '
+      'helpText' => lang::get('Click on the map to set the central grid reference.')      
     ));
     
     // setup the map options
@@ -322,7 +278,7 @@ class iform_sectioned_transects_edit_transect {
     $bottom = '';
     $bottomBlocks = explode("\n", isset($args['bottom_blocks']) ? $args['bottom_blocks'] : '');
     foreach ($bottomBlocks as $block) {
-      $bottom .= get_attribute_html($settings['attributes'], $args, array('extraParams'=>$auth['read'], 'disabled' => isset($settings['cantEdit']) ? ' disabled="disabled" ' : ''), $block);
+      $bottom .= get_attribute_html($settings['attributes'], $args, array('extraParams'=>$auth['read']), $block);
     }
     // other blocks to go at the top, next to the map
     $r .= get_attribute_html($settings['attributes'], $args, array('extraParams'=>$auth['read'])); 
@@ -342,73 +298,44 @@ class iform_sectioned_transects_edit_transect {
       ));
     }
     $olOptions = iform_map_get_ol_options($args);
-    if (isset($settings['cantEdit']))
-      $options['clickForSpatialRef']=false;
     $r .= map_helper::map_panel($options, $olOptions);
     $r .= '</div></div>'; // right    
     if (!empty($bottom))
       $r .= $bottom;
     if (user_access('indicia data admin'))
       $r .= self::get_user_assignment_control($auth['read'], $settings['cmsUserAttr'], $args);
-    else if (!$settings['locationId']) {
+    elseif (!$settings['locationId']) {
       // for a new record, we need to link the current user to the location if they are not admin.
       global $user;
       $r .= '<input type="hidden" name="locAttr:'.self::$cmsUserAttrId.'" value="'.$user->uid.'">';
     }
-    if (!isset($settings['cantEdit']))
-      $r .= '<input type="submit" value="'.lang::get('Save').'" class="form-button right" />';
-    
-    if(!isset($settings['cantEdit']) && $settings['locationId'])
-      $r .= '<input type="button" class="form-button right" value="'.lang::get('Delete').'">' ;
+    $r .= '<input type="submit" value="'.lang::get('Save').'" class="form-button right" />';
     $r .='</form>';
     $r .= '</div>'; // site-details
     // This must go after the map panel, so it has created its toolbar
     data_entry_helper::$onload_javascript .= "$('#current-section').change(selectSection);\n";
-    if(!isset($settings['cantEdit']) && $settings['locationId']) {
-      $r .= "<div style=\"display:none\" />
-<form id=\"form-delete-location\" method=\"POST\">".$auth['write']."
-<input type=\"hidden\" name=\"website_id\" value=\"".$args['website_id']."\" />
-<input type=\"hidden\" name=\"survey_id\" value=\"".$args['survey_id']."\" />
-<input type=\"hidden\" name=\"location:id\" value=\"".$settings['locationId']."\" />
-<input type=\"hidden\" name=\"location:deleted\" value=\"t\" />
-</form>
-</div>";
-      $walkIDs = array();
-      foreach($settings['walks'] as $walk) $walkIDs[] = $walk['id'];
-      data_entry_helper::$javascript .= "
-deleteSurvey = function(sampleID){
-  if(confirm(\"".(count($settings['walks']) > 0 ? count($settings['walks']).' '.lang::get('walks will be flagged as deleted when you delete this location.').' ' : '').lang::get('Are you sure you wish to delete this location?')."\")){
-    deleteWalks([".implode(',',$walkIDs)."]);
-    jQuery('#form-delete-location').submit();
-  };
-};";
-    }
     return $r;
   }
   
   private static function get_your_route_tab($auth, $args, $settings) {
     $r = '<div id="your-route" class="ui-helper-clearfix">';
+    $selector .= self::section_selector($settings, 'section-select-route');
     $olOptions = iform_map_get_ol_options($args);
     $options = iform_map_get_map_options($args, $auth['read']);
     $options['divId'] = 'route-map';
     $options['toolbarDiv'] = 'top';
     $options['tabDiv']='your-route';
-    if (!isset($settings['cantEdit'])){
-      $options['toolbarPrefix'] = self::section_selector($settings, 'section-select-route');
-      if(count($settings['sections'])>1) // do not allow deletion of last section.
-        $options['toolbarSuffix'] = '<input type="button" value="'.lang::get('Delete').'" class="remove-section form-button right" title="'.lang::get('Remove the highlighted section. The form will be reloaded after the section is deleted.').'">';
-      // also let the user click on a feature to select it. The highlighter just makes it easier to select one.
-      // these controls are not present in read-only mode: all you can do is look at the map.
-      $options['standardControls'][] = 'selectFeature';
-      $options['standardControls'][] = 'hoverFeatureHighlight';
-      $options['standardControls'][] = 'drawLine';
-      $options['standardControls'][] = 'modifyFeature';
-      $help = lang::get('Select a section from the list then click on the map to draw the route and double click to finish. '.
+    $options['toolbarPrefix'] = $selector;
+    // also let the user click on a feature to select it. The highlighter just makes it easier to select one.
+    $options['standardControls'][] = 'selectFeature';
+    $options['standardControls'][] = 'hoverFeatureHighlight';
+    $options['standardControls'][] = 'drawLine';
+    $options['standardControls'][] = 'modifyFeature';
+    $options['clickForSpatialRef'] = false;
+    $help = lang::get('Select a section from the list then click on the map to draw the route and double click to finish. '.
         'You can also select a section using the query tool to click on the section lines. If you make a mistake then use the Modify a feature '.
         'tool to correct the line shape, or redraw the line to replace it entirely.');
-      $r .= '<p class="ui-state-highlight page-notice ui-corner-all">'.$help.'</p>';
-    }
-    $options['clickForSpatialRef'] = false;
+    $r .= '<p class="ui-state-highlight page-notice ui-corner-all">'.$help.'</p>'; 
     $r .= map_helper::map_panel($options, $olOptions);
     $r .= '</div>';
     return $r;  
@@ -420,15 +347,12 @@ deleteSurvey = function(sampleID){
     $r .= '<fieldset><legend>'.lang::get('Section Details').'</legend>';
     // Output a selector for the current section.    
     $r .= self::section_selector($settings, 'section-select');
-    if (!isset($settings['cantEdit'])){
-      $r .= "<input type=\"hidden\" name=\"location:id\" value=\"\" id=\"section-location-id\" />\n";
-      $r .= '<input type="hidden" name="website_id" value="'.$args['website_id']."\" />\n";
-    }
+    $r .= "<input type=\"hidden\" name=\"location:id\" value=\"\" id=\"section-location-id\" />\n";
+    $r .= '<input type="hidden" name="website_id" value="'.$args['website_id']."\" />\n";
     // force a blank centroid, so that the Warehouse will recalculate it from the boundary
     //$r .= "<input type=\"hidden\" name=\"location:centroid_geom\" value=\"\" />\n";   
-    $r .= get_attribute_html($settings['section_attributes'], $args, array('extraParams'=>$auth['read'], 'disabled' => isset($settings['cantEdit']) ? ' disabled="disabled" ' : ''));
-    if (!isset($settings['cantEdit']))
-      $r .= '<input type="submit" value="'.lang::get('Save').'" class="form-button right" id="submit-section" />';    
+    $r .= get_attribute_html($settings['section_attributes'], $args, array('extraParams'=>$auth['read']));
+    $r .= '<input type="submit" value="'.lang::get('Save').'" class="form-button right" id="submit-section" />';    
     $r .= '</fieldset></form>';
     $r .= '</div>';
     return $r;
@@ -472,7 +396,6 @@ deleteSurvey = function(sampleID){
     ));
     $r .= '<table id="user-list" style="width: auto">';
     $rows = '';
-    // cmsUserAttr needs to be multivalue
     if (isset($cmsUserAttr['default']) && !empty($cmsUserAttr['default'])) {
       foreach($cmsUserAttr['default'] as $value) {
         $rows .= '<tr><td id="user-'.$value['default'].'"><input type="hidden" name="'.$value['fieldname'].'" '.

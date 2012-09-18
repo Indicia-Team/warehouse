@@ -154,7 +154,6 @@ class Service_Base_Controller extends Controller {
       $auth = new Auth();
       $authentic = ($auth->logged_in() || $auth->auto_login());
       $this->in_warehouse = $authentic;
-      $this->user_is_core_admin = $auth->logged_in('CoreAdmin');
     }
 
     if (!$authentic)
@@ -183,15 +182,14 @@ class Service_Base_Controller extends Controller {
    */
   protected function handle_error($e)
   {
-    $message=kohana::lang('general_errors.'.$e->getMessage());
     $mode = $this->get_input_mode();
     if ($mode=='xml') {
       $view = new View("services/error");
-      $view->message = $message;
+      $view->message = $e->getMessage();
       $view->render(true);
     } else {
       $response = array(
-        'error'=>$message
+        'error'=>$e->getMessage()
       );
       if (get_class($e)=='ArrayException') {
         $response['errors'] = $e->errors();

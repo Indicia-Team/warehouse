@@ -500,8 +500,7 @@ $.extend($.validator, {
 			for (var method in rules ) {
 				var rule = { method: method, parameters: rules[method] };
 				try {
-          // For indicia, all data is trimmed before validation on the warehouse, so need to do this here as well.
-					var result = $.validator.methods[method].call( this, $.trim(element.value).replace(/\r/g, ""), element, rule.parameters );
+					var result = $.validator.methods[method].call( this, element.value.replace(/\r/g, ""), element, rule.parameters );
 
 					// if a method indicates that the field is optional and therefore valid,
 					// don't mark it as valid when there are no other rules
@@ -527,10 +526,10 @@ $.extend($.validator, {
 				}
 			}
 			// GvB: added 2012/04/30.
-			// When an optional field has validation rules and no value is supplied, then it gets flagged as dependencyMismatch.
-			// In this case the field is valid, but is not included in the success list. We still need to return true though,
-			// as returning no value will result in 'undefined' being used which messes up any comparisons, e.g. in function element
-			// this will result in the element being flagged as invalid.
+                        // When an optional field has validation rules and no value is supplied, then it gets flagged as dependencyMismatch.
+                        // In this case the field is valid, but is not included in the success list. We still need to return true though,
+                        // as returning no value will result in 'undefined' being used which messes up any comparisons, e.g. in function element
+                        // this will result in the element being flagged as invalid.			if (dependencyMismatch)
 			if (dependencyMismatch)
 				return true;
 			if ( this.objectLength(rules) )
@@ -637,7 +636,7 @@ $.extend($.validator, {
 		},
 
 		showLabel: function(element, message) {
-			var label = this.errorsFor( element ), elementBefore;
+			var label = this.errorsFor( element );
 			if ( label.length ) {
 				// refresh error/success class
 				label.removeClass( this.settings.validClass ).addClass( this.settings.errorClass );
@@ -655,12 +654,10 @@ $.extend($.validator, {
 					// actually showing the wrapped element is handled elsewhere
 					label = label.hide().show().wrap("<" + this.settings.wrapper + "/>").parent();
 				}
-				if ( !this.labelContainer.append(label).length ) {
-					elementBefore = $(element).next().hasClass('deh-required') ? $(element).next() : element;
+				if ( !this.labelContainer.append(label).length )
 					this.settings.errorPlacement
 						? this.settings.errorPlacement(label, $(element) )
-						: label.insertAfter(elementBefore);
-        }
+						: label.insertAfter(element);
 			}
 			if ( !message && this.settings.success ) {
 				label.text("");

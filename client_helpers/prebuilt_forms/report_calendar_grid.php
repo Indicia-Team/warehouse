@@ -73,7 +73,7 @@ class iform_report_calendar_grid {
         array(
           'name'=>'includeLocationFilter',
           'caption'=>'Include user specific location filter',
-          'description'=>'Choose whether to include a filter on the locations assigned to this user using the CMS User ID location attribute. This alters how the links are highlighted, and provides a default site when creating a new sample.',
+          'description'=>'Choose whether to include a filter on the locations assigned to this user using the CMS User ID location attribute. This alters how the links are highlighted, and provides a default site when creationg a new sample.',
           'type'=>'boolean',
           'default' => false,
           'required' => false,
@@ -169,39 +169,28 @@ class iform_report_calendar_grid {
   // Although public, this function is only to be used as a callback.
   public static function build_link($records, $options, $cellContents){
     // siteIDFilter not present if all selected.
-    $retval['cellContents'] = $cellContents;
-    $cellclass="newLink";
-    foreach($records as $record){
-      $location=empty($record["location_name"]) ? $record["entered_sref"] : $record["location_name"];
-      $cellContents .= '<a href="'.$options["existingURL"].'sample_id='.$record["sample_id"].'" title="View existing sample for '.$location.' on '.$options['consider_date'].' (ID='.$records[0]["sample_id"].')" >'.$location.'</a> ';
-      if(isset($options['siteIDFilter'])){
-        if($record['location_id']==$options['siteIDFilter']){
-          switch($cellclass){
-            case 'newLink': $cellclass='existingLink';
-            case 'existingLink':
-              break;
-            default: $cellclass="multiLink";
-              break;
+    if(count($records)==1){
+      if(isset($options['siteIDFilter']) && $records[0]['location_id']!=$options['siteIDFilter'])
+        return array('cellclass'=>'otherSite',
+            'cellContents'=>"<span title=\"This date has a sample for ".$records[0]["location_name"]." already recorded (ID=".$records[0]["sample_id"].")\" >".$cellContents.'</span>');
+      return array('cellclass'=>'existingLink',
+          'cellContents'=>'<a href="'.$options["existingURL"].'sample_id='.$records[0]["sample_id"].'" title="View existing sample for '.$records[0]["location_name"].' on this date (ID='.$records[0]["sample_id"].')" >'.$cellContents.'</a>');
+    } else {
+      $retval = array('cellclass'=>(isset($options['siteIDFilter']) ? 'otherSite' : 'existingLink'), 'cellContents'=>$cellContents);
+      foreach($records as $record){
+        if(isset($options['siteIDFilter'])){
+          if($record['location_id']==$options['siteIDFilter']){
+            $retval['cellclass']="multiLink";
+            $retval['cellContents'].='<br/><a href="'.$options["existingURL"].'sample_id='.$record["sample_id"].'" title="View existing sample for '.$record["location_name"].' on this date (ID='.$records[0]["sample_id"].')" >'.$record["location_name"].'</a>';
+          } else {
+            $retval['cellContents'].="<br/><span title=\"This date has a sample for ".$record["location_name"]." already recorded (ID=".$records[0]["sample_id"].")\" >".$record["location_name"].'</span>';
           }
         } else {
-          switch($cellclass){
-            case 'newLink': $cellclass='otherSite';
-            case 'otherSite':
-              break;
-            default: $cellclass="multiLink";
-              break;
-          }
+          $retval['cellContents'].='<br/><a href="'.$options["existingURL"].'sample_id='.$record["sample_id"].'" title="View existing sample for '.$record["location_name"].' on this date (ID='.$records[0]["sample_id"].')" >'.$record["location_name"].'</a>';
         }
-      } else {
-        $cellclass='existingLink';
       }
+      return $retval;
     }
-    if(isset($options['siteIDFilter']) && $records[0]['location_id']!=$options['siteIDFilter'])
-      $cellContents .= ' <a href="'.$options["newURL"].'date='.$options['consider_date'].'" class="newLink" title="Create a new sample on '.$options['consider_date'].
-          ' for the selected location."></a> ';
-    else
-      $cellContents .= ' <a href="'.$options["newURL"].'date='.$options['consider_date'].'" class="newLink" title="Create a new sample on '.$options['consider_date'].'" ></a> ';
-    return array('cellclass'=>$cellclass, 'cellContents'=>$cellContents);
   }
 
   /**
@@ -245,12 +234,12 @@ class iform_report_calendar_grid {
         'fieldprefix'=>'locAttr',
         'extraParams'=>$readAuth,
         'survey_id'=>$presets['survey_id']);
-    if(isset($args['locationTypeFilter']) && $args['locationTypeFilter']!="")
+    if(isset($args['locationTypeFilter']))
       $attrArgs['location_type_id'] = $args['locationTypeFilter'];
     $locationAttributes = data_entry_helper::getAttributes($attrArgs, false);
     $cmsAttr=extract_cms_user_attr($locationAttributes,false);
     if(!$cmsAttr){
-      return('<p>'.lang::get('The location selection control requires that CMS User ID location attribute is defined for locations in this survey. If restricting to a particular location type, this must be set in the parameters page for this form instance.').'</p>');
+      return('<p>'.lang::get('The location selection control requires that CMS User ID location attribute is defined for locations in this survey. If restricted to a particular location type, this must be set in the parameters page to this form.').'</p>');
     }
     $attrListArgs=array('nocache'=>true,
         'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
@@ -274,9 +263,9 @@ class iform_report_calendar_grid {
       return $locationList['error'];
     }
     $ctrlid='calendar-location-select-'.$node->nid;
-    $ctrl='<label for="'.$ctrlid.'" class="location-select-label">'.lang::get('Filter by site').
+    $ctrl='<label for="'.$ctrlid.'" class="location-select-label">'.lang::get('Filter by location').
           ' :</label><select id="'.$ctrlid.'" class="location-select">'.
-          '<option value="" class="location-select-option" '.($siteUrlParams[$locationKey]['value']==null ? 'selected=\"selected\" ' : '').'>'.lang::get('All sites').'</option>';
+          '<option value="" class="location-select-option" '.($siteUrlParams[$locationKey]['value']==null ? 'selected=\"selected\" ' : '').'>'.lang::get('All locations').'</option>';
     foreach($locationList as $location){
       $ctrl .= '<option value='.$location['id'].' class="location-select-option" '.($siteUrlParams[$locationKey]['value']==$location['id'] ? 'selected=\"selected\" ' : '').'>'.
                $location['name'].(isset($args['includeSrefInLocationFilter']) && $args['includeSrefInLocationFilter'] ? ' ('.$location['centroid_sref'].')' : '').

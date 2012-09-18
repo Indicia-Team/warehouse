@@ -6,19 +6,6 @@
   width: 100% !important;
 }
 
-/* ensure a shake effect on failed autocompletes stays put */
-div.ui-effects-wrapper {
-  display:-moz-inline-stack;
-  display:inline-block;
-  zoom:1;
-  *display:inline;
-}
-
-.species-grid th button {
-  padding: 0;
-  margin: 0 0.5em;
-}
-
 .species-grid input, .species-grid select {
   width: 95%;
   margin: 0;
@@ -45,16 +32,8 @@ div.ui-effects-wrapper {
   padding-bottom: 1em;
 }
 
-#imp-postcode {
-  text-transform: uppercase;
-}
-
 #ui-datepicker-div {
   z-index: 2000;
-}
-
-.ui-datepicker-trigger {
-  padding: 0;
 }
 
 .inline-error {
@@ -95,10 +74,9 @@ label {
   margin: 4px 0 4px 0;
 }
 
-input, select, textarea, #form-params textarea, .timeEntry_control, 
-    .inline-control, button.inline-control, input.inline-control {
+input, select, textarea, #form-params textarea, .timeEntry_control {
   vertical-align: top;
-  margin: 4px 0;
+  margin: 4px 0 4px 0;
   display: inline; 
 }
 
@@ -320,8 +298,7 @@ li.ui-state-error {
 .helpText, .helpTextLeft {
   color:gray;
   font-size:80%;
-  margin: 0 0 8px 0px;
-  line-height: 1.2em;
+  margin:-4px 0 8px 0px;
 }
 
 .helpText {
@@ -357,23 +334,12 @@ li.ui-state-error {
   background: url(../images/desc.gif) no-repeat right;
 }
 
-table tr.odd {
+tr.odd {
   background-color: #eeeeee;
-  border: none;
 }
 
 .report-grid .ui-widget td {
   padding: 0 0.3em;
-}
-
-.report-grid .single img {
-  width: 100px;
-  margin: 2px;
-}
-
-.report-grid .multi img {
-  width: 50px;
-  margin: 1px;
 }
 
 .remove-row {
@@ -459,7 +425,7 @@ tfoot td div{
   padding: 2px 4px;
 }
 
-#map-toolbar-outer div.olControlEditingToolbar, #map-toolbar-outer div.param-container, #map-toolbar-outer label {
+#map-toolbar-outer .olControlEditingToolbar, #map-toolbar-outer label {
   width: auto;
   display:-moz-inline-stack;
   display:inline-block;
@@ -467,17 +433,8 @@ tfoot td div{
   *display:inline;
 }
 
-#map-toolbar-outer label {
-  padding: 0 0.5em 0 1.5em;
-}
-
 #map-toolbar-outer  * {
   vertical-align: middle;
-}
-
-form #map-toolbar {
-  float: none;
-  padding-left: 1.5em;
 }
 
 .no-border {
@@ -598,23 +555,22 @@ div.olControlEditingToolbar .olControlClickSrefItemActive {
   float: right;
 }
 
-.filelist label {
-  width: auto;
-}
-
+/* lock_open.png and lock.png are sourced from http://www.famfamfam.com/lab/icons/silk/
+ * by Mark James under the creative commons attibution 2.5 licence.
+ * Do not remove this comment as it constitutes the required attribution.
+ */
 .unlocked-icon {
-	background-image: url(../images/Indicia_PadlockIcons_Open.png);
-	width: 19px;
+	background-image: url(../images/lock_open.png);
 }
 
 .locked-icon {
-	background-image: url(../images/Indicia_PadlockIcons_Closed.png);
-	width: 14px;
+	background-image: url(../images/lock.png);
 }
 
 .locked-icon, .unlocked-icon {
 	background-repeat: no-repeat;
 	display: inline-block;
+	width: 16px;
 	margin: 0 0.25em;
 	cursor: pointer;
 }
@@ -687,11 +643,4 @@ span.ind-cancel-icon {
 
 .tooltip p {
   margin: 0;
-}
-
-/* override jquery-ui.custom.css to support browsers which understand border-radius (e.g. IE9) */
-.ui-corner-all { 
-	-moz-border-radius: 4px; 
-	-webkit-border-radius: 4px; 
-	border-radius: 4px; 
 }

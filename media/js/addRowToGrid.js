@@ -21,7 +21,7 @@
   the newly added rows.
  */
 
-var selectVal = null, cacheLookup=false;
+var selectVal = null;
 
 /**
  * A keyboard event handler for the grid.
@@ -97,8 +97,8 @@ function keyHandler(evt) {
   }
 }
     
-function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, useLookupCache) {
-  cacheLookup = typeof useLookupCache !== 'undefined' ? useLookupCache : false;
+function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, cacheLookup) {
+	cacheLookup = typeof cacheLookup !== 'undefined' ? cacheLookup : false;
   // inner function to handle a selection of a taxon from the autocomplete
   var handleSelectedTaxon = function(event, data, value) {
     // on picking a result in the autocomplete, ensure we have a spare row
@@ -139,13 +139,13 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, useLookupC
             rowId = getRowId(data.id, 'name');
           }
           $(child).attr('name', $(child).attr('name').replace(/-ttlId-/g, rowId));
-          }          
+        }
         oldId = $(child).attr('id');
         if (typeof oldId !== "undefined" && oldId.indexOf('-ttlId-') !== -1) {
           // Update the id attribute if it contains the replacement tag
           if (rowId === -1) {
             rowId = getRowId(data.id, 'id');
-          }          
+            }
           $(child).attr('id', $(child).attr('id').replace(/-ttlId-/g, rowId)); 
         }
       });
@@ -234,7 +234,7 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, useLookupC
     // add the row to the bottom of the grid
     newRow.appendTo('table#' + gridId +' > tbody').removeAttr('id');
     extraParams = {
-      orderby : cacheLookup ? 'original' : 'taxon',
+      orderby : 'taxon',
       mode : 'json',
       qfield : cacheLookup ? 'searchterm' : 'taxon',
       auth_token: readAuth.auth_token,
@@ -243,6 +243,9 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, useLookupC
     };
     if (typeof indiciaData['taxonExtraParams-'+gridId]!=="undefined") {
       $.extend(extraParams, indiciaData['taxonExtraParams-'+gridId]);
+    }
+    if (cacheLookup) {
+      $.extend(extraParams, {"query":encodeURI('{"in":{"simplified":[true,null]}}')})
     }
     $(newRow).find('input,select').keydown(keyHandler);
     // Attach auto-complete code to the input

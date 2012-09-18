@@ -79,9 +79,6 @@ class iform_report_grid {
             "desc":"List of actions to make available for each row in the grid.",
             "mapping": {
               "caption": {"type":"str","desc":"Display caption for the action\'s link."},
-              "img": {"type":"str","desc":"Set img to the path to an image to use an image for the action instead of a text caption - the caption '.
-                  'then becomes the image\'s title. The image path can contain {rootFolder} to be replaced by the root folder of the site, in this '.
-                  'case it excludes the path parameter used in Drupal when dirty URLs are used (since this is a direct link to a URL)."},
               "visibility_field": {"type":"str","desc":"Optional name of a field in the data which contains true or false to define the visibility of this action."},
               "url": {"type":"str","desc":"A url that the action link will point to, unless overridden by JavaScript. The url can contain tokens which '.
                   'will be subsituted for field values, e.g. for http://www.example.com/image/{id} the {id} is replaced with a field called id in the current row. '.
@@ -104,29 +101,8 @@ class iform_report_grid {
         },
         "visible": {"type":"bool","desc":"Should this column be shown? Hidden columns can still be used in templates or actions."},
         "template": {"type":"txt","desc":"Allows you to create columns that contain dynamic content using a template, rather than just the output '.
-          'of a field. The template text can contain fieldnames in braces, which will be replaced by the respective field values. '.
-          'Note that template columns cannot be sorted by clicking grid headers." },
-        "json": {"type":"bool","desc":"Set to true if the column contains a json string object with properties that can be decoded to give strings that '.
-          'can be used as replacements in a template."},
-        "update": {
-          "type":"map",
-          "title":"Update Specification",
-          "desc":"Defines the configuration to allow this field to update the database via AJAX. This assumes assume that we have access through iform_ajaxproxy.",
-          "mapping": {
-            "permission": {"type":"str","desc":"The CMS permission that the user must have in order for the field to be editable. If left blank then all users may update it."},
-            "method": {"type":"str","desc":"Ajax proxy method, e.g. loc"},
-            "tablename": {"type":"str","desc":"Submission table name: used to create the form field names from which the submission is built; e.g. location"},
-            "fieldname": {"type":"str","desc":"Field name for this field in submission; e.g. code"},
-            "website_id": {"type":"str","desc":"website_id"},
-            "class": {"type":"str","desc":"Class name to apply to input control."},
-            "parameters": {
-              "type":"map",
-              "subtype":"str",
-              "desc":"List of parameters to copy from the report to the submission; with field value replacements such as {id} begin replaced '.
-                  'by the value of the id field for the current row."
-            }
-          }
-        }
+        'of a field. The template text can contain fieldnames in braces, which will be replaced by the respective field values. '.
+        'Note that template columns cannot be sorted by clicking grid headers." }
       }
     }
   ]
@@ -172,7 +148,6 @@ class iform_report_grid {
    */
   public static function get_form($args, $node, $response) {
     iform_load_helpers(array('report_helper'));
-    data_entry_helper::add_resource('jquery_form');
     $auth = report_helper::get_read_auth($args['website_id'], $args['password']);
     $reportOptions = iform_report_get_report_options($args, $auth);
     // get the grid output before outputting the download link, so we can check if the download link is needed.

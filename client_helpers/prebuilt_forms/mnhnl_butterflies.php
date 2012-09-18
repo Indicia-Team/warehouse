@@ -42,9 +42,6 @@ require_once('includes/mnhnl_common.php');
 class iform_mnhnl_butterflies extends iform_mnhnl_dynamic_1 {
   protected static $locations;
   protected static $svcUrl;
-  protected static function enforcePermissions(){
-  	return true;
-  }
   /** 
    * Return the form metadata.
    * @return array The definition of the form.
@@ -65,7 +62,7 @@ class iform_mnhnl_butterflies extends iform_mnhnl_dynamic_1 {
   }
 
   public static function get_parameters() {    
-    $parentVal = array_merge(
+    $retVal = array_merge(
       parent::get_parameters(),
       array(
         array(
@@ -133,29 +130,6 @@ class iform_mnhnl_butterflies extends iform_mnhnl_dynamic_1 {
         )		
       )
     );
-    $retVal=array();
-    foreach($parentVal as $param){
-      if($param['name'] == 'structure'){
-        $param['default'] =
-             "=General Information=\r\n".
-              "[transect]\r\n".
-              "[date]\r\n".
-              "?Setting this date field automatically fills in the Month field below. This field must be between April and September, otherwise the Month field will not be filled in, and you will not be able to proceed.?\r\n".
-              "[sectionnumber]\r\n".
-              "[*]\r\n".
-              "[sample comment]\r\n".
-             "=Grid-based species records=\r\n".
-              "[display transect and date]\r\n".
-              "[transectgrid]\r\n".
-             "=Section-based species records=\r\n".
-              "[display transect and date]\r\n".
-              "?The number of sections in this list is selected on the first page?\r\n".
-              "[sectionlist]\r\n".
-              "@smpAttr=[TBD]\r\n";
-      }
-      $retVal[] = $param;
-    }
-    
     return $retVal;
   }
   
@@ -163,8 +137,7 @@ class iform_mnhnl_butterflies extends iform_mnhnl_dynamic_1 {
     global $indicia_templates;
     global $user;
     $indicia_templates['select_item'] = '<option value="{value}" {selected} >{caption}&nbsp;</option>';
-    if ($user->uid===0)
-      return lang::get('Before using this facility, please <a href="'.url('user/login', array('query'=>'destination=node/'.($node->nid))).'">login</a> to the website.');
+    
     // we don't use the map, but a lot of the inherited code assumes the map is present.
     self::$svcUrl = data_entry_helper::$base_url.'/index.php/services';
     data_entry_helper::add_resource('openlayers');
@@ -172,14 +145,14 @@ class iform_mnhnl_butterflies extends iform_mnhnl_dynamic_1 {
     $indicia_templates['zilch'] = ''; // can't have the CR on the end
     self::$locations = iform_loctools_listlocations($node);
     $retVal = parent::get_form($args, $node, $response);
-    if(parent::$mode != 0){
-      iform_mnhnl_addCancelButton($args['interface']);
+    if(self::$mode != 0){
+      iform_mnhnl_addCancelButton();
       data_entry_helper::$javascript .= "
 $.validator.messages.required = \"".lang::get('validation_required')."\";";
       if(!iform_loctools_checkaccess($node,'superuser')){
         data_entry_helper::$javascript .= "
 jQuery('[name=smpAttr\\:".$args['observer_attr_id']."],[name^=smpAttr\\:".$args['observer_attr_id']."\\:]').attr('readonly',true)";
-        if(parent::$mode == 1){
+        if(self::$mode == 1){
           data_entry_helper::$javascript .= ".val(\"".$user->name."\");";
         } else {
           data_entry_helper::$javascript .= ";";
@@ -210,14 +183,10 @@ var monthAttr = jQuery('[name=smpAttr\\\\:".$args['month_attr_id']."],[name^=smp
 monthAttr.before('<input type=\"hidden\" id=\"storedMonth\" name=\"'+monthAttr.attr('name')+'\">');
 updateSampleDate = function(context, doAlert){
   jQuery('.displayDateDetails').empty().append('<span>'+jQuery('[name=sample\\:date]').val()+'</span>');
-  var myDate = jQuery(context).datepicker(\"getDate\");
-  var monthAttr = jQuery('[name=smpAttr\\\\:".$args['month_attr_id']."],[name^=smpAttr\\\\:".$args['month_attr_id']."\\\\:]').filter('select').val('');
-  if(myDate != null){
-    myDate = myDate.getMonthName();
-    monthAttr.find(\"option:contains('\"+myDate+\"')\").attr('selected',true) ; 
-    jQuery('#storedMonth').val(monthAttr.val()); // doing in this order converts the text to a number and stores that number in the storedMonth
-  } else
-    jQuery('#storedMonth').val('');
+  var myDate = jQuery(context).datepicker(\"getDate\").getMonthName();
+  var monthAttr = jQuery('[name=smpAttr\\\\:".$args['month_attr_id']."],[name^=smpAttr\\\\:".$args['month_attr_id']."\\\\:]').filter('select').val(\"\");
+  monthAttr.find(\"option:contains('\"+myDate+\"')\").attr('selected',true) ; 
+  jQuery('#storedMonth').val(monthAttr.val()); // doing in this order converts the text to a number and stores that number in the storedMonth
   if(doAlert && monthAttr.val() == \"\")
   	alert('Given date is outside valid month range (April to September).');
 };
@@ -253,7 +222,7 @@ jQuery('.tab-submit').click(function() {
       
     } else {
     $retVal .= "<div style=\"display:none\" />
-    <form id=\"form-delete-survey\" action=\"".iform_mnhnl_getReloadPath()."\" method=\"POST\">".parent::$auth['write']."
+    <form id=\"form-delete-survey\" action=\"".iform_mnhnl_getReloadPath()."\" method=\"POST\">".self::$auth['write']."
        <input type=\"hidden\" name=\"website_id\" value=\"".$args['website_id']."\" />
        <input type=\"hidden\" name=\"survey_id\" value=\"".$args['survey_id']."\" />
        <input type=\"hidden\" name=\"sample:id\" value=\"\" />
@@ -266,7 +235,7 @@ jQuery('.tab-submit').click(function() {
 deleteSurvey = function(sampleID){
   if(confirm(\"Are you sure you wish to delete survey \"+sampleID)){
     jQuery.getJSON(\"".self::$svcUrl."/data/sample/\"+sampleID +
-            \"?mode=json&view=detail&auth_token=".parent::$auth['read']['auth_token']."&nonce=".parent::$auth['read']["nonce"]."\" +
+            \"?mode=json&view=detail&auth_token=".self::$auth['read']['auth_token']."&nonce=".self::$auth['read']["nonce"]."\" +
             \"&callback=?\", function(data) {
         if (data.length>0) {
           jQuery('#form-delete-survey').find('[name=sample\\:id]').val(data[0].id);
@@ -386,16 +355,29 @@ deleteSurvey = function(sampleID){
     return  '<div id="downloads" >
     <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_butterflies_grid.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=downloadgrid">
       <p>'.lang::get('LANG_Grid_Based_Data_Download').'</p>
-      <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "username_attr_id":'.$userNameAttr.', "observer_attr_id":'.$ObserverIdAttr.', "month_attr_id":'.$MonthIdAttr.', "numberinmonth_attr_id":'.$NumInMonthIdAttr.', "starttime_attr_id":'.$StartTimeIdAttr.', "endtime_attr_id":'.$EndTimeIdAttr.', "temperature_attr_id":'.$TempIdAttr.', "wind_attr_id":'.$WindIdAttr.', "cloud_attr_id":'.$CloudIdAttr.'}\' />
-      <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Grid_Download_Button').'">
+      <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].', "username_attr_id":'.$userNameAttr.', "observer_attr_id":'.$ObserverIdAttr.', "month_attr_id":'.$MonthIdAttr.', "numberinmonth_attr_id":'.$NumInMonthIdAttr.', "starttime_attr_id":'.$StartTimeIdAttr.', "endtime_attr_id":'.$EndTimeIdAttr.', "temperature_attr_id":'.$TempIdAttr.', "wind_attr_id":'.$WindIdAttr.', "cloud_attr_id":'.$CloudIdAttr.'}\' />
+      <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Grid_Download_Button').'">
     </form>
 	<form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_butterflies_section.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=downloadsection">
       <p>'.lang::get('LANG_Section_Based_Data_Download').'</p>
-      <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "username_attr_id":'.$userNameAttr.', "observer_attr_id":'.$ObserverIdAttr.', "month_attr_id":'.$MonthIdAttr.', "numberinmonth_attr_id":'.$NumInMonthIdAttr.', "starttime_attr_id":'.$StartTimeIdAttr.', "endtime_attr_id":'.$EndTimeIdAttr.', "temperature_attr_id":'.$TempIdAttr.', "wind_attr_id":'.$WindIdAttr.', "cloud_attr_id":'.$CloudIdAttr.', "habitat_attr_id":'.$HabitatIdAttr.', "no_obs_attr_id":'.$NoObsIdAttr.', "reliability_attr_id":'.$ReliabilityIdAttr.'}\' />
-      <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Section_Download_Button').'">
+      <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].', "username_attr_id":'.$userNameAttr.', "observer_attr_id":'.$ObserverIdAttr.', "month_attr_id":'.$MonthIdAttr.', "numberinmonth_attr_id":'.$NumInMonthIdAttr.', "starttime_attr_id":'.$StartTimeIdAttr.', "endtime_attr_id":'.$EndTimeIdAttr.', "temperature_attr_id":'.$TempIdAttr.', "wind_attr_id":'.$WindIdAttr.', "cloud_attr_id":'.$CloudIdAttr.', "habitat_attr_id":'.$HabitatIdAttr.', "no_obs_attr_id":'.$NoObsIdAttr.', "reliability_attr_id":'.$ReliabilityIdAttr.'}\' />
+      <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Section_Download_Button').'">
     </form>
   </div>';
 	
+  }
+  protected static function getHeaderHTML($args) {
+    $base = base_path();
+    if(substr($base, -1)!='/') $base.='/';
+    $r = '<div id="iform-header">
+    <div id="iform-logo-left"><a href="http://www.environnement.public.lu" target="_blank"><img border="0" class="government-logo" alt="'.lang::get('Gouvernement').'" src="'.$base.'sites/all/files/gouv.png"></a></div>
+    <div id="iform-logo-right"><a href="http://www.crpgl.lu" target="_blank"><img border="0" class="gabriel-lippmann-logo" alt="'.lang::get('Gabriel Lippmann').'" src="'.$base.drupal_get_path('module', 'iform').'/client_helpers/prebuilt_forms/images/mnhnl-gabriel-lippmann-logo.jpg"></a></div>
+    </div>';
+    return $r;
+  }
+  protected static function getTrailerHTML($args) {
+    $r = '<p id="iform-trailer">'.lang::get('LANG_Trailer_Text').'</p>';
+    return $r;
   }
   
   /**
@@ -464,10 +446,10 @@ deleteSurvey = function(sampleID){
     ));	
     $r .= '<form>';    
     if (isset($args['multiple_occurrence_mode']) && $args['multiple_occurrence_mode']=='either') {
-      $r .= '<input type="button" value="'.lang::get('LANG_Add_Sample_Single').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'new')).'\'">';
-      $r .= '<input type="button" value="'.lang::get('LANG_Add_Sample_Grid').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'new&gridmode')).'\'">';
+      $r .= '<input type="button" value="'.lang::get('LANG_Add_Sample_Single').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'newSample')).'\'">';
+      $r .= '<input type="button" value="'.lang::get('LANG_Add_Sample_Grid').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'newSample&gridmode')).'\'">';
     } else {
-      $r .= '<input type="button" value="'.lang::get('LANG_Add_Sample').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'new')).'\'">';    
+      $r .= '<input type="button" value="'.lang::get('LANG_Add_Sample').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'newSample')).'\'">';    
     }
     $r .= '</form>';
     return $r;
@@ -837,12 +819,7 @@ add_section_column = function(column, sampleID){
       data_entry_helper::$javascript .= "
     		} else if(j == (rows.length-".($numAttrs-$i).")) { // section sample attribute rows.
     		  var newName = 'SLA:'+i+':'+(i==column ? sampleID : '-')+':-'; //this will replace the smpAttr, so the AttrID is left alone at the end.
-    		  var attr = '".str_replace("\n", "",
-      				data_entry_helper::outputAttribute($attributes[$options['smpAttr'][$i]],
-      					($attributes[$options['smpAttr'][$i]]['data_type']=='Boolean' ||
-      							$attributes[$options['smpAttr'][$i]]['data_type']=='B' ?
-      						$defNRAttrOptions :
-      						$defAttrOptions)))."';
+    		  var attr = '".str_replace("\n", "", data_entry_helper::outputAttribute($attributes[$options['smpAttr'][$i]], $defAttrOptions))."';
     		  jQuery('<td>'+attr.replace(/smpAttr/g, newName)+'</td>').appendTo(rows[j]);";
     }
     $indicia_templates['label'] = $tempLabel;
@@ -1012,7 +989,7 @@ jQuery('input#sectionlist_taxa_taxon_list_id\\\\:taxon').result(function(event, 
 
   protected static function getSampleListGridPreamble() {
     global $user;
-    $r = '<p>'.lang::get('LANG_SampleListGrid_Preamble').(iform_loctools_checkaccess(parent::$node,'superuser') ? lang::get('LANG_All_Users') : $user->name).'</p>';
+    $r = '<p>'.lang::get('LANG_SampleListGrid_Preamble').(iform_loctools_checkaccess(self::$node,'superuser') ? lang::get('LANG_All_Users') : $user->name).'</p>';
     return $r;
   }
   

@@ -67,8 +67,8 @@ function selectSection(section, doFeature) {
   $('#section-select-'+section).addClass('selected');
   // don't select the feature if this was triggered by selecting the feature (as opposed to the button) otherwise we recurse.
   if (typeof indiciaData.mapdiv !== "undefined") {
-    if(typeof indiciaData.modifyFeature !== "undefined") indiciaData.modifyFeature.deactivate();
-    if (doFeature && typeof indiciaData.selectFeature !== "undefined") {
+    indiciaData.modifyFeature.deactivate();
+    if (doFeature) {
       indiciaData.selectFeature.unselectAll();
       $.each(indiciaData.mapdiv.map.editLayer.features, function(idx, feature) {
         if (feature.attributes.section===section && feature.renderIntent !== 'select') {
@@ -77,7 +77,7 @@ function selectSection(section, doFeature) {
         }
       });
     }
-    if (indiciaData.mapdiv.map.editLayer.selectedFeatures.length===0 && typeof indiciaData.drawFeature !== "undefined") {
+    if (indiciaData.mapdiv.map.editLayer.selectedFeatures.length===0) {
       indiciaData.drawFeature.activate();
     }
     indiciaData.mapdiv.map.editLayer.redraw();
@@ -86,78 +86,6 @@ function selectSection(section, doFeature) {
     loadSectionDetails(section);
     indiciaData.currentSection=section;
   }
-}
-
-function deleteWalks(walkIDs) {
-  for(var i = o; i< walkIDs.length; i++){
-    var data = {
-      'sample:id':walkIDs[i],
-      'sample:deleted':'t',
-      'website_id':indiciaData.website_id
-    };
-    $.post(
-      indiciaData.ajaxFormPostSampleUrl, data,
-      function(data) {
-        if (typeof(data.error)!=="undefined") {
-          alert(data.error);
-        }
-      },
-      'json'
-    );
-  }
-}
-
-//delete a section
-function deleteSection(section) {
-  // section comes in like "S1"
-  // TODO Add progress bar
-  $('.remove-section').addClass('waiting-button');
-  //delete the subsamples lodged against it.
-  $.getJSON(indiciaData.indiciaSvc + "index.php/services/data/sample?location_id=" + indiciaData.sections[section].id +
-            "&mode=json&view=detail&callback=?&auth_token=" + indiciaData.readAuth.auth_token + "&nonce=" + indiciaData.readAuth.nonce, 
-    function(sdata) {
-      if (typeof sdata.error =="undefined") {
-        $.each(sdata, function(idx, sample) {
-          var postData = {'sample:id':sample.id,'sample:deleted':'t','website_id':indiciaData.website_id};
-          $.post(indiciaData.ajaxFormPostSampleUrl, postData,
-            function(data) { if (typeof(data.error)!=="undefined") { alert(data.error); }},
-            'json');
-        });
-      }
-    }
-  );
-  //delete the section
-  var data = {'location:id':indiciaData.sections[section].id,'location:deleted':'t','website_id':indiciaData.website_id};
-  $.post(indiciaData.ajaxFormPostUrl,
-          data,
-          function(data) { if (typeof(data.error)!=="undefined") { alert(data.error); }},
-          'json');
-  // loop through all the subsections with a greater section number
-  // subsamples are attached to the location and parent, but the location_name is not filled in, so don't need to change that
-  // Update the code and the name for the locations.
-  var i;
-  for(i = parseInt(section.substr(1))+1; typeof indiciaData.sections['S'+i] != 'undefined'; i++){
-    var data = {'location:id':indiciaData.sections['S'+i].id,
-    		    'location:code':'S'+(i-1),
-    		    'location:name':$('#location\\:name').val() + ' - ' + 'S'+(i-1),
-    		    'website_id':indiciaData.website_id};
-    $.post(indiciaData.ajaxFormPostUrl,
-          data,
-          function(data) { if (typeof(data.error)!=="undefined") { alert(data.error); }},
-          'json');
-  }
-  // i now holds 1 more than the number of sections used to be....
-  // update the attribute value for number of sections.
-  var data = {'location:id':$('#location\\:id').val(), 'website_id':indiciaData.website_id};
-  data[indiciaData.numSectionsAttrName] = ''+(i-2);
-  $.post(indiciaData.ajaxFormPostUrl,
-          data,
-          function(data) { if (typeof(data.error)!=="undefined") { alert(data.error); }},
-          'json');
-  // reload the form.
-  $('.remove-section').ajaxStop(function(event){
-	  location.href = location.href; // want to GET even if last was a POST.
-  });
 }
 
 $(document).ready(function() {
@@ -176,21 +104,15 @@ $(document).ready(function() {
     }
   });  
   
-  $('#section-select li').click(function(evt) {
+  $('.section-select li').live('click', function(evt) {
     var parts = evt.target.id.split('-');
     selectSection(parts[parts.length-1], true);
   });
   
   mapInitialisationHooks.push(function(div) {
     if (div.id==='route-map') {
-      $('#section-select-route li').click(function(evt) {
-        var parts = evt.target.id.split('-');
-        selectSection(parts[parts.length-1], true);
-      });
-      $('.remove-section').click(function(evt) {
-        var current = $('#section-select-route li.selected').html();
-        if(confirm(indiciaData.sectionDeleteConfirm + ' ' + current + '?')) deleteSection(current);
-      });
+      indiciaData.mapdiv = div;
+    
       // find the selectFeature control so we can interact with it later
       $.each(div.map.controls, function(idx, control) {
         if (control.CLASS_NAME==='OpenLayers.Control.SelectFeature') {
@@ -256,60 +178,57 @@ $(document).ready(function() {
       }
       
       function featureChangeEvent(evt) {
-        // Only handle lines - as things like the sref control also trigger feature change events
-        if (evt.feature.geometry.CLASS_NAME==="OpenLayers.Geometry.LineString") {
-          var current, oldSection = [];
-          // Find section attribute if existing, or selected section button if new
-          current = (typeof evt.feature.attributes.section==="undefined") ? $('#section-select-route li.selected').html() : evt.feature.attributes.section;
-          // label a new feature properly (and remove the undefined that appears)
-          evt.feature.attributes = {section:current, type:"boundary"};
-          evt.feature.renderIntent = 'select';        
-          div.map.editLayer.redraw();
-          $.each(evt.feature.layer.features, function(idx, feature) {
-            if (feature.attributes.section===current && feature !== evt.feature) {
-              oldSection.push(feature);
-            }
-          });
-          if (oldSection.length>0) {
-            if (!confirm('Would you like to replace the existing section with the new one?')) {
-              evt.feature.layer.removeFeatures([evt.feature], {});
-              return;
-            } else {
-              evt.feature.layer.removeFeatures(oldSection, {});
-            }
+        var current, oldSection = [];
+        // Find section attribute if existing, or selected section button if new
+        current = (typeof evt.feature.attributes.section==="undefined") ? $('#section-select-route li.selected').html() : evt.feature.attributes.section;
+        // label a new feature properly (and remove the undefined that appears)
+        evt.feature.attributes = {section:current, type:"boundary"};
+        evt.feature.renderIntent = 'select';        
+        div.map.editLayer.redraw();
+        $.each(evt.feature.layer.features, function(idx, feature) {
+          if (feature.attributes.section===current && feature !== evt.feature) {
+            oldSection.push(feature);
           }
-          // post the new or edited section to the db
-          var data = {
-            'location:code':current,
-            'location:name':$('#location\\:name').val() + ' - ' + current,
-            'location:parent_id':$('#location\\:id').val(),
-            'location:boundary_geom':evt.feature.geometry.toString(),
-            'location:location_type_id':indiciaData.sectionTypeId,
-            'website_id':indiciaData.website_id
-          };
-          if (typeof indiciaData.sections[current]!=="undefined") {
-            data['location:id']=indiciaData.sections[current].id;
+        });
+        if (oldSection.length>0) {
+          if (!confirm('Would you like to replace the existing section with the new one?')) {
+            evt.feature.layer.removeFeatures([evt.feature], {});
+            return;
           } else {
-            data['locations_website:website_id']=indiciaData.website_id;
+            evt.feature.layer.removeFeatures(oldSection, {});
           }
-          $.post(
-            indiciaData.ajaxFormPostUrl,
-            data,
-            function(data) {
-              if (typeof(data.error)!=="undefined") {
-                alert(data.error);
-              } else {
-                // Better way of doing this?
-                var id = data.outer_id;
-                indiciaData.sections[current] = {id:id, geom: evt.feature.geometry.toString()};
-                $('#section-location-id').val(id);
-                $('#section-select-route-'+current).removeClass('missing');
-                $('#section-select-'+current).removeClass('missing');
-              }
-            },
-            'json'
-          );
         }
+        // post the new or edited section to the db
+        var data = {
+          'location:code':current,
+          'location:name':$('#location\\:name').val() + ' - ' + current,
+          'location:parent_id':$('#location\\:id').val(),
+          'location:boundary_geom':evt.feature.geometry.toString(),
+          'location:location_type_id':indiciaData.sectionTypeId,
+          'website_id':indiciaData.website_id
+        };
+        if (typeof indiciaData.sections[current]!=="undefined") {
+          data['location:id']=indiciaData.sections[current].id;
+        } else {
+          data['locations_website:website_id']=indiciaData.website_id;
+        }
+        $.post(
+          indiciaData.ajaxFormPostUrl,
+          data,
+          function(data) {
+            if (typeof(data.error)!=="undefined") {
+              alert(data.error);
+            } else {
+              // Better way of doing this?
+              var id = data.outer_id;
+              indiciaData.sections[current] = {id:id, geom: evt.feature.geometry.toString()};
+              $('#section-location-id').val(id);
+              $('#section-select-route-'+current).removeClass('missing');
+              $('#section-select-'+current).removeClass('missing');
+            }
+          },
+          'json'
+        );
       }
       
       div.map.editLayer.events.on({'featureadded': featureChangeEvent, 'afterfeaturemodified': featureChangeEvent}); 
