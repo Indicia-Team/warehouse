@@ -106,9 +106,37 @@ class iform_sectioned_transects_edit_transect {
             'description'=>'List of allowable spatial reference systems, comma separated. Use the spatial ref system code (e.g. OSGB or the EPSG code number such as 4326).',
             'type'=>'string',
             'group'=>'Other Map Settings'
+          ),
+          array(
+            'name'=>'route_map_height',
+            'caption'=>'Your Route Map Height (px)',
+            'description'=>'Height in pixels of the map.',
+            'type'=>'int',
+            'group'=>'Initial Map View',
+           'default'=>600
+          ),
+          array(
+            'name'=>'route_map_buffer',
+            'caption'=>'Your Route Map Buffer',
+            'description'=>'Factor to multiple the size of the site by, in order to generate a margin around the site when displaying the site on the Your Route tab.',
+            'type'=>'float',
+            'group'=>'Initial Map View',
+            'default'=>0.1
           )
         )
     );
+  }
+  /**
+   * When a form version is upgraded introducing new parameters, old forms will not get the defaults for the 
+   * parameters unless the Edit and Save button is clicked. So, apply some defaults to keep those old forms
+   * working.
+   */
+  protected function getArgDefaults($args) {
+      
+    if (!isset($args['route_map_height'])) $args['route_map_height'] = 600;
+    if (!isset($args['route_map_buffer'])) $args['route_map_buffer'] = 0.1;
+      
+    return $args;
   }
   
   /**
@@ -123,6 +151,7 @@ class iform_sectioned_transects_edit_transect {
    */
   public static function get_form($args, $node, $response=null) {
     $checks=self::check_prerequisites();
+    $args = self::getArgDefaults($args);
     if ($checks!==true)
       return $checks;
     iform_load_helpers(array('map_helper'));
@@ -246,6 +275,7 @@ class iform_sectioned_transects_edit_transect {
     data_entry_helper::$javascript .= "indiciaData.currentSection = '';\n";
     data_entry_helper::$javascript .= "indiciaData.sectionTypeId = '".$settings['locationTypes'][1]['id']."';\n";
     data_entry_helper::$javascript .= "indiciaData.sectionDeleteConfirm = \"".lang::get('Are you sure you wish to delete section')."\";\n";
+    data_entry_helper::$javascript .= "indiciaData.sectionChangeConfirm = \"".lang::get('Do you wish to save the currently unsaved changes you have made to the Section Details?')."\";\n";
     data_entry_helper::$javascript .= "indiciaData.numSectionsAttrName = \"".$settings['numSectionsAttr']."\";\n";
     data_entry_helper::$javascript .= "selectSection('S1', true);\n";
     return $r;
@@ -309,13 +339,16 @@ class iform_sectioned_transects_edit_transect {
       'helpText' => lang::get('Click on the map to set the central grid reference.'),
       'disabled' => isset($settings['cantEdit']) ? ' disabled="disabled" ' : ''
     ));
-    $r .= data_entry_helper::text_input(array(
-      'fieldname' => 'location:code',
-      'label' => lang::get('Site Code'),
-      'class' => 'control-width-4',
-      'disabled' => ' readonly="readonly" '
-    ));
-    
+    if ($settings['locationId'] && data_entry_helper::$entity_to_load['location:code']!='' && data_entry_helper::$entity_to_load['location:code'] != null)
+      $r .= data_entry_helper::text_input(array(
+        'fieldname' => 'location:code',
+        'label' => lang::get('Site Code'),
+        'class' => 'control-width-4',
+        'disabled' => ' readonly="readonly" '
+      ));
+    else
+      $r .= "<p>".lang::get('The Site Code will be allocated by the Administrator.')."</p>";
+      
     // setup the map options
     $options = iform_map_get_map_options($args, $auth['read']);
     // find the form blocks that need to go below the map.
@@ -405,10 +438,16 @@ deleteSurvey = function(sampleID){
       $options['standardControls'][] = 'modifyFeature';
       $help = lang::get('Select a section from the list then click on the map to draw the route and double click to finish. '.
         'You can also select a section using the query tool to click on the section lines. If you make a mistake then use the Modify a feature '.
-        'tool to correct the line shape, or redraw the line to replace it entirely.');
+        'tool to correct the line shape, or redraw the line to replace it entirely. The Delete button will remove the section completely, '.
+        'reducing the number of sections by one. To increase the number of sections, return to the Site Details tab, and increase the value '.
+        'in the No. of sections field there.');
       $r .= '<p class="ui-state-highlight page-notice ui-corner-all">'.$help.'</p>';
     }
     $options['clickForSpatialRef'] = false;
+        // override the map height and buffer size, which are specific to this map.
+    $options['route_map_height'] = $options['route_map_height'];
+    $options['maxZoomBuffer'] = $options['route_map_buffer'];
+    
     $r .= map_helper::map_panel($options, $olOptions);
     $r .= '</div>';
     return $r;  
