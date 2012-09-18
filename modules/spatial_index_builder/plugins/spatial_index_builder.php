@@ -111,9 +111,9 @@ function spatial_index_builder_get_type_filter() {
 function spatial_index_builder_populate($db) {
   // First task - cleanup any existing records for the samples and locations we are about to rescan.
   $query = "delete from index_locations_samples where location_id in (
-      select id from loclist union select id from locations where deleted=false
+      select id from loclist union select id from locations where deleted=true
     ) or sample_id in (
-      select id from smplist union select id from samples where deleted=false
+      select id from smplist union select id from samples where deleted=true
     );";
   $db->query($query);
   // are we filtering by location type?
