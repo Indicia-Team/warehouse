@@ -169,7 +169,7 @@ WITH (
 COMMENT ON VIEW build_index_websites_website_agreements IS 'A view which lists every website in the from_website_id, plus every website they have an agreement with in the to_website_id, plus flags indicating what type of data they must share according to the agreement.';
 COMMENT ON TABLE index_websites_website_agreements IS 'Lists every website in the from_website_id, plus every website they have an agreement with in the to_website_id, plus flags indicating what type of data they must share according to the agreement. Physical copy of the build_index_websites_website_agreement view since this saves a few joins in most report queries.';
 COMMENT ON COLUMN index_websites_website_agreements.id IS 'Unique identifier for table.';
-COMMENT ON COLUMN index_websites_website_agreements.from_website_id IS 'Partipating website\'s ID.';
+COMMENT ON COLUMN index_websites_website_agreements.from_website_id IS 'Partipating website''s ID.';
 COMMENT ON COLUMN index_websites_website_agreements.to_website_id IS 'ID of website being participated with.';
 COMMENT ON COLUMN index_websites_website_agreements.provide_for_reporting IS 'Does the participating website provide data for reporting to the other?';
 COMMENT ON COLUMN index_websites_website_agreements.receive_for_reporting IS 'Does the participating website receive data for reporting from the other?';

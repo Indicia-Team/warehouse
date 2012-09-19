@@ -514,9 +514,9 @@ CREATE TABLE users (
     "password" character varying,
     forgotten_password_key character varying,
     deleted boolean DEFAULT false NOT NULL,
-    CONSTRAINT enforce_dims_home_geom CHECK ((ndims(home_geom) = 2)),
+    CONSTRAINT enforce_dims_home_geom CHECK ((st_ndims(home_geom) = 2)),
     CONSTRAINT enforce_geotype_home_geom CHECK (((geometrytype(home_geom) = 'LINESTRING'::text) OR (home_geom IS NULL))),
-    CONSTRAINT enforce_srid_home_geom CHECK ((srid(home_geom) = (-1)))
+    CONSTRAINT enforce_srid_home_geom CHECK ((st_srid(home_geom) = (-1)))
 ) WITHOUT OIDS;
 --
 -- Structure for table users_websites (OID = 117585) :
