@@ -202,7 +202,7 @@ class Import_Controller extends Service_Base_Controller {
         foreach ($metadata['mappings'] as $col=>$attr) {
           if (isset($data[$index])) {
             // '<Please select>' is a value fixed in import_helper::model_field_options
-            if ($attr != '<Please select>') {
+            if ($attr != '<Please select>' && $data[$index]!=='') {
               // Add the data to the record save array
               $saveArray[$attr] = utf8_encode($data[$index]);
             }
