@@ -74,7 +74,7 @@ class iform_sectioned_transects_edit_transect {
           ), array(
             'name' => 'maxSectionCount',
             'label' => 'Max. Section Count',
-            'type' => 'text_input',
+            'type' => 'int',
             'description' => 'The maximum number of sections a user is allowed to create for a transect site.',
             'group' => 'Transects Editor Settings'
           ), array(
@@ -119,9 +119,9 @@ class iform_sectioned_transects_edit_transect {
             'name'=>'route_map_buffer',
             'caption'=>'Your Route Map Buffer',
             'description'=>'Factor to multiple the size of the site by, in order to generate a margin around the site when displaying the site on the Your Route tab.',
-            'type'=>'float',
+            'type'=>'string',
             'group'=>'Initial Map View',
-            'default'=>0.1
+            'default'=>'0.1'
           )
         )
     );
@@ -445,8 +445,8 @@ deleteSurvey = function(sampleID){
     }
     $options['clickForSpatialRef'] = false;
         // override the map height and buffer size, which are specific to this map.
-    $options['route_map_height'] = $options['route_map_height'];
-    $options['maxZoomBuffer'] = $options['route_map_buffer'];
+    $options['height'] = $args['route_map_height'];
+    $options['maxZoomBuffer'] = $args['route_map_buffer'];
     
     $r .= map_helper::map_panel($options, $olOptions);
     $r .= '</div>';
