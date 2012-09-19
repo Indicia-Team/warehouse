@@ -1196,7 +1196,7 @@ class ORM extends ORM_Core {
     }
     
     $attr = $this->db
-        ->select('data_type','multi_value','termlist_id')
+        ->select('caption','data_type','multi_value','termlist_id')
         ->from($this->object_name.'_attributes')
         ->where(array('id'=>$attrId))
         ->get()->result_array();
@@ -1240,7 +1240,7 @@ class ORM extends ORM_Core {
             kohana::log('debug', "  date_end_value=".$attrValueModel->date_end_value);
             kohana::log('debug', "  date_type_value=".$attrValueModel->date_type_value);
           } else {
-            $this->errors[$fieldId] = "Invalid value $value for attribute";
+            $this->errors[$fieldId] = "Invalid value $value for attribute ".$attr->caption;
             kohana::log('debug', "Could not accept value $value into date fields for attribute $fieldId.");
             return false;
           }
@@ -1276,10 +1276,11 @@ class ORM extends ORM_Core {
             'fkSearchFilterField' => 'termlist_id',
             'fkSearchFilterValue' => $attr->termlist_id,
           ));
+          kohana::log('debug', 'FK lookup query: '.$this->db->last_query());
           if ($r) {
             $value = $r;
           } else {
-            $this->errors[$fieldId] = "Invalid value $value for attribute";
+            $this->errors[$fieldId] = "Invalid value $value for attribute ".$attr->caption;
             kohana::log('debug', "Could not accept value $value into field $vf  for attribute $fieldId.");
             return false;
           }
@@ -1297,7 +1298,7 @@ class ORM extends ORM_Core {
       if (strcmp($attrValueModel->$vf,$value)===0 || ($dataType==='G' && !empty($attrValueModel->$vf))) {
         kohana::log('debug', "Accepted value $value into field $vf for attribute $fieldId. Value=".$attrValueModel->$vf);
       } else {
-        $this->errors[$fieldId] = "Invalid value $value for attribute";
+        $this->errors[$fieldId] = "Invalid value $value for attribute ".$attr->caption;
         kohana::log('debug', "Could not accept value $value into field $vf for attribute $fieldId.");
         return false;
       }
