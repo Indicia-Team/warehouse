@@ -330,6 +330,7 @@ $('#load-params').click(function(evt) {
         'textfield'=>'text_input', // in case there is any Drupal hangover code
         'string'=>'text_input',
         'int'=>'text_input',
+        'float'=>'text_input',
         'smpAttr'=>'text_input',
         'occAttr'=>'text_input',
         'locAttr'=>'text_input',
