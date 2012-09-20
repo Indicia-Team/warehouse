@@ -65,6 +65,7 @@ class Taxa_taxon_designation_Controller extends Gridview_Base_Controller {
   {
     $results=$this->db->select('taxon_designations.id, taxon_designations.title')
         ->from('taxon_designations')
+        ->where(array('deleted'=>'f'))
         ->orderby (array('taxon_designations.title'=>'ASC'))
         ->get();
     $designations=array();
