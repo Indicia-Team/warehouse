@@ -254,7 +254,8 @@ function loadSpeciesList() {
         'nonce': indiciaData.readAuth.nonce,
         'mode': 'json',
         'allow_data_entry': 't',
-        'view': 'detail'
+        'view': 'detail',
+        'orderby': 'taxonomic_sort_order'
     };
   if(typeof indiciaData.speciesList1FilterField != "undefined"){
 	  mainTaxonData.query = '{"in":{"'+indiciaData.speciesList1FilterField+'":'+indiciaData.speciesList1FilterValues+"}}";
@@ -277,7 +278,8 @@ function loadSpeciesList() {
         'nonce': indiciaData.readAuth.nonce,
         'mode': 'json',
         'allow_data_entry': 't',
-        'view': 'detail'
+        'view': 'detail',
+        'orderby': 'taxonomic_sort_order'
     };
     if(typeof indiciaData.speciesList1SubsetFilterField != "undefined"){
     	subsetTaxonData.query = '{"in":{"'+indiciaData.speciesList1SubsetFilterField+'":'+indiciaData.speciesList1SubsetFilterValues+"}}";
@@ -304,7 +306,8 @@ function loadSpeciesList() {
             'nonce': indiciaData.readAuth.nonce,
             'mode': 'json',
             'allow_data_entry': 't',
-            'view': 'detail'
+            'view': 'detail',
+            'orderby': 'taxonomic_sort_order'
     };
     query = {"in":{"id":existingTtlIds}};
     if(typeof indiciaData.speciesList2FilterField != "undefined"){
