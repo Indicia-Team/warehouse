@@ -410,7 +410,7 @@ class ReportEngine {
     foreach($attributeDefns as $attributeDefn){
         // Build an index of the report data indexed on the attribute: nb that the attribute data has been sorted in main_id order.
         $index = array();
-        for ($r=0; $r<count($data); $r++) {
+        for ($r=0; $r<$dataCount; $r++) {
           if(!isset($index[$data[$r][$attributeDefn->parentKey]])){
             $index[$data[$r][$attributeDefn->parentKey]] = array($r);
           } else
