@@ -27,7 +27,10 @@
 function data_cleaner_period_within_year_data_cleaner_rules() {
   return array(
     'testType' => 'periodWithinYear',
-    'optional' => array('Metadata'=>array('Tvk','TaxonMeaningId','Taxon','StartDate','EndDate','DataFieldName'), 'Data'=>array('Stage','StartDate','EndDate')),
+    'optional' => array(
+        'Metadata'=>array('Tvk','TaxonMeaningId','Taxon','StartDate','EndDate','DataFieldName','SurveyId'), 
+        'Data'=>array('Stage','StartDate','EndDate')
+    ),
     'queries' => array(
       // Slightly convoluted logic required in this test to get it to work with ranges in middle of year as well as ranges that span the end of the year.
       // Also note in these queries we use 2012 as the year for expanding dates that have just a month and day, as it is a leap
@@ -41,14 +44,16 @@ function data_cleaner_period_within_year_data_cleaner_rules() {
             "  or (vrm.value=cast(co.taxon_meaning_id as character varying) and vrm.key='TaxonMeaningId') ".
             "join verification_rules vr on vr.id=vrm.verification_rule_id and vr.test_type='PeriodWithinYear' ".
             "left join verification_rule_metadata vrmstart on vrmstart.verification_rule_id=vr.id and vrmstart.key='StartDate' and length(vrmstart.value)=4 ".
-            "left join verification_rule_metadata vrmend on vrmend.verification_rule_id=vr.id and vrmend.key='EndDate' and length(vrmend.value)=4 ",
+            "left join verification_rule_metadata vrmend on vrmend.verification_rule_id=vr.id and vrmend.key='EndDate' and length(vrmend.value)=4 ".
+            "left join verification_rule_metadata vrsurvey on vrsurvey.verification_rule_id=vr.id and vrsurvey.key='SurveyId' and vrsurvey.deleted=false ",
         'where' =>
             "vr.reverse_rule<>(((vrmstart is null or vrmend.value is null or vrmstart.value <= vrmend.value) ".
             "and ((vrmstart.value is not null and extract(doy from co.date_start) < extract(doy from cast('2012' || vrmstart.value as date))) ".
             "or (vrmend.value is not null and extract(doy from co.date_start) > extract(doy from cast('2012' || vrmend.value as date))))) ".
             "or ((vrmstart.value > vrmend.value) ".
             "and ((vrmstart.value is not null and extract(doy from co.date_start) < extract(doy from cast('2012' || vrmstart.value as date))) ".
-            "and (vrmend.value is not null and extract(doy from co.date_start) > extract(doy from cast('2012' || vrmend.value as date))))))"
+            "and (vrmend.value is not null and extract(doy from co.date_start) > extract(doy from cast('2012' || vrmend.value as date)))))) ".
+            "and (vrsurvey.id is null or vrsurvey.value=cast(co.survey_id as varchar))"
       ),
       array(
         // repeat the test, this time filtered by stage
@@ -61,6 +66,7 @@ function data_cleaner_period_within_year_data_cleaner_rules() {
             "join verification_rule_data vrdstage on vrdstage.verification_rule_id=vr.id and vrdstage.key='Stage' ".
             "left join verification_rule_data vrdstart on vrdstart.verification_rule_id=vr.id and vrdstart.key='StartDate' and vrdstart.data_group=vrdstage.data_group ".
             "left join verification_rule_data vrdend on vrdend.verification_rule_id=vr.id and vrdend.key='EndDate' and vrdend.data_group=vrdstage.data_group ".
+            "left join verification_rule_metadata vrsurvey on vrsurvey.verification_rule_id=vr.id and vrsurvey.key='SurveyId' and vrsurvey.deleted=false ".
             "join occurrence_attribute_values oav on oav.occurrence_id=co.id and oav.deleted=false ".
             "left join cache_termlists_terms ctt on ctt.id=oav.int_value and string_to_array(lower(vrdstage.value),',') @> string_to_array(lower(ctt.term),'') ".
             "join occurrence_attributes oa on oa.id=oav.occurrence_attribute_id and oav.deleted=false ".
@@ -76,8 +82,9 @@ function data_cleaner_period_within_year_data_cleaner_rules() {
             "or (vrdend.value is not null and extract(doy from co.date_start) > extract(doy from cast('2012' || vrdend.value as date))))) ".
             "or ((vrdstart.value > vrdend.value) ".
             "and ((vrdstart.value is not null and extract(doy from co.date_start) < extract(doy from cast('2012' || vrdstart.value as date))) ".
-            "and (vrdend.value is not null and extract(doy from co.date_start) > extract(doy from cast('2012' || vrdend.value as date))))))",
-        'errorMsgSuffix' => ' (for this stage)'
+            "and (vrdend.value is not null and extract(doy from co.date_start) > extract(doy from cast('2012' || vrdend.value as date)))))) ".
+            "and (vrsurvey.id is null or vrsurvey.value=cast(co.survey_id as varchar))",
+        'errorMsgSuffix' => " || ' (for this stage)'"
       )
     )
   );
