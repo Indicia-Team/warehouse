@@ -79,12 +79,8 @@ END)" />
     <subTable tablename="occurrences" parentKey="id" where=" #this#.deleted = FALSE" join="LEFT OUTER" >
       <tabColumn name='id' visible='true' display='Occurrence ID' />
       <tabColumn name='comment' display='Occurrence comment' />
-      <subTable tablename='taxa_taxon_lists' join="LEFT OUTER" >
-        <subTable tablename='taxa_taxon_lists' parentKey="taxon_meaning_id" tableKey="taxon_meaning_id" where="#this#.preferred = TRUE AND #this#.taxon_list_id = #taxon_list_id#" join="LEFT OUTER" >
-          <subTable tablename='taxa' join="LEFT OUTER" >
-            <tabColumn name='taxon' display='Species'/>
-          </subTable>
-        </subTable>
+      <subTable tablename='cache_taxa_taxon_lists' parentKey="taxa_taxon_list_id" join="LEFT OUTER" >
+        <tabColumn name='preferred_taxon' display='Species'/>
       </subTable>
       <attributes separator='|'  meaningIdLanguage='preferred'/> 
     </subTable>    
