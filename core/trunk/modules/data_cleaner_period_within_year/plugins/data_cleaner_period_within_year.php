@@ -84,7 +84,7 @@ function data_cleaner_period_within_year_data_cleaner_rules() {
             "and ((vrdstart.value is not null and extract(doy from co.date_start) < extract(doy from cast('2012' || vrdstart.value as date))) ".
             "and (vrdend.value is not null and extract(doy from co.date_start) > extract(doy from cast('2012' || vrdend.value as date)))))) ".
             "and (vrsurvey.id is null or vrsurvey.value=cast(co.survey_id as varchar))",
-        'errorMsgSuffix' => " || ' (for this stage)'"
+        'errorMsgSuffix' => " || ' This test was based on the record being ' || vrdstage.value || '.'"
       )
     )
   );
