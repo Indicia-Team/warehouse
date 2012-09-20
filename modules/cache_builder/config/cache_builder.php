@@ -550,12 +550,14 @@ $config['occurrences']['get_changed_items_query'] = "
   select distinct o.id, o.deleted or s.deleted or su.deleted or (cttl.id is null) as deleted
     from occurrences o
     join samples s on s.id=o.sample_id 
+    left join samples sp on sp.id=s.parent_id
     join surveys su on su.id=s.survey_id 
     join cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
     left join cache_termlists_terms tmethod on tmethod.id=s.sample_method_id
     left join occurrence_images oi on oi.occurrence_id=o.id
     where o.created_on>'#date#' or o.updated_on>'#date#' 
       or s.created_on>'#date#' or s.updated_on>'#date#' 
+      or sp.created_on>'#date#' or sp.updated_on>'#date#' 
       or su.created_on>'#date#' or su.updated_on>'#date#'
       or cttl.cache_updated_on>'#date#'
       or tmethod.cache_updated_on>'#date#'
