@@ -49,11 +49,13 @@ function data_cleaner_get_occurrence_list($db) {
 from cache_occurrences co
 join occurrences o on o.id=co.id
 inner join samples s on s.id=o.sample_id and s.deleted=false
+left join samples sp on sp.id=s.parent_id and sp.deleted=false
 inner join websites w on w.id=o.website_id and w.deleted=false and w.verification_checks_enabled=true
 where o.deleted=false and o.record_status not in (\'I\',\'V\',\'R\',\'D\')
 and (o.last_verification_check_taxa_taxon_list_id<>o.taxa_taxon_list_id
 or o.updated_on>o.last_verification_check_date
 or s.updated_on>o.last_verification_check_date
+or sp.updated_on>o.last_verification_check_date
 or o.last_verification_check_date is null) limit 200';
   $db->query($query);
   $r = $db->query('select count(*) as count from occlist')->result_array(false);
