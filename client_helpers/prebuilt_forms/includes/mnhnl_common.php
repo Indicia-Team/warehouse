@@ -286,6 +286,30 @@ function iform_mnhnl_getParameters() {
           'group' => 'Locations'
         ),
         array(
+          'name'=>'shpDownloadPoints',
+          'caption'=>'SHP Points',
+          'description'=>'Force the availability of a SHP download for points, even if the users cant enter points: may be required to handle initial data. If the users can enter points, then the SHP points download will be available even if this is unchecked.',
+          'type'=>'boolean',
+          'required' => false,
+          'group' => 'Locations'
+        ),
+        array(
+          'name'=>'shpDownloadLines',
+          'caption'=>'SHP Lines',
+          'description'=>'Force the availability of a SHP download for lines, even if the users cant enter lines: may be required to handle initial data. If the users can enter lines, then the SHP lines download will be available even if this is unchecked.',
+          'type'=>'boolean',
+          'required' => false,
+          'group' => 'Locations'
+        ),
+        array(
+          'name'=>'shpDownloadPolygons',
+          'caption'=>'SHP Polygons',
+          'description'=>'Force the availability of a SHP download for polygons, even if the users cant enter polygons: may be required to handle initial data. If the users can enter polygons, then the SHP polygons download will be available even if this is unchecked.',
+          'type'=>'boolean',
+          'required' => false,
+          'group' => 'Locations'
+        ),
+        array(
           'name'=>'mousePosControl',
           'caption'=>'Mouse Position',
           'description'=>'Choose whether to include a mouse position indicator on the main map, in the toolbar.',
@@ -315,9 +339,9 @@ function iform_mnhnl_locModTool($auth, $args, $node) {
     }
     $request .= "&typename=".$args['shpFileFeaturePrefix'].':';
     $retValList = "";
-    if($args['usePoints']!='none')   $retValList .= "<a href=\"".$request."point_locations\">".lang::get('Points')."</a>";
-    if($args['useLines']!='none')    $retValList .= ($retVal == "" ? "" : " : ")."<a href=\"".$request."line_locations\">".lang::get('Lines')."</a>";
-    if($args['usePolygons']!='none') $retValList .= ($retVal == "" ? "" : " : ")."<a href=\"".$request."polygon_locations\">".lang::get('Polygons')."</a>";
+    if($args['usePoints']!='none' || (isset($args['shpDownloadPoints']) && $args['shpDownloadPoints']))       $retValList .= "<a href=\"".$request."point_locations\">".lang::get('Points')."</a>";
+    if($args['useLines']!='none' || (isset($args['shpDownloadLines']) && $args['shpDownloadLines']))          $retValList .= ($retValList == "" ? "" : " : ")."<a href=\"".$request."line_locations\">".lang::get('Lines')."</a>";
+    if($args['usePolygons']!='none' || (isset($args['shpDownloadPolygons']) && $args['shpDownloadPolygons'])) $retValList .= ($retValList == "" ? "" : " : ")."<a href=\"".$request."polygon_locations\">".lang::get('Polygons')."</a>";
     $retVal .= "<fieldset><legend>".lang::get('LANG_SHP_Download_Legend')."</legend>
       <p>".lang::get('LANG_Shapefile_Download')." ".$retValList."</p></fieldset>";
   }
@@ -2195,7 +2219,7 @@ jQuery('#".$options['MainFieldID']."').change(function(){
     $locations = iform_loctools_listlocations($node);
     if($args['locationMode'] == 'parent' || $args['locationMode'] == 'multi'){
       if (!isset($args['loctoolsLocTypeID'])) return "locationMode == parent, loctoolsLocTypeID not set.";
-      iform_mnhnl_set_editable($auth, $args, $node, array(), $options['AdminMode'], $loctypeParam);
+      iform_mnhnl_set_editable($auth, $args, $node, array(), $args['locationMode'] == 'parent' ? "conditional" : $options['AdminMode'], $loctypeParam);
       $locOptions = array('validation' => array('required'),
     					'label'=>$options['ChooseParentLabel'],
     					'id'=>$options['ChooseParentFieldID'],

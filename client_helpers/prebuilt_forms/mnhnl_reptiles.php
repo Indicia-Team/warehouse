@@ -301,26 +301,59 @@ jQuery('.downloadreportparams').val('{\"survey_id\":".$args['survey_id'].", \"lo
     }
     $r .= '</form>
 <div style="display:none" />
-    <form id="form-delete-survey" action="'.iform_mnhnl_getReloadPath().'" method="POST">'.$auth['write'].'
-       <input type="hidden" name="website_id" value="'.$args['website_id'].'" />
-       <input type="hidden" name="survey_id" value="'.$args['survey_id'].'" />
-       <input type="hidden" name="sample:id" value="" />
-       <input type="hidden" name="sample:deleted" value="t" />
-    </form>
+  <form id="form-delete-survey" action="'.iform_mnhnl_getReloadPath().'" method="POST">'.$auth['write'].'
+    <input type="hidden" name="website_id" value="'.$args['website_id'].'" />
+    <input type="hidden" name="survey_id" value="'.$args['survey_id'].'" />
+    <input type="hidden" name="sample:id" value="" />
+    <input type="hidden" name="sample:deleted" value="t" />
+  </form>
+</div>
+<div style="display:none" />
+  <form id="form-delete-survey-location" action="'.iform_mnhnl_getReloadPath().'" method="POST">'.$auth['write'].'
+     <input type="hidden" name="website_id" value="'.$args['website_id'].'" />
+     <input type="hidden" name="survey_id" value="'.$args['survey_id'].'" />
+     <input type="hidden" name="sample:id" value="" />
+     <input type="hidden" name="sample:deleted" value="t" />
+     <input type="hidden" name="location:id" value="" />
+     <input type="hidden" name="location:deleted" value="t" />
+  </form>
 </div>';
     data_entry_helper::$javascript .= "
 deleteSurvey = function(sampleID){
-  if(confirm(\"Are you sure you wish to delete survey \"+sampleID)){
-    jQuery.getJSON(\"".data_entry_helper::$base_url."/index.php/services/data/sample/\"+sampleID +
-            \"?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."\" +
-            \"&callback=?\", function(data) {
-        if (data.length>0) {
-          jQuery('#form-delete-survey').find('[name=sample\\:id]').val(data[0].id);
-          jQuery('#form-delete-survey').submit();
-  }});
-  };
-};";
-    
+  jQuery.getJSON(\"".data_entry_helper::$base_url."/index.php/services/data/sample/\"+sampleID +
+          \"?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."\" +
+          \"&callback=?\", function(data) {
+      if (data.length>0) {
+        jQuery('#form-delete-survey').find('[name=sample\\:id]').val(data[0].id);
+        jQuery('#form-delete-survey-location').find('[name=sample\\:id]').val(data[0].id);
+        jQuery('#form-delete-survey-location').find('[name=location\\:id]').val(data[0].location_id);
+        // next get the location ID from sample, count the samples that are attached to that location
+        jQuery.getJSON(\"".data_entry_helper::$base_url."/index.php/services/data/sample?location_id=\"+data[0].location_id +
+                \"&parent_id=NULL&mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."\" +
+                \"&callback=?\", function(sdata) {
+            if (sdata.length==1) {
+              var dialog = $('<p>".lang::get('The site only has this survey associated with it. Do you wish to delete the site as well?')."</p>').
+                  dialog({ title: 'Delete Location Data?',
+                    width: 400,
+                    buttons: {
+                      'Cancel': function() { dialog.dialog('close'); },
+                      'Survey Only': function() {
+                          dialog.dialog('close');
+                          jQuery('#form-delete-survey').submit();
+                        },
+                      'Site and Survey':  function() {
+                          dialog.dialog('close');
+                          jQuery('#form-delete-survey-location').submit();
+                        }}});
+            } else if (sdata.length > 1) {
+              if(confirm(\"".lang::get('Are you sure you wish to delete survey ')."\"+sampleID)){
+                jQuery('#form-delete-survey').submit();
+              }
+            }
+        });
+      }
+  });
+};\n";
     return $r;
   }
 
@@ -1098,6 +1131,10 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
         }
         return $locationMod;
       }
+    } else if (isset($values['location:deleted'])){
+      $locationMod = submission_builder::wrap_with_images($values, 'location');
+      $locationMod['subModels'] = array(array('fkId' => 'location_id', 'model' => $sampleMod));
+      return $locationMod;
     }
     return $sampleMod;
   }
