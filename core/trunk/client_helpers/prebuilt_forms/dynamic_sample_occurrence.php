@@ -73,6 +73,16 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       parent::get_parameters(),
       array(
         array(
+          'name'=>'survey_id',
+          'caption'=>'Survey',
+          'description'=>'The survey that data will be posted into.',
+          'type'=>'select',
+          'table'=>'survey',
+          'captionField'=>'title',
+          'valueField'=>'id',
+          'siteSpecific'=>true
+        ),
+        array(
           'name'=>'emailShow',
           'caption'=>'Show email field even if logged in',
           'description'=>'If the survey requests an email address, it is sent implicitly for logged in users. Check this box to show it explicitly.',
