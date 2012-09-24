@@ -31,11 +31,6 @@ defined('SYSPATH') or die('No direct script access.');
 $config['private_key'] = 'Indicia';
 
 /**
- * Life span of an authentication token for services, in seconds.
- */
-$config['nonce_life'] = 1200;
-
-/**
  * Maximum size of an upload.
  */
 $config['maxUploadSize'] = '1M';
