@@ -79,7 +79,7 @@ var checkSubmitInProgress = function () {
       );
       // Set up a resize object if required
       var resize = (this.settings.resizeWidth!==0 || this.settings.resizeHeight!==0) ?
-          { width: this.settings.resizeWidth, height: this.settings.resizeHeight, quality: this.settings.resizeQuality } : null;
+          {width: this.settings.resizeWidth, height: this.settings.resizeHeight, quality: this.settings.resizeQuality} : null;
       this.uploader = new plupload.Uploader({
         runtimes : this.settings.runtimes,
         container : this.id,
@@ -252,6 +252,12 @@ var checkSubmitInProgress = function () {
           $(evt.target).parents('#'+id+' .progress').remove();
         }
       });
+      
+      if (this.settings.autopick) {
+        // Auto-display a file picker
+        $('#upload-select-btn-'+id).trigger('click')
+        
+      }
     });
   };
 })(jQuery);
@@ -261,7 +267,7 @@ var checkSubmitInProgress = function () {
  */
 $.fn.uploader.defaults = {
   caption : "Files",
-  uploadSelectBtnCaption : 'Add File(s)',
+  uploadSelectBtnCaption : 'Add file(s)',
   flickrSelectBtnCaption : 'Select photo on Flickr',
   uploadStartBtnCaption : 'Start Upload',
   useFancybox: true,
@@ -274,7 +280,7 @@ $.fn.uploader.defaults = {
   autoupload : true,
   maxFileCount : 4,
   existingFiles : [],
-  buttonTemplate : '<div class="indicia-button ui-state-default ui-corner-all" id="{id}"><span>{caption}</span></div>',
+  buttonTemplate : '<button id="{id}" type="button" class="indicia-button">{caption}</button>',
   file_boxTemplate : '<fieldset class="ui-corner-all">\n<legend>{caption}</legend>\n{uploadSelectBtn}\n{flickrSelectBtn}\n<div class="filelist"></div>' +
                  '{uploadStartBtn}</fieldset>',
   file_box_initial_file_infoTemplate : '<div id="{id}" class="ui-widget-content ui-corner-all photo"><div class="ui-widget-header ui-corner-all"><span>{filename} ({filesize})</span> ' +

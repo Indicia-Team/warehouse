@@ -334,7 +334,7 @@ $('.add-image-link').live('click', function(evt) {
     caption : 'Files',
     autoupload : '1',
     flickr : '',
-    uploadSelectBtnCaption : 'Select file(s)',
+    uploadSelectBtnCaption : 'Add more file(s)',
     startUploadBtnCaption : 'Start upload',
     msgUploadError : 'An error occurred uploading the file.',
     msgFileTooBig : 'The image file cannot be uploaded because it is larger than the maximum file size allowed.',
@@ -346,7 +346,8 @@ $('.add-image-link').live('click', function(evt) {
     jsPath : uploadSettings.jsPath,    
     table : table,
     maxUploadSize : '4000000', // 4mb
-    container: ctrlId
+    container: ctrlId,
+    autopick: true
   };
   if (typeof uploadSettings.resizeWidth!="undefined") opts.resizeWidth=uploadSettings.resizeWidth;
   if (typeof uploadSettings.resizeHeight!="undefined") opts.resizeHeight=uploadSettings.resizeHeight;

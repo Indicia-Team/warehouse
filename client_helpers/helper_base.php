@@ -34,12 +34,17 @@ global $indicia_templates;
 $indicia_templates = array(
   'blank' => '',
   'prefix' => '',
+  'jsWrap' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
+      "document.write('{content}');".
+      "/* ]]> */</script>\n",
   'label' => '<label for="{id}"{labelClass}>{label}:</label>'."\n",
   'suffix' => "<br/>\n",
   'nosuffix' => " \n",
+  'nullsuffix' => "",
   'requiredsuffix' => '<span class="deh-required">*</span><br/>'."\n",
   'requirednosuffix' => '<span class="deh-required">*</span>'."\n",
-  'button' => '<input type=\"button\" id=\"{id}\" class=\"ui-corner-all ui-widget-content ui-state-default indicia-button {class}\" value=\"{caption}\" />',
+  'button' => '<button id="{id}" type="button"{class}>{caption}</button>',
+  'submitButton' => '<input id="{id}" type="submit"{class} value="{caption}" />',
   'anchorButton' => '<a class=\"ui-corner-all ui-widget-content ui-state-default indicia-button {class}\" href=\"{href}\" id=\"{id}\">{caption}</a>',
   'lock_icon' => '<span id="{id}_lock" class="unset-lock">&nbsp;</span>',
   'lock_javascript' => "indicia.locks.initControls (
@@ -94,24 +99,6 @@ $indicia_templates = array(
       'document.write(\'<ul class="ui-helper-hidden">{tabs}</ul>\');'.
       "\n/* ]]> */</script>\n".
       "<noscript><ul>{tabs}</ul></noscript>\n",
-  'tab_next_button' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
-    "document.write('<div{class}>');\n".
-    "document.write('  <span>{captionNext}</span>');\n".
-    "document.write('  <span class=\"ui-icon ui-icon-circle-arrow-e\"></span>');\n".
-    "document.write('</div>');\n".
-    "/* ]]> */</script>\n",
-  'tab_prev_button' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
-    "document.write('<div{class}>');\n".
-    "document.write('  <span class=\"ui-icon ui-icon-circle-arrow-w\"></span>');\n".
-    "document.write('  <span>{captionPrev}</span>');\n".
-    "document.write('</div>');\n".
-    "/* ]]> */</script>\n",
-  'submit_button' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
-    "document.write('<div{class}>');\n".
-    "document.write('  <span>{captionSave}</span>');\n".
-    "document.write('</div>');\n".
-    "/* ]]> */</script>\n".
-    "<noscript><input type=\"submit\" value=\"{captionSave}\" /></noscript>\n",
   'loading_block_start' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
       'document.write(\'<div class="ui-widget ui-widget-content ui-corner-all loading-panel" >'.
       '<img src="'.helper_config::$base_url.'media/images/ajax-loader2.gif" />'.
@@ -253,7 +240,6 @@ $("#{parentControlId}").trigger("change.indicia");'."\n",
   'attribute_cell' => "\n<td class=\"scOccAttrCell ui-widget-content {class}\" headers=\"{headers}\">{content}</td>",
   'taxon_label_cell' => "\n<td class=\"scTaxonCell ui-state-default\" headers=\"{tableId}-species-{idx}\" {colspan}>{content}</td>",
   'helpText' => "\n<p class=\"{helpTextClass}\">{helpText}</p>",
-  'button' => '<div class="indicia-button ui-state-default ui-corner-all" id="{id}"><span>{caption}</span></div>',
   'file_box' => '',                   // the JQuery plugin default will apply, this is just a placeholder for template overrides.
   'file_box_initial_file_info' => '', // the JQuery plugin default will apply, this is just a placeholder for template overrides.
   'file_box_uploaded_image' => '',    // the JQuery plugin default will apply, this is just a placeholder for template overrides.
@@ -261,7 +247,8 @@ $("#{parentControlId}").trigger("change.indicia");'."\n",
   'paging' => '<div class="left">{first} {prev} {pagelist} {next} {last}</div><div class="right">{showing}</div>',
   'jsonwidget' => '<div id="{id}" {class}></div>',
   'report_picker' => '<div id="{id}" {class}>{reports}<div class="report-metadata"></div><div class="ui-helper-clearfix"></div></div>',
-  'report_download_link' => '<div class="report-download-link"><a href="{link}">{caption}</a></div>'
+  'report_download_link' => '<div class="report-download-link"><a href="{link}">{caption}</a></div>',
+  'verification_panel' => '<div id="verification-panel">{button}<div class="messages" style="display: none"></div></div>'
 );
 
 
@@ -475,6 +462,7 @@ class helper_base extends helper_config {
    * <li>spatialReports</li>
    * <li>jsonwidget</li>
    * <li>timeentry</li>
+   * <li>verification</li>
    * </ul>
    */
   public static function add_resource($resource)
@@ -568,7 +556,8 @@ class helper_base extends helper_config {
         'spatialReports' => array('javascript'=>array(self::$js_path.'spatialReports.js')),
         'jsonwidget' => array('javascript'=>array(self::$js_path."jsonwidget/json.js", self::$js_path."jsonwidget/jsonedit.js",
             self::$js_path."jquery.jsonwidget.js"), 'stylesheets'=>array(self::$css_path."jsonwidget.css")),
-        'timeentry' => array('javascript'=>array(self::$js_path."jquery.timeentry.pack.js"))
+        'timeentry' => array('javascript'=>array(self::$js_path."jquery.timeentry.pack.js")),
+        'verification' => array('javascript'=>array(self::$js_path."verification.js"))
       );
     }
     return self::$resource_list;
