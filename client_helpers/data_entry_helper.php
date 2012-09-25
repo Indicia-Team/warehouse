@@ -2328,7 +2328,7 @@ class data_entry_helper extends helper_base {
    * Builds an array to filter for the appropriate selection of species names, e.g. how it accepts searches for 
    * common names and synonyms.
    */
-  private static function get_species_names_filter($options) {
+  public static function get_species_names_filter($options) {
     // $wheres is an array for building of the filter query
     $wheres = array();
     $r = array();
@@ -2345,20 +2345,20 @@ class data_entry_helper extends helper_base {
           else
             $r += array('preferred'=>'t');
           break;
-        case 'language' :
+        case 'currentLanguage' :
           if (isset($options['language'])) {
             $r += array($colLanguage=>$options['language']);
           } elseif (isset($user)) {
             // if in Drupal we can use the user's language
             $r += array($colLanguage=>iform_lang_iso_639_2($user->lang));
           }
-          break;
         case 'excludeSynonyms':
           if (isset($options['cacheLookup']) && $options['cacheLookup'])
             $wheres[] = "(preferred='t' or language_iso<>'lat')";
           else
             $wheres[] = "(preferred='t' or language<>'lat')";
           break;
+        default: drupal_set_message($options['speciesNameFilterMode']);
       }
     }
     $query=array();
@@ -2368,7 +2368,6 @@ class data_entry_helper extends helper_base {
       if ($options['cache_lookup'] && $options['taxonFilterField']==='preferred_name')
         $options['taxonFilterField']='preferred_taxon';
       $query = array('in'=>array($options['taxonFilterField'], $options['taxonFilter']));
-      $extraParams['query'] = json_encode($query);
     }
     if (!empty($wheres))
       $query['where']=array(implode(' AND ', $wheres));

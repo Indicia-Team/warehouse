@@ -155,7 +155,7 @@ class report_helper extends helper_base {
   * <li><b>readAuth</b><br/>
   * Read authorisation tokens.</li>
   * <li><b>dataSource</b><br/>
-  * Name of the report file or table/view.</li>
+  * Name of the report file or singular form of the table/view.</li>
   * <li><b>view</b>
   * When loading from a view, specify list, gv or detail to determine which view variant is loaded. Default is list.
   * </li>
