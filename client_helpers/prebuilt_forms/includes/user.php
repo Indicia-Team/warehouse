@@ -152,8 +152,6 @@ function apply_user_replacements($text) {
 function get_attr_options_array_with_user_data($listData) {
   $r = array();
   $data=get_options_array_with_user_data($listData);
-  drupal_set_message('Interim input data: '.print_r($listData, true));
-  drupal_set_message('Interim data: '.print_r($data, true));
   foreach ($data as $key=>$value) {
     $tokens = explode('|', $key);
     $r[$tokens[0]][$tokens[1]] = $value;
