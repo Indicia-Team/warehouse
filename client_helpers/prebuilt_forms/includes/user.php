@@ -112,6 +112,8 @@ function get_options_array_with_user_data($listData) {
  */
 function apply_user_replacements($text) {
   global $user;
+  if (!is_string($text))
+    return $text;
   $replace=array('{user_id}', '{username}', '{email}');
   $replaceWith=array($user->uid, $user->name, $user->mail);
   // Do basic replacements and trim the data
