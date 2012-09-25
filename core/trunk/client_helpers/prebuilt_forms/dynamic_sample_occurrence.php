@@ -185,6 +185,17 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           'default' => 'reports_for_prebuilt_forms/dynamic_sample_occurrence_samples'
         ),
         array(
+          'name' => 'verification_panel',
+          'caption' => 'Include verification precheck button',
+          'description' => 'Include a "Precheck my records" button which allows the user to request an automated '.
+              'verification check to be run against their records before submission, enabling them to provide '.
+              'additional information for any records which are likely to be contentious.',
+          'type'=>'checkbox',
+          'group' => 'User Interface',
+          'default' => false,
+          'required' => falase
+        ),
+        array(
           'name'=>'users_manage_own_sites',
           'caption'=>'Users can save sites',
           'description'=>'Allow users to save named sites for recall when they add records in future. Users '.

@@ -205,6 +205,7 @@ class iform_map_explorer {
       'paramDefaults'=>$reportOptions['paramDefaults'],
       'autoParamsForm'=>false,
       'reportGroup'=>'explore',
+      'rememberParamsReportGroup'=>'explore',
       'clickableLayersOutputMode'=>'report',
       'sharing'=>$sharing,
       'rowId'=>'occurrence_id'

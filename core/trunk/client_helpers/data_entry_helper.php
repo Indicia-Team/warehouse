@@ -835,7 +835,7 @@ class data_entry_helper extends helper_base {
       'id' => 'imp-georef-search',
       'driver' => 'geoplanet',
       'searchButton' => self::apply_replacements_to_template($indicia_templates['button'], 
-          array('href'=>'#', 'id'=>'imp-georef-search-btn', 'class' => 'inline-control', 'caption'=>lang::get('Search'))),
+          array('href'=>'#', 'id'=>'imp-georef-search-btn', 'class' => 'class="indicia-button"', 'caption'=>lang::get('Search'))),
       'public' => false,
       'autoCollapseResults' => false
     ), $options);
@@ -2028,7 +2028,7 @@ class data_entry_helper extends helper_base {
   * Number of repeating columns of output. For example, a simple grid of species checkboxes could be output in 2 or 3 columns.
   * Defaults to 1.</li>
   * <li><b>rowInclusionCheck</b><br/>
-  * Defines how the system determines whether a row in the grid actually contains an occurrence or not. There are 3 options: <br/>
+  * Defines how the system determines whether a row in the grid actually contains an occurrence or not. There are 4 options: <br/>
   * checkbox - a column is included in the grid containing a presence checkbox. If checked then an occurrence is created for the row. This is the default unless listId is not set.<br/>
   * alwaysFixed - occurrences are created for all rows in the grid. Rows cannot be removed from the grid apart from newly added rows.<br/>
   * alwaysRemovable - occurrences are created for all rows in the grid. Rows can always be removed from the grid. Best used with no listId so there are
@@ -2099,7 +2099,7 @@ class data_entry_helper extends helper_base {
       $filterParam = json_encode($filterArray);
       self::$javascript .= "indiciaData['taxonExtraParams-".$options['id']."'] = $filterParam;\n";
     }
-    
+    self::$javascript .= "indiciaData['rowInclusionCheck-".$options['id']."'] = '".$options['rowInclusionCheck']."';\n";
     if ($options['occurrenceImages']) {
       self::add_resource('plupload');
       // store some globals that we need later when creating uploaders
@@ -2293,7 +2293,7 @@ class data_entry_helper extends helper_base {
         $grid .= "<tr style=\"display: none\"><td></td></tr>\n";
       $grid .= "</tbody>\n</table>\n";
       // in hasData mode, the wrap_species_checklist method must be notified of the different default way of checking if a row is to be
-      // made into an occurrence
+      // made into an occurrence.
       if ($options['rowInclusionCheck']=='hasData')
         $grid .= '<input name="rowInclusionCheck" value="hasData" type="hidden" />';
       self::add_resource('addrowtogrid');
@@ -3131,6 +3131,45 @@ $('div#$escaped_divId').indiciaTreeBrowser({
 });\n";
     return self::apply_template('tree_browser', $options);
   }
+  
+  /**
+   * Requires the data_cleaner module to be enabled on the warehouse.
+   * @global type $indicia_templates
+   * @param type $options
+   * - readAuth
+   * - panelOnly
+   * @return type 
+   */
+  public function verification_panel($options) {
+    global $indicia_templates;
+    $options = array_merge(array(
+      'panelOnly'=>false
+    ), $options);
+    $button=$options['panelOnly'] ? '' :
+          self::apply_replacements_to_template($indicia_templates['button'], 
+          array('href'=>'#', 'id'=>'verify-btn', 'class' => 'class="indicia-button"', 'caption'=>lang::get('Precheck my records')));
+    $replacements = array(
+      'button'=>$button
+    );
+    self::add_resource('verification');
+    $url = self::$base_url;
+    self::$javascript .= "indiciaData.indiciaSvc='$url';\n";
+    self::$javascript .= "indiciaData.auth_token='".$options['readAuth']['auth_token']."';\n";
+    self::$javascript .= "indiciaData.nonce='".$options['readAuth']['nonce']."';\n";
+    self::$javascript .= "indiciaData.verifyMessages=[];\n";
+    self::$javascript .= "indiciaData.verifyMessages.nothingToCheck='".
+        lang::get('There are no records on this form to check.')."';\n";
+    self::$javascript .= "indiciaData.verifyMessages.completeRecordFirst='".
+        lang::get('Before checking, please complete at least the date and grid reference of the record.')."';\n";
+    self::$javascript .= "indiciaData.verifyMessages.noProblems='".
+        lang::get('Automated verification checks did not find anything of note.')."';\n";
+    self::$javascript .= "indiciaData.verifyMessages.problems='".
+        lang::get('Automated verification checks resulted in the following messages:')."';\n";
+    self::$javascript .= "indiciaData.verifyMessages.problemsFooter='".
+        lang::get('A message not mean that there is anything wrong with the record, but if you can provide as much information '.
+            'as possible, including photos, then it will help with its confirmation.')."';\n";
+    return self::apply_replacements_to_template($indicia_templates['verification_panel'], $replacements);
+  }
 
   /**
   * Insert buttons which, when clicked, displays the next or previous tab. Insert this inside the tab divs
@@ -3152,40 +3191,55 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * <li><b>page</b><br/>
   * Specify first, middle or last to indicate which page this is for. Use middle (the default) for
   * all pages other than the first or last.</li>
+  * <li><b>includeVerifyButton</b>
+  * Defaults to false. If set to true, then a Precheck my records button is added to the
+  * button set. There must be a verification_panel control added to the page somewhere
+  * with the panelOnly option set to true. When this button is clicked, the verification
+  * panel will be populated with the output of the automated verification check run
+  * against the proposed records on the form.
+  * </li>
   * </ul>
   *
   * @link http://docs.jquery.com/UI/Tabs
   */
   public static function wizard_buttons($options=array()) {
+    global $indicia_templates;
     // Default captions
     $options = array_merge(array(
       'captionNext' => 'next step',
       'captionPrev' => 'prev step',
       'captionSave' => 'save',
-      'buttonClass' => 'ui-widget-content ui-state-default ui-corner-all indicia-button',
+      'buttonClass' => 'indicia-button',
       'class'       => 'right',
       'page'        => 'middle',
-      'suffixTemplate' => 'nosuffix'
+      'suffixTemplate' => 'nullsuffix',
+      'includeVerifyButton' => false
     ), $options);
     $options['class'] .= ' buttons';
-    // localise the captions
-    $options['captionNext'] = lang::get($options['captionNext']);
-    $options['captionPrev'] = lang::get($options['captionPrev']);
-    $options['captionSave'] = lang::get($options['captionSave']);
     // Output the buttons
     $r = '<div class="'.$options['class'].'">';
     $buttonClass=$options['buttonClass'];
     if (array_key_exists('divId', $options)) {
+      if ($options['includeVerifyButton']) {
+        $r .= self::apply_replacements_to_template($indicia_templates['button'], 
+          array('href'=>'#', 'id'=>'verify-btn', 'class' => 'class="indicia-button"', 'caption'=>lang::get('Precheck my records')));
+      }
       if ($options['page']!='first') {
         $options['class']=$buttonClass." tab-prev";
-        $r .= self::apply_template('tab_prev_button', $options);
+        $options['id']='tab-prev';
+        $options['caption']='&lt; '.lang::get($options['captionPrev']);
+        $r .= str_replace('{content}', self::apply_template('button', $options), $indicia_templates['jsWrap']);
       }
       if ($options['page']!='last') {
         $options['class']=$buttonClass." tab-next";
-        $r .= self::apply_template('tab_next_button', $options);
+        $options['id']='tab-next';
+        $options['caption']=lang::get($options['captionNext']).' &gt;';
+        $r .= str_replace('{content}', self::apply_template('button', $options), $indicia_templates['jsWrap']);
       } else {
         $options['class']=$buttonClass." tab-submit";
-        $r .= self::apply_template('submit_button', $options);
+        $options['id']='tab-submit';
+        $options['caption']=lang::get($options['captionSave']);
+        $r .= str_replace('{content}', self::apply_template('submitButton', $options), $indicia_templates['jsWrap']);
       }
     }
     $r .= '</div><div style="clear:both"></div>';

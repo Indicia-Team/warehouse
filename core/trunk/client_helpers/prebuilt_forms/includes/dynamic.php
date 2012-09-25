@@ -239,22 +239,32 @@ class iform_dynamic {
         $r .= '<h1>'.$headerOptions['tabs']['#'.$tabalias].'</h1>';        
       }
       $r .= $tabContent;    
+      if (isset($args['verification_panel']) && $args['verification_panel'] && $pageIdx==count($tabHtml)-1)
+        $r .= data_entry_helper::verification_panel(array('readAuth'=>$auth['read'], 'panelOnly'=>true));
       // Add any buttons required at the bottom of the tab   
       if ($args['interface']=='wizard') {
         $r .= data_entry_helper::wizard_buttons(array(
           'divId'=>'controls',
-          'page'=>$pageIdx===0 ? 'first' : (($pageIdx==count($tabHtml)-1) ? 'last' : 'middle')
+          'page'=>$pageIdx===0 ? 'first' : (($pageIdx==count($tabHtml)-1) ? 'last' : 'middle'),
+          'includeVerifyButton'=>isset($args['verification_panel']) && $args['verification_panel'] 
+              && ($pageIdx==count($tabHtml)-1)
         ));        
-      } elseif ($pageIdx==count($tabHtml)-1 && !($args['interface']=='tabs' && $args['save_button_below_all_pages']))
-        // last part of a non wizard interface must insert a save button, unless it is tabbed interface with save button beneath all pages 
-        $r .= "<input type=\"submit\" class=\"default-button\" id=\"save-button\" value=\"".lang::get('Submit')."\" />\n";      
+      } elseif ($pageIdx==count($tabHtml)-1) {
+        // We need the verify button as well if this option is enabled
+        if (isset($args['verification_panel']) && $args['verification_panel'])
+          $r .= '<button type="button" class="indicia-button" id="verify-btn">'.lang::get('Precheck my records')."</button>\n";
+        if (!($args['interface']=='tabs' && $args['save_button_below_all_pages'])) 
+          // last part of a non wizard interface must insert a save button, unless it is tabbed 
+          // interface with save button beneath all pages
+          $r .= '<input type="submit" class="indicia-button" id="save-button" value="'.lang::get('Submit')."\" />\n";    
+      }
       $pageIdx++;
       $r .= "</div>\n";      
     }
     $r .= "</div>\n";
-    if ($args['interface']=='tabs' && $args['save_button_below_all_pages']) {
-      $r .= "<input type=\"submit\" class=\"default-button\" id=\"save-button\" value=\"".lang::get('Submit')."\" />\n";
-    }
+    // add a single submit button outside the tabs if they want a button visible all the time
+    if ($args['interface']=='tabs' && $args['save_button_below_all_pages']) 
+      $r .= "<input type=\"submit\" class=\"indicia-button\" id=\"save-button\" value=\"".lang::get('Submit')."\" />\n";
     if(!empty(data_entry_helper::$validation_errors)){
       $r .= data_entry_helper::dump_remaining_errors();
     }   
