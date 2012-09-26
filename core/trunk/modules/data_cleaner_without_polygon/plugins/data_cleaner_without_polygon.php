@@ -73,8 +73,9 @@ function data_cleaner_without_polygon_data_cleaner_postprocess($id, $db) {
         default:
           continue; // we don't know this grid square type - should not have come back from the query
       }
+      $srid=kohana::config('sref_notations.internal_srid');
       try {
-        $wktList[]="(st_geomfromtext('".spatial_ref::sref_to_internal_wkt($gridSquare->key, $system)."'))";
+        $wktList[]="(st_geomfromtext('".spatial_ref::sref_to_internal_wkt($gridSquare->key, $system)."', $srid))";
       } catch (Exception $e) {
         kohana::debug('alert', 'Did not import grid square '.$gridSquare->key." for rule $id");
         error::log_error('Importing without polygon rules', $e);
