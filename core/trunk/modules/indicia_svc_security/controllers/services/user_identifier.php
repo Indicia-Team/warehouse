@@ -381,9 +381,13 @@ class User_Identifier_Controller extends Service_Base_Controller {
     if (count($qry)===0)
       // insert new join record
       $uw=ORM::factory('users_website');
-    else
+    else {
       // update existing
       $uw=ORM::factory('users_website', $qry[0]['id']);
+      if ($uw->site_role_id===1 || $uw->site_role_id===2)
+        // don't bother updating, they are already admin or editor for this site
+        return;
+    }
     $data = array(
       'user_id'=>$userId,
       'website_id'=>$this->website_id,
