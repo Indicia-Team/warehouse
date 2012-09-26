@@ -637,6 +637,7 @@ recalcNumSites = function(){
 recalcNumSites();
 clearLocation = function(hookArg){ // clears all the data in the fields.
   jQuery('#".$options['MainFieldID'].($args['locationMode']!='multi' ? ",#sample-location-name,#sample-location-id" : "").",#location-name,#centroid_sref,#imp-srefX,#imp-srefY,#centroid_geom,#boundary_geom,[name=location\\:comment],[name=location\\:parent_id],#location-code').val('');
+  jQuery('#location-code').attr('dbCode','');
 ".($args['locationMode']!='multi' ? "  jQuery('#location-name option').removeAttr('disabled');\n  ":"").
 "  jQuery('#location_location_type_id').val('$primary');
   // first  to remove any hidden multiselect checkbox unclick fields
@@ -806,7 +807,7 @@ loadLocation = function(feature){ // loads all the data into the location fields
   jQuery('#location_location_type_id').val(feature.attributes.data.location_type_id);
   jQuery('[name=location\\:comment]').val(feature.attributes.data.comment);
   jQuery('[name=location\\:parent_id]').val(feature.attributes.data.parent_id);
-  jQuery('#location-code').val(feature.attributes.data.code);
+  jQuery('#location-code').val(feature.attributes.data.code).attr('dbCode',feature.attributes.data.code);
   jQuery('#imp-geom').val(feature.attributes.data.centroid_geom);
   jQuery('#imp-boundary-geom').val(feature.attributes.data.boundary_geom);
   setSref(feature.geometry, feature.attributes.data.centroid_sref);
@@ -2436,6 +2437,8 @@ jQuery(\"#".$options['ChooseParentFieldID']."\").change(function(){
       $responseRecords = data_entry_helper::get_population_data($location_list_args);
       if (isset($responseRecords['error'])) return $responseRecords['error'];
       iform_mnhnl_set_editable($auth, $args, $node, $responseRecords, 'conditional', $loctypeParam);
+	$usedCodes = array();
+	$maxCode = 0;
       $NameOpts = '';
       foreach ($responseRecords as $record){
         if($record['name']!=''){
@@ -2443,8 +2446,13 @@ jQuery(\"#".$options['ChooseParentFieldID']."\").change(function(){
                       'value' => $record['id'],
                       'caption' => htmlspecialchars(utf8_decode($record['name'])));
           $NameOpts .= data_entry_helper::mergeParamsIntoTemplate($item, $location_list_args['itemTemplate']);
+          if($record['code']!=''){
+            $usedCodes[] = "\"".$record['code']."\"";
+            if($maxCode < $record['code']) $maxCode = $record['code'];
+          }
         }
       }
+      data_entry_helper::$javascript .="\nvar usedCodes = [".implode(',',$usedCodes)."];\nvar defaultCode = ".($maxCode +1).";\n";
       $retVal .= '<p>'.$options['Instructions2'].'</p>'.($options['AdminMode'] && (!isset($args['adminsCanCreate']) || !$args['adminsCanCreate']) ? '<p>'.lang::get('LANG_LocModTool_CantCreate').'</p>' : '' ).'<fieldset><legend>'.lang::get('Existing locations').'</legend>';
       if($NameOpts != ''){
         $location_list_args['items'] = str_replace(array('{value}', '{caption}', '{selected}'),
@@ -3081,7 +3089,7 @@ hook_setSref = function(geom){
       $retVal .= "<input type='hidden' id=\"sample-location-id\" name=\"sample:location_id\" value='".data_entry_helper::$entity_to_load['sample:location_id']."' />";
     }
     if(isset($args['includeLocationCode']) && $args['includeLocationCode'])
-      $retVal .= "<label for=\"location-code\">".$options['CodeLabel'].":</label> <input id=\"location-code\" name=\"location:code\" value=\"".htmlspecialchars(data_entry_helper::$entity_to_load['location:code'])."\"><br />";
+      $retVal .= "<label for=\"location-code\">".$options['CodeLabel'].":</label> <input id=\"location-code\" class=\"integer\" min=1 name=\"location:code\" value=\"".htmlspecialchars(data_entry_helper::$entity_to_load['location:code'])."\" dbCode=\"".htmlspecialchars(data_entry_helper::$entity_to_load['location:code'])."\"><br />";
     // Move any Attribute fields side by side.
     if(isset($args['removeBreakLocAttrIDs']) && $args['removeBreakLocAttrIDs']!=""){
       $removeBreakLocAttrIDs = explode(':', $args['removeBreakLocAttrIDs']);

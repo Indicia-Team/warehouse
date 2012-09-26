@@ -1071,10 +1071,16 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
    * @return array Submission structure.
    */
   public static function get_submission($values, $args) {
-    if (isset($values['source']))
-      return submission_builder::wrap_with_images($values, 'location');
-  	if (isset($values['sample:location_id']) && $values['sample:location_id']=='') unset($values['sample:location_id']);
-  	if (isset($values['sample:recorder_names'])){
+    if (isset($values['source'])){ // comes from main Sites tab, Admins may create so need to check for locations_website entry
+      $locModel = submission_builder::wrap_with_images($values, 'location');
+      if(isset($values['locations_website:website_id'])) // assume no other submodels
+        $locModel['subModels'] = array(array('fkId' => 'location_id',
+                                             'model' => array('id' => 'locations_website',
+                                                              'fields' => array('website_id' =>array('value' => $values['locations_website:website_id'])))));
+      return $locModel;
+    }
+    if (isset($values['sample:location_id']) && $values['sample:location_id']=='') unset($values['sample:location_id']);
+    if (isset($values['sample:recorder_names'])){
       if(is_array($values['sample:recorder_names'])){
         $values['sample:recorder_names'] = implode("\r\n", $values['sample:recorder_names']);
       }
