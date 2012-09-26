@@ -1,0 +1,89 @@
+.taxon-cell {
+  background-color: #FFFFFF;
+  padding: 3px;
+  border: solid silver 1px;
+  margin: 3px;
+  float: left;
+}
+
+.taxon-cell img {
+  border: none; 
+  padding: 0 !important;
+}
+
+.taxon-cell div {
+  text-align: center; 
+  background-color: #ddddff; 
+  font-weight: bold;
+}
+
+.taxon-desc {
+  float: right;
+  width: 170px;
+  vertical-align: top;
+}
+
+.taxon-desc ul {
+  padding-left: 0;
+}
+
+.taxon-desc ul li {
+  list-style-type: none;
+  padding: 0.2em 0;
+  background: none;
+}
+
+.scTaxonCell {
+  padding-right: 1em;
+  border-bottom: dashed 1px #aaaaff;
+  width: 440px;
+}
+
+.scOccAttrCell {
+  padding: 1em;
+  border-bottom: dashed 1px #aaaaff;
+  border-left: dashed 1px #aaaaff;
+  vertical-align: top;
+}
+
+.scOccAttrCell label {
+  margin: 0;
+  width: auto;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+
+.scOccAttrCell input {
+  width: 60px;
+}
+
+#map img {
+  border: none;
+}
+
+.sighting-platform input {
+  margin: 0 1em 0.5em 0.5em;
+  padding-top: 2px;
+}
+
+.footer {
+  margin-top: 1.5em;
+}
+
+.footer label.auto {
+  width: 450px;
+}
+
+.hidden {
+  position: absolute;
+  left: -9999px;
+  border: solid red 1px;
+}
+
+#entry_form label {
+  margin-top: 7px;
+}
+
+p.inline-error {
+  margin-bottom:0;
+}

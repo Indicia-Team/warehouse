@@ -1,0 +1,28 @@
+<report
+    title="LuxBio: Sites Outside Square Check Report"
+    description="Form Internal Report: Used by the Location module on MNHNL/LuxBio forms to identify those Sites which have a centroid which is outside the boundary of their parent location."
+>
+  <query>
+  SELECT l2.name as square,
+        l.name as location_name,
+        l.id as location_id,
+  		regexp_replace(l.centroid_sref, ',|\\.[0-9]*' , '', 'g') as xy
+  FROM locations l
+  INNER JOIN locations l2 ON (l2.id = l.parent_id AND ST_Within(l.centroid_geom, l2.boundary_geom) = FALSE)
+  WHERE l.deleted = FALSE AND l.location_type_id IN (#primary_loc_type_id#, #secondary_loc_type_id#)
+  #order_by#
+  </query>
+  <order_bys>
+    <order_by>l.id ASC</order_by>
+  </order_bys>
+  <params>
+    <param name='primary_loc_type_id' display='Location Type: ' description='Term ID for the Location Type used to indicate primary locations:' datatype='int' />
+    <param name='secondary_loc_type_id' display='Location Type: ' description='Term ID for the Location Type used to indicate secondary locations:' datatype='int' />
+  </params>
+  <columns>
+    <column name='square' display='Square' />
+    <column name='location_name' display='Site name' />
+    <column name='location_id' display='Indicia ID' />
+    <column name='xy' display='X Y' />
+  </columns>
+</report>
