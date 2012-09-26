@@ -48,6 +48,7 @@
   </params>
   <columns>
     <column name='occurrence_id' display='ID' sql='co.id' datatype='integer' template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />
+    <column name='recordkey' display='RecordKey' sql="'iBRC' || co.id" datatype="text" />
     <column name='source' display='Source' sql="w.title || ' | ' || co.survey_title" datatype="text" />
     <column name='sample_id' visible='false' sql='co.sample_id' datatype='integer' />
     <column name='taxon' display='Species' 

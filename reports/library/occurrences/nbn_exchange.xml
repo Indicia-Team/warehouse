@@ -7,12 +7,14 @@ select #columns#
 from cache_occurrences co
 join occurrences o on o.id=co.id -- ensure we have the latest status. Would not be needed if cache_occurrences reflects updated immediately
 join samples s on s.id=o.sample_id
+left join index_locations_samples ils on ils.sample_id=co.sample_id
+left join locations l on l.id=ils.location_id
 #agreements_join#
 #joins#
 where #sharing_filter# 
 and co.date_type in ('D','DD','O','OO','Y','YY','-Y','U') 
 and (#ownData#=0 or CAST(co.created_by_id as character varying)='#currentUser#')
-and lower(s.entered_sref_system) in ('osgb', 'osni', '4326', '27700')
+and (s.entered_sref_system ilike 'osgb' or s.entered_sref_system ilike 'osni' or s.entered_sref_system = '4326' or s.entered_sref_system = '27700')
 and (trim('#date_from#')='' or '#date_from#'='Click here' or co.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
 and (trim('#date_to#')='' or '#date_to#'='Click here' or co.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))            
 and quality_check('#quality#', co.record_status, co.certainty)=true
@@ -21,7 +23,7 @@ and co.taxa_taxon_list_external_key is not null
   </query>
   
   <order_bys>
-    <order_by>o.id ASC</order_by>
+    <order_by>co.id ASC</order_by>
   </order_bys>
   <params>
     <param name='date_from' display='Date From' datatype='date' description="Filter by record added or updated date" />
@@ -47,6 +49,7 @@ and co.taxa_taxon_list_external_key is not null
     </param>
   </params>
   <columns>
+    <column name='id' display='ID' sql="co.id" datatype="integer" visible="false" />
     <column name='recordkey' display='RecordKey' sql="'iBRC' || co.id" datatype="text" />
     <column name='surveykey' display='SurveyKey' sql='co.survey_id' datatype="integer" />
     <column name='samplekey' display='SampleKey' sql='co.sample_id' datatype="integer" />
@@ -70,7 +73,8 @@ and co.taxa_taxon_list_external_key is not null
     when '27700' then 1
     else pow(10, (12-length(replace(s.entered_sref, ' ', '')))/2)
   end" 
-        datatype="text" />    
+        datatype="text" />
+    <column name="vicecounty" display="ViceCounty" sql="array_to_string(array_agg(l.name), ', ')" datatype="text" aggregate="true" />        
     <column name='recorder' display='Recorder' sql='co.recorders' datatype="text" />
     <column name='verifier' display='Verifier' sql='co.verifier' datatype="text" />
         
