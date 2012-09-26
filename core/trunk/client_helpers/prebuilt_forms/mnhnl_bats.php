@@ -244,6 +244,7 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
   </div>'.iform_mnhnl_locModTool(parent::$auth, $args, parent::$node);
     $r .= self::getSiteTypeJS(parent::$auth, $args);
     self::communeJS(parent::$auth, $args);
+    self::set_code_functionality(parent::$auth, $args, true);
     return $r;
   }
   
@@ -573,17 +574,7 @@ jQuery('#smpAttr\\\\:$attrId').next().after(\"<span class='extra-text'>".lang::g
     return iform_mnhnl_PointGrid($auth, $args, $options); 
   }
 
-  /**
-   * Get the location module control
-   */
-  protected static function get_control_locationmodule($auth, $args, $tabalias, $options) {
-    $retVal = iform_mnhnl_lux5kgridControl($auth, $args, parent::$node, array_merge(
-      array('initLoadArgs' => '{initial: true}'), $options));
-    $isAdmin = user_access('IForm n'.parent::$node->nid.' admin');
-    if(!$isAdmin)
-      data_entry_helper::$javascript .= "
-jQuery('#location-code').attr('readonly','readonly');
-";
+  private static function set_code_functionality($auth, $args, $isAdmin) {
     if($args['LocationTypeTerm']=='' && isset($args['loctoolsLocTypeID'])) $args['LocationTypeTerm']=$args['loctoolsLocTypeID'];
     $primary = iform_mnhnl_getTermID($auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
     if($args['SecondaryLocationTypeTerm'] != ''){
@@ -592,24 +583,31 @@ jQuery('#location-code').attr('readonly','readonly');
     } else {
       $loctypequery="&location_type_id=".$primary;
     }
-    data_entry_helper::$javascript .= "
-// this is called after the location is cleared, including the code. If when we come to set the code
-// we find it is filled in, it must have been set by fetch from DB so leave...
+    data_entry_helper::$javascript .= "// This is called after the location is cleared, including the code.
 hook_set_defaults=function(){
-  jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/location' +
-            '?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"].$loctypequery."&callback=?', function(data) {
-      // store value in saved field?
-      var maxCode = 0;
-      if (data instanceof Array && data.length>0) {
-        for(var i = 0; i< data.length; i++){
-          if(parseInt(data[i].code) > maxCode)
-            maxCode = parseInt(data[i].code)
-        }
-      }
-      if(jQuery('[name=location\\:code]').val() == '')
-        jQuery('[name=location\\:code]').val(maxCode+1);
-    });
-};";
+  // If we come to set the code and we find it is filled in, it must have already been set by a fetch from DB so leave...
+  if(jQuery('[name=location\\:code]').val() == '')
+    jQuery('[name=location\\:code]').val(defaultCode);
+};\n";
+    if(!$isAdmin)
+      data_entry_helper::$javascript .= "jQuery('#location-code').attr('readonly','readonly');\n";
+    else { 
+      data_entry_helper::$javascript .= "jQuery('#location-code').change(function(){
+  if(jQuery.inArray(jQuery(this).val(), usedCodes) >= 0 && jQuery(this).attr('dbCode') != jQuery(this).val()) {
+    alert(\"".lang::get('This code is already in use. The value will be set to the next in sequence: ')."\" + defaultCode + \". \"+(jQuery(this).attr('dbCode') != '' ? \"".lang::get('This site previously had a code of: ')."\"+jQuery(this).attr('dbCode') : ''));
+    jQuery(this).val(defaultCode);
+  }
+});\n";
+    }
+  }
+
+  /**
+   * Get the location module control
+   */
+  protected static function get_control_locationmodule($auth, $args, $tabalias, $options) {
+    $retVal = iform_mnhnl_lux5kgridControl($auth, $args, parent::$node, array_merge(
+      array('initLoadArgs' => '{initial: true}'), $options));
+    self::set_code_functionality($auth, $args, user_access('IForm n'.parent::$node->nid.' admin'));
     return $retVal;
   }
 
@@ -1096,8 +1094,14 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
    * @return array Submission structure.
    */
   public static function get_submission($values, $args) {
-    if (isset($values['source']))
-      return submission_builder::wrap_with_images($values, 'location');
+    if (isset($values['source'])){ // comes from main Sites tab, Admins may create so need to check for locations_website entry
+      $locModel = submission_builder::wrap_with_images($values, 'location');
+      if(isset($values['locations_website:website_id'])) // assume no other submodels
+        $locModel['subModels'] = array(array('fkId' => 'location_id',
+                                             'model' => array('id' => 'locations_website',
+                                                              'fields' => array('website_id' =>array('value' => $values['locations_website:website_id'])))));
+      return $locModel;
+    }
     if (isset($values['sample:recorder_names'])){
       if(is_array($values['sample:recorder_names'])){
         $values['sample:recorder_names'] = implode("\r\n", $values['sample:recorder_names']);
