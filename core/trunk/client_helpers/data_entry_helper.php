@@ -2358,7 +2358,6 @@ class data_entry_helper extends helper_base {
           else
             $wheres[] = "(preferred='t' or language<>'lat')";
           break;
-        default: drupal_set_message($options['speciesNameFilterMode']);
       }
     }
     $query=array();
