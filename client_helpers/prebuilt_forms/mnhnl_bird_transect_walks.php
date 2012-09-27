@@ -505,6 +505,11 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
       <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "direction_attr_id":'.$sample_walk_direction_id.', "closed_attr_id":'.$sample_closure_id.'}\' />
       <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Direction_Report_Button').'">
     </form>
+    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_btw_verified_data_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
+      <p>'.lang::get('LANG_Verified_Data_Report').'</p>
+      <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].'}\' />
+      <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Verified_Data_Report_Button').'">
+    </form>
     <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
       <p>'.lang::get('LANG_Initial_Download').'</p>
       <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "closed_attr_id":'.$sample_closure_id.', "download": "INITIAL"}\' />
