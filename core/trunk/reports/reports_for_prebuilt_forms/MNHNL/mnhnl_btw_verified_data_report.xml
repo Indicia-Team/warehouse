@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="MNHNL COBIMO Verified Data Report" description="Lists all verified occurrences. Normally invoked from Reports and Downloads tab on the form.">
+  <params>
+    <param name='survey_id' display='Survey: ' description='Select the survey to return data for:' datatype='lookup'
+        query='SELECT id, title as caption FROM surveys' />
+  </params>
+  <vagueDate enableProcessing='true' />
+  <table tablename="samples" where="#this#.deleted = FALSE and #this#.parent_id IS NULL and #this#.survey_id = #survey_id#" > 
+    <subTable tablename="locations" where="#this#.deleted = FALSE" >
+      <tabColumn name='name' display='Transect'/>
+    </subTable>
+    <tabColumn name='date_start' visible='false'/>
+    <tabColumn name='date_end' visible='false'/>
+    <tabColumn name='date_type' visible='false'/>
+    <tabColumn name='date' func="''"/> // dummy field for the vague date processing, here so appears at logical position and with reasonable description in the report
+    <attributes separator='|' />
+    <subTable tablename="samples" parentKey="id" tableKey="parent_id" where="#this#.deleted = FALSE" >
+    <tabColumn name='entered_sref' display='Spatial Reference'/>
+    <tabColumn name='entered_sref_system'  display='SRef System'/>
+      <subTable tablename="occurrences" parentKey="id" where=" #this#.deleted = FALSE and #this#.record_status='V'" >
+        <subTable tablename='cache_taxa_taxon_lists' parentKey="taxa_taxon_list_id" >
+          <tabColumn name='taxon' display='Entered Species'/>
+          <tabColumn name='preferred_taxon' display='Preferred Species'/>
+        </subTable>
+        <attributes separator='|' /> 
+        <tabColumn name='comment' />
+        <tabColumn name='id' visible='true' />
+      </subTable>    
+    </subTable>    
+  </table>
+</report>
