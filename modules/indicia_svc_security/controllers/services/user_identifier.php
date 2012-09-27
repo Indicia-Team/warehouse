@@ -73,17 +73,19 @@ class User_Identifier_Controller extends Service_Base_Controller {
    */
   public function get_user_id() {
     try {
-      if (!array_key_exists('identifiers', $_REQUEST))
+      // don't use $_REQUEST as it can do funny things escaping quotes etc.
+      $request=array_merge($_GET, $_POST);
+      if (!array_key_exists('identifiers', $request))
         throw new exception('Error: missing identifiers parameter');
-      $identifiers = json_decode($_REQUEST['identifiers']);
+      $identifiers = json_decode($request['identifiers']);
       if (!is_array($identifiers))
         throw new Exception('Error: identifiers parameter not of correct format');
-      if (!isset($_REQUEST['surname']))
+      if (!isset($request['surname']))
         throw new exception('Call to get_user_id requires a surname in the GET or POST data.');
       // We don't need a website_id in the request as the authentication data contains it, but
       // we do need to know the cms_user_id so that we can ensure any previously recorded data for
       // this user is attributed correctly to the warehouse user.
-      if (!isset($_REQUEST['cms_user_id']))
+      if (!isset($request['cms_user_id']))
         throw new exception('Call to get_user_id requires a cms_user_id in the GET or POST data.');
       // authenticate requesting website for this service. This can create a user, so need write
       // permission.
@@ -121,8 +123,8 @@ class User_Identifier_Controller extends Service_Base_Controller {
           $this->db->where("t.term IN ('".$identifier->type."')");
         }
         
-        if (isset($_REQUEST['users_to_merge'])) {
-          $usersToMerge = json_decode($_REQUEST['users_to_merge']);
+        if (isset($request['users_to_merge'])) {
+          $usersToMerge = json_decode($request['users_to_merge']);
           $this->db->in('user_id', $usersToMerge);
         }
         $r = $this->db->get()->result_array(true);
@@ -179,7 +181,7 @@ class User_Identifier_Controller extends Service_Base_Controller {
       ));
       // Update the created_by_id for all records that were created by this cms_user_id. This 
       // takes ownership of the records.
-      postgreSQL::setOccurrenceCreatorByCmsUser($this->website_id, $userId, $_REQUEST['cms_user_id'], $this->db);
+      postgreSQL::setOccurrenceCreatorByCmsUser($this->website_id, $userId, $request['cms_user_id'], $this->db);
     
     }
     catch (Exception $e) {
