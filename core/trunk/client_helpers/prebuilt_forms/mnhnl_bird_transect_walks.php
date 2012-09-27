@@ -67,7 +67,7 @@ class iform_mnhnl_bird_transect_walks {
   public static function get_mnhnl_bird_transect_walks_definition() {
     return array(
       'title'=>'Bird Transect Walks',
-      'category' => 'Forms for specific surveying methods',
+      'category' => 'MNHNL forms',      
       'description'=>'For input of bird records captured during repeated transect walks. Developed for the COBIMO project in Luxembourg.'
     );
   }
@@ -200,9 +200,9 @@ class iform_mnhnl_bird_transect_walks {
     //  All other posting is now done via AJAX.
     // When invoked by GET there are the following modes:
     // No additional arguments: mode 0.
-    // Additional argument - newSample: mode 1.
-    // Additional argument - sample_id=<id>: mode 2.
-    // Additional argument - occurrence_id=<id>: mode 3.
+    // Additional argument - new : mode 1.
+    // Additional argument - sample_id=<id> : mode 2.
+    // Additional argument - occurrence_id=<id> : mode 3.
     // Additional arguments - merge_sample_id1=<id>&merge_sample_id2=<id> : mode 2.1
     $mode = 0; // default mode : output survey selector
           // mode 1: output the main Data Entry page: occurrence list or add/edit occurrence tabs hidden. "Survey" tab active
@@ -329,7 +329,7 @@ class iform_mnhnl_bird_transect_walks {
         $mode = 3;
         $childLoadID = $_GET['occurrence_id'];
         $thisOccID = $childLoadID;
-      } else if (array_key_exists('newSample', $_GET)){
+      } else if (array_key_exists('new', $_GET)){
         $mode = 1;
       } // else default to mode 0
     }
@@ -467,7 +467,7 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
       ", 'inline');
       $r .= '
   <div id="surveyList" class="mnhnl-btw-datapanel"><div id="smp_grid"></div>
-    <form><input type="button" value="'.lang::get('LANG_Add_Survey').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'newSample')).'\'"></form></div>';
+    <form><input type="button" value="'.lang::get('LANG_Add_Survey').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'new')).'\'"></form></div>';
       // Add the locations allocator if user has admin rights.
       if(iform_loctools_checkaccess($node,'admin')){
         $r .= '
@@ -875,28 +875,82 @@ jQuery('#SurveyForm').ajaxForm({
     success:   function(data){
        // this will leave all the fields populated.
        	if(data.success == 'multiple records' && data.outer_table == 'sample'){
-            jQuery('#occ-form').show();
-            jQuery('#na-occ-warn').hide();
-            jQuery('#mergeSurveys').hide();
-       	";
+          jQuery('#occ-form').show();
+          jQuery('#na-occ-warn,#mergeSurveys').hide();";
     if(!user_access($adminPerm)) {
-    	data_entry_helper::$javascript .= "
-			if(jQuery('#main-sample-closed').val() == '1'){
-				jQuery('#read-only-survey').show();
-				jQuery('#close1').hide();
-				jQuery('#close2').hide();
-				jQuery('#occ-form').hide(); //can't enter any more occurrences
-				jQuery('#ro-sur-occ-warn').show();
-				jQuery('#SurveyForm').children().attr('disabled','disabled');
-    	};\n";
+      // don't need to worry about record_status value for non admins as they can't modify when closed.
+      data_entry_helper::$javascript .= "
+          if(jQuery('#main-sample-closed').val() == '1'){
+            jQuery('#read-only-survey,#ro-sur-occ-warn').show();
+            jQuery('#close1,#close2,#occ-form').hide(); //can't enter any more occurrences
+            jQuery('#SurveyForm').children().attr('disabled','disabled');
+          };\n";
     } else {
-    	data_entry_helper::$javascript .= "
-    	    if(jQuery('#main-sample-deleted:checked').length > 0){
-    	    	jQuery('#return-to-main').click();
-    	    	return;
-    		};\n";
+      data_entry_helper::$javascript .= "
+          jQuery('#occurrence\\\\:record_status').val(jQuery('#smpAttr\\\\:".$attributes[$sample_closure_id]['attributeId'].":checked').length > 0 ? 'C' : 'I');
+          if(jQuery('#main-sample-deleted:checked').length > 0){
+            jQuery('#return-to-main').click();
+            return;
+          };\n";
     }
+
+    data_entry_helper::$javascript .= "// If sample_id filled in -> we have a previously saved collection, so possibly have subsamples.
+if(jQuery('#SurveyForm > input[name=sample\\:id]').val() != ''){
+    // Put up warning dialogue that we are checking the subsamples: include a progress bar: set to zero%.
+    var dialog = $('<span id=\"subsample-progress-span\"><p>'+\"".lang::get('Please wait whilst some data integrity checks are carried out.')."\"+'</p><div id=\"subsample-progress\"></div></span>').dialog({ title: \"".lang::get('Checks')."\", zIndex: 4000 });
+    jQuery('#subsample-progress').progressbar({value: 0});
+    jQuery.ajax({ // get all subsamples/occurrences to check if the dates match
+            type: 'GET',
+            url: \"".$svcUrl."/report/requestReport?report=library/occurrences/occurrences_list_for_parent_sample.xml&reportSource=local&mode=json&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+                \"&callback=?&sample_id=\"+data.outer_id+\"&survey_id=&date_from=&date_to=&taxon_group_id=&smpattrs=&occattrs=\",                
+            data: {}, 
+            success: function(subData) {
+              jQuery('#subsample-progress').data('max',subData.length+1);
+              var mainDate = $.datepicker.formatDate('yy-mm-dd', jQuery('#SurveyForm > input[name=sample\\:date]').datepicker(\"getDate\"));
+              for(i=0; i< subData.length; i++){ // loop through all subsamples
+                jQuery('#subsample-progress').progressbar('option','value',(i+1)*100/jQuery('#subsample-progress').data('max'));
+                var values = {};
+                var url = '';
+                // Check if date on subsamples matches supersample date: if not set up a post array for the sample, with correct date.
+                if(subData[i].date_start != mainDate){
+                  values['sample:id']=subData[i].sample_id;
+                  values['sample:date']=mainDate;
+                  url=\"".iform_ajaxproxy_url($node, 'sample')."\";
+                }\n";
+    // Send AJAX request to set occurrence to 'C' if closed : use sync
+    if(!user_access($adminPerm))
+      data_entry_helper::$javascript .= "                if(jQuery('#main-sample-closed').val() == '1'){\n";
+    else
+      data_entry_helper::$javascript .= "                if(jQuery('#smpAttr\\\\:".$attributes[$sample_closure_id]['attributeId'].":checked').length > 0){\n";    
+    // If records are already verified, they are left verified, as if the records themselves are saved
+    // they will flagged as no longer verified: But have to force a re verification if date is changed.
     data_entry_helper::$javascript .= "
+                  if(subData[i].record_status == 'I' || typeof values['sample:id'] != 'undefined'){
+                    values['occurrence:id']=subData[i].occurrence_id;
+                    values['occurrence:record_status']='C';
+                    url=(url == '' ? \"".iform_ajaxproxy_url($node, 'occurrence')."\" : \"".iform_ajaxproxy_url($node, 'smp-occ')."\");
+                  }
+                } else { // any occurrences on unclosed collections must be flagged as 'I' - reopening unverifies.
+                  if(subData[i].record_status != 'I'){
+                    values['occurrence:id']=subData[i].occurrence_id;
+                    values['occurrence:record_status']='I';
+                    url=(url == '' ? \"".iform_ajaxproxy_url($node, 'occurrence')."\" : \"".iform_ajaxproxy_url($node, 'smp-occ')."\");
+                  }
+                }
+                if(url!=''){
+                  values['website_id']=".$args['website_id'].";
+                  jQuery.ajax({ type: 'POST', url: url, data: values, dataType: 'json', async: false});
+                }
+              }
+            },
+            dataType: 'json', 
+            async: false 
+    });
+    dialog.dialog('close');
+    dialog.dialog('destroy');
+    jQuery('#subsample-progress-span').remove();
+}
+
 			window.scroll(0,0);
             jQuery('#SurveyForm > input[name=sample\\:id]').removeAttr('disabled').val(data.outer_id);
             jQuery('#occ-form > input[name=sample\\:parent_id]').val(data.outer_id);
@@ -1039,7 +1093,7 @@ jQuery('#ro-occ-occ-warn').hide();
     <input type=\"hidden\" id=\"sample:date\" name=\"sample:date\" value=\"".data_entry_helper::$entity_to_load['sample:date']."\" />
     <input type=\"hidden\" id=\"sample:id\" name=\"sample:id\" value=\"".data_entry_helper::$entity_to_load['sample:id']."\" />
     <input type=\"hidden\" id=\"occurrence:id\" name=\"occurrence:id\" value=\"".data_entry_helper::$entity_to_load['occurrence:id']."\" />
-    <input type=\"hidden\" id=\"occurrence:record_status\" name=\"occurrence:record_status\" value=\"C\" />
+    <input type=\"hidden\" id=\"occurrence:record_status\" name=\"occurrence:record_status\" value=\"".($closedFieldValue == '0' ? 'I' : 'C' )."\" />
     <input type=\"hidden\" id=\"occurrence:downloaded_flag\" name=\"occurrence:downloaded_flag\" value=\"N\" />
     ".data_entry_helper::autocomplete($species_ctrl_args)."
     ".($occurrence_confidence_id ? data_entry_helper::outputAttribute($attributes[$occurrence_confidence_id], array_merge($languageFilteredAttrOptions, array('noBlankText'=>''))) :  "<span style=\"display: none;\">Occurrence attribute '".self::ATTR_CONFIDENCE."' not assigned to this survey</span>")."
