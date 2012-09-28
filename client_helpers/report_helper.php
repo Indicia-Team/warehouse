@@ -2380,6 +2380,7 @@ if (typeof mapSettingsHooks!=='undefined') {
         } else $locationSamples[$record['location_id']][$weekno] = array($record['sample_id']);
       } else $locationSamples[$record['location_id']] = array($weekno => array($record['sample_id']));
     }
+    if(count($records)>0) $locationArray = self::report_calendar_summary_initLocation($records, $records[0]['location_id']);
     foreach($records as $record){
       // If the taxon has changed
       if(($lastTaxon && $lastTaxon!=$record[$options['rowGroupColumn']]) ||
@@ -2389,7 +2390,7 @@ if (typeof mapSettingsHooks!=='undefined') {
             $locationArray[$weekno]['max'] = $locationArray[$weekno]['sampleTotal'];
         }
         self::report_calendar_summary_processEstimates($summaryArray, $locationArray, $locationSamples[$lastLocation], $minWeekNo, $maxWeekNo, $lastTaxon, $options);
-        $locationArray=array();
+        $locationArray = self::report_calendar_summary_initLocation($records, $record['location_id']);
       }
       $lastTaxon=$record[$options['rowGroupColumn']];
       $lastLocation=$record['location_id'];
@@ -2399,6 +2400,7 @@ if (typeof mapSettingsHooks!=='undefined') {
         $count = (isset($record[$options['countColumn']])?$record[$options['countColumn']]:0);
       } else
         $count = 1; // default to single row = single occurrence
+      // leave this conditional in - not sure what may happen in future, and it works.
       if(isset($locationArray[$weekno])){
         if($locationArray[$weekno]['this_sample'] != $record['sample_id']) {
           if($locationArray[$weekno]['max'] < $locationArray[$weekno]['sampleTotal'])
@@ -2412,6 +2414,7 @@ if (typeof mapSettingsHooks!=='undefined') {
       } else {
         $locationArray[$weekno] = array('this_sample'=>$record['sample_id'], 'total'=>$count, 'sampleTotal'=>$count, 'max'=>$count, 'numSamples'=>1);
       }
+      $locationArray[$weekno]['forcedZero'] = false;
     }
     if($lastTaxon || $lastLocation) {
       foreach($locationArray as $weekno => $data){
@@ -2679,8 +2682,9 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
         $r.= '<td>'.$label.'</td>';
         for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
           if(isset($summaryRow[$i])){
-            // TODO highlight estimates toggle
-            if($summaryRow[$i]['raw'] && $summaryRow[$i]['raw'] == $summaryRow[$i]['estimates'])
+            if($summaryRow[$i]['forcedZero'])
+              $r.= '<td class="'.($options['highlightEstimates'] ? 'forcedZero' : '').'">0</td>';
+            else if($summaryRow[$i]['raw'] && $summaryRow[$i]['raw'] == $summaryRow[$i]['estimates'])
               $r.= '<td>'.$summaryRow[$i]['raw'].'</td>';
             else $r.= '<td>'.
               ($options['includeData']=='raw' || $options['includeData']=='both' ? ($summaryRow[$i]['raw'] ? '<span class="raw">'.$summaryRow[$i]['raw'].'</span>' : '' ) : '').
@@ -2730,15 +2734,30 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
     return $warnings.$r;
   }
 
+  private static function report_calendar_summary_initLocation($records, $locationID){
+    $locationArray= array();
+    foreach($records as $record){ // We want to set up a default entry for all weeks in which there was a walk on this location.
+      if($locationID==$record['location_id']) {
+        $weekno = $record['weekno'];
+        if(!isset($locationArray[$weekno]))
+          $locationArray[$weekno] = array('this_sample'=>-1, 'total'=>0, 'sampleTotal'=>0, 'max'=>0, 'numSamples'=>0, 'forcedZero'=>true);
+      }
+    }
+    return $locationArray;
+  }
+
   private static function report_calendar_summary_processEstimates(&$summaryArray, $locationArray, $numSamples, $minWeekNo, $maxWeekNo, $taxon, $options) {
     for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
       if(isset($locationArray[$i])){
         switch($options['rawDataCombining']){
           case 'max': $locationArray[$i]['raw'] = $locationArray[$i]['max'];
             break;
-          case 'sample': $locationArray[$i]['raw'] = ($locationArray[$i]['total'].'.0')/$locationArray[$i]['numSamples'];
+          case 'sample':
+            if($locationArray[$i]['numSamples'])
+              $locationArray[$i]['raw'] = ($locationArray[$i]['total'].'.0')/$locationArray[$i]['numSamples'];
+            else $locationArray[$i]['raw'] = 0;
             break;
-          case 'location': $locationArray[$i]['raw'] = ($locationArray[$i]['total'].'.0')/count($numSamples[$i]);
+          case 'location': $locationArray[$i]['raw'] = ($locationArray[$i]['total'].'.0')/count($numSamples[$i]); // will always be >=1 sample
             break;
           default : 
           case 'add': $locationArray[$i]['raw'] = $locationArray[$i]['total'];
@@ -2820,6 +2839,7 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
     foreach($locationArray as $weekno => $data){
       if(isset($summaryArray[$taxon])) {
         if(isset($summaryArray[$taxon][$weekno])){
+          if(!$locationArray[$weekno]['forcedZero']) $summaryArray[$taxon][$weekno]['forcedZero'] = false;
           if($locationArray[$weekno]['raw']){
             if($summaryArray[$taxon][$weekno]['raw'])
               $summaryArray[$taxon][$weekno]['raw'] += $locationArray[$weekno]['raw'];
@@ -2827,10 +2847,10 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
           }
           $summaryArray[$taxon][$weekno]['estimates'] += $locationArray[$weekno]['estimates'];
         } else {
-          $summaryArray[$taxon][$weekno] = array('raw'=>$locationArray[$weekno]['raw'], 'estimates'=>$locationArray[$weekno]['estimates']);
+          $summaryArray[$taxon][$weekno] = array('raw'=>$locationArray[$weekno]['raw'], 'estimates'=>$locationArray[$weekno]['estimates'], 'forcedZero' => $locationArray[$weekno]['forcedZero']);
         }
       } else {
-        $summaryArray[$taxon] = array($weekno => array('raw'=>$locationArray[$weekno]['raw'], 'estimates'=>$locationArray[$weekno]['estimates']));
+        $summaryArray[$taxon] = array($weekno => array('raw'=>$locationArray[$weekno]['raw'], 'estimates'=>$locationArray[$weekno]['estimates'], 'forcedZero' => $locationArray[$weekno]['forcedZero']));
       }
     }
   }
