@@ -62,7 +62,9 @@ function addSpeciesToGrid(occurrenceSpecies, taxonList, speciesTableSelector, fo
     var found = force;
     if(!found){
       $.each(occurrenceSpecies, function(idx, occ){
-        if(occ['ttl_id']==species['id'])
+        // taxonList may or may not be preferred
+        // Occ has both a ttl_id and a preferred
+        if(occ['ttl_id']==species['id'] || occ['preferred_ttl_id']==species['id'])
           found=true;
       });
     }
@@ -94,7 +96,7 @@ function addGridRow(species, speciesTableSelector){
   }
   var rowCount = jQuery(speciesTableSelector+' tbody').find('tr').length;
   var rowclass = rowCount%2===0 ? '' : ' class="alt-row"';
-  var row = '<tr id="row-' + species.id + '"' + rowclass + '><td>'+name+'</td>';
+  var row = '<tr id="row-' + species.taxon_meaning_id + '"' + rowclass + '><td>'+name+'</td>';
   rowTotal = 0;
   $.each(indiciaData.sections, function(idx, section) {
     if (typeof section.total==="undefined") {
@@ -103,8 +105,8 @@ function addGridRow(species, speciesTableSelector){
     if (typeof section.total[speciesTableSelector]==="undefined") {
         section.total[speciesTableSelector]=0;
     }
-    // find current value if there is one - the key is the combination of sample id and ttl id that an existing value would be stored as
-    key=indiciaData.samples[section.code] + ':' + species.id;
+    // find current value if there is one - the key is the combination of sample id and ttl meaning id that an existing value would be stored as
+    key=indiciaData.samples[section.code] + ':' + species.taxon_meaning_id;
     row += '<td class="col-'+(idx+1)+'">';
     if (typeof indiciaData.existingOccurrences[key]!=="undefined") {
       indiciaData.existingOccurrences[key]['processed']=true;
@@ -114,8 +116,8 @@ function addGridRow(species, speciesTableSelector){
         section.total[speciesTableSelector] += parseInt(val);
       }
       // store the ids of the occurrence and attribute we loaded, so future changes to the cell can overwrite the existing records
-      row += '<input type="hidden" id="value:'+species.id+':'+section.code+':id" value="'+indiciaData.existingOccurrences[key]['o_id']+'"/>';
-      row += '<input type="hidden" id="value:'+species.id+':'+section.code+':attrId" value="'+indiciaData.existingOccurrences[key]['a_id']+'"/>';
+      row += '<input type="hidden" id="value:'+indiciaData.existingOccurrences[key]['ttl_id']+':'+section.code+':id" value="'+indiciaData.existingOccurrences[key]['o_id']+'"/>';
+      row += '<input type="hidden" id="value:'+indiciaData.existingOccurrences[key]['ttl_id']+':'+section.code+':attrId" value="'+indiciaData.existingOccurrences[key]['a_id']+'"/>';
     } else {
       val='';
     }
@@ -243,7 +245,7 @@ function input_blur (evt) {
 };
 
 function loadSpeciesList() {
-  var submittingSample='', existingTtlIds=[], secondTaxonData, query;
+  var submittingSample='', existingMeaningIds=[], secondTaxonData, query;
   indiciaData.currentCell=null;
   // note we assume these lists are preferred=true. also need meaning_id to match the subset and the main 
   // list on the main grid.
@@ -265,7 +267,7 @@ function loadSpeciesList() {
     'data': mainTaxonData,
     'dataType': 'jsonp',
     'success': function(data) {
-      indiciaData.speciesList1List = data;
+      indiciaData.speciesList1List = data; // NB data is preferred
       addSpeciesToGrid(indiciaData.existingOccurrences, data, 'table#transect-input1', true);
       // possibly put in something to add any in the full list but not in initList.
     }});
@@ -294,14 +296,15 @@ function loadSpeciesList() {
   }
   // build a simple array of existing occurrence IDs for a webservice query
   $.each(indiciaData.existingOccurrences, function(idx, obj) {
-    existingTtlIds.push(obj.ttl_id);
+    existingMeaningIds.push(obj.taxon_meaning_id);
   });
-  // only add species 2 and 3 to grids if present: grids start empty, any new added from autocomplete.
+  // only add species in lists 2 and 3 to grids if present: grids start empty, any new added from autocomplete.
+  // note that when added from the list, the ttlid is the preferred one, but if added from the autocomplete it may/probably
+  // will not be.
   if(indiciaData.speciesList2>0){
     var secondTaxonData = {
             'taxon_list_id': indiciaData.speciesList2,
-            // Data may have been entered using synonyms, so can't just look up preferred
-            // 'preferred': 't',
+            'preferred': 't',
             'auth_token': indiciaData.readAuth.auth_token,
             'nonce': indiciaData.readAuth.nonce,
             'mode': 'json',
@@ -309,7 +312,7 @@ function loadSpeciesList() {
             'view': 'detail',
             'orderby': 'taxonomic_sort_order'
     };
-    query = {"in":{"id":existingTtlIds}};
+    query = {"in":{"taxon_meaning_id":existingMeaningIds}};
     if(typeof indiciaData.speciesList2FilterField != "undefined"){
       query['in'][indiciaData.speciesList2FilterField] = indiciaData.speciesList2FilterValues;
     };
@@ -325,7 +328,7 @@ function loadSpeciesList() {
   if(indiciaData.speciesList3>0){
     // This assumes that there is a list 2!
     secondTaxonData.taxon_list_id=indiciaData.speciesList3;
-    query = {"in":{"id":existingTtlIds}};
+    query = {"in":{"taxon_meaning_id":existingMeaningIds}};
     if(typeof indiciaData.speciesList3FilterField != "undefined"){
       query['in'][indiciaData.speciesList3FilterField] = indiciaData.speciesList3FilterValues;
     };
@@ -374,18 +377,14 @@ function loadSpeciesList() {
     	    case 'full':
     	      $('#taxonLookupControlContainer').hide();
     		  for(var i=0; i<indiciaData.speciesList1List.length; i++){
-    		    if(jQuery('#row-'+indiciaData.speciesList1List[i]['id']).length==0)
+    		    if(jQuery('#row-'+indiciaData.speciesList1List[i]['taxon_meaning_id']).length==0)
     			  addGridRow(indiciaData.speciesList1List[i], 'table#transect-input1');
     		  }
     		  break;
     	    case 'common':
-      		  for(var j=0; j<indiciaData.speciesList1SubsetList.length; j++){
-          		  for(var i=0; i<indiciaData.speciesList1List.length; i++){
-          			  if(indiciaData.speciesList1SubsetList[j].taxon_meaning_id ==
-          				      indiciaData.speciesList1List[i].taxon_meaning_id &&
-          				    jQuery('#row-'+indiciaData.speciesList1List[i]['id']).length==0)
-          				  addGridRow(indiciaData.speciesList1List[i], 'table#transect-input1');
-          		  }
+              for(var i=0; i<indiciaData.speciesList1SubsetList.length; i++){
+                if(jQuery('#row-'+indiciaData.speciesList1SubsetList[i]['taxon_meaning_id']).length==0)
+                  addGridRow(indiciaData.speciesList1SubsetList[i], 'table#transect-input1');
       		  }
       		  break;
     	    case 'here':
@@ -432,11 +431,11 @@ function loadSpeciesList() {
     	      	      	    	    'dataType': 'jsonp',
     	      	      	    	    'success': function(odata) {
     	      	      	      		  for(var j=0; j<odata.length; j++){
-    	      	              		    for(var i=0; i<indiciaData.speciesList1List.length; i++){
-    	      	            			  if(odata[j].taxon_meaning_id ==
-    	      	            				      indiciaData.speciesList1List[i].taxon_meaning_id &&
-    	      	            				    jQuery('#row-'+indiciaData.speciesList1List[i]['id']).length==0)
+    	      	      	      	        if(jQuery('#row-'+odata[j]['taxon_meaning_id']).length==0){
+                                          for(var i=0; i<indiciaData.speciesList1List.length; i++){
+                                            if(odata[j].taxon_meaning_id == indiciaData.speciesList1List[i].taxon_meaning_id)
     	      	            				  addGridRow(indiciaData.speciesList1List[i], 'table#transect-input1');
+                                          }
     	      	              		    }
     	      	            		  }
     	      	      	    	    }});
@@ -486,14 +485,14 @@ function loadSpeciesList() {
      	      	      	    	    },
      	      	      	    	    'dataType': 'jsonp',
      	      	      	    	    'success': function(odata) {
-     	      	      	      		  for(var j=0; j<odata.length; j++){
-     	      	              		    for(var i=0; i<indiciaData.speciesList1List.length; i++){
-     	      	            			  if(odata[j].taxon_meaning_id ==
-     	      	            				      indiciaData.speciesList1List[i].taxon_meaning_id &&
-     	      	            				    jQuery('#row-'+indiciaData.speciesList1List[i]['id']).length==0)
-     	      	            				  addGridRow(indiciaData.speciesList1List[i], 'table#transect-input1');
-     	      	              		    }
-     	      	            		  }
+      	      	      	      		  for(var j=0; j<odata.length; j++){
+      	      	      	      	        if(jQuery('#row-'+odata[j]['taxon_meaning_id']).length==0){
+                                            for(var i=0; i<indiciaData.speciesList1List.length; i++){
+                                              if(odata[j].taxon_meaning_id == indiciaData.speciesList1List[i].taxon_meaning_id)
+      	      	            				  addGridRow(indiciaData.speciesList1List[i], 'table#transect-input1');
+                                            }
+      	      	              		    }
+      	      	            		  }
      	      	      	    	    }});
      	      	    	    }});
      	    	    }});
@@ -595,7 +594,7 @@ function loadSpeciesList() {
 function bindSpeciesAutocomplete(selectorID, tableSelectorID, url, lookupListId, lookupListFilterField, lookupListFilterValues, readAuth, duplicateMsg, max) {
   // inner function to handle a selection of a taxon from the autocomplete
   var handleSelectedTaxon = function(event, data) {
-    if(jQuery('#row-'+data.id).length>0){
+    if(jQuery('#row-'+data.taxon_meaning_id).length>0){
       alert(duplicateMsg);
       $(event.target).val('');
       return;

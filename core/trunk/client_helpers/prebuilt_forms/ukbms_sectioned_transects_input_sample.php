@@ -303,6 +303,21 @@ class iform_ukbms_sectioned_transects_input_sample {
         $locationId = $_POST['sample:location_id'];
 
     }
+    if(isset($args['my_walks_page']) && $args['my_walks_page']!='') {
+      $url = explode('?', $args['my_walks_page'], 2);
+      $params = NULL;
+      $fragment = NULL;
+      // fragment is always at the end.
+      if(count($url)>1){
+        $params = explode('#', $url[1], 2);
+        if(count($params)>1) $fragment=$params[1];
+        $params=$params[0];
+      } else {
+        $url = explode('#', $url[0], 2);
+        if (count($url)>0) $fragment=$url[1];
+      }
+      $args['my_walks_page'] = url($url[0], array('query' => $params, 'fragment' => $fragment, 'absolute' => TRUE));
+    }
     $r .= '<form method="post" id="sample">';
     $r .= $auth['write'];
     // we pass through the read auth. This makes it possible for the get_submission method to authorise against the warehouse
@@ -429,6 +444,21 @@ class iform_ukbms_sectioned_transects_input_sample {
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     // did the parent sample previously exist? Default is no.
     $existing=false;
+    if(isset($args['my_walks_page']) && $args['my_walks_page']!='') {
+      $url = explode('?', $args['my_walks_page'], 2);
+      $params = NULL;
+      $fragment = NULL;
+      // fragment is always at the end.
+      if(count($url)>1){
+        $params = explode('#', $url[1], 2);
+        if(count($params)>1) $fragment=$params[1];
+        $params=$params[0];
+      } else {
+        $url = explode('#', $url[0], 2);
+        if (count($url)>0) $fragment=$url[1];
+      }
+      $args['my_walks_page'] = url($url[0], array('query' => $params, 'fragment' => $fragment, 'absolute' => TRUE));
+    }
     if (isset($_POST['sample:id'])) {
       // have just posted an edit to the existing parent sample, so can use it to get the parent location id.
       $parentSampleId = $_POST['sample:id'];
@@ -504,8 +534,9 @@ class iform_ukbms_sectioned_transects_input_sample {
       // build an array keyed for easy lookup
       $occurrences = array();
       foreach($o as $occurrence) {
-        $occurrences[$occurrence['sample_id'].':'.$occurrence['taxa_taxon_list_id']] = array(
+        $occurrences[$occurrence['sample_id'].':'.$occurrence['taxon_meaning_id']] = array(
           'ttl_id'=>$occurrence['taxa_taxon_list_id'],
+          'taxon_meaning_id'=>$occurrence['taxon_meaning_id'],
           'value'=>$occurrence['attr_occurrence_'.$args['occurrence_attribute_id']],
           'o_id'=>$occurrence['occurrence_id'],
           'a_id'=>$occurrence['attr_id_occurrence_'.$args['occurrence_attribute_id']],
@@ -586,8 +617,9 @@ class iform_ukbms_sectioned_transects_input_sample {
     $r .= '<td class="ui-state-disabled"></td></tr></tfoot>';
     $r .= '</table>'.
           '<label for="listSelect">'.lang::get('Use species list').' :</label><select id="listSelect"><option value="full">'.lang::get('All species').'</option><option value="common">'.lang::get('Common species').'</option><option value="here">'.lang::get('Species known at this site').'</option><option value="mine">'.lang::get('Species I have recorded').'</option></select>';
-    $r .= '<span id="listSelectMsg"></span><br /><span id="taxonLookupControlContainer"><label for="taxonLookupControl" class="auto-width">'.lang::get('Add species to list').':</label> <input id="taxonLookupControl" name="taxonLookupControl" ></span></div>';
-
+    $r .= '<span id="listSelectMsg"></span><br /><span id="taxonLookupControlContainer"><label for="taxonLookupControl" class="auto-width">'.lang::get('Add species to list').':</label> <input id="taxonLookupControl" name="taxonLookupControl" ></span>';
+    $r .= '<br /><a href="'.$args['my_walks_page'].'"><button type="button" class="ui-state-default ui-corner-all" />'.lang::get('Finish').'</button></a></div>';
+    
     if(isset($args['second_taxon_list_id']) && $args['second_taxon_list_id']!=''){
       $r .= '<div id="grid2"><p>' . lang::get('LANG_Tab_Msg') . '</p><table id="transect-input2" class="ui-widget"><thead>';
       $r .= '<tr><th class="ui-widget-header">' . lang::get('Sections') . '</th>';
@@ -602,7 +634,8 @@ class iform_ukbms_sectioned_transects_input_sample {
         $r .= '<td class="col-'.($idx+1).' col-total"></td>';
       }
       $r .= '<td class="ui-state-disabled"></td></tr></tfoot></table>';
-      $r .= '<label for="taxonLookupControl2" class="auto-width">'.lang::get('Add species to list').':</label> <input id="taxonLookupControl2" name="taxonLookupControl2" ></div>';
+      $r .= '<label for="taxonLookupControl2" class="auto-width">'.lang::get('Add species to list').':</label> <input id="taxonLookupControl2" name="taxonLookupControl2" >';
+      $r .= '<br /><a href="'.$args['my_walks_page'].'"><button type="button" class="ui-state-default ui-corner-all" />'.lang::get('Finish').'</button></a></div>';
     }
     if(isset($args['third_taxon_list_id']) && $args['third_taxon_list_id']!=''){
       $r .= '<div id="grid3"><p>' . lang::get('LANG_Tab_Msg') . '</p><table id="transect-input3" class="ui-widget"><thead>';
@@ -618,7 +651,8 @@ class iform_ukbms_sectioned_transects_input_sample {
         $r .= '<td class="col-'.($idx+1).' col-total"></td>';
       }
       $r .= '<td class="ui-state-disabled"></td></tr></tfoot></table>';
-      $r .= '<label for="taxonLookupControl3" class="auto-width">'.lang::get('Add species to list').':</label> <input id="taxonLookupControl3" name="taxonLookupControl3" ></div>';
+      $r .= '<label for="taxonLookupControl3" class="auto-width">'.lang::get('Add species to list').':</label> <input id="taxonLookupControl3" name="taxonLookupControl3" >';
+      $r .= '<br /><a href="'.$args['my_walks_page'].'"><button type="button" class="ui-state-default ui-corner-all" />'.lang::get('Finish').'</button></a></div>';
     }
 
     $r .= "<div id=\"notes\">\n";
