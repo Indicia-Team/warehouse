@@ -190,9 +190,6 @@ class import_helper extends helper_base {
     self::clear_website_survey_fields($unlinked_fields);
     self::clear_website_survey_fields($unlinked_required_fields);
     $options = self::model_field_options($options['model'], $unlinked_fields);
-    if (stripos($options, "Title") !== false)
-      echo "in String!";
-
 
     $r = "<form method=\"post\" id=\"entry_form\" action=\"$reloadpath\" class=\"iform\">\n".
         '<p>'.lang::get('column_mapping_instructions').'</p>'.
