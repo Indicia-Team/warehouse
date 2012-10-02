@@ -18,6 +18,7 @@
   <columns>
     <column name='occurrence_id' display='Record:ID' sql='co.id' />
     <column name='taxon' display='Record:Species' sql='co.taxon' />
+    <column name='recorder' display='Record:Recorder' sql='co.recorders' />
     <column name='verifier' display='Record:Verified by' sql='co.verifier' />
     <column name='preferred_taxon' display='Record:Preferred species name' sql='CASE co.preferred_taxon WHEN co.taxon THEN null ELSE co.preferred_taxon END' />
     <column name='occurrence_comment' display='Record:Comment' sql='o.comment' />
