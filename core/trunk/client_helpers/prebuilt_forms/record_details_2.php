@@ -79,7 +79,7 @@ class iform_record_details_2 extends iform_dynamic {
         'name' => 'fields',
         'caption' => 'Fields to include or exclude',
         'description' => 'List of data fields to hide, one per line. '.
-            'Type in the field name as seen exactly in the Record Details section (case sensitive). For custom attributes you should use the system function values '.
+            'Type in the field name as seen exactly in the Record Details section. For custom attributes you should use the system function values '.
             'to filter instead of the caption if defined below.',
         'type' => 'textarea',
         'default' => 
@@ -99,7 +99,7 @@ Record ID',
           'in' => 'Include',
           'not in' => 'Exclude'
         ),
-        'default' => 'in',
+        'default' => 'not in',
         'group' => 'Fields for record details'
       ),
       array(
@@ -276,50 +276,46 @@ Record ID',
     $auth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
     data_entry_helper::load_existing_record($auth, 'occurrence', $_GET['occurrence_id']);
     $fields=helper_base::explode_lines($args['fields']);
+    $fieldsLower=helper_base::explode_lines(strtolower($args['fields']));
     //Draw the Record Details, but only if they aren't requested as hidden by the administrator
     $detailstemplateHtml = '';
+    $attrsTemplate='<div class="field ui-helper-clearfix"><span>{caption}:</span><span>{value}</span></div>';
     $test=$args['operator']==='in';
-    if ($test===in_array('Record ID', $fields))
-      $detailstemplateHtml .=   '<div><span>Record ID:</span><span>{occurrence_id}</span></div>';
-    if ($test===in_array('Species', $fields))
-      $detailstemplateHtml .=   '<div><span>Species:</span><span>{taxon}</span></div>';
-    if ($test===in_array('Verified By', $fields))
-      $detailstemplateHtml .=  '<div><span>Verified By:</span><span>{verifier}</span></div>';
-    if ($test===in_array('Preferred Species Name', $fields))
-      $detailstemplateHtml .=   '<div><span>Preferred Species Name:</span><span>{preferred_taxon}</span></div>';
-    if ($test===in_array('Comment', $fields))
-      $detailstemplateHtml .=    '<div><span>Comment:</span><span>{occurrence_comment}</span></div>';
-    if ($test===in_array('Sample ID', $fields))
-      $detailstemplateHtml .=   '<div><span>Sample ID:</span><span>{sample_id}</span></div>';
-    if ($test===in_array('Sample SRef', $fields))
-      $detailstemplateHtml .=   '<div><span>Sample SRef:</span><span>{entered_sref}</span></div>';
-    if ($test===in_array('Sample Date', $fields))
-      $detailstemplateHtml .=  ' <div><span>Sample Date:</span><span>{date}</span></div>';
-    if ($test===in_array('Sample Site Name', $fields))
-     $detailstemplateHtml .=    '<div><span>Sample Site Name:</span><span>{location_name}</span></div>';
-    if ($test===in_array('Sample Comment', $fields))
-      $detailstemplateHtml .=   '<div><span>Sample Comment:</span><span>{sample_comment}</span></div>';
-    //Freeform report templates
-    $detailsOptions = array(
-      'template'=>$detailstemplateHtml
+    $availableFields = array(
+      'occurrence_id'=>'Record ID',
+      'taxon'=>'Species',
+      'preferred_taxon'=>'Preferred Species Name',
+      'recorder'=>'Recorder',
+      'verifier'=>'Verified By',
+      'occurrence_comment'=>'Comment',
+      'sample_id'=>'Sample ID',
+      'entered_sref'=>'Grid Ref',
+      'date'=>'Date',
+      'location_name'=>'Site Name',
+      'sample_comment'=>'Sample Comment',
     );
-    $attrsTemplate='<div><span>{caption}:</span><span>{value}</span></div>';
+    foreach($availableFields as $field=>$caption) {
+      if ($test===in_array(strtolower($caption), $fieldsLower))
+        $detailstemplateHtml .= str_replace(array('{caption}','value'), array($caption, "$field"), $attrsTemplate);      
+    }     
     //draw the attributes for the occurrence
     $details_report = report_helper::freeform_report(array(
       'readAuth' => $auth,
+      'class'=>'record-details-fields',
       'dataSource'=>'reports_for_prebuilt_forms/verification_3/record_data',
-      'bands'=>array(array('content'=>$detailsOptions['template'])),
+      'bands'=>array(array('content'=>$detailstemplateHtml)),
       'useCache' => false,
       'extraParams'=>array('occurrence_id'=>$_GET['occurrence_id'])));
     //draw any custom attributes added by the user
     $attrs_report = report_helper::freeform_report(array(
       'readAuth' => $auth,
+      'class'=>'record-details-fields',
       'dataSource'=>'reports_for_prebuilt_forms/record_details_2/record_data_attributes_with_hiddens',
       'bands'=>array(array('content'=>$attrsTemplate)),
       'extraParams'=>array(
         'occurrence_id'=>$_GET['occurrence_id'],
         //the SQL needs to take a set of the hidden fields, so this needs to be converted from an array.
-        'attrs'=>self::convert_array_to_set($fields),
+        'attrs'=>strtolower(self::convert_array_to_set($fields)),
         'testagainst'=>$args['testagainst'],
         'operator'=>$args['operator']
       )
