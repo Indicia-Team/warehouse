@@ -216,8 +216,8 @@ function simple_tooltip(target_items, name){
         pagerContent = pagerContent.replace('{prev}', '<a class="pag-prev pager-button" rel="nofollow" href="#">'+div.settings.langPrev+'</a> ');
         pagerContent = pagerContent.replace('{first}', '<a class="pag-first pager-button" rel="nofollow" href="#">'+div.settings.langFirst+'</a> ');
       } else {
-       pagerContent = pagerContent.replace('{prev}', '<span class="pag-prev pager-button ui-state-disabled">'+div.settings.langPrev+'</span> ');
-       pagerContent = pagerContent.replace('{first}', '<span class="pag-first pager-button ui-state-disabled">'+div.settings.langFirst+'</span> ');
+        pagerContent = pagerContent.replace('{prev}', '<span class="pag-prev pager-button ui-state-disabled">'+div.settings.langPrev+'</span> ');
+        pagerContent = pagerContent.replace('{first}', '<span class="pag-first pager-button ui-state-disabled">'+div.settings.langFirst+'</span> ');
       }
 
       if (hasMore)  {
@@ -238,11 +238,15 @@ function simple_tooltip(target_items, name){
         }
       }
       pagerContent = pagerContent.replace('{pagelist}', pagelist);
-      showing = showing.replace('{1}', div.settings.offset+1);
-      showing = showing.replace('{2}', div.settings.offset + $(div).find('tbody').children().length);
-      showing = showing.replace('{3}', div.settings.recordCount);
-      pagerContent = pagerContent.replace('{showing}', showing);
-
+      if (div.settings.recordCount===0) {
+        pagerContent=pagerContent.replace('{showing}', div.settings.noRecords);
+      } else {
+        showing = showing.replace('{1}', div.settings.offset+1);
+        showing = showing.replace('{2}', div.settings.offset + $(div).find('tbody').children().length);
+        showing = showing.replace('{3}', div.settings.recordCount);
+        pagerContent = pagerContent.replace('{showing}', showing);
+      }
+      
       pager.append(pagerContent);
     }
 
@@ -443,6 +447,7 @@ function simple_tooltip(target_items, name){
 
     // Sets up various clickable things like the filter button on a direct report, or the pagination links.
     function setupReloadLinks (div) {
+      var lastPageOffset = Math.max(0, Math.floor((div.settings.recordCount-1) / div.settings.itemsPerPage)*div.settings.itemsPerPage);
       // Define pagination clicks.
       if (div.settings.itemsPerPage!==null) {
         $(div).find('.pager .pag-next').click(function(e) {
@@ -450,6 +455,9 @@ function simple_tooltip(target_items, name){
           if (div.loading) {return;}
           div.loading = true;
           div.settings.offset += div.settings.itemsPerPage;
+          if (div.settings.offset>lastPageOffset) {
+            div.settings.offset=lastPageOffset;
+          } 
           load(div, false);
         });
 
@@ -475,7 +483,7 @@ function simple_tooltip(target_items, name){
           e.preventDefault();
           if (div.loading) {return;}
           div.loading = true;
-          div.settings.offset = Math.floor((div.settings.recordCount-1) / div.settings.itemsPerPage)*div.settings.itemsPerPage;
+          div.settings.offset = lastPageOffset;
           load(div, false);
         });
 
@@ -698,10 +706,11 @@ $.fn.reportgrid.defaults = {
   filterCol: null,
   filterValue: null,
   langFirst: 'first',
-  langPrev: 'previous',
+  langPrev: 'prev',
   langNext: 'next',
   langLast: 'last',
   langShowing: 'Showing records {1} to {2} of {3}',
+  noRecords: 'No records',
   sendOutputToMap: false, // does the current page of report data get shown on a map?
   linkFeatures: false, // requires a rowId - the selected row's equivalent map feature is highlighted
   msgRowLinkedToMapHint: 'Click the row to highlight the record on the map. Double click to zoom in.'
