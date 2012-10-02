@@ -193,7 +193,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           'type'=>'checkbox',
           'group' => 'User Interface',
           'default' => false,
-          'required' => falase
+          'required' => false
         ),
         array(
           'name'=>'users_manage_own_sites',
