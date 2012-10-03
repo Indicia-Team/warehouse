@@ -91,7 +91,10 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
           $outputs[] = '['.$item->header_name.']';
           $currentHeader = $item->header_name;
         }
-        $outputs[] = $item->key.'='.$item->value;
+        $row = $item->key;
+        if (!empty($item->value)&&$item->value!=='-')
+          $row .= '='.$item->value;
+        $outputs[] = $row;
       }
       $r = implode("\n",$outputs);
       return $r;
