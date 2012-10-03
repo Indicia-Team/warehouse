@@ -1,5 +1,5 @@
 <report
-    title="Occurrence list"
+    title="Occurrence list for parent supersample"
     description="A general purpose list of records, filtered to all those contained within a top level sample, in a 2 level sample hierarchy."
 >
   <query website_filter_field="o.website_id">
