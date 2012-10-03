@@ -166,22 +166,22 @@ class iform_report_calendar_summary {
         array(
           'name'=>'managerPermission',
           'caption'=>'Drupal Permission for Manager mode',
-          'description'=>'Enter the Drupal permission name to be used to determine if this user is a manager. Entering this will allow the identified users to chose which user to filter by via a drop down list, which sets the user_id in the report parameter list to the CMS user id (not the Indicia user id). For non managers the user_id is automatically set to the users CMS ID. The selection of the "All Users" option sets the user_id of the report parameter list to a empty string.',
+          'description'=>'Enter the Drupal permission name to be used to determine if this user is a manager. Entering this will allow the identified users to chose which user to filter by via a drop down list. This will set the user_id in the report parameter list to either the Indicia user id if Easy Login is enabled, or the CMS user id (if not). For non managers the user_id is automatically set to the relevant ID for the logged in user. The selection of the "All Users" option sets the user_id of the report parameter list to a empty string.',
           'type'=>'string',
           'required' => false,
           'group' => 'Controls'
         ),
         array(
-          'name'=>'cmsUserLookpUp',
+          'name'=>'userLookUp',
           'caption'=>'Only Users who have entered data',
-          'description'=>'Choose whether to include only users which have entered data (indicated by the CMS User ID attribute lodged against a sample).',
+          'description'=>'Choose whether to include only users which have entered data (indicated by the created_by_id sample field if Easy Login is enabled, or the CMS User ID attribute lodged against a sample if not).',
           'type'=>'boolean',
           'default' => false,
           'required' => false,
           'group' => 'Controls'
         ),
         array(
-          'name'=>'cmsUserLookpUpSampleMethod',
+          'name'=>'userLookUpSampleMethod',
           'caption'=>'Sample Method',
           'description'=>'When looking up the sample attributes, enter an optional sample method term.',
           'type'=>'string',
@@ -198,7 +198,7 @@ class iform_report_calendar_summary {
           'group' => 'Controls'
         ),
         array(
-          'name'=>'cmsLocationLookpUp',
+          'name'=>'userSpecificLocationLookUp',
           'caption'=>'Make location list user specific',
           'description'=>'Choose whether to restrict the list of locations to those assigned to the selected user the CMS User ID location attribute.',
           'type'=>'boolean',
@@ -569,7 +569,7 @@ class iform_report_calendar_summary {
         array(
           'name'=>'dataRound',
           'caption'=>'Data Rounding',
-          'description'=>'When data is averaged, this determines what rounding is carried out.',
+          'description'=>'When data is averaged, this determines what rounding is carried out. Note that anything between 0 and 1 will be rounded up to 1.',
           'type' => 'select',
           'lookupValues' => array('none'=>'None (may result in non-integer values)',
             'nearest'=>'To the nearest integer, .5 rounds up',
@@ -672,14 +672,14 @@ class iform_report_calendar_summary {
     // this is user specific: when no user selection control, or all users selected then default to all locations
     // this means it does not get a list of all locations if no user is selected: to be added later?
     $options['extraParams']['location_id'] = $siteUrlParams[self::$locationKey]['value'];
-    if(!isset($args['includeUserFilter']) || !$args['includeUserFilter'] || !isset($options['extraParams']['user_id']) || $options['extraParams']['user_id']=="" || !isset($args['cmsLocationLookpUp']) || !$args['cmsLocationLookpUp']){
+    if(!isset($args['includeUserFilter']) || !$args['includeUserFilter'] || !isset($options['extraParams']['user_id']) || $options['extraParams']['user_id']=="" || !isset($args['userSpecificLocationLookUp']) || !$args['userSpecificLocationLookUp']){
       // Get list of all locations
       $locationListArgs=array('nocache'=>true,
           'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'], 'orderby'=>'name'),
                        $readAuth),
           'table'=>'location');
     } else {
-      // Get list of locations attached to this user via the cms user id attribute: have to have included the user control to get user id, and set the cmsLocationLookpUp flag
+      // Get list of locations attached to this user via the cms user id attribute: have to have included the user control to get user id, and set the userSpecificLocationLookUp flag
       // first need to scan param_presets for survey_id..
       $presets = get_options_array_with_user_data($args['param_presets']);
       if(!isset($presets['survey_id']) || $presets['survey_id']=='')
@@ -747,7 +747,8 @@ class iform_report_calendar_summary {
       $userList[$user->uid]=$user;
     } else {
       // user is manager, so need to load the list of users they can choose to report against 
-      if(!isset($args['cmsUserLookpUp']) || !$args['cmsUserLookpUp']) {
+      if(!isset($args['userLookUp']) || !$args['userLookUp']) {
+        // look up all users, not just those that have entered data.
         $results = db_query('SELECT uid, name FROM {users}');
         while($result = db_fetch_object($results)){
           if($result->uid){ // ignore unauthorised user, uid zero
@@ -758,39 +759,59 @@ class iform_report_calendar_summary {
       } else {
         // need to scan param_presets for survey_id.
         $presets = get_options_array_with_user_data($args['param_presets']);
-        if(!isset($presets['survey_id']) || $presets['survey_id']=='')
-          return(lang::get('User control: survey_id missing from presets.'));
-        $attrArgs = array(
-          'valuetable'=>'sample_attribute_value',
-          'attrtable'=>'sample_attribute',
-          'key'=>'sample_id',
-          'fieldprefix'=>'smpAttr',
-          'extraParams'=>$readAuth,
-          'survey_id'=>$presets['survey_id']);
-        if(isset($args['cmsUserLookpUpSampleMethod']) && $args['cmsUserLookpUpSampleMethod']!="") {
-          $sampleMethods = helper_base::get_termlist_terms(array('read'=>$readAuth), 'indicia:sample_methods', array(trim($args['cmsUserLookpUpSampleMethod'])));
-          $attrArgs['sample_method_id']=$sampleMethods[0]['id'];
-        }
-        $sampleAttributes = data_entry_helper::getAttributes($attrArgs, false);
-        if (false== ($cmsAttr = extract_cms_user_attr($sampleAttributes)))
-          return(lang::get('User control: CMS User ID missing.'));
-        $attrListArgs=array('nocache'=>true,
-          'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
+        if(!isset($presets['survey_id']) || $presets['survey_id']=='') return(lang::get('User control: survey_id missing from presets.'));
+        if (function_exists('module_exists') && module_exists('easy_login')) {
+          $sampleArgs=array('nocache'=>true,
+            'extraParams'=>array_merge(array('view'=>'detail', 'website_id'=>$args['website_id']), $readAuth),
+            'table'=>'sample');
+          $sampleList = data_entry_helper::get_population_data($sampleArgs);
+          if (isset($sampleList['error'])) return $sampleList['error'];
+          $uList = array();
+          foreach($sampleList as $sample)
+            $uList[intval($sample['created_by_id'])] = true;
+          // This next bit is DRUPAL specific
+          $results = db_query('SELECT uid, name FROM {users}');
+          while($result = db_fetch_object($results)){
+            if($result->uid){
+              $account = user_load($result->uid);
+              profile_load_profile($account);
+              if(isset($account->profile_indicia_user_id) && isset($uList[$account->profile_indicia_user_id]) && $uList[$account->profile_indicia_user_id])
+                $userList[$account->uid] = $account;
+            }
+          }
+        } else {
+          // not easy login so use the CMS User ID attribute hanging off the to find which users have entered data.
+          $attrArgs = array(
+            'valuetable'=>'sample_attribute_value',
+            'attrtable'=>'sample_attribute',
+            'key'=>'sample_id',
+            'fieldprefix'=>'smpAttr',
+            'extraParams'=>$readAuth,
+            'survey_id'=>$presets['survey_id']);
+          if(isset($args['userLookUpSampleMethod']) && $args['userLookUpSampleMethod']!="") {
+            $sampleMethods = helper_base::get_termlist_terms(array('read'=>$readAuth), 'indicia:sample_methods', array(trim($args['userLookUpSampleMethod'])));
+            $attrArgs['sample_method_id']=$sampleMethods[0]['id'];
+          }
+          $sampleAttributes = data_entry_helper::getAttributes($attrArgs, false);
+          if (false== ($cmsAttr = extract_cms_user_attr($sampleAttributes)))
+            return(lang::get('User control: CMS User ID sample attribute missing.'));
+          $attrListArgs=array('nocache'=>true,
+            'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
                              'sample_attribute_id'=>$cmsAttr['attributeId']),
                        $readAuth),
-          'table'=>'sample_attribute_value');
-        $attrList = data_entry_helper::get_population_data($attrListArgs);
-        if (isset($attrList['error']))
-          return $attrList['error'];
-        foreach($attrList as $attr)
-          if($attr['id']!=null)
-            $userList[intval($attr['raw_value'])] = true;
-        // This next bit is DRUPAL specific
-        $results = db_query('SELECT uid, name FROM {users}');
-        while($result = db_fetch_object($results)){
-          $account = user_load($result->uid);
-          if($result->uid && isset($userList[$account->uid]) && $userList[$account->uid])
-            $userList[$account->uid] = $account;
+            'table'=>'sample_attribute_value');
+          $attrList = data_entry_helper::get_population_data($attrListArgs);
+          if (isset($attrList['error'])) return $attrList['error'];
+          foreach($attrList as $attr)
+            if($attr['id']!=null)
+              $userList[intval($attr['raw_value'])] = true;
+          // This next bit is DRUPAL specific
+          $results = db_query('SELECT uid, name FROM {users}');
+          while($result = db_fetch_object($results)){
+            $account = user_load($result->uid);
+            if($result->uid && isset($userList[$account->uid]) && $userList[$account->uid])
+              $userList[$account->uid] = $account;
+          }
         }
       }
     }
@@ -799,8 +820,10 @@ class iform_report_calendar_summary {
           ': </label><select id="'.$ctrlid.'" class="user-select">'.
           '<option value="" class="user-select-option" '.($siteUrlParams[self::$userKey]['value']=='' ? 'selected="selected" ' : '').'>'.lang::get('All recorders').'</option>';
     foreach($userList as $id => $account) {
-      $name=$account->uid===$user->uid ? lang::get('My data') : $account->name;
-      $ctrl .= '<option value='.$id.' class="user-select-option" '.($siteUrlParams[self::$userKey]['value']==$id ? 'selected="selected" ' : '').'>'.$name.'</option>';
+      if($account !== true){
+        $name=($account->uid===$user->uid ? lang::get('My data') : $account->name);
+        $ctrl .= '<option value='.$id.' class="user-select-option" '.($siteUrlParams[self::$userKey]['value']==$id ? 'selected="selected" ' : '').'>'.$name.'</option>';
+      }
     }
     $ctrl.='</select>';
     self::set_up_control_change($ctrlid, self::$userKey, array('locationID'));
