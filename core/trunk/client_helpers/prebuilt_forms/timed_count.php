@@ -50,7 +50,7 @@ class iform_timed_count {
   public static function get_timed_count_definition() {
     return array(
       'title'=>'Timed Count',
-      'category' => 'General Purpose Data Entry Forms',
+      'category' => 'Forms for specific surveying methods',
       'description'=>'A form for inputting the counts of species during a timed period. Can be called with sample=<id> to edit an existing sample.'
     );
   }
@@ -209,17 +209,6 @@ class iform_timed_count {
     $sampleMethods = helper_base::get_termlist_terms($auth, 'indicia:sample_methods', array('Timed Count'));
     if (count($sampleMethods)==0)
       return 'The sample method "Timed Count" must be defined in the termlist in order to use this form.';
-    $attributes = data_entry_helper::getAttributes(array(
-      'valuetable'=>'sample_attribute_value',
-      'attrtable'=>'sample_attribute',
-      'key'=>'sample_id',
-      'fieldprefix'=>'smpAttr',
-      'extraParams'=>$auth['read'],
-      'survey_id'=>$args['survey_id'],
-      'sample_method_id'=>$sampleMethods[0]['id']
-    ));
-    if (false== ($cmsUserAttr = extract_cms_user_attr($attributes)))
-      return 'This form is designed to be used with the CMS User ID attribute setup for samples in the survey.';
 
     $sampleId = isset($_GET['sample_id']) ? $_GET['sample_id'] : null;
     if ($sampleId && !isset(data_entry_helper::$validation_errors))
@@ -248,8 +237,9 @@ class iform_timed_count {
       'sample_method_id'=>$sampleMethods[0]['id']
     ));
     $r .= get_user_profile_hidden_inputs($attributes, $args, '', $auth['read']).
-        data_entry_helper::text_input(array('label' => lang::get('Site Name'), 'fieldname' => 'sample:location_name', 'validation' => array('required') /*, 'class' => 'control-width-5' */ )).
-        data_entry_helper::textarea(array('label'=>lang::get('Recorder names'), 'fieldname'=>'sample:recorder_names'));
+        data_entry_helper::text_input(array('label' => lang::get('Site Name'), 'fieldname' => 'sample:location_name', 'validation' => array('required') /*, 'class' => 'control-width-5' */ ))
+        // .data_entry_helper::textarea(array('label'=>lang::get('Recorder names'), 'fieldname'=>'sample:recorder_names'))
+        ;
     if ($sampleId == null){
       if(isset($_GET['date'])) data_entry_helper::$entity_to_load['C1:sample:date'] = $_GET['date'];
       $r .= data_entry_helper::date_picker(array('label' => lang::get('Date of first count'), 'fieldname' => 'C1:sample:date', 'validation' => array('required','date')));
@@ -353,22 +343,10 @@ if(jQuery('#C1\\\\:sample\\\\:date').val() != '') jQuery('#sample\\\\:date').val
     }
     if(!$parentSampleId || $parentSampleId == '') return ('Could not determine the parent sample.');
 
-    $sampleMethods = helper_base::get_termlist_terms($auth, 'indicia:sample_methods', array('Timed Count'));
-    $attributes = data_entry_helper::getAttributes(array(
-      'valuetable'=>'sample_attribute_value',
-      'attrtable'=>'sample_attribute',
-      'key'=>'sample_id',
-      'fieldprefix'=>'smpAttr',
-      'extraParams'=>$auth['read'],
-      'survey_id'=>$args['survey_id'],
-      'sample_method_id'=>$sampleMethods[0]['id'],
-      'multiValue'=>false // ensures that array_keys are the list of attribute IDs.
-    ));
-    if (false== ($cmsUserAttr = extract_cms_user_attr($attributes)))
-      return 'This form is designed to be used with the CMS User ID attribute setup for samples in the survey.';
-
     // find any attributes that apply to Timed Count Count samples.
     $sampleMethods = helper_base::get_termlist_terms($auth, 'indicia:sample_methods', array('Timed Count Count'));
+    if (count($sampleMethods)==0)
+      return 'The sample method "Timed Count Count" must be defined in the termlist in order to use this form.';
     $attributes = data_entry_helper::getAttributes(array(
       'valuetable'=>'sample_attribute_value',
       'attrtable'=>'sample_attribute',
@@ -416,8 +394,6 @@ indiciaData.indiciaSvc = '".data_entry_helper::$base_url."';\n";
     data_entry_helper::$javascript .= "indiciaData.readAuth = {nonce: '".$auth['read']['nonce']."', auth_token: '".$auth['read']['auth_token']."'};\n";
     data_entry_helper::$javascript .= "indiciaData.parentSample = ".$parentSampleId.";\n";
     data_entry_helper::$javascript .= "indiciaData.occAttrId = ".$args['occurrence_attribute_id'] .";\n";
-    data_entry_helper::$javascript .= "indiciaData.CMSUserAttrID = ".$cmsUserAttr['attributeId'] .";\n";
-    data_entry_helper::$javascript .= "indiciaData.CMSUserID = ".$user->uid.";\n";
 
     if ($existing) {
       // Only need to load the occurrences for a pre-existing sample
