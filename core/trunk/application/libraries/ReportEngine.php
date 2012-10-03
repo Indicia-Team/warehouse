@@ -288,7 +288,9 @@ class ReportEngine {
   public function record_count() {
     if (isset($this->countQuery) && $this->countQuery!==null) {
       $count = $this->reportDb->query($this->countQuery)->result_array(FALSE);
-      return $count[0]['count'];
+      // query could return no rows, in which case return zero.
+      if(count($count)>0) return $count[0]['count'];
+      return 0;
     } else {
       return false;
     }
