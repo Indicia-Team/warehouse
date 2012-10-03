@@ -482,18 +482,21 @@ class iform_ukbms_sectioned_transects_input_sample {
       $parentLocId = $sample['location_id'];
       $date=$sample['date_start'];
     }
-    $sampleMethods = helper_base::get_termlist_terms($auth, 'indicia:sample_methods', array('Transect'));
-    $attributes = data_entry_helper::getAttributes(array(
-      'valuetable'=>'sample_attribute_value',
-      'attrtable'=>'sample_attribute',
-      'key'=>'sample_id',
-      'fieldprefix'=>'smpAttr',
-      'extraParams'=>$auth['read'],
-      'survey_id'=>$args['survey_id'],
-      'sample_method_id'=>$sampleMethods[0]['id']
-    ));
-    if (false== ($cmsUserAttr = extract_cms_user_attr($attributes)))
-      return 'This form is designed to be used with the CMS User ID attribute setup for samples in the survey.';
+    if (!function_exists('module_exists') || !module_exists('easy_login')) {
+      // work out the CMS User sample ID.
+      $sampleMethods = helper_base::get_termlist_terms($auth, 'indicia:sample_methods', array('Transect'));
+      $attributes = data_entry_helper::getAttributes(array(
+        'valuetable'=>'sample_attribute_value',
+        'attrtable'=>'sample_attribute',
+        'key'=>'sample_id',
+        'fieldprefix'=>'smpAttr',
+        'extraParams'=>$auth['read'],
+        'survey_id'=>$args['survey_id'],
+        'sample_method_id'=>$sampleMethods[0]['id']
+      ));
+      if (false== ($cmsUserAttr = extract_cms_user_attr($attributes)))
+        return 'Easy Login not active: This form is designed to be used with the CMS User ID attribute setup for samples in the survey.';
+    }
     // find any attributes that apply to transect section samples.
     $sampleMethods = helper_base::get_termlist_terms($auth, 'indicia:sample_methods', array('Transect Section'));
     $attributes = data_entry_helper::getAttributes(array(
@@ -743,8 +746,16 @@ indiciaData.indiciaSvc = '".data_entry_helper::$base_url."';\n";
     data_entry_helper::$javascript .= "indiciaData.parentSample = ".$parentSampleId.";\n";
     data_entry_helper::$javascript .= "indiciaData.sections = ".json_encode($sections).";\n";
     data_entry_helper::$javascript .= "indiciaData.occAttrId = ".$args['occurrence_attribute_id'] .";\n";
-    data_entry_helper::$javascript .= "indiciaData.CMSUserAttrID = ".$cmsUserAttr['attributeId'] .";\n";
-    data_entry_helper::$javascript .= "indiciaData.CMSUserID = ".$user->uid.";\n";
+    if (function_exists('module_exists') && module_exists('easy_login')) {
+      data_entry_helper::$javascript .= "indiciaData.easyLogin = true;\n";
+      $userId = hostsite_get_user_field('indicia_user_id');
+      if (!empty($userId)) data_entry_helper::$javascript .= "indiciaData.UserID = ".$userId.";\n";
+      else return '<p>Easy Login active but could not identify user</p>'; // something is wrong 
+    } else {
+      data_entry_helper::$javascript .= "indiciaData.easyLogin = false;\n";
+      data_entry_helper::$javascript .= "indiciaData.CMSUserAttrID = ".$cmsUserAttr['attributeId'] .";\n";
+      data_entry_helper::$javascript .= "indiciaData.CMSUserID = ".$user->uid.";\n";
+    }
     // Do an AJAX population of the grid rows.
     data_entry_helper::$javascript .= "loadSpeciesList();";
     

@@ -7,9 +7,6 @@
   FROM samples s
   JOIN samples ss on s.id=ss.parent_id and ss.deleted=false
   JOIN surveys su on su.id=s.survey_id and su.deleted=false
-  JOIN (sample_attribute_values sav
-    JOIN sample_attributes sa ON sa.id=sav.sample_attribute_id AND sa.deleted=false AND sa.caption='CMS User ID'
-  ) ON sav.sample_id=s.id AND sav.deleted=false
   #joins#
   WHERE s.deleted = FALSE
   AND s.parent_id IS NULL
@@ -17,7 +14,7 @@
   AND (CAST(s.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
   AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
       AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
-  AND CAST(sav.int_value AS character varying)='#user_id#'
+  AND CAST(s.created_by_id AS character varying)='#user_id#'
   #order_by#
   </query>
   <field_sql>
@@ -38,7 +35,7 @@
         population_call='direct:survey:id:title' />
     <param name='date_from' display='Date From' datatype='date' />
     <param name='date_to' display='Date To' datatype='date' />
-    <param name='user_id' display='CMS User ID' description='Enter the ID of the CMS user' datatype='int' />
+    <param name='user_id' display='Indicia User ID' description='Enter the Indicia ID of the user' datatype='int' />
   </params>
   <columns>
     <column name='sample_id' visible='true' />

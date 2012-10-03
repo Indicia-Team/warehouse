@@ -1,6 +1,6 @@
 <report
     title='UKBMS Visit Summary list'
-    description='A list of the number of sites and visits recorded for each species, with filters for date start and end.'
+    description='A list of the number of sites and visits recorded for each species, with filters for user, date start and end.'
 >
   <query website_filter_field='o.website_id'>
     select #field_sql#
@@ -11,11 +11,8 @@
         AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR p.date_end &gt;= CAST(COALESCE('#date_from#',extract(YEAR from NOW())||'-01-01') as date))
         AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR p.date_start &lt;= CAST(COALESCE('#date_to#',extract(YEAR from NOW())||'-12-31') as date))
       JOIN locations l  ON p.location_id = l.id AND l.deleted = false
-      JOIN (sample_attribute_values sav
-        JOIN sample_attributes sa ON sa.id=sav.sample_attribute_id AND sa.deleted=false AND sa.caption='CMS User ID'
-      ) ON sav.sample_id=p.id AND sav.deleted=false
       #joins#
-    WHERE (CAST(sav.int_value AS character varying)='#user_id#' OR '#user_id#' = '')
+    WHERE (CAST(p.created_by_id AS character varying)='#user_id#' OR '#user_id#' = '')
     GROUP by cttl.preferred_taxon, coalesce(cttl.default_common_name, cttl.preferred_taxon)
     #order_by#
   </query>
@@ -33,7 +30,7 @@
         population_call='direct:survey:id:title' />
     <param name='date_from' display='Date From' datatype='date' />
     <param name='date_to' display='Date To' datatype='date' />
-    <param name='user_id' display='CMS User ID' description='Enter the ID of the CMS user' datatype='int' />
+    <param name='user_id' display='Indicia User ID' description='Enter the Indicia ID of the user, or leave blank for all users' datatype='int' />
   </params>
   <columns>
     <column name='taxon' display='Latin Name' visible="false" />    

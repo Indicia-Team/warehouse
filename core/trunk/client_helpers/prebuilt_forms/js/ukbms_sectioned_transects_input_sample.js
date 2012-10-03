@@ -443,9 +443,46 @@ function loadSpeciesList() {
     	    	    }});
       		  break;
     	    case 'mine':
-     	       // get all samples on this transect
-     	       $.ajax({
-     	         'url': indiciaData.indiciaSvc+'index.php/services/data/sample_attribute_value',
+              // get all species on samples that I have recorded.
+    	      if(indiciaData.easyLogin === true){
+     	     	$.ajax({
+     	      	    'url': indiciaData.indiciaSvc+'index.php/services/data/sample',
+     	      	    'data': {
+     	     	        'created_by_id': indiciaData.UserID,
+     	      	    	'auth_token': indiciaData.readAuth.auth_token,
+     	      	    	'nonce': indiciaData.readAuth.nonce,
+     	      	    	'mode': 'json',
+     	      	    	'view': 'detail'
+     	      	    },
+     	      	    'dataType': 'jsonp',
+     	      	    'success': function(ssdata) {
+     	      	        // finally get all occurrences
+     	      	    	var subSampleList = [];
+     	      	        for(var i=0; i<ssdata.length; i++) subSampleList.push(ssdata[i].id);
+     	    	     	$.ajax({
+     	      	      	    'url': indiciaData.indiciaSvc+'index.php/services/data/occurrence',
+     	      	      	    'data': {
+         	     	            'query': JSON.stringify({'in': {'sample_id': subSampleList}}),
+     	      	      	    	'auth_token': indiciaData.readAuth.auth_token,
+     	      	      	    	'nonce': indiciaData.readAuth.nonce,
+     	      	      	    	'mode': 'json',
+     	      	      	    	'view': 'detail'
+     	      	      	    },
+     	      	      	    'dataType': 'jsonp',
+     	      	      	    'success': function(odata) {
+      	      	      	        for(var j=0; j<odata.length; j++){
+      	      	      	          if(jQuery('#row-'+odata[j]['taxon_meaning_id']).length==0){
+                                    for(var i=0; i<indiciaData.speciesList1List.length; i++){
+                                      if(odata[j].taxon_meaning_id == indiciaData.speciesList1List[i].taxon_meaning_id)
+      	      	                        addGridRow(indiciaData.speciesList1List[i], 'table#transect-input1');
+                                    }
+      	      	                  }
+      	      	            	}
+     	      	        }});
+     	            }});
+    	      } else {
+     	        $.ajax({
+     	            'url': indiciaData.indiciaSvc+'index.php/services/data/sample_attribute_value',
      	    	    'data': {
      	    	        'sample_attribute_id': indiciaData.CMSUserAttrID,
      	    	        'raw_value': indiciaData.CMSUserID,
@@ -496,6 +533,7 @@ function loadSpeciesList() {
      	      	      	    	    }});
      	      	    	    }});
      	    	    }});
+    	      }
       		  break;
     	  }
           $('#listSelectMsg').empty();
