@@ -32,19 +32,20 @@ function data_cleaner_sample_attribute_changes_for_site_data_cleaner_rules() {
     'queries' => array(
       array(
         'joins' => 
-            "join sample_attribute_values sav on sav.sample_id=co.sample_id and sav.deleted=false
-            join samples s on s.id=sav.sample_id and s.deleted=false
-            join verification_rule_metadata vrm on vrm.value = cast(sav.sample_attribute_id as character varying) and vrm.key='SampleAttr' 
-                and vrm.deleted=false
-            join sample_attribute_values savprev on savprev.sample_attribute_id=sav.sample_attribute_id and savprev.deleted=false
-                and (coalesce(savprev.text_value, savprev.float_value::bpchar, savprev.int_value::bpchar) <> coalesce(sav.text_value, sav.float_value::bpchar, sav.int_value::bpchar) or
-                  coalesce(savprev.date_start_value, '1000-01-01')<>coalesce(sav.date_start_value, '1000-01-01') or
-                  coalesce(savprev.date_end_value, '1000-01-01')<>coalesce(sav.date_end_value, '1000-01-01') or
-                  coalesce(savprev.date_type_value, '')<>coalesce(sav.date_type_value, ''))
-            join samples sprev on sprev.id=savprev.sample_id and sprev.survey_id=s.survey_id and sprev.location_id=s.location_id
-            join verification_rules vr on vr.id=vrm.verification_rule_id and vr.test_type='SampleAttributeChangesForSite' and vr.deleted=false
-            join verification_rule_metadata vrsurvey on vrsurvey.verification_rule_id=vr.id and vrsurvey.key='SurveyId' 
-                and vrsurvey.value=cast(co.survey_id as character varying) and vrsurvey.deleted=false"
+              "join samples s on s.id=co.sample_id and s.deleted=false
+              left join samples sp on sp.id=s.parent_id and sp.deleted=false
+              join sample_attribute_values sav on sav.sample_id in (s.id, sp.id) and sav.deleted=false
+              join verification_rule_metadata vrm on vrm.value = cast(sav.sample_attribute_id as character varying) and vrm.key='SampleAttr' 
+                  and vrm.deleted=false
+              join sample_attribute_values savprev on savprev.sample_attribute_id=sav.sample_attribute_id and savprev.deleted=false
+                  and (coalesce(savprev.text_value, savprev.float_value::bpchar, savprev.int_value::bpchar) <> coalesce(sav.text_value, sav.float_value::bpchar, sav.int_value::bpchar) or
+                    coalesce(savprev.date_start_value, '1000-01-01')<>coalesce(sav.date_start_value, '1000-01-01') or
+                    coalesce(savprev.date_end_value, '1000-01-01')<>coalesce(sav.date_end_value, '1000-01-01') or
+                    coalesce(savprev.date_type_value, '')<>coalesce(sav.date_type_value, ''))
+              join samples sprev on sprev.id=savprev.sample_id and sprev.survey_id=s.survey_id and sprev.location_id in (s.location_id, sp.location_id)
+              join verification_rules vr on vr.id=vrm.verification_rule_id and vr.test_type='SampleAttributeChangesForSite' and vr.deleted=false
+              join verification_rule_metadata vrsurvey on vrsurvey.verification_rule_id=vr.id and vrsurvey.key='SurveyId' 
+                  and vrsurvey.value=cast(co.survey_id as character varying) and vrsurvey.deleted=false"
       )
     )
   );
