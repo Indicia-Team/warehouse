@@ -1953,7 +1953,7 @@ if (typeof mapSettingsHooks!=='undefined') {
     }
     // We're not even going to bother with asking the user to populate a partially filled in report parameter set.
     if (isset($response['parameterRequest'])) {
-      return '<p>Internal Error: Report request parameters not set up correctly.<p>';
+      return '<p>Internal Error: Report request parameters not set up correctly.<br />'.(print_r($response,true)).'<p>';
     }
     // convert records to a date based array so it can be used when generating the grid.
     $records = $response['records'];
@@ -2120,10 +2120,17 @@ if (typeof mapSettingsHooks!=='undefined') {
     $options["extraParams"] = array_merge(array(
       'date_from' => $options["year"].'-01-01',
       'date_to' => $options["year"].'-12-31',
-      'user_id' => $user->uid, // CMS User, not Indicia User.
+      'user_id' => $user->uid, // Initially CMS User, changed to Indicia User later if in Easy Login mode.
+      'cms_user_id' => $user->uid, // CMS User, not Indicia User.
       'smpattrs' => ''), $options["extraParams"]);
     // Note for the calendar reports, the user_id is assumed to be the CMS user id as recorded in the CMS User ID attribute,
     // not the Indicia user id.
+    if (function_exists('module_exists') && module_exists('easy_login') && $options["extraParams"]['user_id'] == $options["extraParams"]['cms_user_id']) {
+      $account = user_load($options["extraParams"]['user_id']);
+      profile_load_profile($account);
+      if(isset($account->profile_indicia_user_id))
+        $options["extraParams"]['user_id'] = $account->profile_indicia_user_id;
+    }
     return $options;
   }
 
@@ -2896,6 +2903,17 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
 //      'user_id' => '', // CMS User, not Indicia User.
 //      'smpattrs' => '',
       'occattrs' => ''), $options["extraParams"]);
+
+    if (isset($options["extraParams"]['user_id'])) {
+      $options["extraParams"]['cms_user_id'] = $options["extraParams"]['user_id'];
+      if (function_exists('module_exists') && module_exists('easy_login')) {
+        $account = user_load($options["extraParams"]['user_id']);
+        profile_load_profile($account);
+        if(isset($account->profile_indicia_user_id))
+          $options["extraParams"]['user_id'] = $account->profile_indicia_user_id;
+      }
+    }
+    
     // Note for the calendar reports, the user_id is assumed to be the CMS user id as recorded in the CMS User ID attribute,
     // not the Indicia user id.
     return $options;
