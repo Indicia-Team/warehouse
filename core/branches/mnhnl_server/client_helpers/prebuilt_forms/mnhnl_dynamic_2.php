@@ -400,37 +400,56 @@ resetChildValue = function(child){
   else child.val('');
 };
 set_up_relationships = function(startAttr, parent, setval){
+  // parent holds the item that has changed.
   start=false; // final field is treated differently, as it enforces no duplicates.
-  myParentRow = jQuery(parent).closest('tr');
+  var myParentRow = jQuery(parent).closest('tr');
+  while(!myParentRow.hasClass('first')) {
+    myParentRow = myParentRow.prev();
+  }
   for(var i=0; i < attrRestrictionsProcessOrder.length-1; i++){
-    if(start || startAttr==attrRestrictionsProcessOrder[i]){
-      start=true;
-      var child = myParentRow.find('[name$=occAttr\\:'+attrRestrictionsProcessOrder[i]+'],[name*=occAttr\\:'+attrRestrictionsProcessOrder[i]+'\\:]');
+    if(start || startAttr==attrRestrictionsProcessOrder[i]){ // skip throw list until we reach the attr to start with.
+      start=true; // process all subsequent attributes as well.
+      var scanRow = myParentRow;
+      var child = [];
+      while(child.length==0){
+        child = scanRow.find('[name$=occAttr\\:'+attrRestrictionsProcessOrder[i]+'],[name*=occAttr\\:'+attrRestrictionsProcessOrder[i]+'\\:]');
+        scanRow = scanRow.next().not('.first');
+        if(scanRow.length==0) return;
+      }
       var childOptions = child.find('option').not('[value=]');
-      resetChild=false;
-      if(parent.val() == '') {
-        childOptions.attr('disabled','disabled');
+      resetChild=false; // this is if the current value of the child is no longer valid at the end.
+      if(parent.val() == '') { // parent has been cleared so disable everything.
+        childOptions.attr('disabled','disabled'); // this leaves the blank.
         if(setval) resetChild=true;
       } else {
-        childOptions.attr('disabled','');
-        for(var j=0; j < relationships.length; j++){
-          if(relationships[j].child == attrRestrictionsProcessOrder[i]){
-            var relParentVal = jQuery(parent).closest('tr').find('[name$=occAttr\\:'+relationships[j].parent+'],[name*=occAttr\\:'+relationships[j].parent+'\\:]').val();
+        childOptions.removeAttr('disabled'); // initialise everything as enabled.
+        for(var j=0; j < relationships.length; j++){ 
+          if(relationships[j].child == attrRestrictionsProcessOrder[i]){ // scan through all relationships which feature the child attribute as the child.
+            scanRow = myParentRow;
+            var relParent = [];
+            while(relParent.length==0){
+              relParent = scanRow.find('[name$=occAttr\\:'+relationships[j].parent+'],[name*=occAttr\\:'+relationships[j].parent+'\\:]');
+              scanRow = scanRow.next().not('.first');
+              if(scanRow.length==0) return;
+            }
+            var relParentVal = relParent.val();
             for(var k=0; k < relationships[j].values.length; k++){
               if(relParentVal == relationships[j].values[k].value) {
                 childOptions.each(function(index, Element){
                   for(var m=0; m < relationships[j].values[k].list.length; m++){
                     if(relationships[j].values[k].list[m] == $(this).val()){
-                      $(this).attr('disabled','disabled');
                       if($(this).val() == child.val() && setval) resetChild=true;
+                      $(this).attr('disabled','disabled');
                     }}
-                  });
+                });
               }}}}
        }
        if(child.val()=='' && setval) resetChild=true;
        if(resetChild) resetChildValue(child);
     }
   }
+  // no duplicate check as samples will be in different places. TBD reinstate for non includeSubSample
+/*
   // something has changed: now need to go through ALL rows final field, not just ours, and eliminate options which would cause a duplicate.
   // but some of those may have been re-added by the change so have to reset all options!
   i= attrRestrictionsProcessOrder.length-1;
@@ -458,8 +477,7 @@ set_up_relationships = function(startAttr, parent, setval){
                 }}
               });
     }}}}}
-    // no duplicate check as samples will be in different places. TBD reinstate for non includeSubSample
-/*    var classList = jQuery(Row).attr('class').split(/\s+/);
+    var classList = jQuery(Row).attr('class').split(/\s+/);
     jQuery.each( classList, function(index, item){ 
       var parts= item.split(/-/);
       if(parts[0]=='scMeaning'){
@@ -484,10 +502,11 @@ set_up_relationships = function(startAttr, parent, setval){
           }
         });
       }
-    }); */
+    });
     if(child.val()=='' && setval && myParentRow[0]==Row) resetChild=true;
     if(resetChild) resetChildValue(child);
   });
+*/
 };
 
 relationships = [";

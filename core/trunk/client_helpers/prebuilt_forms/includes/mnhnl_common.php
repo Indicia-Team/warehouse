@@ -2557,7 +2557,7 @@ hook_setSref_".$idx." = function(geom){
             var id = a1.features[0].fid.slice(".(strlen($protocol[2])+1).")\n";
 				if($filterAttr[1]=="true"){
 					data_entry_helper::$javascript .="          if(jQuery('#filterSelect".$idx."').val() == '' || // not currently filled in
-              (jQuery('#filterSelect".$idx."').val() != a1.features[0].attributes['id'] && confirm(\"".lang::get('LANG_PositionInDifferentParent')."\"))) {
+              (jQuery('#filterSelect".$idx."').val() != id && confirm(\"".lang::get('LANG_PositionInDifferentParent')."\"))) {
             ParentLocationLayer.destroyFeatures();
             ParentLocationLayer.addFeatures(a1.features);
             jQuery('#filterSelect".$idx."').val(id);\n";
