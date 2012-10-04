@@ -695,7 +695,7 @@ jQuery('.targ-presence').change(function(){
         data_entry_helper::$javascript .= "\njQuery('.target-species-grid').find('[name*=\\:".$disableList[0]."\\:smpAttr\\:]').find('option').filter('";
         for($i=1; $i<count($disableList); $i++)
           data_entry_helper::$javascript .= ($i>1?',':'')."[value=".$disableList[$i]."]";
-        data_entry_helper::$javascript .= "').attr('disabled','disabled');\n";
+        data_entry_helper::$javascript .= "').remove();\n";
       }
     }    
     if(!isset($options['optional']))
