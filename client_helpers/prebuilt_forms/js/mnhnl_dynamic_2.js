@@ -52,7 +52,7 @@ var _setHighlight = function(myRow) {
     if(jQuery(elem).data('feature')!=null){
       if(firstRow[0]==elem){
         jQuery(elem).data('feature').style=selectOccurrenceStyleHash;
-        map.map.editLayer.addFeatures([jQuery(elem).data('feature')]);
+        map.map.editLayer.addFeatures([jQuery(elem).data('feature').clone()]); // add a clone as the editlayer features will be destroyed.
       }else{
         jQuery(elem).data('feature').style=null;
         occurrencePointLayer.addFeatures([jQuery(elem).data('feature')]);
@@ -122,20 +122,24 @@ var _bindSpeciesGridControls = function(row,rowNum,options){
 
   if(row.find('[id$=imp-srefX]').length>0)
     row.find('[id$=imp-srefX]').change(function() {
+      var map2 = jQuery('#map2');
+      if(map2.length==0) return;
       // Only do something if the long is also populated
-      if ($('#'+map.settings.srefLongId).val()!='') {
+      if ($('#'+map2[0].settings.srefLongId).val()!='') {
         // copy the complete sref into the sref field
-        $('#'+map.settings.srefId).val($(this).val() + ', ' + $('#'+map.settings.srefLongId).val());
-        _handleEnteredSref($('#'+map.settings.srefId).val(), map);
+        $('#'+map2[0].settings.srefId).val($(this).val() + ', ' + $('#'+map2[0].settings.srefLongId).val());
+        _handleEnteredSref($('#'+map2[0].settings.srefId).val(), map2[0]);
       }
     });
   if(row.find('[id$=imp-srefY]').length>0)
     row.find('[id$=imp-srefY]').change(function() {
+      var map2 = jQuery('#map2');
+      if(map2.length==0) return;
       // Only do something if the lat is also populated
-      if ($('#'+map.settings.srefLatId).val()!='') {
+      if ($('#'+map2[0].settings.srefLatId).val()!='') {
         // copy the complete sref into the sref field
-        $('#'+map.settings.srefId).val($('#'+map.settings.srefLatId).val() + ', ' + $(this).val());
-        _handleEnteredSref($('#'+map.settings.srefId).val(), map);
+        $('#'+map2[0].settings.srefId).val($('#'+map2[0].settings.srefLatId).val() + ', ' + $(this).val());
+        _handleEnteredSref($('#'+map2[0].settings.srefId).val(), map2[0]);
       }
     });
   row.find('.scCommentLabelCell').each(function(idx,elem){
@@ -332,16 +336,46 @@ $('.remove-row').live('click', function(e) {
 // Two places an editlayer feature can be added:
 // 1) clicking on the map: We want to store a clone of the feature in the row.
 // 2) loading an existing feature. Our code in this case will have cloned the row feature, so do nothing.
-var _featureAdded = function(a1){
-  var highlighted = jQuery('.highlight').filter('.first');
-  if(highlighted.length>0){
-	  highlighted.data('feature',a1.feature.clone());
-  }
-}
 mapInitialisationHooks.push(function(mapdiv) {
 	// try to identify if this map is the secondary small one
   	if(mapdiv.id=='map2'){
+  		var _featureAdded = function(a1){
+  		  if(typeof a1.feature.attributes.type == 'undefined' || a1.feature.attributes.type != 'clickPoint') return;
+  		  var highlighted = jQuery('.highlight').filter('.first');
+  		  if(highlighted.length>0){ // a clone of the feature added to the layer is stored.
+  			  highlighted.data('feature',a1.feature.clone());
+  			  if(superSampleLocationLayer.features.length > 0){
+  			    var inside = null;
+  			    for(var i = 0; i< superSampleLocationLayer.features.length; i++){
+  			      if(superSampleLocationLayer.features[i].geometry.CLASS_NAME == 'OpenLayers.Geometry.Polygon'){
+  			        if(inside === null) inside = false;
+  			        // TODO extend to allow buffer
+  			        inside = inside || superSampleLocationLayer.features[i].geometry.containsPoint(a1.feature.geometry);
+  			      }
+  			    }
+  			    if(inside===false)
+  			      // use jQuery dialog as it does not stop processing.
+  			      var dialog = $('<p>Warning: The point you have selected is outside the limits of the site.</p>').dialog({ title: "Outside Site", buttons: { "OK": function() { dialog.dialog('close'); }}});
+  			  }
+  		  }
+  		};
+
+		var ZoomToParent = function(){
+		  if(superSampleLocationLayer.features.length > 0) superSampleLocationLayer.map.zoomToExtent(superSampleLocationLayer.getDataExtent());
+		};
+
   		mapdiv.map.editLayer.events.on({featureadded: _featureAdded});
+  		Map2Toolbar=OpenLayers.Class(OpenLayers.Control.Panel,
+  			{initialize:function(layer,options){
+  						OpenLayers.Control.Panel.prototype.initialize.apply(this,[options]);
+  						this.addControls([new OpenLayers.Control.Button({displayClass: 'olControlZoomToSite',
+  							trigger: ZoomToParent,
+  							title: 'Zoom to site'})]);
+  				},
+  				CLASS_NAME:'Map2Toolbar'});
+  		var editControl = new Map2Toolbar(superSampleLocationLayer, {allowDepress: false, 'displayClass':'olControlEditingToolbar'});
+  		mapdiv.map.addControl(editControl);
+  		editControl.activate();
 	}
   	// TBD load existing features
 });
