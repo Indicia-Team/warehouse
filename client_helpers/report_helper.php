@@ -1782,8 +1782,8 @@ if (typeof mapSettingsHooks!=='undefined') {
     ), $options);
     if ($options['galleryColCount']>1) $options['class'] .= ' gallery';
     // use the current report as the params form by default
-    if (!isset($options['reportGroup'])) $options['reportGroup'] = $options['id'];
-    if (!isset($options['fieldNamePrefix'])) $options['fieldNamePrefix'] = $options['reportGroup'];
+    if (empty($options['reportGroup'])) $options['reportGroup'] = $options['id'];
+    if (empty($options['fieldNamePrefix'])) $options['fieldNamePrefix'] = $options['reportGroup'];
     if (function_exists('hostsite_get_user_field')) {
       // If the host environment (e.g. Drupal module) can tell us which Indicia user is logged in, pass that
       // to the report call as it might be required for filters.
