@@ -53,7 +53,10 @@
     <column name='sample_id' visible='false' sql='co.sample_id' datatype='integer' />
     <column name='taxon' display='Species' 
       template="&lt;div class='zero-{zero_abundance}'&gt;{taxon}&lt;/div&gt;"
-      sql="CASE WHEN co.preferred_taxon=co.default_common_name then co.preferred_taxon ELSE co.preferred_taxon || COALESCE(' | ' || co.default_common_name, '') END" datatype='text' />
+      sql="co.preferred_taxon" datatype='text' />
+    <column name='common' display='Common name' 
+      template="&lt;div class='zero-{zero_abundance}'&gt;{common}&lt;/div&gt;"
+      sql="co.default_common_name" datatype='text' />
     <column name='taxon_group' display='Taxon Group' sql='co.taxon_group' datatype='text' />
     <column name='taxonversionkey' display='TaxonVersionKey' sql='co.taxa_taxon_list_external_key' datatype="text" />
     <column name='taxa_taxon_list_id' visible='false' sql='co.taxa_taxon_list_id' datatype='integer' />
