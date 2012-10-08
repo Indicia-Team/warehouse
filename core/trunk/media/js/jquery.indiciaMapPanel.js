@@ -418,6 +418,7 @@ mapGeoreferenceHooks = [];
           }
           $('#'+div.settings.helpDiv).html(helptext.join(' '));
         }
+        $('#'+div.settings.helpDiv).show();
       }
     }
 
@@ -1582,6 +1583,16 @@ mapGeoreferenceHooks = [];
       _bindControls(this);
       // keep a handy reference
       indiciaData.mapdiv=div;
+      // switch layer to satellite if auto-switching enabled
+      var ext=div.map.getExtent();
+      if (div.settings.maxZoomBuffer*div.settings.helpToPickPrecisionSwitchAt*2+div.settings.helpToPickPrecisionSwitchAt >
+          (ext.right-ext.left)/3) {
+        $.each(div.map.layers, function(idx, layer) {
+          if (layer.isBaseLayer && layer.name.indexOf('Satellite')!==-1 && div.map.baseLayer!==layer) {
+            div.map.setBaseLayer(layer);
+          }
+        });
+      }
       // call any post initialisation hooks
       $.each(mapInitialisationHooks, function(i, fn) {
         fn(div);
