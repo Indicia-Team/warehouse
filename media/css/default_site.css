@@ -1,5 +1,7 @@
 .scTaxonCell {
-  padding-right: 1em; 
+  padding-right: 1em;
+  background-color: #e3e3e3;
+  border: 1px solid #D3D3D3;
 }
 
 .scTaxonCell .ui-effects-wrapper {
@@ -19,14 +21,16 @@ div.ui-effects-wrapper {
   margin: 0 0.5em;
 }
 
-.species-grid input, .species-grid select {
-  width: 95%;
+.species-grid tr td input, .species-grid tr td select {
+  width: 100%;
   margin: 0;
+  border: none;
+  vertical-align: middle;
+  padding: 3px 0;
 }
 
 .species-grid td {
-  padding: 4px;
-  
+  padding: 0;
 }
 
 .scPresenceCell {
