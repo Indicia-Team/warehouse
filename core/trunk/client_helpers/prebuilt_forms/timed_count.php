@@ -440,7 +440,11 @@ indiciaData.indiciaSvc = '".data_entry_helper::$base_url."';\n";
 <input type='hidden' name='sample:entered_sref_system' value='".data_entry_helper::$entity_to_load['sample:entered_sref_system']."'/>
 <input type='hidden' name='sample:geom' value='".data_entry_helper::$entity_to_load['sample:geom']."'/>
 ";
-    
+
+    if (isset($args['custom_attribute_options']) && $args['custom_attribute_options']) 
+      $blockOptions = get_attr_options_array_with_user_data($args['custom_attribute_options']);
+    else $blockOptions=array();
+
     for($i = 0; $i < $args['numberOfCounts']; $i++){
       $subSampleId = (isset($subSamples[$i]) ? $subSamples[$i]['sample_id'] : null);
       $r .= "<fieldset id=\"count-$i\"><legend>".lang::get('Count ').($i+1)."</legend>";
@@ -468,13 +472,15 @@ $('#C".($i+1)."\\\\:sample\\\\:date' ).datepicker( 'option', 'maxDate', new Date
       foreach ($attributes as $attr) {
         if(strcasecmp($attr['untranslatedCaption'],'Unconfirmed Individuals')==0) continue;
         // output the attribute - tag it with a class & id to make it easy to find from JS.
-        $attrOpts = array(
+        $attrOpts = array_merge(
+          (isset($blockOptions[$attr['fieldname']]) ? $blockOptions[$attr['fieldname']] : array()),
+          array(
             'class' => 'smp-input smpAttr-'.($i+1),
             'id' => 'C'.($i+1).':'.$attr['fieldname'],
             'fieldname' => 'C'.($i+1).':'.$attr['fieldname'],
             'extraParams'=>$auth['read']
-        );
-        // if there is an existing value, set it and also ensure the attribute name reflects the attribute value id.
+          ));
+          // if there is an existing value, set it and also ensure the attribute name reflects the attribute value id.
         if (isset($subSampleId)) {
           // but have to take into account possibility that this field has been blanked out, so deleting the attribute.
           if(isset($subSamples[$i]['attr_id_sample_'.$attr['attributeId']]) && $subSamples[$i]['attr_id_sample_'.$attr['attributeId']] != ''){
