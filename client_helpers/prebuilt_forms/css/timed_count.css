@@ -10,3 +10,7 @@ div.remove-button {
     background-size: auto auto;
     border: none !important;
 }
+
+.page-notice {
+  color:red;
+}

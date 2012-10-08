@@ -240,6 +240,8 @@ class iform_timed_count {
         data_entry_helper::text_input(array('label' => lang::get('Site Name'), 'fieldname' => 'sample:location_name', 'validation' => array('required') /*, 'class' => 'control-width-5' */ ))
         // .data_entry_helper::textarea(array('label'=>lang::get('Recorder names'), 'fieldname'=>'sample:recorder_names'))
         ;
+    $help = lang::get('The Year field is read-only, and is calculated automatically from the date(s) of the Counts.');
+    $r .= '<p class="ui-state-highlight page-notice ui-corner-all">'.$help.'</p>';
     if ($sampleId == null){
       if(isset($_GET['date'])) data_entry_helper::$entity_to_load['C1:sample:date'] = $_GET['date'];
       $r .= data_entry_helper::date_picker(array('label' => lang::get('Date of first count'), 'fieldname' => 'C1:sample:date', 'validation' => array('required','date')));
@@ -262,6 +264,8 @@ if(jQuery('#C1\\\\:sample\\\\:date').val() != '') jQuery('#sample\\\\:date').val
     else $blockOptions=array();
     $r .= get_attribute_html($attributes, $args, array('extraParams'=>$auth['read']), null, $blockOptions);
     $r .= '<input type="hidden" name="sample:sample_method_id" value="'.$sampleMethods[0]['id'].'" />';
+    $help = lang::get('Now draw the flight area for the timed count on the map below. The Grid Reference is filled in automatically when the site is drawn.');
+    $r .= '<p class="ui-state-highlight page-notice ui-corner-all">'.$help.'</p>';
     $options = iform_map_get_map_options($args, $auth['read']);
     $options['allowPolygonRecording'] = true;
     $options['clickForSpatialRef'] = false;
@@ -275,9 +279,9 @@ if(jQuery('#C1\\\\:sample\\\\:date').val() != '') jQuery('#sample\\\\:date').val
 
     $systems=array();
     $list = explode(',', str_replace(' ', '', $args['spatial_systems']));
-    foreach($list as $system) $systems[$system] = lang::get($system);    
-    $r .= "<label for=\"imp-sref\">".lang::get('Grid Reference').":</label> <input type=\"text\" id=\"imp-sref\" name=\"sample:entered_sref\" value=\"".data_entry_helper::$entity_to_load['sample:entered_sref']."\" readonly=\"readonly\" class=\"required\" />
-<input type=\"hidden\" id=\"imp-geom\" name=\"sample:geom\" value=\"".data_entry_helper::$entity_to_load['sample:geom']."\" />";
+    foreach($list as $system) $systems[$system] = lang::get($system); 
+    $r .= "<label for=\"imp-sref\">".lang::get('Grid Reference').":</label> <input type=\"text\" id=\"imp-sref\" name=\"sample:entered_sref\" value=\"".data_entry_helper::$entity_to_load['sample:entered_sref']."\" readonly=\"readonly\" class=\"required\" />";
+    $r .= "<input type=\"hidden\" id=\"imp-geom\" name=\"sample:geom\" value=\"".data_entry_helper::$entity_to_load['sample:geom']."\" />";
     if (count($systems) == 1) {
       // Hidden field for the system
       $keys = array_keys($systems);
@@ -290,8 +294,21 @@ if(jQuery('#C1\\\\:sample\\\\:date').val() != '') jQuery('#sample\\\\:date').val
     $r .= data_entry_helper::map_panel($options, $olOptions);
     // switch off the sref functionality.
     data_entry_helper::$javascript .= "mapInitialisationHooks.push(function(div){
-    	$('#imp-sref').unbind('change');
-});\n";
+  $('#imp-sref').unbind('change');
+  // Programatic activation does not rippleout, so deactivate Nav first, which is actibve by default.
+  for(var i=0; i<div.map.controls.length; i++)
+    if(div.map.controls[i].CLASS_NAME == \"OpenLayers.Control.Navigation\")
+      div.map.controls[i].deactivate();
+  activeCtrl = false;
+  for(var i=0; i<div.map.controls.length; i++){
+    if(div.map.controls[i].CLASS_NAME == \"".
+     (isset(data_entry_helper::$entity_to_load['sample:id']) ? "OpenLayers.Control.ModifyFeature" : "OpenLayers.Control.DrawFeature")."\"){
+      div.map.controls[i].activate();
+      activeCtrl = div.map.controls[i];
+      break;
+    }}\n".
+(isset(data_entry_helper::$entity_to_load['sample:id']) ?
+"  if(activeCtrl && div.map.editLayer.features.length>0) activeCtrl.selectFeature(div.map.editLayer.features[0]);\n" : "")."});\n";
 
     $r .= data_entry_helper::textarea(array('label'=>'Comment', 'fieldname'=>'sample:comment', 'class'=>'wide'));
     $r .= '<input type="submit" value="'.lang::get('Next').'" />';
