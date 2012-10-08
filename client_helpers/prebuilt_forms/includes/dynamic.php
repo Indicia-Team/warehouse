@@ -333,7 +333,8 @@ class iform_dynamic {
               $option = explode('=', substr($tabContent[$i],1), 2);
               $options[$option[0]]=json_decode($option[1], true);
               // if not json then need to use option value as it is
-              if ($options[$option[0]]=='') $options[$option[0]]=$option[1];            
+              if ($options[$option[0]]=='') $options[$option[0]]=$option[1];
+              $options[$option[0]]=apply_user_replacements($options[$option[0]]);
             }
           }
 
