@@ -123,7 +123,7 @@ function apply_user_replacements($text) {
     $profileLoaded=false;
     foreach($matches[1] as $profileField) {
       // got a request for a user profile field, so copy it's value across into the report parameters
-      if (!$profileLoaded) {
+      if (!$profileLoaded && function_exists('profile_load_profile')) {
         profile_load_profile($user);
         $profileLoaded = true;
       }
