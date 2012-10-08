@@ -33,6 +33,7 @@
   <option value="900913">EPSG:900913: Google Projection</option>
   <option value="2169">EPSG:2169 Luxembourg 1930</option>
 </select><br/>
+<input type='checkbox' class="vnarrow" name="use_sref_system"/>Select this checkbox when using the boundary above and you wish the centroid to be generated using this sref. If not checked, the centroid will be generated in EPSG:4326 (Lat Long)<br/>
 <label for='type' class='wide' >Location type for all</label>
 <select id='type' name='type' >
 <?php 

@@ -135,18 +135,24 @@ This page allows you to specify the details of a location.
     'default' => html::initial_value($values, 'location:comment'),
     'disabled' => $disabled,
   ));
+  // sref_notations.sref_notations are not all the srefs we can handle: can handle other purely numeric ones. Add here as required.
+  // Don't like using the array add, but array merge renumbers the numeric keys.
+  $systems = kohana::config('sref_notations.sref_notations') +
+      array('2169' => 'EPSG:2169 Luxembourg 1930',
+            '27572' => 'EPSG:27572 NTF (Paris) / Lambert zone II');
   echo data_entry_helper::sref_and_system(array(
     'label' => 'Spatial Ref',
     'fieldname' => 'location:centroid_sref',
     'geomFieldname' => 'location:centroid_geom',
     'default' => html::initial_value($values, 'location:centroid_sref'),
     'defaultGeom' => html::initial_value($values, 'location:centroid_geom'),
-    'systems' => kohana::config('sref_notations.sref_notations'),
+    'systems' => $systems,
     'defaultSystem' => html::initial_value($values, 'location:centroid_sref_system'),
     'class' => 'control-width-3',
     'validation'=>'required',
     'disabled' => $disabled,
-  ));
+  )); 
+  
   ?>
   <input type="hidden" name="location:boundary_geom" id="boundary_geom" value="<?php echo $boundary_geom; ?>"/>
   <p class="instruct">Zoom the map in by double-clicking then single click on the location's centre to set the
