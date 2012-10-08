@@ -182,7 +182,7 @@ function simple_tooltip(target_items, name){
             result += '<br/>';
           }
           if (typeof action.img!=="undefined") {
-            img=action.img.replace('/{rootFolder}/g', div.settings.rootFolder);
+            img=action.img.replace(/{rootFolder}/g, div.settings.rootFolder);
             content = '<img src="'+img+'" title="'+action.caption+'" />';
           } else
             content = action.caption;
