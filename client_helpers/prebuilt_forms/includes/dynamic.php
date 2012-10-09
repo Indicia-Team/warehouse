@@ -283,11 +283,11 @@ class iform_dynamic {
     unset($reload['params']['newLocation']);
     $reloadPath = $reload['path'];
     if(count($reload['params'])) {
-      // decode params prior to encoding to prevent double encoding.
-      foreach ($reload['params'] as $key => $param) {
-        $reload['params'][$key] = urldecode($param);
-      }
-      $reloadPath .= '?'.http_build_query($reload['params']);
+      $params=array();
+      foreach ($reload['params'] as $key => $param)
+        // This is deliberately not re-encoded, as encoding causes Drupal ?q=a/b to appear as ?q=a%2Fb which means the form can't be re-submit.
+        $params[] = "$key=$param";
+      $reloadPath .= '?'.implode('&', $params);
     }
     return $reloadPath;
   }
