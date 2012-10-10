@@ -636,6 +636,7 @@ function simple_tooltip(target_items, name){
       });
       $(this).find('th .col-filter').blur(doFilter);
       $(this).find('th .col-filter').keypress(function(e) {
+        e.target.hasChanged = true;
         if (e.keyCode===13) {
           doFilter(e);
         }
