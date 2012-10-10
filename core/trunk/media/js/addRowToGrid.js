@@ -106,7 +106,7 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, useLookupC
     $(event.target).unbind('result', handleSelectedTaxon);
     $(event.target).unbind('return', returnPressedInAutocomplete);
     var taxonCell=event.target.parentNode;
-    $(taxonCell).before('<td class="ui-state-default remove-row" style="width: 1%">X</td>');
+    $(taxonCell).before('<td style="width: 1%"><a class="action-button remove-row">X</a></td>');
     // Note case must be colSpan to work in IE!
     $(taxonCell).attr('colSpan',1);
     var row=taxonCell.parentNode;
@@ -290,7 +290,7 @@ $('.remove-row').live('click', function(e) {
   if (typeof hook_species_checklist_pre_delete_row !== "undefined") {
     if(!hook_species_checklist_pre_delete_row(e)) return;
   }
-  var row = $(e.target.parentNode);
+  var row = $($(e.target).parents('tr:first'));
   if (row.next().find('.file-box').length>0) {
     // remove the uploader row
     row.next().remove();
