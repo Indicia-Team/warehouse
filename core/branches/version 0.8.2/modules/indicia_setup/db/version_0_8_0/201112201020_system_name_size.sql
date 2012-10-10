@@ -1,0 +1,1 @@
+ALTER TABLE "system" ALTER "name" TYPE character varying(100);

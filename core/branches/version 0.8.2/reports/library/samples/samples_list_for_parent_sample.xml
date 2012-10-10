@@ -1,0 +1,53 @@
+<report
+    title="Samples list for parent sample"
+    description="A general purpose list of samples filtered to those which belong to a parent sample."
+>
+<query website_filter_field="su.website_id">
+  SELECT #field_sql#
+  FROM samples s
+  JOIN surveys su on su.id=s.survey_id and su.deleted=false
+  LEFT JOIN (termlists_terms ttl1
+    INNER JOIN termlists_terms ttl2 ON ttl2.meaning_id=ttl1.meaning_id
+    INNER JOIN terms t ON t.id=ttl2.term_id
+  ) ON ttl1.id=s.sample_method_id
+  LEFT JOIN locations l ON l.id=s.location_id
+  #joins#
+  WHERE s.deleted = FALSE
+  AND #website_filter#
+  AND (CAST(ttl2.id AS character varying)='#sample_method_id#' OR '#sample_method_id#'='' OR t.term='#sample_method_id#')
+  AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+      AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+  AND s.parent_id=#sample_id#
+  #order_by#
+  </query>
+  <field_sql>
+    s.id as sample_id,
+    su.title as survey,
+    COALESCE(l.name, s.location_name) as location_name,
+    l.code,
+    s.entered_sref,
+    s.date_start,
+    s.date_end,
+    s.date_type
+  </field_sql>
+  <order_bys>
+    <order_by>s.id DESC</order_by>
+    <order_by>s.date_start DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='sample_id' display='Parent Sample ID' description='The ID of the parent sample to load the sub-samples for' datatype='text' />
+    <param name='date_from' display='Date From' datatype='date' />
+    <param name='date_to' display='Date To' datatype='date' />
+    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
+    <param name='sample_method_id' display='Sample Method' description='Select the sample method, or leave blank to not filter by sample method.' datatype='lookup'
+            population_call='report:library/terms/terms_list:id:term:termlist_external_key=indicia:sample_methods,termlist_id=' />
+  </params>
+  <columns>
+    <column name='sample_id' visible='false' />
+    <column name='survey' display='Survey' />
+    <column name='location_name' display='Site name' />
+    <column name='code' display='Site code' />
+    <column name='entered_sref' display='SRef' />
+    <column name='date' display='Date' />
+  </columns>
+</report>

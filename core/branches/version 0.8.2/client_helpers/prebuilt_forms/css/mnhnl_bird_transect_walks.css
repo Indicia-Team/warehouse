@@ -1,0 +1,50 @@
+#iform-header {
+  height: 108px;
+}
+.government-logo,.naturemwelt-logo {
+  height: 100px;
+}
+.gabriel-lippmann-logo {
+  height: 50px;
+}
+#iform-logo-left,#iform-logo-centre {
+	float: left;
+}
+#iform-logo-right {
+	float: right;
+}
+.deh-required {
+  color:red;
+}
+
+.mnhnl-btw-datapanel {
+  float: left;
+  position: relative;
+  width: 420px;
+  padding: 1em 0.5em !important;
+}
+
+.mnhnl-btw-mappanel {
+  margin-left: 435px;
+  height: 490px;
+}
+
+.mnhnl-btw-highlight {
+  background-color: #eeeeee;
+}
+
+textarea {
+  width: 240px;
+}
+
+#smp_grid, #occ_grid {
+  font-size: 11px;
+}
+
+#occurrence label {
+  width: 95px;
+}
+
+.loading-button {  background: transparent url(/misc/throbber.gif) no-repeat 50% -18px  !important ;}
+
+
