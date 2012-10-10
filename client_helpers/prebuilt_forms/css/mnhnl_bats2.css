@@ -54,7 +54,14 @@ span.extra-text {
   margin-top: 4px;
   margin-right: 0;	
 }
-.species-grid td.noPadding {
+.mnhnl-species-grid input, .mnhnl-species-grid select {
+  width: 95%;
+  margin: 0;
+}
+.mnhnl-species-grid td {
+  padding: 4px;
+}
+.mnhnl-species-grid td.noPadding {
   padding: 0;
 }
 
@@ -134,17 +141,17 @@ div.olControlEditingToolbar  {
 .smg-starttime,.smg-endtime {
 	width: 60px;
 }
-.species-grid label {
+.mnhnl-species-grid label {
 	width: auto;
 }
 #fieldset-extras label {
 	width: auto;
 }
-.species-grid input {
+.mnhnl-species-grid input {
 	width: 40px;
 	margin-right: 20px;
 }
-.species-grid input.sgCheckbox{
+.mnhnl-species-grid input.sgCheckbox{
 	width: auto;
 	margin-top: 5px;
 }

@@ -418,7 +418,7 @@ jQuery('.method-presence').change(function(){
     // when you select a survey method: enable all the rows
     jQuery('.sg-tr-'+this.name.split(':')[2]).find('input').removeAttr('disabled');
   } else {
-    if(jQuery('.species-grid').find('.sg-tr-'+this.name.split(':')[2]).length>0)
+    if(jQuery('.mnhnl-species-grid').find('.sg-tr-'+this.name.split(':')[2]).length>0)
       if(!confirm(\"".lang::get('LANG_Confirm_Survey_Method_Removal')."\")){
         jQuery(this).attr('checked',true);
         return;
@@ -429,7 +429,7 @@ jQuery('.method-presence').change(function(){
     jQuery('.sg-tr-'+this.name.split(':')[2]).find('input').not('.scPresence').attr('disabled','disabled').removeAttr('checked').val('');
     myTR.find('.deh-required,.inline-error').remove();
   }
-  jQuery('.species-grid').find('*').removeClass('ui-state-error').filter('.inline-error').remove();
+  jQuery('.mnhnl-species-grid').find('*').removeClass('ui-state-error').filter('.inline-error').remove();
 });
 ";
     if(isset($options['removeOptions'])){
@@ -656,7 +656,7 @@ hook_species_checklist_pre_delete_row=function(e) {
       if (isset($options['lookupListId'])) {
          self::$cloneableTable = self::get_species_checklist_clonable_row($args, $options, $occAttrControls, $attributes);
       }
-      $retVal .= '<table class="ui-widget ui-widget-content species-grid '.$options['class'].'" id="'.$options['id'].'">';
+      $retVal .= '<table class="ui-widget ui-widget-content mnhnl-species-grid '.$options['class'].'" id="'.$options['id'].'">';
       $retVal .= self::get_species_checklist_header($options, $attributes).'<tbody>';
       $attrsPerRow=array();
       foreach ($attributes as $attrId=>$attr) {

@@ -152,14 +152,21 @@ div.olControlEditingToolbar  {
 .ac_input {
 	width: 400px;
 }
-#species-grid-container{
+.mnhnl-species-grid input, .mnhnl-species-grid select {
+  width: 95%;
+  margin: 0;
+}
+.mnhnl-species-grid td {
+  padding: 4px;
+}
+#mnhnl-species-grid-container{
  overflow-y: scroll; 
  max-height: 450px;
 }
-#species-grid {
+#mnhnl-species-grid {
   margin-top: 0px;
   margin-bottom: 0px;
 }
-#species-grid-head {
+#mnhnl-species-grid-head {
   margin-bottom: 0px;
 }

@@ -68,7 +68,14 @@ span.extra-text {
   margin-top: 4px;
   margin-right: 0;	
 }
-.species-grid td.noPadding {
+.mnhnl-species-grid input, .mnhnl-species-grid select {
+  width: 95%;
+  margin: 0;
+}
+.mnhnl-species-grid td {
+  padding: 4px;
+}
+.mnhnl-species-grid td.noPadding {
   padding: 0;
 }
 #pointgridtable input[type='text'] {
