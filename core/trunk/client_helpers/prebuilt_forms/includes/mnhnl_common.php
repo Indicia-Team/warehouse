@@ -124,18 +124,11 @@ function iform_mnhnl_getParameters() {
           'group' => 'Locations'
         ),
         // we use the locTools location type ID for the parent
-        array(
-          'name'=>'locationTypeTermListExtKey',
-          'caption'=>'Location Type Term List',
-          'description'=>'External Key for the Term List used to look up the terms for the Location Types.',
-          'type'=>'string',
-          'default'=>'mnhnl:loctype',
-          'group' => 'Locations'
-        ),
+        // location type look up is now the standard 'indicia:location_types', not 'mnhnl:loctype'
         array(
           'name'=>'LocationTypeTerm',
           'caption'=>'Primary Site Location Type Term',
-          'description'=>"Term in the 'Location Type Term List' above used to provide the Location Type ID for new sites. For the non-parent location based mode, and when using Location Tools to assign locations to users, this is not needed as the 'Location Tools Location Type ID' is used instead.",
+          'description'=>"Term used to provide the Location Type ID for new sites. For the non-parent location based mode, and when using Location Tools to assign locations to users, this is not needed as the 'Location Tools Location Type ID' is used instead.",
           'type'=>'string',
           'required' => false,
           'group' => 'Locations'
@@ -143,7 +136,7 @@ function iform_mnhnl_getParameters() {
         array(
           'name'=>'SecondaryLocationTypeTerm',
           'caption'=>'2nd Site Location Type Term',
-          'description'=>"Term in the 'Location Type Term List' above used to provide the Location Type ID for sites. Exact functionality differences when using this compared to the Primary term is dependant on the form itself. When provided, an extra field is provided in the Mod Tool to allow admins the ability to change the Location Type.",
+          'description'=>"Term used to provide the Location Type ID for sites. Exact functionality differences when using this compared to the Primary term is dependant on the form itself. When provided, an extra field is provided in the Mod Tool to allow admins the ability to change the Location Type.",
           'type'=>'string',
           'required' => false,
           'group' => 'Locations'
@@ -329,10 +322,10 @@ function iform_mnhnl_locModTool($auth, $args, $node) {
   if($args['shpFileDownloadURL']!=""){
     $request= $args['shpFileDownloadURL']."/geoserver/wfs?request=GetFeature&service=wfs&version=1.0.0&outputformat=SHAPE-ZIP&srsName=EPSG:2169";
     if($args['LocationTypeTerm']=='' && isset($args['loctoolsLocTypeID'])) $args['LocationTypeTerm']=$args['loctoolsLocTypeID'];
-    $primary = iform_mnhnl_getTermID($auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
+    $primary = iform_mnhnl_getTermID($auth, 'indicia:location_types',$args['LocationTypeTerm']);
     $request.="&cql_filter=website_id=".$args['website_id']." AND ";
     if($args['SecondaryLocationTypeTerm'] != ''){
-      $secondary = iform_mnhnl_getTermID($auth, $args['locationTypeTermListExtKey'],$args['SecondaryLocationTypeTerm']);
+      $secondary = iform_mnhnl_getTermID($auth, 'indicia:location_types',$args['SecondaryLocationTypeTerm']);
       $request.="(location_type_id=".$primary."OR location_type_id=".$secondary.")";
     } else {
       $request.="location_type_id=".$primary;
@@ -346,9 +339,9 @@ function iform_mnhnl_locModTool($auth, $args, $node) {
       <p>".lang::get('LANG_Shapefile_Download')." ".$retValList."</p></fieldset>";
   }
   if($args['locationMode']=='parent'){ // includes multi - see above
-    $confirmedLocationTypeID = iform_mnhnl_getTermID($auth, $args['locationTypeTermListExtKey'],$args['SecondaryLocationTypeTerm']);
+    $confirmedLocationTypeID = iform_mnhnl_getTermID($auth, 'indicia:location_types',$args['SecondaryLocationTypeTerm']);
     if(is_null($confirmedLocationTypeID)) $confirmedLocationTypeID="0";
-    $submittedLocationTypeID = iform_mnhnl_getTermID($auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
+    $submittedLocationTypeID = iform_mnhnl_getTermID($auth, 'indicia:location_types',$args['LocationTypeTerm']);
     $retVal .= "<fieldset><legend>".lang::get('LANG_Outside_Square_Reports')."</legend>
   	<form method='post' action='".data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/luxbio_outside_squares_1.xml&reportSource=local&auth_token='.$auth['read']['auth_token'].'&nonce='.$auth['read']['nonce'].'&mode=csv&filename='.$args['reportFilenamePrefix']."CentreOutsideSquaresReport'>
       <label style='width:auto;'>".lang::get('LANG_Outside_Square_Download_1').":</label>
@@ -546,9 +539,9 @@ precisionAttr.insertAfter(precisionLabel).addClass('precision');
       data_entry_helper::load_existing_record($auth['read'], 'location', data_entry_helper::$entity_to_load["sample:location_id"]);
     $retVal = '';
     if($args['LocationTypeTerm']=='' && isset($args['loctoolsLocTypeID'])) $args['LocationTypeTerm']=$args['loctoolsLocTypeID'];
-    $primary = iform_mnhnl_getTermID($auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
+    $primary = iform_mnhnl_getTermID($auth, 'indicia:location_types',$args['LocationTypeTerm']);
     if($args['SecondaryLocationTypeTerm'] != ''){
-      $secondary = iform_mnhnl_getTermID($auth, $args['locationTypeTermListExtKey'],$args['SecondaryLocationTypeTerm']);
+      $secondary = iform_mnhnl_getTermID($auth, 'indicia:location_types',$args['SecondaryLocationTypeTerm']);
       $loctypequery="\"&query=\"+escape(JSON.stringify({'in': ['location_type_id', [$primary, $secondary]]}))";
       $loctypeParam=array($primary,$secondary);
     } else {
@@ -1704,7 +1697,7 @@ StartNewSite = function(){
   // No currently selected feature. Create a dummy label new one.
   SiteNum++;
   hook_new_site_added(false, SiteNum);
-  // Programatic activation soes not rippleout to deactivate other draw features, so deactivate all first.
+  // Programatic activation does not rippleout to deactivate other draw features, so deactivate all first.
   for(var i=0; i<editControl.controls.length; i++)
     if(editControl.controls[i].CLASS_NAME == \"OpenLayers.Control.DrawFeature\")
       editControl.controls[i].deactivate();
@@ -2484,7 +2477,7 @@ jQuery(\"#".$options['ChooseParentFieldID']."\").change(function(){
       }
       $locationAttributes = data_entry_helper::getAttributes($attrArgs, false);
       if($args['LocationTypeTerm']=='' && isset($args['loctoolsLocTypeID'])) $args['LocationTypeTerm']=$args['loctoolsLocTypeID'];
-      $primary = iform_mnhnl_getTermID($auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
+      $primary = iform_mnhnl_getTermID($auth, 'indicia:location_types',$args['LocationTypeTerm']);
       $filterAttrs[]="Name"; // always add the location name special case to the filter list.
       $defaultsFunction="";
       $loadFunction="hook_loadFilters = function(){\n";
@@ -2541,7 +2534,7 @@ jQuery(\"#".$options['ChooseParentFieldID']."\").change(function(){
       			// field 1: editable true or false
       			// field 2: display warning if outside true or false
       			// field 3: location_type term
-      			$parentLocTypeID = iform_mnhnl_getTermID($auth,$args['locationTypeTermListExtKey'],$filterAttr[3]);
+      			$parentLocTypeID = iform_mnhnl_getTermID($auth,'indicia:location_types',$filterAttr[3]);
       			// proxiedurl,featurePrefix,featureType,[geometryName],featureNS,srsName[,propertyNames]
                 $protocol = explode(',', $args['locationLayerLookup']);
 				data_entry_helper::$javascript .="
@@ -2684,7 +2677,7 @@ filterReset".$idx." = function(){
        			// 2 = display warning if outside list (will be set to blank)
       			// 3 = optional location type term filter
       			// Note that for Commune readonly displays, the normal Commune functionality is used, e.g. in the Amphibians Squares where the Ciommune must be kept in line so the Amphibian Sites can use it.
-      			$parentLocTypeID = $filterAttr[3]!='' ? iform_mnhnl_getTermID($auth,$args['locationTypeTermListExtKey'],$filterAttr[3]) : -1;
+      			$parentLocTypeID = $filterAttr[3]!='' ? iform_mnhnl_getTermID($auth,'indicia:location_types',$filterAttr[3]) : -1;
                 // proxiedurl,featurePrefix,featureType,geometryName,featureNS,srsName,propertyNames
                 if($filterAttr[1]=="Commune") $includeCommune=false;
                 $protocol = explode(',', $filterAttr[1]=="Commune" ? $args['communeLayerLookup'] : $args['locationLayerLookup']);
@@ -3306,7 +3299,7 @@ clearPGrid= function(){jQuery('.pgDataRow').remove();}
 
 function iform_mnhnl_SrefFields($auth, $args, $incLocTypeDropDown=false) {
   if($args['LocationTypeTerm']=='' && isset($args['loctoolsLocTypeID'])) $args['LocationTypeTerm']=$args['loctoolsLocTypeID'];
-  $primary = iform_mnhnl_getTermID($auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);	
+  $primary = iform_mnhnl_getTermID($auth, 'indicia:location_types',$args['LocationTypeTerm']);	
   data_entry_helper::$javascript .= "
 // functions for iform_mnhnl_SrefFields
 _setSref = function(sref){
@@ -3375,7 +3368,7 @@ function handleEnteredSref(value) {
 <input type=\"hidden\" id=\"locWebsite\" name=\"locations_website:website_id\" value=\"".$args['website_id']."\" />
 ";
 	if($args['SecondaryLocationTypeTerm']!='' && $incLocTypeDropDown) {
-		$secondary = iform_mnhnl_getTermID($auth, $args['locationTypeTermListExtKey'],$args['SecondaryLocationTypeTerm']);	
+		$secondary = iform_mnhnl_getTermID($auth, 'indicia:location_types',$args['SecondaryLocationTypeTerm']);	
 		$retVal .= "<label for=\"location_location_type_id\">".lang::get('LANG_Location_Type_Label').":</label> <select id=\"location_location_type_id\" name=\"location:location_type_id\">
     <option value=\"\"></option>
     <option value=\"$primary\">".lang::get('LANG_Location_Type_Primary')."</option>
@@ -3426,7 +3419,7 @@ function iform_mnhnl_set_editable($auth, $args, $node, $locList, $force, $loctyp
     $locList = data_entry_helper::get_population_data($location_list_args);
     if (isset($locList['error'])) return $locList['error'];
   }
-  $primary = iform_mnhnl_getTermID($auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
+  $primary = iform_mnhnl_getTermID($auth, 'indicia:location_types',$args['LocationTypeTerm']);
   data_entry_helper::$javascript .= "SiteEditable = {";
   $locCheckList = array();
   $locEditList = array();

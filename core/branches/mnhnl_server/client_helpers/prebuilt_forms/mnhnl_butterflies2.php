@@ -146,7 +146,7 @@ class iform_mnhnl_butterflies2 extends iform_mnhnl_dynamic_1 {
   	$isAdmin = user_access('IForm n'.parent::$node->nid.' admin');
   	if(!$isAdmin) return('');
   	if(!$retTabs) return array('#downloads' => lang::get('LANG_Download'), '#locations' => lang::get('LANG_Locations'));
-    $LocationTypeID = iform_mnhnl_getTermID(parent::$auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
+    $LocationTypeID = iform_mnhnl_getTermID(parent::$auth, 'indicia:location_types',$args['LocationTypeTerm']);
     $retVal = '<div id="downloads" >
     <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_butterflies2_sites_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=downloadsites">
       <p>'.lang::get('LANG_Sites_Report_Download').'</p>
@@ -433,7 +433,7 @@ jQuery("#fieldset-'.$options['boltTo'].'").find("legend").after("'.$retVal.'");'
       curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
       $sampleEntities = json_decode(curl_exec($session), true);
       // primary only location type: not secondary
-      $LocationTypeID = iform_mnhnl_getTermID(parent::$auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
+      $LocationTypeID = iform_mnhnl_getTermID(parent::$auth, 'indicia:location_types',$args['LocationTypeTerm']);
       $url = data_entry_helper::$base_url."/index.php/services/data/location?parent_id=".data_entry_helper::$entity_to_load['sample:location_id']."&mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&location_type_id=".$LocationTypeID;
       $session = curl_init($url);
       curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
@@ -735,7 +735,7 @@ jQuery(jQuery('#species').parent()).bind('tabsshow', function(e, ui){
     $tabName = (isset($options['tabNameFilter']) ? $options['tabNameFilter'] : null);
     $ret = '<p>'.lang::get("LANG_ConditionsGridInstructions")."</p>\n<table id=\"cgCloneableTable\" style='display:none' >";
     $cloneprefix='CG:--rownum--:--sampleid--:';
-    $LocationTypeID = iform_mnhnl_getTermID(parent::$auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
+    $LocationTypeID = iform_mnhnl_getTermID(parent::$auth, 'indicia:location_types',$args['LocationTypeTerm']);
     unset($attrArgs['id']);
     $attrArgs['fieldprefix']=$cloneprefix.'smpAttr';
     // have to disabled averything in the cloneable grid due to validation issues.

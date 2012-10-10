@@ -221,8 +221,8 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
   	$isAdmin = user_access('IForm n'.parent::$node->nid.' admin');
   	if(!$isAdmin) return('');
     if(!$retTabs) return array('#downloads' => lang::get('LANG_Download'), '#locations' => lang::get('LANG_Locations'));
-    $confirmedLocationTypeID = iform_mnhnl_getTermID(parent::$auth, $args['locationTypeTermListExtKey'],$args['SecondaryLocationTypeTerm']);
-    $submittedLocationTypeID = iform_mnhnl_getTermID(parent::$auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
+    $confirmedLocationTypeID = iform_mnhnl_getTermID(parent::$auth, 'indicia:location_types',$args['SecondaryLocationTypeTerm']);
+    $submittedLocationTypeID = iform_mnhnl_getTermID(parent::$auth, 'indicia:location_types',$args['LocationTypeTerm']);
     // When a location is created it is created as the Primary location type: this is the new Submitted location for bats.
     // When the location is checked by an admin, or is flagged as such in the initial upload, it is changed to the Secondary Location type: this is the old Confirmed type.
     $r = '<div id="downloads" >
@@ -576,9 +576,9 @@ jQuery('#smpAttr\\\\:$attrId').next().after(\"<span class='extra-text'>".lang::g
 
   private static function set_code_functionality($auth, $args, $isAdmin) {
     if($args['LocationTypeTerm']=='' && isset($args['loctoolsLocTypeID'])) $args['LocationTypeTerm']=$args['loctoolsLocTypeID'];
-    $primary = iform_mnhnl_getTermID($auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
+    $primary = iform_mnhnl_getTermID($auth, 'indicia:location_types',$args['LocationTypeTerm']);
     if($args['SecondaryLocationTypeTerm'] != ''){
-      $secondary = iform_mnhnl_getTermID($auth, $args['locationTypeTermListExtKey'],$args['SecondaryLocationTypeTerm']);
+      $secondary = iform_mnhnl_getTermID($auth, 'indicia:location_types',$args['SecondaryLocationTypeTerm']);
       $loctypequery="&query='+escape(JSON.stringify({'in': ['location_type_id', [$primary, $secondary]]}))+'";
     } else {
       $loctypequery="&location_type_id=".$primary;

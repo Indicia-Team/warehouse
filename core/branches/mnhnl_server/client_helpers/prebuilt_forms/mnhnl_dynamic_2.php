@@ -216,7 +216,7 @@ class iform_mnhnl_dynamic_2 extends iform_mnhnl_dynamic_1 {
     if(!user_access('IForm n'.parent::$node->nid.' admin')) return('');
     if(!$retTabs) return array('#downloads' => lang::get('LANG_Download'), '#locations' => lang::get('LANG_Locations'));
     if($args['LocationTypeTerm']=='' && isset($args['loctoolsLocTypeID'])) $args['LocationTypeTerm']=$args['loctoolsLocTypeID'];
-    $primary = iform_mnhnl_getTermID(array('read'=>$readAuth), $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
+    $primary = iform_mnhnl_getTermID(array('read'=>$readAuth), 'indicia:location_types',$args['LocationTypeTerm']);
     $r= '<div id="downloads" >';
     $r .= '<p>'.lang::get('LANG_Data_Download').'</p>';
     if(isset($args['targetSpeciesAttr']) && $args['targetSpeciesAttr']!="") {
@@ -375,6 +375,21 @@ deleteSurvey = function(sampleID){
   }
   
   protected static function get_control_customJS($auth, $args, $tabalias, $options) {
+    global $indicia_templates;
+    $indicia_templates['check_or_radio_group'] = '<div class="radio_group_container"><span {class}>{items}</span></div>';
+    $indicia_templates['check_or_radio_group_item'] = '<nobr><div class="radio_group_item"><input type="{type}" name="{fieldname}" id="{itemId}" value="{value}"{class}{checked} {disabled}/><label for="{itemId}">{caption}</label></div></nobr>{sep}';
+    data_entry_helper::$javascript .= "
+$('.radio_group_container').each(function(idx,elem){
+  var maxWidth = 0;
+  $(elem).prev('label').width('auto');
+  $(elem).find('div').each(function(index,div){
+    if($(div).width()>maxWidth) maxWidth = $(div).width();
+  });
+  $(elem).find('div').not(':last').css('min-width', maxWidth);
+  var required = $(elem).next('.deh-required');
+  if(required.length>0) $(elem).append(required);
+});
+";
     if(lang::get('validation_required') != 'validation_required')
       data_entry_helper::$late_javascript .= "
 $.validator.messages.required = \"".lang::get('validation_required')."\";";
@@ -588,11 +603,45 @@ $.validator.addMethod('no_observation', function(arg1, arg2){
 },
   \"".lang::get('validation_no_observation')."\");
 ";
+          } else if($rule[$i]=='end_time'){
+            // we are assuming this is on the main supersample.
+            $sampleAttrs = data_entry_helper::getAttributes(array(
+               'attrtable'=>'sample_attribute'
+              ,'valuetable'=>'sample_attribute_value'
+              ,'key'=>'sample_id'
+              ,'fieldprefix'=>'smpAttr'
+              ,'extraParams'=>$auth['read']
+              ,'survey_id'=>$args['survey_id']), true);
+            // fetch start time.
+            $found = false;
+            foreach ($sampleAttrs as $id => $attr)
+              if($attr["untranslatedCaption"]=="Start time") {
+                $found = $id;
+                break;
+              }
+            if($found === false) continue;
+            data_entry_helper::$late_javascript .= "
+jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:',$rule[0])."\\:]').rules('add', {end_time: true});
+$.validator.addMethod('end_time', function(value, element){
+  var startTime = jQuery('[name=smpAttr\\:".$found."],[name^=smpAttr\\:".$found."\\:]') 
+  if(value=='' || startTime.val() == '') return true; 
+  return (value >= startTime.val()); 
+},
+  \"".lang::get('validation_end_time')."\");
+";
           } else if(substr($rule[0], 3, 4)!= 'Attr'){ // have to add for non attribute case.
             data_entry_helper::$late_javascript .= "
 jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:',$rule[0])."\\:]').addClass('".$rule[$i]."');";
           }
     }
+    if(!isset($options['speciesListInTextAttr'])) return '';
+    $ctrlArgs=explode(',',$options['speciesListInTextAttr']);
+    data_entry_helper::$javascript .= "
+indiciaData.speciesListInTextSelector = '.".$ctrlArgs[0]."';
+indiciaData.None = '".lang::get('None')."';
+indiciaData.speciesListInTextLabel = '".lang::get('Add supporting plant species to list')."';
+indiciaData.speciesListInTextSpeciesList = ".$ctrlArgs[1].";
+";
     return '';
   }
 
@@ -745,7 +794,7 @@ var other = jQuery('[name=".$prefix."\\:".$attr2."],[name^=".$prefix."\\:".$attr
 other.next().remove(); // remove break
 other.prev().remove(); // remove legend
 other.removeClass('wide').remove(); // remove Other field, then bolt in after the other radio button.
-jQuery('[name=".str_replace(':','\\:',$attr['id'])."],[name^=".str_replace(':','\\:',$attr['id'])."\\:],[name=".str_replace(':','\\:',$attr['id'])."\\[\\]]').filter('[value=".$other[0]['meaning_id']."]').parent().append(other);
+jQuery('[name=".str_replace(':','\\:',$attr['id'])."],[name^=".str_replace(':','\\:',$attr['id'])."\\:],[name=".str_replace(':','\\:',$attr['id'])."\\[\\]]').filter('[value=".$other[0]['meaning_id']."]').parent().css('width','auto').append(other);
 jQuery('[name=".str_replace(':','\\:',$attr['id'])."],[name^=".str_replace(':','\\:',$attr['id'])."\\:],[name=".str_replace(':','\\:',$attr['id'])."\\[\\]]').change(function(){
   jQuery('[name=".str_replace(':','\\:',$attr['id'])."],[name^=".str_replace(':','\\:',$attr['id'])."\\:],[name=".str_replace(':','\\:',$attr['id'])."\\[\\]]').filter('[value=".$other[0]['meaning_id']."]').each(function(){
     if(this.checked)
@@ -990,31 +1039,64 @@ hook_species_checklist_pre_delete_row=function(e) {
           $row = "";
           $numCtrls=0;
           foreach ($attributes as $attrId => $attribute) {
-            $control=$occAttrControls[$attrId];
             if($foundRows && $attribute["inner_structure_block"] != "Row".$i) continue;
             $ctrlId = $ctrlName = $prefix.":occAttr:$attrId";
-            self::_getCtrlNames($ctrlName, $oldCtrlName);
-            if (isset(data_entry_helper::$entity_to_load[$oldCtrlName])) {
-              $existing_value = data_entry_helper::$entity_to_load[$oldCtrlName];
-            } elseif (array_key_exists('default', $attributes[$attrId])) {
-              $existing_value = $attributes[$attrId]['default'];
-            } else $existing_value = '';
-            $oc = str_replace('{fieldname}', $ctrlName, $control);
-            if (!empty($existing_value)) {
-              // For select controls, specify which option is selected from the existing value
-              if (strpos($oc, '<select') !== false) {
-                $oc = str_replace('value="'.$existing_value.'"', 'value="'.$existing_value.'" selected="selected"', $oc);
-              } else if(strpos($oc, 'radio') !== false) {
-                $oc = str_replace('value="'.$existing_value.'"','value="'.$existing_value.'" checked="checked"', $oc);
-              } else if(strpos($oc, 'checkbox') !== false) {
-                if($existing_value=="1") $oc = str_replace('type="checkbox"', 'type="checkbox" checked="checked"', $oc);
-              } else {
-                $oc = str_replace('value=""', 'value="'.$existing_value.'"', $oc);
+            // the control prebuild method fails for multiple value checkboxes, as each checkbox can be attached to a different attribute value record.
+            if($attribute["control_type"]=='checkbox_group'){ // implies multi_value
+              $attrDef = array_merge($attribute);
+              // sc:<rowIdx>:<smp_id>:<ttlid>:<occ_id>:[field]";
+              $ctrlArr = explode(':',$ctrlName,6);
+              $default = array();
+              if ($ctrlArr[4]!="") {
+                $search = preg_grep("/^sc:".'[0-9]*'.":$ctrlArr[2]:$ctrlArr[3]:$ctrlArr[4]:$ctrlArr[5]".':[0-9]*$/', array_keys(data_entry_helper::$entity_to_load));
+                if(count($search)>0){
+                  foreach($search as $existingField){
+                    $ctrlNameX = explode(':',$existingField);
+                    $ctrlNameX[1]=$ctrlArr[1]; // copy row index across.
+                    $ctrlNameX = implode(':', $ctrlNameX);
+                    $default[] = array('fieldname'=>$ctrlNameX, 'default'=>data_entry_helper::$entity_to_load[$existingField]);
+                  }
+                }
               }
-              // assume all error handling/validation done client side
+              // Get the control class if available. If the class array is too short, the last entry gets reused for all remaining.
+              $ctrlOptions = array(
+                'class'=>self::species_checklist_occ_attr_class($options, $idx, $attrDef['untranslatedCaption']) .
+                  (isset($attrDef['class']) ? ' '.$attrDef['class'] : ''),
+                'extraParams' => $options['readAuth'],
+                'suffixTemplate' => 'nosuffix',
+                'language' => $options['language']
+              );
+              if(isset($options['lookUpKey'])) $ctrlOptions['lookUpKey']=$options['lookUpKey'];
+              if($options['useCaptionsInHeader']) unset($attrDef['caption']);
+              $attrDef['fieldname'] = $ctrlName;
+              $attrDef['id'] = $ctrlId;
+              if(count($default)>0) $attrDef['default'] = $default;
+              $oc = data_entry_helper::outputAttribute($attrDef, $ctrlOptions);
+            } else {
+              $control=$occAttrControls[$attrId];
+              self::_getCtrlNames($ctrlName, $oldCtrlName);
+              if (isset(data_entry_helper::$entity_to_load[$oldCtrlName])) {
+                $existing_value = data_entry_helper::$entity_to_load[$oldCtrlName];
+              } elseif (array_key_exists('default', $attributes[$attrId])) {
+                $existing_value = $attributes[$attrId]['default'];
+              } else $existing_value = '';
+              $oc = str_replace('{fieldname}', $ctrlName, $control);
+              if (!empty($existing_value)) {
+                // For select controls, specify which option is selected from the existing value
+                if (strpos($oc, '<select') !== false) {
+                  $oc = str_replace('value="'.$existing_value.'"', 'value="'.$existing_value.'" selected="selected"', $oc);
+                } else if(strpos($oc, 'radio') !== false) {
+                  $oc = str_replace('value="'.$existing_value.'"','value="'.$existing_value.'" checked="checked"', $oc);
+                } else if(strpos($oc, 'checkbox') !== false) {
+                  if($existing_value=="1") $oc = str_replace('type="checkbox"', 'type="checkbox" checked="checked"', $oc);
+                } else {
+                  $oc = str_replace('value=""', 'value="'.$existing_value.'"', $oc);
+                }
+                // assume all error handling/validation done client side
+              }
             }
             $numCtrls++;
-            $row .= str_replace(array('{label}', '{content}'), array(lang::get($attributes[$attrId]['caption']), $oc), $indicia_templates[$options['attrCellTemplate']]);
+            $row .= str_replace(array('{label}', '{content}'), array($attributes[$attrId]['caption'], $oc), $indicia_templates[$options['attrCellTemplate']]);
           }
           if($maxCellsPerRow>$numCtrls) $row .= "<td class='ui-widget-content' colspan=".($maxCellsPerRow-$numCtrls)."></td>";
           // no confidential checkbox.
@@ -1166,7 +1248,7 @@ jQuery(jQuery('#".$mapOptions['tabDiv']."').parent()).bind('tabsshow', ".$mapOpt
     }
   }
 
-    public static function get_species_checklist_options($options) {
+  public static function get_species_checklist_options($options) {
     // validate some options
     if (!isset($options['speciesListID']))
       throw new Exception('The speciesListID parameter must be provided for this species checklist.');
@@ -1283,7 +1365,8 @@ jQuery(jQuery('#".$mapOptions['tabDiv']."').parent()).bind('tabsshow', ".$mapOpt
         'nocache' => true
       ));
       foreach($attrValues as $attrValue) {
-        data_entry_helper::$entity_to_load['sc::'.$occurrenceIds[$attrValue['occurrence_id']]['sample_id'].':'.$occurrenceIds[$attrValue['occurrence_id']]['taxa_taxon_list_id'].':'.$attrValue['occurrence_id'].':occAttr:'.$attrValue['occurrence_attribute_id'].(isset($attrValue['id'])?':'.$attrValue['id']:'')]
+        if(isset($attrValue['id']) && $attrValue['id'] != null)
+          data_entry_helper::$entity_to_load['sc::'.$occurrenceIds[$attrValue['occurrence_id']]['sample_id'].':'.$occurrenceIds[$attrValue['occurrence_id']]['taxa_taxon_list_id'].':'.$attrValue['occurrence_id'].':occAttr:'.$attrValue['occurrence_attribute_id'].':'.$attrValue['id']]
             = $attrValue['raw_value'];
       }
       if(isset($options['includeSubSample']))

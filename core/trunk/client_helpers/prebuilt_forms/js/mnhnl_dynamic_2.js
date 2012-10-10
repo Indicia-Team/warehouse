@@ -33,8 +33,9 @@ var scRow = 0;
 var _setHighlight = function(myRow) {
   myRow.closest('table').find('tr').removeClass('highlight');
   var map = jQuery('#map2');
-  if(map.length==0) return;
+  if(map.length==0) return; // no map
   map = map[0];
+  if(map.children.length==0) return; // not created yet.
   var firstRow = myRow;
   myRow.addClass('highlight');
   while(!myRow.hasClass('last')) {
@@ -151,11 +152,13 @@ var _bindSpeciesGridControls = function(row,rowNum,options){
     function setControl(control,row,j){
         control.change(function(){
           if(jQuery(this).filter(':checked').length>0){
-            $('.group-'+row+'-'+j).css('opacity','').find('input,select').removeAttr('disabled');
+            $('.group-'+row+'-'+j).find('input,select').removeAttr('disabled');
+            $('.group-'+row+'-'+j).find('label').css('opacity','');
             $('.group-'+row+'-'+j).find('.deh-required').show();
             $('.group-'+row+'-'+j).find('.required').addClass('XrequiredX').removeClass('required');
           } else {
-            $('.group-'+row+'-'+j).css('opacity',0.25).find('input,select').attr('disabled','disabled');
+            $('.group-'+row+'-'+j).find('input,select').attr('disabled','disabled');
+            $('.group-'+row+'-'+j).find('label').css('opacity',0.25);
             $('.group-'+row+'-'+j).find('.deh-required').hide();
             $('.group-'+row+'-'+j).find('.XrequiredX').addClass('required').removeClass('XrequiredX');
             $('.group-'+row+'-'+j).find('select,:text').val('');
@@ -219,6 +222,10 @@ function _addNewSpeciesGridRow(data,options){
   newRows[0].data('feature',null);
   // now bolt all functionality in: deliberately separated from above so all rows are deployed into table first.
   $.each(newRows, function(i, row){
+    if(typeof indiciaData.speciesListInTextSelector != "undefined" && $(row).find(indiciaData.speciesListInTextSelector).length > 0)
+      bindSupportingSpeciesAutocomplete($(row).find(indiciaData.speciesListInTextSelector)[0], options);
+  });
+  $.each(newRows, function(i, row){
     _bindSpeciesGridControls(row,scRow,options);
   });
   // Allow forms to hook into the event of a new row being added
@@ -238,8 +245,12 @@ function _addExistingSpeciesGridRow(index,row,options){
     myRow = myRow.next();
     if(myRow.length==0) break;
   };
-  $.each(rows, function(i, row){row.addClass('group-'+index+'-'+i)});
-  // now bolt all functionality in: deliberately separated from above so all rows are deployed into table first.
+  // now bolt all functionality in: deliberately separated
+  $.each(rows, function(i, row){
+    row.addClass('group-'+index+'-'+i);
+    if(typeof indiciaData.speciesListInTextSelector != "undefined" && $(row).find(indiciaData.speciesListInTextSelector).length > 0)
+      bindSupportingSpeciesAutocomplete($(row).find(indiciaData.speciesListInTextSelector)[0], options);
+  });
   $.each(rows, function(i, row){
     _bindSpeciesGridControls(row,index,options);
   });
@@ -293,6 +304,9 @@ function bindSpeciesAutocomplete(options){
 }
 
 $('.remove-row').live('click', function(e) {
+  var map2 = jQuery('#map2');
+  if(map2.length==0) return;
+  map2 = map2[0];
   e.preventDefault();
   // Allow forms to hook into the event of a row being deleted, most likely use would be to have a confirmation dialog
   // This allows language independance.
@@ -307,7 +321,7 @@ $('.remove-row').live('click', function(e) {
     if(row.data('feature').layer==occurrencePointLayer)
       occurrencePointLayer.destroyFeatures([row.data('feature')]);
     else
-      map.map.editLayer.destroyFeatures([row.data('feature')]);
+      map2.map.editLayer.destroyFeatures([row.data('feature')]);
   }
 
   if (row.hasClass('added-row')) {
@@ -379,3 +393,72 @@ mapInitialisationHooks.push(function(mapdiv) {
 	}
   	// TBD load existing features
 });
+
+jQuery('.remove-button').live('click', function(){
+  var cell = $(this).closest('td');
+  var container = cell.find('.SpeciesNameList');
+  var group = $(this).closest('.SpeciesNameGroup');
+  group.remove();
+  var names=[];
+  cell.find('.Speciesname').each(function(idx,elem){ names.push(elem.innerHTML); });
+  if(names.length){
+    cell.find(indiciaData.speciesListInTextSelector).val(names.join('|'));
+  } else {
+    cell.find(indiciaData.speciesListInTextSelector).val('');
+    container.empty().append('<label><i>'+indiciaData.None+'</i><label>');
+  }
+});
+
+function bindSupportingSpeciesAutocomplete(field, options){
+    // Attach auto-complete code to the input
+  var handleSelectedTaxon = function(event, data) {
+    var cell = $(event.target).closest('td');
+    var container = cell.find('.SpeciesNameList');
+    if(container.find('.Speciesname').length == 0) container.empty();
+    container.append('<span class=\"SpeciesNameGroup\" ><br /><div class=\"ui-state-default remove-button\"> </div><span class=\"Speciesname\">'+data.taxon+'</span></span>');
+    var names=[];
+    cell.find('.Speciesname').each(function(idx,elem){ names.push(elem.innerHTML); });
+    cell.find(indiciaData.speciesListInTextSelector).val(names.join('|'));
+    $(event.target).val('');
+  };
+
+  // convert the attribute to special input control.
+  $(field).hide();
+  var cell= $(field).closest('td');
+  var container = $('<span class="SpeciesNameList"></span>').appendTo(cell);
+  if($(field).val() != ''){
+    var vals = $(field).val().split('|');
+    jQuery.each(vals, function(idx,item){
+      container.append('<span><br /><div class="ui-state-default remove-button"> </div><span class="Speciesname">'+item+'</span></span>');
+    });
+  } else container.append('<label><i>'+indiciaData.None+'</i><label>')
+  cell.append('<br /><label class="auto-width">'+indiciaData.speciesListInTextLabel+'</label> <input name="addSupportingSpeciesControl" >');
+  // merge into following cell if empty, to give us more room
+  var next = cell.next('td');
+  if(next.length && next[0].innerHTML==''){
+    cell.attr('colspan',next[0].colSpan+1);
+    next.remove();
+  }
+  var ctrl = cell.find('[name=addSupportingSpeciesControl]')
+  ctrl = ctrl.autocomplete(options.url+'/taxa_taxon_list', {
+      extraParams : {
+        view : 'detail',
+        orderby : 'taxon',
+        mode : 'json',
+        qfield : 'taxon',
+        auth_token: options.auth_token,
+        nonce: options.nonce,
+        taxon_list_id: indiciaData.speciesListInTextSpeciesList
+      },
+      max : options.max,
+      parse: function(data) {
+        var results = [];
+        jQuery.each(data, function(i, item) { results[results.length] = {'data' : item, 'result' : item.taxon, 'value' : item.taxon }; });
+        return results;
+      },
+      formatItem: function(item) { return item.taxon; }
+  });
+  ctrl.bind('result', handleSelectedTaxon);
+  setTimeout(function() { ctrl.focus(); });
+}
+

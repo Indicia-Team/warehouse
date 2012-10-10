@@ -19,6 +19,25 @@
 .control-box {
   display:inline  !important;
 }
+.species-grid .radio_group_container {
+  display:inline-block;
+  *display:inline;
+}
+.radio_group_item {
+  display:inline-block;
+  zoom:1;
+  *display:inline;
+  margin-left: 1em;
+  margin-top: 2px;
+}
+.radio_group_item * {
+  margin-left: 1em;
+  vertical-align: middle;
+}
+.radio_group_item label {
+  width: auto;
+}
+
 .species-grid input 
 {
   margin-top: 4px;
@@ -93,6 +112,7 @@ span.extra-text {
 }
 label.auto-width {
 	width: auto;
+	max-width: 1000px;
 }
 label.prepad {
   padding-left: 20px;	
@@ -181,5 +201,19 @@ input.scComment  {
 	width: 60px;
 }
 .target-species-grid label {
+	width: auto;
+}
+div.remove-button {
+	width: 16px;
+	height: 16px;
+	background-image: url("../../../../media/images/delete.png") !important;
+	background-color: transparent !important;	
+	display: inline-block;
+	background-position: left top;
+    background-repeat: no-repeat;
+    background-size: auto auto;
+    border: none !important;
+}
+.species-grid input.ac_input {
 	width: auto;
 }
