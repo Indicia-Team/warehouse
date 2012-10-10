@@ -2179,7 +2179,7 @@ class data_entry_helper extends helper_base {
         $row = '';
         // Add a X button if the user can remove rows
         if ($options['rowInclusionCheck']=='alwaysRemovable')
-          $row .= '<td class="ui-state-default remove-row" style="width: 1%">X</td>';
+          $row .= '<td style="width: 1%"><a class="action-button remove-row">X</a></td>';
         $row .= str_replace(array('{content}','{colspan}','{tableId}','{idx}'), 
             array($firstCell,$colspan,$options['id'],$colIdx), $indicia_templates['taxon_label_cell']);
 
