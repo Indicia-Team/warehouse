@@ -59,6 +59,6 @@ $custom_term_overrides[] = array(
 	,'LANG_CommonLocationNameLabel' => 'Site number'
 	,'LANG_LocModTool_NameLabel'=>'New site number'
 	,'LANG_CommonFilterNameLabel'=>'Existing site number'
-	,'Occurrence reliability'=>'Occurrence reliability'
+	,'Occurrence reliability'=>'Observation reliability'
 	
 );

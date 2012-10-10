@@ -308,7 +308,7 @@ createGridEntries = function(feature, isnew) {
   recalcNumSites();
   // Species grid 1) add to header, 2) add to cloneable row, 3) add to existing rows
   insertCount++;// double cells at start for these rows.
-  insertPoint=jQuery('#species-grid-header').children(':eq('+insertCount+')');
+  insertPoint=jQuery('#mnhnl-species-grid-header').children(':eq('+insertCount+')');
   jQuery('<th class=\"smp-'+cgRowNum+'\">'+name+'</th>').css('opacity',0.25).insertAfter(insertPoint);
   jQuery('.sgNoObRow').each(function(i, Row) {
     insertPoint=jQuery(Row).children(':eq('+insertCount+')');
@@ -354,7 +354,7 @@ moveGridEntries = function(cgRowNum) {
       rows[i].insertAfter(insertPoint);
   }
   // Species grid 1) add to header, 2) add to cloneable row, 3) add to existing rows
-  jQuery('#species-grid-header,.sgNoObRow,.sgCloneableRow,.sgAddedRow,.sgOrigRow').each(function(i, Row) {
+  jQuery('#mnhnl-species-grid-header,.sgNoObRow,.sgCloneableRow,.sgAddedRow,.sgOrigRow').each(function(i, Row) {
     insertPoint=jQuery(Row).children(':eq('+(newPosition+2)+')');
     jQuery(Row).children(':eq('+(oldPosition+2)+')').insertAfter(insertPoint);
   });
@@ -382,9 +382,9 @@ hook_ChildFeatureLoad = function(feature, data, child_id, options){
 }
 hook_mnhnl_parent_changed = function(){
   jQuery('#conditions-grid > tbody').find('tr').remove();
-  jQuery('#species-grid > tbody').find('tr').not('.sgNoObRow').remove();
-  jQuery('#species-grid').find('th:gt(1)').remove();
-  jQuery('#species-grid').find('td:gt(1)').remove();
+  jQuery('#mnhnl-species-grid > tbody').find('tr').not('.sgNoObRow').remove();
+  jQuery('#mnhnl-species-grid').find('th:gt(1)').remove();
+  jQuery('#mnhnl-species-grid').find('td:gt(1)').remove();
   jQuery('.sgCloneableRow').find('td:gt(1)').remove();
 };";
     $retVal = iform_mnhnl_lux5kgridControl($auth, $args, parent::$node, array_merge(
@@ -532,7 +532,7 @@ jQuery("#fieldset-'.$options['boltTo'].'").find("legend").after("'.$retVal.'");'
     if ($args['species_ctrl']=='tree_browser')
       return '<p>Can not use tree browser in this context</p>';
     $ret .= '<div>'.call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_list_args).'</div>';
-    $ret .= '<table id="species-grid-head"><thead id="species-grid-head-head"><tr></tr></thead></table><div id="species-grid-container"><table id="species-grid"><thead><tr id="species-grid-header"><th></th><th>'.lang::get('Species').'</th>';
+    $ret .= '<table id="mnhnl-species-grid-head"><thead id="mnhnl-species-grid-head-head"><tr></tr></thead></table><div id="mnhnl-species-grid-container"><table id="mnhnl-species-grid"><thead><tr id="mnhnl-species-grid-header"><th></th><th>'.lang::get('Species').'</th>';
     if (isset($subsamples))
       foreach($subsamples as $key => $entity){
         $ret .= '<th class="smp-'.($key+1).'" '.(isset($entity['date']) ? '' : 'style="opacity: 0.25"').'>'.$entity['name'].'</th>';
@@ -562,7 +562,7 @@ jQuery("#fieldset-'.$options['boltTo'].'").find("legend").after("'.$retVal.'");'
       }
       $taxonRow++;
       data_entry_helper::$javascript .= "
-jQuery('#species-grid').find('tr:eq(".($taxonRow-1).")').data('taxonRow', ".$taxonRow.").data('ttlid', ".$ttlid.").data('meaning_id', ".$taxon[0]['taxon_meaning_id'].");";
+jQuery('#mnhnl-species-grid').find('tr:eq(".($taxonRow-1).")').data('taxonRow', ".$taxonRow.").data('ttlid', ".$ttlid.").data('meaning_id', ".$taxon[0]['taxon_meaning_id'].");";
       $ret .= '
 <tr class="sgOrigRow"><td class="ui-state-default clear-sgrow" >X</td><td class="sggrid-namecell">'.$name.'</td>';
       foreach($subsamples as $key => $entity){
@@ -620,26 +620,26 @@ $.validator.addMethod('no_observation', function(value, element, params){
   data_entry_helper::$javascript .= "
 resetSpeciesGridHeader = function(){
   // easiest way to get a scrollable table body
-  $('#species-grid').find('th,td').each(function(){ $(this).css('width', ''); });
-  jQuery('#species-grid > thead').show();
+  $('#mnhnl-species-grid').find('th,td').each(function(){ $(this).css('width', ''); });
+  jQuery('#mnhnl-species-grid > thead').show();
   var headerWidths = new Array(); // treat separately as may have different CSS
   var columnWidths = new Array();
-  $('#species-grid > thead').find('th').each(function (index) {
+  $('#mnhnl-species-grid > thead').find('th').each(function (index) {
     headerWidths[index] = $(this).width();
   });
-  $('#species-grid > tbody').find('tr:eq(0)').find('td').each(function (index) {
+  $('#mnhnl-species-grid > tbody').find('tr:eq(0)').find('td').each(function (index) {
     columnWidths[index] = $(this).width();
   });
-  $('#species-grid th').each(function(index){
+  $('#mnhnl-species-grid th').each(function(index){
       $(this).css('width', headerWidths[index]);
   });
-  $('#species-grid tr').each(function(){
+  $('#mnhnl-species-grid tr').each(function(){
     $(this).find('td').each(function(index){
       $(this).css('width', columnWidths[index]);
     });
   });
-  jQuery('#species-grid-head-head').empty().append(jQuery('#species-grid > thead').find('tr').clone().removeAttr('id'));
-  jQuery('#species-grid > thead').hide();
+  jQuery('#mnhnl-species-grid-head-head').empty().append(jQuery('#mnhnl-species-grid > thead').find('tr').clone().removeAttr('id'));
+  jQuery('#mnhnl-species-grid > thead').hide();
 }
 resetSpeciesGridHeader();
 sgRowIndex = ".$taxonRow.";
@@ -650,7 +650,7 @@ jQuery('#speciesgrid_taxa_taxon_list_id').change(function(){
       jQuery('#speciesgrid_taxa_taxon_list_id\\\\:taxon').val('');
       if (tdata.length>0) {
         found=false;
-        jQuery('#species-grid').find('tr').each(function(i, row){
+        jQuery('#mnhnl-species-grid').find('tr').each(function(i, row){
           if(tdata[0].taxon_meaning_id == jQuery(row).data('meaning_id'))
             found=true;
         });
@@ -678,7 +678,7 @@ jQuery('#speciesgrid_taxa_taxon_list_id').change(function(){
                 else
                   name = name+(i>0?', ':'')+ldata[i].taxon;
               }
-              jQuery('#species-grid').find('tr').each(function(i, row){
+              jQuery('#mnhnl-species-grid').find('tr').each(function(i, row){
                 if(ldata[0].taxon_meaning_id == jQuery(row).data('meaning_id'))
                   jQuery(row).find('.sggrid-namecell').empty().append(name);});
               resetSpeciesGridHeader();
@@ -1021,7 +1021,7 @@ jQuery('#dummy-name').change(function() {
       jQuery(elem).find('.cggrid-name').val(jQuery('#dummy-name').val());
   });
   moveGridEntries(myRowNum);
-  jQuery('#species-grid-header').find('.smp-'+myRowNum).empty().append(jQuery(this).val());
+  jQuery('#mnhnl-species-grid-header').find('.smp-'+myRowNum).empty().append(jQuery(this).val());
   resetSpeciesGridHeader();
   for(var i=SiteLabelLayer.features.length-1; i>=0; i--){ // Row may not be selected on map
     if(typeof SiteLabelLayer.features[i].attributes.cgRowNum != 'undefined'

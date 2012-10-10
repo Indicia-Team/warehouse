@@ -19,7 +19,14 @@
 .control-box {
   display:inline  !important;
 }
-.species-grid .radio_group_container {
+.mnhnl-species-grid input, .mnhnl-species-grid select {
+  width: 95%;
+  margin: 0;
+}
+.mnhnl-species-grid td {
+  padding: 4px;
+}
+.mnhnl-species-grid .radio_group_container {
   display:inline-block;
   *display:inline;
 }
@@ -38,11 +45,11 @@
   width: auto;
 }
 
-.species-grid input 
+.mnhnl-species-grid input 
 {
   margin-top: 4px;
 }
-.species-grid select 
+.mnhnl-species-grid select 
 {
   margin-top: 4px;
   width: auto;
@@ -158,7 +165,7 @@ div.olControlEditingToolbar div.olControlStartNewSiteItemInactive {
 div.olControlEditingToolbar  {
     width: 500px;
 }
-.species-grid input.imp-srefX,.species-grid input.imp-srefY {
+.mnhnl-species-grid input.imp-srefX,.mnhnl-species-grid input.imp-srefY {
 	width: 60px;
 }
 #samples-grid td {
@@ -191,7 +198,7 @@ input.scComment  {
   padding-left: 20px;	
 }
 
-.species-grid td {
+.mnhnl-species-grid td {
   padding: 1px;
 }
 .ui-widget-header th {
@@ -214,6 +221,6 @@ div.remove-button {
     background-size: auto auto;
     border: none !important;
 }
-.species-grid input.ac_input {
+.mnhnl-species-grid input.ac_input {
 	width: auto;
 }

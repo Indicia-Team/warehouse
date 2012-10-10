@@ -758,7 +758,7 @@ $.validator.addMethod('targ-presence', function(value, element){
   protected static function get_control_species($auth, $args, $tabalias, $options) {
     data_entry_helper::$javascript .= "
 // Main table existing entries
-speciesRows = jQuery('.species-grid > tbody').find('tr');
+speciesRows = jQuery('.mnhnl-species-grid > tbody').find('tr');
 for(var j=0; j<speciesRows.length; j++){
 	occAttrs = jQuery(speciesRows[j]).find('.scOccAttrCell');
 	occAttrs.find('.scCount').addClass('required').attr('min',1).after('<span class=\"deh-required\">*</span>');
@@ -826,7 +826,7 @@ hook_species_checklist_pre_delete_row=function(e) {
       if (isset($options['lookupListId'])) {
         $grid .= self::get_species_checklist_clonable_row($options, $occAttrControls, $attributes);
       }
-      $grid .= '<table class="ui-widget ui-widget-content species-grid '.$options['class'].'" id="'.$options['id'].'">';
+      $grid .= '<table class="ui-widget ui-widget-content mnhnl-species-grid '.$options['class'].'" id="'.$options['id'].'">';
       $grid .= self::get_species_checklist_header($options, $occAttrs);
       $rows = array();
       $rowIdx = 0;

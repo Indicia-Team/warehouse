@@ -377,7 +377,7 @@ deleteSurvey = function(sampleID){
   protected static function get_control_customJS($auth, $args, $tabalias, $options) {
     global $indicia_templates;
     $indicia_templates['check_or_radio_group'] = '<div class="radio_group_container"><span {class}>{items}</span></div>';
-    $indicia_templates['check_or_radio_group_item'] = '<nobr><div class="radio_group_item"><input type="{type}" name="{fieldname}" id="{itemId}" value="{value}"{class}{checked} {disabled}/><label for="{itemId}">{caption}</label></div></nobr>{sep}';
+    $indicia_templates['check_or_radio_group_item'] = '<nobr><div class="radio_group_item"><input type="{type}" name="{fieldname}" id="{itemId}" value="{value}"{class}{checked} {disabled}/><label for="{itemId}">{caption}</label></div></nobr> {sep}';
     data_entry_helper::$javascript .= "
 $('.radio_group_container').each(function(idx,elem){
   var maxWidth = 0;
@@ -830,7 +830,7 @@ jQuery('[name=".str_replace(':','\\:',$attr['id'])."],[name^=".str_replace(':','
   protected static function get_control_species($auth, $args, $tabalias, $options) {
     data_entry_helper::$javascript .= "
 // Main table existing entries
-speciesRows = jQuery('.species-grid > tbody').find('tr');
+speciesRows = jQuery('.mnhnl-species-grid > tbody').find('tr');
 for(var j=0; j<speciesRows.length; j++){
 	occAttrs = jQuery(speciesRows[j]).find('.scOccAttrCell');\n";
     if(isset($options['unitSpeciesMeaning']))
@@ -919,13 +919,14 @@ hook_species_checklist_pre_delete_row=function(e) {
     $indicia_templates['taxon_label'] = $php;
   }
 
-  private static function _getCtrlNames(&$ctrlName, &$oldCtrlName)
+  private static function _getCtrlNames(&$ctrlName, &$oldCtrlName, $isAttr)
   {
     $ctrlArr = explode(':',$ctrlName,6);
     // sc:<rowIdx>:<smp_id>:<ttlid>:<occ_id>:[field]";
     // NB this does not cope with multivalues.
     if ($ctrlArr[4]!="") {
-      $search = preg_grep("/^sc:".'[0-9]*'.":$ctrlArr[2]:$ctrlArr[3]:$ctrlArr[4]:$ctrlArr[5]".'[:[0-9]*]?$/', array_keys(data_entry_helper::$entity_to_load));
+      // preg_grep is behaving oddly.... have to use flag ...
+      $search = preg_grep("/^sc:[0-9]*:$ctrlArr[2]:$ctrlArr[3]:$ctrlArr[4]:$ctrlArr[5]".($isAttr ? ':[0-9]*' : '')."$/", array_keys(data_entry_helper::$entity_to_load));
       if(count($search)===1){
         $oldCtrlName = implode('', $search);
         $ctrlName = explode(':',$oldCtrlName);
@@ -989,7 +990,7 @@ hook_species_checklist_pre_delete_row=function(e) {
       if($options['includeSubSample']) $grid.="<input type='hidden' name='includeSubSample' value='true' >";
       self::species_checklist_prepare_attributes($options, $attributes, $occAttrControls, $occAttrs);
       $grid .= self::get_species_checklist_clonable_row($options, $occAttrControls, $attributes);
-      $grid .= '<table class="ui-widget ui-widget-content species-grid '.$options['class'].'" id="'.$options['id'].'">';
+      $grid .= '<table class="ui-widget ui-widget-content mnhnl-species-grid '.$options['class'].'" id="'.$options['id'].'">';
       $grid .= self::get_species_checklist_header($options, $occAttrs);
       $rows = array();
       $rowIdx = 1;
@@ -1013,15 +1014,15 @@ hook_species_checklist_pre_delete_row=function(e) {
           $row = '<tr class="scMeaning-'.$rec['taxon']['taxon_meaning_id'].' scDataRow">';
           if ($options['displaySampleDate']) {
             $ctrlID=$ctrlName=$prefix.":sample:date";
-            self::_getCtrlNames($ctrlName, $oldCtrlName);
+            self::_getCtrlNames($ctrlName, $oldCtrlName, false);
             // TBD need to attach a date control
             $row .= "<td class='ui-widget-content'><label class='auto-width' for='$ctrlID'>".lang::get('LANG_Date').":</label> <input type='text' id='$ctrlID' class='date' name='$ctrlName' value='".data_entry_helper::$entity_to_load[$oldCtrlName]."' /></td>";
           }
           $ctrlName=$prefix.":sample:geom";
-          self::_getCtrlNames($ctrlName, $oldCtrlName);
+          self::_getCtrlNames($ctrlName, $oldCtrlName, false);
           $row .= "<td class='ui-widget-content'><input type='hidden' id='$prefix:imp-geom' name='$ctrlName' value='".data_entry_helper::$entity_to_load[$oldCtrlName]."' />";
           $ctrlName=$prefix.":sample:entered_sref";
-          self::_getCtrlNames($ctrlName, $oldCtrlName);
+          self::_getCtrlNames($ctrlName, $oldCtrlName, false);
           $row .= "<input type='hidden' id='$prefix:imp-sref' name='$ctrlName' value='".data_entry_helper::$entity_to_load[$oldCtrlName]."' />";
           if(isset(data_entry_helper::$entity_to_load[$oldCtrlName]) && data_entry_helper::$entity_to_load[$oldCtrlName]!=""){
             $parts=explode(' ', data_entry_helper::$entity_to_load[$oldCtrlName]);
@@ -1074,7 +1075,7 @@ hook_species_checklist_pre_delete_row=function(e) {
               $oc = data_entry_helper::outputAttribute($attrDef, $ctrlOptions);
             } else {
               $control=$occAttrControls[$attrId];
-              self::_getCtrlNames($ctrlName, $oldCtrlName);
+              self::_getCtrlNames($ctrlName, $oldCtrlName, true);
               if (isset(data_entry_helper::$entity_to_load[$oldCtrlName])) {
                 $existing_value = data_entry_helper::$entity_to_load[$oldCtrlName];
               } elseif (array_key_exists('default', $attributes[$attrId])) {
@@ -1104,7 +1105,7 @@ hook_species_checklist_pre_delete_row=function(e) {
         }
         if ($options['includeOccurrenceComment']) {
           $ctrlId = $ctrlName=$prefix.":occurrence:comment";
-          self::_getCtrlNames($ctrlName, $oldCtrlName);
+          self::_getCtrlNames($ctrlName, $oldCtrlName, false);
           if (isset(data_entry_helper::$entity_to_load[$oldCtrlName])) {
             $existing_value = data_entry_helper::$entity_to_load[$oldCtrlName];
           } else $existing_value = '';
@@ -1209,7 +1210,7 @@ bindSpeciesButton(bindSpeciesOptions);\n";
   if (ui.panel.id=='".$mapOptions['tabDiv']."') {
     var div=$('#".$mapOptions['divId']."')[0];
     div.map.editLayer.destroyFeatures();
-    $('.species-grid').find('tr').removeClass('highlight');
+    $('.mnhnl-species-grid').find('tr').removeClass('highlight');
     // show the geometry currently held in the main locations part as the parent
     var initialFeatureWkt = $('#imp-boundary-geom').val();
     if(initialFeatureWkt=='') initialFeatureWkt = $('#imp-geom').val();
@@ -1219,7 +1220,7 @@ bindSpeciesButton(bindSpeciesOptions);\n";
     superSampleLocationLayer.addFeatures((typeof(feature)=='object'&&(feature instanceof Array) ? feature : [feature]));
     var bounds=superSampleLocationLayer.getDataExtent();
     occurrencePointLayer.removeAllFeatures();
-	$('.species-grid').find('.first').each(function(idx, elem){
+	$('.mnhnl-species-grid').find('.first').each(function(idx, elem){
 		if(jQuery(elem).data('feature')!=null){
 			jQuery(elem).data('feature').style=null;
 			occurrencePointLayer.addFeatures([jQuery(elem).data('feature')]);
@@ -1261,7 +1262,7 @@ jQuery(jQuery('#".$mapOptions['tabDiv']."').parent()).bind('tabsshow', ".$mapOpt
         'occurrenceComment' => false,
         'occurrenceConfidential' => false,
         'occurrenceImages' => false,
-        'id' => 'species-grid-'.rand(0,1000),
+        'id' => 'mnhnl-species-grid-'.rand(0,1000),
         'colWidths' => array(),
         'taxonFilterField' => 'none'
     ), $options);
@@ -1342,7 +1343,7 @@ jQuery(jQuery('#".$mapOptions['tabDiv']."').parent()).bind('tabsshow', ".$mapOpt
       foreach($occurrences as $occurrence){
         if(isset($options['includeSubSample'])){
           $smp=$occurrence['sample_id'];
-          data_entry_helper::$entity_to_load['sc::'.$smp.':'.$occurrence['taxa_taxon_list_id'].':'.$occurrence['id'].':sample:date'] = $sampleIds[$smp]['date'];
+          data_entry_helper::$entity_to_load['sc::'.$smp.':'.$occurrence['taxa_taxon_list_id'].':'.$occurrence['id'].':sample:date'] = $sampleIds[$smp]['date_start'];
           data_entry_helper::$entity_to_load['sc::'.$smp.':'.$occurrence['taxa_taxon_list_id'].':'.$occurrence['id'].':sample:entered_sref'] = $sampleIds[$smp]['entered_sref'];
           data_entry_helper::$entity_to_load['sc::'.$smp.':'.$occurrence['taxa_taxon_list_id'].':'.$occurrence['id'].':sample:geom'] = $sampleIds[$smp]['wkt'];
           data_entry_helper::$javascript .= "feature = occParser.read('".$sampleIds[$smp]['wkt']."');\n";

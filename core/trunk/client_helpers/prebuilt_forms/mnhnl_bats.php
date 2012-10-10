@@ -432,7 +432,7 @@ checkCheckStatus();
        $colWidths=explode(',', $args['col_widths']);
        for($i=0; $i<count($colWidths); $i++){
        		data_entry_helper::$javascript .= "
-jQuery('.species-grid > thead').find('th').not(':hidden').filter(':eq(".$i.")').width('";
+jQuery('.mnhnl-species-grid > thead').find('th').not(':hidden').filter(':eq(".$i.")').width('";
        	if($colWidths[$i]==''){
        		data_entry_helper::$javascript .= "auto');";
        	} else {
@@ -755,7 +755,7 @@ hook_setSref = function(geom){
 jQuery('.scCommentLabelCell').each(function(idx,elem){
   jQuery(this).css('width',jQuery(this).find('label').css('width'));
 });
-speciesRows = jQuery('.species-grid > tbody').find('tr');
+speciesRows = jQuery('.mnhnl-species-grid > tbody').find('tr');
 for(var j=0; j<speciesRows.length; j++){
 	occAttrs = jQuery(speciesRows[j]).find('.scOccAttrCell');
 	occAttrs.find('input').not(':hidden').addClass('fillgroup');
@@ -826,7 +826,7 @@ hook_species_checklist_pre_delete_row=function(e) {
       if (isset($options['lookupListId'])) {
         $grid .= self::get_species_checklist_clonable_row($options, $occAttrControls, $attributes);
       }
-      $grid .= '<table class="ui-widget ui-widget-content species-grid '.$options['class'].'" id="'.$options['id'].'">';
+      $grid .= '<table class="ui-widget ui-widget-content mnhnl-species-grid '.$options['class'].'" id="'.$options['id'].'">';
       // No header for this one.
       $rows = array();
       $rowIdx = 0;
