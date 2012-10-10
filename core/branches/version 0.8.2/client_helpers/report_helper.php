@@ -488,7 +488,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         $options['extraParams']['sharing']=$options['sharing'];
       }
       if (isset($options['extraParams']))
-        self::$javascript .= ",\n  extraParams: ".json_encode($options['extraParams']);
+        self::$javascript .= ",\n  extraParams: ".json_encode($options['extraParams'], JSON_FORCE_OBJECT);
       if (isset($options['filters']))
         self::$javascript .= ",\n  filters: ".json_encode($options['filters']);
       if (isset($orderby))
