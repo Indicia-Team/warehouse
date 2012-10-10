@@ -90,6 +90,16 @@ class cache_builder {
       $db->query($queries['final_updates']);
     }
   }
+  
+  /**
+   * Deletes a single record from the cache, e.g. could be used as soon as a record is deleted.
+   * @param object $db Database object.
+   * @param string $table Plural form of the table name.
+   * @param integer $id Record ID to delete from the cache
+   */
+  public static function delete($db, $table, $id) {
+    $db->delete("cache_$table", array('id'=>$id));
+  }
 
   /**
    * Build a temporary table with the list of IDs of records we need to update.
