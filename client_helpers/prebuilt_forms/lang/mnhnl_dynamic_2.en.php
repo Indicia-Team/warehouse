@@ -166,6 +166,7 @@ $custom_terms = array(
 	'LANG_Species_Y_Label' => 'Y',
 	'validation_no_observation' => "The <strong>No observation</strong> must be checked if and only if there is no data in the species grid.",
 	'validation_targ-presence'=>'At least one target species must be selected.',
+	'validation_end_time'=>'The end time must be after the start time',
 	'next step'=>'Next step',
 	'prev step'=>'Previous step'
 	
