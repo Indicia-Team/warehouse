@@ -19,6 +19,13 @@
 .control-box {
   display:inline  !important;
 }
+.mnhnl-species-grid input, .mnhnl-species-grid select {
+  width: 95%;
+  margin: 0;
+}
+.mnhnl-species-grid td {
+  padding: 4px;
+}
 .scOccAttrCell label {
   margin-right: 15px;
   width: auto;
@@ -67,13 +74,6 @@ span.extra-text {
   margin-bottom: 0;
   margin-top: 4px;
   margin-right: 0;	
-}
-.mnhnl-species-grid input, .mnhnl-species-grid select {
-  width: 95%;
-  margin: 0;
-}
-.mnhnl-species-grid td {
-  padding: 4px;
 }
 .mnhnl-species-grid td.noPadding {
   padding: 0;
