@@ -1,3 +1,10 @@
+.mnhnl-species-grid input, .mnhnl-species-grid select {
+  width: 95%;
+  margin: 0;
+}
+.mnhnl-species-grid td {
+  padding: 1px;
+}
 #iform-header {
   height: 108px;
 }
@@ -88,13 +95,6 @@ div.olControlEditingToolbar div.olControlStartNewSiteItemInactive {
 
 div.olControlEditingToolbar  {
     width: 500px;
-}
-.mnhnl-species-grid input, .mnhnl-species-grid select {
-  width: 95%;
-  margin: 0;
-}
-.mnhnl-species-grid td {
-  padding: 1px;
 }
 .ui-widget-header th {
   padding-right: 8px;
