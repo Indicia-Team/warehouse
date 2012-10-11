@@ -589,7 +589,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       if (!empty($options['rowClass']))
         self::$javascript .= ",\n  rowClass: '".$options['rowClass']."'";
       if (isset($options['extraParams']))
-        self::$javascript .= ",\n  extraParams: ".json_encode($options['extraParams'], JSON_FORCE_OBJECT);
+        self::$javascript .= ",\n  extraParams: ".json_encode((object)$options['extraParams']);
       if (isset($options['filters']))
         self::$javascript .= ",\n  filters: ".json_encode($options['filters']);
       if (isset($orderby))
