@@ -3209,7 +3209,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       'captionNext' => 'next step',
       'captionPrev' => 'prev step',
       'captionSave' => 'save',
-      'buttonClass' => 'indicia-button',
+      'buttonClass' => 'indicia-button inline-control',
       'class'       => 'right',
       'page'        => 'middle',
       'suffixTemplate' => 'nullsuffix',
