@@ -224,6 +224,7 @@ $.Autocompleter = function(input, options) {
     
     $input.val(v);
     hideResultsNow();
+    gotItem=true; $input.addClass('ui-state-highlight');
     $input.trigger("result", [selected.data, selected.value]);
     return true;
   }
@@ -271,7 +272,7 @@ $.Autocompleter = function(input, options) {
   function simplify(value) {
     // use same regexp as used to populate cache_taxon_searchterms to simplify the search string
     if (options.simplify) {
-      return value.replace(/\. /g, '* ').replace(/\(.+\)/g,'').replace(/[^a-zA-Z0-9\+\?*]/g,'').replace(/ae/g,'e').toLowerCase();
+      return value.toLowerCase().replace(/\(.+\)/g,'').replace(/ae/g,'e').replace(/\. /g, '* ').replace(/[^a-zA-Z0-9\+\?*]/g,'');
     } else {
       return value;
     }
