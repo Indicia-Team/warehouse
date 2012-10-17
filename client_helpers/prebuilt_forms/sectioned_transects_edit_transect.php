@@ -389,32 +389,34 @@ class iform_sectioned_transects_edit_transect {
       $r .= '<input type="hidden" name="locAttr:'.self::$cmsUserAttrId.'" value="'.$user->uid.'">';
     }
     if (!isset($settings['cantEdit']))
-      $r .= '<input type="submit" value="'.lang::get('Save').'" class="form-button right" />';
+      $r .= '<button type="submit" class="indicia-button right">'.lang::get('Save').'</button>';
     
     if(!isset($settings['cantEdit']) && $settings['locationId'])
-      $r .= '<input type="button" class="form-button right" value="'.lang::get('Delete').'">' ;
+      $r .= '<button type="button" class="indicia-button right" id="delete-transect">'.lang::get('Delete').'</button>' ;
     $r .='</form>';
     $r .= '</div>'; // site-details
     // This must go after the map panel, so it has created its toolbar
     data_entry_helper::$onload_javascript .= "$('#current-section').change(selectSection);\n";
     if(!isset($settings['cantEdit']) && $settings['locationId']) {
-      $r .= "<div style=\"display:none\" />
-<form id=\"form-delete-location\" method=\"POST\">".$auth['write']."
-<input type=\"hidden\" name=\"website_id\" value=\"".$args['website_id']."\" />
-<input type=\"hidden\" name=\"survey_id\" value=\"".$args['survey_id']."\" />
-<input type=\"hidden\" name=\"location:id\" value=\"".$settings['locationId']."\" />
-<input type=\"hidden\" name=\"location:deleted\" value=\"t\" />
-</form>
-</div>";
       $walkIDs = array();
-      foreach($settings['walks'] as $walk) $walkIDs[] = $walk['id'];
+      foreach($settings['walks'] as $walk) 
+        $walkIDs[] = $walk['id'];
+      $sectionIDs = array();
+      foreach($settings['sections'] as $code=>$section)
+        $sectionIDs[] = $section['id'];
       data_entry_helper::$javascript .= "
-deleteSurvey = function(sampleID){
-  if(confirm(\"".(count($settings['walks']) > 0 ? count($settings['walks']).' '.lang::get('walks will be flagged as deleted when you delete this location.').' ' : '').lang::get('Are you sure you wish to delete this location?')."\")){
+deleteSurvey = function(){
+  if(confirm(\"".(count($settings['walks']) > 0 ? count($settings['walks']).' '.lang::get('walks will also be deleted when you delete this location.').' ' : '').lang::get('Are you sure you wish to delete this location?')."\")){
     deleteWalks([".implode(',',$walkIDs)."]);
-    jQuery('#form-delete-location').submit();
+    deleteSections([".implode(',',$sectionIDs)."]);
+    $('#delete-transect').html('Deleting Transect');
+    deleteLocation(".$settings['locationId'].");
+    $('#delete-transect').html('Done');
+    window.location='".url($args['sites_list_path'])."';
   };
-};";
+};
+$('#delete-transect').click(deleteSurvey);
+";
     }
     return $r;
   }
