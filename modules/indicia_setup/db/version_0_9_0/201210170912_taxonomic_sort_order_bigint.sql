@@ -1,4 +1,5 @@
-DROP VIEW list_taxa_taxon_designations;
+-- drop this dependent view only if module enabled. The module will have to recreate the view itself...
+DROP VIEW IF EXISTS list_taxa_taxon_designations;
 
 DROP VIEW list_taxa_taxon_lists;
 
@@ -21,15 +22,6 @@ CREATE OR REPLACE VIEW list_taxa_taxon_lists AS
    LEFT JOIN taxa tc ON tc.id = ttl.common_taxon_id AND tc.deleted = false
   WHERE ttl.deleted = false
   ORDER BY ttl.taxonomic_sort_order, t.taxon;
-
-CREATE OR REPLACE VIEW list_taxa_taxon_designations AS 
- SELECT ttd.id, td.title, td.code, td.abbreviation, t.taxon, cttl.default_common_name as common, cttl.preferred_taxon as preferred_name, cttl.language, cttl.taxon_group
-   FROM taxon_designations td
-   JOIN taxa_taxon_designations ttd ON ttd.taxon_designation_id = td.id AND ttd.deleted = false
-   JOIN taxa t on t.id=ttd.taxon_id and t.deleted=false
-   JOIN taxa_taxon_lists ttl on ttl.taxon_id=t.id and ttl.deleted=false
-   JOIN cache_taxa_taxon_lists cttl on cttl.id=ttl.id
-  WHERE td.deleted = false;
 
 CREATE OR REPLACE VIEW gv_taxa_taxon_lists AS 
  SELECT tt.id, tt.taxon_list_id, tt.taxon_id, tt.created_on, tt.created_by_id, tt.parent_id, tt.taxon_meaning_id, tt.taxonomic_sort_order, tt.preferred, tt.deleted, t.taxon, t.taxon_group_id, t.language_id, t.authority, t.search_code, t.scientific, l.language, tg.title AS taxon_group
