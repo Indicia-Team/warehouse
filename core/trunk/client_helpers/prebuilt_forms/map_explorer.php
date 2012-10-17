@@ -107,6 +107,9 @@ class iform_map_explorer {
             "mapping": {
               "caption": {"type":"str","desc":"Display caption for the action\'s link."},
               "visibility_field": {"type":"str","desc":"Optional name of a field in the data which contains true or false to define the visibility of this action."},
+              "img": {"type":"str","desc":"Set img to the path to an image to use an image for the action instead of a text caption - the caption '.
+                  'then becomes the image\'s title. The image path can contain {rootFolder} to be replaced by the root folder of the site, in this '.
+                  'case it excludes the path parameter used in Drupal when dirty URLs are used (since this is a direct link to a URL)."},
               "url": {"type":"str","desc":"A url that the action link will point to, unless overridden by JavaScript. The url can contain tokens which '.
                   'will be subsituted for field values, e.g. for http://www.example.com/image/{id} the {id} is replaced with a field called id in the current row. '.
               'Can also use the subsitution {currentUrl} to link back to the current page, {rootFolder} to represent the folder on the server that the current PHP page is running from, and '.
