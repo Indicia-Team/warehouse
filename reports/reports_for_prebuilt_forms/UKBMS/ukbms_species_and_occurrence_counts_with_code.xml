@@ -50,11 +50,11 @@
         <param name='blank_code' display='Restrict to blank code values' datatype='lookup' lookup_values='no:No,yes:Yes' />
       </params>
       <columns>
-            <column name="id" visible="false" sql="l.id" unique="true" />
-            <column name="name" display="Site Name" style="background-color: #e7e7e7;" sql="l.name" />
-            <column name="occurrences" display="No. of Occurrences" sql="COUNT(DISTINCT o.id)" aggregate="true" />
-            <column name="taxa" display="No. of Taxa" sql="COUNT(DISTINCT ttl.taxon_meaning_id)" aggregate="true" />
-            <column name="groups" display="No. of Taxon Groups" sql="COUNT(DISTINCT tx.taxon_group_id)" aggregate="true" />
-            <column name="code" display="Code" sql="l.code" />
+            <column name="id" visible="false" sql="l.id" in_count="true" datatype="integer" />
+            <column name="name" display="Site Name" style="background-color: #e7e7e7;" sql="l.name" datatype="text" />
+            <column name="occurrences" display="No. of Occurrences" sql="COUNT(DISTINCT o.id)" aggregate="true" datatype="integer" />
+            <column name="taxa" display="No. of Taxa" sql="COUNT(DISTINCT ttl.taxon_meaning_id)" aggregate="true" datatype="integer" />
+            <column name="groups" display="No. of Taxon Groups" sql="COUNT(DISTINCT tx.taxon_group_id)" aggregate="true" datatype="integer" />
+            <column name="code" display="Code" sql="l.code" datatype="text" />
       </columns>
 </report>
