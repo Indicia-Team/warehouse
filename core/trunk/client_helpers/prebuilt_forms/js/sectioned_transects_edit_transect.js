@@ -1,3 +1,5 @@
+
+
 var selectedFeature = null;
 var sectionDetailsChanged = false;
 
@@ -111,23 +113,51 @@ function selectSection(section, doFeature) {
   }
 }
 
+function asyncPost(url, data) {
+  $.ajax({
+    type: 'POST',
+    url: url,
+    data: data,
+    success: function(data) {
+      if (typeof(data.error)!=="undefined") {
+        alert(data.error);
+      }
+    },
+    dataType: 'json',
+    // cannot be synchronous otherwise we navigate away from the page too early
+    async: false
+  });
+}
+
 function deleteWalks(walkIDs) {
-  for(var i = o; i< walkIDs.length; i++){
+  $.each(walkIDs, function(i, walkID) {
+    $('#delete-transect').html('Deleting Walks ' + (Math.round(i/walkIDs.length*100)+'%'));
     var data = {
-      'sample:id':walkIDs[i],
+      'sample:id':walkID,
       'sample:deleted':'t',
       'website_id':indiciaData.website_id
     };
-    $.post(
-      indiciaData.ajaxFormPostSampleUrl, data,
-      function(data) {
-        if (typeof(data.error)!=="undefined") {
-          alert(data.error);
-        }
-      },
-      'json'
-    );
-  }
+    asyncPost(indiciaData.ajaxFormPostSampleUrl, data);
+  });
+  $('#delete-transect').html('Deleting Walks 100%');
+}
+
+function deleteLocation(ID) {
+  var data = {
+    'location:id':ID,
+    'location:deleted':'t',
+    'website_id':indiciaData.website_id
+  };
+  asyncPost(indiciaData.ajaxFormPostUrl, data);
+}
+
+// delete a set of sections. Does not re-index the other section codes.
+function deleteSections(sectionIDs) {
+  $.each(sectionIDs, function(i, sectionID) {
+    $('#delete-transect').html('Deleting Sections ' + (Math.round(i/sectionIDs.length*100)+'%'));
+    deleteLocation(sectionID);
+  });
+  $('#delete-transect').html('Deleting Sections 100%');
 }
 
 //delete a section

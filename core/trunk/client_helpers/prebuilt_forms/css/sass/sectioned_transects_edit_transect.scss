@@ -50,7 +50,3 @@ label {
 #section-details .missing {
   display: none;
 }
-
-.form-button {
-  @include sassy-button("simple", 3px, 14px, #006699);
-}
