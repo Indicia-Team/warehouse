@@ -38,6 +38,9 @@ require_once('includes/report.php');
 
 
 class iform_record_details_2 extends iform_dynamic {
+
+  private static $occurrenceLoaded = false;
+  private static $sampleLoaded = false;
     
   /** 
    * Return the form metadata. 
@@ -274,7 +277,10 @@ Record ID',
   protected static function get_control_recorddetails($auth, $args, $tabalias, $options) {
     iform_load_helpers(array('report_helper')); 
     $auth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
-    data_entry_helper::load_existing_record($auth, 'occurrence', $_GET['occurrence_id']);
+    if (!self::$occurrenceLoaded) {
+      data_entry_helper::load_existing_record($auth, 'occurrence', $_GET['occurrence_id'], 'detail', 'reporting');
+      self::$occurrenceLoaded=true;
+    }
     $fields=helper_base::explode_lines($args['fields']);
     $fieldsLower=helper_base::explode_lines(strtolower($args['fields']));
     //Draw the Record Details, but only if they aren't requested as hidden by the administrator
@@ -305,7 +311,8 @@ Record ID',
       'dataSource'=>'reports_for_prebuilt_forms/verification_3/record_data',
       'bands'=>array(array('content'=>$detailstemplateHtml)),
       'useCache' => false,
-      'extraParams'=>array('occurrence_id'=>$_GET['occurrence_id'])));
+      'extraParams'=>array('occurrence_id'=>$_GET['occurrence_id'], 'sharing'=>'reporting')
+    ));
     //draw any custom attributes added by the user
     $attrs_report = report_helper::freeform_report(array(
       'readAuth' => $auth,
@@ -317,7 +324,8 @@ Record ID',
         //the SQL needs to take a set of the hidden fields, so this needs to be converted from an array.
         'attrs'=>strtolower(self::convert_array_to_set($fields)),
         'testagainst'=>$args['testagainst'],
-        'operator'=>$args['operator']
+        'operator'=>$args['operator'],
+        'sharing'=>'reporting'
       )
     ));
 
@@ -383,6 +391,7 @@ Record ID',
       'galleryColCount' => $options['galleryColCount'],
       'extraParams' => array(
         'occurrence_id'=>$_GET['occurrence_id'],
+        'sharing'=>'reporting'
       )
     ));
   }
@@ -398,8 +407,14 @@ Record ID',
   protected static function get_control_map($auth, $args, $tabalias, $options) {
     iform_load_helpers(array('data_entry_helper'));
     $auth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
-    data_entry_helper::load_existing_record($auth, 'occurrence', $_GET['occurrence_id']);
-    data_entry_helper::load_existing_record($auth, 'sample', data_entry_helper::$entity_to_load['occurrence:sample_id']);
+    if (!self::$occurrenceLoaded) {
+      data_entry_helper::load_existing_record($auth, 'occurrence', $_GET['occurrence_id'], 'detail', 'reporting');
+      self::$occurrenceLoaded=true;
+    }
+    if (!self::$sampleLoaded) {
+      data_entry_helper::load_existing_record($auth, 'sample', data_entry_helper::$entity_to_load['occurrence:sample_id'], 'detail', 'reporting');
+      $sampleLoaded=true;
+    }
     
     $options = array_merge(
       iform_map_get_map_options($args, $auth['read']),
@@ -432,8 +447,14 @@ Record ID',
   protected static function get_control_comments($auth, $args) { 
     iform_load_helpers(array('data_entry_helper'));
     $auth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
-    data_entry_helper::load_existing_record($auth, 'occurrence', $_GET['occurrence_id']);
-    data_entry_helper::load_existing_record($auth, 'sample', data_entry_helper::$entity_to_load['occurrence:sample_id']);
+    if (!self::$occurrenceLoaded) {
+      data_entry_helper::load_existing_record($auth, 'occurrence', $_GET['occurrence_id'], 'detail', 'reporting');
+      self::$occurrenceLoaded=true;
+    }
+    if (!self::$sampleLoaded) {
+      data_entry_helper::load_existing_record($auth, 'sample', data_entry_helper::$entity_to_load['occurrence:sample_id'], 'detail', 'reporting');
+      $sampleLoaded=true;
+    }
 
     $r = '<div>'; 
     $comments = data_entry_helper::get_population_data(array(
