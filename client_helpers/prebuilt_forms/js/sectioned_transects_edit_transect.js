@@ -208,14 +208,14 @@ function deleteSection(section) {
   // update the attribute value for number of sections.
   var data = {'location:id':$('#location\\:id').val(), 'website_id':indiciaData.website_id};
   data[indiciaData.numSectionsAttrName] = ''+(numSections-1);
+  // reload the form when all ajax done.
+  $('.remove-section').ajaxStop(function(event){    
+    window.location = window.location.href.split('#')[0]; // want to GET even if last was a POST. Plus don't want to go to the tab bookmark after #
+  });
   $.post(indiciaData.ajaxFormPostUrl,
           data,
           function(data) { if (typeof(data.error)!=="undefined") { alert(data.error); }},
           'json');
-  // reload the form.
-  $('.remove-section').ajaxStop(function(event){
-    location.href = location.href; // want to GET even if last was a POST.
-  });
 }
 
 $(document).ready(function() {
