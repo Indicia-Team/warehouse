@@ -921,7 +921,9 @@ $('.ui-state-default').live('mouseout', function() {
           // if the control this is linked to is hidden because it has a preset value, just use that value as a filter on the
           // population call for this control
           $ctrlOptions = array_merge($ctrlOptions, array(
-            'extraParams' => array_merge($ctrlOptions['extraParams'], array($info['linked_filter_field']=>$options['presetParams'][$info['linked_to']]))
+            'extraParams' => array_merge($ctrlOptions['extraParams'], array('query'=>json_encode(
+                array('in'=>array($info['linked_filter_field']=>array($options['presetParams'][$info['linked_to']], null)))
+            )))
           ));
         } else {
           // otherwise link the 2 controls
