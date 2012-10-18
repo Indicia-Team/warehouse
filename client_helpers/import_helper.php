@@ -233,7 +233,7 @@ class import_helper extends helper_base {
     }
     $r .= '</tbody>';
     $r .= '</table>';
-    $r .= '<div id="dynamic-instructions" class="import-mappings-instructions"><h2>'.lang::get('Tasks').'</h2><span id="required-instruct">'.
+    $r .= '<div id="required-instructions" class="import-mappings-instructions"><h2>'.lang::get('Tasks').'</h2><span>'.
       lang::get('The following database attributes must be matched to a column in your import file before you can continue').':</span><ul></ul><br/></div>';
     $r .= '<div id="duplicate-instructions" class="import-mappings-instructions"><span id="duplicate-instruct">'.
       lang::get('There are currently two or more drop-downs allocated to the same value.').'</span><ul></ul><br/></div></div>';
@@ -273,7 +273,7 @@ class import_helper extends helper_base {
     self::$javascript .= "function update_required_fields() {
       // copy the list of required fields
       var fields = $.extend(true, {}, required_fields);
-      $('#dynamic-instructions li').remove();
+      $('#required-instructions li').remove();
       var sampleVagueDates = [];
       // strip out the ones we have already allocated
       $.each($('#entry_form select'), function(i, select) {
@@ -292,10 +292,10 @@ class import_helper extends helper_base {
         output += '<li>'+caption+'</li>';
       });
       if (output==='') {
-        $('#required-instruct').css('display', 'none');
+        $('#required-instructions').css('display', 'none');
         RequiredAllowsUpload = 1;
       } else {
-        $('#required-instruct').css('display', 'inline');
+        $('#required-instructions').css('display', 'inline');
         RequiredAllowsUpload = 0;
       }
       if (RequiredAllowsUpload == 1 && DuplicateAllowsUpload == 1) {
@@ -303,7 +303,7 @@ class import_helper extends helper_base {
       } else {
         $('#submit').attr('disabled', true);
       }
-      $('#dynamic-instructions ul').html(output);
+      $('#required-instructions ul').html(output);
     }\n";
     self::$javascript .= "required_fields={};\n";
     foreach ($unlinked_required_fields as $field) {
