@@ -62,9 +62,9 @@ div.ui-effects-wrapper {
 }
 
 .inline-error {
-	color: red;
-	width: auto;
-	margin-left: 1em;
+  color: red;
+  width: auto;
+  margin-left: 1em;
 }
 
 .deh-required {
@@ -72,7 +72,7 @@ div.ui-effects-wrapper {
 }
 
 p.inline-error {
-  margin-left: 160px;	
+  margin-left: 160px;
   margin-bottom: -0.8em;
   margin-top: 0em;  
 }
@@ -111,27 +111,27 @@ a {
 }
 
 .control-width-0 {
-	width: 25px !important;
+  width: 25px !important;
 }
 
 .control-width-1 {
-	width: 50px !important;
+  width: 50px !important;
 }
 
 .control-width-2 {
-	width: 100px !important;
+  width: 100px !important;
 }
 
 .control-width-3 {
-	width: 150px !important;
+  width: 150px !important;
 }
 
 .control-width-4 {
-	width: 200px !important;
+  width: 200px !important;
 }
 
 .control-width-5 {
-	width: 300px !important;
+  width: 300px !important;
 }
 
 .control-width-6 {
@@ -143,11 +143,11 @@ a {
 }
 
 .loading-panel {
-	text-align: center;
-	vertical-align: middle;
-	padding: 2em;
-	width: 200px;
-	margin: 5em auto 0 auto;
+  text-align: center;
+  vertical-align: middle;
+  padding: 2em;
+  width: 200px;
+  margin: 5em auto 0 auto;
 }
 
 .loading-panel img {
@@ -232,7 +232,7 @@ a {
 }
 
 .buttons {
-	padding: 8px;
+  padding: 8px;
 }
 
 .right {
@@ -269,7 +269,7 @@ a {
 }
 
 li.ui-state-error {
-	margin: 0.5em;
+  margin: 0.5em;
 } 
 
 .loading-hide {
@@ -277,8 +277,8 @@ li.ui-state-error {
 }
 
 #imp-georef-div {
-	margin-bottom: 1em;
-	padding: 0.5em;
+  margin-bottom: 1em;
+  padding: 0.5em;
 }
 
 .control-box {
@@ -311,7 +311,7 @@ li.ui-state-error {
 }
 
 .tree-browser li {
-	padding: 0.25em;  
+  padding: 0.25em;
   display:inline-block;
   zoom:1;
   *display:inline;
@@ -607,58 +607,58 @@ div.olControlEditingToolbar .olControlClickSrefItemActive {
 }
 
 .unlocked-icon {
-	background-image: url(../images/Indicia_PadlockIcons_Open.png);
-	width: 19px;
+  background-image: url(../images/Indicia_PadlockIcons_Open.png);
+  width: 19px;
 }
 
 .locked-icon {
-	background-image: url(../images/Indicia_PadlockIcons_Closed.png);
-	width: 14px;
+  background-image: url(../images/Indicia_PadlockIcons_Closed.png);
+  width: 14px;
 }
 
 .locked-icon, .unlocked-icon {
-	background-repeat: no-repeat;
-	display: inline-block;
-	margin: 0 0.25em;
-	cursor: pointer;
+  background-repeat: no-repeat;
+  display: inline-block;
+  margin: 0 0.25em;
+  cursor: pointer;
 }
 
 /* for sub list control */
 ul.ind-sub-list {
-	margin-left: 0;
-	padding-left: 0;
-	list-style-type: none;
+  margin-left: 0;
+  padding-left: 0;
+  list-style-type: none;
 }
 
 ul.ind-sub-list li {
-	display: inline-block;
-	width: 165px;
-	vertical-align: top;
-	margin-left: 0;
-	padding-left: 0;
-	list-style-type: none;
+  display: inline-block;
+  width: 165px;
+  vertical-align: top;
+  margin-left: 0;
+  padding-left: 0;
+  list-style-type: none;
 }
 
 ul.ind-sub-list .ind-delete-icon, ul.ind-sub-list .ind-add-icon, span.ind-cancel-icon {
-	background-repeat: no-repeat;
-	display: inline-block;
-	width: 16px;
-	margin: 0 0.25em 0 0;
-	cursor: pointer;
-	list-style-type: none;
+  background-repeat: no-repeat;
+  display: inline-block;
+  width: 16px;
+  margin: 0 0.25em 0 0;
+  cursor: pointer;
+  list-style-type: none;
 }
 
 ul.ind-sub-list .ind-delete-icon {
-	background-image: url(../images/delete.png);
+  background-image: url(../images/delete.png);
 }
 
 ul.ind-sub-list .ind-add-icon {
-	background-image: url(../images/add.png);
+  background-image: url(../images/add.png);
 }
 
 span.ind-cancel-icon {
-	background-image: url(../images/cancel.png);
-	margin: 0.5em;
+  background-image: url(../images/cancel.png);
+  margin: 0.5em;
 }
 
 .filter-row {
@@ -695,9 +695,9 @@ span.ind-cancel-icon {
 
 /* override jquery-ui.custom.css to support browsers which understand border-radius (e.g. IE9) */
 .ui-corner-all { 
-	-moz-border-radius: 4px; 
-	-webkit-border-radius: 4px; 
-	border-radius: 4px; 
+  -moz-border-radius: 4px; 
+  -webkit-border-radius: 4px; 
+  border-radius: 4px; 
 }
 
 div.note-success, p.note-success {
@@ -706,4 +706,25 @@ div.note-success, p.note-success {
 
 div.note-fail, p.note-fail {
   border: solid #ff0000 1px;
+}
+
+.import-mappings-table table {
+  float: left; 
+  width: 68%;
+}
+
+.import-mappings-table th {
+  text-align:center; 
+  width: 58%;
+  padding: 2px;
+}
+
+.import-mappings-table td.note {
+  font-size: 8pt;
+  padding: 0 0 4px;
+}
+
+.import-mappings-instructions {
+  float: right; 
+  width: 30%;
 }
