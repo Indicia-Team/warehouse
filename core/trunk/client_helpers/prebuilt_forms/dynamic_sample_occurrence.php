@@ -804,7 +804,11 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       $extraParams['taxon_list_id'] = empty($args['extra_list_id']) ? $args['list_id'] : $args['extra_list_id'];
     else
       $extraParams['taxon_list_id'] = array($args['list_id'], $args['extra_list_id']);
-    $extraParams = array_merge($extraParams, data_entry_helper::get_species_names_filter($options));
+    $options['speciesNameFilterMode'] = self::getSpeciesNameFilterMode($args);
+    if ($args['species_ctrl']!=='autocomplete') 
+      // The species autocomplete has built in support for the species name filter.       
+      // For other controls we need to apply the species name filter to the params used for population
+      $extraParams = array_merge($extraParams, data_entry_helper::get_species_names_filter($options));
     global $indicia_templates;
     $species_ctrl_opts=array_merge(array(
         'fieldname'=>'occurrence:taxa_taxon_list_id',
@@ -816,15 +820,14 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         'columns'=>2, // applies to radio buttons
         'parentField'=>'parent_id', // applies to tree browsers
         'blankText'=>lang::get('Please select'), // applies to selects
-        'cacheLookup'=>$args['cache_lookup'], // applies to selects,
-        'speciesNameFilterMode' => self::getSpeciesNameFilterMode($args)
+        'cacheLookup'=>$args['cache_lookup'], // applies to selects
     ), $options);
     // if using something other than an autocomplete, then set the caption template to include the appropriate names. Autocompletes
     // use a JS function instead.
     $db = data_entry_helper::get_species_lookup_db_definition($args['cache_lookup']);
     // get local vars for the array
     extract($db);
-    if ($args['species_ctrl']!=='autcomplete' && isset($args['species_include_both_names']) && $args['species_include_both_names']) {
+    if ($args['species_ctrl']!=='autocomplete' && isset($args['species_include_both_names']) && $args['species_include_both_names']) {
       if ($args['species_names_filter']==='all')
         $indicia_templates['species_caption'] = '{'.$colTaxon.'}';
       elseif ($args['species_names_filter']==='language')

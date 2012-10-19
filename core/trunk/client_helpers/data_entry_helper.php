@@ -2346,12 +2346,15 @@ class data_entry_helper extends helper_base {
             $r += array('preferred'=>'t');
           break;
         case 'currentLanguage' :
+          // look for Drupal user variable. Will degrade gracefully if it doesn't exist
+          global $user;
           if (isset($options['language'])) {
             $r += array($colLanguage=>$options['language']);
           } elseif (isset($user)) {
             // if in Drupal we can use the user's language
             $r += array($colLanguage=>iform_lang_iso_639_2($user->lang));
           }
+          break;
         case 'excludeSynonyms':
           if (isset($options['cacheLookup']) && $options['cacheLookup'])
             $wheres[] = "(preferred='t' or language_iso<>'lat')";
