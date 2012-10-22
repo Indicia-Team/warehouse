@@ -533,12 +533,17 @@ class import_helper extends helper_base {
       // Skip the metadata fields
       if (!in_array($fieldname, $skipped)) {
         $selected = false;             
-        //get user's saved settings, last patameter is 2 as this forces the system to explode into a maximum of two segments.
+        //get user's saved settings, last parameter is 2 as this forces the system to explode into a maximum of two segments.
         //This means only the first occurrence for the needle is exploded which is desirable in the situation as the field caption
         //contains colons in some situations.
-        $savedData = explode(':',$savedFieldMappings[$column],2);
-        $savedSectionHeading = $savedData[0];
-        $savedMainCaption = $savedData[1];
+        if ($savedFieldMappings[$column]) {
+          $savedData = explode(':',$savedFieldMappings[$column],2);
+          $savedSectionHeading = $savedData[0];
+          $savedMainCaption = $savedData[1];
+        } else {
+          $savedSectionHeading = '';
+          $savedMainCaption = '';
+        }
         //Detect if the user has saved a column setting that is not 'not imported' then call the method that handles the auto-match rules.
         if (strcasecmp($prefix,$savedSectionHeading)===0 && strcasecmp($field,$savedSectionHeading.':'.$savedMainCaption)===0) {
           $selected=true;
