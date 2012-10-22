@@ -21,4 +21,6 @@ END;
 $BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
+COMMENT ON FUNCTION quality_check(quality character varying, record_status character, certainty character) IS 
+    'Implements a standard quality check for a record, based on the record_status and certainty. Quality can be requested to be V (verified), C (at least certain), L (at least likely), !D (not dubious or rejected), !R (not rejected).';
 

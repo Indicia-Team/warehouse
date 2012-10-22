@@ -89,7 +89,7 @@ echo html::stylesheet(
 </script>
 <!-- END: jquery/superfish init -->
 
-<title><?php echo html::specialchars($warehouseTitle . ' | ' . $title) ?></title>
+<title><?php echo html::specialchars((isset($warehouseTitle) ? ($warehouseTitle . ' | ') : '') . $title); ?></title>
 
 </head>
 <body>
