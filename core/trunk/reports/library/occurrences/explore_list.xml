@@ -48,7 +48,7 @@
     <column name='date_start' sql='o.date_start' visible='false' />
     <column name='date_end' sql='o.date_end' visible='false' />
     <column name='date_type' sql='o.date_type' visible='false' />
-    <column name='date' display='Date' datatype='date' />
+    <column name='date' display='Date' />
     <column name='recorder' display='Recorder' sql="CASE w.id WHEN iwwa.from_website_id THEN '' ELSE w.title || '-&gt; ' END || CASE WHEN LENGTH(o.recorders)>30 THEN 'Recorder' ELSE o.recorders END" 
         datatype="text" />
     <column name='zero_abundance' display='Zero Abundance' sql='o.zero_abundance' visible="false" />
