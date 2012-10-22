@@ -773,7 +773,9 @@ class Data_Controller extends Data_Service_Base_Controller {
     $orderby='';
     $like=array();
     $where=array();
-    foreach ($_REQUEST as $param => $value)
+    // don't use $_REQUEST as it has a tendency to escape values in different ways on different PHP versions.
+    $request=array_merge($_GET, $_POST);
+    foreach ($request as $param => $value)
     {
       $value = urldecode($value);
       switch ($param)
@@ -832,6 +834,7 @@ class Data_Controller extends Data_Service_Base_Controller {
           }
           break;
         case 'query':
+          kohana::log('debug', "Applying $value");
           $this->apply_query_def_to_db($value);
           break;
         case 'mode':
