@@ -228,7 +228,7 @@ class import_helper extends helper_base {
     foreach ($columns as $column) {
       $colFieldName = preg_replace('/[^A-Za-z0-9]/', '_', $column);
       $r .= "<tr><td>$column</td><td><select name=\"$colFieldName\" id=\"$colFieldName\">";
-      $r .= self::model_field_options($options['model'], $unlinked_fields, $column,' ', $savedFieldMappings);
+      $r .= self::get_column_options($options['model'], $unlinked_fields, $column,' ', $savedFieldMappings);
       $r .=  "</select></td></tr>\n";
     }
     $r .= '</tbody>';
@@ -375,18 +375,20 @@ class import_helper extends helper_base {
   <div id="progress-text">Preparing to upload.</div>
   </div>
   ';
-      // cache the mappings
       $metadata = array('mappings' => json_encode($_POST));
-      foreach ($_POST as $column => $setting) {
-        $userSettings[str_replace("_", " ", $column)] = $setting;
+      // cache the mappings
+      if (function_exists('hostsite_set_user_field')) {
+        foreach ($_POST as $column => $setting) {
+          $userSettings[str_replace("_", " ", $column)] = $setting;
+        }
+        //if the user has not selected the Remember checkbox for a column setting and the Remember All checkbox is not selected
+        //then forget the user's saved setting for that column.
+        foreach ($userSettings as $column => $setting) {
+          if (!isset($userSettings[$column.' '.'Remember']) && $column!='RememberAll')
+            unset($userSettings[$column]);
+        }
+        hostsite_set_user_field("import_field_mappings", json_encode($userSettings));
       }
-      //if the user has not selected the Remember checkbox for a column setting and the Remember All checkbox is not selected
-      //then forget the user's saved setting for that column.
-      foreach ($userSettings as $column => $setting) {
-        if (!isset($userSettings[$column.' '.'Remember']) && $column!='RememberAll')
-          unset($userSettings[$column]);
-      }
-      hostsite_set_user_field("import_field_mappings", json_encode($userSettings));
       $post = array_merge($options['auth']['write_tokens'], $metadata);
       $request = parent::$base_url."index.php/services/import/cache_upload_metadata?uploaded_csv=$filename";
       $response = self::http_post($request, $post);
@@ -457,7 +459,8 @@ class import_helper extends helper_base {
  /**
   * Returns a list of columns as an list of <options> for inclusion in an HTML drop down,
   * loading the columns from a model that are available to import data into
-  * (excluding the id and metadata).
+  * (excluding the id and metadata). Triggers the handling of remembered checkboxes and the
+  * associated labelling. 
   * This method also attempts to automatically find a match for the columns based on a number of rules
   * and gives the user the chance to save their settings for use the next time they do an import.
   * @param string $model Name of the model
@@ -466,7 +469,7 @@ class import_helper extends helper_base {
   * @param string $selected The name of the initially selected field if there is one.
   * @param array $savedFieldMappings An array containing the user's custom saved settings for the page.
   */
-  private static function model_field_options($model, $fields, $column, $selected='', $savedFieldMappings) {
+  private static function get_column_options($model, $fields, $column, $selected='', $savedFieldMappings) {
    /*
     * This is an array of drop-down options with a list of possible column headings the system will use to match against that option.
     * The key is in the format heading:option e.g. Occurrence:Comment 
@@ -514,7 +517,7 @@ class import_helper extends helper_base {
       }
     } 
     $labelList = array_count_values($labelList);
-      
+    $multiMatch=array();  
     foreach ($fields as $field=>$caption) {  
       $optionID = str_replace(" ", "", $column).'Normal';
       if (strpos($field,":"))
@@ -536,7 +539,7 @@ class import_helper extends helper_base {
         //get user's saved settings, last parameter is 2 as this forces the system to explode into a maximum of two segments.
         //This means only the first occurrence for the needle is exploded which is desirable in the situation as the field caption
         //contains colons in some situations.
-        if ($savedFieldMappings[$column]) {
+        if (isset($savedFieldMappings[$column])) {
           $savedData = explode(':',$savedFieldMappings[$column],2);
           $savedSectionHeading = $savedData[0];
           $savedMainCaption = $savedData[1];
@@ -560,7 +563,7 @@ class import_helper extends helper_base {
         }
         //As a last resort. If we have a match and find that there is more than one caption with this match, then flag a multiMatch to deal with it later
         if (strcasecmp($strippedScreenCaption, $column)==0 && $labelList[strtolower($strippedScreenCaption)] > 1) {
-          $multiMatch[$column] = 1;
+          $multiMatch[] = $column;
           $optionID = str_replace(" ", "", $idColumn).'Duplicate';  
         }
         $option = self::model_field_option($field, $caption, $column, $selected, $optionID);
@@ -615,40 +618,50 @@ class import_helper extends helper_base {
   * @param boolean $saveDetectedMode Determines the mode the method is running in
   * @return array Depending on the mode, we either are interested in the $selected value or the $itWasSaved value.
   */ 
-  private function auto_detection_rules($column, $lowerCaseCaption, $strippedScreenCaption, $prefix, $alternatives, $labelList, $itWasSaved, $saveDetectedMode) {
-  //handle situation where there is a unique exact match
-  if (strcasecmp($strippedScreenCaption, $column)==0 && $labelList[strtolower($strippedScreenCaption)] == 1) {
-    if ($saveDetectedMode) $itWasSaved = 0; else $selected=true;
-  } else {
-    //handle the situation where a there isn' a unqiue match, but there is if you take the heading into account also
-    if (strcasecmp($prefix.' '.$strippedScreenCaption, $column)==0) {
-      if ($saveDetectedMode) $itWasSaved = 0; else $selected=true;
+  private static function auto_detection_rules($column, $lowerCaseCaption, $strippedScreenCaption, $prefix, $alternatives, $labelList, $itWasSaved, $saveDetectedMode) {
+    $selected=false;
+    //handle situation where there is a unique exact match
+    if (strcasecmp($strippedScreenCaption, $column)==0 && $labelList[strtolower($strippedScreenCaption)] == 1) {
+      if ($saveDetectedMode) 
+        $itWasSaved = 0; 
+      else 
+        $selected=true;
+    } else {
+      //handle the situation where a there isn' a unqiue match, but there is if you take the heading into account also
+      if (strcasecmp($prefix.' '.$strippedScreenCaption, $column)==0) {
+        if ($saveDetectedMode) 
+          $itWasSaved = 0; 
+        else 
+          $selected=true;
+      }
+      //handle the situation where there is a match with one of the items in the alternatives array.
+      if (isset($alternatives[$prefix.':'.$lowerCaseCaption])) {
+        $theAlternatives = explode(',', $alternatives[$prefix.':'.$lowerCaseCaption]);
+        foreach ($theAlternatives as $theAlternative) {
+          if (strcasecmp($theAlternative, $column)==0) {
+            if ($saveDetectedMode) 
+              $itWasSaved = 0; 
+            else 
+              $selected=true;
+          }
+        } 
+      }
     }
-    //handle the situation where there is a match with one of the items in the alternatives array.
-    if (isset($alternatives[$prefix.':'.$lowerCaseCaption])) {
-      $theAlternatives = explode(',', $alternatives[$prefix.':'.$lowerCaseCaption]);
-      foreach ($theAlternatives as $theAlternative) {
-        if (strcasecmp($theAlternative, $column)==0) {
-          if ($saveDetectedMode) $itWasSaved = 0; else $selected=true;
-        }
-      } 
-    }
+    return array (
+      'itWasSaved'=>$itWasSaved,
+      'selected'=>$selected
+    );
   }
-  return array (
-    'itWasSaved'=>$itWasSaved,
-    'selected'=>$selected
-  );
-  } 
   
   
  /**
-  * Used by the model_field_options to draw the items that appear once for each of the import columns on the import page.
+  * Used by the get_column_options to draw the items that appear once for each of the import columns on the import page.
   * These are the checkboxes, the warning the drop-down setting was saved and also the non-unique match warning
   * @param string $r The HTML to be returned.
   * @param string $column Column from the import CSV file we are currently working with
   * @param integer $itWasSaved This is 1 if a setting is saved for the column and the column would not have been automatically calculated as that value anyway.
   * @param array $savedFieldMappings An array containing the user' preferences for the import page.
-  * @param integer $multiMatch This is 1 if the system has determined there are mutliple matches for the column and this cannot be resolved.
+  * @param integer $multiMatch Array of columns where there are multiple matches for the column and this cannot be resolved.
   * @return string HTMl string 
   */
   private static function items_to_draw_once_per_import_column($r, $column, $itWasSaved, $savedFieldMappings, $multiMatch) {
@@ -666,27 +679,27 @@ class import_helper extends helper_base {
           "Any alterations you make to this default selection in the future will also be remembered until you deselect the checkbox.'></td>";
 
     if ($itWasSaved[$column] == 1) {
-        $r .= "<tr><td></td><td class=\"note\">The above mapping is a remembered previous choice.</td></tr>";
+      $r .= "<tr><td></td><td class=\"note\">The above mapping is a remembered previous choice.</td></tr>";
     }
     //If we find there is a match we cannot resolve uniquely, then give the user a checkbox to reduce the drop-down to suggestions only.
     //Do this by hiding items whose class has "Normal" at the end as these are the items that do not contain the duplicates.
-    if ($multiMatch[$column] == 1 && $itWasSaved[$column] == 0) {
-     $r .= "<tr><td></td><td class=\"note\">There are multiple possible matches for ";
-     $r .= "\"$column\"";
-     $r .=  "<br/><form><input type='checkbox' id='$column.OnlyShowMatches' value='1' onclick='
+    if (in_array($column, $multiMatch) && $itWasSaved[$column] == 0) {
+      $r .= "<tr><td></td><td class=\"note\">There are multiple possible matches for ";
+      $r .= "\"$column\"";
+      $r .=  "<br/><form><input type='checkbox' id='$column.OnlyShowMatches' value='1' onclick='
        if (this.checked) {
          $(\".$optionID\").hide();
        } else {
          $(\".$optionID\").show();
-     }'
-     > Only show likely matches in drop-down<br></form></td></tr>";
+      }'
+      > Only show likely matches in drop-down<br></form></td></tr>";
     }
     return $r;
   }
   
   
  /**
-  * Used by the model_field_options method to add "lookup existing record" to the appropriate captions
+  * Used by the get_column_options method to add "lookup existing record" to the appropriate captions
   * in the drop-downs on the import page.
   * @param type $caption The drop-down item currently being worked on
   * @param type $prefix Caption prefix
@@ -759,7 +772,7 @@ class import_helper extends helper_base {
   private static function model_field_option($field, $caption, $column, $selected, $optionID) {
     $selHtml = ($selected) ? ' selected="selected"' : '';
     $caption = self::translate_field($field, $caption);
-    $r .=  '<option class=';
+    $r =  '<option class=';
     $r .= $optionID;
     $r .= ' value="'.htmlspecialchars($field)."\"$selHtml>".htmlspecialchars($caption).'</option>';
     return $r;
