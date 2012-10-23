@@ -98,22 +98,6 @@ class iform_mnhnl_reptiles extends iform_mnhnl_dynamic_1 {
           'group' => 'User Interface'
         ),
         array(
-          'name'=>'communeLayerLookup',
-          'caption'=>'WFS Layer specification for Commune Lookup',
-          'description'=>'Comma separated: proxiedurl,featurePrefix,featureType,geometryName,featureNS,srsName,propertyNames',
-          'type'=>'string',
-          'required' => false,
-          'group'=>'Locations',
-        ),
-        array(
-          'name'=>'locationLayerLookup',
-          'caption'=>'WFS Layer specification for Locations Lookup',
-          'description'=>'Comma separated: proxiedurl,featurePrefix,featureType,geometryName,featureNS,srsName,propertyNames',
-          'type'=>'string',
-          'required' => false,
-          'group'=>'Locations',
-        ),
-        array(
           'name' => 'reportFilenamePrefix',
           'caption' => 'Report Filename Prefix',
           'description' => 'Prefix to be used at the start of the download report filenames.',
@@ -158,8 +142,12 @@ class iform_mnhnl_reptiles extends iform_mnhnl_dynamic_1 {
               "[location attributes]\r\n".
               "[location spatial reference]\r\n".
               "[map]\r\n".
-              "@layers=[\"ParentLocationLayer\",\"SitePointLayer\",\"SitePathLayer\",\"SiteAreaLayer\",\"SiteLabelLayer\"]\r\n".
+              "@layers=[\"ParentWMSLayer\",\"ParentLocationLayer\",\"SitePointLayer\",\"SitePathLayer\",\"SiteAreaLayer\",\"SiteLabelLayer\"]\r\n".
               "@editLayer=false\r\n".
+              "@clickableLayers=[\"ParentWMSLayer\"]\r\n".
+              "@clickableLayersOutputMode=custom\r\n".
+              "@clickableLayersOutputDiv=clickableLayersOutputDiv\r\n".
+              "@clickableLayersOutputFn=setClickedParent\r\n".
               "[point grid]\r\n".
               "@srefs=2169,LUREF (m),X,Y,;4326,Lat/Long Deg,Lat,Long,D;4326,Lat/Long Deg:Min,Lat,Long,DM;4326,Lat/Long Deg:Min:Sec,Lat,Long,DMS\r\n".
               "[location comment]\r\n".

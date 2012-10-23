@@ -118,22 +118,6 @@ class iform_mnhnl_dynamic_2 extends iform_mnhnl_dynamic_1 {
           'default' => 'en',
           'group' => 'User Interface'
         ),
-        array(
-          'name'=>'communeLayerLookup',
-          'caption'=>'WFS Layer specification for Commune Lookup',
-          'description'=>'Comma separated: proxiedurl,featurePrefix,featureType,geometryName,featureNS,srsName,propertyNames',
-          'type'=>'string',
-          'required' => false,
-          'group'=>'Locations',
-        ),
-        array(
-          'name'=>'locationLayerLookup',
-          'caption'=>'WFS Layer specification for Locations Lookup',
-          'description'=>'Comma separated: proxiedurl,featurePrefix,featureType,geometryName,featureNS,srsName,propertyNames',
-          'type'=>'string',
-          'required' => false,
-          'group'=>'Locations',
-        ),
         
         array(
           'name' => 'reportFilenamePrefix',
@@ -405,7 +389,10 @@ $.validator.messages.number = $.validator.format(\"".lang::get('validation_numbe
     if(lang::get('validation_digits') != 'validation_digits')
       data_entry_helper::$late_javascript .= "
 $.validator.messages.digits = $.validator.format(\"".lang::get('validation_digits')."\");";
-  	// possible clash with link_species_popups, so latter disabled.
+    if(lang::get('validation_integer') != 'validation_integer')
+      data_entry_helper::$late_javascript .= "
+$.validator.messages.integer = $.validator.format(\"".lang::get('validation_integer')."\");";
+    // possible clash with link_species_popups, so latter disabled.
     iform_mnhnl_addCancelButton($args['interface']);
     data_entry_helper::$javascript .= "
 resetChildValue = function(child){

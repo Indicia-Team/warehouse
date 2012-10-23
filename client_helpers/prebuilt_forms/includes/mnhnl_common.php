@@ -124,7 +124,34 @@ function iform_mnhnl_getParameters() {
           'group' => 'Locations'
         ),
         // we use the locTools location type ID for the parent
-        // location type look up is now the standard 'indicia:location_types', not 'mnhnl:loctype'
+
+        array(
+          'name'=>'communeLayerLookup',
+          'caption'=>'WFS Layer specification for Commune Lookup',
+          'description'=>'Comma separated: proxiedurl,featurePrefix,featureType,geometryName,featureNS,srsName,propertyNames',
+          'type'=>'string',
+          'required' => false,
+          'group'=>'Other Map Settings',
+        ),
+        array(
+          'name'=>'locationLayerLookup',
+          'caption'=>'WFS Layer specification for Locations Lookup',
+          'description'=>'Comma separated: proxiedurl,featurePrefix,featureType,geometryName,featureNS,srsName,propertyNames',
+          'type'=>'string',
+          'required' => false,
+          'group'=>'Other Map Settings',
+        ),
+        array(
+          'name'=>'locationLayerWMS',
+          'caption'=>'WMS Location Layer Definition',
+          // e.g. http://localhost/geoserver/wms,indicia:nation2,2169,0,1000000,m
+          'description'=>'Comma separated list of option definitions for the WMS location layer:  url(unproxied),layer,system,minScale,maxScale,units',
+          'type'=>'string',
+          'group'=>'Other Map Settings',
+          'maxlength'=>200
+        ),
+
+      	// location type look up is now the standard 'indicia:location_types', not 'mnhnl:loctype'
         array(
           'name'=>'LocationTypeTerm',
           'caption'=>'Primary Site Location Type Term',
@@ -409,9 +436,17 @@ function iform_mnhnl_locModTool($auth, $args, $node) {
   // For main page we force to Tabs to ensure map drawn correctly
   $mapOptions['tabDiv'] = 'locations';
   $mapOptions['standardControls']=array('layerSwitcher','panZoomBar');
-  $mapOptions['layers']=array("ParentLocationLayer","SiteLabelLayer","SiteAreaLayer","SitePathLayer","SitePointLayer");
   $mapOptions['editLayer']=false;
   $mapOptions['maxZoom']=$args['zoomLevel'];
+  if(isset($args['locationLayerWMS']) && $args['locationLayerWMS'] != ''){
+    $mapOptions['layers']=array('ParentWMSLayer',"ParentLocationLayer","SiteLabelLayer","SiteAreaLayer","SitePathLayer","SitePointLayer");
+    $mapOptions['clickableLayers']=array('ParentWMSLayer');
+    $mapOptions['clickableLayersOutputMode']='custom';
+    $mapOptions['clickableLayersOutputDiv']='clickableLayersOutputDiv';
+    $mapOptions['clickableLayersOutputFn']='setClickedParent';
+  } else {
+    $mapOptions['layers']=array("ParentLocationLayer","SiteLabelLayer","SiteAreaLayer","SitePathLayer","SitePointLayer");
+  }
   $retVal .= data_entry_helper::map_panel($mapOptions, $olOptions);
   $retVal .= iform_mnhnl_PointGrid($auth, $args, array('srefs'=>'2169,LUREF (m),X,Y,;4326,Lat/Long Deg,Lat,Long,D;4326,Lat/Long Deg:Min,Lat,Long,DM;4326,Lat/Long Deg:Min:Sec,Lat,Long,DMS'));
   $retVal .= '<input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Submit').'">
@@ -481,7 +516,7 @@ function iform_mnhnl_lux5kgridControl($auth, $args, $node, $options) {
        break;
       default : // parent, single, filtered
        $options = array_merge(array('ChooseParentFieldID' => 'dummy-parent-id',
-                                    'ChooseParentFieldName' => 'dummy:parent_id',
+                                    'ChooseParentFieldName' => $args['locationMode'] == 'filtered' ? 'location:parent_id' : 'dummy:parent_id',
                                     'ParentFieldID' => 'location-parent-id',
                                     'ParentFieldName' => 'location:parent_id',
                                     'MainFieldID' => 'location-id',
@@ -537,7 +572,7 @@ precisionAttr.insertAfter(precisionLabel).addClass('precision');
     $creatorAttr=iform_mnhnl_getAttrID($auth, $args, 'location', 'Creator');
     if(isset(data_entry_helper::$entity_to_load["sample:updated_by_id"])) // only set if data loaded from db, not error condition
       data_entry_helper::load_existing_record($auth['read'], 'location', data_entry_helper::$entity_to_load["sample:location_id"]);
-    $retVal = '';
+    $retVal = '<div id="clickableLayersOutputDiv" style="display:none;"></div>';
     if($args['LocationTypeTerm']=='' && isset($args['loctoolsLocTypeID'])) $args['LocationTypeTerm']=$args['loctoolsLocTypeID'];
     $primary = iform_mnhnl_getTermID($auth, 'indicia:location_types',$args['LocationTypeTerm']);
     if($args['SecondaryLocationTypeTerm'] != ''){
@@ -584,7 +619,51 @@ SitePointLayer = new OpenLayers.Layer.Vector('Site Points',{styleMap: SitePointS
 SitePathLayer = new OpenLayers.Layer.Vector('Site Paths',{styleMap: SiteStyleMap, displayInLayerSwitcher: false});
 SiteAreaLayer = new OpenLayers.Layer.Vector('Site Areas',{styleMap: SiteStyleMap, displayInLayerSwitcher: false});
 SiteLabelLayer = new OpenLayers.Layer.Vector('Site Labels',{//styleMap: SiteLabelStyleMap, 
-displayInLayerSwitcher: false});
+displayInLayerSwitcher: false});\n";
+
+    if(isset($args['locationLayerWMS']) && $args['locationLayerWMS'] != ''){
+      // define Parent WMS Layer
+      $WMSoptions = explode(',', $args['locationLayerWMS']);
+/*
+ * http://localhost/drupal/proxy
+ * ?url=http%3A%2F%2Flocalhost%3A8080%2Fgeoserver%2Fwms
+ * &CQL_FILTER=website_id%3D8
+ * 
+ * http://localhost/drupal/proxy
+ * ?url=http%3A%2F%2Flocalhost%2Fgeoserver%2Fwms
+ * &CQL_FILTER=location_type_id=205
+ * 
+ * http://localhost/drupal/proxy?url=http%3A%2F%2Flocalhost%3A8080%2Fgeoserver%2Fwms&referer=%2Fdrupal%2Fnode%2F19&SERVICE=WMS&VERSION=1.1.0&STYLES=&SRS=EPSG%3A3857&FORMAT=image%2Fpng&TRANSPARENT=true&LAYERS=indicia%3Abtw_transects&CQL_FILTER=website_id%3D8&REQUEST=GetMap&BBOX=477972.22043638,6307976.4628915,893483.90613676,6532701.3260185&WIDTH=1359&HEIGHT=735
+http://localhost/drupal/proxy?url=http%3A%2F%2Flocalhost%3A8080%2Fgeoserver%2Fwms&referer=%2Fdrupal%2Fnode%2F19&SERVICE=WMS&VERSION=1.1.0&STYLES=&SRS=EPSG%3A3857&FORMAT=image%2Fpng&TRANSPARENT=true&LAYERS=indicia%3Abtw_transects&CQL_FILTER=website_id%3D3&REQUEST=GetMap&BBOX=477972.22043638,6307976.4628915,893483.90613676,6532701.3260185&WIDTH=1359&HEIGHT=735
+ */
+      data_entry_helper::$javascript .= "
+WMSoptions = {
+    SERVICE: 'WMS',
+    VERSION: '1.1.0',
+    STYLES: '',
+    SRS: '".$WMSoptions[2]."',
+    FORMAT: 'image/png',
+    TRANSPARENT: 'true',
+    LAYERS: '".$WMSoptions[1]."'
+    ,CQL_FILTER: 'location_type_id=".$args['loctoolsLocTypeID']." AND website_id=".$args['website_id']."'
+    };
+ParentWMSLayer = new OpenLayers.Layer.WMS('Parent Grid',
+  '".iform_proxy_url($WMSoptions[0])."',
+  WMSoptions, {
+    minScale: ".$WMSoptions[3].",
+    maxScale: ".$WMSoptions[4].",
+    units: '".$WMSoptions[5]."',
+    isBaseLayer: false,
+    singleTile: true
+  });\n";
+      if($args['locationMode']=='multi' && isset(data_entry_helper::$entity_to_load["sample:location_id"])){
+        data_entry_helper::$javascript .= "setClickedParent = function(features, div){ return ''; };\n";
+      } else {
+      	data_entry_helper::$javascript .= "setClickedParent = function(features, div){\n  jQuery('[name=".str_replace(':','\\:',$options['ChooseParentFieldName'])."]').val(features[0].data.id).change();\n  return '';\n};\n";
+      }
+    }
+
+    data_entry_helper::$javascript .= "
 // not happy about centroid calculations: lines and multipoints seem to take first vertex
 _getCentroid = function(geometry){
   var retVal;
