@@ -50,7 +50,7 @@ $custom_terms = array(
 	'LANG_Locations'=>'Sites',
 
 	'LANG_Tab_site' => 'Site',
-	'LANG_CommonInstructions1'=>'Choose a square (5x5km). This square will then be displayed on the map, along with all existing sites associated with that square.',
+	'LANG_CommonInstructions1'=>'Choose a square (5x5km) by either picking it from the drop down list, or clicking it on the map. This square will then be highlighted on the map, along with all existing sites associated with that square.',
 	'LANG_CommonParentLabel'=>'Square (5x5km)',
 	'LANG_CommonParentBlank'=>'Choose a square',
 	'LANG_LocModTool_Instructions2'=>"Either click on the map (ensuring that the select tool on the map is active) to select the site you wish to modify, or choose from the drop down list. You may then change its name, or modify or add Points, Lines, or Polygons to define the site shape. You must choose the correct draw tool on the map for each of these. You may drag the highlighted vertices. To delete a vertex, place the mouse over the vertex and press the 'd' or 'Delete' buttons.",
@@ -87,7 +87,7 @@ $custom_terms = array(
 	'LANG_PolygonOutsideParent'=>'Warning: the polygon you have created for new site has a centre which is outside the square.',
 	'LANG_ConfirmRemoveDrawnSite'=> "This action will remove the existing site you have created. Do you wish to continue?",
 	'LANG_ChoseParentWarning'=> "You can only add a new site after picking a square.",
-	'LANG_SelectTooltip'=>'Click on map to select a site',
+	'LANG_SelectTooltip'=>'Click on map to select a site (or a square if present)',
 	'LANG_PolygonTooltip'=>'Draw polygon(s) for the site',
 	'LANG_LineTooltip'=>'Draw line(s) for the site',
 	'LANG_PointTooltip'=>'Add point(s) to the site',
@@ -167,6 +167,7 @@ $custom_terms = array(
 	'validation_no_observation' => "The <strong>No observation</strong> must be checked if and only if there is no data in the species grid.",
 	'validation_targ-presence'=>'At least one target species must be selected.',
 	'validation_end_time'=>'The end time must be after the start time',
+	'validation_integer' => 'Please enter an integer',
 	'next step'=>'Next step',
 	'prev step'=>'Previous step'
 	

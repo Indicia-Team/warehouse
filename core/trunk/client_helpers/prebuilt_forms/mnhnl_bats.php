@@ -133,14 +133,6 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
           'group' => 'User Interface'
         ),
         array(
-          'name'=>'communeLayerLookup',
-          'caption'=>'WFS Layer specification for Commune Lookup',
-          'description'=>'Comma separated: proxiedurl,featurePrefix,featureType,geometryName,featureNS,srsName,propertyNames',
-          'type'=>'string',
-          'required' => false,
-          'group'=>'Georeferencing',
-        ),
-        array(
           'name'=>'max_species_ids',
           'caption'=>'max number of species to be returned by a search',
           'description'=>'The maximum number of species to be returned by the drop downs at any one time.',
