@@ -1368,8 +1368,8 @@ bulkValidating=false;";
 		data_entry_helper::$javascript .= "
 bulkCancel=false;
 bulkTypeIsTaxon=false;
-jQuery('#validate-taxon-progress').progressbar({value: 10});
-jQuery('#validate-page-progress').progressbar({value: 10});
+jQuery('#validate-taxon-progress').progressbar({value: 0});
+jQuery('#validate-page-progress').progressbar({value: 0});
 jQuery('form#bulk-validation-form').ajaxForm({
 	dataType:  'json', 
 	beforeSubmit:   function(data, obj, options){
@@ -1420,7 +1420,7 @@ uploadValidation = function(){
 		if(jQuery('#results-collections-results').filter(':visible').length > 0)
 			todolist =jQuery('.collection-flower-determination').find('.flower-dubious,.flower-ok').parent();
 		else
-			todolist =jQuery('.filter-insect-container').find('.occurrence-dubious,.insect-ok');
+			todolist =jQuery('.filter-insect-container').find('.occurrence-dubious,.insect-ok').parent();
 		var completed = max - todolist.length;
 		jQuery('#validate-page-progress').progressbar('option','value',completed*100/max);
 		if(todolist.length>0){
@@ -1462,7 +1462,7 @@ bulkValidatePrep=function(isPage, max){
 	jQuery('#validate-page-message,#validate-taxon-message').empty();
 	jQuery('#imp-georef-search-btn,#search-insee-button,#search-insects-button,#search-collections-button,#validate-page-button,#validate-taxon-button').attr('disabled','disabled');
 	jQuery(isPage ? '#validate-page-message' : '#validate-taxon-message').html('<span>0/'+max+' : 0%</span>');
-	jQuery(isPage ? '#validate-page-progress' : '#validate-taxon-progress').data('max',max).data('index',0);
+	jQuery(isPage ? '#validate-page-progress' : '#validate-taxon-progress').data('max',max).data('index',0).progressbar('option','value',0);
 }
 bulkValidateFinish=function(message){
 	bulkCancel=false;
@@ -4135,7 +4135,7 @@ $('#username').autocomplete([";
     while($result = db_fetch_object($results)){
       $account = user_load($result->uid);
       if($account->uid != 1) // && user_access('IForm loctools node '.$node->nid.' user', $account)){
-        $userList[] = "'".$account->name."'";
+        $userList[] = '"'.str_replace('"','\\"',$account->name).'"';
     }
     data_entry_helper::$javascript .= implode(',',$userList)."]);\n";
     
