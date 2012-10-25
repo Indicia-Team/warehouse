@@ -224,3 +224,11 @@ div.remove-button {
 .mnhnl-species-grid input.ac_input {
 	width: auto;
 }
+input.smpAttr-Temperature,
+input.smpAttr-StartTime,
+input.smpAttr-EndTime {
+	width: 60px;
+}
+select.targ-smpAttr-AmphibianSquaresSurveyMethod {
+	width: 190px;
+}
