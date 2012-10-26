@@ -2183,41 +2183,10 @@ if (typeof mapSettingsHooks!=='undefined') {
     if (!empty($addFeaturesJs)) {
       report_helper::$javascript.= "
   if (typeof OpenLayers !== \"undefined\") {
-    var style = new OpenLayers.Style({
-                    pointRadius: '\${radius}',
-                    fillColor: '\${color}',
-                    fillOpacity: 0.8,
-                    strokeColor: '\${color}',
-                    strokeWidth: 2,
-                    strokeOpacity: 0.8,
-                    fontColor: '#FFFFFF',
-                    label: '\${label}'
-                }, {
-                    context: {
-                        radius: function(feature) {
-                          return Math.min(feature.attributes.count, 7) + 3;
-                        },
-                        label: function (feature) {
-                          return feature.attributes.count;
-                        },
-                        color: function(feature) {
-                          var n=Math.min(feature.attributes.count, 7)*36;
-                          return 'rgb('+n+', 0, '+(255-n)+')';
-                        }
-                    }
-                });
-    indiciaData.reportlayer = new OpenLayers.Layer.Vector('Report output', {rendererOptions: {zIndexing: true},
-        strategies: [
-          new OpenLayers.Strategy.Cluster()
-        ],
-        styleMap: new OpenLayers.StyleMap({
-            'default': style,
-            'select': {
-                fillColor: '#8aeeef',
-                strokeColor: '#32a8a9'
-            }
-        })
-    });
+    var defaultStyle = new OpenLayers.Style($defsettings$styleFns);
+    var selectStyle = new OpenLayers.Style($selsettings$styleFns);
+    var styleMap = new OpenLayers.StyleMap({'default' : defaultStyle, 'select' : selectStyle});
+    indiciaData.reportlayer = new OpenLayers.Layer.Vector('Report output', {styleMap: styleMap, rendererOptions: {zIndexing: true}});
     mapInitialisationHooks.push(function(div) {
       features = [];
       $addFeaturesJs
