@@ -19,11 +19,13 @@
       <tabColumn name='id' visible='true' display='Location ID' />
       <tabColumn name='name' display='Site'/>
       <tabColumn name='xy' display='XY centroid' func="(regexp_replace(#this#.centroid_sref, ',|\\.[0-9]*' , '','g'))" />
-      <tabColumn name='points' display='XY point coordinates' func="(CASE
-     WHEN #this#.boundary_geom is null THEN (replace(#this#.centroid_sref, ',' , ''))
-     WHEN GeometryType(#this#.boundary_geom) = 'POINT' THEN regexp_replace(ST_AsText(ST_Transform(#this#.boundary_geom,2169)),'[(){}\\x22]|\\.[0-9]*|POINT','','g')
-     WHEN GeometryType(#this#.boundary_geom) = 'MULTIPOINT' THEN regexp_replace(ST_AsText(ST_Transform(#this#.boundary_geom,2169)),'[(){}\\x22]|\\.[0-9]*|MULTIPOINT','', 'g')
-     WHEN GeometryType(#this#.boundary_geom) = 'GEOMETRYCOLLECTION' AND NOT ST_IsEmpty(ST_CollectionExtract(#this#.boundary_geom, 1)) THEN regexp_replace(ST_AsText(ST_Transform(ST_CollectionExtract(#this#.boundary_geom,1),2169)),'[(){}\\x22]|\\.[0-9]*|MULTIPOINT','', 'g')
+      <tabColumn name='lines' display='XY line coordinates' func="(CASE
+     WHEN GeometryType(#this#.boundary_geom) = 'LINESTRING'
+       THEN regexp_replace(ST_AsText(ST_Transform(ST_Centroid(#this#.boundary_geom),2169)),'[(){}\\x22]|\\.[0-9]*|POINT','','g')
+     WHEN GeometryType(#this#.boundary_geom) = 'MULTILINESTRING'
+       THEN regexp_replace(array(SELECT ST_AsText(ST_Transform(st_centroid((ST_dump(xl.boundary_geom)).geom),2169)) FROM locations xl where xl.id = #this#.id )::text,'[(){}\\x22]|\\.[0-9]*|POINT','', 'g')
+     WHEN GeometryType(#this#.boundary_geom) = 'GEOMETRYCOLLECTION' AND NOT ST_IsEmpty(ST_CollectionExtract(#this#.boundary_geom, 2))
+       THEN regexp_replace(array(SELECT ST_AsText(st_transform(st_centroid((ST_dump(ST_CollectionExtract(xl2.boundary_geom,2))).geom),2169)) FROM locations xl2 where xl2.id = #this#.id )::text,'[(){}\\x22]|\\.[0-9]*|POINT','', 'g')
      ELSE ''
 END)" />
       <tabColumn name='polygons' display='XY polygon coordinates' func="(CASE

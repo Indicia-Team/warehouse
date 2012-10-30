@@ -508,6 +508,17 @@ $.validator.addMethod('end_time', function(value, element){
 },
   \"".lang::get('validation_end_time')."\");
 ";
+          } else if($rule[$i]=='N=2'){
+            // we are assuming this is on the main supersample.
+            // allow a maximum of 2 entries in a multiple value checkbox set.
+            data_entry_helper::$late_javascript .= "
+jQuery('[name=".str_replace(':','\\:',$rule[0])."\\[\\]],[name^=".str_replace(':','\\:',$rule[0])."\\:]').rules('add', {nequals2: true});
+$.validator.addMethod('nequals2', function(value, element){
+  var checkedControls = jQuery('[name=".str_replace(':','\\:',$rule[0])."\\[\\]],[name^=".str_replace(':','\\:',$rule[0])."\\:]').filter(':checked'); 
+  return checkedControls.length <= 2;  
+},
+  \"".lang::get('validation_nequals2')."\");
+";
           } else if(substr($rule[0], 3, 4)!= 'Attr'){ // have to add for non attribute case.
             data_entry_helper::$late_javascript .= "
 jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:',$rule[0])."\\:]').addClass('".$rule[$i]."');";
@@ -520,7 +531,7 @@ indiciaData.speciesListInTextSelector = '.".$ctrlArgs[0]."';
 indiciaData.None = '".lang::get('None')."';
 indiciaData.speciesListInTextLabel = '".lang::get('Add supporting plant species to list')."';
 indiciaData.speciesListInTextSpeciesList = ".$ctrlArgs[1].";
-";
+indiciaData.speciesListInTextMax = '".$ctrlArgs[2]."';\n";
     return '';
   }
 
@@ -1037,13 +1048,14 @@ bindSpeciesOptions = {selectorID: \"addTaxonControl\",
       if(isset($options['unitSpeciesMeaning']))
           data_entry_helper::$javascript .= "bindSpeciesOptions.unitSpeciesMeaning=\"".$options['unitSpeciesMeaning']."\";\n";
       if(isset($options['rowControl'])){
-        $rowControls = explode(':',$options['rowControl']);
-        data_entry_helper::$javascript .= "bindSpeciesOptions.rowControl = [";
-        foreach($rowControls as $rowControl){
-          $parts=explode(',',$rowControl,2);
-          data_entry_helper::$javascript .= "{selector: \"".$parts[0]."\" , rows: [".$parts[1]."]},";
+        $rowControls = explode(';',$options['rowControl']);
+        data_entry_helper::$javascript .= "bindSpeciesOptions.rowControl = {selector: 'sc".str_replace(' ', '', ucWords($rowControls[0]))."',\n  controls: [";
+        for($i=2; $i < count($rowControls); $i++){
+          $parts=explode(',',$rowControls[$i],2);
+          $termList = helper_base::get_termlist_terms(parent::$auth, $rowControls[1], array($parts[0]));
+          data_entry_helper::$javascript .= "{meaning_id: \"".$termList[0]['meaning_id']."\" , rows: [".$parts[1]."]},";
         }
-        data_entry_helper::$javascript .= "];\n";
+        data_entry_helper::$javascript .= "]};\n";
       }
       if(isset($options['singleSpeciesID'])){
         $fetchOpts = array(

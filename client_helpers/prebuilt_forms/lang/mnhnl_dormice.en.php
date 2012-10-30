@@ -42,8 +42,7 @@ $custom_term_overrides[] = array(
 	,'LANG_ZoomToParent'=>'Zoom to square (1x1km)'
 	,'Dormouse stage' => 'Stage'
 	,'Dormouse sex' => 'Sex'
-	,'Dormouse Specimen'=>'Specimen'
-	,'Dormouse Nest'=>'Nest'
+	,'Dormouse Occurrence Type' => 'Record Type'
 	,'Count'=>'Number'
 	,'Dormouse nest height'=>'Nest height (cm)'
 	,'Dormouse nest diameter'=>'Nest diameter (cm)'
@@ -60,5 +59,6 @@ $custom_term_overrides[] = array(
 	,'LANG_LocModTool_NameLabel'=>'New site number'
 	,'LANG_CommonFilterNameLabel'=>'Existing site number'
 	,'Occurrence reliability'=>'Observation reliability'
-	
+	,'LANG_Shapefile_Download'=> 'These downloads provide zipped up shape files for the locations; due to the restrictions of the SHP file format, there are separate downloads for lines and polygons. Click to select:'
+
 );

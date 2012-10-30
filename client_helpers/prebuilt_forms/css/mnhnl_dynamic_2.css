@@ -60,7 +60,7 @@
   max-width: 200px;
 }
 .scOccAttrCell .control-box label {
-  margin-left: 0;
+  margin-left: 3px;
 }
 .scOccAttrCell input[type='radio'] {
   margin-top: 6px;
@@ -72,8 +72,12 @@
   margin-left: 0;
   width: auto;
 }
-input.scCount, input.scNumber, input.scNumAlive, input.scNumDead, input.scDormouseDistanceToSupport,
-input.scDormouseNestHeight, input.scDormouseNestDiameter, input.scDormouseDistanceToStand 
+input.scDormouseDistanceToSupport, input.scDormouseDistanceToStand 
+{
+	width: 40px;
+}
+input.scCount, input.scNumber, input.scNumAlive, input.scNumDead,
+input.scDormouseNestHeight, input.scDormouseNestDiameter 
 {
 	width: 30px;
 }

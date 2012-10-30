@@ -1,25 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<report title="MNHNL Dormouse Conditions Download Report" description="Lists all conditions associated with saved samples. Normally invoked from Reports tab on the form.">
+<report title="MNHNL Amphibian Sites Download Report" description="Lists all sites. Normally invoked from Reports tab on the form.">
   <params>
-    <param name='survey_id' display='Survey: ' description='Select the survey to return data for:' datatype='lookup'
+    <param name='location_type_id' display='Location type' description='Select the location_type_id to return data for:' datatype='int' />
+    <param name='survey_id' display='Survey' description='Select the survey to return data for (needed for the attributes):' datatype='lookup'
         query='SELECT id, title as caption FROM surveys' />
   </params>
-  <table tablename="samples" where="#this#.deleted = FALSE
-      and #this#.parent_id IS NULL
-      and #this#.survey_id = #survey_id#" >
-    <tabColumn name='id' display='Survey ID' visible='true'/>
-    <tabColumn name='recorder_names' display='Recorder names' />
-    <tabColumn name='date_start' visible='false'/>
-    <tabColumn name='date_end' visible='false'/>
-    <tabColumn name='date_type' visible='false'/>
-    <tabColumn name='date' func="''" display='Visit date'/> // dummy field for the vague date processing, here so appears at logical position and with reasonable description in the report
-    <tabColumn name='comment' display='Conditions comment'/>
-    <subTable tablename="locations" > // allow deleted Sites!
-      <tabColumn name='id' visible='true' display='Location ID' />
-      <tabColumn name='name' display='Site'/>
-      <tabColumn name='xy' display='XY centroid' func="(regexp_replace(#this#.centroid_sref, ',|\\.[0-9]*' , '','g'))" />
-      <tabColumn name='lines' display='XY line coordinates' func="(CASE
+  <table tablename="locations" where="#this#.deleted = FALSE
+      and #this#.location_type_id = #location_type_id#" >
+    <tabColumn name='id' visible='true' display='Location ID' />
+    <tabColumn name='name' display='Site'/>
+    <tabColumn name='xy' display='XY centroid' func="(regexp_replace(#this#.centroid_sref, ',|\\.[0-9]*' , '','g'))" />
+    <tabColumn name='lines' display='XY line coordinates' func="(CASE
      WHEN GeometryType(#this#.boundary_geom) = 'LINESTRING'
        THEN regexp_replace(ST_AsText(ST_Transform(ST_Centroid(#this#.boundary_geom),2169)),'[(){}\\x22]|\\.[0-9]*|POINT','','g')
      WHEN GeometryType(#this#.boundary_geom) = 'MULTILINESTRING'
@@ -28,7 +20,7 @@
        THEN regexp_replace(array(SELECT ST_AsText(st_transform(st_centroid((ST_dump(ST_CollectionExtract(xl2.boundary_geom,2))).geom),2169)) FROM locations xl2 where xl2.id = #this#.id )::text,'[(){}\\x22]|\\.[0-9]*|POINT','', 'g')
      ELSE ''
 END)" />
-      <tabColumn name='polygons' display='XY polygon coordinates' func="(CASE
+    <tabColumn name='polygons' display='XY polygon coordinates' func="(CASE
      WHEN GeometryType(#this#.boundary_geom) = 'POLYGON'
        THEN regexp_replace(ST_AsText(ST_Transform(ST_Centroid(#this#.boundary_geom),2169)),'[(){}\\x22]|\\.[0-9]*|POINT','','g')
      WHEN GeometryType(#this#.boundary_geom) = 'MULTIPOLYGON'
@@ -37,12 +29,10 @@ END)" />
        THEN regexp_replace(array(SELECT ST_AsText(st_transform(st_centroid((ST_dump(ST_CollectionExtract(xl2.boundary_geom,3))).geom),2169)) FROM locations xl2 where xl2.id = #this#.id )::text,'[(){}\\x22]|\\.[0-9]*|POINT','', 'g')
      ELSE ''
 END)" />
-      <tabColumn name='comment' display='Site comment'/>
-      <attributes separator='|' meaningIdLanguage='preferred'/>
-      <subTable tablename="locations" parentKey="parent_id" where="#this#.deleted = FALSE" join="LEFT OUTER" >
-        <tabColumn name='name' display='Square'/>
-      </subTable>
+    <subTable tablename="locations" parentKey="parent_id" where="#this#.deleted = FALSE" join="LEFT OUTER" >
+      <tabColumn name='name' display='Square'/>
     </subTable>
+    <tabColumn name='comment' display='Site comment'/>
     <attributes separator='|' meaningIdLanguage='preferred'/>
   </table>
   <order_bys>
