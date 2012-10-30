@@ -13,13 +13,14 @@
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  */
 
-superSampleLocStyleMap = new OpenLayers.StyleMap({"default": new OpenLayers.Style({pointRadius: 10, strokeColor: "Yellow",fillOpacity: 0,strokeWidth: 4})});
-superSampleLocationLayer = new OpenLayers.Layer.Vector('SuperSample',{styleMap: superSampleLocStyleMap,displayInLayerSwitcher: false});
-defaultoccurrenceStyle = new OpenLayers.Style({pointRadius: 6,fillColor: "Red",fillOpacity: 0.3,strokeColor: "Red",strokeWidth: 1});
-selectoccurrenceStyle = new OpenLayers.Style({pointRadius: 6,fillColor: "Blue",fillOpacity: 0.3,strokeColor: "Yellow",strokeWidth: 2});
-occurrenceStyleMap = new OpenLayers.StyleMap({"default": defaultoccurrenceStyle, "select": selectoccurrenceStyle});
-occurrencePointLayer = new OpenLayers.Layer.Vector('Site Points',{styleMap: occurrenceStyleMap});
-selectOccurrenceStyleHash={pointRadius:6,fillColor:'Fuchsia',fillOpacity:0.3,strokeColor:'Fuchsia',strokeWidth:1};
+if(typeof OpenLayers != 'undefined'){
+  superSampleLocStyleMap = new OpenLayers.StyleMap({"default": new OpenLayers.Style({pointRadius: 10, strokeColor: "Yellow",fillOpacity: 0,strokeWidth: 4})});
+  superSampleLocationLayer = new OpenLayers.Layer.Vector('SuperSample',{styleMap: superSampleLocStyleMap,displayInLayerSwitcher: false});
+  defaultoccurrenceStyle = new OpenLayers.Style({pointRadius: 6,fillColor: "Red",fillOpacity: 0.3,strokeColor: "Red",strokeWidth: 1});
+  selectoccurrenceStyle = new OpenLayers.Style({pointRadius: 6,fillColor: "Blue",fillOpacity: 0.3,strokeColor: "Yellow",strokeWidth: 2});
+  occurrenceStyleMap = new OpenLayers.StyleMap({"default": defaultoccurrenceStyle, "select": selectoccurrenceStyle});
+  occurrencePointLayer = new OpenLayers.Layer.Vector('Site Points',{styleMap: occurrenceStyleMap});
+  selectOccurrenceStyleHash={pointRadius:6,fillColor:'Fuchsia',fillOpacity:0.3,strokeColor:'Fuchsia',strokeWidth:1};
 
 /**
  * Helper methods for additional JavaScript functionality required by the species_checklist control.
@@ -30,7 +31,125 @@ selectOccurrenceStyleHash={pointRadius:6,fillColor:'Fuchsia',fillOpacity:0.3,str
  */
 var scRow = 0;
 
+resetChildValue = function(child){
+  var options = child.find('option').not('[value=]').not('[disabled]');
+  if (options.length==1)
+    child.val(options.val());
+  else child.val('');
+};
+
+set_up_relationships = function(startAttr, parent, setval){
+  // parent holds the item that has changed.
+  start=false; // final field is treated differently, as it enforces no duplicates.
+  var myParentRow = jQuery(parent).closest('tr');
+  while(!myParentRow.hasClass('first')) {
+    myParentRow = myParentRow.prev();
+  }
+  for(var i=0; i < attrRestrictionsProcessOrder.length; i++){
+    if(start || startAttr==attrRestrictionsProcessOrder[i]){ // skip throw list until we reach the attr to start with.
+      start=true; // process all subsequent attributes as well.
+      var scanRow = myParentRow;
+      var child = [];
+      while(child.length==0){
+        child = scanRow.find('[name$=occAttr\:'+attrRestrictionsProcessOrder[i]+'],[name*=occAttr\:'+attrRestrictionsProcessOrder[i]+'\:]');
+        scanRow = scanRow.next().not('.first');
+        if(scanRow.length==0) return;
+      }
+      var childOptions = child.find('option').not('[value=]');
+      resetChild=false; // this is if the current value of the child is no longer valid at the end.
+      if(parent.val() == '') { // parent has been cleared so disable everything.
+        childOptions.attr('disabled','disabled'); // this leaves the blank.
+        if(setval) resetChild=true;
+      } else {
+        childOptions.removeAttr('disabled'); // initialise everything as enabled.
+        for(var j=0; j < relationships.length; j++){ 
+          if(relationships[j].child == attrRestrictionsProcessOrder[i]){ // scan through all relationships which feature the child attribute as the child.
+            scanRow = myParentRow;
+            var relParent = [];
+            while(relParent.length==0){
+              relParent = scanRow.find('[name$=occAttr\:'+relationships[j].parent+'],[name*=occAttr\:'+relationships[j].parent+'\:]');
+              scanRow = scanRow.next().not('.first');
+              if(scanRow.length==0) return;
+            }
+            var relParentVal = relParent.val();
+            for(var k=0; k < relationships[j].values.length; k++){
+              if(relParentVal == relationships[j].values[k].value) {
+                childOptions.each(function(index, Element){
+                  for(var m=0; m < relationships[j].values[k].list.length; m++){
+                    if(relationships[j].values[k].list[m] == $(this).val()){
+                      if($(this).val() == child.val() && setval) resetChild=true;
+                      $(this).attr('disabled','disabled');
+                    }}
+                });
+              }}}}
+       }
+       if(child.val()=='' && setval) resetChild=true;
+       if(resetChild) resetChildValue(child);
+    }
+  }
+  // no duplicate check as samples will be in different places. TBD reinstate for non includeSubSample
+/*
+  // something has changed: now need to go through ALL rows final field, not just ours, and eliminate options which would cause a duplicate.
+  // but some of those may have been re-added by the change so have to reset all options!
+  i= attrRestrictionsProcessOrder.length-1;
+  var tableRows = jQuery(parent).closest('table').find('.scDataRow');
+  tableRows.each(function(index, Row){
+    var child = jQuery(Row).find('[name$=occAttr\:'+attrRestrictionsProcessOrder[i]+'],[name*=occAttr\:'+attrRestrictionsProcessOrder[i]+'\:]');
+    var parent = jQuery(Row).find('[name$=occAttr\:'+attrRestrictionsProcessOrder[i-1]+'],[name*=occAttr\:'+attrRestrictionsProcessOrder[i-1]+'\:]');
+    var childOptions = child.find('option').not('[value=]');
+    resetChild=false;
+    if(parent.val() == '') {
+      childOptions.attr('disabled','disabled'); // all disabled.
+      if(setval && myParentRow[0]==Row) resetChild=true;
+    } else {
+      childOptions.attr('disabled','');
+      for(var j=0; j < relationships.length; j++){
+        if(relationships[j].child == attrRestrictionsProcessOrder[i]){
+          var relParentVal = jQuery(Row).find('[name$=occAttr\:'+relationships[j].parent+'],[name*=occAttr\:'+relationships[j].parent+'\:]').val();
+          for(var k=0; k < relationships[j].values.length; k++){
+            if(relParentVal == relationships[j].values[k].value) {
+              childOptions.each(function(index, Element){
+                for(var m=0; m < relationships[j].values[k].list.length; m++){
+                  if(relationships[j].values[k].list[m] == $(Element).val()){
+                    $(Element).attr('disabled','disabled');
+                    if($(Element).val() == child.val() && setval && myParentRow[0]==Row) resetChild=true;
+                }}
+              });
+    }}}}}
+    var classList = jQuery(Row).attr('class').split(/\s+/);
+    jQuery.each( classList, function(index, item){ 
+      var parts= item.split(/-/);
+      if(parts[0]=='scMeaning'){
+        sameSpeciesRows=jQuery('.'+item).not(Row);
+        sameSpeciesRows.each(function(index, sameSpeciesRow){
+          var same=true;
+          for(var j=0; j < attrRestrictionsProcessOrder.length-1; j++){
+            otherVal = jQuery(sameSpeciesRow).find('[name$=occAttr\:'+attrRestrictionsProcessOrder[j]+'],[name*=occAttr\:'+attrRestrictionsProcessOrder[j]+'\:]').val();
+            myVal = jQuery(Row).find('[name$=occAttr\:'+attrRestrictionsProcessOrder[j]+'],[name*=occAttr\:'+attrRestrictionsProcessOrder[j]+'\:]').val();
+            if(myVal == '' || otherVal == '' || myVal != otherVal) same=false;
+          }
+          myVal = jQuery(Row).find('[name$=occAttr\:'+attrRestrictionsProcessOrder[attrRestrictionsProcessOrder.length-1]+'],[name*=occAttr\:'+attrRestrictionsProcessOrder[attrRestrictionsProcessOrder.length-1]+'\:]').val();
+          otherVal = jQuery(sameSpeciesRow).find('[name$=occAttr\:'+attrRestrictionsProcessOrder[attrRestrictionsProcessOrder.length-1]+'],[name*=occAttr\:'+attrRestrictionsProcessOrder[attrRestrictionsProcessOrder.length-1]+'\:]').val();
+          // where all the other parents in the relationships are the same on this row, and the value is not empty
+          // and we have changed a value in a row (ie myParentRow), then that row is the one that gets reset if a duplicate row is created.
+          // ie myParentRow is one that will have option removed, not Row
+          if(same && (myVal!=otherVal || myParentRow[0]!=sameSpeciesRow)){
+            if(otherVal!='')
+              childOptions.filter('[value='+otherVal+']').attr('disabled','disabled');
+            if(setval && otherVal == child.val())
+              resetChild=true;
+          }
+        });
+      }
+    });
+    if(child.val()=='' && setval && myParentRow[0]==Row) resetChild=true;
+    if(resetChild) resetChildValue(child);
+  });
+*/
+};
+
 var _setHighlight = function(myRow) {
+  if(jQuery(myRow).hasClass('highlight')) return;
   myRow.closest('table').find('tr').removeClass('highlight');
   var map = jQuery('#map2');
   if(map.length==0) return; // no map
@@ -61,9 +180,11 @@ var _setHighlight = function(myRow) {
     }
   });
   if(map.map.editLayer.features.length>0){
-    // keep zoom same, just move to centre location we are intested in
-    var bounds=map.map.editLayer.features[0].geometry.bounds.clone();
-    map.map.setCenter(bounds.getCenterLonLat());
+    // keep zoom same, just move to centre location we are intested in, if feature is not already onscreen.
+    if(!map.map.editLayer.features[0].onScreen()){
+      var bounds=map.map.editLayer.features[0].geometry.bounds.clone();
+      map.map.setCenter(bounds.getCenterLonLat());
+    }
   }
   if(jQuery('.sideMap-container').length>0){
     var offset = jQuery('#map2').parent().parent().offset().top;
@@ -149,33 +270,34 @@ var _bindSpeciesGridControls = function(row,rowNum,options){
   // normal validation is taken from the database.
   row.find('input,select').bind('focus', handleFocus);
   if(typeof options.rowControl != 'undefined'){
-    function setControl(control,row,j){
-        control.change(function(){
-          if(jQuery(this).filter(':checked').length>0){
-            $('.group-'+row+'-'+j).find('input,select').removeAttr('disabled');
-            $('.group-'+row+'-'+j).find('label').css('opacity','');
-            $('.group-'+row+'-'+j).find('.deh-required').show();
-            $('.group-'+row+'-'+j).find('.required').addClass('XrequiredX').removeClass('required');
+    function setRowControl(value,row){
+      for(var i = 0; i < options.rowControl.controls.length; i++){
+        for(var j = 0; j < options.rowControl.controls[i].rows.length; j++){
+          var considerRow = $('.group-'+row+'-'+options.rowControl.controls[i].rows[j]);
+          if(value== options.rowControl.controls[i].meaning_id){
+            considerRow.find('input,select').removeAttr('disabled');
+            considerRow.find('label').css('opacity','');
+            considerRow.find('.deh-required').show();
+            considerRow.find('.XrequiredX').addClass('required').removeClass('XrequiredX');
           } else {
-            $('.group-'+row+'-'+j).find('input,select').attr('disabled','disabled');
-            $('.group-'+row+'-'+j).find('label').css('opacity',0.25);
-            $('.group-'+row+'-'+j).find('.deh-required').hide();
-            $('.group-'+row+'-'+j).find('.XrequiredX').addClass('required').removeClass('XrequiredX');
-            $('.group-'+row+'-'+j).find('select,:text').val('');
-            $('.group-'+row+'-'+j).find(':radio').removeAttr('checked');
-            $('.group-'+row+'-'+j).find('.ui-state-error').removeClass('ui-state-error');
-            $('.group-'+row+'-'+j).find('.inline-error').remove();
+            considerRow.find('input,select').attr('disabled','disabled');
+            considerRow.find('label').css('opacity',0.25);
+            considerRow.find('.deh-required').hide();
+            considerRow.find('select,:text').val('');
+            considerRow.find(':radio').removeAttr('checked');
+            considerRow.find('.required').addClass('XrequiredX').removeClass('required');
+            considerRow.find('.ui-state-error').removeClass('ui-state-error');
+            considerRow.find('.inline-error').remove();
           }
-        });
-        control.change();
-    };
-    for(var i = 0; i< options.rowControl.length; i++){
-      var control = row.find('.'+options.rowControl[i].selector).filter(':checkbox');
-      if(control.length > 0){
-        for(var j=0; j< options.rowControl[i].rows.length; j++){
-          setControl(control,rowNum,options.rowControl[i].rows[j]);
         }
-      }
+      };
+    };
+    var control = row.find('.'+options.rowControl.selector).find('input');
+    if(control.length > 0){
+      // for radio buttons, the change is fired on the new value only.
+      (function(control,rownum){control.change(function(){setRowControl($(this).val(),rownum)})})(control,rowNum);
+      control = control.filter(':checked');
+      setRowControl(control.length>0 ? control.val() : -1,rowNum);
     }
   }
   if(typeof options.unitSpeciesMeaning != 'undefined'){
@@ -187,23 +309,26 @@ var _bindSpeciesGridControls = function(row,rowNum,options){
         units.change(function(){
           jQuery('.ui-state-error').removeClass('ui-state-error');
           jQuery('.inline-error').remove();
-          if(jQuery(this).find('option').filter(':selected')[0].text=='m2')
+          var shown = jQuery(this).find('option').filter(':selected')[0].text;
+          if(shown=='' || shown == 'm2')
             jQuery(this).closest('tr').find('.scNumber').removeClass('integer').attr('min',0);
-          else
-            jQuery(this).closest('tr').find('.scNumber').addClass('integer').attr('min',1);
+          else 
+            jQuery(this).closest('tr').find('.scNumber').addClass('integer').attr('min',1).valid();
         });
       }
     } else {
-      row.find('.scNumber').addClass('integer');
+      row.find('.scNumber').addClass('integer').attr('min',1);
       row.find('.scUnits').find('option').each(function(index, elem){
         if(elem.text == 'm2' || elem.value == '') jQuery(elem).remove();
-      });
+      }); // may need relationship rebuild
     }
   }
 }
 
 function _addNewSpeciesGridRow(data,options){
   var map = jQuery('#map2')[0];
+  $('#'+options.gridId).find('.ui-state-error').removeClass('.ui-state-error');
+  $('#'+options.gridId).find('.inline-error').remove();
   var rows=$('#'+options.gridId + '-scClonable > tbody > tr');
   var newRows=[];
   rows.each(function(){newRows.push($(this).clone(true))})
@@ -228,6 +353,13 @@ function _addNewSpeciesGridRow(data,options){
   $.each(newRows, function(i, row){
     _bindSpeciesGridControls(row,scRow,options);
   });
+  if(typeof attrRestrictionsProcessOrder != 'undefined' && attrRestrictionsProcessOrder.length > 1){
+    $.each(newRows, function(i, row){
+      var parent = $(row).find('[name$=occAttr\:'+attrRestrictionsProcessOrder[0]+'],[name*=occAttr\:'+attrRestrictionsProcessOrder[0]+'\:]');
+      if(parent.length>0)
+        set_up_relationships(attrRestrictionsProcessOrder[1], parent, false);
+    });
+  }
   // Allow forms to hook into the event of a new row being added
   if (typeof hook_species_grid_changed !== "undefined") {
     hook_species_grid_changed();
@@ -336,7 +468,7 @@ $('.remove-row').live('click', function(e) {
     for(var i=0;i<numRows;i++){
       // disable or remove all other active controls from the row.
       // Do NOT disable the presence checkbox or the container td, otherwise it is not submitted.
-      considerRow.addClass('deleted-row').css('opacity',0.25);
+      considerRow.addClass('deleted-row').hide();
       considerRow.find('*:not(.scPresence,.scPresenceCell)').attr('disabled','disabled').removeClass('required ui-state-error').filter('input,select').val('').width('');
       considerRow.find('a').remove();
       considerRow.find('.deh-required,.inline-error').remove();
@@ -415,7 +547,15 @@ function bindSupportingSpeciesAutocomplete(field, options){
     var cell = $(event.target).closest('td');
     var container = cell.find('.SpeciesNameList');
     if(container.find('.Speciesname').length == 0) container.empty();
-    container.append('<span class=\"SpeciesNameGroup\" ><br /><div class=\"ui-state-default remove-button\"> </div><span class=\"Speciesname\">'+data.taxon+'</span></span>');
+    if(indiciaData.speciesListInTextMax != '' && container.find('.Speciesname').length >= indiciaData.speciesListInTextMax){
+      // use jQuery dialog as it does not stop processing.
+      var dialog = $('<p>Warning: You have reached the limit on the number of supporting species you may add.</p>').dialog({ title: "Too Many Supporting Species", buttons: { "OK": function() { dialog.dialog('close'); }}});
+      $(event.target).val('');
+      return;
+    }
+    var found=false;
+    cell.find('.Speciesname').each(function(idx,elem){ found = found || (elem.innerHTML == data.taxon) });
+    if(!found) container.append('<span class="SpeciesNameGroup" ><br /><div class="ui-state-default remove-button"> </div><span class="Speciesname">'+data.taxon+'</span></span>');
     var names=[];
     cell.find('.Speciesname').each(function(idx,elem){ names.push(elem.innerHTML); });
     cell.find(indiciaData.speciesListInTextSelector).val(names.join('|'));
@@ -429,7 +569,7 @@ function bindSupportingSpeciesAutocomplete(field, options){
   if($(field).val() != ''){
     var vals = $(field).val().split('|');
     jQuery.each(vals, function(idx,item){
-      container.append('<span><br /><div class="ui-state-default remove-button"> </div><span class="Speciesname">'+item+'</span></span>');
+      container.append('<span class="SpeciesNameGroup" ><br /><div class="ui-state-default remove-button"> </div><span class="Speciesname">'+item+'</span></span>');
     });
   } else container.append('<label><i>'+indiciaData.None+'</i><label>')
   cell.append('<br /><label class="auto-width">'+indiciaData.speciesListInTextLabel+'</label> <input name="addSupportingSpeciesControl" >');
@@ -462,3 +602,4 @@ function bindSupportingSpeciesAutocomplete(field, options){
   setTimeout(function() { ctrl.focus(); });
 }
 
+}

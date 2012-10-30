@@ -207,7 +207,7 @@ class iform_mnhnl_dynamic_2 extends iform_mnhnl_dynamic_1 {
       $targetSpeciesAttr=iform_mnhnl_getAttr(parent::$auth, $args, 'sample', $args['targetSpeciesAttr']);
       if(!$targetSpeciesAttr) return lang::get('This form must be used with a survey that has the '.$args['targetSpeciesAttr'].' sample attribute associated with it.');
       data_entry_helper::$javascript .= "
-jQuery('[name=params]').val('{\"survey_id\":".$args['survey_id'].", \"location_type_id\":".$primary.", \"target_species_attr\":".$targetSpeciesAttr['attributeId'].", \"target_species_termlist\":".$targetSpeciesAttr['termlist_id'].(isset($args['targetSpeciesAttrList']) && $args['targetSpeciesAttrList']!='' ? ", \"target_species_attr_list\":\"".$args['targetSpeciesAttrList']."\"":"")."}');
+jQuery('#downloads').find('[name=params]').val('{\"survey_id\":".$args['survey_id'].", \"location_type_id\":".$primary.", \"target_species_attr\":".$targetSpeciesAttr['attributeId'].", \"target_species_termlist\":".$targetSpeciesAttr['termlist_id'].(isset($args['targetSpeciesAttrList']) && $args['targetSpeciesAttrList']!='' ? ", \"target_species_attr_list\":\"".$args['targetSpeciesAttrList']."\"":"")."}');
 ";
     };
     return $r.($args['sites_download_report']!=''?'
@@ -394,129 +394,21 @@ $.validator.messages.digits = $.validator.format(\"".lang::get('validation_digit
 $.validator.messages.integer = $.validator.format(\"".lang::get('validation_integer')."\");";
     // possible clash with link_species_popups, so latter disabled.
     iform_mnhnl_addCancelButton($args['interface']);
-    data_entry_helper::$javascript .= "
-resetChildValue = function(child){
-  var options = child.find('option').not('[value=]').not('[disabled]');
-  if (options.length==1)
-    child.val(options.val());
-  else child.val('');
-};
-set_up_relationships = function(startAttr, parent, setval){
-  // parent holds the item that has changed.
-  start=false; // final field is treated differently, as it enforces no duplicates.
-  var myParentRow = jQuery(parent).closest('tr');
-  while(!myParentRow.hasClass('first')) {
-    myParentRow = myParentRow.prev();
-  }
-  for(var i=0; i < attrRestrictionsProcessOrder.length-1; i++){
-    if(start || startAttr==attrRestrictionsProcessOrder[i]){ // skip throw list until we reach the attr to start with.
-      start=true; // process all subsequent attributes as well.
-      var scanRow = myParentRow;
-      var child = [];
-      while(child.length==0){
-        child = scanRow.find('[name$=occAttr\\:'+attrRestrictionsProcessOrder[i]+'],[name*=occAttr\\:'+attrRestrictionsProcessOrder[i]+'\\:]');
-        scanRow = scanRow.next().not('.first');
-        if(scanRow.length==0) return;
-      }
-      var childOptions = child.find('option').not('[value=]');
-      resetChild=false; // this is if the current value of the child is no longer valid at the end.
-      if(parent.val() == '') { // parent has been cleared so disable everything.
-        childOptions.attr('disabled','disabled'); // this leaves the blank.
-        if(setval) resetChild=true;
-      } else {
-        childOptions.removeAttr('disabled'); // initialise everything as enabled.
-        for(var j=0; j < relationships.length; j++){ 
-          if(relationships[j].child == attrRestrictionsProcessOrder[i]){ // scan through all relationships which feature the child attribute as the child.
-            scanRow = myParentRow;
-            var relParent = [];
-            while(relParent.length==0){
-              relParent = scanRow.find('[name$=occAttr\\:'+relationships[j].parent+'],[name*=occAttr\\:'+relationships[j].parent+'\\:]');
-              scanRow = scanRow.next().not('.first');
-              if(scanRow.length==0) return;
-            }
-            var relParentVal = relParent.val();
-            for(var k=0; k < relationships[j].values.length; k++){
-              if(relParentVal == relationships[j].values[k].value) {
-                childOptions.each(function(index, Element){
-                  for(var m=0; m < relationships[j].values[k].list.length; m++){
-                    if(relationships[j].values[k].list[m] == $(this).val()){
-                      if($(this).val() == child.val() && setval) resetChild=true;
-                      $(this).attr('disabled','disabled');
-                    }}
-                });
-              }}}}
-       }
-       if(child.val()=='' && setval) resetChild=true;
-       if(resetChild) resetChildValue(child);
+    $attributes = data_entry_helper::getAttributes(array(
+       'valuetable'=>'sample_attribute_value'
+      ,'attrtable'=>'sample_attribute'
+      ,'key'=>'sample_id'
+      ,'extraParams'=>$auth['read']
+      ,'survey_id'=>$args['survey_id']));
+    foreach($attributes as $attribute){
+      data_entry_helper::$javascript .= "$('#smpAttr\\\\:".$attribute['attributeId']."').addClass('smpAttr-".str_replace(' ', '', ucWords($attribute['untranslatedCaption']))."');\n";
     }
-  }
-  // no duplicate check as samples will be in different places. TBD reinstate for non includeSubSample
-/*
-  // something has changed: now need to go through ALL rows final field, not just ours, and eliminate options which would cause a duplicate.
-  // but some of those may have been re-added by the change so have to reset all options!
-  i= attrRestrictionsProcessOrder.length-1;
-  var tableRows = jQuery(parent).closest('table').find('.scDataRow');
-  tableRows.each(function(index, Row){
-    var child = jQuery(Row).find('[name$=occAttr\\:'+attrRestrictionsProcessOrder[i]+'],[name*=occAttr\\:'+attrRestrictionsProcessOrder[i]+'\\:]');
-    var parent = jQuery(Row).find('[name$=occAttr\\:'+attrRestrictionsProcessOrder[i-1]+'],[name*=occAttr\\:'+attrRestrictionsProcessOrder[i-1]+'\\:]');
-    var childOptions = child.find('option').not('[value=]');
-    resetChild=false;
-    if(parent.val() == '') {
-      childOptions.attr('disabled','disabled'); // all disabled.
-      if(setval && myParentRow[0]==Row) resetChild=true;
-    } else {
-      childOptions.attr('disabled','');
-      for(var j=0; j < relationships.length; j++){
-        if(relationships[j].child == attrRestrictionsProcessOrder[i]){
-          var relParentVal = jQuery(Row).find('[name$=occAttr\\:'+relationships[j].parent+'],[name*=occAttr\\:'+relationships[j].parent+'\\:]').val();
-          for(var k=0; k < relationships[j].values.length; k++){
-            if(relParentVal == relationships[j].values[k].value) {
-              childOptions.each(function(index, Element){
-                for(var m=0; m < relationships[j].values[k].list.length; m++){
-                  if(relationships[j].values[k].list[m] == $(Element).val()){
-                    $(Element).attr('disabled','disabled');
-                    if($(Element).val() == child.val() && setval && myParentRow[0]==Row) resetChild=true;
-                }}
-              });
-    }}}}}
-    var classList = jQuery(Row).attr('class').split(/\s+/);
-    jQuery.each( classList, function(index, item){ 
-      var parts= item.split(/-/);
-      if(parts[0]=='scMeaning'){
-        sameSpeciesRows=jQuery('.'+item).not(Row);
-        sameSpeciesRows.each(function(index, sameSpeciesRow){
-          var same=true;
-          for(var j=0; j < attrRestrictionsProcessOrder.length-1; j++){
-            otherVal = jQuery(sameSpeciesRow).find('[name$=occAttr\\:'+attrRestrictionsProcessOrder[j]+'],[name*=occAttr\\:'+attrRestrictionsProcessOrder[j]+'\\:]').val();
-            myVal = jQuery(Row).find('[name$=occAttr\\:'+attrRestrictionsProcessOrder[j]+'],[name*=occAttr\\:'+attrRestrictionsProcessOrder[j]+'\\:]').val();
-            if(myVal == '' || otherVal == '' || myVal != otherVal) same=false;
-          }
-          myVal = jQuery(Row).find('[name$=occAttr\\:'+attrRestrictionsProcessOrder[attrRestrictionsProcessOrder.length-1]+'],[name*=occAttr\\:'+attrRestrictionsProcessOrder[attrRestrictionsProcessOrder.length-1]+'\\:]').val();
-          otherVal = jQuery(sameSpeciesRow).find('[name$=occAttr\\:'+attrRestrictionsProcessOrder[attrRestrictionsProcessOrder.length-1]+'],[name*=occAttr\\:'+attrRestrictionsProcessOrder[attrRestrictionsProcessOrder.length-1]+'\\:]').val();
-          // where all the other parents in the relationships are the same on this row, and the value is not empty
-          // and we have changed a value in a row (ie myParentRow), then that row is the one that gets reset if a duplicate row is created.
-          // ie myParentRow is one that will have option removed, not Row
-          if(same && (myVal!=otherVal || myParentRow[0]!=sameSpeciesRow)){
-            if(otherVal!='')
-              childOptions.filter('[value='+otherVal+']').attr('disabled','disabled');
-            if(setval && otherVal == child.val())
-              resetChild=true;
-          }
-        });
-      }
-    });
-    if(child.val()=='' && setval && myParentRow[0]==Row) resetChild=true;
-    if(resetChild) resetChildValue(child);
-  });
-*/
-};
-
-relationships = [";
+    data_entry_helper::$javascript .= "\nrelationships = [";
     if(isset($options["attrRestrictions"]) && $options["attrRestrictions"]!=""){
       $restrictionRules = explode(';', $options["attrRestrictions"]);
       foreach($restrictionRules as $restrictionRule){
         $parts = explode(':', $restrictionRule);
-        data_entry_helper::$javascript .= "{parent : ".$parts[0].",
+        data_entry_helper::$javascript .= "\n {parent : ".$parts[0].",
   child : ".$parts[1].",
   values: [";
         for($i = 2; $i < count($parts); $i++){
@@ -616,6 +508,17 @@ $.validator.addMethod('end_time', function(value, element){
 },
   \"".lang::get('validation_end_time')."\");
 ";
+          } else if($rule[$i]=='N=2'){
+            // we are assuming this is on the main supersample.
+            // allow a maximum of 2 entries in a multiple value checkbox set.
+            data_entry_helper::$late_javascript .= "
+jQuery('[name=".str_replace(':','\\:',$rule[0])."\\[\\]],[name^=".str_replace(':','\\:',$rule[0])."\\:]').rules('add', {nequals2: true});
+$.validator.addMethod('nequals2', function(value, element){
+  var checkedControls = jQuery('[name=".str_replace(':','\\:',$rule[0])."\\[\\]],[name^=".str_replace(':','\\:',$rule[0])."\\:]').filter(':checked'); 
+  return checkedControls.length <= 2;  
+},
+  \"".lang::get('validation_nequals2')."\");
+";
           } else if(substr($rule[0], 3, 4)!= 'Attr'){ // have to add for non attribute case.
             data_entry_helper::$late_javascript .= "
 jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:',$rule[0])."\\:]').addClass('".$rule[$i]."');";
@@ -628,7 +531,7 @@ indiciaData.speciesListInTextSelector = '.".$ctrlArgs[0]."';
 indiciaData.None = '".lang::get('None')."';
 indiciaData.speciesListInTextLabel = '".lang::get('Add supporting plant species to list')."';
 indiciaData.speciesListInTextSpeciesList = ".$ctrlArgs[1].";
-";
+indiciaData.speciesListInTextMax = '".$ctrlArgs[2]."';\n";
     return '';
   }
 
@@ -719,9 +622,12 @@ indiciaData.speciesListInTextSpeciesList = ".$ctrlArgs[1].";
       $fieldprefix='targ:'.($smpID ? $smpID : '-').':'.$target['meaning_id'];
       $retval .= str_replace('{MyPrefix}',$fieldprefix,'<tr><td>'.$target['term'].'</td><td><input type="hidden" name="'.$fieldname.'" value=0><input type="checkbox" class="targ-presence" name="'.$fieldname.'" value=1 '.$present.'></td>');
       foreach($attrIDs as $attrID){
+        $attrOpts['class']='targ-smpAttr-'.str_replace(' ', '', ucWords($smpAttributes[$attrID]['untranslatedCaption']));
+        if($smpID && $smpAttributes[$attrID]["data_type"]!="B") $attrOpts['validation'] = array('required');
+        else unset($attrOpts['validation']);
         $retval .= str_replace('{MyPrefix}',$fieldprefix, 
-              '<td class="targ-grid-cell">'.data_entry_helper::outputAttribute(($smpID ? $subSamplesAttrs[$smpID][$attrID] : $smpAttributes[$attrID]),
-                $attrOpts).'</td>');
+              '<td class="targ-grid-cell"><nobr>'.data_entry_helper::outputAttribute(($smpID ? $subSamplesAttrs[$smpID][$attrID] : $smpAttributes[$attrID]),
+                $attrOpts).'</nobr></td>');
       }
       $retval .= '</tr>';
       $first=false;
@@ -1142,13 +1048,14 @@ bindSpeciesOptions = {selectorID: \"addTaxonControl\",
       if(isset($options['unitSpeciesMeaning']))
           data_entry_helper::$javascript .= "bindSpeciesOptions.unitSpeciesMeaning=\"".$options['unitSpeciesMeaning']."\";\n";
       if(isset($options['rowControl'])){
-        $rowControls = explode(':',$options['rowControl']);
-        data_entry_helper::$javascript .= "bindSpeciesOptions.rowControl = [";
-        foreach($rowControls as $rowControl){
-          $parts=explode(',',$rowControl,2);
-          data_entry_helper::$javascript .= "{selector: \"".$parts[0]."\" , rows: [".$parts[1]."]},";
+        $rowControls = explode(';',$options['rowControl']);
+        data_entry_helper::$javascript .= "bindSpeciesOptions.rowControl = {selector: 'sc".str_replace(' ', '', ucWords($rowControls[0]))."',\n  controls: [";
+        for($i=2; $i < count($rowControls); $i++){
+          $parts=explode(',',$rowControls[$i],2);
+          $termList = helper_base::get_termlist_terms(parent::$auth, $rowControls[1], array($parts[0]));
+          data_entry_helper::$javascript .= "{meaning_id: \"".$termList[0]['meaning_id']."\" , rows: [".$parts[1]."]},";
         }
-        data_entry_helper::$javascript .= "];\n";
+        data_entry_helper::$javascript .= "]};\n";
       }
       if(isset($options['singleSpeciesID'])){
         $fetchOpts = array(
@@ -1182,7 +1089,7 @@ bindSpeciesButton(bindSpeciesOptions);\n";
       $mapOptions['srefId']='sg-imp-sref';
       $mapOptions['srefLatId']='sg-imp-srefX';
       $mapOptions['srefLongId']='sg-imp-srefY';
-      $mapOptions['standardControls']=array('layerSwitcher','panZoom');
+      $mapOptions['standardControls']=array('layerSwitcher','panZoomBar');
       $mapOptions['fillColor']=$mapOptions['strokeColor']='Fuchsia';
       $mapOptions['fillOpacity']=0.3;
       $mapOptions['strokeWidth']=1;

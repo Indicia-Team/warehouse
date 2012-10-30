@@ -288,7 +288,9 @@ class ReportEngine {
   public function record_count() {
     if (isset($this->countQuery) && $this->countQuery!==null) {
       $count = $this->reportDb->query($this->countQuery)->result_array(FALSE);
-      return $count[0]['count'];
+      // query could return no rows, in which case return zero.
+      if(count($count)>0) return $count[0]['count'];
+      return 0;
     } else {
       return false;
     }
@@ -760,10 +762,13 @@ class ReportEngine {
     $query = str_replace(array('#joins#','#fields#','#group_bys#','#filters#'), array('','','',''), $query);
     // allow the URL to provide a sort order override
     if (!$counting) {
-      if (isset($this->orderby))
-        $order_by = $this->orderby . (isset($this->sortdir) ? ' '.$this->sortdir : '');
-      else
-        $order_by=$this->reportReader->getOrderClause();
+      // prioritise any URL provided sort order, but still keep any other sort ordering in the report.
+      $order_by=$this->reportReader->getOrderClause();
+      if($order_by){
+        if (isset($this->orderby))
+          $order_by = $this->orderby . (isset($this->sortdir) ? ' '.$this->sortdir : '') . ', ' . $order_by;
+      } else if (isset($this->orderby))
+          $order_by = $this->orderby . (isset($this->sortdir) ? ' '.$this->sortdir : '');
       if ($order_by) {
         $order_by = $this->checkOrderByForVagueDate($order_by);
         // Order by will either be appended to the end of the query, or inserted at a #order_by# marker.

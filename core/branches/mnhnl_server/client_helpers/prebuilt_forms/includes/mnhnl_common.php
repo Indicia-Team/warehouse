@@ -365,7 +365,18 @@ function iform_mnhnl_locModTool($auth, $args, $node) {
     $retVal .= "<fieldset><legend>".lang::get('LANG_SHP_Download_Legend')."</legend>
       <p>".lang::get('LANG_Shapefile_Download')." ".$retValList."</p></fieldset>";
   }
-  if($args['locationMode']=='parent'){ // includes multi - see above
+  $includeOutsideSquare = $args['locationMode']=='parent'; // includes multi - see above
+  // filtered
+  if($args['locationMode']=='filtered'){
+    $filterAttrs = explode(',',$args['filterAttrs']);
+    foreach($filterAttrs as $idx=>$filterAttr){
+      $filterAttr=explode(':',$filterAttr);
+      if($filterAttr[0] == 'Parent' && $filterAttr[1] == "true")
+        $includeOutsideSquare = true;
+    }
+  };
+
+  if($includeOutsideSquare){
     $confirmedLocationTypeID = iform_mnhnl_getTermID($auth, 'indicia:location_types',$args['SecondaryLocationTypeTerm']);
     if(is_null($confirmedLocationTypeID)) $confirmedLocationTypeID="0";
     $submittedLocationTypeID = iform_mnhnl_getTermID($auth, 'indicia:location_types',$args['LocationTypeTerm']);
@@ -516,7 +527,7 @@ function iform_mnhnl_lux5kgridControl($auth, $args, $node, $options) {
        break;
       default : // parent, single, filtered
        $options = array_merge(array('ChooseParentFieldID' => 'dummy-parent-id',
-                                    'ChooseParentFieldName' => $args['locationMode'] == 'filtered' ? 'location:parent_id' : 'dummy:parent_id',
+                                    'ChooseParentFieldName' => 'dummy:parent_id',
                                     'ParentFieldID' => 'location-parent-id',
                                     'ParentFieldName' => 'location:parent_id',
                                     'MainFieldID' => 'location-id',
@@ -624,28 +635,13 @@ displayInLayerSwitcher: false});\n";
     if(isset($args['locationLayerWMS']) && $args['locationLayerWMS'] != ''){
       // define Parent WMS Layer
       $WMSoptions = explode(',', $args['locationLayerWMS']);
-/*
- * http://localhost/drupal/proxy
- * ?url=http%3A%2F%2Flocalhost%3A8080%2Fgeoserver%2Fwms
- * &CQL_FILTER=website_id%3D8
- * 
- * http://localhost/drupal/proxy
- * ?url=http%3A%2F%2Flocalhost%2Fgeoserver%2Fwms
- * &CQL_FILTER=location_type_id=205
- * 
- * http://localhost/drupal/proxy?url=http%3A%2F%2Flocalhost%3A8080%2Fgeoserver%2Fwms&referer=%2Fdrupal%2Fnode%2F19&SERVICE=WMS&VERSION=1.1.0&STYLES=&SRS=EPSG%3A3857&FORMAT=image%2Fpng&TRANSPARENT=true&LAYERS=indicia%3Abtw_transects&CQL_FILTER=website_id%3D8&REQUEST=GetMap&BBOX=477972.22043638,6307976.4628915,893483.90613676,6532701.3260185&WIDTH=1359&HEIGHT=735
-http://localhost/drupal/proxy?url=http%3A%2F%2Flocalhost%3A8080%2Fgeoserver%2Fwms&referer=%2Fdrupal%2Fnode%2F19&SERVICE=WMS&VERSION=1.1.0&STYLES=&SRS=EPSG%3A3857&FORMAT=image%2Fpng&TRANSPARENT=true&LAYERS=indicia%3Abtw_transects&CQL_FILTER=website_id%3D3&REQUEST=GetMap&BBOX=477972.22043638,6307976.4628915,893483.90613676,6532701.3260185&WIDTH=1359&HEIGHT=735
- */
+      if($args['includeLocTools'] && function_exists('iform_loctools_listlocations')){
+        $squares = iform_loctools_listlocations($node);
+      } else $squares = 'all';
+      // can't use the column name id in the cql_filter as this has a special (fid) meaning.
       data_entry_helper::$javascript .= "
-WMSoptions = {
-    SERVICE: 'WMS',
-    VERSION: '1.1.0',
-    STYLES: '',
-    SRS: '".$WMSoptions[2]."',
-    FORMAT: 'image/png',
-    TRANSPARENT: 'true',
-    LAYERS: '".$WMSoptions[1]."'
-    ,CQL_FILTER: 'location_type_id=".$args['loctoolsLocTypeID']." AND website_id=".$args['website_id']."'
+WMSoptions = {SERVICE: 'WMS', VERSION: '1.1.0', STYLES: '', SRS: '".$WMSoptions[2]."', FORMAT: 'image/png', TRANSPARENT: 'true', LAYERS: '".$WMSoptions[1]."',
+  CQL_FILTER: \"location_type_id=".$args['loctoolsLocTypeID']." AND website_id=".$args['website_id'].($squares != 'all' ? " AND location_id IN (".implode(',', $squares).")" : '')."\"
     };
 ParentWMSLayer = new OpenLayers.Layer.WMS('Parent Grid',
   '".iform_proxy_url($WMSoptions[0])."',
@@ -710,7 +706,16 @@ recalcNumSites();
 clearLocation = function(hookArg){ // clears all the data in the fields.
   jQuery('#".$options['MainFieldID'].($args['locationMode']!='multi' ? ",#sample-location-name,#sample-location-id" : "").",#location-name,#centroid_sref,#imp-srefX,#imp-srefY,#centroid_geom,#boundary_geom,[name=location\\:comment],[name=location\\:parent_id],#location-code').val('');
   jQuery('#location-code').attr('dbCode','');
-".($args['locationMode']!='multi' ? "  jQuery('#location-name option').removeAttr('disabled');\n  ":"").
+".($args['locationMode']!='multi' && $args['siteNameTermListID']!="" && isset($args['duplicateNameCheck']) && $args['duplicateNameCheck']=='enforce' ?
+"  jQuery('#location-name option').removeAttr('disabled');
+  for(var i=0; i< SiteLabelLayer.features.length; i++){
+    if(typeof SiteLabelLayer.features[i].attributes.SiteNum != 'undefined'){
+      // At the moment the allowable options are integers: if the old data is dodgy it may not hold an integer
+      if(SiteLabelLayer.features[i].style.label == parseInt(SiteLabelLayer.features[i].style.label))
+        jQuery('#location-name').find('option').filter('[value='+SiteLabelLayer.features[i].style.label+']').attr('disabled','disabled');
+    }
+  }
+  jQuery('#location-name').val('');\n":"").
 "  jQuery('#location_location_type_id').val('$primary');
   // first  to remove any hidden multiselect checkbox unclick fields
   var attrList=jQuery('[name^=locAttr\\:]').not('[name$=\\:term]');
@@ -878,7 +883,7 @@ loadLocation = function(feature){ // loads all the data into the location fields
   jQuery('#location-name,#sample-location-name').val(feature.attributes.data.name);
   jQuery('#location_location_type_id').val(feature.attributes.data.location_type_id);
   jQuery('[name=location\\:comment]').val(feature.attributes.data.comment);
-  jQuery('[name=location\\:parent_id]').val(feature.attributes.data.parent_id);
+  jQuery('[name=location\\:parent_id],[name=dummy\\:parent_id]').val(feature.attributes.data.parent_id);
   jQuery('#location-code').val(feature.attributes.data.code).attr('dbCode',feature.attributes.data.code);
   jQuery('#imp-geom').val(feature.attributes.data.centroid_geom);
   jQuery('#imp-boundary-geom').val(feature.attributes.data.boundary_geom);
@@ -939,7 +944,10 @@ loadFeatures = function(parent_id, child_id, childArgs, loadParent, setSelectOpt
   SitePointLayer.destroyFeatures();
   if(setSelectOptions)
     jQuery('#".$options['MainFieldID']."').find('option').remove();
-  if(child_id == ''){
+".($args['locationMode']!='multi' && $args['siteNameTermListID']!="" ?
+"  jQuery('#location-name').find('option').removeAttr('disabled');\n"
+: "").
+"  if(child_id == ''){
     clearLocation(false);
   }
   deactivateControls();
@@ -2142,6 +2150,11 @@ SitePointLayer.events.on({
       data_entry_helper::$javascript .= "
 hook_ChildFeatureLoad = function(feature, data, child_id, childArgs){
   if(child_id == '' || data.id != child_id){
+    var clearVal = jQuery('#location-name').val() == data.name;
+".($args['siteNameTermListID']!="" && isset($args['duplicateNameCheck']) && $args['duplicateNameCheck']=='enforce' ?
+	"    jQuery('#location-name').find('option').filter('[value='+data.name+']').attr('disabled','disabled');\n" :
+	"").
+"    if(clearVal) jQuery('#location-name').val('');
     return;
   }
   var pointFeature = false;
@@ -2287,7 +2300,6 @@ jQuery('#".$options['MainFieldID']."').change(function(){
     if($args['includeLocTools'] && function_exists('iform_loctools_listlocations')){
       $locations = iform_loctools_listlocations($node);
     } else $locations = 'all';
-    $locations = iform_loctools_listlocations($node);
     if($args['locationMode'] == 'parent' || $args['locationMode'] == 'multi'){
       if (!isset($args['loctoolsLocTypeID'])) return "locationMode == parent, loctoolsLocTypeID not set.";
       iform_mnhnl_set_editable($auth, $args, $node, array(), $args['locationMode'] == 'parent' ? "conditional" : $options['AdminMode'], $loctypeParam);
@@ -2344,6 +2356,7 @@ jQuery(\"#".$options['ChooseParentFieldID']."\").change(function(){
 });
 jQuery(\"#".$options['ParentFieldID']."\").change(function(){
   if(jQuery(this).val() != '') {
+    // we have a new parent location, so draw boundary
     jQuery.getJSON(\"".data_entry_helper::$base_url."/index.php/services/data/location/\"+jQuery(this).val()+\"?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?\",
       function(data) {
        if (data.length>0) {
@@ -2356,25 +2369,35 @@ jQuery(\"#".$options['ParentFieldID']."\").change(function(){
          }
        }});
 ".($options['AdminMode'] ? 
-"    jQuery('#location-name').find('option').removeAttr('disabled');
-    jQuery.getJSON(\"".data_entry_helper::$base_url."/index.php/services/data/location?parent_id=\"+jQuery(this).val()+\"&mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?\",
-      function(data) {
-       if (data.length>0) {
-         for(var di=0; di<data.length; di++){
+"    // in admin mode we have to reset the location name drop downs.
+    jQuery('#location-name').find('option').removeAttr('disabled');
 ".(isset($args['duplicateNameCheck']) && ($args['duplicateNameCheck']==true || $args['duplicateNameCheck']=='check' || $args['duplicateNameCheck']=='enforce') ?
-"           if(jQuery('#location-name').val() == data[di].name && jQuery('#".$options['MainFieldID']."').val() != data[di].id){
-             alert(\"".lang::get('This site name is already in use in the new square. Please choose another.')."\");
+"    jQuery.getJSON(\"".data_entry_helper::$base_url."/index.php/services/data/location?parent_id=\"+jQuery(this).val()+\"&location_type_id".$primary."&mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?\",
+      function(data) {
+        if (data.length>0) {
+          var currentName = jQuery('#location-name').val();
+          var currentID = jQuery('#".$options['MainFieldID']."').val();
+          // first check if there is a clash and give a warning
+          for(var di=0; di<data.length; di++){
+            if(currentName == data[di].name && currentID != data[di].id && currentID != ''){
+              alert(\"".lang::get('This site name is already in use in the new square. Please choose another.')."\");
+              break; // only display one message
+            }
+          }
 ".($args['duplicateNameCheck']=='enforce' ?
-"		     jQuery('#location-name').val('');\n" : "").
-"		   }
-" : "").
-(isset($args['siteNameTermListID']) && $args['siteNameTermListID']!="" ? 
-"           if(data[di].name == parseInt(data[di].name) && jQuery('#".$options['MainFieldID']."').val() != data[di].id)
-             jQuery('#location-name').find('option').filter('[value='+data[di].name+']').attr('disabled','disabled');
-" : "").
-"         }
-       }});
-": "").
+"          // if enforce, disable all options for existing and reset the name value if needed.
+          for(var di=0; di<data.length; di++){
+            if(data[di].name == parseInt(data[di].name) && currentID != data[di].id)
+              // only disable fields for existing locations for numeric names and which are not me. 
+              jQuery('#location-name').find('option').filter('[value='+data[di].name+']').attr('disabled','disabled');
+          }
+          // finally if enforce and there is a clash, reset the value. This will then automatically take first available.
+          for(var di=0; di<data.length; di++){
+            if(currentName == data[di].name && currentID != data[di].id)
+              jQuery('#location-name').val('');
+          }
+": "")."
+       }});\n" : "") : "").
 "  } else
     ParentLocationLayer.destroyFeatures();
 });
@@ -2640,7 +2663,7 @@ hook_setSref_".$idx." = function(geom){
           }\n";
 				} else {
 					data_entry_helper::$javascript .="          jQuery('#".$options['ParentFieldID']."').val(id);
-          jQuery('#".$options['ChooseParentFieldID']."').empty().text(a1.features[0].attributes['name']);\n";
+          jQuery('#".$options['ChooseParentFieldID']."').val(a1.features[0].attributes['name']);\n";
 				}
 				data_entry_helper::$javascript .="        } else {\n".
 ($filterAttr[2]=='true'?"        alert(\"".lang::get('LANG_PositionOutsideParent')."\");\n":'').
@@ -2661,10 +2684,22 @@ hook_setSref_".$idx." = function(geom){
                     'view'=>'detail',
                     'extraParams'=>array_merge(array('orderby'=>'name', 'website_id'=>$args['website_id']), $auth['read']),
                     'location_type_id'=>$parentLocTypeID,
-                    'fieldname'=>$options['ParentFieldName'],
+                    'fieldname'=>$options['ChooseParentFieldName'],
                     'id'=>'filterSelect'.$idx,
-                    'blankText'=>lang::get('LANG_FirstChooseParentFilter'));
+                    'blankText'=>lang::get('LANG_FirstChooseParentFilter'),
+                    'default'=>'12');
                   $retVal .= data_entry_helper::location_select($location_list_args);
+                  if($options['AdminMode']){
+                    $location_list_args=array_merge($location_list_args, 
+                        array('validation' => array('required'),
+                              'label'=>$options['ParentLabel'],
+                              'id'=>$options['ParentFieldID'],
+                              'fieldname'=>$options['ParentFieldName'],
+                              'blankText'=>''));
+                    $retVal .= data_entry_helper::location_select($location_list_args);
+                  } else {
+                  	$retVal .= "<input type='hidden' id='".$options['ParentFieldID']."' name='".$options['ParentFieldName']."' value='".(isset(data_entry_helper::$entity_to_load[$options['ParentFieldName']]) ? data_entry_helper::$entity_to_load[$options['ParentFieldName']] : "")."' />";
+                  }
                   data_entry_helper::$javascript .="indiciaData.filterParent=true;
 // load the counts to the end of the parent drop down list. Do only once. Equivalent to filterLoad".$idx."
 jQuery('#filterSelect".$idx." option').each(function(idx, elem){
@@ -2691,6 +2726,7 @@ displayParent = function(zoom){
   }});
 }
 jQuery('#filterSelect".$idx."').change(function(){
+  jQuery('#".$options['ParentFieldID']."').val(jQuery(this).val());
   SetFilterNewLocation();\n";
                   foreach($filterAttrs as $idx1=>$filterAttr1)
                     if($idx1 > $idx)
@@ -2718,15 +2754,16 @@ jQuery('#filterSelect".$idx."').change(function(){
       					'" type="hidden" value="'.
       					(isset(data_entry_helper::$entity_to_load[$options['ParentFieldName']]) && data_entry_helper::$entity_to_load[$options['ParentFieldName']]!= "" && data_entry_helper::$entity_to_load[$options['ParentFieldName']] != null ? data_entry_helper::$entity_to_load[$options['ParentFieldName']] : '').
       					'">'.
-      					'<label>'.
-      					lang::get('LANG_CommonParentLabel').
-      					':</label> <span id="'.
+      					'<input id="'.
       					$options['ChooseParentFieldID'].
-      					'" ></span><br/>';
+      					'" name="dummy" value="" disabled="disabled" >';
 					$loadFunction .= "  populate".$idx."();\n";
 				  data_entry_helper::$javascript .="
+$('#sample-location-id').before('<label>".lang::get('LANG_CommonParentLabel').":</label> ');
+$('#".$options['ChooseParentFieldID']."').insertBefore('#sample-location-id');
+$('#sample-location-id').before('<br/>');
 populate".$idx." = function(){
-  jQuery('#".$options['ChooseParentFieldID']."').empty();
+  jQuery('#".$options['ChooseParentFieldID']."').val('');
   if(jQuery('#".$options['ParentFieldID']."').val()!='' && jQuery('#".$options['ParentFieldID']."').val() != null){
     var protocol = new OpenLayers.Protocol.WFS({
         url:  '".$protocol[0]."',featurePrefix: '".$protocol[1]."',featureType: '".$protocol[2]."',geometryName:'boundary_geom',featureNS: '".$protocol[3]."',srsName: '".$protocol[4]."',version: '1.1.0',propertyNames: ['boundary_geom','name']
@@ -2734,7 +2771,7 @@ populate".$idx." = function(){
           if(a1.error && (typeof a1.error.success == 'undefined' || a1.error.success == false)){
             alert(\"".lang::get('LANG_ParentLookUpFailed')."\");
           } else if(a1.features.length > 0) {
-            jQuery('#".$options['ChooseParentFieldID']."').text(a1.features[0].attributes['name']);
+            jQuery('#".$options['ChooseParentFieldID']."').val(a1.features[0].attributes['name']);
         }}});
     var filter = new OpenLayers.Filter.FeatureId({fids: ['".$protocol[2].".'+jQuery('#".$options['ParentFieldID']."').val()]});
     protocol.read({filter: filter});
@@ -2745,7 +2782,7 @@ filterLoad".$idx." = function(){
 };
 populate".$idx."();
 filterReset".$idx." = function(){
-  jQuery('#".$options['ChooseParentFieldID']."').empty();
+  jQuery('#".$options['ChooseParentFieldID']."').val('');
 };";
       			}
       			// have to extract id from fid.
@@ -2787,14 +2824,20 @@ filterLoad".$idx." = function(){
       names.sort(); // the sort WFS does not work...
       for(var i=0; i<names.length; i++) {
         for(j=0, count=0; j< locations.length; j++){
-          if(locations[j].attrs['".$attr['attributeId']."']==names[i]) count++;
+          if(locations[j].attrs['".$attr['attributeId']."']==names[i]) {
+            count++;
+            locations[j].shapeFound=true;
+          }
         }
         jQuery('#filterSelect".$idx."').append('<option value=\"'+names[i]+'\">'+names[i]+(count?' ('+count+')':'')+'</option>');
       }
       for(j=0; j< locations.length; j++){ // add any communes which are in the locations but not in the shape file.
-        if(jQuery('#filterSelect".$idx." option').filter('[value='+locations[j].attrs['".$attr['attributeId']."']+']').length==0){
+        if(typeof locations[j].shapeFound == 'undefined'){
           for(i=0, count=0; i< locations.length; i++){
-            if(locations[j].attrs['".$attr['attributeId']."']==locations[i].attrs['".$attr['attributeId']."']) count++;
+            if(locations[j].attrs['".$attr['attributeId']."']==locations[i].attrs['".$attr['attributeId']."']) {
+              count++;
+              locations[i].shapeFound=true;
+            }
           }
           jQuery('#filterSelect".$idx."').append('<option value=\"'+locations[j].attrs['".$attr['attributeId']."']+'\">'+locations[j].attrs['".$attr['attributeId']."']+' ('+count+')'+'</option>');
         }
@@ -3036,12 +3079,13 @@ filterLoad".$idx." = function(){
     }
     if(match) results.push(locations[i].attrs[\"".$attr['attributeId']."\"]);
   }
+  jQuery('#filterSelect".$idx."').empty();
   if(results.length>0) {
     results.sort();
     for(i=1, results1=[results[0]]; i<results.length; i++)
       if(results[i]!=results[i-1]) results1.push(results[i]);
     jQuery('#filter".$idx."').show();
-    jQuery('#filterSelect".$idx."').empty().append('<option value=\"\">".lang::get("Please select...")."</option>');
+    jQuery('#filterSelect".$idx."').append('<option value=\"\">".lang::get("Please select...")."</option>');
     for (var i=0, count=0;i<results1.length;i++){
       // for each results, need to work out count of matching locations.
       for(k=0; k<locations.length; k++){
@@ -3058,13 +3102,12 @@ filterLoad".$idx." = function(){
       }
       jQuery('#filterSelect".$idx."').append('<option value=\"'+results1[i]+'\" '+(results1[i] == jQuery('#locAttr\\\\:".$attr['attributeId']."').val() ? 'selected=\"selected\"' : '')+'>'+results1[i]+' ('+count+')'+'</option>');
     }
-  } else 
+  } else
     jQuery('#filter".$idx."').hide();
 };
 filterReset".$idx." = function(){
   jQuery('#locAttr\\\\:".$attr['attributeId']."').val('');
-  jQuery('#filterSelect".$idx."').empty();
-  jQuery('#filter".$idx."').hide();
+  filterLoad".$idx."();
 };";
       			if (array_key_exists('location:id', data_entry_helper::$entity_to_load) && data_entry_helper::$entity_to_load['location:id']!="") {
 				  $initFunctions .="\nfilterLoad".$idx."();";
@@ -3120,7 +3163,7 @@ hook_setSref = function(geom){
         return;
       }
       if(a1.features.length > 0)
-        jQuery('[name=locAttr\\:$communeAttr],[name^=locAttr\\:$communeAttr\\:]').val(a1.features[0].attributes[\"".$parts[6]."\"]).attr('readonly','readonly');
+        jQuery('[name=locAttr\\:$communeAttr],[name^=locAttr\\:$communeAttr\\:]').val(a1.features[0].attributes[\"".$parts[6]."\"]);
       else {
         alert(\"".lang::get('LANG_PositionOutsideCommune')."\");
       }}});\n";
@@ -3134,7 +3177,10 @@ hook_setSref = function(geom){
         data_entry_helper::$javascript .="  {id:'".$filterAttr['id']."', shape:".($filterAttr['shape']?'true':'false')."},\n";
       }
       data_entry_helper::$javascript .="];";
-      
+
+      if($includeCommune)
+        data_entry_helper::$javascript .="jQuery('[name=locAttr\\:$communeAttr],[name^=locAttr\\:$communeAttr\\:]').attr('readonly','readonly');\n";
+
       if(isset($args['autoGenSiteName']) && $args['autoGenSiteName']) {
         $retVal .= "<label for=\"location-name\">".$options['NameLabel'].":</label> <input type='text' id=\"location-name\" name=\"location:name\" ".($options['AdminMode'] ? "class='required integer' min='1'" : "class='required' readonly='readonly'")." value=\"".htmlspecialchars(data_entry_helper::$entity_to_load['location:name'])."\" /><span class='deh-required'>*</span><br/>";
       } else {

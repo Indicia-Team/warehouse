@@ -168,6 +168,7 @@ $custom_terms = array(
 	'validation_targ-presence'=>'At least one target species must be selected.',
 	'validation_end_time'=>'The end time must be after the start time',
 	'validation_integer' => 'Please enter an integer',
+	'validation_nequals2' => 'Select a maximum of 2 entries',
 	'next step'=>'Next step',
 	'prev step'=>'Previous step'
 	

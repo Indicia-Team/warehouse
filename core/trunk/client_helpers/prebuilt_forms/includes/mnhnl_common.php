@@ -635,28 +635,13 @@ displayInLayerSwitcher: false});\n";
     if(isset($args['locationLayerWMS']) && $args['locationLayerWMS'] != ''){
       // define Parent WMS Layer
       $WMSoptions = explode(',', $args['locationLayerWMS']);
-/*
- * http://localhost/drupal/proxy
- * ?url=http%3A%2F%2Flocalhost%3A8080%2Fgeoserver%2Fwms
- * &CQL_FILTER=website_id%3D8
- * 
- * http://localhost/drupal/proxy
- * ?url=http%3A%2F%2Flocalhost%2Fgeoserver%2Fwms
- * &CQL_FILTER=location_type_id=205
- * 
- * http://localhost/drupal/proxy?url=http%3A%2F%2Flocalhost%3A8080%2Fgeoserver%2Fwms&referer=%2Fdrupal%2Fnode%2F19&SERVICE=WMS&VERSION=1.1.0&STYLES=&SRS=EPSG%3A3857&FORMAT=image%2Fpng&TRANSPARENT=true&LAYERS=indicia%3Abtw_transects&CQL_FILTER=website_id%3D8&REQUEST=GetMap&BBOX=477972.22043638,6307976.4628915,893483.90613676,6532701.3260185&WIDTH=1359&HEIGHT=735
-http://localhost/drupal/proxy?url=http%3A%2F%2Flocalhost%3A8080%2Fgeoserver%2Fwms&referer=%2Fdrupal%2Fnode%2F19&SERVICE=WMS&VERSION=1.1.0&STYLES=&SRS=EPSG%3A3857&FORMAT=image%2Fpng&TRANSPARENT=true&LAYERS=indicia%3Abtw_transects&CQL_FILTER=website_id%3D3&REQUEST=GetMap&BBOX=477972.22043638,6307976.4628915,893483.90613676,6532701.3260185&WIDTH=1359&HEIGHT=735
- */
+      if($args['includeLocTools'] && function_exists('iform_loctools_listlocations')){
+        $squares = iform_loctools_listlocations($node);
+      } else $squares = 'all';
+      // can't use the column name id in the cql_filter as this has a special (fid) meaning.
       data_entry_helper::$javascript .= "
-WMSoptions = {
-    SERVICE: 'WMS',
-    VERSION: '1.1.0',
-    STYLES: '',
-    SRS: '".$WMSoptions[2]."',
-    FORMAT: 'image/png',
-    TRANSPARENT: 'true',
-    LAYERS: '".$WMSoptions[1]."'
-    ,CQL_FILTER: 'location_type_id=".$args['loctoolsLocTypeID']." AND website_id=".$args['website_id']."'
+WMSoptions = {SERVICE: 'WMS', VERSION: '1.1.0', STYLES: '', SRS: '".$WMSoptions[2]."', FORMAT: 'image/png', TRANSPARENT: 'true', LAYERS: '".$WMSoptions[1]."',
+  CQL_FILTER: \"location_type_id=".$args['loctoolsLocTypeID']." AND website_id=".$args['website_id'].($squares != 'all' ? " AND location_id IN (".implode(',', $squares).")" : '')."\"
     };
 ParentWMSLayer = new OpenLayers.Layer.WMS('Parent Grid',
   '".iform_proxy_url($WMSoptions[0])."',
@@ -721,7 +706,16 @@ recalcNumSites();
 clearLocation = function(hookArg){ // clears all the data in the fields.
   jQuery('#".$options['MainFieldID'].($args['locationMode']!='multi' ? ",#sample-location-name,#sample-location-id" : "").",#location-name,#centroid_sref,#imp-srefX,#imp-srefY,#centroid_geom,#boundary_geom,[name=location\\:comment],[name=location\\:parent_id],#location-code').val('');
   jQuery('#location-code').attr('dbCode','');
-".($args['locationMode']!='multi' ? "  jQuery('#location-name option').removeAttr('disabled');\n  ":"").
+".($args['locationMode']!='multi' && $args['siteNameTermListID']!="" && isset($args['duplicateNameCheck']) && $args['duplicateNameCheck']=='enforce' ?
+"  jQuery('#location-name option').removeAttr('disabled');
+  for(var i=0; i< SiteLabelLayer.features.length; i++){
+    if(typeof SiteLabelLayer.features[i].attributes.SiteNum != 'undefined'){
+      // At the moment the allowable options are integers: if the old data is dodgy it may not hold an integer
+      if(SiteLabelLayer.features[i].style.label == parseInt(SiteLabelLayer.features[i].style.label))
+        jQuery('#location-name').find('option').filter('[value='+SiteLabelLayer.features[i].style.label+']').attr('disabled','disabled');
+    }
+  }
+  jQuery('#location-name').val('');\n":"").
 "  jQuery('#location_location_type_id').val('$primary');
   // first  to remove any hidden multiselect checkbox unclick fields
   var attrList=jQuery('[name^=locAttr\\:]').not('[name$=\\:term]');
@@ -950,7 +944,10 @@ loadFeatures = function(parent_id, child_id, childArgs, loadParent, setSelectOpt
   SitePointLayer.destroyFeatures();
   if(setSelectOptions)
     jQuery('#".$options['MainFieldID']."').find('option').remove();
-  if(child_id == ''){
+".($args['locationMode']!='multi' && $args['siteNameTermListID']!="" ?
+"  jQuery('#location-name').find('option').removeAttr('disabled');\n"
+: "").
+"  if(child_id == ''){
     clearLocation(false);
   }
   deactivateControls();
@@ -2153,6 +2150,11 @@ SitePointLayer.events.on({
       data_entry_helper::$javascript .= "
 hook_ChildFeatureLoad = function(feature, data, child_id, childArgs){
   if(child_id == '' || data.id != child_id){
+    var clearVal = jQuery('#location-name').val() == data.name;
+".($args['siteNameTermListID']!="" && isset($args['duplicateNameCheck']) && $args['duplicateNameCheck']=='enforce' ?
+	"    jQuery('#location-name').find('option').filter('[value='+data.name+']').attr('disabled','disabled');\n" :
+	"").
+"    if(clearVal) jQuery('#location-name').val('');
     return;
   }
   var pointFeature = false;
