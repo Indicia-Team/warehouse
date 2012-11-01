@@ -362,18 +362,13 @@ deleteSurvey = function(sampleID){
     global $indicia_templates;
     $indicia_templates['check_or_radio_group'] = '<div class="radio_group_container"><span {class}>{items}</span></div>';
     $indicia_templates['check_or_radio_group_item'] = '<nobr><div class="radio_group_item"><input type="{type}" name="{fieldname}" id="{itemId}" value="{value}"{class}{checked} {disabled}/><label for="{itemId}">{caption}</label></div></nobr> {sep}';
-    data_entry_helper::$javascript .= "
-$('.radio_group_container').each(function(idx,elem){
-  var maxWidth = 0;
-  $(elem).prev('label').width('auto');
-  $(elem).find('div').each(function(index,div){
-    if($(div).width()>maxWidth) maxWidth = $(div).width();
-  });
-  $(elem).find('div').not(':last').css('min-width', maxWidth);
-  var required = $(elem).next('.deh-required');
-  if(required.length>0) $(elem).append(required);
-});
-";
+    if(isset($options['resizeRadioGroupSelector'])){
+      $selectors = explode(',',$options['resizeRadioGroupSelector']);
+      foreach($selectors as $selector){
+        data_entry_helper::$javascript .= "resize_radio_groups('".$selector."');\n";
+      }
+    }
+    data_entry_helper::$javascript .= "\nindiciaData.resizeSpeciesRadioGroup = ".(isset($options['resizeRadioGroupSelector']) && (in_array('*',$selectors) || in_array('species',$selectors)) ? 'true' : 'false').";\n";
     if(lang::get('validation_required') != 'validation_required')
       data_entry_helper::$late_javascript .= "
 $.validator.messages.required = \"".lang::get('validation_required')."\";";
@@ -428,15 +423,15 @@ $.validator.messages.integer = $.validator.format(\"".lang::get('validation_inte
       data_entry_helper::$javascript .= "
 attrRestrictionsProcessOrder = [".(implode(',', $attrOrder))."];
 // set up pre-existing ones.
-jQuery('[name$=occAttr\\:".$attrOrder[0]."],[name*=occAttr\\:".$attrOrder[0]."\\:]').each(function(){
-    set_up_relationships(".$attrOrder[1].", $(this), false);
+jQuery('.mnhnl-species-grid').find('[name$=occAttr\\:".$attrOrder[0]."],[name*=occAttr\\:".$attrOrder[0]."\\:]').each(function(){
+    set_up_relationships(".$attrOrder[1].", $(this), false, '".(isset($options["attrRestrictionsEnforceDuplicates"]) ? 'true' : 'false')."');
 });";
       // need to check all but last
       for($i = 0; $i < count($attrOrder)-1; $i++){
         data_entry_helper::$javascript .= "
 jQuery('[name$=occAttr\\:".$attrOrder[$i]."],[name*=occAttr\\:".$attrOrder[$i]."\\:]').live('change',
   function(){
-    set_up_relationships(".$attrOrder[$i+1].", $(this), true);
+    set_up_relationships(".$attrOrder[$i+1].", $(this), true, '".(isset($options["attrRestrictionsEnforceDuplicates"]) ? 'true' : 'false')."');
   });";
       }
       // last is special - only updates similar on other rows.
@@ -444,7 +439,7 @@ jQuery('[name$=occAttr\\:".$attrOrder[$i]."],[name*=occAttr\\:".$attrOrder[$i]."
 jQuery('[name$=occAttr\\:".$attrOrder[count($attrOrder)-1]."],[name*=occAttr\\:".$attrOrder[count($attrOrder)-1]."\\:]').live('change',
   function(){
     var parent = $(this).closest('tr').find('[name$=occAttr\\:".$attrOrder[count($attrOrder)-2]."],[name*=occAttr\\:".$attrOrder[count($attrOrder)-2]."\\:]');
-    set_up_relationships(".$attrOrder[count($attrOrder)-1].", parent, true);
+    set_up_relationships(".$attrOrder[count($attrOrder)-1].", parent, true, '".(isset($options["attrRestrictionsEnforceDuplicates"]) ? 'true' : 'false')."');
   });";
     }
     if (!empty($args['attributeValidation'])) {
@@ -767,6 +762,8 @@ hook_species_checklist_pre_delete_row=function(e) {
           'includeSubSample'=>isset($options['includeSubSample']),
           'separateCells'=>isset($options['separateCells']),
           'useCaptionsInHeader'=>isset($options['useCaptionsInHeader']) && $options['useCaptionsInHeader']=='true',
+          'useCaptionsInPreRow'=>isset($options['useCaptionsInPreRow']) && $options['useCaptionsInPreRow']=='true',
+          'resizeRadioGroup'=>isset($options['resizeRadioGroup']) && $options['resizeRadioGroup']=='true',
           'includeOccurrenceComment'=>isset($options['includeOccurrenceComment']) && $options['includeOccurrenceComment']=='true',
           'PHPtaxonLabel' => true,
           'language' => $myLanguage,
@@ -837,6 +834,7 @@ hook_species_checklist_pre_delete_row=function(e) {
     data_entry_helper::add_resource('json');
     data_entry_helper::add_resource('autocomplete');
     $occAttrControls = array();
+    $occAttrCaptions = array();
     $occAttrs = array();
     // Load any existing sample's occurrence data into $entity_to_load
     if (isset(data_entry_helper::$entity_to_load['sample:id']))
@@ -873,16 +871,16 @@ hook_species_checklist_pre_delete_row=function(e) {
     $options['extraParams']['view'] = 'detail';
     $options['numRows'] = 1 + /* taxon name row */
                           ($options['includeSubSample']?1:0) + /* row holding subsample location and date */
-                          $numRows +
+                          $numRows * ($options['useCaptionsInPreRow'] ? 2 : 1) +
                           ($options['includeOccurrenceComment']?1:0);
     $recordList = self::get_species_checklist_record_list($options);
     // If we managed to read the species list data we can proceed
     if (! array_key_exists('error', $recordList)) {
       $grid = "";
       // Get the attribute and control information required to build the custom occurrence attribute columns
-      if($options['includeSubSample']) $grid.="<input type='hidden' name='includeSubSample' value='true' >";
-      self::species_checklist_prepare_attributes($options, $attributes, $occAttrControls, $occAttrs);
-      $grid .= self::get_species_checklist_clonable_row($options, $occAttrControls, $attributes);
+      if($options['includeSubSample']) $grid.="<input type='hidden' name='includeSubSample' id='includeSubSample' value='true' >";
+      self::species_checklist_prepare_attributes($options, $attributes, $occAttrControls, $occAttrCaptions, $occAttrs);
+      $grid .= self::get_species_checklist_clonable_row($options, $occAttrControls, $occAttrCaptions, $attributes);
       $grid .= '<table class="ui-widget ui-widget-content mnhnl-species-grid '.$options['class'].'" id="'.$options['id'].'">';
       $grid .= self::get_species_checklist_header($options, $occAttrs);
       $rows = array();
@@ -931,6 +929,7 @@ hook_species_checklist_pre_delete_row=function(e) {
         }
         for($i=1; $i<=$numRows; $i++){
           $row = "";
+          $headerPreRow = "";
           $numCtrls=0;
           foreach ($attributes as $attrId => $attribute) {
             if($foundRows && $attribute["inner_structure_block"] != "Row".$i) continue;
@@ -961,12 +960,13 @@ hook_species_checklist_pre_delete_row=function(e) {
                 'language' => $options['language']
               );
               if(isset($options['lookUpKey'])) $ctrlOptions['lookUpKey']=$options['lookUpKey'];
-              if($options['useCaptionsInHeader']) unset($attrDef['caption']);
+              if($options['useCaptionsInHeader'] || $options['useCaptionsInPreRow']) unset($attrDef['caption']);
               $attrDef['fieldname'] = $ctrlName;
               $attrDef['id'] = $ctrlId;
               if(count($default)>0) $attrDef['default'] = $default;
               $oc = data_entry_helper::outputAttribute($attrDef, $ctrlOptions);
             } else {
+              // use prebuilt attribute list
               $control=$occAttrControls[$attrId];
               self::_getCtrlNames($ctrlName, $oldCtrlName, true);
               if (isset(data_entry_helper::$entity_to_load[$oldCtrlName])) {
@@ -991,9 +991,15 @@ hook_species_checklist_pre_delete_row=function(e) {
             }
             $numCtrls++;
             $row .= str_replace(array('{label}', '{content}'), array($attributes[$attrId]['caption'], $oc), $indicia_templates[$options['attrCellTemplate']]);
+            $headerPreRow .= '<td class="ui-widget-content" ><label class="auto-width">'.$occAttrCaptions[$attrId].':</label></td>';
           }
-          if($maxCellsPerRow>$numCtrls) $row .= "<td class='ui-widget-content' colspan=".($maxCellsPerRow-$numCtrls)."></td>";
+          if($maxCellsPerRow>$numCtrls) {
+          	$row .= "<td class='ui-widget-content' colspan=".($maxCellsPerRow-$numCtrls)."></td>";
+            $headerPreRow .= "<td class='ui-widget-content' colspan=".($maxCellsPerRow-$numCtrls)."></td>";
+          }
           // no confidential checkbox.
+          if($options['useCaptionsInPreRow'])
+            $rows[]='<tr class="scMeaning-'.$rec['taxon']['taxon_meaning_id'].' scDataRow">'.$headerPreRow.'</tr>'; // no images.
           $rows[]='<tr class="scMeaning-'.$rec['taxon']['taxon_meaning_id'].' scDataRow'.(count($rows)==($options['numRows']-1)?' last':'').'">'.$row.'</tr>'; // no images.
         }
         if ($options['includeOccurrenceComment']) {
@@ -1076,35 +1082,37 @@ bindSpeciesButton(bindSpeciesOptions);\n";
         data_entry_helper::$javascript .= "bindSpeciesAutocomplete(bindSpeciesOptions);\n";
       }
       // No help text
-      $mapOptions = iform_map_get_map_options($options['args'],$options['readAuth']);
-      $olOptions = iform_map_get_ol_options($options['args']);
-      $mapOptions['tabDiv'] = 'species';
-      $mapOptions['divId'] = 'map2';
-      $mapOptions['width'] = isset($options['map2Width']) ? $options['map2Width'] : "250px";
-      $mapOptions['height'] = isset($options['map2Height']) ? $options['map2Height'] : "250px";
-      $mapOptions['layers']=array("superSampleLocationLayer","occurrencePointLayer");
-      $mapOptions['editLayer']=true;
-      $mapOptions['maxZoomBuffer']=0.3;
-      $mapOptions['initialFeatureWkt']=false;
-      $mapOptions['srefId']='sg-imp-sref';
-      $mapOptions['srefLatId']='sg-imp-srefX';
-      $mapOptions['srefLongId']='sg-imp-srefY';
-      $mapOptions['standardControls']=array('layerSwitcher','panZoomBar');
-      $mapOptions['fillColor']=$mapOptions['strokeColor']='Fuchsia';
-      $mapOptions['fillOpacity']=0.3;
-      $mapOptions['strokeWidth']=1;
-      $mapOptions['pointRadius']=6;
-      //      $mapOptions['maxZoom']=$args['zoomLevel'];
-      $r = '<div>';
-      $r .= "<p>".lang::get('LANG_SpeciesInstructions')."</p>\n";
+      if($options['includeSubSample']){
+        $mapOptions = iform_map_get_map_options($options['args'],$options['readAuth']);
+        $olOptions = iform_map_get_ol_options($options['args']);
+        $mapOptions['tabDiv'] = 'species';
+        $mapOptions['divId'] = 'map2';
+        $mapOptions['width'] = isset($options['map2Width']) ? $options['map2Width'] : "250px";
+        $mapOptions['height'] = isset($options['map2Height']) ? $options['map2Height'] : "250px";
+        $mapOptions['layers']=array("superSampleLocationLayer","occurrencePointLayer");
+        $mapOptions['editLayer']=true;
+        $mapOptions['maxZoomBuffer']=0.3;
+        $mapOptions['initialFeatureWkt']=false;
+        $mapOptions['srefId']='sg-imp-sref';
+        $mapOptions['srefLatId']='sg-imp-srefX';
+        $mapOptions['srefLongId']='sg-imp-srefY';
+        $mapOptions['standardControls']=array('layerSwitcher','panZoomBar');
+        $mapOptions['fillColor']=$mapOptions['strokeColor']='Fuchsia';
+        $mapOptions['fillOpacity']=0.3;
+        $mapOptions['strokeWidth']=1;
+        $mapOptions['pointRadius']=6;
+        //      $mapOptions['maxZoom']=$args['zoomLevel'];
+      }
+      $r = "<div><p>".lang::get('LANG_SpeciesInstructions')."</p>\n";
       if($options['includeSubSample'] && $options['mapPosition']=='top') $r .= '<div class="topMap-container">'.data_entry_helper::map_panel($mapOptions, $olOptions).'</div>';
       $r .= '<div class="grid-container">'.$grid.'</div>';
       if($options['includeSubSample'] && $options['mapPosition']!='top') $r .= '<div class="sideMap-container">'.data_entry_helper::map_panel($mapOptions, $olOptions).'</div>';
-      data_entry_helper::$javascript .= "var ".$mapOptions['tabDiv']."TabHandler = function(event, ui) {
+      if($options['includeSubSample'])
+      	data_entry_helper::$javascript .= "var ".$mapOptions['tabDiv']."TabHandler = function(event, ui) {
   if (ui.panel.id=='".$mapOptions['tabDiv']."') {
+    $('.mnhnl-species-grid').find('tr').removeClass('highlight');
     var div=$('#".$mapOptions['divId']."')[0];
     div.map.editLayer.destroyFeatures();
-    $('.mnhnl-species-grid').find('tr').removeClass('highlight');
     // show the geometry currently held in the main locations part as the parent
     var initialFeatureWkt = $('#imp-boundary-geom').val();
     if(initialFeatureWkt=='') initialFeatureWkt = $('#imp-geom').val();
@@ -1132,11 +1140,11 @@ bindSpeciesButton(bindSpeciesOptions);\n";
     }
   }
 };
-// move the cloneable table outside the form, so allowing the validatrion to ignore it.
-var cloneableDiv = $('<div style=\"display: none;\">');
-cloneableDiv.append($('#".$options['id']."-scClonable'));
-$('#entry_form').before(cloneableDiv);
 jQuery(jQuery('#".$mapOptions['tabDiv']."').parent()).bind('tabsshow', ".$mapOptions['tabDiv']."TabHandler);\n";
+      // move the cloneable table outside the form, so allowing the validation to ignore it.
+      data_entry_helper::$javascript .= "var cloneableDiv = $('<div style=\"display: none;\">');
+cloneableDiv.append($('#".$options['id']."-scClonable'));
+$('#entry_form').before(cloneableDiv);\n";
       return $r.'</div>';
     } else {
       return $taxalist['error'];
@@ -1179,7 +1187,7 @@ jQuery(jQuery('#".$mapOptions['tabDiv']."').parent()).bind('tabsshow', ".$mapOpt
   }
 
   
-  public static function species_checklist_prepare_attributes($options, $attributes, &$occAttrControls, &$occAttrs) {
+  public static function species_checklist_prepare_attributes($options, $attributes, &$occAttrControls, &$occAttrCaptions, &$occAttrs) {
     $idx=0;
     // this sets up client side only required validation
     if (array_key_exists('required', $options))
@@ -1197,6 +1205,7 @@ jQuery(jQuery('#".$mapOptions['tabDiv']."').parent()).bind('tabsshow', ".$mapOpt
         throw new Exception("The occurrence attribute $occAttrId requested for the grid is not linked with the survey.");
       $attrDef = array_merge($attributes[$occAttrId]);
       $occAttrs[$occAttrId] = $attrDef['caption'];
+      $occAttrCaptions[$occAttrId] = $attrDef['caption'];
       // Get the control class if available. If the class array is too short, the last entry gets reused for all remaining.
       $ctrlOptions = array(
         'class'=>self::species_checklist_occ_attr_class($options, $idx, $attrDef['untranslatedCaption']) .
@@ -1209,7 +1218,7 @@ jQuery(jQuery('#".$mapOptions['tabDiv']."').parent()).bind('tabsshow', ".$mapOpt
       if(in_array($occAttrId,$requiredAttrs)) $ctrlOptions['validation'] = array('required');
       if(isset($options['lookUpKey'])) $ctrlOptions['lookUpKey']=$options['lookUpKey'];
       if(isset($options['blankText'])) $ctrlOptions['blankText']=$options['blankText'];
-      if($options['useCaptionsInHeader']) unset($attrDef['caption']);
+      if($options['useCaptionsInHeader'] || $options['useCaptionsInPreRow']) unset($attrDef['caption']);
       $attrDef['fieldname'] = '{fieldname}';
       $attrDef['id'] = '{fieldname}';
       $occAttrControls[$occAttrId] = data_entry_helper::outputAttribute($attrDef, $ctrlOptions);
@@ -1224,7 +1233,7 @@ jQuery(jQuery('#".$mapOptions['tabDiv']."').parent()).bind('tabsshow', ".$mapOpt
     // data we need.
     if (is_null(data_entry_helper::$validation_errors)) {
       $extraParams = $readAuth + array('view'=>'detail','sample_id'=>$sampleId,'deleted'=>'f');
-      if(isset($options['includeSubSample'])){
+      if($options['includeSubSample']){
         data_entry_helper::$javascript .= "var occParser = new OpenLayers.Format.WKT();\nvar occFeatures=[];\n";
         $samples = data_entry_helper::get_population_data(array(
           'table' => 'sample',
@@ -1235,7 +1244,7 @@ jQuery(jQuery('#".$mapOptions['tabDiv']."').parent()).bind('tabsshow', ".$mapOpt
       }
       $occurrences = data_entry_helper::get_population_data(array('table' => 'occurrence', 'extraParams' => $extraParams, 'nocache' => true));
       foreach($occurrences as $occurrence){
-        if(isset($options['includeSubSample'])){
+        if($options['includeSubSample']){
           $smp=$occurrence['sample_id'];
           data_entry_helper::$entity_to_load['sc::'.$smp.':'.$occurrence['taxa_taxon_list_id'].':'.$occurrence['id'].':sample:date'] = $sampleIds[$smp]['date_start'];
           data_entry_helper::$entity_to_load['sc::'.$smp.':'.$occurrence['taxa_taxon_list_id'].':'.$occurrence['id'].':sample:entered_sref'] = $sampleIds[$smp]['entered_sref'];
@@ -1261,10 +1270,10 @@ jQuery(jQuery('#".$mapOptions['tabDiv']."').parent()).bind('tabsshow', ".$mapOpt
       ));
       foreach($attrValues as $attrValue) {
         if(isset($attrValue['id']) && $attrValue['id'] != null)
-          data_entry_helper::$entity_to_load['sc::'.$occurrenceIds[$attrValue['occurrence_id']]['sample_id'].':'.$occurrenceIds[$attrValue['occurrence_id']]['taxa_taxon_list_id'].':'.$attrValue['occurrence_id'].':occAttr:'.$attrValue['occurrence_attribute_id'].':'.$attrValue['id']]
+          data_entry_helper::$entity_to_load['sc::'.($options['includeSubSample'] ? $occurrenceIds[$attrValue['occurrence_id']]['sample_id'] : '').':'.$occurrenceIds[$attrValue['occurrence_id']]['taxa_taxon_list_id'].':'.$attrValue['occurrence_id'].':occAttr:'.$attrValue['occurrence_attribute_id'].':'.$attrValue['id']]
             = $attrValue['raw_value'];
       }
-      if(isset($options['includeSubSample']))
+      if($options['includeSubSample'])
         data_entry_helper::$javascript .= "occurrencePointLayer.addFeatures(occFeatures);\n";
     }
     return $occurrenceIds;
@@ -1276,12 +1285,12 @@ jQuery(jQuery('#".$mapOptions['tabDiv']."').parent()).bind('tabsshow', ".$mapOpt
    * a hidden table is used to store a clonable row which provides the template for new rows
    * to be added to the grid.
    */
-  private static function get_species_checklist_clonable_row($options, $occAttrControls, $attributes) {
+  private static function get_species_checklist_clonable_row($options, $occAttrControls, $occAttrCaptions, $attributes) {
     global $indicia_templates;
     // assume always removeable and presence is hidden.
     // DEBUG/DEV MODE
-//     $hiddenCTRL = "text";
 //     $r = '<table border=3 id="'.$options['id'].'-scClonable">';
+//     $hiddenCTRL = "text";
     $r = '<table style="display: none" id="'.$options['id'].'-scClonable">';
     $hiddenCTRL = "hidden";
     $numRows=0;
@@ -1332,6 +1341,7 @@ jQuery(jQuery('#".$mapOptions['tabDiv']."').parent()).bind('tabsshow', ".$mapOpt
     for($i=1; $i<=$numRows; $i++){
       $numCtrls=0;
       $row='';
+      $headerPreRow='';
       foreach ($attributes as $attrId => $attribute) {
         $control=$occAttrControls[$attrId];
         if($foundRows && $attribute["inner_structure_block"] != "Row".$i) continue;
@@ -1355,11 +1365,18 @@ jQuery(jQuery('#".$mapOptions['tabDiv']."').parent()).bind('tabsshow', ".$mapOpt
             str_replace('{fieldname}', "$prefix:occAttr:$attrId", $oc),
             self::species_checklist_occ_attr_class($options, $idx, $attributes[$attrId]['untranslatedCaption']).'Cell'),
           $indicia_templates['attribute_cell']);
+        $headerPreRow .= '<td class="ui-widget-content" ><label class="auto-width">'.$occAttrCaptions[$attrId].':</label></td>';
       }
       $idx++;
-      if($maxCellsPerRow>$numCtrls)
+      if($maxCellsPerRow>$numCtrls){
+        $headerPreRow .= "<td class='ui-widget-content' colspan=".($maxCellsPerRow-$numCtrls)."></td>";
         $row .= "<td class='ui-widget-content' colspan=".($maxCellsPerRow-$numCtrls)."></td>";
+      }
       // no confidential checkbox.
+      if($options['useCaptionsInPreRow']){
+      	$idex++;
+      	$r .='<tr class="scClonableRow scDataRow" id="'.$options['id'].'-scClonableRow'.$idex.'">'.$headerPreRow.'</tr>';
+      }
       $idex++;
       $r .='<tr class="scClonableRow scDataRow'.(count($rows)==($options['numRows']-1)?' last':'').'" id="'.$options['id'].'-scClonableRow'.$idex.'">'.$row.'</tr>'; // no images.
     }

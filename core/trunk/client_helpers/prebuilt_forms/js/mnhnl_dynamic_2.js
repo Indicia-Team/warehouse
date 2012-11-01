@@ -31,53 +31,78 @@ if(typeof OpenLayers != 'undefined'){
  */
 var scRow = 0;
 
-resetChildValue = function(child){
-  var options = child.find('option').not('[value=]').not('[disabled]');
-  if (options.length==1)
-    child.val(options.val());
-  else child.val('');
-};
+resize_radio_groups = function(selector){
+  $(selector).find('.radio_group_container').each(function(idx,elem){
+    var maxWidth = 0;
+    $(elem).prev('label').width('auto');
+    $(elem).find('div').each(function(index,div){
+      if($(div).width()>maxWidth) maxWidth = $(div).width();
+    });
+    $(elem).find('div').not(':last').css('min-width', maxWidth);
+    var required = $(elem).next('.deh-required');
+    if(required.length>0) $(elem).append(required);
+  });
+}
 
-set_up_relationships = function(startAttr, parent, setval){
-  // parent holds the item that has changed.
-  start=false; // final field is treated differently, as it enforces no duplicates.
-  var myParentRow = jQuery(parent).closest('tr');
-  while(!myParentRow.hasClass('first')) {
-    myParentRow = myParentRow.prev();
+set_up_relationships = function(startAttr, parent, setval, duplicates){
+  var resetChildValue = function(child){
+    if (child.length==1 && child.is('select')){
+      var options = child.find('option').not('[value=]').not('[disabled]');
+      if (options.length==1)
+        child.val(options.val());
+      else child.val('');
+    } else {
+      var options = child.not('[disabled]');
+      if (options.length==1)
+        options.attr('checked','checked');
+      else child.removeAttr('checked');
+    }
+  };
+  var scanForAttr = function(firstRow, attrID){
+    var children = [];
+    for( ; children.length == 0 && firstRow.length > 0; firstRow = firstRow.next().not('.first')){
+      children = firstRow.find('[name$=occAttr\:'+attrID+'],[name*=occAttr\:'+attrID+'\:]');
+    }
+    return children.length > 0 ? children : false;
   }
-  for(var i=0; i < attrRestrictionsProcessOrder.length; i++){
-    if(start || startAttr==attrRestrictionsProcessOrder[i]){ // skip throw list until we reach the attr to start with.
+  var getDisableableElements = function(attr){
+    return (attr.length==1 && attr.is('select') ? attr.find('option').not('[value=]') : attr);
+  }
+  var getAttrVal = function(attr){
+    if (attr.length==1 && attr.is('select'))
+      return attr.val();
+    var checked = attr.filter(':checked');
+    if(checked.length == 0) return '';
+    return checked.val();
+  }
+  // parent holds the item that has changed.
+  start=false;
+  var myParentRow = jQuery(parent).closest('tr');
+  for( myParentRow = jQuery(myParentRow[0]); !myParentRow.hasClass('first') ; myParentRow = myParentRow.prev() );
+  for(var i=1; i < attrRestrictionsProcessOrder.length - (duplicates ? 1 : 0); i++){ // don't do first as has no parent, and when duplicate checking don't do last attribute - this is handled later.
+    if(start || startAttr==attrRestrictionsProcessOrder[i]){ // skip through list until we reach the attr to start with.
       start=true; // process all subsequent attributes as well.
-      var scanRow = myParentRow;
-      var child = [];
-      while(child.length==0){
-        child = scanRow.find('[name$=occAttr\:'+attrRestrictionsProcessOrder[i]+'],[name*=occAttr\:'+attrRestrictionsProcessOrder[i]+'\:]');
-        scanRow = scanRow.next().not('.first');
-        if(scanRow.length==0) return;
-      }
-      var childOptions = child.find('option').not('[value=]');
-      resetChild=false; // this is if the current value of the child is no longer valid at the end.
-      if(parent.val() == '') { // parent has been cleared so disable everything.
+      var child = scanForAttr(myParentRow, attrRestrictionsProcessOrder[i]);
+      if(!child) break;
+      var childOptions = getDisableableElements(child);
+      var childVal = getAttrVal(child);
+      var resetChild=false; // this is if the current value of the child is no longer valid at the end.
+      if(getAttrVal(parent) == '') { // immediate parent has been cleared so disable everything.
         childOptions.attr('disabled','disabled'); // this leaves the blank.
         if(setval) resetChild=true;
       } else {
         childOptions.removeAttr('disabled'); // initialise everything as enabled.
         for(var j=0; j < relationships.length; j++){ 
           if(relationships[j].child == attrRestrictionsProcessOrder[i]){ // scan through all relationships which feature the child attribute as the child.
-            scanRow = myParentRow;
-            var relParent = [];
-            while(relParent.length==0){
-              relParent = scanRow.find('[name$=occAttr\:'+relationships[j].parent+'],[name*=occAttr\:'+relationships[j].parent+'\:]');
-              scanRow = scanRow.next().not('.first');
-              if(scanRow.length==0) return;
-            }
-            var relParentVal = relParent.val();
+            var relParent = scanForAttr(myParentRow, relationships[j].parent);
+            if(relParent.length==0) break;
+            var relParentVal = getAttrVal(relParent);
             for(var k=0; k < relationships[j].values.length; k++){
               if(relParentVal == relationships[j].values[k].value) {
                 childOptions.each(function(index, Element){
                   for(var m=0; m < relationships[j].values[k].list.length; m++){
                     if(relationships[j].values[k].list[m] == $(this).val()){
-                      if($(this).val() == child.val() && setval) resetChild=true;
+                      if($(this).val() == childVal && setval) resetChild=true;
                       $(this).attr('disabled','disabled');
                     }}
                 });
@@ -87,65 +112,90 @@ set_up_relationships = function(startAttr, parent, setval){
        if(resetChild) resetChildValue(child);
     }
   }
-  // no duplicate check as samples will be in different places. TBD reinstate for non includeSubSample
-/*
+  if(!duplicates) return;
   // something has changed: now need to go through ALL rows final field, not just ours, and eliminate options which would cause a duplicate.
   // but some of those may have been re-added by the change so have to reset all options!
-  i= attrRestrictionsProcessOrder.length-1;
-  var tableRows = jQuery(parent).closest('table').find('.scDataRow');
+  var tableRows = jQuery(parent).closest('table').find('.first');
+  var lastAttr = attrRestrictionsProcessOrder.length-1;
+  jQuery('[name$=occAttr\:'+attrRestrictionsProcessOrder[lastAttr]+'],[name*=occAttr\:'+attrRestrictionsProcessOrder[lastAttr]+'\:]').removeAttr('disabled').find('option').removeAttr('disabled');
+  // now separate into groups: the attributes may be on different rows with in a group
+  groups=[];
   tableRows.each(function(index, Row){
-    var child = jQuery(Row).find('[name$=occAttr\:'+attrRestrictionsProcessOrder[i]+'],[name*=occAttr\:'+attrRestrictionsProcessOrder[i]+'\:]');
-    var parent = jQuery(Row).find('[name$=occAttr\:'+attrRestrictionsProcessOrder[i-1]+'],[name*=occAttr\:'+attrRestrictionsProcessOrder[i-1]+'\:]');
-    var childOptions = child.find('option').not('[value=]');
-    resetChild=false;
-    if(parent.val() == '') {
-      childOptions.attr('disabled','disabled'); // all disabled.
-      if(setval && myParentRow[0]==Row) resetChild=true;
-    } else {
-      childOptions.attr('disabled','');
-      for(var j=0; j < relationships.length; j++){
-        if(relationships[j].child == attrRestrictionsProcessOrder[i]){
-          var relParentVal = jQuery(Row).find('[name$=occAttr\:'+relationships[j].parent+'],[name*=occAttr\:'+relationships[j].parent+'\:]').val();
-          for(var k=0; k < relationships[j].values.length; k++){
-            if(relParentVal == relationships[j].values[k].value) {
-              childOptions.each(function(index, Element){
-                for(var m=0; m < relationships[j].values[k].list.length; m++){
-                  if(relationships[j].values[k].list[m] == $(Element).val()){
-                    $(Element).attr('disabled','disabled');
-                    if($(Element).val() == child.val() && setval && myParentRow[0]==Row) resetChild=true;
-                }}
-              });
-    }}}}}
-    var classList = jQuery(Row).attr('class').split(/\s+/);
+    var group = {attrs:{}, firstRow:$(Row)};
+    var classList = $(Row).attr('class').split(/\s+/);
     jQuery.each( classList, function(index, item){ 
       var parts= item.split(/-/);
-      if(parts[0]=='scMeaning'){
-        sameSpeciesRows=jQuery('.'+item).not(Row);
-        sameSpeciesRows.each(function(index, sameSpeciesRow){
-          var same=true;
-          for(var j=0; j < attrRestrictionsProcessOrder.length-1; j++){
-            otherVal = jQuery(sameSpeciesRow).find('[name$=occAttr\:'+attrRestrictionsProcessOrder[j]+'],[name*=occAttr\:'+attrRestrictionsProcessOrder[j]+'\:]').val();
-            myVal = jQuery(Row).find('[name$=occAttr\:'+attrRestrictionsProcessOrder[j]+'],[name*=occAttr\:'+attrRestrictionsProcessOrder[j]+'\:]').val();
-            if(myVal == '' || otherVal == '' || myVal != otherVal) same=false;
-          }
-          myVal = jQuery(Row).find('[name$=occAttr\:'+attrRestrictionsProcessOrder[attrRestrictionsProcessOrder.length-1]+'],[name*=occAttr\:'+attrRestrictionsProcessOrder[attrRestrictionsProcessOrder.length-1]+'\:]').val();
-          otherVal = jQuery(sameSpeciesRow).find('[name$=occAttr\:'+attrRestrictionsProcessOrder[attrRestrictionsProcessOrder.length-1]+'],[name*=occAttr\:'+attrRestrictionsProcessOrder[attrRestrictionsProcessOrder.length-1]+'\:]').val();
-          // where all the other parents in the relationships are the same on this row, and the value is not empty
-          // and we have changed a value in a row (ie myParentRow), then that row is the one that gets reset if a duplicate row is created.
-          // ie myParentRow is one that will have option removed, not Row
-          if(same && (myVal!=otherVal || myParentRow[0]!=sameSpeciesRow)){
-            if(otherVal!='')
-              childOptions.filter('[value='+otherVal+']').attr('disabled','disabled');
-            if(setval && otherVal == child.val())
-              resetChild=true;
-          }
-        });
-      }
+      if(parts[0]=='scMeaning') group.species = item;
     });
-    if(child.val()=='' && setval && myParentRow[0]==Row) resetChild=true;
+    for(var j=0; j < attrRestrictionsProcessOrder.length; j++){
+      var child = scanForAttr($(Row), attrRestrictionsProcessOrder[j]);
+      if(child.length>0) group.attrs[attrRestrictionsProcessOrder[j]] = child;
+    }
+    groups.push(group);
+  });
+  // first do all the final field relationships.
+  $.each(groups, function(index, group){
+    var child = group.attrs[attrRestrictionsProcessOrder[lastAttr]];
+    var childOptions = getDisableableElements(child);
+    var childVal = getAttrVal(child);
+    var resetChild=false;
+    if(getAttrVal(group.attrs[attrRestrictionsProcessOrder[lastAttr-1]]) == '') {
+      childOptions.attr('disabled','disabled'); // immediate parent is empty so all disabled.
+      if(setval && myParentRow[0]==group.firstRow[0]) resetChild=true;
+    } else {
+      for(var j=0; j < relationships.length; j++){
+        if(relationships[j].child == attrRestrictionsProcessOrder[lastAttr]){
+          var relParentVal = getAttrVal(group.attrs[relationships[j].parent]);
+	      for(var k=0; k < relationships[j].values.length; k++){
+	        if(relParentVal == relationships[j].values[k].value) {
+	          childOptions.each(function(index, Element){
+	            for(var m=0; m < relationships[j].values[k].list.length; m++){
+	              if(relationships[j].values[k].list[m] == $(this).val()){
+	                if($(this).val() == child.val() && setval && myParentRow[0]==group.firstRow[0]) resetChild=true;
+	                $(this).attr('disabled','disabled');
+	            }}
+	          });
+	        }
+	      }
+        }
+      }
+    }
+    if(childVal=='' && setval && myParentRow[0]==group.firstRow[0]) resetChild=true;
     if(resetChild) resetChildValue(child);
   });
-*/
+  // now check for duplicates.
+  $.each(groups, function(index, group){
+    var resetChild=false;
+    var myLastVal = getAttrVal(group.attrs[attrRestrictionsProcessOrder[lastAttr]]);
+    var childOptions = getDisableableElements(group.attrs[attrRestrictionsProcessOrder[lastAttr]]);
+    $.each(groups, function(idx, innerGroup){
+      var same=true;
+      if(idx == index) return; // don't compare myself to myself
+      if(group.species == innerGroup.species) {
+        for(var j=0; j < attrRestrictionsProcessOrder.length-1; j++){ // don't check last attribute.
+          var myVal = getAttrVal(group.attrs[attrRestrictionsProcessOrder[j]]);
+          var otherVal = getAttrVal(innerGroup.attrs[attrRestrictionsProcessOrder[j]]);
+          if(myVal == '' || otherVal == '' || myVal != otherVal) same=false;
+        }
+      } else
+        same = false;
+      var otherVal = getAttrVal(innerGroup.attrs[attrRestrictionsProcessOrder[lastAttr]]);
+      // where all the other parents in the relationships are the same on this row, and the value is not empty
+      // and we have changed a value in a row (ie myParentRow), then that row is the one that gets reset if a duplicate row is created.
+      // ie myParentRow is one that will have option removed, not Row
+      if(same && (myLastVal!=otherVal || myParentRow[0]==group.firstRow[0])){
+        if(setval && otherVal == myLastVal) resetChild=true;
+        if(otherVal!='')
+          childOptions.each(function(index, Element){
+            if(otherVal == $(this).val()){
+              if($(this).val() == myLastVal && setval && myParentRow[0]==group.firstRow[0]) resetChild=true;
+              $(this).attr('disabled','disabled');
+            }});
+      }
+    });
+    if(getAttrVal(group.attrs[attrRestrictionsProcessOrder[lastAttr]]) =='' && setval && myParentRow[0]==group.firstRow[0]) resetChild=true;
+    if(resetChild) resetChildValue(group.attrs[attrRestrictionsProcessOrder[lastAttr]]);
+  });
 };
 
 var _setHighlight = function(myRow) {
@@ -352,6 +402,8 @@ function _addNewSpeciesGridRow(data,options){
   });
   $.each(newRows, function(i, row){
     _bindSpeciesGridControls(row,scRow,options);
+    if(indiciaData.resizeSpeciesRadioGroup)
+      resize_radio_groups(row);
   });
   if(typeof attrRestrictionsProcessOrder != 'undefined' && attrRestrictionsProcessOrder.length > 1){
     $.each(newRows, function(i, row){
@@ -436,9 +488,6 @@ function bindSpeciesAutocomplete(options){
 }
 
 $('.remove-row').live('click', function(e) {
-  var map2 = jQuery('#map2');
-  if(map2.length==0) return;
-  map2 = map2[0];
   e.preventDefault();
   // Allow forms to hook into the event of a row being deleted, most likely use would be to have a confirmation dialog
   // This allows language independance.
@@ -446,14 +495,19 @@ $('.remove-row').live('click', function(e) {
     if(!hook_species_checklist_pre_delete_row(e)) return;
   }
   // @TBD unbind all event handlers
+  // row is first in group, as this holds the delete button.
   var row = $(e.target.parentNode);
   var numRows = $(e.target).attr('rowspan');
-  // row is first in group, as this holds the delete button.
-  if(row.data('feature')!=null){
-    if(row.data('feature').layer==occurrencePointLayer)
-      occurrencePointLayer.destroyFeatures([row.data('feature')]);
-    else
-      map2.map.editLayer.destroyFeatures([row.data('feature')]);
+
+  var map2 = jQuery('#map2');
+  if(map2.length>0) {
+    map2 = map2[0];
+    if(row.data('feature')!=null){
+      if(row.data('feature').layer==occurrencePointLayer)
+        occurrencePointLayer.destroyFeatures([row.data('feature')]);
+      else
+        map2.map.editLayer.destroyFeatures([row.data('feature')]);
+    }
   }
 
   if (row.hasClass('added-row')) {

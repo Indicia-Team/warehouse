@@ -443,6 +443,7 @@ function iform_mnhnl_locModTool($auth, $args, $node) {
       $retVal .=  data_entry_helper::georeference_lookup($georefOpts);
     $mapOptions['searchLayer']=true;
     $mapOptions['searchUpdatesSref']=false;
+    $mapOptions['searchDisplaysPoint']=false;
   }
   // For main page we force to Tabs to ensure map drawn correctly
   $mapOptions['tabDiv'] = 'locations';
