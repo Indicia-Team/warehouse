@@ -1351,9 +1351,26 @@ indiciaData.windowLoaded=false;
           }
         },
         invalidHandler: ".$indicia_templates['invalid_handler_javascript'].",
-        messages: ".json_encode(self::$validation_messages) .
+        messages: ".json_encode(self::$validation_messages).",".
         // Do not place errors if 'message' not in validation_mode
-        (in_array('message', self::$validation_mode) ? "" : ",
+        // if it is present, put radio button messages at start of list: 
+        // radio and checkbox elements come before their labels, so putting the error after the invalid element 
+        // places it between the element and its label.
+        // most radio button validation will be "required"
+        (in_array('message', self::$validation_mode) ? "
+        errorPlacement: function(error, element) {
+          if(element.is(':radio')){
+            var jqBox = element.parents('.control-box');
+            if (jqBox.length != 0) {
+              error.insertBefore(jqBox);
+            } else {
+              error.insertAfter(element);
+            }
+          } else {
+            element = element.next().hasClass('deh-required') ? element.next() : element;
+            error.insertAfter(element);
+          }
+        }" : "
         errorPlacement: function(error, element) {}") ."
       });\n";
     }
