@@ -131,16 +131,19 @@ mapGeoreferenceHooks = [];
      */
     function _showWktFeature(div, wkt, layer, invisible, temporary, type, panzoom) {
       var parser = new OpenLayers.Format.WKT();
-      var feature = parser.read(wkt);
-      var styletype = (typeof type !== 'undefined') ? styletype = type : styletype = 'default';
-      feature.style = new style(styletype);
-      feature.attributes.type = type;
-      if (temporary) {
-        feature.attributes.temp = true;
-      } 
+      var features = [];
       // This replaces other features of the same type
       _removeAllFeatures(layer, type);
-      var features = [feature];
+      if(wkt){
+        var feature = parser.read(wkt);
+        var styletype = (typeof type !== 'undefined') ? styletype = type : styletype = 'default';
+        feature.style = new style(styletype);
+        feature.attributes.type = type;
+        if (temporary) {
+          feature.attributes.temp = true;
+        } 
+        var features = [feature];
+      }
 
       if(invisible !== null){
         //there are invisible features that define the map extent
@@ -155,6 +158,7 @@ mapGeoreferenceHooks = [];
           features.push(feature);
         });
       }
+      if(features.length == 0) return false;
       layer.addFeatures(features);
       var bounds=layer.getDataExtent();
 
@@ -523,7 +527,7 @@ mapGeoreferenceHooks = [];
       var datac1 = new OpenLayers.Geometry.Point(corner1xy[1],corner1xy[0]).transform(epsg, div.map.projection).toString();
       var corner2xy = corner2.split(', ');
       var datac2 = new OpenLayers.Geometry.Point(corner2xy[1],corner2xy[0]).transform(epsg, div.map.projection).toString();
-      _showWktFeature(div, dataref, div.map.searchLayer, [datac1, datac2], true, 'georef');
+      _showWktFeature(div, div.settings.searchDisplaysPoint ? dataref : false, div.map.searchLayer, [datac1, datac2], true, 'georef');
       if(div.settings.searchUpdatesSref && !div.settings.searchLayer){ // if no separate search layer, ensure sref matches feature in editlayer, if requested.
         $('#'+opts.geomId).val(dataref);
         // Unfortunately there is no guarentee that the georeferencer will return the sref in the system required: eg it will usually be in
@@ -1636,6 +1640,7 @@ $.fn.indiciaMapPanel.defaults = {
     editLayerInSwitcher: false,
     searchLayer: false, // determines whether we have a separate layer for the display of location searches, eg georeferencing. Defaults to editLayer.
     searchUpdatesSref: false,
+    searchDisplaysPoint: true,
     searchLayerName: 'Search layer',
     searchLayerInSwitcher: false,
     initialFeatureWkt: null,
