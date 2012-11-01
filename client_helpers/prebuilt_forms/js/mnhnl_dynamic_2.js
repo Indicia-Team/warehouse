@@ -271,7 +271,7 @@ var _bindSpeciesGridControls = function(row,rowNum,options){
         return selector.val();
     }
     function _showWktFeature(div, wkt, layer) {
-      var parser = new OpenLayers.Format.WKT();
+      var parser = new OpenLayers.Format.WKT(); // should already be in map projection
       var feature = parser.read(wkt);
       layer.removeAllFeatures();
       layer.addFeatures([feature]);

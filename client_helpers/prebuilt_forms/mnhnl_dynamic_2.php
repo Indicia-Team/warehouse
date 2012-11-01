@@ -1118,6 +1118,7 @@ bindSpeciesButton(bindSpeciesOptions);\n";
     if(initialFeatureWkt=='') initialFeatureWkt = $('#imp-geom').val();
     var parser = new OpenLayers.Format.WKT();
     var feature = parser.read(initialFeatureWkt);
+    feature=convertFeature(feature, div.map.projection);
     superSampleLocationLayer.destroyFeatures();
     superSampleLocationLayer.addFeatures((typeof(feature)=='object'&&(feature instanceof Array) ? feature : [feature]));
     var bounds=superSampleLocationLayer.getDataExtent();
@@ -1234,7 +1235,6 @@ $('#entry_form').before(cloneableDiv);\n";
     if (is_null(data_entry_helper::$validation_errors)) {
       $extraParams = $readAuth + array('view'=>'detail','sample_id'=>$sampleId,'deleted'=>'f');
       if($options['includeSubSample']){
-        data_entry_helper::$javascript .= "var occParser = new OpenLayers.Format.WKT();\nvar occFeatures=[];\n";
         $samples = data_entry_helper::get_population_data(array(
           'table' => 'sample',
           'extraParams' => $readAuth + array('view'=>'detail','parent_id'=>$sampleId,'deleted'=>'f'),
@@ -1249,8 +1249,6 @@ $('#entry_form').before(cloneableDiv);\n";
           data_entry_helper::$entity_to_load['sc::'.$smp.':'.$occurrence['taxa_taxon_list_id'].':'.$occurrence['id'].':sample:date'] = $sampleIds[$smp]['date_start'];
           data_entry_helper::$entity_to_load['sc::'.$smp.':'.$occurrence['taxa_taxon_list_id'].':'.$occurrence['id'].':sample:entered_sref'] = $sampleIds[$smp]['entered_sref'];
           data_entry_helper::$entity_to_load['sc::'.$smp.':'.$occurrence['taxa_taxon_list_id'].':'.$occurrence['id'].':sample:geom'] = $sampleIds[$smp]['wkt'];
-          data_entry_helper::$javascript .= "feature = occParser.read('".$sampleIds[$smp]['wkt']."');\n";
-          data_entry_helper::$javascript .= "$('.scOcc-".$occurrence['id']."').data('feature',feature);\noccFeatures.push(feature);\n";
         } else $smp="";
         data_entry_helper::$entity_to_load['occurrence:record_status']=$occurrence['record_status'];
         data_entry_helper::$entity_to_load['occurrence:taxa_taxon_list_id']=$occurrence['taxa_taxon_list_id'];
@@ -1274,7 +1272,22 @@ $('#entry_form').before(cloneableDiv);\n";
             = $attrValue['raw_value'];
       }
       if($options['includeSubSample'])
-        data_entry_helper::$javascript .= "occurrencePointLayer.addFeatures(occFeatures);\n";
+        data_entry_helper::$javascript .= "
+mapInitialisationHooks.push(function(mapdiv) {
+  // try to identify if this map is the second one
+  if(mapdiv.id=='map2'){
+    var occParser = new OpenLayers.Format.WKT();
+    var occFeatures=[];
+    var feature;\n";
+        foreach($occurrences as $occurrence){
+          $smp=$occurrence['sample_id'];
+          data_entry_helper::$javascript .= "    feature = occParser.read('".$sampleIds[$smp]['wkt']."');
+    feature = convertFeature(feature,occurrencePointLayer.map.projection);
+    $('.scOcc-".$occurrence['id']."').data('feature',feature);
+    occFeatures.push(feature);\n";
+        }
+        data_entry_helper::$javascript .= "    occurrencePointLayer.addFeatures(occFeatures);
+  }});\n";
     }
     return $occurrenceIds;
   }

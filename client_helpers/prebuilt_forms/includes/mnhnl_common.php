@@ -26,7 +26,6 @@
  * 			includeLocationComment
  * 			includeLocationCode
  * 
- * TBD switch in WMS layer to select if present
  * TBD extend sref_system so can choose from drop down if > 1, else set to configured value.
  * TBD Convert locModTool to AJAX: return to locations page after saving
  * TBD put in check to enforce ParentLocationType and LocationType in options, loctools set?
@@ -147,6 +146,7 @@ function iform_mnhnl_getParameters() {
           // e.g. http://localhost/geoserver/wms,indicia:nation2,2169,0,1000000,m
           'description'=>'Comma separated list of option definitions for the WMS location layer:  url(unproxied),layer,system,minScale,maxScale,units',
           'type'=>'string',
+          'required' => false,
           'group'=>'Other Map Settings',
           'maxlength'=>200
         ),
@@ -937,6 +937,33 @@ checkEditable = function(isNew, id){
   if(typeof canEditExistingSites != 'undefined') return canEditExistingSites;
   return(SiteEditable[id]);
 }
+convertFeature = function(feature, projection){
+  if(feature instanceof Array){
+    if(feature.length == 0) return geom;
+    var newfeatures = [];
+    $.each(feature, function(idx, featureElem){
+      newfeatures.push(convertFeature(featureElem, projection));
+    });
+    return newfeatures;
+  }
+  feature.geometry = convertGeom(feature.geometry, projection);
+  return feature;
+}
+convertGeom = function(geom, projection){
+  if (projection.projcode!='EPSG:900913' && projection.projcode!='EPSG:3857') { 
+    var cloned = geom.clone();
+    return cloned.transform(new OpenLayers.Projection('EPSG:900913'), projection);
+  }
+  return geom;
+}
+reverseConvertGeom = function(geom, projection){
+  if (projection.projcode!='EPSG:900913' && projection.projcode!='EPSG:3857') {
+    var cloned = geom.clone();
+    return cloned.transform(projection, new OpenLayers.Projection('EPSG:900913'));
+  }
+  return geom;
+}
+
 loadFeatures = function(parent_id, child_id, childArgs, loadParent, setSelectOptions){
   ParentLocationLayer.destroyFeatures();
   SiteLabelLayer.destroyFeatures();
@@ -961,6 +988,7 @@ loadFeatures = function(parent_id, child_id, childArgs, loadParent, setSelectOpt
          var parser = new OpenLayers.Format.WKT();
          if(data[0].boundary_geom){ // only one location if any
            var feature = parser.read(data[0].boundary_geom)
+           feature=convertFeature(feature, $('#map')[0].map.projection);
            ParentLocationLayer.addFeatures([feature]);
            if(child_id == '') ParentLocationLayer.map.zoomToExtent(ParentLocationLayer.getDataExtent());
          }
@@ -988,6 +1016,7 @@ loadFeatures = function(parent_id, child_id, childArgs, loadParent, setSelectOpt
               var centre = false;
               if(data[i].centroid_geom) {
                 centreFeature = parser.read(data[i].centroid_geom); // assume map projection=900913
+                centreFeature=convertFeature(centreFeature, $('#map')[0].map.projection);
               }
               var pointFeature = false;
               var lineFeature = false;
@@ -1025,22 +1054,26 @@ loadFeatures = function(parent_id, child_id, childArgs, loadParent, setSelectOpt
               }
               if(areaFeature) {
                 areaFeature.attributes = {highlighted: false, new: false, canEdit: checkEditable(false, data[i].id), SiteNum: SiteNum, data: data[i]};
+                areaFeature=convertFeature(areaFeature, $('#map')[0].map.projection);
                 SiteAreaLayer.addFeatures([areaFeature]);
                 if(!centreFeature) centreFeature = new OpenLayers.Feature.Vector(getCentroid(areaFeature.geometry));
               }
               if(lineFeature) {
                 lineFeature.attributes = {highlighted: false, new: false, canEdit: checkEditable(false, data[i].id), SiteNum: SiteNum, data: data[i]};
+                lineFeature=convertFeature(lineFeature, $('#map')[0].map.projection);
                 SitePathLayer.addFeatures([lineFeature]);
                 if(!centreFeature) centreFeature = new OpenLayers.Feature.Vector(getCentroid(lineFeature.geometry));
               }
               if(pointFeature) {
                 pointFeature.attributes = {highlighted: false, new: false, canEdit: checkEditable(false, data[i].id), SiteNum: SiteNum, data: data[i]};
+                pointFeature=convertFeature(pointFeature, $('#map')[0].map.projection);
                 SitePointLayer.addFeatures([pointFeature]);
                 if(!centreFeature) centreFeature = new OpenLayers.Feature.Vector(getCentroid(pointFeature.geometry));
               }
             } else {
               // no boundary, only a centre point.
               feature = parser.read(data[i].centroid_geom); // assume map projection=900913
+              feature=convertFeature(feature, $('#map')[0].map.projection);
               centreFeature = feature.clone();
               feature.attributes = {highlighted: false, new: false, canEdit: checkEditable(false, data[i].id), SiteNum: SiteNum, data: data[i]};
               SitePointLayer.addFeatures([feature]);
@@ -2364,6 +2397,7 @@ jQuery(\"#".$options['ParentFieldID']."\").change(function(){
          var parser = new OpenLayers.Format.WKT();
          if(data[0].boundary_geom){ // only one location if any
            var feature = parser.read(data[0].boundary_geom)
+           feature=convertFeature(feature, $('#map')[0].map.projection);
            ParentLocationLayer.destroyFeatures();
            ParentLocationLayer.addFeatures([feature]);
            ParentLocationLayer.map.zoomToExtent(ParentLocationLayer.getDataExtent());
@@ -2641,7 +2675,8 @@ jQuery(\"#".$options['ChooseParentFieldID']."\").change(function(){
       			// proxiedurl,featurePrefix,featureType,[geometryName],featureNS,srsName[,propertyNames]
                 $protocol = explode(',', $args['locationLayerLookup']);
 				data_entry_helper::$javascript .="
-hook_setSref_".$idx." = function(geom){
+hook_setSref_".$idx." = function(geom){ // map projection
+  // srsName should be in map projection.
   var protocol = new OpenLayers.Protocol.WFS({
       url:  '".$protocol[0]."',featurePrefix: '".$protocol[1]."',featureType: '".$protocol[2]."',geometryName:'boundary_geom',featureNS: '".$protocol[3]."',srsName: '".$protocol[4]."',version: '1.1.0',propertyNames: ['boundary_geom','name']
      ,callback: function(a1){
@@ -2655,7 +2690,7 @@ hook_setSref_".$idx." = function(geom){
 					data_entry_helper::$javascript .="          if(jQuery('#filterSelect".$idx."').val() == '' || // not currently filled in
               (jQuery('#filterSelect".$idx."').val() != id && confirm(\"".lang::get('LANG_PositionInDifferentParent')."\"))) {
             ParentLocationLayer.destroyFeatures();
-            ParentLocationLayer.addFeatures(a1.features);
+            ParentLocationLayer.addFeatures(a1.features); // TBD check geometry system - convert?
             jQuery('#filterSelect".$idx."').val(id);\n";
 					foreach($filterAttrs as $idx1=>$filterAttr1) // just need index, so don't explode
 						if($idx1 > $idx && $idx1<count($filterAttrs)-1) // don't do name
@@ -2721,6 +2756,7 @@ displayParent = function(zoom){
         var parser = new OpenLayers.Format.WKT();
         if(data[0].boundary_geom){ // only one location if any
           var feature = parser.read(data[0].boundary_geom)
+          feature=convertFeature(feature, $('#map')[0].map.projection);
           ParentLocationLayer.addFeatures([feature]);
           if(zoom) ParentLocationLayer.map.zoomToExtent(ParentLocationLayer.getDataExtent());
         }
@@ -2804,11 +2840,11 @@ filterReset".$idx." = function(){
 displayShape = function(zoom){
   ParentLocationLayer.destroyFeatures();
   if(jQuery('#filterSelect".$idx."').val()=='') return;
-  var protocol = new OpenLayers.Protocol.WFS({
-    url:  '".$protocol[0]."',featurePrefix: '".$protocol[1]."',featureType: '".$protocol[2]."',geometryName: '".$protocol[3]."',featureNS: '".$protocol[4]."',srsName: 'EPSG:900913',version: '1.1.0',propertyNames: ['".$protocol[6]."','".$protocol[3]."']
+  var protocol = new OpenLayers.Protocol.WFS({ // WFS request is to be made in the map projection
+    url:  '".$protocol[0]."',featurePrefix: '".$protocol[1]."',featureType: '".$protocol[2]."',geometryName: '".$protocol[3]."',featureNS: '".$protocol[4]."',srsName: '".$protocol[5]."',version: '1.1.0',propertyNames: ['".$protocol[6]."','".$protocol[3]."']
    ,callback:function(data){
-      if(data.features.length>0){
-        ParentLocationLayer.addFeatures(data.features);
+      if(data.features.length>0){ // feature is in map projection
+        ParentLocationLayer.addFeatures(data.features); // TBD check geometry system - convert?
         if(zoom) ZoomToParent();
       }}});
   var filter = new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.EQUAL_TO, property: '".$protocol[6]."', value: jQuery('#filterSelect".$idx."').val()});\n".
@@ -2852,7 +2888,8 @@ filterLoad".$idx." = function(){
 }
 // this is only done once
 filterLoad".$idx."();
-hook_setSref_".$idx." = function(geom){
+hook_setSref_".$idx." = function(geom){ // map projection
+  // srsName should be in map projection.
   var protocol = new OpenLayers.Protocol.WFS({
       url:  '".$protocol[0]."',featurePrefix: '".$protocol[1]."',featureType: '".$protocol[2]."',geometryName:'".$protocol[3]."',featureNS: '".$protocol[4]."',srsName: '".$protocol[5]."',version: '1.1.0',propertyNames: [\"".$protocol[6]."\",'".$protocol[3]."']
      ,callback: function(a1){
@@ -2864,7 +2901,7 @@ hook_setSref_".$idx." = function(geom){
           if(jQuery('#filterSelect".$idx."').val() == '' || // not currently filled in
               (jQuery('#filterSelect".$idx."').val() != a1.features[0].attributes[\"".$protocol[6]."\"] && confirm(\"".lang::get('LANG_PositionInDifferent'.$filterAttr[1])."\"))) {
             ParentLocationLayer.destroyFeatures();
-            ParentLocationLayer.addFeatures(a1.features);
+            ParentLocationLayer.addFeatures(a1.features); // feature should be in map projection
             jQuery('#filterSelect".$idx."').val(a1.features[0].attributes[\"".$protocol[6]."\"]);
             jQuery('#locAttr\\\\:".$attr['attributeId']."').val(a1.features[0].attributes[\"".$protocol[6]."\"]);\n";
 				foreach($filterAttrs as $idx1=>$filterAttr1) // just need index, so don't explode
@@ -3141,7 +3178,7 @@ hook_set_defaults = function(keepFilter){
 };
 ".$loadFunction."
 };
-hook_setSref = function(geom){
+hook_setSref = function(geom){ // geom is in map projection.
   jQuery('#map').ajaxStop(function(event){\n";
       if($includeCommune)
           data_entry_helper::$javascript .="    var communeProtocol = new OpenLayers.Protocol.WFS({
@@ -3150,7 +3187,7 @@ hook_setSref = function(geom){
               featureType: '".$parts[2]."',
               geometryName:'".$parts[3]."',
               featureNS: '".$parts[4]."',
-              srsName: '".$parts[5]."',
+              srsName: '".$parts[5]."', // this should be in map projection.
               version: '1.1.0'                  
       		  ,propertyNames: [\"".$parts[6]."\"]});
     jQuery('[name=locAttr\\:$communeAttr],[name^=locAttr\\:$communeAttr\\:]').val('');
@@ -3171,7 +3208,7 @@ hook_setSref = function(geom){
       foreach($filterAttrs as $idx=>$filterAttr){
         $filterAttr=explode(':',$filterAttr);
         if($filterAttr[0]=="Parent" || $filterAttr[0]=="Shape")
-          data_entry_helper::$javascript .="    hook_setSref_".$idx."(geom);\n";
+          data_entry_helper::$javascript .="    hook_setSref_".$idx."(geom);\n"; // map projection
       }
       data_entry_helper::$javascript .="    $(this).unbind(event);\n  });\n};\nlocation_attrs = [";
       foreach($attrList as $filterAttr){
@@ -3224,6 +3261,12 @@ function iform_mnhnl_PointGrid($auth, $args, $options) {
   data_entry_helper::$javascript .= "
 // functions for iform_mnhnl_PointGrid
 jQuery('#pointgrid').hide();
+function _projToSystem(proj, convertGoogle) {
+    var system = ((typeof proj != 'string') ? proj.getCode() : proj);
+    if(system.substring(0,5)=='EPSG:') system = system.substring(5);
+    if(convertGoogle && system=='900913') system='3857';
+    return system;
+}
 ";
   $retVal="<fieldset id=\"pointgrid\">\n<legend>".lang::get('LANG_PointsLegend')."</legend>";
   $retVal.="<table ><tbody id=\"pointgridtable\"><tr class=\"pgAddRow\">
@@ -3275,12 +3318,15 @@ jQuery('[name=pg\\:srefX],[name=pg\\:srefY]').live('change', function(){
   $.getJSON(\"".data_entry_helper::$base_url."/index.php/services/spatial/sref_to_wkt\"+
             \"?sref=\" + myRow.find('[name=pg\\:srefX]').val() + ', ' + myRow.find('[name=pg\\:srefY]').val() +
             \"&system=\" + myRow.data('system') +
+            \"&mapsystem=\" + _projToSystem(SitePointLayer.map.projection, false) +
             \"&callback=?\", function(data) {
       if(typeof data.error != 'undefined')
         alert(data.error);
       else {
         var parser = new OpenLayers.Format.WKT();
-        var feature = parser.read(data.wkt);
+        var feature = parser.read(data.mapwkt);
+        // geometry data item holds the map based geometry.
+        // wkt holds the WKT version of the internal indicia system
         myRow.data('geometry',feature.geometry).data('oldGeometry',feature.geometry.clone()).data('WKT',data.wkt);
         var replace;
         if(jQuery('.pgDataRow').length>1){
@@ -3356,7 +3402,8 @@ jQuery('.pgHighlightPoint').live('click', function(){
 });
 addPGPoint = function(geometry){
   removePopups();
-  var wkt= getwkt(geometry, true, true);
+  geometryX = reverseConvertGeom(geometry, SitePointLayer.map.projection);
+  var wkt= getwkt(geometryX, true, true);
   var newRow=jQuery('<tr class=\"pgDataRow\">');
   newRow.append('<td><label class=\"auto-width X\" >".lang::get('LANG_Grid_X_Label').":</label> <input type=\"text\" name=\"pg:srefX\" value=\"\" /></td>');
   newRow.append('<td><label class=\"auto-width Y\" >".lang::get('LANG_Grid_Y_Label').":</label> <input type=\"text\" name=\"pg:srefY\" value=\"\" /></td>');
@@ -3376,7 +3423,8 @@ modPGPoint = function(geometry){
     if(jQuery(this).data('geometry').x != jQuery(this).data('oldGeometry').x || 
         jQuery(this).data('geometry').y != jQuery(this).data('oldGeometry').y){
       // the geometry, which is the same object as the feature, has moved
-      var wkt= getwkt(jQuery(this).data('geometry'), true, true);
+      var geometryX = convertGeom(jQuery(this).data('geometry'), SitePointLayer.map.projection);
+      var wkt= getwkt(geometryX, true, true);
       jQuery(this).data('WKT',wkt).data('oldGeometry',jQuery(this).data('geometry').clone());
       jQuery(this).find('.pgSrefSystem').change();
     }
@@ -3394,11 +3442,12 @@ jQuery('#pgNewPoint').click(function(){
   $.getJSON(\"".data_entry_helper::$base_url."/index.php/services/spatial/sref_to_wkt\"+
             \"?sref=\" + $('#new-srefX').val() + ', ' + $('#new-srefY').val() +
             \"&system=\" + jQuery('.pgAddRow').data('system') +
+            \"&mapsystem=\" + _projToSystem(SitePointLayer.map.projection, false) +
             \"&callback=?\", function(data) {
       if(typeof data.error != 'undefined') alert(data.error);
       else {
         var parser = new OpenLayers.Format.WKT();
-        var feature = parser.read(data.wkt);
+        var feature = parser.read(data.mapwkt);
         addDrawnPointToSelection(feature.geometry);
         $('#new-srefX').val('');
         $('#new-srefY').val('');
@@ -3439,7 +3488,8 @@ _setSref = function(sref){
 setSref = function(geometry, sref){
   var centre = getCentroid(geometry);
   if(typeof hook_setSref != 'undefined')
-    hook_setSref(centre);
+    hook_setSref(centre); // centre is in map projection
+  centre = reverseConvertGeom(centre, SitePointLayer.map.projection); // convert to indicia internal projection
   if(sref=='TBC'){
     jQuery.getJSON(\"".data_entry_helper::$base_url."/index.php/services/spatial/wkt_to_sref?wkt=POINT(\" + centre.x + \"  \" + centre.y + \")&system=2169&precision=8&callback=?\",
       function(data){
@@ -3463,15 +3513,16 @@ function handleEnteredSref(value) {
     $.getJSON(\"".data_entry_helper::$base_url."/index.php/services/spatial/sref_to_wkt\"+
             \"?sref=\" + value +
             \"&system=2169\" +
+            \"&mapsystem=\" + _projToSystem(SitePointLayer.map.projection, false) +
             \"&callback=?\", function(data) {
       if(typeof data.error != 'undefined')
         alert(data.error);
       else {
         $('#centroid_geom').val(data.wkt);
         var parser = new OpenLayers.Format.WKT();
-        var feature = parser.read(data.wkt);
+        var feature = parser.read(data.mapwkt);
         if(typeof hook_setSref != 'undefined')
-          hook_setSref(feature.geometry);
+          hook_setSref(feature.geometry); // in map projection.
         for(var i=0; i<SitePointLayer.features.length; i++){
           if(SitePointLayer.features[i].attributes.highlighted == true){
             replaceGeom(SitePointLayer.features[i], SitePointLayer, modPointFeature, feature.geometry, false, false);

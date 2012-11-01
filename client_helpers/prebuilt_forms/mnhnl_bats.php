@@ -616,7 +616,7 @@ hook_set_defaults=function(){
               featureType: '".$parts[2]."',
               geometryName:'".$parts[3]."',
               featureNS: '".$parts[4]."',
-              srsName: '".$parts[5]."',
+              srsName: '".$parts[5]."', // map projection
               version: '1.1.0'                  
       		  ,propertyNames: [\"".$parts[6]."\"]
 });
@@ -632,7 +632,7 @@ fillCommune = function(a1){
   }
 }
 jQuery('[name=locAttr\\:$communeAttr],[name^=locAttr\\:$communeAttr\\:]').attr('readonly','readonly');
-hook_setSref = function(geom){
+hook_setSref = function(geom){ // map projection
   jQuery('[name=locAttr\\:$communeAttr],[name^=locAttr\\:$communeAttr\\:]').val('');
   var filter = new OpenLayers.Filter.Spatial({
   		type: OpenLayers.Filter.Spatial.CONTAINS ,
