@@ -49,6 +49,12 @@ class Helper_Vague_Date_Test extends PHPUnit_Framework_TestCase {
     $this->assertFalse($vd, "Date '34 march 73' should not be accepted");
   }
   
+  public function testBadDate100132001 () {
+    $vd = vague_date::string_to_vague_date('100/13/2001');
+    $this->assertFalse($vd, "Date '100/13/2001' should not be accepted");
+    print_r($vd);
+  }
+  
   public function testConvertVagueDate_To_DayRange() {
     $this->checkConvertVagueDate('2001-03-28', '2001-03-28', 'DD', '28/03/2001 to 28/03/2001');
   }
