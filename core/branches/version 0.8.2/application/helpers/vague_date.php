@@ -231,7 +231,7 @@ class vague_date {
 
     if (!$range) {
       $a = self::parseSingleDate($string, $parseFormats);
-      if ($a != null) {
+      if ($a) {
         $startDate = $endDate = $a;
         $matched = true;
       }
@@ -262,7 +262,7 @@ class vague_date {
       if (trim($string)=='U' || trim($string)==Kohana::lang('dates.unknown'))
         return array(null, null, 'U');
       else {
-        return null;
+        return false;
       }
     }
     // Okay, now we try to determine the type - we look mostly at $endDate because
