@@ -52,7 +52,20 @@ class Helper_Vague_Date_Test extends PHPUnit_Framework_TestCase {
   public function testBadDate100132001 () {
     $vd = vague_date::string_to_vague_date('100/13/2001');
     $this->assertFalse($vd, "Date '100/13/2001' should not be accepted");
-    print_r($vd);
+  }
+  
+  public function testDateFeb97 () {
+    $vd = vague_date::string_to_vague_date('Feb 97');
+    $this->assertEquals($vd[0], '1997-02-01', "Date 'Feb 97' starts at 01/02/1997");
+    $this->assertEquals($vd[1], '1997-02-28', "Date 'Feb 97' ends at 28/02/1997");
+    $this->assertEquals($vd[2], 'O', "Date 'Feb 97' is a month (O) date type");
+  }
+  
+  public function testDateOct92 () {
+    $vd = vague_date::string_to_vague_date('Oct 92');
+    $this->assertEquals($vd[0], '1992-10-01', "Date 'Oct 92' starts at 01/10/1992");
+    $this->assertEquals($vd[1], '1992-10-31', "Date 'Oct 92' ends at 31/10/1992");
+    $this->assertEquals($vd[2], 'O', "Date 'Oct 97' is a month (O) date type");
   }
   
   public function testConvertVagueDate_To_DayRange() {
