@@ -140,6 +140,16 @@ class iform_dynamic {
           'default' => 'default',
           'group'=>'Other Map Settings'
         ),
+        array(
+          'name'=>'survey_id',
+          'caption'=>'Survey',
+          'description'=>'The survey that data will be posted into and that defines custom attributes.',
+          'type'=>'select',
+          'table'=>'survey',
+          'captionField'=>'title',
+          'valueField'=>'id',
+          'siteSpecific'=>true
+        ),
       )
     );
     return $retVal;
