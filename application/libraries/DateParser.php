@@ -349,17 +349,23 @@ class DateParser_Core {
       }
     }
 
-    // If no month is given, set it to December
-    if ($aStart['tm_mon'] == null) $aStart['tm_mon'] = 11;
+    // If no month is given, set it to December (indexed to 0)
+    if ($aStart['tm_mon'] == null) 
+      $aStart['tm_mon'] = 11;
 
-    // If no day is given, set month to month +1 and day to 0
+    // Because dates before 1970 can't be handled by mktime, we use another year as a dummy date then swap it for the real year.
+    // To ensure the calculation is correct for Feb-29, the dummy year must also be a leap year if the actual year is.
+    $dummy = date('L', strtotime($aStart['tm_year']."-01-01")) ? 2000 : 2001;
+      
+    // If no day is given, set day to end of the month using the 't' format which gets the days in the month
     if ($aStart['tm_mday'] == null) {
-      $aStart['tm_mday'] = 0;
-      $aStart['tm_mon'] += 1;
-    }
-    // Because dates before 1970 can't be handled by mktime, we use 2000 as a dummy date then swap it for the real year
-    $date = date("Y-m-d", mktime(0,0,0,$aStart['tm_mon'] + 1, $aStart['tm_mday'], 2000));
-    return str_replace('2000', $aStart['tm_year'], $date);
+      $aStart['tm_mday'] = date('t', mktime(0,0,0,$aStart['tm_mon']+1, 1, $dummy));
+    }    
+    
+    // Build our date
+    $date = date("Y-m-d", mktime(0,0,0,$aStart['tm_mon'] + 1, $aStart['tm_mday'], $dummy));
+    // Swap back to the correct year and return
+    return str_replace($dummy, $aStart['tm_year'], $date);
   }
 
   /**
