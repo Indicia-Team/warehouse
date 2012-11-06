@@ -29,9 +29,10 @@
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Termlists_term_Model extends Base_Name_Model {
-  // TODO: this is a temporary placeholder. Need to think how we can get the term (from the terms table)
-  // in as the search field in termlists_terms. Perhaps a view?
-  public $search_field='id';
+
+  public $search_field='term';
+
+  protected $lookup_against='lookup_term';
   
   protected $list_id_field = 'termlist_id';
 
