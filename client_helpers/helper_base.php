@@ -1281,7 +1281,7 @@ $('.ui-state-default').live('mouseout', function() {
 indiciaData.windowLoaded=false;
 ";
       if (!self::$is_ajax)
-        $script .= "jQuery(document).ready(function() {\n";
+        $script .= "jQuery(document).ready(function($) {\n";
       $script .= "$javascript\n$late_javascript\n";
       if (!self::$is_ajax)
         $script .= "});\n";
