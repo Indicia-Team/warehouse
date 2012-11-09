@@ -63,13 +63,14 @@ class iform_dynamic_location extends iform_dynamic {
             "<strong>=tab/page name=</strong> is used to specify the name of a tab or wizard page. (Alpha-numeric characters only)<br/>".
             "<strong>=*=</strong> indicates a placeholder for putting any custom attribute tabs not defined in this form structure. <br/>".
             "<strong>[control name]</strong> indicates a predefined control is to be added to the form with the following predefined controls available: <br/>".
-                "&nbsp;&nbsp;<strong>[map]</strong><br/>".
-                "&nbsp;&nbsp;<strong>[place search]</strong><br/>".
-                "&nbsp;&nbsp;<strong>[spatial reference]</strong><br/>".
-                "&nbsp;&nbsp;<strong>[location name]</strong><br/>".
-                "&nbsp;&nbsp;<strong>[location code]</strong><br/>".
-                "&nbsp;&nbsp;<strong>[location type]</strong><br/>".
-                "&nbsp;&nbsp;<strong>[location comment]</strong>. <br/>".
+                "&nbsp;&nbsp;<strong>[map]</strong> - a map that links to the spatial reference control<br/>".
+                "&nbsp;&nbsp;<strong>[place search]</strong> - zooms the map to the entered location.<br/>".
+                "&nbsp;&nbsp;<strong>[spatial reference]</strong> - a location must always have a spatial reference.<br/>".
+                "&nbsp;&nbsp;<strong>[location name]</strong> - a text box to enter a descriptive name for the locataion.<br/>".
+                "&nbsp;&nbsp;<strong>[location code]</strong> - a text box to enter an identifying code for the location.<br/>".
+                "&nbsp;&nbsp;<strong>[location type]</strong> - a list to select the location type (hidden if a filter limits this to a single type).<br/>".
+                "&nbsp;&nbsp;<strong>[location comment]</strong> - a text box for comments.<br/>".
+                "&nbsp;&nbsp;<strong>[location photo]</strong> - a photo upload for location images. <br/>".
             "<strong>@option=value</strong> on the line(s) following any control allows you to override one of the options passed to the control. The options ".
             "available depend on the control. For example @label=Abundance would set the untranslated label of a control to Abundance. Where the ".
             "option value is an array, use valid JSON to encode the value. For example an array of strings could be passed as @occAttrClasses=[\"class1\",\"class2\"] ".
@@ -295,6 +296,16 @@ class iform_dynamic_location extends iform_dynamic {
       return parent::get_control_spatialreference($auth, $args, $tabalias, $options);
     }
 
+  /**
+   * Get the location photo control
+   */
+  protected static function get_control_locationphoto($auth, $args, $tabalias, $options) {
+    return data_entry_helper::file_box(array_merge(array(
+      'table'=>'location_image',
+      'caption'=>lang::get('File upload')
+    ), $options)); 
+  }
+  
 
   /**
    * Handles the construction of a submission array from a set of form values.
@@ -303,12 +314,12 @@ class iform_dynamic_location extends iform_dynamic {
    * @return array Submission structure.
    */
   public static function get_submission($values, $args) {
-    // default for forms setup on old versions is grid - list of occurrences
-    // Can't call getGridMode in this context as we might not have the $_GET value to indicate grid
     $structure = array(
         'model' => 'location',
     );
     // Either an uploadable file, or a link to a Flickr external detail means include the submodel
+    // (Copied from data_entry_helper::build_sample_occurrence_submission. If file_box control is used
+    // then build_submission calls wrap_with_images instead)
     if ((array_key_exists('location:image', $values) && $values['location:image'])
         || array_key_exists('location_image:external_details', $values) && $values['location_image:external_details']) {
       $structure['submodel'] = array(
@@ -318,16 +329,15 @@ class iform_dynamic_location extends iform_dynamic {
     }
     $s = submission_builder::build_submission($values, $structure);
    
-    // on first save of a new location, link it to the website.
+    // On first save of a new location, link it to the website.
+    // Be careful not to over-write other subModels (e.g. images)
     if (empty($values['location:id']))
-      $s['subModels'] = array(
-        array(
+      $s['subModels'][] = array(
           'fkId' => 'location_id', 
           'model' => array(
             'id' => 'locations_website',
             'fields' => array(
               'website_id' => $args['website_id']
-            )
           )
         )
       );
