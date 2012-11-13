@@ -1936,7 +1936,7 @@ class data_entry_helper extends helper_base {
     $db = data_entry_helper::get_species_lookup_db_definition($options['cacheLookup']);
     // get local vars for the array
     extract($db);
-    $options['extraParams']['orderby'] = ($options['cacheLookup']) ? 'original' : 'taxon';
+    $options['extraParams']['orderby'] = ($options['cacheLookup']) ? 'searchterm_length,original' : 'taxon';
     $options = array_merge(array(
       'fieldname'=>'occurrence:taxa_taxon_list_id',
       'table'=>$tblTaxon,
