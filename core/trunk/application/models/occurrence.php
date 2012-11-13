@@ -201,7 +201,7 @@ class Occurrence_Model extends ORM
     if (class_exists('cache_builder')) {
       if ($isInsert) 
         cache_builder::insert($this->db, 'occurrences', $this->id);
-      elseif ($this->deleted)
+      elseif ($this->deleted==='t')
         cache_builder::delete($this->db, 'occurrences', $this->id);
     }
     return true;
