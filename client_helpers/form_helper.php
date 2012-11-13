@@ -399,6 +399,16 @@ $('#load-params').click(function(evt) {
       'required'=>false,
       'default'=>true
     );
+    $params[] = array(
+      'fieldname'=>'additional_css',
+      'label'=>'Additional CSS files to include',
+      'helpText'=>'Additional CSS files to include on the page. You can use the following replacements to simplify the setting '.
+          'of the correct paths. {mediacss} is replaced by the media/css folder in the module. {theme} is replaced by the '.
+          'current theme folder. {prebuiltformcss} is replaced by the prebuilt_forms/css folder. Specify one CSS file per '.
+          'line.',
+      'type'=>'textarea',
+      'required'=>false
+    );
     return $params;
   }
 
