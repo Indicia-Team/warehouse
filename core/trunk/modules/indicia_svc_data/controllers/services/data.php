@@ -769,8 +769,8 @@ class Data_Controller extends Data_Service_Base_Controller {
   */
   protected function apply_get_parameters_to_db($count=false)
   {
-    $sortdir='ASC';
-    $orderby='';
+    $sortdir=array();
+    $orderby=array();
     $like=array();
     $where=array();
     // don't use $_REQUEST as it has a tendency to escape values in different ways on different PHP versions.
@@ -782,16 +782,21 @@ class Data_Controller extends Data_Service_Base_Controller {
       {
         case 'sortdir':
           if ($count) break;
-          $sortdir=strtoupper($value);
-          if ($sortdir != 'ASC' && $sortdir != 'DESC')
-          {
-            $sortdir='ASC';
+          $sortdir=explode(',', strtoupper($value));
+          // default to ASC any which are not ASC or DESC for safety
+          foreach ($sortdir as $idx=>$dir) {
+            if ($dir !== 'ASC' && $dir !== 'DESC')
+              $sortdir[$idx]='ASC';
           }
           break;
         case 'orderby':
           if ($count) break;
-          if (array_key_exists(strtolower($value), $this->view_columns))
-            $orderby=strtolower($value);
+          $orderby=explode(',', strtolower($value));
+          // strip any which are not field names for safety
+          foreach ($orderby as $idx=>$field) {
+            if (!array_key_exists($field, $this->view_columns))
+              unset($orderby[$idx]);
+          }
           break;
         case 'limit':
           if ($count) break;
@@ -875,8 +880,12 @@ class Data_Controller extends Data_Service_Base_Controller {
         $like[$qfield]=str_replace('*', '%', $q).'%';
       }
     }
-    if ($orderby)
-      $this->db->orderby($orderby, $sortdir);
+    if (count($orderby)) {
+      // Build a multi-field order array according to Kohana db builder spec. 
+      // Default missing sort directions to ASC.
+      $order=array_combine($orderby, array_pad($sortdir, count($orderby), 'ASC'));
+      $this->db->orderby($order);
+    }
     if (count($like)) {
       foreach ($like as $field => $value) {
         $this->db->like($field, $value, false);
