@@ -383,11 +383,16 @@ class map_helper extends helper_base {
   *
   * @param array $options Associative array of options to pass to the jQuery.indiciaMapPanel plugin.
   * Has the following possible options:
-  * <ul><li><b>id</b><br/>
+  * <ul>
+  * <li><b>id</b><br/>
+  * Optional CSS id for the output panel.
   * </li>
   * <li><b>includeIcons</b><br/>
+  * Set to true to include icons alongside each layer item. Default true.
   * </li>
   * <li><b>includeSwitchers/b><br/>
+  * Set to true to include radio buttons and/or checkboxes for switching on or off the visible base 
+  * layers and overlays. Default false.
   * </li>
   * <li><b>includeHiddenLayers</b><br/>
   * True or false to include layers that are not currently visible on the map. Default is false.
@@ -450,7 +455,7 @@ class map_helper extends helper_base {
   } else {
     layerHtml += '<div></div>';
   }\n";
-    self::$javascript .= "  layerHtml += layer.name;
+    self::$javascript .= "  layerHtml += '<span class=\"layer-title\">' + layer.name + '</span>';
   return layerHtml;
 }
     
