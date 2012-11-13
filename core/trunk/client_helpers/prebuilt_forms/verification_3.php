@@ -873,8 +873,10 @@ idlist=';
     global $user;
     $headers  = 'MIME-Version: 1.0' . "\r\n";
     $headers .= 'Content-type: text/html; charset=iso-8859-1' . "\r\n";
-    $headers .= 'From: '. $user->mail . PHP_EOL . "\r\n";
-    $headers .= 'Return-Path: '. $user->mail . "\r\n";
+    $site_email = variable_get('site_mail', '');
+    $headers .= 'From: '. $site_email . PHP_EOL . "\r\n";
+    $headers .= 'Reply-To: '. $user->mail . "\r\n";
+    $headers .= 'Return-Path: '. $site_email . "\r\n";
     $emailBody = $_POST['body'];        
     $emailBody = str_replace("\n", "<br/>", $emailBody);
     // Send email. Depends upon settings in php.ini being correct
