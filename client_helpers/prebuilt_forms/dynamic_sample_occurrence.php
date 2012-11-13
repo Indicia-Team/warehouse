@@ -833,6 +833,11 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           '<span>{caption}</span>';
     }
     $ctrl = $args['species_ctrl'] === 'autocomplete' ? 'species_autocomplete' : $args['species_ctrl'];
+    if ($args['cache_lookup']) {
+      unset($species_ctrl_opts['captionField']);
+      unset($species_ctrl_opts['valueField']);
+      unset($species_ctrl_opts['table']);
+    }
     // Dynamically generate the species selection control required.
     return call_user_func(array('data_entry_helper', $ctrl), $species_ctrl_opts);
   }
