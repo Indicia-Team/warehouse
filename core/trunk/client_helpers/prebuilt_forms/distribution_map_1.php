@@ -63,6 +63,28 @@ class iform_distribution_map_1 {
           'group' => 'Other Map Settings'
         ),
         array(
+          'name' => 'include_layer_list_switchers',
+          'caption' => 'Include Layer switchers',
+          'description' => 'Should the legend include checkboxes and/or radio buttons for controlling layer visibility?',
+          'type' => 'boolean',
+          'required'=>false,
+          'default'=>true,
+          'group' => 'Other Map Settings'
+        ),
+        array(
+          'name' => 'include_layer_list_types',
+          'caption' => 'Types of layer to include in legend',
+          'description' => 'Select which types of layer to include in the legend.',
+          'type' => 'select',
+          'options' => array(
+            'base,overlay' => 'All',
+            'base' => 'Base layers only',
+            'overlay' => 'Overlays only'
+          ),
+          'default' => 'base,overlay',
+          'group' => 'Other Map Settings'
+        ),
+        array(
           'name' => 'layer_title',
           'caption' => 'Layer Caption',
           'description' => 'Caption to display for the species distribution map layer. Can contain replacement strings {species} or {survey}.',
@@ -243,14 +265,15 @@ class iform_distribution_map_1 {
     // Get the style if there is one selected
     $style = $args["wms_style"] ? ", styles: '".$args["wms_style"]."'" : '';   
     map_helper::$onload_javascript .= "\n    var filter='website_id=".$args['website_id']."';";
-    if (!$args['show_all_species'])
-      map_helper::$onload_javascript .= "\n    filter += ' AND taxon_meaning_id=$meaningId';\n";
-    if ($args['cql_filter']) 
-      map_helper::$onload_javascript .= "\n    filter += ' AND(".str_replace("'","\'",$args['cql_filter']).")';\n";
     if ($args['show_all_species'])
       $layerTitle = lang::get('All species occurrences');
-    else
+    else {
       $layerTitle = str_replace('{species}', $taxonRecords[0]['taxon'], $args['layer_title']);
+      map_helper::$onload_javascript .= "\n    filter += ' AND taxon_meaning_id=$meaningId';\n";
+    }
+    if ($args['cql_filter']) 
+      map_helper::$onload_javascript .= "\n    filter += ' AND(".str_replace("'","\'",$args['cql_filter']).")';\n";
+    
     $layerTitle = str_replace("'","\'",$layerTitle);
     map_helper::$onload_javascript .= "\n    var distLayer = new OpenLayers.Layer.WMS(
           '".$layerTitle."',
@@ -282,10 +305,15 @@ class iform_distribution_map_1 {
       $options['proxy'] = $base_url . '?q=' . variable_get('iform_proxy_path', 'proxy') . '&url=';
     }
     // output a legend
+    if (isset($args['include_layer_list_types']))
+      $layerTypes = explode(',', $args['include_layer_list_types']);
+    else
+      $layerTypes = array('base', 'overlay');
     if (!isset($args['include_layer_list']) || $args['include_layer_list'])
       $r .= map_helper::layer_list(array(
-        'includeSwitchers' => true,
-        'includeHiddenLayers' => true
+        'includeSwitchers' => isset($args['include_layer_list_switchers']) ? $args['include_layer_list_switchers'] : true,
+        'includeHiddenLayers' => true,
+        'layerTypes' => $layerTypes
       ));
     // output a map    
     $r .= map_helper::map_panel($options, $olOptions);
