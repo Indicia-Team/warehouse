@@ -2306,7 +2306,11 @@ class data_entry_helper extends helper_base {
         } else {
           self::$javascript .= "var formatter = '".$indicia_templates['taxon_label']."';\n";
         }
-        self::$javascript .= "addRowToGrid('".parent::$base_url."index.php/services/data"."', '".
+        if (!empty(parent::$warehouse_proxy))
+          $url = parent::$warehouse_proxy."index.php/services/data";
+        else
+          $url = parent::$base_url."index.php/services/data";
+        self::$javascript .= "addRowToGrid('$url', '".
             $options['id']."', '".$options['lookupListId']."', {'auth_token' : '".
             $options['readAuth']['auth_token']."', 'nonce' : '".$options['readAuth']['nonce']."'},".
             " formatter, ".($options['cacheLookup'] ? 'true' : 'false').");\r\n";
