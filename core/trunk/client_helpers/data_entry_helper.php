@@ -2194,8 +2194,11 @@ class data_entry_helper extends helper_base {
         $hidden = ($options['rowInclusionCheck']=='checkbox' ? '' : ' style="display:none"');
         // AlwaysFixed mode means all rows in the default checklist are included as occurrences. Same for
         // AlwayeRemovable except that the rows can be removed.
+        // If we are reloading a record there will be an entity_to_load which will indicate whether present should be checked.
+        // This has to be evaluated true or false if reloading a submission with errors.
         if ($options['rowInclusionCheck']=='alwaysFixed' || $options['rowInclusionCheck']=='alwaysRemovable' ||
-            (self::$entity_to_load!=null && array_key_exists("sc:$id:$existing_record_id:present", self::$entity_to_load))) {
+            (self::$entity_to_load!=null && array_key_exists("sc:$id:$existing_record_id:present", self::$entity_to_load) &&
+                self::$entity_to_load["sc:$id:$existing_record_id:present"] == true)) {
           $checked = ' checked="checked"';
         } else {
           $checked='';
