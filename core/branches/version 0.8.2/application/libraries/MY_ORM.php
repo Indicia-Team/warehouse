@@ -875,7 +875,7 @@ class ORM extends ORM_Core {
           if ($isAttribute) {
             // extract the nn, this is the attribute id
             preg_match('/[0-9]+/', $baseAttrName[0], $attrId);
-            if ($content['value'])  
+            if (isset($content['value']) && $content['value'] !== '')  
               array_push($got_values, $attrId[0]);
             else {
               // keep track of the empty field names, so we can attach any required validation errors 
