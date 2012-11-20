@@ -26,14 +26,14 @@ require_once('includes/report.php');
 /**
  * Prebuilt Indicia data form that lists the output of an occurrences report with an option
  * to verify, reject or flag dubious each record.
- * 
+ *
  * @package Client
  * @subpackage PrebuiltForms
  */
 class iform_verification_3 {
-  
-  /** 
-   * Return the form metadata. 
+
+  /**
+   * Return the form metadata.
    * @return array The definition of the form.
    */
   public static function get_verification_3_definition() {
@@ -45,20 +45,29 @@ class iform_verification_3 {
           'user\'s profile which match input parameters for the report then these are passed through. For example if you enable the Easy Login '.
           'feature then the expert\'s location of expertise (e.g. vice county) and taxon groups they have expertise in can be passed into the '.
           'report to filter the data. See the "Auto-checked verification data" report for an example.',
-      'helpLink' => 'http://code.google.com/p/indicia/wiki/PrebuiltFormVerification3'      
+      'helpLink' => 'http://code.google.com/p/indicia/wiki/PrebuiltFormVerification3'
     );
   }
-  
+
   /**
    * Get the list of parameters for this form.
    * @return array List of parameters that this form requires.
    */
-  public static function get_parameters() {   
+  public static function get_parameters() {
     $r = array_merge(
       iform_map_get_map_parameters(),
       iform_report_get_minimal_report_parameters(),
       array(
-         array(
+        array(
+          'name'=>'mapping_report_name',
+          'caption'=>'Report for map output',
+          'description'=>'Report used to obtain the output for the map. Should have the same parameters as the grid report but only needs to '.
+              'return the occurrence id, geom and any shape formatting.',
+          'type'=>'report_helper::report_picker',
+          'group'=>'Report Settings',
+          'default'=>'library/occurrences/verification_list_3_mapping'
+        ),
+        array(
           'name'=>'record_details_report',
           'caption'=>'Report for record details',
           'description'=>'Report used to obtain the details of a record. See reports_for_prebuilt_forms/verification_3/record_data.xml for an example.',
@@ -350,11 +359,11 @@ record_status=C
 records=unverified
 searchArea=
 idlist=';
-      
+
     }
     return $r;
   }
-  
+
   private static function get_template_grid_left($args, $auth) {
     $r .= '<div id="outer-grid-left" class="ui-helper-clearfix">';
     $r .= '<div id="grid" class="left">{grid}';
@@ -362,7 +371,7 @@ idlist=';
     $r .= '<button type="button" id="btn-verify-all">'.lang::get('Verify all clean records in grid').'</button>';
     $r .= '</div>';
     $r .= '<div id="record-details-wrap" class="right ui-widget ui-widget-content">';
-    $r .= self::instructions('grid on the left');    
+    $r .= self::instructions('grid on the left');
     $r .= '<div id="record-details-content" style="display: none">';
     $r .= '<div id="record-details-toolbar">';
     $r .= '<label>Set status:</label>';
@@ -404,7 +413,7 @@ idlist=';
     $r .= '</div></div></div></div>';
     return $r;
   }
-  
+
   private static function get_template_with_map($args, $auth, $extraParams, $paramDefaults) {
     $r .= '<div id="outer-with-map" class="ui-helper-clearfix">';
     $r .= '<div id="grid" class="left" style="width:65%">{paramsForm}{grid}';
@@ -426,7 +435,7 @@ idlist=';
     // give realistic performance on the map
     $extraParams['limit']=3000;
     $r .= report_helper::report_map(array(
-      'dataSource' => $args['report_name'],
+      'dataSource' => !empty($args['mapping_report_name']) ? $args['mapping_report_name'] : $args['report_name'],
       'mode' => 'report',
       'readAuth' => $auth,
       'autoParamsForm' => false,
@@ -439,7 +448,7 @@ idlist=';
     ));
     $r .= '</div>';
     $r .= '<div id="record-details-wrap" class="ui-widget ui-widget-content">';
-    $r .= self::instructions('grid on the left');    
+    $r .= self::instructions('grid on the left');
     $r .= '<div id="record-details-content" style="display: none">';
     $r .= '<div id="record-details-toolbar">';
     $r .= '<label>Set status:</label>';
@@ -454,7 +463,7 @@ idlist=';
     // note - there is a dependency in the JS that comments is the last tab and images the 2nd to last.
     $r .= data_entry_helper::tab_header(array(
       'tabs'=>array(
-        '#details-tab'=>lang::get('Details'),     
+        '#details-tab'=>lang::get('Details'),
         '#phenology-tab'=>lang::get('Phenology'),
         '#images-tab'=>lang::get('Images'),
         '#comments-tab'=>lang::get('Comments')
@@ -464,7 +473,7 @@ idlist=';
     data_entry_helper::enable_tabs(array(
       'divId'=>'record-details-tabs'
     ));
-    $r .= '<div id="details-tab"></div>';    
+    $r .= '<div id="details-tab"></div>';
     $r .= '<div id="phenology-tab"><p>'.lang::get('The following phenology chart shows the relative abundance of records through the '.
         'year for this species, <em>from the online recording data only.</em>').'</p><div id="chart-div"></div></div>';
     $r .= '<div id="images-tab"></div>';
@@ -472,9 +481,9 @@ idlist=';
     $r .= '</div></div></div></div></div>';
     return $r;
   }
-  
+
   /**
-   * Constructs HTML for a block of instructions. 
+   * Constructs HTML for a block of instructions.
    * @param string $gridPos Pass in a description of where the records grid is relative to the instruction  block, e.g. 'grid below' or 'grid on the left'
    * @return string HTML for the instruction div
    */
@@ -484,7 +493,7 @@ idlist=';
     $r .= '<li>'.lang::get('Fine tune the list of records by entering search criteria into the boxes at the top of each grid column.')."</li>\n";
     $r .= '<li>'.lang::get("Click on a record in the $gridpos to view the details.")."</li>\n";
     $r .= '<li>'.lang::get('When viewing the record details, verify, reject, mark as dubious or email the record details for confirmation.')."</li>\n";
-    $r .= '<li>'.lang::get('When viewing the record details, view and add comments on the record.')."</li>\n";    
+    $r .= '<li>'.lang::get('When viewing the record details, view and add comments on the record.')."</li>\n";
     $r .= '<li>'.lang::get('Use the ... button to the left of each record to view bulk-verification options for similar records.')."</li>\n";
     $r .= '<li>'.lang::get('Use the map tool buttons to draw lines, polygons or points then reload the report using the <strong>Filter</strong> button above the grid.')."</li>\n";
     $r .= '<li>'.lang::get('Use the <strong>Buffer (m)</strong> input box to buffer your lines, polygons or points to search against.')."</li>\n";
@@ -492,8 +501,8 @@ idlist=';
     $r .= '</ul></div>';
     return $r;
   }
- 
-  
+
+
   /**
    * Return the Indicia form code.
    * Expects there to be a sample attribute with caption 'Email' containing the email
@@ -561,14 +570,14 @@ idlist=';
     );
     if (isset($args['show_map']) && $args['show_map']) {
       $opts['paramsOnly']=true;
-      $paramsForm = data_entry_helper::report_grid($opts);
+      $paramsForm = report_helper::report_grid($opts);
       $opts['paramsOnly']=false;
       $opts['autoParamsForm']=false;
-      $grid = data_entry_helper::report_grid($opts);
-      $r = str_replace(array('{grid}','{paramsForm}'), array($grid, $paramsForm), 
+      $grid = report_helper::report_grid($opts);
+      $r = str_replace(array('{grid}','{paramsForm}'), array($grid, $paramsForm),
           self::get_template_with_map($args, $auth, $opts['extraParams'], $opts['paramDefaults']));
     } else {
-      $grid = data_entry_helper::report_grid($opts);
+      $grid = report_helper::report_grid($opts);
       $r = str_replace(array('{grid}'), array($grid), self::get_template_grid_left($args, $auth));
     }
     $link = data_entry_helper::get_reload_link_parts();
@@ -607,7 +616,7 @@ idlist=';
     data_entry_helper::$javascript .= 'indiciaData.popupTranslations.verbD="'.lang::get('mark dubious')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.popupTranslations.V="'.lang::get('Verification')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.popupTranslations.R="'.lang::get('Rejection')."\";\n";
-    data_entry_helper::$javascript .= 'indiciaData.popupTranslations.D="'.lang::get('Mark Dubious')."\";\n";    
+    data_entry_helper::$javascript .= 'indiciaData.popupTranslations.D="'.lang::get('Mark Dubious')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.popupTranslations.emailTitle="'.lang::get('Email record details for checking')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.popupTranslations.sendEmail="'.lang::get('Send Email')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.popupTranslations.emailSent="'.lang::get('The email was sent successfully.')."\";\n";
@@ -621,26 +630,26 @@ idlist=';
     data_entry_helper::$javascript .= 'indiciaData.statusTranslations.T = "'.lang::get('Test record')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.statusTranslations.S = "'.lang::get('Sent for verification')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.statusTranslations.C = "'.lang::get('Awaiting verification')."\";\n";
-    
+
     data_entry_helper::$javascript .= 'indiciaData.email_subject_send_to_verifier = "'.$args['email_subject_send_to_verifier']."\";\n";
     $body = str_replace(array("\r", "\n"), array('', '\n'), $args['email_body_send_to_verifier']);
     data_entry_helper::$javascript .= 'indiciaData.email_body_send_to_verifier = "'.$body."\";\n";
-    
+
     data_entry_helper::$javascript .= 'indiciaData.email_subject_send_to_recorder = "'.$args['email_subject_send_to_recorder']."\";\n";
     $body = str_replace(array("\r", "\n"), array('', '\n'), $args['email_body_send_to_recorder']);
     data_entry_helper::$javascript .= 'indiciaData.email_body_send_to_recorder = "'.$body."\";\n";
-    
+
     data_entry_helper::$javascript .= 'indiciaData.email_request_attribute = "'.$args['email_request_attribute']."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.email_address_attribute = "'.$args['email_address_attribute']."\";\n";
-   
+
     data_entry_helper::$javascript .= 'indiciaData.email_subject_verified = "'.$args['email_subject_verified']."\";\n";
     $body = str_replace(array("\r", "\n"), array('', '\n'), $args['email_body_verified']);
     data_entry_helper::$javascript .= 'indiciaData.email_body_verified = "'.$body."\";\n";
-    
+
     data_entry_helper::$javascript .= 'indiciaData.email_subject_rejected = "'.$args['email_subject_rejected']."\";\n";
     $body = str_replace(array("\r", "\n"), array('', '\n'), $args['email_body_rejected']);
     data_entry_helper::$javascript .= 'indiciaData.email_body_rejected = "'.$body."\";\n";
-    
+
     data_entry_helper::$javascript .= 'indiciaData.email_subject_dubious = "'.$args['email_subject_dubious']."\";\n";
     $body = str_replace(array("\r", "\n"), array('', '\n'), $args['email_subject_dubious']);
     data_entry_helper::$javascript .= 'indiciaData.email_subject_dubious = "'.$body."\";\n";
@@ -648,12 +657,12 @@ idlist=';
     data_entry_helper::add_resource('jqplot');
     data_entry_helper::add_resource('jqplot_bar');
     return $r;
-    
+
   }
-  
+
   /**
    * Use the mapping from Drupal to Indicia users to get the Indicia user ID for the current logged in Drupal user.
-   * If there is a user profile field called profile_indicia_user_id then this value is used instead, for 
+   * If there is a user profile field called profile_indicia_user_id then this value is used instead, for
    * example when the Easy Login feature is installed.
    */
   private static function get_indicia_user_id($args) {
@@ -678,14 +687,14 @@ idlist=';
       // verifiers mapping is just a single number
       return trim($args['verifiers_mapping']);
     }
-	  return 1; // default to admin  
+	  return 1; // default to admin
   }
-  
+
   /**
    * Ajax handler to provide the content for the details of a single record.
    */
   public static function ajax_details($website_id, $password, $node) {
-    
+
     $details_report = empty($node->params['record_details_report']) ? 'reports_for_prebuilt_forms/verification_3/record_data' : $node->params['record_details_report'];
     $attrs_report = empty($node->params['record_attrs_report']) ? 'reports_for_prebuilt_forms/verification_3/record_data_attributes' : $node->params['record_attrs_report'];
     iform_load_helpers(array('report_helper'));
@@ -713,7 +722,7 @@ idlist=';
         $data[$caption[0]][] = array('caption'=>$caption[1], 'value'=>$record[$col]);
       }
     }
-    
+
     // Do the custom attributes
      $options = array(
       'dataSource' => $attrs_report,
@@ -729,7 +738,7 @@ idlist=';
         $data[$attribute['attribute_type']][] = array('caption'=>$attribute['caption'], 'value'=>$attribute['value']);
       }
     }
-    
+
     $r = "<table>\n";
     $r .= '<tr><td class="caption">'.lang::get('Status').'</td><td class="status status-'.$record['record_status'].'">';
     $r .= self::statusLabel($record['record_status']);
@@ -748,7 +757,7 @@ idlist=';
       }
     }
     $r .= "</table>\n";
-    
+
     $additional=array();
     $additional['wkt'] = $record['wkt'];
     $additional['taxon'] = $record['taxon'];
@@ -765,7 +774,7 @@ idlist=';
       'additional' => $additional
     ));
   }
-  
+
   private function statusLabel($status) {
     switch ($status) {
       case 'V' :
@@ -785,13 +794,13 @@ idlist=';
       default :
         return lang::get('Unknown');
     }
-    
+
   }
-  
+
   public static function ajax_images($website_id, $password) {
     echo self::get_images($website_id, $password);
   }
-  
+
   private static function get_images($website_id, $password) {
     iform_load_helpers(array('data_entry_helper'));
     $auth = data_entry_helper::get_read_auth($website_id, $password);
@@ -802,7 +811,7 @@ idlist=';
       'sharing'=>'verification'
     ));
     $r = '';
-    if (count($images)===0) 
+    if (count($images)===0)
       $r .= lang::get('No images found for this record');
     else {
       $path = data_entry_helper::get_uploaded_image_folder();
@@ -817,11 +826,11 @@ idlist=';
     $r .= '<script type="text/javascript">$("a.fancybox").fancybox();</script>';
     return $r;
   }
-  
+
   public static function ajax_comments($website_id, $password) {
     echo self::get_comments($website_id, $password);
   }
-  
+
   private static function get_comments($website_id, $password, $includeAddNew = true) {
     iform_load_helpers(array('data_entry_helper'));
     $auth = data_entry_helper::get_read_auth($website_id, $password);
@@ -832,7 +841,7 @@ idlist=';
       'sharing'=>'verification'
     ));
     $r = '';
-    if (count($comments)===0) 
+    if (count($comments)===0)
       $r .= '<p id="no-comments">'.lang::get('No comments have been made.').'</p>';
     $r .= '<div id="comment-list">';
     foreach($comments as $comment) {
@@ -856,7 +865,7 @@ idlist=';
     }
     return $r;
   }
-  
+
   public static function ajax_imagesAndComments($website_id, $password) {
     header('Content-type: application/json');
     echo json_encode(array(
@@ -864,7 +873,7 @@ idlist=';
       'comments' => self::get_comments($website_id, $password, false)
     ));
   }
-  
+
   /**
    * Ajax method to send an email. Takes the subject and body in the $_GET parameters.
    * @return boolean True if the email was sent.
@@ -877,7 +886,7 @@ idlist=';
     $headers .= 'From: '. $site_email . PHP_EOL . "\r\n";
     $headers .= 'Reply-To: '. $user->mail . "\r\n";
     $headers .= 'Return-Path: '. $site_email . "\r\n";
-    $emailBody = $_POST['body'];        
+    $emailBody = $_POST['body'];
     $emailBody = str_replace("\n", "<br/>", $emailBody);
     // Send email. Depends upon settings in php.ini being correct
     $success = mail($_POST['to'],
@@ -886,10 +895,10 @@ idlist=';
          $headers);
     if ($success)
       echo 'OK';
-    else  
+    else
       echo 'Fail';
   }
-  
+
   /**
    * Ajax method to retrieve phenology data for a species by external key.
    */
@@ -915,8 +924,8 @@ idlist=';
     foreach ($data as $month)
       $output[$month['name']][1] = intval($month['value']);
     echo json_encode($output);
-  } 
-  
+  }
+
   /**
    * Ajax method to proxy requests for bulk verification on to the warehouse, attaching write auth
    * as it goes.
@@ -929,8 +938,8 @@ idlist=';
     $response = data_entry_helper::http_post($url, $params);
     echo $response['output'];
   }
-  
-  /** 
+
+  /**
    * Convert a timestamp into readable format (... ago) for use on a comment list.
    * @param timestamp $timestamp The date time to convert.
    * @return string The output string.
@@ -940,31 +949,31 @@ idlist=';
    // Having the full phrase means that it is fully localisable if the phrasing is different.
    $periods = array(
        lang::get("{1} second ago"),
-       lang::get("{1} minute ago"), 
-       lang::get("{1} hour ago"), 
-       lang::get("Yesterday"), 
-       lang::get("{1} week ago"), 
-       lang::get("{1} month ago"), 
-       lang::get("{1} year ago"), 
+       lang::get("{1} minute ago"),
+       lang::get("{1} hour ago"),
+       lang::get("Yesterday"),
+       lang::get("{1} week ago"),
+       lang::get("{1} month ago"),
+       lang::get("{1} year ago"),
        lang::get("{1} decade ago"));
    $periodsPlural = array(
        lang::get("{1} seconds ago"),
-       lang::get("{1} minutes ago"), 
-       lang::get("{1} hours ago"), 
-       lang::get("{1} days ago"), 
-       lang::get("{1} weeks ago"), 
-       lang::get("{1} months ago"), 
-       lang::get("{1} years ago"), 
+       lang::get("{1} minutes ago"),
+       lang::get("{1} hours ago"),
+       lang::get("{1} days ago"),
+       lang::get("{1} weeks ago"),
+       lang::get("{1} months ago"),
+       lang::get("{1} years ago"),
        lang::get("{1} decades ago"));
    $lengths = array("60","60","24","7","4.35","12","10");
    for($j = 0; $difference >= $lengths[$j]; $j++)
    $difference /= $lengths[$j];
    $difference = round($difference);
-   if($difference == 1) 
+   if($difference == 1)
      $text = str_replace('{1}', $difference, $periods[$j]);
    else
      $text = str_replace('{1}', $difference, $periodsPlural[$j]);
-   return $text; 
+   return $text;
   }
-  
+
 }
