@@ -77,30 +77,6 @@ class data_entry_helper extends helper_base {
   public static $entity_to_load=null;
 
   /**
-   * @var integer Length of time in seconds after which cached Warehouse responses will start to expire.
-   */
-  public static $cache_timeout=3600;
-
-  /**
-   * @var integer On average, every 1 in $cache_chance_expire times the Warehouse is called for data which is
-   * cached but older than the cache timeout, the cached data will be refreshed. This introduces a random element to
-   * cache refreshes so that no single form load event is responsible for refreshing all cached content.
-   */
-  public static $cache_chance_refresh_file=5;
-
-  /**
-   * @var integer On average, every 1 in $cache_chance_purge times the Warehouse is called for data, all files
-   * older than 5 times the cache_timeout will be purged, apart from the most recent $cache_allowed_file_count files.
-   */
-  public static $cache_chance_purge=100;
-
-  /**
-   * @var integer Number of recent files allowed in the cache which the cache will not bother clearing during a deletion operation.
-   * They will be refreshed occasionally when requested anyway.
-   */
-  public static $cache_allowed_file_count=50;
-
-  /**
    * @var integer On average, every 1 in $interim_image_chance_purge times the Warehouse is called for data, all interim images
    * older than $interim_image_expiry seconds will be deleted. These are images that should have uploaded to the warehouse but the form was not
    * finally submitted.
@@ -3430,108 +3406,6 @@ $('div#$escaped_divId').indiciaTreeBrowser({
           array_key_exists('default', $options) ? $options['default'] : '');
     }
     return $options;
-  }
-
-  /**
-   * Private function to fetch a validated timeout value from passed in options array
-   * @param array $options Options array with the following possibilities:<ul>
-   * <li><b>cachetimeout</b><br/>
-   * Optional. The length in seconds before the cache times out and is refetched.</li></ul>
-   * @return Timeout in number of seconds, else FALSE if data is not to be cached.
-   */
-  private static function _getCacheTimeOut($options)
-  {
-    if (is_numeric(self::$cache_timeout) && self::$cache_timeout > 0) {
-      $ret_value = self::$cache_timeout;
-    } else {
-      $ret_value = false;
-    }
-    if (isset($options['cachetimeout'])) {
-      if (is_numeric($options['cachetimeout']) && $options['cachetimeout'] > 0) {
-        $ret_value = $options['cachetimeout'];
-      } else {
-        $ret_value = false;
-      }
-    }
-    return $ret_value;
-  }
-
-  /**
-   * Private function to generate a filename to be used as the cache file for this data
-   * @param string $path directory path for file
-   * @param array $options Options array : contents are used along with md5 to generate the filename.
-   * @param number $timeout - will be false if no caching to take place
-   * @return string filename, else FALSE if data is not to be cached.
-   */
-  private static function _getCacheFileName($path, $options, $timeout)
-  {
-    /* If timeout is not set, we're not caching */
-    if (!$timeout)
-      return false;
-    if(!is_dir($path) || !is_writeable($path))
-      return false;
-
-    $cacheFileName = $path.'cache_'.self::$website_id.'_';
-    $cacheFileName .= md5(self::array_to_query_string($options));
-
-    return $cacheFileName;
-  }
-
-  /**
-   * Private function to return the cached data stored in the specified local file.
-   * @param string $file Cache file to be used, includes path
-   * @param number $timeout - will be false if no caching to take place
-   * @param array $options Options array : contents used to confirm what this data is.
-   * @return array equivalent of call to http_post, else FALSE if data is not to be cached.
-   */
-  private static function _getCachedResponse($file, $timeout, $options)
-  {
-    // Note the random element, we only timeout a cached file sometimes.
-    if (($timeout && $file && is_file($file) &&
-        (rand(1, self::$cache_chance_refresh_file)!=1 || filemtime($file) >= (time() - $timeout)))
-    ) {
-      $response = array();
-      $handle = fopen($file, 'rb');
-      if(!$handle) return false;
-      $tags = fgets($handle);
-      $response['output'] = fread($handle, filesize($file));
-      fclose($handle);
-      if ($tags == self::array_to_query_string($options)."\n")
-        return($response);
-    } else {
-      self::_timeOutCacheFile($file, $timeout);
-    }
-    return false;
-  }
-
-  /**
-   * Private function to remove a cache file if it has timed out.
-   * @param string $file Cache file to be removed, includes path
-   * @param number $timeout - will be false if no caching to take place
-   */
-  private static function _timeOutCacheFile($file, $timeout)
-  {
-    if ($file && is_file($file) && filemtime($file) < (time() - $timeout)) {
-      unlink($file);
-    }
-  }
-
-  /**
-   * Private function to create a cache file provided it does not already exist.
-   * @param string $file Cache file to be removed, includes path - will be false if no caching to take place
-   * @param array $response http_post return value
-   * @param array $options Options array : contents used to tag what this data is.
-   */
-  private static function _cacheResponse($file, $response, $options)
-  {
-    // need to create the file as a binary event - so create a temp file and move across.
-    if ($file && !is_file($file) && isset($response['output'])) {
-      $handle = fopen($file.getmypid(), 'wb');
-      fputs($handle, self::array_to_query_string($options)."\n");
-      fwrite($handle, $response['output']);
-      fclose($handle);
-      rename($file.getmypid(),$file);
-    }
   }
 
   /**
