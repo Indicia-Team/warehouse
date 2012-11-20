@@ -1439,6 +1439,8 @@ mapSettingsHooks.push(function(opts) {
    * verification, moderation, peer_review, data_flow, website (this website only) or me (my data only).</li>
    * <li><b>UserId</b>
    * If sharing=me, then this must contain the Indicia user ID of the user to return data for.
+   * <li><b>caching</b>
+   * If true, then the response will be cached and the cached copy used for future calls. Default false.
    * </li>
    * </ul>
 
@@ -1446,7 +1448,7 @@ mapSettingsHooks.push(function(opts) {
    * @return object If linkOnly is set in the options, returns the link string, otherwise returns the response as an array.
    */
   public static function get_report_data($options, $extra='') {
-    $query = array();
+    $query = array();    
     if (!isset($options['mode'])) $options['mode']='report';
     if (!isset($options['format'])) $options['format']='json';
     if ($options['mode']=='report') {
@@ -1497,13 +1499,29 @@ mapSettingsHooks.push(function(opts) {
       return (empty(parent::$warehouse_proxy) ? parent::$base_url : parent::$warehouse_proxy).$request;
     }
     else {
+      if (isset($options['caching']) && $options['caching']) {
+        // Get the URL params, so we know what the unique thing is we are caching
+        $query=parse_url(parent::$base_url.$request, PHP_URL_QUERY);                
+        parse_str($query, $cacheOpts);
+        unset($cacheOpts['auth_token']);
+        unset($cacheOpts['nonce']);
+        $cacheTimeOut = self::_getCacheTimeOut($options);
+        $cacheFolder = self::relative_client_helper_path() . (isset(parent::$cache_folder) ? parent::$cache_folder : 'cache/');
+        $cacheFile = self::_getCacheFileName($cacheFolder, $cacheOpts, $cacheTimeOut);        
+        $response = self::_getCachedResponse($cacheFile, $cacheTimeOut, $cacheOpts);
+      }
       // no need to proxy the request, as coming from server-side
-      $response = self::http_post(parent::$base_url.$request, null);
+      if (!isset($response) || $response===false)
+        $response = self::http_post(parent::$base_url.$request, null);
       $decoded = json_decode($response['output'], true);
       if (!is_array($decoded))
         return array('error'=>print_r($response, true));
-      else
+      else {
+        if (isset($options['caching']) && $options['caching']) { 
+          self::_cacheResponse($cacheFile, $response, $cacheOpts);
+        }
         return $decoded;
+      }
     }
   }
 
@@ -1778,7 +1796,8 @@ if (typeof mapSettingsHooks!=='undefined') {
       'callback' => '',
       'paramsFormButtonCaption' => 'Run Report',
       'paramsInMapToolbar' => false,
-      'view' => 'list'
+      'view' => 'list',
+      'caching' => isset($options['paramsOnly']) && $options['paramsOnly']
     ), $options);
     if ($options['galleryColCount']>1) $options['class'] .= ' gallery';
     // use the current report as the params form by default
