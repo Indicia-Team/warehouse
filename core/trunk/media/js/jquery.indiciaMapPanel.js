@@ -115,8 +115,8 @@ mapGeoreferenceHooks = [];
      * Adds a buffer around a boundary so you can zoom to the boundary without zooming too tight.
      */
     function _extendBounds(bounds, buffer) {
-      var dy = (bounds.top-bounds.bottom) * buffer;
-      var dx = (bounds.right-bounds.left) * buffer;
+      var dy = Math.max(50, (bounds.top-bounds.bottom) * buffer);
+      var dx = Math.max(50, (bounds.right-bounds.left) * buffer);
       bounds.top = bounds.top + dy;
       bounds.bottom = bounds.bottom - dy;
       bounds.right = bounds.right + dx;
@@ -126,16 +126,20 @@ mapGeoreferenceHooks = [];
 
     /**
      * Add a well known text definition of a feature to the map.
-     * WKT is assumed to be in map projection.
+     * WKT is assumed to be in map projection, unless transform is set to true 
+     * in which case it is transformed from the indicia projection to map projection.
      * @access private
      */
-    function _showWktFeature(div, wkt, layer, invisible, temporary, type, panzoom) {
+    function _showWktFeature(div, wkt, layer, invisible, temporary, type, panzoom, transform) {
       var parser = new OpenLayers.Format.WKT();
       var features = [];
       // This replaces other features of the same type
       _removeAllFeatures(layer, type);
       if(wkt){
         var feature = parser.read(wkt);
+        if (typeof transform!=="undefined" && transform && div.map.projection.getCode() != div.indiciaProjection.getCode()) {
+          feature.geometry.transform(div.indiciaProjection, div.map.projection);
+        }
         var styletype = (typeof type !== 'undefined') ? styletype = type : styletype = 'default';
         feature.style = new style(styletype);
         feature.attributes.type = type;
@@ -1298,7 +1302,7 @@ mapGeoreferenceHooks = [];
         // Draw the feature to be loaded on startup, if present
         if (this.settings.initialFeatureWkt)
         {
-          _showWktFeature(this, this.settings.initialFeatureWkt, div.map.editLayer, null, false);
+          _showWktFeature(this, this.settings.initialFeatureWkt, div.map.editLayer, null, false, "undefined", true, true);
         }
         
         if (div.settings.clickForSpatialRef) {
