@@ -666,8 +666,6 @@ function simple_tooltip(target_items, name){
             feature=indiciaData.reportlayer.getFeatureById(featureId);
             if (feature!==null) {
               indiciaData.reportlayer.map.zoomToExtent(feature.geometry.getBounds());
-            } else {
-              alert('This record does not have spatial information in the database');
             }
           }
         });
