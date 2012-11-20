@@ -28,6 +28,18 @@ function selectRow(tr) {
     null,
     function (data) {
       current_record = data;
+      // if no selected features on map, add a feature for this record. This means the report was limited to 3K occurrences
+      // and we are trying to look at one of the others.
+      if (indiciaData.reportlayer.selectedFeatures.length===0) {
+        var feature, geom=OpenLayers.Geometry.fromWKT(data.additional.wkt);
+        if (indiciaData.mapdiv.map.projection.getCode() != indiciaData.mapdiv.indiciaProjection.getCode()) {
+          geom.transform(indiciaData.mapdiv.indiciaProjection, indiciaData.mapdiv.map.projection);
+        }
+        feature = new OpenLayers.Feature.Vector(geom, {'occurrence_id':data.data.Record[0].value});
+        // store a supplied identifier against the feature
+        feature.id=data.data.Record[0].value;
+        indiciaData.reportlayer.addFeatures([feature]);
+      }
       $('#instructions').hide();
       $('#record-details-content').show();
       if ($(tr).parents('tbody').length !== 0) {
