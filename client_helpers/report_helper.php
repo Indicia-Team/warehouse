@@ -368,7 +368,7 @@ class report_helper extends helper_base {
     $currentUrl = self::get_reload_link_parts();
     // automatic handling for Drupal clean urls.
     $pathParam = (function_exists('variable_get') && variable_get('clean_url', 0)=='0') ? 'q' : '';
-    $rootFolder = self::getRootFolder();
+    $rootFolder = self::getRootFolder() . empty($pathParam) ? '' : "?$pathParam=";
     // amend currentUrl path if we have drupal dirty URLs so javascript will work properly
     if ($pathParam==='q' && isset($currentUrl['params']['q']) && strpos($currentUrl['path'], '?')===false) {
       $currentUrl['path'] = $currentUrl['path'].'?q='.$currentUrl['params']['q'];
