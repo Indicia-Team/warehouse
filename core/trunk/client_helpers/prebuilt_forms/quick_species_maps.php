@@ -123,9 +123,10 @@ class iform_quick_species_maps {
       'paramsFormButtonCaption'=>lang::get('Filter')        
     ), $reportOptions);
     $reportOptions['rowId']='external_key';
+    $imgPath = empty(report_helper::$images_path) ? report_helper::relative_client_helper_path()."../media/images/" : report_helper::$images_path;
     $reportOptions['columns'][] = array(
       'actions'=>array(
-        array('img'=>report_helper::client_helper_path()."../media/images/add.png",'caption'=>'Click to add this species to the map')
+        array('img'=>"$imgPath/add.png",'caption'=>'Click to add this species to the map')
       )        
     );
     $r .= report_helper::report_grid($reportOptions);
