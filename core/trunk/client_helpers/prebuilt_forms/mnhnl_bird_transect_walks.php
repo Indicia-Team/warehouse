@@ -1022,8 +1022,23 @@ loadAttributes = function(attributeTable, attributeKey, key, keyValue, prefix){
               for (var i=0;i<attrdata.length;i++){
                 // in all cases if the attribute already has the <prefix>:<X>:<Y> format name we leave. Other wise we update <prefix>:<X> to <prefix>:<X>:<Y>
                 // We leave all values unchanged.
-                if (attrdata[i].id && (attrdata[i].iso == null || attrdata[i].iso == '' || attrdata[i].iso == '".$language."'))
-                  jQuery('[name='+attrPrefix+'\\:'+attrdata[i][attrKey]+']').attr('name', attrPrefix+':'+attrdata[i][attrKey]+':'+attrdata[i].id)
+                // need to be careful about Cloud: this is a drop down, but it is not language specific: the termlist is
+                // always in english, so the iso won't match.
+                if (attrdata[i].id){
+                  if (attrdata[i].iso == null || attrdata[i].iso == '') // no iso - not a look up.
+                    jQuery('[name='+attrPrefix+'\\:'+attrdata[i][attrKey]+']').attr('name', attrPrefix+':'+attrdata[i][attrKey]+':'+attrdata[i].id);
+                  else {
+                    if (attrdata[i].iso == '".$language."') // this is our actual language so OK
+                      jQuery('[name='+attrPrefix+'\\:'+attrdata[i][attrKey]+']').attr('name', attrPrefix+':'+attrdata[i][attrKey]+':'+attrdata[i].id);
+                    else {// not our language: look up all the other attrs, and if we don't find one of this id for our language, use this one.
+                      var found = false;
+                      for (var j=0;j<attrdata.length;j++)
+                        found = found || (i!=j && attrdata[i][attrKey] == attrdata[j][attrKey] && attrdata[j].iso == '".$language."');
+                      if(!found)
+                        jQuery('[name='+attrPrefix+'\\:'+attrdata[i][attrKey]+']').attr('name', attrPrefix+':'+attrdata[i][attrKey]+':'+attrdata[i].id);
+                    }
+                  }
+                }
               }
             }};
           return retVal;
