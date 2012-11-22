@@ -47,7 +47,7 @@
     </param>
   </params>
   <columns>
-    <column name='occurrence_id' display='ID' sql='o.id' datatype='integer' />    
+    <column name='occurrence_id' display='ID' sql='o.id' datatype='integer' in_count="true" />    
     <column name='geom' visible='false' mappable="true" sql='st_astext(coalesce(s.geom, o.public_geom))' />
     <column name='fo' visible='false' feature_style="fillOpacity" sql='round(length(o.public_entered_sref) / 24.0, 2)' />
     <column name='sc' visible='false' feature_style="strokeColor" sql="case xo.record_status when 'C' then 
