@@ -269,10 +269,16 @@ class ReportEngine {
     else
     {
       // Okay, all the parameters have been provided.
-      $this->mergeQuery();
-      $this->mergeCountQuery();
-      $this->executeQuery();
-      $data = $this->response->result_array(FALSE);
+      if ($this->limit===0 || $this->limit==='0') {
+        // optimisation for zero limited queries
+        $data=array();
+      }
+      else {      
+        $this->mergeQuery();
+        $this->mergeCountQuery();
+        $this->executeQuery();
+        $data = $this->response->result_array(FALSE);
+      }
       $this->prepareColumns();
       $this->post_process($data);
       $r = array(
@@ -780,7 +786,7 @@ class ReportEngine {
       } else {
         $query = preg_replace("/#order_by#/",  "", $query);
       }
-      if ($this->limit)
+      if (isset($this->limit))
         $query .= ' LIMIT '.$this->limit;
       if ($this->offset)
         $query .= ' OFFSET '.$this->offset;
