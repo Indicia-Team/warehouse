@@ -35,6 +35,7 @@ function data_cleaner_scheduled_task() {
     $db->query('drop table occlist');
   } catch (Exception $e) {
     $db->query('drop table occlist');
+    throw $e;
   }
 }
 
