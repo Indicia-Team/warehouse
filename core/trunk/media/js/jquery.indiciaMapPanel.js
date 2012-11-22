@@ -72,7 +72,7 @@ mapGeoreferenceHooks = [];
      * Remove all features of a specific type or not of a specific type
      * This functionality allows a location to havea centroid and separate boundary.
      */
-    function _removeAllFeatures(layer, type, inverse) {
+    function removeAllFeatures(layer, type, inverse) {
       var toRemove = [];
       if (typeof inverse==="undefined") {
         inverse=false;
@@ -134,7 +134,7 @@ mapGeoreferenceHooks = [];
       var parser = new OpenLayers.Format.WKT();
       var features = [];
       // This replaces other features of the same type
-      _removeAllFeatures(layer, type);
+      removeAllFeatures(layer, type);
       if(wkt){
         var feature = parser.read(wkt);
         if (typeof transform!=="undefined" && transform && div.map.projection.getCode() != div.indiciaProjection.getCode()) {
@@ -397,7 +397,7 @@ mapGeoreferenceHooks = [];
         $('#'+opts.srefLatId).val(parts[0]);
         $('#'+opts.srefLongId).val(parts[1]);
       }
-      _removeAllFeatures(div.map.editLayer, 'boundary', true);
+      removeAllFeatures(div.map.editLayer, 'boundary', true);
       $('#'+opts.geomId).val(data.wkt);
       var parser = new OpenLayers.Format.WKT();
       // If mapwkt not provided, calculate it
@@ -1113,6 +1113,7 @@ mapGeoreferenceHooks = [];
       this.settings = opts;
       this.pointToSref = pointToSref;
       this.addPt = addPt;
+      this.removeAllFeatures = removeAllFeatures;
       // wrap the map in a div container
       $(this).wrap('<div id="map-container" style="width:'+opts.width+'" >');
       
@@ -1309,7 +1310,7 @@ mapGeoreferenceHooks = [];
           div.map.events.register('mousemove', null, function(evt) {
             if (div.map.editLayer.clickControl.active) {
               if (div.map.dragging) {
-                _removeAllFeatures(div.map.editLayer, 'ghost');
+                removeAllFeatures(div.map.editLayer, 'ghost');
               } else {
                 var ll = div.map.getLonLatFromPixel(evt.xy);
                 // don't recalculate if mouse is still over the existing ghost
@@ -1326,7 +1327,7 @@ mapGeoreferenceHooks = [];
                     pt = {x:ll.lon, y:ll.lat};
                     r=indiciaData.srefHandlers[_getSystem().toLowerCase()].pointToSref(pt, precisionInfo);
                     if (typeof r.error!=="undefined") {
-                      _removeAllFeatures(div.map.editLayer, 'ghost');
+                      removeAllFeatures(div.map.editLayer, 'ghost');
                     } else {
                       parser = new OpenLayers.Format.WKT();
                       feature = parser.read(r.wkt);
@@ -1346,7 +1347,7 @@ mapGeoreferenceHooks = [];
           }); 
           $('#map').mouseleave(function(evt) {
             // clear ghost hover markers when mouse leaves the map
-            _removeAllFeatures(div.map.editLayer, 'ghost'); 
+            removeAllFeatures(div.map.editLayer, 'ghost'); 
           });
         }
       }
