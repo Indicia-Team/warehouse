@@ -368,7 +368,7 @@ mapGeoreferenceHooks = [];
                 // data should contain 2 wkts, one in indiciaProjection which is stored in the geom field, 
                 // and one in mapProjection which is used to draw the object.
                 if (div.map.editLayer) {
-                  _showWktFeature(div, data.mapwkt, div.map.editLayer, null, false);
+                  _showWktFeature(div, data.mapwkt, div.map.editLayer, null, false, "clickPoint");
                 }
                 $('#'+opts.geomId).val(data.wkt);
               }
