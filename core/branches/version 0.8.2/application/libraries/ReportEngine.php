@@ -269,10 +269,16 @@ class ReportEngine {
     else
     {
       // Okay, all the parameters have been provided.
-      $this->mergeQuery();
-      $this->mergeCountQuery();
-      $this->executeQuery();
-      $data = $this->response->result_array(FALSE);
+      if ($this->limit===0 || $this->limit==='0') {
+        // optimisation for zero limited queries
+        $data=array();
+      }
+      else {      
+        $this->mergeQuery();
+        $this->mergeCountQuery();
+        $this->executeQuery();
+        $data = $this->response->result_array(FALSE);
+      }
       $this->prepareColumns();
       $this->post_process($data);
       $r = array(
@@ -288,7 +294,9 @@ class ReportEngine {
   public function record_count() {
     if (isset($this->countQuery) && $this->countQuery!==null) {
       $count = $this->reportDb->query($this->countQuery)->result_array(FALSE);
-      return $count[0]['count'];
+      // query could return no rows, in which case return zero.
+      if(count($count)>0) return $count[0]['count'];
+      return 0;
     } else {
       return false;
     }
@@ -358,9 +366,10 @@ class ReportEngine {
           array_push($col_sets, $prefix);
           if (!in_array($prefix.'date', $cols)) {
             $this->columns[$prefix.'date'] = array(
-              'display'=>'',
+              'display'=>'Date',
               'class'=>'',
-              'style'=>''
+              'style'=>'',
+              'datatype'=>'date'
             );
           }
           // Hide the internal vague date columns, unless the report explicitly asks for them (in which case
@@ -409,7 +418,7 @@ class ReportEngine {
     foreach($attributeDefns as $attributeDefn){
         // Build an index of the report data indexed on the attribute: nb that the attribute data has been sorted in main_id order.
         $index = array();
-        for ($r=0; $r<count($data); $r++) {
+        for ($r=0; $r<$dataCount; $r++) {
           if(!isset($index[$data[$r][$attributeDefn->parentKey]])){
             $index[$data[$r][$attributeDefn->parentKey]] = array($r);
           } else
@@ -745,6 +754,15 @@ class ReportEngine {
         $filterClause = $this->getFilterClause($field, $this->reportReader->filterableColumns[$name]['datatype'], $operator, $value);
         $query = str_replace('#filters#', "AND $filterClause\n#filters#", $query);
       }
+      elseif (preg_match('/(?P<prefix>.*)date$/', $name, $matches) 
+          && array_key_exists($matches['prefix'].'date_start', $this->reportReader->columns)
+          && array_key_exists($matches['prefix'].'date_end', $this->reportReader->columns)
+          && array_key_exists($matches['prefix'].'date_type', $this->reportReader->columns)) {
+        // special handling for a filter on a vague date added column
+        $field = $this->reportReader->columns[$matches['prefix'].'date_start']['sql'];
+        $filterClause = $this->getFilterClause($field, 'date', $operator, $value);
+        $query = str_replace('#filters#', "AND $filterClause\n#filters#", $query);
+      }
     }
     // remove the marker left in the query to show where to insert joins
     $query = str_replace(array('#joins#','#fields#','#group_bys#','#filters#'), array('','','',''), $query);
@@ -765,7 +783,7 @@ class ReportEngine {
       } else {
         $query = preg_replace("/#order_by#/",  "", $query);
       }
-      if ($this->limit)
+      if (isset($this->limit))
         $query .= ' LIMIT '.$this->limit;
       if ($this->offset)
         $query .= ' OFFSET '.$this->offset;
@@ -783,7 +801,7 @@ class ReportEngine {
     } else 
       $operator = '='; 
     // apart from text and date values we can use > or < to set the filter operator
-      if ($datatype!='text' && $datatype!='date' && (substr($value, 0, 1)=='<' || substr($value, 0, 1)=='>')) {
+    if ($datatype!='text' && $datatype!='date' && (substr($value, 0, 1)=='<' || substr($value, 0, 1)=='>')) {
       $operator=substr($value, 0, 1);
       $value = substr($value, 1);
     }
