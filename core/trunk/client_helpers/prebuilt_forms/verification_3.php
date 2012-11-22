@@ -432,8 +432,6 @@ idlist=';
       $options,
       $olOptions
     );
-    // give realistic performance on the map
-    $extraParams['limit']=3000;
     $r .= report_helper::report_map(array(
       'dataSource' => !empty($args['mapping_report_name']) ? $args['mapping_report_name'] : $args['report_name'],
       'mode' => 'report',
@@ -444,7 +442,8 @@ idlist=';
       'reportGroup' => 'verification',
       'clickableLayersOutputMode' => 'report',
       'rowId'=>'occurrence_id',
-      'sharing'=>'verification'
+      'sharing'=>'verification',
+      'ajax'=>TRUE
     ));
     $r .= '</div>';
     $r .= '<div id="record-details-wrap" class="ui-widget ui-widget-content">';
@@ -573,6 +572,8 @@ idlist=';
       $paramsForm = report_helper::report_grid($opts);
       $opts['paramsOnly']=false;
       $opts['autoParamsForm']=false;
+      $opts['sendOutputToMap']=true;
+      $opts['zoomMapToOutput']=false;
       $grid = report_helper::report_grid($opts);
       $r = str_replace(array('{grid}','{paramsForm}'), array($grid, $paramsForm),
           self::get_template_with_map($args, $auth, $opts['extraParams'], $opts['paramDefaults']));

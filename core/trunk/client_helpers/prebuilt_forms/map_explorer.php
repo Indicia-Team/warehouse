@@ -211,7 +211,8 @@ class iform_map_explorer {
       'rememberParamsReportGroup'=>'explore',
       'clickableLayersOutputMode'=>'report',
       'sharing'=>$sharing,
-      'rowId'=>'occurrence_id'
+      'rowId'=>'occurrence_id',
+      'ajax'=>TRUE
     ));
     $options = array_merge(
       iform_map_get_map_options($args, $readAuth),
