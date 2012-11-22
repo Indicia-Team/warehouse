@@ -58,7 +58,7 @@ and co.taxa_taxon_list_external_key is not null
     <column name='sensitive' display='Sensitive' sql='upper(cast (o.confidential as character))' datatype="text" />
     <column name='startdate' display='StartDate' sql='cast(co.date_start as character varying)' datatype="text" />
     <column name='enddate' display='EndDate' sql='cast(co.date_end as character varying)' datatype="text" />
-    <column name='dateyype' display='DateType' sql='co.date_type' datatype="integer" />
+    <column name='datetype' display='DateType' sql='co.date_type' datatype="integer" />
     <column name='sitekey' display='SiteKey' sql='s.location_id' datatype="integer" />
     <column name='sitename' display='SiteName' sql='co.location_name' datatype="text" />
     <column name='gridreference' display='GridReference' sql="case s.entered_sref_system when '4326' then null else replace(s.entered_sref, ' ', '') end" datatype="text" />
