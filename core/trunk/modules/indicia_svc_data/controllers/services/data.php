@@ -801,7 +801,7 @@ class Data_Controller extends Data_Service_Base_Controller {
         case 'limit':
           if ($count) break;
           if (is_numeric($value))
-          $this->db->limit($value);
+            $this->db->limit($value);
           break;
         case 'offset':
           if ($count) break;
@@ -839,7 +839,6 @@ class Data_Controller extends Data_Service_Base_Controller {
           }
           break;
         case 'query':
-          kohana::log('debug', "Applying $value");
           $this->apply_query_def_to_db($value);
           break;
         case 'mode':
