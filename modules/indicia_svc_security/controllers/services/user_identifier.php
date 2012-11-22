@@ -29,7 +29,7 @@ class User_Identifier_Controller extends Service_Base_Controller {
   protected $db;
   
   /**
-   * Service method that takes list of user identifiers and returns the appropriate user ID
+   * Service method that takes a list of user identifiers such as email addresses and returns the appropriate user ID
    * from the warehouse, which can then be used in subsequent calls to save the data. Takes the 
    * following parameters in the $_GET or $_POST data in addition to a nonce and auth_token for a write operation:<ul>
    * <li><strong>identifiers</strong/><br/>
