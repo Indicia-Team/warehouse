@@ -317,11 +317,11 @@ mapGeoreferenceHooks = [];
       var helptext = [],info;
       if (div.settings.helpToPickPrecisionMin && typeof indiciaData.srefHandlers!=="undefined" &&
           typeof indiciaData.srefHandlers[_getSystem().toLowerCase()]!=="undefined" &&
-          $.inArray('precisions', indiciaData.srefHandlers[_getSystem().toLowerCase()].returns)!==-1) {
-        info=indiciaData.srefHandlers[_getSystem().toLowerCase()].srefToPrecision(value);
-        if (info.metres>div.settings.helpToPickPrecisionMin) {
+          $.inArray('precisions', indiciaData.srefHandlers[_getSystem().toLowerCase()].returns) !== -1) {
+        info = indiciaData.srefHandlers[_getSystem().toLowerCase()].srefToPrecision(value);
+        if (info.metres > div.settings.helpToPickPrecisionMin) {
           helptext.push(div.settings.hlpImproveResolution1.replace('{size}', info.display));
-        } else if (info.metres>div.settings.helpToPickPrecisionMax) {
+        } else if (info.metres > div.settings.helpToPickPrecisionMax) {
           helptext.push(div.settings.hlpImproveResolution2.replace('{size}', info.display));
         } else {
           helptext.push(div.settings.hlpImproveResolution3.replace('{size}', info.display));
@@ -336,18 +336,16 @@ mapGeoreferenceHooks = [];
           });
         }
         // zoom in if need more precision
-        if (info.metres>div.settings.helpToPickPrecisionMax) {
-          if (typeof panzoom==="undefined" || panzoom) {
-            var bounds=div.map.editLayer.features[0].geometry.getBounds();
-            bounds=_extendBounds(bounds, div.settings.maxZoomBuffer);
-            if (div.map.getZoomForExtent(bounds) > div.settings.maxZoom) {
-              // if showing something small, don't zoom in too far
-              div.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
-            }
-            else {
-              // Set the default view to show something triple the size of the grid square
-              div.map.zoomToExtent(bounds);
-            }
+        if (info.metres > div.settings.helpToPickPrecisionMax) {
+          var bounds = div.map.editLayer.features[0].geometry.getBounds();
+          bounds = _extendBounds(bounds, div.settings.maxZoomBuffer);
+          if (div.map.getZoomForExtent(bounds) > div.settings.maxZoom) {
+            // if showing something small, don't zoom in too far
+            div.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
+          }
+          else {
+            // Set the default view to show something triple the size of the grid square
+            div.map.zoomToExtent(bounds);
           }
         }
       }
@@ -385,10 +383,8 @@ mapGeoreferenceHooks = [];
     function _setClickPoint(data, div) {
       // data holds the sref in _getSystem format, wkt in indiciaProjection, optional mapwkt in mapProjection
       var feature, parts, helptext=[], helpitem;
-      if (div.settings.click_zoom)
-        $('#'+opts.srefId).val(data.sref).change();
-      else
-        $('#'+opts.srefId).val(data.sref);
+      // Update the spatial reference control
+      $('#'+opts.srefId).val(data.sref);
       // If the sref is in two parts, then we might need to split it across 2 input fields for lat and long
       if (data.sref.indexOf(' ')!==-1) {
         parts=data.sref.split(' ');
@@ -398,12 +394,12 @@ mapGeoreferenceHooks = [];
         $('#'+opts.srefLongId).val(parts[1]);
       }
       removeAllFeatures(div.map.editLayer, 'boundary', true);
-      $('#'+opts.geomId).val(data.wkt);
+      $('#' + opts.geomId).val(data.wkt);
       var parser = new OpenLayers.Format.WKT();
       // If mapwkt not provided, calculate it
-      if (typeof data.mapwkt ==="undefined") {
-        if (div.indiciaProjection.getCode()===div.map.projection.getCode()) {
-          data.mapwkt=data.wkt;
+      if (typeof data.mapwkt === "undefined") {
+        if (div.indiciaProjection.getCode() === div.map.projection.getCode()) {
+          data.mapwkt = data.wkt;
         } else {
           feature = parser.read(data.wkt);
           data.mapwkt = feature.geometry.transform(div.indiciaProjection, div.map.projection).toString();
@@ -414,19 +410,32 @@ mapGeoreferenceHooks = [];
       feature.style = new style('default');
       div.map.editLayer.addFeatures([feature]);
       if (div.settings.helpDiv) {
-        helpitem=_getPrecisionHelp(div, data.sref);
-        if (helpitem!=='') {
-          $('#'+div.settings.helpDiv).html(helpitem);
+        // Output optional help and zoom in if more precision needed 
+        helpitem = _getPrecisionHelp(div, data.sref);
+        if (helpitem !== '') {
+          $('#' + div.settings.helpDiv).html(helpitem);
         } else {
           helptext.push(div.settings.hlpClickAgainToCorrect);
           // Extra help for grid square precision, as long as the precision is not fixed.
-          if (feature.geometry.CLASS_NAME!=='OpenLayers.Geometry.Point' && (div.settings.clickedSrefPrecisionMin==='' 
-            || div.settings.clickedSrefPrecisionMin!==div.settings.clickedSrefPrecisionMax)) {
+          if (feature.geometry.CLASS_NAME !== 'OpenLayers.Geometry.Point' && (div.settings.clickedSrefPrecisionMin==='' 
+            || div.settings.clickedSrefPrecisionMin !== div.settings.clickedSrefPrecisionMax)) {
             helptext.push(div.settings.hlpZoomChangesPrecision);
           }
-          $('#'+div.settings.helpDiv).html(helptext.join(' '));
+          $('#' + div.settings.helpDiv).html(helptext.join(' '));
         }
-        $('#'+div.settings.helpDiv).show();
+        $('#' + div.settings.helpDiv).show();
+      } else if (div.settings.click_zoom) {
+        // Optional zoom in after clicking when helpDiv not in use.
+        var bounds = div.map.editLayer.features[0].geometry.getBounds();
+        bounds = _extendBounds(bounds, div.settings.maxZoomBuffer);
+        if (div.map.getZoomForExtent(bounds) > div.settings.maxZoom) {
+          // if showing something small, don't zoom in too far
+          div.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
+        }
+        else {
+          // Set the default view to show something triple the size of the grid square
+          div.map.zoomToExtent(bounds);
+        }
       }
     }
 
@@ -1125,18 +1134,18 @@ mapGeoreferenceHooks = [];
         });
       }
       
-      if (this.settings.toolbarDiv!='map' && (opts.toolbarPrefix!=='' || opts.toolbarSuffix!=='')) {
-        var toolbar='<div id="map-toolbar-outer" class="ui-helper-clearfix">' + opts.toolbarPrefix + '<div class="olControlEditingToolbar" id="map-toolbar"></div>' + opts.toolbarSuffix + '</div>';
-        if (this.settings.toolbarDiv=='top') {
+      if (this.settings.toolbarDiv != 'map' && (opts.toolbarPrefix !== '' || opts.toolbarSuffix !== '')) {
+        var toolbar = '<div id="map-toolbar-outer" class="ui-helper-clearfix">' + opts.toolbarPrefix + '<div class="olControlEditingToolbar" id="map-toolbar"></div>' + opts.toolbarSuffix + '</div>';
+        if (this.settings.toolbarDiv == 'top') {
           $(this).before(toolbar);
-        } else if (this.settings.toolbarDiv=='bottom') {
+        } else if (this.settings.toolbarDiv == 'bottom') {
           $(this).after(toolbar);
         } else {
           $('#' + this.settings.toolbarDiv).html(toolbar);
         }
-        this.settings.toolbarDiv='map-toolbar';
+        this.settings.toolbarDiv = 'map-toolbar';
       }
-      if (this.settings.helpDiv==='bottom') {
+      if (this.settings.helpDiv === 'bottom') {
         var helpbar, helptext = [];
         if ($.inArray('panZoom', this.settings.standardControls) || 
             $.inArray('panZoomBar', this.settings.standardControls)) {
