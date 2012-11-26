@@ -83,7 +83,7 @@ class report_helper extends helper_base {
         $checked = $item['path']==$default ? ' checked="checked"' : '';
         $r .= '<li><label class="ui-helper-reset auto">'.
             '<input type="radio" id="'.$id.'" name="'.$fieldname.'" value="'.$item['path'].
-            '" onclick="displayReportMetadata(\''.$item['path'].'\');" '.$checked.'>'.
+            '" onclick="displayReportMetadata(\'' . $fieldname . '\', \'' . $item['path'] . '\');" ' . $checked . '>'.
             $item['title'].
             "</input></label></li>\n";
       }
