@@ -16,15 +16,15 @@
  * When clicking on an entry in the list of reports available, display the title and description of that report
  * in the metadata panel on the report_picker.
  */
-function displayReportMetadata(path) {
+function displayReportMetadata(control, path) {
   // safe for Windows paths
   path = path.replace('\\','/');
   path = path.split('/');
   var current = indiciaData.reportList;
   $.each(path, function(idx, item) {
     current = current[item];
-    if (current.type==='report') {
-      $('.report-metadata').html('<strong>'+current.title+'</strong><br/>'+
+    if (current.type === 'report') {
+      $('#' + control + ' .report-metadata').html('<strong>' + current.title+'</strong><br/>' +
           '<p>' + current.description + '</p>');
     } else {
       current = current['content'];
