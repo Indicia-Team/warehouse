@@ -78,8 +78,9 @@ class Websites_Website_Agreement_Model extends ORM
    * latest information about website agreements.
    */
   public function save() {
-    parent::save();
+    $v = parent::save();
     $this->db->query('SELECT refresh_index_websites_website_agreements();');
+    return $v;
   }
 
 }
