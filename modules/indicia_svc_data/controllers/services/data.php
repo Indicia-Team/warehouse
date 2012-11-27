@@ -697,7 +697,10 @@ class Data_Controller extends Data_Service_Base_Controller {
               'iwwa.from_website_id'=>$this->viewname.'.'.$websiteFilterField,
               'iwwa.provide_for_'.$_REQUEST['sharing']."='t'"=>''
           ), NULL, 'LEFT');
-          $this->db->where('(' . $this->viewname.'.'.$websiteFilterField.' IS NULL OR iwwa.to_website_id=' . $this->website_id . ')');
+          $this->db->where('(' . 
+            $this->viewname . '.' . $websiteFilterField . ' IS NULL OR ' .
+            $this->viewname . '.' . $websiteFilterField . '=' . $this->website_id . ' OR ' .
+           'iwwa.to_website_id=' . $this->website_id . ')');
         } else {
           $this->db->in($this->viewname.'.'.$websiteFilterField, array(null, $this->website_id));
         }
