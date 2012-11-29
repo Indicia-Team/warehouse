@@ -51,7 +51,7 @@ class iform_mnhnl_bird_transect_walks {
    * The report paging will not be converted to use LIMIT & OFFSET because we want the full list returned so
    * we can display all the occurrences on the map.
    * When displaying transects, we should display children locations as well as parent.
-   * 
+   *
    * Main Locations:
    * centroid is the grid square boundary surrounding the transect.
    * boundary is the actual transect walk.
@@ -59,19 +59,19 @@ class iform_mnhnl_bird_transect_walks {
    * centroid is the buffer surrounding the transect.
    * boundary are the points defining the start and end of the walk.
    */
-   
-  /** 
+
+  /**
    * Return the form metadata.
    * @return string The definition of the form.
    */
   public static function get_mnhnl_bird_transect_walks_definition() {
     return array(
       'title'=>'Bird Transect Walks',
-      'category' => 'MNHNL forms',      
+      'category' => 'MNHNL forms',
       'description'=>'For input of bird records captured during repeated transect walks. Developed for the COBIMO project in Luxembourg.'
     );
   }
-  
+
   /**
    * Get the list of parameters for this form.
    * @return array List of parameters that this form requires.
@@ -81,7 +81,7 @@ class iform_mnhnl_bird_transect_walks {
   	// map_width will be overridden to auto
   	// openlayers options needs to be filled in with projection {"projection":"900913"}
     return array_merge(
-      iform_map_get_map_parameters(),      
+      iform_map_get_map_parameters(),
       array(
       array(
         'name'=>'survey_id',
@@ -149,7 +149,7 @@ class iform_mnhnl_bird_transect_walks {
   const MODE_EXISTING_SAMPLE = 2; // mode 2: output the main Data Entry page, display existing sample. Active tab determined by iform params. No occurence details filled in.
         // mode 2.1: sample 2 has all its occurrences merged into sample 1. sample 2 is then flagged as deleted. sample 1 is then viewed as in normal mode 2.
   const MODE_EXISTING_OCCURRENCE = 3; // mode 3: output the main Data Entry page, display existing occurrence. "Edit Occurrence" tab active. Occurence details filled in.
-  
+
   const ATTR_WALK = 'Walk started at end';
   const ATTR_RELIABILITY = 'Reliability of this data';
   const ATTR_TEMP = 'Temperature';
@@ -172,7 +172,7 @@ class iform_mnhnl_bird_transect_walks {
   const ATTR_TERRITORIAL = 'Territorial';
   const ATTR_ATLAS_CODE = 'Atlas Code';
   const ATTR_OVERFLYING = 'Overflying';
-    
+
   /**
    * Return the generated form output.
    * @return Form HTML.
@@ -194,7 +194,7 @@ class iform_mnhnl_bird_transect_walks {
     $language = iform_lang_iso_639_2($args['language']);
     if($args['language'] != 'en')
         data_entry_helper::add_resource('jquery_ui_'.$args['language']);
-    
+
     // If not logged in: Display an information message.
     // This form should only be called in POST mode when setting the location allocation.
     //  All other posting is now done via AJAX.
@@ -235,7 +235,6 @@ class iform_mnhnl_bird_transect_walks {
     $sample_cloud_id = self::getAttrID($auth, $args, 'sample', self::ATTR_CLOUD);
     $sample_start_time_id = self::getAttrID($auth, $args, 'sample', self::ATTR_START_TIME);
     $sample_end_time_id = self::getAttrID($auth, $args, 'sample', self::ATTR_END_TIME);
-    $sample_end_time_id = self::getAttrID($auth, $args, 'sample', self::ATTR_END_TIME);
     $sample_closure_id = self::getAttrID($auth, $args, 'sample', self::ATTR_CLOSED);
     $uid_attr_id = self::getAttrID($auth, $args, 'sample', self::ATTR_UID);
     $email_attr_id = self::getAttrID($auth, $args, 'sample', self::ATTR_EMAIL);
@@ -246,7 +245,7 @@ class iform_mnhnl_bird_transect_walks {
     $occurrence_territorial_id = self::getAttrID($auth, $args, 'occurrence', self::ATTR_TERRITORIAL);
     $occurrence_atlas_code_id = self::getAttrID($auth, $args, 'occurrence', self::ATTR_ATLAS_CODE);
     $occurrence_overflying_id = self::getAttrID($auth, $args, 'occurrence', self::ATTR_OVERFLYING);
-    
+
     if(!$sample_closure_id)
       return '<p>This form must be used with a survey which has the "'.self::ATTR_CLOSED.'" sample attribute allocated to it. Survey_id = '.$args['survey_id'];
     if(!$uid_attr_id)
@@ -510,20 +509,25 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
       <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].'}\' />
       <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Verified_Data_Report_Button').'">
     </form>
-    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
+    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_download_report_2.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
       <p>'.lang::get('LANG_Initial_Download').'</p>
-      <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "closed_attr_id":'.$sample_closure_id.', "download": "INITIAL"}\' />
+      <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "closed_attr_id":'.$sample_closure_id.', "download": "INITIAL", "quality": "!R", "occattrs": "'.$occurrence_confidence_id.','.$occurrence_count_id.','.$occurrence_approximation_id.','.$occurrence_territorial_id.','.$occurrence_atlas_code_id.','.$occurrence_overflying_id.'", "smpattrs" : "'.$sample_walk_direction_id.','.$sample_reliability_id.','.$sample_visit_number_id.','.$sample_wind_id.','.$sample_precipitation_id.','.$sample_temperature_id.','.$sample_cloud_id.','.$sample_start_time_id.','.$sample_end_time_id.','.$sample_closure_id.','.$uid_attr_id.','.$email_attr_id.','.$username_attr_id.'"}\' />
       <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Initial_Download_Button').'">
     </form>
-    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
+    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_download_report_2.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
       <p>'.lang::get('LANG_Confirm_Download').'</p>
-      <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "closed_attr_id":'.$sample_closure_id.', "download": "CONFIRM"}\' />
+      <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "closed_attr_id":'.$sample_closure_id.', "download": "CONFIRM", "quality": "V", "occattrs": "'.$occurrence_confidence_id.','.$occurrence_count_id.','.$occurrence_approximation_id.','.$occurrence_territorial_id.','.$occurrence_atlas_code_id.','.$occurrence_overflying_id.'", "smpattrs" : "'.$sample_walk_direction_id.','.$sample_reliability_id.','.$sample_visit_number_id.','.$sample_wind_id.','.$sample_precipitation_id.','.$sample_temperature_id.','.$sample_cloud_id.','.$sample_start_time_id.','.$sample_end_time_id.','.$sample_closure_id.','.$uid_attr_id.','.$email_attr_id.','.$username_attr_id.'"}\' />
       <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Confirm_Download_Button').'">
     </form>
-    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
+    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_download_report_2.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
       <p>'.lang::get('LANG_Final_Download').'</p>
-      <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "closed_attr_id":'.$sample_closure_id.', "download": "FINAL"}\' />
+      <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "closed_attr_id":'.$sample_closure_id.', "download": "FINAL", "quality": "V", "occattrs": "'.$occurrence_confidence_id.','.$occurrence_count_id.','.$occurrence_approximation_id.','.$occurrence_territorial_id.','.$occurrence_atlas_code_id.','.$occurrence_overflying_id.'", "smpattrs" : "'.$sample_walk_direction_id.','.$sample_reliability_id.','.$sample_visit_number_id.','.$sample_wind_id.','.$sample_precipitation_id.','.$sample_temperature_id.','.$sample_cloud_id.','.$sample_start_time_id.','.$sample_end_time_id.','.$sample_closure_id.','.$uid_attr_id.','.$email_attr_id.','.$username_attr_id.'"}\' />
       <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Final_Download_Button').'">
+    </form>
+    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_download_report_2.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
+      <p>'.lang::get('LANG_Complete_Final_Download').'</p>
+      <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "closed_attr_id":'.$sample_closure_id.', "download": "OFF", "quality": "NA", "occattrs": "'.$occurrence_confidence_id.','.$occurrence_count_id.','.$occurrence_approximation_id.','.$occurrence_territorial_id.','.$occurrence_atlas_code_id.','.$occurrence_overflying_id.'", "smpattrs" : "'.$sample_walk_direction_id.','.$sample_reliability_id.','.$sample_visit_number_id.','.$sample_wind_id.','.$sample_precipitation_id.','.$sample_temperature_id.','.$sample_cloud_id.','.$sample_start_time_id.','.$sample_end_time_id.','.$sample_closure_id.','.$uid_attr_id.','.$email_attr_id.','.$username_attr_id.'"}\' />
+      <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Complete_Final_Download_Button').'">
     </form>
   </div>';
       }
@@ -645,7 +649,7 @@ $('#controls').bind('tabsshow', function(event, ui) {
     // with the AJAX code, we deal with the validation semi manually: Form name is meant be invalid as we only want code included.
     data_entry_helper::enable_validation(null);
     $r .= "<div id=\"controls\">\n";
-    $activeTab = 'survey'; // mode 1 = new Sample, display sample. 
+    $activeTab = 'survey'; // mode 1 = new Sample, display sample.
     if($mode == 2){ // have specified a sample ID
       if($args["on_edit_survey_nav"] == "survey")
         $activeTab = 'survey';
@@ -686,7 +690,7 @@ $('#controls').bind('tabsshow', function(event, ui) {
         		}
         	}
         	$r .= "</div>";
-        }    	
+        }
     }
     $r .= "<form id=\"SurveyForm\" action=\"".iform_ajaxproxy_url($node, 'sample')."\" method=\"post\">
     <input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />
@@ -697,13 +701,13 @@ $('#controls').bind('tabsshow', function(event, ui) {
       $r .= "<input type=\"hidden\" id=\"sample:id\" name=\"sample:id\" value=\"\" disabled=\"disabled\" />\n";
       // GvB 19/Nov/2012 : change to user detail defaults
       // logic is now much simpler, and they are only included/created if the sample is new.
-      $fieldName = $attributes[$args['uid_attr_id']]['fieldname'];
+      $fieldName = $attributes[$uid_attr_id]['fieldname'];
       $fieldValue = data_entry_helper::check_default_value($fieldName, $user->uid);
       $r .= "<input type=\"hidden\" name=\"".$fieldName."\" value=\"".$fieldValue."\" />\n";
-      $fieldName = $attributes[$args['email_attr_id']]['fieldname'];
+      $fieldName = $attributes[$email_attr_id]['fieldname'];
       $fieldValue = data_entry_helper::check_default_value($fieldName, $user->mail);
       $r .= "<input type=\"hidden\" name=\"".$fieldName."\" value=\"".$fieldValue."\" />\n";
-      $fieldName = $attributes[$args['username_attr_id']]['fieldname'];
+      $fieldName = $attributes[$username_attr_id]['fieldname'];
       $fieldValue = data_entry_helper::check_default_value($fieldName, $user->name);
       $r .= "<input type=\"hidden\" name=\"".$fieldName."\" value=\"".$fieldValue."\" />\n";
     }
@@ -816,7 +820,7 @@ alertIndiciaError = function(data){
 	if(data.errors){
 		for (var i in data.errors){
 			errorString = errorString + ' : ' + data.errors[i];
-		}				
+		}
 	}
 	alert(errorString);
 	// the most likely cause is authentication failure - eg the read authentication has timed out.
@@ -845,9 +849,9 @@ myScrollToError = function(){
 		}
 	});
 };
-jQuery('#SurveyForm').ajaxForm({ 
+jQuery('#SurveyForm').ajaxForm({
 	async: false,
-	dataType:  'json', 
+	dataType:  'json',
     beforeSubmit:   function(data, obj, options){
     	var valid = true;
     	clearErrors('form#SurveyForm');
@@ -859,11 +863,11 @@ jQuery('#SurveyForm').ajaxForm({
   		SurveyFormRetVal = true;
   		if(jQuery('#main-sample-deleted:checked').length == 0){ // only do check if not deleting
           jQuery.ajax({ // now check if there are any other samples with this combination of date and location
-            type: 'GET', 
+            type: 'GET',
             url: \"".$svcUrl."/data/sample?mode=json&view=detail\" +
                 \"&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-                \"&orderby=id&callback=?&location_id=\"+jQuery('#imp-location').val()+\"&date_start=\"+jQuery('#SurveyForm [name=sample\\:date]').val(), 
-            data: {}, 
+                \"&orderby=id&callback=?&location_id=\"+jQuery('#imp-location').val()+\"&date_start=\"+jQuery('#SurveyForm [name=sample\\:date]').val(),
+            data: {},
             success: function(detData) {
               for(i=0, j=0; i< detData.length; i++){
                 if(detData[i].id != jQuery('#SurveyForm [name=sample\\:id]').val()) j++;
@@ -872,10 +876,10 @@ jQuery('#SurveyForm').ajaxForm({
               	SurveyFormRetVal = confirm(\"".lang::get('LANG_Survey_Already_Exists')."\");
               }
             },
-            dataType: 'json', 
-            async: false 
+            dataType: 'json',
+            async: false
           });
-        } 
+        }
 		return SurveyFormRetVal;
 	},
     success:   function(data){
@@ -908,8 +912,8 @@ if(jQuery('#SurveyForm > input[name=sample\\:id]').val() != ''){
     jQuery.ajax({ // get all subsamples/occurrences to check if the dates match
             type: 'GET',
             url: \"".$svcUrl."/report/requestReport?report=library/occurrences/occurrences_list_for_parent_sample.xml&reportSource=local&mode=json&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-                \"&callback=?&sample_id=\"+data.outer_id+\"&survey_id=&date_from=&date_to=&taxon_group_id=&smpattrs=&occattrs=\",                
-            data: {}, 
+                \"&callback=?&sample_id=\"+data.outer_id+\"&survey_id=&date_from=&date_to=&taxon_group_id=&smpattrs=&occattrs=\",
+            data: {},
             success: function(subData) {
               jQuery('#subsample-progress').data('max',subData.length+1);
               var mainDate = $.datepicker.formatDate('yy-mm-dd', jQuery('#SurveyForm > input[name=sample\\:date]').datepicker(\"getDate\"));
@@ -927,7 +931,7 @@ if(jQuery('#SurveyForm > input[name=sample\\:id]').val() != ''){
     if(!user_access($adminPerm))
       data_entry_helper::$javascript .= "                if(jQuery('#main-sample-closed').val() == '1'){\n";
     else
-      data_entry_helper::$javascript .= "                if(jQuery('#smpAttr\\\\:".$attributes[$sample_closure_id]['attributeId'].":checked').length > 0){\n";    
+      data_entry_helper::$javascript .= "                if(jQuery('#smpAttr\\\\:".$attributes[$sample_closure_id]['attributeId'].":checked').length > 0){\n";
     // If records are already verified, they are left verified, as if the records themselves are saved
     // they will flagged as no longer verified: But have to force a re verification if date is changed.
     data_entry_helper::$javascript .= "
@@ -949,8 +953,8 @@ if(jQuery('#SurveyForm > input[name=sample\\:id]').val() != ''){
                 }
               }
             },
-            dataType: 'json', 
-            async: false 
+            dataType: 'json',
+            async: false
     });
     dialog.dialog('close');
     dialog.dialog('destroy');
@@ -986,8 +990,8 @@ if(jQuery('#SurveyForm > input[name=sample\\:id]').val() != ''){
 			}
         } else {
 			if(data.error){
-				var lastIndex = data.error.lastIndexOf('Validation error'); 
-    			if (lastIndex != -1 && lastIndex  == (data.error.length - 16)){ 
+				var lastIndex = data.error.lastIndexOf('Validation error');
+    			if (lastIndex != -1 && lastIndex  == (data.error.length - 16)){
 					if(data.errors){
 						// TODO translation
 						for (i in data.errors){
@@ -1008,12 +1012,12 @@ if(jQuery('#SurveyForm > input[name=sample\\:id]').val() != ''){
 });
 // In this case, all the samples attributes are on the survey tab, and all the occurrence attributes are on the occurrence tab. No need to worry about getting the correct form.
 loadAttributes = function(attributeTable, attributeKey, key, keyValue, prefix){
-    jQuery.ajax({ 
-        type: \"GET\", 
+    jQuery.ajax({
+        type: \"GET\",
         url: \"".$svcUrl."/data/\" + attributeTable + \"?mode=json&view=list\" +
         	\"&reset_timeout=true&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-   			\"&\" + key + \"=\" + keyValue + \"&callback=?\", 
-        data: {}, 
+   			\"&\" + key + \"=\" + keyValue + \"&callback=?\",
+        data: {},
         success: (function(attrPrefix, attrKey) {
           var retVal = function(attrdata) {
             if(!(attrdata instanceof Array)){
@@ -1043,11 +1047,11 @@ loadAttributes = function(attributeTable, attributeKey, key, keyValue, prefix){
             }};
           return retVal;
           })(prefix, attributeKey),
-		dataType: 'json', 
-	    async: false  
+		dataType: 'json',
+	    async: false
 	});
 }";
-    
+
 
     // Set up Occurrence List tab: don't include when creating a new sample as it will have no occurrences
     // Grid populated at a later point
@@ -1157,9 +1161,9 @@ retriggerGrid = function(){
   });
 }
 
-jQuery('#occ-form').ajaxForm({ 
+jQuery('#occ-form').ajaxForm({
 	async: false,
-	dataType:  'json', 
+	dataType:  'json',
     beforeSubmit:   function(data, obj, options){
     	var valid = true;
     	clearErrors('form#occ-form');
@@ -1209,8 +1213,8 @@ jQuery('#occ-form').ajaxForm({
 			}
         } else {
 			if(data.error){
-				var lastIndex = data.error.lastIndexOf('Validation error'); 
-    			if (lastIndex != -1 && lastIndex  == (data.error.length - 16)){ 
+				var lastIndex = data.error.lastIndexOf('Validation error');
+    			if (lastIndex != -1 && lastIndex  == (data.error.length - 16)){
 					if(data.errors){
 						// TODO translation
 						for (i in data.errors){
@@ -1247,15 +1251,15 @@ setAtlasStatus = function() {
   }
 };
 jQuery(\"#occ-territorial\").change(setAtlasStatus);
-if($.browser.msie) { 
-    jQuery(\"#occ-territorial\").click(function() { 
-        $(this).change(); 
-    }); 
-} 
+if($.browser.msie) {
+    jQuery(\"#occ-territorial\").click(function() {
+        $(this).change();
+    });
+}
 \n";
   if($mode != 3)
     data_entry_helper::$javascript .= "setAtlasStatus();\n"; // reset the atlas when not looking at a old occurrence.
-    
+
   $r .= '</div>';
 
     // add map panel.
@@ -1267,10 +1271,10 @@ if($.browser.msie) {
       $options['proxy'] = '';
       $options['scroll_wheel_zoom'] = false;
       $options['width'] = 'auto'; // TBD remove from arglist
-  
+
     $r .= "<div class=\"mnhnl-btw-mappanel\">\n";
     $r .= data_entry_helper::map_panel($options, $olOptions);
-    
+
     // for timing reasons, all the following has to be done after the map is loaded.
     // 1) feature selector for occurrence list must have the map present to attach the control
     // 2) location placer must have the location layer populated and the map present in
@@ -1531,7 +1535,7 @@ $('div#occ_grid').indiciaDataGrid('rpt:mnhnl_btw_list_occurrences', {
     if($attr) return $attr['attributeId'];
     return false;
   }
-  
+
   /**
    * Construct JavaScript to read and transform a boundary from the supplied
    * object name.

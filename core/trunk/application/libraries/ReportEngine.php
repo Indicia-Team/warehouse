@@ -587,7 +587,11 @@ class ReportEngine {
     $response = $db->in("id", $idList)
         ->update('occurrences',
           array('downloaded_flag' => ($mode == 'FINAL'? 'F' : 'I'),
-              'downloaded_on' => $downloaded_on));
+              'downloaded_on' => $downloaded_on,
+              'updated_on' => $downloaded_on));
+    $response = $db->in("id", $idList)
+        ->update('cache_occurrences',
+          array('downloaded_flag' => ($mode == 'FINAL'? 'F' : 'I')));
     $db->query('COMMIT;');
   }
 
