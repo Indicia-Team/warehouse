@@ -96,12 +96,14 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           'name'=>'copyFromProfile',
           'caption'=>'Copy field values from user profile',
           'description'=>'Copy any matching fields from the user\'s profile into the fields with matching names in the sample data. This works for fields '.
-              'defined in the Drupal Profile module. Applies whether fields are shown or not.',
+              'defined in the Drupal Profile module which must be enabled to use this feature. Applies whether fields are shown or not.',
           'type'=>'boolean',
           'default' => false,
           'required' => false,
           'group' => 'User Interface',
-          'visible' => function_exists('profile_load_profile')
+          // Note that we can't test Drupal module availability whilst loading this form for a new iform, using Ajax. So 
+          // in this case we show the control even though it is not usable (the help text explains the module requirement).          
+          'visible' => !function_exists('module_exists') || module_exists('profile')
         ),
         array(
           'name'=>'structure',

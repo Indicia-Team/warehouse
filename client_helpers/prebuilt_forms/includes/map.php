@@ -166,8 +166,9 @@ function iform_map_get_map_parameters() {
       'default'=>"layerSwitcher\npanZoom"
     )
   );
-  // Check for easy login module to allow integration into profile locations. Degrade gracefully if Drupal not installed.
-  if (function_exists('module_exists') && module_exists('easy_login')) {
+  // Check for easy login module to allow integration into profile locations. If no module_exists function then 
+  // we are in the AJAX call for the form details for a new iform, so must show it as we have no way of knowing.
+  if (!function_exists('module_exists') || module_exists('easy_login')) {
     $r[] = array(
       'fieldname'=>'display_user_profile_location',
       'label'=>'Display location from user profile',
