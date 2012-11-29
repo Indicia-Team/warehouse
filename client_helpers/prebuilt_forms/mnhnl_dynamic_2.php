@@ -1271,7 +1271,7 @@ $('#entry_form').before(cloneableDiv);\n";
           data_entry_helper::$entity_to_load['sc::'.($options['includeSubSample'] ? $occurrenceIds[$attrValue['occurrence_id']]['sample_id'] : '').':'.$occurrenceIds[$attrValue['occurrence_id']]['taxa_taxon_list_id'].':'.$attrValue['occurrence_id'].':occAttr:'.$attrValue['occurrence_attribute_id'].':'.$attrValue['id']]
             = $attrValue['raw_value'];
       }
-      if($options['includeSubSample'])
+      if($options['includeSubSample']){
         data_entry_helper::$javascript .= "
 mapInitialisationHooks.push(function(mapdiv) {
   // try to identify if this map is the second one
@@ -1288,6 +1288,7 @@ mapInitialisationHooks.push(function(mapdiv) {
         }
         data_entry_helper::$javascript .= "    occurrencePointLayer.addFeatures(occFeatures);
   }});\n";
+      }
     }
     return $occurrenceIds;
   }
