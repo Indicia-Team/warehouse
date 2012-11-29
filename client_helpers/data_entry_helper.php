@@ -4736,7 +4736,7 @@ if (errors.length>0) {
           }
         }
       }
-      if(count($item['values'])==1 && $item['multi_value'] != 't'){
+      if(count($item['values'])>=1 && $item['multi_value'] != 't'){
         $item['fieldname'] = $item['values'][0]['fieldname'];
         $item['default'] = $item['values'][0]['default'];
       }
