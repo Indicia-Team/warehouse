@@ -1653,13 +1653,14 @@ onFeatureModified = function(evt) {
       if(feature.geometry.components.length == 0){
         modPointFeature.unselectFeature(feature);
         SitePointLayer.destroyFeatures([feature]);
-      }
 ".($args['locationMode']!='single' && $args['locationMode']!='filtered' ?
-"      var centre = getCentroid(feature.geometry);
-      if(!ParentLocationLayer.features[0].geometry.intersects(centre))
-        alert(\"".lang::get('LANG_PointOutsideParent')."\");
+"     } else {
+        var centre = getCentroid(feature.geometry);
+        if(!ParentLocationLayer.features[0].geometry.intersects(centre))
+          alert(\"".lang::get('LANG_PointOutsideParent')."\");
 " : "").
-"      if(typeof modPGPoint != 'undefined') modPGPoint(feature.geometry);
+"      }
+      if(typeof modPGPoint != 'undefined') modPGPoint(feature.geometry);
       break;
     case \"OpenLayers.Geometry.LineString\":
       points = feature.geometry.getVertices();
@@ -2183,13 +2184,14 @@ SitePointLayer.events.on({
     if($args['locationMode']!='multi'){
       data_entry_helper::$javascript .= "
 hook_ChildFeatureLoad = function(feature, data, child_id, childArgs){
-  if(child_id == '' || data.id != child_id){
-    var clearVal = jQuery('#location-name').val() == data.name;
-".($args['siteNameTermListID']!="" && isset($args['duplicateNameCheck']) && $args['duplicateNameCheck']=='enforce' ?
-	"    jQuery('#location-name').find('option').filter('[value='+data.name+']').attr('disabled','disabled');\n" :
-	"").
-"    if(clearVal) jQuery('#location-name').val('');
-    return;
+  if(child_id == '' || data.id != child_id){\n";
+      if($args['locationMode']!='filtered' && isset($args['duplicateNameCheck']) && $args['duplicateNameCheck']=='enforce'){
+        data_entry_helper::$javascript .= "    var clearVal = jQuery('#location-name').val() == data.name;\n"; 
+        if($args['siteNameTermListID']!="")
+          data_entry_helper::$javascript .= "    jQuery('#location-name').find('option').filter('[value='+data.name+']').attr('disabled','disabled');\n";
+        data_entry_helper::$javascript .= "    if(clearVal) jQuery('#location-name').val('');\n";
+      }
+      data_entry_helper::$javascript .= "    return;
   }
   var pointFeature = false;
   var lineFeature = false;
@@ -2715,23 +2717,53 @@ hook_setSref_".$idx." = function(geom){ // map projection
 };\n";
                 if($filterAttr[1]=="true"){ // filterable.
                   // set up the parent list
-                  $location_list_args=array(
-                    'label'=>lang::get('LANG_CommonParentLabel'),
-                    'view'=>'detail',
-                    'extraParams'=>array_merge(array('orderby'=>'name', 'website_id'=>$args['website_id']), $auth['read']),
-                    'location_type_id'=>$parentLocTypeID,
-                    'fieldname'=>$options['ChooseParentFieldName'],
-                    'id'=>'filterSelect'.$idx,
-                    'blankText'=>lang::get('LANG_FirstChooseParentFilter'),
-                    'default'=>'12');
-                  $retVal .= data_entry_helper::location_select($location_list_args);
+                  $locOptions = array(
+                  		'label'=>lang::get('LANG_CommonParentLabel'),
+                  		'id'=>'filterSelect'.$idx,
+                  		'table'=>'location',
+                  		'fieldname'=>$options['ChooseParentFieldName'],
+                  		'valueField'=>'id',
+                  		'captionField'=>'name',
+                  		'template' => 'select',
+                  		'itemTemplate' => 'select_item',
+                  		'extraParams'=>array_merge($auth['read'],
+                  				array('parent_id'=>'NULL',
+                  						'view'=>'detail',
+                  						'orderby'=>'name',
+                  						'location_type_id'=>$parentLocTypeID,
+                  						'deleted'=>'f')));
+                  $locResponse = data_entry_helper::get_population_data($locOptions);
+                  if (isset($locResponse['error'])) return "PARENT LOOKUP ERROR:  ".$locResponse['error'];
+                  $opts = str_replace(array('{value}', '{caption}', '{selected}'),
+                  		array('', lang::get('LANG_FirstChooseParentFilter'), ''),
+                  		$indicia_templates[$locOptions['itemTemplate']]);
+                  foreach ($locResponse as $record) {
+                  	$include=false;
+                  	if($locations == 'all') $include = true;
+                  	else if(in_array($record["id"], $locations)) $include = true;
+                  	if($include == true){
+                  		$opts .= str_replace(array('{value}', '{caption}', '{selected}'),
+                  				array($record[$locOptions['valueField']],
+                  						htmlentities($record[$locOptions['captionField']]),
+                  						isset(data_entry_helper::$entity_to_load[$options['ParentFieldName']]) ? (data_entry_helper::$entity_to_load[$options['ParentFieldName']] == $record[$locOptions['valueField']] ? 'selected=selected' : '') : ''),
+                  				$indicia_templates[$locOptions['itemTemplate']]);
+                  	}
+                  }
+                  $locOptions['items'] = $opts;
+                  $retVal .= data_entry_helper::apply_template($locOptions['template'], $locOptions);
+                  
                   if($options['AdminMode']){
-                    $location_list_args=array_merge($location_list_args, 
-                        array('validation' => array('required'),
+                    // In admin mode assume can reassign to any location: admins should have access to all squares.
+                    $location_list_args=array(
+                              'view'=>'detail',
+                              'extraParams'=>array_merge(array('orderby'=>'name', 'website_id'=>$args['website_id']), $auth['read']),
+                              'location_type_id'=>$parentLocTypeID,
+                              'default'=>data_entry_helper::$entity_to_load[$options['ParentFieldName']],
+                              'validation' => array('required'),
                               'label'=>$options['ParentLabel'],
                               'id'=>$options['ParentFieldID'],
                               'fieldname'=>$options['ParentFieldName'],
-                              'blankText'=>''));
+                              'blankText'=>'');
                     $retVal .= data_entry_helper::location_select($location_list_args);
                   } else {
                   	$retVal .= "<input type='hidden' id='".$options['ParentFieldID']."' name='".$options['ParentFieldName']."' value='".(isset(data_entry_helper::$entity_to_load[$options['ParentFieldName']]) ? data_entry_helper::$entity_to_load[$options['ParentFieldName']] : "")."' />";
@@ -3356,6 +3388,7 @@ jQuery('.pgDeletePoint').live('click', function(){
       var feature = modPointFeature.feature;
       modPointFeature.unselectFeature(feature);
       SitePointLayer.destroyFeatures([feature]);
+      setGeomFields();
       break;
     case 1:
       replaceGeom(modPointFeature.feature, SitePointLayer, modPointFeature,

@@ -7,7 +7,7 @@
         l.name as location_name,
         l.id as location_id
   FROM locations l
-  INNER JOIN locations l2 ON (l2.id = l.parent_id AND ST_Within(l.centroid_geom, l2.boundary_geom) = FALSE)
+  INNER JOIN locations l2 ON l2.id = l.parent_id
   WHERE l.deleted = FALSE AND l.location_type_id IN (#primary_loc_type_id#, #secondary_loc_type_id#)
   AND TRUE = (CASE
      WHEN l.boundary_geom is null THEN FALSE
