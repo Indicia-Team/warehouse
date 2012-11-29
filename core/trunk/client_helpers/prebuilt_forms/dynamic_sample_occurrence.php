@@ -1159,7 +1159,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    */
   protected static function getGridMode($args) {
     // if loading an existing sample and we are allowed to display a grid or single species selector
-    if ($args['multiple_occurrence_mode']=='either') {
+    if (isset($args['multiple_occurrence_mode']) && $args['multiple_occurrence_mode']=='either') {
       // Either we are in grid mode because we were instructed to externally, or because the form is reloading
       // after a validation failure with a hidden input indicating grid mode.
       return isset($_GET['gridmode']) ||

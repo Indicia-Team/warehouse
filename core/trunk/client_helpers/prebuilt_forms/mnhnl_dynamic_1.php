@@ -50,7 +50,7 @@ class iform_mnhnl_dynamic_1 extends iform_dynamic_sample_occurrence {
    * @return array List of parameters that this form requires.
    */
   public static function get_parameters() {    
-    $retVal = array_merge(
+    $parentVal = array_merge(
       parent::get_parameters(),
       array(
         array(
@@ -64,7 +64,21 @@ class iform_mnhnl_dynamic_1 extends iform_dynamic_sample_occurrence {
         ),
       )
     );
-   return $retVal;
+    $retVal=array();
+    foreach($parentVal as $param){
+      if($param['name'] == 'interface')
+        $param['options'] = array('tabs' => 'Tabs', 'wizard' => 'Wizard'); // No one_page
+      if(!in_array($param['name'], array('no_grid',
+                   'occurrence_confidential',
+                   'occurrence_images',
+                   'save_button_below_all_pages',
+                   'emailShow',
+                   'nameShow',
+                   'users_manage_own_sites',
+                   'multiple_occurrence_mode')))
+        $retVal[] = $param;
+    }
+    return $retVal;
  }
   
   protected static function get_form_html($args, $auth, $attributes) {
