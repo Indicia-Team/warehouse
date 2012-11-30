@@ -424,14 +424,14 @@ $.validator.messages.integer = $.validator.format(\"".lang::get('validation_inte
 attrRestrictionsProcessOrder = [".(implode(',', $attrOrder))."];
 // set up pre-existing ones.
 jQuery('.mnhnl-species-grid').find('[name$=occAttr\\:".$attrOrder[0]."],[name*=occAttr\\:".$attrOrder[0]."\\:]').each(function(){
-    set_up_relationships(".$attrOrder[1].", $(this), false, '".(isset($options["attrRestrictionsEnforceDuplicates"]) ? 'true' : 'false')."');
+    set_up_relationships(".$attrOrder[1].", $(this), false, ".(isset($options["attrRestrictionsEnforceDuplicates"]) ? 'true' : 'false').");
 });";
       // need to check all but last
       for($i = 0; $i < count($attrOrder)-1; $i++){
         data_entry_helper::$javascript .= "
 jQuery('[name$=occAttr\\:".$attrOrder[$i]."],[name*=occAttr\\:".$attrOrder[$i]."\\:]').live('change',
   function(){
-    set_up_relationships(".$attrOrder[$i+1].", $(this), true, '".(isset($options["attrRestrictionsEnforceDuplicates"]) ? 'true' : 'false')."');
+    set_up_relationships(".$attrOrder[$i+1].", $(this), true, ".(isset($options["attrRestrictionsEnforceDuplicates"]) ? 'true' : 'false').");
   });";
       }
       // last is special - only updates similar on other rows.
@@ -439,7 +439,7 @@ jQuery('[name$=occAttr\\:".$attrOrder[$i]."],[name*=occAttr\\:".$attrOrder[$i]."
 jQuery('[name$=occAttr\\:".$attrOrder[count($attrOrder)-1]."],[name*=occAttr\\:".$attrOrder[count($attrOrder)-1]."\\:]').live('change',
   function(){
     var parent = $(this).closest('tr').find('[name$=occAttr\\:".$attrOrder[count($attrOrder)-2]."],[name*=occAttr\\:".$attrOrder[count($attrOrder)-2]."\\:]');
-    set_up_relationships(".$attrOrder[count($attrOrder)-1].", parent, true, '".(isset($options["attrRestrictionsEnforceDuplicates"]) ? 'true' : 'false')."');
+    set_up_relationships(".$attrOrder[count($attrOrder)-1].", parent, true, ".(isset($options["attrRestrictionsEnforceDuplicates"]) ? 'true' : 'false').");
   });";
     }
     if (!empty($args['attributeValidation'])) {
