@@ -21,7 +21,7 @@
  */
 
 /**
- * Hook into the data cleaner to declare checks species being in a provided list of expectd species. Can use TVK (external_key)
+ * Hook into the data cleaner to declare checks species being in a provided list of expected species. Can use TVK (external_key)
  * to identify the species (so rules can be compatible with Record Cleaner), or preferred species name if names are put into a [Taxa] data section.
  * Set SurveyId to the ID of a survey in metadata if this only applies to one survey. Set SpeciesFieldName to 'preferredName'
  * if looking up species names rather than by Taxon_Version_Key.
