@@ -29,6 +29,7 @@ function data_cleaner_new_species_for_site_data_cleaner_rules() {
   return array(
     'testType' => 'NewSpeciesForSite',
     'required' => array('Metadata'=>array('SurveyId')),
+    'optional' => array('Taxa'=>array('*')),
     'queries' => array(
       array(
         'joins' => 
@@ -41,9 +42,14 @@ function data_cleaner_new_species_for_site_data_cleaner_rules() {
             ) on coprev.taxon_meaning_id=co.taxon_meaning_id 
                 and coprev.id<>co.id 
                 and sprev.location_id=s.location_id
-                and coprev.record_status='V'",
+                and coprev.record_status='V'
+            -- Is there any taxon filter in place?
+            left join verification_rule_data filteringtaxa on filteringtaxa.verification_rule_id=vr.id and filteringtaxa.header_name='Taxa' and filteringtaxa.deleted=false
+            -- if so, does this record match the filter?
+            left join verification_rule_data taxa on taxa.verification_rule_id=vr.id and taxa.header_name='Taxa' and upper(taxa.key)=upper(co.preferred_taxon) and taxa.deleted=false",
         'where' =>
-            "sprev.id is null"
+            "sprev.id is null
+            and (filteringtaxa.id is null or taxa.id is not null)"
       )
     )
   );
