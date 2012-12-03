@@ -69,13 +69,16 @@ END)" />
       <attributes separator='|' meaningIdLanguage='preferred'/>
     </subTable>
     <attributes separator='|' meaningIdLanguage='preferred'/>
-    <subTable tablename="occurrences" parentKey="id" where=" #this#.deleted = FALSE" join="LEFT OUTER" >
-      <tabColumn name='id' visible='true' display='Occurrence ID' />
-      <tabColumn name='comment' display='Occurrence comment' />
-      <subTable tablename='cache_taxa_taxon_lists' parentKey="taxa_taxon_list_id" join="LEFT OUTER" >
-        <tabColumn name='preferred_taxon' display='Species'/>
-      </subTable>
-      <attributes separator='|'  meaningIdLanguage='preferred'/> 
+    <subTable tablename="samples" tableKey="parent_id" parentKey="id" where="#this#.deleted = FALSE" >
+      <tabColumn name='taxon_xy' display='Taxon XY' func="(regexp_replace(#this#.entered_sref, ',|\\.[0-9]*' , '','g'))" />
+      <subTable tablename="occurrences" parentKey="id" where=" #this#.deleted = FALSE" join="LEFT OUTER" >
+        <tabColumn name='id' visible='true' display='Occurrence ID' />
+        <tabColumn name='comment' display='Occurrence comment' />
+        <subTable tablename='cache_taxa_taxon_lists' parentKey="taxa_taxon_list_id" join="LEFT OUTER" >
+          <tabColumn name='preferred_taxon' display='Species'/>
+        </subTable>
+        <attributes separator='|'  meaningIdLanguage='preferred'/> 
+      </subTable>    
     </subTable>    
   </table>
   <order_bys>
