@@ -55,6 +55,8 @@ class iform_mnhnl_dynamic_2 extends iform_mnhnl_dynamic_1 {
   protected static $currentUrl;
   protected static $gridmode;
   protected static $node;
+  protected static $check_or_radio_group_template;
+  protected static $check_or_radio_group_item_template;
   
   /*
    * First all the API stuff for bolting into the IForm Module.
@@ -357,9 +359,12 @@ deleteSurvey = function(sampleID){
   protected static function get_control_lateJS($auth, $args, $tabalias, $options) {
    return iform_mnhnl_locationmodule_lateJS($auth, $args, $tabalias, $options);
   }
-  
+
+
   protected static function get_control_customJS($auth, $args, $tabalias, $options) {
     global $indicia_templates;
+    self::$check_or_radio_group_template = $indicia_templates['check_or_radio_group'];
+    self::$check_or_radio_group_item_template = $indicia_templates['check_or_radio_group_item'];
     $indicia_templates['check_or_radio_group'] = '<div class="radio_group_container"><span {class}>{items}</span></div>';
     $indicia_templates['check_or_radio_group_item'] = '<nobr><div class="radio_group_item"><input type="{type}" name="{fieldname}" id="{itemId}" value="{value}"{class}{checked} {disabled}/><label for="{itemId}">{caption}</label></div></nobr> {sep}';
     if(isset($options['resizeRadioGroupSelector'])){
@@ -716,6 +721,11 @@ jQuery('[name=".str_replace(':','\\:',$attr['id'])."],[name^=".str_replace(':','
    * includeOccurrenceComment = boolean to determine if occurrence_comments are included in the species grid, on a separate line
    */
   protected static function get_control_species($auth, $args, $tabalias, $options) {
+  	global $indicia_templates;
+  	$indicia_templates['check_or_radio_group'] = '<span {class}>{items}</span>';
+  	$indicia_templates['check_or_radio_group_item'] = '<span><input type="{type}" name="{fieldname}" id="{itemId}" value="{value}"{class}{checked} {disabled}/><label for="{itemId}">{caption}</label></span>{sep}';
+//  	$indicia_templates['check_or_radio_group'] = self::$check_or_radio_group_template;
+//  	$indicia_templates['check_or_radio_group_item'] = self::$check_or_radio_group_item_template;
     data_entry_helper::$javascript .= "
 // Main table existing entries
 speciesRows = jQuery('.mnhnl-species-grid > tbody').find('tr');
@@ -994,8 +1004,8 @@ hook_species_checklist_pre_delete_row=function(e) {
             $headerPreRow .= '<td class="ui-widget-content" ><label class="auto-width">'.$occAttrCaptions[$attrId].':</label></td>';
           }
           if($maxCellsPerRow>$numCtrls) {
-          	$row .= "<td class='ui-widget-content' colspan=".($maxCellsPerRow-$numCtrls)."></td>";
-            $headerPreRow .= "<td class='ui-widget-content' colspan=".($maxCellsPerRow-$numCtrls)."></td>";
+          	$row .= "<td class='ui-widget-content sg-filler' colspan=".($maxCellsPerRow-$numCtrls)."></td>";
+            $headerPreRow .= "<td class='ui-widget-content sg-filler' colspan=".($maxCellsPerRow-$numCtrls)."></td>";
           }
           // no confidential checkbox.
           if($options['useCaptionsInPreRow'])
@@ -1022,6 +1032,12 @@ hook_species_checklist_pre_delete_row=function(e) {
       $grid .= "</tbody>\n</table>\n";
       // Javascript to add further rows to the grid
       data_entry_helper::$javascript .= "scRow=".$rowIdx.";
+$('.sg-filler').each(function(idx,elem){
+  var colSpan = elem.colSpan;
+  var prev = $(elem).prev();
+  prev[0].colSpan=colSpan+1;
+  $(elem).remove();
+});
 var formatter = function(rowData,taxonCell) {
   taxonCell.html(\"".lang::get('loading')."\");
   jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/taxa_taxon_list/' + rowData.id +
