@@ -1399,8 +1399,8 @@ mapInitialisationHooks.push(function(mapdiv) {
       }
       $idx++;
       if($maxCellsPerRow>$numCtrls){
-        $headerPreRow .= "<td class='ui-widget-content' colspan=".($maxCellsPerRow-$numCtrls)."></td>";
-        $row .= "<td class='ui-widget-content' colspan=".($maxCellsPerRow-$numCtrls)."></td>";
+      	$headerPreRow .= "<td class='ui-widget-content sg-filler' colspan=".($maxCellsPerRow-$numCtrls)."></td>";
+      	$row .= "<td class='ui-widget-content sg-filler' colspan=".($maxCellsPerRow-$numCtrls)."></td>";
       }
       // no confidential checkbox.
       if($options['useCaptionsInPreRow']){

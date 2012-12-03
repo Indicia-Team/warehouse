@@ -82,7 +82,12 @@ class iform_mnhnl_dynamic_1 extends iform_dynamic_sample_occurrence {
  }
   
   protected static function get_form_html($args, $auth, $attributes) {
-    $r = self::getHeaderHTML($args);
+    if($args['includeLocTools'] && function_exists('iform_loctools_listlocations')){
+  		$squares = iform_loctools_listlocations($node);
+  		if(squares != "all" && count(squares)==0)
+  			return lang::get('Error: You do not have any squares allocated to you. Please contact your manager.');
+  	}
+  	$r = self::getHeaderHTML($args);
     $r .= parent::get_form_html($args, $auth, $attributes);
     $r .= self::getTrailerHTML($args);
     return $r;

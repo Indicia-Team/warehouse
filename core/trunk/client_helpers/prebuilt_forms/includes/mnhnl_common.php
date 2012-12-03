@@ -719,14 +719,15 @@ clearLocation = function(hookArg){ // clears all the data in the fields.
   jQuery('#location-name').val('');\n":"").
 "  jQuery('#location_location_type_id').val('$primary');
   // first  to remove any hidden multiselect checkbox unclick fields
-  var attrList=jQuery('[name^=locAttr\\:]').not('[name$=\\:term]');
-  attrList.filter('.multiselect').remove();
-  attrList.filter(':checkbox').removeAttr('checked').each(function(idx,elem){
+  var fullAttrList=jQuery('[name^=locAttr\\:]').not('[name$=\\:term]');
+  var attrList=jQuery('[name^=locAttr\\:]').not('[name$=\\:term]').not('.filterFields');
+  fullAttrList.filter('.multiselect').remove();
+  fullAttrList.filter(':checkbox').removeAttr('checked').each(function(idx,elem){
     var name = jQuery(elem).attr('name').split(':');
     jQuery('[name^=locAttr\\:'+name[1]+'\\:]').filter(':hidden').remove();
   });
   // rename
-  attrList.each(function(){
+  fullAttrList.each(function(){
     var name = jQuery(this).attr('name').split(':');
     if(name[1].indexOf('[]') > 0) name[1] = name[1].substr(0, name[1].indexOf('[]'));
     jQuery(this).attr('name', name[0]+':'+name[1]);
@@ -2270,7 +2271,7 @@ hook_ChildFeatureLoad = function(feature, data, child_id, childArgs){
 //  setGeomFields();
 };
 jQuery('#location-name').change(function(){";
-      if(isset($args['duplicateNameCheck']) && ($args['duplicateNameCheck']==true || $args['duplicateNameCheck']=='check' || $args['duplicateNameCheck']=='enforce'))
+      if($args['locationMode']!='filtered' && isset($args['duplicateNameCheck']) && ($args['duplicateNameCheck']==true || $args['duplicateNameCheck']=='check' || $args['duplicateNameCheck']=='enforce'))
         data_entry_helper::$javascript .= "
   for(var i=0; i< SiteLabelLayer.features.length; i++){
     if(SiteLabelLayer.features[i].attributes.new == false){
@@ -2876,7 +2877,7 @@ filterReset".$idx." = function(){
                 // proxiedurl,featurePrefix,featureType,geometryName,featureNS,srsName,propertyNames
                 if($filterAttr[1]=="Commune") $includeCommune=false;
                 $protocol = explode(',', $filterAttr[1]=="Commune" ? $args['communeLayerLookup'] : $args['locationLayerLookup']);
-                $retVal .= '<input id="'.$attr['id'].'" name="'.$attr['fieldname'].'" type="hidden" value="'.$attr['default'].'"><label>'.$attr['caption'].':</label> <select class="required" id="filterSelect'.$idx.'"></select><span class="deh-required">*</span><br/>';
+                $retVal .= '<input id="'.$attr['id'].'" class="filterFields" name="'.$attr['fieldname'].'" type="hidden" value="'.$attr['default'].'"><label>'.$attr['caption'].':</label> <select class="required" id="filterSelect'.$idx.'"></select><span class="deh-required">*</span><br/>';
                 $attrList[]=array('id'=>$attr['attributeId'],'shape'=>true);
                 data_entry_helper::$javascript .="
 displayShape = function(zoom){
@@ -3079,12 +3080,13 @@ filterReset".$idx." = function(){
       			} else {
 				  $initFunctions .="\nfilterReset".$idx."();";
       			}
-				//$defaultsFunction .= "  jQuery('#location-name').val(jQuery('#location-name').data('newValue'));\n";
+				// $defaultsFunction .= "  jQuery('#location-name').val(jQuery('#location-name').data('newValue'));\n";
       			$defaultsFunction .= "  filterLoad".$idx."(true)\n";
       			$loadFunction .= "  filterLoad".$idx."(true);\n";
       			break;
       		default:
-      			$ctrl = data_entry_helper::outputAttribute($attr,array()).
+      			$attr['class'] = (isset($attr['class']) ? $attr['class']." " : "")."filterFields";
+      			$ctrl = data_entry_helper::outputAttribute($attr,array('class'=>"filterFields")).
       			'<span id="filter'.$idx.'"><label class="auto-width">'.lang::get("or pick one previously used").':</label> '.
       			'<select id="filterSelect'.$idx.'" ></select></span>';
 				$retVal .= str_replace('<br/>','',$ctrl).'<br />';
@@ -3195,7 +3197,7 @@ filterReset".$idx." = function(){
       			} else {
 				  $initFunctions .="\nfilterReset".$idx."();";
       			}
-				$defaultsFunction .= "    filterLoad".$idx."();\n";
+      			$defaultsFunction .= "  filterLoad".$idx."();\n";
 				$loadFunction .= "  filterLoad".$idx."();\n";
 				$prevFilterAttr=$filterAttr;
 				$prevAttr=$attr;
