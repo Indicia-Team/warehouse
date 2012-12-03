@@ -1384,7 +1384,7 @@ indiciaData.windowLoaded=false;
         // most radio button validation will be "required"
         (in_array('message', self::$validation_mode) ? "
         errorPlacement: function(error, element) {
-          if(element.is(':radio')){
+          if(element.is(':radio')||element.is(':checkbox')){
             var jqBox = element.parents('.control-box');
             if (jqBox.length != 0) {
               error.insertBefore(jqBox);

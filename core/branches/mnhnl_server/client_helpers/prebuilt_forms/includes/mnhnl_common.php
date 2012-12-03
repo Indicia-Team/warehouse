@@ -964,7 +964,7 @@ reverseConvertGeom = function(geom, projection){
   return geom;
 }
 
-loadFeatures = function(parent_id, child_id, childArgs, loadParent, setSelectOptions, zoomParent, clearLocation, setPermissionState){
+loadFeatures = function(parent_id, child_id, childArgs, loadParent, setSelectOptions, zoomParent, clearLocationFlag, setPermissionState){
   ParentLocationLayer.destroyFeatures();
   SiteLabelLayer.destroyFeatures();
   SiteAreaLayer.destroyFeatures();
@@ -975,7 +975,7 @@ loadFeatures = function(parent_id, child_id, childArgs, loadParent, setSelectOpt
 ".($args['locationMode']!='multi' && $args['siteNameTermListID']!="" ?
 "  jQuery('#location-name').find('option').removeAttr('disabled');\n"
 : "").
-"  if(clearLocation){
+"  if(clearLocationFlag){
     clearLocation(false);
   }
   deactivateControls();

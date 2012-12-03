@@ -24,7 +24,10 @@
   margin: 0;
 }
 .mnhnl-species-grid td {
-  padding: 4px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 1px;
+  padding-right: 1px;
 }
 .mnhnl-species-grid .radio_group_container {
   display:inline-block;
@@ -54,23 +57,39 @@
   margin-top: 4px;
   width: auto;
 }
+.scOccAttrCell {
+  padding-top: 4px;
+}
 .scOccAttrCell label {
+  white-space: normal;
   margin-right: 5px;
   width: auto;
-  max-width: 200px;
+  display: inline;
+}
+.scOccAttrCell .control-box {
+  white-space: normal;
+}
+.scOccAttrCell .control-box span {
+  white-space: nowrap;
+  margin-top: 0px;
 }
 .scOccAttrCell .control-box label {
   margin-left: 3px;
 }
-.scOccAttrCell input[type='radio'] {
-  margin-top: 6px;
+.scOccAttrCell input,
+.scOccAttrCell select {
+  margin-top: 0px;
+}
+.scOccAttrCell input[type='radio'],
+.scOccAttrCell input[type='checkbox'] {
   margin-left: 0;
   width: auto;
 }
 .scOccAttrCell input[type='checkbox'] {
-  margin-top: 6px;
-  margin-left: 0;
-  width: auto;
+  margin-top: 3px;
+}
+.scOccAttrCell .control-box input[type='checkbox'] {
+  margin-top: 0px;
 }
 input.scDormouseDistanceToSupport, input.scDormouseDistanceToStand 
 {
@@ -202,9 +221,6 @@ input.scComment  {
   padding-left: 20px;	
 }
 
-.mnhnl-species-grid td {
-  padding: 1px;
-}
 .ui-widget-header th {
   padding-right: 8px;
 }
