@@ -1,3 +1,5 @@
+DROP VIEW gv_taxon_groups_taxon_lists;
+
 CREATE OR REPLACE VIEW gv_taxon_groups_taxon_lists AS 
  SELECT tgtl.id, tg.id AS taxon_group_id, tg.title, tgtl.deleted, tgtl.taxon_list_id
    FROM taxon_groups_taxon_lists tgtl
