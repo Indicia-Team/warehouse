@@ -545,14 +545,19 @@ mapInitialisationHooks.push(function(mapdiv) {
   		  if(highlighted.length>0){ // a clone of the feature added to the layer is stored.
   			  highlighted.data('feature',a1.feature.clone());
   			  if(superSampleLocationLayer.features.length > 0){
-  			    var inside = null;
+  			    var inside = true;
+  			    // when dealing with a multiple polygon site, it must be outside all polygons - i.e. inside any one.
   			    for(var i = 0; i< superSampleLocationLayer.features.length; i++){
-  			      if(superSampleLocationLayer.features[i].geometry.CLASS_NAME == 'OpenLayers.Geometry.Polygon'){
-  			        if(inside === null) inside = false;
-  			        // TODO extend to allow buffer
-  			        inside = inside || superSampleLocationLayer.features[i].geometry.containsPoint(a1.feature.geometry);
-  			      }
-  			    }
+                  // TODO extend to allow buffer
+                  if(superSampleLocationLayer.features[i].geometry.CLASS_NAME == 'OpenLayers.Geometry.Polygon'){
+                    inside = superSampleLocationLayer.features[i].geometry.containsPoint(a1.feature.geometry);
+                  } else if(superSampleLocationLayer.features[i].geometry.CLASS_NAME == 'OpenLayers.Geometry.MultiPolygon'){
+                    for(var j = 0, inside = false; j< superSampleLocationLayer.features[i].geometry.components.length; j++){
+                      inside = inside || superSampleLocationLayer.features[i].geometry.components[j].containsPoint(a1.feature.geometry);
+                    }
+                  }  // any non polygon geometries > not a valid check as always outside.
+                  if(inside) break;
+                }
   			    if(inside===false)
   			      // use jQuery dialog as it does not stop processing.
   			      var dialog = $('<p>Warning: The point you have selected is outside the limits of the site.</p>').dialog({ title: "Outside Site", buttons: { "OK": function() { dialog.dialog('close'); }}});

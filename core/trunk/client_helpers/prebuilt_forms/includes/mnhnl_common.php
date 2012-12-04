@@ -2816,7 +2816,9 @@ jQuery('#filterSelect".$idx."').change(function(){
 						if($idx1 > $idx)
 						  data_entry_helper::$javascript .="    filterLoad".($idx1)."();\n";
 					data_entry_helper::$javascript .="  }\n  displayParent(true);\n});\n";
-					$defaultsFunction .= "  if(!keepFilter){
+					$defaultsFunction .= "  if(keepFilter){
+    jQuery('#".$options['ParentFieldID']."').val(jQuery('#filterSelect".$idx."').val());
+  } else {
     jQuery('#filterSelect".$idx."').val('');
   }\n";
 					$loadFunction.="\ndisplayParent(false);";
