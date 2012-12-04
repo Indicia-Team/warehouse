@@ -73,8 +73,9 @@ class ReportEngine {
   private $localReportDir;
   private $cache;
   const rowsPerUpdate = 50;
-  private $websiteIds = null;
+  private $websiteIds;
   private $userId = null;
+  private $sharingMode='reporting';
 
   /**
    * @var array A list of additional columns identified from custom attribute parameters.
@@ -94,6 +95,9 @@ class ReportEngine {
   public function __construct($websiteIds = null, $userId = null)
   {
     $this->websiteIds = $websiteIds;
+    // is the default sharing mode of "reporting" being overridden?
+    if (isset($this->providedParams['sharing']))
+      $this->sharingMode = $this->providedParams['sharing'];
     $this->userId = $userId;
     $this->localReportDir = Kohana::config('indicia.localReportDir');
     $this->reportDb = new Database('report');
@@ -186,7 +190,7 @@ class ReportEngine {
     switch ($this->reportFormat)
     {
       case 'xml':
-        $this->reportReader = new XMLReportReader($this->report, $this->websiteIds, $this->userId, isset($this->providedParams['sharing']) ? $this->providedParams['sharing'] : 'reporting');
+        $this->reportReader = new XMLReportReader($this->report, $this->websiteIds, $this->userId, $this->sharingMode);
         break;
       default:
         return array('error' => 'Unknown report format specified: '. $this->reportFormat);
@@ -837,10 +841,13 @@ class ReportEngine {
    */
   private function mergeAttrListParam($query, $type, $attrList) {
     $this->reportDb
-        ->select('distinct id, data_type, caption, validation_rules')
-        ->from('list_'.$type.'_attributes');
+        ->select('distinct a.id, a.data_type, a.caption, a.validation_rules')
+        ->from('list_'.$type.'_attributes as a');
     if ($this->websiteIds)
-      $this->reportDb->in('website_id', $this->websiteIds);
+      $this->reportDb
+          ->join('index_websites_website_agreements as wa', 'wa.from_website_id', 'a.website_id')
+          ->in('wa.to_website_id', $this->websiteIds)
+          ->where('wa.provide_for_'.$this->sharingMode, 't');
     $ids = array();
     $captions = array();
     $attrList = explode(',',$attrList);
@@ -851,7 +858,7 @@ class ReportEngine {
         $captions[] = $attr;
     }
     if (count($ids)>0) {
-      $this->reportDb->in('id', $ids);
+      $this->reportDb->in('a.id', $ids);
       if (count($captions)>0) 
         throw new exception('Cannot mix numeric IDs and captions in the list of requested custom attributes');
     } elseif (count($captions)>0) 
