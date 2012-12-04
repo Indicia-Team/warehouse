@@ -242,11 +242,11 @@ class iform_easy_download {
   
   private static function build_filter($args, $readAuth, $format) {
     require_once('includes/user.php');
-    $location_expertise=hostsite_get_user_field('location_expertise');
-    $taxon_groups_expertise=hostsite_get_user_field('taxon_groups_expertise');
+    $location_expertise = hostsite_get_user_field('location_expertise');
+    $taxon_groups_expertise = hostsite_get_user_field('taxon_groups_expertise');
     $taxon_groups_expertise = $taxon_groups_expertise ? unserialize($taxon_groups_expertise) : null;
     $ownData = (isset($_POST['user-filter']) && $_POST['user-filter'] === 'all') || !$args['allow_my_data'] ? 0 : 1;
-    $surveys_expertise=hostsite_get_user_field('surveys_expertise');
+    $surveys_expertise = hostsite_get_user_field('surveys_expertise');
     $surveys_expertise = $surveys_expertise ? unserialize($surveys_expertise) : null;
     // either a selected survey, or the surveys the user can see. The field name used will depend on which of the 2 survey selects were active.
     if (empty($args['survey_id'])) {
@@ -261,7 +261,7 @@ class iform_easy_download {
         'ownData'=>$ownData,
         'location_id'=>hostsite_get_user_field('location_expertise'),
         'ownLocality'=>!empty($location_expertise) && !$ownData ? 1 : 0,
-        'taxon_groups'=>implode(',', $taxon_groups_expertise),
+        'taxon_groups'=>!empty($taxon_groups_expertise) ? implode(',', $taxon_groups_expertise) : '',
         'ownGroups'=>!empty($taxon_groups_expertise) && $taxon_groups_expertise && !$ownData ? 1 : 0,
         'surveys'=>$surveys,
         'ownSurveys'=>((empty($surveys_expertise) || $ownData) && empty($_POST[$surveyFieldName])) && empty($args['survey_id']) ? 0 : 1
