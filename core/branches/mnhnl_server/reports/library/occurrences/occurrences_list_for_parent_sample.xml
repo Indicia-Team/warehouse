@@ -1,5 +1,5 @@
 <report
-    title="Occurrence list"
+    title="Occurrence list for parent supersample"
     description="A general purpose list of records, filtered to all those contained within a top level sample, in a 2 level sample hierarchy."
 >
   <query website_filter_field="o.website_id">
@@ -31,10 +31,12 @@
     s.date_end,
     s.date_type as date_type,
     ttl.id as taxa_taxon_list_id,
+    ttl.taxon_meaning_id as taxon_meaning_id,
     tpref.taxon,
     tcommon.taxon as common,
     tg.title as taxon_group,
-    o.zero_abundance
+    o.zero_abundance,
+    o.record_status
   </field_sql>
   <order_bys>
     <order_by>o.id DESC</order_by>
@@ -56,10 +58,12 @@
     <column name='taxon' display='Species' />
     <column name='common' display='Common' />
     <column name='taxa_taxon_list_id' visible='false' />
+    <column name='taxon_meaning_id' visible='false' />
     <column name='location_name' display='Site name' />
     <column name='entered_sref' display='SRef' />
     <column name='date' display='Date' />
     <column name='zero_abundance' display='Zero Abundance' />
     <column name='taxon_group' display='Taxon Group' />
+    <column name='record_status' display='Record Status Flag' />
   </columns>
 </report>
