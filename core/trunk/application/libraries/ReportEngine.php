@@ -95,9 +95,6 @@ class ReportEngine {
   public function __construct($websiteIds = null, $userId = null)
   {
     $this->websiteIds = $websiteIds;
-    // is the default sharing mode of "reporting" being overridden?
-    if (isset($this->providedParams['sharing']))
-      $this->sharingMode = $this->providedParams['sharing'];
     $this->userId = $userId;
     $this->localReportDir = Kohana::config('indicia.localReportDir');
     $this->reportDb = new Database('report');
@@ -156,6 +153,9 @@ class ReportEngine {
   {
     $this->reportFormat = $reportFormat;
     $this->providedParams = $params;
+    // is the default sharing mode of "reporting" being overridden?
+    if (isset($this->providedParams['sharing']))
+      $this->sharingMode = $this->providedParams['sharing'];
     Kohana::log('debug', "Received request for report: $report, source: $reportSource");
     if ($reportSource == null) {
       $reportSource='local';
