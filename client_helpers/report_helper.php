@@ -1238,6 +1238,9 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * Optional. Set to true to load the records onto the map using an AJAX request after the initial page load. Not relevant for 
   * GeoServer layers. Note that when ajax loading the map, the map will not automatically zoom to the layer extent.
   * </li>
+  * <li><b>zoomMapToOutput</b>
+  * Default true. Defines that the map will automatically zoom to show the records.
+  * </li>  
   * </ul>
   */
   public static function report_map($options) {
@@ -1389,7 +1392,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
           }
           self::$javascript .= 'indiciaData.geoms=['.implode(',',$geoms)."];\n";
         }
-        self::addFeaturesLoadingJs($addFeaturesJs, $defsettings, $selsettings, $styleFns, !$options['ajax']);
+        self::addFeaturesLoadingJs($addFeaturesJs, $defsettings, $selsettings, $styleFns, $options['zoomMapToOutput'] && !$options['ajax']);
       } else {
         // doing WMS reporting via GeoServer
         $replacements = array();
