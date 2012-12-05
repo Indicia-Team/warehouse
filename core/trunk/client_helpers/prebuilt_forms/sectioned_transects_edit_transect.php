@@ -90,7 +90,30 @@ class iform_sectioned_transects_edit_transect {
             'name'=>'sites_list_path',
             'caption'=>'Site list page path',
             'description'=>'Enter the path to the page which the site list is on.',
-            'type'=>'text_input',
+            'type' => 'string',
+            'required' => true,
+            'group'=>'Transects Editor Settings'
+          ), array(
+            'name'=>'transect_type_term',
+            'caption'=>'Transect type term',
+            'description'=>'Select the term used for transect location types.',
+            'type' => 'select',
+            'table'=>'termlists_term',
+            'captionField'=>'term',
+            'valueField'=>'term',
+            'extraParams' => array('termlist_external_key'=>'indicia:location_types'),
+            'required' => true,
+            'group'=>'Transects Editor Settings'
+          ), array(
+            'name'=>'section_type_term',
+            'caption'=>'Transect type term',
+            'description'=>'Select the term used for section location types.',
+            'type' => 'select',
+            'table'=>'termlists_term',
+            'captionField'=>'term',
+            'valueField'=>'term',
+            'extraParams' => array('termlist_external_key'=>'indicia:location_types'),
+            'required' => true,            
             'group'=>'Transects Editor Settings'
           ), array(
             'name'=>'bottom_blocks',
@@ -104,7 +127,7 @@ class iform_sectioned_transects_edit_transect {
             'name'=>'spatial_systems',
             'caption'=>'Allowed Spatial Ref Systems',      
             'description'=>'List of allowable spatial reference systems, comma separated. Use the spatial ref system code (e.g. OSGB or the EPSG code number such as 4326).',
-            'type'=>'string',
+            'type'=>'text_input',
             'group'=>'Other Map Settings'
           ),
           array(
@@ -113,7 +136,7 @@ class iform_sectioned_transects_edit_transect {
             'description'=>'Height in pixels of the map.',
             'type'=>'int',
             'group'=>'Initial Map View',
-           'default'=>600
+            'default'=>600
           ),
           array(
             'name'=>'route_map_buffer',
@@ -162,8 +185,12 @@ class iform_sectioned_transects_edit_transect {
       $args['section_edit_path'] = url($args['section_edit_path']);
     }
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
+    $typeTerms = array(
+      empty($args['transect_type_term']) ? 'Transect' : $args['transect_type_term'],
+      empty($args['section_type_term']) ? 'Section' : $args['section_type_term']
+    );
     $settings = array(
-      'locationTypes' => helper_base::get_termlist_terms($auth, 'indicia:location_types', array('Transect', 'Transect Section')),
+      'locationTypes' => helper_base::get_termlist_terms($auth, 'indicia:location_types', $typeTerms),
       'locationId' => isset($_GET['id']) ? $_GET['id'] : null
     );
     $settings['attributes'] = data_entry_helper::getAttributes(array(

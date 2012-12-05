@@ -201,7 +201,6 @@ class iform_map_explorer {
     $r = report_helper::report_grid($reportOptions);
    
     $r .= report_helper::report_map(array(
-      'id'=>'latest-photos',
       'readAuth' => $readAuth,
       'dataSource'=>$args['report_name'],
       'extraParams'=>$reportOptions['extraParams'],

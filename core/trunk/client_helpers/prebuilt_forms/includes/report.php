@@ -241,7 +241,7 @@ function iform_report_get_report_options($args, $readAuth) {
 function iform_report_apply_explore_user_own_preferences(&$reportOptions) {
   $allParams = array_merge($reportOptions['paramDefaults'], $reportOptions['extraParams']);
   global $user;
-  if (!isset($user->profile_indicia_user_id))
+  if (!isset($user->profile_indicia_user_id) && function_exists('profile_load_profile'))
     profile_load_profile($user);
   // Unless ownData explicitly set, we either default it to unchecked, or we set it unchecked and hidden if the user account
   // is not on the warehouse

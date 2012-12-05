@@ -991,9 +991,7 @@ jQuery('#".$ctrlid."').change(function(){
     foreach (self::$removableParams as $param=>$caption)
       if (isset($_GET[$param]) && $_GET[$param]==='true')    
         $reportOptions['extraParams'][$param]='';
-    if ($siteUrlParams[self::$locationKey]['value']!='')
-      $reportOptions['highlightEstimates']=true;
-     
+    $reportOptions['highlightEstimates']=true;
     $retVal .= report_helper::report_calendar_summary($reportOptions);
     return $retVal;
   }
