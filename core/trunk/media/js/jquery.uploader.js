@@ -164,8 +164,9 @@ var checkSubmitInProgress = function () {
             msg='Uploading...';
           }
           var mediaPath = div.settings.jsPath.substr(0, div.settings.jsPath.length - 3);
-          $('#' + file.id + ' .progress-gif').html('<img style="display: inline; margin: 4px;" src="'+ mediaPath +'images/ajax-loader.gif" width="300" height="16" alt="In progress"/>');
+          $('#' + file.id + ' .progress-gif').html('<img style="display: inline; margin: 4px;" src="'+ mediaPath +'images/ajax-loader2.gif" width="32" height="32" alt="In progress"/>');
           $('#' + file.id + ' .progress-percent').html('<span>'+msg+'</span>');
+          throw new exception;
         });
         
       });
