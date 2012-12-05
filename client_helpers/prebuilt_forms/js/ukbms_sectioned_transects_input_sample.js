@@ -129,11 +129,58 @@ function addGridRow(species, speciesTableSelector){
   $(speciesTableSelector+' tbody.occs-body').append(row);
   row.find('.count-input').keydown(count_keydown).focus(count_focus).change(input_change).blur(input_blur);
 }
+
+function smp_keydown(evt) {
+  var targetRow = [], targetInput=[], code, parts=evt.target.id.split(':'), type='smpAttr';
+  code=parts[2];
+  if (evt.keyCode===13 || evt.keyCode===40) {
+    targetRow = $(evt.target).parents('tr').next('tr');
+    if (targetRow.length===0) {
+      // moving out of sample attributes area into next tbody for counts
+      targetRow = $(evt.target).parents('tbody').next('tbody').find('tr:first');
+      type='value';
+    }
+    if (targetRow.length>0) {
+      targetInput = $('#' + type + '\\:' + targetRow[0].id.substr(4) + '\\:' + code);
+    }
+  }
+  
+  if (evt.keyCode===39 && evt.target.selectionEnd >= evt.target.value.length) {
+    targetInput = $(evt.target).parents('td').next('td').find('input');
+    if (targetInput.length===0) {
+      // end of row, so move down to next if there is one
+      targetRow = $(evt.target).parents('tr').next('tr');
+      if (targetRow.length===0) {
+        // moving out of sample attributes area into next tbody for counts
+        targetRow = $(evt.target).parents('tbody').next('tbody').find('tr:first');
+      }      
+      if (targetRow.length>0) {
+        targetInput = targetRow.find('input.count-input:first');
+      }
+    }
+  }
+  // left arrow - move to previous cell if at start of text
+  if (evt.keyCode===37 && evt.target.selectionStart === 0) {
+    targetInput = $(evt.target).parents('td').prev('td').find('input');
+    if (targetInput.length===0) {
+      // before start of row, so move up to previous if there is one
+      targetRow = $(evt.target).parents('tr').prev('tr');
+      if (targetRow.length>0) {
+        targetInput = targetRow.find('input:last');
+      }
+    }
+  }
+  if (targetInput.length > 0) {
+    $(targetInput).get()[0].focus();
+    return false;
+  }
+}
+
 // Not all events can be bound using live() - which is deprecated for later versions of jQuery anyway.
 // Define event handlers.
 // TBC this should be OK to use as is.
 function count_keydown (evt) {
-  var targetRow = [], code, parts=evt.target.id.split(':');
+  var targetRow = [], targetInput=[], code, parts=evt.target.id.split(':'), type='value';
   code=parts[2];
 
   // down arrow or enter key
@@ -143,10 +190,14 @@ function count_keydown (evt) {
   // up arrow
   if (evt.keyCode===38) {
     targetRow = $(evt.target).parents('tr').prev('tr');
+    if (targetRow.length===0) {
+      // moving out of counts area into previous tbody for sample attributes
+      targetRow = $(evt.target).parents('tbody').prev('tbody').find('tr:last');
+      type='smpAttr';
+    } 
   }
-  var targetInput = [];
   if (targetRow.length>0) {
-    targetInput = $('#value\\:' + targetRow[0].id.substr(4) + '\\:' + code);
+    targetInput = $('#' + type + '\\:' + targetRow[0].id.substr(4) + '\\:' + code);
   }        
   // right arrow - move to next cell if at end of text
   if (evt.keyCode===39 && evt.target.selectionEnd >= evt.target.value.length) {
@@ -165,6 +216,10 @@ function count_keydown (evt) {
     if (targetInput.length===0) {
       // before start of row, so move up to previous if there is one
       targetRow = $(evt.target).parents('tr').prev('tr');
+      if (targetRow.length===0) {
+        // moving out of counts area into previous tbody for sample attributes
+        targetRow = $(evt.target).parents('tbody').prev('tbody').find('tr:last');
+      } 
       if (targetRow.length>0) {
         targetInput = targetRow.find('input:last');
       }
@@ -216,8 +271,13 @@ function input_blur (evt) {
         return;
       }
 
-      // store the actual abundance value we want to save.
+      // store the actual abundance value we want to save. Use 0 instead of blank
+      // since required for deletions
+      if ($(selector).val()==='') {
+        $(selector).val('0');
+      }
       $('#occattr').val($(selector).val());
+      $('#occdeleted').val($(selector).val()==='0' ? 't' : 'f'); 
       // does this cell already have an occurrence?
       if ($(selector +'\\:id').length>0) {
         $('#occid').val($(selector +'\\:id').val());
@@ -541,7 +601,7 @@ function loadSpeciesList() {
 
 //      $('.count-input').keydown(count_keydown).focus(count_focus);
 //      $('.count-input,.smp-input').change(input_change).blur(input_blur);
-      $('.smp-input').change(input_change).blur(input_blur);
+      $('.smp-input').keydown(smp_keydown).change(input_change).blur(input_blur);
       $(this).unbind(event);
     });
 
