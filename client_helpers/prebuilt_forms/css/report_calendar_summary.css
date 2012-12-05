@@ -39,6 +39,9 @@ tr td.week {
 #controls-table,#chartdiv-container {
 	margin-bottom: 3px;
 }
+.controls-table {
+  width: 100%;
+}
 .controls-table label {
 	width: auto;
 }
