@@ -96,7 +96,29 @@ class iform_ukbms_sectioned_transects_input_sample {
           'captionField'=>'caption',
           'valueField'=>'id',
           'siteSpecific'=>true
-        ),
+        ), array(
+          'name'=>'transect_type_term',
+          'caption'=>'Transect type term',
+          'description'=>'Select the term used for transect location types.',
+          'type' => 'select',
+          'table'=>'termlists_term',
+          'captionField'=>'term',
+          'valueField'=>'term',
+          'extraParams' => array('termlist_external_key'=>'indicia:location_types'),
+          'required' => true,
+          'group'=>'Transects Editor Settings'
+        ), array(
+          'name'=>'section_type_term',
+          'caption'=>'Transect type term',
+          'description'=>'Select the term used for section location types.',
+          'type' => 'select',
+          'table'=>'termlists_term',
+          'captionField'=>'term',
+          'valueField'=>'term',
+          'extraParams' => array('termlist_external_key'=>'indicia:location_types'),
+          'required' => true,            
+          'group'=>'Transects Editor Settings'
+        ), 
         array(
           'name'=>'taxon_list_id',
           'caption'=>'All Species List',
@@ -347,7 +369,11 @@ class iform_ukbms_sectioned_transects_input_sample {
     } else {
       // Output only the locations for this website and transect type. Note we load both transects and sections, just so that
       // we always use the same warehouse call and therefore it uses the cache.
-      $locationTypes = helper_base::get_termlist_terms($auth, 'indicia:location_types', array('Transect', 'Transect Section'));
+      $typeTerms = array(
+        empty($args['transect_type_term']) ? 'Transect' : $args['transect_type_term'],
+        empty($args['section_type_term']) ? 'Section' : $args['section_type_term']
+      );
+      $locationTypes = helper_base::get_termlist_terms($auth, 'indicia:location_types', $typeTerms);
       $availableSites = data_entry_helper::get_population_data(array(
         'report'=>'library/locations/locations_list',
         'extraParams' => $auth['read'] + array('website_id' => $args['website_id'], 'location_type_id'=>$locationTypes[0]['id'],
@@ -585,7 +611,7 @@ class iform_ukbms_sectioned_transects_input_sample {
     // output rows at the top for any transect section level sample attributes
     $rowClass='';
     foreach ($attributes as $attr) {
-      $r .= '<tr '.$rowClass.'><td>'.$attr['caption'].'</td>';
+      $r .= '<tr '.$rowClass.' id="smp-'.$attr['attributeId'].'"><td>'.$attr['caption'].'</td>';
       $rowClass=$rowClass=='' ? 'class="alt-row"':'';
       unset($attr['caption']);
       foreach ($sections as $idx=>$section) {
@@ -677,6 +703,7 @@ class iform_ukbms_sectioned_transects_input_sample {
     $r .= '<form style="display: none" id="occ-form" method="post" action="'.iform_ajaxproxy_url($node, 'occurrence').'">';
     $r .= '<input name="website_id" value="'.$args['website_id'].'"/>';
     $r .= '<input name="occurrence:id" id="occid" />';
+    $r .= '<input name="occurrence:deleted" id="occdeleted" />';
     $r .= '<input name="occurrence:taxa_taxon_list_id" id="ttlid" />';
     $r .= '<input name="occurrence:sample_id" id="occ_sampleid"/>';
     $r .= '<input name="occAttr:' . $args['occurrence_attribute_id'] . '" id="occattr"/>';
