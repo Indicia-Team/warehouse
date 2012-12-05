@@ -656,7 +656,7 @@ mapGeoreferenceHooks = [];
      */
     function selectBox(position, layers, div) {
       var testGeom, tolerantGeom, layer, bounds, xy, minXY, maxXY, layer, tolerance, testGeoms={},
-          fnRadius=null, fnStrokeWidth=null;
+          getRadius=null, getStrokeWidth=null;
       if (position instanceof OpenLayers.Bounds) {
         if (position.left===position.right && position.top===position.bottom) {
           // point clicked
@@ -693,13 +693,21 @@ mapGeoreferenceHooks = [];
             if (typeof radius === "string") {
               match=radius.match(/^\${(.+)}/);
               if (match!==null && match.length>1) {
-                fnRadius=layer.styleMap.styles['default'].context[match[1]];
+                getRadius=layer.styleMap.styles['default'].context[match[1]];
+                if (getRadius===undefined) {
+                  // the context function is missing, so must be a field name
+                  getRadius=match[1];
+                }
               }
             }
             if (typeof strokeWidth === "string") {
               match=strokeWidth.match(/^\${(.+)}/);
               if (match!==null && match.length>1) {
-                fnStrokeWidth=layer.styleMap.styles['default'].context[match[1]];
+                getStrokeWidth=layer.styleMap.styles['default'].context[match[1]];
+                if (getStrokeWidth===undefined) {
+                  // the context function is missing, so must be a field name
+                  getStrokeWidth=match[1];
+                }
               }
             }
           }
@@ -710,12 +718,29 @@ mapGeoreferenceHooks = [];
             if (!feature.onScreen()) {
               continue;
             }
-            if (fnRadius!==null) {
-              radius = fnRadius(feature);
+            if (getRadius!==null) {
+              // getRadius might be a string (fieldname) or a context function
+              if (typeof getRadius==='string') {
+                radius=feature.attributes[getRadius];
+              } else {
+                radius = getRadius(feature);
+              }
             }
-            if (fnStrokeWidth!==null) {
-              // div 2 because half the stroke width is inside the perimeter
-              strokeWidth = fnStrokeWidth(feature);
+            if (getRadius!==null) {
+              // getRadius might be a string (fieldname) or a context function
+              if (typeof getRadius==='string') {
+                radius=feature.attributes[getRadius];
+              } else {
+                radius = getRadius(feature);
+              }
+            }
+            if (getStrokeWidth!==null) {
+              // getStrokeWidth might be a string (fieldname) or a context function
+              if (typeof getStrokeWidth==='string') {
+                strokeWidth=feature.attributes[getStrokeWidth];
+              } else {
+                strokeWidth = getStrokeWidth(feature);
+              }
             }
             var geom = feature.geometry;
             if (geom.CLASS_NAME === 'OpenLayers.Geometry.Point') {
