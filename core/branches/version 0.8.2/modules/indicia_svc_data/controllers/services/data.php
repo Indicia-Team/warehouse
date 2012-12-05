@@ -619,7 +619,7 @@ class Data_Controller extends Data_Service_Base_Controller {
         else
           $finalName = time().strtolower($_FILES['media_upload']['name']);
         $fTmp = upload::save('media_upload', $finalName);
-        Image::create_image_files(dirname($fTmp), basename($fTmp));
+        Image::create_image_files(dirname($fTmp), basename($fTmp), $this->website_id);
         $this->response=basename($fTmp);
         $this->send_response();
         kohana::log('debug', 'Successfully uploaded media to '. basename($fTmp));

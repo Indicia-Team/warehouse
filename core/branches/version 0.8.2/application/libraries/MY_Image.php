@@ -21,32 +21,37 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
-/** 
+/**
  * Extension to the image library class which adds functionality to create multiple sized
  * images for an uploaded image file.
  */
 class Image extends Image_Core {
-  
+
 /**
    * When an image file is uploaded, the indicia configuration file is used to determine what resized
-   * versions of the file must also be created. This method creates those files and applies the relevant 
+   * versions of the file must also be created. This method creates those files and applies the relevant
    * image manipulations.
    * @param string $uploadpath Path to the upload directory.
-   * @param string $filename The file name of the original uploaded file.   *
+   * @param string $filename The file name of the original uploaded file.
+   * @param int $website_id The website's ID, which allows custom sizing for saved images on a per-website basis.
    */
-  public static function create_image_files($uploadpath, $filename) {
+  public static function create_image_files($uploadpath, $filename, $website_id) {
     // First check that the configured graphics library is available.
-    // @todo Consider implementing checks if the driver is set to ImageMagick or GraphicsMagick.    
-    if (kohana::config('image.driver') != 'GD' || function_exists('gd_info')) {      
+    // @todo Consider implementing checks if the driver is set to ImageMagick or GraphicsMagick.
+    if (kohana::config('image.driver') != 'GD' || function_exists('gd_info')) {
       // tolerate path with or withoug trailing slash
       if (substr($uploadpath,-1) != '\\' && substr($uploadpath,-1) != '/')
         $uploadpath = $uploadpath.'/';      
       $fileParts = explode('.', $filename);
       $ext = strtolower(array_pop($fileParts));
       if (in_array($ext, Image::$allowed_types)) {
-        $config = kohana::config('indicia.image_handling');
+        // website specific config available?
+        $config = kohana::config('indicia.image_handling_website_'.$website_id);
+        // if not, is there a default config setting
+        if (!$config)
+          $config = kohana::config('indicia.image_handling');
+        // If no file based settings at all, then we just use a hard coded default.
         if (!$config) {
-          // Apply a default configuration if not in the file.
           $config = array(
             'thumb' => array('width'  => 100, 'height' => 100, 'crop' => true),
             'med' => array('width'  => 500),
@@ -67,7 +72,7 @@ class Image extends Image_Core {
       }
     }
   }
-  
+
   /**
    * Resize an image according to the supplied resize settings array.
    * @access private
@@ -78,20 +83,20 @@ class Image extends Image_Core {
       if (array_key_exists('crop', $settings) && $settings['crop']===true) {
         // Is the cropped image wider aspect ratio than the original?
         $wider = $img->width/$img->height < $settings['width']/$settings['height'];
-        if ($wider && 
+        if ($wider &&
             (!isset($settings['upscale']) || $settings['upscale'] || $img->width > $settings['width'])) {
           // Wider ratio, so we need to fit to this width, then crop the top and bottom.
-          $img->resize($settings['width'], 0, Image::WIDTH);                
+          $img->resize($settings['width'], 0, Image::WIDTH);
         } elseif (!isset($settings['upscale']) || $settings['upscale'] || $img->height > $settings['height']) {
           // Taller ratio, so we need to fit to this height, then crop the left and right.
-          $img->resize(0, $settings['height'], Image::HEIGHT);                
+          $img->resize(0, $settings['height'], Image::HEIGHT);
         }
         // Now do the required crop
-        $img->crop($settings['width'], $settings['height']);              
+        $img->crop($settings['width'], $settings['height']);
       } else {
         $img->resize($settings['width'], $settings['height']);
       }
-    } else if (array_key_exists('width', $settings) && 
+    } else if (array_key_exists('width', $settings) &&
         (!isset($settings['upscale']) || $settings['upscale'] || $img->width > $settings['width'])) {
       // resize to a set width and preserve aspect ratio
       $img->resize($settings['width'], 0, Image::WIDTH);
@@ -101,7 +106,7 @@ class Image extends Image_Core {
       $img->resize(0, $settings['height'], Image::HEIGHT);
     }
   }
-  
+
 }
 
 ?>
