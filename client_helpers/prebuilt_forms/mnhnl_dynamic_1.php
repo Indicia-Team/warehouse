@@ -50,7 +50,7 @@ class iform_mnhnl_dynamic_1 extends iform_dynamic_sample_occurrence {
    * @return array List of parameters that this form requires.
    */
   public static function get_parameters() {    
-    $parentVal = array_merge(
+    $retVal = array_merge(
       parent::get_parameters(),
       array(
         array(
@@ -64,20 +64,6 @@ class iform_mnhnl_dynamic_1 extends iform_dynamic_sample_occurrence {
         ),
       )
     );
-    $retVal=array();
-    foreach($parentVal as $param){
-      if($param['name'] == 'interface')
-        $param['options'] = array('tabs' => 'Tabs', 'wizard' => 'Wizard'); // No one_page
-      if(!in_array($param['name'], array('no_grid',
-                   'occurrence_confidential',
-                   'occurrence_images',
-                   'save_button_below_all_pages',
-                   'emailShow',
-                   'nameShow',
-                   'users_manage_own_sites',
-                   'multiple_occurrence_mode')))
-        $retVal[] = $param;
-    }
     return $retVal;
  }
   
@@ -87,16 +73,16 @@ class iform_mnhnl_dynamic_1 extends iform_dynamic_sample_occurrence {
   		if(squares != "all" && count(squares)==0)
   			return lang::get('Error: You do not have any squares allocated to you. Please contact your manager.');
   	}
-  	$r = self::getHeaderHTML($args);
+    $r = call_user_func(array(self::$called_class, 'getHeaderHTML'), $args);
     $r .= parent::get_form_html($args, $auth, $attributes);
-    $r .= self::getTrailerHTML($args);
+    $r .= call_user_func(array(self::$called_class, 'getTrailerHTML'), $args);
     return $r;
   }
   
   protected static function getGrid($args, $node, $auth) {
-    $r = self::getHeaderHTML($args);
+    $r = call_user_func(array(self::$called_class, 'getHeaderHTML'), $args);
     $r .= parent::getGrid($args, $node, $auth);
-    $r .= self::getTrailerHTML($args);
+    $r .= call_user_func(array(self::$called_class, 'getTrailerHTML'), $args);
     return $r;  
   }
   

@@ -106,7 +106,7 @@ class iform_mnhnl_butterflies2 extends iform_mnhnl_dynamic_1 {
              "=Conditions=\r\n".
               "[recorder names]\r\n".
               "[*]\r\n".
-              "@sep= \r\n".
+              "@sep=&#32;\r\n".
               "@lookUpKey=meaning_id\r\n".
               "[year]\r\n".
               "@boltTo=passage\r\n".
