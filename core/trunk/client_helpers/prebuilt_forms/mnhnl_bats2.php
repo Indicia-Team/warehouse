@@ -99,7 +99,7 @@ class iform_mnhnl_bats2 extends iform_mnhnl_bats {
               "@lookUpKey=meaning_id\r\n".
               "[location attributes]\r\n".
               "@lookUpKey=meaning_id\r\n".
-              "@sep= \r\n".
+              "@sep=&#32;\r\n".
               "@tabNameFilter=SiteExtras\r\n".
               "[location spatial reference]\r\n".
               "[place search]\r\n".
@@ -123,7 +123,7 @@ class iform_mnhnl_bats2 extends iform_mnhnl_bats {
               "@removeAttr=<TBD>\r\n".
               "?The Visit is of the format 'Visit number' of 'Number of visits during the season'. Please enter times in 24 Hour clock format, omitting any AM or PM: for example for 4:15PM, please enter 16:15. When entering times before 10:00 in the morning, you must include a leading zero: e.g. 09:00.?\r\n".
               "[*]\r\n".
-              "@sep= \r\n".
+              "@sep=&#32;\r\n".
               "@lookUpKey=meaning_id\r\n".
               "[sample comment]\r\n".
              "=Species=\r\n".
@@ -131,7 +131,7 @@ class iform_mnhnl_bats2 extends iform_mnhnl_bats {
               "@surveyMethodTermList=bats2:surveymethod\r\n".
               "@view=detail\r\n".
               "@rowInclusionCheck=alwaysRemovable\r\n".
-              "@sep= \r\n".
+              "@sep=&#32;\r\n".
               "@lookUpKey=meaning_id\r\n".
               "[*]\r\n".
               "[lateJS]\r\n";
@@ -172,7 +172,7 @@ class iform_mnhnl_bats2 extends iform_mnhnl_bats {
   private static $cloneableTable = "";
   
   protected static function getTrailerHTML($args) {
-    $r = self::$cloneableTable.
+    $r = self::$cloneableTable;
     $r .= (isset($args['headerAndFooter']) && $args['headerAndFooter'] ?
       '<p id="iform-trailer">'.lang::get('LANG_Trailer_Text').'</p>' : '');
     return $r;

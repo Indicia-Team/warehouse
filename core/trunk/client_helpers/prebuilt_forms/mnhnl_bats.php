@@ -153,7 +153,7 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
               "[location attributes]\r\n".
               "@lookUpListCtrl=radio_group\r\n".
               "@lookUpKey=meaning_id\r\n".
-              "@sep= \r\n".
+              "@sep=&#32;\r\n".
               "@tabNameFilter=Site\r\n".
               "@class=wide\r\n".
               "[location spatial reference]\r\n".
@@ -174,14 +174,14 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
               "[date]\r\n".
               "[recorder names]\r\n".
               "[*]\r\n".
-              "@sep= \r\n".
+              "@sep=&#32;\r\n".
               "@lookUpKey=meaning_id\r\n".
               "[sample comment]\r\n".
              "=Species=\r\n".
               "[species]\r\n". 
               "@view=detail\r\n".
               "@rowInclusionCheck=alwaysRemovable\r\n".
-              "@sep= \r\n".
+              "@sep=&#32;\r\n".
               "@lookUpKey=meaning_id\r\n".
               "[*]\r\n".
               "[lateJS]\r\n";

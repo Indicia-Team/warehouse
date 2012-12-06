@@ -64,25 +64,25 @@ class iform_mnhnl_dynamic_1 extends iform_dynamic_sample_occurrence {
         ),
       )
     );
-   return $retVal;
+    return $retVal;
  }
   
   protected static function get_form_html($args, $auth, $attributes) {
     if($args['includeLocTools'] && function_exists('iform_loctools_listlocations')){
-      $squares = iform_loctools_listlocations($node);
-      if(squares != "all" && count(squares)==0)
-        return lang::get('Error: You do not have any squares allocated to you. Please contact your manager.');
+  		$squares = iform_loctools_listlocations($node);
+  		if(squares != "all" && count(squares)==0)
+  			return lang::get('Error: You do not have any squares allocated to you. Please contact your manager.');
   	}
-  	$r = self::getHeaderHTML($args);
+    $r = call_user_func(array(self::$called_class, 'getHeaderHTML'), $args);
     $r .= parent::get_form_html($args, $auth, $attributes);
-    $r .= self::getTrailerHTML($args);
+    $r .= call_user_func(array(self::$called_class, 'getTrailerHTML'), $args);
     return $r;
   }
   
   protected static function getGrid($args, $node, $auth) {
-    $r = self::getHeaderHTML($args);
+    $r = call_user_func(array(self::$called_class, 'getHeaderHTML'), $args);
     $r .= parent::getGrid($args, $node, $auth);
-    $r .= self::getTrailerHTML($args);
+    $r .= call_user_func(array(self::$called_class, 'getTrailerHTML'), $args);
     return $r;  
   }
   

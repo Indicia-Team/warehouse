@@ -158,7 +158,7 @@ class iform_mnhnl_reptiles extends iform_mnhnl_dynamic_1 {
               "[date]\r\n".
               "[recorder names]\r\n".
               "[*]\r\n".
-              "@sep= \r\n".
+              "@sep=&#32;\r\n".
               "@lookUpKey=meaning_id\r\n".
               "[sample comment]\r\n".
              "=Species=\r\n".
