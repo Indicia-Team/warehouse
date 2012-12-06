@@ -1006,25 +1006,27 @@ mapGeoreferenceHooks = [];
      */
     function getPrecisionInfo(div, precision) {
       // get approx metres accuracy we can expect from the mouse click - about 5mm accuracy.
-      var metres = div.map.getScale()/200;
-      if (typeof precision==="undefined") {
+      var metres = div.map.getScale() / 200;
+      if (typeof precision === "undefined") {
         // now round to find appropriate square size
-        if (metres<30) {
-          precision=8;
-        } else if (metres<300) {
-          precision=6;
-        } else if (metres<3000) {
-          precision=4;
+        if (metres < 5) {
+          precision = 10;
+        } else if (metres < 30) {
+          precision = 8;
+        } else if (metres < 300) {
+          precision = 6;
+        } else if (metres < 3000) {
+          precision = 4;
         } else {
-          precision=2;
+          precision = 2;
         }
       }
       // enforce precision limits if specified in the settings
-      if (div.settings.clickedSrefPrecisionMin!=='') {
-        precision=Math.max(div.settings.clickedSrefPrecisionMin, precision);
+      if (div.settings.clickedSrefPrecisionMin !== '') {
+        precision = Math.max(div.settings.clickedSrefPrecisionMin, precision);
       }
-      if (div.settings.clickedSrefPrecisionMax!=='') {
-        precision=Math.min(div.settings.clickedSrefPrecisionMax, precision);
+      if (div.settings.clickedSrefPrecisionMax !== '') {
+        precision = Math.min(div.settings.clickedSrefPrecisionMax, precision);
       }
       return {precision: precision, metres: metres};
     }
@@ -1692,7 +1694,7 @@ $.fn.indiciaMapPanel.defaults = {
     srefSystemId: 'imp-sref-system',
     geomId: 'imp-geom',
     clickedSrefPrecisionMin: '', // depends on sref system, but for OSGB this would be 2,4,6,8,10 etc = length of grid reference
-    clickedSrefPrecisionMax: '',
+    clickedSrefPrecisionMax: '8',
     msgGeorefSelectPlace: 'Select from the following places that were found matching your search, then click on the map to specify the exact location:',
     msgGeorefNothingFound: 'No locations found with that name. Try a nearby town name.',
     msgGetInfoNothingFound: 'No occurrences were found at the location you clicked.',
