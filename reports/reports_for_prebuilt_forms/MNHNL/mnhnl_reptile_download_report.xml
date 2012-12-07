@@ -42,8 +42,8 @@
       <subTable tablename="locations" parentKey="parent_id" where="#this#.deleted = FALSE" >
         <tabColumn name='name' display='Square (5x5km)'/>
       </subTable>
-      <tabColumn name='id' visible='true' display='Location ID' />
-      <tabColumn name='name' display='Site'/>
+      <tabColumn name='id' visible='true' display='Site_ID' />
+      <tabColumn name='name' display='Site_name'/>
       <tabColumn name='xy' display='XY centroid' func="(regexp_replace(#this#.centroid_sref, ',|\\.[0-9]*' , '','g'))" />
       <tabColumn name='lines' display='XY line coordinates' func="(CASE
      WHEN GeometryType(#this#.boundary_geom) = 'LINESTRING'

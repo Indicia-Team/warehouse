@@ -353,9 +353,9 @@ function iform_mnhnl_locModTool($auth, $args, $node) {
     $request.="&cql_filter=website_id=".$args['website_id']." AND ";
     if($args['SecondaryLocationTypeTerm'] != ''){
       $secondary = iform_mnhnl_getTermID($auth, 'indicia:location_types',$args['SecondaryLocationTypeTerm']);
-      $request.="(location_type_id=".$primary."OR location_type_id=".$secondary.")";
+      $request.="(type_id=".$primary."OR type_id=".$secondary.")";
     } else {
-      $request.="location_type_id=".$primary;
+      $request.="type_id=".$primary;
     }
     $request .= "&typename=".$args['shpFileFeaturePrefix'].':';
     $retValList = "";
@@ -365,7 +365,7 @@ function iform_mnhnl_locModTool($auth, $args, $node) {
     $retVal .= "<fieldset><legend>".lang::get('LANG_SHP_Download_Legend')."</legend>
       <p>".lang::get('LANG_Shapefile_Download')." ".$retValList."</p></fieldset>";
   }
-  $includeOutsideSquare = $args['locationMode']=='parent'; // includes multi - see above
+  $includeOutsideSquare = ($args['locationMode']=='parent'); // includes multi - see above
   // filtered
   if($args['locationMode']=='filtered'){
     $filterAttrs = explode(',',$args['filterAttrs']);
@@ -704,19 +704,23 @@ recalcNumSites = function(){
   jQuery('#dummy-num-sites').val(count);
 };
 recalcNumSites();
-clearLocation = function(hookArg){ // clears all the data in the fields.
-  jQuery('#".$options['MainFieldID'].($args['locationMode']!='multi' ? ",#sample-location-name,#sample-location-id" : "").",#location-name,#centroid_sref,#imp-srefX,#imp-srefY,#centroid_geom,#boundary_geom,[name=location\\:comment],[name=location\\:parent_id],#location-code').val('');
+clearLocation = function(hookArg, clearName){ // clears all the data in the fields.
+  if(clearName === true || (clearName == 'maybe' && jQuery('#".$options['MainFieldID']."').val() != ''))
+    jQuery('".($args['locationMode']!='multi' ? "#sample-location-name" : "").",#location-name').val('');
+  jQuery('#".$options['MainFieldID'].($args['locationMode']!='multi' ? ",#sample-location-id" : "").",#centroid_sref,#imp-srefX,#imp-srefY,#centroid_geom,#boundary_geom,[name=location\\:comment],[name=location\\:parent_id],#location-code').val('');
   jQuery('#location-code').attr('dbCode','');
 ".($args['locationMode']!='multi' && $args['siteNameTermListID']!="" && isset($args['duplicateNameCheck']) && $args['duplicateNameCheck']=='enforce' ?
 "  jQuery('#location-name option').removeAttr('disabled');
+  var nameVal = jQuery('#location-name').val();
   for(var i=0; i< SiteLabelLayer.features.length; i++){
     if(typeof SiteLabelLayer.features[i].attributes.SiteNum != 'undefined'){
       // At the moment the allowable options are integers: if the old data is dodgy it may not hold an integer
-      if(SiteLabelLayer.features[i].style.label == parseInt(SiteLabelLayer.features[i].style.label))
-        jQuery('#location-name').find('option').filter('[value='+SiteLabelLayer.features[i].style.label+']').attr('disabled','disabled');
+      if(SiteLabelLayer.features[i].style.label == parseInt(SiteLabelLayer.features[i].style.label)){
+		if(SiteLabelLayer.features[i].style.label == nameVal) jQuery('#location-name').val('');
+		jQuery('#location-name').find('option').filter('[value='+SiteLabelLayer.features[i].style.label+']').attr('disabled','disabled');
+      }
     }
-  }
-  jQuery('#location-name').val('');\n":"").
+  }\n":"").
 "  jQuery('#location_location_type_id').val('$primary');
   // first  to remove any hidden multiselect checkbox unclick fields
   var fullAttrList=jQuery('[name^=locAttr\\:]').not('[name$=\\:term]');
@@ -856,7 +860,7 @@ loadLocation = function(feature){ // loads all the data into the location fields
 ".($args['locationMode']=='multi' ?
 "  var mySelector = '#dummy-name';
 " : "  var mySelector = '#location-name';
-  clearLocation(false);
+  clearLocation(false, true);
 ")."
 ".($args['siteNameTermListID']!="" ? "  jQuery(mySelector).find('option').removeAttr('disabled');
 " : "").
@@ -977,7 +981,7 @@ loadFeatures = function(parent_id, child_id, childArgs, loadParent, setSelectOpt
 "  jQuery('#location-name').find('option').removeAttr('disabled');\n"
 : "").
 "  if(clearLocationFlag){
-    clearLocation(false);
+    clearLocation(false, true);
   }
   deactivateControls();
   recalcNumSites();
@@ -1286,7 +1290,7 @@ setGeomFields = function(){
 setDrawnGeom = function() {
   // need to leave the location parent id enabled. Don't need to set geometries as we are using an existing location.
   setPermissionsNewSite();
-  clearLocation(true);
+  clearLocation(true, 'maybe');
   if(jQuery('#dummy-parent-id').length>0 && jQuery('[name=location\\:parent_id]').length>0 &&
       jQuery('#dummy-parent-id').val() != jQuery('[name=location\\:parent_id]').val())
     jQuery('[name=location\\:parent_id]').val(jQuery('#dummy-parent-id').val()).change();
@@ -1793,7 +1797,7 @@ RemoveNewSite = function(){
   if(confirm('".lang::get('LANG_ConfirmRemoveDrawnSite')."')){
     if(typeof hook_RemoveNewSite != 'undefined')
       hook_RemoveNewSite();
-    clearLocation(true);
+    clearLocation(true, true);
     removeDrawnGeom(highlighted[0].attributes.SiteNum);
     recalcNumSites();
     setGeomFields();
@@ -1802,6 +1806,7 @@ RemoveNewSite = function(){
   }
 };
 StartNewSite = function(){
+  var keepName=false;
 ".($args['locationMode']=='parent' ?
 "  if(jQuery('#".$options['ChooseParentFieldID']."').val()==''){
     alert('".lang::get('LANG_MustSelectParentFirst')."');
@@ -1814,10 +1819,24 @@ StartNewSite = function(){
 " :
 "  jQuery('#dummy-name').val('');
 ") : 
-"  jQuery('#".$options['MainFieldID']."').val('').change();
+"  keepName = jQuery('#".$options['MainFieldID']."').val() == '';
+  // first remove any existing new location.
+  var highlighted = gethighlight();
+  var found=false;
+  // only confirm if have something drawn on map: ie ignore label
+  for(i=0; i<highlighted.length; i++) found = found || (highlighted[i].layer != SiteLabelLayer && highlighted[i].attributes.new==true)
+  if(found && !confirm('".lang::get('LANG_ConfirmRemoveDrawnSite')."')) return false;
+  if(highlighted.length>0 && highlighted[0].attributes.new==true) removeDrawnGeom(highlighted[0].attributes.SiteNum); // remove label here
+  unhighlightAll();
+  jQuery('#".$options['MainFieldID'].",#sample-location-id').val(''); // reset id field.
 ").
-"  setDrawnGeom();
-  // No currently selected feature. Create a dummy label new one.
+"  setPermissionsNewSite(); // need to leave the location parent id enabled.
+  clearLocation(true, !keepName);
+  if(jQuery('#dummy-parent-id').length>0 && jQuery('[name=location\\:parent_id]').length>0 &&
+      jQuery('#dummy-parent-id').val() != jQuery('[name=location\\:parent_id]').val())
+    jQuery('[name=location\\:parent_id]').val(jQuery('#dummy-parent-id').val()).change();
+".($creatorAttr ? "  jQuery('[name=locAttr:".$creatorAttr."],[name^=locAttr:".$creatorAttr.":]').val('".$user->name."');\n" : "").
+"  // No currently selected feature. Create a dummy label new one.
   SiteNum++;
   hook_new_site_added(false, SiteNum);
   // Programatic activation does not rippleout to deactivate other draw features, so deactivate all first.
@@ -2079,9 +2098,8 @@ onFeatureSelect = function(evt) {
 " :
 "  var willRemove = false;
   var allFeatures = SiteAreaLayer.features.concat(SitePathLayer.features,SitePointLayer.features);
-  for(var i=0; i<allFeatures.length; i++){
-    if(allFeatures[i].attributes.new==true) willRemove=true;
-  }
+  for(var i=0; i<allFeatures.length; i++)
+    willRemove = willRemove || (allFeatures[i].attributes.new==true);
   if(willRemove && !confirm('".lang::get('LANG_ConfirmRemoveDrawnSite')."')) return false;
   var highlighted = gethighlight();
   if(highlighted.length > 0 && highlighted[0].attributes.new)
@@ -2293,10 +2311,11 @@ jQuery('#location-id').change(function(){
 // With a new site in progress, then the mod control allows modification of the new site or selection of an existing feature, or the draw controls allow the additional of elements to the new site.
 // With a existing site selected, then the mod control allows selection of a different existing feature, or the draw controls allow the creation of a new site.
 // the state of the mod and draw controls re enabling stays the same before and afterwards.
-jQuery('#".$options['MainFieldID']."').change(function(){
+mainFieldChange = function(resetName){
   // this is only used when not multisite.
   var highlighted = gethighlight();
   var found=false;
+  var myVal = jQuery('#".$options['MainFieldID']."').val();
   // only confirm if have something drawn on map: ie ignore label
   for(i=0; i<highlighted.length; i++){
     if(highlighted[i].layer != SiteLabelLayer && highlighted[i].attributes.new==true)
@@ -2308,31 +2327,32 @@ jQuery('#".$options['MainFieldID']."').change(function(){
   if(highlighted.length>0 && highlighted[0].attributes.new==true){
     removeDrawnGeom(highlighted[0].attributes.SiteNum);
   }
-  jQuery('#sample-location-id').val(jQuery(this).val());
+  jQuery('#sample-location-id').val(myVal);
   unhighlightAll();
   pointDraw.deactivate();
   lineDraw.deactivate();
   polygonDraw.deactivate();
   selectFeature.activate();
   setPermissionsNoSite();
-  if(jQuery(this).val()=='') {
-    clearLocation(true);
+  if(myVal=='') {
+    clearLocation(true, resetName);
     return;
   }
   // at this point we have selected an existing site.
-  highlightMe(jQuery(this).val(), false);
+  highlightMe(myVal, false);
   ZoomToSite();
   var allFeatures = SiteAreaLayer.features.concat(SitePathLayer.features,SitePointLayer.features);
   for(var i=0; i<allFeatures.length; i++){
     if(typeof allFeatures[i].attributes.data != 'undefined' &&
         typeof allFeatures[i].attributes.data.id != 'undefined' &&
-        allFeatures[i].attributes.data.id == jQuery(this).val()){
+        allFeatures[i].attributes.data.id == myVal){
       loadLocation(allFeatures[i]); // sets permissions.
       return;
     }
   }
-  clearLocation(true);
-});
+  clearLocation(true, true);
+}
+jQuery('#".$options['MainFieldID']."').change(function(){mainFieldChange(true)});
 ";
     }
     if($args['locationMode']=='multi' && isset(data_entry_helper::$entity_to_load["sample:updated_by_id"])){ // only set if data loaded from db, not error condition
@@ -2821,7 +2841,7 @@ jQuery('#filterSelect".$idx."').change(function(){
   } else {
     jQuery('#filterSelect".$idx."').val('');
   }\n";
-					$loadFunction.="\ndisplayParent(false);";
+					// $loadFunction.="  displayParent(false);\n";
 					if (array_key_exists('location:id', data_entry_helper::$entity_to_load) && data_entry_helper::$entity_to_load['location:id']!="") {
 						$initFunctions .="\ndisplayParent(false);";
 					}
@@ -3040,8 +3060,8 @@ filterLoad".$idx." = function(){
     if(match) results.push(locations[i]);
   }
   jQuery('#location-name').data('newValue',newName);
-  if(jQuery('#location-id').val()=='' || jQuery('#location-id').val()==null) jQuery('#location-name').val(newName);
-  // next work out 
+  if(jQuery('#location-name').val()=='' && (jQuery('#location-id').val()=='' || jQuery('#location-id').val()==null)) jQuery('#location-name').val(newName);
+  // next work out existing sites list
   jQuery('#".$options['MainFieldID']."').empty(); // clear list
   var stored = jQuery('#".$options['MainFieldID']."').data('storedValue');
   if(results.length>0) {
@@ -3218,7 +3238,7 @@ SetFilterNewLocation = function(){
   var id=jQuery('#".$options['MainFieldID']."').val();
   if(checkEditable(id=='',id)) return;
   setPermissionsNewSite();
-  clearLocation(true);
+  clearLocation(true,'maybe');
 };
 hook_set_defaults = function(keepFilter){
 ".$defaultsFunction."

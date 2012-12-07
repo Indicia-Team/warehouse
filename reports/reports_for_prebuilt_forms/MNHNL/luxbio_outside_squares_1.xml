@@ -4,8 +4,8 @@
 >
   <query>
   SELECT l2.name as square,
-        l.name as location_name,
-        l.id as location_id,
+        l.name as site_name,
+        l.id as site_id,
   		regexp_replace(l.centroid_sref, ',|\\.[0-9]*' , '', 'g') as xy
   FROM locations l
   INNER JOIN locations l2 ON (l2.id = l.parent_id AND ST_Within(l.centroid_geom, l2.boundary_geom) = FALSE)
@@ -21,8 +21,8 @@
   </params>
   <columns>
     <column name='square' display='Square' />
-    <column name='location_name' display='Site name' />
-    <column name='location_id' display='Indicia ID' />
+    <column name='location_name' display='Site_name' />
+    <column name='location_id' display='Site_ID' />
     <column name='xy' display='X Y' />
   </columns>
 </report>
