@@ -166,17 +166,8 @@ class iform_dynamic_location extends iform_dynamic {
    * @return string HTML for grid.
    */
   protected static function getGrid($args, $node, $auth) {
-    $r = '';
-    $attributes = data_entry_helper::getAttributes(array(
-      'valuetable'=>'sample_attribute_value'
-      ,'attrtable'=>'sample_attribute'
-      ,'key'=>'sample_id'
-      ,'fieldprefix'=>'smpAttr'
-      ,'extraParams'=>$auth['read']
-      ,'survey_id'=>$args['survey_id']
-    ), false);
-    $r .= '<div id="locationList">' . 
-            call_user_func(array(self::$called_class, 'getLocationListGrid'), $args, $node, $auth, $attributes) . 
+    $r = '<div id="locationList">' . 
+            call_user_func(array(self::$called_class, 'getLocationListGrid'), $args, $node, $auth) . 
           '</div>';
     return $r;  
   }
@@ -350,7 +341,7 @@ class iform_dynamic_location extends iform_dynamic {
    * Filtering of locations is by Indicia User ID stored in the user profile.
    * Enable Easy Login module to achieve this function.
    */
-  protected static function getLocationListGrid($args, $node, $auth, $attributes) {
+  protected static function getLocationListGrid($args, $node, $auth) {
     global $user;
     // User must be logged in before we can access their records.
     if ($user->uid===0) {
