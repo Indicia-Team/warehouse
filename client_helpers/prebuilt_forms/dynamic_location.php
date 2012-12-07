@@ -111,6 +111,17 @@ class iform_dynamic_location extends iform_dynamic {
           'default' => 'reports_for_prebuilt_forms/simple_location_list'
         ),
         array(
+          'name'=>'list_all_locations',
+          'caption'=>'List all locations',
+          'description'=>'Should the user be given the option to list all locations in the grid rather than just their own? '.
+              'To use this, the selected report must have an ownData parameter and return an editable field. ' .
+              'See reports_for_prebuilt_forms/simple_location_list_2 for an example.',
+          'type'=>'boolean',
+          'required' => false,
+          'default'=>false,
+          'group'=>'User Interface'
+        ),
+        array(
           'name'=>'location_images',
           'caption'=>'Location Images',
           'description'=>'Should locations allow images to be uploaded?',
@@ -364,6 +375,14 @@ class iform_dynamic_location extends iform_dynamic {
     else
       $r = '';
     
+    $extraParams = array(
+      'website_id' => $args['website_id'], 
+      'iUserID' => $iUserId,
+    );
+    if (!$args['list_all_locations']) {
+      // The option to list all locations is denied so enforce selection of own data.
+      $extraParams['ownData'] = '1';
+    }
     $r .= data_entry_helper::report_grid(array(
       'id' => 'locations-grid',
       'dataSource' => $args['grid_report'],
@@ -372,10 +391,8 @@ class iform_dynamic_location extends iform_dynamic {
       'columns' => call_user_func(array(self::$called_class, 'getReportActions')),
       'itemsPerPage' =>(isset($args['grid_num_rows']) ? $args['grid_num_rows'] : 10),
       'autoParamsForm' => true,
-      'extraParams' => array(
-        'website_id' => $args['website_id'], 
-        'iUserID' => $iUserId
-      )
+      'extraParams' => $extraParams,
+      'paramDefaults' => array('ownData' => '1')
     ));    
     $r .= '<form>';    
     $r .= '<input type="button" value="' . lang::get('LANG_Add_Location') . '" ' .
@@ -416,8 +433,9 @@ class iform_dynamic_location extends iform_dynamic {
   protected function getReportActions() {
     return array(array( 'display' => 'Actions', 
                         'actions' =>  array(array('caption' => lang::get('Edit'), 
-                                                  'url'=>'{currentUrl}', 
-                                                  'urlParams'=>array('location_id'=>'{id}')))
+                                                  'url' => '{currentUrl}', 
+                                                  'urlParams' => array('location_id'=>'{id}'),
+                                                  'visibility_field' => 'editable'))
     ));
   }
   
