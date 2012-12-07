@@ -425,8 +425,13 @@ $.validator.messages.integer = $.validator.format(\"".lang::get('validation_inte
 ];";
     if(isset($options["attrRestrictionsProcessOrder"]) && $options["attrRestrictionsProcessOrder"]!=""){
       $attrOrder = explode(':', $options["attrRestrictionsProcessOrder"]);
+      if(!isset($options["attrRestrictionsDuplicateAttrList"]))
+      	$options["attrRestrictionsDuplicateAttrList"] = $options["attrRestrictionsProcessOrder"];
+      $duplicateAttrList = explode(':', $options["attrRestrictionsDuplicateAttrList"]);
       data_entry_helper::$javascript .= "
 attrRestrictionsProcessOrder = [".(implode(',', $attrOrder))."];
+attrRestrictionsDuplicates = ".(isset($options["attrRestrictionsEnforceDuplicates"]) ? 'true' : 'false').";
+attrRestrictionsDuplicateAttrList = [".(implode(',', $duplicateAttrList))."];
 // set up pre-existing ones.
 jQuery('.mnhnl-species-grid').find('[name$=occAttr\\:".$attrOrder[0]."],[name*=occAttr\\:".$attrOrder[0]."\\:]').each(function(){
     set_up_relationships(".$attrOrder[1].", $(this), false, ".(isset($options["attrRestrictionsEnforceDuplicates"]) ? 'true' : 'false').");
@@ -442,10 +447,31 @@ jQuery('[name$=occAttr\\:".$attrOrder[$i]."],[name*=occAttr\\:".$attrOrder[$i]."
       // last is special - only updates similar on other rows.
       data_entry_helper::$javascript .= "
 jQuery('[name$=occAttr\\:".$attrOrder[count($attrOrder)-1]."],[name*=occAttr\\:".$attrOrder[count($attrOrder)-1]."\\:]').live('change',
-  function(){
+  function(){ // this assumes the previous attribute is on the same row.
     var parent = $(this).closest('tr').find('[name$=occAttr\\:".$attrOrder[count($attrOrder)-2]."],[name*=occAttr\\:".$attrOrder[count($attrOrder)-2]."\\:]');
     set_up_relationships(".$attrOrder[count($attrOrder)-1].", parent, true, ".(isset($options["attrRestrictionsEnforceDuplicates"]) ? 'true' : 'false').");
   });";
+      // for duplicate checks had to trigger on all duplicate based fields.
+      $selector = (isset($options['includeSubSample']) ? '.imp-srefX,.imp-srefY' : '');
+      foreach($duplicateAttrList as $attr){
+        if(!in_array($attr, $attrOrder))
+          $selector .= ($selector==""?"":",")."[name$=occAttr\\:".$attr."],[name*=occAttr\\:".$attr."\\:]";
+      }
+      if($selector != "" && isset($options["attrRestrictionsEnforceDuplicates"]))
+        data_entry_helper::$javascript .= "
+jQuery('".$selector."').live('change', function(){
+  var scanForAttr = function(firstRow, attrID){
+    var children = [];
+    for( ; children.length == 0 && firstRow.length > 0; firstRow = firstRow.next().not('.first')){
+      children = firstRow.find('[name$=occAttr\:'+attrID+'],[name*=occAttr\:'+attrID+'\:]');
+    }
+    return children.length > 0 ? children : false;
+  }
+  var myParentRow =$(this).closest('tr');
+  for( myParentRow = jQuery(myParentRow[0]); !myParentRow.hasClass('first') ; myParentRow = myParentRow.prev() );
+  var parent = scanForAttr(myParentRow, ".$attrOrder[count($attrOrder)-2].");
+  set_up_relationships(".$attrOrder[count($attrOrder)-1].", parent, true, true);
+});\n";
     }
     if (!empty($args['attributeValidation'])) {
       $rules = array();

@@ -12,10 +12,10 @@
     <attributes separator='|' meaningIdLanguage='preferred'/>
     <subTable tablename="samples" tableKey="parent_id" parentKey="id" where="#this#.deleted = FALSE" >
       <subTable tablename="locations" > // allow deleted Sites!
-        <tabColumn name='name' display='Site' />
-        <tabColumn name='id' visible='true' display='Location ID' />
-      <tabColumn name='xy' display='XY centroid' func="(regexp_replace(#this#.centroid_sref, ',|\\.[0-9]*' , '','g'))" />
-      <tabColumn name='lines' display='XY line coordinates' func="(CASE
+        <tabColumn name='id' visible='true' display='Site_ID' />
+        <tabColumn name='name' display='Site_name'/>
+        <tabColumn name='xy' display='XY centroid' func="(regexp_replace(#this#.centroid_sref, ',|\\.[0-9]*' , '','g'))" />
+        <tabColumn name='lines' display='XY line coordinates' func="(CASE
      WHEN GeometryType(#this#.boundary_geom) = 'LINESTRING'
        THEN regexp_replace(ST_AsText(ST_Transform(ST_Centroid(#this#.boundary_geom),2169)),'[(){}\\x22]|\\.[0-9]*|POINT','','g')
      WHEN GeometryType(#this#.boundary_geom) = 'MULTILINESTRING'
@@ -24,7 +24,7 @@
        THEN regexp_replace(array(SELECT ST_AsText(st_transform(st_centroid((ST_dump(ST_CollectionExtract(xl2.boundary_geom,2))).geom),2169)) FROM locations xl2 where xl2.id = #this#.id )::text,'[(){}\\x22]|\\.[0-9]*|POINT','', 'g')
      ELSE ''
 END)" />
-      <tabColumn name='polygons' display='XY polygon coordinates' func="(CASE
+        <tabColumn name='polygons' display='XY polygon coordinates' func="(CASE
      WHEN GeometryType(#this#.boundary_geom) = 'POLYGON'
        THEN regexp_replace(ST_AsText(ST_Transform(ST_Centroid(#this#.boundary_geom),2169)),'[(){}\\x22]|\\.[0-9]*|POINT','','g')
      WHEN GeometryType(#this#.boundary_geom) = 'MULTIPOLYGON'

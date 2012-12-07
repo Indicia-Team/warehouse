@@ -39,8 +39,8 @@
   WHERE tt.termlist_id = #target_species_termlist#)::text, '[{}\x22]', '', 'g'))" display='Target species'/>
     <tabColumn name='comment' display='Conditions comment'/>
     <subTable tablename="locations" > // allow deleted Sites!
-      <tabColumn name='id' visible='true' display='Location ID' />
-      <tabColumn name='name' display='Site'/>
+      <tabColumn name='id' visible='true' display='Site_ID' />
+      <tabColumn name='name' display='Site_name'/>
       <tabColumn name='points' display='XY point coordinates' func="(CASE
      WHEN #this#.boundary_geom is null THEN (replace(#this#.centroid_sref, ',' , ''))
      WHEN GeometryType(#this#.boundary_geom) = 'POINT' THEN regexp_replace(ST_AsText(ST_Transform(#this#.boundary_geom,2169)),'[(){}\\x22]|\\.[0-9]*|POINT','','g')

@@ -58,12 +58,15 @@ set_up_relationships = function(startAttr, parent, setval, duplicates){
       else child.removeAttr('checked');
     }
   };
-  var scanForAttr = function(firstRow, attrID){
+  var scanForSelector = function(firstRow, selector){
     var children = [];
     for( ; children.length == 0 && firstRow.length > 0; firstRow = firstRow.next().not('.first')){
-      children = firstRow.find('[name$=occAttr\:'+attrID+'],[name*=occAttr\:'+attrID+'\:]');
+      children = firstRow.find(selector);
     }
     return children.length > 0 ? children : false;
+  }
+  var scanForAttr = function(firstRow, attrID){
+    return(scanForSelector(firstRow, '[name$=occAttr\:'+attrID+'],[name*=occAttr\:'+attrID+'\:]'));
   }
   var getDisableableElements = function(attr){
     return (attr.length==1 && attr.is('select') ? attr.find('option').not('[value=]') : attr);
@@ -127,9 +130,13 @@ set_up_relationships = function(startAttr, parent, setval, duplicates){
       var parts= item.split(/-/);
       if(parts[0]=='scMeaning') group.species = item;
     });
-    for(var j=0; j < attrRestrictionsProcessOrder.length; j++){
-      var child = scanForAttr($(Row), attrRestrictionsProcessOrder[j]);
-      if(child.length>0) group.attrs[attrRestrictionsProcessOrder[j]] = child;
+    var location = scanForSelector($(Row), '.imp-srefX');
+    if(location && location.length>0) group.X = location;
+    var location = scanForSelector($(Row), '.imp-srefY');
+    if(location && location.length>0) group.Y = location;
+    for(var j=0; j < attrRestrictionsDuplicateAttrList.length; j++){
+      var child = scanForAttr($(Row), attrRestrictionsDuplicateAttrList[j]);
+      if(child && child.length>0) group.attrs[attrRestrictionsDuplicateAttrList[j]] = child;
     }
     groups.push(group);
   });
@@ -172,9 +179,14 @@ set_up_relationships = function(startAttr, parent, setval, duplicates){
       var same=true;
       if(idx == index) return; // don't compare myself to myself
       if(group.species == innerGroup.species) {
-        for(var j=0; j < attrRestrictionsProcessOrder.length-1; j++){ // don't check last attribute.
-          var myVal = getAttrVal(group.attrs[attrRestrictionsProcessOrder[j]]);
-          var otherVal = getAttrVal(innerGroup.attrs[attrRestrictionsProcessOrder[j]]);
+        if(typeof group.X != 'undefined' && typeof innerGroup.X != 'undefined' && group.X.val() != innerGroup.X.val())
+          same = false;
+        else if(typeof group.Y != 'undefined' && typeof innerGroup.Y != 'undefined' && group.Y.val() != innerGroup.Y.val())
+          same = false;
+        else for(var j=0; j < attrRestrictionsDuplicateAttrList.length-1; j++){ 
+          if(attrRestrictionsDuplicateAttrList[j] == attrRestrictionsProcessOrder[lastAttr]) continue; // don't check last attribute.
+          var myVal = getAttrVal(group.attrs[attrRestrictionsDuplicateAttrList[j]]);
+          var otherVal = getAttrVal(innerGroup.attrs[attrRestrictionsDuplicateAttrList[j]]);
           if(myVal == '' || otherVal == '' || myVal != otherVal) same=false;
         }
       } else
@@ -273,10 +285,14 @@ var _bindSpeciesGridControls = function(row,rowNum,options){
     function _showWktFeature(div, wkt, layer) {
       var parser = new OpenLayers.Format.WKT(); // should already be in map projection
       var feature = parser.read(wkt);
+      feature.attributes.type = 'enteredSref'; // so outside polygon is done.
       layer.removeAllFeatures();
       layer.addFeatures([feature]);
-      var bounds=layer.getDataExtent();
-      div.map.setCenter(bounds.getCenterLonLat());
+      // keep zoom same, just move to centre location we are intested in, if feature is not already onscreen.
+      if(!feature.onScreen()){
+        var bounds=feature.geometry.bounds.clone();
+        layer.map.setCenter(bounds.getCenterLonLat());
+      }
     }
 
     if (value!='')
@@ -409,7 +425,7 @@ function _addNewSpeciesGridRow(data,options){
     $.each(newRows, function(i, row){
       var parent = $(row).find('[name$=occAttr\:'+attrRestrictionsProcessOrder[0]+'],[name*=occAttr\:'+attrRestrictionsProcessOrder[0]+'\:]');
       if(parent.length>0)
-        set_up_relationships(attrRestrictionsProcessOrder[1], parent, false);
+        set_up_relationships(attrRestrictionsProcessOrder[1], parent, false, attrRestrictionsDuplicates);
     });
   }
   // Allow forms to hook into the event of a new row being added
@@ -540,7 +556,7 @@ mapInitialisationHooks.push(function(mapdiv) {
 	// try to identify if this map is the secondary small one
   	if(mapdiv.id=='map2'){
   		var _featureAdded = function(a1){
-  		  if(typeof a1.feature.attributes.type == 'undefined' || a1.feature.attributes.type != 'clickPoint') return;
+  		  if(typeof a1.feature.attributes.type == 'undefined' || (a1.feature.attributes.type != 'clickPoint' && a1.feature.attributes.type != 'enteredSref')) return;
   		  var highlighted = jQuery('.highlight').filter('.first');
   		  if(highlighted.length>0){ // a clone of the feature added to the layer is stored.
   			  highlighted.data('feature',a1.feature.clone());

@@ -1,5 +1,5 @@
 <report
-    title="MNHNL Amphibians (Sites) Samples List"
+    title="MNHNL Amphibians (Squares) Samples List"
     description="Form Internal Report: Used by the Samples grid to retrieve the samples associated with a survey and user."
 >
   <query>

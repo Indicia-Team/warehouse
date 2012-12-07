@@ -1,5 +1,5 @@
 <report
-    title="MNHNL Bats Grid"
+    title="MNHNL Bats2 Grid"
     description="Form Internal Report: Used by the Samples grid on the MNHNL Bats Form to retrieve the samples associated with a survey and user."
 >
   <query>
