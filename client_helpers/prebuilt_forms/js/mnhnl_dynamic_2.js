@@ -187,7 +187,7 @@ set_up_relationships = function(startAttr, parent, setval, duplicates){
           if(attrRestrictionsDuplicateAttrList[j] == attrRestrictionsProcessOrder[lastAttr]) continue; // don't check last attribute.
           var myVal = getAttrVal(group.attrs[attrRestrictionsDuplicateAttrList[j]]);
           var otherVal = getAttrVal(innerGroup.attrs[attrRestrictionsDuplicateAttrList[j]]);
-          if(myVal == '' || otherVal == '' || myVal != otherVal) same=false;
+          if(myVal != otherVal) same=false;
         }
       } else
         same = false;
