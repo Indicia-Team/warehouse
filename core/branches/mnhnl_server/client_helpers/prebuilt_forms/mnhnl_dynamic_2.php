@@ -447,8 +447,17 @@ jQuery('[name$=occAttr\\:".$attrOrder[$i]."],[name*=occAttr\\:".$attrOrder[$i]."
       // last is special - only updates similar on other rows.
       data_entry_helper::$javascript .= "
 jQuery('[name$=occAttr\\:".$attrOrder[count($attrOrder)-1]."],[name*=occAttr\\:".$attrOrder[count($attrOrder)-1]."\\:]').live('change',
-  function(){ // this assumes the previous attribute is on the same row.
-    var parent = $(this).closest('tr').find('[name$=occAttr\\:".$attrOrder[count($attrOrder)-2]."],[name*=occAttr\\:".$attrOrder[count($attrOrder)-2]."\\:]');
+  function(){
+    var scanForAttr = function(firstRow, attrID){
+      var children = [];
+      for( ; children.length == 0 && firstRow.length > 0; firstRow = firstRow.next().not('.first')){
+        children = firstRow.find('[name$=occAttr\:'+attrID+'],[name*=occAttr\:'+attrID+'\:]');
+      }
+      return children.length > 0 ? children : false;
+    }
+    var myParentRow =$(this).closest('tr');
+    for( myParentRow = jQuery(myParentRow[0]); !myParentRow.hasClass('first') ; myParentRow = myParentRow.prev() );
+    var parent = scanForAttr(myParentRow, ".$attrOrder[count($attrOrder)-2].");
     set_up_relationships(".$attrOrder[count($attrOrder)-1].", parent, true, ".(isset($options["attrRestrictionsEnforceDuplicates"]) ? 'true' : 'false').");
   });";
       // for duplicate checks had to trigger on all duplicate based fields.
@@ -1117,7 +1126,7 @@ bindSpeciesOptions = {selectorID: \"addTaxonControl\",
         $speciesRecord = data_entry_helper::get_population_data($fetchOpts);
         $grid .= "<input id='addTaxonControl' type='button' value='".lang::get('Add another record')."'>";
         data_entry_helper::$javascript .= "
-bindSpeciesOptions.speciesData = {id : \"".$options['singleSpeciesID']."\"},
+bindSpeciesOptions.speciesData = {id : \"".$options['singleSpeciesID']."\", taxon_meaning_id: \"".$speciesRecord[0]['taxon_meaning_id']."\"},
 bindSpeciesButton(bindSpeciesOptions);\n";
       } else {
         $grid .= "<label for='addTaxonControl' class='auto-width'>".lang::get('Add species to list').":</label> <input id='addTaxonControl' name='addTaxonControl' >";
