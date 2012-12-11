@@ -553,6 +553,10 @@ class data_entry_helper extends helper_base {
   * Name of the image table to upload images into, e.g. occurrence_image, location_image, sample_image or taxon_image.
   * Defaults to occurrence_image.
   * </li>
+  * <li><b>loadExistingRecordKey</b><br/>
+  * Optional prefix for the information in the data_entry_helper::$entity_to_load to use for loading any existing images. 
+  * Defaults to use the table option.
+  * </li>
   * <li><b>id</b><br/>
   * Optional. Provide a unique identifier for this image uploader control if more than one are required on the page.
   * </li>
@@ -670,7 +674,7 @@ class data_entry_helper extends helper_base {
       'table' => 'occurrence_image',
       'maxUploadSize' => self::convert_to_bytes(isset(parent::$maxUploadSize) ? parent::$maxUploadSize : '4M'),
       'codeGenerated' => 'all'
-    );
+    );    
     if (isset(self::$final_image_folder_thumbs))
       $defaults['finalImageFolderThumbs'] = $relpath . self::$final_image_folder_thumbs;
     $browser = self::get_browser_info();
@@ -713,7 +717,8 @@ class data_entry_helper extends helper_base {
       }
       // add in any reloaded items, when editing or after validation failure
       if (self::$entity_to_load) {
-        $images = self::extract_image_data(self::$entity_to_load, $options['table']);
+        $images = self::extract_image_data(self::$entity_to_load, 
+            isset($options['loadExistingRecordKey']) ? $options['loadExistingRecordKey'] : $options['table']);
         $javascript .= ",\n  existingFiles : ".json_encode($images);
       }
       $javascript .= "\n});\n";
@@ -2112,7 +2117,7 @@ class data_entry_helper extends helper_base {
       self::preload_species_checklist_occurrences(self::$entity_to_load['sample:id'], $options['readAuth'], 
           $options['occurrenceImages'], $options['reloadExtraParams']);
     // load the full list of species for the grid, including the main checklist plus any additional species in the reloaded occurrences.
-    $taxalist = self::get_species_checklist_taxa_list($options, $taxonRows);
+    $taxalist = self::get_species_checklist_taxa_list($options, $taxonRows);    
     // If we managed to read the species list data we can proceed
     if (! array_key_exists('error', $taxalist)) {
       $attributes = self::getAttributes(array(
@@ -2120,7 +2125,7 @@ class data_entry_helper extends helper_base {
            ,'valuetable'=>'occurrence_attribute_value'
            ,'attrtable'=>'occurrence_attribute'
            ,'key'=>'occurrence_id'
-           ,'fieldprefix'=>"sc:-ttlId-::occAttr"
+           ,'fieldprefix'=>"sc:-idx-::occAttr"
            ,'extraParams'=>$options['readAuth']
            ,'survey_id'=>array_key_exists('survey_id', $options) ? $options['survey_id'] : null
       ));
@@ -2135,16 +2140,25 @@ class data_entry_helper extends helper_base {
       $rows = array();
       $taxonCounter = array();
       $rowIdx = 0;
+      // tell the addTowToGrid javascript how many rows are already used, so it has a unique index for new rows
+      self::$javascript .= "indiciaData['gridCounter-".$options['id']."'] = ".count($taxonRows).";\n";
       // Loop through all the rows needed in the grid
-      foreach ($taxonRows as $id) {
+      // Get the checkboxes (hidden or otherwise) that indicate a species is present
+      if (is_array(self::$entity_to_load)) {
+        $presenceValues = preg_grep("/^sc:[0-9]*:[0-9]*:present$/", array_keys(self::$entity_to_load));
+      }
+      foreach ($taxonRows as $txIdx => $rowIds) {
+        $ttlId = $rowIds['ttlId'];
+        $existing_record_id = isset($rowIds['occId']) ? $rowIds['occId'] : false;
         // Multi-column input does not work when image upload allowed
         $colIdx = $options['occurrenceImages'] ? 0 : floor($rowIdx / (count($taxonRows)/$options['columns']));
-        // Find the taxon information for this row
-        $ttlId = substr($id, 0, strpos($id, '_'));
+        // Find the taxon in our preloaded list data that we want to output for this row
         $taxonIdx = 0;
-        while ($taxalist[$taxonIdx]['id'] != $ttlId) {
+        while ($taxonIdx < count($taxalist) && $taxalist[$taxonIdx]['id'] != $ttlId) {
           $taxonIdx += 1;
         }
+        if ($taxonIdx >= count($taxalist))
+          continue; // next taxon, as this one was not found in the list
         $taxon = $taxalist[$taxonIdx];
         // Get the cell content from the taxon_label template
         $firstCell = self::mergeParamsIntoTemplate($taxon, 'taxon_label');
@@ -2158,13 +2172,17 @@ class data_entry_helper extends helper_base {
           $row .= '<td style="width: 1%"><a class="action-button remove-row">X</a></td>';
         $row .= str_replace(array('{content}','{colspan}','{tableId}','{idx}'), 
             array($firstCell,$colspan,$options['id'],$colIdx), $indicia_templates['taxon_label_cell']);
-
-        $existing_record_id = false;
+        $loadedTxIdx=-1;
         if (is_array(self::$entity_to_load)) {
-          $search = preg_grep("/^sc:$id:[0-9]*:present$/", array_keys(self::$entity_to_load));
-          if (count($search)===1) {
-            // we have to implode the search result as the key can be not zero, then strip out the stuff other than the occurrence Id.
-            $existing_record_id = str_replace(array("sc:$id:",":present"), '', implode('', $search));
+          // Find the loaded taxon that matches this row. This gives us an index which can be used to 
+          // get the loaded values for this row from the $entity_to_load
+          $presenceValue = preg_grep("/^sc:[0-9]*:$existing_record_id:present$/", $presenceValues);
+          if (count($presenceValue)===1) {
+            $presentIndicator = array_pop($presenceValue);
+            if (self::$entity_to_load[$presentIndicator]===$ttlId) {
+              preg_match("/^sc:(?P<idx>[0-9]*):/", $presentIndicator, $matches);
+              $loadedTxIdx = $matches['idx'];
+            }
           }
         }
         $hidden = ($options['rowInclusionCheck']=='checkbox' ? '' : ' style="display:none"');
@@ -2173,33 +2191,50 @@ class data_entry_helper extends helper_base {
         // If we are reloading a record there will be an entity_to_load which will indicate whether present should be checked.
         // This has to be evaluated true or false if reloading a submission with errors.
         if ($options['rowInclusionCheck']=='alwaysFixed' || $options['rowInclusionCheck']=='alwaysRemovable' ||
-            (self::$entity_to_load!=null && array_key_exists("sc:$id:$existing_record_id:present", self::$entity_to_load) &&
-                self::$entity_to_load["sc:$id:$existing_record_id:present"] == true)) {
+            (self::$entity_to_load!=null && array_key_exists("sc:$loadedTxIdx:$existing_record_id:present", self::$entity_to_load) &&
+                self::$entity_to_load["sc:$loadedTxIdx:$existing_record_id:present"] == true)) {
           $checked = ' checked="checked"';
         } else {
           $checked='';
         }
         $row .= "\n<td class=\"scPresenceCell\" headers=\"".$options['id']."-present-$colIdx\"$hidden>";
-        if ($options['rowInclusionCheck']!='hasData')
+        if ($options['rowInclusionCheck']==='hasData')
+          $row .= "<input type=\"hidden\" name=\"sc:$txIdx:$existing_record_id:present\" value=\"".$taxon['id']."\"/>";
+        else
           // this includes a control to force out a 0 value when the checkbox is unchecked.
-          $row .= "<input type=\"hidden\" class=\"scPresence\" name=\"sc:$id:$existing_record_id:present\" value=\"0\"/><input type=\"checkbox\" class=\"scPresence\" name=\"sc:$id:$existing_record_id:present\" $checked />";
+          $row .= "<input type=\"hidden\" class=\"scPresence\" name=\"sc:$txIdx:$existing_record_id:present\" value=\"0\"/>".
+              "<input type=\"checkbox\" class=\"scPresence\" name=\"sc:$txIdx:$existing_record_id:present\" value=\"".$taxon['id']."\" $checked />";
         $row .= "</td>";  
         $idx = 0;
         foreach ($occAttrControls as $attrId => $control) {
+          $existing_value='';
           if ($existing_record_id) {
-            $search = preg_grep("/^sc:$id:$existing_record_id:occAttr:$attrId".'[:[0-9]*]?$/', array_keys(self::$entity_to_load));
-            $ctrlId = (count($search)===1) ? implode('', $search) : str_replace('-ttlId-:', $id.':'.$existing_record_id, $attributes[$attrId]['fieldname']);
+            // Search for the control in the data to load. It has a suffix containing the attr_value_id which we don't know, hence preg.
+            $search = preg_grep("/^sc:$loadedTxIdx:$existing_record_id:occAttr:$attrId".'[:[0-9]*]?$/', array_keys(self::$entity_to_load));
+            if (count($search)>0) {
+              // use our preg search result as the field name to load from the existing data array.
+              // Warning - if there are multi-values in play here then it will just load one.
+              $loadedCtrlFieldName = array_pop($search);
+              // Convert loaded field name to our output row index
+              $ctrlId = str_replace("sc:$loadedTxIdx:", "sc:$txIdx:", $loadedCtrlFieldName);
+            } else {
+              // go for the default, which has no suffix.
+              $loadedCtrlFieldName = str_replace('-idx-:', $loadedTxIdx.':'.$existing_record_id, $attributes[$attrId]['fieldname']);
+              $ctrlId = str_replace('-idx-:', $txIdx.':'.$existing_record_id, $attributes[$attrId]['fieldname']);
+            }            
+            if (isset(self::$entity_to_load[$loadedCtrlFieldName]))
+              $existing_value = self::$entity_to_load[$loadedCtrlFieldName];
           } else {
-            $ctrlId = str_replace('-ttlId-', $id, $attributes[$attrId]['fieldname']);
+            // no existing record, so use a default control ID which excludes the existing record ID.
+            $ctrlId = str_replace('-idx-', $txIdx, $attributes[$attrId]['fieldname']);
+            $loadedCtrlFieldName='-';
           }
-          if (isset(self::$entity_to_load[$ctrlId])) {
-            $existing_value = self::$entity_to_load[$ctrlId];
-          } elseif (array_key_exists('default', $attributes[$attrId])) {
+                   
+          
+          if ($existing_value==='' && array_key_exists('default', $attributes[$attrId]))
             // this case happens when reloading an existing record
             $existing_value = $attributes[$attrId]['default'];
-          } else
-            $existing_value = '';
-            // inject the field name into the control HTML
+          // inject the field name into the control HTML
           $oc = str_replace('{fieldname}', $ctrlId, $control);
           if ($existing_value<>"") {
             // For select controls, specify which option is selected from the existing value
@@ -2212,7 +2247,7 @@ class data_entry_helper extends helper_base {
             } else {
               $oc = str_replace('value=""', 'value="'.$existing_value.'"', $oc);
             }
-            $error = self::check_errors("sc:$id::occAttr:$attrId");
+            $error = self::check_errors("sc:$txIdx::occAttr:$attrId");
             if (!$error)
               // double check in case there is an error against the whole column
               $error = self::check_errors("occAttr:$attrId");
@@ -2229,21 +2264,25 @@ class data_entry_helper extends helper_base {
           $idx++;
         }
         if ($options['occurrenceComment']) {
-          $row .= "\n<td class=\"ui-widget-content scCommentCell\" headers=\"".$options['id']."-comment-$colIdx\"><input class=\"scComment\" type=\"text\" name=\"sc:$id:$existing_record_id:occurrence:comment\" ".
-          "id=\"sc:$id:$existing_record_id:occurrence:comment\" value=\"".self::$entity_to_load["sc:$id:$existing_record_id:occurrence:comment"]."\" /></td>";
+          $row .= "\n<td class=\"ui-widget-content scCommentCell\" headers=\"".$options['id']."-comment-$colIdx\"><input class=\"scComment\" type=\"text\" name=\"sc:$txIdx:$existing_record_id:occurrence:comment\" ".
+          "id=\"sc:$txIdx:$existing_record_id:occurrence:comment\" value=\"".self::$entity_to_load["sc:$loadedTxIdx:$existing_record_id:occurrence:comment"]."\" /></td>";
         }
         if (isset($options['occurrenceConfidential']) && $options['occurrenceConfidential']) {
           $row .= "\n<td class=\"ui-widget-content scConfidentialCell\" headers=\"".$options['id']."-confidential-$colIdx\">";
-          $row .= self::checkbox(array('fieldname'=>"sc:$id:$existing_record_id:occurrence:confidential"));
+          $row .= self::checkbox(array(
+              'fieldname'=>"sc:$txIdx:$existing_record_id:occurrence:confidential", 
+              'default'=>isset(self::$entity_to_load["sc:$loadedTxIdx:$existing_record_id:occurrence:confidential"]) 
+                  ? self::$entity_to_load["sc:$loadedTxIdx:$existing_record_id:occurrence:confidential"] : false
+          ));
           $row .= "</td>\n";
         }
         if ($options['occurrenceImages']) {
-          $existingImages = is_array(self::$entity_to_load) ? preg_grep("/^sc:$id:$existing_record_id:occurrence_image:id:[0-9]*$/", array_keys(self::$entity_to_load)) : array();
+          $existingImages = is_array(self::$entity_to_load) ? preg_grep("/^sc:$loadedTxIdx:$existing_record_id:occurrence_image:id:[a-z0-9]*$/", array_keys(self::$entity_to_load)) : array();
           if (count($existingImages)===0)
-            $row .= "\n<td class=\"ui-widget-content scImageLinkCell\"><a href=\"\" class=\"add-image-link scImageLink\" id=\"add-images:$id:$existing_record_id\">".
+            $row .= "\n<td class=\"ui-widget-content scImageLinkCell\"><a href=\"\" class=\"add-image-link scImageLink\" id=\"add-images:$txIdx:$existing_record_id\">".
                 str_replace(' ','&nbsp;',lang::get('add images')).'</a></td>';
           else
-            $row .= "\n<td class=\"ui-widget-content scImageLinkCell\"><a href=\"\" class=\"hide-image-link scImageLink\" id=\"hide-images:$id:$existing_record_id\">".
+            $row .= "\n<td class=\"ui-widget-content scImageLinkCell\"><a href=\"\" class=\"hide-image-link scImageLink\" id=\"hide-images:$txIdx:$existing_record_id\">".
                 str_replace(' ','&nbsp;',lang::get('hide images')).'</a></td>';
         }
         // Are we in the first column of a multicolumn grid, or doing single column grid? If so start new row. 
@@ -2258,7 +2297,8 @@ class data_entry_helper extends helper_base {
           if (count($existingImages) > 0) {
             $totalCols = ($options['lookupListId'] ? 2 : 1) + 1 /*checkboxCol*/ + ($options['occurrenceImages'] ? 1 : 0) + count($occAttrControls);
             $rows[$rowIdx]='<td colspan="'.$totalCols.'">'.data_entry_helper::file_box(array(
-              'table'=>"sc:$id:$existing_record_id:occurrence_image",
+              'table'=>"sc:$txIdx:$existing_record_id:occurrence_image",
+              'loadExistingRecordKey'=>"sc:$loadedTxIdx:$existing_record_id:occurrence_image",
               'label'=>lang::get('Upload your photos')
             )).'</td>';
             $rowIdx++;
@@ -2488,7 +2528,7 @@ $('#".$options['id']."-filter').click(function(evt) {
       // checklist grids on the same page. Otherwise we'd double up the record data.
       foreach(data_entry_helper::$entity_to_load as $key => $value) {
         $parts = explode(':', $key);
-        if (count($parts) > 2 && $parts[0] == 'sc' && $parts[1]!='-ttlId-') {
+        if (count($parts) > 2 && $parts[0] == 'sc' && $parts[1]!='-idx-') {
           unset(data_entry_helper::$entity_to_load[$key]);
         }
       }
@@ -2497,25 +2537,17 @@ $('#".$options['id']."-filter').click(function(evt) {
         'extraParams' => $extraParams,
         'nocache' => true
       ));
-      foreach($occurrences as $occurrence){
-        $ttlId = $occurrence['taxa_taxon_list_id'];
-        if (isset($taxonCounter[$ttlId])) {
-          $taxonCounter[$ttlId] += 1;
-        } else {
-          $taxonCounter[$ttlId] = 0;
-        }
-        // $taxonInstance allows for a sample with multiple occurrences of the same species
-        $taxonInstance = $ttlId .'_'. $taxonCounter[$ttlId];
-        self::$entity_to_load['sc:'.$taxonInstance.':'.$occurrence['id'].':present'] = true;
-        self::$entity_to_load['sc:'.$taxonInstance.':'.$occurrence['id'].':occurrence:comment'] = $occurrence['comment'];
-        self::$entity_to_load['sc:'.$taxonInstance.':'.$occurrence['id'].':occurrence:confidential'] = $occurrence['confidential'];
+      foreach($occurrences as $idx => $occurrence){
+        self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':present'] = $occurrence['taxa_taxon_list_id'];
+        self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':occurrence:comment'] = $occurrence['comment'];
+        self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':occurrence:confidential'] = $occurrence['confidential'];
         // Warning. I observe that, in cases where more than one occurrence is loaded, the following entries in 
         // $entity_to_load will just take the value of the last loaded occurrence.
         self::$entity_to_load['occurrence:record_status']=$occurrence['record_status'];
         self::$entity_to_load['occurrence:taxa_taxon_list_id']=$occurrence['taxa_taxon_list_id'];
         self::$entity_to_load['occurrence:taxa_taxon_list_id:taxon']=$occurrence['taxon'];
         // Keep a list of all Ids
-        $occurrenceIds[$occurrence['id']] = $taxonInstance;
+        $occurrenceIds[$occurrence['id']] = $idx;
       }
       // load the attribute values into the entity to load as well
       $attrValues = self::get_population_data(array(
@@ -2600,7 +2632,8 @@ $('#".$options['id']."-filter').click(function(evt) {
    * Private method to build the list of taxa to add to a species checklist grid.
    * @param array $options Options array for the control
    * @param array $taxonRows Array that is modified by this method to contain a list of
-   * the taxa_taxon_list_ids plus row suffix for rows in grid. Allows for multiple rows with same taxa.
+   * the rows to load onto the grid. Each row contains a sub-array with ttlId entry plus
+   * occId if the row represents an existing record
    * @return array The taxon list to use in the grid.
    */
   private static function get_species_checklist_taxa_list($options, &$taxonRows) {
@@ -2614,11 +2647,9 @@ $('#".$options['id']."-filter').click(function(evt) {
     } else {
       $taxalist = array();
     }
-    $taxaLoaded = array();
     foreach ($taxalist as $taxon) {
-      // build a list of the ids we have got from the default list so we don't load them again
-      $taxaLoaded[] = $taxon['id'];
-      $taxonRows[] = $taxon['id'] .'_0';
+      // build a list of the ids we have got from the default list so we don't load them again      
+      $taxonRows[] = array('ttlId'=>$taxon['id']);
     }
     // If there are any extra taxa to add to the list from the lookup list/add rows feature, get their details
     if(self::$entity_to_load && !empty($options['lookupListId'])) {
@@ -2635,21 +2666,12 @@ $('#".$options['id']."-filter').click(function(evt) {
       foreach(self::$entity_to_load as $key => $value) {
         $parts = explode(':', $key);
         // Is this taxon attribute data?
-        if (count($parts) > 2 && $parts[0] == 'sc' && $parts[1]!='-ttlId-') {
-          //different rows with the same taxon are distinguished by a suffix begining with an underscore
-          $taxonRow = $parts[1];
-          // If we haven't already seen this taxon row
-          if (!in_array($taxonRow, $taxonRows)) {
-            $taxonRows[] = $taxonRow;
-            $pos = strpos($taxonRow, '_');
-            $taxon = ($pos === false) ? $taxonRow : substr($taxonRow, 0, $pos);          
-            // If this taxon is not already loaded
-            if(!in_array($taxon, $taxaLoaded)) {
-              $taxaLoaded[] = $taxon;
-              // store the id of the taxon in the array, so we can load them all in one go later
-              $extraTaxonOptions['extraParams']['id'][]=$taxon;
-            }
-          }
+        if (count($parts) > 2 && $parts[0] === 'sc' && $parts[1]!='-idx-' && $parts[3]==='present') {
+          $ttlId = $value;
+          // the 3rd part of the loaded value's key is the occurrence ID.
+          $taxonRows[] = array('ttlId'=>$ttlId, 'occId'=>$parts[2]);
+          // store the id of the taxon in the array, so we can load them all in one go later
+          $extraTaxonOptions['extraParams']['id'][]=$ttlId;
         }
       }
       // load and append the additional taxa  to use in the grid
@@ -2774,7 +2796,7 @@ $('#".$options['id']."-filter').click(function(evt) {
     $colspan = isset($options['lookupListId']) || $options['rowInclusionCheck']=='alwaysRemovable' ? ' colspan="2"' : '';
     $r .= str_replace(array('{colspan}','{tableId}','{idx}'), array($colspan, $options['id'],0), $indicia_templates['taxon_label_cell']);
     $hidden = ($options['rowInclusionCheck']=='checkbox' ? '' : ' style="display:none"');
-    $r .= '<td class="scPresenceCell" headers="'.$options['id'].'-present-0"'.$hidden.'><input type="checkbox" class="scPresence" name="" value="" /></td>';
+    $r .= '<td class="scPresenceCell" headers="'.$options['id'].'-present-0"'.$hidden.'><input type="checkbox" class="scPresence" name="sc:-idx-::present" value="" /></td>';
     $idx = 0;
     foreach ($occAttrControls as $attrId=>$oc) {
       $class = self::species_checklist_occ_attr_class($options, $idx, $attributes[$attrId]['caption']);
@@ -2789,23 +2811,23 @@ $('#".$options['id']."-filter').click(function(evt) {
         }
       }
       $r .= str_replace(array('{content}', '{class}', '{headers}'),
-          array(str_replace('{fieldname}', "sc:-ttlId-::occAttr:$attrId", $oc), $class.'Cell', $options['id']."-attr$attrId-0"),
+          array(str_replace('{fieldname}', "sc:-idx-::occAttr:$attrId", $oc), $class.'Cell', $options['id']."-attr$attrId-0"),
           $indicia_templates['attribute_cell']
       );
       $idx++;
     }
     if ($options['occurrenceComment']) {
       $r .= '<td class="ui-widget-content scCommentCell" headers="'.$options['id'].'-comment-0"><input class="scComment" type="text" ' .
-          'id="sc:-ttlId-::occurrence:comment" name="sc:-ttlId-::occurrence:comment" value="" /></td>';
+          'id="sc:-idx-::occurrence:comment" name="sc:-idx-::occurrence:comment" value="" /></td>';
     }
     if (isset($options['occurrenceConfidential']) && $options['occurrenceConfidential']) {
       $r .= '<td class="ui-widget-content scConfidentialCell" headers="'.$options['id'].'-confidential-0">'.
-          self::checkbox(array('fieldname'=>'sc:-ttlId-::occurrence:confidential')).
+          self::checkbox(array('fieldname'=>'sc:-idx-::occurrence:confidential')).
           '</td>';
     }
     if ($options['occurrenceImages']) {
       // Add a link, but make it display none for now as we can't link images till we know what species we are linking to.
-      $r .= '<td class="ui-widget-content scImageLinkCell"><a href="" class="add-image-link scImageLink" style="display: none" id="add-images:-ttlId-:">'.
+      $r .= '<td class="ui-widget-content scImageLinkCell"><a href="" class="add-image-link scImageLink" style="display: none" id="add-images:-idx-:">'.
           lang::get('add images').'</a><span class="add-image-select-species">'.lang::get('select a species first').'</span></td>';
     }
     $r .= "</tr></tbody></table>\n";
@@ -4163,13 +4185,14 @@ if (errors.length>0) {
     }
     // Set the default method of looking for rows to include - either using data, or the checkbox (which could be hidden)
     $include_if_any_data = $include_if_any_data || (isset($arr['rowInclusionCheck']) && $arr['rowInclusionCheck']=='hasData');
-    // Species checklist entries take the following format where <instance> is a number that distinguishes different rows 
-    // referring to the same taxon.
-    // sc:<taxa_taxon_list_id>[_<instance>]:[<occurrence_id>]:occAttr:<occurrence_attribute_id>[:<occurrence_attribute_value_id>]
+    // Species checklist entries take the following format.
+    // sc:<rowIndex>:[<occurrence_id>]:present (checkbox with val set to ttl_id
     // or
-    // sc:<taxa_taxon_list_id>[_<instance>]:[<occurrence_id>]:occurrence:comment
+    // sc:<rowIndex>:[<occurrence_id>]:occAttr:<occurrence_attribute_id>[:<occurrence_attribute_value_id>]
     // or
-    // sc:<taxa_taxon_list_id>[_<instance>]:[<occurrence_id>]:occurrence_image:fieldname:uniqueImageId
+    // sc:<rowIndex>:[<occurrence_id>]:occurrence:comment
+    // or
+    // sc:<rowIndex>:[<occurrence_id>]:occurrence_image:fieldname:uniqueImageId
     $records = array();
     $subModels = array();
     foreach ($arr as $key=>$value){
@@ -4192,10 +4215,7 @@ if (errors.length>0) {
           $record['deleted'] = 't';
         else
           $record['zero_abundance']=$present ? 'f' : 't';
-
-        // strip off <instance> suffix, if present, to obtain taxa_taxon_list_id
-        $pos = strpos($id, '_');
-        $record['taxa_taxon_list_id'] = ($pos === false) ? $id : substr($id, 0, $pos);
+        $record['taxa_taxon_list_id'] = $record['present'];
         $record['website_id'] = $website_id;
         if (isset($determiner_id)) {
             $record['determiner_id'] = $determiner_id;
@@ -4220,8 +4240,11 @@ if (errors.length>0) {
    * @return boolean True if present, false if absent (zero abundance record), null if not defined in the data (no occurrence).
    */
   private static function wrap_species_checklist_record_present($record, $include_if_any_data, $zero_attrs, $zero_values) {
-    // as we are working on a copy of the record, discard the ID so it is easy to check if there is any other data for the row.
+    // present should contain the ttl ID, or zero if the present box was unchecked
+    $gotTtlId=array_key_exists('present', $record) && $record['present']!='0';
+    // as we are working on a copy of the record, discard the ID and taxa_taxon_list_id so it is easy to check if there is any other data for the row.
     unset($record['id']);
+    unset($record['present']); // stores ttl id
     // if zero attrs not an empty array, we must proceed to check for zeros
     if ($zero_attrs) {
       // check for zero abundance records. First build a regexp that will match the attr IDs to check. Attrs can be
@@ -4248,7 +4271,7 @@ if (errors.length>0) {
     }
     $recordData=implode('',$record);
     $record = ($include_if_any_data && $recordData!='' && !preg_match("/^[0]*$/", $recordData)) ||       // inclusion of record is detected from having a non-zero value in any cell
-      (!$include_if_any_data && array_key_exists('present', $record) && $record['present']!='0'); // inclusion of record detected from the presence checkbox
+        (!$include_if_any_data && $gotTtlId); // inclusion of record detected from the presence checkbox
     // return null if no record to create
     return $record ? true : null;
   }
