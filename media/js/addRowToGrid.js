@@ -15,9 +15,9 @@
 
 /**
  * Helper methods for additional JavaScript functionality required by the species_checklist control.
- * formatter - The taxon label template, OR a JavaScript function that takes an item returned by the web service 
- * search for a species when adding rows to the grid, and returns a formatted taxon label. Overrides the label 
- * template and controls the appearance of the species name both in the autocomplete for adding new rows, plus for 
+ * formatter - The taxon label template, OR a JavaScript function that takes an item returned by the web service
+ * search for a species when adding rows to the grid, and returns a formatted taxon label. Overrides the label
+ * template and controls the appearance of the species name both in the autocomplete for adding new rows, plus for
   the newly added rows.
  */
 
@@ -50,7 +50,7 @@ function keyHandler(evt) {
     }
   }
   switch (evt.keyCode) {
-    case 9: 
+    case 9:
       // tab direction depends on shift key and occurs irrespective of caret
       deltaX = evt.shiftKey ? -1 : 1;
       break;
@@ -70,7 +70,7 @@ function keyHandler(evt) {
       }
       break;
     case 40: // down. Doesn't work in select as this changes the value
-      if (!isSelect && rowIndex < rows.length-1) { 
+      if (!isSelect && rowIndex < rows.length-1) {
         deltaY = 1;
       }
       break;
@@ -96,7 +96,7 @@ function keyHandler(evt) {
     $(rows[rowIndex+deltaY]).find('td[headers=' + $(cell).attr('headers') + '] input').focus();
   }
 }
-    
+
 function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, useLookupCache) {
   cacheLookup = typeof useLookupCache !== 'undefined' ? useLookupCache : false;
   // inner function to handle a selection of a taxon from the autocomplete
@@ -125,41 +125,13 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, useLookupC
       });
       $(taxonCell).html(label);
     }
-    // Replace the tags in the row template with a rowId consisting of the taxa_taxon_list_ID
-    // plus a suffix so that the same taxa may be recorded more than once with 
-    // differing attributes.
-    var rowId = -1;
-    $.each($(row).children(), function(i, cell) {
-      $.each($(cell).find('*'), function(idx, child) {
-        var oldName, oldId;
-        oldName = $(child).attr('name');
-        if (typeof oldName !== "undefined" && oldName.indexOf('-ttlId-') !== -1) {
-          // Update the name attribute if it contains the replacement tag
-          if (rowId === -1) {
-            rowId = getRowId(data.id, 'name');
-          }
-          $(child).attr('name', $(child).attr('name').replace(/-ttlId-/g, rowId));
-          }          
-        oldId = $(child).attr('id');
-        if (typeof oldId !== "undefined" && oldId.indexOf('-ttlId-') !== -1) {
-          // Update the id attribute if it contains the replacement tag
-          if (rowId === -1) {
-            rowId = getRowId(data.id, 'id');
-          }          
-          $(child).attr('id', $(child).attr('id').replace(/-ttlId-/g, rowId)); 
-        }
-      });
-    });
     $(row).find('.add-image-select-species').hide();
-    $(row).find('.add-image-link').show();    
+    $(row).find('.add-image-link').show();
     // auto-check the row
     var checkbox=$(row).find('.scPresenceCell input');
     checkbox.attr('checked', 'checked');
-    // and name the control so it posts into the right species record
-    if (rowId == -1) {
-      rowId = getRowId(data.id, 'name');
-    }
-    checkbox.attr('name', 'sc:' + rowId + '::present');
+    // store the ttlId
+    checkbox.val(data.id);
     // Finally, a blank row is added for the next record
     makeSpareRow(null, true);
     // Allow forms to hook into the event of a new row being added
@@ -167,7 +139,7 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, useLookupC
       hook_species_checklist_new_row(data);
     }
   };
-  
+
   /**
    * Determines next available rowId for taxon defined by ttlId by searching
    * the attr of existing controls.
@@ -193,7 +165,7 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, useLookupC
     item.id = item.taxa_taxon_list_id;
     return item;
   };
-  
+
   /**
    * Function fired when return pressed in the species selector - adds a new row and focuses it.
    */
@@ -210,7 +182,7 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, useLookupC
       evt.preventDefault();
     }
   };
-  
+
   // Create an inner function for adding blank rows to the bottom of the grid
   var makeSpareRow = function(evt, scroll, keycode, force) {
     if (!$.isFunction(formatter)) {
@@ -225,12 +197,26 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, useLookupC
     }
     // get a copy of the new row template
     var extraParams, newRow = $('tr#'+gridId + '-scClonableRow').clone(true);
-    // build an auto-complete control for selecting the species to add to the bottom of the grid. 
+    // build an auto-complete control for selecting the species to add to the bottom of the grid.
     // The next line gets a unique id for the autocomplete.
-    selectorId = gridId + '-' + $('#' + gridId +' tbody')[0].children.length;
+    selectorId = gridId + '-' + indiciaData['gridCounter-'+gridId];
     var speciesSelector = '<input type="text" id="' + selectorId + '" class="grid-required" />';
     // put this inside the new row template in place of the species label.
     $(newRow).html($(newRow.html().replace('{content}', speciesSelector)));
+    // Replace the tags in the row template with a unique row ID
+    $.each($(newRow).children(), function(i, cell) {
+      $.each($(cell).find('*'), function(idx, child) {
+        var oldName, oldId;
+        oldName = $(child).attr('name');
+        if (typeof oldName !== "undefined" && oldName.indexOf('-idx-') !== -1) {
+          $(child).attr('name', $(child).attr('name').replace(/-idx-/g, indiciaData['gridCounter-'+gridId]));
+        }
+        oldId = $(child).attr('id');
+        if (typeof oldId !== "undefined" && oldId.indexOf('-idx-') !== -1) {
+          $(child).attr('id', $(child).attr('id').replace(/-idx-/g, indiciaData['gridCounter-'+gridId]));
+        }
+      });
+    });
     // add the row to the bottom of the grid
     newRow.appendTo('table#' + gridId +' > tbody').removeAttr('id');
     extraParams = {
@@ -276,11 +262,13 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, useLookupC
     if (scroll && ctrl.offset().top > $(window).scrollTop() + $(window).height() - 180) {
       var newTop = ctrl.offset().top - $(window).height() + 180;
       // slide the body upwards so the grid entry box remains in view, as does the drop down content on the autocomplete for taxa
-      $('html,body').animate({scrollTop: newTop}, 500);       
+      $('html,body').animate({scrollTop: newTop}, 500);
     }
+    // increment the count so it is unique next time and we can generate unique IDs
+    indiciaData['gridCounter-'+gridId]++;
     return ctrl;
   };
-  
+
   makeSpareRow(null, false);
 }
 
@@ -316,7 +304,7 @@ $('.remove-row').live('click', function(e) {
 });
 
 /**
- * Click handler for the add image link that is displayed alongside each occurrence row in the grid once 
+ * Click handler for the add image link that is displayed alongside each occurrence row in the grid once
  * it has been linked to a taxon. Adds a row to the grid specifically to contain a file uploader for images
  * linked to that occurrence.
  */
@@ -343,7 +331,7 @@ $('.add-image-link').live('click', function(evt) {
     uploadScript : uploadSettings.uploadScript,
     destinationFolder : uploadSettings.destinationFolder,
     swfAndXapFolder : uploadSettings.swfAndXapFolder,
-    jsPath : uploadSettings.jsPath,    
+    jsPath : uploadSettings.jsPath,
     table : table,
     maxUploadSize : '4000000', // 4mb
     container: ctrlId,
@@ -398,11 +386,11 @@ function ConvertControlsToPopup(controls, label, icon) {
       $('#anchor-' + identifier).append('<label>'+label+':</label><br/>');
       $('#anchor-' + identifier).append(input);
       $('#anchor-' + identifier).append('<br/><input type="button" value="Close" onclick="$.fancybox.close();" class="ui-state-default ui-corner-all" />');
-      // make sure the input shows, though at this stage it is in a hidden div. @todo This is a bit of a nasty hack, 
+      // make sure the input shows, though at this stage it is in a hidden div. @todo This is a bit of a nasty hack,
       // would rather obay CSS precedence rules but !important is getting in the way.
       $(input).css('cssText', 'display: inline !important');
       $('#click-' + identifier).fancybox({titleShow: false, showCloseButton: false});
     }
   });
-  
+
 }
