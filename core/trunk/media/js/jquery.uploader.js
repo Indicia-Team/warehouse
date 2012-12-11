@@ -105,7 +105,7 @@ var checkSubmitInProgress = function () {
       var div = this;
       
       // load the existing data if there is any
-      var existing, uniqueId;
+      var existing, uniqueId, thumbnailfilepath;
       $.each(div.settings.existingFiles, function(i, file) {
         uniqueId = file.path.split('.')[0];
         uniqueId = uniqueId.replace(/[^a-zA-Z0-9]+/g,'');
@@ -115,12 +115,17 @@ var checkSubmitInProgress = function () {
             .replace(/\{imagewidth\}/g, div.settings.imageWidth);
         $('#' + div.id.replace(/:/g,'\\:') + ' .filelist').append(existing);
         $('#' + uniqueId + ' .progress').remove();
-        if (div.settings.finalImageFolderThumbs===undefined) {
-          // default thumbnail location if Indicia in charge of images
-          var thumbnailfilepath = div.settings.finalImageFolder + 'med-' + file.path;
-        } else {
-          // overridden thumbnail location
-          var thumbnailfilepath = div.settings.finalImageFolderThumbs + file.path;
+        if (file.id==='') {
+          thumbnailfilepath = div.settings.destinationFolder + file.path;
+        }
+        else {
+          if (div.settings.finalImageFolderThumbs===undefined) {
+            // default thumbnail location if Indicia in charge of images
+            thumbnailfilepath = div.settings.finalImageFolder + 'med-' + file.path;
+          } else {
+            // overridden thumbnail location
+            thumbnailfilepath = div.settings.finalImageFolderThumbs + file.path;
+          }
         }
         var origfilepath = div.settings.finalImageFolder + file.path;
         $('#' + uniqueId + ' .photo-wrapper').append(div.settings.file_box_uploaded_imageTemplate
