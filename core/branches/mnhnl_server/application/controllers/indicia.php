@@ -58,7 +58,9 @@ class Indicia_Controller extends Template_Controller {
     $this->auth = new Auth;
     $this->session = new Session;
     if ($this->auth->logged_in())
-      $this->template->menu = self::get_menu();;
+      $this->template->menu = self::get_menu();
+    $title=kohana::config('indicia.warehouse_title');
+    $this->template->warehouseTitle = $title ? $title : 'Indicia Warehouse';
   }
 
   /**
@@ -625,11 +627,11 @@ class Indicia_Controller extends Template_Controller {
     }
     if ( ! is_dir($directory) ) {
       $this->setError('Upload file problem', 'Zip extraction directory '.$directory.' does not exist. Please create, or set Indicia upload.create_directories configuration item to true.');
-      return;
+      return false;
     }
     if ( ! is_writable($directory)) {
       $this->setError('Upload file problem', 'Zip extraction directory '.$directory.' is not writable.');
-      return;
+      return false;
     }
     return $directory;
   }
