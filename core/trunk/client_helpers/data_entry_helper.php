@@ -3246,7 +3246,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         $options['class']=$buttonClass." tab-submit";
         $options['id']='tab-submit';
         $options['caption']=lang::get($options['captionSave']);
-        $r .= str_replace('{content}', self::apply_template('submitButton', $options), $indicia_templates['jsWrap']);
+        $r .= str_replace('{content}', self::apply_template(isset(self::$validated_form_id) ? 'button' : 'submitButton', $options), $indicia_templates['jsWrap']);
       }
     }
     $r .= '</div><div style="clear:both"></div>';
