@@ -168,6 +168,7 @@ class Location_Controller extends Gridview_Base_Controller {
         return;
       }
       $directory = $this->create_zip_extract_dir();
+      if($directory == false) return;
       if ( ! $zip->extractTo($directory)) {
         $this->setError('Upload file problem', 'Could not extract Zip archive file contents.');
         return;
