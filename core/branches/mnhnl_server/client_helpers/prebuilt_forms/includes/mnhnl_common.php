@@ -626,8 +626,8 @@ SiteStyleMap = new OpenLayers.StyleMap({\"default\": defaultStyle, \"select\": s
 SiteListSecondaryLabelStyleHash" : "
 SiteListPrimaryLabelStyleHash")."={fontColor: \"Yellow\", labelAlign: \"".$args['labelAlign']."\", labelXOffset: ".$args['labelXOffset'].", labelSelect: true};
 
-//SitePointLayer = new OpenLayers.Layer.Vector('Site Points',{styleMap: SitePointStyleMap, displayInLayerSwitcher: false});
-SitePointLayer = new OpenLayers.Layer.Vector('Site Points',{styleMap: SitePointStyleMap});
+SitePointLayer = new OpenLayers.Layer.Vector('Site Points',{styleMap: SitePointStyleMap, displayInLayerSwitcher: false});
+//SitePointLayer = new OpenLayers.Layer.Vector('Site Points',{styleMap: SitePointStyleMap});
 SitePathLayer = new OpenLayers.Layer.Vector('Site Paths',{styleMap: SiteStyleMap, displayInLayerSwitcher: false});
 SiteAreaLayer = new OpenLayers.Layer.Vector('Site Areas',{styleMap: SiteStyleMap, displayInLayerSwitcher: false});
 SiteLabelLayer = new OpenLayers.Layer.Vector('Site Labels',{//styleMap: SiteLabelStyleMap, 
