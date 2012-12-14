@@ -30,8 +30,7 @@
 class iform_easy_download {
   
   /** 
-   * Return the form metadata. Note the title of this method includes the name of the form file. This ensures
-   * that if inheritance is used in the forms, subclassed forms don't return their parent's form definition.
+   * Return the form metadata. 
    * @return array The definition of the form.
    */
   public static function get_easy_download_definition() {
