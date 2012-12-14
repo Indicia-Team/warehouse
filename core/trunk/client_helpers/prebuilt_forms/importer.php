@@ -29,6 +29,20 @@ require_once('includes/user.php');
  * @subpackage PrebuiltForms
  */
 class iform_importer {
+  
+  /** 
+   * Return the form metadata. 
+   * @return array The definition of the form.
+   */
+  public static function get_importer_definition() {
+    return array(
+      'title'=>'Importer',
+      'category' => 'Utilities',
+      'description'=>'A page containing a wizard for uploading CSV file data.',
+      'helpLink'=>'https://readthedocs.org/projects/indicia-docs/en/latest/site-building/iform/prebuilt-forms/importer.html'
+    );
+  }
+  
   /**
    * Get the list of parameters for this form.
    * @return array List of parameters that this form requires.
@@ -58,14 +72,6 @@ class iform_importer {
         'required'=>false
       )
     );
-  }
-
-  /**
-   * Return the form title.
-   * @return string The title of the form.
-   */
-  public static function get_title() {
-    return 'Importer - upload data using CSV files';
   }
 
   /**
