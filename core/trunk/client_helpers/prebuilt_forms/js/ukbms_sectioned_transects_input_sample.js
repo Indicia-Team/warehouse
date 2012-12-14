@@ -296,6 +296,11 @@ function input_blur (evt) {
       // store the current cell's ID as a transaction ID, so we know which cell we were updating.
       $('#transaction_id').val(evt.target.id);
       $('#occ-form').submit();
+      // if deleting, then must remove the occurrence ID
+      if ($(selector).val()==='0') {
+        $(selector +'\\:id').remove();
+        $(selector +'\\:attrId').remove();
+      }
     } else if ($(selector).hasClass('smp-input')) {
       // change to just a sample attribute.
       var parts=evt.target.id.split(':');
@@ -631,13 +636,16 @@ function loadSpeciesList() {
       if (checkErrors(data)) {
         var selector = '#'+data.transaction_id.replace(/:/g, '\\:');
         $(selector).removeClass('saving');
-        if ($(selector +'\\:id').length===0) {
-          // this is a new occurrence, so keep a note of the id in a hidden input
-          $(selector).after('<input type="hidden" id="'+data.transaction_id +':id" value="'+data.outer_id+'"/>');
-        }
-        if ($(selector +'\\:attrId').length===0) {
-          // this is a new attribute, so keep a note of the id in a hidden input
-          $(selector).after('<input type="hidden" id="'+data.transaction_id +':attrId" value="'+data.struct.children[0].id+'"/>');
+        // skip deletions
+        if ($(selector).val()!=='0') {
+          if ($(selector +'\\:id').length===0) {
+            // this is a new occurrence, so keep a note of the id in a hidden input
+            $(selector).after('<input type="hidden" id="'+data.transaction_id +':id" value="'+data.outer_id+'"/>');
+          }
+          if ($(selector +'\\:attrId').length===0) {
+            // this is a new attribute, so keep a note of the id in a hidden input
+            $(selector).after('<input type="hidden" id="'+data.transaction_id +':attrId" value="'+data.struct.children[0].id+'"/>');
+          }
         }
 
         $(selector).removeClass('edited');
