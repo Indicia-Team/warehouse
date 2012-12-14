@@ -41,7 +41,8 @@ class iform_quick_species_maps {
     return array(
       'title'=>'Quick Species Maps',
       'category' => 'Reporting',
-      'description'=>'A list of species that can quickly be added to a distribution map.'
+      'description'=>'A list of species that can quickly be added to a distribution map.',
+      'helpLink'=>'https://readthedocs.org/projects/indicia-docs/en/latest/site-building/iform/prebuilt-forms/quick-species-maps.html'
     );
   }
   
@@ -58,7 +59,7 @@ class iform_quick_species_maps {
           'name'=>'indicia_species_layer_feature_type',
           'caption'=>'Feature type for Indicia species layer',
           'description'=>'Set to the name of a feature type on GeoServer that will be loaded to display the Indicia species data for the selected record. '.
-              'Leave empty for no layer. Normally this should be set to a feature type that exposes the cache_occurrences view.',
+              'Leave empty for no layer. Normally this should be set to a feature type that exposes the cache_occurrences table.',
           'type'=>'text_input',
           'required'=>true,
           'default'=>'indicia:cache_occurrences',
@@ -66,14 +67,15 @@ class iform_quick_species_maps {
         ), array(
           'name'=>'indicia_species_layer_filter_field',
           'caption'=>'Field to filter on',
-          'description'=>'Set to the name of a field exposed by the feature type which can be used to filter for the species data to display. Examples include '.
-              'taxon_external_key, taxon_meaning_id.',
+          'description'=>'Set to the name of a field exposed by the feature type which contains the external key defined for the species ' .
+              'and can therefore be used to filter the layer. ',
           'type'=>'text_input',
           'required'=>true,
+          'default'=>'taxa_taxon_list_external_key',
           'group'=>'Other Map Settings'
         ), array(
           'name'=>'indicia_species_layer_slds',
-          'caption'=>'SLD filse from GeoServer for Indicia species layer',
+          'caption'=>'SLD files from GeoServer for Indicia species layer',
           'description'=>'Set to the names of SLD files available on the GeoServer for the rendering of the Indicia species layer, or leave blank for default. '.
               'Provide one per species layer you are going to allow on the map. Layer styles will be cycled through.',
           'type'=>'textarea',
