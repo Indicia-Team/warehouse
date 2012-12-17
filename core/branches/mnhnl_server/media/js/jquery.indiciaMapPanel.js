@@ -72,7 +72,7 @@ mapGeoreferenceHooks = [];
      * Remove all features of a specific type or not of a specific type
      * This functionality allows a location to havea centroid and separate boundary.
      */
-    function _removeAllFeatures(layer, type, inverse) {
+    function removeAllFeatures(layer, type, inverse) {
       var toRemove = [];
       if (typeof inverse==="undefined") {
         inverse=false;
@@ -115,8 +115,8 @@ mapGeoreferenceHooks = [];
      * Adds a buffer around a boundary so you can zoom to the boundary without zooming too tight.
      */
     function _extendBounds(bounds, buffer) {
-      var dy = (bounds.top-bounds.bottom) * buffer;
-      var dx = (bounds.right-bounds.left) * buffer;
+      var dy = Math.max(50, (bounds.top-bounds.bottom) * buffer);
+      var dx = Math.max(50, (bounds.right-bounds.left) * buffer);
       bounds.top = bounds.top + dy;
       bounds.bottom = bounds.bottom - dy;
       bounds.right = bounds.right + dx;
@@ -126,16 +126,20 @@ mapGeoreferenceHooks = [];
 
     /**
      * Add a well known text definition of a feature to the map.
-     * WKT is assumed to be in map projection.
+     * WKT is assumed to be in map projection, unless transform is set to true 
+     * in which case it is transformed from the indicia projection to map projection.
      * @access private
      */
-    function _showWktFeature(div, wkt, layer, invisible, temporary, type, panzoom) {
+    function _showWktFeature(div, wkt, layer, invisible, temporary, type, panzoom, transform) {
       var parser = new OpenLayers.Format.WKT();
       var features = [];
       // This replaces other features of the same type
-      _removeAllFeatures(layer, type);
+      removeAllFeatures(layer, type);
       if(wkt){
         var feature = parser.read(wkt);
+        if (typeof transform!=="undefined" && transform && div.map.projection.getCode() != div.indiciaProjection.getCode()) {
+          feature.geometry.transform(div.indiciaProjection, div.map.projection);
+        }
         var styletype = (typeof type !== 'undefined') ? styletype = type : styletype = 'default';
         feature.style = new style(styletype);
         feature.attributes.type = type;
@@ -313,11 +317,11 @@ mapGeoreferenceHooks = [];
       var helptext = [],info;
       if (div.settings.helpToPickPrecisionMin && typeof indiciaData.srefHandlers!=="undefined" &&
           typeof indiciaData.srefHandlers[_getSystem().toLowerCase()]!=="undefined" &&
-          $.inArray('precisions', indiciaData.srefHandlers[_getSystem().toLowerCase()].returns)!==-1) {
-        info=indiciaData.srefHandlers[_getSystem().toLowerCase()].srefToPrecision(value);
-        if (info.metres>div.settings.helpToPickPrecisionMin) {
+          $.inArray('precisions', indiciaData.srefHandlers[_getSystem().toLowerCase()].returns) !== -1) {
+        info = indiciaData.srefHandlers[_getSystem().toLowerCase()].srefToPrecision(value);
+        if (info.metres > div.settings.helpToPickPrecisionMin) {
           helptext.push(div.settings.hlpImproveResolution1.replace('{size}', info.display));
-        } else if (info.metres>div.settings.helpToPickPrecisionMax) {
+        } else if (info.metres > div.settings.helpToPickPrecisionMax) {
           helptext.push(div.settings.hlpImproveResolution2.replace('{size}', info.display));
         } else {
           helptext.push(div.settings.hlpImproveResolution3.replace('{size}', info.display));
@@ -332,18 +336,16 @@ mapGeoreferenceHooks = [];
           });
         }
         // zoom in if need more precision
-        if (info.metres>div.settings.helpToPickPrecisionMax) {
-          if (typeof panzoom==="undefined" || panzoom) {
-            var bounds=div.map.editLayer.features[0].geometry.getBounds();
-            bounds=_extendBounds(bounds, div.settings.maxZoomBuffer);
-            if (div.map.getZoomForExtent(bounds) > div.settings.maxZoom) {
-              // if showing something small, don't zoom in too far
-              div.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
-            }
-            else {
-              // Set the default view to show something triple the size of the grid square
-              div.map.zoomToExtent(bounds);
-            }
+        if (info.metres > div.settings.helpToPickPrecisionMax) {
+          var bounds = div.map.editLayer.features[0].geometry.getBounds();
+          bounds = _extendBounds(bounds, div.settings.maxZoomBuffer);
+          if (div.map.getZoomForExtent(bounds) > div.settings.maxZoom) {
+            // if showing something small, don't zoom in too far
+            div.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
+          }
+          else {
+            // Set the default view to show something triple the size of the grid square
+            div.map.zoomToExtent(bounds);
           }
         }
       }
@@ -366,7 +368,7 @@ mapGeoreferenceHooks = [];
                 // data should contain 2 wkts, one in indiciaProjection which is stored in the geom field, 
                 // and one in mapProjection which is used to draw the object.
                 if (div.map.editLayer) {
-                  _showWktFeature(div, data.mapwkt, div.map.editLayer, null, false);
+                  _showWktFeature(div, data.mapwkt, div.map.editLayer, null, false, "clickPoint");
                 }
                 $('#'+opts.geomId).val(data.wkt);
               }
@@ -381,10 +383,8 @@ mapGeoreferenceHooks = [];
     function _setClickPoint(data, div) {
       // data holds the sref in _getSystem format, wkt in indiciaProjection, optional mapwkt in mapProjection
       var feature, parts, helptext=[], helpitem;
-      if (div.settings.click_zoom)
-        $('#'+opts.srefId).val(data.sref).change();
-      else
-        $('#'+opts.srefId).val(data.sref);
+      // Update the spatial reference control
+      $('#'+opts.srefId).val(data.sref);
       // If the sref is in two parts, then we might need to split it across 2 input fields for lat and long
       if (data.sref.indexOf(' ')!==-1) {
         parts=data.sref.split(' ');
@@ -393,13 +393,13 @@ mapGeoreferenceHooks = [];
         $('#'+opts.srefLatId).val(parts[0]);
         $('#'+opts.srefLongId).val(parts[1]);
       }
-      _removeAllFeatures(div.map.editLayer, 'boundary', true);
-      $('#'+opts.geomId).val(data.wkt);
+      removeAllFeatures(div.map.editLayer, 'boundary', true);
+      $('#' + opts.geomId).val(data.wkt);
       var parser = new OpenLayers.Format.WKT();
       // If mapwkt not provided, calculate it
-      if (typeof data.mapwkt ==="undefined") {
-        if (div.indiciaProjection.getCode()===div.map.projection.getCode()) {
-          data.mapwkt=data.wkt;
+      if (typeof data.mapwkt === "undefined") {
+        if (div.indiciaProjection.getCode() === div.map.projection.getCode()) {
+          data.mapwkt = data.wkt;
         } else {
           feature = parser.read(data.wkt);
           data.mapwkt = feature.geometry.transform(div.indiciaProjection, div.map.projection).toString();
@@ -410,17 +410,31 @@ mapGeoreferenceHooks = [];
       feature.style = new style('default');
       div.map.editLayer.addFeatures([feature]);
       if (div.settings.helpDiv) {
-        helpitem=_getPrecisionHelp(div, data.sref);
-        if (helpitem!=='') {
-          $('#'+div.settings.helpDiv).html(helpitem);
+        // Output optional help and zoom in if more precision needed 
+        helpitem = _getPrecisionHelp(div, data.sref);
+        if (helpitem !== '') {
+          $('#' + div.settings.helpDiv).html(helpitem);
         } else {
           helptext.push(div.settings.hlpClickAgainToCorrect);
           // Extra help for grid square precision, as long as the precision is not fixed.
-          if (feature.geometry.CLASS_NAME!=='OpenLayers.Geometry.Point' && (div.settings.clickedSrefPrecisionMin==='' 
-            || div.settings.clickedSrefPrecisionMin!==div.settings.clickedSrefPrecisionMax)) {
+          if (feature.geometry.CLASS_NAME !== 'OpenLayers.Geometry.Point' && (div.settings.clickedSrefPrecisionMin==='' 
+            || div.settings.clickedSrefPrecisionMin !== div.settings.clickedSrefPrecisionMax)) {
             helptext.push(div.settings.hlpZoomChangesPrecision);
           }
-          $('#'+div.settings.helpDiv).html(helptext.join(' '));
+          $('#' + div.settings.helpDiv).html(helptext.join(' '));
+        }
+        $('#' + div.settings.helpDiv).show();
+      } else if (div.settings.click_zoom) {
+        // Optional zoom in after clicking when helpDiv not in use.
+        var bounds = div.map.editLayer.features[0].geometry.getBounds();
+        bounds = _extendBounds(bounds, div.settings.maxZoomBuffer);
+        if (div.map.getZoomForExtent(bounds) > div.settings.maxZoom) {
+          // if showing something small, don't zoom in too far
+          div.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
+        }
+        else {
+          // Set the default view to show something triple the size of the grid square
+          div.map.zoomToExtent(bounds);
         }
       }
     }
@@ -642,7 +656,7 @@ mapGeoreferenceHooks = [];
      */
     function selectBox(position, layers, div) {
       var testGeom, tolerantGeom, layer, bounds, xy, minXY, maxXY, layer, tolerance, testGeoms={},
-          fnRadius=null, fnStrokeWidth=null;
+          getRadius=null, getStrokeWidth=null;
       if (position instanceof OpenLayers.Bounds) {
         if (position.left===position.right && position.top===position.bottom) {
           // point clicked
@@ -679,13 +693,21 @@ mapGeoreferenceHooks = [];
             if (typeof radius === "string") {
               match=radius.match(/^\${(.+)}/);
               if (match!==null && match.length>1) {
-                fnRadius=layer.styleMap.styles['default'].context[match[1]];
+                getRadius=layer.styleMap.styles['default'].context[match[1]];
+                if (getRadius===undefined) {
+                  // the context function is missing, so must be a field name
+                  getRadius=match[1];
+                }
               }
             }
             if (typeof strokeWidth === "string") {
               match=strokeWidth.match(/^\${(.+)}/);
               if (match!==null && match.length>1) {
-                fnStrokeWidth=layer.styleMap.styles['default'].context[match[1]];
+                getStrokeWidth=layer.styleMap.styles['default'].context[match[1]];
+                if (getStrokeWidth===undefined) {
+                  // the context function is missing, so must be a field name
+                  getStrokeWidth=match[1];
+                }
               }
             }
           }
@@ -696,12 +718,29 @@ mapGeoreferenceHooks = [];
             if (!feature.onScreen()) {
               continue;
             }
-            if (fnRadius!==null) {
-              radius = fnRadius(feature);
+            if (getRadius!==null) {
+              // getRadius might be a string (fieldname) or a context function
+              if (typeof getRadius==='string') {
+                radius=feature.attributes[getRadius];
+              } else {
+                radius = getRadius(feature);
+              }
             }
-            if (fnStrokeWidth!==null) {
-              // div 2 because half the stroke width is inside the perimeter
-              strokeWidth = fnStrokeWidth(feature);
+            if (getRadius!==null) {
+              // getRadius might be a string (fieldname) or a context function
+              if (typeof getRadius==='string') {
+                radius=feature.attributes[getRadius];
+              } else {
+                radius = getRadius(feature);
+              }
+            }
+            if (getStrokeWidth!==null) {
+              // getStrokeWidth might be a string (fieldname) or a context function
+              if (typeof getStrokeWidth==='string') {
+                strokeWidth=feature.attributes[getStrokeWidth];
+              } else {
+                strokeWidth = getStrokeWidth(feature);
+              }
             }
             var geom = feature.geometry;
             if (geom.CLASS_NAME === 'OpenLayers.Geometry.Point') {
@@ -967,25 +1006,27 @@ mapGeoreferenceHooks = [];
      */
     function getPrecisionInfo(div, precision) {
       // get approx metres accuracy we can expect from the mouse click - about 5mm accuracy.
-      var metres = div.map.getScale()/200;
-      if (typeof precision==="undefined") {
+      var metres = div.map.getScale() / 200;
+      if (typeof precision === "undefined") {
         // now round to find appropriate square size
-        if (metres<30) {
-          precision=8;
-        } else if (metres<300) {
-          precision=6;
-        } else if (metres<3000) {
-          precision=4;
+        if (metres < 5) {
+          precision = 10;
+        } else if (metres < 30) {
+          precision = 8;
+        } else if (metres < 300) {
+          precision = 6;
+        } else if (metres < 3000) {
+          precision = 4;
         } else {
-          precision=2;
+          precision = 2;
         }
       }
       // enforce precision limits if specified in the settings
-      if (div.settings.clickedSrefPrecisionMin!=='') {
-        precision=Math.max(div.settings.clickedSrefPrecisionMin, precision);
+      if (div.settings.clickedSrefPrecisionMin !== '') {
+        precision = Math.max(div.settings.clickedSrefPrecisionMin, precision);
       }
-      if (div.settings.clickedSrefPrecisionMax!=='') {
-        precision=Math.min(div.settings.clickedSrefPrecisionMax, precision);
+      if (div.settings.clickedSrefPrecisionMax !== '') {
+        precision = Math.min(div.settings.clickedSrefPrecisionMax, precision);
       }
       return {precision: precision, metres: metres};
     }
@@ -1108,6 +1149,7 @@ mapGeoreferenceHooks = [];
       this.settings = opts;
       this.pointToSref = pointToSref;
       this.addPt = addPt;
+      this.removeAllFeatures = removeAllFeatures;
       // wrap the map in a div container
       $(this).wrap('<div id="map-container" style="width:'+opts.width+'" >');
       
@@ -1119,18 +1161,18 @@ mapGeoreferenceHooks = [];
         });
       }
       
-      if (this.settings.toolbarDiv!='map' && (opts.toolbarPrefix!=='' || opts.toolbarSuffix!=='')) {
-        var toolbar='<div id="map-toolbar-outer" class="ui-helper-clearfix">' + opts.toolbarPrefix + '<div class="olControlEditingToolbar" id="map-toolbar"></div>' + opts.toolbarSuffix + '</div>';
-        if (this.settings.toolbarDiv=='top') {
+      if (this.settings.toolbarDiv != 'map' && (opts.toolbarPrefix !== '' || opts.toolbarSuffix !== '')) {
+        var toolbar = '<div id="map-toolbar-outer" class="ui-helper-clearfix">' + opts.toolbarPrefix + '<div class="olControlEditingToolbar" id="map-toolbar"></div>' + opts.toolbarSuffix + '</div>';
+        if (this.settings.toolbarDiv == 'top') {
           $(this).before(toolbar);
-        } else if (this.settings.toolbarDiv=='bottom') {
+        } else if (this.settings.toolbarDiv == 'bottom') {
           $(this).after(toolbar);
         } else {
           $('#' + this.settings.toolbarDiv).html(toolbar);
         }
-        this.settings.toolbarDiv='map-toolbar';
+        this.settings.toolbarDiv = 'map-toolbar';
       }
-      if (this.settings.helpDiv==='bottom') {
+      if (this.settings.helpDiv === 'bottom') {
         var helpbar, helptext = [];
         if ($.inArray('panZoom', this.settings.standardControls) || 
             $.inArray('panZoomBar', this.settings.standardControls)) {
@@ -1297,14 +1339,14 @@ mapGeoreferenceHooks = [];
         // Draw the feature to be loaded on startup, if present
         if (this.settings.initialFeatureWkt)
         {
-          _showWktFeature(this, this.settings.initialFeatureWkt, div.map.editLayer, null, false);
+          _showWktFeature(this, this.settings.initialFeatureWkt, div.map.editLayer, null, false, "undefined", true, true);
         }
         
         if (div.settings.clickForSpatialRef) {
           div.map.events.register('mousemove', null, function(evt) {
             if (div.map.editLayer.clickControl.active) {
               if (div.map.dragging) {
-                _removeAllFeatures(div.map.editLayer, 'ghost');
+                removeAllFeatures(div.map.editLayer, 'ghost');
               } else {
                 var ll = div.map.getLonLatFromPixel(evt.xy);
                 // don't recalculate if mouse is still over the existing ghost
@@ -1321,7 +1363,7 @@ mapGeoreferenceHooks = [];
                     pt = {x:ll.lon, y:ll.lat};
                     r=indiciaData.srefHandlers[_getSystem().toLowerCase()].pointToSref(pt, precisionInfo);
                     if (typeof r.error!=="undefined") {
-                      _removeAllFeatures(div.map.editLayer, 'ghost');
+                      removeAllFeatures(div.map.editLayer, 'ghost');
                     } else {
                       parser = new OpenLayers.Format.WKT();
                       feature = parser.read(r.wkt);
@@ -1341,7 +1383,7 @@ mapGeoreferenceHooks = [];
           }); 
           $('#map').mouseleave(function(evt) {
             // clear ghost hover markers when mouse leaves the map
-            _removeAllFeatures(div.map.editLayer, 'ghost'); 
+            removeAllFeatures(div.map.editLayer, 'ghost'); 
           });
         }
       }
@@ -1557,7 +1599,7 @@ mapGeoreferenceHooks = [];
         }
         var toolbar = new OpenLayers.Control.Panel(toolbarOpts);
         // add a nav control to the toolbar
-        var nav=new OpenLayers.Control.Navigation({displayClass: align + "olControlNavigation", "title":div.settings.hintNavigation});
+        var nav=new OpenLayers.Control.Navigation({displayClass: align + "olControlNavigation", "title":div.settings.hintNavigation+((!this.settings.scroll_wheel_zoom || this.settings.scroll_wheel_zoom==="false")?'':div.settings.hintScrollWheel)});
         toolbar.addControls([nav]);
         toolbar.addControls(toolbarControls);
         div.map.addControl(toolbar);
@@ -1652,7 +1694,7 @@ $.fn.indiciaMapPanel.defaults = {
     srefSystemId: 'imp-sref-system',
     geomId: 'imp-geom',
     clickedSrefPrecisionMin: '', // depends on sref system, but for OSGB this would be 2,4,6,8,10 etc = length of grid reference
-    clickedSrefPrecisionMax: '',
+    clickedSrefPrecisionMax: '8',
     msgGeorefSelectPlace: 'Select from the following places that were found matching your search, then click on the map to specify the exact location:',
     msgGeorefNothingFound: 'No locations found with that name. Try a nearby town name.',
     msgGetInfoNothingFound: 'No occurrences were found at the location you clicked.',
@@ -1701,6 +1743,8 @@ $.fn.indiciaMapPanel.defaults = {
     // Are we using the OpenLayers defaults, or are they all provided?
     useOlDefaults: true,
     rememberPos: false, // set to true to enable restoring the map position when the page is reloaded. Requires jquery.cookie plugin.
+    hintNavigation: 'Select this tool navigate around the map by dragging, or double clicking to centre the map.',
+    hintScrollWheel: ' Using the scroll bar whilst over the map will zoom in and out.',
     hintClickSpatialRefTool: 'Select this tool to enable clicking on the map to set your location',
     hintQueryDataPointsTool: 'Select this tool then click on or drag a box over data points on the map to view the underlying records.',
     hintDrawPolygonHint: 'Select this tool to draw a polygon, clicking on the map to draw the shape and double clicking to finish.',

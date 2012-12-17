@@ -182,7 +182,7 @@ function simple_tooltip(target_items, name){
             result += '<br/>';
           }
           if (typeof action.img!=="undefined") {
-            img=action.img.replace('/{rootFolder}/g', div.settings.rootFolder);
+            img=action.img.replace(/{rootFolder}/g, div.settings.rootFolder);
             content = '<img src="'+img+'" title="'+action.caption+'" />';
           } else
             content = action.caption;
@@ -216,8 +216,8 @@ function simple_tooltip(target_items, name){
         pagerContent = pagerContent.replace('{prev}', '<a class="pag-prev pager-button" rel="nofollow" href="#">'+div.settings.langPrev+'</a> ');
         pagerContent = pagerContent.replace('{first}', '<a class="pag-first pager-button" rel="nofollow" href="#">'+div.settings.langFirst+'</a> ');
       } else {
-       pagerContent = pagerContent.replace('{prev}', '<span class="pag-prev pager-button ui-state-disabled">'+div.settings.langPrev+'</span> ');
-       pagerContent = pagerContent.replace('{first}', '<span class="pag-first pager-button ui-state-disabled">'+div.settings.langFirst+'</span> ');
+        pagerContent = pagerContent.replace('{prev}', '<span class="pag-prev pager-button ui-state-disabled">'+div.settings.langPrev+'</span> ');
+        pagerContent = pagerContent.replace('{first}', '<span class="pag-first pager-button ui-state-disabled">'+div.settings.langFirst+'</span> ');
       }
 
       if (hasMore)  {
@@ -238,11 +238,15 @@ function simple_tooltip(target_items, name){
         }
       }
       pagerContent = pagerContent.replace('{pagelist}', pagelist);
-      showing = showing.replace('{1}', div.settings.offset+1);
-      showing = showing.replace('{2}', div.settings.offset + $(div).find('tbody').children().length);
-      showing = showing.replace('{3}', div.settings.recordCount);
-      pagerContent = pagerContent.replace('{showing}', showing);
-
+      if (div.settings.recordCount===0) {
+        pagerContent=pagerContent.replace('{showing}', div.settings.noRecords);
+      } else {
+        showing = showing.replace('{1}', div.settings.offset+1);
+        showing = showing.replace('{2}', div.settings.offset + $(div).find('tbody').children().length);
+        showing = showing.replace('{3}', div.settings.recordCount);
+        pagerContent = pagerContent.replace('{showing}', showing);
+      }
+      
       pager.append(pagerContent);
     }
 
@@ -310,8 +314,8 @@ function simple_tooltip(target_items, name){
               tbody.children().remove();
             }
             if (div.settings.sendOutputToMap && typeof indiciaData.reportlayer!=="undefined") {
-              indiciaData.reportlayer.removeAllFeatures();
               map=indiciaData.reportlayer.map;
+              indiciaData.mapdiv.removeAllFeatures(indiciaData.reportlayer, 'linked');
             }
             rowTitle = (div.settings.rowId && div.settings.linkFeatures && typeof indiciaData.reportlayer!=="undefined") ?
               ' title="'+div.settings.msgRowLinkedToMapHint+'"' : '';
@@ -350,7 +354,7 @@ function simple_tooltip(target_items, name){
                       geom.transform(map.div.indiciaProjection, map.projection);
                     }
                     geom = geom.getCentroid();
-                    feature = new OpenLayers.Feature.Vector(geom, {});
+                    feature = new OpenLayers.Feature.Vector(geom, {type: 'linked'});
                     if (div.settings.rowId!=="") {
                       feature.id = row[div.settings.rowId];
                     }
@@ -443,6 +447,7 @@ function simple_tooltip(target_items, name){
 
     // Sets up various clickable things like the filter button on a direct report, or the pagination links.
     function setupReloadLinks (div) {
+      var lastPageOffset = Math.max(0, Math.floor((div.settings.recordCount-1) / div.settings.itemsPerPage)*div.settings.itemsPerPage);
       // Define pagination clicks.
       if (div.settings.itemsPerPage!==null) {
         $(div).find('.pager .pag-next').click(function(e) {
@@ -450,6 +455,9 @@ function simple_tooltip(target_items, name){
           if (div.loading) {return;}
           div.loading = true;
           div.settings.offset += div.settings.itemsPerPage;
+          if (div.settings.offset>lastPageOffset) {
+            div.settings.offset=lastPageOffset;
+          } 
           load(div, false);
         });
 
@@ -475,7 +483,7 @@ function simple_tooltip(target_items, name){
           e.preventDefault();
           if (div.loading) {return;}
           div.loading = true;
-          div.settings.offset = Math.floor((div.settings.recordCount-1) / div.settings.itemsPerPage)*div.settings.itemsPerPage;
+          div.settings.offset = lastPageOffset;
           load(div, false);
         });
 
@@ -539,9 +547,72 @@ function simple_tooltip(target_items, name){
       $.each($(this), function(idx, div) {
         load(div, recount);
       });
-
     };
+    
+    var BATCH_SIZE=1000, currentMapRequest;
+    
+    function _internalMapRecords(div, request, offset) {
+      if ($('#map-progress').length===0) {
+        $(indiciaData.mapdiv).append('<div id="map-progress" style="height: 16px;"></div>');
+        $('#map-progress').progressbar({ value: 0 });
+      } else {
+        $('#map-progress').show();
+      }
+      var matchString;
+      $.getJSON(request + '&offset=' + offset,
+        null,
+        function(response, textStatus, jqXHR) {
+          // implement a crude way of aborting out of date requests, since jsonp does not support xhr
+          // therefore no xhr.abort...
+          matchString = this.url.replace(/(jsonp\d+)/, '?').substring(0, currentMapRequest.length);
+          if (matchString===currentMapRequest) {
+            // start the load of the next batch
+            if (offset+BATCH_SIZE<div.settings.recordCount) {
+              _internalMapRecords(div, request, offset+BATCH_SIZE, false);
+            }              
+            // whilst that is loading, put the dots on the map
+            var features=[];
+            $.each(response, function (idx, obj) {
+              indiciaData.mapdiv.addPt(features, obj, 'geom', {"type":"vector"}, obj[div.settings.rowId]);
+            });
+            indiciaData.reportlayer.addFeatures(features);
+            $('#map-progress').progressbar("option", "value", (offset+BATCH_SIZE) * 100 / div.settings.recordCount);
+            if (offset+BATCH_SIZE>=div.settings.recordCount) {
+              $('#map-progress').hide();
+            }
+          }
+        }
+      );
+    }
 
+    /** 
+     * Public function which loads the current report request output onto a map. 
+     * The request is handled in chunks of 1000 records.
+     */
+    function mapRecords(div) {
+      // we need to reload the map layer using the mapping report, so temporarily switch the report      
+      var origReport=div.settings.dataSource;
+      if (div.settings.mapDataSource!=='') {
+        div.settings.dataSource=div.settings.mapDataSource;
+      }
+      try {
+        var request=getFullRequestPathWithoutPaging(div)+'&limit='+BATCH_SIZE;
+      }
+      finally {
+        div.settings.dataSource=origReport;
+      }
+      indiciaData.mapdiv.removeAllFeatures(indiciaData.reportlayer, 'linked', true);
+      currentMapRequest = request;
+      _internalMapRecords(div, request, 0);      
+    }
+    
+    this.mapRecords = function(report) {
+      $.each($(this), function(idx, div) {
+        div.settings.mapDataSource = report;
+        mapRecords(div);
+      });
+    }
+    
     /**
      * Public method to be called after deleting rows from the grid - to keep paginator updated
      */
@@ -603,19 +674,7 @@ function simple_tooltip(target_items, name){
           }
           load(div, true);
           if (div.settings.linkFeatures && typeof indiciaData.reportlayer!=="undefined") {
-            // we need to reload the map layer
-            var request=getFullRequestPathWithoutPaging(div)+'&limit=3000';
-            $.getJSON(request,
-              null,
-              function(response) {
-                var features=[];
-                $.each(response, function (idx, obj) {
-                  indiciaData.mapdiv.addPt(features, obj, 'geom', {"type":"vector"}, obj[div.settings.rowId]);
-                });
-                indiciaData.reportlayer.removeAllFeatures();
-                indiciaData.reportlayer.addFeatures(features);
-              }
-            );
+            mapRecords(div);
           }
           e.target.hasChanged = false;
         }
@@ -628,6 +687,7 @@ function simple_tooltip(target_items, name){
       });
       $(this).find('th .col-filter').blur(doFilter);
       $(this).find('th .col-filter').keypress(function(e) {
+        e.target.hasChanged = true;
         if (e.keyCode===13) {
           doFilter(e);
         }
@@ -657,8 +717,6 @@ function simple_tooltip(target_items, name){
             feature=indiciaData.reportlayer.getFeatureById(featureId);
             if (feature!==null) {
               indiciaData.reportlayer.map.zoomToExtent(feature.geometry.getBounds());
-            } else {
-              alert('This record does not have spatial information in the database');
             }
           }
         });
@@ -682,6 +740,7 @@ $.fn.reportgrid.defaults = {
   auth_token : '',
   nonce : '',
   dataSource : '',
+  mapDataSource: '',
   view: 'list',
   columns : null,
   orderby : null,
@@ -698,10 +757,11 @@ $.fn.reportgrid.defaults = {
   filterCol: null,
   filterValue: null,
   langFirst: 'first',
-  langPrev: 'previous',
+  langPrev: 'prev',
   langNext: 'next',
   langLast: 'last',
   langShowing: 'Showing records {1} to {2} of {3}',
+  noRecords: 'No records',
   sendOutputToMap: false, // does the current page of report data get shown on a map?
   linkFeatures: false, // requires a rowId - the selected row's equivalent map feature is highlighted
   msgRowLinkedToMapHint: 'Click the row to highlight the record on the map. Double click to zoom in.'

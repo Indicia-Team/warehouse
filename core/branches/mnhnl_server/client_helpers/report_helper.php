@@ -83,7 +83,7 @@ class report_helper extends helper_base {
         $checked = $item['path']==$default ? ' checked="checked"' : '';
         $r .= '<li><label class="ui-helper-reset auto">'.
             '<input type="radio" id="'.$id.'" name="'.$fieldname.'" value="'.$item['path'].
-            '" onclick="displayReportMetadata(\''.$item['path'].'\');" '.$checked.'>'.
+            '" onclick="displayReportMetadata(\'' . $fieldname . '\', \'' . $item['path'] . '\');" ' . $checked . '>'.
             $item['title'].
             "</input></label></li>\n";
       }
@@ -281,6 +281,9 @@ class report_helper extends helper_base {
   * report_map method when linked to a report_grid, which loads its own report data for display on a map, just using the same input parameters
   * as other reports. In this case the report_grid's report data is used to draw the features on the map, so only 1 report request is made.
   * </li>
+  * <li><b>zoomMapToOutput</b>
+  * Default true. When combined with sendOutputToMap=true, defines that the map will automatically zoom to show the records.
+  * </li>
   * <li><b>rowClass</b>
   * A CSS class to add to each row in the grid. Can include field value replacements in braces, e.g. {certainty} to construct classes from
   * field values, e.g. to colour rows in the grid according to the data.
@@ -368,7 +371,7 @@ class report_helper extends helper_base {
     $currentUrl = self::get_reload_link_parts();
     // automatic handling for Drupal clean urls.
     $pathParam = (function_exists('variable_get') && variable_get('clean_url', 0)=='0') ? 'q' : '';
-    $rootFolder = dirname($_SERVER['PHP_SELF']) . (empty($pathParam) ? '/' : "?$pathParam=");
+    $rootFolder = self::getRootFolder() . (empty($pathParam) ? '' : "?$pathParam=");
     // amend currentUrl path if we have drupal dirty URLs so javascript will work properly
     if ($pathParam==='q' && isset($currentUrl['params']['q']) && strpos($currentUrl['path'], '?')===false) {
       $currentUrl['path'] = $currentUrl['path'].'?q='.$currentUrl['params']['q'];
@@ -434,8 +437,9 @@ class report_helper extends helper_base {
         }
         foreach ($options['columns'] as $field) {
           $classes=array();
-          if (isset($options['sendOutputToMap']) && $options['sendOutputToMap'] && isset($field['mappable']) && ($field['mappable']==='true' || $field['mappable']===true)) {
-            $addFeaturesJs.= "div.addPt(features, ".json_encode($row).", '".$field['fieldname']."', {\"type\":\"circle\"}".
+          if ($options['sendOutputToMap'] && isset($field['mappable']) && ($field['mappable']==='true' || $field['mappable']===true)) {
+            $data = json_encode($row + array('type'=>'linked'));
+            $addFeaturesJs.= "div.addPt(features, ".$data.", '".$field['fieldname']."', {\"type\":\"circle\"}".
                 (empty($rowId) ? '' : ", '".$row[$options['rowId']]."'").");\n";
           }
           if (isset($field['visible']) && ($field['visible']==='false' || $field['visible']===false))
@@ -539,7 +543,10 @@ $('.update-input').focus(function(evt) {
 });
 ";
     }
-    self::addFeaturesLoadingJs($addFeaturesJs);
+    if ($options['sendOutputToMap']) {
+      self::addFeaturesLoadingJs($addFeaturesJs, '', '{"strokeColor":"#ff0000","fillColor":"#ff0000","strokeWidth":2}', 
+          '', $options['zoomMapToOutput']);
+    }
     // $r may be empty if a spatial report has put all its controls on the map toolbar, when using params form only mode.
     // In which case we don't need to output anything.
     if (!empty($r)) {
@@ -589,7 +596,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       if (!empty($options['rowClass']))
         self::$javascript .= ",\n  rowClass: '".$options['rowClass']."'";
       if (isset($options['extraParams']))
-        self::$javascript .= ",\n  extraParams: ".json_encode($options['extraParams']);
+        self::$javascript .= ",\n  extraParams: ".json_encode((object)$options['extraParams']);
       if (isset($options['filters']))
         self::$javascript .= ",\n  filters: ".json_encode($options['filters']);
       if (isset($orderby))
@@ -1227,6 +1234,13 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * layer. For example this can be used in conjunction with rowId on a report grid to allow a report's rows to be linked to the associated
   * features.
   * </li>
+  * <li><b>ajax</b>
+  * Optional. Set to true to load the records onto the map using an AJAX request after the initial page load. Not relevant for 
+  * GeoServer layers. Note that when ajax loading the map, the map will not automatically zoom to the layer extent.
+  * </li>
+  * <li><b>zoomMapToOutput</b>
+  * Default true. Defines that the map will automatically zoom to show the records.
+  * </li>  
   * </ul>
   */
   public static function report_map($options) {
@@ -1234,15 +1248,21 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       'clickable' => true,
       'clickableLayersOutputMode' => 'popup',
       'clickableLayersOutputDiv' => '',
-      'displaySymbol'=>'vector'
+      'displaySymbol'=>'vector',
+      'ajax'=>false,
+      'extraParams'=>''
     ), $options);
     $options = self::get_report_grid_options($options);
     if (empty($options['geoserverLayer'])) {
+      if ($options['ajax']) 
+        // just load the report structure, as Ajax will load content later
+        $options['extraParams']['limit']=0;
       self::request_report($response, $options, $currentParamValues, false, '');
       if (isset($response['error'])) return $response['error'];
       $r = self::params_form_if_required($response, $options, $currentParamValues);
       // return the params form, if that is all that is being requested, or the parameters are not complete.
-      if ($options['paramsOnly'] || !isset($response['records'])) return $r;
+      if ($options['paramsOnly'] || !isset($response['records']))
+        return $r;
       $records = $response['records'];
       // find the geom column
       foreach($response['columns'] as $col=>$cfg) {
@@ -1347,28 +1367,32 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
             if (isset($def['feature_style']))
               $colsToInclude[$name] = '';
           }
-        }
-        $geoms = array();
-        foreach ($records as $record) {        
-          $record[$wktCol]=preg_replace('/\.(\d+)/', '', $record[$wktCol]);
-          // rather than output every geom separately, do a list of distinct geoms to minify the JS
-          if (!$geomIdx = array_search('"'.$record[$wktCol].'"', $geoms)) {          
-            $geoms[] = '"'.$record[$wktCol].'"';
-            $geomIdx = count($geoms)-1;
+        }        
+        if (!empty($styleFns)) 
+          $styleFns = ", {context: {\n    $styleFns\n  }}";
+        if ($options['ajax'])
+          self::$javascript .= "mapInitialisationHooks.push(function(div) {\n".
+            "  $.each(indiciaData.reports.".$options['reportGroup'].", function(idx, grid) {\n" .
+            "    grid.mapRecords('".$options['dataSource']."');\n" .
+            "  });\n" .
+            "});\n";
+        else {
+          $geoms = array();
+          foreach ($records as $record) {
+            $record[$wktCol]=preg_replace('/\.(\d+)/', '', $record[$wktCol]);
+            // rather than output every geom separately, do a list of distinct geoms to minify the JS
+            if (!$geomIdx = array_search('"'.$record[$wktCol].'"', $geoms)) {          
+              $geoms[] = '"'.$record[$wktCol].'"';
+              $geomIdx = count($geoms)-1;
+            }
+            $record[$wktCol] = $geomIdx;
+            if (isset($colsToInclude))
+              $record = array_intersect_key($record, $colsToInclude); 
+            $addFeaturesJs.= "div.addPt(features, ".json_encode($record).", '$wktCol', $opts".(empty($rowId) ? '' : ", '".$record[$options['rowId']]."'").");\n";
           }
-          $record[$wktCol] = $geomIdx;
-          if (isset($colsToInclude))
-            $record = array_intersect_key($record, $colsToInclude); 
-          $addFeaturesJs.= "div.addPt(features, ".json_encode($record).", '$wktCol', $opts".(empty($rowId) ? '' : ", '".$record[$options['rowId']]."'").");\n";
+          self::$javascript .= 'indiciaData.geoms=['.implode(',',$geoms)."];\n";
         }
-        if (!empty($styleFns)) {
-          $styleFns = ", {context: {
-  $styleFns
-}}";
-        }
-        self::$javascript .= 'indiciaData.geoms=['.implode(',',$geoms)."];\n";
-        self::addFeaturesLoadingJs($addFeaturesJs, $defsettings, $selsettings, $styleFns);
-        
+        self::addFeaturesLoadingJs($addFeaturesJs, $defsettings, $selsettings, $styleFns, $options['zoomMapToOutput'] && !$options['ajax']);
       } else {
         // doing WMS reporting via GeoServer
         $replacements = array();
@@ -1439,6 +1463,8 @@ mapSettingsHooks.push(function(opts) {
    * verification, moderation, peer_review, data_flow, website (this website only) or me (my data only).</li>
    * <li><b>UserId</b>
    * If sharing=me, then this must contain the Indicia user ID of the user to return data for.
+   * <li><b>caching</b>
+   * If true, then the response will be cached and the cached copy used for future calls. Default false.
    * </li>
    * </ul>
 
@@ -1446,7 +1472,7 @@ mapSettingsHooks.push(function(opts) {
    * @return object If linkOnly is set in the options, returns the link string, otherwise returns the response as an array.
    */
   public static function get_report_data($options, $extra='') {
-    $query = array();
+    $query = array();    
     if (!isset($options['mode'])) $options['mode']='report';
     if (!isset($options['format'])) $options['format']='json';
     if ($options['mode']=='report') {
@@ -1497,13 +1523,29 @@ mapSettingsHooks.push(function(opts) {
       return (empty(parent::$warehouse_proxy) ? parent::$base_url : parent::$warehouse_proxy).$request;
     }
     else {
+      if (isset($options['caching']) && $options['caching']) {
+        // Get the URL params, so we know what the unique thing is we are caching
+        $query=parse_url(parent::$base_url.$request, PHP_URL_QUERY);                
+        parse_str($query, $cacheOpts);
+        unset($cacheOpts['auth_token']);
+        unset($cacheOpts['nonce']);
+        $cacheTimeOut = self::_getCacheTimeOut($options);
+        $cacheFolder = self::relative_client_helper_path() . (isset(parent::$cache_folder) ? parent::$cache_folder : 'cache/');
+        $cacheFile = self::_getCacheFileName($cacheFolder, $cacheOpts, $cacheTimeOut);        
+        $response = self::_getCachedResponse($cacheFile, $cacheTimeOut, $cacheOpts);
+      }
       // no need to proxy the request, as coming from server-side
-      $response = self::http_post(parent::$base_url.$request, null);
+      if (!isset($response) || $response===false)
+        $response = self::http_post(parent::$base_url.$request, null);
       $decoded = json_decode($response['output'], true);
       if (!is_array($decoded))
         return array('error'=>print_r($response, true));
-      else
+      else {
+        if (isset($options['caching']) && $options['caching']) { 
+          self::_cacheResponse($cacheFile, $response, $cacheOpts);
+        }
         return $decoded;
+      }
     }
   }
 
@@ -1778,12 +1820,15 @@ if (typeof mapSettingsHooks!=='undefined') {
       'callback' => '',
       'paramsFormButtonCaption' => 'Run Report',
       'paramsInMapToolbar' => false,
-      'view' => 'list'
+      'view' => 'list',
+      'caching' => isset($options['paramsOnly']) && $options['paramsOnly'],
+      'sendOutputToMap' => false,
+      'zoomMapToOutput' => true
     ), $options);
     if ($options['galleryColCount']>1) $options['class'] .= ' gallery';
     // use the current report as the params form by default
-    if (!isset($options['reportGroup'])) $options['reportGroup'] = $options['id'];
-    if (!isset($options['fieldNamePrefix'])) $options['fieldNamePrefix'] = $options['reportGroup'];
+    if (empty($options['reportGroup'])) $options['reportGroup'] = $options['id'];
+    if (empty($options['fieldNamePrefix'])) $options['fieldNamePrefix'] = $options['reportGroup'];
     if (function_exists('hostsite_get_user_field')) {
       // If the host environment (e.g. Drupal module) can tell us which Indicia user is logged in, pass that
       // to the report call as it might be required for filters.
@@ -1953,7 +1998,7 @@ if (typeof mapSettingsHooks!=='undefined') {
     }
     // We're not even going to bother with asking the user to populate a partially filled in report parameter set.
     if (isset($response['parameterRequest'])) {
-      return '<p>Internal Error: Report request parameters not set up correctly.<p>';
+      return '<p>Internal Error: Report request parameters not set up correctly.<br />'.(print_r($response,true)).'<p>';
     }
     // convert records to a date based array so it can be used when generating the grid.
     $records = $response['records'];
@@ -2120,10 +2165,17 @@ if (typeof mapSettingsHooks!=='undefined') {
     $options["extraParams"] = array_merge(array(
       'date_from' => $options["year"].'-01-01',
       'date_to' => $options["year"].'-12-31',
-      'user_id' => $user->uid, // CMS User, not Indicia User.
+      'user_id' => $user->uid, // Initially CMS User, changed to Indicia User later if in Easy Login mode.
+      'cms_user_id' => $user->uid, // CMS User, not Indicia User.
       'smpattrs' => ''), $options["extraParams"]);
     // Note for the calendar reports, the user_id is assumed to be the CMS user id as recorded in the CMS User ID attribute,
     // not the Indicia user id.
+    if (function_exists('module_exists') && module_exists('easy_login') && $options["extraParams"]['user_id'] == $options["extraParams"]['cms_user_id']) {
+      $account = user_load($options["extraParams"]['user_id']);
+      profile_load_profile($account);
+      if(isset($account->profile_indicia_user_id))
+        $options["extraParams"]['user_id'] = $account->profile_indicia_user_id;
+    }
     return $options;
   }
 
@@ -2172,24 +2224,32 @@ if (typeof mapSettingsHooks!=='undefined') {
    * Inserts into the page javascript a function for loading features onto the map as a result of report output.
    */
   private static function addFeaturesLoadingJs($addFeaturesJs, $defsettings='',
-      $selsettings='{"strokeColor":"#ff0000","fillColor":"#ff0000","strokeWidth":2}', $styleFns='', $zoomToExtent=true) {
-    if (!empty($addFeaturesJs)) {
-      report_helper::$javascript.= "
+    $selsettings='{"strokeColor":"#ff0000","fillColor":"#ff0000","strokeWidth":2}', $styleFns='', $zoomToExtent=true) {
+    report_helper::$javascript.= "
   if (typeof OpenLayers !== \"undefined\") {
     var defaultStyle = new OpenLayers.Style($defsettings$styleFns);
     var selectStyle = new OpenLayers.Style($selsettings$styleFns);
     var styleMap = new OpenLayers.StyleMap({'default' : defaultStyle, 'select' : selectStyle});
-    indiciaData.reportlayer = new OpenLayers.Layer.Vector('Report output', {styleMap: styleMap, rendererOptions: {zIndexing: true}});
+    if (typeof indiciaData.reportlayer==='undefined') {
+      indiciaData.reportlayer = new OpenLayers.Layer.Vector('Report output', {styleMap: styleMap, rendererOptions: {zIndexing: true}});
+    }";
+    // If there are some special styles to apply, but the layer exists already, apply the styling
+    if ($styleFns!=='') {
+      report_helper::$javascript.= "
+    else {
+      indiciaData.reportlayer.styleMap = styleMap;
+    }";  
+    }
+    report_helper::$javascript.= "
     mapInitialisationHooks.push(function(div) {
       features = [];
       $addFeaturesJs
       indiciaData.reportlayer.addFeatures(features);\n";
-        if ($zoomToExtent)
-          self::$javascript .= "  div.map.zoomToExtent(indiciaData.reportlayer.getDataExtent());\n";
-        self::$javascript .= "  div.map.addLayer(indiciaData.reportlayer);
+        if ($zoomToExtent && !empty($addFeaturesJs))
+          self::$javascript .= "      div.map.zoomToExtent(indiciaData.reportlayer.getDataExtent());\n";
+        self::$javascript .= "      div.map.addLayer(indiciaData.reportlayer);
     });
   }\n";
-    }
   }
 
  /**
@@ -2380,6 +2440,7 @@ if (typeof mapSettingsHooks!=='undefined') {
         } else $locationSamples[$record['location_id']][$weekno] = array($record['sample_id']);
       } else $locationSamples[$record['location_id']] = array($weekno => array($record['sample_id']));
     }
+    if(count($records)>0) $locationArray = self::report_calendar_summary_initLocation($records, $records[0]['location_id']);
     foreach($records as $record){
       // If the taxon has changed
       if(($lastTaxon && $lastTaxon!=$record[$options['rowGroupColumn']]) ||
@@ -2389,7 +2450,7 @@ if (typeof mapSettingsHooks!=='undefined') {
             $locationArray[$weekno]['max'] = $locationArray[$weekno]['sampleTotal'];
         }
         self::report_calendar_summary_processEstimates($summaryArray, $locationArray, $locationSamples[$lastLocation], $minWeekNo, $maxWeekNo, $lastTaxon, $options);
-        $locationArray=array();
+        $locationArray = self::report_calendar_summary_initLocation($records, $record['location_id']);
       }
       $lastTaxon=$record[$options['rowGroupColumn']];
       $lastLocation=$record['location_id'];
@@ -2399,6 +2460,7 @@ if (typeof mapSettingsHooks!=='undefined') {
         $count = (isset($record[$options['countColumn']])?$record[$options['countColumn']]:0);
       } else
         $count = 1; // default to single row = single occurrence
+      // leave this conditional in - not sure what may happen in future, and it works.
       if(isset($locationArray[$weekno])){
         if($locationArray[$weekno]['this_sample'] != $record['sample_id']) {
           if($locationArray[$weekno]['max'] < $locationArray[$weekno]['sampleTotal'])
@@ -2412,6 +2474,7 @@ if (typeof mapSettingsHooks!=='undefined') {
       } else {
         $locationArray[$weekno] = array('this_sample'=>$record['sample_id'], 'total'=>$count, 'sampleTotal'=>$count, 'max'=>$count, 'numSamples'=>1);
       }
+      $locationArray[$weekno]['forcedZero'] = false;
     }
     if($lastTaxon || $lastLocation) {
       foreach($locationArray as $weekno => $data){
@@ -2679,8 +2742,9 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
         $r.= '<td>'.$label.'</td>';
         for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
           if(isset($summaryRow[$i])){
-            // TODO highlight estimates toggle
-            if($summaryRow[$i]['raw'] && $summaryRow[$i]['raw'] == $summaryRow[$i]['estimates'])
+            if($summaryRow[$i]['forcedZero'])
+              $r.= '<td class="'.($options['highlightEstimates'] ? 'forcedZero' : '').'">0</td>';
+            else if($summaryRow[$i]['raw'] && $summaryRow[$i]['raw'] == $summaryRow[$i]['estimates'])
               $r.= '<td>'.$summaryRow[$i]['raw'].'</td>';
             else $r.= '<td>'.
               ($options['includeData']=='raw' || $options['includeData']=='both' ? ($summaryRow[$i]['raw'] ? '<span class="raw">'.$summaryRow[$i]['raw'].'</span>' : '' ) : '').
@@ -2730,15 +2794,30 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
     return $warnings.$r;
   }
 
+  private static function report_calendar_summary_initLocation($records, $locationID){
+    $locationArray= array();
+    foreach($records as $record){ // We want to set up a default entry for all weeks in which there was a walk on this location.
+      if($locationID==$record['location_id']) {
+        $weekno = $record['weekno'];
+        if(!isset($locationArray[$weekno]))
+          $locationArray[$weekno] = array('this_sample'=>-1, 'total'=>0, 'sampleTotal'=>0, 'max'=>0, 'numSamples'=>0, 'forcedZero'=>true);
+      }
+    }
+    return $locationArray;
+  }
+
   private static function report_calendar_summary_processEstimates(&$summaryArray, $locationArray, $numSamples, $minWeekNo, $maxWeekNo, $taxon, $options) {
     for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
       if(isset($locationArray[$i])){
         switch($options['rawDataCombining']){
           case 'max': $locationArray[$i]['raw'] = $locationArray[$i]['max'];
             break;
-          case 'sample': $locationArray[$i]['raw'] = ($locationArray[$i]['total'].'.0')/$locationArray[$i]['numSamples'];
+          case 'sample':
+            if($locationArray[$i]['numSamples'])
+              $locationArray[$i]['raw'] = ($locationArray[$i]['total'].'.0')/$locationArray[$i]['numSamples'];
+            else $locationArray[$i]['raw'] = 0;
             break;
-          case 'location': $locationArray[$i]['raw'] = ($locationArray[$i]['total'].'.0')/count($numSamples[$i]);
+          case 'location': $locationArray[$i]['raw'] = ($locationArray[$i]['total'].'.0')/count($numSamples[$i]); // will always be >=1 sample
             break;
           default : 
           case 'add': $locationArray[$i]['raw'] = $locationArray[$i]['total'];
@@ -2820,6 +2899,7 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
     foreach($locationArray as $weekno => $data){
       if(isset($summaryArray[$taxon])) {
         if(isset($summaryArray[$taxon][$weekno])){
+          if(!$locationArray[$weekno]['forcedZero']) $summaryArray[$taxon][$weekno]['forcedZero'] = false;
           if($locationArray[$weekno]['raw']){
             if($summaryArray[$taxon][$weekno]['raw'])
               $summaryArray[$taxon][$weekno]['raw'] += $locationArray[$weekno]['raw'];
@@ -2827,10 +2907,10 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
           }
           $summaryArray[$taxon][$weekno]['estimates'] += $locationArray[$weekno]['estimates'];
         } else {
-          $summaryArray[$taxon][$weekno] = array('raw'=>$locationArray[$weekno]['raw'], 'estimates'=>$locationArray[$weekno]['estimates']);
+          $summaryArray[$taxon][$weekno] = array('raw'=>$locationArray[$weekno]['raw'], 'estimates'=>$locationArray[$weekno]['estimates'], 'forcedZero' => $locationArray[$weekno]['forcedZero']);
         }
       } else {
-        $summaryArray[$taxon] = array($weekno => array('raw'=>$locationArray[$weekno]['raw'], 'estimates'=>$locationArray[$weekno]['estimates']));
+        $summaryArray[$taxon] = array($weekno => array('raw'=>$locationArray[$weekno]['raw'], 'estimates'=>$locationArray[$weekno]['estimates'], 'forcedZero' => $locationArray[$weekno]['forcedZero']));
       }
     }
   }
@@ -2876,6 +2956,17 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
 //      'user_id' => '', // CMS User, not Indicia User.
 //      'smpattrs' => '',
       'occattrs' => ''), $options["extraParams"]);
+
+    if (isset($options["extraParams"]['user_id'])) {
+      $options["extraParams"]['cms_user_id'] = $options["extraParams"]['user_id'];
+      if (function_exists('module_exists') && module_exists('easy_login')) {
+        $account = user_load($options["extraParams"]['user_id']);
+        profile_load_profile($account);
+        if(isset($account->profile_indicia_user_id))
+          $options["extraParams"]['user_id'] = $account->profile_indicia_user_id;
+      }
+    }
+    
     // Note for the calendar reports, the user_id is assumed to be the CMS user id as recorded in the CMS User ID attribute,
     // not the Indicia user id.
     return $options;
