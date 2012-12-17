@@ -912,7 +912,7 @@ idlist=';
       'date_from'=>'',
       'date_to'=>'',
       'survey_id'=>'',
-      'quality'=>'!D'
+      'quality'=>'V'
     );
     $data = report_helper::get_report_data(array(
       'dataSource' => 'library/months/phenology',
@@ -921,7 +921,7 @@ idlist=';
       'sharing'=>'verification'
     ));
     // must output all months
-    $output = array(array(1,0),array(2,0),array(3,0),array(4,0),array(5,10),array(6,0),array(7,0),array(8,0),array(9,0),array(10,0),array(11,0),array(12,0));
+    $output = array(array(1,0),array(2,0),array(3,0),array(4,0),array(5,0),array(6,0),array(7,0),array(8,0),array(9,0),array(10,0),array(11,0),array(12,0));
     foreach ($data as $month)
       $output[$month['name']][1] = intval($month['value']);
     echo json_encode($output);
