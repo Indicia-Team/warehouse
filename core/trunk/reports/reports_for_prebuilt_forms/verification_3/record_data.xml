@@ -8,6 +8,7 @@
   join occurrences o on o.id=co.id and o.deleted=false
   join samples s on s.id=o.sample_id and s.deleted=false
   left join samples sparent on sparent.id=s.parent_id and sparent.deleted=false
+  left join locations l on l.id=s.location_id and l.deleted=false
   #agreements_join#
   #joins#
   where co.id=#occurrence_id#
@@ -23,7 +24,7 @@
     <column name='preferred_taxon' display='Record:Preferred species name' sql='CASE co.preferred_taxon WHEN co.taxon THEN null ELSE co.preferred_taxon END' />
     <column name='occurrence_comment' display='Record:Comment' sql='o.comment' />
     <column name='sample_id' display='Sample:ID' visible="false" sql='s.id' />
-    <column name='entered_sref' display='Sample:SRef' sql='s.entered_sref' />
+    <column name='entered_sref' display='Sample:SRef' sql='coalesce(s.entered_sref, l.centroid_sref)' />
     <column name='date' display='Sample:Date' sql='s.date_start' />
     <column name='location_name' display='Sample:Site Name' sql='co.location_name' />
     <column name='sample_comment' display='Sample:Comment' sql='s.comment' />
@@ -31,6 +32,6 @@
     <column name='taxon_meaning_id' visible="false" sql='co.taxon_meaning_id' />
     <column name='record_status' visible="false" sql='o.record_status' />
     <column name='zero_abundance' visible="false" sql='co.zero_abundance' />
-    <column name='wkt' visible="false" sql='st_astext(s.geom)' />
+    <column name='wkt' visible="false" sql='st_astext(coalesce(s.geom, l.centroid_geom))' />
   </columns>
 </report>
