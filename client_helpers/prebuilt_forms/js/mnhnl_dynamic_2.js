@@ -597,6 +597,17 @@ mapInitialisationHooks.push(function(mapdiv) {
   		var editControl = new Map2Toolbar(superSampleLocationLayer, {allowDepress: false, 'displayClass':'olControlEditingToolbar'});
   		mapdiv.map.addControl(editControl);
   		editControl.activate();
+  		if($('#mousePos').length>0){
+  	  		jQuery('#map2 .olControlEditingToolbar').append('<span id=\"mousePos2\"></span>');
+  			mousePos = new OpenLayers.Control.MousePosition({
+  			  div: document.getElementById('mousePos2'),
+  			  prefix: 'LUREF:',
+  			  displayProjection: new OpenLayers.Projection('EPSG:2169'),
+  			  emptyString: '',
+  			  numDigits: 0 
+  			});
+  			mapdiv.map.addControl(mousePos);
+  		}
 	}
   	// TBD load existing features
 });
