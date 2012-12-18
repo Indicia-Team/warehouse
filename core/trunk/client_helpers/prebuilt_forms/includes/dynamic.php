@@ -181,12 +181,11 @@ class iform_dynamic {
     // Determine how the form was requested and therefore what to output
     $mode = call_user_func(array(self::$called_class, 'getMode'), $args, $node);
     self::$mode = $mode;
-
-    if($mode ==  MODE_GRID) {
+    if($mode ==  self::MODE_GRID) {
       // Output a grid of existing records
       $r = call_user_func(array(self::$called_class, 'getGrid'), $args, $node, $auth);
     } else {
-      if ($mode == MODE_EXISTING && is_null(data_entry_helper::$entity_to_load)) { 
+      if ($mode == self::MODE_EXISTING && is_null(data_entry_helper::$entity_to_load)) { 
         // only load if not in error situation. 
         call_user_func_array(array(self::$called_class, 'getEntity'), array(&$args, $auth));
       }

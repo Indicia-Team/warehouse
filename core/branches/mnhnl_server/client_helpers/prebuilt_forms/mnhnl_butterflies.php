@@ -172,14 +172,14 @@ class iform_mnhnl_butterflies extends iform_mnhnl_dynamic_1 {
     $indicia_templates['zilch'] = ''; // can't have the CR on the end
     self::$locations = iform_loctools_listlocations($node);
     $retVal = parent::get_form($args, $node, $response);
-    if(parent::$mode != 0){
+    if(parent::$mode != self::MODE_GRID){
       iform_mnhnl_addCancelButton($args['interface']);
       data_entry_helper::$javascript .= "
 $.validator.messages.required = \"".lang::get('validation_required')."\";";
       if(!iform_loctools_checkaccess($node,'superuser')){
         data_entry_helper::$javascript .= "
 jQuery('[name=smpAttr\\:".$args['observer_attr_id']."],[name^=smpAttr\\:".$args['observer_attr_id']."\\:]').attr('readonly',true)";
-        if(parent::$mode == 1){
+        if(parent::$mode == self::MODE_NEW){
           data_entry_helper::$javascript .= ".val(\"".$user->name."\");";
         } else {
           data_entry_helper::$javascript .= ";";

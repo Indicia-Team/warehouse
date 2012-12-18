@@ -441,7 +441,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    */
   protected static function getMode($args, $node) {
     // Default to mode MODE_GRID or MODE_NEW depending on no_grid parameter
-    $mode = (isset($args['no_grid']) && $args['no_grid']) ? MODE_NEW : MODE_GRID;
+    $mode = (isset($args['no_grid']) && $args['no_grid']) ? self::MODE_NEW : self::MODE_GRID;
     self::$loadedSampleId = null;
     self::$loadedOccurrenceId = null;
     if ($_POST) {
@@ -456,20 +456,20 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         }
       } else if(!is_null(data_entry_helper::$entity_to_load)){
         // errors with new sample or entity populated with post, so display this data.
-        $mode = MODE_EXISTING;
+        $mode = self::MODE_EXISTING;
       } // else valid save, so go back to gridview: default mode 0
     }
     if (array_key_exists('sample_id', $_GET) && $_GET['sample_id']!='{sample_id}'){
-      $mode = MODE_EXISTING;
+      $mode = self::MODE_EXISTING;
       self::$loadedSampleId = $_GET['sample_id'];
     }
     if (array_key_exists('occurrence_id', $_GET) && $_GET['occurrence_id']!='{occurrence_id}'){
-      $mode = MODE_EXISTING;
+      $mode = self::MODE_EXISTING;
       self::$loadedOccurrenceId = $_GET['occurrence_id'];
       self::$occurrenceIds = array(self::$loadedOccurrenceId);
     }
-    if ($mode != MODE_EXISTING && array_key_exists('new', $_GET)){
-      $mode = MODE_NEW;
+    if ($mode != self::MODE_EXISTING && array_key_exists('new', $_GET)){
+      $mode = self::MODE_NEW;
       data_entry_helper::$entity_to_load = array();
     }
     return $mode;

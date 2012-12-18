@@ -153,17 +153,17 @@ class iform_dynamic_location extends iform_dynamic {
    */
   protected static function getMode($args, $node) {
     // Default to mode MODE_GRID or MODE_NEW depending on no_grid parameter
-    $mode = (isset($args['no_grid']) && $args['no_grid']) ? MODE_NEW : MODE_GRID;                 
+    $mode = (isset($args['no_grid']) && $args['no_grid']) ? self::MODE_NEW : self::MODE_GRID;
     
     if ($_POST && !is_null(data_entry_helper::$entity_to_load)) {
       // errors with new sample or entity populated with post, so display this data.
-      $mode = MODE_EXISTING; 
+      $mode = self::MODE_EXISTING; 
     } else if (array_key_exists('location_id', $_GET)){
       // request for display of existing record
-      $mode = MODE_EXISTING;
+      $mode = self::MODE_EXISTING;
     } else if (array_key_exists('new', $_GET)){
       // request to create new record (e.g. by clicking on button in grid view)
-      $mode = MODE_NEW;
+      $mode = self::MODE_NEW;
       data_entry_helper::$entity_to_load = array();
     }
     return $mode;
