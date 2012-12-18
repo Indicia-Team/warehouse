@@ -332,7 +332,7 @@ function iform_mnhnl_getParameters() {
         array(
           'name'=>'mousePosControl',
           'caption'=>'Mouse Position',
-          'description'=>'Choose whether to include a mouse position indicator on the main map, in the toolbar.',
+          'description'=>'Choose whether to include a mouse position indicator on the map(s), in the toolbar.',
           'type'=>'boolean',
           'required' => false,
           'group' => 'Other Map Settings'

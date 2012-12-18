@@ -252,3 +252,9 @@ input.smpAttr-EndTime {
 select.targ-smpAttr-AmphibianSquaresSurveyMethod {
 	width: 190px;
 }
+#mousePos,#mousePos2 {
+  background-color: #FFFFFF;
+  float: right;
+  margin-top: 7px;
+  margin-right: 20px;
+}
