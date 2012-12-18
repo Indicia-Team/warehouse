@@ -2642,40 +2642,54 @@ $('#".$options['id']."-filter').click(function(evt) {
       $qry = array('in'=>array($options['taxonFilterField'], $options['taxonFilter']));
       $options['extraParams']['query']=json_encode($qry);
     }
+    // load the species names that should be initially included in the grid
     if (isset($options['listId']) && !empty($options['listId'])) {
       $taxalist = self::get_population_data($options);
     } else {
       $taxalist = array();
     }
     foreach ($taxalist as $taxon) {
-      // build a list of the ids we have got from the default list so we don't load them again      
+      // create a list of the rows we are going to add to the grid, with the preloaded species names linked to them
       $taxonRows[] = array('ttlId'=>$taxon['id']);
     }
-    // If there are any extra taxa to add to the list from the lookup list/add rows feature, get their details
-    if(self::$entity_to_load && !empty($options['lookupListId'])) {
+    // If there are any existing records to add to the list from the lookup list/add rows feature, get their details
+    if (self::$entity_to_load) {
       // copy the options array so we can modify it
       $extraTaxonOptions = array_merge(array(), $options);
-      // We don't want to filter the taxa to be added, because if they are in the sample, then they must be included whatever.
+      // We don't want to filter the taxa to be added to a specific list, because if they are in the sample, 
+      // then they must be included whatever.
       unset($extraTaxonOptions['extraParams']['taxon_list_id']);
       unset($extraTaxonOptions['extraParams']['preferred']);
       unset($extraTaxonOptions['extraParams']['language_iso']);
       unset($extraTaxonOptions['extraParams']['query']);
       // create an array to hold the IDs, so that get_population_data can construct a single IN query, faster
-      // than multiple requests.
+      // than multiple requests. We'll populate it in a moment
       $extraTaxonOptions['extraParams']['id'] = array();
+      // look through the data being loaded for the ttlIds associated with existing occurrences
       foreach(self::$entity_to_load as $key => $value) {
         $parts = explode(':', $key);
-        // Is this taxon attribute data?
+        // Is this an occurrence?
         if (count($parts) > 2 && $parts[0] === 'sc' && $parts[1]!='-idx-' && $parts[3]==='present') {
           $ttlId = $value;
-          // the 3rd part of the loaded value's key is the occurrence ID.
-          $taxonRows[] = array('ttlId'=>$ttlId, 'occId'=>$parts[2]);
+          // Find an existing row for this species that is not already linked to an occurrence
+          $done=false;
+          foreach($taxonRows as &$row) {
+            if ($row['ttlId']===$ttlId && !isset($row['occId'])) {
+              // the 3rd part of the loaded value's key is the occurrence ID.
+              $row['occId']=$parts[2];
+              $done=true;
+            }
+          }
+          if (!$done)
+            // add a new row to the bottom of the grid
+            $taxonRows[] = array('ttlId'=>$ttlId, 'occId'=>$parts[2]);
           // store the id of the taxon in the array, so we can load them all in one go later
           $extraTaxonOptions['extraParams']['id'][]=$ttlId;
         }
       }
-      // load and append the additional taxa  to use in the grid
-      $taxalist = array_merge($taxalist, self::get_population_data($extraTaxonOptions));
+      // load and append the additional taxa to our list of taxa to use in the grid
+      if (!empty($options['lookupListId']))
+        $taxalist = array_merge($taxalist, self::get_population_data($extraTaxonOptions));
     }
     return $taxalist;
   }
