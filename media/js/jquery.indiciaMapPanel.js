@@ -1405,11 +1405,14 @@ mapGeoreferenceHooks = [];
       var clickInfoCtrl = getClickableLayersControl(div, align);
 
       if (div.settings.locationLayerName) {
-        var layer = new OpenLayers.Layer.WMS('Locations', div.settings.indiciaGeoSvc + 'wms', {
+        var layer, locLayerSettings = {
             layers: div.settings.locationLayerName,
-            transparent: true,
-            cql_filter: div.settings.locationLayerFilter
-          }, {
+            transparent: true
+        };
+        if (div.settings.locationLayerFilter!=='') {
+          locLayerSettings.cql_filter=div.settings.locationLayerFilter;
+        }
+        var layer = new OpenLayers.Layer.WMS('Locations', div.settings.indiciaGeoSvc + 'wms', locLayerSettings, {
             singleTile: true,
             isBaseLayer: false,
             sphericalMercator: true,
