@@ -287,101 +287,32 @@ deleteSurvey = function(sampleID){
   }
 
   protected static function getExtraGridModeTabs($retTabs, $readAuth, $args, $attributes) {
+    $isAdmin = user_access('IForm n'.parent::$node->nid.' admin');
+    if(!$isAdmin) return('');
     if(!$retTabs) return array('#downloads' => lang::get('LANG_Download'));
-    foreach($attributes as $attrId => $attr) {
-      if (strcasecmp($attr['untranslatedCaption'],'CMS Username')==0) {
-        $userNameAttr = $attr['attributeId'];
-        break;
-      }
-    }
-    
-    foreach($attributes as $attrId => $attr)
-      if (strcasecmp($attr['untranslatedCaption'],'Observer')==0) {
-        $ObserverIdAttr = $attr['attributeId'];
-        break;
-      }
-    if (!isset($ObserverIdAttr))
-      return lang::get('This form must be used with a survey that has the Observer attribute associated with it.');
-
-    foreach($attributes as $attrId => $attr)
-      if (strcasecmp($attr['untranslatedCaption'],'MNHNL Month')==0) {
-        $MonthIdAttr = $attr['attributeId'];
-        break;
-      }
-    if (!isset($MonthIdAttr))
-      return lang::get('This form must be used with a survey that has the MNHNL Month attribute associated with it.');
-
-    foreach($attributes as $attrId => $attr)
-      if (strcasecmp($attr['untranslatedCaption'],'Number In Month')==0) {
-        $NumInMonthIdAttr = $attr['attributeId'];
-        break;
-      }
-    if (!isset($NumInMonthIdAttr))
-      return lang::get('This form must be used with a survey that has the Number In Month attribute associated with it.');
-
-    foreach($attributes as $attrId => $attr)
-      if (strcasecmp($attr['untranslatedCaption'],'Start time')==0) {
-        $StartTimeIdAttr = $attr['attributeId'];
-        break;
-      }
-    if (!isset($StartTimeIdAttr))
-      return lang::get('This form must be used with a survey that has the Start time attribute associated with it.');
-
-    foreach($attributes as $attrId => $attr)
-      if (strcasecmp($attr['untranslatedCaption'],'End time')==0) {
-        $EndTimeIdAttr = $attr['attributeId'];
-        break;
-      }
-    if (!isset($EndTimeIdAttr))
-      return lang::get('This form must be used with a survey that has the End time attribute associated with it.');
-
-    foreach($attributes as $attrId => $attr)
-      if (strcasecmp($attr['untranslatedCaption'],'Temperature')==0) {
-        $TempIdAttr = $attr['attributeId'];
-        break;
-      }
-    if (!isset($TempIdAttr))
-      return lang::get('This form must be used with a survey that has the Temperature attribute associated with it.');
-
-    foreach($attributes as $attrId => $attr)
-      if (strcasecmp($attr['untranslatedCaption'],'Wind force')==0) {
-        $WindIdAttr = $attr['attributeId'];
-        break;
-      }
-    if (!isset($WindIdAttr))
-      return lang::get('This form must be used with a survey that has the Wind force attribute associated with it.');
-
-    foreach($attributes as $attrId => $attr)
-      if (strcasecmp($attr['untranslatedCaption'],'Cloud cover')==0) {
-        $CloudIdAttr = $attr['attributeId'];
-        break;
-      }
-    if (!isset($CloudIdAttr))
-      return lang::get('This form must be used with a survey that has the Cloud cover attribute associated with it.');
-
-    foreach($attributes as $attrId => $attr)
-      if (strcasecmp($attr['untranslatedCaption'],'Habitat type')==0) {
-        $HabitatIdAttr = $attr['attributeId'];
-        break;
-      }
-    if (!isset($HabitatIdAttr))
-      return lang::get('This form must be used with a survey that has the Habitat type attribute associated with it.');
-
-    foreach($attributes as $attrId => $attr)
-      if (strcasecmp($attr['untranslatedCaption'],'No observation')==0) {
-        $NoObsIdAttr = $attr['attributeId'];
-        break;
-      }
-    if (!isset($NoObsIdAttr))
-      return lang::get('This form must be used with a survey that has the No observation attribute associated with it.');
-
-    foreach($attributes as $attrId => $attr)
-      if (strcasecmp($attr['untranslatedCaption'],'Survey reliability')==0) {
-        $ReliabilityIdAttr = $attr['attributeId'];
-        break;
-      }
-    if (!isset($ReliabilityIdAttr))
-      return lang::get('This form must be used with a survey that has the Survey reliability attribute associated with it.');
+    $userNameAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'CMS Username');
+    $ObserverIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Observer');
+    if (!$ObserverIdAttr) return lang::get('This form must be used with a survey that has the Observer sample attribute associated with it.');
+    $MonthIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'MNHNL Month');
+    if (!$MonthIdAttr) return lang::get('This form must be used with a survey that has the MNHNL Month sample attribute associated with it.');
+    $NumInMonthIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Number In Month');
+    if (!$NumInMonthIdAttr) return lang::get('This form must be used with a survey that has the Number In Month sample attribute associated with it.');
+    $StartTimeIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Start time');
+    if (!$StartTimeIdAttr) return lang::get('This form must be used with a survey that has the Start time sample attribute associated with it.');
+    $EndTimeIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'End time');
+    if (!$EndTimeIdAttr) return lang::get('This form must be used with a survey that has the End time sample attribute associated with it.');
+    $TempIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Temperature');
+    if (!$TempIdAttr) return lang::get('This form must be used with a survey that has the Temperature sample attribute associated with it.');
+    $WindIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Wind force');
+    if (!$WindIdAttr) return lang::get('This form must be used with a survey that has the Wind force sample attribute associated with it.');
+    $CloudIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Cloud cover');
+    if (!$CloudIdAttr) return lang::get('This form must be used with a survey that has the Cloud cover sample attribute associated with it.');
+    $HabitatIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Habitat type');
+    if (!$HabitatIdAttr) return lang::get('This form must be used with a survey that has the Habitat type sample attribute associated with it.');
+    $NoObsIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'No observation');
+    if (!$NoObsIdAttr) return lang::get('This form must be used with a survey that has the No observation sample attribute associated with it.');
+    $ReliabilityIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Survey reliability');
+    if (!$ReliabilityIdAttr) return lang::get('This form must be used with a survey that has the Survey reliability sample attribute associated with it.');
 
     return  '<div id="downloads" >
     <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_butterflies_grid.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=downloadgrid">
@@ -403,42 +334,17 @@ deleteSurvey = function(sampleID){
    */
   protected static function getSampleListGrid($args, $node, $auth, $attributes) {
   	global $user;
-    // get the CMS User ID attribute so we can filter the grid to this user
-    foreach($attributes as $attrId => $attr) {
-      if (strcasecmp($attr['untranslatedCaption'],'CMS User ID')==0) {
-        $userIdAttr = $attr['attributeId'];
-        break;
-      }
-    }
-    foreach($attributes as $attrId => $attr) {
-      if (strcasecmp($attr['untranslatedCaption'],'CMS Username')==0) {
-        $userNameAttr = $attr['attributeId'];
-        break;
-      }
-    }
-    foreach($attributes as $attrId => $attr) {
-      if (strcasecmp($attr['untranslatedCaption'],'Observer')==0) {
-        $observerAttr = $attr['attributeId'];
-        break;
-      }
-    }
-
     if ($user->uid===0) {
       // Return a login link that takes you back to this form when done.
       return lang::get('Before using this facility, please <a href="'.url('user/login', array('query'=>'destination=node/'.($node->nid))).'">login</a> to the website.');
     }
-    if (!isset($userIdAttr)) {
-      return lang::get('This form must be used with a survey that has the CMS User ID attribute associated with it so records can '.
-          'be tagged against their creator.');
-    }
-    if (!isset($userNameAttr)) {
-      return lang::get('This form must be used with a survey that has the CMS User Name attribute associated with it so records can '.
-          'be tagged against their creator.');
-    }
-    if (!isset($observerAttr)) {
-      return lang::get('This form must be used with a survey that has the Observer attribute associated with it so records can '.
-          'be tagged against their Observer.');
-    }
+    $userIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'CMS User ID');
+    if (!$userIdAttr) return lang::get('This form must be used with a survey that has the CMS User ID sample attribute associated with it.');
+    $userNameAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'CMS Username');
+    if (!$userNameAttr) return lang::get('This form must be used with a survey that has the CMS Username sample attribute associated with it.');
+    $observerAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Observer');
+    if (!$observerAttr) return lang::get('This form must be used with a survey that has the Observer sample attribute associated with it.');
+        
     if (isset($args['grid_report']))
       $reportName = $args['grid_report'];
     else
