@@ -824,7 +824,6 @@ idlist=';
       $r .= '</ul>';
       $r .= '<p>'.lang::get('Click on image thumbnails to view full size').'</p>';
     }
-    $r .= '<script type="text/javascript">$("a.fancybox").fancybox();</script>';
     return $r;
   }
 
