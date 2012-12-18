@@ -1253,6 +1253,7 @@ setGeomFields = function(){
   var geomstack = [];
   var completeGeom;
   var centreGeom;
+  var centreSrefGeom;
   var mySiteNum;
   var allFeatures = SiteAreaLayer.features.concat(SitePathLayer.features,SitePointLayer.features);
   for(var i=allFeatures.length-1; i>=0; i--){
@@ -1275,6 +1276,11 @@ setGeomFields = function(){
   } else {
     completeGeom = new OpenLayers.Geometry.Collection(geomstack);
   }
+  centreSrefGeom=getCentroid(completeGeom);
+  // the geometry is in the map projection: if this doesn't match indicia's internal one, then must convert.
+  if (SiteAreaLayer.map.projection.projcode!='EPSG:900913' && SiteAreaLayer.map.projection.projcode!='EPSG:3857') { 
+    completeGeom.transform(SiteAreaLayer.map.projection,  new OpenLayers.Projection('EPSG:900913'));
+  }
   var boundaryWKT = getwkt(completeGeom, true, true);
   centreGeom=getCentroid(completeGeom);
   var centreWKT = getwkt(centreGeom, true, true);
@@ -1284,7 +1290,7 @@ setGeomFields = function(){
 " :
 "  jQuery(\"#imp-boundary-geom\").val(boundaryWKT);
   jQuery(\"#imp-geom\").val(centreWKT);
-  setSref(centreGeom, 'TBC');  // forces the sref to be generated.
+  setSref(centreSrefGeom, 'TBC');  // forces the sref to be generated.
 ").
 "}
 setDrawnGeom = function() {
