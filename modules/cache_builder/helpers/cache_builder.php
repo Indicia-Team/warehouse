@@ -35,7 +35,7 @@ class cache_builder {
     $queries = kohana::config("cache_builder.$table");
     cache_builder::get_changelist($db, $table, $queries, $last_run_date);
     try {
-      cache_builder::do_delete($db, $table);
+      cache_builder::do_delete($db, $table, $queries);
       cache_builder::run_statement($db, $table, $queries['update'], 'update');
       // preprocess some of the tags in the queries
       if (is_array($queries['insert']))
@@ -143,10 +143,16 @@ class cache_builder {
    * where the deleted flag is true.
    * @param object $db Database connection.
    * @param string $table Name of the table being cached.
+   * @param array $queries List of configured queries for this table, which might include non-default delete queries.
    */
-  private static function do_delete($db, $table) {
-    $query = "delete from cache_$table where id in (select id from needs_update_$table where deleted=true)";
-    $count = $db->query($query)->count();
+  private static function do_delete($db, $table, $queries) {
+    // set up a default delete query if none are specified
+    if (!isset($queries['delete_query']))
+      $queries['delete_query'] = array("delete from cache_$table where id in (select id from needs_update_$table where deleted=true)");
+    $count=0;
+    foreach($queries['delete_query'] as $query) {
+      $count += $db->query($query)->count();
+    }
     if (variable::get("populated-$table"))
       echo ", $count delete(s)";
   }
