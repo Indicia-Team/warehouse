@@ -2390,7 +2390,7 @@ class data_entry_helper extends helper_base {
     if (!empty($options['taxonFilterField']) && $options['taxonFilterField']!=='none' && !empty($options['taxonFilter'])) {
       // filter the taxa available to record
       // switch field to filter by if using cached lookup
-      if ($options['cache_lookup'] && $options['taxonFilterField']==='preferred_name')
+      if ($options['cacheLookup'] && $options['taxonFilterField']==='preferred_name')
         $options['taxonFilterField']='preferred_taxon';
       $query = array('in'=>array($options['taxonFilterField'], $options['taxonFilter']));
     }
@@ -2638,7 +2638,7 @@ $('#".$options['id']."-filter').click(function(evt) {
    */
   private static function get_species_checklist_taxa_list($options, &$taxonRows) {
     // Get the list of species that are always added to the grid, by first building a filter
-    if (preg_match('/^(preferred_name|taxon_meaning_id|taxon_group)$/', $options['taxonFilterField']))  {
+    if (preg_match('/^(preferred_name|taxon_meaning_id|taxon_group|external_key)$/', $options['taxonFilterField']))  {
       $qry = array('in'=>array($options['taxonFilterField'], $options['taxonFilter']));
       $options['extraParams']['query']=json_encode($qry);
     }

@@ -346,23 +346,46 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           'options' => array(
             'preferred_name' => 'Preferred name of the taxa',
             'taxon_meaning_id' => 'Taxon Meaning ID',
-            'taxon_group' => 'Taxon group title'
+            'taxon_group' => 'Taxon group title',
+            'external_key' => 'Taxon external key'
+              
           ),
           'required'=>false,
           'group'=>'Species'
         ),
         array(
+          'name'=>'use_url_taxon_parameter',
+          'caption'=>'Use URL taxon parameter',
+          'description'=>'Use a URL parameter called taxon to get the filter? Case sensitive. Uses the "Field used to filter taxa" setting to control '.
+            'what is being filtered against, e.g. &taxon=Passer+domesticus,Turdus+merula',
+          'type'=>'boolean',
+          'required' => false,
+          'default'=>false,
+          'group'=>'Species'
+        ),
+        array(
           'name'=>'taxon_filter',
           'caption'=>'Taxon filter items',
-          'description'=>'When filtering the list of available taxa, taxa will not be available for recording unless they match one of the '.
-              'values you input in this box. Enter one value per line. E.g. enter a list of taxon group titles if you are filtering by taxon group. '.
-              'If you provide a single taxon preferred name or taxon meaning ID in this box, then the form is set up for recording just this single '.
+          'description'=>'Taxa can be filtered by entering values into this box. '. 
+              'Enter one value per line. E.g. enter a list of taxon group titles if you are filtering by taxon group. '.
+              'If you provide a single taxon preferred name, taxon meaning ID or external key in this box, then the form is set up for recording just this single '.
               'species. Therefore there will be no species picker control or input grid, and the form will always operate in the single record, non-grid mode. '.
-              'As there is no visual indicator which species is recorded you may like to include information about what is being recorded in the '.
-              'body text for the page. You may also want to configure the User Interface section of the form\'s Form Structure to move the [species] and [species] controls '.
-              'to a different tab and remove the =species= tab, especially if there are no other occurrence attributes on the form.',
+              'You may like to include information about what is being recorded in the body text for the page or by using the '.
+              '\'Include a message stating which species you are recording in single species mode?\' checkbox to automatically add a message to the screen.'.
+              'You may also want to configure the User Interface section of the form\'s Form Structure to move the [species] and [species] controls '.
+              'to a different tab and remove the =species= tab, especially if there are no other occurrence attributes on the form.'.
+              'The \'Use URL taxon parameter\' option can be used to override the filters specified here.',
           'type' => 'textarea',
           'required'=>false,
+          'group'=>'Species'
+        ),
+        array(
+          'name'=>'single_species_message',
+          'caption'=>'Include a message stating which species you are recording in single species mode?',
+          'description'=>'Message which displays the species you are recording against in single species mode. When selected, this will automatically be displayed where applicable.',
+          'type'=>'boolean',
+          'required' => false,
+          'default'=>false,
           'group'=>'Species'
         ),
         array(
@@ -679,14 +702,101 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   }
 
   /**
+   * The species filter can be taken from the edit tab or overridden by a URL filter.
+   * This method determines the filter to be used.
+   * @param array $args Form arguments
+   * @return array List of items to filter against, e.g. species names or meaning IDs.
+   */  
+  protected static function get_species_filter($args) {
+    // we must have a filter field specified in order to apply a filter
+    if (!empty($args['taxon_filter_field'])) {
+      // if URL params are enabled and we have one, then this is the top priority filter to apply
+      if (!empty($_GET['taxon']) && $args['use_url_taxon_parameter'])  
+        // convert commas to newline, so url provided filters are the same format as those
+        // on the edit tab, also allowing for url encoding.
+        return explode(',', urldecode($_GET['taxon']));
+      elseif (!empty($args['taxon_filter']))
+        // filter is provided on the edit tab
+        return helper_base::explode_lines($args['taxon_filter']);
+    }
+    // default - no filter to apply
+    return array();
+  }
+  
+  /**
+   * Get the species data for the page in single species mode
+   */
+  protected static function get_single_species_data($auth, $args, $filterLines) {
+    //The form is configured for filtering by taxon name, meaning id or external key. If there is only one specified, then the form
+    //cannot display a species checklist, as there is no point. So, convert our preferred taxon name, meaning ID or external_key to find the 
+    //preferred taxa_taxon_list_id from the selected checklist
+    if (empty($args['list_id']))
+      throw new exception(lang::get('Please configure the Initial Species List parameter to define which list the species to record is selected from.'));
+    $filter = array(
+      'preferred'=>'t',
+      'taxon_list_id'=>$args['list_id']
+    );
+    if ($args['taxon_filter_field']=='preferred_name') {
+      $filter['taxon']=$filterLines[0];
+    } else {
+      $filter[$args['taxon_filter_field']]=$filterLines[0];
+    }
+    $options = array(
+      'table' => 'taxa_taxon_list',
+      'extraParams' => $auth['read'] + $filter
+    );
+    $response =data_entry_helper::get_population_data($options);
+    // Call code that handles the error logs
+    self::get_single_species_logging($auth, $args, $filterLines, $response);
+    return $response;
+  }
+    
+  /**
+   * Error logging code for the page in single species mode
+   */
+  protected static function get_single_species_logging($auth, $args, $filterLines, $response) {
+    //Go through each filter line and add commas between the values so it looks nice in the log
+    $filters = implode(', ', $filterLines);
+    //If only one filter is supplied but more than one match is found, we can't continue as we don't know which one to match against.
+    if (count($response)>1 and count($filterLines)==1 and empty($response['error'])) {
+      if (function_exists('watchdog')) {
+        watchdog('indicia', 'Multiple matches have been found when using the filter \''.$args['taxon_filter_field'].'\'. '.
+          'The filter was passed the following value(s)'.$filters);
+        throw new exception(lang::get('This form is setup for single species recording, but more than one species matching the criteria exists in the list.'));
+      }    
+    }
+    //If our filter returns nothing at all, we log it, we return string 'no matches' which the system then uses to clear the filter
+    if (count($response)==0) {
+      if (function_exists('watchdog')) 
+        watchdog('missing sp.', 'No matches were found when using the filter \''.$args['taxon_filter_field'].'\'. '.
+          'The filter was passed the following value(s)'.$filters); 
+    }
+  }
+    
+  /**
    * Get the control for species input, either a grid or a single species input control.
    */
   protected static function get_control_species($auth, $args, $tabalias, $options) {
     $gridmode = call_user_func(array(self::$called_class, 'getGridMode'), $args);
     if (!isset($args['cache_lookup']) || ($args['species_ctrl'] !== 'autocomplete' && !$gridmode))
       $args['cache_lookup']=false; // default for old form configurations or when not using an autocomplete
-    if ($hidden = self::get_single_species_hidden_input($auth, $args))
-      return $hidden;
+    //The filter can be a URL or on the edit tab, so do the processing to work out the filter to use
+    $filterLines = self::get_species_filter($args);
+    // store in the argument so that it can be used elsewhere
+    $args['taxon_filter'] = implode("\n", $filterLines);
+    //Single species mode only ever applies if we have supplied only one filter species and we aren't in taxon group mode
+    if ($args['taxon_filter_field']!=='taxon_group' && count($filterLines)===1) {
+      $response = self::get_single_species_data($auth, $args, $filterLines);
+      //Optional message to display the single species on the page
+      if ($args['single_species_message']) 
+        self::$singleSpeciesName=$response[0]['taxon'];
+      if (count($response)==0)
+        //if the response is empty there is no matching taxon, so clear the filter as we can try and display the checklist with all data
+        $args['taxon_filter']='';
+      elseif (count($response)==1)
+        //Keep the id of the single species in a hidden field for processing if in single species mode
+        return '<input type="hidden" name="occurrence:taxa_taxon_list_id" value="'.$response[0]['id']."\"/>\n";
+    }
     $extraParams = $auth['read'];
     call_user_func(array(self::$called_class, 'build_grid_autocomplete_function'), $args);
     if ($gridmode)
@@ -695,46 +805,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       return self::get_control_species_single($auth, $args, $extraParams, $options);
   }
 
-  /**
-   * If the form is for single-species recording, then returns the hidden input which outputs
-   * that species' taxa_taxon_list_id as there is no need for a species picker of any kind.
-   * @param array $auth Read authorisation
-   * @param array $args Form configuration arguments
-   * @return string Returns the HTML for the hidden control, or false if a multi-species recording form.
-   */
-  protected static function get_single_species_hidden_input($auth, $args) {
-    if (!empty($args['taxon_filter_field']) && !empty($args['taxon_filter'])) {
-      $filterLines = helper_base::explode_lines($args['taxon_filter']);
-      if ($args['taxon_filter_field']!=='taxon_group' && count($filterLines)===1) {
-        // The form is configured for filtering by taxon name or meaning id. If there is only one specified then the form
-        // cannot display a species checklist, as there is no point. So, convert our preferred taxon name or meaning ID to find the
-        // preferred taxa_taxon_list_id from the selected checklist, and then output a hidden ID.
-        if (empty($args['list_id']))
-          throw new exception(lang::get('Please configure the Initial Species List parameter to define which list the species to record is selected from.'));
-        $filter = array(
-          'preferred'=>'t',
-          'taxon_list_id'=>$args['list_id']
-        );
-        if ($args['taxon_filter_field']=='preferred_name') {
-          $filter['taxon']=$filterLines[0];
-        } else {
-          $filter[$args['taxon_filter_field']]=$filterLines[0];
-        }
-        $options = array(
-          'table' => 'taxa_taxon_list',
-          'extraParams' => $auth['read'] + $filter
-        );
-        $response =data_entry_helper::get_population_data($options);
-        if (count($response)===0)
-          throw new exception(lang::get('Failed to find the single species that this form is setup to record in the defined list.'));
-        if (count($response)>1)
-          throw new exception(lang::get('This form is setup for single species recording, but more than one species with the same name exists in the list.'));
-        return '<input type="hidden" name="occurrence:taxa_taxon_list_id" value="'.$response[0]['id']."\"/>\n";
-      }
-    }
-    return false;
-  }
-
+    
+    
   /**
    * Returns the species checklist input control.
    * @param array $auth Read authorisation tokens
@@ -765,7 +837,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       $species_ctrl_opts['usersPreferredGroups'] = unserialize($groups);
     }
     if ($args['extra_list_id']) $species_ctrl_opts['lookupListId']=$args['extra_list_id'];
-    if (!empty($args['taxon_filter_field']) && !empty($args['taxon_filter'])) {
+    //We only do the work to setup the filter if the user has specified a filter in the box
+    if (!empty($args['taxon_filter_field']) && (!empty($args['taxon_filter']))) {
       $species_ctrl_opts['taxonFilterField']=$args['taxon_filter_field'];
       $filterLines = helper_base::explode_lines($args['taxon_filter']);
       $species_ctrl_opts['taxonFilter']=$filterLines;
@@ -790,17 +863,11 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   protected static function get_control_species_single($auth, $args, $extraParams, $options) {
     if ($args['extra_list_id']=='')
       $extraParams['taxon_list_id'] = $args['list_id'];
-    // @todo At the moment the autocomplete control does not support 2 lists. So use just the extra list. Should
-    // update to support 2 lists.
-    elseif ($args['species_ctrl']=='autocomplete')
-      $extraParams['taxon_list_id'] = empty($args['extra_list_id']) ? $args['list_id'] : $args['extra_list_id'];
+    // @todo At the moment the controls do not support 2 lists. So use just the extra list. Should
+    // update to support 2 lists. This is an edge case anyway.
     else
-      $extraParams['taxon_list_id'] = array($args['list_id'], $args['extra_list_id']);
+      $extraParams['taxon_list_id'] = empty($args['extra_list_id']) ? $args['list_id'] : $args['extra_list_id'];
     $options['speciesNameFilterMode'] = self::getSpeciesNameFilterMode($args);
-    if ($args['species_ctrl']!=='autocomplete')
-      // The species autocomplete has built in support for the species name filter.
-      // For other controls we need to apply the species name filter to the params used for population
-      $extraParams = array_merge($extraParams, data_entry_helper::get_species_names_filter($options));
     global $indicia_templates;
     $ctrl = $args['species_ctrl'] === 'autocomplete' ? 'species_autocomplete' : $args['species_ctrl'];
     $species_ctrl_opts=array_merge(array(
@@ -810,9 +877,17 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         'columns'=>2, // applies to radio buttons
         'parentField'=>'parent_id', // applies to tree browsers
         'blankText'=>lang::get('Please select'), // applies to selects
-        'cacheLookup'=>$args['cache_lookup'], // applies to selects
+        'cacheLookup'=>$args['cache_lookup']
     ), $options);
+    if (!empty($args['taxon_filter'])) {
+      $species_ctrl_opts['taxonFilterField']=$args['taxon_filter_field']; // applies to autocompletes
+      $species_ctrl_opts['taxonFilter']=helper_base::explode_lines($args['taxon_filter']); // applies to autocompletes
+    }
     if ($ctrl!=='species_autocomplete') {
+      // The species autocomplete has built in support for the species name filter.
+      // For other controls we need to apply the species name filter to the params used for population
+      if (!empty($species_ctrl_opts['taxonFilter']))
+        $species_ctrl_opts['extraParams'] = array_merge($species_ctrl_opts['extraParams'], data_entry_helper::get_species_names_filter($species_ctrl_opts));
       // for controls which don't know how to do the lookup, we need to tell them
       $species_ctrl_opts = array_merge(array(
         'table'=>'taxa_taxon_list',
