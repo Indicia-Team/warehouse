@@ -112,6 +112,7 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, useLookupC
     var row=taxonCell.parentNode;
     $(taxonCell).parent().addClass('added-row');
     $(taxonCell).parent().removeClass('scClonableRow');
+    $(taxonCell).parent().find('input,select,textarea').removeClass('inactive');
     // Do we use a JavaScript fn, or a standard template, to format the species label?
     if ($.isFunction(formatter)) {
       $(taxonCell).html(formatter(data));
