@@ -34,7 +34,9 @@ require_once('language_utils.php');
 require_once('form_generation.php');
 
 class iform_dynamic {
-
+  // Hold the single species name to be shown on the page to the user. Inherited by dynamic_sample_occurrence
+  protected static $singleSpeciesName;
+  
   // The node id upon which this form appears
   protected static $node;
 
@@ -196,7 +198,7 @@ class iform_dynamic {
     return $r;
   }
   
-  protected static function get_form_html($args, $auth, $attributes) {
+  protected static function get_form_html($args, $auth, $attributes) { 
     // Make sure the form action points back to this page
     $reloadPath = call_user_func(array(self::$called_class, 'getReloadPath'));    
     $r = "<form method=\"post\" id=\"entry_form\" action=\"$reloadPath\">\n";
@@ -236,13 +238,17 @@ class iform_dynamic {
           'progressBar' => isset($args['tabProgress']) && $args['tabProgress']==true
       ));
     }
-    
     // Output the dynamic tab content
     $pageIdx = 0;
+    $singleSpeciesLabel=self::$singleSpeciesName;
     foreach ($tabHtml as $tab=>$tabContent) {
       // get a machine readable alias for the heading
       $tabalias = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tab));
       $r .= '<div id="'.$tabalias.'">'."\n";
+      //We only want to show the single species message to the user if they have selected the option and we are in single species mode.
+      //We also want to only show it on the species tab otherwise in 'All one page' mode it will appear multple times.
+      if ($args['single_species_message'] && $tabalias=='species' && isset($singleSpeciesLabel))
+        $r .= '<div class="page-notice ui-state-highlight ui-corner-all">You are submitting a record of '."$singleSpeciesLabel</div>";
       // For wizard include the tab title as a header.
       if ($args['interface']=='wizard') {
         $r .= '<h1>'.$headerOptions['tabs']['#'.$tabalias].'</h1>';        
@@ -292,11 +298,11 @@ class iform_dynamic {
     unset($reload['params']['newLocation']);
     $reloadPath = $reload['path'];
     if(count($reload['params'])) {
-      $params=array();
-      foreach ($reload['params'] as $key => $param)
-        // This is deliberately not re-encoded, as encoding causes Drupal ?q=a/b to appear as ?q=a%2Fb which means the form can't be re-submit.
-        $params[] = "$key=$param";
-      $reloadPath .= '?'.implode('&', $params);
+      // decode params prior to encoding to prevent double encoding.
+      foreach ($reload['params'] as $key => $param) {
+        $reload['params'][$key] = urldecode($param);
+      }
+      $reloadPath .= '?'.http_build_query($reload['params']);
     }
     return $reloadPath;
   }
@@ -342,8 +348,7 @@ class iform_dynamic {
               $option = explode('=', substr($tabContent[$i],1), 2);
               $options[$option[0]]=json_decode($option[1], true);
               // if not json then need to use option value as it is
-              if ($options[$option[0]]=='') $options[$option[0]]=$option[1];
-              $options[$option[0]]=apply_user_replacements($options[$option[0]]);
+              if ($options[$option[0]]=='') $options[$option[0]]=$option[1];            
             }
           }
 
@@ -478,5 +483,5 @@ class iform_dynamic {
       $options
     ));
   }
-
+  
 }
