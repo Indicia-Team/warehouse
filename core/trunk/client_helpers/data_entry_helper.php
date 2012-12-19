@@ -2149,6 +2149,7 @@ class data_entry_helper extends helper_base {
       }
       foreach ($taxonRows as $txIdx => $rowIds) {
         $ttlId = $rowIds['ttlId'];
+        $loadedTxIdx = isset($rowIds['loadedTxIdx']) ? $rowIds['loadedTxIdx'] : -1;
         $existing_record_id = isset($rowIds['occId']) ? $rowIds['occId'] : false;
         // Multi-column input does not work when image upload allowed
         $colIdx = $options['occurrenceImages'] ? 0 : floor($rowIdx / (count($taxonRows)/$options['columns']));
@@ -2172,19 +2173,6 @@ class data_entry_helper extends helper_base {
           $row .= '<td style="width: 1%"><a class="action-button remove-row">X</a></td>';
         $row .= str_replace(array('{content}','{colspan}','{tableId}','{idx}'), 
             array($firstCell,$colspan,$options['id'],$colIdx), $indicia_templates['taxon_label_cell']);
-        $loadedTxIdx=-1;
-        if (is_array(self::$entity_to_load)) {
-          // Find the loaded taxon that matches this row. This gives us an index which can be used to 
-          // get the loaded values for this row from the $entity_to_load
-          $presenceValue = preg_grep("/^sc:[0-9]*:$existing_record_id:present$/", $presenceValues);
-          if (count($presenceValue)===1) {
-            $presentIndicator = array_pop($presenceValue);
-            if (self::$entity_to_load[$presentIndicator]===$ttlId) {
-              preg_match("/^sc:(?P<idx>[0-9]*):/", $presentIndicator, $matches);
-              $loadedTxIdx = $matches['idx'];
-            }
-          }
-        }
         $hidden = ($options['rowInclusionCheck']=='checkbox' ? '' : ' style="display:none"');
         // AlwaysFixed mode means all rows in the default checklist are included as occurrences. Same for
         // AlwayeRemovable except that the rows can be removed.
@@ -2208,7 +2196,7 @@ class data_entry_helper extends helper_base {
         $idx = 0;
         foreach ($occAttrControls as $attrId => $control) {
           $existing_value='';
-          if ($existing_record_id) {
+          if (!empty(data_entry_helper::$entity_to_load)) {
             // Search for the control in the data to load. It has a suffix containing the attr_value_id which we don't know, hence preg.
             $search = preg_grep("/^sc:$loadedTxIdx:$existing_record_id:occAttr:$attrId".'[:[0-9]*]?$/', array_keys(self::$entity_to_load));
             if (count($search)>0) {
@@ -2675,6 +2663,8 @@ $('#".$options['id']."-filter').click(function(evt) {
           $done=false;
           foreach($taxonRows as &$row) {
             if ($row['ttlId']===$ttlId && !isset($row['occId'])) {
+              // the 2nd part of the loaded value's key row index we loaded from.
+              $row['loadedTxIdx']=$parts[1];
               // the 3rd part of the loaded value's key is the occurrence ID.
               $row['occId']=$parts[2];
               $done=true;
@@ -2682,7 +2672,7 @@ $('#".$options['id']."-filter').click(function(evt) {
           }
           if (!$done)
             // add a new row to the bottom of the grid
-            $taxonRows[] = array('ttlId'=>$ttlId, 'occId'=>$parts[2]);
+            $taxonRows[] = array('ttlId'=>$ttlId, 'loadedTxIdx'=>$parts[1], 'occId'=>$parts[2]);
           // store the id of the taxon in the array, so we can load them all in one go later
           $extraTaxonOptions['extraParams']['id'][]=$ttlId;
         }
@@ -2768,7 +2758,7 @@ $('#".$options['id']."-filter').click(function(evt) {
       // Get the control class if available. If the class array is too short, the last entry gets reused for all remaining.
       $ctrlOptions = array(
         'class'=>self::species_checklist_occ_attr_class($options, $idx, $attrDef['untranslatedCaption']) .
-            (isset($attrDef['class']) ? ' '.$attrDef['class'] : ''),
+            (isset($attrDef['class']) ? ' '.$attrDef['class'] : '') . ' inactive',
         'extraParams' => $options['readAuth'],
         'suffixTemplate' => 'nosuffix',
         'language' => $options['language'] // required for lists eg radio boxes: kept separate from options extra params as that is used to indicate filtering of species list by language
