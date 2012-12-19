@@ -1345,6 +1345,7 @@ indiciaData.windowLoaded=false;
     if (self::$validated_form_id) {
       global $indicia_templates;
       self::$javascript .= "$('#".self::$validated_form_id."').validate({
+        ignore: \":hidden,.inactive\",
         errorClass: \"".$indicia_templates['error_class']."\",
         ". (in_array('inline', self::$validation_mode) ? "" : "errorElement: 'p',") ."
         highlight: function(element, errorClass) {
