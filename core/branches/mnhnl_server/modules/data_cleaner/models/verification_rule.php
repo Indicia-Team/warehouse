@@ -147,7 +147,7 @@ class Verification_rule_Model extends ORM {
       // force keys lowercase for case-insensitive lookup
       $metadata = array_change_key_case($metadata, CASE_LOWER);
       foreach ($fields['Metadata'] as $idx=>$field) {
-        if (array_key_exists(strtolower($field), $metadata) && !empty($metadata[strtolower($field)])) {
+        if (array_key_exists(strtolower($field), $metadata) && trim($metadata[strtolower($field)])!=='') {
           $recordsInSubmission[] = "(verification_rule_id='".$this->id."' and key='".$field."')";
           $vrm = ORM::Factory('verification_rule_metadatum')->where(array(
               'verification_rule_id'=>$this->id, 'key'=>$field
