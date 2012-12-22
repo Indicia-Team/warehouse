@@ -7,8 +7,10 @@ select #columns#
 from cache_occurrences co
 join occurrences o on o.id=co.id -- ensure we have the latest status. Would not be needed if cache_occurrences reflects updated immediately
 join samples s on s.id=o.sample_id
-left join index_locations_samples ils on ils.sample_id=co.sample_id
-left join locations l on l.id=ils.location_id
+left join (index_locations_samples ils
+  join locations l on l.id=ils.location_id
+  join cache_termlists_terms ctt on ctt.id=l.location_type_id and ctt.term='Vice County'
+) on ils.sample_id=co.sample_id
 #agreements_join#
 #joins#
 where #sharing_filter# 
