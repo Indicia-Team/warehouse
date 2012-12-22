@@ -44,7 +44,7 @@ class Title_Controller extends Gridview_Base_Controller {
   /** 
    * No access to the titles list unless core admin.
    */
-  public function page_authorised()
+  protected function page_authorised()
   {
     return $this->auth->logged_in('CoreAdmin');
   }
