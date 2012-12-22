@@ -39,14 +39,14 @@ function nbn_species_dict_sync_extend_ui() {
       'view'=>'taxon_group/index',
       'type'=>'tab',
       'controller'=>'nbn_species_dict_sync/taxon_groups',
-      'title'=>'NBN Sync'
+      'title'=>'NBN Species Dict Sync'
     ),
     // tab on the taxon designations inedx page, allowing you to pull the Species Dictionary designations in.
     array(
       'view'=>'taxon_designation/index',
       'type'=>'tab',
       'controller'=>'nbn_species_dict_sync/taxon_designations',
-      'title'=>'NBN Sync'
+      'title'=>'NBN Species Dict Sync'
     )
   );
 }
