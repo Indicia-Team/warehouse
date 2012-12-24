@@ -49,7 +49,7 @@ add_taxon_group = function() {
       else
         // if OK, it returns the new record ID. Add it to the grid.
         if (data!==0)
-          grid_taxon_groups_taxon_list.addRecords('id', data);
+          indiciaData.reports.taxon_groups_taxon_list.grid_taxon_groups_taxon_list.addRecords('id', data);
     }
   );
 }
