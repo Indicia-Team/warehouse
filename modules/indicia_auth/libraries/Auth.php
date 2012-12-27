@@ -330,6 +330,21 @@ class Auth_Core {
         array('user_id' => $_SESSION['auth_user']->id,
         'site_role_id <=' => $role, 'site_role_id IS NOT' => NULL))->find()->loaded;
   }
+  
+  /**
+   * Test if the current logged in user is at least user, editor or admin of the website.
+   * @return boolean True if the user is has access to any website at this level.
+   */
+  public function has_website_access($level, $website_id) {
+    switch ($level) {
+      case 'admin': $role=1; break;
+      case 'editor': $role=2; break;
+      case 'user': $role=3; break;
+    }
+    return ORM::factory('users_website')->where(
+        array('user_id' => $_SESSION['auth_user']->id, 'website_id' => $website_id,
+        'site_role_id <=' => $role, 'site_role_id IS NOT' => NULL))->find()->loaded;
+  }
       
   /**
    * Returns true if the supplied user has a role on the supplied website.
