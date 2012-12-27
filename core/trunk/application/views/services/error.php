@@ -20,6 +20,7 @@
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
  */
+header("Content-Type: application/xml");
 echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 <error>
   <message>$message</message>
