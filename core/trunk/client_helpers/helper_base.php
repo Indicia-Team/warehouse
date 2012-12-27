@@ -662,12 +662,13 @@ $('.ui-state-default').live('mouseout', function() {
       curl_setopt ($session, CURLOPT_POST, true);
       curl_setopt ($session, CURLOPT_POSTFIELDS, $postargs);
     }
-    curl_setopt($session, CURLOPT_HEADER, true);
+    curl_setopt($session, CURLOPT_HEADER, false);
     curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
     // Do the POST and then close the session
     $response = curl_exec($session);
-    // Check for an error, or check if the http response was not OK. Note that the cUrl emulator only returns connection: close.
-    if (curl_errno($session) || (strpos($response, 'HTTP/1.1 200 OK')===false && strpos($response, 'Connection: close')===false)) {
+    $httpCode = curl_getinfo($session, CURLINFO_HTTP_CODE); 
+    // Check for an error, or check if the http response was not OK.
+    if (curl_errno($session) || $httpCode!==200) {
       if ($output_errors) {
         echo '<div class="error">cUrl POST request failed. Please check cUrl is installed on the server and the $base_url setting is correct.<br/>URL:'.$url.'<br/>';
         if (curl_errno($session)) {
@@ -680,7 +681,9 @@ $('.ui-state-default').live('mouseout', function() {
       $return = array(
           'result'=>false,
           'output'=> curl_errno($session) ? curl_error($session) : $response,
-          'errno'=>curl_errno($session));
+          'errno'=>curl_errno($session),
+          'status'=>$statusCode
+      );
     } else {
       $arr_response = explode("\r\n\r\n",$response);
       // last part of response is the actual data
