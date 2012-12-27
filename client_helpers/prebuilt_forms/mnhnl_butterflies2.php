@@ -242,7 +242,7 @@ deleteSurvey = function(sampleID){
     data_entry_helper::$javascript .= "
 // because the fetch is generic, we can't guarentee that the sort order will be numeric eg name 2 comes after 10.
 hook_loadLocation= function(feature) {
-  if(feature.attributes.new) setNameDropDowns(false, false);
+  if(feature.attributes['new']) setNameDropDowns(false, false);
   else setNameDropDowns(true, false);
 }
 createGridEntries = function(feature, isnew) {
@@ -992,7 +992,7 @@ hook_RemoveNewSite= function() {
   });
 };
 hook_multisite_setGeomFields=function(feature, boundaryWKT, centreWKT){
-  if(feature.attributes.new != true) return; // just to be safe...
+  if(feature.attributes['new'] != true) return; // just to be safe...
   // AND assume that we can modify existing.
   // want newCGRow to stay valid until json returns so don't scope local.
   newCGrow=false;
@@ -1009,7 +1009,7 @@ hook_multisite_setGeomFields=function(feature, boundaryWKT, centreWKT){
 }
 jQuery('#dummy-name').change(function() {
   var highlighted = gethighlight();
-  if(highlighted.length == 0 || !highlighted[0].attributes.new) {
+  if(highlighted.length == 0 || !highlighted[0].attributes['new']) {
     setNameDropDowns(true, false);
     return;
   }
@@ -1025,7 +1025,7 @@ jQuery('#dummy-name').change(function() {
   for(var i=SiteLabelLayer.features.length-1; i>=0; i--){ // Row may not be selected on map
     if(typeof SiteLabelLayer.features[i].attributes.cgRowNum != 'undefined'
         && SiteLabelLayer.features[i].attributes.cgRowNum == myRowNum
-        && SiteLabelLayer.features[i].attributes.new){
+        && SiteLabelLayer.features[i].attributes['new']){
       feature = SiteLabelLayer.features[i];
       SiteLabelLayer.removeFeatures([feature]);
       feature.style.label = jQuery(this).val();
@@ -1083,7 +1083,7 @@ hook_new_site_added = function(feature) {
   var centrefeature;
   centreGeom = getCentroid(feature.geometry);
   centrefeature = new OpenLayers.Feature.Vector(centreGeom);
-  centrefeature.attributes.new=true;
+  centrefeature.attributes['new']=true;
   centrefeature.attributes.highlighted=true;
   centrefeature.attributes.SiteNum=feature.attributes.SiteNum;
   centrefeature.attributes.cgRowNum=cgRowNum;
