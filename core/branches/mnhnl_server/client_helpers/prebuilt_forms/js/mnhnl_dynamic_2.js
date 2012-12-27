@@ -599,14 +599,14 @@ mapInitialisationHooks.push(function(mapdiv) {
   		editControl.activate();
   		if($('#mousePos').length>0){
   	  		jQuery('#map2 .olControlEditingToolbar').append('<span id=\"mousePos2\"></span>');
-  			mousePos = new OpenLayers.Control.MousePosition({
+  	  		var mousePosCtrl = new OpenLayers.Control.MousePosition({
   			  div: document.getElementById('mousePos2'),
   			  prefix: 'LUREF:',
   			  displayProjection: new OpenLayers.Projection('EPSG:2169'),
   			  emptyString: '',
   			  numDigits: 0 
   			});
-  			mapdiv.map.addControl(mousePos);
+  			mapdiv.map.addControl(mousePosCtrl);
   		}
 	}
   	// TBD load existing features

@@ -363,6 +363,12 @@ deleteSurvey = function(sampleID){
 
   protected static function get_control_customJS($auth, $args, $tabalias, $options) {
     global $indicia_templates;
+    data_entry_helper::$javascript .= "
+if($.browser.msie && $.browser.version < 9)
+  $('input[type=radio],[type=checkbox]').live('click', function(){
+    this.blur();
+    this.focus();
+});\n";
     self::$check_or_radio_group_template = $indicia_templates['check_or_radio_group'];
     self::$check_or_radio_group_item_template = $indicia_templates['check_or_radio_group_item'];
     $indicia_templates['check_or_radio_group'] = '<div class="radio_group_container"><span {class}>{items}</span></div>';
@@ -403,26 +409,23 @@ $.validator.messages.integer = $.validator.format(\"".lang::get('validation_inte
     foreach($attributes as $attribute){
       data_entry_helper::$javascript .= "$('#smpAttr\\\\:".$attribute['attributeId']."').addClass('smpAttr-".str_replace(' ', '', ucWords($attribute['untranslatedCaption']))."');\n";
     }
-    data_entry_helper::$javascript .= "\nrelationships = [";
+    $restrictText = array();
     if(isset($options["attrRestrictions"]) && $options["attrRestrictions"]!=""){
       $restrictionRules = explode(';', $options["attrRestrictions"]);
       foreach($restrictionRules as $restrictionRule){
         $parts = explode(':', $restrictionRule);
-        data_entry_helper::$javascript .= "\n {parent : ".$parts[0].",
-  child : ".$parts[1].",
-  values: [";
+        $valList = array();
         for($i = 2; $i < count($parts); $i++){
           $values = explode(',', trim($parts[$i]));
-          data_entry_helper::$javascript .= "{value : ".$values[0].", list: [\"";
+          $valString = "{value : ".$values[0].", list: [\"";
           unset($values[0]);
-          data_entry_helper::$javascript .= (implode("\",\"", $values))."\"]},
-          ";
+          $valList[] = $valString.(implode("\",\"", $values))."\"]}";
         }
-        data_entry_helper::$javascript .= "]},";
+        $restrictText[] = "{parent : ".$parts[0].", child : ".$parts[1].",
+  values: [".(implode(",\n    ",$valList))."]}";
       }
     }
-    data_entry_helper::$javascript .= "
-];";
+    data_entry_helper::$javascript .= "\nrelationships = [".implode(",\n",$restrictText)."\n];";
     if(isset($options["attrRestrictionsProcessOrder"]) && $options["attrRestrictionsProcessOrder"]!=""){
       $attrOrder = explode(':', $options["attrRestrictionsProcessOrder"]);
       if(!isset($options["attrRestrictionsDuplicateAttrList"]))

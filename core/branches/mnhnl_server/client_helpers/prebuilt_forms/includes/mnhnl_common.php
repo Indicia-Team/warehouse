@@ -840,7 +840,7 @@ setPermissionsNewSite = function(){
   var allFeatures = SiteAreaLayer.features.concat(SitePathLayer.features,SitePointLayer.features);
   var haveOld=false;
   for(var i=0; i<allFeatures.length; i++){
-    if(allFeatures[i].attributes.new==false){
+    if(allFeatures[i].attributes['new']==false){
       haveOld=true;
     }}
   if(haveOld){
@@ -851,7 +851,7 @@ setPermissionsNewSite = function(){
   setPermissions(enable,disable);
 }
 loadLocation = function(feature){ // loads all the data into the location fields from a feature.
-  if(feature.attributes.new)
+  if(feature.attributes['new'])
     setPermissionsNewSite();
   else if (feature.attributes.canEdit)
     setPermissionsOldEditableSite();
@@ -1058,19 +1058,19 @@ loadFeatures = function(parent_id, child_id, childArgs, loadParent, setSelectOpt
                 }
               }
               if(areaFeature) {
-                areaFeature.attributes = {highlighted: false, new: false, canEdit: checkEditable(false, data[i].id), SiteNum: SiteNum, data: data[i]};
+                areaFeature.attributes = {highlighted: false, 'new': false, canEdit: checkEditable(false, data[i].id), SiteNum: SiteNum, data: data[i]};
                 areaFeature=convertFeature(areaFeature, $('#map')[0].map.projection);
                 SiteAreaLayer.addFeatures([areaFeature]);
                 if(!centreFeature) centreFeature = new OpenLayers.Feature.Vector(getCentroid(areaFeature.geometry));
               }
               if(lineFeature) {
-                lineFeature.attributes = {highlighted: false, new: false, canEdit: checkEditable(false, data[i].id), SiteNum: SiteNum, data: data[i]};
+                lineFeature.attributes = {highlighted: false, 'new': false, canEdit: checkEditable(false, data[i].id), SiteNum: SiteNum, data: data[i]};
                 lineFeature=convertFeature(lineFeature, $('#map')[0].map.projection);
                 SitePathLayer.addFeatures([lineFeature]);
                 if(!centreFeature) centreFeature = new OpenLayers.Feature.Vector(getCentroid(lineFeature.geometry));
               }
               if(pointFeature) {
-                pointFeature.attributes = {highlighted: false, new: false, canEdit: checkEditable(false, data[i].id), SiteNum: SiteNum, data: data[i]};
+                pointFeature.attributes = {highlighted: false, 'new': false, canEdit: checkEditable(false, data[i].id), SiteNum: SiteNum, data: data[i]};
                 pointFeature=convertFeature(pointFeature, $('#map')[0].map.projection);
                 SitePointLayer.addFeatures([pointFeature]);
                 if(!centreFeature) centreFeature = new OpenLayers.Feature.Vector(getCentroid(pointFeature.geometry));
@@ -1080,10 +1080,10 @@ loadFeatures = function(parent_id, child_id, childArgs, loadParent, setSelectOpt
               feature = parser.read(data[i].centroid_geom); // assume map projection=900913
               feature=convertFeature(feature, $('#map')[0].map.projection);
               centreFeature = feature.clone();
-              feature.attributes = {highlighted: false, new: false, canEdit: checkEditable(false, data[i].id), SiteNum: SiteNum, data: data[i]};
+              feature.attributes = {highlighted: false, 'new': false, canEdit: checkEditable(false, data[i].id), SiteNum: SiteNum, data: data[i]};
               SitePointLayer.addFeatures([feature]);
             }
-            centreFeature.attributes = {highlighted: false, new: false, canEdit: checkEditable(false, data[i].id), SiteNum: SiteNum, data: data[i]};
+            centreFeature.attributes = {highlighted: false, 'new': false, canEdit: checkEditable(false, data[i].id), SiteNum: SiteNum, data: data[i]};
 ".($args['SecondaryLocationTypeTerm'] != '' && $options['AdminMode'] ?
 "            if(data[i].location_type_id == $secondary){
               centreFeature.style = jQuery.extend({}, SiteListSecondaryLabelStyleHash);
@@ -1308,23 +1308,23 @@ removeDrawnGeom = function(SiteNum){
     unhighlightAll();
   }
   for(var i=SiteLabelLayer.features.length-1; i>=0; i--)
-    if(SiteLabelLayer.features[i].attributes.new == true && SiteLabelLayer.features[i].attributes.SiteNum == SiteNum)
+    if(SiteLabelLayer.features[i].attributes['new'] == true && SiteLabelLayer.features[i].attributes.SiteNum == SiteNum)
       SiteLabelLayer.destroyFeatures([SiteLabelLayer.features[i]]);
   for(var i=SiteAreaLayer.features.length-1; i>=0; i--)
-    if(SiteAreaLayer.features[i].attributes.new == true && SiteAreaLayer.features[i].attributes.SiteNum == SiteNum)
+    if(SiteAreaLayer.features[i].attributes['new'] == true && SiteAreaLayer.features[i].attributes.SiteNum == SiteNum)
       SiteAreaLayer.destroyFeatures([SiteAreaLayer.features[i]]);
   for(var i=SitePathLayer.features.length-1; i>=0; i--)
-    if(SitePathLayer.features[i].attributes.new == true && SitePathLayer.features[i].attributes.SiteNum == SiteNum)
+    if(SitePathLayer.features[i].attributes['new'] == true && SitePathLayer.features[i].attributes.SiteNum == SiteNum)
       SitePathLayer.destroyFeatures([SitePathLayer.features[i]]);
   for(var i=SitePointLayer.features.length-1; i>=0; i--)
-    if(SitePointLayer.features[i].attributes.new == true && SitePointLayer.features[i].attributes.SiteNum == SiteNum)
+    if(SitePointLayer.features[i].attributes['new'] == true && SitePointLayer.features[i].attributes.SiteNum == SiteNum)
       SitePointLayer.destroyFeatures([SitePointLayer.features[i]]);
   recalcNumSites();
 }
 resetVertices = function(){
   var allFeatures = SiteAreaLayer.features.concat(SitePathLayer.features,SitePointLayer.features);
   for(var i=allFeatures.length-1; i>=0; i--){
-    if(typeof allFeatures[i].attributes.new == 'undefined'){ // not one of ours, so must be a vertex
+    if(typeof allFeatures[i].attributes['new'] == 'undefined'){ // not one of ours, so must be a vertex
       var layer= allFeatures[i].layer;
       layer.removeFeatures([allFeatures[i]]);
       allFeatures[i].style=dragPointStyleHash;
@@ -1367,7 +1367,7 @@ replaceGeom = function(feature, layer, modControl, geom, highlight, setFields){
 }
 addAndSelectNewGeom = function(layer, modControl, geom, highlight){
   SiteNum++;
-  var feature = new OpenLayers.Feature.Vector(geom, {highlighted: false, new: true, canEdit: true, SiteNum: SiteNum});
+  var feature = new OpenLayers.Feature.Vector(geom, {highlighted: false, 'new': true, canEdit: true, SiteNum: SiteNum});
   layer.addFeatures([feature]);
   modControl.selectFeature(feature);
   feature.attributes.highlighted=true;
@@ -1433,7 +1433,7 @@ if (typeof hook_new_site_added == 'undefined')
     centreGeom = getCentroid(feature.geometry);
   }
   centrefeature = new OpenLayers.Feature.Vector(centreGeom);
-  centrefeature.attributes.new=true;
+  centrefeature.attributes['new']=true;
   centrefeature.attributes.highlighted=true;
   centrefeature.attributes.SiteNum=SiteNum;
   centrefeature.style = jQuery.extend({}, SiteListPrimaryLabelStyleHash);
@@ -1473,7 +1473,7 @@ addDrawnPointToSelection = function(geometry) {
       selectedFeature = SitePointLayer.features[i];
       break;
     }}
-  if(highlightedFeatures[0].attributes.new == true){
+  if(highlightedFeatures[0].attributes['new'] == true){
     if(!selectedFeature) {
       addToExistingFeatureSet(highlightedFeatures, SitePointLayer, modPointFeature, geometry, false);
       if(typeof addPGPoint != 'undefined') addPGPoint(geometry);
@@ -1548,7 +1548,7 @@ addDrawnLineToSelection = function(geometry) {
       break;
     }}
   // a site is already selected so the Drawn/Specified state stays unaltered
-  if(highlightedFeatures[0].attributes.new == true){
+  if(highlightedFeatures[0].attributes['new'] == true){
     if(!selectedFeature) {
       addToExistingFeatureSet(highlightedFeatures, SitePathLayer, modPathFeature, geometry, true);
       return true;
@@ -1619,7 +1619,7 @@ addDrawnPolygonToSelection = function(geometry) {
       break;
     }}
   // a site is already selected so the Drawn/Specified state stays unaltered
-  if(highlightedFeatures[0].attributes.new == true){
+  if(highlightedFeatures[0].attributes['new'] == true){
     if(!selectedFeature) {
       addToExistingFeatureSet(highlightedFeatures, SiteAreaLayer, modAreaFeature, geometry, true);
       return true;
@@ -1799,7 +1799,7 @@ UndoSketchPoint = function(layer){
 RemoveNewSite = function(){
   // can only remove the site if highlighted,
   var highlighted = gethighlight();
-  if(highlighted.length == 0 || !highlighted[0].attributes.new) return;
+  if(highlighted.length == 0 || !highlighted[0].attributes['new']) return;
   if(confirm('".lang::get('LANG_ConfirmRemoveDrawnSite')."')){
     if(typeof hook_RemoveNewSite != 'undefined')
       hook_RemoveNewSite();
@@ -1830,9 +1830,9 @@ StartNewSite = function(){
   var highlighted = gethighlight();
   var found=false;
   // only confirm if have something drawn on map: ie ignore label
-  for(i=0; i<highlighted.length; i++) found = found || (highlighted[i].layer != SiteLabelLayer && highlighted[i].attributes.new==true)
+  for(i=0; i<highlighted.length; i++) found = found || (highlighted[i].layer != SiteLabelLayer && highlighted[i].attributes['new']==true)
   if(found && !confirm('".lang::get('LANG_ConfirmRemoveDrawnSite')."')) return false;
-  if(highlighted.length>0 && highlighted[0].attributes.new==true) removeDrawnGeom(highlighted[0].attributes.SiteNum); // remove label here
+  if(highlighted.length>0 && highlighted[0].attributes['new']==true) removeDrawnGeom(highlighted[0].attributes.SiteNum); // remove label here
   unhighlightAll();
   jQuery('#".$options['MainFieldID'].",#sample-location-id').val(''); // reset id field.
 ").
@@ -1935,7 +1935,7 @@ polygonDrawActivate = function(){
 "    modAreaFeature.activate();
     return true;
   }
-  if(highlighted[0].attributes.new == true){
+  if(highlighted[0].attributes['new'] == true){
     modAreaFeature.activate();
     for(var i=0; i<SiteAreaLayer.features.length; i++){
       if(SiteAreaLayer.features[i].attributes.highlighted == true){
@@ -1979,7 +1979,7 @@ lineDrawActivate = function(){
 "    modPathFeature.activate();
     return true;
   }
-  if(highlighted[0].attributes.new == true){
+  if(highlighted[0].attributes['new'] == true){
     modPathFeature.activate();
     for(var i=0; i<SitePathLayer.features.length; i++){
       if(SitePathLayer.features[i].attributes.highlighted == true){
@@ -2028,7 +2028,7 @@ pointDrawActivate = function(){
 "    modPointFeature.activate();
     return true;
   }
-  if(highlighted[0].attributes.new == true){
+  if(highlighted[0].attributes['new'] == true){
     modPointFeature.activate();
     for(var i=0; i<SitePointLayer.features.length; i++){
       if(SitePointLayer.features[i].attributes.highlighted == true){
@@ -2105,10 +2105,10 @@ onFeatureSelect = function(evt) {
 "  var willRemove = false;
   var allFeatures = SiteAreaLayer.features.concat(SitePathLayer.features,SitePointLayer.features);
   for(var i=0; i<allFeatures.length; i++)
-    willRemove = willRemove || (allFeatures[i].attributes.new==true);
+    willRemove = willRemove || (allFeatures[i].attributes['new']==true);
   if(willRemove && !confirm('".lang::get('LANG_ConfirmRemoveDrawnSite')."')) return false;
   var highlighted = gethighlight();
-  if(highlighted.length > 0 && highlighted[0].attributes.new)
+  if(highlighted.length > 0 && highlighted[0].attributes['new'])
     removeDrawnGeom(highlighted[0].attributes.SiteNum);
   else
     // Any highlighted existing features should be unhighlighted.
@@ -2145,14 +2145,14 @@ mapInitialisationHooks.push(function(mapdiv) {
 		modPointFeature.deactivate();
 		mapdiv.map.addControl(editControl);
 ".(isset($args['mousePosControl']) && $args['mousePosControl'] ? "		jQuery('.olControlEditingToolbar').append('<span id=\"mousePos\"></span>');
-		mousePos = new OpenLayers.Control.MousePosition({
+		var mousePosCtrl = new OpenLayers.Control.MousePosition({
 		  div: document.getElementById('mousePos'),
 		  prefix: 'LUREF:',
 		  displayProjection: new OpenLayers.Projection('EPSG:2169'),
 		  emptyString: '',
 		  numDigits: 0 
 		});
-		mapdiv.map.addControl(mousePos);
+		mapdiv.map.addControl(mousePosCtrl);
 " : "").
 "		editControl.activate();
 		if(SiteAreaLayer.map.editLayer){
@@ -2298,7 +2298,7 @@ jQuery('#location-name').change(function(){";
       if($args['locationMode']!='filtered' && isset($args['duplicateNameCheck']) && ($args['duplicateNameCheck']==true || $args['duplicateNameCheck']=='check' || $args['duplicateNameCheck']=='enforce'))
         data_entry_helper::$javascript .= "
   for(var i=0; i< SiteLabelLayer.features.length; i++){
-    if(SiteLabelLayer.features[i].attributes.new == false){
+    if(SiteLabelLayer.features[i].attributes['new'] == false){
       if(jQuery(this).val() == SiteLabelLayer.features[i].attributes.data.name){
         alert(\"".lang::get('LANG_DuplicateName')."\");
 ".($args['duplicateNameCheck']=='enforce' ? "		 jQuery(this).val('');\n" : "")."      }
@@ -2324,13 +2324,13 @@ mainFieldChange = function(resetName){
   var myVal = jQuery('#".$options['MainFieldID']."').val();
   // only confirm if have something drawn on map: ie ignore label
   for(i=0; i<highlighted.length; i++){
-    if(highlighted[i].layer != SiteLabelLayer && highlighted[i].attributes.new==true)
+    if(highlighted[i].layer != SiteLabelLayer && highlighted[i].attributes['new']==true)
       found=true;
   }
   if(found){
     if(!confirm('".lang::get('LANG_ConfirmRemoveDrawnSite')."')) return false;
   }
-  if(highlighted.length>0 && highlighted[0].attributes.new==true){
+  if(highlighted.length>0 && highlighted[0].attributes['new']==true){
     removeDrawnGeom(highlighted[0].attributes.SiteNum);
   }
   jQuery('#sample-location-id').val(myVal);
@@ -2687,17 +2687,17 @@ jQuery(\"#".$options['ChooseParentFieldID']."\").change(function(){
           'table'=>'location_attribute_value');
       $locAttrList = data_entry_helper::get_population_data($location_attr_list_args);
       if (isset($locAttrList['error'])) return $locAttrList['error'];
-      data_entry_helper::$javascript .="\nvar locations = [\n";
+      $locTextList = array();
       for($i=0, $j=0; $i< count($locList); $i++){
         while($j<count($locAttrList) && $locAttrList[$j]['location_id']<$locList[$i]['id']) $j++;
-        data_entry_helper::$javascript .=($i==0?'':',')."{id:".$locList[$i]['id'].", name:\"".$locList[$i]['name']."\", parent_id:\"".$locList[$i]['parent_id']."\", attrs: {";
+        $locAttrTextList = array();
         while($j<count($locAttrList) && $locAttrList[$j]['location_id']==$locList[$i]['id']){
-          data_entry_helper::$javascript .= '"'.$locAttrList[$j]['location_attribute_id'].'":"'.$locAttrList[$j]['raw_value'].'",';
+          $locAttrTextList[] = '"'.$locAttrList[$j]['location_attribute_id'].'":"'.$locAttrList[$j]['raw_value'].'"';
           $j++;
         }
-        data_entry_helper::$javascript .= "}}\n";
+        $locTextList[] = "{'id':".$locList[$i]['id'].", 'name':\"".$locList[$i]['name']."\", 'parent_id':\"".$locList[$i]['parent_id']."\", 'attrs': {".(implode(",",$locAttrTextList))."}}";
       }
-      data_entry_helper::$javascript .="];\n";
+      data_entry_helper::$javascript .="\nvar locations = [\n".(implode(",\n",$locTextList))."];\n";
       foreach($filterAttrs as $idx=>$filterAttr){
         $filterAttr=explode(':',$filterAttr);
         $attr = "";
@@ -3283,11 +3283,11 @@ hook_setSref = function(geom){ // geom is in map projection.
         if($filterAttr[0]=="Parent" || $filterAttr[0]=="Shape")
           data_entry_helper::$javascript .="    hook_setSref_".$idx."(geom);\n"; // map projection
       }
-      data_entry_helper::$javascript .="    $(this).unbind(event);\n  });\n};\nlocation_attrs = [";
+      $locAttrText = array();
       foreach($attrList as $filterAttr){
-        data_entry_helper::$javascript .="  {id:'".$filterAttr['id']."', shape:".($filterAttr['shape']?'true':'false')."},\n";
+        $locAttrText[] ="  {'id':'".$filterAttr['id']."', 'shape':".($filterAttr['shape']?'true':'false')."}";
       }
-      data_entry_helper::$javascript .="];";
+      data_entry_helper::$javascript .="    $(this).unbind(event);\n  });\n};\nlocation_attrs = [".(implode(",\n",$locAttrText))."];";
 
       if($includeCommune)
         data_entry_helper::$javascript .="jQuery('[name=locAttr\\:$communeAttr],[name^=locAttr\\:$communeAttr\\:]').attr('readonly','readonly');\n";

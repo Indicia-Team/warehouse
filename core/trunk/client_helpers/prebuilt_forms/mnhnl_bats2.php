@@ -205,6 +205,12 @@ $.validator.messages.integer = $.validator.format(\"".lang::get('validation_inte
     iform_mnhnl_addCancelButton($args['interface']);
     
     $r .= self::getSiteTypeJS(parent::$auth, $args);
+    data_entry_helper::$javascript .= "
+if($.browser.msie && $.browser.version < 9)
+  $('input[type=radio],[type=checkbox]').live('click', function(){
+    this.blur();
+    this.focus();
+});\n";
     // Move the date after the Institution
     $institutionAttrID=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Institution');
     if($institutionAttrID) {

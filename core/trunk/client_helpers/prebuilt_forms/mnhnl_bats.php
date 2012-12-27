@@ -386,6 +386,11 @@ $.validator.addMethod('fillgroup', function(value, element){
     iform_mnhnl_addCancelButton($args['interface']);
     $r .= self::getSiteTypeJS($auth, $args);
     data_entry_helper::$javascript .= "
+if($.browser.msie && $.browser.version < 9)
+  $('input[type=radio],[type=checkbox]').live('click', function(){
+    this.blur();
+    this.focus();
+  });
 var other = jQuery('[name=smpAttr\\:".$args['entranceDefectiveCommentAttrID']."],[name^=smpAttr\\:".$args['entranceDefectiveCommentAttrID']."\\:]');
 other.next().remove(); // remove break
 other.prev().remove(); // remove legend

@@ -153,7 +153,7 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
               "[location attributes]\r\n".
               "@lookUpListCtrl=radio_group\r\n".
               "@lookUpKey=meaning_id\r\n".
-              "@sep= \r\n".
+              "@sep=&#32;\r\n".
               "@tabNameFilter=Site\r\n".
               "@class=wide\r\n".
               "[location spatial reference]\r\n".
@@ -174,14 +174,14 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
               "[date]\r\n".
               "[recorder names]\r\n".
               "[*]\r\n".
-              "@sep= \r\n".
+              "@sep=&#32;\r\n".
               "@lookUpKey=meaning_id\r\n".
               "[sample comment]\r\n".
              "=Species=\r\n".
               "[species]\r\n". 
               "@view=detail\r\n".
               "@rowInclusionCheck=alwaysRemovable\r\n".
-              "@sep= \r\n".
+              "@sep=&#32;\r\n".
               "@lookUpKey=meaning_id\r\n".
               "[*]\r\n".
               "[lateJS]\r\n";
@@ -323,12 +323,7 @@ myTerms_change();
       'extraParams' => $extraparams
     ));    
     $r .= '<form>';    
-    if (isset($args['multiple_occurrence_mode']) && $args['multiple_occurrence_mode']=='either') {
-      $r .= '<input type="button" value="'.lang::get('LANG_Add_Sample_Single').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'new')).'\'">';
-      $r .= '<input type="button" value="'.lang::get('LANG_Add_Sample_Grid').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'new&gridmode')).'\'">';
-    } else {
-      $r .= '<input type="button" value="'.lang::get('LANG_Add_Sample').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'new')).'\'">';    
-    }
+    $r .= '<input type="button" value="'.lang::get('LANG_Add_Sample').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'new')).'\'">';
     $r .= "</form>
 <div style=\"display:none\" />
     <form id=\"form-delete-survey\" action=\"".iform_mnhnl_getReloadPath()."\" method=\"POST\">".parent::$auth['write']."
@@ -391,6 +386,11 @@ $.validator.addMethod('fillgroup', function(value, element){
     iform_mnhnl_addCancelButton($args['interface']);
     $r .= self::getSiteTypeJS($auth, $args);
     data_entry_helper::$javascript .= "
+if($.browser.msie && $.browser.version < 9)
+  $('input[type=radio],[type=checkbox]').live('click', function(){
+    this.blur();
+    this.focus();
+  });
 var other = jQuery('[name=smpAttr\\:".$args['entranceDefectiveCommentAttrID']."],[name^=smpAttr\\:".$args['entranceDefectiveCommentAttrID']."\\:]');
 other.next().remove(); // remove break
 other.prev().remove(); // remove legend
@@ -616,7 +616,7 @@ hook_set_defaults=function(){
               featureType: '".$parts[2]."',
               geometryName:'".$parts[3]."',
               featureNS: '".$parts[4]."',
-              srsName: '".$parts[5]."',
+              srsName: '".$parts[5]."', // map projection
               version: '1.1.0'                  
       		  ,propertyNames: [\"".$parts[6]."\"]
 });
@@ -632,7 +632,7 @@ fillCommune = function(a1){
   }
 }
 jQuery('[name=locAttr\\:$communeAttr],[name^=locAttr\\:$communeAttr\\:]').attr('readonly','readonly');
-hook_setSref = function(geom){
+hook_setSref = function(geom){ // map projection
   jQuery('[name=locAttr\\:$communeAttr],[name^=locAttr\\:$communeAttr\\:]').val('');
   var filter = new OpenLayers.Filter.Spatial({
   		type: OpenLayers.Filter.Spatial.CONTAINS ,
