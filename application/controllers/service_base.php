@@ -72,7 +72,7 @@ class Service_Base_Controller extends Controller {
    * to filter the response. A value of 0 indicates the warehouse.
    */
   protected $website_id = null;
-  
+
   /**
    * @var int Id of the indicia user ID calling the service. Obtained when performing read authentication and can be used
    * to filter the response. Null if not provided in the report call.
@@ -111,7 +111,7 @@ class Service_Base_Controller extends Controller {
           if ($id>0) {
             // normal state, the ID is positive, which means we are authenticating a remote website
             $website = ORM::factory('website', $id);
-            if ($website->id) 
+            if ($website->id)
               $password = $website->password;
           } else
             $password = kohana::config('indicia.private_key');
@@ -120,7 +120,7 @@ class Service_Base_Controller extends Controller {
             Kohana::log('info', "Authentication successful.");
             // cache website_password for subsequent use by controllers
             $this->website_password = $password;
-            $authentic=true;            
+            $authentic=true;
           }
           if ($authentic) {
             if ($id>0) {
@@ -137,7 +137,7 @@ class Service_Base_Controller extends Controller {
               if (!$this->user_is_core_admin) {
                 $this->user_websites = array();
                 $userWebsites = ORM::Factory('users_website')->where(array('user_id'=>$this->user_id, 'site_role_id is not'=>null, 'banned'=>'f'))->find_all();
-                foreach ($userWebsites as $userWebsite) 
+                foreach ($userWebsites as $userWebsite)
                   $this->user_websites[] = $userWebsite->website_id;
               }
             }
@@ -145,9 +145,9 @@ class Service_Base_Controller extends Controller {
             if(array_key_exists('reset_timeout', $array) && $array['reset_timeout']=='true') {
               Kohana::log('info', "Nonce timeout reset.");
               $this->cache->set($nonce, $id, $mode);
-            } 
+            }
           }
-        }        
+        }
       }
     } else {
       $auth = new Auth();
@@ -162,7 +162,7 @@ class Service_Base_Controller extends Controller {
       throw new ServiceError("unauthorised");
     };
   }
-  
+
   /**
    * Set the content type and then issue the response.
    */
@@ -182,13 +182,20 @@ class Service_Base_Controller extends Controller {
    */
   protected function handle_error($e)
   {
+    if($e->getMessage() == 'Unknown Exception: unauthorised') 
+      $statusCode = 403;
+    else
+      $statusCode = 500;
     $message=kohana::lang('general_errors.'.$e->getMessage());
-    $mode = $this->get_input_mode();
+    $mode = $this->get_output_mode();
+    if (kohana::config('indicia.http_status_responses')===true)
+      header(' ', true, $statusCode);
     if ($mode=='xml') {
       $view = new View("services/error");
       $view->message = $message;
       $view->render(true);
     } else {
+      header("Content-Type: application/json");
       $response = array(
         'error'=>$message
       );
@@ -197,7 +204,7 @@ class Service_Base_Controller extends Controller {
       } elseif (get_class($e)!='ServiceError') {
         $response['file']=$e->getFile();
         $response['line']=$e->getLine();
-        $response['trace']=array();        
+        $response['trace']=array();
       }
       $a = json_encode($response);
       if (array_key_exists('callback', $_GET))
@@ -211,13 +218,13 @@ class Service_Base_Controller extends Controller {
 
   /**
    * Retrieve the output mode for a RESTful request from the GET or POST data.
-   * Defaults to xml. Other options are json and csv, or a view loaded from the views folder.
+   * Defaults to json. Other options are xml and csv, or a view loaded from the views folder.
    */
   protected function get_output_mode() {
     if (isset($_REQUEST['mode']))
       return $_REQUEST['mode'];
     else
-      return 'xml';
+      return 'json';
   }
 
   /**
