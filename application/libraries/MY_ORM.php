@@ -267,6 +267,7 @@ class ORM extends ORM_Core {
     // the created_by_id field can be specified by web service calls if the caller knows which Indicia user
     // is making the post.
     $fields_to_copy=array_merge(array('created_by_id'), $this->unvalidatedFields);
+    $this->set_metadata();
     foreach ($fields_to_copy as $a)
     {
       if (array_key_exists($a, $array->as_array())) {
@@ -278,7 +279,6 @@ class ORM extends ORM_Core {
         $this->__set($a, $array[$a]);
       }
     }
-    $this->set_metadata();
     try {
       if (parent::validate($array, $save)) {
         return TRUE;
