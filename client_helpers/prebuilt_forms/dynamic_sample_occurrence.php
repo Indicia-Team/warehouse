@@ -284,6 +284,19 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           'group'=>'Species'
         ),
         array(
+          'name'=>'sub_species_column',
+          'caption'=>'Include sub-species in a separate column?',
+          'description'=>'If checked and doing grid based data entry letting the recorder add species they choose to '.
+            'the bottom of the grid, sub-species will be displayed in a separate column so the recorder picks the species '.
+            'first then the subspecies. The species checklist must be configured so that species are parents of the subspecies. '.
+            'This setting also forces the Cache Lookups option therefore it requires the Cache Builder module to be installed '.
+            'on the Indicia warehouse.',
+          'type'=>'boolean',
+          'default' => false,
+          'required' => false,
+          'group' => 'Species'
+        ),
+        array(
           'name' => 'species_include_both_names',
           'caption' => 'Include both names in species controls and added rows',
           'description' => 'When using a species grid with the ability to add new rows, the autocomplete control by default shows just the searched taxon name in the drop down. '.
@@ -831,7 +844,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         'language' => iform_lang_iso_639_2($user->lang), // used for termlists in attributes
         'cacheLookup' => $args['cache_lookup'],
         'speciesNameFilterMode' => self::getSpeciesNameFilterMode($args),
-        'userControlsTaxonFilter' => isset($args['user_controls_taxon_filter']) ? $args['user_controls_taxon_filter'] : false
+        'userControlsTaxonFilter' => isset($args['user_controls_taxon_filter']) ? $args['user_controls_taxon_filter'] : false,
+        'subSpeciesColumn' => $args['sub_species_column']
     ), $options);
     if ($groups=hostsite_get_user_field('taxon_groups')) {
       $species_ctrl_opts['usersPreferredGroups'] = unserialize($groups);
@@ -950,7 +964,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
 
     $fn = "function(item) { \n".
         "  var r;\n".
-        "  if (item.$colLanguage.toLowerCase()==='$valLatinLanguage') {\n".
+        "  if (item.$colLanguage!==null && item.$colLanguage.toLowerCase()==='$valLatinLanguage') {\n".
         "    r = '<em>'+item.$colTaxon+'</em>';\n".
         "  } else {\n".
         "    r = item.$colTaxon;\n".
