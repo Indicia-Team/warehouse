@@ -2063,6 +2063,12 @@ class data_entry_helper extends helper_base {
   * Set to an array of additional parameters such as filter criteria to pass to the service request used to load 
   * existing records into the grid when reloading a sample. Especially useful when there are more than one species checklist
   * on a single form, so that each grid can display the appropriate output.</li>
+  * <li>subSpeciesColumn</li>
+  * If true and doing grid based data entry with lookupListId set so allowing the recorder to add species they choose to 
+  * the bottom of the grid, subspecies will be displayed in a separate column so the recorder picks the species 
+  * first then the subspecies. The species checklist must be configured as a simple 2 level list so that species are 
+  * parents of the subspecies. For performance reasons, this option forces the cacheLookup option to be set to true therefore it 
+  * requires the cache_builder module to be running on the warehouse. Defaults to false.
   * </ul>
   */
   public static function species_checklist()
@@ -2147,6 +2153,9 @@ class data_entry_helper extends helper_base {
       if (is_array(self::$entity_to_load)) {
         $presenceValues = preg_grep("/^sc:[0-9]*:[0-9]*:present$/", array_keys(self::$entity_to_load));
       }
+      // if subspecies are stored, then need to load up the parent species info into the $taxonRows data
+      if ($options['subSpeciesColumn'])
+        self::load_parent_species($taxalist, $options);
       foreach ($taxonRows as $txIdx => $rowIds) {
         $ttlId = $rowIds['ttlId'];
         $loadedTxIdx = isset($rowIds['loadedTxIdx']) ? $rowIds['loadedTxIdx'] : -1;
@@ -2161,8 +2170,14 @@ class data_entry_helper extends helper_base {
         if ($taxonIdx >= count($taxalist))
           continue; // next taxon, as this one was not found in the list
         $taxon = $taxalist[$taxonIdx];
+        // If we are using the sub-species column then when the taxon has a parent (=species) this goes in the
+        // first column and we put the subsp in the second column in a moment.
+        if (isset($options['subSpeciesColumn']) && $options['subSpeciesColumn'] && !empty($taxon['parent'])) 
+          $firstColumnTaxon=$taxon['parent'];
+        else
+          $firstColumnTaxon=$taxon;
         // Get the cell content from the taxon_label template
-        $firstCell = self::mergeParamsIntoTemplate($taxon, 'taxon_label');
+        $firstCell = self::mergeParamsIntoTemplate($firstColumnTaxon, 'taxon_label');
         // If the taxon label template is PHP, evaluate it.
         if ($options['PHPtaxonLabel']) $firstCell = eval($firstCell);
         // Now create the table cell to contain this.
@@ -2173,6 +2188,7 @@ class data_entry_helper extends helper_base {
           $row .= '<td style="width: 1%"><a class="action-button remove-row">X</a></td>';
         $row .= str_replace(array('{content}','{colspan}','{tableId}','{idx}'), 
             array($firstCell,$colspan,$options['id'],$colIdx), $indicia_templates['taxon_label_cell']);
+        $row .= self::species_checklist_get_subsp_cell($taxon, $txIdx, $existing_record_id, $options);
         $hidden = ($options['rowInclusionCheck']=='checkbox' ? '' : ' style="display:none"');
         // AlwaysFixed mode means all rows in the default checklist are included as occurrences. Same for
         // AlwayeRemovable except that the rows can be removed.
@@ -2187,15 +2203,16 @@ class data_entry_helper extends helper_base {
         }
         $row .= "\n<td class=\"scPresenceCell\" headers=\"".$options['id']."-present-$colIdx\"$hidden>";
         if ($options['rowInclusionCheck']==='hasData')
-          $row .= "<input type=\"hidden\" name=\"sc:$txIdx:$existing_record_id:present\" value=\"".$taxon['id']."\"/>";
+          $row .= "<input type=\"hidden\" name=\"sc:$txIdx:$existing_record_id:present\" id=\"sc:$txIdx:$existing_record_id:present\" value=\"".$taxon['id']."\"/>";
         else
           // this includes a control to force out a 0 value when the checkbox is unchecked.
           $row .= "<input type=\"hidden\" class=\"scPresence\" name=\"sc:$txIdx:$existing_record_id:present\" value=\"0\"/>".
-              "<input type=\"checkbox\" class=\"scPresence\" name=\"sc:$txIdx:$existing_record_id:present\" value=\"".$taxon['id']."\" $checked />";
+            "<input type=\"checkbox\" class=\"scPresence\" name=\"sc:$txIdx:$existing_record_id:present\" id=\"sc:$txIdx:$existing_record_id:present\"value=\"".$taxon['id']."\" $checked />";
         $row .= "</td>";  
         $idx = 0;
         foreach ($occAttrControls as $attrId => $control) {
           $existing_value='';
+          $valId=false;
           if (!empty(data_entry_helper::$entity_to_load)) {
             // Search for the control in the data to load. It has a suffix containing the attr_value_id which we don't know, hence preg.
             $search = preg_grep("/^sc:$loadedTxIdx:$existing_record_id:occAttr:$attrId".'[:[0-9]*]?$/', array_keys(self::$entity_to_load));
@@ -2205,6 +2222,9 @@ class data_entry_helper extends helper_base {
               $loadedCtrlFieldName = array_pop($search);
               // Convert loaded field name to our output row index
               $ctrlId = str_replace("sc:$loadedTxIdx:", "sc:$txIdx:", $loadedCtrlFieldName);
+              // find out the loaded value record ID
+              preg_match("/occAttr:[0-9]+:(?P<valId>[0-9]+)$/", $loadedCtrlFieldName, $matches);
+              $valId = $matches['valId'];
             } else {
               // go for the default, which has no suffix.
               $loadedCtrlFieldName = str_replace('-idx-:', $loadedTxIdx.':'.$existing_record_id, $attributes[$attrId]['fieldname']);
@@ -2217,8 +2237,7 @@ class data_entry_helper extends helper_base {
             $ctrlId = str_replace('-idx-', $txIdx, $attributes[$attrId]['fieldname']);
             $loadedCtrlFieldName='-';
           }
-                   
-          
+
           if ($existing_value==='' && array_key_exists('default', $attributes[$attrId]))
             // this case happens when reloading an existing record
             $existing_value = $attributes[$attrId]['default'];
@@ -2235,14 +2254,12 @@ class data_entry_helper extends helper_base {
             } else {
               $oc = str_replace('value=""', 'value="'.$existing_value.'"', $oc);
             }
-            $error = self::check_errors("sc:$txIdx::occAttr:$attrId");
-            if (!$error)
-              // double check in case there is an error against the whole column
-              $error = self::check_errors("occAttr:$attrId");
-            if ($error) {
-              $oc = str_replace("class='", "class='ui-state-error ", $oc);
-              $oc .= $error;
-            }
+          }
+          $errorField = "occAttr:$attrId" . ($valId ? ":$valId" : '');
+          $error = self::check_errors($errorField);
+          if ($error) {
+            $oc = str_replace("class='", "class='ui-state-error ", $oc);
+            $oc .= $error;
           }
           $headers = $options['id']."-attr$attrId-$colIdx";
           $class = self::species_checklist_occ_attr_class($options, $idx, $attributes[$attrId]['untranslatedCaption']);
@@ -2335,6 +2352,75 @@ class data_entry_helper extends helper_base {
     }
   }
   
+  /**
+   * Private function to retrieve the subspecies selection cell for a species_checklist, 
+   * when the subspeciesColumn option is enabled.
+   */
+  private function species_checklist_get_subsp_cell($taxon, $txIdx, $existing_record_id, $options) {
+    if ($options['subSpeciesColumn']) {
+      //Disable the sub-species drop-down if the row delete button is not displayed.
+      //Also disable if we are preloading our data from a sample.
+      $isDisabled=($options['rowInclusionCheck']!='alwaysRemovable' || (!empty($existing_record_id) && !empty($taxon))) ?
+          'disabled="disabled"' : '';
+      //if the taxon has a parent then we need to setup both a child and parent
+      if (!empty($taxon['parent_id'])) {
+        $selectedChildId=$taxon['id'];
+        $selectedParentId=$taxon['parent']['id'];
+        $selectedParentName=$taxon['parent']['taxon'];
+      } else {
+        //If the taxon doesn't have a parent, then the taxon is considered to be the parent we set the to be no child selected by default.
+        //Children might still be present, we just aren't selecting one by default.
+        $selectedChildId=0;
+        $selectedParentId=$taxon['preferred_taxa_taxon_list_id'];
+        $selectedParentName=$taxon['preferred_taxon'];
+      }
+      self::$javascript .= "createSubSpeciesList(
+        '".parent::$base_url."index.php/services/data"."'
+        , $selectedParentId
+        , '$selectedParentName'
+        , '".$options['lookupListId']."'
+        , 'sc:$txIdx:$existing_record_id::occurrence:subspecies'
+        , {'auth_token' : '".$options['readAuth']['auth_token']."', 'nonce' : '".$options['readAuth']['nonce']."'}
+        , $selectedChildId
+      );\n";
+      return '<td class="ui-widget-content scSubSpeciesCell"><select class="scSubSpecies" ' .
+          "id=\"sc:$txIdx:$existing_record_id::occurrence:subspecies\" name=\"sc:$txIdx:$existing_record_id::occurrence:subspecies\" ".
+          "$isDisabled onchange=\"SetHtmlIdsOnSubspeciesChange(this.id);\">" .
+          '</select></td>';
+    }
+    // default - no cell returned
+    return '';
+  }
+  
+  /**
+   * If using a subspecies column then the list of taxa we have loaded will have a parent species
+   * that must be displayed in the grid. So load them up...
+   */
+  private function load_parent_species(&$taxalist, $options) {
+    // get a list of the species parent IDs
+    $ids = array();
+    foreach($taxalist as $taxon) {
+      if (!empty($taxon['parent_id']))    
+        $ids[]=$taxon['parent_id'];
+    }
+    if (!empty($ids)) {
+      // load each parent from the db in one go
+      $loadOpts = array(
+        'table'=>'cache_taxa_taxon_list',
+        'extraParams'=>$options['readAuth'] + array('id'=>$ids),      
+      );
+      $parents=data_entry_helper::get_population_data($loadOpts);
+      // assign the parents back into the relevent places in $taxalist. Not sure if there is a better
+      // way than a double loop?
+      foreach($parents as $parent) {
+        foreach($taxalist as &$taxon) {
+          if ($taxon['parent_id']===$parent['id'])
+            $taxon['parent']=$parent;
+        }
+      }
+    }
+  }
+  
   /** 
    * Builds an array to filter for the appropriate selection of species names, e.g. how it accepts searches for 
    * common names and synonyms.
@@ -2343,6 +2429,10 @@ class data_entry_helper extends helper_base {
     // $wheres is an array for building of the filter query
     $wheres = array();
     $r = array();
+    // If we are showing sub-species in a seperate column the then main species column should not include any sub-species.
+    // If we had a rank field for each taxon, then this would be replaced by a rank=species filter.
+    if ($options['subSpeciesColumn']) 
+      $wheres[] = "(parent_id is null)";
     if (isset($options['cacheLookup']) && $options['cacheLookup']) {
       $wheres[] = "(simplified='t' or simplified is null)";
       $colLanguage='language_iso';
@@ -2588,6 +2678,8 @@ $('#".$options['id']."-filter').click(function(evt) {
               lang::get('Filter the list of species you can search').'" width="16" height="16"/></button>';
         }
         $r .= self::get_species_checklist_col_header($options['id']."-species-$i", $speciesColTitle, $visibleColIdx, $options['colWidths'], $colspan);
+        if ($options['subSpeciesColumn'])
+          $r .= self::get_species_checklist_col_header($options['id']."-subspecies-$i", lang::get('Subspecies'), $visibleColIdx, $options['colWidths']);
         $hidden = ($options['rowInclusionCheck']=='checkbox' ? '' : ' style="display:none"');
         $r .= self::get_species_checklist_col_header($options['id']."-present-$i", lang::get('species_checklist.present'), 
             $visibleColIdx, $options['colWidths'], $hidden);
@@ -2719,8 +2811,11 @@ $('#".$options['id']."-filter').click(function(evt) {
         'taxonFilterField' => 'none',
         'cacheLookup' => false,
         'reloadExtraParams' => array(),
-        'useLoadedExistingRecords' => false
+        'useLoadedExistingRecords' => false,
+        'subSpeciesColumn' => false
     ), $options);
+    // subspecies columns require cached lookups to be enabled.
+    $options['cacheLookup'] = $options['cacheLookup'] || $options['subSpeciesColumn'];
     // If filtering for a language, then use any taxa of that language. Otherwise, just pick the preferred names.
     if (!isset($options['extraParams']['language_iso']))
       $options['extraParams']['preferred'] = 't';
@@ -2735,7 +2830,7 @@ $('#".$options['id']."-filter').click(function(evt) {
           'nonce' => $options['extraParams']['nonce']
       );
     }
-    $options['table']='taxa_taxon_list';
+    $options['table'] = $options['cacheLookup'] ? 'cache_taxa_taxon_list' : 'taxa_taxon_list';
     return $options;
   }
 
@@ -2799,8 +2894,13 @@ $('#".$options['id']."-filter').click(function(evt) {
     $r = '<table style="display: none"><tbody><tr class="scClonableRow" id="'.$options['id'].'-scClonableRow">';
     $colspan = isset($options['lookupListId']) || $options['rowInclusionCheck']=='alwaysRemovable' ? ' colspan="2"' : '';
     $r .= str_replace(array('{colspan}','{tableId}','{idx}'), array($colspan, $options['id'],0), $indicia_templates['taxon_label_cell']);
+    if ($options['subSpeciesColumn']) {
+      $r .= '<td class="ui-widget-content scSubSpeciesCell"><select class="scSubSpecies" style="display: none" ' .
+        'id="sc:-idx-::occurrence:subspecies" name="sc:-idx-::occurrence:subspecies" onchange="SetHtmlIdsOnSubspeciesChange(this.id);">';
+      $r .= '</select><span class="species-checklist-select-species">'.lang::get('select a species first').'</span></td>';
+    }
     $hidden = ($options['rowInclusionCheck']=='checkbox' ? '' : ' style="display:none"');
-    $r .= '<td class="scPresenceCell" headers="'.$options['id'].'-present-0"'.$hidden.'><input type="checkbox" class="scPresence" name="sc:-idx-::present" value="" /></td>';
+    $r .= '<td class="scPresenceCell" headers="'.$options['id'].'-present-0"'.$hidden.'><input type="checkbox" class="scPresence" name="sc:-idx-::present" id="sc:-idx-::present" value="" /></td>';
     $idx = 0;
     foreach ($occAttrControls as $attrId=>$oc) {
       $class = self::species_checklist_occ_attr_class($options, $idx, $attributes[$attrId]['caption']);
@@ -2832,7 +2932,7 @@ $('#".$options['id']."-filter').click(function(evt) {
     if ($options['occurrenceImages']) {
       // Add a link, but make it display none for now as we can't link images till we know what species we are linking to.
       $r .= '<td class="ui-widget-content scImageLinkCell"><a href="" class="add-image-link scImageLink" style="display: none" id="add-images:-idx-:">'.
-          lang::get('add images').'</a><span class="add-image-select-species">'.lang::get('select a species first').'</span></td>';
+          lang::get('add images').'</a><span class="species-checklist-select-species">'.lang::get('select a species first').'</span></td>';
     }
     $r .= "</tr></tbody></table>\n";
     return $r;
@@ -4107,6 +4207,7 @@ if (errors.length>0) {
         if (array_key_exists('nonce', $_POST))
           $postargs .= '&nonce='.$_POST['nonce'];
       }
+      
       // pass through the user_id if hostsite_get_user_field is implemented
       if (function_exists('hostsite_get_user_field')) 
         $postargs .= '&user_id='.hostsite_get_user_field('indicia_user_id');
