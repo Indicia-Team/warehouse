@@ -21,7 +21,7 @@
   the newly added rows.
  */
 
-var selectVal = null, cacheLookup=false;
+var selectVal = null, cacheLookup=false, mainSpeciesValue = null;
 
 /**
  * A keyboard event handler for the grid.
@@ -101,6 +101,9 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, useLookupC
   cacheLookup = typeof useLookupCache !== 'undefined' ? useLookupCache : false;
   // inner function to handle a selection of a taxon from the autocomplete
   var handleSelectedTaxon = function(event, data, value) {
+    //As soon as the user selects a species, we need to save its id as otherwise the information is lost. 
+    //This is used if the user selects a sub-species, but then selects the blank option again, we can then use the main species id
+    mainSpeciesValue = value;
     // on picking a result in the autocomplete, ensure we have a spare row
     // clear the event handlers
     $(event.target).unbind('result', handleSelectedTaxon);
@@ -126,13 +129,18 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, useLookupC
       });
       $(taxonCell).html(label);
     }
-    $(row).find('.add-image-select-species').hide();
+    $(row).find('.species-checklist-select-species').hide();
     $(row).find('.add-image-link').show();
     // auto-check the row
     var checkbox=$(row).find('.scPresenceCell input');
     checkbox.attr('checked', 'checked');
     // store the ttlId
     checkbox.val(data.id);
+    // Setup a subspecies picker if this option is enabled. -1 because gridCounter gives the count of rows, but we are using
+    // a zero indexed rownum to build unique ids.
+    var rowNum = indiciaData['gridCounter-'+gridId] - 1,
+      subSpeciesCellId = 'sc:' + rowNum + '::occurrence:subspecies';
+    createSubSpeciesList(url, data.preferred_taxa_taxon_list_id, data.preferred_name, lookupListId, subSpeciesCellId, readAuth, 0);
     // Finally, a blank row is added for the next record
     makeSpareRow(null, true);
     // Allow forms to hook into the event of a new row being added
@@ -238,7 +246,7 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, useLookupC
       continueOnBlur: true,
       simplify: cacheLookup, // uses simplified version of search string in cache to remove errors due to punctuation etc.
       parse: function(data) {
-        var results = [];
+        var results = [], done={};
         jQuery.each(data, function(i, item) {
           // common name can be supplied in a field called common, or default_common_name
           if (cacheLookup) {
@@ -246,12 +254,16 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, useLookupC
           } else {
             item.searchterm = item.taxon;
           }
-          results[results.length] =
-          {
-            'data' : item,
-            'result' : item.searchterm,
-            'value' : item.id
-          };
+          // note we track the distinct ttl_id and display term, so we don't output duplicates
+          if (!done.hasOwnProperty(item.id + '_' + item.display)) {
+            results[results.length] =
+            {
+              'data' : item,
+              'result' : item.searchterm,
+              'value' : item.id
+            };
+            done[item.id + '_' + item.display]=true;
+          }
         });
         return results;
       },
@@ -394,4 +406,69 @@ function ConvertControlsToPopup(controls, label, icon) {
     }
   });
 
+}
+
+RegExp.escape= function(s) {
+    return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
+};
+
+function createSubSpeciesList(url, selectedItemPrefId, selectedItemPrefName, lookupListId, subSpeciesCtrlId, readAuth, selectedChild) {
+  var subSpeciesData={
+    'mode': 'json',
+    'nonce': readAuth.nonce,
+    'auth_token': readAuth.auth_token,
+    'parent_id': selectedItemPrefId,
+    'taxon_list_id': lookupListId,
+    'name_type': 'L',
+    'simplified': 'f'
+  }, ctrl=$("#"+subSpeciesCtrlId.replace(/:/g,'\\:'));
+  $.getJSON(url+'/cache_taxon_searchterm', subSpeciesData, 
+    function(data) {
+      //clear the sub-species cell ready for new data
+      ctrl.empty();
+      var optionsCount = 0, epithet, nameRegex=new RegExp('^'+RegExp.escape(selectedItemPrefName));
+      //Work our way through the sub-species data returned from data services
+      jQuery.each(data, function(i, item) {
+        epithet = item.preferred_taxon.replace(nameRegex, '');
+        if (selectedChild==item.taxa_taxon_list_id) {
+          //If we find the sub-species we want to be selected by default then we set the 'selected' attribute on html the option tag
+          ctrl.append($('<option selected="selected"></option>').val(item.taxa_taxon_list_id).html(epithet));
+        } else {
+          //If we don't want this sub-species to be selected by default then we don't set the 'selected' attribute on html the option tag
+          ctrl.append($("<option></option>").val(item.taxa_taxon_list_id).html(epithet));          
+        }
+      });
+      //If we don't find any sub-species then just display n/a
+      if (data.length===0) {
+        ctrl.after("<span>N/A</span>");
+        ctrl.hide();
+      } else {
+        //The selected sub-species might be the first (blank) option if there are sub-species present but
+        //we don't know yet which one the user wants.
+        //This would occur if the user manually fills in the species and the parent has sub-species
+        if (selectedChild==0)
+          ctrl.prepend("<option value='' selected='selected'></option>");
+        ctrl.show();
+      }
+      
+    }
+  );
+}
+
+function SetHtmlIdsOnSubspeciesChange(subSpeciesId) {
+  //We can work out the grid row number we are working with by stripping the sub-species id.
+  var gridRowId = subSpeciesId.match(/\d+\.?\d*/g);
+  presentCellId = 'sc:' + gridRowId + '::present';
+  //We need to escape certain characters in the html id so we can use it with jQuery.
+  presentCellSelector = presentCellId.replace(/:/g,'\\:');
+  //If we don't have a taxon id for the parent species saved, then collect it from the html
+  if(!mainSpeciesValue)
+    mainSpeciesValue = $("#"+presentCellSelector).val();
+  subSpecieSelectorId = subSpeciesId.replace(/:/g,'\\:')
+  subSpeciesValue=($("#"+subSpecieSelectorId).val());
+  //If the user has selected the blank sub-species row, then we use the parent species
+  if (subSpeciesValue=="")
+    $("#"+presentCellSelector).val(mainSpeciesValue);
+  if (subSpeciesValue)
+    $("#"+presentCellSelector).val(subSpeciesValue);
 }
