@@ -3564,16 +3564,52 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   }
 
   /**
-   * Issue a post request to get the population data required for a control. Depends on the
-   * options' table and extraParams values what is requested. This is now cacheable.
-   * NB that this function only uses the 'table', 'report' and 'extraParams' of $options. $options 
-   * supports the following additional settings: 
-   * nocache - if set to true then caching is skipped.
-   * sharing - set to verification, reporting, peer_review, moderation or data_flow to request
-   * data sharing with other websites for the task.
-   * When generating the cache for this data we need to use the table and
-   * any extra params, excluding the read_auth and the nonce. The cache should be
-   * used by all accesses to the DB.   
+   * Issue a post request to get the population data required for a control either from
+   * direct access to a data entity (table) or via a report query. The response will be cached
+   * locally unless the caching option is set to false.
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>table</b><br/>
+   * Singular table name used when loading from a database entity.
+   * </li>
+   * <li><b>view</b><br/>
+   * Optional. Use to specify which database view to load for an entity (e.g. list, details, gv or cache).
+   * Defaults to list.
+   * </li>
+   * <li><b>report</b><br/>
+   * Path to the report file to use when loading data from a report, e.g. "library/occurrences/explore_list", 
+   * exc;uding the .xml extension.
+   * </li>
+   * <li><b>orderby</b><br/>
+   * Optional. For a non-default sort order, provide the field name to sort by. Can be comma separated
+   * to sort by several fields in descending order of precedence.
+   * </li>
+   * <li><b>sortdir</b><br/>
+   * Optional. Specify ASC or DESC to define ascending or descending sort order respectively. Can 
+   * be comma separated if several sort fields are specified in the orderby parameter.
+   * </li>
+   * <li><b>extraParams</b><br/>
+   * Array of extra URL parameters to send with the web service request. Should include key value 
+   * pairs for the field filters (for table data) or report parameters (for the report data) as well
+   * as the read authorisation tokens. Can also contain a parameter for:
+   * orderby - for a non-default sort order, provide the field name to sort by. Can be comma separated
+   * to sort by several fields in descending order of precedence.
+   * sortdir - specify ASC or DESC to define ascending or descending sort order respectively. Can 
+   * be comma separated if several sort fields are specified in the orderby parameter.
+   * limit - number of records to return.
+   * offset - number of records to offset by into the dataset, useful when paginating through the 
+   * records.
+   * </li>
+   * <li><b>nocache</b><br/>
+   * Optional, if set to true then the results will always be loaded from the warehouse not
+   * from the local cache.
+   * </li>
+   * <li><b>sharing</b><br/>
+   * Optional. Set to verification, reporting, peer_review, moderation or data_flow to request
+   * data sharing with other websites for the task. Further information is given in the link below.
+   * </li>
+   * </ul>
+   * @link https://indicia-docs.readthedocs.org/en/latest/developing/web-services/data-services-entity-list.html  
+   * @link https://indicia-docs.readthedocs.org/en/latest/administrating/warehouse/website-agreements.html
    */
   public static function get_population_data($options) {
     if (isset($options['report']))
