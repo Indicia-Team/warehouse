@@ -46,7 +46,7 @@ function setAsBoundaryFeature(feature) {
 jQuery(document).ready(function() {
 
   mapInitialisationHooks.push(function(mapdiv) {
-    
+    // on submit of the form, store the boundary geom in the boundary form field
     jQuery('form.cmxform').submit(function() {
       $.each(mapdiv.map.editLayer.features, function(idx, feature) {
         if (feature.attributes.type=="boundary") {
@@ -56,15 +56,23 @@ jQuery(document).ready(function() {
 
     }); 
 
-<?php if ($boundary_geom) : ?>
+<?php 
+// if we have an existing boundary to load, create a feature and add it to the layer.
+if ($boundary_geom) : 
+?>
     var parser = new OpenLayers.Format.WKT();
     var feature = parser.read('<?php echo $boundary_geom; ?>');
     mapdiv.map.editLayer.addFeatures([feature]);
     setAsBoundaryFeature(feature);
     mapdiv.map.editLayer.redraw();
-<?php endif; ?>
+<?php 
+endif; 
+// When a boundary is added, remove existing boundary features then set the boundary
+// feature's properties
+?>
     mapdiv.map.editLayer.events.on({'featureadded': function(evt) {
-      if (evt.feature.state===OpenLayers.State.INSERT) {
+      // a clickpoint or clickpoint ghost will have the type attribute set to clickpoint or ghost
+      if (typeof evt.feature.attributes.type==="undefined") {
         var toRemove = [];
         $.each(mapdiv.map.editLayer.features, function(idx, feature) {
           if (feature.attributes.type=="boundary") {
