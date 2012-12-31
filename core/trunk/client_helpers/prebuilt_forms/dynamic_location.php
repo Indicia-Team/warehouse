@@ -219,22 +219,30 @@ class iform_dynamic_location extends iform_dynamic {
       iform_map_get_map_options($args, $auth['read']),
       $options
     );
-    if (isset(data_entry_helper::$entity_to_load['location:geom'])) {
-      // The geom field is WKB representing the boundary, if defined, else the centroid
-      if (isset(data_entry_helper::$entity_to_load['location:boundary_geom'])) {
-        // The boundary_geom field is WKT
-        $options['initialFeatureWkt'] = data_entry_helper::$entity_to_load['location:boundary_geom'];
-      } else {
-        // The centroid_geom field is WKT
-        $options['initialFeatureWkt'] = data_entry_helper::$entity_to_load['location:centroid_geom'];
+    // If a drawing tool is on the map we can support boundaries.
+    $boundaries = false;
+    foreach ($options['standardControls'] as $ctrl) {
+      if (substr($ctrl, 0, 4)==='draw') {
+        $boundaries = true;
+        break;
       }
     }
+    if (isset(data_entry_helper::$entity_to_load['location:centroid_geom'])) 
+      $options['initialFeatureWkt'] = data_entry_helper::$entity_to_load['location:centroid_geom'];
+    if ($boundaries && isset(data_entry_helper::$entity_to_load['location:boundary_geom'])) 
+      $options['initialBoundaryWkt'] = data_entry_helper::$entity_to_load['location:boundary_geom'];
     if ($args['interface']!=='one_page')
       $options['tabDiv'] = $tabalias;
     $olOptions = iform_map_get_ol_options($args);
     if (!isset($options['standardControls']))
       $options['standardControls']=array('layerSwitcher','panZoom');
-    return data_entry_helper::map_panel($options, $olOptions);
+    $r = '';
+    $r .= data_entry_helper::map_panel($options, $olOptions);
+    // Add a geometry hidden field for boundary support
+    if ($boundaries) 
+      $r .= '<input type="hidden" name="location:boundary_geom" id="imp-boundary-geom" value="' .
+          data_entry_helper::$entity_to_load['location:boundary_geom'] . '"/>';
+    return $r;
   }
 
   protected static function get_control_locationname($auth, $args, $tabalias, $options) {
@@ -343,7 +351,6 @@ class iform_dynamic_location extends iform_dynamic {
           )
         )
       );
-
     return $s;
   }
 
