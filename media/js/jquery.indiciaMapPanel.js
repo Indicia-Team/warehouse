@@ -193,14 +193,15 @@ mapGeoreferenceHooks = [];
       this.fillOpacity = opts.fillOpacity;
       this.hoverFillColor = opts.hoverFillColor;
       this.hoverFillOpacity = opts.hoverFillOpacity;
+      this.hoverStrokeColor = opts.hoverStrokeColor;
+      this.hoverStrokeOpacity = opts.hoverStrokeOpacity;
+      this.hoverStrokeWidth = opts.hoverStrokeWidth;
       this.strokeColor = opts.strokeColor;
       this.strokeOpacity = opts.strokeOpacity;
       this.strokeWidth = opts.strokeWidth;
       this.strokeLinecap = opts.strokeLinecap;
       this.strokeDashstyle = opts.strokeDashstyle;
-      this.hoverStrokeColor = opts.hoverStrokeColor;
-      this.hoverStrokeOpacity = opts.hoverStrokeOpacity;
-      this.hoverStrokeWidth = opts.hoverStrokeWidth;
+      
       this.pointRadius = opts.pointRadius;
       this.hoverPointRadius = opts.hoverPointRadius;
       this.hoverPointUnit = opts.hoverPointUnit;
@@ -214,7 +215,7 @@ mapGeoreferenceHooks = [];
           this.strokeColor = opts.strokeColorSearch;
           break;
         case "ghost":
-        case "location":
+        case "boundary":
           this.fillColor = opts.fillColorGhost;
           this.fillOpacity= opts.fillOpacityGhost;
           this.strokeColor = opts.strokeColorGhost;
@@ -1084,9 +1085,9 @@ mapGeoreferenceHooks = [];
      */
     function recordPolygon(evt) {
       // replace old features?
-      var oldFeatures=[], map=this.map;
+      var oldFeatures=[], map=this.map, separateBoundary=$('#imp-boundary-geom').length>0;
       $.each(evt.feature.layer.features, function(idx, feature) {
-        if (feature!==evt.feature) {
+        if (feature!==evt.feature && !separateBoundary || feature.attributes.type==="boundary") {
           oldFeatures.push(feature);
         }
       });
@@ -1098,12 +1099,20 @@ mapGeoreferenceHooks = [];
           return;
         }
       }
-      $('#imp-geom').val(evt.feature.geometry.toString());
-      pointToSref(map.div, evt.feature.geometry.getCentroid(), _getSystem(), function(data) {
-        if (typeof data.sref !== "undefined") {
-          $('#'+map.div.settings.srefId).val(data.sref);
-        }
-      });
+      evt.feature.attributes.type="boundary";
+      if (separateBoundary) {
+        $('#imp-boundary-geom').val(evt.feature.geometry.toString());
+        evt.feature.style = new style('boundary');
+        map.editLayer.redraw();
+      } else {
+        $('#imp-geom').val(evt.feature.geometry.toString());
+        // as we are not separating the boundary geom, the geom's sref goes in the centroid
+        pointToSref(map.div, evt.feature.geometry.getCentroid(), _getSystem(), function(data) {
+          if (typeof data.sref !== "undefined") {
+            $('#'+map.div.settings.srefId).val(data.sref);
+          }
+        });
+      }
     }
     
     /**
@@ -1188,7 +1197,7 @@ mapGeoreferenceHooks = [];
         this.settings.helpDiv='map-help';
       }
       
-      this.settings.boundaryStyle=new style();
+      this.settings.featureStyle=new style();
 
       // Sizes the div. Width sized by outer div.
       $(this).css('height', this.settings.height);
@@ -1264,9 +1273,7 @@ mapGeoreferenceHooks = [];
       div.map.addLayers(this.settings.layers);
 
       // Centre the map, using cookie if remembering position, otherwise default setting.
-      var zoom = null;
-      var center = {"lat":null, "lon":null};
-      var baseLayerName = null;
+      var zoom = null, center = {"lat":null, "lon":null}, baseLayerName = null, added;
       if (typeof $.cookie !== "undefined" && div.settings.rememberPos!==false) {
         zoom = $.cookie('mapzoom');
         center.lon = $.cookie('maplon');
@@ -1325,21 +1332,28 @@ mapGeoreferenceHooks = [];
         // Add an editable layer to the map
         var editLayer = new OpenLayers.Layer.Vector(
             this.settings.editLayerName,
-            {style: this.settings.boundaryStyle, 'sphericalMercator': true, displayInLayerSwitcher: this.settings.editLayerInSwitcher}
+            {style: this.settings.featureStyle, 'sphericalMercator': true, displayInLayerSwitcher: this.settings.editLayerInSwitcher}
         );
         div.map.editLayer = editLayer;
         div.map.addLayer(div.map.editLayer);
 
-        if (this.settings.initialFeatureWkt === null ) {
+        if (this.settings.initialFeatureWkt === null && $('#'+this.settings.geomId).length>0) {
           // if no initial feature specified, but there is a populated imp-geom hidden input,
           // use the value from the hidden geom
           this.settings.initialFeatureWkt = $('#'+this.settings.geomId).val();
         }
+        if (this.settings.initialBoundaryWkt === null && $('#'+this.settings.boundaryGeomId).length>0) {
+          // same again for the boundary
+          added=this.settings.initialBoundaryWkt = $('#'+this.settings.boundaryGeomId).val();
+          added.style = new style('boundary');
+        }
 
         // Draw the feature to be loaded on startup, if present
-        if (this.settings.initialFeatureWkt)
-        {
+        if (this.settings.initialFeatureWkt) {
           _showWktFeature(this, this.settings.initialFeatureWkt, div.map.editLayer, null, false, "undefined", true, true);
+        }
+        if (this.settings.initialBoundaryWkt) {
+          _showWktFeature(this, this.settings.initialBoundaryWkt, div.map.editLayer, null, false, "boundary", true, true);
         }
         
         if (div.settings.clickForSpatialRef) {
@@ -1515,7 +1529,11 @@ mapGeoreferenceHooks = [];
         });
       }
       if (div.settings.editLayer && div.settings.allowPolygonRecording) {
-        div.map.editLayer.events.on({'afterfeaturemodified': recordPolygon});     
+        div.map.editLayer.events.on({'afterfeaturemodified': function(evt) {
+          if ($('#imp-boundary-geom').length>0) {
+            $('#imp-boundary-geom').val(evt.feature.geometry.toString());
+          }
+        }});     
       }
       var ctrl, hint, pushDrawCtrl = function(c) {
         toolbarControls.push(c);
@@ -1689,6 +1707,7 @@ $.fn.indiciaMapPanel.defaults = {
     searchLayerName: 'Search layer',
     searchLayerInSwitcher: false,
     initialFeatureWkt: null,
+    initialBoundaryWkt: null,
     defaultSystem: 'OSGB',
     latLongFormat: 'D',
     srefId: 'imp-sref',
@@ -1696,6 +1715,7 @@ $.fn.indiciaMapPanel.defaults = {
     srefLongId: 'imp-sref-long',
     srefSystemId: 'imp-sref-system',
     geomId: 'imp-geom',
+    boundaryGeomId: 'imp-boundary-geom',
     clickedSrefPrecisionMin: '', // depends on sref system, but for OSGB this would be 2,4,6,8,10 etc = length of grid reference
     clickedSrefPrecisionMax: '8',
     msgGeorefSelectPlace: 'Select from the following places that were found matching your search, then click on the map to specify the exact location:',
@@ -1711,13 +1731,13 @@ $.fn.indiciaMapPanel.defaults = {
     //options for OpenLayers. Feature. Vector. style
     fillColor: '#ee9900',
     fillOpacity: 0.4,
-    hoverFillColor: 'white',
-    hoverFillOpacity: 0.8,
     strokeColor: '#ee9900',
     strokeOpacity: 1,
     strokeWidth: 1,
     strokeLinecap: 'round',
     strokeDashstyle: 'solid',
+    hoverFillColor: 'white',
+    hoverFillOpacity: 0.8,
     hoverStrokeColor: 'red',
     hoverStrokeOpacity: 1,
     hoverStrokeWidth: 0.2,

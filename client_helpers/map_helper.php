@@ -165,6 +165,12 @@ class map_helper extends helper_base {
   * Default is layerSwitcher, panZoom and graticule.
   * </li>
   * <li><b>initialFeatureWkt</b><br/>
+  * Well known text for a geometry to load onto the map at startup, normally corresponding to the geometry of the record
+  * being edited.
+  * </li>
+  * <li><b>initialBoundaryWkt</b><br/>
+  * Well known text for a geometry to load onto the map at startup, normally corresponding to the geometry of the boundary
+  * being edited (e.g. a site boundary).
   * </li>
   * <li><b>defaultSystem</b><br/>
   * </li>
