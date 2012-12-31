@@ -36,55 +36,7 @@ if (isset($_POST))
 ?>
 <script type="text/javascript">
 
-function setAsBoundaryFeature(feature) {
-  feature.attributes = {type:"boundary"};
-  feature.style.fillOpacity = 0;
-  feature.style.strokeColor = "#0000ff";
-  feature.style.strokeWidth = 3;
-}
-
-jQuery(document).ready(function() {
-
-  mapInitialisationHooks.push(function(mapdiv) {
-    // on submit of the form, store the boundary geom in the boundary form field
-    jQuery('form.cmxform').submit(function() {
-      $.each(mapdiv.map.editLayer.features, function(idx, feature) {
-        if (feature.attributes.type=="boundary") {
-          $('#boundary_geom').val(feature.geometry.toString());
-        }
-      });
-
-    }); 
-
-<?php 
-// if we have an existing boundary to load, create a feature and add it to the layer.
-if ($boundary_geom) : 
-?>
-    var parser = new OpenLayers.Format.WKT();
-    var feature = parser.read('<?php echo $boundary_geom; ?>');
-    mapdiv.map.editLayer.addFeatures([feature]);
-    setAsBoundaryFeature(feature);
-    mapdiv.map.editLayer.redraw();
-<?php 
-endif; 
-// When a boundary is added, remove existing boundary features then set the boundary
-// feature's properties
-?>
-    mapdiv.map.editLayer.events.on({'featureadded': function(evt) {
-      // a clickpoint or clickpoint ghost will have the type attribute set to clickpoint or ghost
-      if (typeof evt.feature.attributes.type==="undefined") {
-        var toRemove = [];
-        $.each(mapdiv.map.editLayer.features, function(idx, feature) {
-          if (feature.attributes.type=="boundary") {
-            toRemove.push(feature);
-          }
-        });
-        mapdiv.map.editLayer.removeFeatures(toRemove, {});
-        setAsBoundaryFeature(evt.feature);
-        mapdiv.map.editLayer.redraw();
-      }
-    }});
-  });
+jQuery(document).ready(function() { 
   
   if ($('#location\\:public').attr('checked')) {
     $('#websites').hide();
@@ -162,7 +114,7 @@ This page allows you to specify the details of a location.
   )); 
   
   ?>
-  <input type="hidden" name="location:boundary_geom" id="boundary_geom" value="<?php echo $boundary_geom; ?>"/>
+  <input type="hidden" name="location:boundary_geom" id="imp-boundary-geom" value="<?php echo $boundary_geom; ?>"/>
   <p class="instruct">Zoom the map in by double-clicking then single click on the location's centre to set the
   spatial reference. The more you zoom in, the more accurate the reference will be.</p>
   <?php
@@ -179,6 +131,7 @@ This page allows you to specify the details of a location.
     'height'=>400,
     'initialFeatureWkt' => $centroid_geom,
     'standardControls' => ($disabled_input==='YES') ? array('layerSwitcher','panZoomBar'): array('layerSwitcher','panZoomBar','drawPolygon','drawLine','modifyFeature'),
+    'allowPolygonRecording' => true
   ));
   echo data_entry_helper::autocomplete(array(
     'label' => 'Parent location',
