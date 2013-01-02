@@ -340,16 +340,16 @@ mapGeoreferenceHooks = [];
         if (info.metres > div.settings.helpToPickPrecisionMax) {
           var bounds = div.map.editLayer.features[0].geometry.getBounds();
           bounds = _extendBounds(bounds, div.settings.maxZoomBuffer);
-          if (div.map.getZoomForExtent(bounds) > div.settings.maxZoom) {
-            // if showing something small, don't zoom in too far
-            div.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
-          }
-          else {
-            // Set the default view to show something triple the size of the grid square
-            div.map.zoomToExtent(bounds);
+            if (div.map.getZoomForExtent(bounds) > div.settings.maxZoom) {
+              // if showing something small, don't zoom in too far
+              div.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
+            }
+            else {
+              // Set the default view to show something triple the size of the grid square
+              div.map.zoomToExtent(bounds);
+            }
           }
         }
-      }
       return helptext.join(' ');
     }
 
@@ -385,7 +385,7 @@ mapGeoreferenceHooks = [];
       // data holds the sref in _getSystem format, wkt in indiciaProjection, optional mapwkt in mapProjection
       var feature, parts, helptext=[], helpitem;
       // Update the spatial reference control
-      $('#'+opts.srefId).val(data.sref);
+        $('#'+opts.srefId).val(data.sref);
       // If the sref is in two parts, then we might need to split it across 2 input fields for lat and long
       if (data.sref.indexOf(' ')!==-1) {
         parts=data.sref.split(' ');
@@ -425,15 +425,14 @@ mapGeoreferenceHooks = [];
           $('#' + div.settings.helpDiv).html(helptext.join(' '));
         }
         $('#' + div.settings.helpDiv).show();
-      } else if (div.settings.click_zoom) {
+     } else if (div.settings.click_zoom) {
         // Optional zoom in after clicking when helpDiv not in use.
         var bounds = div.map.editLayer.features[0].geometry.getBounds();
         bounds = _extendBounds(bounds, div.settings.maxZoomBuffer);
         if (div.map.getZoomForExtent(bounds) > div.settings.maxZoom) {
           // if showing something small, don't zoom in too far
           div.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
-        }
-        else {
+        } else {
           // Set the default view to show something triple the size of the grid square
           div.map.zoomToExtent(bounds);
         }
@@ -725,7 +724,7 @@ mapGeoreferenceHooks = [];
                 radius=feature.attributes[getRadius];
               } else {
                 radius = getRadius(feature);
-              }
+            }
             }
             if (getRadius!==null) {
               // getRadius might be a string (fieldname) or a context function
@@ -926,6 +925,10 @@ mapGeoreferenceHooks = [];
                 });
               } else if (div.settings.clickableLayersOutputMode==='div') {
                 $('#'+div.settings.clickableLayersOutputDiv).html(div.settings.clickableLayersOutputFn(features, div));
+                //allows a custom function to be run when a user clicks on a map
+              } else if (div.settings.clickableLayersOutputMode==='customFunction') {
+                // features is already the list of clicked on objects, div.setting's.customClickFn must be a function passed to the map as a param.
+                div.settings.customClickFn(features);
               } else {
                 for (var i=0; i<div.map.popups.length; i++) {
                   div.map.removePopup(div.map.popups[i]);
@@ -1532,7 +1535,7 @@ mapGeoreferenceHooks = [];
         div.map.editLayer.events.on({'afterfeaturemodified': function(evt) {
           if ($('#imp-boundary-geom').length>0) {
             $('#imp-boundary-geom').val(evt.feature.geometry.toString());
-          }
+      }
         }});     
       }
       var ctrl, hint, pushDrawCtrl = function(c) {
@@ -1681,7 +1684,7 @@ $.fn.indiciaMapPanel.defaults = {
     indiciaWFSLayers : {},
     layers: [],
     clickableLayers: [],
-    clickableLayersOutputMode: 'popup', // options are popup or div
+    clickableLayersOutputMode: 'popup', // options are popup, div or customFunction
     clickableLayersOutputFn: format_selected_features,
     clickableLayersOutputDiv: '',
     clickableLayersOutputColumns: [],
