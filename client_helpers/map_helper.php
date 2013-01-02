@@ -101,16 +101,28 @@ class map_helper extends helper_base {
   * can be added to data_entry_helper::$onload_javascript before calling the map_panel method and they can be the same layers as those referred to in 
   * the layers parameter.
   * </li>
-  * <li><b>clickableLayersOutputDiv</b><br/>
-  * If this is set to the name of a div, then clicking on a clickable layer item outputs the details into this div rather than a popup.
+  * <li><b>clickableLayersOutputMode</b><br/>
+  * Set to popup to display the information retrieved from a click operation on a popup window, set to div to
+  * display the information in a specified HTML div, or to customFunction to call a JavaScript function
+  * after the click operation allowing custom functionality such as navigation to another page. Default 
+  * is popup.
   * </li>
+  * <li><b>clickableLayersOutputDiv</b><br/>
+  * ID of the HTML div to output information retrieved from a click operation into, if clickableLayersOutputMode
+  * is set to div.
+  * </li>
+  * <li><b>customClickFn</b>
+  * Set to the name of a global custom JavaScript function which will handle the event of clicking on the map if 
+  * you want custom functionality. Provide this when clickableLayersOutputMode=customFunction. The function will 
+  * receive a single parameter containing an array of features.
+  * </li>
+  * <li><b>clickableLayersOutputFn</b><br/>
+  * Allows overridding of the appearance of the output when clicking on the map for WMS or vector layers. Should be set to a 
+  * JavaScript function name which takes a list of features and the map div as parameters, then returns the HTML to output.</li>
   * <li><b>clickableLayersOutputColumns</b><br/>
   * An associated array of column field names with column titles as the values which defines the columns that are output when clicking on a data point. 
   * If ommitted, then all columns are output using their original field names.
   * </li>
-  * <li><b>clickableLayersOutputFn</b><br/>
-  * Allows overridding of the appearance of the output when clicking on the map for WMS or vector layers. Should be set to a JavaScript function name 
-  * which takes a list of features and the map div as parameters, then returns the HTML to output.</li>
   * <li><b>locationLayerName</b><br/>
   * If using a location select or autocomplete control, then set this to the name of a feature type exposed on GeoServer which contains the id, name and boundary
   * geometry of each location that can be selected. Then when the user clicks on the map the system is able to automatically populate the locations control with the 
@@ -335,6 +347,12 @@ class map_helper extends helper_base {
       if (isset($options['clickableLayersOutputFn'])) {
         $json_insert .= ',"clickableLayersOutputFn":'.$options['clickableLayersOutputFn'];
         unset($options['clickableLayersOutputFn']);
+      }
+      
+      // Same for 'customClickFn' 
+      if (isset($options['customClickFn'])) {
+        $json_insert .= ',"customClickFn":'.$options['customClickFn'];
+        unset($options['customClickFn']);
       }
       
       // make a copy of the options to pass into JavaScript, with a few entries removed.

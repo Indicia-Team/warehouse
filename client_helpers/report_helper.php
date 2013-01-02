@@ -133,6 +133,7 @@ class report_helper extends helper_base {
   * used as a PHP grid, note that the current web page will reload when you page or sort the grid, with the
   * same $_GET parameters but no $_POST information. If you need 2 grids on one page, then you must define a different
   * id in the options for each grid.</p>
+  * <p>For summary reports, the user can optionally setup clicking functionality so that another report is called when the user clicks on the grid.</p>
   * <p>The grid operation will be handled by AJAX calls when possible to avoid reloading the web page.</p>
   *
   * @param array $options Options array with the following possibilities:<ul>
@@ -291,6 +292,17 @@ class report_helper extends helper_base {
   * <li><b>callback</b>
   * Set to the name of a JavaScript function that should already exist which will be called each time the grid reloads (e.g. when paginating or sorting).
   * </li>
+  * <li><b>linkToReportPath</b>
+  * Allows drill down into reports. Holds the URL of the report that is called when the user clicks on 
+  * a report row. When this is not set, the report click functionality is disabled.
+  * </li>
+  * <li><b>linkToReportParam</b>
+  * Holds the input parameter to be passed to the report that is called when the user clicks on a report row. 
+  * The input parameter's full unique identifier is required, which consists of the report group name (defaults
+  * to report) followed by a hyphen, then the report parameter name defined in the report XML file, for example
+  * "report-location_id" works for the location_id report parameter for a report in the report group "report".
+  * When this is not set, the report click functionality is disabled.
+  * </li>
   * </ul>
   * @todo Allow additional params to filter by table column or report parameters
   * @todo Display a filter form for direct mode
@@ -416,7 +428,7 @@ class report_helper extends helper_base {
             // the url is being rewritten.
             'currentUrl' => $currentUrl['path']
         ));
-        // set a unique id for the row if we know the identifying field.
+        // set a unique id for the row if we know the identifying field.       
         $rowId = isset($options['rowId']) ? ' id="row'.$row[$options['rowId']].'"' : '';
         if ($rowIdx % $options['galleryColCount']==0) {
           $classes=array();
@@ -429,7 +441,7 @@ class report_helper extends helper_base {
           $r .= "<tr $class$rowId$rowTitle>";
           $rowInProgress=true;
         }
-        // first decode any json data
+        // decode any data in columns that are defined as containing JSON
         foreach ($options['columns'] as $field) {
           if (isset($field['json']) && $field['json'] && isset($row[$field['fieldname']])) {
             $row = array_merge(json_decode($row[$field['fieldname']], true), $row);
@@ -502,6 +514,22 @@ jQuery('#updateform-".$updateformID."').ajaxForm({
         }
         $altRowClass = empty($altRowClass) ? $options['altRowClass'] : '';
         $outputCount++;
+      }
+      // implement links from the report grid rows if configuration options set
+      if(isset($options['linkToReportPath']) && isset($options['linkToReportParam'])) {
+        $path=$options['linkToReportPath'];
+        // ensure we can add url params to make a value url
+        $path .= (strpos($path, '?')===false) ? '?' : '&';
+        $param=$options['linkToReportParam'];
+        if (isset($options['rowId'])) {
+        //if the user clicks on a summary table row then open the report specified by the user.
+            self::$javascript .= "
+              $('#".$options['id']." tbody').click(function(evt) {
+                var tr=$(evt.target).parents('tr')[0], rowId=tr.id.substr(3);
+                window.location='$path$param=' + rowId;
+              });
+            ";
+        }
       }
       if ($rowInProgress)
         $r .= '</tr>';
@@ -776,6 +804,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * 'xLabels' => 'month'<br/>
   * The latter is obviuosly slightly more efficient as only a single report is run. Pie charts will always revert to a
   * single series.</p>
+  * <p>For summary reports, the user can optionally setup clicking functionality so that another report is called when the user clicks on the chart.</p>
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>mode</b><br/>
@@ -836,6 +865,17 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * verification, moderation, peer_review, data_flow, website (this website only) or me (my data only).</li>
   * <li><b>UserId</b>
   * If sharing=me, then this must contain the Indicia user ID of the user to return data for.
+  * </li>
+  * <li><b>linkToReportPath</b>
+  * Allows drill down into reports. Holds the URL of the report that is called when the user clicks on 
+  * a chart data item. When this is not set, the report click functionality is disabled.
+  * </li>
+  * <li><b>linkToReportParam</b>
+  * Holds the input parameter to be passed to the report that is called when the user clicks on a chart data item. 
+  * The input parameter's full unique identifier is required, which consists of the report group name (defaults
+  * to report) followed by a hyphen, then the report parameter name defined in the report XML file, for example
+  * "report-location_id" works for the location_id report parameter for a report in the report group "report".
+  * When this is not set, the report click functionality is disabled.
   * </li>
   * </ul>
   * @todo look at the ReportEngine to check it is not prone to SQL injection (eg. offset, limit).
@@ -913,6 +953,10 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       $lastRequestSource = $options['dataSource'];
       $values=array();
       $xLabelsForSeries=array();
+      //The options to pass to the report when the user clicks on a summary are held in an array whose keys match
+      //the number of the bar column (this is different to a pie chart). We use this variable to return the data 
+      //from the correct key in the array.
+      $trackerForBarGraph = 1;
       foreach ($data as $row) {
         if (isset($options['xValues']))
           // 2 dimensional data
@@ -927,9 +971,25 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
               $xLabelsForSeries[] = $row[$options['xLabels']];
           }
         }
-      }
+        //once again we only include summary report clicking functionality if user has setup the appropriate options
+        if(isset($options['linkToReportPath']) && isset($options['linkToReportParam'])) {
+          if ($options['reportGroupOption']=="region"||$options['reportGroupOption']=="taxon_group"||$options['reportGroupOption']=="species") {
+            //we save the same data to two different keys in the array because when we access the array using jplot data[0] as 
+            //the key later on data[0] is different depending on whether we are using a pie or bar chart. So if we have 
+            //saved the data twice, then when we retrieve the data, we don't need to worry which type data[0] is at the time.
+            $clickReportParamData[$row['name']] = $row['id'];
+            $clickReportParamData[$trackerForBarGraph] = $row['id'];
+          }
+          //only if the user is using the month or year summary option do we get our data from the "name" key in the $row array
+          if ($options['reportGroupOption']=="month"||$options['reportGroupOption']=="year") {
+            $clickReportParamData[$row['name']] = $row['name'];
+            $clickReportParamData[$trackerForBarGraph] = $row['name'];
+          }
+          $trackerForBarGraph++;
+        }
+      }  
       // each series will occupy an entry in $seriesData
-      $seriesData[] = '['.implode(',', $values).']';
+      $seriesData[] = '['.implode(',', $values).']'; 
     }
     if (isset($options['xLabels']) && $options['chartType']!='pie') {
       // make a renderer to output x axis labels
@@ -942,6 +1002,22 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
 
     // Finally, dump out the Javascript with our constructed parameters
     self::$javascript .= "$.jqplot('".$options['id']."',  [".implode(',', $seriesData)."], \n{".implode(",\n", $opts)."});\n";
+     //once again we only include summary report clicking functionality if user has setup the appropriate options
+    if(isset($options['linkToReportPath']) && isset($options['linkToReportParam'])) {
+      //get the URL to the report to call
+      $path=$options['linkToReportPath'];
+      //grab the user specified input parameter for the report that is called when the user clicks on a summary.
+      $param=$options['linkToReportParam'];
+      $json = json_encode($clickReportParamData);
+      //open the report, note that data[0] varies depending on whether we are using a pie or bar. But we have
+      //saved the data to the array twice already to handle this
+      self::$javascript .= "$('#chartdiv').bind('jqplotDataClick', 
+      function(ev, seriesIndex, pointIndex, data) {
+        var reportData = $json;";
+      // if path already contains query params, add new params using &, else use ?
+      $path .= (strpos($path, '?')===false) ? '?' : '&';
+      self::$javascript .= "window.location='$path$param=' + reportData[data[0]];})";
+    }
     $r = '<div class="'.$options['class'].'" style="width:'.$options['width'].'; ">';
     if (isset($options['title']))
       $r .= '<div class="'.$options['headerClass'].'">'.$options['title'].'</div>';
@@ -1253,6 +1329,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       'extraParams'=>''
     ), $options);
     $options = self::get_report_grid_options($options);
+    // keep track of the columns in the report output which we need to draw the layer
+    $colsToInclude=array();
     if (empty($options['geoserverLayer'])) {
       if ($options['ajax']) 
         // just load the report structure, as Ajax will load content later
@@ -1298,7 +1376,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
           'strokeWidth'=>"\${getstrokewidth}",
           'fillOpacity'=>0.8,
           'strokeOpacity'=>0.8,
-          'pointRadius'=>2,
+          'pointRadius'=>5,
           'graphicZIndex'=>0
         ), $settings);
         if ($options['displaySymbol']!=='vector')
@@ -1313,13 +1391,17 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         if (isset($options['valueOutput'])) {
           foreach($options['valueOutput'] as $type => $outputdef) {
             $value = $outputdef['valueField'];
-            if (preg_match('/{(?P<name>.+)}/', $outputdef['minValue'], $matches))
+            // we need this value in the output
+            $colsToInclude[$value]='';
+            if (preg_match('/{(?P<name>.+)}/', $outputdef['minValue'], $matches)) {
               $minvalue = 'feature.data.'.$matches['name'];
-            else
+              $colsToInclude[$matches['name']]='';
+            } else
               $minvalue = $outputdef['minValue'];
-            if (preg_match('/{(?P<name>.+)}/', $outputdef['maxValue'], $matches))
+            if (preg_match('/{(?P<name>.+)}/', $outputdef['maxValue'], $matches)) {
               $maxvalue = 'feature.data.'.$matches['name'];
-            else
+              $colsToInclude[$matches['name']]='';
+            } else
               $maxvalue = $outputdef['maxValue'];
             $from = $outputdef['from'];
             $to = $outputdef['to'];
@@ -1358,16 +1440,17 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         $selsettings = json_encode($selsettings);
         $addFeaturesJs = "";        
         // No need to pass the default type of vector display, so use empty obj to keep JavaScript size down
-        $opts = $options['displaySymbol']='vector' ? '{}' : json_encode(array('type'=>$options['displaySymbol']));
+        $opts = $options['displaySymbol']==='vector' ? '{}' : json_encode(array('type'=>$options['displaySymbol']));
         $rowId = isset($options['rowId']) ? ' id="row'.$row[$options['rowId']].'"' : '';
         if ($options['clickableLayersOutputMode']<>'popup' && $options['clickableLayersOutputMode']<>'div') {
           // If we don't need record data for every row for feature clicks, then only include necessary columns to minimise JS
-          $colsToInclude=array('occurrence_id'=>'',$wktCol=>'');
+          $colsToInclude['occurrence_id']='';
+          $colsToInclude[$wktCol]='';
           foreach ($response['columns'] as $name=>$def) {
             if (isset($def['feature_style']))
               $colsToInclude[$name] = '';
           }
-        }        
+        }
         if (!empty($styleFns)) 
           $styleFns = ", {context: {\n    $styleFns\n  }}";
         if ($options['ajax'])
@@ -1378,17 +1461,24 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
             "});\n";
         else {
           $geoms = array();
-          foreach ($records as $record) {
-            $record[$wktCol]=preg_replace('/\.(\d+)/', '', $record[$wktCol]);
-            // rather than output every geom separately, do a list of distinct geoms to minify the JS
-            if (!$geomIdx = array_search('"'.$record[$wktCol].'"', $geoms)) {          
-              $geoms[] = '"'.$record[$wktCol].'"';
-              $geomIdx = count($geoms)-1;
+          foreach ($records as $record) { 
+            if (!empty($record[$wktCol])) {
+              //grab the locationId so it can be added to the feature data. This is used for 
+              //calling the report when clicking on Summary Report maps.
+              $locationId = $record['id'];
+              $record[$wktCol]=preg_replace('/\.(\d+)/', '', $record[$wktCol]);
+              // rather than output every geom separately, do a list of distinct geoms to minify the JS
+              if (!$geomIdx = array_search('"'.$record[$wktCol].'"', $geoms)) {          
+                $geoms[] = '"'.$record[$wktCol].'"';
+                $geomIdx = count($geoms)-1;
+              }
+              $record[$wktCol] = $geomIdx;
+              if (!empty($colsToInclude)) {
+                $colsToInclude[$wktCol]='';
+                $record = array_intersect_key($record, $colsToInclude); 
+              }
+              $addFeaturesJs.= "div.addPt(features, ".json_encode($record).", '$wktCol', $opts".(empty($rowId) ? '' : ", '".$record[$options['rowId']]."'").", $locationId);\n";
             }
-            $record[$wktCol] = $geomIdx;
-            if (isset($colsToInclude))
-              $record = array_intersect_key($record, $colsToInclude); 
-            $addFeaturesJs.= "div.addPt(features, ".json_encode($record).", '$wktCol', $opts".(empty($rowId) ? '' : ", '".$record[$options['rowId']]."'").");\n";
           }
           self::$javascript .= 'indiciaData.geoms=['.implode(',',$geoms)."];\n";
         }
@@ -1417,7 +1507,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
           $filter, $style},
       {singleTile: true, isBaseLayer: false, sphericalMercator: true});\n";
       }
-
+      
       report_helper::$javascript.= "
 mapSettingsHooks.push(function(opts) {
   opts.reportGroup = '".$options['reportGroup']."';
@@ -1425,8 +1515,10 @@ mapSettingsHooks.push(function(opts) {
     opts.layers.push(indiciaData.reportlayer);\n";
       if ($options['clickable'])
         report_helper::$javascript .= "    opts.clickableLayers.push(indiciaData.reportlayer);\n";
-
-      report_helper::$javascript .= "}\n  opts.clickableLayersOutputMode='".$options['clickableLayersOutputMode']."';\n";
+      report_helper::$javascript .= "  }\n";
+      if (!empty($options["customClickFn"]))
+        report_helper::$javascript .= "  opts.customClickFn=".$options['customClickFn'].";\n";
+      report_helper::$javascript .= "  opts.clickableLayersOutputMode='".$options['clickableLayersOutputMode']."';\n";
       if ($options['clickableLayersOutputDiv'])
         report_helper::$javascript .= "  opts.clickableLayersOutputDiv='".$options['clickableLayersOutputDiv']."';\n";
       if (isset($options['clickableLayersOutputColumns']))
@@ -1472,7 +1564,7 @@ mapSettingsHooks.push(function(opts) {
    * @return object If linkOnly is set in the options, returns the link string, otherwise returns the response as an array.
    */
   public static function get_report_data($options, $extra='') {
-    $query = array();    
+    $query = array();
     if (!isset($options['mode'])) $options['mode']='report';
     if (!isset($options['format'])) $options['format']='json';
     if ($options['mode']=='report') {
@@ -1509,9 +1601,13 @@ mapSettingsHooks.push(function(opts) {
     if (!empty($query))
       $request .= "&query=".urlencode(json_encode($query));
     if (isset($options['extraParams'])) {
-      foreach ($options['extraParams'] as $key=>$value)
+      foreach ($options['extraParams'] as $key=>$value) {
+        // allow URL parameters to override the provided params
+        if (isset($_REQUEST[$options['reportGroup'] . '-' . $key]))
+          $value = $_REQUEST[$options['reportGroup'] . '-' . $key];
         // Must urlencode the keys and parameters, as things like spaces cause curl to hang.
         $request .= '&'.urlencode($key).'='.urlencode($value);
+      }
     }
     // Pass through the type of data sharing
     if (isset($options['sharing']))
@@ -1536,7 +1632,7 @@ mapSettingsHooks.push(function(opts) {
       }
       // no need to proxy the request, as coming from server-side
       if (!isset($response) || $response===false)
-        $response = self::http_post(parent::$base_url.$request, null);
+      $response = self::http_post(parent::$base_url.$request, null);
       $decoded = json_decode($response['output'], true);
       if (!is_array($decoded))
         return array('error'=>print_r($response, true));
@@ -1545,8 +1641,8 @@ mapSettingsHooks.push(function(opts) {
           self::_cacheResponse($cacheFile, $response, $cacheOpts);
         }
         return $decoded;
-      }
     }
+  }
   }
 
   /**
@@ -2224,14 +2320,15 @@ if (typeof mapSettingsHooks!=='undefined') {
    * Inserts into the page javascript a function for loading features onto the map as a result of report output.
    */
   private static function addFeaturesLoadingJs($addFeaturesJs, $defsettings='',
-    $selsettings='{"strokeColor":"#ff0000","fillColor":"#ff0000","strokeWidth":2}', $styleFns='', $zoomToExtent=true) {
-    report_helper::$javascript.= "
+      $selsettings='{"strokeColor":"#ff0000","fillColor":"#ff0000","strokeWidth":2}', $styleFns='', $zoomToExtent=true) {
+    if (!empty($addFeaturesJs)) {
+      report_helper::$javascript.= "
   if (typeof OpenLayers !== \"undefined\") {
     var defaultStyle = new OpenLayers.Style($defsettings$styleFns);
     var selectStyle = new OpenLayers.Style($selsettings$styleFns);
     var styleMap = new OpenLayers.StyleMap({'default' : defaultStyle, 'select' : selectStyle});
     if (typeof indiciaData.reportlayer==='undefined') {
-      indiciaData.reportlayer = new OpenLayers.Layer.Vector('Report output', {styleMap: styleMap, rendererOptions: {zIndexing: true}});
+    indiciaData.reportlayer = new OpenLayers.Layer.Vector('Report output', {styleMap: styleMap, rendererOptions: {zIndexing: true}});
     }";
     // If there are some special styles to apply, but the layer exists already, apply the styling
     if ($styleFns!=='') {
@@ -2250,6 +2347,7 @@ if (typeof mapSettingsHooks!=='undefined') {
         self::$javascript .= "      div.map.addLayer(indiciaData.reportlayer);
     });
   }\n";
+    }
   }
 
  /**
