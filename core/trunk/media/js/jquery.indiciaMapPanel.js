@@ -176,7 +176,7 @@ mapGeoreferenceHooks = [];
           div.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
         }
         else {
-          // Set the default view to show something triple the size of the grid square
+          // Set the default view to show something a bit larger than the size of the grid square
           div.map.zoomToExtent(bounds);
         }
       }
@@ -292,7 +292,7 @@ mapGeoreferenceHooks = [];
                   var feature = parser.read(wkt);
                   geomwkt = feature.geometry.transform(div.indiciaProjection, div.map.projection).toString();
                 }
-                _showWktFeature(div, geomwkt, div.map.editLayer, null, true, 'location');
+                _showWktFeature(div, geomwkt, div.map.editLayer, null, true, 'clickPoint');
               
                 if (typeof indiciaData.searchUpdatesSref !== "undefined" && indiciaData.searchUpdatesSref) {
                   // The location search box must fill in the sample sref box
@@ -385,7 +385,7 @@ mapGeoreferenceHooks = [];
       // data holds the sref in _getSystem format, wkt in indiciaProjection, optional mapwkt in mapProjection
       var feature, parts, helptext=[], helpitem;
       // Update the spatial reference control
-        $('#'+opts.srefId).val(data.sref);
+      $('#'+opts.srefId).val(data.sref).change();
       // If the sref is in two parts, then we might need to split it across 2 input fields for lat and long
       if (data.sref.indexOf(' ')!==-1) {
         parts=data.sref.split(' ');
