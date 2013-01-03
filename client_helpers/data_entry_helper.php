@@ -149,6 +149,9 @@ class data_entry_helper extends helper_base {
   * <li><b>simplify</b><br/>
   * Set to true to simplify the search term by removing punctuation and spaces. Use when the field 
   * being searched against is also simplified.</li>
+  * <li><b>warnIfNoMatch</b>
+  * Should the autocomplete control warn the user if they leave the control whilst searching
+  * and then nothing is matched? Default true.
   * </ul>
   *
   * @return string HTML to insert into the page for the autocomplete control.
@@ -177,8 +180,10 @@ class data_entry_helper extends helper_base {
           array_key_exists('defaultCaption', $options) ? $options['defaultCaption'] : ''),
       'max' => array_key_exists('numValues', $options) ? ', max : '.$options['numValues'] : '',
       'formatFunction' => 'function(item) { return item.{captionField}; }',
-      'simplify' => (isset($options['simplify']) && $options['simplify']) ? 'true' : 'false'
+      'simplify' => (isset($options['simplify']) && $options['simplify']) ? 'true' : 'false',
+      'warnIfNoMatch' => true
     ), $options);
+    $options['warnIfNoMatch'] = $options['warnIfNoMatch'] ? 'true' : 'false';
     self::add_resource('autocomplete');
     // Escape the id for jQuery selectors
     $escaped_id=self::jq_esc($options['id']);
@@ -1142,6 +1147,8 @@ class data_entry_helper extends helper_base {
         'allowCreate'=>false,
         'searchUpdatesSref'=>false
     ), $options);
+    // Disable warnings for no matches if the user is allowed to input a vague unmatched location name.
+    $options['warnIfNoMatch']=!$options['useLocationName'];
     $r = self::autocomplete($options);
     // put a hidden input in the form to indicate that the location value should be 
     // copied to the location_name field if not linked to a location id.
@@ -1896,7 +1903,7 @@ class data_entry_helper extends helper_base {
    * A version of the autocomplete control preconfigured for species lookups.
    * @param type $options Array of configuration options with the following possible entries.
    * <ul>
-   * <li><b>cache_lookup</b>
+   * <li><b>cacheLookup</b>
    * Defaults to false. Set to true to lookup species against cache_taxon_searchterms rather than detail_taxa_taxon_lists.
    * </li>
    * <li><b>speciesNameFilterMode</b><br/>
@@ -1908,6 +1915,9 @@ class data_entry_helper extends helper_base {
    * <li><b>extraParams</b>
    * Should contain the read authorisation array and taxon_list_id to filter against. 
    * </li>
+   * <li><b>warnIfNoMatch</b>
+   * Should the autocomplete control warn the user if they leave the control whilst searching
+   * and then nothing is matched? Default true.
    * @return string Html for the species autocomplete control.
    */   
   public function species_autocomplete($options) {

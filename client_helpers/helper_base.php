@@ -124,6 +124,7 @@ $indicia_templates = array(
           {sParams}
         },
         simplify: {simplify},
+        warnIfNoMatch: {warnIfNoMatch},
         parse: function(data)
         {
           // Clear the current selected key as the user has changed the search text

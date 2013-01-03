@@ -217,11 +217,13 @@ class submission_builder extends helper_config {
       $loc['location:centroid_geom']=$array['sample:geom'];
     $submission = self::build_submission($loc, array('model'=>'location',
         'subModels'=>array('locations_website'=>array('fk'=>'location_id'))));
-    $request = parent::$base_url."index.php/services/data/location";
+    $request = parent::$base_url."index.php/services/data/save";
     $postargs = 'submission='.urlencode(json_encode($submission));
     // Setting persist_auth allows the write tokens to be re-used
     $postargs .= '&persist_auth=true&auth_token='.$array['auth_token'];
     $postargs .= '&nonce='.$array['nonce'];
+    if (function_exists('hostsite_get_user_field')) 
+      $postargs .= '&user_id='.hostsite_get_user_field('indicia_user_id');
     $response = data_entry_helper::http_post($request, $postargs);
     // The response should be in JSON if it worked
     if (isset($response['output'])) {
