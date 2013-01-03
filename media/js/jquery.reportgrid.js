@@ -672,6 +672,7 @@ function simple_tooltip(target_items, name){
           } else {
             div.settings.extraParams[fieldname] = $(e.target).val();
           }
+          div.settings.offset=0;
           load(div, true);
           if (div.settings.linkFeatures && typeof indiciaData.reportlayer!=="undefined") {
             mapRecords(div);
