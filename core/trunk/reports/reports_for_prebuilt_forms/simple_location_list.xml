@@ -1,6 +1,6 @@
 <report
     title="Simple Location List"
-    description=": Used by the Dynamic Location Form to retrieve the locations associated with a survey and user."
+    description="Used by the Dynamic Location Form to retrieve the locations associated with a survey and user."
 >
   <query>
   SELECT l.id,

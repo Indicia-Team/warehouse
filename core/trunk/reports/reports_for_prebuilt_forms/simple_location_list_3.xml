@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="Simple Location List 2" description="Alternative grid report used by the Dynamic Location Form to retrieve the locations associated with a survey and user.">
+      <query>
+      SELECT #columns#
+      FROM locations l
+      LEFT JOIN cache_termlists_terms lt on lt.id=l.location_type_id
+      LEFT JOIN (
+        index_locations_samples ils        
+        JOIN cache_occurrences co on co.sample_id=ils.sample_id
+      ) on ils.location_id=l.id
+      JOIN locations_websites lw on lw.location_id = l.id and lw.deleted = false
+      #joins#
+      WHERE l.deleted=false
+      AND lw.website_id = '#website_id#'  
+      AND l.created_by_id=#iUserID#
+      </query>
+      <order_bys>
+        <order_by>l.name ASC</order_by>
+      </order_bys>
+      <params>
+        <param name='website_id' display='Website: ' description='Select the website to return data for?' datatype='lookup'
+            query='SELECT id, title as caption FROM websites' />
+        <param name='iUserID' display='Indicia User ID' description='Something has gone wrong as you are logged in to the system but do not have an ID' datatype='int' />
+      </params>
+      <columns>
+        <column name="id" visible="false" sql="l.id" unique="true" in_count="true" />
+        <column name="name" display="Site Name" sql="l.name" datatype="text" />
+        <column name="code" display="Site Code" sql="l.code" />
+        <column name="occurrences" display="No. of Records" sql="COUNT(DISTINCT co.id)" aggregate="true" />
+        <column name="taxa" display="No. of Taxa" sql="COUNT(DISTINCT co.taxon_meaning_id)" aggregate="true" />
+        <column name="groups" display="No. of Taxon Groups" sql="COUNT(DISTINCT co.taxon_group_id)" aggregate="true" />
+      </columns>
+</report>
