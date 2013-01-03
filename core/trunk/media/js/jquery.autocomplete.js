@@ -358,7 +358,7 @@ $.Autocompleter = function(input, options) {
         selectCurrent();
       }
     } else {
-      if (!hasFocus) {
+      if (!hasFocus && options.warnIfNoMatch) {
         $input.addClass('error');
         $input.effect("shake", { times:2, distance:3 }, 150);
       }
@@ -444,6 +444,7 @@ $.Autocompleter.defaults = {
   cacheLength: 10,
   max: 100,
   mustMatch: false,
+  warnIfNoMatch: true,
   extraParams: {},
   selectFirst: true,
   formatItem: function(row) { return row[0]; },
