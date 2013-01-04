@@ -2321,8 +2321,8 @@ if (typeof mapSettingsHooks!=='undefined') {
    */
   private static function addFeaturesLoadingJs($addFeaturesJs, $defsettings='',
       $selsettings='{"strokeColor":"#ff0000","fillColor":"#ff0000","strokeWidth":2}', $styleFns='', $zoomToExtent=true) {
-    if (!empty($addFeaturesJs)) {
-      report_helper::$javascript.= "
+    // Note that we still need the Js to add the layer even if using AJAX (when $addFeaturesJs will be empty)
+    report_helper::$javascript.= "
   if (typeof OpenLayers !== \"undefined\") {
     var defaultStyle = new OpenLayers.Style($defsettings$styleFns);
     var selectStyle = new OpenLayers.Style($selsettings$styleFns);
@@ -2347,7 +2347,6 @@ if (typeof mapSettingsHooks!=='undefined') {
         self::$javascript .= "      div.map.addLayer(indiciaData.reportlayer);
     });
   }\n";
-    }
   }
 
  /**
