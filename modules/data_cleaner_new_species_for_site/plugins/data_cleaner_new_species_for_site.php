@@ -37,11 +37,14 @@ function data_cleaner_new_species_for_site_data_cleaner_rules() {
                 and vrsurvey.value=cast(co.survey_id as character varying) and vrsurvey.deleted=false
             join verification_rules vr on vr.id=vrsurvey.verification_rule_id and vr.test_type='NewSpeciesForSite' and vr.deleted=false
             join samples s on s.id=co.sample_id and s.deleted=false
+            left join samples sp on sp.id=s.parent_id and sp.deleted=false
             left join (cache_occurrences coprev 
               join samples sprev on sprev.deleted=false and sprev.id=coprev.sample_id 
+              left join samples sprevp on sprevp.id=sprev.parent_id and sprevp.deleted=false
             ) on coprev.taxon_meaning_id=co.taxon_meaning_id 
                 and coprev.id<>co.id 
-                and sprev.location_id=s.location_id
+                and coalesce(sprev.location_id, sprevp.location_id)=coalesce(s.location_id, sp.location_id)
+                and coalesce(sprev.location_id, sprevp.location_id) is not null
                 and coprev.record_status='V'
             -- Is there any taxon filter in place?
             left join verification_rule_data filteringtaxa on filteringtaxa.verification_rule_id=vr.id and filteringtaxa.header_name='Taxa' and filteringtaxa.deleted=false
