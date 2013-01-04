@@ -303,6 +303,11 @@ class report_helper extends helper_base {
   * "report-location_id" works for the location_id report parameter for a report in the report group "report".
   * When this is not set, the report click functionality is disabled.
   * </li>
+  * <li><b>ajax</b>
+  * If true, then the first page of records is loaded via an AJAX call after the initial page load, otherwise
+  * they are loaded using PHP during page build. This means the grid load will be delayed till after the 
+  * rest of the page, speeding up the load time of the rest of the page. Default false.
+  * </li>
   * </ul>
   * @todo Allow additional params to filter by table column or report parameters
   * @todo Display a filter form for direct mode
@@ -314,6 +319,8 @@ class report_helper extends helper_base {
     $sortAndPageUrlParams = self::get_report_grid_sort_page_url_params($options);
     $options = self::get_report_grid_options($options);
     $extras = self::get_report_sorting_paging_params($options, $sortAndPageUrlParams);
+    if ($options['ajax'])
+      $options['extraParams']['limit']=0;
     self::request_report($response, $options, $currentParamValues, true, $extras);
     if (isset($response['error'])) return $response['error'];
     $r = self::params_form_if_required($response, $options, $currentParamValues);
@@ -643,6 +650,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       self::$javascript.= "  opts.clickableLayersOutputMode='reportHighlight';\n";
       self::$javascript .= "});\n";
     }
+    if ($options['ajax']) 
+      self::$onload_javascript .= "indiciaData.reports.verification.grid_verification_grid.reload(true);\n";
     return $r;
   }
 
@@ -1919,8 +1928,12 @@ if (typeof mapSettingsHooks!=='undefined') {
       'view' => 'list',
       'caching' => isset($options['paramsOnly']) && $options['paramsOnly'],
       'sendOutputToMap' => false,
-      'zoomMapToOutput' => true
+      'zoomMapToOutput' => true,
+      'ajax' => false
     ), $options);
+    // if using AJAX we are only loading parameters and columns, so may as well use local cache
+    if ($options['ajax'])
+      $options['caching']=true;
     if ($options['galleryColCount']>1) $options['class'] .= ' gallery';
     // use the current report as the params form by default
     if (empty($options['reportGroup'])) $options['reportGroup'] = $options['id'];
