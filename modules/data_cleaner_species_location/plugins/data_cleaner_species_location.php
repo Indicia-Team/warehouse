@@ -29,7 +29,7 @@ function data_cleaner_species_location_data_cleaner_rules() {
   return array(
     'testType' => 'SpeciesLocation',
     'optional' => array('Metadata'=>array('Tvk','Taxon','TaxonMeaningId')),
-    'required' => array('Metadata'=>array('Locations','SurveyId')),    
+    'required' => array('Metadata'=>array('LocationNames','SurveyId')),    
     'queries' => array(
       array(
         'joins' => 
