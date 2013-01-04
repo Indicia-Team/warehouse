@@ -45,7 +45,8 @@ function data_cleaner_sample_time_attr_outside_range_data_cleaner_rules() {
             join sample_attribute_values vtime on vtime.sample_id in (sparent.id, s.id) and vtime.deleted=false
             join verification_rule_metadata vrmattr on vrmattr.value = cast(vtime.sample_attribute_id as character varying) 
                 and vrmattr.key='StartTimeAttr' and vrmattr.deleted=false
-            join verification_rule_metadata vrm on vrm.verification_rule_id=vrmattr.verification_rule_id and vrm.key='StartTime' and vrm.deleted=false
+            join verification_rule_metadata vrm on vrm.verification_rule_id=vrmattr.verification_rule_id 
+                and vrm.key in ('StartTime', 'EndTime') and vrm.deleted=false
             join verification_rules vr on vr.id=vrmattr.verification_rule_id and vr.test_type='SampleTimeAttrOutsideRange' and vr.deleted=false
             join verification_rule_metadata vrsurvey on vrsurvey.verification_rule_id=vr.id and vrsurvey.key='SurveyId' 
                 and vrsurvey.value=cast(co.survey_id as character varying) and vrsurvey.deleted=false",
@@ -60,8 +61,9 @@ function data_cleaner_sample_time_attr_outside_range_data_cleaner_rules() {
             left join samples sparent on sparent.id=s.parent_id and sparent.deleted=false
             join sample_attribute_values vtime on vtime.sample_id in (sparent.id, s.id) and vtime.deleted=false
             join verification_rule_metadata vrmattr on vrmattr.value = cast(vtime.sample_attribute_id as character varying) 
-                and vrmattr.key='EndTimeAttr' and vrmattr.deleted=false
-            join verification_rule_metadata vrm on vrm.verification_rule_id=vrmattr.verification_rule_id and vrm.key='EndTime' and vrm.deleted=false
+                and (vrmattr.key='StartTimeAttr' or vrmattr.key='EndTimeAttr') and vrmattr.deleted=false
+            join verification_rule_metadata vrm on vrm.verification_rule_id=vrmattr.verification_rule_id 
+                and vrm.key in ('StartTime', 'EndTime') and vrm.deleted=false
             join verification_rules vr on vr.id=vrmattr.verification_rule_id and vr.test_type='SampleTimeAttrOutsideRange' and vr.deleted=false
             join verification_rule_metadata vrsurvey on vrsurvey.verification_rule_id=vr.id and vrsurvey.key='SurveyId' 
                 and vrsurvey.value=cast(co.survey_id as character varying) and vrsurvey.deleted=false",
