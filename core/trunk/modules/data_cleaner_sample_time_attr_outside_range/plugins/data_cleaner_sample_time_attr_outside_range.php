@@ -68,7 +68,7 @@ function data_cleaner_sample_time_attr_outside_range_data_cleaner_rules() {
         'where' =>
           " vtime.text_value<>''
          and regexp_replace(vtime.text_value, '^(([0-1][0-9])|2[0-3]):[0-5][0-9]', '')=''
-         and cast(vtime.text_value as time)<cast(vrm.value as time)"
+         and cast(vtime.text_value as time)>cast(vrm.value as time)"
       )
     )
   );
