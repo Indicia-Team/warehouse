@@ -42,19 +42,33 @@ function data_cleaner_sample_time_attr_outside_range_data_cleaner_rules() {
         'joins' => 
           "join samples s  on s.id=co.sample_id and s.deleted=false
             left join samples sparent on sparent.id=s.parent_id and sparent.deleted=false
-            join sample_attribute_values starttime on starttime.sample_id in (sparent.id, s.id) and starttime.deleted=false
-            join sample_attribute_values endtime on endtime.sample_id in (sparent.id, s.id) and endtime.deleted=false
-            join verification_rule_metadata vrmstartattr on vrmstartattr.value = cast(starttime.sample_attribute_id as character varying) 
-                and vrmstartattr.key='StartTimeAttr' and vrmstartattr.deleted=false
-            join verification_rule_metadata vrmendattr on vrmendattr.value = cast(endtime.sample_attribute_id as character varying) and vrmendattr.key='EndTimeAttr'             
-                and vrmendattr.verification_rule_id=vrmstartattr.verification_rule_id and vrmendattr.deleted=false
-            join verification_rule_metadata vrmstart on vrmstart.verification_rule_id=vrmstartattr.verification_rule_id and vrmstart.key='StartTime' and vrmstart.deleted=false
-            join verification_rule_metadata vrmend on vrmend.verification_rule_id=vrmstartattr.verification_rule_id and vrmend.key='EndTime' and vrmend.deleted=false            
-            join verification_rules vr on vr.id=vrmstartattr.verification_rule_id and vr.test_type='SampleTimeAttrOutsideRange' and vr.deleted=false
+            join sample_attribute_values vtime on vtime.sample_id in (sparent.id, s.id) and vtime.deleted=false
+            join verification_rule_metadata vrmattr on vrmattr.value = cast(vtime.sample_attribute_id as character varying) 
+                and vrmattr.key='StartTimeAttr' and vrmattr.deleted=false
+            join verification_rule_metadata vrm on vrm.verification_rule_id=vrmattr.verification_rule_id and vrm.key='StartTime' and vrm.deleted=false
+            join verification_rules vr on vr.id=vrmattr.verification_rule_id and vr.test_type='SampleTimeAttrOutsideRange' and vr.deleted=false
             join verification_rule_metadata vrsurvey on vrsurvey.verification_rule_id=vr.id and vrsurvey.key='SurveyId' 
                 and vrsurvey.value=cast(co.survey_id as character varying) and vrsurvey.deleted=false",
         'where' =>
-          "cast(starttime.text_value as time)<cast(vrmstart.value as time) or cast(endtime.text_value as time)>cast(vrmend.value as time)"
+          "vtime.text_value<>''
+         and regexp_replace(vtime.text_value, '^(([0-1][0-9])|2[0-3]):[0-5][0-9]', '')=''
+         and cast(vtime.text_value as time)<cast(vrm.value as time)"
+      ),
+      array(
+        'joins' => 
+          "join samples s  on s.id=co.sample_id and s.deleted=false
+            left join samples sparent on sparent.id=s.parent_id and sparent.deleted=false
+            join sample_attribute_values vtime on vtime.sample_id in (sparent.id, s.id) and vtime.deleted=false
+            join verification_rule_metadata vrmattr on vrmattr.value = cast(vtime.sample_attribute_id as character varying) 
+                and vrmattr.key='EndTimeAttr' and vrmattr.deleted=false
+            join verification_rule_metadata vrm on vrm.verification_rule_id=vrmattr.verification_rule_id and vrm.key='EndTime' and vrm.deleted=false
+            join verification_rules vr on vr.id=vrmattr.verification_rule_id and vr.test_type='SampleTimeAttrOutsideRange' and vr.deleted=false
+            join verification_rule_metadata vrsurvey on vrsurvey.verification_rule_id=vr.id and vrsurvey.key='SurveyId' 
+                and vrsurvey.value=cast(co.survey_id as character varying) and vrsurvey.deleted=false",
+        'where' =>
+          " vtime.text_value<>''
+         and regexp_replace(vtime.text_value, '^(([0-1][0-9])|2[0-3]):[0-5][0-9]', '')=''
+         and cast(vtime.text_value as time)<cast(vrm.value as time)"
       )
     )
   );
