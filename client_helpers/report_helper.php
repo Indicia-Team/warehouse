@@ -306,7 +306,9 @@ class report_helper extends helper_base {
   * <li><b>ajax</b>
   * If true, then the first page of records is loaded via an AJAX call after the initial page load, otherwise
   * they are loaded using PHP during page build. This means the grid load will be delayed till after the 
-  * rest of the page, speeding up the load time of the rest of the page. Default false.
+  * rest of the page, speeding up the load time of the rest of the page. If used on a tabbed output then
+  * the report will load when the tab is first viewed.
+  * Default false.
   * </li>
   * </ul>
   * @todo Allow additional params to filter by table column or report parameters
@@ -651,7 +653,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       self::$javascript .= "});\n";
     }
     if ($options['ajax']) 
-      self::$onload_javascript .= "indiciaData.reports.verification.grid_verification_grid.reload(true);\n";
+      self::$onload_javascript .= "indiciaData.reports.$group.$uniqueName.ajaxload();\n";
     return $r;
   }
 
