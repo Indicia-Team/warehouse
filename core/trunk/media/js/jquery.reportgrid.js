@@ -549,6 +549,25 @@ function simple_tooltip(target_items, name){
       });
     };
     
+    /**
+     * Public method to support late-loading of the initial page of grid data via AJAX.
+     * Automatically waits for the current tab to load if on jquery tabs.
+     */
+    this.ajaxload = function() {
+      // are we on a hidden tab?
+      if ($(this).parents('.ui-tabs-panel').hasClass('ui-tabs-hide')) {
+        var report=this;
+        $($(this).parents('.ui-tabs-panel').parent()).bind('tabsshow', function(evt, ui) {
+          if (ui.panel.id===$(report).parents('.ui-tabs-panel')[0].id) {
+            report.reload(true);
+            $(this).unbind(evt);
+          }
+        });
+      } else {
+        this.reload(true);
+      }
+    }
+    
     var BATCH_SIZE=1000, currentMapRequest;
     
     function _internalMapRecords(div, request, offset) {
