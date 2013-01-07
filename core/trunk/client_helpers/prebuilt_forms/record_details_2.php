@@ -467,6 +467,14 @@ Record ID';
     }
     return $args;      
   } 
+  
+  /**
+   * Disable save buttons for this form class. Not a data entry form...
+   * @return boolean 
+   */
+  protected static function include_save_buttons() {
+    return FALSE;  
+  }
    
 }
 ?>
