@@ -270,7 +270,8 @@ class iform_dynamic {
         // We need the verify button as well if this option is enabled
         if (isset($args['verification_panel']) && $args['verification_panel'])
           $r .= '<button type="button" class="indicia-button" id="verify-btn">'.lang::get('Precheck my records')."</button>\n";
-        if (!($args['interface']=='tabs' && $args['save_button_below_all_pages'])) 
+        if (call_user_func(array(self::$called_class, 'include_save_buttons')) 
+            && !($args['interface']=='tabs' && isset($args['save_button_below_all_pages']) && $args['save_button_below_all_pages'])) 
           // last part of a non wizard interface must insert a save button, unless it is tabbed 
           // interface with save button beneath all pages
           $r .= '<input type="submit" class="indicia-button" id="save-button" value="'.lang::get('Submit')."\" />\n";    
@@ -285,6 +286,14 @@ class iform_dynamic {
     if (method_exists(self::$called_class, 'link_species_popups')) 
       $r .= call_user_func(array(self::$called_class, 'link_species_popups'), $args);
     return $r;    
+  }
+  
+  /**
+   * Simple protected method which allows child classes to disable save buttons on the form.
+   * @return type 
+   */
+  protected static function include_save_buttons() {
+    return TRUE;  
   }
   
   /**
