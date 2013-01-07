@@ -680,6 +680,15 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       $extras .= '&wantRecords=0';
     else
       $extras .= '&'.self::array_to_query_string($currentParamValues, true);
+    // allow URL parameters to override any extra params that are set. Default params
+    // are handled elsewhere.
+    if (isset($options['extraParams'])) {
+      foreach ($options['extraParams'] as $key=>&$value) {
+        // allow URL parameters to override the provided params
+        if (isset($_REQUEST[$options['reportGroup'] . '-' . $key]))
+          $value = $_REQUEST[$options['reportGroup'] . '-' . $key];
+      }
+    }
     $response = self::get_report_data($options, $extras);
   }
 
@@ -1368,7 +1377,6 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       $currentParamValues = self::get_report_grid_current_param_values($options);
       $r .= self::get_report_grid_parameters_form($response, $options, $currentParamValues);
     }
-    // don't load the report layer if not all parameters are filled in
     if (!isset($response['parameterRequest']) || count(array_intersect_key($currentParamValues, $response['parameterRequest']))==count($response['parameterRequest'])) {
       if (empty($options['geoserverLayer'])) {
         // we are doing vector reporting via indicia services
@@ -1613,9 +1621,6 @@ mapSettingsHooks.push(function(opts) {
       $request .= "&query=".urlencode(json_encode($query));
     if (isset($options['extraParams'])) {
       foreach ($options['extraParams'] as $key=>$value) {
-        // allow URL parameters to override the provided params
-        if (isset($_REQUEST[$options['reportGroup'] . '-' . $key]))
-          $value = $_REQUEST[$options['reportGroup'] . '-' . $key];
         // Must urlencode the keys and parameters, as things like spaces cause curl to hang.
         $request .= '&'.urlencode($key).'='.urlencode($value);
       }
@@ -1643,7 +1648,7 @@ mapSettingsHooks.push(function(opts) {
       }
       // no need to proxy the request, as coming from server-side
       if (!isset($response) || $response===false)
-      $response = self::http_post(parent::$base_url.$request, null);
+        $response = self::http_post(parent::$base_url.$request, null);
       $decoded = json_decode($response['output'], true);
       if (!is_array($decoded))
         return array('error'=>print_r($response, true));
