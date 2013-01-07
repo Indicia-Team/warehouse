@@ -3997,7 +3997,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       // Scroll to the top of the page. This may be required if subsequent tab pages are longer than the first one, meaning the
         // browser scroll bar is too long making it possible to load the bottom blank part of the page if the user accidentally
       // drags the scroll bar while the page is loading.
-      self::$javascript .= "\nscroll(0,0);";
+      self::$javascript .= "scroll(0,0);\n";
 
       // Client-side validation only works on active tabs so validate on tab change
       if (isset($options['style']) && $options['style']=='wizard' || 
