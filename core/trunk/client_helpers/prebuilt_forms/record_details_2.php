@@ -62,78 +62,79 @@ class iform_record_details_2 extends iform_dynamic {
    */
   public static function get_parameters() {   
     $retVal = array_merge(
-    iform_map_get_map_parameters(),
-      array(array(
-        'name'=>'interface',
-        'caption'=>'Interface Style Option',
-        'description'=>'Choose the style of user interface, either dividing the form up onto separate tabs, '.
-          'wizard pages or having all controls on a single page.',
-        'type'=>'select',
-        'options' => array(
-          'tabs' => 'Tabs',
-          'wizard' => 'Wizard',
-          'one_page' => 'All One Page'
-        ),
-        'default' => 'one_page',
-        'group' => 'User Interface'
-      ),
-      //List of fields to hide in the Record Details section
+      iform_map_get_map_parameters(),
       array(
-        'name' => 'fields',
-        'caption' => 'Fields to include or exclude',
-        'description' => 'List of data fields to hide, one per line. '.
-            'Type in the field name as seen exactly in the Record Details section. For custom attributes you should use the system function values '.
-            'to filter instead of the caption if defined below.',
-        'type' => 'textarea',
-        'default' => 
+        array(
+          'name'=>'interface',
+          'caption'=>'Interface Style Option',
+          'description'=>'Choose the style of user interface, either dividing the form up onto separate tabs, '.
+            'wizard pages or having all controls on a single page.',
+          'type'=>'select',
+          'options' => array(
+            'tabs' => 'Tabs',
+            'wizard' => 'Wizard',
+            'one_page' => 'All One Page'
+          ),
+          'default' => 'one_page',
+          'group' => 'User Interface'
+        ),
+        //List of fields to hide in the Record Details section
+        array(
+          'name' => 'fields',
+          'caption' => 'Fields to include or exclude',
+          'description' => 'List of data fields to hide, one per line. '.
+              'Type in the field name as seen exactly in the Record Details section. For custom attributes you should use the system function values '.
+              'to filter instead of the caption if defined below.',
+          'type' => 'textarea',
+          'default' => 
 'CMS Username
 CMS User ID
 Email
 Sample ID
 Record ID',
-        'group' => 'Fields for record details'
-      ),
-      array(
-        'name'=>'operator',
-        'caption'=>'Include or exclude',
-        'description'=>"Do you want to include only the list of fields you've defined, or exclude them?",
-        'type'=>'select',
-        'options' => array(
-          'in' => 'Include',
-          'not in' => 'Exclude'
+          'group' => 'Fields for record details'
         ),
-        'default' => 'not in',
-        'group' => 'Fields for record details'
-      ),
-      array(
-        'name'=>'testagainst',
-        'caption'=>'Test attributes against',
-        'description'=>'For custom attributes, do you want to filter the list to show using the caption or the system function? If the latter, then '.
-            'any custom attributes referred to in the fields list above should be referred to by their system function which might be one of: email, '.
-            'cms_user_id, cms_username, first_name, last_name, full_name, biotope, sex_stage, sex_stage_count, certainty, det_first_name, det_last_name.',
-        'type'=>'select',
-        'options' => array(
-          'caption'=>'Caption',
-          'system_function'=>'System Function'
+        array(
+          'name'=>'operator',
+          'caption'=>'Include or exclude',
+          'description'=>"Do you want to include only the list of fields you've defined, or exclude them?",
+          'type'=>'select',
+          'options' => array(
+            'in' => 'Include',
+            'not in' => 'Exclude'
+          ),
+          'default' => 'not in',
+          'group' => 'Fields for record details'
         ),
-        'default' => 'caption',
-        'group' => 'Fields for record details'
-      ),
-      //Allows the user to define how the page will be displayed.
-      array(
-      'name'=>'structure',
-        'caption'=>'Form Structure',
-        'description'=>'Define the structure of the form. Each component must be placed on a new line. <br/>'.
-          "The following types of component can be specified. <br/>".
-          "<strong>[control name]</strong> indicates a predefined control is to be added to the form with the following predefined controls available: <br/>".
-              "&nbsp;&nbsp;<strong>[recorddetails]</strong> - displays information relating to the occurrence and its sample<br/>".
-              "&nbsp;&nbsp;<strong>[comments]</strong> - lists any comments associated with the occurrence. Also includes the ability to add a comment<br/>".
-              "&nbsp;&nbsp;<strong>[photos]</strong> - photos associated with the occurrence<br/>".
-              "&nbsp;&nbsp;<strong>[map]</strong> - a map that links to the spatial reference and location<br/>".
-          "<strong>=tab/page name=</strong> is used to specify the name of a tab or wizard page (alpha-numeric characters only). ".
-          "If the page interface type is set to one page, then each tab/page name is displayed as a seperate section on the page. ".
-          "Note that in one page mode, the tab/page names are not displayed on the screen.<br/>".
-          "<strong>|</strong> is used to split a tab/page/section into two columns, place a [control name] on the previous line and following line to split.<br/>",
+        array(
+          'name'=>'testagainst',
+          'caption'=>'Test attributes against',
+          'description'=>'For custom attributes, do you want to filter the list to show using the caption or the system function? If the latter, then '.
+              'any custom attributes referred to in the fields list above should be referred to by their system function which might be one of: email, '.
+              'cms_user_id, cms_username, first_name, last_name, full_name, biotope, sex_stage, sex_stage_count, certainty, det_first_name, det_last_name.',
+          'type'=>'select',
+          'options' => array(
+            'caption'=>'Caption',
+            'system_function'=>'System Function'
+          ),
+          'default' => 'caption',
+          'group' => 'Fields for record details'
+        ),
+        //Allows the user to define how the page will be displayed.
+        array(
+        'name'=>'structure',
+          'caption'=>'Form Structure',
+          'description'=>'Define the structure of the form. Each component must be placed on a new line. <br/>'.
+            "The following types of component can be specified. <br/>".
+            "<strong>[control name]</strong> indicates a predefined control is to be added to the form with the following predefined controls available: <br/>".
+                "&nbsp;&nbsp;<strong>[recorddetails]</strong> - displays information relating to the occurrence and its sample<br/>".
+                "&nbsp;&nbsp;<strong>[comments]</strong> - lists any comments associated with the occurrence. Also includes the ability to add a comment<br/>".
+                "&nbsp;&nbsp;<strong>[photos]</strong> - photos associated with the occurrence<br/>".
+                "&nbsp;&nbsp;<strong>[map]</strong> - a map that links to the spatial reference and location<br/>".
+            "<strong>=tab/page name=</strong> is used to specify the name of a tab or wizard page (alpha-numeric characters only). ".
+            "If the page interface type is set to one page, then each tab/page name is displayed as a seperate section on the page. ".
+            "Note that in one page mode, the tab/page names are not displayed on the screen.<br/>".
+            "<strong>|</strong> is used to split a tab/page/section into two columns, place a [control name] on the previous line and following line to split.<br/>",
           'type'=>'textarea',
           'default' => 
 '=Record Details and Comments=
@@ -145,47 +146,11 @@ Record ID',
 |
 [photos]',
           'group' => 'User Interface'
-       )
-       )
-     );
-     return $retVal;
-   }
-  
-   
-  /**
-   * Override the getHidden function.
-   * getForm in dynamic.php will now call this and return an empty array when creating a list of hidden input 
-   * controls for form submission as this functionality is not being used for the Record Details page.
-   * @package    Client
-   * @subpackage PrebuiltForms
-   */ 
-  protected static function getHidden() {
-    return NULL;
-  } 
-  
-  
-  /**
-   * Override the getMode function.
-   * getForm in dynamic.php will now call this and return an empty array when creating a mode list
-   * as this functionality is not being used for the Record Details page.
-   * @package    Client
-   * @subpackage PrebuiltForms
-   */ 
-  protected static function getMode() {
-    return array();
+        )
+      )
+    );
+    return $retVal;
   }
-   
-  
- /**
-  * Override the getAttributes function.
-  * getForm in dynamic.php will now call this and return an empty array when creating an attributes list
-  * as this functionality is not being used for the Record Details page.
-  * @package    Client
-  * @subpackage PrebuiltForms
-  */ 
- protected static function getAttributes() {
-   return array();
- }
  
   /**
    * Override the get_form_html function.
@@ -203,66 +168,8 @@ Record ID',
        
       data_entry_helper::$javascript .= 'indiciaData.username = "'.$user->name."\";\n";
       data_entry_helper::$javascript .= 'indiciaData.website_id = '.$args['website_id'].";\n";
-      data_entry_helper::$javascript .= 'indiciaData.ajaxFormPostUrl="'.iform_ajaxproxy_url($node, 'occurrence')."&sharing=verification\";\n";
-      //This returns NULL, the getForm in dynamic php uses this, but we want it empty
-      // @todo: Can this be removed, along with the function, since it will be empty?
-      $hiddens .= call_user_func(array(self::$called_class, 'getHidden'), $args);
-      $customAttributeTabs = get_attribute_tabs($attributes);
-      $tabs = self::get_all_tabs($args['structure'], $customAttributeTabs);
-      $r .= "<div id=\"controls\">\n";
-      // Build a list of the tabs that actually have content
-      try {
-        $tabHtml = self::get_tab_html($tabs, $auth, $args, $attributes, $hiddens);
-      } catch (Exception $e) {
-        if (strpos($e->getMessage(), 'Attempt to access existing record failed')!==false)
-          return 'The record could not be loaded, either because it does not exist or it is not accessible from this website.';
-        else 
-          throw $e;
-      }
-      // Output the dynamic tab headers
-      if ($args['interface']!='one_page') {
-        $headerOptions = array('tabs'=>array());
-        foreach ($tabHtml as $tab=>$tabContent) {
-          $alias = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tab));
-          $tabtitle = lang::get("LANG_Tab_$alias");
-          if ($tabtitle=="LANG_Tab_$alias") {
-            // if no translation provided, we'll just use the standard heading
-            $tabtitle = $tab;
-          }
-          $headerOptions['tabs']['#'.$alias] = $tabtitle;        
-        }
-        $r .= data_entry_helper::tab_header($headerOptions);
-        data_entry_helper::enable_tabs(array(
-          'divId'=>'controls',
-          'style'=>$args['interface'],
-          'progressBar' => isset($args['tabProgress']) && $args['tabProgress']==true
-        ));
-      }
-    
-      // Output the dynamic tab content
-      $pageIdx = 0;
-      foreach ($tabHtml as $tab=>$tabContent) {
-        // get a machine readable alias for the heading
-        $tabalias = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tab));
-        $r .= '<div id="'.$tabalias.'">'."\n";
-        // For wizard include the tab title as a header.
-        if ($args['interface']=='wizard') {
-          $r .= '<h1>'.$headerOptions['tabs']['#'.$tabalias].'</h1>';        
-        }
-        $r .= $tabContent;    
-        // Add any buttons required at the bottom of the tab   
-        if ($args['interface']=='wizard') {
-          $r .= data_entry_helper::wizard_buttons(array(
-            'divId'=>'controls',
-            'page'=>$pageIdx===0 ? 'first' : (($pageIdx==count($tabHtml)-1) ? 'last' : 'middle')
-          ));        
-        }     
-        $pageIdx++;
-        $r .= "</div>\n";      
-      }
-      $r .= "</div>\n";
-    
-      return $r;    
+      data_entry_helper::$javascript .= 'indiciaData.ajaxFormPostUrl="'.iform_ajaxproxy_url($node, 'occurrence')."&sharing=reporting\";\n";
+      return parent::get_form_html($args, $auth, $attributes);
     }
   }
 
