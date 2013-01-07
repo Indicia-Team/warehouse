@@ -168,10 +168,11 @@ class iform_dynamic {
     // Convert parameter, defaults, into structured array
     self::parse_defaults($args);
     // Supply parameters that may be missing after form upgrade
-    $args = call_user_func(array(self::$called_class, 'getArgDefaults'), $args);
+    if (method_exists(self::$called_class, 'getArgDefaults')) 
+      $args = call_user_func(array(self::$called_class, 'getArgDefaults'), $args);
     
     // 
-    if (method_exists(self::$called_class, 'enforcePermissions')){
+    if (method_exists(self::$called_class, 'enforcePermissions')) {
       if(call_user_func(array(self::$called_class, 'enforcePermissions')) && !user_access('IForm n'.$node->nid.' admin') && !user_access('IForm n'.$node->nid.' user')){
         return lang::get('LANG_no_permissions');
       }
@@ -181,18 +182,22 @@ class iform_dynamic {
     self::$auth = $auth;
     
     // Determine how the form was requested and therefore what to output
-    $mode = call_user_func(array(self::$called_class, 'getMode'), $args, $node);
+    $mode = (method_exists(self::$called_class, 'getMode'))
+      ? call_user_func(array(self::$called_class, 'getMode'), $args, $node)
+      : '';
     self::$mode = $mode;
-    if($mode ==  self::MODE_GRID) {
+    if($mode ===  self::MODE_GRID) {
       // Output a grid of existing records
       $r = call_user_func(array(self::$called_class, 'getGrid'), $args, $node, $auth);
     } else {
-      if ($mode == self::MODE_EXISTING && is_null(data_entry_helper::$entity_to_load)) { 
+      if ($mode === self::MODE_EXISTING && is_null(data_entry_helper::$entity_to_load)) { 
         // only load if not in error situation. 
         call_user_func_array(array(self::$called_class, 'getEntity'), array(&$args, $auth));
       }
       // attributes must be fetched after the entity to load is filled in - this is because the id gets filled in then!
-      $attributes = call_user_func(array(self::$called_class, 'getAttributes'), $args, $auth);
+      $attributes = (method_exists(self::$called_class, 'getAttributes'))
+          ? call_user_func(array(self::$called_class, 'getAttributes'), $args, $auth)
+          : array();
       $r = call_user_func(array(self::$called_class, 'get_form_html'), $args, $auth, $attributes);      
     }
     return $r;
@@ -200,8 +205,9 @@ class iform_dynamic {
   
   protected static function get_form_html($args, $auth, $attributes) { 
     $r = call_user_func(array(self::$called_class, 'getHeader'), $args);
-    $hiddens = call_user_func(array(self::$called_class, 'getFirstTabAdditionalContent'), $args, $auth);
-    
+    $firstTabExtras = (method_exists(self::$called_class, 'getFirstTabAdditionalContent')) 
+      ? call_user_func(array(self::$called_class, 'getFirstTabAdditionalContent'), $args, $auth, $attributes)
+      : '';
     $customAttributeTabs = get_attribute_tabs($attributes);
     $tabs = self::get_all_tabs($args['structure'], $customAttributeTabs);
     if (isset($tabs['-'])) {
@@ -214,7 +220,7 @@ class iform_dynamic {
       
     $r .= "<div id=\"controls\">\n";
     // Build a list of the tabs that actually have content
-    $tabHtml = self::get_tab_html($tabs, $auth, $args, $attributes, $hiddens);
+    $tabHtml = self::get_tab_html($tabs, $auth, $args, $attributes, $firstTabExtras);
     // Output the dynamic tab headers
     if ($args['interface']!='one_page') {
       $headerOptions = array('tabs'=>array());
@@ -273,9 +279,11 @@ class iform_dynamic {
       $r .= "</div>\n";      
     }
     $r .= "</div>\n";
-    $r .= call_user_func(array(self::$called_class, 'getFooter'), $args);
+    if (method_exists(self::$called_class, 'getFooter'))
+      $r .= call_user_func(array(self::$called_class, 'getFooter'), $args);
     
-    if (method_exists(self::$called_class, 'link_species_popups')) $r .= call_user_func(array(self::$called_class, 'link_species_popups'), $args);
+    if (method_exists(self::$called_class, 'link_species_popups')) 
+      $r .= call_user_func(array(self::$called_class, 'link_species_popups'), $args);
     return $r;    
   }
   
@@ -300,7 +308,7 @@ class iform_dynamic {
    * website ID to post with a form submission.
    * @param type $args 
    */
-  protected static function getFirstTabAdditionalContent($args, $auth) {
+  protected static function getFirstTabAdditionalContent($args, $auth, $attributes) {
     // Get authorisation tokens to update the Warehouse, plus any other hidden data.
     $r = $auth['write'].
           "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n".
@@ -344,7 +352,7 @@ class iform_dynamic {
     return $reloadPath;
   }
   
-  protected static function get_tab_html($tabs, $auth, $args, $attributes, $hiddens) {
+  protected static function get_tab_html($tabs, $auth, $args, $attributes, $firstTabExtras) {
     $tabHtml = array();
     foreach ($tabs as $tab=>$tabContent) {
       $columnsOpen=false;
@@ -354,9 +362,9 @@ class iform_dynamic {
       // get a machine readable alias for the heading
       $tabalias = 'tab-'.preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tab));
       $html = '';
-      if (count($tabHtml)===0 && $hiddens)
+      if (count($tabHtml)===0 && $firstTabExtras)
         // output the hidden inputs on the first tab
-        $html .= $hiddens;
+        $html .= $firstTabExtras;
       $html .= self::get_tab_content($auth, $args, $tab, $tabContent, $tabalias, $attributes,  
           $columnsOpen, $hasControls);
       // close any column layout divs. extra closure for the outer container of the columns

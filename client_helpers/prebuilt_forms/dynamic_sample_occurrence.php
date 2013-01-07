@@ -640,7 +640,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     return $attributes;
   }
 
-  protected static function getFirstTabAdditionalContent($args, $auth) {
+  protected static function getFirstTabAdditionalContent($args, $auth, $attributes) {
     // Get authorisation tokens to update the Warehouse, plus any other hidden data.
     $r = $auth['write'].
           "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n".
