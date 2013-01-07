@@ -199,23 +199,19 @@ class iform_dynamic {
   }
   
   protected static function get_form_html($args, $auth, $attributes) { 
-    // Make sure the form action points back to this page
-    $reloadPath = call_user_func(array(self::$called_class, 'getReloadPath'));    
-    $r = "<form method=\"post\" id=\"entry_form\" action=\"$reloadPath\">\n";
-
-    // Get authorisation tokens to update the Warehouse, plus any other hidden data.
-    $hiddens = $auth['write'].
-          "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n".
-          "<input type=\"hidden\" id=\"survey_id\" name=\"survey_id\" value=\"".$args['survey_id']."\" />\n";
-    $hiddens .= call_user_func(array(self::$called_class, 'getHidden'), $args);
-    $hiddens .= get_user_profile_hidden_inputs($attributes, $args, isset(data_entry_helper::$entity_to_load['sample:id']), $auth['read']);
-
-    // request automatic JS validation
-    if (!isset($args['clientSideValidation']) || $args['clientSideValidation'])
-      data_entry_helper::enable_validation('entry_form');
-
+    $r = call_user_func(array(self::$called_class, 'getHeader'), $args);
+    $hiddens = call_user_func(array(self::$called_class, 'getFirstTabAdditionalContent'), $args, $auth);
+    
     $customAttributeTabs = get_attribute_tabs($attributes);
     $tabs = self::get_all_tabs($args['structure'], $customAttributeTabs);
+    if (isset($tabs['-'])) {
+      $columnsOpen=false;
+      $hasControls=false;
+      $r .= self::get_tab_content($auth, $args, '$tab'-'', $tabs['-'], 'above-tabs', &$attributes, 
+        &$columnsOpen, &$hasControls);
+      unset($tabs['-']);
+    }
+      
     $r .= "<div id=\"controls\">\n";
     // Build a list of the tabs that actually have content
     $tabHtml = self::get_tab_html($tabs, $auth, $args, $attributes, $hiddens);
@@ -229,7 +225,7 @@ class iform_dynamic {
           // if no translation provided, we'll just use the standard heading
           $tabtitle = $tab;
         }
-        $headerOptions['tabs']['#'.$alias] = $tabtitle;        
+        $headerOptions['tabs']['#tab-'.$alias] = $tabtitle;        
       }
       $r .= data_entry_helper::tab_header($headerOptions);
       data_entry_helper::enable_tabs(array(
@@ -243,15 +239,15 @@ class iform_dynamic {
     $singleSpeciesLabel=self::$singleSpeciesName;
     foreach ($tabHtml as $tab=>$tabContent) {
       // get a machine readable alias for the heading
-      $tabalias = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tab));
-      $r .= '<div id="'.$tabalias.'">'."\n";
+      $tabalias = 'tab-'.preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tab));
+      $r .= "<div id=\"$tabalias\">\n";
       //We only want to show the single species message to the user if they have selected the option and we are in single species mode.
       //We also want to only show it on the species tab otherwise in 'All one page' mode it will appear multple times.
-      if ($args['single_species_message'] && $tabalias=='species' && isset($singleSpeciesLabel))
+      if ($args['single_species_message'] && $tabalias=='tab-species' && isset($singleSpeciesLabel))
         $r .= '<div class="page-notice ui-state-highlight ui-corner-all">You are submitting a record of '."$singleSpeciesLabel</div>";
       // For wizard include the tab title as a header.
       if ($args['interface']=='wizard') {
-        $r .= '<h1>'.$headerOptions['tabs']['#'.$tabalias].'</h1>';        
+        $r .= '<h1>'.$headerOptions['tabs'][$tabalias].'</h1>';        
       }
       $r .= $tabContent;    
       if (isset($args['verification_panel']) && $args['verification_panel'] && $pageIdx==count($tabHtml)-1)
@@ -277,6 +273,49 @@ class iform_dynamic {
       $r .= "</div>\n";      
     }
     $r .= "</div>\n";
+    $r .= call_user_func(array(self::$called_class, 'getFooter'), $args);
+    
+    if (method_exists(self::$called_class, 'link_species_popups')) $r .= call_user_func(array(self::$called_class, 'link_species_popups'), $args);
+    return $r;    
+  }
+  
+  /**
+   * Overridable function to retrieve the HTML to appear above the dynamically constructed form, 
+   * which by default is an HTML form for data submission
+   * @param type $args 
+   */
+  protected static function getHeader($args) {
+    // Make sure the form action points back to this page
+    $reloadPath = call_user_func(array(self::$called_class, 'getReloadPath'));    
+    $r = "<form method=\"post\" id=\"entry_form\" action=\"$reloadPath\">\n";
+    // request automatic JS validation
+    if (!isset($args['clientSideValidation']) || $args['clientSideValidation'])
+      data_entry_helper::enable_validation('entry_form');
+    return $r;
+  }
+  
+  /**
+   * Overridable function to retrieve the additional HTML to appear at the top of the first
+   * tab or form section. This is normally a set of hidden inputs, containing things like the
+   * website ID to post with a form submission.
+   * @param type $args 
+   */
+  protected static function getFirstTabAdditionalContent($args, $auth) {
+    // Get authorisation tokens to update the Warehouse, plus any other hidden data.
+    $r = $auth['write'].
+          "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n".
+          "<input type=\"hidden\" id=\"survey_id\" name=\"survey_id\" value=\"".$args['survey_id']."\" />\n";
+    $r .= get_user_profile_hidden_inputs($attributes, $args, isset(data_entry_helper::$entity_to_load['sample:id']), $auth['read']);
+    return $r;
+  }
+  
+  /**
+   * Overridable function to retrieve the HTML to appear below the dynamically constructed form, 
+   * which by default is the closure of the HTML form for data submission
+   * @param type $args 
+   */
+  protected static function getFooter($args) {
+    $r = '';
     // add a single submit button outside the tabs if they want a button visible all the time
     if ($args['interface']=='tabs' && $args['save_button_below_all_pages']) 
       $r .= "<input type=\"submit\" class=\"indicia-button\" id=\"save-button\" value=\"".lang::get('Submit')."\" />\n";
@@ -284,9 +323,7 @@ class iform_dynamic {
       $r .= data_entry_helper::dump_remaining_errors();
     }   
     $r .= "</form>";
-    
-    if (method_exists(self::$called_class, 'link_species_popups')) $r .= call_user_func(array(self::$called_class, 'link_species_popups'), $args);
-    return $r;    
+    return $r;
   }
 
   protected static function getReloadPath () {
@@ -308,15 +345,6 @@ class iform_dynamic {
   }
   
   protected static function get_tab_html($tabs, $auth, $args, $attributes, $hiddens) {
-    $defAttrOptions = array('extraParams'=>$auth['read']);
-    if(isset($args['attribute_termlist_language_filter']) && $args['attribute_termlist_language_filter'])
-        $defAttrOptions['language'] = iform_lang_iso_639_2($args['language']);
-
-    //create array of attribute field names to test against later
-    $attribNames = array();
-    foreach ($attributes as $key => $attrib){
-      $attribNames[$key] = $attrib['id'];
-    }
     $tabHtml = array();
     foreach ($tabs as $tab=>$tabContent) {
       $columnsOpen=false;
@@ -324,77 +352,13 @@ class iform_dynamic {
       // were removed by user profile integration for example.
       $hasControls = false;
       // get a machine readable alias for the heading
-      $tabalias = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tab));
+      $tabalias = 'tab-'.preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tab));
       $html = '';
-      if (count($tabHtml)===0)
+      if (count($tabHtml)===0 && $hiddens)
         // output the hidden inputs on the first tab
         $html .= $hiddens;
-      // Now output the content of the tab. Use a for loop, not each, so we can treat several rows as one object
-      for ($i = 0; $i < count($tabContent); $i++) {
-        $component = trim($tabContent[$i]);
-        if (preg_match('/\A\?[^�]*\?\z/', $component) === 1) {          
-          // Component surrounded by ? so represents a help text
-          $helpText = substr($component, 1, -1);
-          $html .= '<div class="page-notice ui-state-highlight ui-corner-all">'.lang::get($helpText)."</div>";
-        } elseif (preg_match('/\A\[[^�]*\]\z/', $component) === 1) {
-          // Component surrounded by [] so represents a control or control block
-          $method = 'get_control_'.preg_replace('/[^a-zA-Z0-9]/', '', strtolower($component));
-          // Anything following the component that starts with @ is an option to pass to the control
-          $options = array();
-          while ($i < count($tabContent)-1 && substr($tabContent[$i+1],0,1)=='@' || trim($tabContent[$i])==='') {
-            $i++;
-            // ignore empty lines
-            if (trim($tabContent[$i])!=='') {
-              $option = explode('=', substr($tabContent[$i],1), 2);
-              $options[$option[0]]=json_decode($option[1], true);
-              // if not json then need to use option value as it is
-              if ($options[$option[0]]=='') $options[$option[0]]=$option[1];            
-            }
-          }
-
-          if (method_exists(self::$called_class, $method)) { 
-            //outputs a control for which a specific output function has been written.
-            $html .= call_user_func(array(self::$called_class, $method), $auth, $args, $tabalias, $options);
-            $hasControls = true;
-          } elseif (($attribKey = array_search(substr($component, 1, -1), $attribNames)) !== false) {
-            //outputs a control for a single custom attribute where component is in the form [smpAttr:167]
-            $options['extraParams'] = array_merge($defAttrOptions['extraParams'], (array)$options['extraParams']);
-            //merge extraParams first so we don't loose authentication
-            $options = array_merge($defAttrOptions, $options);
-            $html .= data_entry_helper::outputAttribute($attributes[$attribKey], $options);
-            $attributes[$attribKey]['handled'] = true;
-            $hasControls = true;
-          } elseif ($component === '[*]'){
-            // this outputs any custom attributes that remain for this tab. The custom attributes can be configured in the 
-            // settings text using something like @smpAttr:4|label=My label. The next bit of code parses these out into an 
-            // array used when building the html.
-            $blockOptions = array();
-            foreach ($options as $option => $value) {
-              // split the id of the option into the control name and option name.
-              $optionId = explode('|', $option);
-              if (!isset($blockOptions[$optionId[0]])) $blockOptions[$optionId[0]]=array();
-              $blockOptions[$optionId[0]][$optionId[1]] = apply_user_replacements($value);
-            }
-            $defAttrOptions = array_merge($defAttrOptions, $options);
-            $attrHtml = get_attribute_html($attributes, $args, $defAttrOptions, $tab, $blockOptions);
-            if (!empty($attrHtml))
-              $hasControls = true;
-            $html .= $attrHtml;
-          } else {         
-            $html .= "The form structure includes a control called $component which is not recognised.<br/>";
-            //ensure $hasControls is true so that the error message is shown
-            $hasControls = true;
-          }      
-        } elseif ($component === '|') {
-          // a splitter in the structure so put the stuff so far in a 50% width left float div, and the stuff that follows in a 50% width right float div.
-          $html = '<div class="two columns"><div class="column">'.$html.'</div><div class="column">';
-          // need to close the div
-          $columnsOpen=true; 
-        } else {
-          // output anything else as is. This allow us to add html to the form structure.
-          $html .= $component;
-        }
-      }
+      $html .= self::get_tab_content($auth, $args, $tab, $tabContent, $tabalias, $attributes,  
+          $columnsOpen, $hasControls);
       // close any column layout divs. extra closure for the outer container of the columns
       if ($columnsOpen) 
         $html .= '</div></div>';  
@@ -404,6 +368,86 @@ class iform_dynamic {
     }
     return $tabHtml;
   }  
+  
+  protected static function get_tab_content($auth, $args, $tab, $tabContent, $tabalias, &$attributes,
+      &$columnsOpen, &$hasControls) {
+    $defAttrOptions = array('extraParams'=>$auth['read']);
+    if(isset($args['attribute_termlist_language_filter']) && $args['attribute_termlist_language_filter'])
+      $defAttrOptions['language'] = iform_lang_iso_639_2($args['language']);
+    //create array of attribute field names to test against later
+    $attribNames = array();
+    foreach ($attributes as $key => $attrib){
+      $attribNames[$key] = $attrib['id'];
+    }
+    $html='';
+    // Now output the content of the tab. Use a for loop, not each, so we can treat several rows as one object
+    for ($i = 0; $i < count($tabContent); $i++) {
+      $component = trim($tabContent[$i]);
+      if (preg_match('/\A\?[^�]*\?\z/', $component) === 1) {          
+        // Component surrounded by ? so represents a help text
+        $helpText = substr($component, 1, -1);
+        $html .= '<div class="page-notice ui-state-highlight ui-corner-all">'.lang::get($helpText)."</div>";
+      } elseif (preg_match('/\A\[[^�]*\]\z/', $component) === 1) {
+        // Component surrounded by [] so represents a control or control block
+        $method = 'get_control_'.preg_replace('/[^a-zA-Z0-9]/', '', strtolower($component));
+        // Anything following the component that starts with @ is an option to pass to the control
+        $options = array();
+        while ($i < count($tabContent)-1 && substr($tabContent[$i+1],0,1)=='@' || trim($tabContent[$i])==='') {
+          $i++;
+          // ignore empty lines
+          if (trim($tabContent[$i])!=='') {
+            $option = explode('=', substr($tabContent[$i],1), 2);
+            $options[$option[0]]=json_decode($option[1], true);
+            // if not json then need to use option value as it is
+            if ($options[$option[0]]=='') $options[$option[0]]=$option[1];            
+          }
+        }
+
+        if (method_exists(self::$called_class, $method)) { 
+          //outputs a control for which a specific output function has been written.
+          $html .= call_user_func(array(self::$called_class, $method), $auth, $args, $tabalias, $options);
+          $hasControls = true;
+        } elseif (($attribKey = array_search(substr($component, 1, -1), $attribNames)) !== false) {
+          //outputs a control for a single custom attribute where component is in the form [smpAttr:167]
+          $options['extraParams'] = array_merge($defAttrOptions['extraParams'], (array)$options['extraParams']);
+          //merge extraParams first so we don't loose authentication
+          $options = array_merge($defAttrOptions, $options);
+          $html .= data_entry_helper::outputAttribute($attributes[$attribKey], $options);
+          $attributes[$attribKey]['handled'] = true;
+          $hasControls = true;
+        } elseif ($component === '[*]'){
+          // this outputs any custom attributes that remain for this tab. The custom attributes can be configured in the 
+          // settings text using something like @smpAttr:4|label=My label. The next bit of code parses these out into an 
+          // array used when building the html.
+          $blockOptions = array();
+          foreach ($options as $option => $value) {
+            // split the id of the option into the control name and option name.
+            $optionId = explode('|', $option);
+            if (!isset($blockOptions[$optionId[0]])) $blockOptions[$optionId[0]]=array();
+            $blockOptions[$optionId[0]][$optionId[1]] = apply_user_replacements($value);
+          }
+          $defAttrOptions = array_merge($defAttrOptions, $options);
+          $attrHtml = get_attribute_html($attributes, $args, $defAttrOptions, $tab, $blockOptions);
+          if (!empty($attrHtml))
+            $hasControls = true;
+          $html .= $attrHtml;
+        } else {         
+          $html .= "The form structure includes a control called $component which is not recognised.<br/>";
+          //ensure $hasControls is true so that the error message is shown
+          $hasControls = true;
+        }      
+      } elseif ($component === '|') {
+        // a splitter in the structure so put the stuff so far in a 50% width left float div, and the stuff that follows in a 50% width right float div.
+        $html = '<div class="two columns"><div class="column">'.$html.'</div><div class="column">';
+        // need to close the div
+        $columnsOpen=true; 
+      } else {
+        // output anything else as is. This allow us to add html to the form structure.
+        $html .= $component;
+      }
+    }
+    return $html;
+  }
 
   /**
    * Finds the list of all tab names that are going to be required, either by the form
@@ -412,13 +456,13 @@ class iform_dynamic {
     protected static function get_all_tabs($structure, $attrTabs) {    
     $structureArr = helper_base::explode_lines($structure);
     $structureTabs = array();
+    // A default 'tab' for content that must appear above the set of tabs.
+    $currentTab='-';
     foreach ($structureArr as $component) {
       if (preg_match('/^=[A-Za-z0-9 \-\*\?]+=$/', trim($component), $matches)===1) {
         $currentTab = substr($matches[0], 1, -1);
         $structureTabs[$currentTab] = array();
       } else {
-        if (!isset($currentTab)) 
-          throw new Exception('The form structure parameter must start with a tab title, e.g. =Species=');
         $structureTabs[$currentTab][] = $component;
       }
     }
