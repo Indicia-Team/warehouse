@@ -640,24 +640,28 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     return $attributes;
   }
 
-  protected static function getHidden ($args) {
-    $hiddens = '';
+  protected static function getFirstTabAdditionalContent($args, $auth) {
+    // Get authorisation tokens to update the Warehouse, plus any other hidden data.
+    $r = $auth['write'].
+          "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n".
+          "<input type=\"hidden\" id=\"survey_id\" name=\"survey_id\" value=\"".$args['survey_id']."\" />\n";
     if (!empty($args['sample_method_id'])) {
-      $hiddens .= '<input type="hidden" name="sample:sample_method_id" value="'.$args['sample_method_id'].'"/>' . PHP_EOL;
+      $r .= '<input type="hidden" name="sample:sample_method_id" value="'.$args['sample_method_id'].'"/>' . PHP_EOL;
     }
     if (isset(data_entry_helper::$entity_to_load['sample:id'])) {
-      $hiddens .= '<input type="hidden" id="sample:id" name="sample:id" value="' . data_entry_helper::$entity_to_load['sample:id'] . '" />' . PHP_EOL;
+      $r .= '<input type="hidden" id="sample:id" name="sample:id" value="' . data_entry_helper::$entity_to_load['sample:id'] . '" />' . PHP_EOL;
     }
     if (isset(data_entry_helper::$entity_to_load['occurrence:id'])) {
-      $hiddens .= '<input type="hidden" id="occurrence:id" name="occurrence:id" value="' . data_entry_helper::$entity_to_load['occurrence:id'] . '\" />' . PHP_EOL;
+      $r .= '<input type="hidden" id="occurrence:id" name="occurrence:id" value="' . data_entry_helper::$entity_to_load['occurrence:id'] . '\" />' . PHP_EOL;
     }
     // Check if Record Status is included as a control. If not, then add it as a hidden.
     $arr = helper_base::explode_lines($args['structure']);
     if (!in_array('[record status]', $arr)) {
       $value = isset($args['defaults']['occurrence:record_status']) ? $args['defaults']['occurrence:record_status'] : 'C';
-      $hiddens .= '<input type="hidden" id="occurrence:record_status" name="occurrence:record_status" value="' . $value . '" />' . PHP_EOL;
+      $r .= '<input type="hidden" id="occurrence:record_status" name="occurrence:record_status" value="' . $value . '" />' . PHP_EOL;
     }
-    return $hiddens;
+    $r .= get_user_profile_hidden_inputs($attributes, $args, isset(data_entry_helper::$entity_to_load['sample:id']), $auth['read']);
+    return $r;
   }
 
   /**

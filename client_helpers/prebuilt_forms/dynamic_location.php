@@ -203,14 +203,24 @@ class iform_dynamic_location extends iform_dynamic {
     return $attributes;
   }
   
-  protected static function getHidden ($args) {
-    $hiddens = '';
+  /**
+   * Retrieve the additional HTML to appear at the top of the first
+   * tab or form section. This is a set of hidden inputs containing the website ID and
+   * survey ID as well as an existing location's ID.
+   * @param type $args 
+   */
+  protected static function getFirstTabAdditionalContent($args, $auth) {
+    // Get authorisation tokens to update the Warehouse, plus any other hidden data.
+    $r = $auth['write'].
+          "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n".
+          "<input type=\"hidden\" id=\"survey_id\" name=\"survey_id\" value=\"".$args['survey_id']."\" />\n";
     if (isset(data_entry_helper::$entity_to_load['location:id'])) {
-      $hiddens .= '<input type="hidden" id="location:id" name="location:id" value="' . data_entry_helper::$entity_to_load['location:id'] . '" />' . PHP_EOL;    
+      $r .= '<input type="hidden" id="location:id" name="location:id" value="' . data_entry_helper::$entity_to_load['location:id'] . '" />' . PHP_EOL;    
     }
+    $r .= get_user_profile_hidden_inputs($attributes, $args, isset(data_entry_helper::$entity_to_load['location:id']), $auth['read']);
     return $hiddens;
   }
-  
+ 
   /** 
    * Get the map control.
    */
