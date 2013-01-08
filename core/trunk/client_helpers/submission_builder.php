@@ -230,6 +230,8 @@ class submission_builder extends helper_config {
       $output = json_decode($response['output'], true);
       if (!$output)
         throw new exception(print_r($response, true));
+      elseif (isset($output['success']) && $output['success']==='multiple records')
+        $array['sample:location_id']=$output['outer_id'];
       elseif (isset($output['success']))
         $array['sample:location_id']=$output['success'];
       else
