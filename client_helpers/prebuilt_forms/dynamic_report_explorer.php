@@ -298,7 +298,6 @@ class iform_dynamic_report_explorer extends iform_dynamic {
       $args['columns_config']=json_encode($columnLists[self::$reportCount]);
     else
       unset($args['columns_config']);
-    drupal_set_message($args['columns_config']);
     $sharing='reporting';
     $reportOptions = array_merge(
       iform_report_get_report_options($args, $auth['read']),
