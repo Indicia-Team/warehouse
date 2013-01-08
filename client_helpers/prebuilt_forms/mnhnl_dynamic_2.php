@@ -435,34 +435,22 @@ $.validator.messages.integer = $.validator.format(\"".lang::get('validation_inte
 attrRestrictionsProcessOrder = [".(implode(',', $attrOrder))."];
 attrRestrictionsDuplicates = ".(isset($options["attrRestrictionsEnforceDuplicates"]) ? 'true' : 'false').";
 attrRestrictionsDuplicateAttrList = [".(implode(',', $duplicateAttrList))."];
-// set up pre-existing ones.
+// set up pre-existing ones: trigger first which will bubble through
 jQuery('.mnhnl-species-grid').find('[name$=occAttr\\:".$attrOrder[0]."],[name*=occAttr\\:".$attrOrder[0]."\\:]').each(function(){
     set_up_relationships(".$attrOrder[1].", $(this), false, ".(isset($options["attrRestrictionsEnforceDuplicates"]) ? 'true' : 'false').");
-});";
+});
+// Set up what happens when existing fields are changed\n";
       // need to check all but last
       for($i = 0; $i < count($attrOrder)-1; $i++){
         data_entry_helper::$javascript .= "
-jQuery('[name$=occAttr\\:".$attrOrder[$i]."],[name*=occAttr\\:".$attrOrder[$i]."\\:]').live('change',
-  function(){
-    set_up_relationships(".$attrOrder[$i+1].", $(this), true, ".(isset($options["attrRestrictionsEnforceDuplicates"]) ? 'true' : 'false').");
-  });";
+jQuery('.mnhnl-species-grid').find('[name$=occAttr\\:".$attrOrder[$i]."],[name*=occAttr\\:".$attrOrder[$i]."\\:]').change(function(){
+  set_up_relationships(".$attrOrder[$i+1].", $(this), true, ".(isset($options["attrRestrictionsEnforceDuplicates"]) ? 'true' : 'false').");
+});\n";
       }
-      // last is special - only updates similar on other rows.
-      data_entry_helper::$javascript .= "
-jQuery('[name$=occAttr\\:".$attrOrder[count($attrOrder)-1]."],[name*=occAttr\\:".$attrOrder[count($attrOrder)-1]."\\:]').live('change',
-  function(){
-    var scanForAttr = function(firstRow, attrID){
-      var children = [];
-      for( ; children.length == 0 && firstRow.length > 0; firstRow = firstRow.next().not('.first')){
-        children = firstRow.find('[name$=occAttr\:'+attrID+'],[name*=occAttr\:'+attrID+'\:]');
-      }
-      return children.length > 0 ? children : false;
-    }
-    var myParentRow =$(this).closest('tr');
-    for( myParentRow = jQuery(myParentRow[0]); !myParentRow.hasClass('first') ; myParentRow = myParentRow.prev() );
-    var parent = scanForAttr(myParentRow, ".$attrOrder[count($attrOrder)-2].");
-    set_up_relationships(".$attrOrder[count($attrOrder)-1].", parent, true, ".(isset($options["attrRestrictionsEnforceDuplicates"]) ? 'true' : 'false').");
-  });";
+      data_entry_helper::$javascript .= "// last is special - only updates similar on other rows.
+jQuery('.mnhnl-species-grid').find('[name$=occAttr\\:".$attrOrder[count($attrOrder)-1]."],[name*=occAttr\\:".$attrOrder[count($attrOrder)-1]."\\:]').change(function(){
+  set_up_last_relationship(this, ".$attrOrder[count($attrOrder)-1].", ".$attrOrder[count($attrOrder)-2].", true);
+});\n";
       // for duplicate checks had to trigger on all duplicate based fields.
       $selector = (isset($options['includeSubSample']) ? '.imp-srefX,.imp-srefY' : '');
       foreach($duplicateAttrList as $attr){
@@ -471,20 +459,12 @@ jQuery('[name$=occAttr\\:".$attrOrder[count($attrOrder)-1]."],[name*=occAttr\\:"
       }
       if($selector != "" && isset($options["attrRestrictionsEnforceDuplicates"]))
         data_entry_helper::$javascript .= "
-jQuery('".$selector."').live('change', function(){
-  var scanForAttr = function(firstRow, attrID){
-    var children = [];
-    for( ; children.length == 0 && firstRow.length > 0; firstRow = firstRow.next().not('.first')){
-      children = firstRow.find('[name$=occAttr\:'+attrID+'],[name*=occAttr\:'+attrID+'\:]');
-    }
-    return children.length > 0 ? children : false;
-  }
-  var myParentRow =$(this).closest('tr');
-  for( myParentRow = jQuery(myParentRow[0]); !myParentRow.hasClass('first') ; myParentRow = myParentRow.prev() );
-  var parent = scanForAttr(myParentRow, ".$attrOrder[count($attrOrder)-2].");
-  set_up_relationships(".$attrOrder[count($attrOrder)-1].", parent, true, true);
+attrRestrictionsDuplicateSelector = \"".$selector."\";
+jQuery('.mnhnl-species-grid').find('".$selector."').change(function(){
+  set_up_last_relationship(this, ".$attrOrder[count($attrOrder)-1].", ".$attrOrder[count($attrOrder)-2].", true);
 });\n";
     }
+
     if (!empty($args['attributeValidation'])) {
       $rules = array();
       $argRules = explode(';', $args['attributeValidation']);
