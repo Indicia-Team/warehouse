@@ -49,6 +49,8 @@ END)" />
             </subTable>
           </subTable>
         </subTable>
+        <tabColumn name='record_status' display='State' 
+          func="(CASE #this#.record_status WHEN 'V' THEN 'Verified'::text WHEN 'D' THEN 'Dubious'::text WHEN 'R' THEN 'Rejected'::text WHEN 'I' THEN 'In progress'::text WHEN 'C' THEN 'Complete'::text WHEN 'S' THEN 'Awaiting check'::text ELSE #this#.record_status::text END)" />
         <attributes separator='|'  meaningIdLanguage='preferred'/> 
         <tabColumn name='id' visible='true' />
       </subTable>    
