@@ -1,8 +1,8 @@
 ALTER TABLE cache_taxon_searchterms
-ADD parent_id integer;
+ADD parent_id integer null;
 
 ALTER TABLE cache_taxon_searchterms
-ADD preferred_taxa_taxon_list_id integer;
+ADD preferred_taxa_taxon_list_id integer null;
 
 COMMENT ON COLUMN cache_taxon_searchterms.parent_id IS 'Identifies the parent of the taxon in the hierarchy, if one exists. ';
 COMMENT ON COLUMN cache_taxon_searchterms.preferred_taxa_taxon_list_id IS 'ID of the preferred version of this term.';
