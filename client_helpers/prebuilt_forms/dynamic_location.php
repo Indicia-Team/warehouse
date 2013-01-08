@@ -218,7 +218,7 @@ class iform_dynamic_location extends iform_dynamic {
       $r .= '<input type="hidden" id="location:id" name="location:id" value="' . data_entry_helper::$entity_to_load['location:id'] . '" />' . PHP_EOL;    
     }
     $r .= get_user_profile_hidden_inputs($attributes, $args, isset(data_entry_helper::$entity_to_load['location:id']), $auth['read']);
-    return $hiddens;
+    return $r;
   }
  
   /** 
