@@ -210,6 +210,20 @@ set_up_relationships = function(startAttr, parent, setval, duplicates){
   });
 };
 
+set_up_last_relationship = function(child, childAttrID, parentAttrID, setval){
+  var scanForAttr = function(firstRow, attrID){
+    var children = [];
+    for( ; children.length == 0 && firstRow.length > 0; firstRow = firstRow.next().not('.first')){
+      children = firstRow.find('[name$=occAttr\:'+attrID+'],[name*=occAttr\:'+attrID+'\:]');
+    }
+    return children.length > 0 ? children : false;
+  }
+  var myParentRow =$(child).closest('tr');
+  for( myParentRow = jQuery(myParentRow[0]); !myParentRow.hasClass('first') ; myParentRow = myParentRow.prev() );
+  var parent = scanForAttr(myParentRow, parentAttrID);
+  set_up_relationships(childAttrID, parent, setval, attrRestrictionsDuplicates);
+};
+
 var _setHighlight = function(myRow) {
   if(jQuery(myRow).hasClass('highlight')) return;
   myRow.closest('table').find('tr').removeClass('highlight');
@@ -393,39 +407,63 @@ var _bindSpeciesGridControls = function(row,rowNum,options){
 
 function _addNewSpeciesGridRow(data,options){
   var map = jQuery('#map2')[0];
+  scRow++;
   $('#'+options.gridId).find('.ui-state-error').removeClass('.ui-state-error');
   $('#'+options.gridId).find('.inline-error').remove();
   var rows=$('#'+options.gridId + '-scClonable > tbody > tr');
-  var newRows=[];
-  rows.each(function(){newRows.push($(this).clone(true))})
-  var taxonCell=newRows[0].find('td:eq(1)');
-  scRow++;
   // Replace the tags in the row template with the taxa_taxon_list_ID
-  $.each(newRows, function(i, row) {
-    row.addClass('added-row').removeClass('scClonableRow').attr('id','').addClass('scMeaning-'+data.taxon_meaning_id);;
-    $.each(row.children(), function(j, cell) {
+  rows.each(function(i, row) {
+    var newRow = $(row).clone(true);
+    newRow.addClass('added-row').removeClass('scClonableRow').attr('id','').addClass('scMeaning-'+data.taxon_meaning_id);;
+    $.each(newRow.children(), function(j, cell) {
       cell.innerHTML = cell.innerHTML.replace(/--TTLID--/g, data.id).replace(/--GroupID--/g, scRow).replace(/--SampleID--/g, '').replace(/--OccurrenceID--/g, '');
     }); 
-    row.addClass('group-'+scRow+'-'+i).appendTo('#'+options.gridId);
+    newRow.addClass('group-'+scRow).addClass('group-'+scRow+'-'+i).appendTo('#'+options.gridId);
   });
   // sc:--GroupID--:--SampleID--:--TTLID--:--OccurrenceID--
-  newRows[0].find('.scPresenceCell input').attr('name', 'sc:'+scRow+'::' + data.id + '::present').val('true');
-  newRows[0].data('feature',null);
+  var newRows = $('.group-'+scRow);
+  var taxonCell=$(newRows[0]).find('td:eq(1)');
+  $(newRows[0]).find('.scPresenceCell input').attr('name', 'sc:'+scRow+'::' + data.id + '::present').val('true');
+  $(newRows[0]).data('feature',null);
   // now bolt all functionality in: deliberately separated from above so all rows are deployed into table first.
-  $.each(newRows, function(i, row){
+  newRows.each(function(i, row){
     if(typeof indiciaData.speciesListInTextSelector != "undefined" && $(row).find(indiciaData.speciesListInTextSelector).length > 0)
       bindSupportingSpeciesAutocomplete($(row).find(indiciaData.speciesListInTextSelector)[0], options);
   });
-  $.each(newRows, function(i, row){
-    _bindSpeciesGridControls(row,scRow,options);
+  newRows.each(function(i, row){
+    _bindSpeciesGridControls($(row),scRow,options);
     if(indiciaData.resizeSpeciesRadioGroup)
-      resize_radio_groups(row);
+      resize_radio_groups($(row));
   });
   if(typeof attrRestrictionsProcessOrder != 'undefined' && attrRestrictionsProcessOrder.length > 1){
-    $.each(newRows, function(i, row){
+    newRows.each(function(i, row){
+      // first set up initial state by triggering first - this will bubble through
       var parent = $(row).find('[name$=occAttr\:'+attrRestrictionsProcessOrder[0]+'],[name*=occAttr\:'+attrRestrictionsProcessOrder[0]+'\:]');
       if(parent.length>0)
         set_up_relationships(attrRestrictionsProcessOrder[1], parent, false, attrRestrictionsDuplicates);
+      // Set up what happens when fields are changed - do last one separately.
+      for(var i = 0; i < attrRestrictionsProcessOrder.length-1; i++){
+        var chngFunc = function(i, me){return function(){
+        	set_up_relationships(attrRestrictionsProcessOrder[i+1], $(me), true, attrRestrictionsDuplicates);
+        }};
+        $(row).find('[name$=occAttr\:'+attrRestrictionsProcessOrder[i]+'],[name*=occAttr\:'+attrRestrictionsProcessOrder[i]+'\:]').each(
+          function(idx,elem){
+            $(elem).change(
+              chngFunc(i, elem)
+            );
+          }
+        );
+      }
+      // last is special - only updates similar on other rows.
+      $(row).find('[name$=occAttr\:'+attrRestrictionsProcessOrder[attrRestrictionsProcessOrder.length-1]+'],[name*=occAttr\:'+attrRestrictionsProcessOrder[attrRestrictionsProcessOrder.length-1]+'\\:]').change(function(){
+        set_up_last_relationship(this, attrRestrictionsProcessOrder[attrRestrictionsProcessOrder.length-1], attrRestrictionsProcessOrder[attrRestrictionsProcessOrder.length-2], true);
+      });
+      // for duplicate checks have to trigger on all duplicate based fields.
+      if(typeof attrRestrictionsDuplicateSelector != "undefined"){
+        $(row).find('".$selector."').change(function(){
+          set_up_last_relationship(this, attrRestrictionsProcessOrder[attrRestrictionsProcessOrder.length-1], attrRestrictionsProcessOrder[attrRestrictionsProcessOrder.length-2], true);
+        });
+      }
     });
   }
   // Allow forms to hook into the event of a new row being added
@@ -433,7 +471,7 @@ function _addNewSpeciesGridRow(data,options){
     hook_species_grid_changed();
   }
   options.formatter(data,taxonCell);
-  _setHighlight(newRows[0]);
+  _setHighlight($(newRows[0]));
 };
 
 function _addExistingSpeciesGridRow(index,row,options){
@@ -447,7 +485,7 @@ function _addExistingSpeciesGridRow(index,row,options){
   };
   // now bolt all functionality in: deliberately separated
   $.each(rows, function(i, row){
-    row.addClass('group-'+index+'-'+i);
+    row.addClass('group-'+index).addClass('group-'+index+'-'+i);
     if(typeof indiciaData.speciesListInTextSelector != "undefined" && $(row).find(indiciaData.speciesListInTextSelector).length > 0)
       bindSupportingSpeciesAutocomplete($(row).find(indiciaData.speciesListInTextSelector)[0], options);
   });
