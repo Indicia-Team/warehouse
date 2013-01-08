@@ -22,7 +22,8 @@
   		s.comment as comment,
   		griddet.name as grid,
   		griddet.taxon as taxon,
-  		griddet.term as observation
+  		griddet.term as observation,
+  		(CASE griddet.record_status WHEN 'V' THEN 'Verified' WHEN 'D' THEN 'Dubious' WHEN 'R' THEN 'Rejected' WHEN 'I' THEN 'In progress' WHEN 'C' THEN 'Complete' WHEN 'S' THEN 'Awaiting check' ELSE griddet.record_status END) as record_status
   FROM samples s 
   LEFT OUTER JOIN (
     select s2.id as subsample_id,
@@ -30,7 +31,8 @@
            split_part(s2.location_name, ' ', 3) as name,
            o.id as occurrence_id,
            dttl.taxon as taxon,
-           tocc.term as term
+           tocc.term as term,
+           o.record_status as record_status
     FROM samples s2
     INNER JOIN occurrences o ON o.sample_id = s2.id and o.deleted = false
     INNER JOIN detail_taxa_taxon_lists dttl ON o.taxa_taxon_list_id = dttl.id
@@ -98,5 +100,6 @@
     <column name='num_grid_species' display='Num Species' />
     <column name='taxon' display='Taxon' />
     <column name='observation' display='Observation' />
+    <column name='record_status' display='State' /> 
   </columns>
 </report>

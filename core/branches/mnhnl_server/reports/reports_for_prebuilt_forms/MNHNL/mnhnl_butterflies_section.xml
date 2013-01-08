@@ -29,7 +29,8 @@
         	END as no_obs,
   		treliability.term as reliability,
   		occdet.taxon as taxon,
-  		occdet.observation as observation
+  		occdet.observation as observation,
+  		(CASE occdet.record_status WHEN 'V' THEN 'Verified' WHEN 'D' THEN 'Dubious' WHEN 'R' THEN 'Rejected' WHEN 'I' THEN 'In progress' WHEN 'C' THEN 'Complete' WHEN 'S' THEN 'Awaiting check' ELSE occdet.record_status END) as record_status
   FROM samples s 
   INNER JOIN samples s2
   		ON s2.parent_id = s.id and s2.deleted = false and s2.location_name like 'SL%'
@@ -62,6 +63,7 @@
            o.sample_id as sample_id,
            dttl.taxon as taxon,
            oav1.int_value as observation
+           o.record_status as record_status
       FROM occurrences o
       INNER JOIN detail_taxa_taxon_lists dttl ON o.taxa_taxon_list_id = dttl.id
       INNER JOIN occurrence_attribute_values oav1 ON oav1.occurrence_id = o.id  and oav1.deleted = FALSE and oav1.int_value is not null
@@ -118,5 +120,6 @@
     <column name='reliability' display='Reliability' />
     <column name='taxon' display='Taxon' />
     <column name='observation' display='Observation' />
+    <column name='record_status' display='State' />
   </columns>
 </report>
