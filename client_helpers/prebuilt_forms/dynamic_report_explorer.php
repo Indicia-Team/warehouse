@@ -283,7 +283,8 @@ class iform_dynamic_report_explorer extends iform_dynamic {
         'clickForSpatialRef'=>false,
         'reportGroup'=>'explore',
         'toolbarDiv'=>'top'
-      )
+      ),
+      $options
     );
     $olOptions = iform_map_get_ol_options($args);
     $r .= map_helper::map_panel($options, $olOptions);
