@@ -213,8 +213,7 @@ class iform_dynamic {
     if (isset($tabs['-'])) {
       $columnsOpen=false;
       $hasControls=false;
-      $r .= self::get_tab_content($auth, $args, '$tab'-'', $tabs['-'], 'above-tabs', &$attributes, 
-        &$columnsOpen, &$hasControls);
+      $r .= self::get_tab_content($auth, $args, '$tab'-'', $tabs['-'], 'above-tabs', $attributes, $columnsOpen, $hasControls);
       unset($tabs['-']);
     }
       
