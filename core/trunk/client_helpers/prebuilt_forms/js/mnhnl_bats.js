@@ -37,7 +37,7 @@ function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth
     $.each(newRows, function(i, row) {
       row.addClass('added-row').addClass(myClass).removeClass('scClonableRow').attr('id','');
       $.each(row.children(), function(j, cell) {
-        cell.innerHTML = cell.innerHTML.replace(/-ttlId-/g, data.id);
+        cell.innerHTML = cell.innerHTML.replace(/-idx-/g, indiciaData['speciesGridCounter']);
       }); 
       row.appendTo('#'+gridId);
       row.find('.scOccAttrCell').find('select').addClass('required').after('<span class=\"deh-required\">*</span>');
@@ -46,11 +46,12 @@ function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth
           jQuery(this).css('width',jQuery(this).find('label').css('width'));
       });
     }); 
-    newRows[0].find('.scPresenceCell input').attr('name', 'sc:' + data.id + '::present').attr('checked', 'checked');
+    newRows[0].find('.scPresenceCell input').attr('name', 'sc:' + indiciaData['speciesGridCounter'] + '::present').attr('checked','checked').val(data.id);
     // Allow forms to hook into the event of a new row being added
     if (typeof hook_check_no_obs !== "undefined") {
   	  hook_check_no_obs();
     }
+    indiciaData['speciesGridCounter']++;
     $(event.target).val('');
     formatter(data,taxonCell);
   };

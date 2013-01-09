@@ -28,11 +28,7 @@
  * @subpackage PrebuiltForms
  */
 
-/* Development Stream: TBD
- * 
- * Future possibles:
- * add map to main grid, Populate with positions of samples?
- * 
+/* 
  * On Installation:
  * Need to set attributeValidation required for locAttrs for Village, site type, site follow up, and smpAttrs Visit, human freq, microclimate (including min, max) 
  * Need to manually set the term list sort order on non-default language tems.
@@ -375,8 +371,15 @@ $.validator.messages.digits = $.validator.format(\"".lang::get('validation_digit
 $.validator.messages.integer = $.validator.format(\"".lang::get('validation_integer')."\");";
       data_entry_helper::$late_javascript .= "
 $.validator.addMethod('fillgroup', function(value, element){
-	return jQuery(element).closest('tr').find(':text').not('[value=]').length > 0 ||
-	       jQuery(element).closest('tr').find(':checkbox').filter('[checked]').length > 0;
+  var valid = jQuery(element).closest('tr').find(':text').not('[value=]').length > 0 ||
+         jQuery(element).closest('tr').find(':checkbox').filter('[checked]').length > 0;
+  // when this field is changed and becomes valid, remove the error codes on all the associated fields.
+  if(valid){
+    $(element).removeClass('ui-state-error');
+    var to_valid = $(element).closest('tr').find('.fillgroup').filter('.ui-state-error');
+    if(to_valid.length) to_valid.removeClass('ui-state-error').valid();
+  }
+  return valid;
 },
   \"".lang::get('validation_fillgroup')."\");";
       
@@ -799,6 +802,11 @@ hook_species_checklist_pre_delete_row=function(e) {
     if (isset(data_entry_helper::$entity_to_load['sample:id']))
       data_entry_helper::preload_species_checklist_occurrences(data_entry_helper::$entity_to_load['sample:id'], $options['readAuth'], false, array());
     // load the full list of species for the grid, including the main checklist plus any additional species in the reloaded occurrences.
+    // Following a recent change, fieldnames are now of the format
+    //    sc:<idx>:<occID>:present    This now holds the ttlid.
+    //    sc:<idx>:<occID>:occurrence:comment
+    //    sc:<idx>:<occID>:occurrence:confidential
+    //    sc:<idx>:<occID>:occAttr:<attrID>[:<valueID>]
     $options['extraParams']['view'] = 'detail';
     $occList = self::get_species_checklist_occ_list($options);
     // If we managed to read the species list data we can proceed
@@ -818,6 +826,8 @@ hook_species_checklist_pre_delete_row=function(e) {
       if (isset($options['lookupListId'])) {
         $grid .= self::get_species_checklist_clonable_row($options, $occAttrControls, $attributes);
       }
+      // tell the addTowToGrid javascript how many rows are already used, so it has a unique index for new rows
+      data_entry_helper::$javascript .= "indiciaData['speciesGridCounter'] = ".count($occList).";\n";
       $grid .= '<table class="ui-widget ui-widget-content mnhnl-species-grid '.$options['class'].'" id="'.$options['id'].'">';
       // No header for this one.
       $rows = array();
@@ -830,27 +840,15 @@ hook_species_checklist_pre_delete_row=function(e) {
         $firstrow = '<td class="ui-state-default remove-row" style="width: 1%" rowspan="'.($options['occurrenceComment']?"3":"2").'" >X</td>';
         $firstrow .= str_replace('{content}', $firstCell, str_replace('{colspan}', $colspan, $indicia_templates['taxon_label_cell']));
         $existing_record_id = $occ['id'];
-        $search = preg_grep("/^sc:".$occ['taxon']['id']."[_[0-9]*]?:$existing_record_id:present$/", array_keys(data_entry_helper::$entity_to_load));
-        if(count($search)===1){
-          $parts=explode(':',implode('', $search));
-          $ttlid_and_row = $parts[1];
-        } else $ttlid_and_row = $occ['taxon']['id'];
-        $hidden = ($options['rowInclusionCheck']=='checkbox' ? '' : ' style="display:none"');
-        if ($options['rowInclusionCheck']=='alwaysFixed' || $options['rowInclusionCheck']=='alwaysRemovable' ||
-            (data_entry_helper::$entity_to_load!=null && array_key_exists("sc:$ttlid_and_row:$existing_record_id:present", data_entry_helper::$entity_to_load))) {
-          $checked = ' checked="checked"';
-        } else {
-          $checked='';
-        }
-        $firstrow .= "<td class=\"scPresenceCell\"$hidden>".($options['rowInclusionCheck']!='hasData' ? "<input type=\"hidden\" class=\"scPresence\" name=\"sc:$ttlid_and_row:$existing_record_id:present\" value=\"0\"/><input type=\"checkbox\" class=\"scPresence\" name=\"sc:$ttlid_and_row:$existing_record_id:present\" $checked />" : '')."</td>";
+        $ttlid = $occ['taxon']['id'];
+        $search = preg_grep("/^sc:[0-9]*:$existing_record_id:present$/", array_keys(data_entry_helper::$entity_to_load));
+        $parts=explode(':',implode('', $search));
+        $row = $parts[1];
+        $firstrow .= "<td class=\"scPresenceCell\" style=\"display:none\"><input type=\"hidden\" class=\"scPresence\" name=\"sc:$row:$existing_record_id:present\" value=\"0\"/><input type=\"checkbox\" class=\"scPresence\" name=\"sc:$row:$existing_record_id:present\" checked=\"checked\" value=\"$ttlid\" /></td>";
         $secondrow = "";
         foreach ($occAttrControls as $attrId => $control) {
-          if ($existing_record_id) {
-            $search = preg_grep("/^sc:".$ttlid_and_row.":$existing_record_id:occAttr:$attrId".'[:[0-9]*]?$/', array_keys(data_entry_helper::$entity_to_load));
-            $ctrlId = (count($search)===1) ? implode('', $search) : "sc:$ttlid_and_row:$existing_record_id:occAttr:$attrId";
-          } else {
-            $ctrlId = "sc:$ttlid_and_row::occAttr:$attrId";
-          }
+          $search = preg_grep("/^sc:$row:$existing_record_id:occAttr:$attrId".'[:[0-9]*]?$/', array_keys(data_entry_helper::$entity_to_load));
+          $ctrlId = (count($search)===1) ? implode('', $search) : "sc:$row:$existing_record_id:occAttr:$attrId";
           if (isset(data_entry_helper::$entity_to_load[$ctrlId])) {
             $existing_value = data_entry_helper::$entity_to_load[$ctrlId];
           } elseif (array_key_exists('default', $attributes[$attrId])) {
@@ -883,10 +881,10 @@ hook_species_checklist_pre_delete_row=function(e) {
   <table class=\"scCommentTable\">
     <tbody class=\"scCommentTableBody\" ><tr>
       <td class=\"scCommentLabelCell\">
-        <label for=\"sc:$ttlid_and_row:$existing_record_id:occurrence:comment\" class=\"auto-width\">".lang::get("Comment").":</label>
+        <label for=\"sc:$row:$existing_record_id:occurrence:comment\" class=\"auto-width\">".lang::get("Comment").":</label>
       </td>
       <td>
-        <input type=\"text\" class=\"scComment\" name=\"sc:$ttlid_and_row:$existing_record_id:occurrence:comment\" id=\"sc:$ttlid_and_row:$existing_record_id:occurrence:comment\" value=\"".htmlspecialchars(data_entry_helper::$entity_to_load["sc:$ttlid_and_row:$existing_record_id:occurrence:comment"])."\">
+        <input type=\"text\" class=\"scComment\" name=\"sc:$row:$existing_record_id:occurrence:comment\" id=\"sc:$row:$existing_record_id:occurrence:comment\" value=\"".htmlspecialchars(data_entry_helper::$entity_to_load["sc:$row:$existing_record_id:occurrence:comment"])."\">
       </td>
     </tr></tbody>
   </table>
@@ -995,7 +993,7 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
         }
       }
       $r .= str_replace(array('{content}', '{class}'),
-          array(str_replace('{fieldname}', "sc:-ttlId-::occAttr:$attrId", $oc), $class.'Cell'),
+          array(str_replace('{fieldname}', "sc:-idx-::occAttr:$attrId", $oc), $class.'Cell'),
           $indicia_templates['attribute_cell']
       );
       $idx++;
@@ -1006,10 +1004,10 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
   <table class=\"scCommentTable\">
     <tbody class=\"scCommentTableBody\" ><tr>
       <td class=\"scCommentLabelCell\">
-        <label for=\"sc:-ttlId-::occurrence:comment\" class=\"auto-width\">".lang::get("Comment").":</label>
+        <label for=\"sc:-idx-::occurrence:comment\" class=\"auto-width\">".lang::get("Comment").":</label>
       </td>
       <td>
-        <input type=\"text\" class=\"scComment\" name=\"sc:-ttlId-::occurrence:comment\" id=\"sc:-ttlId-::occurrence:comment\" value=\"\">
+        <input type=\"text\" class=\"scComment\" name=\"sc:-idx-::occurrence:comment\" id=\"sc:-idx-::occurrence:comment\" value=\"\">
       </td>
     </tr></tbody>
   </table>
@@ -1031,11 +1029,7 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
   
   public static function get_species_checklist_occ_list($options) {
     // at this point the data_entry_helper::$entity_to_load has been preloaded with the occurrence data.
-  	// Get the list of species that are always added to the grid
-    if (isset($options['listId']) && !empty($options['listId'])) {
-      $taxalist = data_entry_helper::get_population_data($options);
-    } else
-      $taxalist = array();
+    // make assumption that no species are automatically added to List.
     // copy the options array so we can modify it
     $extraTaxonOptions = array_merge(array(), $options);
     // We don't want to filter the taxa to be added, because if they are in the sample, then they must be included whatever.
@@ -1046,36 +1040,25 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
     $fullTaxalist = data_entry_helper::get_population_data($extraTaxonOptions);
     $taxaLoaded = array();
     $occList = array();
-    $maxgensequence = 0;
     foreach(data_entry_helper::$entity_to_load as $key => $value) {
       $parts = explode(':', $key,4);
+      // following recent changes, the ttlid is stored in the present field.
       // Is this taxon attribute data?
-      if (count($parts) > 2 && $parts[0] == 'sc' && $parts[1]!='-ttlId-') {
-        if($parts[2]=='') $occList['error'] = 'ERROR PROCESSING entity_to_load: found name '.$key.' with no sequence/id number in part 2';
-        else if(!isset($occList[$parts[2]])){
-          $occ['id'] = $parts[2];
-          $pos = strpos($parts[1], '_');
-          $txID = ($pos === false) ? $parts[1] : substr($parts[1], 0, $pos); 
+      if (count($parts) == 4 && $parts[0] == 'sc' && $parts[3]=='present') {
+        if($parts[2]=='')
+          $occList['error'] = 'ERROR PROCESSING entity_to_load: found name '.$key.' with no sequence/id number in part 2';
+        else {
+          $occ = array('id' => $parts[2]); // occurrence ID
           foreach($fullTaxalist as $taxon){
-            if($txID == $taxon['id']){
+            if($value == $taxon['id']){
               $occ['taxon'] = $taxon;
-              $taxaLoaded[] = $txID;
+              $taxaLoaded[] = $value;
             }
           }
           $occList[$parts[2]] = $occ;
-          if(!is_numeric($parts[2])) $maxgensequence = intval(max(substr($parts[2],1),$maxgensequence));
         }
       }
     }
-    if (!isset(data_entry_helper::$entity_to_load['sample:id']))
-      foreach ($taxalist as $taxon){
-        if(!in_array($taxon['id'], $taxaLoaded)) {
-          $maxgensequence++;
-          $occ['id'] = 'x'.$maxgensequence;
-          $occ['taxon'] = $taxon;
-          $occList[] = $occ;
-        }
-      }
   	return $occList;
   }
   
