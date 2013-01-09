@@ -83,18 +83,30 @@ class Data_Controller extends Data_Service_Base_Controller {
       'taxon_relation',
       'taxon_group',
       'notification',
-      'cache_taxon_searchterm'
+      'cache_taxon_searchterm',
+      'cache_taxa_taxon_list'
   );
   
   // List of tables that do not use views to expose their data.
   protected $tables_without_views = array(
     'index_websites_website_agreements',
     'cache_taxon_searchterms',
+    'cache_taxa_taxon_lists',
     'notification'
   );
   
   /**
-  * Provides the /services/data/cache_taxon_searchterms service.
+  * Provides the /services/data/cache_taxa_taxon_list service.
+  * Retrieves details of a single taxon searchterm.
+  */
+  public function cache_taxa_taxon_list()
+  {
+    $this->handle_call('cache_taxa_taxon_list');
+  }
+  
+  
+  /**
+  * Provides the /services/data/cache_taxon_searchterm service.
   * Retrieves details of a single taxon searchterm.
   */
   public function cache_taxon_searchterm()
