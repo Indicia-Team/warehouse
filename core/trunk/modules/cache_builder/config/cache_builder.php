@@ -567,7 +567,7 @@ $config['occurrences']['get_missing_items_query'] = "
     left join cache_occurrences co on co.id=o.id 
     left join needs_update_occurrences nuo on nuo.id=o.id 
     where co.id is null and nuo.id is null
-    and (o.deleted or s.deleted or sp.deleted or su.deleted or (cttl.id is null)) = false";
+    and (o.deleted or s.deleted or coalesce(sp.deleted, false) or su.deleted or (cttl.id is null)) = false";
     
 $config['occurrences']['get_changed_items_query'] = "
   select distinct o.id, o.deleted or s.deleted or coalesce(sp.deleted, false) or su.deleted or (cttl.id is null) as deleted
