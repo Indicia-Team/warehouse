@@ -23,18 +23,19 @@ $(document).ready(function () {
   function setVisibleSurveyControl() {
     if ($('#user-filter\\:1').attr('checked')) {
       $('#survey_expertise').show();
-      $('#survey_mine').hide();    
+      $('#survey_all').hide();    
     } else {
-      if (!$('#user-filter\\:0').attr('checked')) {
+      if (!$('#user-filter\\:0').attr('checked') && !$('#user-filter\\:2').attr('checked')) {
         $('#user-filter\\:0').attr('checked',true);
       }
-      $('#survey_mine').show();
+      // radios 0 and 2 allow all surveys to be selected
+      $('#survey_all').show();
       $('#survey_expertise').hide();
     }
   }
   
   // toggle between the surveys available for the 2 options (my data, or data I am an expert for)
-  $('#user-filter\\:0, #user-filter\\:1').click(setVisibleSurveyControl);
+  $('#user-filter\\:0, #user-filter\\:1, #user-filter\\:2').click(setVisibleSurveyControl);
   
   setVisibleSurveyControl();
 });
