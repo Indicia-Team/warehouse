@@ -172,15 +172,6 @@ class iform_easy_download {
    * @return Form HTML.
    */
   public static function get_form($args, $node, $response=null) {
-    // apply defaults to options that have been added since the original version of this form
-    $args = array_merge(array(
-      'allow_experts_data'=>true,
-      'allow_all_data'=>false,
-      'csv_format'=>'yes',
-      'nbn_format'=>'expert',
-      'limit'=>10000
-    ), $args);
-    
     // Do they have expert access?
     $expert = (function_exists('user_access') && user_access($args['permission']));
     
@@ -328,8 +319,7 @@ class iform_easy_download {
       'sharing'=>'data_flow',
       'itemsPerPage'=>$limit
     ));
-    drupal_set_message($url);
-    //header("Location: $url");
+    header("Location: $url");
   }
   
   private static function build_filter($args, $readAuth, $format) {
