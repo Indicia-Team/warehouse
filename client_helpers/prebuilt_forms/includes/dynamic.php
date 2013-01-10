@@ -205,8 +205,9 @@ class iform_dynamic {
   
   protected static function get_form_html($args, $auth, $attributes) { 
     $r = call_user_func(array(self::$called_class, 'getHeader'), $args);
+    $params=array($args, $auth, &$attributes);
     $firstTabExtras = (method_exists(self::$called_class, 'getFirstTabAdditionalContent')) 
-      ? call_user_func(array(self::$called_class, 'getFirstTabAdditionalContent'), $args, $auth, $attributes)
+      ? call_user_func_array(array(self::$called_class, 'getFirstTabAdditionalContent'), $params)
       : '';
     $customAttributeTabs = get_attribute_tabs($attributes);
     $tabs = self::get_all_tabs($args['structure'], $customAttributeTabs);
@@ -316,7 +317,7 @@ class iform_dynamic {
    * website ID to post with a form submission.
    * @param type $args 
    */
-  protected static function getFirstTabAdditionalContent($args, $auth, $attributes) {
+  protected static function getFirstTabAdditionalContent($args, $auth, &$attributes) {
     // Get authorisation tokens to update the Warehouse, plus any other hidden data.
     $r = $auth['write'].
           "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n".
@@ -469,7 +470,7 @@ class iform_dynamic {
    * Finds the list of all tab names that are going to be required, either by the form
    * structure, or by custom attributes.
    */
-    protected static function get_all_tabs($structure, $attrTabs) {    
+  protected static function get_all_tabs($structure, $attrTabs) {    
     $structureArr = helper_base::explode_lines($structure);
     $structureTabs = array();
     // A default 'tab' for content that must appear above the set of tabs.
