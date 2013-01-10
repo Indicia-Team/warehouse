@@ -16,7 +16,7 @@ left join (index_locations_samples ils
 where #sharing_filter# 
 and co.date_type in ('D','DD','O','OO','Y','YY','-Y','U') 
 and (#ownData#=0 or CAST(co.created_by_id as character varying)='#currentUser#')
-and (s.entered_sref_system ilike 'osgb' or s.entered_sref_system ilike 'osni' or s.entered_sref_system = '4326' or s.entered_sref_system = '27700')
+and (s.entered_sref_system ilike 'osgb' or s.entered_sref_system ilike 'osie' or s.entered_sref_system = '4326' or s.entered_sref_system = '27700')
 and (trim('#date_from#')='' or '#date_from#'='Click here' or co.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
 and (trim('#date_to#')='' or '#date_to#'='Click here' or co.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))            
 and quality_check('#quality#', co.record_status, co.certainty)=true
