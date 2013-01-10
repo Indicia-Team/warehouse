@@ -137,8 +137,8 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, useLookupC
     // store the ttlId
     checkbox.val(data.id);
     // Setup a subspecies picker if this option is enabled. -1 because gridCounter gives the count of rows, but we are using
-    // a zero indexed rownum to build unique ids.
-    var rowNum = indiciaData['gridCounter-'+gridId] - 1,
+    // a zero indexed rownum to build unique ids. -1 more because we have just added an extra row!
+    var rowNum = indiciaData['gridCounter-'+gridId] - 2,
       subSpeciesCellId = 'sc:' + rowNum + '::occurrence:subspecies';
     createSubSpeciesList(url, data.preferred_taxa_taxon_list_id, data.preferred_name, lookupListId, subSpeciesCellId, readAuth, 0);
     // Finally, a blank row is added for the next record
@@ -422,11 +422,18 @@ function createSubSpeciesList(url, selectedItemPrefId, selectedItemPrefName, loo
     'name_type': 'L',
     'simplified': 'f'
   }, ctrl=$("#"+subSpeciesCtrlId.replace(/:/g,'\\:'));
-  $.getJSON(url+'/cache_taxon_searchterm', subSpeciesData, 
+  $.getJSON(url+'/cache_taxon_searchterm?callback=?', subSpeciesData, 
     function(data) {
+      var sspRegexString, optionsCount = 0, epithet, nameRegex;
       //clear the sub-species cell ready for new data
       ctrl.empty();
-      var optionsCount = 0, epithet, nameRegex=new RegExp('^'+RegExp.escape(selectedItemPrefName));
+      // build a regex that can remove the species binomial (plus optionally the subsp rank) from the name, so
+      // Adelia decempunctata forma bimaculata can be shown as just bimaculata.
+      sspRegexString=RegExp.escape(selectedItemPrefName);
+      if (typeof indiciaData.subspeciesRanksToStrip!=="undefined") {
+        sspRegexString += "[ ]+" + indiciaData.subspeciesRanksToStrip;
+      }
+      nameRegex=new RegExp('^'+sspRegexString);
       //Work our way through the sub-species data returned from data services
       jQuery.each(data, function(i, item) {
         epithet = item.preferred_taxon.replace(nameRegex, '');
