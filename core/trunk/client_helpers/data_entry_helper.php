@@ -2073,12 +2073,16 @@ class data_entry_helper extends helper_base {
   * Set to an array of additional parameters such as filter criteria to pass to the service request used to load 
   * existing records into the grid when reloading a sample. Especially useful when there are more than one species checklist
   * on a single form, so that each grid can display the appropriate output.</li>
-  * <li>subSpeciesColumn</li>
+  * <li><b>subSpeciesColumn</b>
   * If true and doing grid based data entry with lookupListId set so allowing the recorder to add species they choose to 
   * the bottom of the grid, subspecies will be displayed in a separate column so the recorder picks the species 
   * first then the subspecies. The species checklist must be configured as a simple 2 level list so that species are 
   * parents of the subspecies. For performance reasons, this option forces the cacheLookup option to be set to true therefore it 
-  * requires the cache_builder module to be running on the warehouse. Defaults to false.
+  * requires the cache_builder module to be running on the warehouse. Defaults to false.</li>
+  * <li><b>subSpeciesRemoveSspRank</b>
+  * Set to true to force the displayed subspecies names to remove the rank (var., forma, ssp) etc. Useful if all subspecies
+  * are the same rank.
+  * </li>
   * </ul>
   */
   public static function species_checklist()
@@ -2164,8 +2168,12 @@ class data_entry_helper extends helper_base {
         $presenceValues = preg_grep("/^sc:[0-9]*:[0-9]*:present$/", array_keys(self::$entity_to_load));
       }
       // if subspecies are stored, then need to load up the parent species info into the $taxonRows data
-      if ($options['subSpeciesColumn'])
+      if ($options['subSpeciesColumn']) {
         self::load_parent_species($taxalist, $options);
+        if ($options['subSpeciesRemoveSspRank']) 
+          // remove subspecific rank information from the displayed subspecies names by passing a regex
+          self::$javascript .= "indiciaData.subspeciesRanksToStrip='".lang::get('(form[a\.]?|var\.?|ssp\.)')."';\n";
+      }
       foreach ($taxonRows as $txIdx => $rowIds) {
         $ttlId = $rowIds['ttlId'];
         $loadedTxIdx = isset($rowIds['loadedTxIdx']) ? $rowIds['loadedTxIdx'] : -1;
@@ -2822,7 +2830,8 @@ $('#".$options['id']."-filter').click(function(evt) {
         'cacheLookup' => false,
         'reloadExtraParams' => array(),
         'useLoadedExistingRecords' => false,
-        'subSpeciesColumn' => false
+        'subSpeciesColumn' => false,
+        'subSpeciesRemoveSspRank' => false
     ), $options);
     // subspecies columns require cached lookups to be enabled.
     $options['cacheLookup'] = $options['cacheLookup'] || $options['subSpeciesColumn'];
