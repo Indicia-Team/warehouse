@@ -1382,10 +1382,17 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         // we are doing vector reporting via indicia services
         // first we need to build a style object which respects columns in the report output that define style settings for each vector.
         $settings=array();
+        $styleFns=array();
         foreach($response['columns'] as $col=>$def) {
           if (!empty($def['feature_style'])) {
-            // found a column that outputs data to input into a feature style parameter. ${} syntax is explained at http://docs.openlayers.org/library/feature_styling.html.
-            $settings[$def['feature_style']] = '${'.$col.'}';
+            if ($def['feature_style']==='fillOpacity') {
+              $styleFns[] = "get$col: function(feature) {
+                return Math.max(0, feature.attributes.$col-feature.layer.map.zoom/100);
+              }";
+              $settings[$def['feature_style']] = '${get'.$col.'}';
+            } else
+              // found a column that outputs data to input into a feature style parameter. ${} syntax is explained at http://docs.openlayers.org/library/feature_styling.html.
+              $settings[$def['feature_style']] = '${'.$col.'}';
           }
         }
         // default features are color red by default
@@ -1402,11 +1409,11 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
           $defsettings['graphicName']=$options['displaySymbol'];
         // The following function uses the strokeWidth to pad out the squares which go too small when zooming the map out. Points 
         // always display the same size so are no problem.
-        $styleFns = array("getstrokewidth: function(feature) {          
+        $styleFns[] = "getstrokewidth: function(feature) {          
           var width=feature.geometry.getBounds().right - feature.geometry.getBounds().left,
             strokeWidth=(width===0) ? 1 : 6 - (width / feature.layer.map.getResolution());
           return (strokeWidth<1) ? 1 : strokeWidth;
-        }");
+        }";
         if (isset($options['valueOutput'])) {
           foreach($options['valueOutput'] as $type => $outputdef) {
             $value = $outputdef['valueField'];
@@ -1526,9 +1533,18 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
           $filter, $style},
       {singleTile: true, isBaseLayer: false, sphericalMercator: true});\n";
       }
-      
+      if (!empty($currentParamValues['location_id'])) {
+        $location=data_entry_helper::get_population_data(array(
+          'table'=>'location',
+          'extraParams'=>$options['readAuth'] + array('id'=>$currentParamValues['location_id'],'view'=>'detail')
+        ));        
+        if (count($location)===1) {
+          $location=$location[0];
+          $setLocationJs = "\n  opts.initialFeatureWkt='".(!empty($location['boundary_geom']) ? $location['boundary_geom'] : $location['centroid_geom'])."';";
+        }
+      }
       report_helper::$javascript.= "
-mapSettingsHooks.push(function(opts) {
+mapSettingsHooks.push(function(opts) { $setLocationJs
   opts.reportGroup = '".$options['reportGroup']."';
   if (typeof indiciaData.reportlayer!=='undefined') {
     opts.layers.push(indiciaData.reportlayer);\n";
