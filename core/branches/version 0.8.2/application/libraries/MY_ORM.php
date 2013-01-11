@@ -670,6 +670,11 @@ class ORM extends ORM_Core {
     $r=true;
     if (array_key_exists('fkFields', $this->submission)) {
       foreach ($this->submission['fkFields'] as $a => $b) {
+        // if doing a parent lookup in a list based entity (terms or taxa), then filter to lookup within the list.
+        if (isset($this->list_id_field) && $b['fkIdField']==='parent_id' && !isset($b['fkSearchFilterField'])) {
+          $b['fkSearchFilterField']=$this->list_id_field;
+          $b['fkSearchFilterValue']=$this->submission['fields'][$this->list_id_field]['value'];
+        }
         $fk = $this->fkLookup($b);
         if ($fk) {
           $this->submission['fields'][$b['fkIdField']] = $fk;
@@ -1234,7 +1239,7 @@ class ORM extends ORM_Core {
             kohana::log('debug', "  date_end_value=".$attrValueModel->date_end_value);
             kohana::log('debug', "  date_type_value=".$attrValueModel->date_type_value);
           } else {
-            $this->errors[$fieldId] = "Invalid value $value for attribute";
+            $this->errors[$fieldId] = "Invalid value $value for attribute ".$attr->caption;
             kohana::log('debug', "Could not accept value $value into date fields for attribute $fieldId.");
             return false;
           }
@@ -1273,7 +1278,7 @@ class ORM extends ORM_Core {
           if ($r) {
             $value = $r;
           } else {
-            $this->errors[$fieldId] = "Invalid value $value for attribute";
+            $this->errors[$fieldId] = "Invalid value $value for attribute ".$attr->caption;
             kohana::log('debug', "Could not accept value $value into field $vf  for attribute $fieldId.");
             return false;
           }
@@ -1291,7 +1296,7 @@ class ORM extends ORM_Core {
       if (strcmp($attrValueModel->$vf,$value)===0 || ($dataType==='G' && !empty($attrValueModel->$vf))) {
         kohana::log('debug', "Accepted value $value into field $vf for attribute $fieldId. Value=".$attrValueModel->$vf);
       } else {
-        $this->errors[$fieldId] = "Invalid value $value for attribute";
+        $this->errors[$fieldId] = "Invalid value $value for attribute ".$attr->caption;
         kohana::log('debug', "Could not accept value $value into field $vf for attribute $fieldId.");
         return false;
       }
