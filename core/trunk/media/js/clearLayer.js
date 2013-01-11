@@ -34,6 +34,12 @@ OpenLayers.Control.ClearLayer = OpenLayers.Class(OpenLayers.Control, {
      * or the layer if the control was configured with a single layer
      */
     layers: null,
+    
+    /**
+     * Property: clearReport
+     * If true then a report map is cleared when the button is clicked.
+     */
+    clearReport: false,
 
     /**
      * Constructor: OpenLayers.Control.ClearLayer
@@ -68,6 +74,20 @@ OpenLayers.Control.ClearLayer = OpenLayers.Class(OpenLayers.Control, {
             $('#imp-geom').val('');
           }
         });
+      }
+      if (this.clearReport) {
+        $('#hidden-wkt').val('');
+        $('#orig-wkt').val('');
+        if (typeof indiciaData.reportlayer!=="undefined") {
+          indiciaData.reportlayer.removeAllFeatures();
+          $.each(indiciaData.reports, function(i, reportGroup) {
+            $.each(reportGroup, function(j, grid) {
+              grid.mapRecords(grid[0].settings.dataSource);
+              grid[0].settings.offset=0;
+              grid.reload(true);
+            });
+          });
+        }
       }
     },
    
