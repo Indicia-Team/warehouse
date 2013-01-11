@@ -63,6 +63,8 @@ class postgreSQL {
   public static function selectVerificationAndCommentNotifications($last_run_date, $db=null) {
     if (!$db)
       $db = new Database();
+    // note this query excludes user 1 from the notifications (admin user) as they are records which don't
+    // have a warehouse user ID.
     return $db->query("select case when o.verified_on>'$last_run_date' and o.record_status not in ('I','T','C') then 'V' else 'C' end as source_type,
         co.id, co.created_by_id, co.taxon, co.date_start, co.date_end, co.date_type, co.public_entered_sref, u.username, 
         o.verified_on, co.public_entered_sref, oc.comment, oc.auto_generated, oc.generated_by, o.record_status, o.updated_on    
@@ -70,9 +72,10 @@ class postgreSQL {
       join cache_occurrences co on co.id=o.id
       left join occurrence_comments oc on oc.occurrence_id=o.id and oc.deleted=false and oc.created_on>'$last_run_date'
       join users u on u.id=coalesce(oc.created_by_id, o.verified_by_id)
-      where (o.verified_on>'$last_run_date'
+      where ((o.verified_on>'$last_run_date'
       and o.record_status not in ('I','T','C'))
-      or oc.id is not null")->result();
+      or oc.id is not null)
+      and o.created_by_id<>1")->result();
   }
   
 }
