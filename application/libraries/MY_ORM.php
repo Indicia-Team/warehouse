@@ -670,6 +670,11 @@ class ORM extends ORM_Core {
     $r=true;
     if (array_key_exists('fkFields', $this->submission)) {
       foreach ($this->submission['fkFields'] as $a => $b) {
+        // if doing a parent lookup in a list based entity (terms or taxa), then filter to lookup within the list.
+        if (isset($this->list_id_field) && $b['fkIdField']==='parent_id' && !isset($b['fkSearchFilterField'])) {
+          $b['fkSearchFilterField']=$this->list_id_field;
+          $b['fkSearchFilterValue']=$this->submission['fields'][$this->list_id_field]['value'];
+        }
         $fk = $this->fkLookup($b);
         if ($fk) {
           $this->submission['fields'][$b['fkIdField']] = $fk;
@@ -1276,7 +1281,6 @@ class ORM extends ORM_Core {
             'fkSearchFilterField' => 'termlist_id',
             'fkSearchFilterValue' => $attr->termlist_id,
           ));
-          kohana::log('debug', 'FK lookup query: '.$this->db->last_query());
           if ($r) {
             $value = $r;
           } else {
