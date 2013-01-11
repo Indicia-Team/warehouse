@@ -1589,7 +1589,7 @@ mapGeoreferenceHooks = [];
           highlighter.activate();
         } else if (ctrl=='clearEditLayer' && div.settings.editLayer) {
           toolbarControls.push(new OpenLayers.Control.ClearLayer([div.map.editLayer],
-              {'displayClass': align + ' olControlClearLayer', 'title':div.settings.hintClearSelection}));
+              {'displayClass': align + ' olControlClearLayer', 'title':div.settings.hintClearSelection, 'clearReport':true}));
         } else if (ctrl=='modifyFeature' && div.settings.editLayer) {
           toolbarControls.push(new OpenLayers.Control.ModifyFeature(div.map.editLayer,
               {'displayClass': align + 'olControlModifyFeature', 'title':div.settings.hintModifyFeature}));
