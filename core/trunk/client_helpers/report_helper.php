@@ -371,12 +371,13 @@ class report_helper extends helper_base {
           if (isset($field['datatype'])) {
             switch ($field['datatype']) {
               case 'text':
-                $title=lang::get("$caption search. Use * as a wildcard.");
+                $title=lang::get("$caption text begins with ... search. Use * as a wildcard.");
                 break;
               case 'date':
                 $title=lang::get("$caption search. Search for an exact date or use a vague<br/> date such as a year to select a range of dates.");
                 break;
-              default: $title=lang::get("$caption search. Enter an exact number or use > or < as the first character to<br/>filter for greater than or less than a value.");
+              default: $title=lang::get("$caption search. Either enter an exact number, use >, >=, <, or <= before the number to filter for ".
+                      "$caption more or less than your search value, or enter a range such as 1000-2000.");
             }
             $filterRow .= "<th><input title=\"$title\" type=\"text\" class=\"col-filter\" id=\"col-filter-".$field['fieldname']."\"/></th>";
             $wantFilterRow = true;
