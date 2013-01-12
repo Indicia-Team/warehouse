@@ -37,7 +37,8 @@ class iform_easy_download {
     return array(
       'title'=>'Easy download',
       'category' => 'Utilities',
-      'description'=>'A page for quick and easy download of the data you have access to.'
+      'description'=>'A page for quick and easy download of the data you have access to.',
+      'helpLink'=>'https://indicia-docs.readthedocs.org/en/latest/site-building/iform/prebuilt-forms/easy-download.html'
     );
   }
   
