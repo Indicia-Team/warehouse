@@ -147,7 +147,8 @@ class Report_Controller extends Data_Service_Base_Controller {
       $pairs = explode('&', $_SERVER['QUERY_STRING']);
       foreach ($pairs as $pair) {
         if (!empty($pair)) {
-          $nv = explode("=", $pair);
+          // limit explode to 2 in case there is an = in the value itself
+          $nv = explode("=", $pair, 2);
           $name = urldecode($nv[0]);
           $value = urldecode($nv[1]);
           $vars[$name] = $value;

@@ -801,22 +801,34 @@ class ReportEngine {
     if ($datatype=='text') {
       // quote text values and replace * wildcards with SQL friendly ones.
       $value=str_replace('*','%',$value);
+      //by default add a wildcard to the end
+      if (substr($value, -1)!=='%')
+        $value .= '%';
       $operator='ILIKE';
     } else 
       $operator = '='; 
-    // apart from text and date values we can use > or < to set the filter operator
-    if ($datatype!='text' && $datatype!='date' && (substr($value, 0, 1)=='<' || substr($value, 0, 1)=='>')) {
-      $operator=substr($value, 0, 1);
-      $value = substr($value, 1);
-    }
+    
+    if ($datatype!=='text' && $datatype!=='date') {
+      //strip spaces so the user can be more flexible about spaces they enter
+      //Note: Don't use this for text filter as spacing might be important for the search.
+      //For dates, spacing will be handled by the vague date engine
+      $value = str_replace(" ","",$value);
+      //apart from text and date values we handle the case where the user enters a range e.g. 1-3
+      // @todo: is there an i18n consideration here with the .?
+      if (preg_match('/(?P<from>\d+(\.\d+)?)(-|to)(?<to>\d+(\.\d+)?)/', $value, $matches))
+        return "$field BETWEEN ".$matches['from']." AND ".$matches['to'];
+      // support <, <=, >, >= operators
+      if (preg_match('/(?P<op>(>|<|>=|<=))(?P<val>\d+(\.\d+)?)/', $value, $matches)) 
+        return "$field ".$matches['op']." ".$matches['val'];
+    } 
     if ($datatype=='text') {
       // ensure value is escaped for apostrophes
       $value = pg_escape_string($value);
       // quote text and date values 
       $value="'".$value."'";
     }
-    if ($datatype != 'date') 
-      return "$field $operator $value";
+    if ($datatype != 'date') {
+      return "$field $operator $value";}
     else {
       $vaguedate = vague_date::string_to_vague_date($value);
       return "($field >= '".$vaguedate[0]."' AND $field <= '".$vaguedate[1]."')";
