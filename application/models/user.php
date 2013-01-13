@@ -77,8 +77,15 @@ class User_Model extends ORM {
       if (!is_numeric($this->submission['fields']['core_role_id']['value']))
         $this->submission['fields']['core_role_id']['value'] = NULL;
 
+    // Set boolean field defaults as not in form submission if not checked. This is not required if the view is 
+    // switched to the data_entry_helper controls.
     $this->submission['fields']['email_visible']	 = array('value' => (isset($this->submission['fields']['email_visible']) ? 't' : 'f'));
     $this->submission['fields']['view_common_names'] = array('value' => (isset($this->submission['fields']['view_common_names']) ? 't' : 'f'));
+    $this->submission['fields']['allow_share_for_reporting'] = array('value' => (isset($this->submission['fields']['allow_share_for_reporting']) ? 't' : 'f'));
+    $this->submission['fields']['allow_share_for_peer_review'] = array('value' => (isset($this->submission['fields']['allow_share_for_peer_review']) ? 't' : 'f'));
+    $this->submission['fields']['allow_share_for_verification'] = array('value' => (isset($this->submission['fields']['allow_share_for_verification']) ? 't' : 'f'));
+    $this->submission['fields']['allow_share_for_data_flow'] = array('value' => (isset($this->submission['fields']['allow_share_for_data_flow']) ? 't' : 'f'));
+    $this->submission['fields']['allow_share_for_moderation'] = array('value' => (isset($this->submission['fields']['allow_share_for_moderation']) ? 't' : 'f'));
     // Ensure that the website fields remain available (as they are not proper model columns so get
     // stripped from the model).
     $this->droppedFields = array_diff_key($this->submission['fields'],
