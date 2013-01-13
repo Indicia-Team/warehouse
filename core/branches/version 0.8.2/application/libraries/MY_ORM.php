@@ -670,18 +670,20 @@ class ORM extends ORM_Core {
     $r=true;
     if (array_key_exists('fkFields', $this->submission)) {
       foreach ($this->submission['fkFields'] as $a => $b) {
-        // if doing a parent lookup in a list based entity (terms or taxa), then filter to lookup within the list.
-        if (isset($this->list_id_field) && $b['fkIdField']==='parent_id' && !isset($b['fkSearchFilterField'])) {
-          $b['fkSearchFilterField']=$this->list_id_field;
-          $b['fkSearchFilterValue']=$this->submission['fields'][$this->list_id_field]['value'];
-        }
-        $fk = $this->fkLookup($b);
-        if ($fk) {
-          $this->submission['fields'][$b['fkIdField']] = $fk;
-        } else {
-          $this->errors[$a] = 'Could not find a '.$b['readableTableName'].' by looking for "'.$b['fkSearchValue'].
-                '" in the '.ucwords($b['fkSearchField']).' field.';
-          $r=false;
+        if (!empty($b['fkSearchValue'])) {
+          // if doing a parent lookup in a list based entity (terms or taxa), then filter to lookup within the list.
+          if (isset($this->list_id_field) && $b['fkIdField']==='parent_id' && !isset($b['fkSearchFilterField'])) {
+            $b['fkSearchFilterField']=$this->list_id_field;
+            $b['fkSearchFilterValue']=$this->submission['fields'][$this->list_id_field]['value'];
+          }
+          $fk = $this->fkLookup($b);
+          if ($fk) {
+            $this->submission['fields'][$b['fkIdField']] = $fk;
+          } else {
+            $this->errors[$a] = 'Could not find a '.$b['readableTableName'].' by looking for "'.$b['fkSearchValue'].
+                  '" in the '.ucwords($b['fkSearchField']).' field.';
+            $r=false;
+          }
         }
       }
     }
