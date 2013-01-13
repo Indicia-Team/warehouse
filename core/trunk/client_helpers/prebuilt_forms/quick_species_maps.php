@@ -42,7 +42,7 @@ class iform_quick_species_maps {
       'title'=>'Quick Species Maps',
       'category' => 'Reporting',
       'description'=>'A list of species that can quickly be added to a distribution map.',
-      'helpLink'=>'https://readthedocs.org/projects/indicia-docs/en/latest/site-building/iform/prebuilt-forms/quick-species-maps.html'
+      'helpLink'=>'https://indicia-docs.readthedocs.org/en/latest/site-building/iform/prebuilt-forms/quick-species-maps.html'
     );
   }
   
