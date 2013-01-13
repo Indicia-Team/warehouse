@@ -58,7 +58,12 @@ class User_Model extends ORM {
       'core_role_id',
       'email_visible',
       'view_common_names',
-      'person_id');
+      'person_id',
+      'allow_share_for_reporting',
+      'allow_share_for_peer_review',
+      'allow_share_for_verification',
+      'allow_share_for_data_flow',
+      'allow_share_for_moderation');
     if (!array_key_exists('core_role_id', $array->as_array())) {
     	// if core role id is blank, make sure it is nulled out.
       $array['core_role_id'] = null;
