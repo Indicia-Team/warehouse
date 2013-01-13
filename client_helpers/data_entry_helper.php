@@ -905,6 +905,7 @@ class data_entry_helper extends helper_base {
       'id'=>'select-'.rand(0,10000),
       'blankText'=>'<please select>'
     ), $options);
+    $options['extraParams']['preferred']='t';
     // Get the data for the control. Not Ajax populated at the moment. We either populate the lookupValues for the top level control
     // or store in the childData for output into JavaScript
     $values = self::get_population_data($options);
