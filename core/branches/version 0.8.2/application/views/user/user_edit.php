@@ -53,6 +53,26 @@
 <label class="wide" for="view_common_names">Show Common Names</label>
 <?php echo form::checkbox('view_common_names', TRUE, isset($model->view_common_names) AND ($model->view_common_names == 't') ) ?>
 </li>
+<li>
+<label class="wide" for="view_common_names">This user allows records to be shared for reporting</label>
+<?php echo form::checkbox('allow_share_for_reporting', TRUE, isset($model->allow_share_for_reporting) AND ($model->allow_share_for_reporting == 't') ) ?>
+</li>
+<li>
+<label class="wide" for="view_common_names">This user allows records to be shared for peer review</label>
+<?php echo form::checkbox('allow_share_for_peer_review', TRUE, isset($model->allow_share_for_peer_review) AND ($model->allow_share_for_peer_review == 't') ) ?>
+</li>
+<li>
+<label class="wide" for="view_common_names">This user allows records to be shared for verification</label>
+<?php echo form::checkbox('allow_share_for_verification', TRUE, isset($model->allow_share_for_verification) AND ($model->allow_share_for_verification == 't') ) ?>
+</li>
+<li>
+<label class="wide" for="view_common_names">This user allows records to be shared for data flow</label>
+<?php echo form::checkbox('allow_share_for_data_flow', TRUE, isset($model->allow_share_for_data_flow) AND ($model->allow_share_for_data_flow == 't') ) ?>
+</li>
+<li>
+<label class="wide" for="view_common_names">This user allows records to be shared for moderation</label>
+<?php echo form::checkbox('allow_share_for_moderation', TRUE, isset($model->allow_share_for_moderation) AND ($model->allow_share_for_moderation == 't') ) ?>
+</li>
 <?php if ($this->auth->logged_in('CoreAdmin')): ?>
 <li>
 <label class="wide" for="core_role_id">Role within Warehouse</label>

@@ -29,7 +29,7 @@ class User_Identifier_Controller extends Service_Base_Controller {
   protected $db;
   
   /**
-   * Service method that takes list of user identifiers and returns the appropriate user ID
+   * Service method that takes a list of user identifiers such as email addresses and returns the appropriate user ID
    * from the warehouse, which can then be used in subsequent calls to save the data. Takes the 
    * following parameters in the $_GET or $_POST data in addition to a nonce and auth_token for a write operation:<ul>
    * <li><strong>identifiers</strong/><br/>
@@ -55,6 +55,11 @@ class User_Identifier_Controller extends Service_Base_Controller {
    * values will be ignored. Provide this as a JSON object with the properties being the caption of the 
    * attribute and the values being the values to change.
    * </li>
+   * <li><strong>shares_to_prevent</strong>
+   * If the user has opted out of allowing their records to be shared with other 
+   * websites, the sharing tasks which they have opted out of should be passed as a comma separated list
+   * here. Valid sharing tasks are: reporting, peer_review, verification, data_flow, moderation. They 
+   * will then be stored against the user account. </li>
    * </ul>
    * @return JSON JSON object containing the following properties:
    *   userId - If a single user account has been identified then returns the Indicia user ID for the existing 
@@ -73,17 +78,19 @@ class User_Identifier_Controller extends Service_Base_Controller {
    */
   public function get_user_id() {
     try {
-      if (!array_key_exists('identifiers', $_REQUEST))
+      // don't use $_REQUEST as it can do funny things escaping quotes etc.
+      $request=array_merge($_GET, $_POST);
+      if (!array_key_exists('identifiers', $request))
         throw new exception('Error: missing identifiers parameter');
-      $identifiers = json_decode($_REQUEST['identifiers']);
+      $identifiers = json_decode($request['identifiers']);
       if (!is_array($identifiers))
         throw new Exception('Error: identifiers parameter not of correct format');
-      if (!isset($_REQUEST['surname']))
+      if (!isset($request['surname']))
         throw new exception('Call to get_user_id requires a surname in the GET or POST data.');
       // We don't need a website_id in the request as the authentication data contains it, but
       // we do need to know the cms_user_id so that we can ensure any previously recorded data for
       // this user is attributed correctly to the warehouse user.
-      if (!isset($_REQUEST['cms_user_id']))
+      if (!isset($request['cms_user_id']))
         throw new exception('Call to get_user_id requires a cms_user_id in the GET or POST data.');
       // authenticate requesting website for this service. This can create a user, so need write
       // permission.
@@ -121,8 +128,8 @@ class User_Identifier_Controller extends Service_Base_Controller {
           $this->db->where("t.term IN ('".$identifier->type."')");
         }
         
-        if (isset($_REQUEST['users_to_merge'])) {
-          $usersToMerge = json_decode($_REQUEST['users_to_merge']);
+        if (isset($request['users_to_merge'])) {
+          $usersToMerge = json_decode($request['users_to_merge']);
           $this->db->in('user_id', $usersToMerge);
         }
         $r = $this->db->get()->result_array(true);
@@ -166,6 +173,7 @@ class User_Identifier_Controller extends Service_Base_Controller {
       }
       $this->storeIdentifiers($userId, $identifiers);
       $this->associateWebsite($userId);
+      $this->storeSharingPreferences($userId);
       $attrs = $this->getAttributes();
       $this->storeCustomAttributes($userId, $attrs);
       // Convert the attributes to update in the client website account into an array
@@ -179,8 +187,7 @@ class User_Identifier_Controller extends Service_Base_Controller {
       ));
       // Update the created_by_id for all records that were created by this cms_user_id. This 
       // takes ownership of the records.
-      postgreSQL::setOccurrenceCreatorByCmsUser($this->website_id, $userId, $_REQUEST['cms_user_id'], $this->db);
-    
+      postgreSQL::setOccurrenceCreatorByCmsUser($this->website_id, $userId, $request['cms_user_id'], $this->db);
     }
     catch (Exception $e) {
       $this->handle_error($e);
@@ -381,9 +388,13 @@ class User_Identifier_Controller extends Service_Base_Controller {
     if (count($qry)===0)
       // insert new join record
       $uw=ORM::factory('users_website');
-    else
+    else {
       // update existing
       $uw=ORM::factory('users_website', $qry[0]['id']);
+      if ($uw->site_role_id===1 || $uw->site_role_id===2)
+        // don't bother updating, they are already admin or editor for this site
+        return;
+    }
     $data = array(
       'user_id'=>$userId,
       'website_id'=>$this->website_id,
@@ -391,6 +402,27 @@ class User_Identifier_Controller extends Service_Base_Controller {
     );
     $uw->validate(new Validation($data), true);
     $this->checkErrors($uw);
+  }
+  
+  /**
+   * If there are sharing preferences in the $_REQUEST for this user account, then 
+   * stores them against the user record. E.g. the user might opt of allowing other
+   * websites to pass on their records via the sharing mechanism.
+   */
+  private function storeSharingPreferences($userId) {
+    if (isset($_REQUEST['shares_to_prevent'])) {
+      // the web service request parameter is a comma separated list of the tasks this user does not
+      // want to share their records with other sites for
+      $preventShares = explode(',', $_REQUEST['shares_to_prevent']);
+      // build an array of values to post to the db
+      $tasks = array('reporting', 'peer_review', 'verification', 'data_flow', 'moderation');
+      $values=array();
+      foreach ($tasks as $task) {
+        $values["allow_share_for_$task"]=(in_array($task, $preventShares) ? 'f' : 't');
+      }
+      // update their user record.
+      $this->db->update('users', $values, array('id'=>$userId));    
+    }
   }
   
   /**
