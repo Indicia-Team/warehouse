@@ -450,8 +450,13 @@ class import_helper extends helper_base {
         $r = 'The upload was successful.';
       }
     } else {
-      return 'An error occurred during the upload.<br/>'.print_r($response, true);
+      $r = 'An error occurred during the upload.<br/>'.print_r($response, true);
     }
+    $reload = self::get_reload_link_parts();
+    unset($reload['params']['total']);
+    unset($reload['params']['uploaded_csv']);
+    $reloadpath = $reload['path'] . '?' . self::array_to_query_string($reload['params']);
+    $r = "<p>$r</p><p>".lang::get('Would you like to ')."<a href=\"$reloadpath\">".lang::get('import another file?')."</a></p>";
     return $r;
   }
 
