@@ -55,6 +55,11 @@ class User_Identifier_Controller extends Service_Base_Controller {
    * values will be ignored. Provide this as a JSON object with the properties being the caption of the 
    * attribute and the values being the values to change.
    * </li>
+   * <li><strong>shares_to_prevent</strong>
+   * If the user has opted out of allowing their records to be shared with other 
+   * websites, the sharing tasks which they have opted out of should be passed as a comma separated list
+   * here. Valid sharing tasks are: reporting, peer_review, verification, data_flow, moderation. They 
+   * will then be stored against the user account. </li>
    * </ul>
    * @return JSON JSON object containing the following properties:
    *   userId - If a single user account has been identified then returns the Indicia user ID for the existing 
@@ -168,6 +173,7 @@ class User_Identifier_Controller extends Service_Base_Controller {
       }
       $this->storeIdentifiers($userId, $identifiers);
       $this->associateWebsite($userId);
+      $this->storeSharingPreferences($userId);
       $attrs = $this->getAttributes();
       $this->storeCustomAttributes($userId, $attrs);
       // Convert the attributes to update in the client website account into an array
@@ -182,7 +188,6 @@ class User_Identifier_Controller extends Service_Base_Controller {
       // Update the created_by_id for all records that were created by this cms_user_id. This 
       // takes ownership of the records.
       postgreSQL::setOccurrenceCreatorByCmsUser($this->website_id, $userId, $request['cms_user_id'], $this->db);
-    
     }
     catch (Exception $e) {
       $this->handle_error($e);
@@ -397,6 +402,27 @@ class User_Identifier_Controller extends Service_Base_Controller {
     );
     $uw->validate(new Validation($data), true);
     $this->checkErrors($uw);
+  }
+  
+  /**
+   * If there are sharing preferences in the $_REQUEST for this user account, then 
+   * stores them against the user record. E.g. the user might opt of allowing other
+   * websites to pass on their records via the sharing mechanism.
+   */
+  private function storeSharingPreferences($userId) {
+    if (isset($_REQUEST['shares_to_prevent'])) {
+      // the web service request parameter is a comma separated list of the tasks this user does not
+      // want to share their records with other sites for
+      $preventShares = explode(',', $_REQUEST['shares_to_prevent']);
+      // build an array of values to post to the db
+      $tasks = array('reporting', 'peer_review', 'verification', 'data_flow', 'moderation');
+      $values=array();
+      foreach ($tasks as $task) {
+        $values["allow_share_for_$task"]=(in_array($task, $preventShares) ? 'f' : 't');
+      }
+      // update their user record.
+      $this->db->update('users', $values, array('id'=>$userId));    
+    }
   }
   
   /**
