@@ -2233,6 +2233,8 @@ if (typeof mapSettingsHooks!=='undefined') {
     if($now < $consider_date && $options["viewPreviousIfTooEarly"]){
       $options["year"]--;
       $options["viewPreviousIfTooEarly"]=false;
+      unset($options['extraParams']['date_from']);
+      unset($options['extraParams']['date_to']);
       return self::report_calendar_grid($options);
     }
     $options["newURL"] .= (strpos($options["newURL"] , '?')===false) ? '?' : '&';
@@ -2295,6 +2297,7 @@ if (typeof mapSettingsHooks!=='undefined') {
       'weekstart' => 'weekday=7', // Default Sunday
       'weekNumberFilter' => ':'
     ), $options);
+    drupal_set_message($options['year']);
     $options["extraParams"] = array_merge(array(
       'date_from' => $options["year"].'-01-01',
       'date_to' => $options["year"].'-12-31',
