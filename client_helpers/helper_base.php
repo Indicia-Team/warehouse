@@ -791,8 +791,10 @@ $('.ui-state-default').live('mouseout', function() {
    * </li>
    * </ul>
    */
-  public static function build_params_form($options) {
+  public static function build_params_form($options, &$hasVisibleContent) {
     require_once('data_entry_helper.php');
+    // track if there is anything other than hiddens on the form
+    $hasVisibleContent=false;
     // apply defaults
     $options = array_merge(array(
       'inlineMapTools' => false,
@@ -810,8 +812,12 @@ $('.ui-state-default').live('mouseout', function() {
     foreach($options['form'] as $key=>$info) {
       $tools = array(); 
       // Skip parameters if we have been asked to ignore them
-      if (!isset($options['paramsToExclude']) || !in_array($key, $options['paramsToExclude'])) 
+      if (!isset($options['paramsToExclude']) || !in_array($key, $options['paramsToExclude'])) {
         $r .= self::get_params_form_control($key, $info, $options, $tools);
+        // If that was a visible setting, then we have to tell the caller that there is something to show.
+        if (!array_key_exists($key, $options['presetParams']))
+          $hasVisibleContent=true;
+      }
       // If the form has defined any tools to add to the map, we need to create JavaScript to add them to the map.
       if (count($tools)) {
         // wrap JavaScript in a test that the map is on the page

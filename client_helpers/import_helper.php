@@ -114,7 +114,11 @@ class import_helper extends helper_base {
         // skip parts of the form we have a preset value for
         $formOptions['presetParams'] = $options['presetSettings'];
       }
-      $r .= self::build_params_form($formOptions);
+      $form = self::build_params_form($formOptions, $hasVisibleContent);
+      // If there are no settings required, skip to the next step.
+      if (!$hasVisibleContent)
+        return self::upload_mappings_form($options);
+      $r .= $form;      
       if (isset($options['presetSettings'])) {
         // The presets might contain some extra values to apply to every row - must be output as hiddens
         $extraHiddens = array_diff_key($options['presetSettings'], $formArray);
@@ -143,15 +147,20 @@ class import_helper extends helper_base {
       return lang::get('upload_not_available');
     self::add_resource('jquery_ui');
     $filename=basename($_SESSION['uploaded_file']);
-    // capture the settings form if there is one, but only use the actually set values - others can be populated per row.
-    foreach ($_POST as $key => $value) {
+    // If the last step was skipped because the user did not have any settings to supply, presetSettings contains the presets.
+    // Otherwise we'll use the settings form content which already in $_POST so will overwrite presetSettings.
+    $settings = array_merge(
+      $options['presetSettings'],
+      $_POST
+    );
+    // only want defaults that actually have a value - others can be set on a per-row basis by mapping to a column
+    foreach ($settings as $key => $value) {
       if (empty($value)) {
-        unset($_POST[$key]);
+        unset($settings[$key]);
       }
     }
-    $settings = json_encode($_POST);
     // cache the mappings
-    $metadata = array('settings' => $settings);
+    $metadata = array('settings' => json_encode($settings));
     $post = array_merge($options['auth']['write_tokens'], $metadata);
     $request = parent::$base_url."index.php/services/import/cache_upload_metadata?uploaded_csv=$filename";
     $response = self::http_post($request, $post);
@@ -161,10 +170,10 @@ class import_helper extends helper_base {
     $request = parent::$base_url."index.php/services/import/get_import_fields/".$options['model'];
     $request .= '?'.self::array_to_query_string($options['auth']['read']);
     // include survey and website information in the request if available, as this limits the availability of custom attributes
-    if (!empty($_POST['website_id']))
-      $request .= '&website_id='.trim($_POST['website_id']);
-    if (!empty($_POST['survey_id']))
-      $request .= '&survey_id='.trim($_POST['survey_id']);
+    if (!empty($settings['website_id']))
+      $request .= '&website_id='.trim($settings['website_id']);
+    if (!empty($settings['survey_id']))
+      $request .= '&survey_id='.trim($settings['survey_id']);
     $response = self::http_post($request, array());
     $fields = json_decode($response['output'], true);
     if (!is_array($fields))
@@ -175,8 +184,8 @@ class import_helper extends helper_base {
     if (!is_array($responseIds))
       return "curl request to $request failed. Response ".print_r($response, true);
     $model_required_fields = self::expand_ids_to_fks($responseIds);
-    if (!empty($_POST))
-      $preset_fields = self::expand_ids_to_fks(array_keys($_POST));
+    if (!empty($settings))
+      $preset_fields = self::expand_ids_to_fks(array_keys($settings));
     else
       $preset_fields=array();
     if (!empty($preset_fields))
@@ -191,8 +200,8 @@ class import_helper extends helper_base {
     $reload = self::get_reload_link_parts();
     $reloadpath = $reload['path'] . '?' . self::array_to_query_string($reload['params']);
 
-    self::clear_website_survey_fields($unlinked_fields);
-    self::clear_website_survey_fields($unlinked_required_fields);
+    self::clear_website_survey_fields($unlinked_fields, $settings);
+    self::clear_website_survey_fields($unlinked_required_fields, $settings);
     $savedFieldMappings=array();
     //get the user's checked preference for the import page
     if (function_exists('hostsite_get_user_field'))
@@ -340,14 +349,14 @@ class import_helper extends helper_base {
 
   /**
    * Takes an array of fields, and removes the website ID or survey ID fields within the arrays if
-   * the website and/or survey id are set in the $_POST data (which contains the settings).
+   * the website and/or survey id are set in the $settings data.
    */
-  private static function clear_website_survey_fields(&$array) {
+  private static function clear_website_survey_fields(&$array, $settings) {
     foreach ($array as $idx => $field) {
-      if (!empty($_POST['website_id']) && (preg_match('/:fk_website$/', $idx) || preg_match('/:fk_website$/', $field))) {
+      if (!empty($settings['website_id']) && (preg_match('/:fk_website$/', $idx) || preg_match('/:fk_website$/', $field))) {
         unset($array[$idx]);
       }
-      if (!empty($_POST['survey_id']) && (preg_match('/:fk_survey$/', $idx) || preg_match('/:fk_survey$/', $field))) {
+      if (!empty($settings['survey_id']) && (preg_match('/:fk_survey$/', $idx) || preg_match('/:fk_survey$/', $field))) {
         unset($array[$idx]);
       }
     }
@@ -469,22 +478,12 @@ class import_helper extends helper_base {
   * This method also attempts to automatically find a match for the columns based on a number of rules
   * and gives the user the chance to save their settings for use the next time they do an import.
   * @param string $model Name of the model
-  * @param array  $fields List of the available import columns
+  * @param array  $fields List of the available possible import columns
   * @param string $column The name of the column from the CSV file currently being worked on.
   * @param string $selected The name of the initially selected field if there is one.
   * @param array $savedFieldMappings An array containing the user's custom saved settings for the page.
   */
   private static function get_column_options($model, $fields, $column, $selected='', $savedFieldMappings) {
-   /*
-    * This is an array of drop-down options with a list of possible column headings the system will use to match against that option.
-    * The key is in the format heading:option e.g. Occurrence:Comment 
-    * The value is a comma seperate list of possible column headings that system will automatically match against.
-    */
-    $alternatives = array("Sample:Grid ref or other spatial ref"=>"Sample Spatial Reference,SP Ref",
-      "Occurrence:Species or taxon selected from existing list"=>"Taxon Latin Name");
-    foreach ($alternatives as $key => $data) {
-      $alternatives[strtolower($key)] = strtolower($data);
-    }
     $skipped = array('id', 'created_by_id', 'created_on', 'updated_by_id', 'updated_on',
       'fk_created_by', 'fk_updated_by', 'fk_meaning', 'fk_taxon_meaning', 'deleted', 'image_path');
     //strip the column of spaces for use in html ids
@@ -523,7 +522,7 @@ class import_helper extends helper_base {
     } 
     $labelList = array_count_values($labelList);
     $multiMatch=array();  
-    foreach ($fields as $field=>$caption) {  
+    foreach ($fields as $field=>$caption) {
       $optionID = str_replace(" ", "", $column).'Normal';
       if (strpos($field,":"))
         list($prefix,$fieldname)=explode(':',$field);
@@ -557,12 +556,12 @@ class import_helper extends helper_base {
           $selected=true;
           $itWasSaved[$column] = 1;
           //even though we have already detected the user has a saved setting, we need to call the auto-detect rules as if it gives the same result then the system acts as if it wasn't saved.
-          $saveDetectRulesResult = self::auto_detection_rules($column, $lowerCaseCaption, $strippedScreenCaption, $prefix, $alternatives, $labelList, $itWasSaved[$column], true);
+          $saveDetectRulesResult = self::auto_detection_rules($column, $lowerCaseCaption, $strippedScreenCaption, $prefix, $labelList, $itWasSaved[$column], true);
           $itWasSaved[$column] = $saveDetectRulesResult['itWasSaved'];
         } else {
           //only use the auto field selection rules to select the drop-down if there isn't a saved option
           if (!isset($savedFieldMappings[$column])) {
-            $nonSaveDetectRulesResult = self::auto_detection_rules($column, $lowerCaseCaption, $strippedScreenCaption, $prefix, $alternatives, $labelList, $itWasSaved[$column], false);
+            $nonSaveDetectRulesResult = self::auto_detection_rules($column, $lowerCaseCaption, $strippedScreenCaption, $prefix, $labelList, $itWasSaved[$column], false);
             $selected = $nonSaveDetectRulesResult['selected'];
           }
         }
@@ -617,13 +616,22 @@ class import_helper extends helper_base {
   * @param string $lowerCaseCaption A version of an item in the column selection drop-down that is all lowercase.
   * @param string $strippedScreenCaption A version of an item in the column selection drop-down that has 'lookup existing record'stripped
   * @param string $prefix Caption prefix
-  * @param array $alternatives An array containing a list of csv column headings that can be matched against a particular option
+  * each item having a list of regexes to match against
   * @param array $labelList A list of captions and the number of times they occur.
   * @param integer $itWasSaved This is set to 1 if the system detects that the user has a custom saved preference for a csv column drop-down.
   * @param boolean $saveDetectedMode Determines the mode the method is running in
   * @return array Depending on the mode, we either are interested in the $selected value or the $itWasSaved value.
   */ 
-  private static function auto_detection_rules($column, $lowerCaseCaption, $strippedScreenCaption, $prefix, $alternatives, $labelList, $itWasSaved, $saveDetectedMode) {
+  private static function auto_detection_rules($column, $lowerCaseCaption, $strippedScreenCaption, $prefix, $labelList, $itWasSaved, $saveDetectedMode) {
+    /*
+    * This is an array of drop-down options with a list of possible column headings the system will use to match against that option.
+    * The key is in the format heading:option, all lowercase e.g. occurrence:comment 
+    * The value is an array of regexes that the system will automatically match against.
+    */
+    $alternatives = array(
+      "sample:grid ref or other spatial ref"=>array("/(sample)?(spatial|grid)ref(erence)?/"),
+      "occurrence:species or taxon selected from existing list"=>array("/(species(latin)?|taxon(latin)?|latin)(name)?/")
+    );
     $selected=false;
     //handle situation where there is a unique exact match
     if (strcasecmp($strippedScreenCaption, $column)==0 && $labelList[strtolower($strippedScreenCaption)] == 1) {
@@ -641,9 +649,8 @@ class import_helper extends helper_base {
       }
       //handle the situation where there is a match with one of the items in the alternatives array.
       if (isset($alternatives[$prefix.':'.$lowerCaseCaption])) {
-        $theAlternatives = explode(',', $alternatives[$prefix.':'.$lowerCaseCaption]);
-        foreach ($theAlternatives as $theAlternative) {
-          if (strcasecmp($theAlternative, $column)==0) {
+        foreach ($alternatives[$prefix.':'.$lowerCaseCaption] as $regexp) {
+          if (preg_match($regexp, strtolower(str_replace(' ', '', $column)))) {
             if ($saveDetectedMode) 
               $itWasSaved = 0; 
             else 
