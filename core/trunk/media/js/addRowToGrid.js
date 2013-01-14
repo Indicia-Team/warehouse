@@ -445,9 +445,8 @@ function createSubSpeciesList(url, selectedItemPrefId, selectedItemPrefName, loo
           ctrl.append($("<option></option>").val(item.taxa_taxon_list_id).html(epithet));          
         }
       });
-      //If we don't find any sub-species then just display n/a
+      //If we don't find any sub-species then hide the control
       if (data.length===0) {
-        ctrl.after("<span>N/A</span>");
         ctrl.hide();
       } else {
         //The selected sub-species might be the first (blank) option if there are sub-species present but
