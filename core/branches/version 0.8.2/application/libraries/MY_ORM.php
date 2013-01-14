@@ -877,8 +877,8 @@ class ORM extends ORM_Core {
       } else {
         // New way of submitting attributes embeds attr values direct in the main table submission values.
         foreach($this->submission['fields'] as $field => $content) {
-          // look for pattern smpAttr:nn (or occAttr, taxAttr, locAttr or psnAttr)
-          $isAttribute = preg_match('/^'.$this->attrs_field_prefix.'\:[0-9]+/', $field, $baseAttrName);   
+          // look for pattern smpAttr:(fk_)nn (or occAttr, taxAttr, locAttr or psnAttr)
+          $isAttribute = preg_match('/^'.$this->attrs_field_prefix.'\:(fk_)?[0-9]+/', $field, $baseAttrName);   
           if ($isAttribute) {
             // extract the nn, this is the attribute id
             preg_match('/[0-9]+/', $baseAttrName[0], $attrId);
