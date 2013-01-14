@@ -136,9 +136,9 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, useLookupC
     checkbox.attr('checked', 'checked');
     // store the ttlId
     checkbox.val(data.id);
-    // Setup a subspecies picker if this option is enabled. -1 because gridCounter gives the count of rows, but we are using
-    // a zero indexed rownum to build unique ids. -1 more because we have just added an extra row!
-    var rowNum = indiciaData['gridCounter-'+gridId] - 2,
+    // Setup a subspecies picker if this option is enabled. Since we don't know for sure if this is matching the 
+    // last row in the grid (as the user might be typing ahead), use the presence checkbox to extract the rownum.
+    var rowNum = checkbox[0].id.match(/sc:(\d+)/)[1],
       subSpeciesCellId = 'sc:' + rowNum + '::occurrence:subspecies';
     createSubSpeciesList(url, data.preferred_taxa_taxon_list_id, data.preferred_name, lookupListId, subSpeciesCellId, readAuth, 0);
     // Finally, a blank row is added for the next record
