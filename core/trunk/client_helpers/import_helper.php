@@ -630,7 +630,8 @@ class import_helper extends helper_base {
     */
     $alternatives = array(
       "sample:grid ref or other spatial ref"=>array("/(sample)?(spatial|grid)ref(erence)?/"),
-      "occurrence:species or taxon selected from existing list"=>array("/(species(latin)?|taxon(latin)?|latin)(name)?/")
+      "occurrence:species or taxon selected from existing list"=>array("/(species(latin)?|taxon(latin)?|latin)(name)?/"),
+      "sample:location_name"=>array("/(site|location)(name)?/")
     );
     $selected=false;
     //handle situation where there is a unique exact match
