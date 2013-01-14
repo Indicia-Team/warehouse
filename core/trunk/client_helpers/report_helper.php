@@ -1792,7 +1792,7 @@ mapSettingsHooks.push(function(opts) { $setLocationJs
       if (isset($options['ignoreParams']))
         // tell the params form builder to hide the ignored parameters.
         $options['paramsToHide']=$options['ignoreParams'];
-      $r .= self::build_params_form(array_merge($options, array('form'=>$response['parameterRequest'], 'defaults'=>$params)));
+      $r .= self::build_params_form(array_merge($options, array('form'=>$response['parameterRequest'], 'defaults'=>$params)), $hasVisibleContent);
       if ($options['completeParamsForm']==true) {
         $suffix = '<input type="submit" value="'.lang::get($options['paramsFormButtonCaption']).'" id="run-report"/>'.
             '</fieldset></form>';
