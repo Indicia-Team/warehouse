@@ -2097,6 +2097,17 @@ class data_entry_helper extends helper_base {
     self::add_resource('json');
     self::add_resource('autocomplete');
     $filterArray = self::get_species_names_filter($options);
+    $filterNameTypes = array('all','currentLanguage', 'preferred', 'excludeSynonyms');
+    //make a copy of the options so that we can maipulate it
+    $overrideOptions = $options;
+    //We are going to cycle through each of the name filter types
+    //and save the parameters required for each type in an array so
+    //that the Javascript can quickly access the required parameters
+    foreach ($filterNameTypes as $filterType) {
+      $overrideOptions['speciesNameFilterMode'] = $filterType;
+      $nameFilter[$filterType] = self::get_species_names_filter($overrideOptions);
+      $nameFilter[$filterType] = json_encode($nameFilter[$filterType]);
+    }  
     if (count($filterArray)) {
       $filterParam = json_encode($filterArray);
       self::$javascript .= "indiciaData['taxonExtraParams-".$options['id']."'] = $filterParam;\n";
@@ -2364,7 +2375,9 @@ class data_entry_helper extends helper_base {
       $r .= $grid;
       $r .= self::get_help_text($options, 'after');
       self::$javascript .= "$('#".$options['id']."').find('input,select').keydown(keyHandler);\n";
-      self::species_checklist_filter_popup($options);
+      //nameFilter is an array containing all the parameters required to return data for each of the
+      //"Choose species names available for selection" filter types 
+      self::species_checklist_filter_popup($options, $nameFilter);
       return $r;
     } else {
       return $taxalist['error'];
@@ -2501,7 +2514,15 @@ class data_entry_helper extends helper_base {
   /**
    * Adds javascript to popup a config box for the current filter on the species you can add to the grid.
    */
-  private static function species_checklist_filter_popup($options) {
+  private static function species_checklist_filter_popup($options, $nameFilter) {
+    self::add_resource('fancybox');
+    $defaultFilterMode=$options['speciesNameFilterMode'];
+    self::$javascript .= "var mode,  nameFilter=[];\n";
+    //convert the nameFilter php array into a Javascript one
+    foreach ($nameFilter as $key=>$theFilter) {
+      self::$javascript .= "nameFilter['".$key."'] = ".$theFilter.";\n"; 
+      drupal_set_message($theFilter);
+    }
     if ($options['userControlsTaxonFilter'] && !empty($options['lookupListId'])) {
       if ($options['taxonFilterField']==='none') {
         $defaultOptionLabel=lang::get('Input any species from the list available for this form');
@@ -2510,46 +2531,61 @@ class data_entry_helper extends helper_base {
         $defaultOptionLabel=lang::get('Input species from the form\\\'s default {1}.', lang::get($type));
       }
       self::$javascript .= "
-
-var applyFilterMode = function(type, group_id) {
-  if (typeof group_id==='undefined') {
-    group_id=null;
+var applyFilterMode = function(type, group_id, nameFilterMode) {
+  var currentFilter;
+  //get the filter we are going to use. Use a) the provided parameter, when loading from a cookie,
+  // b) the default name filter, when not in cookie and loading for first time, or c) the one selected on the form.
+  if (typeof nameFilterMode==='undefined') {
+    nameFilterMode = $('#filter-name').length===0 ? '$defaultFilterMode' : $('#filter-name').val();
   }
-  query=JSON.parse(indiciaData['taxonExtraParams-".$options['id']."']['query']);
-  if (typeof indiciaData.originalTaxonQuery==='undefined') {
-    indiciaData.originalTaxonQuery=$.extend({},query);
-  }
+  currentFilter=$.extend({}, nameFilter[nameFilterMode]);
+  // decode the query part, so we can modify it
+  currentFilter.query=JSON.parse(currentFilter.query);
+  //Extend the current query with any taxon group selections the user has made
   switch (type) {\n";
-      if (!empty($options['usersPreferredGroups'])) 
-        self::$javascript .= "    case 'user':
-      query['in']={\"taxon_group_id\":[".implode(',', $options['usersPreferredGroups'])."]};
-      break;\n";
-      self::$javascript .= "    case 'selected':
-      query['in']={\"taxon_group_id\":[group_id]};
-      break;
-    default:
-      query=indiciaData.originalTaxonQuery;
+    if (!empty($options['usersPreferredGroups']))
+      self::$javascript .= "    case 'user':
+        currentFilter.query.in={\"taxon_group_id\":[".implode(',', $options['usersPreferredGroups'])."]};
+        break;\n";
+    self::$javascript .= "    case 'selected':
+      currentFilter.query.in={\"taxon_group_id\":[group_id]};
   }
+  // re-encode the query part
+  currentFilter.query=JSON.stringify(currentFilter.query);
   if (type==='default') {
     $('#".$options['id']."-filter').removeClass('button-active');
   } else {
     $('#".$options['id']."-filter').addClass('button-active');
   }
-  indiciaData['taxonExtraParams-".$options['id']."']['query']=JSON.stringify(query);
+  
+  //Tell the system to use the current filter.
+  indiciaData['taxonExtraParams-".$options['id']."']=currentFilter;
+  $('.scTaxonCell input').setExtraParams(currentFilter);
+  // Unset previous filters which are no longer wanted
+  switch (nameFilterMode) {
+    case 'preferred':
+      $('.scTaxonCell input').unsetExtraParams(\"language_iso\");
+      break;
+    case 'all':
+      $('.scTaxonCell input').unsetExtraParams(\"language_iso\");
+    case 'currentLanguage':
+    default:
+      $('.scTaxonCell input').unsetExtraParams(\"name_type\");
+  }
   // store in cookie
-  $.cookie('user_selected_taxon_filter', JSON.stringify({\"type\":type,\"group_id\":group_id}));
-  $('.scTaxonCell input').setExtraParams({\"query\":JSON.stringify(query)});
+  $.cookie('user_selected_taxon_filter', JSON.stringify({\"type\":type,\"group_id\":group_id,\"name_filter\":nameFilterMode}));
 };
-
 // load the filter mode from a cookie
 var userFilter=$.cookie('user_selected_taxon_filter');
 if (userFilter) {
   userFilter = JSON.parse(userFilter);
-  applyFilterMode(userFilter.type, userFilter.group_id);
+  applyFilterMode(userFilter.type, userFilter.group_id, userFilter.name_filter);
 }\n";
       self::$javascript .= "
 $('#".$options['id']."-filter').click(function(evt) {
-  var userFilter=$.cookie('user_selected_taxon_filter'), defaultChecked='', userChecked='', selectedChecked='';
+  var userFilter=$.cookie('user_selected_taxon_filter'), defaultChecked='', userChecked='', selectedChecked='', nameChecked='';
+  
+  //Select the radio button on the form depending on what is set in the cookie
   if (userFilter) {
     userFilter = JSON.parse(userFilter);
     if (userFilter.type==='user') {
@@ -2563,17 +2599,25 @@ $('#".$options['id']."-filter').click(function(evt) {
     defaultChecked = ' checked=\"checked\"';
   }
   $.fancybox('<div id=\"filter-form\"><fieldset class=\"popup-form\">' +
-        '<legend>".lang::get('Configure the filter applied to species names you are searching for').":</legend>' +
-        '<label class=\"auto\"><input type=\"radio\" name=\"filter-mode\" id=\"filter-mode-default\"'+defaultChecked+'/>$defaultOptionLabel</label><br/>' + \n";
-      if (!empty($options['usersPreferredGroups'])) {
-        self::$javascript .= "        '<label class=\"auto\"><input type=\"radio\" name=\"filter-mode\" id=\"filter-mode-user\"'+userChecked+'/>".
-            lang::get('Input species from the preferred list of species groups from your user account.')."</label><br/>' + \n";
-      }
-      self::$javascript .= "        '<label class=\"auto\"><input type=\"radio\" name=\"filter-mode\" id=\"filter-mode-selected\"'+selectedChecked+'/>".
-          lang::get('Input species from the following species group:')."</label><br/>' +
-        '<select name=\"filter-group\" id=\"filter-group\"></select>' +
-        '</fieldset><button type=\"button\" class=\"default-button\" id=\"filter-popup-apply\">".lang::get('Apply')."</button><button type=\"button\" class=\"default-button\" id=\"filter-popup-cancel\">".lang::get('Cancel')."</button></div>');
-  $.getJSON(\"".self::$base_url."index.php/services/report/requestReport?report=library/taxon_groups/taxon_groups_used_in_checklist.xml&reportSource=local&mode=json".
+    '<legend>".lang::get('Configure the filter applied to species names you are searching for').":</legend>' +
+    '<label class=\"auto\"><input type=\"radio\" name=\"filter-mode\" id=\"filter-mode-default\"'+defaultChecked+'/>$defaultOptionLabel</label><br/>' + \n";
+    if (!empty($options['usersPreferredGroups'])) {
+      self::$javascript .= "        '<label class=\"auto\"><input type=\"radio\" name=\"filter-mode\" id=\"filter-mode-user\"'+userChecked+'/>".
+          lang::get('Input species from the preferred list of species groups from your user account.')."</label><br/>' + \n";
+    }
+    self::$javascript .= "        '<label class=\"auto\"><input type=\"radio\" name=\"filter-mode\" id=\"filter-mode-selected\"'+selectedChecked+'/>".
+        lang::get('Input species from the following species group:')."</label><br/>' +
+      '<select name=\"filter-group\" id=\"filter-group\"></select><br/>' +
+      '<label class=\"auto\">".
+        lang::get('Choose species names available for selection:')."</label><br/>' +
+      '<select name=\"filter-name\" id=\"filter-name\">' +
+         '<option id=\"filter-all\" value=\"all\">".lang::get('All names including common names and synonyms')."</option>' +
+         '<option id=\"filter-common\" value=\"currentLanguage\">".lang::get('Common names only')."</option>' +
+         '<option id=\"filter-common-preferred\" value=\"excludeSynonyms\">".lang::get('Common names and preferred latin names only')."</option>' +
+         '<option id=\"filter-preferred\" value=\"preferred\">".lang::get('Preferred latin names only')."</option>' +
+      '</select>' +
+      '</fieldset><button type=\"button\" class=\"default-button\" id=\"filter-popup-apply\">".lang::get('Apply')."</button><button type=\"button\" class=\"default-button\" id=\"filter-popup-cancel\">".lang::get('Cancel')."</button></div>');
+    $.getJSON(\"".self::$base_url."index.php/services/report/requestReport?report=library/taxon_groups/taxon_groups_used_in_checklist.xml&reportSource=local&mode=json".
       "&taxon_list_id=".$options['lookupListId']."&auth_token=".$options['readAuth']['auth_token']."&nonce=".$options['readAuth']['nonce']."&callback=?\", function(data) {
     var checked;
     $.each(data, function(idx, item) {
@@ -2581,22 +2625,42 @@ $('#".$options['id']."-filter').click(function(evt) {
       $('#filter-group').append('<option value=\"'+item.id+'\"' + selected + '>'+item.title+'</option>');
     });
   });
-  
+  //By defult assume that the filter mode is the default one 
+  var filterMode = '$defaultFilterMode';
+  //if the cookie is present and it holds one of the name type filters
+  //it  means the last time the user used the screen they selected
+  //to filter for a particular name type, so auto-select those previous 
+  //settings when the user opens the popup (overriding the defaultFilterMode)
+  if(userFilter) {
+    if (nameFilter.indexOf(userFilter.name_filter)) {
+      filterMode = userFilter.name_filter;
+      $('#filter-mode-name').attr('selected','selected');
+    }
+  }
+  if (filterMode=='all')
+    $('#filter-all').attr('selected','selected');
+  if (filterMode=='currentLanguage')
+    $('#filter-common').attr('selected','selected');
+  if (filterMode=='preferred')
+    $('#filter-preferred').attr('selected','selected');
+  if (filterMode=='excludeSynonyms')
+    $('#filter-common-preferred').attr('selected','selected');  
   $('#filter-group').focus(function() {
     $('#filter-mode-selected').attr('checked','checked');
   });
   
   $('#filter-popup-apply').click(function() {       
-    if ($('#filter-mode-default').attr('checked')==true) {
+    if ($('#filter-mode-default').attr('checked')===true) {
       applyFilterMode('default');
-    } else if ($('#filter-mode-selected').attr('checked')==true) {
+    } else if ($('#filter-mode-selected').attr('checked')===true) {
       applyFilterMode('selected', $('#filter-group').val()); 
-    }";
+    } 
+    ";
     if (!empty($options['usersPreferredGroups']))
       self::$javascript .= " else if ($('#filter-mode-user').attr('checked')==true) {
       applyFilterMode('user');
     }";
-    self::$javascript .= "\n    $.fancybox.close(); 
+    self::$javascript .= "\n    $.fancybox.close();
   });
   $('#filter-popup-cancel').click(function() {
     $.fancybox.close(); 
