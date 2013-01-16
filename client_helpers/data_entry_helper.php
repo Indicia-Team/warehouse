@@ -2522,8 +2522,7 @@ class data_entry_helper extends helper_base {
     self::$javascript .= "var mode,  nameFilter=[];\n";
     //convert the nameFilter php array into a Javascript one
     foreach ($nameFilter as $key=>$theFilter) {
-      self::$javascript .= "nameFilter['".$key."'] = ".$theFilter.";\n"; 
-      drupal_set_message($theFilter);
+      self::$javascript .= "nameFilter['".$key."'] = ".$theFilter.";\n";
     }
     if ($options['userControlsTaxonFilter'] && !empty($options['lookupListId'])) {
       if ($options['taxonFilterField']==='none') {
