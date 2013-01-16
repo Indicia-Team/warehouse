@@ -116,7 +116,6 @@ $custom_terms = array(
 	'LANG_Georef_SelectPlace' => 'Select the correct one from the following places that were found matching your search. (Click on the list items to see them on the map.)',
 	'LANG_Georef_NothingFound' => 'No place found with that name. Try a nearby town name.',
 
-	'LANG_Tab_otherinformation' => 'Conditions',
 	'LANG_Date' => 'Date',
 	'Overall Comment' => 'Comments',
 	'Recorder names' => 'Observer(s)',

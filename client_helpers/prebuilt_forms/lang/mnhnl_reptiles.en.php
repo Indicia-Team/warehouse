@@ -107,7 +107,6 @@ $custom_terms = array(
 	'LANG_HighlightPoint'=>'Highlight this point',
 	'Location Comment' => 'Comment',
 
-	'LANG_Tab_otherinformation' => 'Conditions',
 	'LANG_Date' => 'Date',
 	'Overall Comment' => 'Comments',
 	'Recorder names' => 'Observer(s)',
