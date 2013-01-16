@@ -304,10 +304,13 @@ $(document).ready(function() {
 <fieldset>
 <?php 
 require_once(DOCROOT.'client_helpers/data_entry_helper.php');
+$lookupValues=array('sample'=>'Samples','occurrence'=>'Occurrences','location'=>'Locations','subject_observation'=>'Subject Observations');
 echo data_entry_helper::select(array(
   'fieldname'=>'type',
   'label' => 'Display attributes for',
-  'lookupValues' => array('sample'=>'Samples','occurrence'=>'Occurrences','location'=>'Locations'),
+#Should be array that can be hooked into 
+#Also not use first char as identifying field
+  'lookupValues' => $lookupValues,
   'default' => $_GET['type'],
   'suffixTemplate' => 'nosuffix',
   'class' => 'line-up'  
