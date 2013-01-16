@@ -166,7 +166,7 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
               "@srefs=2169,LUREF (m),X,Y,;4326,Lat/Long Deg,Lat,Long,D;4326,Lat/Long Deg:Min,Lat,Long,DM;4326,Lat/Long Deg:Min:Sec,Lat,Long,DMS\r\n".
               "[location comment]\r\n".
               "[*]\r\n".
-             "=Other Information=\r\n".
+             "=Conditions=\r\n".
               "[date]\r\n".
               "[recorder names]\r\n".
               "[*]\r\n".

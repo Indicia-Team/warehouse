@@ -534,20 +534,22 @@ class XMLReportReader_Core implements ReportReader
       at.id, at.caption, at.data_type, at.termlist_id, at.multi_value ";
     $j=0;
     // table list
-    $query .= " FROM ";
-    for($i = 0; $i <= $attributes->parentTableIndex; $i++){
+    $from = ""; // this is built from back to front, to scan up the tree of tables that are only relevent to this attribute request.
+    $i = $attributes->parentTableIndex;
+    while(true){
       if ($i == 0) {
-          $query .= $this->tables[$i]['tablename']." lt".$i;
-      } else { // making assumption to reduce the size of the query that all left outer join tables can be excluded, but make sure parent is included!
-          if ($this->tables[$i]['join'] == null || $i == $attributes->parentTableIndex) {
-            $query .= " INNER JOIN ".$this->tables[$i]['tablename']." lt".$i." ON (".$this->tables[$i]['tableKey']." = ".$this->tables[$i]['parentKey'];
-              if($this->tables[$i]['where'] != null) {
-                $query .= " AND ".preg_replace("/#this#/", "lt".$i, $this->tables[$i]['where']);
-             }
-              $query .= ") ";
-          }
+          $from = $this->tables[$i]['tablename']." lt".$i.$from;
+          break;
+      } else {
+          $from = " INNER JOIN ".$this->tables[$i]['tablename']." lt".$i.
+                  " ON (".$this->tables[$i]['tableKey']." = ".$this->tables[$i]['parentKey'].
+                  ($this->tables[$i]['where'] != null ? 
+                      " AND ".preg_replace("/#this#/", "lt".$i, $this->tables[$i]['where']) :
+                      "").") ".$from;
+          $i = $this->tables[$i]['parent']; // next process the parent for this table, until we've scanned upto zero.
       }
     }
+    $query .= " FROM ".$from;
     $query .= " INNER JOIN ".$parentSingular."_attribute_values vt ON (vt.".$parentSingular."_id = "." lt".$attributes->parentTableIndex.".id and vt.deleted = FALSE) ";
     $query .= " INNER JOIN ".$parentSingular."_attributes at ON (vt.".$parentSingular."_attribute_id = at.id and at.deleted = FALSE) ";
     $query .= " INNER JOIN ".$parentSingular."_attributes_websites rt ON (rt.".$parentSingular."_attribute_id = at.id and rt.deleted = FALSE and (rt.restrict_to_survey_id = #".

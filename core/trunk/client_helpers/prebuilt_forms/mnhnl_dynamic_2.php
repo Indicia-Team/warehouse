@@ -1089,13 +1089,13 @@ bindSpeciesOptions = {selectorID: \"addTaxonControl\",
           data_entry_helper::$javascript .= "bindSpeciesOptions.unitSpeciesMeaning=\"".$options['unitSpeciesMeaning']."\";\n";
       if(isset($options['rowControl'])){
         $rowControls = explode(';',$options['rowControl']);
-        data_entry_helper::$javascript .= "bindSpeciesOptions.rowControl = {selector: 'sc".str_replace(' ', '', ucWords($rowControls[0]))."',\n  controls: [";
+        $controlArr = array();
         for($i=2; $i < count($rowControls); $i++){
           $parts=explode(',',$rowControls[$i],2);
           $termList = helper_base::get_termlist_terms(parent::$auth, $rowControls[1], array($parts[0]));
-          data_entry_helper::$javascript .= "{meaning_id: \"".$termList[0]['meaning_id']."\" , rows: [".$parts[1]."]},";
+          $controlArr[] = '{meaning_id: "'.$termList[0]['meaning_id'].'" , rows: ['.$parts[1].']}';
         }
-        data_entry_helper::$javascript .= "]};\n";
+        data_entry_helper::$javascript .= "bindSpeciesOptions.rowControl = {selector: 'sc".str_replace(' ', '', ucWords($rowControls[0]))."',\n  controls: [".implode(',',$controlArr)."]};\n";
       }
       if(isset($options['singleSpeciesID'])){
         $fetchOpts = array(
