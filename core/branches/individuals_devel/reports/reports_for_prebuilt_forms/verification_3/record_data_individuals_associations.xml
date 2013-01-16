@@ -1,0 +1,43 @@
+<report
+    title="Individuals record data for verification"
+    description="Report used to retrieve details of a record and associated individual information, excluding custom attributes for the verification 3 prebuilt form."
+>
+  <query website_filter_field="o.website_id">
+  select #columns#
+  from cache_occurrences co
+  join occurrences o on o.id=co.id and o.deleted=false
+  left join (occurrences_subject_observations oso 
+    join subject_observations so on so.id=oso.subject_observation_id and so.deleted=false
+    join cache_termlists_terms cttst on cttst.id=so.subject_type_id
+    left join cache_termlists_terms cttco on cttco.id=so.count_qualifier_id
+  ) on oso.occurrence_id=o.id and oso.deleted=false
+  join samples s on s.id=o.sample_id and s.deleted=false
+  left join samples sparent on sparent.id=s.parent_id and sparent.deleted=false
+  #agreements_join#
+  #joins#
+  where co.id=#occurrence_id#
+  </query>
+  <params>
+    <param name='occurrence_id' display='Occurrence ID' description='ID of the occurrence to load' datatype='text' />
+  </params>
+  <columns>
+    <column name='occurrence_id' display='Record:ID' sql='co.id' />
+    <column name='taxon' display='Record:Species' sql='co.taxon' />
+    <column name='preferred_taxon' display='Record:Preferred species name' sql='CASE co.preferred_taxon WHEN co.taxon THEN null ELSE co.preferred_taxon END' />
+    <column name='occurrence_comment' display='Record:Comment' sql='o.comment' />
+    <column name='sample_id' display='Sample:ID' visible="false" sql='s.id' />
+    <column name='entered_sref' display='Sample:SRef' sql='s.entered_sref' />
+    <column name='date' display='Sample:Date' sql='s.date_start' />
+    <column name='location_name' display='Sample:Site Name' sql='co.location_name' />
+    <column name='sample_comment' display='Sample:Comment' sql='s.comment' />
+    <column name='taxon_external_key' visible="false" sql='co.taxa_taxon_list_external_key' />
+    <column name='taxon_meaning_id' visible="false" sql='co.taxon_meaning_id' />
+    <column name='record_status' visible="false" sql='o.record_status' />
+    <column name='zero_abundance' visible="false" sql='co.zero_abundance' />
+    <column name='wkt' visible="false" sql='st_astext(s.geom)' />
+    <column name='so_subject_type' display='Subject observation:Type' sql='cttst.term' />
+    <column name='so_count' display='Subject observation:Count' sql='so.count' />
+    <column name='so_count_of' display='Subject observation:Count of' sql='cttco.term' />
+    <column name='so_comment' display='Subject observation:Comment' sql='so.comment' />
+  </columns>
+</report>

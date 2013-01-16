@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="Summary record counts by location" description="Lists locations with mappable boundary output and the number of records within them. Requires the spatial_index_builder warehouse module to be enabled.">
+      <query website_filter_field="o.website_id">
+      SELECT #columns#
+      FROM (SELECT l.id as id, count(distinct o.id) as value
+          FROM locations l
+          LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false 
+          JOIN index_locations_samples ils on ils.location_id=l.id
+          JOIN cache_occurrences o ON o.sample_id=ils.sample_id 
+          #agreements_join# 
+          #joins#
+          WHERE l.deleted=false 
+          AND (lw.website_id in (#website_ids#) OR l.public=true)
+          AND (o.id IS NULL or (
+            o.zero_abundance='f'
+            AND #sharing_filter# 
+            AND (CAST(o.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
+            AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR o.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+            AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+            AND quality_check('#quality#', o.record_status, o.certainty)=true)
+          )
+      GROUP BY l.id) AS stats
+      RIGHT JOIN locations l on l.id=stats.id AND l.deleted=false AND l.boundary_geom IS NOT NULL
+      LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false 
+      WHERE l.deleted=false
+          AND (lw.website_id in (#website_ids#) OR l.public=true)
+      </query>
+      <params>
+        <param name='date_from' display='Date From' datatype='date' />
+        <param name='date_to' display='Date To' datatype='date' />
+        <param name='survey_id' display='Survey' description='Select the survey to return data for, or leave for all surveys' datatype='lookup'
+            query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title' />
+        <param name='location_type_id' display='Location Type' description='Select the location type, or leave blank to not filter by location type.' datatype='lookup'
+            population_call='report:library/terms/terms_list:id:term:termlist_external_key=indicia:location_types,termlist_id='>
+          <join value="" operator="notequal">JOIN termlists_terms ttl1 ON ttl1.id=l.location_type_id and ttl1.deleted=false
+              JOIN termlists_terms ttl2 ON ttl2.meaning_id=ttl1.meaning_id and ttl2.deleted=false
+              JOIN terms t ON t.id=ttl2.term_id and t.deleted=false AND (t.term='#location_type_id#' or cast(ttl.id as varchar)='#location_type_id#')
+          </join>      
+        </param>
+        <param name='locattrs' display='Location attribute list' description='Comma separated list of location attribute IDs to include' datatype='locattrs' />
+        <param name='quality' display='Data quality' description='Quality level required of data to be included in the map.' datatype='lookup' 
+            lookup_values='V:Data must be verified,C:Data must be verified or certain,L:Data must be at least likely,!D:Include anything not dubious or rejected,!R:Include anything not rejected' />
+      </params>
+      <columns>
+            <column name="id" visible="false" sql="l.id" />
+            <column name="name" display="Site Name" style="background-color: #e7e7e7;" sql="l.name" />
+            <column name="boundary" display="Boundary" sql="st_astext(ST_SnapToGrid(ST_Simplify(COALESCE(l.boundary_geom, l.centroid_geom), 100), 100, 100))" visible="false" mappable="true"/>
+            <column name="value" display="No. of Records"  sql="stats.value"/>
+            <column name="minvalue" visible="false" sql="0" />
+            <column name="maxvalue" visible="false" sql="max(stats.value) OVER ()" />
+      </columns>
+</report>

@@ -1,0 +1,71 @@
+<report
+    title="Pollinisateurs Parcourir Collections"
+    description="Utilisé pour récupérer les détails des collections"
+>
+  <query>
+  select s.id as id,
+	l.name as Nom,
+	s.date_start,
+	s.date_end,
+	l.centroid_sref as sref,
+	li.path as location_image_path,
+	oi.path as flower_image_path,
+	(CASE WHEN d.taxa_taxon_list_id IS NOT NULL THEN t1.taxon 
+		ELSE (ARRAY(select t2.taxon FROM taxa_taxon_lists ttl2 INNER JOIN taxa t2 ON ttl2.taxon_id = t2.id WHERE ttl2.id = ANY (d.taxa_taxon_list_id_list) ))::text END) as taxon,
+	d.taxon_extra_info as flower_extra_info,
+	ARRAY(select sa.caption || ' : ' ||
+			CASE sa.data_type WHEN 'T' THEN sav.text_value WHEN 'L' THEN t.term::text WHEN 'B' THEN CASE sav.int_value WHEN 0 THEN 'Non' ELSE 'Oui' END ELSE sav.int_value::text END 
+		from sample_attribute_values sav
+		INNER JOIN sample_attributes sa ON sa.deleted = false and sa.id = sav.sample_attribute_id
+		LEFT JOIN (termlists_terms tt JOIN terms t ON t.id = tt.term_id AND t.language_id = #language_id#) ON tt.meaning_id = sav.int_value AND sa.data_type = 'L'::bpchar
+		WHERE sav.deleted = false and sav.sample_id = s.id)::text as collection_attributes,
+	ARRAY(select la.caption || ' : ' ||
+			CASE la.data_type WHEN 'T' THEN lav.text_value WHEN 'L' THEN t.term::text WHEN 'B' THEN CASE lav.int_value WHEN 0 THEN 'Non' ELSE 'Oui' END ELSE lav.int_value::text END 
+		from location_attribute_values lav
+		INNER JOIN location_attributes la ON la.deleted = false and la.id = lav.location_attribute_id
+		LEFT JOIN (termlists_terms tt JOIN terms t ON t.id = tt.term_id AND t.language_id = #language_id#) ON tt.meaning_id = lav.int_value AND la.data_type = 'L'::bpchar
+		WHERE lav.deleted = false and lav.location_id = l.id)::text as location_attributes,
+	ARRAY(select oa.caption || ' : ' ||
+			CASE oa.data_type WHEN 'T' THEN oav.text_value WHEN 'L' THEN t.term::text WHEN 'B' THEN CASE oav.int_value WHEN 0 THEN 'Non' ELSE 'Oui' END ELSE oav.int_value::text END 
+		from occurrence_attribute_values oav
+		INNER JOIN occurrence_attributes oa ON oa.deleted = false and oa.id = oav.occurrence_attribute_id
+		LEFT JOIN (termlists_terms tt JOIN terms t ON t.id = tt.term_id AND t.language_id = #language_id#) ON tt.meaning_id = oav.int_value AND oa.data_type = 'L'::bpchar
+		WHERE oav.deleted = false and oav.occurrence_id = o.id)::text as flower_attributes,
+	ARRAY(select i.id 
+		from samples s2
+		INNER JOIN occurrences i ON i.sample_id = s2.id and i.deleted = false 
+		WHERE s2.parent_id = s.id AND s2.deleted = FALSE ORDER by i.id) as insect_ids
+	from samples s
+	INNER JOIN locations l ON l.id = s.location_id and l.deleted = false
+	INNER JOIN location_images li ON l.id = li.location_id and li.deleted = false
+	INNER JOIN occurrences o ON o.sample_id = s.id and o.deleted = false 
+	INNER JOIN determinations d ON o.id = d.occurrence_id and d.deleted = false and d.id = (select max(d2.id) from determinations d2 where d2.occurrence_id = o.id and d2.deleted = false)
+	INNER JOIN occurrence_images oi ON o.id = oi.occurrence_id and oi.deleted = false
+	LEFT JOIN taxa_taxon_lists ttl1 ON d.taxa_taxon_list_id = ttl1.id
+	LEFT JOIN taxa t1 ON ttl1.taxon_id = t1.id 
+	WHERE s.survey_id=#survey_id# AND s.deleted = FALSE AND s.parent_id IS NULL
+	#order_by#
+  </query>
+  <order_bys>
+    <order_by>s.id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='survey_id' display='Survey: ' description='Sélectionnez le survey pour retourner des données' datatype='lookup'
+        query='SELECT id, title as caption FROM surveys' />
+    <param name='language_id' display='Language: ' description='Sélectionnez la langue pour renvoyer des données' datatype='lookup'
+        query='SELECT id, language as caption FROM languages' />
+  </params>
+  <columns>
+    <column name='id' display='ID' />
+    <column name='date_start' display='Date de début' />
+    <column name='date_end' display='fin' />
+    <column name='flower_image_path' display='image de fleur' />
+    <column name='location_image_path' display='image de environment' />
+    <column name='taxon' display='Fleur' />
+    <column name='flower_extra_info' display='Précise' />
+    <column name='collection_attributes' display='Collection' />
+    <column name='location_attributes' display='Environment' />
+    <column name='flower_attributes' display='Fleur' />
+    <column name='insect_ids' display='Insectes' />
+  </columns>
+</report>

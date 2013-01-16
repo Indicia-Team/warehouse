@@ -1,0 +1,110 @@
+form fieldset {
+  border: none;
+}
+
+.form-notice {
+  padding: 0.3em;
+  margin-left: 120px;
+  margin-bottom: 0.5em;
+  display: block;
+}
+
+form.cmxform fieldset, form.iform fieldset {
+  margin-bottom: 10px;
+  border: solid 1px #AAAAAA;
+  -moz-border-radius: 4px; -webkit-border-radius: 4px;
+  padding: 4px;
+}
+form.iform fieldset {
+  padding: 0.5em;
+}
+form.iform * {
+  vertical-align: middle;
+  line-height: 1.8em;
+}
+form.iform .align-top {
+  vertical-align: top;
+  margin-top: 4px;
+}
+form.iform legend {
+  font-weight: bold;
+}
+form.iform .helpText {
+  margin-left: 154px;
+  color: #aaaaaa;
+  line-height: 1em;
+}
+form.cmxform legend {
+  padding: 0 2px;
+  font-weight: bold;
+}
+
+form label {
+  display: inline-block;
+  line-height: 1.8;
+  vertical-align: top;
+  width: 150px; /* Width of labels */
+}
+form.cmxform fieldset ol {
+  margin: 0;
+  padding: 0;
+}
+form.cmxform fieldset li {
+  list-style: none;
+  padding: 5px;
+  margin: 0;
+}
+form.cmxform fieldset fieldset {
+  border: none;
+  margin: 3px 0 0;
+}
+form.cmxform fieldset fieldset legend {
+  padding: 0 0 5px;
+  font-weight: normal;
+}
+form.cmxform fieldset fieldset label {
+  display: block;
+  width: auto;
+}
+form.cmxform em {
+  font-weight: bold;
+  font-style: normal;
+  color: #f00;
+}
+form.cmxform fieldset fieldset label {
+  margin-left: 123px; /* Width plus 3 (html space) */
+}
+form.cmxform fieldset textarea {
+  width: 520px;
+}
+form.cmxform fieldset input, form.cmxform select {
+  width: 300px;
+}
+
+form.cmxform fieldset input.narrow {
+  width: 150px;
+}
+
+form.cmxform fieldset input.vnarrow {
+  width: 50px;
+}
+
+form.cmxform fieldset input.wide {
+  width: 600px;
+}
+
+form.cmxform fieldset input.default {
+  width: auto;
+}
+
+form.cmxform fieldset label.wide {
+  width: 300px; /* Width of labels */
+}
+
+form.widelabels fieldset label {
+  width: 300px; /* Width of labels */
+}
+
+form.cmxform fieldset select.narrow {
+  width: 150px;
+}

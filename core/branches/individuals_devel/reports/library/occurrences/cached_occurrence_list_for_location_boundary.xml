@@ -1,0 +1,66 @@
+<report
+    title="Cached occurrence list for location boundary"
+    description="A general purpose list of records filtered to the contents of a selected location's boundary. Uses the cache tables so fast, but there is a lag before data appears."
+>
+  <query website_filter_field="o.website_id">
+  SELECT #field_sql#
+  FROM cache_occurrences o
+  #joins#
+  WHERE #website_filter#
+  AND (CAST(o.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
+  AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR o.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+      AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+  AND (CAST(o.taxon_group_id AS character varying)='#taxon_group_id#' OR '#taxon_group_id#'='')
+  AND o.record_status not in ('D','I','R','T')
+  #order_by#
+  </query>
+  <field_sql>
+      o.id as occurrence_id, 
+      o.sample_id,
+      o.location_name,
+      o.public_entered_sref as entered_sref,
+      o.date_start,
+      o.date_end,
+      o.date_type,
+      o.taxa_taxon_list_id,
+      o.preferred_taxon as taxon,
+      o.default_common_name as common,
+      o.taxon_group,
+      o.recorders as recorder,
+      st_astext(o.public_geom) as geom,
+      o.zero_abundance,
+      o.certainty
+  </field_sql>
+  <order_bys>
+    <order_by>o.id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='survey_id' display='Survey' description='Select the survey, or leave for all surveys' datatype='lookup'
+        population_call='direct:survey:id:title' />
+    <param name='date_from' display='Date From' datatype='date' />
+    <param name='date_to' display='Date To' datatype='date' />
+    <param name='taxon_group_id' display='Taxon Group' description='Select the taxon group to return data for, or leave for all groups' datatype='lookup'
+        query='SELECT id, title as caption FROM taxon_groups' population_call='direct:taxon_group:id:title' />
+    <param name='location_id' display='Location' description='Select the location to return data for' datatype='lookup'
+        population_call='direct:location:id:name'>
+      <join>JOIN locations l ON l.id=#location_id# AND st_intersects(o.public_geom, l.boundary_geom) AND l.deleted=false</join>
+    </param>
+    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
+    <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
+  </params>
+  <columns>
+    <column name='occurrence_id' display='ID' />
+    <column name='sample_id' visible='false' />
+    <column name='taxon' display='Species' />    
+    <column name='common' display='Common' /> 
+    <column name='taxa_taxon_list_id' visible='false' />   
+    <column name='location_name' display='Site name' />
+    <column name='entered_sref' display='SRef' />
+    <column name='date' display='Date' />
+    <column name='zero_abundance' display='Zero Abundance' />
+    <column name='taxon_group' display='Taxon Group' />
+    <column name='recorder' display='Recorder' />
+    <column name='geom' visible='false' mappable="true" />
+    <column name='certainty' visible='false' />
+  </columns>
+</report>

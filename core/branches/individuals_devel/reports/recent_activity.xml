@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="Recent Activity" description="Lists recent activity broken down by survey.">
+      <query>
+      SELECT su.title as survey, w.title as website, COUNT(*) as count FROM report_websites w
+      JOIN occurrences o ON o.website_id = w.id
+      JOIN samples s ON o.sample_id = s.id
+      JOIN surveys su ON s.survey_id = su.id
+      WHERE o.created_on > '#date#'::date
+      GROUP BY survey, website
+      </query>
+      <order_bys>
+            <order_by>website ASC</order_by>
+      <order_by>survey ASC</order_by>
+      </order_bys>
+      <params>
+      <param name='date' display='Since: ' description='Show activity since:' datatype='date' />
+      </params>
+      <columns>
+            <column name="survey" display="Survey Name" />
+            <column name="website" display="Website Name" />
+            <column name="count" display="Total no. of Occurrences" />
+      </columns>
+</report>

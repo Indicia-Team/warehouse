@@ -1,0 +1,36 @@
+<report
+    title="Notifications list for warehouse user"
+    description="A general purpose list of notifications, filtered by warehouse user."
+>
+  <query>
+  SELECT #columns#
+  FROM notifications n
+  #joins#
+  WHERE n.acknowledged=false
+  and n.user_id=#user_id#  
+  #order_by#
+  </query>  
+  <order_bys>
+    <order_by>n.id desc</order_by>
+  </order_bys>
+  <params>
+    <param name="user_id" display="User ID" description="Warehouse user ID" datatype="text" />
+    <param name="source_types" display="Source Types" 
+        description="Comma separated list of source types with each item single quoted, or blank to allow all. Options are 'T' (trigger), 'C' (comment), 'V' (verification)." datatype="text">
+      <join>
+        JOIN notifications n2 on n2.id=n.id and n2.source_type in (#source_types#)
+      </join>
+    </param>
+    <param name="system_name" display="System Name" description="Name to display instead of admin for system generated notifications" datatype="text" />
+  </params>
+  <columns>
+    <column name="notification_id" visible="false" sql="n.id" />
+    <column name="source" display='Source' visible="false" datatype="text" sql="n.source" />
+    <column name="source_type" display='Source type' visible="false" datatype="text" sql="n.source_type" />
+    <column name="data" display="Message" datatype="text" sql="replace(n.data, '&quot;username&quot;:&quot;admin&quot;', '&quot;username&quot;:&quot;#system_name#&quot;')" />
+    <column name="acknowledged" display="Acknowledged" datatype="boolean" sql="n.acknowledged" visible="false" />
+    <column name="user_id" display="User ID" visible="false" datatype="integer" sql="n.user_id" />
+    <column name="triggered_on" display="Notification date" datatype="date" sql="n.triggered_on" visible="false" />    
+    <column name="triggered_date" display="Notification date" datatype="date" sql="to_char(n.triggered_on, 'DD/MM/YYYY')" orderby="triggered_on" /> 
+  </columns>
+</report>

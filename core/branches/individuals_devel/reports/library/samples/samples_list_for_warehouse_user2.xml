@@ -1,0 +1,61 @@
+<report
+    title="Top level samples list for a warehouse user"
+    description="A general purpose list of top level samples filtered according to the ID of the user as registered on the warehouse. Top level means that the parent_id field of the samples is null."
+>
+<query website_filter_field="su.website_id">
+  SELECT #columns#
+  FROM samples s
+  JOIN surveys su on su.id=s.survey_id and su.deleted=false
+  LEFT JOIN locations l ON l.id=s.location_id
+  #joins#
+  WHERE s.deleted = FALSE
+  AND s.parent_id IS NULL
+  AND #website_filter#
+  AND (CAST(s.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
+  AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+      AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+  AND s.created_by_id=#user_id#
+  #order_by#
+  </query>
+  <field_sql>
+    s.id as sample_id,
+    su.title as survey,
+    COALESCE(l.name, s.location_name) as location_name,
+    l.id as location_id,
+    l.code,
+    s.entered_sref,
+    s.date_start,
+    s.date_end,
+    s.date_type
+  </field_sql>
+  <order_bys>
+    <order_by>s.id DESC</order_by>
+    <order_by>s.date_start DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='survey_id' display='Survey' description='Select the survey, or leave for all surveys' datatype='lookup'
+        population_call='direct:survey:id:title' />
+    <param name='date_from' display='Date From' datatype='date' />
+    <param name='date_to' display='Date To' datatype='date' />
+    <param name='user_id' display='Warehouse User ID' description='Enter the ID of the warehouse user' datatype='int' />
+    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
+    <param name='sample_method_id' display='Sample Method' description='Select the sample method, or leave blank to not filter by sample method.' datatype='lookup'
+            population_call='report:library/terms/terms_list:id:term:termlist_external_key=indicia:sample_methods,termlist_id=' >
+      <join>JOIN JOIN termlists_terms ttl1 ON ttl1.id=s.sample_method_id
+      INNER JOIN termlists_terms ttl2 ON ttl2.meaning_id=ttl1.meaning_id and ttl2.id=#sample_method_id#
+      </join>
+    </param>
+  </params>
+  <columns>
+    <column name="sample_id" visible="true" sql="s.id" datatype="integer" />
+    <column name="survey" display="Survey" sql="su.title" datatype="text" />
+    <column name="location_name" display="Site name" sql="COALESCE(l.name, s.location_name)" datatype="text" />
+    <column name="location_id" display="Location ID" visible="false" sql="l.id" datatype="integer" />
+    <column name="code" display="Site code" sql="l.code" datatype="text" />
+    <column name="entered_sref" display="SRef" sql="s.entered_sref" datatype="text" />
+    <column name='date_start' sql='s.date_start' visible="false" />
+    <column name='date_end' sql='s.date_end' visible="false" />
+    <column name='date_type' sql='s.date_type' visible="false" />
+    <column name='date' display='Date' datatype="date" />
+  </columns>
+</report>
