@@ -48,6 +48,9 @@ $.fn.extend({
   setExtraParams: function(extraParams){
     return this.trigger("setExtraParams", [extraParams]);
   },
+  unsetExtraParams: function(extraParams){
+    return this.trigger("unsetExtraParams", [extraParams]);
+  },
   unautocomplete: function() {
     return this.trigger("unautocomplete");
   }
@@ -192,7 +195,10 @@ $.Autocompleter = function(input, options) {
     if ( "data" in arguments[1] )
       cache.populate();
   }).bind("setExtraParams", function() {
-    $.extend(options.extraParams, arguments[1]);
+    $.extend(options.extraParams, arguments[1]); 
+    cache.flush();
+  }).bind("unsetExtraParams", function() {
+    delete options.extraParams[arguments[1]];
     cache.flush();
   }).bind("unautocomplete", function() {
     select.unbind();
