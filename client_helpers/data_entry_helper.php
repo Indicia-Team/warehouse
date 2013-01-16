@@ -2516,6 +2516,8 @@ class data_entry_helper extends helper_base {
    */
   private static function species_checklist_filter_popup($options, $nameFilter) {
     self::add_resource('fancybox');
+    $db=self::get_species_lookup_db_definition(isset($options['cacheLookup']) && $options['cacheLookup']);
+    extract($db);
     $defaultFilterMode=$options['speciesNameFilterMode'];
     self::$javascript .= "var mode,  nameFilter=[];\n";
     //convert the nameFilter php array into a Javascript one
@@ -2540,7 +2542,11 @@ var applyFilterMode = function(type, group_id, nameFilterMode) {
   }
   currentFilter=$.extend({}, nameFilter[nameFilterMode]);
   // decode the query part, so we can modify it
-  currentFilter.query=JSON.parse(currentFilter.query);
+  if (typeof currentFilter.query!==\"undefined\") {
+    currentFilter.query=JSON.parse(currentFilter.query);
+  } else {
+    currentFilter.query={};
+  }
   //Extend the current query with any taxon group selections the user has made
   switch (type) {\n";
     if (!empty($options['usersPreferredGroups']))
@@ -2564,10 +2570,10 @@ var applyFilterMode = function(type, group_id, nameFilterMode) {
   // Unset previous filters which are no longer wanted
   switch (nameFilterMode) {
     case 'preferred':
-      $('.scTaxonCell input').unsetExtraParams(\"language_iso\");
+      $('.scTaxonCell input').unsetExtraParams(\"$colLanguage\");
       break;
     case 'all':
-      $('.scTaxonCell input').unsetExtraParams(\"language_iso\");
+      $('.scTaxonCell input').unsetExtraParams(\"$colLanguage\");
     case 'currentLanguage':
     default:
       $('.scTaxonCell input').unsetExtraParams(\"name_type\");
