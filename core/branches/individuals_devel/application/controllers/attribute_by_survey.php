@@ -32,6 +32,8 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
   private $_survey=null;
   private $_website_id=null;
   private $_survey_id=null;  
+#rfj temp fix
+  private $alias;
 
   public function __construct()
   {
@@ -40,9 +42,14 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
       throw new Exception('Page cannot be accessed without a survey filter');
     if (!isset($_GET['type'])) 
       throw new Exception('Page cannot be accessed without a type parameter');
-    if ($_GET['type']!='sample' && $_GET['type']!='occurrence' && $_GET['type']!='location')
+      
+### RFJ - should be an array that can be hooked into      
+$lookupValues=array('sample'=>'Samples','occurrence'=>'Occurrences','location'=>'Locations','subject_observation'=>'Subject Observations');
+    if ($_GET['type']!='sample' && $_GET['type']!='occurrence' && $_GET['type']!='location' && $_GET['type']!='subject_observation')
+    if(!in_array($_GET['type'],$lookupValues) )
       throw new Exception('Type parameter in URL is invalid'); 
     $this->type=$_GET['type'];
+    $this->alias=$_GET['type'];
     $this->pagetitle = 'Attributes for a survey';
     $this->get_auth();
     $this->auth_filter = $this->gen_auth_filter;
@@ -59,9 +66,14 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
     $this->template->content=new View('attribute_by_survey/index');
     $this->template->title=$this->pagetitle;
     $filter = array('survey_id'=>$this->_survey_id);
+    ###RFJ
+    if(strtoupper($this->alias)=='SUBJECT_OBSERVATION')
+	    $sectionType='X';
+    else
+	    $sectionType=strtoupper(substr($this->alias,0,1));
     $top_blocks = ORM::factory('form_structure_block')->
         where('parent_id',null)->
-        where('type', strtoupper(substr($this->type,0,1)))->
+        where('type', $sectionType)->
         where($filter)->
         orderby('weight', 'ASC')->find_all();
     $this->template->content->top_blocks=$top_blocks;
@@ -109,7 +121,11 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
         $model->name = $block['name'];
         $model->survey_id=$this->_survey_id;
         $model->weight=$weight;
-        $model->type=strtoupper(substr($_GET['type'], 0, 1));
+        ### rfj 
+        if(strtoupper($_GET['type'])=='SUBJECT_OBSERVATION')
+        	$model->type='X';
+	else        
+	        $model->type=strtoupper(substr($_GET['type'], 0, 1));
         $model->parent_id=$blockId;
         $changed = true;
       } elseif (substr($block['id'], 0, 6)=='block-') {
