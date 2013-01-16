@@ -407,7 +407,7 @@ idlist=';
     );
     $r .= '</div>';
     $r .= '<div id="phenology-tab"><p>'.lang::get('The following phenology chart shows the relative abundance of records through the '.
-        'year for this species, <em>from the online recording data only.</em>').'</p><div id="chart-div"></div></div>';
+        'year for this species, <em>from the verified online recording data only.</em>').'</p><div id="chart-div"></div></div>';
     $r .= '<div id="images-tab"></div>';
     $r .= '<div id="comments-tab"></div>';
     $r .= '</div></div></div></div>';
@@ -922,7 +922,8 @@ idlist=';
     // must output all months
     $output = array(array(1,0),array(2,0),array(3,0),array(4,0),array(5,0),array(6,0),array(7,0),array(8,0),array(9,0),array(10,0),array(11,0),array(12,0));
     foreach ($data as $month)
-      $output[$month['name']][1] = intval($month['value']);
+      // -1 here, because our array is zero indexed, but the report returns a real month number
+      $output[$month['name']-1][1] = intval($month['value']);
     echo json_encode($output);
   }
 
