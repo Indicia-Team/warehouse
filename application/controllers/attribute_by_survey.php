@@ -34,6 +34,7 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
   private $_survey_id=null;  
 #rfj temp fix
   private $alias;
+  private $availableAttrTables;
 
   public function __construct()
   {
@@ -44,9 +45,11 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
       throw new Exception('Page cannot be accessed without a type parameter');
       
 ### RFJ - should be an array that can be hooked into      
-$lookupValues=array('sample'=>'Samples','occurrence'=>'Occurrences','location'=>'Locations','subject_observation'=>'Subject Observations');
-    if ($_GET['type']!='sample' && $_GET['type']!='occurrence' && $_GET['type']!='location' && $_GET['type']!='subject_observation')
-    if(!in_array($_GET['type'],$lookupValues) )
+
+//$this->availableAttrTables=array('sample'=>'Samples','occurrence'=>'Occurrences','location'=>'Locations','subject_observation'=>'Subject Observations');
+$this->availableAttrTables=$this->getAvailableAttrTables();
+//    if ($_GET['type']!='sample' && $_GET['type']!='occurrence' && $_GET['type']!='location' && $_GET['type']!='subject_observation')
+    if(!in_array($_GET['type'],array_keys($this->availableAttrTables)) )
       throw new Exception('Type parameter in URL is invalid'); 
     $this->type=$_GET['type'];
     $this->alias=$_GET['type'];
@@ -66,14 +69,12 @@ $lookupValues=array('sample'=>'Samples','occurrence'=>'Occurrences','location'=>
     $this->template->content=new View('attribute_by_survey/index');
     $this->template->title=$this->pagetitle;
     $filter = array('survey_id'=>$this->_survey_id);
-    ###RFJ
-    if(strtoupper($this->alias)=='SUBJECT_OBSERVATION')
-	    $sectionType='X';
-    else
-	    $sectionType=strtoupper(substr($this->alias,0,1));
+
+    //make list of valid tables available to the view
+    $this->template->content->availableAttrTables=$this->availableAttrTables;
     $top_blocks = ORM::factory('form_structure_block')->
         where('parent_id',null)->
-        where('type', $sectionType)->
+        where('type', $this->alias)->
         where($filter)->
         orderby('weight', 'ASC')->find_all();
     $this->template->content->top_blocks=$top_blocks;
@@ -121,11 +122,7 @@ $lookupValues=array('sample'=>'Samples','occurrence'=>'Occurrences','location'=>
         $model->name = $block['name'];
         $model->survey_id=$this->_survey_id;
         $model->weight=$weight;
-        ### rfj 
-        if(strtoupper($_GET['type'])=='SUBJECT_OBSERVATION')
-        	$model->type='X';
-	else        
-	        $model->type=strtoupper(substr($_GET['type'], 0, 1));
+	$model->type=$_GET['type'];
         $model->parent_id=$blockId;
         $changed = true;
       } elseif (substr($block['id'], 0, 6)=='block-') {
@@ -248,12 +245,51 @@ $lookupValues=array('sample'=>'Samples','occurrence'=>'Occurrences','location'=>
         ->from('control_types')
         ->where('for_data_type', $attr->data_type)
         ->get();
+
     return array(
       'name' => $attr->caption,
       'survey' => $survey->title,
-      'controlTypes' => $controlTypes
+      'controlTypes' => $controlTypes,
+//      'availableAttrTables' => $availableAttrTables
     );
   }
+
+
+/* Generate the list of available tables for the form structure - including hooks by plugins
+*/
+private function getAvailableAttrTables(){
+    //Basic list of tables to show in survey structure
+    $availableAttrTables=array('sample'=>'Samples','occurrence'=>'Occurrences','location'=>'Locations'
+    //,'subject_observation'=>'Subject Observations'
+    );
+    
+      // Now look for any modules which extend the tables available for survey level custom attributes
+      foreach (Kohana::config('config.modules') as $path) {
+        $plugin = basename($path);
+        if (file_exists("$path/plugins/$plugin.php")) {
+          require_once("$path/plugins/$plugin.php");
+          if (function_exists($plugin.'_declare_custom_attributes')) {
+		$custAttrs = call_user_func($plugin.'_declare_custom_attributes');
+            foreach($custAttrs as $custAttr){
+            	if(is_array($custAttr['table']))
+            	$attrTable=$custAttr['table'];
+            else
+            	$attrTable=array($custAttr['table']=>$custAttr['table']);
+            $availableAttrTables=array_merge($availableAttrTables,$attrTable);
+//            if ($custAttrs['filtersBySurvey']){
+            // add filtered
+  //          }
+  //          else{
+            //add unfiltered
+  //          }
+	    }
+          }
+        }
+      }
+
+      return $availableAttrTables;
+}
+
   
   public function save() {       
     // Build the validation_rules field from the set of controls that are associated with it.
