@@ -1,0 +1,383 @@
+@CHARSET "UTF-8";
+
+.ui-state-highlight,.ui-widget-content .ui-state-highlight {
+	border: 1px solid #008f93;
+	background: #008f93;
+	color: #ffffff;
+	font-weight: bold;
+}
+
+.ui-accordion-header.ui-state-active {
+	/* 
+	background: #e6e6e6;
+	*/
+	border: 1px solid #008f93;
+	background: #008f93;
+	color: #ffffff;
+}
+
+.ui-accordion-header.ui-state-active a {
+	/* 
+	background: #e6e6e6;
+	*/
+	border: 1px solid #008f93;
+	background: #008f93;
+	color: #ffffff;
+	font-weight: bold;
+}
+
+.ui-accordion-header.ui-state-default a {
+	font-weight: bold;
+}
+
+#tabs-wrapper h1, #tabs-wrapper h2, #tabs-wrapper h3 {
+	color: #008f93;
+}
+
+#controls h1, #controls h2, #controls h3 {
+	color: #008f93;
+}
+
+input.locked-control, select.locked-control, textarea.locked-control {
+	background-color: #fff99d !important;
+}
+
+.identifier_checkbox {
+	display: none;
+}
+
+fieldset, #fieldset-recorder-details, .file-box fieldset {
+	border:1px solid #008f93;
+}
+
+.individual_panel {
+	border:1px solid #008f93;
+	padding: 1em;
+}
+
+.taxon_individual {
+	border:1px solid #008f93;
+	background-color: transparent;
+	width: 480px;
+	float: left;
+	margin-right: -488px;
+}
+
+.taxon_individual legend, #fieldset-recorder-details legend, .file-box legend  {
+	color: #008f93;
+	font-weight: bold;
+}
+
+.readonlyFieldset fieldset {
+	background-color: #E7E7E7;
+}
+
+.readonlyFieldset legend:after {
+	content: " (read-only)";
+}
+
+/*
+.ind-tax-img-barnaclegoose {
+	background-image: url('../images/barnacle.jpg');
+	background-repeat: no-repeat;
+	background-position: 540px 24px;
+}
+
+.ind-tax-img-bewicksswan {
+	background-image: url('../images/bewicks.jpg');
+	background-repeat: no-repeat;
+	background-position: 540px 24px;
+}
+	
+.ind-tax-img-greylaggoose {
+	background-image: url('../images/greylag.jpg');
+	background-repeat: no-repeat;
+	background-position: 540px 24px;
+}
+	
+.ind-tax-img-pinkfootedgoose {
+	background-image: url('../images/pinkfoot.jpg');
+	background-repeat: no-repeat;
+	background-position: 540px 24px;
+}
+	
+.ind-tax-img-whooperswan {
+	background-image: url('../images/whooper.jpg');
+	background-repeat: no-repeat;
+	background-position: 540px 24px;;
+}
+*/
+.ind-tax-img-barnaclegoose, .ind-tax-img-bewicksswan, .ind-tax-img-greylaggoose, .ind-tax-img-pinkfootedgoose, .ind-tax-img-whooperswan {
+	background-image: url('../images/brent.jpg');
+	background-repeat: no-repeat;
+	background-position: 540px 24px;;
+}
+
+.idn-accordion {
+	width: 460px;
+}
+
+.neck-collar-indentifier-colourbox  {
+	float: left;
+	width: 5em;
+	height: 2em;
+	border: 1px solid #3f3f3f; 
+	text-align: center;
+	text-transform: uppercase;
+	font-size: 1.25em;
+	font-weight: bold;
+	font-family: Verdana, sans-serif;
+	line-height: 2em;
+	margin-top: 50px;
+	margin-left: 540px;
+	margin-right: -617px;
+}
+
+* html .neck-collar-indentifier-colourbox  {
+	margin-left: 270px;
+}
+
+.colour-left-indentifier-colourbox  {
+	float: left;
+	width: 5em;
+	height: 2em;
+	border: 1px solid #3f3f3f; 
+	text-align: center;
+	text-transform: uppercase;
+	font-size: 1.25em;
+	font-weight: bold;
+	font-family: Verdana, sans-serif;
+	line-height: 2em;
+	margin-top: 50px;
+	margin-left: 640px;
+	margin-right: -717px;
+}
+
+* html .colour-left-indentifier-colourbox  {
+	margin-left: 320px;
+}
+
+.colour-right-indentifier-colourbox  {
+	float: left;
+	width: 5em;
+	height: 2em;
+	border: 1px solid #3f3f3f; 
+	text-align: center;
+	text-transform: uppercase;
+	font-size: 1.25em;
+	font-weight: bold;
+	font-family: Verdana, sans-serif;
+	line-height: 2em;
+	margin-top: 50px;
+	margin-left: 740px;
+	margin-right: -817px;
+}
+
+* html .colour-left-indentifier-colourbox  {
+	margin-left: 370px;
+}
+/*
+.ind-tax-img-barnaclegoose .neck-collar-indentifier-colourbox  {
+	margin-top: 120px;
+	margin-left: 740px;
+	margin-right: -817px;
+}
+
+* html .ind-tax-img-barnaclegoose .neck-collar-indentifier-colourbox  {
+	margin-left: 370px;
+}
+
+.ind-tax-img-barnaclegoose .colour-left-indentifier-colourbox  {
+	margin-top: 300px;
+	margin-left: 630px;
+	margin-right: -707px;
+}
+
+* html .ind-tax-img-barnaclegoose .colour-left-indentifier-colourbox  {
+	margin-left: 315px;
+}
+
+.ind-tax-img-barnaclegoose .colour-right-indentifier-colourbox  {
+	margin-top: 340px;
+	margin-left: 660px;
+	margin-right: -737px;
+}
+
+* html .ind-tax-img-barnaclegoose .colour-right-indentifier-colourbox  {
+	margin-left: 330px;
+}
+
+.ind-tax-img-bewicksswan .neck-collar-indentifier-colourbox  {
+	margin-top: 130px;
+	margin-left: 730px;
+	margin-right: -807px;
+}
+
+* html .ind-tax-img-bewicksswan .neck-collar-indentifier-colourbox  {
+	margin-left: 315px;
+}
+
+.ind-tax-img-bewicksswan .colour-left-indentifier-colourbox  {
+	margin-top: 310px;
+	margin-left: 610px;
+	margin-right: -687px;
+}
+
+* html .ind-tax-img-bewicksswan .colour-left-indentifier-colourbox  {
+	margin-left: 305px;
+}
+
+.ind-tax-img-bewicksswan .colour-right-indentifier-colourbox  {
+	margin-top: 350px;
+	margin-left: 640px;
+	margin-right: -717px;
+}
+
+* html .ind-tax-img-bewicksswan .colour-right-indentifier-colourbox  {
+	margin-left: 320px;
+}
+
+.ind-tax-img-greylaggoose .neck-collar-indentifier-colourbox  {
+	margin-top: 110px;
+	margin-left: 740px;
+	margin-right: -817px;
+}
+
+* html .ind-tax-img-greylaggoose .neck-collar-indentifier-colourbox  {
+	margin-left: 370px;
+}
+
+.ind-tax-img-greylaggoose .colour-left-indentifier-colourbox  {
+	margin-top: 280px;
+	margin-left: 580px;
+	margin-right: -657px;
+}
+
+* html .ind-tax-img-greylaggoose .colour-left-indentifier-colourbox  {
+	margin-left: 290px;
+}
+
+.ind-tax-img-greylaggoose .colour-right-indentifier-colourbox  {
+	margin-top: 320px;
+	margin-left: 670px;
+	margin-right: -747px;
+}
+
+* html .ind-tax-img-greylaggoose .colour-right-indentifier-colourbox  {
+	margin-left: 335px;
+}
+
+.ind-tax-img-pinkfootedgoose .neck-collar-indentifier-colourbox  {
+	margin-top: 110px;
+	margin-left: 730px;
+	margin-right: -807px;
+}
+
+* html .ind-tax-img-pinkfootedgoose .neck-collar-indentifier-colourbox  {
+	margin-left: 365px;
+}
+
+.ind-tax-img-pinkfootedgoose .colour-left-indentifier-colourbox  {
+	margin-top: 310px;
+	margin-left: 560px;
+	margin-right: -637px;
+}
+
+* html .ind-tax-img-pinkfootedgoose .colour-left-indentifier-colourbox  {
+	margin-left: 280px;
+}
+
+.ind-tax-img-pinkfootedgoose .colour-right-indentifier-colourbox  {
+	margin-top: 350px;
+	margin-left: 650px;
+	margin-right: -727px;
+}
+
+* html .ind-tax-img-pinkfootedgoose .colour-right-indentifier-colourbox  {
+	margin-left: 305px;
+}
+
+.ind-tax-img-whooperswan .neck-collar-indentifier-colourbox  {
+	margin-top: 140px;
+	margin-left: 720px;
+	margin-right: -797px;
+}
+
+* html .ind-tax-img-whooperswan .neck-collar-indentifier-colourbox  {
+	margin-left: 360px;
+}
+
+.ind-tax-img-whooperswan .colour-left-indentifier-colourbox  {
+	margin-top: 310px;
+	margin-left: 610px;
+	margin-right: -687px;
+}
+
+* html .ind-tax-img-whooperswan .colour-left-indentifier-colourbox  {
+	margin-left: 305px;
+}
+
+.ind-tax-img-whooperswan .colour-right-indentifier-colourbox  {
+	margin-top: 350px;
+	margin-left: 660px;
+	margin-right: -737px;
+}
+
+* html .ind-tax-img-whooperswan .colour-right-indentifier-colourbox  {
+	margin-left: 330px;
+}
+*/
+
+.ind-tax-img-barnaclegoose .neck-collar-indentifier-colourbox,
+.ind-tax-img-bewicksswan .neck-collar-indentifier-colourbox,
+.ind-tax-img-greylaggoose .neck-collar-indentifier-colourbox,
+.ind-tax-img-pinkfootedgoose .neck-collar-indentifier-colourbox,
+.ind-tax-img-whooperswan .neck-collar-indentifier-colourbox  {
+	margin-top: 84px;
+	margin-left: 576px;
+	margin-right: -853px;
+}
+
+* html .ind-tax-img-barnaclegoose .neck-collar-indentifier-colourbox,
+* html .ind-tax-img-bewicksswan .neck-collar-indentifier-colourbox,
+* html .ind-tax-img-greylaggoose .neck-collar-indentifier-colourbox,
+* html .ind-tax-img-pinkfootedgoose .neck-collar-indentifier-colourbox,
+* html .ind-tax-img-whooperswan .neck-collar-indentifier-colourbox  {
+	margin-left: 288px;
+}
+
+.ind-tax-img-barnaclegoose .colour-left-indentifier-colourbox,
+.ind-tax-img-bewicksswan .colour-left-indentifier-colourbox,
+.ind-tax-img-greylaggoose .colour-left-indentifier-colourbox,
+.ind-tax-img-pinkfootedgoose .colour-left-indentifier-colourbox,
+.ind-tax-img-whooperswan .colour-left-indentifier-colourbox  {
+	margin-top: 400px;
+	margin-left: 680px;
+	margin-right: -757px;
+}
+
+* html .ind-tax-img-barnaclegoose .colour-left-indentifier-colourbox,
+* html .ind-tax-img-bewicksswan .colour-left-indentifier-colourbox,
+* html .ind-tax-img-greylaggoose .colour-left-indentifier-colourbox,
+* html .ind-tax-img-pinkfootedgoose .colour-left-indentifier-colourbox,
+* html .ind-tax-img-whooperswan .colour-left-indentifier-colourbox  {
+	margin-left: 340px;
+}
+
+.ind-tax-img-barnaclegoose .colour-right-indentifier-colourbox,
+.ind-tax-img-bewicksswan .colour-right-indentifier-colourbox,
+.ind-tax-img-greylaggoose .colour-right-indentifier-colourbox,
+.ind-tax-img-pinkfootedgoose .colour-right-indentifier-colourbox,
+.ind-tax-img-whooperswan .colour-right-indentifier-colourbox  {
+	margin-top: 400px;
+	margin-left: 570px;
+	margin-right: -647px;
+}
+
+* html .ind-tax-img-barnaclegoose .colour-right-indentifier-colourbox,
+* html .ind-tax-img-bewicksswan .colour-right-indentifier-colourbox,
+* html .ind-tax-img-greylaggoose .colour-right-indentifier-colourbox,
+* html .ind-tax-img-pinkfootedgoose .colour-right-indentifier-colourbox,
+* html .ind-tax-img-whooperswan .colour-right-indentifier-colourbox  {
+	margin-left: 285px;
+}

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Species, record and verified record counts for a user" description="Gives count of species, record and verified records for a user. Filters by warehouse user.">
+      <query website_filter_field="o.website_id">
+      SELECT 0 as weight, 'Number of different species that I have recorded' as count_of, count(DISTINCT ttl.taxon_meaning_id) as count
+      FROM occurrences o
+      JOIN taxa_taxon_lists ttl ON o.taxa_taxon_list_id = ttl.id AND ttl.deleted=false
+      JOIN samples s on s.id=o.sample_id and s.deleted=false
+      #agreements_join#
+      WHERE o.deleted=false
+      AND o.zero_abundance='f'
+      AND o.created_by_id=#user_id#
+      AND #sharing_filter#      
+      UNION
+      SELECT 1 as weight, 'Number of records I have entered' as count_of, count(DISTINCT o.id) as count
+      FROM occurrences o      
+      JOIN samples s on s.id=o.sample_id and s.deleted=false
+      #agreements_join#
+      WHERE o.deleted=false
+      AND o.created_by_id=#user_id#
+      AND #sharing_filter#
+      UNION
+      SELECT 2 as weight, 'Number of my records that have been verified' as count_of, count(DISTINCT o.id) as count
+      FROM occurrences o      
+      JOIN samples s on s.id=o.sample_id and s.deleted=false
+      #agreements_join#
+      WHERE o.deleted=false
+      AND o.created_by_id=#user_id# AND o.record_status='V'
+      AND #sharing_filter#
+      UNION
+      SELECT 3 as weight, 'Number of records I have verified for other people' as count_of, count(DISTINCT o.id) as count
+      FROM occurrences o      
+      JOIN samples s on s.id=o.sample_id and s.deleted=false
+      #agreements_join#
+      WHERE o.deleted=false
+      AND o.verified_by_id=#user_id#
+      AND #sharing_filter#
+      </query>
+  <params>
+    <param name='user_id' display='Warehouse user ID' datatype='integer' />
+  </params>
+      <columns>
+            <column name="weight" visible="false" />
+            <column name="count_of" display="Count of" />
+            <column name="count" display="Count" />
+      </columns>
+      <order_bys>
+            <order_by>weight ASC</order_by>
+      </order_bys>
+</report>

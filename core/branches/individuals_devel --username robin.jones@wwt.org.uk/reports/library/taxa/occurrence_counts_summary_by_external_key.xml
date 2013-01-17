@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="Record counts by taxon external key" description="Lists taxa and the number of records of each. Uses the external key to identify each unique taxon">
+      <query website_filter_field="o.website_id">
+      SELECT #columns#
+      FROM cache_taxa_taxon_lists cttl
+      JOIN cache_occurrences o on o.taxon_meaning_id=cttl.taxon_meaning_id
+      #agreements_join# 
+      #joins#
+      WHERE  #sharing_filter# 
+      and cttl.id=cttl.preferred_taxa_taxon_list_id
+      AND (o.zero_abundance='f')
+      AND (CAST(o.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
+      AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR o.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+      AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+      AND quality_check('#quality#', o.record_status, o.certainty)=true
+      AND o.record_status&lt;&gt;'R'
+      AND cttl.preferred=true
+      AND (#ownData#=0 OR CAST(o.created_by_id AS character varying)='#currentUser#')
+      </query>
+      <order_by>
+        count(distinct o.id) desc
+      </order_by>
+      <params>
+        <param name='date_from' display='Date From' datatype='date' />
+        <param name='date_to' display='Date To' datatype='date' />
+        <param name='survey_id' display='Survey' description='Select the survey to return data for, or leave for all surveys' datatype='lookup'
+            query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title' />
+        <param name='quality' display='Data quality' description='Quality level required of data to be included in the report.' datatype='lookup' 
+            lookup_values='V:Data must be verified,C:Data must be verified or certain,L:Data must be at least likely,!D:Include anything not dubious or rejected,!R:Include anything not rejected' />
+        <param name="currentUser" display="Current User ID" description="Current user's warehouse ID. Allows a column to be output indicating that the user owns the record." datatype="text" />
+        <param name="ownData" display="My data only?" datatype="checkbox" />
+        <param name="taxon_groups" display="Taxon Groups" description="List of taxon group IDs to view data for" datatype="text" emptyvalue="0"/>
+        <param name="ownGroups" display="My species groups only?" datatype="checkbox">      
+          <join value="1">JOIN taxon_groups tgfilter ON tgfilter.id=o.taxon_group_id AND tgfilter.id IN (#taxon_groups#)</join>
+        </param>
+      </params>
+      <columns>
+            <column name="external_key"  sql="cttl.external_key" unique="true" incount="true" datatype="text" visible="false"/>
+            <column name='taxon' display='Species' 
+              template="&lt;div class='zero-{zero_abundance}'&gt;{taxon}&lt;/div&gt;"
+              sql="CASE WHEN o.preferred_taxon=o.default_common_name then o.preferred_taxon ELSE o.preferred_taxon || COALESCE(' | ' || o.default_common_name, '') END" datatype='text' />
+            <column name='taxon_group' display='Taxon Group' sql='o.taxon_group' datatype='text' />
+            <column name="value" display="No. of Records" sql="count(distinct o.id)" aggregate="true" in_count="false" datatype="int"/>
+      </columns>
+</report>

@@ -1,0 +1,13 @@
+#report-grid td {
+  font-size: 80%;
+  line-height: 1.3em;
+}
+input.input-selected {
+  border: solid blue 1px;
+}
+input.input-edited {
+  border: solid green 1px;
+}
+input.input-saving {
+  border: solid yellow 1px;
+}

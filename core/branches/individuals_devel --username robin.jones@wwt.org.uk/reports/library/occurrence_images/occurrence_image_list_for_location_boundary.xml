@@ -1,0 +1,75 @@
+<report
+      title="Occurrence images for location boundary"
+      description="Outputs a list of occurrence images filtered to the contents of a selected location's boundary."
+      row_class="biota"
+  >
+  <query website_filter_field="o.website_id">
+  SELECT #field_sql#
+  FROM occurrences o
+  JOIN occurrence_images oi ON oi.occurrence_id=o.id AND oi.deleted=false
+  JOIN samples s ON s.id=o.sample_id AND s.deleted = FALSE
+  JOIN locations l ON st_intersects(s.geom, l.boundary_geom) AND l.id=#location_id# AND l.deleted=false
+  JOIN taxa_taxon_lists ttl ON ttl.id=o.taxa_taxon_list_id AND ttl.deleted=false
+  JOIN taxa_taxon_lists ttlpref ON ttlpref.taxon_meaning_id=ttl.taxon_meaning_id AND ttlpref.preferred='t' AND ttlpref.deleted=false
+  JOIN taxa tpref ON tpref.id=ttlpref.taxon_id AND tpref.deleted=false
+  JOIN taxon_groups tg on tg.id=tpref.taxon_group_id and tg.deleted=false
+  LEFT JOIN taxa tcommon ON tcommon.id=ttlpref.common_taxon_id AND tcommon.deleted=false
+  #joins#
+  WHERE o.deleted = FALSE
+  AND #website_filter#
+  AND (CAST(s.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
+  AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+      AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+  AND (CAST(tpref.taxon_group_id AS character varying)='#taxon_group_id#' OR '#taxon_group_id#'='')
+  #order_by#
+  </query>
+  <field_sql>
+    o.id as occurrence_id,
+    oi.path,
+    oi.caption,
+    s.id as sample_id,
+    COALESCE(l.name, s.location_name) as location_name,
+    s.entered_sref,
+    s.date_start,
+    s.date_end,
+    s.date_type,
+    ttl.id as taxa_taxon_list_id,
+    tpref.taxon,
+    tcommon.taxon as common,
+    coalesce(tcommon.taxon, tpref.taxon) as species,
+    tg.title as taxon_group,
+    st_astext(s.geom) as geom,
+    o.zero_abundance
+  </field_sql>
+  <order_bys>
+    <order_by>o.id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='survey_id' display='Survey' description='Select the survey, or leave for all surveys' datatype='lookup'
+        population_call='direct:survey:id:title' />
+    <param name='date_from' display='Date From' datatype='date' />
+    <param name='date_to' display='Date To' datatype='date' />
+    <param name='taxon_group_id' display='Taxon Group' description='Select the taxon group to return data for, or leave for all groups' datatype='lookup'
+        query='SELECT id, title as caption FROM taxon_groups' population_call='direct:taxon_group:id:title' />
+    <param name='location_id' display='Location' description='Select the location to return data for' datatype='lookup'
+        population_call='direct:location:id:name' />
+    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
+    <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
+  </params>
+  <columns>
+    <column name='occurrence_id' display='ID' />
+    <column name='path' display='Photo' img='true' />
+    <column name='caption' display='Caption' />
+    <column name='sample_id' visible='false' />
+    <column name='taxon' display='Preferred Name' />
+    <column name='common' display='Common Name' />
+    <column name='species' display='Species' visible="false" />
+    <column name='taxa_taxon_list_id' visible='false' />
+    <column name='location_name' display='Site name' />
+    <column name='entered_sref' display='SRef' />
+    <column name='date' display='Date' />
+    <column name='zero_abundance' display='Zero Abundance' />
+    <column name='taxon_group' display='Taxon Group' />
+    <column name='geom' visible='false' mappable="true" />
+  </columns>
+</report>
