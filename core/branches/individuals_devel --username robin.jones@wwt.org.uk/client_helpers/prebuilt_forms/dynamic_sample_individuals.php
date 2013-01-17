@@ -30,7 +30,7 @@
 
 require_once('includes/dynamic.php');
 
-class iform_dynamic_sample_occurrence extends iform_dynamic {
+class iform_dynamic_sample_individual extends iform_dynamic {
 
   // The ids we are loading if editing existing data
   protected static $loadedSampleId;
@@ -41,7 +41,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    * Return the form metadata.
    * @return string The definition of the form.
    */
-  public static function get_dynamic_sample_occurrence_definition() {
+  public static function get_dynamic_sample_individual_definition() {
     return array(
       'title'=>'Sample with occurrences form',
       'category' => 'General Purpose Data Entry Forms',
