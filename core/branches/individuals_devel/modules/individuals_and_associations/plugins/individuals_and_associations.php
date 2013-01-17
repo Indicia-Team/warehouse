@@ -94,5 +94,13 @@ function individuals_and_associations_extend_data_services() {
     'occurrences_subject_observations'=>array(),
   );
 }
+/**
+ * Add the appropriate tables to the survey structure definition.
+ */
+function individuals_and_associations_declare_custom_attributes(
+  return array(
+    array('table'=>'subject_observation', 'filtersBySurvey'=>true, 'prefix'=>'sjo'),
+    )
+);
 
 ?>
