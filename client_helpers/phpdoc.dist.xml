@@ -18,6 +18,7 @@
   <files>
     <ignore-hidden>on</ignore-hidden>
     <ignore-symlinks>on</ignore-symlinks>
+    <file>helper_base.php</file>
     <file>*helper.php</file>
   </files>
   <transformer>
