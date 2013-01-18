@@ -104,7 +104,7 @@ var checkSubmitInProgress = function () {
       // make the main object accessible
       var div = this;
       
-      // load the existing data if there is any
+      // load the existing data if there are any
       var existing, uniqueId, thumbnailfilepath;
       $.each(div.settings.existingFiles, function(i, file) {
         uniqueId = file.path.split('.')[0];

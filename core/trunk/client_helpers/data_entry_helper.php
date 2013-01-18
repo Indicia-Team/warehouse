@@ -114,6 +114,17 @@ class data_entry_helper extends helper_base {
   * )); ?>
   * </code>
   * Of course if you use the built in label option in the options array then this is handled for you.
+  * The output of this control can be configured using the following templates: 
+  * <ul>
+  * <li><b>autocomplete</b></br>
+  * Defines a hidden input and a visible input, to hold the underlying database ID and to 
+  * allow input and display of the text search string respectively.
+  * </li>
+  * <li><b>autocomplete_javascript</b></br>
+  * Defines the JavaScript which will be inserted onto the page in order to activate the 
+  * autocomplete control.
+  * </li>
+  * </ul>
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>fieldname</b><br/>
@@ -261,6 +272,23 @@ class data_entry_helper extends helper_base {
   * If true, the control allows new values to be added and inserts them into the source table.
   * Defaults to true.</li>
   * </ul>
+  * The output of this control can be configured using the following templates: 
+  * <ul>
+  * <li><b>sub_list</b></br>
+  * Defines the search input, plus container element for the list of items which will be added.
+  * </li>
+  * <li><b>sub_list_item</b></br>
+  * Defines the template for a single item added to the list.
+  * </li>
+  * <li><b>sub_list_add</b></br>
+  * Defines hidden inputs to insert onto the page which contain the items to add to the 
+  * sublist, when loading existing records.
+  * </li>
+  * <li><b>sub_list_javascript</b></br>
+  * Defines the JavaScript added to the page to implement the click handling for the various 
+  * butons. 
+  * </li>
+  * </ul>
   *
   * @return string HTML to insert into the page for the sub_list control.
   *
@@ -366,6 +394,12 @@ class data_entry_helper extends helper_base {
  /**
   * Helper function to output an HTML checkbox control. This includes re-loading of existing values
   * and displaying of validation error messages.
+  * The output of this control can be configured using the following templates: 
+  * <ul>
+  * <li><b>checkbox</b></br>
+  * HTML template for the checkbox.
+  * </li>
+  * </ul>
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>fieldname</b><br/>
@@ -434,6 +468,15 @@ class data_entry_helper extends helper_base {
   * Optional and only relevant when loading content from a data service call. Specifies the template used to build the caption,
   * with each database field represented as {fieldname}.</li>
   * </ul>
+  * The output of this control can be configured using the following templates: 
+  * <ul>
+  * <li><b>check_or_radio_group</b></br>
+  * Container element for the group of checkboxes.
+  * </li>
+  * <li><b>check_or_radio_group_item</b></br>
+  * Template for the HTML element used for each item in the group.
+  * </li>
+  * </ul>
   *
   * @return string HTML to insert into the page for the group of checkboxes.
   */
@@ -448,6 +491,13 @@ class data_entry_helper extends helper_base {
 
  /**
   * Helper function to insert a date picker control.
+  * The output of this control can be configured using the following templates: 
+  * <ul>
+  * <li><b>date_picker</b></br>
+  * HTML The output of this controlfor the text input element used for the date picker. Other functionality is added
+  * using JavaScript.
+  * </li>
+  * </ul>
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>fieldname</b><br/>
@@ -643,6 +693,25 @@ class data_entry_helper extends helper_base {
   * runtimes. This has no effect if codeGenerated is not left to the default state of all.
   * </li>
   * </ul>
+  * The output of this control can be configured using the following templates: 
+  * <ul>
+  * <li><b>file_box</b></br>
+  * Outputs the HTML container which will contain the upload button and images.
+  * </li>
+  * <li><b>file_box_initial_file_info</b></br>
+  * HTML which provides the outer container for each displayed image, including the header and
+  * remove file button. Has an element with class set to photo-wrapper into which images 
+  * themselves will be inserted.
+  * </li>
+  * <li><b>file_box_uploaded_image</b></br>
+  * Template for the HTML for each uploaded image, including the image, caption input
+  * and hidden inputs to define the link to the database. Will be inserted into the
+  * file_box_initial_file_info template's photo-wrapper element.
+  * </li>
+  * <li><b>button</b></br>
+  * Template for the buttons used.
+  * </li>
+  * </ul>
   *
   * @todo select file button pointer overriden by the flash shim
   * @todo flickr
@@ -776,6 +845,17 @@ class data_entry_helper extends helper_base {
  /**
   * Generates a text input control with a search button that looks up an entered place against a georeferencing
   * web service. The control is automatically linked to any map panel added to the page.
+  * The output of this control can be configured using the following templates: 
+  * <ul>
+  * <li><b>georeference_lookup</b></br>
+  * Template which outputs the HTML for the georeference search input, button placehold and container
+  * for the list of search results. The default template uses JavaScript to write the output, so that 
+  * this control is removed from the page if JavaScript is disabled as it will have no functionality.
+  * </li>
+  * <li><b>button</b></br>
+  * HTML template for the buttons used.
+  * </li>
+  * </ul>
   *
   * @param array $options Options array with the following possibilities:
   * <ul>
@@ -810,6 +890,7 @@ class data_entry_helper extends helper_base {
   * Optional. If a list of possible matches are found, does selecting a match automatically fold up the results? Defaults to false.
   * </li>
   * </ul>
+  * 
   * @link http://code.google.com/apis/ajaxsearch/terms.html Google AJAX Search API Terms of Use.
   * @link http://code.google.com/p/indicia/wiki/GeoreferenceLookupDrivers Documentation for the driver architecture.
   * @return string HTML to insert into the page for the georeference lookup control.
@@ -899,6 +980,18 @@ class data_entry_helper extends helper_base {
   * should at least contain the read authorisation array if the select is being populated by a service call. It can also contain
   * view=cache to use the cached termlists entries or view=detail for the uncached version.</li>
   * </ul>
+  * The output of this control can be configured using the following templates: 
+  * <ul>
+  * <li><b>select</b></br>
+  * Template used for the HTML select element.
+  * </li>
+  * <li><b>select_item</b></br>
+  * Template used for each option item placed within the select element.
+  * </li>
+  * <li><b>hidden_text</b></br>
+  * HTML used for a hidden input that will hold the value to post to the database.
+  * </li>
+  * </ul>
   */
   public static function hierarchical_select($options) {
     $options = array_merge(array(
@@ -937,7 +1030,7 @@ class data_entry_helper extends helper_base {
     $fieldname = $options['fieldname'];
     $options['fieldname'] = 'parent-'.$options['fieldname'];
     
-    // Output a select. Use templating to add a wrapper div, so we can keep all the hierarchical selects together,
+    // Output a select. Use templating to add a wrapper div, so we can keep all the hierarchical selects together. 
     global $indicia_templates;
     $oldTemplate = $indicia_templates['select'];
     $indicia_templates['select'] = '<div class="hierarchical-select control-box">'.$indicia_templates['select'].'</div>';
@@ -1020,6 +1113,11 @@ class data_entry_helper extends helper_base {
   * Note that when using this control, it is essential that the form's HTML enctype attribute is
   * set to enctype="multipart/form-data" so that the image file is included in the form data. For multiple
   * image support and more advanced options, see the file_box control.
+  * The output of this control can be configured using the following templates: 
+  * <ul>
+  * <li><b>image_upload</b></br>
+  * HTML template for the file input control.
+  * </li></ul>
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>fieldname</b><br/>
@@ -1069,6 +1167,12 @@ class data_entry_helper extends helper_base {
    * <li><b>class</b>
    * Additional css class names to include on the outer div.</li>
    * </ul>
+   * The output of this control can be configured using the following templates: 
+   * <ul>
+   * <li><b>jsonwidget</b></br>
+   * HTML template for outer container. The inner content is not templatable since it is created by the 
+   * JavaScript control code.
+   * </li></ul>
    * @return HTML string to insert in the form.
    */
   public static function jsonwidget($options) {
@@ -1094,6 +1198,17 @@ class data_entry_helper extends helper_base {
   * added to the page. Although it is possible to set all the options of a normal autocomplete, generally
   * the table, valueField, captionField, id should be left uninitialised and the fieldname will default to the
   * sample's location_id field so can normally also be left.
+  * The output of this control can be configured using the following templates: 
+  * <ul>
+  * <li><b>autocomplete</b></br>
+  * Defines a hidden input and a visible input, to hold the underlying database ID and to 
+  * allow input and display of the text search string respectively.
+  * </li>
+  * <li><b>autocomplete_javascript</b></br>
+  * Defines the JavaScript which will be inserted onto the page in order to activate the 
+  * autocomplete control.
+  * </li>
+  * </ul>
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>fieldname</b><br/>
@@ -1200,6 +1315,16 @@ class data_entry_helper extends helper_base {
   * reference is loaded into the spatial_ref control on the form if any exists. Defaults to false.
   * </li>
   * </ul>
+  * 
+  * The output of this control can be configured using the following templates: 
+  * <ul>
+  * <li><b>select</b></br>
+  * HTML template used to generate the select element.
+  * </li>
+  * <li><b>select_item</b></br>
+  * HTML template used to generate each option element with the select element.
+  * </li>
+  * </ul>
   *
   * @return string HTML to insert into the page for the location select control.
   */
@@ -1228,6 +1353,15 @@ class data_entry_helper extends helper_base {
   * a termlist, or can be populated from a fixed supplied array. The list box can
   * be linked to populate itself when an item is selected in another control by specifying the
   * parentControlId and filterField options.
+  * The output of this control can be configured using the following templates: 
+  * <ul>
+  * <li><b>listbox</b></br>
+  * HTML template used to generate the select element.
+  * </li>
+  * <li><b>listbox_item</b></br>
+  * HTML template used to generate each option element with the select element.
+  * </li>
+  * </ul>
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>fieldname</b><br/>
@@ -1322,6 +1456,12 @@ class data_entry_helper extends helper_base {
   *     'extraParams' => $readAuth,
   *     'template'=>'<li>|title|</li>'
   * ));</pre>
+  * The output of this control can be configured using the following templates: 
+  * <ul>
+  * <li><b>list_in_template</b></br>
+  * HTML template used to generate the outer container.
+  * </li>
+  * </ul>
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>class</b><br/>
@@ -1385,6 +1525,33 @@ class data_entry_helper extends helper_base {
   * <li><b>tabDiv</b><br/>
   * If the map is on a tab or wizard interface, specify the div the map loads on.</li>
   * </ul>
+  * 
+  * The output of this control can be configured using the following templates: 
+  * <ul>
+  * <li><b>georeference_lookup</b></br>
+  * Template which outputs the HTML for the georeference search input, button placehold and container
+  * for the list of search results. The default template uses JavaScript to write the output, so that 
+  * this control is removed from the page if JavaScript is disabled as it will have no functionality.
+  * </li>
+  * <li><b>button</b></br>
+  * HTML template for the buttons used for the georeference_lookup.
+  * </li>
+  * <li><b>sref_textbox</b></br>
+  * HTML template for the spatial reference input control.
+  * </li>
+  * <li><b>sref_textbox_latlong</b></br>
+  * HTML template for the spatial reference input control used when inputting latitude
+  * and longitude into separate inputs.
+  * </li>
+  * <li><b>select</b></br>
+  * HTML template used by the select control for picking a spatial reference system, if there
+  * is one.
+  * </li>
+  * <li><b>select_item</b></br>
+  * HTML template used by the option items in the select control for picking a spatial 
+  * reference system, if there is one.
+  * </li>
+  * </ul>
   */
   public static function map() {
     $options = self::check_arguments(func_get_args(), array('div', 'presetLayers', 'edit', 'locate', 'wkt'));
@@ -1424,6 +1591,12 @@ class data_entry_helper extends helper_base {
  /**
   * Helper function to output an HTML password input. For security reasons, this does not re-load existing values
   * or display validation error messages and no default can be set.
+  * The output of this control can be configured using the following templates: 
+  * <ul>
+  * <li><b>password_input</b></br>
+  * Template which outputs the HTML for a password input control.
+  * </li>
+  * </ul>
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>fieldname</b><br/>
@@ -1468,6 +1641,12 @@ class data_entry_helper extends helper_base {
   *     'fieldname' => 'smpAttr:9'
   * ));?>
   * </code>
+  * The output of this control can be configured using the following templates: 
+  * <ul>
+  * <li><b>postcode_textbox</b></br>
+  * Template which outputs the HTML for the text input control used. Must have an onblur event handler
+  * which calls the JavaScript required to search for the post code.
+  * </li>
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>fieldname</b><br/>
@@ -1558,6 +1737,15 @@ class data_entry_helper extends helper_base {
   * Optional and only relevant when loading content from a data service call. Specifies the template used to build the caption,
   * with each database field represented as {fieldname}.</li>
   * </ul>
+  * The output of this control can be configured using the following templates: 
+  * <ul>
+  * <li><b>check_or_radio_group</b></br>
+  * Container element for the group of checkboxes.
+  * </li>
+  * <li><b>check_or_radio_group_item</b></br>
+  * Template for the HTML element used for each item in the group.
+  * </li>
+  * </ul>
   *
   * @return string HTML to insert into the page for the group of radio buttons.
   */
@@ -1598,6 +1786,15 @@ class data_entry_helper extends helper_base {
   * Helper function to generate a select control from a Indicia core service query. The select control can
   * be linked to populate itself when an item is selected in another control by specifying the
   * parentControlId and filterField options.
+  * The output of this control can be configured using the following templates: 
+  * <ul>
+  * <li><b>select</b></br>
+  * HTML template used to generate the select element.
+  * </li>
+  * <li><b>select_item</b></br>
+  * HTML template used to generate each option element with the select elements.
+  * </li>
+  * </ul>
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>fieldname</b><br/>
@@ -1661,7 +1858,7 @@ class data_entry_helper extends helper_base {
   * <li><b>selectedItemTemplate</b><br/>
   * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
   * for the selected item in the control.</li></ul>
-  *
+  * 
   * @return string HTML code for a select control.
   */
   public static function select()
@@ -1683,6 +1880,24 @@ class data_entry_helper extends helper_base {
   * Outputs a spatial reference input box and a drop down select control populated with a list of
   * spatial reference systems for the user to select from. If there is only 1 system available then
   * the system drop down is ommitted since it is not required.
+  * The output of this control can be configured using the following templates: 
+  * <ul>
+  * <li><b>sref_textbox</b></br>
+  * Template used for the text input box for the spatial reference.
+  * </li>
+  * <li><b>sref_textbox_latlong</b></br>
+  * Template used for the latitude and longitude input boxes when the splitLatLong option is set
+  * to true.
+  * </li>
+  * <li><b>select</b></br>
+  * Template used for the select element which contains the spatial reference system options available
+  * for input.
+  * </li>
+  * <li><b>select_item</b></br>
+  * Template used for the option elements in the select list of spatial reference system options available
+  * for input.
+  * </li>
+  * </ul>
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>fieldname</b><br/>
@@ -1742,6 +1957,17 @@ class data_entry_helper extends helper_base {
  /**
   * Outputs a drop down select control populated with a list of spatial reference systems
   * for the user to select from.
+  * The output of this control can be configured using the following templates: 
+  * <ul>
+  * <li><b>select</b></br>
+  * Template used for the select element which contains the spatial reference system options available
+  * for input.
+  * </li>
+  * <li><b>select_item</b></br>
+  * Template used for the option elements in the select list of spatial reference system options available
+  * for input.
+  * </li>
+  * </ul>
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>fieldname</b><br/>
@@ -1787,6 +2013,16 @@ class data_entry_helper extends helper_base {
   * Creates a textbox for entry of a spatial reference.
   * Also generates the hidden geom field required to properly post spatial data. The
   * box is automatically linked to a map_panel if one is added to the page.
+  * The output of this control can be configured using the following templates: 
+  * <ul>
+  * <li><b>sref_textbox</b></br>
+  * Template used for the text input box for the spatial reference.
+  * </li>
+  * <li><b>sref_textbox_latlong</b></br>
+  * Template used for the latitude and longitude input boxes when the splitLatLong option is set
+  * to true.
+  * </li>
+  * </ul>
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>fieldName</b><br/>
@@ -1858,6 +2094,12 @@ class data_entry_helper extends helper_base {
   *   searchUpdatesSref=true
   *   validation="required"
   *   blankText="Select..." 
+  * The output of this control can be configured using the following templates: 
+  * <ul>
+  * <li><b>hidden_input</b></br>
+  * Template used for the hidden text HTML element.
+  * </li>
+  * </ul>
   *   
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>fieldame</b><br/>
@@ -1869,7 +2111,7 @@ class data_entry_helper extends helper_base {
   * <li><b>defaultSys</b><br/>
   * Optional. The default spatial reference system to assign to the control. This is overridden when reloading a
   * record with existing data for this control.</li>
-  * </ul>  
+  * </ul>
   * @return string HTML to insert into the page for the location sref control.
   */
   public static function sref_hidden($options) {
@@ -1902,6 +2144,17 @@ class data_entry_helper extends helper_base {
 
   /**
    * A version of the autocomplete control preconfigured for species lookups.
+   * The output of this control can be configured using the following templates: 
+   * <ul>
+   * <li><b>autocomplete</b></br>
+   * Defines a hidden input and a visible input, to hold the underlying database ID and to 
+   * allow input and display of the text search string respectively.
+   * </li>
+   * <li><b>autocomplete_javascript</b></br>
+   * Defines the JavaScript which will be inserted onto the page in order to activate the 
+   * autocomplete control.
+   * </li>
+   * </ul>
    * @param type $options Array of configuration options with the following possible entries.
    * <ul>
    * <li><b>cacheLookup</b>
@@ -1919,6 +2172,8 @@ class data_entry_helper extends helper_base {
    * <li><b>warnIfNoMatch</b>
    * Should the autocomplete control warn the user if they leave the control whilst searching
    * and then nothing is matched? Default true.
+   * </li>
+   * </ul>
    * @return string Html for the species autocomplete control.
    */   
   public function species_autocomplete($options) {
@@ -2085,6 +2340,38 @@ class data_entry_helper extends helper_base {
   * are the same rank.
   * </li>
   * </ul>
+  * The output of this control can be configured using the following templates: 
+  * <ul>
+  * <li><b>file_box</b></br>
+  * When image upload for records is enabled, outputs the HTML container which will contain the 
+  * upload button and images.
+  * </li>
+  * <li><b>file_box_initial_file_info</b></br>
+  * When image upload for records is enabled, this template provides the HTML for the outer container 
+  * for each displayed image, including the header and remove file button. Has an element with 
+  * class set to photo-wrapper into which images themselves will be inserted.
+  * </li>
+  * <li><b>file_box_uploaded_image</b></br>
+  * Template for the HTML for each uploaded image, including the image, caption input
+  * and hidden inputs to define the link to the database. Will be inserted into the
+  * file_box_initial_file_info template's photo-wrapper element.
+  * </li>
+  * <li><b>taxon_label_cell</b></br>
+  * Generates the label shown for the taxon name for each added row.
+  * </li>
+  * <li><b>format_species_autocomplete_fn</b></br>
+  * Can be set to an optional JavaScript function which formats the contents of the species
+  * autocomplete's search list items.
+  * </li>
+  * <li><b>taxon_label</b></br>
+  * If format_species_autocomplete_fn is not set, then this provides an HTML template for the
+  * contents of the species autocomplete's search list items.
+  * </li>
+  * <li><b>attribute_cell</b></br>
+  * HTML wrapper for cells containing attribute inputs.
+  * </li>
+  * </ul>
+  * @return string HTML for the species checklist input grid.
   */
   public static function species_checklist()
   {
@@ -3030,6 +3317,12 @@ $('#".$options['id']."-filter').click(function(evt) {
  /**
   * Helper function to output an HTML textarea. This includes re-loading of existing values
   * and displaying of validation error messages.
+  * The output of this control can be configured using the following templates: 
+  * <ul>
+  * <li><b>textareat</b></br>
+  * HTML template used to generate the textarea element.
+  * </li>
+  * </ul>
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>fieldname</b><br/>
@@ -3075,6 +3368,12 @@ $('#".$options['id']."-filter').click(function(evt) {
   * <li><b>readonly</b><br/>
   * Optional. can be set to 'readonly="readonly"' to set this control as read only.</li>
   * </ul>
+  * The output of this control can be configured using the following templates: 
+  * <ul>
+  * <li><b>text_input</b></br>
+  * HTML template used to generate the input element.
+  * </li>
+  * </ul>
   *
   * @return string HTML to insert into the page for the text input control.
   */
@@ -3090,6 +3389,12 @@ $('#".$options['id']."-filter').click(function(evt) {
   * Helper function to output an HTML hidden text input. This includes re-loading of existing values.
   * Hidden fields should not have any validation.
   * No Labels allowed, no suffix.
+  * The output of this control can be configured using the following templates: 
+  * <ul>
+  * <li><b>hidden_text</b></br>
+  * HTML template used to generate the hidden input element.
+  * </li>
+  * </ul>
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>fieldname</b><br/>
@@ -3134,6 +3439,13 @@ $('#".$options['id']."-filter').click(function(evt) {
   * <li><b>timeSteps</b><br/>
   * Optional. An array containing 3 values for the allowable increments in time for hours, minutes and seconds respectively. Defaults to
   * 1, 15, 0 meaning that the increments allowed are in 15 minute steps and seconds are ignored.</li>
+  * </ul>
+  * The output of this control can be configured using the following templates: 
+  * <ul>
+  * <li><b>text_input</b></br>
+  * HTML template used to generate the input element. Time management aspects of this are managed
+  * by JavaScript.
+  * </li>
   * </ul>
   */
   public static function time_input($options) {
@@ -3247,6 +3559,15 @@ $('#".$options['id']."-filter').click(function(evt) {
   * rather than inserted as list children. This allows controls to be created which allow
   * selection of an item, then the control is updated with the new list of options after each
   * item is clicked.
+  * The output of this control can be configured using the following templates: 
+  * <ul>
+  * <li><b>tree_browser</b></br>
+  * HTML template used to generate container element for the browser.
+  * </li>
+  * <li><b>tree_browser_node</b></br>
+  * HTML template used to generate each node that appears in the browser.
+  * </li>
+  * </ul>
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>fieldname</b><br/>
@@ -3280,7 +3601,7 @@ $('#".$options['id']."-filter').click(function(evt) {
   * <li><b>default</b><br/>
   * Optional. The default value for the underlying control.</li>
   * </ul>
-  *
+  * 
   * TODO
   * Need to do initial value.
   */
@@ -3333,12 +3654,28 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   }
   
   /**
-   * Requires the data_cleaner module to be enabled on the warehouse.
+   * Outputs a panel and "Precheck my records" button. When clicked, the contents of the
+   * current form are sent to the warehouse and run through any data cleaner verification
+   * rules. The results are then displayed in the panel allowing the user to provide more
+   * details for records of interest before submitting the form. Requires the data_cleaner 
+   * module to be enabled on the warehouse.
+   * The output of this control can be configured using the following templates: 
+   * <ul>
+   * <li><b>verification_panel</b></br>
+   * HTML template used to generate container element for the verification panel.
+   * </li>
+   * </ul>
    * @global type $indicia_templates
-   * @param type $options
-   * - readAuth
-   * - panelOnly
-   * @return type 
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>readAuth</b><br/>
+   * Read authorisation tokens
+   * </ul>
+   * <li><b>panelOnly</b><br/>
+   * Default false. If true, then the button is ommited and the button's functionality
+   * must be included elsewhere on the page.
+   * </li>
+   * </ul>
+   * @return type HTML to insert onto the page for the verification panel.
    */
   public function verification_panel($options) {
     global $indicia_templates;
@@ -3374,6 +3711,14 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   /**
   * Insert buttons which, when clicked, displays the next or previous tab. Insert this inside the tab divs
   * on each tab you want to have a next or previous button, excluding the last tab.
+  * The output of this control can be configured using the following templates: 
+  * <ul>
+  * <li><b>button</b></br>
+  * HTML template used for buttons other than the form submit button.
+  * </li>
+  * <li><b>submit_button</b></br>
+  * HTML template used for the submit button.
+  * </li>
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>divId</b><br/>
