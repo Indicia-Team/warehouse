@@ -1046,21 +1046,26 @@ class iform_dynamic_sample_individual extends iform_dynamic {
    * Get the block of custom attributes at the individual (subject_observation) level
 
    */
-  protected static function get_control_individualattributes($auth, $args, $tabalias, $options) {
+
+  protected static function get_attributes_for_table($table,$tableprefix,$auth, $args, $tabalias, $options) {
     if (!(call_user_func(array(self::$called_class, 'getGridMode'), $args))) {
       // Add any dynamically generated controls
       $attrArgs = array(
-         'valuetable'=>'subject_observation_attribute_value',
-         'attrtable'=>'subject_observation_attribute',
-         'key'=>'subject_observation_id',
-         'fieldprefix'=>'sjoAttr',
+         'valuetable'=>$table.'_attribute_value',
+         'attrtable'=>$table.'_attribute',
+         'key'=>$table.'_id',
+         'fieldprefix'=>$tableprefix.'Attr',
          'extraParams'=>$auth['read'],
-         'survey_id'=>$args['survey_id']
       );
-//      if (count(self::$occurrenceIds)==1) {
-//        // if we have a single occurrence Id to load, use it to get attribute values
-//        $attrArgs['id'] = self::$occurrenceIds[0];
-//      }
+	if(isset($args['survey_id']))
+          $attrArgs['survey_id']=$args['survey_id'];
+//Specific to occurrence attributes
+     if($table=='occurrence'){
+      if (count(self::$occurrenceIds)==1) {
+        // if we have a single occurrence Id to load, use it to get attribute values
+        $attrArgs['id'] = self::$occurrenceIds[0];
+      }
+     }
       $attributes = data_entry_helper::getAttributes($attrArgs, false);
       $defAttrOptions = array('extraParams'=>$auth['read']);
       $blockOptions = array();
@@ -1072,19 +1077,19 @@ class iform_dynamic_sample_individual extends iform_dynamic {
         $blockOptions[$optionId[0]][$optionId[1]] = $value;
       }
       $r = get_attribute_html($attributes, $args, $defAttrOptions, $tabAlias, $blockOptions);
-      if ($args['occurrence_comment'])
+      if ($args[$table.'_comment'])
         $r .= data_entry_helper::textarea(array(
-          'fieldname'=>'subject_observation:comment',
+          'fieldname'=>$table.':comment',
           'label'=>lang::get('Record Comment')
         ));
-      if ($args['subject_observation_confidential'])
+      if ($args[$table.'_confidential'])
         $r .= data_entry_helper::checkbox(array(
-          'fieldname'=>'subject_observation:confidential',
+          'fieldname'=>$table.':confidential',
           'label'=>lang::get('Record Confidental')
         ));
-      if ($args['subject_observation_images']){
+      if ($args[$table.'images']){
         $opts = array(
-          'table'=>'subject_observation_image',
+          'table'=>$table.'_image',
           'label'=>lang::get('Upload your photos'),
         );
         if ($args['interface']!=='one_page')
@@ -1101,60 +1106,19 @@ class iform_dynamic_sample_individual extends iform_dynamic {
   }
 
   /**
+   * Get the block of custom attributes at the individual (subject_observation) level
+   */
+  protected static function get_control_individualattributes($auth, $args, $tabalias, $options) {
+  $r=self::get_attributes_for_table('subject_observation','sjo',$auth, $args, $tabalias, $options) {
+      return $r;
+  }
+
+  /**
    * Get the block of custom attributes at the species (occurrence) level
    */
   protected static function get_control_speciesattributes($auth, $args, $tabalias, $options) {
-    if (!(call_user_func(array(self::$called_class, 'getGridMode'), $args))) {
-      // Add any dynamically generated controls
-      $attrArgs = array(
-         'valuetable'=>'occurrence_attribute_value',
-         'attrtable'=>'occurrence_attribute',
-         'key'=>'occurrence_id',
-         'fieldprefix'=>'occAttr',
-         'extraParams'=>$auth['read'],
-         'survey_id'=>$args['survey_id']
-      );
-      if (count(self::$occurrenceIds)==1) {
-        // if we have a single occurrence Id to load, use it to get attribute values
-        $attrArgs['id'] = self::$occurrenceIds[0];
-      }
-      $attributes = data_entry_helper::getAttributes($attrArgs, false);
-      $defAttrOptions = array('extraParams'=>$auth['read']);
-      $blockOptions = array();
-      // look for options specific to each attribute
-      foreach ($options as $option => $value) {
-        // split the id of the option into the control name and option name.
-        $optionId = explode('|', $option);
-        if (!isset($blockOptions[$optionId[0]])) $blockOptions[$optionId[0]]=array();
-        $blockOptions[$optionId[0]][$optionId[1]] = $value;
-      }
-      $r = get_attribute_html($attributes, $args, $defAttrOptions, $tabAlias, $blockOptions);
-      if ($args['occurrence_comment'])
-        $r .= data_entry_helper::textarea(array(
-          'fieldname'=>'occurrence:comment',
-          'label'=>lang::get('Record Comment')
-        ));
-      if ($args['occurrence_confidential'])
-        $r .= data_entry_helper::checkbox(array(
-          'fieldname'=>'occurrence:confidential',
-          'label'=>lang::get('Record Confidental')
-        ));
-      if ($args['occurrence_images']){
-        $opts = array(
-          'table'=>'occurrence_image',
-          'label'=>lang::get('Upload your photos'),
-        );
-        if ($args['interface']!=='one_page')
-          $opts['tabDiv']=$tabalias;
-        $opts['resizeWidth'] = isset($options['resizeWidth']) ? $options['resizeWidth'] : 1600;
-        $opts['resizeHeight'] = isset($options['resizeHeight']) ? $options['resizeHeight'] : 1600;
-        $opts['caption'] = lang::get('Photos');
-        $r .= data_entry_helper::file_box($opts);
-      }
+  $r=self::get_attributes_for_table('occurrence','occ',$auth, $args, $tabalias, $options) {
       return $r;
-    } else
-      // in grid mode the attributes are embedded in the grid.
-      return '';
   }
 
   /**
