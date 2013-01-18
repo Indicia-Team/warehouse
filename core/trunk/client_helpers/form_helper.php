@@ -29,6 +29,7 @@ require_once('helper_base.php');
 /**
  * A class with helper methods for handling prebuilt forms and generating complete parameters entry forms from 
  * simple input arrays.
+ * @package Client
  */
 class form_helper extends helper_base {
 
