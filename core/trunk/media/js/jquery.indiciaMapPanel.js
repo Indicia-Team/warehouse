@@ -1532,10 +1532,10 @@ mapGeoreferenceHooks = [];
         });
       }
       if (div.settings.editLayer && div.settings.allowPolygonRecording) {
-        div.map.editLayer.events.on({'afterfeaturemodified': function(evt) {
+        div.map.editLayer.events.on({'featuremodified': function(evt) {
           if ($('#imp-boundary-geom').length>0) {
             $('#imp-boundary-geom').val(evt.feature.geometry.toString());
-      }
+          }
         }});     
       }
       var ctrl, hint, pushDrawCtrl = function(c) {
