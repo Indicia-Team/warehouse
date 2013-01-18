@@ -1116,7 +1116,7 @@ jsonwidget.editor.setView = function setView (viewtoset) {
   var tryUpdateJSON = (this.currentView != 'source')
   setTimeout(function () {
     if(tryUpdateJSON) {
-    je.updateJSON();
+      je.updateJSON();
     }
     document.getElementById(je.htmlids.sourcetextarea).style.display="inline";
     je.clearStatusLight();
@@ -1248,7 +1248,7 @@ jsonwidget.editor.toggleToFormActual = function () {
   this.clearForm();
 
 
-  rootjson.domparent = document.createElement("form");
+  rootjson.domparent = document.createElement("div");
   this.showForm(rootjson.domparent);
   this.attachNodeInput(rootjson);
   if(this.showByExampleButton) {
@@ -1390,7 +1390,9 @@ jsonwidget.editor.setFormOnSubmit = function () {
   // submitted, the JSON output is updated.
   // Keep a local var for the editor, so it stays in scope when we submit
   var editor=this;
-  $('#'+this.htmlids.formdiv).parents().find('form').submit(function () {
-    editor.updateJSON();
+  $('#'+this.htmlids.formdiv).parents('form').submit(function () {
+    if (editor.currentView==="form") {
+      editor.updateJSON();
+    }
   });
 }
