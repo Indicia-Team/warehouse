@@ -32,6 +32,10 @@ require_once('helper_base.php');
  */
 class import_helper extends helper_base {
 
+  /**
+   * @var boolean Flag set to true if the host system is capable of storing our user's remembered import mappings
+   * for future imports.
+   */
   private static $rememberingMappings=true;
 
   /**
@@ -60,7 +64,7 @@ class import_helper extends helper_base {
       if (count($_FILES)==1)
         return self::import_settings_form($options);
       else
-        return self::upload_form($options);
+        return self::upload_form();
     } elseif ($_POST['import_step']==1) {
       return self::upload_mappings_form($options);
     } elseif ($_POST['import_step']==2) {
@@ -68,7 +72,10 @@ class import_helper extends helper_base {
     }
   }
 
-  private static function upload_form($options) {
+  /**
+   * Returns the HTML for a simple file upload form.
+   */
+  private static function upload_form() {
     $reload = self::get_reload_link_parts();
     $reloadpath = $reload['path'] . '?' . self::array_to_query_string($reload['params']);
     $r = '<form action="'.$reloadpath.'" method="post" enctype="multipart/form-data">';
@@ -80,6 +87,7 @@ class import_helper extends helper_base {
 
   /**
    * Generates the import settings form. If none available, then outputs the upload mappings form.
+   * @param array $options Options array passed to the import control.
    */
   private static function import_settings_form($options) {
     $r = '';
@@ -142,6 +150,7 @@ class import_helper extends helper_base {
 
   /**
    * Outputs the form for mapping columns to the import fields.
+   * @param array $options Options array passed to the import control.
    */
   private static function upload_mappings_form($options) {
     if (!file_exists($_SESSION['uploaded_file']))
@@ -335,6 +344,7 @@ class import_helper extends helper_base {
   /**
    * When an array (e.g. $_POST containing preset import values) has values with actual ids in it, we need to
    * convert these to fk_* so we can compare the array of preset data with other arrays of expected data.
+   * @param array $arr Array of IDs.
    */
   private static function expand_ids_to_fks($arr) {
     $ids = preg_grep('/_id$/', $arr);
@@ -351,6 +361,9 @@ class import_helper extends helper_base {
   /**
    * Takes an array of fields, and removes the website ID or survey ID fields within the arrays if
    * the website and/or survey id are set in the $settings data.
+   * @param array $array Array of fields.
+   * @param array $settings Global settings which apply to every row, which may include the website_id 
+   * and survey_id.
    */
   private static function clear_website_survey_fields(&$array, $settings) {
     foreach ($array as $idx => $field) {
@@ -365,6 +378,7 @@ class import_helper extends helper_base {
 
   /**
    * Display the page which outputs the upload progress bar. Adds JavaScript to the page which performs the chunked upload.
+   * @param array $options Array of options passed to the import control.
    */
   private static function run_upload($options) {
     self::add_resource('jquery_ui');
@@ -443,6 +457,7 @@ class import_helper extends helper_base {
 
   /**
    * Displays the upload result page.
+   * @param array $options Array of options passed to the import control.
    */
   private static function upload_result($options) {
     $request = parent::$base_url."index.php/services/import/get_upload_result?uploaded_csv=".$_GET['uploaded_csv'];
@@ -571,7 +586,7 @@ class import_helper extends helper_base {
           $multiMatch[] = $column;
           $optionID = str_replace(" ", "", $idColumn).'Duplicate';  
         }
-        $option = self::model_field_option($field, $caption, $column, $selected, $optionID);
+        $option = self::model_field_option($field, $caption, $selected, $optionID);
       }
       
       // if we have got an option for this field, add to the list
@@ -744,6 +759,7 @@ class import_helper extends helper_base {
   
   /**
    * Method to upload the file in the $_FILES array, or return the existing file if already uploaded.
+   * @param array $options Options array passed to the import control.
    * @access private
    */
   private static function get_uploaded_file($options) {
@@ -782,8 +798,12 @@ class import_helper extends helper_base {
   /**
    * Private method to build a single select option for the model field options.
    * Option is selected if selected=caption (case insensitive).
+   * @param string $field Name of the field being output.
+   * @param string $caption Caption of the field being output.
+   * @param boolean $selected Set to true if outputing the currently selected option.
+   * @param string $optionID Id of the current option.
    */
-  private static function model_field_option($field, $caption, $column, $selected, $optionID) {
+  private static function model_field_option($field, $caption, $selected, $optionID) {
     $selHtml = ($selected) ? ' selected="selected"' : '';
     $caption = self::translate_field($field, $caption);
     $r =  '<option class=';
@@ -795,6 +815,9 @@ class import_helper extends helper_base {
   /**
    * Provides optional translation of field captions by looking for a translation code dd:model:fieldname. If not
    * found returns the original caption.
+   * @param string $field Name of the field being output.
+   * @param string $caption Untranslated caption of the field being output.
+   * @return string Translated caption.
    */
   private static function translate_field($field, $caption) {
     // look in the translation settings to see if this column name needs overriding
