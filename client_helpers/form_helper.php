@@ -152,6 +152,8 @@ class form_helper extends helper_base {
   
   /**
    * Adds the JavaScript required to drive the prebuilt form picker.
+   * @param array $forms List of prebuilt forms and their associated settings required 
+   * by the picker.
    */
   private function add_form_picker_js($forms) {
     self::$javascript .= "prebuilt_forms = ".json_encode($forms).";
@@ -323,7 +325,7 @@ $('#load-params').click(function(evt) {
   /**
    * Maps control types in simple form definition arrays (e.g. parameter forms for prebuilt forms or reports)
    * to their constituent controls.
-   * @param string $type Type name given for the control.
+   * @param array $control Control definition array, which includes a type entry defining the control type.
    * @return string Data_entry_helper control name.
    */
   private static function map_type($control) {
@@ -346,7 +348,7 @@ $('#load-params').click(function(evt) {
   
   /** 
    * Retrieve the parameters for an iform. This is defined by each iform individually.
-   * @param object $node the node that the iform is linked to. 
+   * @param object $form The name of the form we are retrieving the parameters for.
    * @return array list of parameter definitions.
    */
   public static function get_form_parameters($form) {
