@@ -28,6 +28,7 @@ require_once('helper_base.php');
 
 /**
  * Static helper class that provides methods for dealing with reports.
+ * @package	Client
  */
 class report_helper extends helper_base {
 

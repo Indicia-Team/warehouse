@@ -1,4 +1,4 @@
-<?php
+c<?php
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -169,11 +169,9 @@ class data_entry_helper extends helper_base {
   *
   * @link http://code.google.com/p/indicia/wiki/DataModel
   */
-  public static function autocomplete() {
+  public static function autocomplete($options) {
     global $indicia_templates;
-    $options = self::check_arguments(func_get_args(), array(
-        'fieldname', 'table', 'captionField', 'valueField', 'extraParams', 'defaultCaption', 'default', 'numValues'
-    ));
+    $options = self::check_options($options);
     if (!array_key_exists('id', $options)) $options['id']=$options['fieldname'];
     $options['inputId'] = $options['id'].':'.$options['captionField'];
     if (!empty(parent::$warehouse_proxy))
@@ -480,10 +478,8 @@ class data_entry_helper extends helper_base {
   *
   * @return string HTML to insert into the page for the group of checkboxes.
   */
-  public static function checkbox_group() {
-    $options = self::check_arguments(func_get_args(), array('fieldname', 'table', 'captionField', 'valueField', 'extraParams', 'sep', 'default'));
-    if (!isset($options['id']))
-      $options['id'] = $options['fieldname'];
+  public static function checkbox_group($options) {
+    $options = self::check_options($options);
     if (substr($options['fieldname'],-2) !='[]')
       $options['fieldname'] .= '[]';
     return self::check_or_radio_group($options, 'checkbox');
@@ -525,8 +521,8 @@ class data_entry_helper extends helper_base {
   *
   * @return string HTML to insert into the page for the date picker control.
   */
-  public static function date_picker() {
-    $options = self::check_arguments(func_get_args(), array('fieldname', 'default'));
+  public static function date_picker($options) {
+    $options = self::check_options($options);
     $options = array_merge(array(
       'dateFormat'=>'dd/mm/yy',
       'allowVagueDates'=>false,
@@ -1130,8 +1126,8 @@ class data_entry_helper extends helper_base {
   *
   * @return string HTML to insert into the page for the file upload control.
   */
-  public static function image_upload() {
-    $options = self::check_arguments(func_get_args(), array('fieldname'));
+  public static function image_upload($options) {
+    $options = self::check_options($options);
     $pathField = $pathField = str_replace(':image','_image:path', $options['fieldname']);
     $alreadyUploadedFile = self::check_default_value($pathField);
     $options = array_merge(array(
@@ -1428,11 +1424,9 @@ class data_entry_helper extends helper_base {
   *
   * @return string HTML to insert into the page for the listbox control.
   */
-  public static function listbox()
+  public static function listbox($options)
   {
-    $options = self::check_arguments(func_get_args(), array(
-        'fieldname', 'table', 'captionField', 'size', 'multiselect', 'valueField', 'extraParams', 'default'
-    ));
+    $options = self::check_options($options);
     // blank text option not applicable to list box
     unset($options['blankText']);
     $options = array_merge(
@@ -1485,8 +1479,8 @@ class data_entry_helper extends helper_base {
   *
   * @return string HTML to insert into the page for the generated list.
   */
-  public static function list_in_template() {
-    $options = self::check_arguments(func_get_args(), array('table', 'extraParams', 'template'));
+  public static function list_in_template($options) {
+    $options = self::check_options($options);
     $response = self::get_population_data($options);
     $items = "";
     if (!array_key_exists('error', $response)){
@@ -1553,8 +1547,8 @@ class data_entry_helper extends helper_base {
   * </li>
   * </ul>
   */
-  public static function map() {
-    $options = self::check_arguments(func_get_args(), array('div', 'presetLayers', 'edit', 'locate', 'wkt'));
+  public static function map($options) {
+    $options = self::check_options($options);
     $options = array_merge(array(
         'div'=>'map',
         'edit'=>true,
@@ -1581,6 +1575,8 @@ class data_entry_helper extends helper_base {
 
  /**
   * Outputs a map panel.
+  * @param array $options Refer to map_helper::map_panel documentation.
+  * @param array $olOptions Refer to map_helper::map_panel documentation.
   * @deprecated Use map_helper::map_panel instead.
   */
   public static function map_panel($options, $olOptions=null) {
@@ -1609,8 +1605,8 @@ class data_entry_helper extends helper_base {
   *
   * @return string HTML to insert into the page for the text input control.
   */
-  public static function password_input() {
-    $options = self::check_arguments(func_get_args(), array('fieldname'));
+  public static function password_input($options) {
+    $options = self::check_options($options);
     $options['lockable']=false;
     $options = array_merge(array(
       'default'=>''
@@ -1749,14 +1745,15 @@ class data_entry_helper extends helper_base {
   *
   * @return string HTML to insert into the page for the group of radio buttons.
   */
-  public static function radio_group() {
-    $options = self::check_arguments(func_get_args(), array('fieldname', 'table', 'captionField', 'valueField', 'extraParams', 'sep', 'default'));
+  public static function radio_group($options) {
+    $options = self::check_options($options);
     return self::check_or_radio_group($options, 'radio');
   }
 
   /**
    * Returns a simple HTML link to download the contents of a report defined by the options. The options arguments supported are the same as for the
    * report_grid method. Pagination information will be ignored (e.g. itemsPerPage).
+   * @param array $options Refer to report_helper::report_download_link documentation.
    * @deprecated Use report_helper::report_download_link.
    */
   public static function report_download_link($options) {
@@ -1766,6 +1763,7 @@ class data_entry_helper extends helper_base {
 
   /**
    * Outputs a grid that loads the content of a report or Indicia table.
+   * @param array $options Refer to report_helper::report_grid documentation.   
    * @deprecated Use report_helper::report_grid.
    */
   public static function report_grid($options) {
@@ -1775,6 +1773,7 @@ class data_entry_helper extends helper_base {
 
   /**
    * Outputs a chart that loads the content of a report or Indicia table.
+   * @param array $options Refer to report_helper::report_chart documentation.
    * @deprecated Use report_helper::report_chart.
    */
   public static function report_chart($options) {
@@ -1861,17 +1860,14 @@ class data_entry_helper extends helper_base {
   * 
   * @return string HTML code for a select control.
   */
-  public static function select()
+  public static function select($options)
   {
-    $options = self::check_arguments(func_get_args(), array(
-        'fieldname', 'table', 'captionField', 'valueField', 'extraParams', 'default'
-    ));
     $options = array_merge(
       array(
         'template' => 'select',
         'itemTemplate' => 'select_item'
       ),
-      $options
+      self::check_options($options)
     );
     return self::select_or_listbox($options);
   }
@@ -2373,10 +2369,10 @@ class data_entry_helper extends helper_base {
   * </ul>
   * @return string HTML for the species checklist input grid.
   */
-  public static function species_checklist()
+  public static function species_checklist($options)
   {
     global $indicia_templates;
-    $options = self::check_arguments(func_get_args(), array('listId', 'occAttrs', 'readAuth', 'extraParams', 'lookupListId'));
+    $options = self::check_options($options);
     $options = self::get_species_checklist_options($options);
     if ($options['columns']>1 && $options['occurrenceImages'])
       throw new Exception('The species_checklist control does not support having more than one occurrence per row (columns option > 0) '.
@@ -2674,7 +2670,12 @@ class data_entry_helper extends helper_base {
   /**
    * Private function to retrieve the subspecies selection cell for a species_checklist, 
    * when the subspeciesColumn option is enabled.
-   */
+   * @param array Taxon definition as loaded from the database.
+   * @param integer Index of the taxon row we are operating on.
+   * @param integer If an existing record, then the record's occurrence ID.   
+   * @param array Options array for the species grid. Used to obtain the row inclusion check mode,
+   * read authorisation and lookup list's ID.   
+   */  
   private function species_checklist_get_subsp_cell($taxon, $txIdx, $existing_record_id, $options) {
     if ($options['subSpeciesColumn']) {
       //Disable the sub-species drop-down if the row delete button is not displayed.
@@ -2714,6 +2715,9 @@ class data_entry_helper extends helper_base {
   /**
    * If using a subspecies column then the list of taxa we have loaded will have a parent species
    * that must be displayed in the grid. So load them up...
+   * @param array $taxalist List of taxon definitions we are loading parents for.
+   * @param array $options Options array as passed to the species grid. Provides the read authorisation
+   * tokens.
    */
   private function load_parent_species(&$taxalist, $options) {
     // get a list of the species parent IDs
@@ -2743,6 +2747,7 @@ class data_entry_helper extends helper_base {
   /** 
    * Builds an array to filter for the appropriate selection of species names, e.g. how it accepts searches for 
    * common names and synonyms.
+   * @param array $options Options array as passed to the species grid.
    */
   public static function get_species_names_filter($options) {
     // $wheres is an array for building of the filter query
@@ -2800,6 +2805,9 @@ class data_entry_helper extends helper_base {
   
   /**
    * Adds javascript to popup a config box for the current filter on the species you can add to the grid.
+   * @param array $options Options array as passed to the species checklist grid.
+   * @param array $nameFilter array of optional name filtering modes, with the actual filter to apply
+   * as the value.
    */
   private static function species_checklist_filter_popup($options, $nameFilter) {
     self::add_resource('fancybox');
@@ -2968,6 +2976,8 @@ $('#".$options['id']."-filter').click(function(evt) {
    * of occurrences loaded is returned.
    * @param int $sampleId ID of the sample to load
    * @param array $readAuth Read authorisation array
+   * @param boolean $loadImages If set to true, then image information is loaded as well.
+   * @param boolean $extraParams Extra params to pass to the web service call for filtering.
    * @return array Array with key of occurrence_id and value of $taxonInstance.
    */
   public static function preload_species_checklist_occurrences($sampleId, $readAuth, $loadImages, $extraParams) {
@@ -3077,6 +3087,15 @@ $('#".$options['id']."-filter').click(function(evt) {
     }
   }
 
+  /**
+   * Returns a th element for the top of a species checklist grid column. Skips any columns which are display: none.
+   * @param string $id The HTML ID to use.
+   * @param string $caption The caption to insert.
+   * @param integer $colIdx The index of the current column. Incremented only if the header is output (so
+   * hidden columns are excluded).
+   * @param array $colWidths List of column percentage widths.
+   * @param string $attrs CSS attributes to attach.
+   */
   private static function get_species_checklist_col_header($id, $caption, &$colIdx, $colWidths, $attrs='') {
     $width = count($colWidths)>$colIdx && $colWidths[$colIdx] ? ' style="width: '.$colWidths[$colIdx].'%;"' : '';
     if (!strpos($attrs, 'display:none')) $colIdx++;
@@ -3212,6 +3231,11 @@ $('#".$options['id']."-filter').click(function(evt) {
 
   /**
    * Internal function to prepare the list of occurrence attribute columns for a species_checklist control.
+   * @param array $options Options array as passed to the species checklist grid control.
+   * @param array $attributes Array of custom attributes as loaded from the database.
+   * @param array $occAttrControls Empty array which will be populated with the controls required for each 
+   * custom attribute.
+   * @param array $occAttrs Empty array which will be populated with the captions for each custom attribute.
    */
   public static function species_checklist_prepare_attributes($options, $attributes, &$occAttrControls, &$occAttrs) {
     $idx=0;
@@ -3247,7 +3271,10 @@ $('#".$options['id']."-filter').click(function(evt) {
 
   /**
    * Returns the class to apply to a control for an occurrence attribute, identified by an index.
-   * @access private
+   * @param array $options Options array which contains the occAttrClasses item, an array of classes 
+   * configured for each attribute control.
+   * @param integer $idx Index of the custom attribute.
+   * @param string $caption Caption of the attribute used to construct a suitable CSS class.
    */
   private static function species_checklist_occ_attr_class($options, $idx, $caption) {
     return (array_key_exists('occAttrClasses', $options) && $idx<count($options['occAttrClasses'])) ?
@@ -3260,6 +3287,9 @@ $('#".$options['id']."-filter').click(function(evt) {
    * secondary checklist which you can pick species from to add to the grid. As this happens,
    * a hidden table is used to store a clonable row which provides the template for new rows
    * to be added to the grid.
+   * @param array $options Options array passed to the species grid.
+   * @param array $occAttrControls List of the occurrence attribute controls, keyed by attribute ID.
+   * @param array $attributes List of attribute definitions loaded from the database.
    */
   public static function get_species_checklist_clonable_row($options, $occAttrControls, $attributes) {
     global $indicia_templates;
@@ -3342,12 +3372,11 @@ $('#".$options['id']."-filter').click(function(evt) {
   *
   * @return string HTML to insert into the page for the textarea control.
   */
-  public static function textarea() {
-    $options = self::check_arguments(func_get_args(), array('fieldname'));
+  public static function textarea($options) {
     $options = array_merge(array(
         'cols'=>'80',
         'rows'=>'4'
-    ), $options);
+    ), self::check_options($options));
     return self::apply_template('textarea', $options);
   }
 
@@ -3377,11 +3406,10 @@ $('#".$options['id']."-filter').click(function(evt) {
   *
   * @return string HTML to insert into the page for the text input control.
   */
-  public static function text_input() {
-    $options = self::check_arguments(func_get_args(), array('fieldname'));
+  public static function text_input($options) {
     $options = array_merge(array(
       'default'=>''
-    ), $options);
+    ), self::check_options($options));
     return self::apply_template('text_input', $options);
   }
 
@@ -3408,11 +3436,10 @@ $('#".$options['id']."-filter').click(function(evt) {
   *
   * @return string HTML to insert into the page for the hidden text control.
   */
-  public static function hidden_text() {
-    $options = self::check_arguments(func_get_args(), array('fieldname'));
+  public static function hidden_text($options) {
     $options = array_merge(array(
       'default'=>''
-    ), $options);
+    ), self::check_options($options));
     unset($options['label']);
     $options['suffixTemplate'] = 'nosuffix';
     return self::apply_template('hidden_text', $options);
@@ -3504,11 +3531,9 @@ $('#".$options['id']."-filter').click(function(evt) {
   * TODO
   * Need to do initial value.
   */
-  public static function treeview()
+  public static function treeview($options)
   {
     global $indicia_templates;
-    $options = self::check_arguments(func_get_args(), array('fieldname', 'table', 'captionField', 'valueField',
-        'topField', 'topValue', 'parentField', 'default', 'extraParams', 'class'));
     self::add_resource('treeview_async');
     // Declare the data service
     if (!empty(parent::$warehouse_proxy))
@@ -3521,7 +3546,7 @@ $('#".$options['id']."-filter').click(function(evt) {
       'class'=>'treeview',
       'id'=>$options['fieldname'],
       'view'=>'list'
-    ), $options);
+    ), self::check_options($options));
     $default = self::check_default_value($options['fieldname'],
         array_key_exists('default', $options) ? $options['default'] : null);
     // Do stuff with extraParams
@@ -3799,6 +3824,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    * Returns an array defining various database object names and values required for the species
    * lookup filtering, depending on whether this is a cached lookup or a standard lookup. Used for 
    * both species checklist and species autocompletes.
+   * @param boolean $cached Set to true to use the cached taxon search tables rather than 
+   * standard taxa in taxon list views.
    */
   public function get_species_lookup_db_definition($cached) {
     if ($cached) {
@@ -3913,38 +3940,11 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   }
 
   /**
-   * Internal method to handle the deprecated use of a list of arguments, for backwards compatibility.
-   * Converts the list of arguments to an options array unless the first argument is already
-   * an options array. The arguments are mapped to the array in the order specified by the mapping.
-   */
-  public static function check_arguments(array $args, array $mapping=null) {
-    if (count($args)>0) {
-      if (is_array($args[0])) {
-        // First argument is an options array
-        $options = $args[0];
-      } elseif ($mapping) {
-        // arguments are passed individuall using deprecated method - so for backward compatibility we'll
-        // map them to an options array
-        $options=array();
-        $i=0;
-        foreach ($args as $arg) {
-          $options[$mapping[$i]]=$arg;
-          $i++;
-        }
-      }
-    }
-    if (isset($options)) {
-      return self::check_options($options);
-    } else {
-      return array();
-    }
-  }
-
-  /**
    * Checks that an Id is supplied, if not, uses the fieldname as the id. Also checks if a
    * captionField is supplied, and if not uses a valueField if available. Finally, gets the control's
    * default value.
    * If the control is set to be remembered, then adds it to the list of remembered fields.
+   * @param array $options Control's options array.
    */
   private static function check_options($options) {
     // force some defaults to be present in the options
@@ -3971,9 +3971,17 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   /**
    * Method which populates data_entry_helper::$entity_to_load with the values from an existing
    * record. Useful when reloading data to edit.
+   * @param array $readAuth Read authorisation tokens
+   * @param string $entity Name of the entity to load data from.
+   * @param integer $id ID of the database record to load
+   * @param string $view Name of the view to load attributes from, normally 'list' or 'detail'. 
+   * @param boolean $sharing Defaults to false. If set to the name of a sharing task 
+   * (reporting, peer_review, verification, data_flow or moderation), then the record can be 
+   * loaded from another client website if a sharing agreement is in place.
+   * @link https://indicia-docs.readthedocs.org/en/latest/administrating/warehouse/website-agreements.html
    */
-  public static function load_existing_record($readAuth, $model, $id, $view='detail', $sharing=false) {
-    $url = self::$base_url."index.php/services/data/$model/$id";
+  public static function load_existing_record($readAuth, $entity, $id, $view='detail', $sharing=false) {
+    $url = self::$base_url."index.php/services/data/$entity/$id";
     $url .= "?mode=json&view=$view&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce'];
     if ($sharing) 
       $url .= "&sharing=$sharing";
@@ -3985,12 +3993,12 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     if (self::$form_mode===null) self::$form_mode = 'RELOAD';
     // populate the entity to load with the record data
     foreach($entity[0] as $key => $value) {
-      self::$entity_to_load["$model:$key"] = $value;
+      self::$entity_to_load["$entity:$key"] = $value;
     }
-    if ($model=='sample') {
+    if ($entity=='sample') {
       self::$entity_to_load['sample:geom'] = self::$entity_to_load['sample:wkt']; // value received from db in geom is not WKT, which is assumed by all the code.
       self::$entity_to_load['sample:date'] = self::$entity_to_load['sample:date_start']; // bit of a bodge to get around vague dates.
-    } elseif ($model=='occurrence') {
+    } elseif ($entity=='occurrence') {
       // prepare data to work in autocompletes
       if (!empty(self::$entity_to_load['occurrence:taxon']) && empty(self::$entity_to_load['occurrence:taxa_taxon_list:taxon']))
         self::$entity_to_load['occurrence:taxa_taxon_list_id:taxon'] = self::$entity_to_load['occurrence:taxon'];
@@ -4135,7 +4143,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    */
   private static function _purgeCache() {
     $cacheFolder = self::relative_client_helper_path() . (isset(parent::$cache_folder) ? parent::$cache_folder : 'cache/');
-    self::_purgeFiles(self::$cache_chance_purge, $cacheFolder, self::$cache_timeout * 5, self::$cache_allowed_file_count);
+    self::purgeFiles(self::$cache_chance_purge, $cacheFolder, self::$cache_timeout * 5, self::$cache_allowed_file_count);
   }
 
   /**
@@ -4143,10 +4151,20 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    */
   private static function _purgeImages() {
     $interimImageFolder = self::relative_client_helper_path() . (isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/');
-    self::_purgeFiles(self::$cache_chance_purge, $interimImageFolder, self::$interim_image_expiry);
+    self::purgeFiles(self::$cache_chance_purge, $interimImageFolder, self::$interim_image_expiry);
   }
 
-  private static function _purgeFiles($chanceOfPurge, $folder, $timeout, $allowedFileCount=0) {
+  /**
+   * Performs a periodic purge of cached files.
+   * @param integer $chanceOfPurge Indicates the chance of a purge happening. 1 causes a purge
+   * every time the function is called, 10 means there is a 1 in 10 chance, etc.
+   * @param string $folder Path to the folder to purge cache files from.
+   * @param integer $timeout Age of files in seconds before they will be considered for
+   * purging.
+   * @param integer $allowedFileCount Number of most recent files to not bother purging
+   * from the cache.
+   */
+  private static function purgeFiles($chanceOfPurge, $folder, $timeout, $allowedFileCount=0) {
     // don't do this every time.
     if (rand(1, $chanceOfPurge)===1) {
       // First, get an array of files sorted by date
@@ -4161,7 +4179,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         }
       }
       // sort the file array by date, oldest first
-      usort($files, array('data_entry_helper', '_DateCmp'));
+      usort($files, array('data_entry_helper', 'DateCmp'));
       // iterate files, ignoring the number of files we allow in the cache without caring.
       for ($i=0; $i<count($files)-$allowedFileCount; $i++) {
         // if we have reached a file that is not old enough to expire, don't go any further
@@ -4174,8 +4192,15 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       }
     }
   }
-
-  private static function _DateCmp($a, $b)
+  
+  /**
+   * A custom PHP sorting function which uses the 2nd element in the compared array to 
+   * sort by. The sorted array normally contains a list of files, with the first element
+   * of each array entry being the file path and the second the file date stamp.
+   * @param int $a Datestamp of the first file to compare.
+   * @param int $b Datestamp of the second file to compare.
+   */
+  private static function DateCmp($a, $b)
   {
     if ($a[1]<$b[1])
       $r = -1;
@@ -4188,7 +4213,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   /**
    * Internal function to output either a select or listbox control depending on the templates
    * passed.
-   *
+   * @param array $options Control options array
    * @access private
    */
   private static function select_or_listbox($options) {
@@ -4312,6 +4337,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
 
   /**
    * Internal method to output either a checkbox group or a radio group.
+   * @param array $options Control options array
+   * @param string $type Name of the input element's type attribute, e.g. radio or checkbox.
    */
   private static function check_or_radio_group($options, $type) {
     // checkboxes are inherantly multivalue, whilst radio buttons are single value
@@ -4560,7 +4587,7 @@ if (errors.length>0) {
     return self::apply_template('tab_header', $options);
   }
 
-  /* Insert a button which, when clicked, displays the previous tab. Insert this inside the tab divs
+  /** Insert a button which, when clicked, displays the previous tab. Insert this inside the tab divs
   * on each tab you want to have a next button, excluding the first tab.
   *
   * @param array $options Options array with the following possibilities:<ul>
@@ -4811,6 +4838,13 @@ if (errors.length>0) {
 
   /**
    * Test whether the data extracted from the $_POST for a species_checklist grid row refers to an occurrence record.
+   * @param array $record Record submission array from the form post. 
+   * @param boolean $include_if_any_data If set, then records are automatically created if any of the custom
+   * attributes are filled in.
+   * @param mixed $zero_attrs Optional array of attribute IDs to restrict checks for zero abundance records to, 
+   * or pass true to check all attributes.
+   * @param array $zero_values Array of values to consider as zero, which might include localisations of words
+   * such as "absent" and "zero" as well as "0".
    * @access Private
    * @return boolean True if present, false if absent (zero abundance record), null if not defined in the data (no occurrence).
    */
@@ -4854,6 +4888,8 @@ if (errors.length>0) {
   /**
    * When wrapping a species checklist submission, scan the contents of the data for a single grid row to
    * look for attached images. If found they are attached to the occurrence model as sub-models.
+   * @param array $occ Occurrence submission structure.
+   * @param array $record Record information from the form post, which may contain images.
    */
   private static function attachOccurrenceImagesToModel(&$occ, $record) {
     $images = array();
@@ -5071,20 +5107,7 @@ if (errors.length>0) {
     }
     return $r;
   }
-
-  /**
-  * Private method to find an option from an associative array of options. If not present, returns the default.
-  */
-  private static function option($key, array $opts, $default)
-  {
-    if (array_key_exists($key, $opts)) {
-      $r = $opts[$key];
-    } else {
-      $r = $default;
-    }
-    return $r;
-  }
-
+  
   /**
    * Returns the default value for the control with the supplied Id.
    * The default value is taken as either the $_POST value for this control, or the first of the remaining
@@ -5204,6 +5227,15 @@ if (errors.length>0) {
     return $r;
   }
 
+  /**
+   * Checks a configuration setting in the helper_config.php file. If it is missing or blank
+   * then it is added to an array so that the caller can decide what to do.
+   * @param string $name Name of the configuration parameter.
+   * @param boolean $isset Is the parameter set?
+   * @param boolean $empty Is the parameter empty?
+   * @param array $missing_configs Configuration settings that are missing are added to this array.
+   * @param array $blank_configs Configuration settings that are empty are added to this array.
+   */
   private static function check_config($name, $isset, $empty, &$missing_configs, &$blank_configs) {
     if (!$isset) {
       array_push($missing_configs, $name);
@@ -5353,6 +5385,7 @@ if (errors.length>0) {
   /**
    * For a single sample or occurrence attribute array loaded from the database, find the appropriate default value depending on the
    * data type.
+   * @param array $item The attribute's definition array.
    * @todo Handle vague dates. At the moment we just use the start date.
    */
   private static function attributes_get_default($item) {
@@ -5372,6 +5405,11 @@ if (errors.length>0) {
     }
   }
 
+  /**
+   * Returns the control required to implement a boolean custom attribute.
+   * @param string $ctrl The control type, should be radio or checkbox.
+   * @param array $options The control's options array.
+   */
   private static function boolean_attribute($ctrl, $options) {
     global $indicia_templates;
     $options = array_merge(
@@ -5669,9 +5707,8 @@ if (errors.length>0) {
    * B is the byte modifier: (B)ytes, (K)ilobytes, (M)egabytes, (G)igabytes.
    * Eg: to limit the size to 1MB or less, you would use "1M".
    *
-   * @param   array    $_FILES item
-   * @param   array    maximum file size
-   * @return  bool
+   * @param array $file Item from the $_FILES array.
+   * @return bool True if the file size is acceptable, otherwise false. 
    */
   public static function check_upload_size(array $file)
   {
@@ -5712,6 +5749,8 @@ if (errors.length>0) {
 
   /**
    * Method that retrieves the data from a report or a table/view, ready to display in a chart or grid.
+   * @param array $options Refer to documentation for report_helper::get_report_data.
+   * @param string $extra Refer to documentation for report_helper::get_report_data.
    * @deprecated, use report_helper::get_report_data instead.
    */
   public static function get_report_data($options, $extra='') {

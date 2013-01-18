@@ -22,6 +22,10 @@
 
 require_once('helper_base.php');
  
+/**
+ * Static helper class that provides methods for dealing with maps.
+ * @package	Client
+ */
 class map_helper extends helper_base {
  
   /**
