@@ -105,10 +105,12 @@ class report_helper extends helper_base {
    * report_grid method. Pagination information will be ignored (e.g. itemsPerPage).
    * If this download link is to be displayed alongside a report_grid to provide a download of the same data, set the id
    * option to the same value for both the report_download_link and report_grid controls to link them together. Use the itemsPerPage parameter
-   * to control how many records are downloaded. The following additional options are supported:<ul>
+   * to control how many records are downloaded. 
+   * @param array $options Options array with the following possibilities:<ul>
    * <li><b>format</b><br/>
    * Default to csv. Specify the download format, one of csv, json, xml, nbn.
    * </li>
+   * </ul>
    */
   public static function report_download_link($options) {
     $options = array_merge(array(
@@ -659,6 +661,17 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     return $r;
   }
 
+ /**
+  * Requests the data for a report from the reporting services.
+  * @param array $response Data to be returned.
+  * @param array $options Options array defining the report request.
+  * @param array $currentParamValues Array of current parameter values, e.g. the contents of 
+  * parameters form.
+  * @param boolean $wantCount Set to true if a count of total results (ignoring limit) is required
+  * in the response.
+  * @param string $extras Set any additional URL filters if required, e.g. taxon_list_id=1 to filter
+  * for taxon list 1.  
+  */
   private static function request_report(&$response, &$options, &$currentParamValues, $wantCount, $extras='') {
     $extras .= '&wantColumns=1&wantParameters=1';
     if ($wantCount)
@@ -694,6 +707,15 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     $response = self::get_report_data($options, $extras);
   }
 
+  /**
+   * Returns the parameters form for a report, only if it is needed because there are
+   * parameters without preset values to fill in.
+   * @param array $response Response from the call to the report services, which may contain
+   * a parameter request.
+   * @param array $options Array of report options.
+   * @param string $currentParamValues Array of current parameter values, e.g. the contents
+   * of a submitted parameters form.
+   */
   private static function params_form_if_required($response, $options, $currentParamValues) {
     if (isset($response['parameterRequest'])) {
       // We put report param controls into their own divs, making layout easier. Unless going in the
@@ -718,25 +740,36 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   }
 
   /**
-   * Output pagination links
+   * Output pagination links.
+   * @param array $options Report options array.
+   * @param string $pageUrl The URL of the page to reload when paginating (normally the current page). Only
+   * used when JavaScript is disabled.
+   * @param array $sortAndPageUrlParams Current parameters for the page and sort order.
+   * @param array $response Response from the call to reporting services, which we are paginating.
+   * @return string The HTML for the paginator.
    */
   private static function output_pager($options, $pageUrl, $sortAndPageUrlParams, $response) {
     global $indicia_templates;
     $pagLinkUrl = $pageUrl . ($sortAndPageUrlParams['orderby']['value'] ? $sortAndPageUrlParams['orderby']['name'].'='.$sortAndPageUrlParams['orderby']['value'].'&' : '');
     $pagLinkUrl .= $sortAndPageUrlParams['sortdir']['value'] ? $sortAndPageUrlParams['sortdir']['name'].'='.$sortAndPageUrlParams['sortdir']['value'].'&' : '';
     if (!isset($response['count'])) {
-      $r = self::simple_pager($options, $pageUrl, $sortAndPageUrlParams, $response, $pagLinkUrl);
+      $r = self::simple_pager($options, $sortAndPageUrlParams, $response, $pagLinkUrl);
     } else {
-      $r = self::advanced_pager($options, $pageUrl, $sortAndPageUrlParams, $response, $pagLinkUrl);
+      $r = self::advanced_pager($options, $sortAndPageUrlParams, $response, $pagLinkUrl);
     }
     $r = str_replace('{paging}', $r, $indicia_templates['paging_container']);
     return $r;
   }
 
-  /**
-   * Creates the HTML for the simple version of the pager.
-   */
-  private static function simple_pager($options, $pageUrl, $sortAndPageUrlParams, $response, $pagLinkUrl) {
+ /**
+  * Creates the HTML for the simple version of the pager.
+  * @param array $options Report options array.
+  * @param array $sortAndPageUrlParams Current parameters for the page and sort order.
+  * @param array $response Response from the call to reporting services, which we are paginating.
+  * @param string $pagLinkUrl The basic URL used to construct page reload links in the pager.
+  * @return string The HTML for the simple paginator.
+  */
+  private static function simple_pager($options, $sortAndPageUrlParams, $response, $pagLinkUrl) {
     // skip pager if all records fit on one page
     if ($sortAndPageUrlParams['page']['value']==0 && count($response['records'])<=$options['itemsPerPage'])
       return '';
@@ -758,10 +791,15 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     }
   }
 
-  /**
-   * Creates the HTML for the advanced version of the pager.
-   */
-  private static function advanced_pager($options, $pageUrl, $sortAndPageUrlParams, $response, $pagLinkUrl) {
+ /**
+  * Creates the HTML for the advanced version of the pager.
+  * @param array $options Report options array.
+  * @param array $sortAndPageUrlParams Current parameters for the page and sort order.
+  * @param array $response Response from the call to reporting services, which we are paginating.
+  * @param string $pagLinkUrl The basic URL used to construct page reload links in the pager.
+  * @return string The HTML for the advanced paginator.
+  */
+  private static function advanced_pager($options, $sortAndPageUrlParams, $response, $pagLinkUrl) {
     global $indicia_templates;
     $r = '';
     $replacements = array();
@@ -1067,6 +1105,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   /**
    * When loading records from a view, put a simple filter parameters form at the top as the view does not specify any
    * parameters.
+   * @param array $options Options passed to the report control, which should contain the column definitions.
    */
   private static function get_direct_mode_params_form($options) {
     $reloadUrl = self::get_reload_link_parts();
@@ -1735,7 +1774,7 @@ mapSettingsHooks.push(function(opts) { $setLocationJs
    * Build a url suitable for inclusion in the links for the report grid column headings or pagination
    * bar. This effectively re-builds the current page's URL, but drops the query string parameters that
    * indicate the sort order and page number.
-   * @param array $sortAndPageParams List of the sorting and pagination parameters which should be excluded.
+   * @param array $sortAndPageUrlParams List of the sorting and pagination parameters which should be excluded.
    * @return unknown_type
    */
   private static function report_grid_get_reload_url($sortAndPageUrlParams) {
@@ -1869,9 +1908,9 @@ if (typeof mapSettingsHooks!=='undefined') {
 
   /**
    * Retrieve the HTML for the actions in a grid row.
-   * @param array $actions
-   * @param array $row
-   * @param string $dirtyUrlParam Set to the name of a URL param used to pass the path to this page. E.g. in Drupal
+   * @param array $actions List of the action definitions to convert to HTML.
+   * @param array $row The content of the row loaded from the database.
+   * @param string $pathParam Set to the name of a URL param used to pass the path to this page. E.g. in Drupal
    * with clean urls disabled, this is set to q. Otherwise leave empty.
    */
   private static function get_report_grid_actions($actions, $row, $pathParam='') {
@@ -1931,6 +1970,10 @@ if (typeof mapSettingsHooks!=='undefined') {
     return implode('<br/>', $links);
   }
 
+  /**
+   * Apply the defaults to the options for the report grid.
+   * @param array $options Array of control options.
+   */
   private static function get_report_grid_options($options) {
     $options = array_merge(array(
       'mode' => 'report',
@@ -1970,28 +2013,6 @@ if (typeof mapSettingsHooks!=='undefined') {
         $options['extraParams']['user_id'] = $indiciaUserId;
     }
     return $options;
-  }
-
-
-  /**
-   * Returns the query string describing additional sort query params for a
-   * data request to populate the report grid.
-   */
-  private static function get_report_grid_data_request_sort_params($options, $paramKeyNames) {
-    $r = '';
-    if (isset($_GET[$paramKeyNames['orderby']]))
-      $orderby = $_GET[$paramKeyNames['orderby']];
-    else
-      $orderby = null;
-    if ($orderby)
-      $r .= "&orderby=$orderby";
-    if (isset($_GET[$paramKeyNames['sortdir']]))
-      $sortdir = $_GET[$paramKeyNames['sortdir']];
-    else
-      $sortdir = 'ASC';
-    if ($sortdir && $orderby)
-      $r .= "&sortdir=$sortdir";
-    return $r;
   }
 
   /**
@@ -2113,8 +2134,10 @@ if (typeof mapSettingsHooks!=='undefined') {
   * A callback (taking 3 arguments - record array, options, and baseline cell contents - just the date as a string)
   * to generate the link. This is optional. Can be used if special classes are to be added, or to
   * handle extra filter constraints.
+  * </li>
+  * </ul>
+  * @todo Future Enhancements? Allow restriction to month.
   */
-  // Future Enhancements? Allow restriction to month.
   public static function report_calendar_grid($options) {
     // I know that there are better ways to approach some of the date manipulation, but they are PHP 5.3+.
     // We support back to PHP 5.2
@@ -2283,6 +2306,10 @@ if (typeof mapSettingsHooks!=='undefined') {
     return $warnings.$r;
   }
 
+  /**
+   * Applies the defaults to the options array passed to a report_calendar_grid.
+   * @param array $options Options array passed to the control.
+   */
   private static function get_report_calendar_grid_options($options) {
     global $user;
     $options = array_merge(array(
@@ -2359,6 +2386,12 @@ if (typeof mapSettingsHooks!=='undefined') {
 
   /**
    * Inserts into the page javascript a function for loading features onto the map as a result of report output.
+   * @param string $addFeaturesJs JavaScript which creates the list of features.
+   * @param string $defsettings Default style settings.
+   * @param string $selsettings Selected item style settings.
+   * @param string $styleFns JavaScript snippet which places any style functions required into the 
+   * context parameter when creating a Style.
+   * @param boolean $zoomToExtent If true, then the map will zoom to show the extent of the features added.
    */
   private static function addFeaturesLoadingJs($addFeaturesJs, $defsettings='',
       $selsettings='{"strokeColor":"#ff0000","fillColor":"#ff0000","strokeWidth":2}', $styleFns='', $zoomToExtent=true) {
@@ -2442,8 +2475,9 @@ if (typeof mapSettingsHooks!=='undefined') {
   * <li><b>includeChartTotalSeries</b>
   * Defaults to true. Include a series for the total of each item in the report output.
   * </li>
+  * </ul>
+  * @todo: Future Enhancements? Allow restriction to month.
   */
-  // Future Enhancements? Allow restriction to month.
   public static function report_calendar_summary($options) {
     // I know that there are better ways to approach some of the date manipulation, but they are PHP 5.3+.
     // We support back to PHP 5.2
@@ -2932,6 +2966,11 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
     return $warnings.$r;
   }
 
+  /**
+   * Creates an array of week numbers which have a record for the provided location.
+   * @param array $records Records to scan through.
+   * @param integer $locationID ID of the location to check for.
+   */
   private static function report_calendar_summary_initLocation($records, $locationID){
     $locationArray= array();
     foreach($records as $record){ // We want to set up a default entry for all weeks in which there was a walk on this location.
@@ -2944,6 +2983,16 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
     return $locationArray;
   }
 
+  /**
+   * @todo: document this method
+   * @param array $summaryArray
+   * @param array $locationArray
+   * @param integer $numSamples
+   * @param integer $minWeekNo
+   * @param integer $maxWeekNo
+   * @param string $taxon
+    *@param array $options
+   */
   private static function report_calendar_summary_processEstimates(&$summaryArray, $locationArray, $numSamples, $minWeekNo, $maxWeekNo, $taxon, $options) {
     for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
       if(isset($locationArray[$i])){
@@ -3053,6 +3102,11 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
     }
   }
   
+  /**
+   * Applies defaults to the options array passed to a report calendar summary control.
+   * @param array $options Options array passed to the control.
+   * @return array The processed options array.
+   */
   private static function get_report_calendar_summary_options($options) {
     global $user;
     $options = array_merge(array(
