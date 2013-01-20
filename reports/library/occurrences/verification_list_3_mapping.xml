@@ -57,5 +57,6 @@
     when 'R' then 'red'
     else 'black' end" />
     <column name='fc' visible='false' feature_style="fillColor" sql="case xo.record_status when 'V' then 'green' when 'D' then 'orange' when 'R' then 'red' else 'blue' end" />    
+    <column name='zi' visible='false' feature_style='graphicZIndex' sql='length(o.public_entered_sref)' />
   </columns>
 </report>
