@@ -264,13 +264,19 @@ class ORM extends ORM_Core {
    * @param boolean $save Optional. True if this call also saves the data, false to just validate. Default is false.
    */
   public function validate(Validation $array, $save = FALSE) {
-    // the created_by_id field can be specified by web service calls if the caller knows which Indicia user
-    // is making the post.
-    $fields_to_copy=array_merge(array('created_by_id'), $this->unvalidatedFields);
+    // set the default created/updated information
     $this->set_metadata();
+    $modelFields=$array->as_array();
+    $fields_to_copy=$this->unvalidatedFields;
+    // the created_by_id and updated_by_id fields can be specified by web service calls if the 
+    // caller knows which Indicia user is making the post.
+    if (!empty($modelFields['created_by_id']))
+      $fields_to_copy[] = 'created_by_id';
+    if (!empty($modelFields['updated_by_id']))
+      $fields_to_copy[] = 'updated_by_id';
     foreach ($fields_to_copy as $a)
     {
-      if (array_key_exists($a, $array->as_array())) {
+      if (array_key_exists($a, $modelFields)) {
         // When a field allows nulls, convert empty values to null. Otherwise we end up trying to store '' in non-string
         // fields such as dates.
         if ($array[$a]==='' && isset($this->table_columns[$a]['null']) && $this->table_columns[$a]['null']==1) {
