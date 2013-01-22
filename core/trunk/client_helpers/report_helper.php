@@ -360,7 +360,8 @@ class report_helper extends helper_base {
             // reverse sort order if already sorted by this field in ascending dir
             if ($sortAndPageUrlParams['orderby']['value']==$field['orderby'] && $sortAndPageUrlParams['sortdir']['value']!='DESC')
               $sortLink .= '&'.$sortAndPageUrlParams['sortdir']['name']."=DESC";
-            $captionLink = "<a href=\"$sortLink\" rel=\"nofollow\" title=\"Sort by $caption\">$caption</a>";
+            // store the field in a hidden input field
+            $captionLink = "<input type=\"hidden\" value=\"".$field['orderby']."\"><a href=\"$sortLink\" rel=\"nofollow\" title=\"Sort by $caption\">$caption</a>";
             // set a style for the sort order
             $orderStyle = ($sortAndPageUrlParams['orderby']['value']==$field['orderby']) ? ' '.$sortdirval : '';
             $orderStyle .= ' sortable';

@@ -653,8 +653,9 @@ function simple_tooltip(target_items, name){
         e.preventDefault();
         if (div.loading) {return;}
         div.loading = true;
-        // $(this).text() = display label for column
-        var colName = $(this).text();
+        // $(this).text() = display label for column, but this may have had language string translation carried out against it.
+        // use hidden input field to store the field name.
+        var colName = $(this).find('input').val();
         $.each(div.settings.columns, function(idx, col) {
           if (col.display===colName) {
             colName=col.orderby || col.fieldname;
