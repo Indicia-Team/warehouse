@@ -1499,12 +1499,13 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
           }
         }
         $styleFns = implode(",\n", $styleFns);
-        // selected features are made larger
+        // selected features are made bolder and brought to the front
         $selsettings = array(
-          'strokeWidth'=>15,
+          'strokeWidth'=>"\${getstrokewidth}",
           'strokeColor'=>'red',
           'strokeOpacity'=>0.8,
-          'fillOpacity'=>0.8
+          'fillOpacity'=>0.8,
+          'graphicZIndex'=>"1000",
         );
         // convert these styles into a JSON definition ready to feed into JS.
         $defsettings = json_encode($defsettings);
