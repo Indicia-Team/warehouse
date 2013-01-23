@@ -940,7 +940,7 @@ protected static function get_form_html_off($args, $auth, $attributes) {
   
   
 public function get_tabs(&$tabs,$auth,$args,$attributes){
-return self::get_form_html($args, $auth, $attributes);
+//return self::get_form_html($args, $auth, $attributes);
 
 $hiddens=self::get_hiddens($args,$attributes);//get html for hiddens
     $r = "<div id=\"controls\">\n";
