@@ -75,7 +75,8 @@ class iform_dynamic {
             'wizard' => 'Wizard',
             'one_page' => 'All One Page'
           ),
-          'group' => 'User Interface'
+          'group' => 'User Interface',
+          'default' => 'tabs'
         ),
         array(
           'name'=>'tabProgress',
@@ -111,7 +112,7 @@ class iform_dynamic {
               'the default of displaying a grid of the user\'s data which they can add to. By ticking this box, it is possible to use this form '.
               'for data entry by anonymous users though they cannot then list the data they have entered.',
           'type'=>'boolean',
-          'default' => false,
+          'default' => true,
           'required' => false,
           'group' => 'User Interface'
         ),    
