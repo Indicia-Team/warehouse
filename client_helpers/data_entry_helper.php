@@ -3991,12 +3991,12 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       $url .= "&sharing=$sharing";
     $session = curl_init($url);
     curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-    $entity = json_decode(curl_exec($session), true);
-    if (isset($entity['error'])) throw new Exception($entity['error']);
+    $response = json_decode(curl_exec($session), true);
+    if (isset($response['error'])) throw new Exception($response['error']);
     // set form mode
     if (self::$form_mode===null) self::$form_mode = 'RELOAD';
     // populate the entity to load with the record data
-    foreach($entity[0] as $key => $value) {
+    foreach($response[0] as $key => $value) {
       self::$entity_to_load["$entity:$key"] = $value;
     }
     if ($entity=='sample') {
