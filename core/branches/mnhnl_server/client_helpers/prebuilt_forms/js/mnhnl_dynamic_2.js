@@ -72,6 +72,7 @@ set_up_relationships = function(startAttr, parent, setval, duplicates){
     return (attr.length==1 && attr.is('select') ? attr.find('option').not('[value=]') : attr);
   }
   var getAttrVal = function(attr){
+    if (typeof attr == "undefined") return '';
     if (attr.length==1 && attr.is('select'))
       return attr.val();
     var checked = attr.filter(':checked');

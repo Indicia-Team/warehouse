@@ -891,8 +891,8 @@ loadLocation = function(feature){ // loads all the data into the location fields
   jQuery('[name=location\\:comment]').val(feature.attributes.data.comment);
   jQuery('[name=location\\:parent_id],[name=dummy\\:parent_id]').val(feature.attributes.data.parent_id);
   jQuery('#location-code').val(feature.attributes.data.code).attr('dbCode',feature.attributes.data.code);
-  jQuery('#imp-geom').val(feature.attributes.data.centroid_geom);
-  jQuery('#imp-boundary-geom').val(feature.attributes.data.boundary_geom);
+  jQuery('#imp-geom').val(feature.attributes.data.centroid_geom); // this is as stored in the database i.e. 3857/900913 projection, not necessarily the map projection
+  jQuery('#imp-boundary-geom').val(feature.attributes.data.boundary_geom); // this is as stored in the database i.e. 3857/900913 projection, not necessarily the map projection
   setSref(feature.geometry, feature.attributes.data.centroid_sref);
   // reset attributes is done by clearLocation above.
   jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/location_attribute_value' +
@@ -1258,7 +1258,7 @@ setGeomFields = function(){
   var allFeatures = SiteAreaLayer.features.concat(SitePathLayer.features,SitePointLayer.features);
   for(var i=allFeatures.length-1; i>=0; i--){
     if(allFeatures[i].attributes.highlighted == true){
-      geomstack.push(allFeatures[i].geometry);
+      geomstack.push(allFeatures[i].geometry.clone()); // needs to be a clone as we don't want to transform the original geoms.
       mySiteNum = allFeatures[i].attributes.SiteNum;
     }
   }
@@ -1886,7 +1886,27 @@ ZoomToSite = function(){
   if(modAreaFeature.feature){
     return ZoomToFeature(modAreaFeature.feature);}
   var highlighted = gethighlight();
-  if(highlighted.length>0) return ZoomToFeature(highlighted[0]);
+  if(highlighted.length>0){
+    var div = jQuery('#map')[0];
+    var bounds=highlighted[0].geometry.bounds.clone();
+    $.each(highlighted, function(idx, feat){
+      bounds.extend(feat.geometry.bounds);
+    });
+    // extend the boundary to include a buffer, so the map does not zoom too tight.
+    var dy = (bounds.top-bounds.bottom) * div.settings.maxZoomBuffer;
+    var dx = (bounds.right-bounds.left) * div.settings.maxZoomBuffer;
+    bounds.top = bounds.top + dy;
+    bounds.bottom = bounds.bottom - dy;
+    bounds.right = bounds.right + dx;
+    bounds.left = bounds.left - dx;
+    if (div.map.getZoomForExtent(bounds) > div.settings.maxZoom) {
+      // if showing something small, don't zoom in too far
+      div.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
+    } else {
+      // Set the default view to show something triple the size of the grid square
+      div.map.zoomToExtent(bounds);
+    }
+  }
 };
 ZoomToParent = function(){
   if(ParentLocationLayer.features.length > 0) ParentLocationLayer.map.zoomToExtent(ParentLocationLayer.getDataExtent());
@@ -2189,9 +2209,9 @@ mapInitialisationHooks.push(function(mapdiv) {
                 $activeParent = true;
             }
             if($activeParent)
-              data_entry_helper::$javascript .= "		loadFeatures(".data_entry_helper::$entity_to_load['location:parent_id'].",".data_entry_helper::$entity_to_load['location:id'].",{initial: true}, true, false, false, false, false);\n";
+              data_entry_helper::$javascript .= "		loadFeatures(".data_entry_helper::$entity_to_load['location:parent_id'].",".data_entry_helper::$entity_to_load['location:id'].",{initial: true}, true, false, false, false, true);\n";
             else
-              data_entry_helper::$javascript .= "		loadFeatures('',".data_entry_helper::$entity_to_load['location:id'].",{initial: true}, false, false, false, false, false);\n";
+              data_entry_helper::$javascript .= "		loadFeatures('',".data_entry_helper::$entity_to_load['location:id'].",{initial: true}, false, false, false, false, true);\n";
       		break;
     	default: // mode = parent
       		data_entry_helper::$javascript .= "		loadFeatures(".data_entry_helper::$entity_to_load['location:parent_id'].",".data_entry_helper::$entity_to_load['location:id'].",{initial: true}, true, true, false, false, true);\n"; 

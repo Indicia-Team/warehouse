@@ -62,7 +62,7 @@
     SELECT o.id as id,
            o.sample_id as sample_id,
            dttl.taxon as taxon,
-           oav1.int_value as observation
+           oav1.int_value as observation,
            o.record_status as record_status
       FROM occurrences o
       INNER JOIN detail_taxa_taxon_lists dttl ON o.taxa_taxon_list_id = dttl.id

@@ -137,16 +137,20 @@ mapGeoreferenceHooks = [];
       removeAllFeatures(layer, type);
       if(wkt){
         var feature = parser.read(wkt);
-        if (typeof transform!=="undefined" && transform && div.map.projection.getCode() != div.indiciaProjection.getCode()) {
-          feature.geometry.transform(div.indiciaProjection, div.map.projection);
-        }
+        // this could be an array of features for a GEOMETRYCOLLECTION
+        if(Array.isArray(feature)==false) feature = [feature];
         var styletype = (typeof type !== 'undefined') ? styletype = type : styletype = 'default';
-        feature.style = new style(styletype);
-        feature.attributes.type = type;
-        if (temporary) {
-          feature.attributes.temp = true;
-        } 
-        var features = [feature];
+        $.each(feature, function(idx, feat){
+          if (typeof transform!=="undefined" && transform && div.map.projection.getCode() != div.indiciaProjection.getCode()) {
+            feat.geometry.transform(div.indiciaProjection, div.map.projection);
+          }
+          feat.style = new style(styletype);
+          feat.attributes.type = type;
+          if (temporary) {
+            feat.attributes.temp = true;
+          }
+          features.push(feat);
+        });
       }
 
       if(invisible !== null){

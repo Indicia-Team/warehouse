@@ -854,10 +854,10 @@ hook_species_checklist_pre_delete_row=function(e) {
     } else $oldCtrlName=$ctrlName;
   }
 
-  public static function species_checklist()
+  public static function species_checklist($options)
   {
   	global $indicia_templates;
-    $options = data_entry_helper::check_arguments(func_get_args(), array('speciesListID', 'occAttrs', 'readAuth', 'extraParams'));
+//    $options = data_entry_helper::check_arguments(func_get_args(), array('speciesListID', 'occAttrs', 'readAuth', 'extraParams'));
     $options = self::get_species_checklist_options($options);
     data_entry_helper::add_resource('json');
     data_entry_helper::add_resource('autocomplete');
@@ -1119,7 +1119,7 @@ bindSpeciesButton(bindSpeciesOptions);\n";
       if($options['includeSubSample']){
         $mapOptions = iform_map_get_map_options($options['args'],$options['readAuth']);
         $olOptions = iform_map_get_ol_options($options['args']);
-        $mapOptions['tabDiv'] = 'species';
+        $mapOptions['tabDiv'] = 'tab-species';
         $mapOptions['divId'] = 'map2';
         $mapOptions['width'] = isset($options['map2Width']) ? $options['map2Width'] : "250px";
         $mapOptions['height'] = isset($options['map2Height']) ? $options['map2Height'] : "250px";
@@ -1142,7 +1142,7 @@ bindSpeciesButton(bindSpeciesOptions);\n";
       $r .= '<div class="grid-container">'.$grid.'</div>';
       if($options['includeSubSample'] && $options['mapPosition']!='top') $r .= '<div class="sideMap-container">'.data_entry_helper::map_panel($mapOptions, $olOptions).'</div>';
       if($options['includeSubSample'])
-      	data_entry_helper::$javascript .= "var ".$mapOptions['tabDiv']."TabHandler = function(event, ui) {
+      	data_entry_helper::$javascript .= "var speciesMapTabHandler = function(event, ui) {
   if (ui.panel.id=='".$mapOptions['tabDiv']."') {
     $('.mnhnl-species-grid').find('tr').removeClass('highlight');
     var div=$('#".$mapOptions['divId']."')[0];
@@ -1175,7 +1175,7 @@ bindSpeciesButton(bindSpeciesOptions);\n";
     }
   }
 };
-jQuery(jQuery('#".$mapOptions['tabDiv']."').parent()).bind('tabsshow', ".$mapOptions['tabDiv']."TabHandler);\n";
+jQuery(jQuery('#".$mapOptions['tabDiv']."').parent()).bind('tabsshow', speciesMapTabHandler);\n";
       // move the cloneable table outside the form, so allowing the validation to ignore it.
       data_entry_helper::$javascript .= "var cloneableDiv = $('<div style=\"display: none;\">');
 cloneableDiv.append($('#".$options['id']."-scClonable'));
