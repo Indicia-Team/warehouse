@@ -180,7 +180,6 @@ $r.=self::rfj_debug_content($args);
 
 $r.=self::rfj_static_content($args,$attributes,$reloadPath,$tabs);
 $r.=self::get_tabs($tabs,$auth,$args,$attributes);
-    return $r;
 //$r.=self::get_form_html($args, $auth, $attributes);
 
 $r.='Footer below Tabs section';
