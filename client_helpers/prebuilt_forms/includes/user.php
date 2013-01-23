@@ -141,6 +141,9 @@ function apply_user_replacements($text) {
       $text=str_replace('{'.$profileField.'}', $value, $text);  
     }
   }
+  // convert booleans to true booleans
+  $text = ($text==='false') ? false : (($text==='true') ? true : $text);
+    
   return $text;
 }
 
