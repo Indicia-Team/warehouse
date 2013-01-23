@@ -852,7 +852,7 @@ public static function get_perms($nid) {
     );
   }
 
-protected static function get_form_html($args, $auth, $attributes) { 
+protected static function get_form_html_off($args, $auth, $attributes) { 
 
     $r = call_user_func(array(self::$called_class, 'getHeader'), $args);
     $firstTabExtras = (method_exists(self::$called_class, 'getFirstTabAdditionalContent')) 
@@ -936,6 +936,9 @@ protected static function get_form_html($args, $auth, $attributes) {
       $r .= call_user_func(array(self::$called_class, 'link_species_popups'), $args);
     return $r;    
   }  
+  
+  
+  
 public function get_tabs(&$tabs,$auth,$args,$attributes){
 return self::get_form_html($args, $auth, $attributes);
 
