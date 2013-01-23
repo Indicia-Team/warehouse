@@ -177,6 +177,8 @@ switch(self::$mode){
 $hiddens=self::get_hiddens($args,$attributes);//get html for hiddens
 // debug section
 $r.=self::rfj_debug_content($args);
+    return $r;
+
 $r.=self::rfj_static_content($args,$attributes,$reloadPath,$tabs);
 $r.=self::get_tabs($tabs,$auth,$args,$attributes);
 //$r.=self::get_form_html($args, $auth, $attributes);
