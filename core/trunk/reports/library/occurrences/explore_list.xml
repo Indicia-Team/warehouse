@@ -55,8 +55,8 @@
     <column name='record_status' display='State' sql='o.record_status' visible="false" />
     <column name='belongs_to_user' display='Belongs to User' sql="CASE CAST(o.created_by_id AS character varying) WHEN '#currentUser#' THEN true ELSE false END" visible="false" />
     <column name='certainty' sql="o.certainty" visible='false' />
-    <column name='fo' visible='false' feature_style="fillOpacity" round(length(o.public_entered_sref) / 24.0, 2)' />
-    <column name='sc' visible='false' feature_style="strokeColor" case o.record_status when 'C' then 
+    <column name='fo' visible='false' feature_style="fillOpacity" sql='round(length(o.public_entered_sref) / 24.0, 2)' />
+    <column name='sc' visible='false' feature_style="strokeColor" sql="case o.record_status when 'C' then 
       case o.certainty when 'C' then 'green' when 'L' then 'orange' when 'U' then 'red' else 'blue' end
     when 'V' then 'green'
     when 'D' then 'orange'
