@@ -74,6 +74,7 @@ class iform_wwt_colour_marked_lean  extends iform_dynamic_subject_observation{
     define ("MODE_EXISTING", 2);
 $r='Header above Tabs section';
 //$r.=parent::get_form($args, $node);
+    self::parse_defaults($args); //don't think can be done in parent::get_form
 
     self::$node = $node;
     self::$called_class = 'iform_' . $node->iform;
