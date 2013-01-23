@@ -419,7 +419,7 @@ class data_entry_helper extends helper_base {
     $options = self::check_options($options);
     $default = isset($options['default']) ? $options['default'] : '';
     $value = self::check_default_value($options['fieldname'], $default);
-    $options['checked'] = ($value==='on' || $value === 1 || $value === '1' || $value==='t') ? ' checked="checked"' : '';
+    $options['checked'] = ($value==='on' || $value === 1 || $value === '1' || $value==='t' || $value===true) ? ' checked="checked"' : '';
     $options['template'] = array_key_exists('template', $options) ? $options['template'] : 'checkbox';
     return self::apply_template($options['template'], $options);
   }
@@ -516,7 +516,9 @@ class data_entry_helper extends helper_base {
   * Optional. Set to true to show a button which must be clicked to drop down the picker. Defaults to false unless allowVagueDates is true
   * as inputting a vague date without the button is confusing.</li>
   * <li><b>buttonText</b><br/>
-  * Optional. if showButton is true, this text will be shown as the 'alt' text for the buttom image.</li>
+  * Optional. If showButton is true, this text will be shown as the 'alt' text for the buttom image.</li>
+  * <li><b>placeHolder</b><br/>
+  * Optional. Control the placeholder text shown in the text box before a value has been added.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the date picker control.
@@ -531,8 +533,9 @@ class data_entry_helper extends helper_base {
     if (!isset($options['showButton']))
       // vague dates best with the button
       $options['showButton']=$options['allowVagueDates'];
+    $vague=$options['allowVagueDates'] ? ' vague' : '';
     if (!isset($options['placeholder']))
-      $options['placeholder'] = $options['allowVagueDates'] ? lang::get('Pick or type a vague date') : lang::get('Click here');
+      $options['placeholder'] = $options['showButton'] ? lang::get("Pick or type a$vague date") : lang::get('Click here');
     self::add_resource('jquery_ui');
     $escaped_id=str_replace(':','\\\\:',$options['id']);
     // Don't set js up for the datepicker in the clonable row for the species checklist grid
@@ -1637,12 +1640,13 @@ class data_entry_helper extends helper_base {
   *     'fieldname' => 'smpAttr:9'
   * ));?>
   * </code>
-  * The output of this control can be configured using the following templates: 
+  * <p>The output of this control can be configured using the following templates:</p>
   * <ul>
   * <li><b>postcode_textbox</b></br>
   * Template which outputs the HTML for the text input control used. Must have an onblur event handler
   * which calls the JavaScript required to search for the post code.
   * </li>
+  * </ul>
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>fieldname</b><br/>
