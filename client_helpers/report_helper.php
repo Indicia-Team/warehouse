@@ -130,14 +130,17 @@ class report_helper extends helper_base {
     return str_replace(array('{link}','{caption}'), array($link, lang::get($options['caption'])), $indicia_templates['report_download_link']);
   }
 
-  /**
-  * <p>Outputs a grid that loads the content of a report or Indicia table.</p>
-  * <p>The grid supports a simple pagination footer as well as column title sorting through PHP. If
+ /**
+  * Outputs a grid that loads the content of a report or Indicia table.
+  * 
+  * The grid supports a simple pagination footer as well as column title sorting through PHP. If
   * used as a PHP grid, note that the current web page will reload when you page or sort the grid, with the
   * same $_GET parameters but no $_POST information. If you need 2 grids on one page, then you must define a different
-  * id in the options for each grid.</p>
-  * <p>For summary reports, the user can optionally setup clicking functionality so that another report is called when the user clicks on the grid.</p>
-  * <p>The grid operation will be handled by AJAX calls when possible to avoid reloading the web page.</p>
+  * id in the options for each grid.
+  * 
+  * For summary reports, the user can optionally setup clicking functionality so that another report is called when the user clicks on the grid.
+  * 
+  * The grid operation will be handled by AJAX calls when possible to avoid reloading the web page.
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>id</b><br/>
