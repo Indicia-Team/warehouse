@@ -1109,7 +1109,7 @@ class iform_dynamic_sample_individual extends iform_dynamic {
    * Get the block of custom attributes at the individual (subject_observation) level
    */
   protected static function get_control_individualattributes($auth, $args, $tabalias, $options) {
-  $r=self::get_attributes_for_table('subject_observation','sjo',$auth, $args, $tabalias, $options) {
+  $r=self::get_attributes_for_table('subject_observation','sjo',$auth, $args, $tabalias, $options) ;
       return $r;
   }
 
@@ -1117,7 +1117,7 @@ class iform_dynamic_sample_individual extends iform_dynamic {
    * Get the block of custom attributes at the species (occurrence) level
    */
   protected static function get_control_speciesattributes($auth, $args, $tabalias, $options) {
-  $r=self::get_attributes_for_table('occurrence','occ',$auth, $args, $tabalias, $options) {
+  $r=self::get_attributes_for_table('occurrence','occ',$auth, $args, $tabalias, $options) ;
       return $r;
   }
 
