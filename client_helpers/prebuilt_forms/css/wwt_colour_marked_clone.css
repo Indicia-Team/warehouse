@@ -1,0 +1,333 @@
+@CHARSET "UTF-8";
+label {
+/*	display:block;*/
+}
+.gridbg_S        {/*silver*/
+        background-color:gray;
+        width:55px;
+}
+.gridbg_B        {
+        background-color:blue;
+        width:30px;
+        }
+.gridbg_G{
+        background-color:green;
+        width:30px;
+}
+.gridbg_O{
+        background-color:orange;
+        width:30px;
+}
+.gridbg_R{
+        background-color:red;
+        width:30px;
+}
+.gridbg_Y{
+        background-color:yellow;
+        width:30px;
+}
+.gridbg_W{
+        background-color:white;
+        width:30px;
+}
+.gridfg_W{
+        color:white;
+}
+.gridfg_B .gridfg_M{
+        color:black;
+}
+.gridpos_LB{
+        float:left;
+
+}
+.gridpos_RB{
+        float:left;
+}
+.gridpos_NC{
+        float:left;
+}
+.gridpos_X{ /*instead of ? */
+        float:left;
+}
+
+
+
+
+.family {
+    background-color: green;
+    border: solid thick red;
+    }
+.ui-state-highlight,.ui-widget-content .ui-state-highlight {
+    border: 1px solid #008f93;
+    background: #008f93;
+    color: #ffffff;
+    font-weight: bold;
+    }
+
+.ui-accordion-header{
+        line-height:0.1em;
+        }
+.ui-accordion-header.ui-state-active {
+    /* 
+        background: #e6e6e6;
+    */
+        border: 1px solid #008f93;
+    background: #008f93;
+    color: #ffffff;
+    }
+.ui-accordion-header.ui-state-active a {
+    /* 
+        background: #e6e6e6;
+    */
+        border: 1px solid #008f93;
+    background: #008f93;
+    color: #ffffff;
+    font-weight: bold;
+    }
+.ui-accordion-header.ui-state-default a {
+    font-weight: bold;
+    }
+#tabs-wrapper h1, #tabs-wrapper h2, #tabs-wrapper h3 {
+    color: #008f93;
+    }
+#controls h1, #controls h2, #controls h3 {
+    color: #008f93;
+    }
+input.locked-control, select.locked-control, textarea.locked-control {
+    background-color: #fff99d !important;
+    }
+.identifier_checkbox {
+    display: none;
+    }
+fieldset, #fieldset-recorder-details, .file-box fieldset {
+    border: 1px solid #008f93;
+    }
+.family_panel {
+    border: 1px solid #008f93;
+    padding: 1em;
+    }
+.individual_panel {
+    border: 0px solid #008f93;
+    padding: 0em;
+    }
+.taxon_individual {
+    border: 1px solid #008f93;
+    background-color: transparent;
+    width: 640px;
+    float: left;
+    margin-right: -488px;
+    }
+.taxon_individual_odd {
+    border: 1px solid #008f93;
+    background-color: cyan;
+}
+.taxon_individual_even {
+    border: 1px solid #008f93;
+    background-color: red;
+}
+.taxon_single_odd {
+    border: 1px solid #008f93;
+    background-color: orange;
+}
+.taxon_single_even {
+    border: 1px solid #008f93;
+    background-color: yellow;
+}
+.taxon_family_odd {
+    border: 1px solid #008f93;
+    background-color: #bbddbb;
+/*    width: 640px;
+    float: left;
+    margin-right: -488px;*/
+    }
+.taxon_family_even {
+    border: 1px solid #008f93;
+    background-color: #ddbbbb;
+/*    width: 640px;
+    float: left;
+    margin-right: -488px;*/
+    }
+.taxon_family {
+    border: 1px solid #008f93;
+/*    width: 640px;
+    float: left;
+    margin-right: -488px;*/
+    }
+.taxon_family legend{
+    color: #008f93;
+    font-weight: bold;
+    }
+.taxon_individual legend, #fieldset-recorder-details legend, .file-box legend {
+    color: #008f93;
+    font-weight: bold;
+    }
+.readonlyFieldset fieldset {
+    background-color: #E7E7E7;
+    }
+.readonlyFieldset legend:after {
+    content: " (read-only)";
+    }
+.idn-accordion {
+    width: 640px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    }
+.idn-accordion div {
+    padding-top: 2px !important;
+    padding-bottom: 2px !important;
+    line-height:1.5em;
+    }
+.image_panel {
+    position: relative;
+    top: 20px;
+    background-image: url('../images/brentsmall.png');
+    background-repeat: no-repeat;
+    background-position: 0px 0px;
+    float: right;
+    width: 175px;
+    height: 250px;
+    }
+/* Species over-ride */
+.ind-tax-img-anseranser
+,.ind-tax-img-greylaggoose
+,.ind-tax-img-anseransergreylaggoose
+,.ind-tax-img-bewicksswan
+,.ind-tax-img-cygnuscolumbianusbewickii
+,.ind-tax-img-brantaleucopsis
+,.ind-tax-img-barnaclegoose
+,.ind-tax-img-brantaleucopsisbarnaclegoose
+,.ind-tax-img-cygnuscygnus
+,.ind-tax-img-whooperswan
+,.ind-tax-img-cygnuscygnuswhooperswan {
+    background-image: url('../images/brentsmall.png');
+    }
+.ind-tax-img-cygnuscolumbianusbewickiibewicksswan {
+    background-image: url('../images/bewick.png');
+    }
+.ind-tax-img-anserbrachyrhynchus
+,.ind-tax-img-anserbrachyrhynchuspinkfootedgoose
+,.ind-tax-img-pinkfootedgoose {
+    background-image: url('../images/pinkfoot.png');
+    }
+.ind-tax-img-anseralbifrons
+,.ind-tax-img-anseralbifronsgreaterwhitefrontedgoose
+,.ind-tax-img-greaterwhitefrontedgoose {
+    background-image: url('../images/whitefront.png');
+    }
+.identifier {
+    width: 2.5em;
+    height: 1.5em;
+    /*        border: 1px solid #3f3f3f;
+    */
+        text-align: center;
+    text-transform: uppercase;
+    font-size: 1em;
+    font-weight: bold;
+    font-family: Verdana, sans-serif;
+    line-height: 1.5em;
+    }
+.identifier input {
+    width: 22px;
+    }
+.identifier-colourbox-input {
+
+}
+.neck-collar-identifier-colourbox {
+    position: absolute;
+    left: 25px;
+    top: 25px;
+    }
+.neck-collar-identifier-colourbox input {
+    width: 26px;
+    }
+.metal-identifier-colourbox {
+    position: absolute;
+    left: 50px;
+    top: 250px;
+    cursor: move; 
+    }
+.metal-identifier-colourbox input {
+    width: 40px;
+    font-size: 0.75em;
+    line-height: 1.2em;
+    }
+.colour-ring-identifier-colourbox {
+    position: absolute;
+    left: 50px;
+    top: 275px;
+    cursor: move; 
+    }
+.colour-ring-identifier-colourbox input {
+    width: 30px;
+    -webkit-transform: rotate(270deg);
+    -moz-transform: rotate(270deg);
+    -o-transform: rotate(270deg);
+    /*        filter: progid: DXImageTransform.Microsoft.BasicImage(rotation=3);
+    */
+        rotation-point: 50% 50%;
+    rotation: 270deg;
+    }
+.right-leg {
+    left: 25px;
+    top: 200px;
+    }
+.left-leg {
+    left: 80px;
+    top: 200px;
+    }
+.ind-tax-img-cygnuscolumbianusbewickii .neck-collar-identifier-colourbox,
+.ind-tax-img-cygnuscolumbianusbewickiibewicksswan .neck-collar-identifier-colourbox,
+.ind-tax-img-bewicksswan .neck-collar-identifier-colourbox {
+    left: 35px;
+    top: 45px;
+    }
+.ind-tax-img-cygnuscolumbianusbewickii .colour-ring-identifier-colourbox,
+.ind-tax-img-cygnuscolumbianusbewickiibewicksswan .colour-ring-identifier-colourbox,
+.ind-tax-img-bewicksswan .colour-ring-identifier-colourbox {
+    left: 80px;
+    top: 200px;
+    }
+.ind-tax-img-cygnuscolumbianusbewickii .metal-identifier-colourbox,
+.ind-tax-img-cygnuscolumbianusbewickiibewicksswan .metal-identifier-colourbox,
+.ind-tax-img-bewicksswan .metal-identifier-colourbox {
+    left: 38px;
+    top: 200px;
+    }
+.ind-tax-img-anserbrachyrhyncus .neck-collar-identifier-colourbox, 
+.ind-tax-img-anserbrachyrhynchuspinkfootedgoose .neck-collar-identifier-colourbox, 
+.ind-tax-img-pinkfootedgoose .neck-collar-identifier-colourbox {
+    left: 37px;
+    top: 45px;
+    }
+.ind-tax-img-anserbrachyrhyncus .metal-identifier-colourbox, 
+.ind-tax-img-anserbrachyrhynchuspinkfootedgoose .metal-identifier-colourbox, 
+.ind-tax-img-pinkfootedgoose .metal-identifier-colourbox {
+    left: 21px;
+    top: 200px;
+    }
+.ind-tax-img-anserbrachyrhyncus .colour-ring-identifier-colourbox, 
+.ind-tax-img-anserbrachyrhynchuspinkfootedgoose .colour-ring-identifier-colourbox, 
+.ind-tax-img-pinkfootedgoose .colour-ring-identifier-colourbox {
+    left: 65px;
+    top: 200px;
+    }
+/*
+.ind-tax-img-anseralbifrons .neck-collar-identifier-colourbox
+,.ind-tax-img-anseralbifronsgreaterwhitefrontedgoose .neck-collar-identifier-colourbox
+,.ind-tax-img-greaterwhitefrontedgoose .neck-collar-identifier-colourbox {
+    left: 44px;
+    top: 62px;
+    }
+.ind-tax-img-anseralbifrons .metal-identifier-colourbox
+,.ind-tax-img-anseralbifronsgreaterwhitefrontedgoose .metal-identifier-colourbox
+,.ind-tax-img-greaterwhitefrontedgoose .metal-identifier-colourbox {
+    left: 21px;
+    top: 200px;
+    }
+.ind-tax-img-anseralbifrons .colour-ring-identifier-colourbox
+,.ind-tax-img-anseralbifronsgreaterwhitefrontedgoose .colour-ring-identifier-colourbox
+,.ind-tax-img-greaterwhitefrontedgoose .colour-ring-identifier-colourbox {
+    left: 65px;
+    top: 200px;
+    }
+*/
