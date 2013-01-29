@@ -968,6 +968,15 @@ reverseConvertGeom = function(geom, projection){
   }
   return geom;
 }
+zoomToLayerExtent = function(layer){
+  var layerBounds = layer.getDataExtent().clone(); // use a clone
+  var mapBounds = layer.map.getMaxExtent();
+  if(layerBounds.left   < mapBounds.left)   layerBounds.left = mapBounds.left;
+  if(layerBounds.right  > mapBounds.right)  layerBounds.right = mapBounds.right;
+  if(layerBounds.bottom < mapBounds.bottom) layerBounds.bottom = mapBounds.bottom;
+  if(layerBounds.top    > mapBounds.top)    layerBounds.top = mapBounds.top;
+  layer.map.zoomToExtent(layerBounds);
+}
 
 loadFeatures = function(parent_id, child_id, childArgs, loadParent, setSelectOptions, zoomParent, clearLocationFlag, setPermissionState){
   ParentLocationLayer.destroyFeatures();
@@ -995,7 +1004,10 @@ loadFeatures = function(parent_id, child_id, childArgs, loadParent, setSelectOpt
            var feature = parser.read(data[0].boundary_geom)
            feature=convertFeature(feature, $('#map')[0].map.projection);
            ParentLocationLayer.addFeatures([feature]);
-           if(zoomParent) ParentLocationLayer.map.zoomToExtent(ParentLocationLayer.getDataExtent());
+           if(zoomParent) {
+             // Parent squares may overlap the edges of the map.
+             zoomToLayerExtent(ParentLocationLayer);
+           }
          }
          selectFeature.activate();
 ".($args['locationMode']=='multi' ? "  jQuery('#sample-location-name').val(data[0].name);" : "").
@@ -1874,6 +1886,7 @@ ZoomToFeature = function(feature){
     div.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
   } else {
     // Set the default view to show something triple the size of the grid square
+    // Assume this is within the map extent
     div.map.zoomToExtent(bounds);
   }
 };
@@ -1904,12 +1917,14 @@ ZoomToSite = function(){
       div.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
     } else {
       // Set the default view to show something triple the size of the grid square
+      // Assume this is within the map extent
       div.map.zoomToExtent(bounds);
     }
   }
 };
 ZoomToParent = function(){
-  if(ParentLocationLayer.features.length > 0) ParentLocationLayer.map.zoomToExtent(ParentLocationLayer.getDataExtent());
+  if(ParentLocationLayer.features.length > 0)
+    zoomToLayerExtent(ParentLocationLayer);
 };
 ZoomToCountry = function(){
 	var div = jQuery('#map')[0];
@@ -2471,7 +2486,7 @@ jQuery(\"#".$options['ParentFieldID']."\").change(function(){
            feature=convertFeature(feature, $('#map')[0].map.projection);
            ParentLocationLayer.destroyFeatures();
            ParentLocationLayer.addFeatures([feature]);
-           ParentLocationLayer.map.zoomToExtent(ParentLocationLayer.getDataExtent());
+           zoomToLayerExtent(ParentLocationLayer);
          }
        }});
 ".($options['AdminMode'] ? 
