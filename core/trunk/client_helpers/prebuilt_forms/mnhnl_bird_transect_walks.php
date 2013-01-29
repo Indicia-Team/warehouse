@@ -634,6 +634,7 @@ $('#controls').bind('tabsshow', function(event, ui) {
     ));
     $closedFieldName = $attributes[$sample_closure_id]['fieldname'];
     $closedFieldValue = data_entry_helper::check_default_value($closedFieldName, array_key_exists('default', $attributes[$sample_closure_id]) ? $attributes[$sample_closure_id]['default'] : '0'); // default is not closed
+    if($closedFieldValue == '') $closedFieldValue = '0';
     if($closedFieldValue == '1' && !user_access($adminPerm)){
       // sample has been closed, no admin perms. Everything now set to read only.
       $surveyReadOnly = true;
