@@ -303,6 +303,9 @@ var _bindSpeciesGridControls = function(row,rowNum,options){
       feature.attributes.type = 'enteredSref'; // so outside polygon is done.
       layer.removeAllFeatures();
       layer.addFeatures([feature]);
+      var highlighted = jQuery('.highlight').filter('.first');
+      if(highlighted.length>0) // a clone of the feature added to the layer is stored.
+        highlighted.data('feature',feature.clone());
       // keep zoom same, just move to centre location we are intested in, if feature is not already onscreen.
       if(!feature.onScreen()){
         var bounds=feature.geometry.bounds.clone();
@@ -560,7 +563,7 @@ $('.remove-row').live('click', function(e) {
     if(row.data('feature')!=null){
       if(row.data('feature').layer==occurrencePointLayer)
         occurrencePointLayer.destroyFeatures([row.data('feature')]);
-      else
+      else if(row.data('feature').layer==map2.map.editLayer)
         map2.map.editLayer.destroyFeatures([row.data('feature')]);
     }
   }
