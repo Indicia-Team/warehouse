@@ -170,9 +170,9 @@ function iform_map_get_map_parameters() {
   // we are in the AJAX call for the form details for a new iform, so must show it as we have no way of knowing.
   if (!function_exists('module_exists') || module_exists('easy_login')) {
     $r[] = array(
-      'fieldname'=>'display_user_profile_location',
-      'label'=>'Display location from user profile',
-      'helpText'=>'Tick this box to display the outline of the user\'s preferred recording location from the user '.
+      'name'=>'display_user_profile_location',
+      'caption'=>'Display location from user profile',
+      'description'=>'Tick this box to display the outline of the user\'s preferred recording location from the user '.
           'account on the map. The map will be centred and zoomed to this location on first usage.',
       'type'=>'checkbox',
       'required'=>false,
