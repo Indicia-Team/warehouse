@@ -159,6 +159,10 @@ class Import_Controller extends Service_Base_Controller {
   public function upload() {
     $csvTempFile = DOCROOT . "upload/" . $_GET['uploaded_csv'];
     $metadata = $this->_get_metadata($_GET['uploaded_csv']);
+    if (!empty($metadata['user_id'])) {
+      global $remoteUserId;
+      $remoteUserId = $metadata['user_id'];
+    }
     // Check if details of the last supermodel (e.g. sample for an occurrence) are in the cache from a previous iteration of 
     // this bulk operation
     $cache= Cache::instance();

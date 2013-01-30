@@ -157,7 +157,7 @@ class XMLReportReader_Core implements ReportReader
                       array('#agreements_join#','#sharing_filter#'), 
                       array('join system sys on sys.id=1', "$websiteFilterField in ($idList)"), 
                     $this->query);
-                  else
+                  else {
                     // implement the appropriate sharing agreement across websites
                     $agreementsJoin="JOIN index_websites_website_agreements iwwa ON iwwa.to_website_id=o.website_id and iwwa.receive_for_$sharing=true AND iwwa.from_website_id in ($idList)\n";
                     // add a join to users so we can check their privacy preferences. This does not apply if record input
@@ -166,6 +166,7 @@ class XMLReportReader_Core implements ReportReader
                     $this->query = str_replace(array('#agreements_join#','#sharing_filter#'), 
                         array($agreementsJoin, 
                         "(iwwa.from_website_id=iwwa.to_website_id OR privacyusers.allow_share_for_$sharing=true)"), $this->query);
+                  }
                 }
                 $this->query = str_replace('#sharing#', $sharing, $this->query);
                 break;

@@ -723,6 +723,18 @@ class ORM extends ORM_Core {
           ->where($where)
           ->limit(1)
           ->get();
+      if (count($matches)===0) {
+        // try a slower case insensitive search before giving up
+        $this->db
+          ->select('id')
+          ->from(inflector::plural($fkArr['fkTable']))
+          ->where("(".$fkArr['fkSearchField']." ilike '".strtolower($fkArr['fkSearchValue'])."')");
+        if (isset($fkArr['fkSearchFilterField']) && $fkArr['fkSearchFilterField']) 
+          $this->db->where(array($fkArr['fkSearchFilterField']=>$fkArr['fkSearchFilterValue']));
+        $matches = $this->db
+          ->limit(1)
+          ->get();
+      }
       if (count($matches) > 0) {
         $r = $matches[0]->id;
         if (ORM::$cacheFkLookups) {
