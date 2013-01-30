@@ -302,9 +302,19 @@ function iform_map_get_map_options($args, $readAuth) {
     if (!isset($user->profile_location))
       profile_load_profile($user);
     if (!empty($user->profile_location)) {
-      $getPopDataOpts = array(
+      iform_map_zoom_to_location($user->profile_location, $readAuth);
+    }
+  } 
+  return $options;
+}
+
+/**
+ * Adds a vector to the map for a particular location, and zooms into it.
+ */
+function iform_map_zoom_to_location($locationId, $readAuth) {
+  $getPopDataOpts = array(
         'table' => 'location',
-        'extraParams' => $readAuth + array('id'=>$user->profile_location,'view' => 'detail')
+        'extraParams' => $readAuth + array('id'=>$locationId,'view' => 'detail')
       );
       $response = data_entry_helper::get_population_data($getPopDataOpts);
       data_entry_helper::$javascript .= "
@@ -332,9 +342,6 @@ mapInitialisationHooks.push(function(mapdiv) {
   }
   mapdiv.map.addLayer(loclayer);
 });\n";
-    }
-  } 
-  return $options;
 }
 
 /**
