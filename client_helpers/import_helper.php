@@ -414,6 +414,9 @@ class import_helper extends helper_base {
         hostsite_set_user_field("import_field_mappings", json_encode($userSettings));
       }
       $post = array_merge($options['auth']['write_tokens'], $metadata);
+      // store the warehouse user ID if we know it.
+      if (function_exists('hostsite_get_user_field')) 
+        $post['user_id'] = hostsite_get_user_field('indicia_user_id');
       $request = parent::$base_url."index.php/services/import/cache_upload_metadata?uploaded_csv=$filename";
       $response = self::http_post($request, $post);
       if (!isset($response['output']) || $response['output'] != 'OK')
