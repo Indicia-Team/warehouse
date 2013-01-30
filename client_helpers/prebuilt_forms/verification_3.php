@@ -446,6 +446,9 @@ idlist=';
       'ajax'=>TRUE
     ));
     $r .= '</div>';
+    global $user;
+    if (function_exists('hostsite_get_user_field') && $locationId=hostsite_get_user_field('location_expertise', false)) 
+      iform_map_zoom_to_location($locationId, $auth);
     $r .= '<div id="record-details-wrap" class="ui-widget ui-widget-content">';
     $r .= self::instructions('grid on the left');
     $r .= '<div id="record-details-content" style="display: none">';
