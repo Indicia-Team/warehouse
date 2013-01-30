@@ -667,9 +667,6 @@ class import_helper extends helper_base {
           $selected=true;
       }
       //handle the situation where there is a match with one of the items in the alternatives array.
-      if ($defaultCaption==='Weather') {
-        drupal_set_message("doing $prefix");
-      }
       if (isset($alternatives[$prefix.':'.strtolower($defaultCaption)])) {
         foreach ($alternatives[$prefix.':'.strtolower($defaultCaption)] as $regexp) {
           if (preg_match($regexp, strtolower(str_replace(' ', '', $column)))) {
