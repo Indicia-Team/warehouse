@@ -80,7 +80,9 @@ $default_terms = array(
   'import_settings_instructions' => 'Before proceeding with the import, please specify the following settings that will apply to every record in the import file. '.
       'Any settings that you do not specify here can be supplied in the import file on a row by row basis by mapping the setting to the appropriate column in the '.
       'next step.',      
-  'column_mapping_instructions' => 'Please map each column in the CSV file you are uploading to the associated attribute in the destination list.',
+  'column_mapping_instructions' => 'Please map each column in the CSV file you are uploading to the associated attribute in the database. We\'ve tried to '.
+      'match your columns to the available attributes where possible so check any automatically selected attributes in the <strong>Maps to attribute</strong> '.
+      'column before proceeding. If you plan to repeat imports from similar spreadsheets in future you can use the tickboxes to remember your choices.',
   'upload_not_available' => 'The uploaded file is no longer available. Please try uploading again.',
   
   // define the captions for fields in the data dictionary

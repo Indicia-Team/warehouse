@@ -822,7 +822,7 @@ $('.ui-state-default').live('mouseout', function() {
       if (!isset($options['paramsToExclude']) || !in_array($key, $options['paramsToExclude'])) {
         $r .= self::get_params_form_control($key, $info, $options, $tools);
         // If that was a visible setting, then we have to tell the caller that there is something to show.
-        if (!array_key_exists($key, $options['extraParams']))
+        if (!isset($options['presetParams']) || !array_key_exists($key, $options['presetParams']))
           $hasVisibleContent=true;
       }
       // If the form has defined any tools to add to the map, we need to create JavaScript to add them to the map.

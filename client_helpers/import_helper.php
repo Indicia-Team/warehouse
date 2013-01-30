@@ -537,20 +537,20 @@ class import_helper extends helper_base {
       }
     } 
     $labelList = array_count_values($labelList);
-    $multiMatch=array();  
+    $multiMatch=array();
     foreach ($fields as $field=>$caption) {
-      $optionID = str_replace(" ", "", $column).'Normal';
       if (strpos($field,":"))
         list($prefix,$fieldname)=explode(':',$field);
       else {
         $prefix=$model;
         $fieldname=$field;
       }
-      $lowerCaseCaption = strtolower(self::translate_field($field, $caption));
-      // make a clean looking caption
-      $caption = self::make_clean_caption($caption, $prefix, $fieldname, $model);
+      // make a clean looking default caption. This could be provided by the $fields array, or we have to construct it.
+      $defaultCaption = self::make_clean_caption($caption, $prefix, $fieldname, $model);
+      // Allow the default caption to be translated or overridden by language files.
+      $translatedCaption=self::translate_field($field, $defaultCaption);
       //need a version of the caption without "Lookup existing record" as we ignore that for matching.
-      $strippedScreenCaption = str_replace(" (lookup existing record)","",self::translate_field($field, $caption));
+      $strippedScreenCaption = str_replace(" (lookup existing record)","",$translatedCaption);
       $fieldname=str_replace(array('fk_','_id'), array('',''), $fieldname);
       unset($option);     
       // Skip the metadata fields
@@ -572,21 +572,22 @@ class import_helper extends helper_base {
           $selected=true;
           $itWasSaved[$column] = 1;
           //even though we have already detected the user has a saved setting, we need to call the auto-detect rules as if it gives the same result then the system acts as if it wasn't saved.
-          $saveDetectRulesResult = self::auto_detection_rules($column, $lowerCaseCaption, $strippedScreenCaption, $prefix, $labelList, $itWasSaved[$column], true);
+          $saveDetectRulesResult = self::auto_detection_rules($column, $defaultCaption, $strippedScreenCaption, $prefix, $labelList, $itWasSaved[$column], true);
           $itWasSaved[$column] = $saveDetectRulesResult['itWasSaved'];
         } else {
           //only use the auto field selection rules to select the drop-down if there isn't a saved option
           if (!isset($savedFieldMappings[$column])) {
-            $nonSaveDetectRulesResult = self::auto_detection_rules($column, $lowerCaseCaption, $strippedScreenCaption, $prefix, $labelList, $itWasSaved[$column], false);
+            $nonSaveDetectRulesResult = self::auto_detection_rules($column, $defaultCaption, $strippedScreenCaption, $prefix, $labelList, $itWasSaved[$column], false);
             $selected = $nonSaveDetectRulesResult['selected'];
           }
         }
         //As a last resort. If we have a match and find that there is more than one caption with this match, then flag a multiMatch to deal with it later
         if (strcasecmp($strippedScreenCaption, $column)==0 && $labelList[strtolower($strippedScreenCaption)] > 1) {
           $multiMatch[] = $column;
-          $optionID = str_replace(" ", "", $idColumn).'Duplicate';  
-        }
-        $option = self::model_field_option($field, $caption, $selected, $optionID);
+          $optionID = $idColumn.'Duplicate';  
+        } else 
+          $optionID = $idColumn.'Normal';
+        $option = self::model_field_option($field, $defaultCaption, $selected, $optionID);
       }
       
       // if we have got an option for this field, add to the list
@@ -629,7 +630,7 @@ class import_helper extends helper_base {
   * as if the value had been automatically determined rather than saved.
   * 
   * @param string $column The CSV column we are currently working with from the import file.
-  * @param string $lowerCaseCaption A version of an item in the column selection drop-down that is all lowercase.
+  * @param string $defaultCaption The default, untranslated caption.
   * @param string $strippedScreenCaption A version of an item in the column selection drop-down that has 'lookup existing record'stripped
   * @param string $prefix Caption prefix
   * each item having a list of regexes to match against
@@ -638,16 +639,17 @@ class import_helper extends helper_base {
   * @param boolean $saveDetectedMode Determines the mode the method is running in
   * @return array Depending on the mode, we either are interested in the $selected value or the $itWasSaved value.
   */ 
-  private static function auto_detection_rules($column, $lowerCaseCaption, $strippedScreenCaption, $prefix, $labelList, $itWasSaved, $saveDetectedMode) {
+  private static function auto_detection_rules($column, $defaultCaption, $strippedScreenCaption, $prefix, $labelList, $itWasSaved, $saveDetectedMode) {
     /*
     * This is an array of drop-down options with a list of possible column headings the system will use to match against that option.
     * The key is in the format heading:option, all lowercase e.g. occurrence:comment 
     * The value is an array of regexes that the system will automatically match against.
     */
     $alternatives = array(
-      "sample:grid ref or other spatial ref"=>array("/(sample)?(spatial|grid)ref(erence)?/"),
-      "occurrence:species or taxon selected from existing list"=>array("/(species(latin)?|taxon(latin)?|latin)(name)?/"),
-      "sample:location_name"=>array("/(site|location)(name)?/")
+      "sample:entered sref"=>array("/(sample)?(spatial|grid)ref(erence)?/"),
+      "occurrence:taxa taxon list (lookup existing record)"=>array("/(species(latin)?|taxon(latin)?|latin)(name)?/"),
+      "sample:location name"=>array("/(site|location)(name)?/"),
+      "smpAttr:eunis habitat (lookup existing record)" => array("/(habitat|eunishabitat)/")
     );
     $selected=false;
     //handle situation where there is a unique exact match
@@ -665,8 +667,11 @@ class import_helper extends helper_base {
           $selected=true;
       }
       //handle the situation where there is a match with one of the items in the alternatives array.
-      if (isset($alternatives[$prefix.':'.$lowerCaseCaption])) {
-        foreach ($alternatives[$prefix.':'.$lowerCaseCaption] as $regexp) {
+      if ($defaultCaption==='Weather') {
+        drupal_set_message("doing $prefix");
+      }
+      if (isset($alternatives[$prefix.':'.strtolower($defaultCaption)])) {
+        foreach ($alternatives[$prefix.':'.strtolower($defaultCaption)] as $regexp) {
           if (preg_match($regexp, strtolower(str_replace(' ', '', $column)))) {
             if ($saveDetectedMode) 
               $itWasSaved = 0; 
