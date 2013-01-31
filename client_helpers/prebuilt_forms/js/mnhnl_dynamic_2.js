@@ -464,7 +464,7 @@ function _addNewSpeciesGridRow(data,options){
       });
       // for duplicate checks have to trigger on all duplicate based fields.
       if(typeof attrRestrictionsDuplicateSelector != "undefined"){
-        $(row).find('".$selector."').change(function(){
+        $(row).find(attrRestrictionsDuplicateSelector).change(function(){
           set_up_last_relationship(this, attrRestrictionsProcessOrder[attrRestrictionsProcessOrder.length-1], attrRestrictionsProcessOrder[attrRestrictionsProcessOrder.length-2], true);
         });
       }
