@@ -184,6 +184,7 @@ mapGeoreferenceHooks = [];
           div.map.zoomToExtent(bounds);
         }
       }
+      if(feature.length == 1) return feature[0];
       return feature;
     }
 
