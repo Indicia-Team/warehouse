@@ -470,10 +470,11 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   }
 
   /**
-   * Determine whether to show a gird of existing records or a form for either adding a new record or editing an existing one.
+   * Determine whether to show a gird of existing records or a form for either adding a new record, editing an existing one,
+   * or creating a new record from an existing one.
    * @param array $args iform parameters.
    * @param object $node node being shown.
-   * @return const The mode [MODE_GRID|MODE_NEW|MODE_EXISTING].
+   * @return const The mode [MODE_GRID|MODE_NEW|MODE_EXISTING|MODE_CLONE].
    */
   protected static function getMode($args, $node) {
     // Default to mode MODE_GRID or MODE_NEW depending on no_grid parameter
@@ -507,6 +508,9 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     if ($mode != self::MODE_EXISTING && array_key_exists('new', $_GET)){
       $mode = self::MODE_NEW;
       data_entry_helper::$entity_to_load = array();
+    }
+    if ($mode == self::MODE_EXISTING && array_key_exists('new', $_GET)){
+      $mode = self::MODE_CLONE;
     }
     return $mode;
   }
@@ -639,6 +643,76 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     $attributes = data_entry_helper::getAttributes($attrOpts, false);
     return $attributes;
   }
+
+  /* Overrides function in class iform_dynamic.
+   * 
+   * This function removes ID information from the entity_to_load, fooling the 
+   * system in to building a form for a new record with default values from the entity_to_load.
+   * This feels like it could be easily broken by changes to how the form is built, 
+   * particularly the species checklist.
+   * I would have preferred to modify the completed html but I perceived a problem with
+   * multi-value inputs and knowing whether to replace e.g. smpAttr:123:12345 with
+   * smpAttr:123 or smpAttr:123[]
+   * 
+   * At the time of calling, the entity_to_load contains the sample and the 
+   * $attributes array contains the sample attributes. No occurrences are loaded.
+   * This function calls preload_species_checklist_occurrences which loads the 
+   * occurrence and occurrence attribute information in to the entity_to_load. Having
+   * modified the occurrence information in entity_to_load the species checklist must 
+   * be called with option['useLoadedExistingRecords'] = true so that the modifications
+   * are not overwritten
+   */
+  protected static function cloneEntity($args, $auth, &$attributes) {
+    // First modify the sample attribute information in the $attributes array.
+    // Set the sample attribute fieldnames as for a new record
+    foreach($attributes as $attributeKey => $attributeValue){
+      if ($attributeValue['multi_value'] == 't') {
+        // Set the attribute fieldname to the attribute id plus brackets for multi-value attributes
+       $attributes[$attributeKey]['fieldname'] = $attributeValue['id'] . '[]';
+       foreach($attributeValue['default'] as $defaultKey => $defaultValue) {
+         // Set the fieldname in the defaults array to the attribute id plus brackets as well
+         $attributes[$attributeKey]['default'][$defaultKey]['fieldname'] = $attributeValue['id'] . '[]';
+       }
+      } else {
+        // Set the attribute fieldname to the attribute id for single values
+        $attributes[$attributeKey]['fieldname'] = $attributeValue['id'];
+      }
+    }
+    
+    // Now load the occurrences and their attributes.
+    $loadImages = $args['occurrence_images'];
+    data_entry_helper::preload_species_checklist_occurrences(data_entry_helper::$entity_to_load['sample:id'], 
+              $auth['read'], $loadImages, array());
+    // If using a species grid $entity_to_load will now contain elements in the form
+    //  sc:row_num:occ_id:occurrence:field_name
+    //  sc:row_num:occ_id:present
+    //  sc:row_num:occ_id:occAttr:occAttr_id:attrValue_id
+    // We are going to strip out the occ_id and the attrValue_id
+    $keysToDelete = array();
+    $elementsToAdd = array();
+    foreach(data_entry_helper::$entity_to_load as $key => $value) {
+      $parts = explode(':', $key);
+      // Is this an occurrence?
+      if ($parts[0] === 'sc') {
+        // We'll be deleting this
+        $keysToDelete[] = $key;
+        // And replacing it
+        $parts[2] = '';
+        if (count($parts) == 6) unset($parts[5]);
+        $keyToCreate = implode(':', $parts);
+        $elementsToAdd[$keyToCreate] = $value;
+      }
+    }
+    foreach($keysToDelete as $key) {
+      unset(data_entry_helper::$entity_to_load[$key]);
+    }
+    data_entry_helper::$entity_to_load = array_merge(data_entry_helper::$entity_to_load, $elementsToAdd);
+    
+    // Unset the sample and occurrence id from entitiy_to_load as for a new record.
+    unset(data_entry_helper::$entity_to_load['sample:id']);
+    unset(data_entry_helper::$entity_to_load['occurrence:id']);
+    
+}
 
   protected static function getFirstTabAdditionalContent($args, $auth, &$attributes) {
     // Get authorisation tokens to update the Warehouse, plus any other hidden data.
@@ -863,6 +937,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     }
     if (isset($args['col_widths']) && $args['col_widths']) $species_ctrl_opts['colWidths']=explode(',', $args['col_widths']);
     call_user_func(array(self::$called_class, 'build_grid_taxon_label_function'), $args);
+    if (self::$mode == self::MODE_CLONE)
+      $species_ctrl_opts['useLoadedExistingRecords'] = true;
     // Start by outputting a hidden value that tells us we are using a grid when the data is posted,
     // then output the grid control
     return '<input type="hidden" value="true" name="gridmode" />'.
