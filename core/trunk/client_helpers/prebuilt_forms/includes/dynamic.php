@@ -51,8 +51,9 @@ class iform_dynamic {
 
   // Values that $mode can take
   const MODE_GRID = 0; // default mode when no grid set to false - display grid of existing data
-  const MODE_NEW = 1; // default mode when no_grid set to true - display new sample
-  const MODE_EXISTING = 2; // display existing sample
+  const MODE_NEW = 1; // default mode when no_grid set to true - display an empty form for adding a new sample
+  const MODE_EXISTING = 2; // display existing sample for editing
+  const MODE_CLONE = 3; // display form for adding a new sample containing values of an existing sample.
 
 
   public static function get_perms($nid) {
@@ -191,7 +192,7 @@ class iform_dynamic {
       // Output a grid of existing records
       $r = call_user_func(array(self::$called_class, 'getGrid'), $args, $node, $auth);
     } else {
-      if ($mode === self::MODE_EXISTING && is_null(data_entry_helper::$entity_to_load)) { 
+      if (($mode === self::MODE_EXISTING || $mode === self::MODE_CLONE) && is_null(data_entry_helper::$entity_to_load)) { 
         // only load if not in error situation. 
         call_user_func_array(array(self::$called_class, 'getEntity'), array(&$args, $auth));
       }
@@ -206,7 +207,11 @@ class iform_dynamic {
   
   protected static function get_form_html($args, $auth, $attributes) { 
     $r = call_user_func(array(self::$called_class, 'getHeader'), $args);
-    $params=array($args, $auth, &$attributes);
+
+    $params = array($args, $auth, &$attributes);
+    if (self::$mode === self::MODE_CLONE) {
+      call_user_func_array(array(self::$called_class, 'cloneEntity'), $params);
+    }
     $firstTabExtras = (method_exists(self::$called_class, 'getFirstTabAdditionalContent')) 
       ? call_user_func_array(array(self::$called_class, 'getFirstTabAdditionalContent'), $params)
       : '';
@@ -313,6 +318,13 @@ class iform_dynamic {
   }
   
   /**
+   * Overridable function to supply default values to a new record from the entity_to_load.
+   * @param type $args 
+   */
+  protected static function cloneEntity($args, $auth, &$attributes) {
+  }
+  
+ /**
    * Overridable function to retrieve the additional HTML to appear at the top of the first
    * tab or form section. This is normally a set of hidden inputs, containing things like the
    * website ID to post with a form submission.
