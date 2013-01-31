@@ -1028,7 +1028,7 @@ hook_species_checklist_pre_delete_row=function(e) {
           // no confidential checkbox.
           if($options['useCaptionsInPreRow'])
             $rows[]='<tr class="scMeaning-'.$rec['taxon']['taxon_meaning_id'].' scDataRow">'.$headerPreRow.'</tr>'; // no images.
-          $rows[]='<tr class="scMeaning-'.$rec['taxon']['taxon_meaning_id'].' scDataRow'.(count($rows)==($options['numRows']-1)?' last':'').'">'.$row.'</tr>'; // no images.
+          $rows[]='<tr class="scMeaning-'.$rec['taxon']['taxon_meaning_id'].' scDataRow'.($i==$numRows && !$options['includeOccurrenceComment'] ?' last':'').'">'.$row.'</tr>'; // no images.
         }
         if ($options['includeOccurrenceComment']) {
           $ctrlId = $ctrlName=$prefix.":occurrence:comment";
@@ -1171,6 +1171,7 @@ bindSpeciesButton(bindSpeciesOptions);\n";
       div.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
     } else {
       // Set the default view to show something triple the size of the grid square
+      // assume this is within the map extent.
       div.map.zoomToExtent(bounds);
     }
   }
@@ -1382,7 +1383,7 @@ mapInitialisationHooks.push(function(mapdiv) {
 <td class='ui-widget-content'><label class=\"auto-width\" for=\"sg---GroupID---imp-srefY\">".lang::get('LANG_Species_Y_Label').":</label> <input type=\"text\" id=\"sg---GroupID---imp-srefY\" class=\"imp-srefY integer required\" name=\"dummy:srefY\" value=\"\"/><span class='deh-required'>*</span></td>";
       if($maxCellsPerRow>($options['displaySampleDate']?3:2))
         $r .= "<td class='ui-widget-content' colspan=".($maxCellsPerRow-($options['displaySampleDate']?3:2))."></td>";
-      $row.="</tr>";
+      $r .="</tr>";
     }
     $idx = 0;
     
@@ -1426,7 +1427,7 @@ mapInitialisationHooks.push(function(mapdiv) {
       	$r .='<tr class="scClonableRow scDataRow" id="'.$options['id'].'-scClonableRow'.$idex.'">'.$headerPreRow.'</tr>';
       }
       $idex++;
-      $r .='<tr class="scClonableRow scDataRow'.(count($rows)==($options['numRows']-1)?' last':'').'" id="'.$options['id'].'-scClonableRow'.$idex.'">'.$row.'</tr>'; // no images.
+      $r .='<tr class="scClonableRow scDataRow'.($i==$numRows && !$options['includeOccurrenceComment'] ? ' last':'').'" id="'.$options['id'].'-scClonableRow'.$idex.'">'.$row.'</tr>'; // no images.
     }
     if ($options['includeOccurrenceComment']) {
       $idex++;
