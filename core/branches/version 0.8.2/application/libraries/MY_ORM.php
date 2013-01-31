@@ -1209,7 +1209,7 @@ class ORM extends ORM_Core {
     }
     
     $attr = $this->db
-        ->select('data_type','multi_value','termlist_id')
+        ->select('caption','data_type','multi_value','termlist_id')
         ->from($this->object_name.'_attributes')
         ->where(array('id'=>$attrId))
         ->get()->result_array();
