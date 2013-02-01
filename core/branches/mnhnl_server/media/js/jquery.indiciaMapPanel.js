@@ -245,18 +245,18 @@ mapGeoreferenceHooks = [];
       });
       // If the spatial ref latitude or longitude input control exists, bind it to the map, so entering a ref updates the map
       $('#'+opts.srefLatId).change(function() {
-        // Only do something if the long is also populated
-        if ($('#'+opts.srefLongId).val()!='') {
+        // Only do something if both the lat and long are populated
+        if ($($(this).val()).trim()!='' && $($('#'+opts.srefLongId).val()).trim()!='') {
           // copy the complete sref into the sref field
-          $('#'+opts.srefId).val($(this).val() + ', ' + $('#'+opts.srefLongId).val());
+          $('#'+opts.srefId).val($($(this).val()).trim() + ', ' + $($('#'+opts.srefLongId).val()).trim());
           _handleEnteredSref($('#'+opts.srefId).val(), div);
         }
       });
       $('#'+opts.srefLongId).change(function() {
-        // Only do something if the long is also populated
-        if ($('#'+opts.srefLatId).val()!='') {
+        // Only do something if both the lat and long are populated
+        if ($($('#'+opts.srefLatId).val()).trim()!='' && $($(this).val()).trim()!='') {
           // copy the complete sref into the sref field
-          $('#'+opts.srefId).val($('#'+opts.srefLatId).val() + ', ' + $(this).val());
+          $('#'+opts.srefId).val($($('#'+opts.srefLatId).val()).trim() + ', ' + $($(this).val()).trim());
           _handleEnteredSref($('#'+opts.srefId).val(), div);
         }
       });
