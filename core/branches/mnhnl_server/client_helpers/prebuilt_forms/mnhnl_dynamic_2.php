@@ -1119,7 +1119,7 @@ bindSpeciesButton(bindSpeciesOptions);\n";
       if($options['includeSubSample']){
         $mapOptions = iform_map_get_map_options($options['args'],$options['readAuth']);
         $olOptions = iform_map_get_ol_options($options['args']);
-        $mapOptions['tabDiv'] = 'tab-species';
+        $mapOptions['tabDiv'] = 'species';
         $mapOptions['divId'] = 'map2';
         $mapOptions['width'] = isset($options['map2Width']) ? $options['map2Width'] : "250px";
         $mapOptions['height'] = isset($options['map2Height']) ? $options['map2Height'] : "250px";
