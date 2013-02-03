@@ -570,7 +570,7 @@ function simple_tooltip(target_items, name){
     
     var BATCH_SIZE=1000, currentMapRequest;
     
-    function _internalMapRecords(div, request, offset) {
+    function _internalMapRecords(div, request, offset, recordCount) {
       if ($('#map-progress').length===0) {
         $(indiciaData.mapdiv).append('<div id="map-progress" style="height: 16px;"></div>');
         $('#map-progress').progressbar({ value: 0 });
@@ -578,16 +578,21 @@ function simple_tooltip(target_items, name){
         $('#map-progress').show();
       }
       var matchString;
-      $.getJSON(request + '&offset=' + offset,
+      // first call- get the record count
+      $.getJSON(request + '&offset=' + offset + (typeof recordCount==="undefined" ? '&wantCount=1' : ''),
         null,
         function(response, textStatus, jqXHR) {
+          if (typeof recordCount==="undefined") {
+            recordCount = response.count;
+            response = response.records;
+          }
           // implement a crude way of aborting out of date requests, since jsonp does not support xhr
           // therefore no xhr.abort...
           matchString = this.url.replace(/(jsonp\d+)/, '?').substring(0, currentMapRequest.length);
           if (matchString===currentMapRequest) {
             // start the load of the next batch
-            if (offset+BATCH_SIZE<div.settings.recordCount) {
-              _internalMapRecords(div, request, offset+BATCH_SIZE, false);
+            if (offset+BATCH_SIZE<recordCount) {
+              _internalMapRecords(div, request, offset+BATCH_SIZE, recordCount);
             }              
             // whilst that is loading, put the dots on the map
             var features=[];
@@ -595,8 +600,8 @@ function simple_tooltip(target_items, name){
               indiciaData.mapdiv.addPt(features, obj, 'geom', {"type":"vector"}, obj[div.settings.rowId]);
             });
             indiciaData.reportlayer.addFeatures(features);
-            $('#map-progress').progressbar("option", "value", (offset+BATCH_SIZE) * 100 / div.settings.recordCount);
-            if (offset+BATCH_SIZE>=div.settings.recordCount) {
+            $('#map-progress').progressbar("option", "value", (offset+BATCH_SIZE) * 100 / recordCount);
+            if (offset+BATCH_SIZE>=recordCount) {
               $('#map-progress').hide();
             }
           }
@@ -720,12 +725,12 @@ function simple_tooltip(target_items, name){
         // Setup highlighting of features on an associated map when rows are clicked
         $(div).find('tbody').click(function(evt) {
           if (typeof indiciaData.reportlayer!=="undefined") {
-            var tr=$(evt.target).parents('tr')[0];
-            var featureId=tr.id.substr(3), feature, featureArr;
-            feature=indiciaData.reportlayer.getFeatureById(featureId);
+            var tr=$(evt.target).parents('tr')[0], featureId=tr.id.substr(3), 
+                feature, featureArr, map=indiciaData.reportlayer.map;
+            feature=map.div.getFeatureById(indiciaData.reportlayer, featureId);
             featureArr = (feature===null) ? [] : [feature];
             // deselect any existing selection and select the feature
-            indiciaData.reportlayer.map.setSelection(indiciaData.reportlayer, featureArr);
+            map.setSelection(indiciaData.reportlayer, featureArr);
             $(div).find('tbody tr').removeClass('selected');
             // select row
             $(tr).addClass('selected');

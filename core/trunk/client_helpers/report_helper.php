@@ -590,7 +590,7 @@ $('.update-input').focus(function(evt) {
     }
     if ($options['sendOutputToMap']) {
       self::addFeaturesLoadingJs($addFeaturesJs, '', '{"strokeColor":"#ff0000","fillColor":"#ff0000","strokeWidth":2}', 
-          '', $options['zoomMapToOutput']);
+          '', '', $options['zoomMapToOutput']);
     }
     // $r may be empty if a spatial report has put all its controls on the map toolbar, when using params form only mode.
     // In which case we don't need to output anything.
@@ -1426,35 +1426,69 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       if (empty($options['geoserverLayer'])) {
         // we are doing vector reporting via indicia services
         // first we need to build a style object which respects columns in the report output that define style settings for each vector.
-        $settings=array();
-        $styleFns=array();
+        // default features are color red by default
+        $defsettings = array(
+          'fillColor'=> '#0000ff',
+          'strokeColor'=> '#0000ff',
+          'strokeWidth'=>"\${getstrokewidth}",
+          'fillOpacity'=>"\${getfillopacity}",
+          'strokeOpacity'=>0.4,
+          'pointRadius'=>5,
+          'graphicZIndex'=>"\${getgraphiczindex}");
+        $selsettings = array_merge($defsettings, array(
+          'fillColor'=> '#ff0000',
+          'strokeColor'=> '#ff0000',
+          'strokeOpacity'=>0.7)
+        );
+        $defStyleFns=array();
+        $selStyleFns=array();
+        // default fill opacity, more opaque if selected, and gets more transparent as you zoom in.
+        $defStyleFns['fillOpacity'] = "getfillopacity: function(feature) {
+          return Math.max(0, 0.4-feature.layer.map.zoom/100);
+        }";
+        // when selected, a little bit more opaque
+        $selStyleFns['fillOpacity'] = "getfillopacity: function(feature) {
+          return Math.max(0, 0.7-feature.layer.map.zoom/100);
+        }";
+        // default z index, smaller objects on top
+        $defStyleFns['graphicZIndex'] = "getgraphiczindex: function(feature) {
+          return Math.round(feature.geometry.getBounds().left - feature.geometry.getBounds().right)+100000;
+        }";
+        // when selected, move objects upwards
+        $selStyleFns['graphicZIndex'] = "getgraphiczindex: function(feature) {
+          return Math.round(feature.geometry.getBounds().left - feature.geometry.getBounds().right)+200000;
+        }";
         foreach($response['columns'] as $col=>$def) {
           if (!empty($def['feature_style'])) {
             if ($def['feature_style']==='fillOpacity') {
-              $styleFns[] = "get$col: function(feature) {
+              // replace the fill opacity functions to use a column value, with the same +0.3 change
+              // when selected
+              $defStyleFns['fillOpacity'] = "getfillopacity: function(feature) {
                 return Math.max(0, feature.attributes.$col-feature.layer.map.zoom/100);
               }";
-              $settings[$def['feature_style']] = '${get'.$col.'}';
-            } else
+              $selStyleFns['fillOpacity'] = "getfillopacity: function(feature) {
+                return Math.max(0, feature.attributes.$col-feature.layer.map.zoom/100+0.3);
+              }";
+            } elseif ($def['feature_style']==='graphicZIndex') {
+              // replace the default z index with the column value, using an fn to add 1000 when selected
+              $defsettings['graphicZIndex'] = '${'.$col.'}';
+              $selStyleFns['graphicZIndex'] = "getgraphiczindex: function(feature) {
+                return feature.attributes.$col+1000;
+              }";
+              $selsettings['graphicZIndex'] = '${getgraphiczindex}';
+            } else {
               // found a column that outputs data to input into a feature style parameter. ${} syntax is explained at http://docs.openlayers.org/library/feature_styling.html.
-              $settings[$def['feature_style']] = '${'.$col.'}';
+              $defsettings[$def['feature_style']] = '${'.$col.'}';
+              if ($def['feature_style']!=='strokeColor')
+                $selsettings[$def['feature_style']] = '${'.$col.'}';
+            }
           }
         }
-        // default features are color red by default
-        $defsettings = array_merge(array(
-          'fillColor'=> '#ff0000',
-          'strokeColor'=> '#ff0000',
-          'strokeWidth'=>"\${getstrokewidth}",
-          'fillOpacity'=>0.8,
-          'strokeOpacity'=>0.8,
-          'pointRadius'=>5,
-          'graphicZIndex'=>0
-        ), $settings);
         if ($options['displaySymbol']!=='vector')
           $defsettings['graphicName']=$options['displaySymbol'];
         // The following function uses the strokeWidth to pad out the squares which go too small when zooming the map out. Points 
         // always display the same size so are no problem.
-        $styleFns[] = "getstrokewidth: function(feature) {          
+        $defStyleFns['getStrokeWidth'] = "getstrokewidth: function(feature) {          
           var width=feature.geometry.getBounds().right - feature.geometry.getBounds().left,
             strokeWidth=(width===0) ? 1 : 6 - (width / feature.layer.map.getResolution());
           return (strokeWidth<1) ? 1 : strokeWidth;
@@ -1477,7 +1511,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
             $from = $outputdef['from'];
             $to = $outputdef['to'];
             if (substr($type, -5)==='Color')
-              $styleFns[] = "get$type: function(feature) { \n".
+              $defStyleFns[$type] = "get$type: function(feature) { \n".
                   "var from_r, from_g, from_b, to_r, to_g, to_b, r, g, b, ratio = Math.pow((feature.data.$value - $minvalue) / ($maxvalue - $minvalue), .2); \n".
                   "from_r = parseInt('$from'.substring(1,3),16);\n".
                   "from_g = parseInt('$from'.substring(3,5),16);\n".
@@ -1491,22 +1525,15 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
                   "return 'rgb('+r+','+g+','+b+')';\n".
                 '}';
             else
-              $styleFns[] = "get$type: function(feature) { \n".
+              $defStyleFns[$type] = "get$type: function(feature) { \n".
                   "var ratio = (feature.data.$value - $minvalue) / ($maxvalue - $minvalue); \n".
                   "return $from + ($to-$from)*ratio; \n".
                   '}';
             $defsettings[$type]="\${get$type}";
           }
         }
-        $styleFns = implode(",\n", $styleFns);
-        // selected features are made bolder and brought to the front
-        $selsettings = array(
-          'strokeWidth'=>"\${getstrokewidth}",
-          'strokeColor'=>'red',
-          'strokeOpacity'=>0.8,
-          'fillOpacity'=>0.8,
-          'graphicZIndex'=>"1000",
-        );
+        $selStyleFns = implode(",\n", array_values(array_merge($defStyleFns, $selStyleFns)));
+        $defStyleFns = implode(",\n", array_values($defStyleFns));
         // convert these styles into a JSON definition ready to feed into JS.
         $defsettings = json_encode($defsettings);
         $selsettings = json_encode($selsettings);
@@ -1523,12 +1550,13 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
               $colsToInclude[$name] = '';
           }
         }
-        if (!empty($styleFns)) 
-          $styleFns = ", {context: {\n    $styleFns\n  }}";
+        $defStyleFns = ", {context: {\n    $defStyleFns\n  }}";
+        $selStyleFns = ", {context: {\n    $selStyleFns\n  }}";
         if ($options['ajax'])
           self::$javascript .= "mapInitialisationHooks.push(function(div) {\n".
             "  $.each(indiciaData.reports.".$options['reportGroup'].", function(idx, grid) {\n" .
             "    grid.mapRecords('".$options['dataSource']."');\n" .
+            "    return false;\n" . // only need the first grid to draw the map. 
             "  });\n" .
             "});\n";
         else {
@@ -1554,7 +1582,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
           }
           self::$javascript .= 'indiciaData.geoms=['.implode(',',$geoms)."];\n";
         }
-        self::addFeaturesLoadingJs($addFeaturesJs, $defsettings, $selsettings, $styleFns, $options['zoomMapToOutput'] && !$options['ajax']);
+        self::addFeaturesLoadingJs($addFeaturesJs, $defsettings, $selsettings, $defStyleFns, $selStyleFns, $options['zoomMapToOutput'] && !$options['ajax']);
       } else {
         // doing WMS reporting via GeoServer
         $replacements = array();
@@ -2394,23 +2422,25 @@ if (typeof mapSettingsHooks!=='undefined') {
    * @param string $addFeaturesJs JavaScript which creates the list of features.
    * @param string $defsettings Default style settings.
    * @param string $selsettings Selected item style settings.
-   * @param string $styleFns JavaScript snippet which places any style functions required into the 
-   * context parameter when creating a Style.
+   * @param string $defStyleFns JavaScript snippet which places any style functions required into the 
+   * context parameter when creating a default Style.
+   * @param string $selStyleFns JavaScript snippet which places any style functions required into the 
+   * context parameter when creating a selected Style.
    * @param boolean $zoomToExtent If true, then the map will zoom to show the extent of the features added.
    */
   private static function addFeaturesLoadingJs($addFeaturesJs, $defsettings='',
-      $selsettings='{"strokeColor":"#ff0000","fillColor":"#ff0000","strokeWidth":2}', $styleFns='', $zoomToExtent=true) {
+      $selsettings='{"strokeColor":"#ff0000","fillColor":"#ff0000","strokeWidth":2}', $defStyleFns='', $selStyleFns='', $zoomToExtent=true) {
     // Note that we still need the Js to add the layer even if using AJAX (when $addFeaturesJs will be empty)
     report_helper::$javascript.= "
   if (typeof OpenLayers !== \"undefined\") {
-    var defaultStyle = new OpenLayers.Style($defsettings$styleFns);
-    var selectStyle = new OpenLayers.Style($selsettings$styleFns);
+    var defaultStyle = new OpenLayers.Style($defsettings$defStyleFns);
+    var selectStyle = new OpenLayers.Style($selsettings$selStyleFns);
     var styleMap = new OpenLayers.StyleMap({'default' : defaultStyle, 'select' : selectStyle});
     if (typeof indiciaData.reportlayer==='undefined') {
     indiciaData.reportlayer = new OpenLayers.Layer.Vector('Report output', {styleMap: styleMap, rendererOptions: {zIndexing: true}});
     }";
     // If there are some special styles to apply, but the layer exists already, apply the styling
-    if ($styleFns!=='') {
+    if ($defStyleFns!=='' || $selStyleFns) {
       report_helper::$javascript.= "
     else {
       indiciaData.reportlayer.styleMap = styleMap;

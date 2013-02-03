@@ -84,6 +84,28 @@ mapGeoreferenceHooks = [];
       });
       layer.removeFeatures(toRemove, {});
     }
+    
+    /** 
+     * Variant of getFeatureById which allows for the features being checked being a comma
+     * separated list of values.
+     */
+    function getFeatureById(layer, value) {
+      var feature = null, ids;
+      for(var i=0, len=layer.features.length; i<len; ++i) {
+        if(layer.features[i]['id'] == value) {
+          feature = layer.features[i];
+          break;
+        } else {
+          ids=layer.features[i]['id'].split(',');
+          if (ids.length>1) {
+            if ($.inArray(value, ids)>-1) {
+              feature = layer.features[i];
+            }
+          }
+        }
+      }
+      return feature;
+    }
 
     /**
      * Convert any projection representation to a system string.
@@ -1166,6 +1188,7 @@ mapGeoreferenceHooks = [];
       this.settings = opts;
       this.pointToSref = pointToSref;
       this.addPt = addPt;
+      this.getFeatureById = getFeatureById;
       this.removeAllFeatures = removeAllFeatures;
       // wrap the map in a div container
       $(this).wrap('<div id="map-container" style="width:'+opts.width+'" >');
