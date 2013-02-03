@@ -302,7 +302,7 @@ class XMLReportReader_Core implements ReportReader
       $distincton = '';
     }
     if (count($countSql)>0) {
-      $this->countQuery = str_replace('#columns#', ' count(distinct ' . implode(', ', $countSql) . ') ', $this->query);
+      $this->countQuery = str_replace('#columns#', ' count(distinct ' . implode(' || ', $countSql) . ') ', $this->query);
     } else {
       $this->countQuery = str_replace('#columns#', ' count(*) ', $this->query);
     }
