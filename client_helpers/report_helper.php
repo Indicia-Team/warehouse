@@ -1373,7 +1373,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * <li><b>rowId</b>
   * Optional. Set this to the name of a field in the report to define which field is being used to define the feature ID created on the map
   * layer. For example this can be used in conjunction with rowId on a report grid to allow a report's rows to be linked to the associated
-  * features.
+  * features. Note that the row ID can point to either an integer value, or a list of integers separated by commas if the rows returned
+  * by the report map to features which are shared by multiple records.
   * </li>
   * <li><b>ajax</b>
   * Optional. Set to true to load the records onto the map using an AJAX request after the initial page load. Not relevant for 
