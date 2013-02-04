@@ -413,7 +413,7 @@ class report_helper extends helper_base {
           array($rootFolder, $currentUrl['path']), $options['footer']);
       $extraFooter .= '<div class="left">'.$footer.'</div>';
     }
-    if (isset($options['downloadLink']) && $options['downloadLink'] && count($records)>0) {
+    if (isset($options['downloadLink']) && $options['downloadLink'] && (count($records)>0 || $options['ajax'])) {
       $downloadOpts = array_merge($options);
       unset($downloadOpts['itemsPerPage']);
       $extraFooter .= '<div class="right">'.self::report_download_link($downloadOpts).'</div>';
@@ -1611,6 +1611,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       if (!empty($currentParamValues['location_id'])) {
         $location=data_entry_helper::get_population_data(array(
           'table'=>'location',
+          'nocache'=>true,
           'extraParams'=>$options['readAuth'] + array('id'=>$currentParamValues['location_id'],'view'=>'detail')
         ));        
         if (count($location)===1) {
@@ -1906,7 +1907,7 @@ if (typeof mapSettingsHooks!=='undefined') {
    * @return unknown_type
    */
   private static function report_grid_get_columns($response, &$options) {
-    if ($options['includeAllColumns'] && isset($response['columns'])) {
+    if (isset($response['columns'])) {
       $specifiedCols = array();
       $actionCols = array();
       $idx=0;
@@ -1927,12 +1928,14 @@ if (typeof mapSettingsHooks!=='undefined') {
             $col['datatype']=$response['columns'][$col['fieldname']]['datatype'];
         }
       }
-      foreach ($response['columns'] as $resultField => $value) {
-        if (!in_array($resultField, $specifiedCols)) {
-          $options['columns'][] = array_merge(
-            $value,
-            array('fieldname'=>$resultField)
-          );
+      if ($options['includeAllColumns']) {
+        foreach ($response['columns'] as $resultField => $value) {
+          if (!in_array($resultField, $specifiedCols)) {
+            $options['columns'][] = array_merge(
+              $value,
+              array('fieldname'=>$resultField)
+            );
+          }
         }
       }
       // add the actions columns back in at the end
