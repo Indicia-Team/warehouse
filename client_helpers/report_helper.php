@@ -696,7 +696,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     // if loading the parameters form only, we don't need to send the parameter values in the report request but instead
     // mark the request not to return records
     if ($options['paramsOnly'])
-      $extras .= '&wantRecords=0';
+      $extras .= '&wantRecords=0&wantCount=0&wantColumns=0';
     else
       $extras .= '&'.self::array_to_query_string($currentParamValues, true);
     // allow URL parameters to override any extra params that are set. Default params

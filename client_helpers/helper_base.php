@@ -800,6 +800,7 @@ $('.ui-state-default').live('mouseout', function() {
    */
   public static function build_params_form($options, &$hasVisibleContent) {
     require_once('data_entry_helper.php');
+    $javascript = '';
     // track if there is anything other than hiddens on the form
     $hasVisibleContent=false;
     // apply defaults
@@ -816,6 +817,10 @@ $('.ui-state-default').live('mouseout', function() {
         $r .= "<input type=\"hidden\" name=\"$fieldPrefix$key\" value=\"$default\" class=\"test\"/>\n";
       }
     }
+    // if doing map tools inline, they don't get added to the page until the map initialises. So capture the JavaScript 
+    // into a map initialisation hook.
+    if (isset($options['paramsInMapToolbar']) && $options['paramsInMapToolbar'])
+      self::$javascript .= "mapInitialisationHooks.push(function(div) {\n";
     foreach($options['form'] as $key=>$info) {
       $tools = array(); 
       // Skip parameters if we have been asked to ignore them
@@ -829,11 +834,11 @@ $('.ui-state-default').live('mouseout', function() {
       if (count($tools)) {
         // wrap JavaScript in a test that the map is on the page
         if (isset($info['allow_buffer']) && $info['allow_buffer']=='true')
-          data_entry_helper::$javascript .= "if (typeof $.fn.indiciaMapPanel!=='undefined') {\n";
+          $javascript .= "if (typeof $.fn.indiciaMapPanel!=='undefined') {\n";
         $fieldname=(isset($options['fieldNamePrefix']) ? $options['fieldNamePrefix'].'-' : '') .$key;
         self::add_resource('spatialReports');
         self::add_resource('clearLayer');
-        data_entry_helper::$javascript .= "  enableBuffering();\n";
+        $javascript .= "  enableBuffering();\n";
         if ($options['inlineMapTools']) {
           $r .= '<label>'.$info['display'].':</label>';
           $r .= '<div class="control-box">Use the following tools to define the query area.<br/>'.
@@ -854,7 +859,7 @@ $('.ui-state-default').live('mouseout', function() {
             $r .= $bufferInput;
           else {
             $bufferInput = str_replace(array('<br/>',"\n"), '', $bufferInput);
-            data_entry_helper::$javascript .= "$.fn.indiciaMapPanel.defaults.toolbarSuffix+='$bufferInput';\n";
+            $javascript .= "$.fn.indiciaMapPanel.defaults.toolbarSuffix+='$bufferInput';\n";
           }
           // keep a copy of the unbuffered polygons in this input, so that when the page reloads both versions
           // are available
@@ -865,7 +870,7 @@ $('.ui-state-default').live('mouseout', function() {
         // to handle getting the polygons from the edit layer into the report parameter
         // when run report is clicked.
         $toolbarDiv = $options['inlineMapTools'] ? 'map-toolbar' : 'top';
-        data_entry_helper::$javascript .= "
+        $javascript .= "
   $.fn.indiciaMapPanel.defaults.toolbarDiv='$toolbarDiv';
   mapInitialisationHooks.push(function(div) {
     var styleMap = new OpenLayers.StyleMap(OpenLayers.Util.applyDefaults(
@@ -879,25 +884,29 @@ $('.ui-state-default').live('mouseout', function() {
           $origWkt = empty($_POST[$fieldname]) ? '' : $_POST[$fieldname];
 
         if (!empty($origWkt)) {
-          data_entry_helper::$javascript .= "  var geom=OpenLayers.Geometry.fromWKT('$origWkt');\n";
-          data_entry_helper::$javascript .= "  if (div.map.projection.getCode() !== div.indiciaProjection.getCode()) {\n";
-          data_entry_helper::$javascript .= "    geom.transform(div.indiciaProjection, div.map.projection);\n";
-          data_entry_helper::$javascript .= "  }\n";
-          data_entry_helper::$javascript .= "  div.map.editLayer.addFeatures([new OpenLayers.Feature.Vector(geom)]);\n";
+          $javascript .= "  var geom=OpenLayers.Geometry.fromWKT('$origWkt');\n";
+          $javascript .= "  if (div.map.projection.getCode() !== div.indiciaProjection.getCode()) {\n";
+          $javascript .= "    geom.transform(div.indiciaProjection, div.map.projection);\n";
+          $javascript .= "  }\n";
+          $javascript .= "  div.map.editLayer.addFeatures([new OpenLayers.Feature.Vector(geom)]);\n";
         }
-        data_entry_helper::$javascript .= "
+        $javascript .= "
   });
   var add_map_tools = function(opts) {\n";
         foreach ($tools as $tool) {
-          data_entry_helper::$javascript .= "  opts.standardControls.push('draw$tool');\n";
+          $javascript .= "  opts.standardControls.push('draw$tool');\n";
         }
-        data_entry_helper::$javascript .= "  opts.standardControls.push('clearEditLayer');
+        $javascript .= "  opts.standardControls.push('clearEditLayer');
   }
   mapSettingsHooks.push(add_map_tools);\n";      
         if (isset($info['allow_buffer']) && $info['allow_buffer']=='true') 
-          data_entry_helper::$javascript .= "}\n";       
+          $javascript .= "}\n";       
       }
     }
+    // closure for the map initialisation hooks.
+    if (isset($options['paramsInMapToolbar']) && $options['paramsInMapToolbar'])
+      self::$javascript .= "});";
+    self::$javascript .= $javascript;
     return $r;
   }
   
