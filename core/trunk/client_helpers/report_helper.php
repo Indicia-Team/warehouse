@@ -1923,7 +1923,7 @@ if (typeof mapSettingsHooks!=='undefined') {
         }
         $idx++;
         // datatype of column always defined in the server XML report file. Copy into the col def
-        if (array_key_exists($col['fieldname'], $response['columns'])) {
+        if (isset($col['fieldname']) && array_key_exists($col['fieldname'], $response['columns'])) {
           if (isset($response['columns'][$col['fieldname']]['datatype']))
             $col['datatype']=$response['columns'][$col['fieldname']]['datatype'];
         }
