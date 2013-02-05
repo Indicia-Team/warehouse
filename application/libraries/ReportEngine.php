@@ -273,13 +273,13 @@ class ReportEngine {
     else
     {
       // Okay, all the parameters have been provided.
+      $this->mergeQuery();
+      $this->mergeCountQuery();
       if ($this->limit===0 || $this->limit==='0') {
         // optimisation for zero limited queries
         $data=array();
       }
-      else {      
-        $this->mergeQuery();
-        $this->mergeCountQuery();
+      else {
         $this->executeQuery();
         $data = $this->response->result_array(FALSE);
       }
