@@ -1433,13 +1433,13 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
           'strokeColor'=> '#0000ff',
           'strokeWidth'=>"\${getstrokewidth}",
           'fillOpacity'=>"\${getfillopacity}",
-          'strokeOpacity'=>0.4,
+          'strokeOpacity'=>0.8,
           'pointRadius'=>5,
           'graphicZIndex'=>"\${getgraphiczindex}");
         $selsettings = array_merge($defsettings, array(
           'fillColor'=> '#ff0000',
           'strokeColor'=> '#ff0000',
-          'strokeOpacity'=>0.7)
+          'strokeOpacity'=>0.9)
         );
         $defStyleFns=array();
         $selStyleFns=array();
@@ -1489,11 +1489,13 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
           $defsettings['graphicName']=$options['displaySymbol'];
         // The following function uses the strokeWidth to pad out the squares which go too small when zooming the map out. Points 
         // always display the same size so are no problem.
-        $defStyleFns['getStrokeWidth'] = "getstrokewidth: function(feature) {          
+        $strokeWidthFn = "getstrokewidth: function(feature) {
           var width=feature.geometry.getBounds().right - feature.geometry.getBounds().left,
             strokeWidth=(width===0) ? 1 : 6 - (width / feature.layer.map.getResolution());
-          return (strokeWidth<1) ? 1 : strokeWidth;
+          return (strokeWidth<%d) ? %d : strokeWidth;
         }";
+        $defStyleFns['getStrokeWidth'] = sprintf($strokeWidthFn, 1, 1);
+        $selStyleFns['getStrokeWidth'] = sprintf($strokeWidthFn, 3, 3);
         if (isset($options['valueOutput'])) {
           foreach($options['valueOutput'] as $type => $outputdef) {
             $value = $outputdef['valueField'];
