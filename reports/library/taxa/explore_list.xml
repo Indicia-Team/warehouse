@@ -1,8 +1,6 @@
 <report
-    title="Explore distinct species using index_locations_samples"
-    description="Report designed for the explore records facility in iRecord. This version displays distinct taxa and depends on the 
-        Spatial Index Builder module to index the list of locations that users can set in their preferences
-        as their locality, for significantly improved performance."
+    title="Explore distinct species"
+    description="Report designed for species lists used in the explore records facility in iRecord. "
 >
   <query website_filter_field="o.website_id">
   SELECT distinct #columns#
