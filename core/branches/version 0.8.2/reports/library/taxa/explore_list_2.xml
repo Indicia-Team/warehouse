@@ -1,0 +1,56 @@
+<report
+    title="Explore distinct species 2 using index_locations_samples"
+    description="Report designed for species lists used in the explore records facility in iRecord. 
+        Second version has additional parameters. This version depends on the 
+        Spatial Index Builder module to index the list of locations that users can set in their preferences
+        as their locality, for significantly improved performance."
+>
+  <query website_filter_field="o.website_id">
+  SELECT distinct #columns#
+  FROM cache_occurrences o
+  JOIN websites w on w.id=o.website_id 
+  #agreements_join#
+  #joins#
+  WHERE #sharing_filter# 
+  AND o.record_status not in ('I','T') AND (#ownData#=1 OR o.record_status not in ('D','R'))
+  AND ('#searchArea#'='' OR st_intersects(o.public_geom, st_geomfromtext('#searchArea#',900913)))
+  AND (#ownData#=0 OR CAST(o.created_by_id AS character varying)='#currentUser#')
+  AND (o.survey_id=#survey_id# OR #survey_id#=0)
+  AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR o.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+  AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+  #idlist#
+  </query>
+  <order_bys>
+    <order_by>o.taxon_group, o.preferred_taxon ASC</order_by>
+  </order_bys>
+  <params>
+    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
+    <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
+    <param name='searchArea' display='Report Search Area' datatype='geometry' allow_buffer='true' />
+    <param name='idlist' display='List of IDs' description='Comma separated list of occurrence IDs to filter to.' datatype='idlist' fieldname='o.id' alias='occurrence_id' />
+	  <param name="currentUser" display="Current User ID" description="Current user's warehouse ID. Allows a column to be output indicating that the user owns the record." datatype="text" />
+    <param name="ownData" display="My data only?" datatype="checkbox" />
+    <param name='location_id' display='Location' description='Provide the location to display records for' datatype='lookup' emptyvalue="0"
+        population_call='direct:location:id:name' />
+    <param name="ownLocality" display="My locality only?" datatype="checkbox">
+      <join value="1">JOIN locations lfilter ON st_intersects(lfilter.boundary_geom, o.public_geom) AND lfilter.id=#location_id#</join>  
+    </param>
+    <param name="taxon_groups" display="Taxon Groups" description="List of taxon group IDs to view data for" datatype="text" emptyvalue="0"/>
+    <param name="ownGroups" display="My species groups only?" datatype="checkbox">      
+      <join value="1">JOIN taxon_groups tgfilter ON tgfilter.id=o.taxon_group_id AND ('#taxon_groups#'='0' OR tgfilter.id IN (#taxon_groups#))</join>
+    </param>
+    <param name='survey_id' display='Survey' description='Select the survey, or leave for all surveys' datatype='lookup'
+        population_call='direct:survey:id:title' emptyvalue="0" />
+    <param name='date_from' display='Date From' datatype='date' />
+    <param name='date_to' display='Date To' datatype='date' />
+  </params>
+  <columns>
+    <column name='taxon_meaning_id' display='ID' sql='o.taxon_meaning_id' datatype='integer' visible="false" in_count="true" />
+    <column name='taxon' display='Preferred Name' sql="o.preferred_taxon" datatype='text' />
+    <column name='common' display='Common Name' sql="o.default_common_name" datatype='text' />
+    <column name='taxon_group' display='Taxon Group' sql='o.taxon_group' datatype='text' />
+    <column name="first_date" display="First Recorded Date" sql="min(coalesce(o.date_start, o.date_end))" aggregate="true" datatype="date" />
+    <column name="last_date" display="Last Recorded Date" sql="max(coalesce(o.date_end, o.date_start))" aggregate="true" datatype="date" />
+    <column name="count" display="Number of Records" sql="count(distinct o.id)" aggregate="true" datatype="integer" />
+  </columns>
+</report>
