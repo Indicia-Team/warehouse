@@ -273,12 +273,12 @@ class ReportEngine {
     else
     {
       // Okay, all the parameters have been provided.
+      $this->mergeQuery();
       if ($this->limit===0 || $this->limit==='0') {
         // optimisation for zero limited queries
         $data=array();
       }
-      else {      
-        $this->mergeQuery();
+      else {
         $this->mergeCountQuery();
         $this->executeQuery();
         $data = $this->response->result_array(FALSE);
@@ -359,16 +359,18 @@ class ReportEngine {
    * If one is found, inserts a new column for the processed date string.
    */
   private function add_vague_dates(&$data) {
-    $col_sets=array();    
-    $cols = array_keys($this->columns);
+    $col_sets=array();
+    $columnNames = array_keys($this->columns);
     // First find the additional plaintext columns we need to add
-    for ($i=0; $i<count($cols); $i++) {
-      if (substr(($cols[$i]), -10)=='date_start') {
-        $prefix=substr($cols[$i], 0, strlen($cols[$i])-10);
+    foreach($this->columns as $col => $coldef) {
+      if (isset($coldef['on_demand']) && $coldef['on_demand']==="true")
+        continue;
+      if (substr($col, -10)=='date_start') {
+        $prefix=substr($col, 0, strlen($col)-10);
         // check that the report includes date_end and type
-        if (in_array($prefix."date_end", $cols) && in_array($prefix."date_type", $cols)) {
+        if (in_array($prefix."date_end", $columnNames) && in_array($prefix."date_type", $columnNames)) {
           array_push($col_sets, $prefix);
-          if (!in_array($prefix.'date', $cols)) {
+          if (!in_array($prefix.'date', $columnNames)) {
             $this->columns[$prefix.'date'] = array(
               'display'=>'Date',
               'class'=>'',
@@ -397,13 +399,13 @@ class ReportEngine {
     // Now we have identified the vague date columns to add, create data columns with the processed date
     // strings.
     $dataCount = count($data); // invariant
-    for ($i=0; $i<count($col_sets); $i++) {
+    foreach($col_sets as $col_set) {
       for ($r=0; $r<$dataCount; $r++) {
         $row=$data[$r];
-        $data[$r][$col_sets[$i].'date'] = vague_date::vague_date_to_string(array(
-          $row[$col_sets[$i].'date_start'],
-          $row[$col_sets[$i].'date_end'],
-          $row[$col_sets[$i].'date_type']
+        $data[$r][$col_set.'date'] = vague_date::vague_date_to_string(array(
+          $row[$col_set.'date_start'],
+          $row[$col_set.'date_end'],
+          $row[$col_set.'date_type']
         ));
       }
     }

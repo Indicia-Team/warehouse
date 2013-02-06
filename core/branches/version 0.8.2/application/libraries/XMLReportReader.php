@@ -26,6 +26,7 @@
 */
 class XMLReportReader_Core implements ReportReader
 {
+  public $columns = array();
   private $name;
   private $title;
   private $description;
@@ -36,7 +37,6 @@ class XMLReportReader_Core implements ReportReader
   private $field_sql;
   private $order_by;
   private $params = array();
-  private $columns = array();
   private $tables = array();
   private $attributes = array();
   private $automagic = false;
@@ -252,9 +252,10 @@ class XMLReportReader_Core implements ReportReader
         if (strpos($this->query, '#order_by#')!==false)
           $this->query = str_replace('#order_by#', "#filters#\n#order_by#", $this->query);
         else
-            $this->query .= '#filters#';
+          $this->query .= '#filters#';
       }
-
+      // cleanup some of the tokens in the SQL if they haven't already been done
+      $this->query = str_replace(array('#agreements_join#','#sharing_filter#'), array('','1=1'), $this->query);
       if ($this->hasColumnsSql) {
         // column sql is defined in the list of column elements, so autogenerate the query.
         $this->autogenColumns();
@@ -288,17 +289,18 @@ class XMLReportReader_Core implements ReportReader
     $countSql = array();
     foreach ($this->columns as $col=>$def) {
       if (isset($def['sql'])) {
-        $sql[] = $def['sql'] . ' as ' . $col;
+        if (!isset($def['on_demand']) || $def['on_demand']!=="true")
+          $sql[] = $def['sql'] . ' as ' . $col;
         if (isset($def['distincton']) && $def['distincton']=='true') {
-          $distinctSql[] = $def['sql'];
+          $distinctSql[] = $def['internal_sql'];
           // in_count lets the xml file exclude distinct on columns from the count query
           if (!isset($def['in_count']) || $def['in_count']=='true') {
-            $countSql[] = $def['sql'];
+            $countSql[] = $def['internal_sql'];
           }
         } else {
           // if the column is not distinct on, then it defaults to not in the count
           if (isset($def['in_count']) && $def['in_count']=='true') {
-            $countSql[] = $def['sql'];
+            $countSql[] = $def['internal_sql'];
           }
         }
       }
@@ -309,13 +311,13 @@ class XMLReportReader_Core implements ReportReader
       $distincton = '';
     }
     if (count($countSql)>0) {
-      $this->countQuery = str_replace('#columns#', ' count(distinct ' . implode(', ', $countSql) . ') ', $this->query);
+      $this->countQuery = str_replace('#columns#', ' count(distinct ' . implode(' || ', $countSql) . ') ', $this->query);
     } else {
       $this->countQuery = str_replace('#columns#', ' count(*) ', $this->query);
     }
     // merge this back into the query. Note we drop in a #fields# tag so that the query processor knows where to
     // add custom attribute fields.
-    $this->query = str_replace('#columns#', $distincton . implode(', ', $sql) . '#fields#', $this->query);
+    $this->query = str_replace('#columns#', $distincton . implode(",\n", $sql) . '#fields#', $this->query);
   }
 
   /**
@@ -327,8 +329,10 @@ class XMLReportReader_Core implements ReportReader
   private function buildGroupBy() {
     $sql = array();
     foreach ($this->columns as $col=>$def) {
-      if (isset($def['sql']) && (!isset($def['aggregate']) || $def['aggregate']!='true')) {
-        $sql[] = $def['sql'];
+      if (isset($def['internal_sql']) 
+          && (!isset($def['aggregate']) || $def['aggregate']!='true')
+          && (!isset($def['on_demand']) || $def['on_demand']!='true')) {
+        $sql[] = $def['internal_sql'];
       }
     }
     // Add the non-aggregated fields to the end of the query. Leave a token so that the query processor
@@ -512,7 +516,7 @@ class XMLReportReader_Core implements ReportReader
   {
    $thisDefn = new stdClass;
    $thisDefn->mode = $this->download;
-   $thisDefn->id = 'occurrences_id';
+   $thisDefn->id = 'occurrence_id';
    if($this->automagic) {
      for($i = 0; $i < count($this->tables); $i++){
       if($this->tables[$i]['tablename'] == 'occurrences'){ // Warning, will not work with multiple occurrence tables
@@ -672,6 +676,10 @@ class XMLReportReader_Core implements ReportReader
     // do we have any datatype attributes, used for column based filtering? Data types can't be used without the SQL
     if (isset($this->columns[$name]['datatype']) && isset($this->columns[$name]['sql']))
       $this->filterableColumns[$name] = $this->columns[$name];
+    // internal sql is used in group by and count queries. If not set, just use the SQL
+    if (!empty($this->columns[$name]['sql'])) 
+      $this->columns[$name]['internal_sql'] = empty($this->columns[$name]['internal_sql']) ? 
+          $this->columns[$name]['sql'] : $this->columns[$name]['internal_sql'];
   }
 
   private function mergeColumn($name, $display = '', $style = '', $feature_style='', $class='', $visible='', $img='', $orderby='', $mappable='', $autodef=true)
