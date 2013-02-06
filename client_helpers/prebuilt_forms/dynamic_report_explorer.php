@@ -277,12 +277,12 @@ class iform_dynamic_report_explorer extends iform_dynamic {
     iform_report_apply_explore_user_own_preferences($reportOptions);
     $r = report_helper::report_map($reportOptions);
     $options = array_merge(
-      iform_map_get_map_options($args, $readAuth),
+      iform_map_get_map_options($args, $auth['read']),
       array(
         'featureIdField'=>'occurrence_id',
         'clickForSpatialRef'=>false,
         'reportGroup'=>'explore',
-        'toolbarDiv'=>'top'
+        'toolbarDiv'=>'top',
       ),
       $options
     );
