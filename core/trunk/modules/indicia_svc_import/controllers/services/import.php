@@ -130,7 +130,8 @@ class Import_Controller extends Service_Base_Controller {
     if (isset($metadata['mappings']))
       $metadata['mappings']=json_decode($metadata['mappings'], true);
     if (isset($metadata['settings']))
-      $metadata['settings']=json_decode($metadata['settings'], true);    
+      $metadata['settings']=json_decode($metadata['settings'], true);
+    // the metadata can also hold auth tokens and user_id, though they do not need decoding.
     self::internal_cache_upload_metadata($metadata);
     echo "OK";
   }
@@ -159,6 +160,10 @@ class Import_Controller extends Service_Base_Controller {
   public function upload() {
     $csvTempFile = DOCROOT . "upload/" . $_GET['uploaded_csv'];
     $metadata = $this->_get_metadata($_GET['uploaded_csv']);
+    if (!empty($metadata['user_id'])) {
+      global $remoteUserId;
+      $remoteUserId = $metadata['user_id'];
+    }
     // Check if details of the last supermodel (e.g. sample for an occurrence) are in the cache from a previous iteration of 
     // this bulk operation
     $cache= Cache::instance();
