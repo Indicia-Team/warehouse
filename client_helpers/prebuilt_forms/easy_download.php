@@ -350,10 +350,11 @@ class iform_easy_download {
     } else 
       // survey to load is preconfigured for the form
       $surveys = $args['survey_id'];
+    $ownData=$filterToApply==='mine' ? 1 : 0;
     $filters = array_merge(
       array(
         'currentUser'=>hostsite_get_user_field('indicia_user_id'),
-        'ownData'=>$filterToApply==='mine' ? 1 : 0,
+        'ownData'=>$ownData,
         'location_id'=>hostsite_get_user_field('location_expertise'),
         'ownLocality'=>!empty($location_expertise) && !$ownData ? 1 : 0,
         'taxon_groups'=>!empty($taxon_groups_expertise) ? implode(',', $taxon_groups_expertise) : '',

@@ -288,6 +288,9 @@ class report_helper extends helper_base {
   * report_map method when linked to a report_grid, which loads its own report data for display on a map, just using the same input parameters
   * as other reports. In this case the report_grid's report data is used to draw the features on the map, so only 1 report request is made.
   * </li>
+  * <li><b>linkFilterToMap</b>
+  * Default true but requires a rowId to be set. If true, then filtering the grid causes the map to also filter.
+  * </li>
   * <li><b>zoomMapToOutput</b>
   * Default true. When combined with sendOutputToMap=true, defines that the map will automatically zoom to show the records.
   * </li>
@@ -630,7 +633,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   pagingTemplate: '".$indicia_templates['paging']."',
   pathParam: '".$pathParam."',
   sendOutputToMap: ".((isset($options['sendOutputToMap']) && $options['sendOutputToMap']) ? 'true' : 'false').",
-  linkFeatures: ".(!empty($options['rowId']) ? 'true' : 'false').",
+  linkFilterToMap: ".(!empty($options['rowId']) && (empty($options['linkFilterToMap']) || $options['linkFilterToMap']===false) ? 'true' : 'false').",
   msgRowLinkedToMapHint: '".lang::get('Click the row to highlight the record on the map. Double click to zoom in.')."',
   altRowClass: '".$options['altRowClass']."'";
       if (isset($options['sharing'])) {
@@ -1491,11 +1494,11 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         // always display the same size so are no problem.
         $strokeWidthFn = "getstrokewidth: function(feature) {
           var width=feature.geometry.getBounds().right - feature.geometry.getBounds().left,
-            strokeWidth=(width===0) ? 1 : 6 - (width / feature.layer.map.getResolution());
+            strokeWidth=(width===0) ? 1 : %d - (width / feature.layer.map.getResolution());
           return (strokeWidth<%d) ? %d : strokeWidth;
         }";
-        $defStyleFns['getStrokeWidth'] = sprintf($strokeWidthFn, 1, 1);
-        $selStyleFns['getStrokeWidth'] = sprintf($strokeWidthFn, 3, 3);
+        $defStyleFns['getStrokeWidth'] = sprintf($strokeWidthFn, 6, 1, 1);
+        $selStyleFns['getStrokeWidth'] = sprintf($strokeWidthFn, 9, 2, 2);
         if (isset($options['valueOutput'])) {
           foreach($options['valueOutput'] as $type => $outputdef) {
             $value = $outputdef['valueField'];
