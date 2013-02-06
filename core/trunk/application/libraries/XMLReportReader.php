@@ -153,12 +153,20 @@ class XMLReportReader_Core implements ReportReader
                 elseif (isset($idList)) {
                   if ($sharing==='website') 
                     // this website only
-                    $this->query = str_replace(array('#agreements_join#','#sharing_filter#'), array('join system sys on sys.id=1', "$websiteFilterField in ($idList)"), $this->query);
-                  else
+                    $this->query = str_replace(
+                      array('#agreements_join#','#sharing_filter#'), 
+                      array('join system sys on sys.id=1', "$websiteFilterField in ($idList)"), 
+                    $this->query);
+                  else {
                     // implement the appropriate sharing agreement across websites
+                    $agreementsJoin="JOIN index_websites_website_agreements iwwa ON iwwa.to_website_id=o.website_id and iwwa.receive_for_$sharing=true AND iwwa.from_website_id in ($idList)\n";
+                    // add a join to users so we can check their privacy preferences. This does not apply if record input
+                    // on this website.
+                    $agreementsJoin .= "JOIN users privacyusers ON privacyusers.id=o.created_by_id";
                     $this->query = str_replace(array('#agreements_join#','#sharing_filter#'), 
-                        array("JOIN index_websites_website_agreements iwwa ON iwwa.to_website_id=o.website_id and iwwa.receive_for_$sharing=true AND iwwa.from_website_id in ($idList)", 
-                        '1=1'), $this->query);
+                        array($agreementsJoin, 
+                        "(iwwa.from_website_id=iwwa.to_website_id OR privacyusers.allow_share_for_$sharing=true)"), $this->query);
+                  }
                 }
                 $this->query = str_replace('#sharing#', $sharing, $this->query);
                 break;
@@ -281,17 +289,18 @@ class XMLReportReader_Core implements ReportReader
     $countSql = array();
     foreach ($this->columns as $col=>$def) {
       if (isset($def['sql'])) {
-        $sql[] = $def['sql'] . ' as ' . $col;
+        if (!isset($def['on_demand']) || $def['on_demand']!=="true")
+          $sql[] = $def['sql'] . ' as ' . $col;
         if (isset($def['distincton']) && $def['distincton']=='true') {
-          $distinctSql[] = $def['sql'];
+          $distinctSql[] = $def['internal_sql'];
           // in_count lets the xml file exclude distinct on columns from the count query
           if (!isset($def['in_count']) || $def['in_count']=='true') {
-            $countSql[] = $def['sql'];
+            $countSql[] = $def['internal_sql'];
           }
         } else {
           // if the column is not distinct on, then it defaults to not in the count
           if (isset($def['in_count']) && $def['in_count']=='true') {
-            $countSql[] = $def['sql'];
+            $countSql[] = $def['internal_sql'];
           }
         }
       }
@@ -308,7 +317,7 @@ class XMLReportReader_Core implements ReportReader
     }
     // merge this back into the query. Note we drop in a #fields# tag so that the query processor knows where to
     // add custom attribute fields.
-    $this->query = str_replace('#columns#', $distincton . implode(', ', $sql) . '#fields#', $this->query);
+    $this->query = str_replace('#columns#', $distincton . implode(",\n", $sql) . '#fields#', $this->query);
   }
 
   /**
@@ -320,8 +329,10 @@ class XMLReportReader_Core implements ReportReader
   private function buildGroupBy() {
     $sql = array();
     foreach ($this->columns as $col=>$def) {
-      if (isset($def['sql']) && (!isset($def['aggregate']) || $def['aggregate']!='true')) {
-        $sql[] = $def['sql'];
+      if (isset($def['internal_sql']) 
+          && (!isset($def['aggregate']) || $def['aggregate']!='true')
+          && (!isset($def['on_demand']) || $def['on_demand']!='true')) {
+        $sql[] = $def['internal_sql'];
       }
     }
     // Add the non-aggregated fields to the end of the query. Leave a token so that the query processor
@@ -360,54 +371,54 @@ class XMLReportReader_Core implements ReportReader
     // In download mode make sure that the occurrences id is in the list
 
       foreach($this->tables[$i]['columns'] as $column){
-    if ($j != 0) $query .= ",";
-    if ($column['func']=='') {
-        $query .= " lt".$i.".".$column['name']." AS lt".$i."_".$column['name'];
-    } else {
+        if ($j != 0) $query .= ",";
+        if ($column['func']=='') {
+          $query .= " lt".$i.".".$column['name']." AS lt".$i."_".$column['name'];
+        } else {
           $query .= " ".preg_replace("/#parent#/", "lt".$this->tables[$i]['parent'], preg_replace("/#this#/", "lt".$i, $column['func']))." AS lt".$i."_".$column['name'];
-    }
+        }
         $j++;
       }
-  }
-  // table list
-  $query .= " FROM ";
-  for($i = 0; $i < count($this->tables); $i++){
-    if ($i == 0) {
-        $query .= $this->tables[$i]['tablename']." lt".$i;
-    } else {
-        if ($this->tables[$i]['join'] != null) {
-          $query .= " LEFT OUTER JOIN ";
-           } else {
-          $query .= " INNER JOIN ";
-        }
-        $query .= $this->tables[$i]['tablename']." lt".$i." ON (".$this->tables[$i]['tableKey']." = ".$this->tables[$i]['parentKey'];
-        if($this->tables[$i]['where'] != null) {
-          $query .= " AND ".preg_replace("/#this#/", "lt".$i, $this->tables[$i]['where']);
-       }
-        $query .= ") ";
     }
-  }
-  // where list
-  $previous=false;
-  if($this->tables[0]['where'] != null) {
-    $query .= " WHERE ".preg_replace("/#this#/", "lt0", $this->tables[0]['where']);
-    $previous = true;
-  }
-  // when in download mode set a where clause
-  // only down load records which are complete or verified, and have not been downloaded before.
-  // for the final download, only download thhose records which have gone through an initial download, and hence assumed been error checked.
-  if($this->download != 'OFF'){
+    // table list
+    $query .= " FROM ";
     for($i = 0; $i < count($this->tables); $i++){
-      if ($this->tables[$i]['tablename'] == "occurrences") {
-        $query .= ($previous ? " AND " : " WHERE ").
-          " (lt".$i.".record_status in ('C'::bpchar, 'V'::bpchar) OR '".$this->download."'::text = 'OFF'::text) ".
-            " AND (lt".$i.".downloaded_flag in ('N'::bpchar, 'I'::bpchar) OR '".$this->download."'::text != 'INITIAL'::text) ".
-            " AND (lt".$i.".downloaded_flag = 'I'::bpchar OR ('".$this->download."'::text != 'CONFIRM'::text AND '".$this->download."'::text != 'FINAL'::text))";
-        break;
+      if ($i == 0) {
+          $query .= $this->tables[$i]['tablename']." lt".$i;
+      } else {
+          if ($this->tables[$i]['join'] != null) {
+            $query .= " LEFT OUTER JOIN ";
+             } else {
+            $query .= " INNER JOIN ";
+          }
+          $query .= $this->tables[$i]['tablename']." lt".$i." ON (".$this->tables[$i]['tableKey']." = ".$this->tables[$i]['parentKey'];
+          if($this->tables[$i]['where'] != null) {
+            $query .= " AND ".preg_replace("/#this#/", "lt".$i, $this->tables[$i]['where']);
+         }
+          $query .= ") ";
       }
     }
-  }
-  return $query;
+    // where list
+    $previous=false;
+    if($this->tables[0]['where'] != null) {
+      $query .= " WHERE ".preg_replace("/#this#/", "lt0", $this->tables[0]['where']);
+      $previous = true;
+    }
+    // when in download mode set a where clause
+    // only down load records which are complete or verified, and have not been downloaded before.
+    // for the final download, only download thhose records which have gone through an initial download, and hence assumed been error checked.
+    if($this->download != 'OFF'){
+      for($i = 0; $i < count($this->tables); $i++){
+        if ($this->tables[$i]['tablename'] == "occurrences") {
+          $query .= ($previous ? " AND " : " WHERE ").
+            " (lt".$i.".record_status in ('C'::bpchar, 'V'::bpchar) OR '".$this->download."'::text = 'OFF'::text) ".
+              " AND (lt".$i.".downloaded_flag in ('N'::bpchar, 'I'::bpchar) OR '".$this->download."'::text != 'INITIAL'::text) ".
+              " AND (lt".$i.".downloaded_flag = 'I'::bpchar OR ('".$this->download."'::text != 'CONFIRM'::text AND '".$this->download."'::text != 'FINAL'::text))";
+          break;
+        }
+      }
+    }
+    return $query;
   }
 
   public function getCountQuery()
@@ -667,6 +678,10 @@ class XMLReportReader_Core implements ReportReader
     // do we have any datatype attributes, used for column based filtering? Data types can't be used without the SQL
     if (isset($this->columns[$name]['datatype']) && isset($this->columns[$name]['sql']))
       $this->filterableColumns[$name] = $this->columns[$name];
+    // internal sql is used in group by and count queries. If not set, just use the SQL
+    if (!empty($this->columns[$name]['sql'])) 
+      $this->columns[$name]['internal_sql'] = empty($this->columns[$name]['internal_sql']) ? 
+          $this->columns[$name]['sql'] : $this->columns[$name]['internal_sql'];
   }
 
   private function mergeColumn($name, $display = '', $style = '', $feature_style='', $class='', $visible='', $img='', $orderby='', $mappable='', $autodef=true)
