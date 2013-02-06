@@ -154,9 +154,10 @@ function simple_tooltip(target_items, name){
           }
           if (typeof action.url !== "undefined") {
             var link = action.url, linkParams=[];
+            row.rootFolder = div.settings.rootFolder;
             if (div.settings.pathParam !== '' && link.indexOf('?'+div.settings.pathParam+'=') === -1) {
               //if there is a path param but it is not in the link already then add it to the rootFolder
-              row.rootFolder = div.settings.rootFolder + '?'+div.settings.pathParam+'=';
+              row.rootFolder += '?'+div.settings.pathParam+'=';
             }
             if (link.substr(0, 12).toLowerCase()!=='{rootfolder}' && link.substr(0, 12).toLowerCase()!=='{currenturl}'
                 && link.substr(0, 4).toLowerCase()!=='{http}') {
@@ -317,7 +318,7 @@ function simple_tooltip(target_items, name){
               map=indiciaData.reportlayer.map;
               indiciaData.mapdiv.removeAllFeatures(indiciaData.reportlayer, 'linked');
             }
-            rowTitle = (div.settings.rowId && div.settings.linkFeatures && typeof indiciaData.reportlayer!=="undefined") ?
+            rowTitle = (div.settings.rowId && typeof indiciaData.reportlayer!=="undefined") ?
               ' title="'+div.settings.msgRowLinkedToMapHint+'"' : '';
             $.each(rows, function(rowidx, row) {
               if (div.settings.rowClass!=='') {
@@ -418,12 +419,12 @@ function simple_tooltip(target_items, name){
     /**
      * Build the URL required for a report request, excluding the pagination (limit + offset) parameters.
      */
-    function getFullRequestPathWithoutPaging(div) {
+    function getFullRequestPathWithoutPaging(div, sort) {
       var request = getRequest(div), params=getUrlParamsForAllRecords(div);
       $.each(params, function(key, val) {
         request += '&' + key + '=' + val;
       });
-      if (div.settings.orderby !== null) {
+      if (sort && div.settings.orderby !== null) {
         request += '&orderby=' + div.settings.orderby + '&sortdir=' + div.settings.sortdir;
       }
       return request;
@@ -433,7 +434,7 @@ function simple_tooltip(target_items, name){
      * Function to make a service call to load the grid data.
      */
     function load (div, recount) {
-      var request = getFullRequestPathWithoutPaging(div);
+      var request = getFullRequestPathWithoutPaging(div, true);
       request += '&offset=' + div.settings.offset;
       if (recount) {
         request += '&wantCount=1';
@@ -620,7 +621,7 @@ function simple_tooltip(target_items, name){
         div.settings.dataSource=div.settings.mapDataSource;
       }
       try {
-        var request=getFullRequestPathWithoutPaging(div)+'&limit='+BATCH_SIZE;
+        var request=getFullRequestPathWithoutPaging(div, false)+'&limit='+BATCH_SIZE;
       }
       finally {
         div.settings.dataSource=origReport;
@@ -699,7 +700,7 @@ function simple_tooltip(target_items, name){
           }
           div.settings.offset=0;
           load(div, true);
-          if (div.settings.linkFeatures && typeof indiciaData.reportlayer!=="undefined") {
+          if (div.settings.linkFilterToMap && typeof indiciaData.reportlayer!=="undefined") {
             mapRecords(div);
           }
           e.target.hasChanged = false;
@@ -721,14 +722,13 @@ function simple_tooltip(target_items, name){
 
       setupReloadLinks(div);
 
-      if (div.settings.rowId && div.settings.linkFeatures) {
+      if (div.settings.rowId) {
         // Setup highlighting of features on an associated map when rows are clicked
         $(div).find('tbody').click(function(evt) {
           if (typeof indiciaData.reportlayer!=="undefined") {
             var tr=$(evt.target).parents('tr')[0], featureId=tr.id.substr(3), 
-                feature, featureArr, map=indiciaData.reportlayer.map;
-            feature=map.div.getFeatureById(indiciaData.reportlayer, featureId);
-            featureArr = (feature===null) ? [] : [feature];
+                featureArr, map=indiciaData.reportlayer.map;
+            featureArr=map.div.getFeaturesByVal(indiciaData.reportlayer, featureId, div.settings.rowId);
             // deselect any existing selection and select the feature
             map.setSelection(indiciaData.reportlayer, featureArr);
             $(div).find('tbody tr').removeClass('selected');
@@ -738,11 +738,15 @@ function simple_tooltip(target_items, name){
         });
         $(div).find('tbody').dblclick(function(evt) {
           if (typeof indiciaData.reportlayer!=="undefined") {
-            var tr=$(evt.target).parents('tr')[0];
-            var featureId=tr.id.substr(3), feature;
-            feature=indiciaData.reportlayer.getFeatureById(featureId);
-            if (feature!==null) {
-              indiciaData.reportlayer.map.zoomToExtent(feature.geometry.getBounds());
+            var tr=$(evt.target).parents('tr')[0], featureId=tr.id.substr(3), 
+                featureArr, map=indiciaData.reportlayer.map, extent;
+            featureArr=map.div.getFeaturesByVal(indiciaData.reportlayer, featureId, div.settings.rowId);
+            if (featureArr.length!==0) {
+              extent = featureArr[0].geometry.getBounds().clone();
+              for(var i=1;i<featureArr.length;i++) {
+                  extent.extend(featureArr[i].geometry.getBounds());
+              }
+              indiciaData.reportlayer.map.zoomToExtent(extent);
             }
           }
         });
@@ -789,6 +793,6 @@ $.fn.reportgrid.defaults = {
   langShowing: 'Showing records {1} to {2} of {3}',
   noRecords: 'No records',
   sendOutputToMap: false, // does the current page of report data get shown on a map?
-  linkFeatures: false, // requires a rowId - the selected row's equivalent map feature is highlighted
+  linkFilterToMap: false, // requires a rowId - filtering the grid also filters the map
   msgRowLinkedToMapHint: 'Click the row to highlight the record on the map. Double click to zoom in.'
 };

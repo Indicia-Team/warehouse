@@ -87,24 +87,24 @@ mapGeoreferenceHooks = [];
     
     /** 
      * Variant of getFeatureById which allows for the features being checked being a comma
-     * separated list of values.
+     * separated list of values, against any field.
      */
-    function getFeatureById(layer, value) {
-      var feature = null, ids;
+    function getFeaturesByVal(layer, value, field) {
+      var features = [], ids, val;
       for(var i=0, len=layer.features.length; i<len; ++i) {
-        if(layer.features[i]['id'] == value) {
-          feature = layer.features[i];
-          break;
+        if (typeof field!=="undefined" && typeof layer.features[i]['attributes'][field+'s']!=="undefined") {
+          ids=layer.features[i]['attributes'][field+'s'].split(',');
+          if ($.inArray(value, ids)>-1) {
+            features.push(layer.features[i]);           
+          }
         } else {
-          ids=layer.features[i]['id'].split(',');
-          if (ids.length>1) {
-            if ($.inArray(value, ids)>-1) {
-              feature = layer.features[i];
-            }
+          featureVal=(typeof field==="undefined" ? layer.features[i]['id'] : layer.features[i]['attributes'][field]);
+          if (featureVal == value) {
+            features.push(layer.features[i]);
           }
         }
       }
-      return feature;
+      return features;
     }
 
     /**
@@ -683,7 +683,7 @@ mapGeoreferenceHooks = [];
      */
     function selectBox(position, layers, div) {
       var testGeom, tolerantGeom, layer, bounds, xy, minXY, maxXY, layer, tolerance, testGeoms={},
-          getRadius=null, getStrokeWidth=null;
+          getRadius=null, getStrokeWidth=null, radius, strokeWidth, match;;
       if (position instanceof OpenLayers.Bounds) {
         if (position.left===position.right && position.top===position.bottom) {
           // point clicked
@@ -706,34 +706,37 @@ mapGeoreferenceHooks = [];
         }
         for(var l=0; l<layers.length; ++l) {
           layer = layers[l];
-          // when testing against points, use a circle drawn around the click point so the 
-          // click does not have to be exact. Do this once per layer so we can respect the default 
-          // click point size for the layer
-          if (testGeom.CLASS_NAME==='OpenLayers.Geometry.Point' &&
-              typeof layer.styleMap.styles['default'].defaultStyle.pointRadius!=="undefined") {
-            // Convert point to an approx circle so we can test the click using it. We convert the click
-            // point rather than individual tested points, as it has the same effect but only needs to be
-            // done once.
-            var radius = layer.styleMap.styles['default'].defaultStyle.pointRadius, 
-                strokeWidth=layer.styleMap.styles['default'].defaultStyle.strokeWidth,
-                match;
-            if (typeof radius === "string") {
-              match=radius.match(/^\${(.+)}/);
-              if (match!==null && match.length>1) {
-                getRadius=layer.styleMap.styles['default'].context[match[1]];
-                if (getRadius===undefined) {
-                  // the context function is missing, so must be a field name
-                  getRadius=match[1];
+          // when testing a click point, use a circle drawn around the click point so the 
+          // click does not have to be exact. At this stage, we just look for the layer default
+          // pointRadius and strokeWidth, so we can calculate the geom size to test.
+          if (testGeom.CLASS_NAME==='OpenLayers.Geometry.Point') {
+            if (typeof layer.styleMap.styles['default'].defaultStyle.pointRadius!=="undefined") {
+              radius = layer.styleMap.styles['default'].defaultStyle.pointRadius;
+              if (typeof radius === "string") {
+                // A setting {n} means we use n to get the pointRadius per feature (either a field or a context func)
+                match=radius.match(/^\${(.+)}/);
+                if (match!==null && match.length>1) {
+                  getRadius=layer.styleMap.styles['default'].context[match[1]];
+                  if (getRadius===undefined) {
+                    // the context function is missing, so must be a field name
+                    getRadius=match[1];
+                  }
                 }
               }
+            } else {
+              radius=6; // default
             }
-            if (typeof strokeWidth === "string") {
-              match=strokeWidth.match(/^\${(.+)}/);
-              if (match!==null && match.length>1) {
-                getStrokeWidth=layer.styleMap.styles['default'].context[match[1]];
-                if (getStrokeWidth===undefined) {
-                  // the context function is missing, so must be a field name
-                  getStrokeWidth=match[1];
+            if (typeof layer.styleMap.styles['default'].defaultStyle.strokeWidth!=="undefined") {
+              strokeWidth=layer.styleMap.styles['default'].defaultStyle.strokeWidth;
+              if (typeof strokeWidth === "string") {
+                // A setting {n} means we use n to get the strokeWidth per feature (either a field or a context func)
+                match=strokeWidth.match(/^\${(.+)}/);
+                if (match!==null && match.length>1) {
+                  getStrokeWidth=layer.styleMap.styles['default'].context[match[1]];
+                  if (getStrokeWidth===undefined) {
+                    // the context function is missing, so must be a field name
+                    getStrokeWidth=match[1];
+                  }
                 }
               }
             }
@@ -745,45 +748,39 @@ mapGeoreferenceHooks = [];
             if (!feature.onScreen()) {
               continue;
             }
-            if (getRadius!==null) {
-              // getRadius might be a string (fieldname) or a context function
-              if (typeof getRadius==='string') {
-                radius=feature.attributes[getRadius];
-              } else {
-                radius = getRadius(feature);
-            }
-            }
-            if (getRadius!==null) {
-              // getRadius might be a string (fieldname) or a context function
-              if (typeof getRadius==='string') {
-                radius=feature.attributes[getRadius];
-              } else {
-                radius = getRadius(feature);
+            if (feature.geometry.CLASS_NAME === 'OpenLayers.Geometry.Point') {
+              if (getRadius!==null) {
+                // getRadius might be a string (fieldname) or a context function, so overwrite the layer default
+                if (typeof getRadius==='string') {
+                  radius=feature.attributes[getRadius];
+                } else {
+                  radius = getRadius(feature);
+                }
               }
-            }
-            if (getStrokeWidth!==null) {
-              // getStrokeWidth might be a string (fieldname) or a context function
-              if (typeof getStrokeWidth==='string') {
-                strokeWidth=feature.attributes[getStrokeWidth];
+              if (getStrokeWidth!==null) {
+                // getStrokeWidth might be a string (fieldname) or a context function, so overwrite the layer default
+                if (typeof getStrokeWidth==='string') {
+                  strokeWidth=feature.attributes[getStrokeWidth];
+                } else {
+                  strokeWidth = getStrokeWidth(feature);
+                }
               } else {
-                strokeWidth = getStrokeWidth(feature);
+                strokeWidth = 1;
               }
-            }
-            var geom = feature.geometry;
-            if (geom.CLASS_NAME === 'OpenLayers.Geometry.Point') {
               tolerance = div.map.getResolution() * (radius + (strokeWidth/2));
+              tolerance=Math.round(tolerance);
+              // keep geoms we create so we don't keep rebuilding them
+              if (typeof testGeoms['geom-'+Math.round(tolerance/100)]!=="undefined") {
+                tolerantGeom = testGeoms['geom-'+Math.round(tolerance/100)];
+              } else {
+                tolerantGeom = OpenLayers.Geometry.Polygon.createRegularPolygon(testGeom, tolerance, 20, 0);
+                testGeoms['geom-'+Math.round(tolerance/100)] = tolerantGeom;
+              }
             } else {
-              tolerance = div.map.getResolution() * (strokeWidth/2);
+              // doing a test against a dragged box, no need to worry about click tolerance. 
+              tolerantGeom=testGeom;
             }
-            tolerance=Math.round(tolerance);
-            // keep geoms we create so we don't keep rebuilding them
-            if (typeof testGeoms['geom-'+Math.round(tolerance/100)]!=="undefined") {
-              tolerantGeom = testGeoms['geom-'+Math.round(tolerance/100)];
-            } else {
-              tolerantGeom = OpenLayers.Geometry.Polygon.createRegularPolygon(testGeom, tolerance, 20, 0);
-              testGeoms['geom-'+Math.round(tolerance/100)] = tolerantGeom;
-            }
-            if (tolerantGeom.intersects(geom)) {
+            if (tolerantGeom.intersects(feature.geometry)) {
               if (OpenLayers.Util.indexOf(layer.selectedFeatures, feature) == -1) {
                 featuresToSelect.push(feature);
               }
@@ -931,7 +928,12 @@ mapGeoreferenceHooks = [];
                 // grab the feature ids
                 ids = [];
                 $.each(features, function(idx, feature) {
-                  ids.push(feature.attributes[div.settings.featureIdField]);
+                  if (typeof feature.attributes[div.settings.featureIdField]!=="undefined") {
+                    ids.push(feature.attributes[div.settings.featureIdField]);
+                  } else if (typeof feature.attributes[div.settings.featureIdField+'s']!=="undefined") {
+                    // allow for plural, list fields
+                    ids.push(feature.attributes[div.settings.featureIdField+'s']);
+                  }
                 });
                 $('.'+div.settings.reportGroup+'-idlist-param').val(ids.join(','));
                 // find the associated reports, charts etc and reload them to show the selected data. No need to if we started with no selection 
@@ -1188,7 +1190,7 @@ mapGeoreferenceHooks = [];
       this.settings = opts;
       this.pointToSref = pointToSref;
       this.addPt = addPt;
-      this.getFeatureById = getFeatureById;
+      this.getFeaturesByVal = getFeaturesByVal;
       this.removeAllFeatures = removeAllFeatures;
       // wrap the map in a div container
       $(this).wrap('<div id="map-container" style="width:'+opts.width+'" >');
