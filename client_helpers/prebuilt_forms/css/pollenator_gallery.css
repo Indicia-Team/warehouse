@@ -32,6 +32,7 @@ h1#poll-banner {
 #filter .ui-accordion-content .ui-accordion-content { margin-bottom:10px; border-top:1px solid #d5d5d5; background-color:#fafafa; }
 #filter-footer { background:#f8fdee; border-top:1px solid #e9f2b0; margin-bottom:20px; text-align:center; }
 #preferred-button-container { background:#f8fdee; text-align:center; margin-top:0px; }
+#fc-delete-collection { background:#f8fdee; text-align:center; margin-top:0px; }
 #filter-spec { border-bottom: none; }
 #fc_location_submit_button, #fc_front_page_submit_button { float: right;}
 
