@@ -20,11 +20,13 @@
             AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
             AND quality_check('#quality#', o.record_status, o.certainty)=true)
           )
+          AND (CAST(l.location_type_id AS character varying)='#location_type_id#' OR '#location_type_id#'='')
       GROUP BY l.id) AS stats
       RIGHT JOIN locations l on l.id=stats.id AND l.deleted=false AND l.boundary_geom IS NOT NULL
       LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false 
       WHERE l.deleted=false
           AND (lw.website_id in (#website_ids#) OR l.public=true)
+          AND (CAST(l.location_type_id AS character varying)='#location_type_id#' OR '#location_type_id#'='')
       </query>
       <params>
         <param name='date_from' display='Date From' datatype='date' />
@@ -32,12 +34,7 @@
         <param name='survey_id' display='Survey' description='Select the survey to return data for, or leave for all surveys' datatype='lookup'
             query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title' />
         <param name='location_type_id' display='Location Type' description='Select the location type, or leave blank to not filter by location type.' datatype='lookup'
-            population_call='report:library/terms/terms_list:id:term:termlist_external_key=indicia:location_types,termlist_id='>
-          <join value="" operator="notequal">JOIN termlists_terms ttl1 ON ttl1.id=l.location_type_id and ttl1.deleted=false
-              JOIN termlists_terms ttl2 ON ttl2.meaning_id=ttl1.meaning_id and ttl2.deleted=false
-              JOIN terms t ON t.id=ttl2.term_id and t.deleted=false AND (t.term='#location_type_id#' or cast(ttl.id as varchar)='#location_type_id#')
-          </join>      
-        </param>
+            population_call='report:library/terms/terms_list:id:term:termlist_external_key=indicia:location_types,termlist_id='/>
         <param name='locattrs' display='Location attribute list' description='Comma separated list of location attribute IDs to include' datatype='locattrs' />
         <param name='quality' display='Data quality' description='Quality level required of data to be included in the map.' datatype='lookup' 
             lookup_values='V:Data must be verified,C:Data must be verified or certain,L:Data must be at least likely,!D:Include anything not dubious or rejected,!R:Include anything not rejected' />
