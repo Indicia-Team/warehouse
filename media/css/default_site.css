@@ -446,8 +446,14 @@ table tr.odd {
   margin-left: 0;
 }
 
-.jqplot-table-legend {
+table.jqplot-table-legend {
   width: auto;
+  border: none;
+  font-size: 100%;
+}
+
+td.jqplot-table-legend.highlight {
+  background-color: yellow;
 }
 
 .pager-button {
