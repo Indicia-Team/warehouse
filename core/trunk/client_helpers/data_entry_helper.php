@@ -1280,6 +1280,47 @@ class data_entry_helper extends helper_base {
       if ($options['searchUpdatesSref'])
         self::$javascript .= "indiciaData.searchUpdatesSref=true;\n";
     }
+    // If using Easy Login, then this enables auto-population of the site related fields.
+    if (function_exists('hostsite_get_user_field') && $createdById=hostsite_get_user_field('indicia_user_id')) {
+      $nonce=$options['extraParams']['nonce'];
+      $authToken=$options['extraParams']['auth_token'];
+      $resportingServerURL = data_entry_helper::$base_url;
+      self::$javascript .= "$('#imp-location').change(function() {
+        var reportingURL = '$resportingServerURL/index.php/services/report/requestReport?report=library/sample_attribute_values/get_latest_values_for_site_and_user.xml';
+        var reportOptions={
+          'mode': 'json',
+          'nonce': '$nonce',
+          'auth_token': '$authToken',
+          'reportSource': 'local',
+          'location_id': $('#imp-location').attr('value'),
+          'created_by_id': $createdById,
+        }
+        //If the user changes the Location in the same entry session then we need to clear all the sample attribute
+        //values before filling in new ones (otherwise if there isn't a value to load the old one will remain)
+        $('[id^=smpAttr][type!=hidden][type!=checkbox]').attr('value', '');
+        $('[id^=smpAttr][type=checkbox]').removeAttr('checked'); 
+        //fill in the sample attributes based on what is returned by the report
+        $.getJSON(reportingURL, reportOptions,
+          function(data) {
+            jQuery.each(data, function(i, item) {
+              var selector=\"smpAttr:\"+item.id;
+              if (item.value !== null && item.data_type !== 'Boolean')
+                $('[id=' + selector + ']').attr('value', item.value);
+              //If there is a date value then we use the date field instead.
+              //This is because the vague date engine returns to this special field
+              if (item.value_date !== null)
+                $('[id=' + selector + ']').attr('value', item.value_date);
+              //booleans need special treatment because checkboxes rely on using the
+              //'checked' attribute instead of using the value.
+              if (item.value_int === '1' && item.data_type === 'Boolean')
+                $('[id=' + selector + ']').attr('checked', 'checked');
+              if (item.value_int === '0' && item.data_type === 'Boolean')
+                $('[id=' + selector + ']').removeAttr('checked'); 
+            });
+          }
+        );
+      });\n";
+    }
     return $r;
   }
 
