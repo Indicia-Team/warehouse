@@ -303,14 +303,8 @@ class report_helper extends helper_base {
   * </li>
   * <li><b>linkToReportPath</b>
   * Allows drill down into reports. Holds the URL of the report that is called when the user clicks on 
-  * a report row. When this is not set, the report click functionality is disabled.
-  * </li>
-  * <li><b>linkToReportParam</b>
-  * Holds the input parameter to be passed to the report that is called when the user clicks on a report row. 
-  * The input parameter's full unique identifier is required, which consists of the report group name (defaults
-  * to report) followed by a hyphen, then the report parameter name defined in the report XML file, for example
-  * "report-location_id" works for the location_id report parameter for a report in the report group "report".
-  * When this is not set, the report click functionality is disabled.
+  * a report row. When this is not set, the report click functionality is disabled. The replacement #param# will
+  * be filled in with the row ID of the clicked on row.
   * </li>
   * <li><b>ajax</b>
   * If true, then the first page of records is loaded via an AJAX call after the initial page load, otherwise
@@ -536,17 +530,14 @@ jQuery('#updateform-".$updateformID."').ajaxForm({
         $outputCount++;
       }
       // implement links from the report grid rows if configuration options set
-      if(isset($options['linkToReportPath']) && isset($options['linkToReportParam'])) {
+      if (isset($options['linkToReportPath'])) {
         $path=$options['linkToReportPath'];
-        // ensure we can add url params to make a value url
-        $path .= (strpos($path, '?')===false) ? '?' : '&';
-        $param=$options['linkToReportParam'];
         if (isset($options['rowId'])) {
-        //if the user clicks on a summary table row then open the report specified by the user.
+          //if the user clicks on a summary table row then open the report specified using the row ID as a parameter.
             self::$javascript .= "
               $('#".$options['id']." tbody').click(function(evt) {
                 var tr=$(evt.target).parents('tr')[0], rowId=tr.id.substr(3);
-                window.location='$path$param=' + rowId;
+                window.location='$path'.replace(/#param#/g, rowId);
               });
             ";
         }
@@ -935,14 +926,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * </li>
   * <li><b>linkToReportPath</b>
   * Allows drill down into reports. Holds the URL of the report that is called when the user clicks on 
-  * a chart data item. When this is not set, the report click functionality is disabled.
-  * </li>
-  * <li><b>linkToReportParam</b>
-  * Holds the input parameter to be passed to the report that is called when the user clicks on a chart data item. 
-  * The input parameter's full unique identifier is required, which consists of the report group name (defaults
-  * to report) followed by a hyphen, then the report parameter name defined in the report XML file, for example
-  * "report-location_id" works for the location_id report parameter for a report in the report group "report".
-  * When this is not set, the report click functionality is disabled.
+  * a chart data item. When this is not set, the report click functionality is disabled. The replacement #param#
+  * is replaced by the Id of the clicked on item.
   * </li>
   * </ul>
   * @todo look at the ReportEngine to check it is not prone to SQL injection (eg. offset, limit).
@@ -1039,7 +1024,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
           }
         }
         //once again we only include summary report clicking functionality if user has setup the appropriate options
-        if(isset($options['linkToReportPath']) && isset($options['linkToReportParam'])) {
+        if(isset($options['linkToReportPath'])) {
           if ($options['reportGroupOption']=="region"||$options['reportGroupOption']=="taxon_group"||$options['reportGroupOption']=="species") {
             //we save the same data to two different keys in the array because when we access the array using jplot data[0] as 
             //the key later on data[0] is different depending on whether we are using a pie or bar chart. So if we have 
@@ -1070,21 +1055,28 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     // Finally, dump out the Javascript with our constructed parameters
     self::$javascript .= "$.jqplot('".$options['id']."',  [".implode(',', $seriesData)."], \n{".implode(",\n", $opts)."});\n";
      //once again we only include summary report clicking functionality if user has setup the appropriate options
-    if(isset($options['linkToReportPath']) && isset($options['linkToReportParam'])) {
+    if(isset($options['linkToReportPath'])) {
       //get the URL to the report to call
       $path=$options['linkToReportPath'];
-      //grab the user specified input parameter for the report that is called when the user clicks on a summary.
-      $param=$options['linkToReportParam'];
       $json = json_encode($clickReportParamData);
       //open the report, note that data[0] varies depending on whether we are using a pie or bar. But we have
       //saved the data to the array twice already to handle this
       self::$javascript .= "$('#chartdiv').bind('jqplotDataClick', 
-      function(ev, seriesIndex, pointIndex, data) {
-        var reportData = $json;";
-      // if path already contains query params, add new params using &, else use ?
-      $path .= (strpos($path, '?')===false) ? '?' : '&';
-      self::$javascript .= "window.location='$path$param=' + reportData[data[0]];})";
+  function(ev, seriesIndex, pointIndex, data) {
+    var reportData = $json;
+    window.location='$path'.replace(/#param#/g, reportData[data[0]]);
+  }
+);\n";
     }
+    self::$javascript .= "$('#chartdiv').bind('jqplotDataHighlight', function(ev, seriesIndex, pointIndex, data) {
+      $('table.jqplot-table-legend td').removeClass('highlight');
+      $('table.jqplot-table-legend td').filter(function() { 
+        return this.textContent == data[0]; 
+      }).addClass('highlight');
+  });
+  $('#chartdiv').bind('jqplotDataUnhighlight', function(ev, seriesIndex, pointIndex, data) {
+    $('table.jqplot-table-legend td').removeClass('highlight');
+  });\n";
     $r = '<div class="'.$options['class'].'" style="width:'.$options['width'].'; ">';
     if (isset($options['title']))
       $r .= '<div class="'.$options['headerClass'].'">'.$options['title'].'</div>';
@@ -1532,7 +1524,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
                 '}';
             else
               $defStyleFns[$type] = "get$type: function(feature) { \n".
-                  "var ratio = (feature.data.$value - $minvalue) / ($maxvalue - $minvalue); \n".
+                  "var ratio = Math.pow((feature.data.$value - $minvalue) / ($maxvalue - $minvalue), .2); \n".
                   "return $from + ($to-$from)*ratio; \n".
                   '}';
             $defsettings[$type]="\${get$type}";
