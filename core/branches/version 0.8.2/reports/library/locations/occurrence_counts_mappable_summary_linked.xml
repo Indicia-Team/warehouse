@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<report title="Summary species counts by location" description="Lists locations with mappable boundary output and the number of species within them. Requires the spatial_index_builder warehouse module to be enabled.">
+<report title="Summary record counts by linked location" description="Lists locations with mappable boundary output and the number of records within them. Records are only included if they have the location directly linked to the sample, this does not use a spatial search.">
       <query website_filter_field="o.website_id">
       SELECT #columns#
-      FROM (SELECT l.id as id, count(distinct o.taxon_meaning_id) as value
+      FROM (SELECT l.id as id, count(distinct o.id) as value
           FROM locations l
-          LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false 
-          JOIN index_locations_samples ils on ils.location_id=l.id
-          JOIN cache_occurrences o ON o.sample_id=ils.sample_id 
+          LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
+          JOIN samples s ON s.location_id=l.id AND s.deleted=false
+          JOIN cache_occurrences o ON o.sample_id=s.id
           #agreements_join# 
           #joins#
-          WHERE l.deleted=false 
+          WHERE l.deleted=false AND l.boundary_geom IS NOT NULL
           AND (lw.website_id in (#website_ids#) OR l.public=true)
           AND (o.id IS NULL or (
             o.zero_abundance='f'
@@ -19,8 +19,8 @@
             AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR o.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
             AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
             AND quality_check('#quality#', o.record_status, o.certainty)=true)
-            AND (CAST(l.location_type_id AS character varying)='#location_type_id#' OR '#location_type_id#'='')
           )
+          AND (CAST(l.location_type_id AS character varying)='#location_type_id#' OR '#location_type_id#'='')
       GROUP BY l.id) AS stats
       RIGHT JOIN locations l on l.id=stats.id AND l.deleted=false AND l.boundary_geom IS NOT NULL
       LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false 
