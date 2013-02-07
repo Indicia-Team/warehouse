@@ -1,0 +1,56 @@
+<report
+    title="Location get latest sample attributes for site"
+    description="Return the values from the sample attributes for the most recent sample for the site. We only return
+                 values for samples created by the current user and where the sample attribute has applies_to_location set."
+>
+<query website_filter_field="lw.website_id">
+  SELECT #columns#
+  FROM sample_attribute_values sav
+    JOIN sample_attributes sa on sa.id = sav.sample_attribute_id
+    JOIN samples s on s.id = sav.sample_id
+  WHERE sa.applies_to_location = true
+    AND s.created_on = (
+      SELECT MAX(created_on) 
+      FROM samples 
+      WHERE created_by_id = '#created_by_id#' 
+        AND location_id = '#location_id#'
+    )
+</query>
+<params>
+  <param name='location_id' display='Location Id' description='Location to get latest sample attributes for.' datatype='lookup' />
+  <param name='created_by_id' display='Created By Id' description='Only return sample attribute values created by the current user.' datatype='lookup' />
+</params>
+<columns>
+  <column name='location_id' display='Location Id' sql='s.location_id' datatype='lookup' />
+  <column name='id' display='Sample Attribute Id' sql='sa.id' datatype='lookup' />
+  <column name='data_type' display='Sample Attribute Data Type' sql="
+          CASE sa.data_type
+            WHEN 'T'::bpchar THEN 'Text'::bpchar
+            WHEN 'L'::bpchar THEN 'Lookup List'::bpchar
+            WHEN 'I'::bpchar THEN 'Integer'::bpchar
+            WHEN 'B'::bpchar THEN 'Boolean'::bpchar
+            WHEN 'F'::bpchar THEN 'Float'::bpchar
+            WHEN 'D'::bpchar THEN 'Specific Date'::bpchar
+            WHEN 'V'::bpchar THEN 'Vague Date'::bpchar
+            ELSE sa.data_type
+          END" />
+  <column name='value' display='Sample Attribute Value' sql="
+          CASE sa.data_type
+            WHEN 'T'::bpchar THEN sav.text_value
+            WHEN 'L'::bpchar THEN sav.int_value::character varying::text
+            WHEN 'I'::bpchar THEN sav.int_value::character varying::text
+            WHEN 'B'::bpchar THEN sav.int_value::character varying::text
+            WHEN 'F'::bpchar THEN sav.float_value::character varying::text
+            WHEN 'D'::bpchar THEN sav.date_start_value::character varying::text
+            WHEN 'V'::bpchar THEN (sav.date_start_value::character varying::text || ' - '::text) || sav.date_end_value::character varying::text
+            ELSE NULL::text
+          END" />
+  <column name='value_text' display='Sample Attribute Value Text Value' sql='sav.text_value' datatype='text' />
+  <column name='value_int' display='Sample Attribute Value Int Value' sql='sav.int_value' datatype='int' />
+  <column name='value_float' display='Sample Attribute Value Float Value' sql='sav.float_value' datatype='float' />
+  <column name='value_date_start' sql='sav.date_start_value' visible='false' />
+  <column name='value_date_end' sql='sav.date_end_value' visible='false' />
+  <column name='value_date_type' sql='sav.date_type_value' visible='false' />
+  <column name='date' display='Date' />
+</columns>
+</report>
