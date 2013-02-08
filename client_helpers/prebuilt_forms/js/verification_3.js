@@ -118,7 +118,6 @@ function postOccurrence(occ) {
         } else {
           // reload the grid once empty, to get the next page
           indiciaData.reports.verification.grid_verification_grid.reload();
-          
         }
       }
     }
@@ -140,10 +139,10 @@ function setupRecordCheckEmail(subject, body) {
     });
   });
   record += "\n\n[Photos]\n\n[Comments]";
-  email.subject = indiciaData.email_subject_send_to_verifier
+  email.subject = subject
       .replace('%taxon%', current_record.additional.taxon)
       .replace('%id%', occurrence_id);
-  email.body = indiciaData.email_body_send_to_verifier
+  email.body = body
       .replace('%taxon%', current_record.additional.taxon)
       .replace('%id%', occurrence_id)
       .replace('%record%', record);
@@ -158,6 +157,7 @@ function buildVerifierEmail() {
   setupRecordCheckEmail(indiciaData.email_subject_send_to_verifier, indiciaData.email_body_send_to_verifier);
   // Let the user pick the recipient
   email.to = '';
+  email.subtype='V';
   popupEmail();
 }
 
@@ -167,6 +167,7 @@ function buildVerifierEmail() {
 function buildRecorderConfirmationEmail() {
   setupRecordCheckEmail(indiciaData.email_subject_send_to_recorder, indiciaData.email_body_send_to_recorder); 
   email.to=current_record.additional.recorder_email;
+  email.subtype='R';
   popupEmail();
 }
 
@@ -224,24 +225,19 @@ function processEmail(){
     email.body = $('#email-body').val();
 
     if (email.type === 'recordCheck') {
-    // ensure images are loaded
-    $.ajax({
-      url: indiciaData.ajaxUrl + '/imagesAndComments/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id,
-      async: false,
-      dataType: 'json',
-      success: function (response) {
-          email.body = email.body.replace(/\[Photos\]/g, response.images);
-          email.body = email.body.replace(/\[Comments\]/g, response.comments);
-      }
-    });
-    // set the status
-    var status = 'S',
-      occ = {
-        'website_id': indiciaData.website_id,
-        'occurrence:id': occurrence_id,
-        'occurrence:record_status': status
-      };
-    postOccurrence(occ);
+      // ensure images are loaded
+      $.ajax({
+        url: indiciaData.ajaxUrl + '/imagesAndComments/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id,
+        async: false,
+        dataType: 'json',
+        success: function (response) {
+            email.body = email.body.replace(/\[Photos\]/g, response.images);
+            email.body = email.body.replace(/\[Comments\]/g, response.comments);
+        }
+      });
+      // save a comment to indicate that the mail was sent
+      saveComment(indiciaData.commentTranslations.emailed.replace('{1}', email.subtype==='R' ?
+          indiciaData.commentTranslations.recorder : indiciaData.commentTranslations.expert));
     }
 
     sendEmail();
@@ -282,11 +278,14 @@ function showComment(comment, username) {
   $('#comment-list').prepend(html);
 }
 
-function saveComment() {
+function saveComment(text) {
+  if (text==="undefined" && $('#comment-text')) {
+    text=$('#comment-text').val();
+  } 
   var data = {
     'website_id': indiciaData.website_id,
     'occurrence_comment:occurrence_id': occurrence_id,
-    'occurrence_comment:comment': $('#comment-text').val(),
+    'occurrence_comment:comment': text,
     'occurrence_comment:person_name': indiciaData.username
   };
   $.post(
@@ -294,8 +293,10 @@ function saveComment() {
     data,
     function (data) {
       if (typeof data.error === "undefined") {
-        showComment($('#comment-text').val(), indiciaData.username);
-        $('#comment-text').val('');
+        showComment(text, indiciaData.username);
+        if ($('#comment-text')) {
+          $('#comment-text').val('');
+        }
       } else {
         alert(data.error);
       }

@@ -634,6 +634,10 @@ idlist=';
     data_entry_helper::$javascript .= 'indiciaData.statusTranslations.T = "'.lang::get('Test record')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.statusTranslations.S = "'.lang::get('Sent for verification')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.statusTranslations.C = "'.lang::get('Awaiting verification')."\";\n";
+    data_entry_helper::$javascript .= "indiciaData.commentTranslations = {};\n";
+    data_entry_helper::$javascript .= 'indiciaData.commentTranslations.emailed = "'.lang::get('I emailed this record to {1} for checking.')."\";\n";
+    data_entry_helper::$javascript .= 'indiciaData.commentTranslations.recorder = "'.lang::get('the recorder')."\";\n";
+    data_entry_helper::$javascript .= 'indiciaData.commentTranslations.expert = "'.lang::get('an expert')."\";\n";
 
     data_entry_helper::$javascript .= 'indiciaData.email_subject_send_to_verifier = "'.$args['email_subject_send_to_verifier']."\";\n";
     $body = str_replace(array("\r", "\n"), array('', '\n'), $args['email_body_send_to_verifier']);
@@ -884,11 +888,11 @@ idlist=';
   public static function ajax_email() {
     global $user;
     $headers  = 'MIME-Version: 1.0' . "\r\n";
-    $headers .= 'Content-type: text/html; charset=iso-8859-1' . "\r\n";
+    $headers .= 'Content-type: text/html; charset=UTF-8' . "\r\n";
     $site_email = variable_get('site_mail', '');
     $headers .= 'From: '. $site_email . PHP_EOL . "\r\n";
     $headers .= 'Reply-To: '. $user->mail . "\r\n";
-    $headers .= 'Return-Path: '. $site_email . "\r\n";
+    $headers .= 'Return-Path: '. $site_email;
     $emailBody = $_POST['body'];
     $emailBody = str_replace("\n", "<br/>", $emailBody);
     // Send email. Depends upon settings in php.ini being correct
