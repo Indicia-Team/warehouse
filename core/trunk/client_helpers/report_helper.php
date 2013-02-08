@@ -327,6 +327,8 @@ class report_helper extends helper_base {
     if ($options['ajax'])
       $options['extraParams']['limit']=0;
     self::request_report($response, $options, $currentParamValues, true, $extras);
+    if ($options['ajax'])
+      unset($options['extraParams']['limit']);
     if (isset($response['error'])) return $response['error'];
     $r = self::params_form_if_required($response, $options, $currentParamValues);
     // return the params form, if that is all that is being requested, or the parameters are not complete.
