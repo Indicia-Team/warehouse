@@ -21,14 +21,13 @@
  */
 
 /**
- * Hook into the data cleaner to declare checks for the test of a species against a list of allowed locations. 
- * Allows for 2 levels of sample hierarchy and 2 levels of location hierarchy.
+ * Hook into the data cleaner to declare checks for the test of a species against a list of allowed locations.
  * @return type array of rules.
  */
 function data_cleaner_species_location_data_cleaner_rules() {
   return array(
     'testType' => 'SpeciesLocation',
-    'optional' => array('Metadata'=>array('Tvk','Taxon','TaxonMeaningId')),
+    'optional' => array('Metadata'=>array('Tvk','Taxon','TaxonMeaningId','LocationTypeId')),
     'required' => array('Metadata'=>array('LocationNames','SurveyId')),    
     'queries' => array(
       array(
@@ -38,15 +37,14 @@ function data_cleaner_species_location_data_cleaner_rules() {
             or (vrm.value=cast(co.taxon_meaning_id as character varying) and vrm.key='TaxonMeaningId') 
             join verification_rules vr on vr.id=vrm.verification_rule_id and vr.test_type='SpeciesLocation' 
             join verification_rule_metadata vrml on vrml.verification_rule_id = vr.id and vrml.deleted=false and upper(vrml.key)='LOCATIONNAMES' 
+            left join verification_rule_metadata vrmlt on vrmlt.verification_rule_id = vr.id and vrmlt.deleted=false and upper(vrml.key)='LOCATIONTYPEID' 
             join samples s on s.id=co.sample_id and s.deleted=false 
-            left join samples sp on sp.id=s.parent_id and sp.deleted=false
-            join locations l on l.id in (s.location_id, sp.location_id) and l.deleted=false
-            left join locations lp on lp.id=l.parent_id and lp.deleted=false
+            join locations l on (vrmlt.id is null or l.location_type_id=vrmlt.id) and 
+                st_intersects(l.boundary_geom, s.geom) and l.deleted=false 
             join verification_rule_metadata vrsurvey on vrsurvey.verification_rule_id=vr.id and vrsurvey.key='SurveyId' 
                 and vrsurvey.value=cast(co.survey_id as character varying) and vrsurvey.deleted=false",
         'where' =>
-            "not (array[upper(lp.name)] <@ string_to_array(upper(vrml.value), ',') or 
-                array[upper(l.name)] <@ string_to_array(upper(vrml.value), ','))"
+            "not array[upper(l.name)] <@ string_to_array(upper(vrml.value), ',')"
       )
     )
   );
