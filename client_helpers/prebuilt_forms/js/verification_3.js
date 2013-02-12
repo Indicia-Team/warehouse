@@ -355,6 +355,8 @@ function showTab() {
           $('#chart-div').css('opacity',1);
         }
       );
+    } else if (indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] === 'images') {
+      $('#images-tab a.fancybox').fancybox();
     }
     // make it clear things are loading
     if (indiciaData.mapdiv !== null) {
