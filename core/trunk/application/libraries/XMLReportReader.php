@@ -310,9 +310,13 @@ class XMLReportReader_Core implements ReportReader
     } else {
       $distincton = '';
     }
-    if (count($countSql)>0) {
-      $this->countQuery = str_replace('#columns#', ' count(distinct ' . implode(' || ', $countSql) . ') ', $this->query);
-    } else {
+    if (count($countSql)>1) {
+      $this->countQuery = str_replace('#columns#', ' count(distinct coalesce(' . implode(", '') || coalesce(", $countSql) . ", '')) ", $this->query);
+    } 
+    elseif (count($countSql)===1) {
+      $this->countQuery = str_replace('#columns#', ' count(distinct ' . $countSql[0] . ') ', $this->query);
+    }
+    else {
       $this->countQuery = str_replace('#columns#', ' count(*) ', $this->query);
     }
     // merge this back into the query. Note we drop in a #fields# tag so that the query processor knows where to
