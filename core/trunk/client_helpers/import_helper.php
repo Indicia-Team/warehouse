@@ -159,10 +159,13 @@ class import_helper extends helper_base {
     $filename=basename($_SESSION['uploaded_file']);
     // If the last step was skipped because the user did not have any settings to supply, presetSettings contains the presets.
     // Otherwise we'll use the settings form content which already in $_POST so will overwrite presetSettings.
-    $settings = array_merge(
-      $options['presetSettings'],
-      $_POST
-    );
+    if (isset($options['presetSettings'])) {
+      $settings = array_merge(
+        $options['presetSettings'],
+        $_POST
+      );
+    } else 
+      $settings = $_POST;
     // only want defaults that actually have a value - others can be set on a per-row basis by mapping to a column
     foreach ($settings as $key => $value) {
       if (empty($value)) {
