@@ -94,7 +94,8 @@ class Report_Controller extends Data_Service_Base_Controller {
       header('Content-Disposition: attachment; filename="'.$downloadfilename.'.'.$extension.'"');
       if ($mode=='csv') {
         // prepend a byte order marker, so Excel recognises the CSV file as UTF8
-        echo chr(hexdec('EF')) . chr(hexdec('BB')) . chr(hexdec('BF'));
+        if (!empty($this->response))
+          echo chr(hexdec('EF')) . chr(hexdec('BB')) . chr(hexdec('BF'));
       }
       $this->send_response();
     }
