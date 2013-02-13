@@ -1,4 +1,4 @@
-var occurrence_id = null, current_record = null, urlSep, validator, speciesLayers = [];
+var rowRequest=null, occurrence_id = null, current_record = null, urlSep, validator, speciesLayers = [];
 var email = {to:'', subject:'', body:'', type:''};
 
 // IE7 compatability
@@ -18,21 +18,27 @@ function selectRow(tr) {
   if (tr.id.substr(3)===occurrence_id) {
     return;
   }
+  if (rowRequest) {
+    rowRequest.abort();
+  }
   // while we are loading, disable the toolbar
   $('#record-details-toolbar *').attr('disabled', 'disabled');
   occurrence_id = tr.id.substr(3);
   // make it clear things are loading
   $('#chart-div').css('opacity',0.15);
-  $.getJSON(
+  rowRequest = $.getJSON(
     indiciaData.ajaxUrl + '/details/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id,
     null,
     function (data) {
+      // refind the row, as $(tr) sometimes gets obliterated.
+      var $row = $('#row' + data.data.Record[0].value);
+      rowRequest=null;
       current_record = data;
       $('#instructions').hide();
       $('#record-details-content').show();
-      if ($(tr).parents('tbody').length !== 0) {
-        $(tr).parents('tbody').children('tr').removeClass('selected');
-        $(tr).addClass('selected');
+      if ($row.parents('tbody').length !== 0) {
+        $row.parents('tbody').children('tr').removeClass('selected');
+        $row.addClass('selected');
         // point the image and comments tabs to the correct AJAX call for the selected occurrence.
         $('#record-details-tabs').tabs('url', indiciaData.detailsTabs.indexOf('images'), indiciaData.ajaxUrl + '/images/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id);
         $('#record-details-tabs').tabs('url', indiciaData.detailsTabs.indexOf('comments'), indiciaData.ajaxUrl + '/comments/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id);
@@ -49,7 +55,7 @@ function selectRow(tr) {
         if (typeof indiciaData.wmsSpeciesLayers!=="undefined" && data.additional.taxon_external_key!==null) {
           $.each(indiciaData.wmsSpeciesLayers, function(idx, layerDef) {
             thisSpLyrSettings = $.extend({}, layerDef.settings);
-            // replace values with the extrnal key if the token is used
+            // replace values with the external key if the token is used
             $.each(thisSpLyrSettings, function(prop, value) {
               if (typeof(value)==='string' && $.trim(value)==='{external_key}') {
                 thisSpLyrSettings[prop]=data.additional.taxon_external_key;
