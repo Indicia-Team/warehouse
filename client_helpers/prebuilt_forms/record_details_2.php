@@ -358,9 +358,13 @@ Record ID',
       data_entry_helper::load_existing_record($auth, 'occurrence', $_GET['occurrence_id'], 'detail', 'reporting');
       self::$occurrenceLoaded=true;
     }
+    watchdog('indicia', 'occ details: '.print_r(data_entry_helper::$entity_to_load, true));
     if (!self::$sampleLoaded) {
+      watchdog('indicia', 'loading sample: '.data_entry_helper::$entity_to_load['occurrence:sample_id']);
       data_entry_helper::load_existing_record($auth, 'sample', data_entry_helper::$entity_to_load['occurrence:sample_id'], 'detail', 'reporting');
       $sampleLoaded=true;
+    } else {
+      watchdog('indicia', 'sample was already loaded');
     }
 
     $r = '<div>'; 

@@ -121,7 +121,7 @@ class import_helper extends helper_base {
       );
       if (isset($options['presetSettings'])) {
         // skip parts of the form we have a preset value for
-        $formOptions['presetParams'] = $options['presetSettings'];
+        $formOptions['extraParams'] = $options['presetSettings'];
       }
       $form = self::build_params_form($formOptions, $hasVisibleContent);
       // If there are no settings required, skip to the next step.

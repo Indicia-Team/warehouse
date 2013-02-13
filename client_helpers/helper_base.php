@@ -779,7 +779,7 @@ $('.ui-state-default').live('mouseout', function() {
    * <li><b>paramsToExclude</b><br/>
    * An optional array of parameter names for parameters that should be skipped in the form output despite being in the form definition.
    * </li>
-   * <li><b>presetParams</b><br/>
+   * <li><b>extraParams</b><br/>
    * Optional array of param names and values that have a fixed value and are therefore output only as a hidden control.
    * </li>
    * <li><b>inlineMapTools</b><br/>
@@ -827,7 +827,7 @@ $('.ui-state-default').live('mouseout', function() {
       if (!isset($options['paramsToExclude']) || !in_array($key, $options['paramsToExclude'])) {
         $r .= self::get_params_form_control($key, $info, $options, $tools);
         // If that was a visible setting, then we have to tell the caller that there is something to show.
-        if (!isset($options['presetParams']) || !array_key_exists($key, $options['presetParams']))
+        if (!isset($options['extraParams']) || !array_key_exists($key, $options['extraParams']))
           $hasVisibleContent=true;
       }
       // If the form has defined any tools to add to the map, we need to create JavaScript to add them to the map.
@@ -912,17 +912,17 @@ $('.ui-state-default').live('mouseout', function() {
   
   /** 
    * Internal method to safely find the value of a preset parameter. Returns empty string if not defined.
-   * @param array $options The options array, containing a presetParams entry that the parameter should be 
+   * @param array $options The options array, containing a extraParams entry that the parameter should be 
    * found in.
    * @param string $name The key identifying the preset parameter to look for.
    */
   private static function get_preset_param($options, $name) {
-    if (!isset($options['presetParams']))
+    if (!isset($options['extraParams']))
       return '';
-    else if (!isset($options['presetParams'][$name]))
+    else if (!isset($options['extraParams'][$name]))
       return '';
     else
-      return $options['presetParams'][$name];
+      return $options['extraParams'][$name];
   }
   
   /**
@@ -953,7 +953,7 @@ $('.ui-state-default').live('mouseout', function() {
     if ($info['datatype']=='idlist') {
       // idlists are not for human input so use a hidden. 
       $r .= "<input type=\"hidden\" name=\"$fieldPrefix$key\" value=\"".self::get_preset_param($options, $key)."\" class=\"".$fieldPrefix."idlist-param\" />\n";
-    } elseif (isset($options['presetParams']) && array_key_exists($key, $options['presetParams'])) {
+    } elseif (isset($options['extraParams']) && array_key_exists($key, $options['extraParams'])) {
       $r .= "<input type=\"hidden\" name=\"$fieldPrefix$key\" value=\"".self::get_preset_param($options, $key)."\" />\n";
     } elseif ($info['datatype']=='lookup' && isset($info['population_call'])) {
       // population call is colon separated, of the form direct|report:table|view|report:idField:captionField:params(key=value,key=value,...)
@@ -981,12 +981,12 @@ $('.ui-state-default').live('mouseout', function() {
       else
         $ctrlOptions['report']=$popOpts[1];
       if (isset($info['linked_to']) && isset($info['linked_filter_field'])) {
-        if (isset($options['presetParams']) && array_key_exists($info['linked_to'], $options['presetParams'])) {
+        if (isset($options['extraParams']) && array_key_exists($info['linked_to'], $options['extraParams'])) {
           // if the control this is linked to is hidden because it has a preset value, just use that value as a filter on the
           // population call for this control
           $ctrlOptions = array_merge($ctrlOptions, array(
             'extraParams' => array_merge($ctrlOptions['extraParams'], array('query'=>json_encode(
-                array('in'=>array($info['linked_filter_field']=>array($options['presetParams'][$info['linked_to']], null)))
+                array('in'=>array($info['linked_filter_field']=>array($options['extraParams'][$info['linked_to']], null)))
             )))
           ));
         } else {
