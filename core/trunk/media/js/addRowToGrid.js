@@ -422,43 +422,45 @@ function createSubSpeciesList(url, selectedItemPrefId, selectedItemPrefName, loo
     'name_type': 'L',
     'simplified': 'f'
   }, ctrl=$("#"+subSpeciesCtrlId.replace(/:/g,'\\:'));
-  $.getJSON(url+'/cache_taxon_searchterm?callback=?', subSpeciesData, 
-    function(data) {
-      var sspRegexString, optionsCount = 0, epithet, nameRegex;
-      //clear the sub-species cell ready for new data
-      ctrl.empty();
-      // build a regex that can remove the species binomial (plus optionally the subsp rank) from the name, so
-      // Adelia decempunctata forma bimaculata can be shown as just bimaculata.
-      sspRegexString=RegExp.escape(selectedItemPrefName);
-      if (typeof indiciaData.subspeciesRanksToStrip!=="undefined") {
-        sspRegexString += "[ ]+" + indiciaData.subspeciesRanksToStrip;
-      }
-      nameRegex=new RegExp('^'+sspRegexString);
-      //Work our way through the sub-species data returned from data services
-      jQuery.each(data, function(i, item) {
-        epithet = item.preferred_taxon.replace(nameRegex, '');
-        if (selectedChild==item.taxa_taxon_list_id) {
-          //If we find the sub-species we want to be selected by default then we set the 'selected' attribute on html the option tag
-          ctrl.append($('<option selected="selected"></option>').val(item.taxa_taxon_list_id).html(epithet));
-        } else {
-          //If we don't want this sub-species to be selected by default then we don't set the 'selected' attribute on html the option tag
-          ctrl.append($("<option></option>").val(item.taxa_taxon_list_id).html(epithet));          
+  if (ctrl.length>0) {
+    $.getJSON(url+'/cache_taxon_searchterm?callback=?', subSpeciesData, 
+      function(data) {
+        var sspRegexString, optionsCount = 0, epithet, nameRegex;
+        //clear the sub-species cell ready for new data
+        ctrl.empty();
+        // build a regex that can remove the species binomial (plus optionally the subsp rank) from the name, so
+        // Adelia decempunctata forma bimaculata can be shown as just bimaculata.
+        sspRegexString=RegExp.escape(selectedItemPrefName);
+        if (typeof indiciaData.subspeciesRanksToStrip!=="undefined") {
+          sspRegexString += "[ ]+" + indiciaData.subspeciesRanksToStrip;
         }
-      });
-      //If we don't find any sub-species then hide the control
-      if (data.length===0) {
-        ctrl.hide();
-      } else {
-        //The selected sub-species might be the first (blank) option if there are sub-species present but
-        //we don't know yet which one the user wants.
-        //This would occur if the user manually fills in the species and the parent has sub-species
-        if (selectedChild==0)
-          ctrl.prepend("<option value='' selected='selected'></option>");
-        ctrl.show();
+        nameRegex=new RegExp('^'+sspRegexString);
+        //Work our way through the sub-species data returned from data services
+        jQuery.each(data, function(i, item) {
+          epithet = item.preferred_taxon.replace(nameRegex, '');
+          if (selectedChild==item.taxa_taxon_list_id) {
+            //If we find the sub-species we want to be selected by default then we set the 'selected' attribute on html the option tag
+            ctrl.append($('<option selected="selected"></option>').val(item.taxa_taxon_list_id).html(epithet));
+          } else {
+            //If we don't want this sub-species to be selected by default then we don't set the 'selected' attribute on html the option tag
+            ctrl.append($("<option></option>").val(item.taxa_taxon_list_id).html(epithet));          
+          }
+        });
+        //If we don't find any sub-species then hide the control
+        if (data.length===0) {
+          ctrl.hide();
+        } else {
+          //The selected sub-species might be the first (blank) option if there are sub-species present but
+          //we don't know yet which one the user wants.
+          //This would occur if the user manually fills in the species and the parent has sub-species
+          if (selectedChild==0)
+            ctrl.prepend("<option value='' selected='selected'></option>");
+          ctrl.show();
+        }
+        
       }
-      
-    }
-  );
+    );
+  }
 }
 
 function SetHtmlIdsOnSubspeciesChange(subSpeciesId) {
