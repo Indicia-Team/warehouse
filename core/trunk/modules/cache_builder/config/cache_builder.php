@@ -701,19 +701,14 @@ $config['occurrences']['insert']="insert into cache_occurrences (
   $config['occurrences']['insert_key_field']='o.id';
   
   // Additional update statements to pick up the recorder name from various possible custom attribute places. Faster than 
-  // loads of left joins.
+  // loads of left joins. These should be in priority order - i.e. ones where we have recorded the inputter rather than
+  // specifically the recorder should come after ones where we have recorded the recorder specifically.
   $config['occurrences']['final_updates']=array(
     // nullify the recorders field so it gets an update
     'Nullify recorders' => 'update cache_occurrences co
       set recorders=null
       from needs_update_occurrences nuo
       where nuo.id=co.id;',
-    // warehouse surname, first name
-    'Warehouse surname, first name' => 'update cache_occurrences co
-      set recorders=p.surname || coalesce(\', \' || p.first_name, \'\')
-      from needs_update_occurrences nuo, users u, people p
-      where co.recorders is null and u.id=co.created_by_id and p.id=u.person_id and p.deleted=false
-      and nuo.id=co.id and u.id<>1;',
     // surname, firstname
     'First name/surname' => 'update cache_occurrences co
       set recorders=sav.text_value || coalesce(\', \' || savf.text_value, \'\')
@@ -732,6 +727,12 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'full_name\' and sa.deleted=false
       where co.recorders is null  
       and sav.sample_id=co.sample_id and sav.deleted=false
+      and nuo.id=co.id;',
+    // Sample recorder names
+    'Sample recorder names' => 'update cache_occurrences co
+      set recorders=s.recorder_names
+      from samples s, needs_update_occurrences nuo
+      where co.recorders is null and s.id=co.sample_id and s.deleted=false
       and nuo.id=co.id;',
     // firstname and surname in parent sample
     'Parent first name/surname' => 'update cache_occurrences co
@@ -756,6 +757,19 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       where co.recorders is null
       and s.id=co.sample_id and s.deleted=false
       and nuo.id=co.id;',
+    // Sample recorder names in parent sample
+    'Sample recorder names' => 'update cache_occurrences co
+      set recorders=sp.recorder_names
+      from needs_update_occurrences nuo, samples s
+      join samples sp on sp.id=s.parent_id and sp.deleted=false
+      where co.recorders is null and s.id=co.sample_id and s.deleted=false
+      and nuo.id=co.id;',
+    // warehouse surname, first name
+    'Warehouse surname, first name' => 'update cache_occurrences co
+      set recorders=p.surname || coalesce(\', \' || p.first_name, \'\')
+      from needs_update_occurrences nuo, users u, people p
+      where co.recorders is null and u.id=co.created_by_id and p.id=u.person_id and p.deleted=false
+      and nuo.id=co.id and u.id<>1;',
     // CMS username
     'CMS Username' => 'update cache_occurrences co
       set recorders=sav.text_value
@@ -777,12 +791,6 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       set recorders=case u.id when 1 then null else u.username end
       from needs_update_occurrences nuo, users u
       where co.recorders is null and u.id=co.created_by_id
-      and nuo.id=co.id;',
-    // Sample recorder names
-    'Sample recorder names' => 'update cache_occurrences co
-      set recorders=s.recorder_names
-      from samples s, needs_update_occurrences nuo
-      where co.recorders is null and s.id=co.sample_id and s.deleted=false
       and nuo.id=co.id;'
   );
   
