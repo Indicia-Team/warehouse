@@ -17,7 +17,7 @@
   and (trim('#date_from#')='' or '#date_from#'='Click here' 
     or o.created_on &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date) or o.updated_on &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date) )
   and (trim('#date_to#')='' or '#date_to#'='Click here' 
-    or o.created_on &gt;= CAST(COALESCE('#date_to#','1500-01-01') as date) or o.updated_on &gt;= CAST(COALESCE('#date_to#','1500-01-01') as date) )
+    or o.created_on &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date) or o.updated_on &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date) )
   AND quality_check('#quality#', co.record_status, co.certainty)=true
   #idlist#
   </query>
@@ -49,7 +49,7 @@
     </param>
   </params>
   <columns>
-    <column name='occurrence_id' display='ID' sql='co.id' datatype='integer' template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />
+    <column name='occurrence_id' display='ID' sql='co.id' datatype='integer' distincton="true" template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />
     <column name='recordkey' display='RecordKey' sql="'iBRC' || co.id" datatype="text" />
     <column name='source' display='Source' sql="w.title || ' | ' || co.survey_title" datatype="text" />
     <column name='sample_id' visible='false' sql='co.sample_id' datatype='integer' />
