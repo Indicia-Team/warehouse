@@ -36,7 +36,7 @@ class Image extends Image_Core {
    * @param string $subdir The subdirectory to save the image into
    * @param int $website_id The website's ID, which allows custom sizing for saved images on a per-website basis.
    */
-  public static function create_image_files($uploadpath, $filename, $subdir = "", $website_id) {
+  public static function create_image_files($uploadpath, $filename, $subdir = "", $website_id=null) {
     // First check that the configured graphics library is available.
     // @todo Consider implementing checks if the driver is set to ImageMagick or GraphicsMagick.
     if (kohana::config('image.driver') != 'GD' || function_exists('gd_info')) {
@@ -49,7 +49,7 @@ class Image extends Image_Core {
       $ext = strtolower(array_pop($fileParts));
       if (in_array($ext, Image::$allowed_types)) {
         // website specific config available?
-        $config = kohana::config('indicia.image_handling_website_'.$website_id);
+        $config = $website_id && kohana::config('indicia.image_handling_website_'.$website_id);
         // if not, is there a default config setting
         if (!$config)
           $config = kohana::config('indicia.image_handling');
