@@ -137,6 +137,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
             "<strong>[*]</strong> is used to make a placeholder for putting any custom attributes that should be inserted into the current tab. When this option is ".
             "used, you can change any of the control options for an individual custom attribute control by putting @control|option=value on the subsequent line(s). ".
             "For example, if a control is for smpAttr:4 then you can update it's label by specifying @smpAttr:4|label=New Label on the line after the [*]. ".
+            "You can also set an option for all the controls output by the [*] block by specifying @option=value as for non-custom controls, e.g. ".
+            "set @label=My label to define the same label for all controls in this custom attribute block. ". 
             "You can define the value for a control using the standard replacement tokens for user data, namely {user_id}, {username}, {email} and {profile_*}; ".
             "replace * in the latter to construct an existing profile field name. For example you could set the default value of an email input using @smpAttr:n|default={email} ".
             "where n is the attribute ID.<br/>".
@@ -1142,9 +1144,13 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       // look for options specific to each attribute
       foreach ($options as $option => $value) {
         // split the id of the option into the control name and option name.
-        $optionId = explode('|', $option);
-        if (!isset($blockOptions[$optionId[0]])) $blockOptions[$optionId[0]]=array();
-        $blockOptions[$optionId[0]][$optionId[1]] = $value;
+        if (strpos($option, '|')!==false) {
+          $optionId = explode('|', $option);
+          if (!isset($blockOptions[$optionId[0]])) $blockOptions[$optionId[0]]=array();
+          $blockOptions[$optionId[0]][$optionId[1]] = $value;
+        } else {
+          $defAttrOptions[$option]=$value;
+        }
       }
       $r = get_attribute_html($attributes, $args, $defAttrOptions, $tabAlias, $blockOptions);
       if ($args['occurrence_comment'])
