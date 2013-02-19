@@ -794,7 +794,8 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
         '  "extraParams"=>array("website_id"=>'.$args['website_id'].','."\n".
         '    "view"=>"detail",'."\n".
         '    "auth_token"=>"'.parent::$auth['read']['auth_token'].'",'."\n".
-        '    "nonce"=>"'.parent::$auth['read']['nonce'].'"),'."\n".
+        '    "nonce"=>"'.parent::$auth['read']['nonce'].'",'."\n".
+        '    "taxon_list_id"=>'.$args['extra_list_id'].'),'."\n".
         '  "table"=>"taxa_taxon_list");'."\n".
         '$responseRecords = data_entry_helper::get_population_data($taxa_list_args);'."\n".
         '$taxaList = "";'."\n".
