@@ -180,9 +180,9 @@ class iform_easy_download {
     $filters = self::get_filters($args);
     $formats = array();
     if ($args['csv_format']==='yes' || ($args['csv_format']==='expert' && $expert))
-      array_push($formats, 'csv');
+      $formats[]='csv';
     if ($args['nbn_format']==='yes' || ($args['nbn_format']==='expert' && $expert))
-      array_push($formats, 'nbn');
+      $formats[]='nbn';
     if (count($filters)===0)
       return 'This download page is configured so that no filter options are available.';
     if (count($formats)===0)
@@ -268,8 +268,10 @@ class iform_easy_download {
     ));
     $r .= '</fieldset>';
     $r .= '<fieldset><legend>'.lang::get('Downloads').'</legend>';
-    $r .= '<label>Download options:</label><input class="inline-control" type="submit" name="format" value="'.lang::get('Download Spreadsheet').'"/>';
-    if ($expert) {
+    $r .= '<label>Download options:</label>';
+    if (in_array('csv', $formats))
+      $r .= '<input class="inline-control" type="submit" name="format" value="'.lang::get('Download Spreadsheet').'"/>';
+    if (in_array('nbn', $formats)) {
       $r .= '<input class="inline-control" type="submit" name="format" value="'.lang::get('Download NBN Format').'"/>';
       $r .= '<p class="helpText">'.lang::get('Note that the NBN format download will only include verified data and excludes records where the date or spatial reference is not compatible with the NBN Gateway.').'</p>';
     }
