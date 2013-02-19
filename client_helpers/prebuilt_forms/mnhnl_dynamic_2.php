@@ -781,7 +781,7 @@ hook_species_checklist_pre_delete_row=function(e) {
     // multiple species being input via a grid
     $myLanguage = iform_lang_iso_639_2($args['language']);
     $species_ctrl_opts=array_merge(array(
-          'speciesListID'=>$args['speciesListID'],
+          'speciesListID'=>$options['speciesListID'],
           'label'=>lang::get('occurrence:taxa_taxon_list_id'),
           'columns'=>1,          
           'extraParams'=>$extraParams,
@@ -798,7 +798,7 @@ hook_species_checklist_pre_delete_row=function(e) {
           'args'=>$args
     ), $options);
     $species_ctrl_opts['mapPosition'] = (isset($options['mapPosition']) ? $options['mapPosition'] : 'top');
-    call_user_func(array(get_called_class(), 'build_grid_taxon_label_function'), $args);
+    call_user_func(array(get_called_class(), 'build_grid_taxon_label_function'), $args, $options);
     return self::species_checklist($species_ctrl_opts);
   }
 
@@ -807,17 +807,16 @@ hook_species_checklist_pre_delete_row=function(e) {
    * This puts the choosen one first, folowed by ones with the same meaning, led by the preferred one.
    * This differs from the JS formatter function, which puts preferred first.
    */
-  protected static function build_grid_taxon_label_function($args) {
+  protected static function build_grid_taxon_label_function($args, $options) {
     global $indicia_templates;
     // always include the searched name
     $php = '$taxa_list_args=array('."\n".
-        '  "extraParams"=>array("website_id"=>'.$args['website_id'].','."\n".
-        '    "view"=>"detail",'."\n".
+        '  "extraParams"=>array("view"=>"detail",'."\n".
         '    "auth_token"=>"'.parent::$auth['read']['auth_token'].'",'."\n".
-        '    "nonce"=>"'.parent::$auth['read']['nonce'].'"),'."\n".
+        '    "nonce"=>"'.parent::$auth['read']['nonce'].'",'."\n".
+        '    "taxon_list_id"=>'.$options['speciesListID'].'),'."\n".
         '  "table"=>"taxa_taxon_list");'."\n".
         '$responseRecords = data_entry_helper::get_population_data($taxa_list_args);'."\n".
-        '$taxaList = "";'."\n".
         '$taxaMeaning = -1;'."\n".
         'foreach ($responseRecords as $record)'."\n".
         '  if($record["id"] == {id}){'."\n".
@@ -1207,9 +1206,7 @@ $('#entry_form').before(cloneableDiv);\n";
     // If filtering for a language, then use any taxa of that language. Otherwise, just pick the preferred names.
     if (!isset($options['extraParams']['language_iso']))
       $options['extraParams']['preferred'] = 't';
-    if (array_key_exists('listId', $options) && !empty($options['listId'])) {
-      $options['extraParams']['taxon_list_id']=$options['listId'];
-    }
+    $options['extraParams']['taxon_list_id']=$options['speciesListID'];
     if (array_key_exists('readAuth', $options)) {
       $options['extraParams'] += $options['readAuth'];
     } else {
@@ -1457,7 +1454,7 @@ mapInitialisationHooks.push(function(mapdiv) {
     // copy the options array so we can modify it
     $extraTaxonOptions = array_merge(array(), $options);
     // We don't want to filter the taxa to be added, because if they are in the sample, then they must be included whatever.
-    unset($extraTaxonOptions['extraParams']['taxon_list_id']);
+    // unset($extraTaxonOptions['extraParams']['taxon_list_id']);
     unset($extraTaxonOptions['extraParams']['preferred']);
     unset($extraTaxonOptions['extraParams']['language_iso']);
      // append the taxa to the list to load into the grid
