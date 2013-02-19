@@ -1206,6 +1206,7 @@ class ORM extends ORM_Core {
       // value is a term that needs looking up
       $fk = true;
       $attrId = substr($attrId, 3);
+      $value=trim($value);
     }
     
     $attr = $this->db
@@ -1280,7 +1281,7 @@ class ORM extends ORM_Core {
       case 'L':
         // Lookup list
         $vf = 'int_value';
-        if ($fk) {
+        if (!empty($value) && $fk) {
           // value must be looked up 
           $r = $this->fkLookup(array(
             'fkTable' => 'lookup_term',
