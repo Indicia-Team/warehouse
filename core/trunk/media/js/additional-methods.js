@@ -56,6 +56,11 @@ jQuery.validator.addMethod("ziprange", function(value, element) {
 jQuery.validator.addMethod("integer", function(value, element) {
 	return this.optional(element) || /^-?\d+$/.test(value);
 }, "A positive or negative non-decimal number please");
+// Requires a minimum figure grid reference
+jQuery.validator.addMethod("mingridref", function(value, element, params) {
+  // note the 2nd part of this allows a non-grid ref through.
+	return this.optional(element) || !(/[a-zA-Z]([a-zA-Z])?[0-9 ]*$/.test(value)) || value.replace(/[^0-9]/g,"").length>=params;
+}, "Please supply at least a {0} figure grid reference");
 
 /**
 * Return true, if the value is a valid vehicle identification number (VIN).
