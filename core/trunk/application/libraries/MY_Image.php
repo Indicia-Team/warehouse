@@ -49,7 +49,8 @@ class Image extends Image_Core {
       $ext = strtolower(array_pop($fileParts));
       if (in_array($ext, Image::$allowed_types)) {
         // website specific config available?
-        $config = $website_id && kohana::config('indicia.image_handling_website_'.$website_id);
+        if ($website_id)
+          $config = kohana::config('indicia.image_handling_website_'.$website_id);
         // if not, is there a default config setting
         if (!$config)
           $config = kohana::config('indicia.image_handling');
