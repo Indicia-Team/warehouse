@@ -1518,7 +1518,7 @@ indiciaData.windowLoaded=false;
 
     // Add a label only if specified in the options array. Link the label to the inputId if available,
     // otherwise the fieldname (as the fieldname control could be a hidden control).
-    if (array_key_exists('label', $options) && !empty($options['label'])) {
+    if (!empty($options['label'])) {
       $r .= str_replace(
           array('{label}', '{id}', '{labelClass}'),
           array(
@@ -1564,7 +1564,10 @@ indiciaData.windowLoaded=false;
 
     // If options contain a help text, output it at the end if that is the preferred position
     $r .= self::get_help_text($options, 'after');
-
+    
+    if (!empty($options['label']) && isset($indicia_templates['controlWrap'])) 
+      $r = str_replace(array('{control}', '{id}'), array($r, str_replace(':', '-', $options['id'])), $indicia_templates['controlWrap']);
+      
     return $r;
   }
 
@@ -1736,6 +1739,8 @@ indiciaData.windowLoaded=false;
         $converted[] = 'min:'.$matches['val'];
       } elseif (preg_match('/regex\[(?P<val>.+)\]/', $rule, $matches)) {
         $converted[] = 'pattern:'. $matches['val'];
+      } elseif (preg_match('/mingridref\[(?P<val>-?\d+)\]/', $rule, $matches)) {
+        $converted[] = 'mingridref:'.$matches['val'];
       }
     }
     if (count($converted) == 0) {
