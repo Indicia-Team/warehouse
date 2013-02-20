@@ -2088,6 +2088,9 @@ class data_entry_helper extends helper_base {
   * <li><b>geomFieldname</b><br/>
   * Optional. Fieldname to use for the geom (table:fieldname format) where the geom field is not
   * just called geom, e.g. location:centroid_geom.</li>
+  * <li><b>minGridRef</b><br/>
+  * Optional. Set to a number to enforce grid references to be a certain precision, e.g. provide the value 6 
+  * to enforce a minimum 6 figure grid reference.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the spatial reference control.
@@ -2105,6 +2108,8 @@ class data_entry_helper extends helper_base {
         'default'=>self::check_default_value($options['fieldname']),
         'splitLatLong'=>false
     ), $options);
+    if (!empty($options['minGridRef']))
+      $options['validation']='mingridref['.$options['minGridRef'].']';
     if (!isset($options['defaultGeom']))
       $options['defaultGeom']=self::check_default_value($options['geomFieldname']);
     $options = self::check_options($options);
