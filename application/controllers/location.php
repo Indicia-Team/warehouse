@@ -297,7 +297,12 @@ class Location_Controller extends Gridview_Base_Controller {
         $this->loadFromFile($handle);
 
         if(kohana::config('sref_notations.internal_srid') != $_POST['srid']) {
-          //convert to internal srid
+          //convert to internal srid. First convert +/-90 to a value just off, as Google Maps doesn't cope with the poles!
+          $this->wkt = str_replace(
+              array(' 90,', ' -90,', ' 90)', ' -90)'), 
+              array(' 89.99999999,', ' -89.99999999,', ' 89.99999999)', ' -89.99999999)'), 
+              $this->wkt
+          );
           $result = $this->db->query("SELECT ST_asText(ST_Transform(ST_GeomFromText('".$this->wkt."',".$_POST['srid']."),".
           kohana::config('sref_notations.internal_srid').")) AS wkt;")->current();
           $this->wkt = $result->wkt;
@@ -383,13 +388,11 @@ class Location_Controller extends Gridview_Base_Controller {
               ,'fields' => $fields
               ,'fkFields' => array()
               ,'superModels' => array());
+          if ($_POST['website_id'] != 'all') 
+            $save_array['joinsTo']=array('website'=>array($_POST['website_id']));
           $myLocation->submission = $save_array;
           $myLocation->submit();
 
-          if ($_POST['website_id'] != 'all') {
-            $joinModel = ORM::factory('locations_website');
-            $joinModel->validate(new Validation(array('location_id' => $myLocation->id, 'website_id' => $_POST['website_id'])), true);
-          }
           $description = $location_name.(isset($parent) ? ' - parent '.$parent : '');
           $view->create[] = $description;
           $view->location_id[$description] = $myLocation->id;
