@@ -399,7 +399,7 @@ $.Autocompleter = function(input, options) {
         url: options.url,
         data: $.extend({
           q: encodeURIComponent(simplify(lastWord(term))),
-          limit: options.max
+          limit: options.max+1
         }, extraParams),
         success: function(data) {
           var parsed = options.parse && options.parse(data) || parse(data);
@@ -467,7 +467,9 @@ $.Autocompleter.defaults = {
         : '';
   },
   scroll: true,
-  scrollHeight: 180
+  scrollHeight: 180,
+  langMore: 'More available',
+  langMoreDetails: 'Type more characters to refine the search'
 };
 
 $.Autocompleter.Cache = function(options) {
@@ -711,6 +713,9 @@ $.Autocompleter.Select = function (options, input, select, config) {
     if ( options.selectFirst ) {
       listItems.slice(0, 1).addClass(CLASSES.ACTIVE);
       active = 0;
+    }
+    if (data.length>options.max) {
+      list.append('<li class="ac_more"><span title="' + options.langMoreDetails + '">' + options.langMore + '...</span></li>');
     }
     // apply bgiframe if available
     if ( $.fn.bgiframe )

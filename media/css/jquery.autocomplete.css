@@ -26,8 +26,6 @@
   when scroll mode will be used
   */
   /*width: 100%;*/
-  font: menu;
-  font-size: 12px;
   /*
   it is very important, if line-height not setted or setted
   in relative units scroll will be broken in firefox
@@ -47,4 +45,9 @@
 .ac_over {
   background-color: #0A246A;
   color: white;
+}
+
+.ac_more {
+  border-top: solid #c0c0c0 1px;
+  font-style: italic;
 }
