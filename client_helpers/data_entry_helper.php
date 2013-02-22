@@ -2901,10 +2901,10 @@ var applyFilterMode = function(type, group_id, nameFilterMode) {
   switch (type) {\n";
     if (!empty($options['usersPreferredGroups']))
       self::$javascript .= "    case 'user':
-        currentFilter.query.in={\"taxon_group_id\":[".implode(',', $options['usersPreferredGroups'])."]};
+        currentFilter.query['in']={\"taxon_group_id\":[".implode(',', $options['usersPreferredGroups'])."]};
         break;\n";
     self::$javascript .= "    case 'selected':
-      currentFilter.query.in={\"taxon_group_id\":[group_id]};
+      currentFilter.query['in']={\"taxon_group_id\":[group_id]};
   }
   // re-encode the query part
   currentFilter.query=JSON.stringify(currentFilter.query);
