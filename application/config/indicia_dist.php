@@ -101,4 +101,11 @@ $config['image_handling']=array(
   )
 );
 
+/**
+ * Should the warehouse return http status codes when a web service error occurs. 
+ * This setting should be set to false if compatibility with Indicia clients running
+ * 0.8.x or earlier is required.
+ */
+$config['http_status_responses'] = true;
+
 ?>

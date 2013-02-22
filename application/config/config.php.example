@@ -114,13 +114,6 @@ $config['render_stats'] = false;
 $config['extension_prefix'] = 'MY_';
 
 /**
- * Should the warehouse return http status codes when a web service error occurs. 
- * This setting should be left out if compatibility with Indicia clients running
- * 0.8.x or earlier is required.
- */
-$config['http_status_responses'] = true;
-
-/**
  * Additional resource paths, or "modules". Each path can either be absolute
  * or relative to the docroot. Modules can include any resource that can exist
  * in your application directory, configuration files, controllers, views, etc.
