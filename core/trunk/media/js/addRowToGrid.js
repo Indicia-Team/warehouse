@@ -96,7 +96,7 @@ function keyHandler(evt) {
     $(rows[rowIndex+deltaY]).find('td[headers=' + $(cell).attr('headers') + '] input').focus();
   }
 }
-
+hook_species_checklist_new_row = [];
 function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, useLookupCache) {
   cacheLookup = typeof useLookupCache !== 'undefined' ? useLookupCache : false;
   // inner function to handle a selection of a taxon from the autocomplete
@@ -144,24 +144,11 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, useLookupC
     // Finally, a blank row is added for the next record
     makeSpareRow(null, true);
     // Allow forms to hook into the event of a new row being added
-    if (typeof hook_species_checklist_new_row !== "undefined") {
-      hook_species_checklist_new_row(data);
+    if (hook_species_checklist_new_row.length > 0) {
+      for(var i=0; i<hook_species_checklist_new_row.length; i++)
+        (hook_species_checklist_new_row[i])(data);
     }
   };
-
-  /**
-   * Determines next available rowId for taxon defined by ttlId by searching
-   * the attr of existing controls.
-   */
-  var getRowId = function(ttlId, attr) {
-    var rowId, suffix = -1;
-    do {
-      suffix++;
-      rowId = ttlId + '_' + suffix;
-    }
-    while ($('[' + attr + '^="sc:' + rowId + '"]').length !== 0);
-    return rowId;
-  }
 
   /**
    * Ensure field names are consistent independent of whether we are using cached data
@@ -225,6 +212,9 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, useLookupC
           $(child).attr('id', $(child).attr('id').replace(/-idx-/g, indiciaData['gridCounter-'+gridId]));
         }
       });
+    });
+    $(newRow).find('[name$=\:sampleIDX]').each(function(idx, field) {
+      $(field).val(indiciaData['gridSampleCounter-'+gridId]);
     });
     // add the row to the bottom of the grid
     newRow.appendTo('table#' + gridId +' > tbody').removeAttr('id');
@@ -306,8 +296,8 @@ $('.remove-row').live('click', function(e) {
     // Hide the checkbox so this can't be undone
     row.find('.scPresence').css('display','none');
     // disable or remove all other active controls from the row.
-    // Do NOT disable the presence checkbox or the container td, otherwise it is not submitted.
-    row.find('*:not(.scPresence,.scPresenceCell)').attr('disabled','disabled');
+    // Do NOT disable the presence checkbox or the container td, nor the sample Index field if present, otherwise they are not submitted.
+    row.find('*:not(.scPresence,.scPresenceCell,.scSample,.scSampleCell)').attr('disabled','disabled');
     row.find('a').remove();
   }
   // Allow forms to hook into the event of a row being deleted

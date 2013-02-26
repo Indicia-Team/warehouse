@@ -2271,8 +2271,8 @@ class data_entry_helper extends helper_base {
   * which takes a single parameter. The parameter is the item returned from the database with attributes taxon, preferred ('t' or 'f'),
   * preferred_name, common, authority, taxon_group, language. The function must return the string to display in the autocomplete list.</p>
   *
-  * <p>To perform an action on the event of a new row being added to the grid, write a JavaScript function called hook_species_checklist_new_row(data), where data
-  * is an object containing the details of the taxon row as loaded from the data services.</p>
+  * <p>To perform an action on the event of a new row being added to the grid, write a JavaScript function taking arguments (data, row) and add to the array
+  * hook_species_checklist_new_row, where data is an object containing the details of the taxon row as loaded from the data services.</p>
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>listId</b><br/>
@@ -2482,11 +2482,12 @@ class data_entry_helper extends helper_base {
     $occAttrControls = array();
     $occAttrs = array();
     $taxonRows = array();
-
+    $subSampleRows = array();
+    
     // Load any existing sample's occurrence data into $entity_to_load
     if (isset(self::$entity_to_load['sample:id']) && $options['useLoadedExistingRecords']===false)
       self::preload_species_checklist_occurrences(self::$entity_to_load['sample:id'], $options['readAuth'], 
-          $options['occurrenceImages'], $options['reloadExtraParams']);
+          $options['occurrenceImages'], $options['reloadExtraParams'], $subSampleRows, isset($options['speciesControlToUseSubSamples']) && $options['speciesControlToUseSubSamples']);
     // load the full list of species for the grid, including the main checklist plus any additional species in the reloaded occurrences.
     $taxalist = self::get_species_checklist_taxa_list($options, $taxonRows);    
     // If we managed to read the species list data we can proceed
@@ -2513,6 +2514,7 @@ class data_entry_helper extends helper_base {
       $rowIdx = 0;
       // tell the addTowToGrid javascript how many rows are already used, so it has a unique index for new rows
       self::$javascript .= "indiciaData['gridCounter-".$options['id']."'] = ".count($taxonRows).";\n";
+      self::$javascript .= "indiciaData['gridSampleCounter-".$options['id']."'] = ".count($subSampleRows).";\n";
       // Loop through all the rows needed in the grid
       // Get the checkboxes (hidden or otherwise) that indicate a species is present
       if (is_array(self::$entity_to_load)) {
@@ -2577,7 +2579,10 @@ class data_entry_helper extends helper_base {
           // this includes a control to force out a 0 value when the checkbox is unchecked.
           $row .= "<input type=\"hidden\" class=\"scPresence\" name=\"sc:$txIdx:$existing_record_id:present\" value=\"0\"/>".
             "<input type=\"checkbox\" class=\"scPresence\" name=\"sc:$txIdx:$existing_record_id:present\" id=\"sc:$txIdx:$existing_record_id:present\"value=\"".$taxon['id']."\" $checked />";
-        $row .= "</td>";  
+        $row .= "</td>";
+        if(isset($options['speciesControlToUseSubSamples']) && $options['speciesControlToUseSubSamples']){
+        	$row .= '<td class="scSampleCell" style="display:none"><input type="hidden" class="scSample" name="sc:'.$txIdx.':'.$existing_record_id.':occurrence:sampleIDX" id="sc:'.$txIdx.':'.$existing_record_id.':occurrence:sampleIDX" value="'.$rowIds['smpIdx'].'" /></td>';
+        }
         $idx = 0;
         foreach ($occAttrControls as $attrId => $control) {
           $existing_value='';
@@ -3036,12 +3041,11 @@ $('#".$options['id']."-filter').click(function(evt) {
    * @param boolean $extraParams Extra params to pass to the web service call for filtering.
    * @return array Array with key of occurrence_id and value of $taxonInstance.
    */
-  public static function preload_species_checklist_occurrences($sampleId, $readAuth, $loadImages, $extraParams) {
+  public static function preload_species_checklist_occurrences($sampleId, $readAuth, $loadImages, $extraParams, &$subSamples, $useSubSamples) {
     $occurrenceIds = array();
     $taxonCounter = array();
     // don't load from the db if there are validation errors, since the $_POST will already contain all the
     // data we need.
-    $extraParams += $readAuth + array('view'=>'detail','sample_id'=>$sampleId,'deleted'=>'f', 'orderby'=>'id', 'sortdir'=>'ASC' );
     if (is_null(self::$validation_errors)) {
       // strip out any occurrences we've already loaded into the entity_to_load, in case there are other
       // checklist grids on the same page. Otherwise we'd double up the record data.
@@ -3051,12 +3055,42 @@ $('#".$options['id']."-filter').click(function(evt) {
           unset(data_entry_helper::$entity_to_load[$key]);
         }
       }
+      if($useSubSamples){
+      	$extraParams += $readAuth + array('view'=>'detail','parent_id'=>$sampleId,'deleted'=>'f', 'orderby'=>'id', 'sortdir'=>'ASC' );
+      	$subSamples = data_entry_helper::get_population_data(array(
+      			'table' => 'sample',
+      			'extraParams' => $extraParams,
+      			'nocache' => true
+      	));
+      	$subSampleList = array();
+      	foreach($subSamples as $idx => $subsample){
+      		$subSampleList[] = $subsample['id'];
+      		data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:id'] = $subsample['id'];
+      		data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:geom'] = $subsample['wkt'];
+      		data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:wkt'] = $subsample['wkt'];
+      		data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:entered_sref'] = $subsample['entered_sref'];
+      	    data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:entered_sref_system'] = $subsample['entered_sref_system'];
+      	    data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:date_start'] = $subsample['date_start'];
+      	    data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:date_end'] = $subsample['date_end'];
+            data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:date_type'] = $subsample['date_type'];
+      	}
+      	unset($extraParams['parent_id']);
+      	$extraParams['sample_id']=$subSampleList;
+      } else {
+        $extraParams += $readAuth + array('view'=>'detail','sample_id'=>$sampleId,'deleted'=>'f', 'orderby'=>'id', 'sortdir'=>'ASC' );
+      }
       $occurrences = self::get_population_data(array(
         'table' => 'occurrence',
         'extraParams' => $extraParams,
         'nocache' => true
       ));
       foreach($occurrences as $idx => $occurrence){
+        if($useSubSamples){
+  		  foreach($subSamples as $sidx => $subsample){
+  			if($subsample['id'] == $occurrence['sample_id'])
+  				self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':occurrence:sampleIDX'] = $sidx;
+  		  }
+        }
         self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':present'] = $occurrence['taxa_taxon_list_id'];
         self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':occurrence:comment'] = $occurrence['comment'];
         self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':occurrence:confidential'] = $occurrence['confidential'];
@@ -3201,6 +3235,9 @@ $('#".$options['id']."-filter').click(function(evt) {
         // Is this an occurrence?
         if (count($parts) > 2 && $parts[0] === 'sc' && $parts[1]!='-idx-' && $parts[3]==='present') {
           $ttlId = $value;
+          if(isset($options['speciesControlToUseSubSamples']) && $options['speciesControlToUseSubSamples']){
+            $smpIdx = self::$entity_to_load['sc:'.$parts[1].':'.$parts[2].':occurrence:sampleIDX'];
+          } else $smpIdx = null;
           // Find an existing row for this species that is not already linked to an occurrence
           $done=false;
           foreach($taxonRows as &$row) {
@@ -3209,12 +3246,13 @@ $('#".$options['id']."-filter').click(function(evt) {
               $row['loadedTxIdx']=$parts[1];
               // the 3rd part of the loaded value's key is the occurrence ID.
               $row['occId']=$parts[2];
+              $row['smpIdx']=$smpIdx;
               $done=true;
             }
           }
           if (!$done)
             // add a new row to the bottom of the grid
-            $taxonRows[] = array('ttlId'=>$ttlId, 'loadedTxIdx'=>$parts[1], 'occId'=>$parts[2]);
+            $taxonRows[] = array('ttlId'=>$ttlId, 'loadedTxIdx'=>$parts[1], 'occId'=>$parts[2], 'smpIdx'=>$smpIdx);
           // store the id of the taxon in the array, so we can load them all in one go later
           $extraTaxonOptions['extraParams']['id'][]=$ttlId;
         }
@@ -3363,6 +3401,8 @@ $('#".$options['id']."-filter').click(function(evt) {
     }
     $hidden = ($options['rowInclusionCheck']=='checkbox' ? '' : ' style="display:none"');
     $r .= '<td class="scPresenceCell" headers="'.$options['id'].'-present-0"'.$hidden.'><input type="checkbox" class="scPresence" name="sc:-idx-::present" id="sc:-idx-::present" value="" /></td>';
+    if(isset($options['speciesControlToUseSubSamples']) && $options['speciesControlToUseSubSamples'])
+      $r .= '<td class="scSampleCell" style="display:none"><input type="hidden" class="scSample" name="sc:-idx-::occurrence:sampleIDX" id="sc:-idx-::occurrence:sampleIDX" value="" /></td>';
     $idx = 0;
     foreach ($occAttrControls as $attrId=>$oc) {
       $class = self::species_checklist_occ_attr_class($options, $idx, $attributes[$attrId]['caption']);
@@ -4893,6 +4933,124 @@ if (errors.length>0) {
   }
 
   /**
+   * Wraps data from a species checklist grid with subsamples (generated by
+   * data_entry_helper::species_checklist) into a suitable format for submission. This will
+   * return an array of submodel entries which can be dropped directly into the subModel
+   * section of the submission array. If there is a field occurrence:determiner_id or
+   * occurrence:record_status in the main form data, then these values are applied to each
+   * occurrence created from the grid. For example, place a hidden field in the form named
+   * "occurrence:record_status" with a value "C" to set all occurrence records to completed
+   * as soon as they are entered.
+   *
+   * @param array $arr Array of data generated by data_entry_helper::species_checklist method.
+   * @param boolean $include_if_any_data If true, then any list entry which has any data
+   * set will be included in the submission. This defaults to false, unless the grid was
+   * created with rowInclusionCheck=hasData in the grid options.
+   * @param array $zero_attrs Set to an array of abundance attribute field IDs that can be
+   * treated as abundances. Alternatively set to true to treat all occurrence custom attributes
+   * as possible zero abundance indicators.
+   * @param array $zero_values Set to an array of values which are considered to indicate a
+   * zero abundance record if found for one of the zero_attrs. Values are case-insensitive. Defaults to
+   * array('0','None','Absent').
+   */
+  public static function wrap_species_checklist_with_subsamples($arr, $include_if_any_data=false,
+          $zero_attrs = array(), $zero_values=array('0','None','Absent')){
+  	if (array_key_exists('website_id', $arr)){
+  		$website_id = $arr['website_id'];
+  	} else {
+  		throw new Exception('Cannot find website id in POST array!');
+  	}
+  	// determiner and record status can be defined globally for the whole list.
+  	if (array_key_exists('occurrence:determiner_id', $arr)){
+  		$determiner_id = $arr['occurrence:determiner_id'];
+  	}
+  	if (array_key_exists('occurrence:record_status', $arr)){
+  		$record_status = $arr['occurrence:record_status'];
+  	}
+    if (array_key_exists('sample:entered_sref_system', $arr)){
+  		$sref_system = $arr['sample:entered_sref_system'];
+  	}
+  	// Set the default method of looking for rows to include - either using data, or the checkbox (which could be hidden)
+  	$include_if_any_data = $include_if_any_data || (isset($arr['rowInclusionCheck']) && $arr['rowInclusionCheck']=='hasData');
+  	// Species checklist entries take the following format.
+  	// sc:<subsampleIndex>:[<sample_id>]:sample:deleted
+  	// sc:<subsampleIndex>:[<sample_id>]:sample:geom
+  	// sc:<subsampleIndex>:[<sample_id>]:sample:entered_sref
+  	// sc:<rowIndex>:[<occurrence_id>]:occurrence:sampleIDX (val set to subsample index)
+  	// sc:<rowIndex>:[<occurrence_id>]:present (checkbox with val set to ttl_id
+  	// sc:<rowIndex>:[<occurrence_id>]:occAttr:<occurrence_attribute_id>[:<occurrence_attribute_value_id>]
+  	// sc:<rowIndex>:[<occurrence_id>]:occurrence:comment
+  	// sc:<rowIndex>:[<occurrence_id>]:occurrence_image:fieldname:uniqueImageId
+  	$occurrenceRecords = array();
+  	$sampleRecords = array();
+  	$subModels = array();
+  	foreach ($arr as $key=>$value){
+  		if (substr($key, 0, 3)=='sc:' && substr($key, 2, 7)!=':-idx-:'){ //discard the hidden cloneable rows
+  			// Don't explode the last element for occurrence attributes
+  			$a = explode(':', $key, 4);
+  			$b = explode(':', $a[3], 2);
+  			if($b[0] == "sample"){
+  			  $sampleRecords[$a[1]][$a[3]] = $value;
+              if($a[2]) $sampleRecords[$a[1]]['id'] = $a[2];
+  			} else {
+              $occurrenceRecords[$a[1]][$a[3]] = $value;
+              if($a[2]) $occurrenceRecords[$a[1]]['id'] = $a[2];
+  			}
+  		}
+  	}
+  	foreach ($sampleRecords as $id => $sampleRecord) {
+  		$sampleRecords[$id]['occurrences'] = array();
+  	}
+  	foreach ($occurrenceRecords as $id => $record) {
+  		$sampleIDX = $record['occurrence:sampleIDX'];
+  		unset($record['occurrence:sampleIDX']);
+  		$present = self::wrap_species_checklist_record_present($record, $include_if_any_data,
+  				$zero_attrs, $zero_values);
+  		if (array_key_exists('id', $record) || $present!==null) { // must always handle row if already present in the db
+  			if ($present===null)
+  				// checkboxes do not appear if not checked. If uncheck, delete record.
+  				$record['deleted'] = 't';
+  			else
+  				$record['zero_abundance']=$present ? 'f' : 't';
+  			$record['taxa_taxon_list_id'] = $record['present'];
+  			$record['website_id'] = $website_id;
+  			if (isset($determiner_id)) {
+  				$record['determiner_id'] = $determiner_id;
+  			}
+  			if (isset($record_status)) {
+  				$record['record_status'] = $record_status;
+  			}
+  			$occ = data_entry_helper::wrap($record, 'occurrence');
+  			self::attachOccurrenceImagesToModel($occ, $record);
+  			$sampleRecords[$sampleIDX]['occurrences'][] = array('fkId' => 'sample_id','model' => $occ);
+  		}
+  	}
+  	 
+  	foreach ($sampleRecords as $id => $sampleRecord) {
+  		$occs = $sampleRecord['occurrences'];
+  		unset($sampleRecord['occurrences']);
+  		$sampleRecord['website_id'] = $website_id;
+  		if (isset($sref_system)) {
+  			$sampleRecord['entered_sref_system'] = $sref_system;
+  		}
+  		$subSample = data_entry_helper::wrap($sampleRecord, 'sample');
+  		// Add the subsample/soccurrences in as subModels without overwriting others such as a sample image
+  		if (array_key_exists('subModels', $subSample)) {
+  			$subSample['subModels'] = array_merge($sampleMod['subModels'], $occs);
+  		} else {
+  			$subSample['subModels'] = $occs;
+  		}
+  		$subModel = array('fkId' => 'parent_id', 'model' => $subSample);
+  		$copyFields = array();
+  		if(!isset($sampleRecord['date'])) $copyFields = array('date_start'=>'date_start','date_end'=>'date_end','date_type'=>'date_type');
+  		if(!isset($sampleRecord['survey_id'])) $copyFields['survey_id'] = 'survey_id';
+  		if(count($copyFields)>0) $subModel['copyFields'] = $copyFields; // from parent->to child
+  		$subModels[] = $subModel;
+  	}
+  	return $subModels;
+  }
+  
+  /**
    * Test whether the data extracted from the $_POST for a species_checklist grid row refers to an occurrence record.
    * @param array $record Record submission array from the form post. 
    * @param boolean $include_if_any_data If set, then records are automatically created if any of the custom
@@ -5055,6 +5213,44 @@ if (errors.length>0) {
       $sampleMod['subModels'] = array_merge($sampleMod['subModels'], $occurrences);
     } else {
       $sampleMod['subModels'] = $occurrences;
+    }
+
+    return $sampleMod;
+  }
+
+  /**
+   * Helper function to simplify building of a submission that contains a single supersample,
+   * with multiple subsamples, each of which has multiple occurrences records, as generated 
+   * by a species_checklist control.
+   *
+   * @param array $values List of the posted values to create the submission from.
+   * @param boolean $include_if_any_data If true, then any list entry which has any data
+   * set will be included in the submission. Set this to true when hiding the select checkbox
+   * in the grid.
+   * @param array $zero_attrs Set to an array of abundance attribute field IDs that can be
+   * treated as abundances. Alternatively set to true to treat all occurrence custom attributes
+   * as possible zero abundance indicators.
+   * @param array $zero_values Set to an array of values which are considered to indicate a 
+   * zero abundance record if found for one of the zero_attrs. Values are case-insensitive. Defaults to 
+   * array('0','None','Absent').
+   * of values that can be treated as meaning a zero abundance record. E.g.
+   * array('
+
+   * @return array Sample submission array
+   */
+  public static function build_sample_subsamples_occurrences_submission($values, $include_if_any_data=false,
+       $zero_attrs = array(), $zero_values=array('0','None','Absent'))
+  {
+    // We're mainly submitting to the sample model
+    $sampleMod = submission_builder::wrap_with_images($values, 'sample');
+    $subModels = data_entry_helper::wrap_species_checklist_with_subsamples($values, $include_if_any_data,
+        $zero_attrs, $zero_values);
+
+    // Add the subsample/soccurrences in as subModels without overwriting others such as a sample image
+    if (array_key_exists('subModels', $sampleMod)) {
+      $sampleMod['subModels'] = array_merge($sampleMod['subModels'], $subModels);
+    } else {
+      $sampleMod['subModels'] = $subModels;
     }
 
     return $sampleMod;

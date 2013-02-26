@@ -683,8 +683,9 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     
     // Now load the occurrences and their attributes.
     $loadImages = $args['occurrence_images'];
+    $subSamples = array();
     data_entry_helper::preload_species_checklist_occurrences(data_entry_helper::$entity_to_load['sample:id'], 
-              $auth['read'], $loadImages, array());
+              $auth['read'], $loadImages, array(), $subSamples, false);
     // If using a species grid $entity_to_load will now contain elements in the form
     //  sc:row_num:occ_id:occurrence:field_name
     //  sc:row_num:occ_id:present
@@ -765,11 +766,11 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         // put the popup fieldset into the hidden div
         data_entry_helper::$javascript .= "$('#hide-$fieldset').append($('#$fieldset'));\n";
         // capture new row events on the grid
-        data_entry_helper::$javascript .= "hook_species_checklist_new_row=function(data) {
+        data_entry_helper::$javascript .= "hook_species_checklist_new_row.push(function(data) {
   if (data.preferred_name=='$tokens[0]') {
     $('#click-$fieldset').fancybox({showCloseButton: false}).trigger('click');
   }
-}\n";
+});\n";
       }
     }
     return $r;
@@ -794,6 +795,123 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     return data_entry_helper::map_panel($options, $olOptions);
   }
 
+  /**
+   * Get the control for map based species input, assumed to be multiple entry: ie a grid. Can be single species though.
+   * Uses the normal species grid, so all options that apply to that, apply to this.
+   */
+  protected static function get_control_speciesmap($auth, $args, $tabalias, $options) {
+  	// The ID must be done here so it can be accessed by both the species grid and the buttons.
+  	$code = rand(0,1000);
+  	$defaults = array('id' => 'species-grid-'.$code, buttonsId => 'species-grid-buttons-'.$code);
+  	$options = array_merge($defaults, $options);
+  	
+  	$gridmode = call_user_func(array(self::$called_class, 'getGridMode'), $args);
+  	if(!$gridmode)
+  		return "<b>The SpeciesMap control must be used in gridmode.</b><br/>";
+  	// Force a new option
+  	$options['speciesControlToUseSubSamples'] = true;
+  	$options['base_url'] = data_entry_helper::$base_url;
+  	if (!isset($args['cache_lookup']) || ($args['species_ctrl'] !== 'autocomplete'))
+  		$args['cache_lookup']=false; // default for old form configurations or when not using an autocomplete
+  	//The filter can be a URL or on the edit tab, so do the processing to work out the filter to use
+  	$filterLines = self::get_species_filter($args);
+  	// store in the argument so that it can be used elsewhere
+  	$args['taxon_filter'] = implode("\n", $filterLines);
+  	//Single species mode only ever applies if we have supplied only one filter species and we aren't in taxon group mode
+  	if ($args['taxon_filter_field']!=='taxon_group' && count($filterLines)===1) {
+  		$response = self::get_single_species_data($auth, $args, $filterLines);
+  		//Optional message to display the single species on the page
+  		if ($args['single_species_message'])
+  			self::$singleSpeciesName=$response[0]['taxon'];
+  		if (count($response)==0)
+  			//if the response is empty there is no matching taxon, so clear the filter as we can try and display the checklist with all data
+  			$args['taxon_filter']='';
+  		elseif (count($response)==1)
+  		//Keep the id of the single species in a hidden field for processing if in single species mode
+  		// TBD
+  		return '<input type="hidden" name="occurrence:taxa_taxon_list_id" value="'.$response[0]['id']."\"/>\n";
+  	}
+  	$extraParams = $auth['read'];
+  	call_user_func(array(self::$called_class, 'build_grid_autocomplete_function'), $args);
+  	// the imp-sref & imp-geom are within the dialog so it is updated.
+  	$speciesCtrl = self::get_control_species_checklist($auth, $args, $extraParams, $options); // this preloads the subsample data.
+  	$list = explode(',', str_replace(' ', '', $args['spatial_systems']));
+    $systems=array();
+    foreach($list as $system) {
+      $systems[$system] = lang::get($system);
+    }
+  	if (count($systems) == 1) {
+      // Hidden field for the system
+      $keys = array_keys($systems);
+      $system = '<input type="hidden" id="imp-sref-system" name="sample:entered_sref_system" value="'.$keys[0].'" />';
+    } else {
+      $options['systems']=$systems;
+      $system = data_entry_helper::sref_system_select($options);
+    }
+  	return '<div id="'.$options['id'].'-container" style="display: none">'.
+  	       '<input type="hidden" name="sample:entered_sref" value="'.data_entry_helper::check_default_value('sample:entered_sref', '').'">'.
+  	       '<input type="hidden" name="sample:geom" value="'.data_entry_helper::check_default_value('sample:geom', '').'" >'.
+  	       $system.
+  	       '<div id="'.$options['id'].'-blocks">'.
+  	       self::get_control_speciesmap_controls($options).
+  	       '</div>'.
+  	       '<input type="hidden" value="true" name="speciesgridmapmode" />'.
+           $speciesCtrl.
+  			'</div>';
+  }
+
+  /* Set up the control JS and also return the existing data subsample blocks */
+  protected static function get_control_speciesmap_controls($options){
+    $langStrings = array('InitMessage' => lang::get("Click on a button to choose what you would like to do."),
+    		'AddLabel' => lang::get("Add grid ref"),
+            'AddMessage' => lang::get("Please click on the map to add data."),
+            'AddDataMessage' => lang::get("Please enter all the species records for this grid reference. When you have finished, click the Finish button: this will return you to the map where you may choose another grid reference to enter data for."),
+    		'ConfirmAddTitle' => lang::get("Accept this grid square?"),
+    		'ConfirmAddText' => lang::get("Do you wish to add data for this grid reference?"),
+    		
+    		'MoveLabel' => lang::get("Move grid ref"),
+            'MoveMessage1' => lang::get("Please select the square on the map you wish to move."),
+            'MoveMessage2' => lang::get("Please click on the map to choose the new position. Press the Cancel button to choose another square to move instead."),
+            'ConfirmMove1Title' => lang::get("Confirm Move Grid Square"),
+            'ConfirmMove1Text' => lang::get("Are you sure you wish to move the {OLD} grid square?"),
+    		'ConfirmMove2Title' => lang::get("Confirm New Position"),
+    		'ConfirmMove2Text' => lang::get("Are you sure you wish to move the data held for grid square {OLD} to the following new location?"),
+    		
+    		'ModifyLabel' => lang::get("Modify grid ref data"),
+            'ModifyMessage1' => lang::get("Please select the square on the map you wish to change the recorded data for."),
+    		'ModifyMessage2' => lang::get("Change (or add to) the data for this grid reference. When you have finished, click the Finish button: this will return you to the map where you may choose another grid reference to change."),
+    		
+    		'DeleteLabel' => lang::get("Delete grid ref"),
+            'DeleteMessage' => lang::get("Please select the square on the map you wish to delete."),
+    		'ConfirmDeleteTitle' => lang::get("Confirm Delete Grid Square"),
+    		'ConfirmDeleteText' => lang::get("Are you sure you wish to delete all the data for the {OLD} grid square?"),
+    		
+    		'CancelLabel' => lang::get("CANCEL"),
+    		'FinishLabel' => lang::get("Finish"),
+    		'Yes' => lang::get("Yes"),
+    		'No' => lang::get("No"),
+    		'SRefLabel' => lang::get('LANG_SRef_Label'));
+    // make sure we load the JS.
+    data_entry_helper::add_resource('control_speciesmap_controls');
+    data_entry_helper::$javascript .= "control_speciesmap_addcontrols(".json_encode($options).",".json_encode($langStrings).");\n";
+    $blocks = "";
+    foreach(data_entry_helper::$entity_to_load as $key => $value){
+      $a = explode(':', $key, 4);
+      if(count($a)==4 && $a[0] == 'sc' && $a[3] == 'sample:entered_sref'){
+      	$geomKey = $a[0].':'.$a[1].':'.$a[2].':sample:geom';
+      	$idKey = $a[0].':'.$a[1].':'.$a[2].':sample:id';
+      	$deletedKey = $a[0].':'.$a[1].':'.$a[2].':sample:deleted';
+      	$blocks .= '<div id="scm-'.$a[1].'-block" class="scm-block">'.
+                  '<label>'.lang::get('LANG_SRef_Label').'</label>'.
+                  '<input type="text" value="'.$value.'" readonly="readonly" name="'.$key.'">'.
+       /* TODO */           '<input type="text" value="'.data_entry_helper::$entity_to_load[$geomKey].'" name="'.$geomKey.'">'.
+                  '<input type="text" value="'.(isset(data_entry_helper::$entity_to_load[$deletedKey]) ? data_entry_helper::$entity_to_load[$deletedKey] : 'f').'" name="'.$deletedKey.'">'.
+                  (isset(data_entry_helper::$entity_to_load[$idKey]) ? '<input type="hidden" value="'.data_entry_helper::$entity_to_load[$idKey].'" name="'.$idKey.'">' : '').
+                  '</div>';
+      }
+    }
+    return $blocks;
+  }
   /**
    * The species filter can be taken from the edit tab or overridden by a URL filter.
    * This method determines the filter to be used.
@@ -1312,7 +1430,9 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   public static function get_submission($values, $args) {
     // default for forms setup on old versions is grid - list of occurrences
     // Can't call getGridMode in this context as we might not have the $_GET value to indicate grid
-    if (isset($values['gridmode']))
+    if (isset($values['speciesgridmapmode']))
+      $submission = data_entry_helper::build_sample_subsamples_occurrences_submission($values);
+  	else if (isset($values['gridmode']))
       $submission = data_entry_helper::build_sample_occurrences_list_submission($values);
     else
       $submission = data_entry_helper::build_sample_occurrence_submission($values);
@@ -1326,7 +1446,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    * @return array List of css files to include for this form.
    */
   public static function get_css() {
-    return array('mnhnl_collaborators_1.css');
+    return array('dynamic_sample_occurrence.css');
   }
 
   /**
@@ -1359,23 +1479,22 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       // Return a login link that takes you back to this form when done.
       return lang::get('Before using this facility, please <a href="'.url('user/login', array('query'=>'destination=node/'.($node->nid))).'">login</a> to the website.');
     }
-
+    $filter = array();
     // Get the CMS User ID attribute so we can filter the grid to this user
     foreach($attributes as $attrId => $attr) {
       if (strcasecmp($attr['caption'],'CMS User ID')==0) {
-        $userIdAttr = $attr['attributeId'];
-        break;
-      }
-      if (isset($userIdAttr)) $filter = array (
+        $filter = array (
           'survey_id' => $args['survey_id'],
-          'userID_attr_id' => $userIdAttr,
+          'userID_attr_id' => $attr['attributeId'],
           'userID' => $user->uid,
           'iUserID' => 0);
+        break;
+      }
     }
     // Alternatively get the Indicia User ID and use that instead
     if (function_exists('hostsite_get_user_field')) {
       $iUserId = hostsite_get_user_field('indicia_user_id');
-      if (isset($iUserId)) $filter = array (
+      if (isset($iUserId) && $iUserId!=false) $filter = array (
           'survey_id'=>$args['survey_id'],
           'userID_attr_id' => 0,
           'userID' => 0,
@@ -1392,7 +1511,6 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       $r = call_user_func(array(self::$called_class, 'getSampleListGridPreamble'));
     else
       $r = '';
-
     $r .= data_entry_helper::report_grid(array(
       'id' => 'samples-grid',
       'dataSource' => $args['grid_report'],
