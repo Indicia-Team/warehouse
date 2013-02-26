@@ -442,6 +442,8 @@ class iform_dynamic {
           $options['extraParams'] = array_merge($defAttrOptions['extraParams'], (array)$options['extraParams']);
           //merge extraParams first so we don't loose authentication
           $options = array_merge($defAttrOptions, $options);
+          foreach ($options as $key=>&$value)
+            $value = apply_user_replacements($value);
           $html .= data_entry_helper::outputAttribute($attributes[$attribKey], $options);
           $attributes[$attribKey]['handled'] = true;
           $hasControls = true;
