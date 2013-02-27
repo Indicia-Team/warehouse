@@ -39,8 +39,8 @@ function control_speciesmap_addcontrols(options, translatedStrings) {
             indiciaData.control_speciesmap_existing_feature = a1.feature; /* not clone */
             switch (indiciaData.control_speciesmap_mode) {
             case 'Modify':
-                $('#' + indiciaData.control_speciesmap_opts.id + '-container').show().find('.new').removeClass('new');
-                $(indiciaData.control_speciesmap_opts.mapDiv).hide();
+                $('#' + indiciaData.control_speciesmap_opts.id + '-container').show(indiciaData.control_speciesmap_opts.animationDuration).find('.new').removeClass('new');
+                $(indiciaData.control_speciesmap_opts.mapDiv).hide(indiciaData.control_speciesmap_opts.animationDuration);
                 $('#' + indiciaData.control_speciesmap_opts.id + '-blocks > div').hide();
                 $('#' + indiciaData.control_speciesmap_opts.id + ' > tbody > tr').not('.scClonableRow').hide();
                 block.show();
@@ -159,8 +159,8 @@ function control_speciesmap_addcontrols(options, translatedStrings) {
             div.map.editLayer.destroyFeatures();
             $('#imp-sref,#imp-geom').val('');
             indiciaData.control_speciesmap_add_dialog.dialog('close');
-            $('#' + indiciaData.control_speciesmap_opts.id + '-container').hide().find('.new').removeClass('new');
-            $(indiciaData.control_speciesmap_opts.mapDiv).show();
+            $('#' + indiciaData.control_speciesmap_opts.id + '-container').hide(indiciaData.control_speciesmap_opts.animationDuration).find('.new').removeClass('new');
+            $(indiciaData.control_speciesmap_opts.mapDiv).show(indiciaData.control_speciesmap_opts.animationDuration);
             $('#' + indiciaData.control_speciesmap_opts.finishButtonId + ',#' + indiciaData.control_speciesmap_opts.cancelButtonId).hide();
             // Switch off Move button functionality
             indiciaData.control_speciesmap_selectFeatureControl.unselectAll();
@@ -208,7 +208,7 @@ function control_speciesmap_addcontrols(options, translatedStrings) {
             var div = $(indiciaData.control_speciesmap_opts.mapDiv)[0];
             switch (indiciaData.control_speciesmap_mode) {
             case 'Add':
-                $(indiciaData.control_speciesmap_opts.mapDiv).show();
+                $(indiciaData.control_speciesmap_opts.mapDiv).show(indiciaData.control_speciesmap_opts.animationDuration);
                 $('#' + indiciaData.control_speciesmap_opts.messageId).empty().append(indiciaData.control_speciesmap_translatedStrings.AddMessage);
                 $('#' + indiciaData.control_speciesmap_opts.finishButtonId + ',#' + indiciaData.control_speciesmap_opts.cancelButtonId).hide();
                 indiciaData.control_speciesmap_selectFeatureControl.unselectAll();
@@ -217,7 +217,7 @@ function control_speciesmap_addcontrols(options, translatedStrings) {
                 set_up_summary_rows(indiciaData.control_speciesmap_new_feature.attributes.subSampleIndex);
                 indiciaData.SubSampleLayer.removeFeatures([indiciaData.control_speciesmap_new_feature]);
                 fillInMainSref();
-                $('#' + indiciaData.control_speciesmap_opts.id + '-container').hide();
+                $('#' + indiciaData.control_speciesmap_opts.id + '-container').hide(indiciaData.control_speciesmap_opts.animationDuration);
                 break;
             case 'Move':
                 div.map.editLayer.clickControl.deactivate(); // to allow user to select new position.
@@ -242,8 +242,8 @@ function control_speciesmap_addcontrols(options, translatedStrings) {
                 return; // validation failed: leave everything in sight
             }
             set_up_summary_rows(feature.attributes.subSampleIndex);
-            $('#' + indiciaData.control_speciesmap_opts.id + '-container').hide().find('.new').removeClass('new');
-            $(indiciaData.control_speciesmap_opts.mapDiv).show();
+            $('#' + indiciaData.control_speciesmap_opts.id + '-container').hide(indiciaData.control_speciesmap_opts.animationDuration).find('.new').removeClass('new');
+            $(indiciaData.control_speciesmap_opts.mapDiv).show(indiciaData.control_speciesmap_opts.animationDuration);
             switch (indiciaData.control_speciesmap_mode) {
             case 'Add':
                 $('#' + indiciaData.control_speciesmap_opts.messageId).empty().append(indiciaData.control_speciesmap_translatedStrings.AddMessage);
@@ -269,8 +269,8 @@ function control_speciesmap_addcontrols(options, translatedStrings) {
                     fillInMainSref();
                     // TODO if map projection != indicia internal projection transform to internal projection
                     indiciaData.control_speciesmap_add_dialog.dialog('close');
-                    $(indiciaData.control_speciesmap_opts.mapDiv).hide();
-                    $('#' + indiciaData.control_speciesmap_opts.id + '-container').show().find('.new').removeClass('new');
+                    $(indiciaData.control_speciesmap_opts.mapDiv).hide(indiciaData.control_speciesmap_opts.animationDuration);
+                    $('#' + indiciaData.control_speciesmap_opts.id + '-container').show(indiciaData.control_speciesmap_opts.animationDuration).find('.new').removeClass('new');
                     $('#' + indiciaData.control_speciesmap_opts.id + '-blocks').find('div').hide();
                     $('#' + indiciaData.control_speciesmap_opts.id + ' > tbody > tr').not('.scClonableRow').hide();
                     $('#' + indiciaData.control_speciesmap_opts.id + ' .scClonableRow').find('[name$=\:sampleIDX]').each(function (idx, field) {
@@ -401,7 +401,8 @@ function control_speciesmap_addcontrols(options, translatedStrings) {
             finishButtonId: 'speciesmap_finishbutton_control',
             messageId:      'speciesmap_controls_messages',
             messageClasses: 'page-notice ui-state-highlight ui-corner-all',
-            featureLabel:   'Grid: ${sRef}\nSpecies: ${count}'},
+            featureLabel:   'Grid: ${sRef}\nSpecies: ${count}',
+            animationDuration: 1000},
         opts,
         container;
     // Extend our default options with those provided, basing this on an empty object
