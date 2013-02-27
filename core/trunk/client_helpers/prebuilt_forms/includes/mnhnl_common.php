@@ -545,7 +545,7 @@ function iform_mnhnl_lux5kgridControl($auth, $args, $node, $options) {
        'extraParams'=>$auth['read'],
        'survey_id'=>$args['survey_id']
       );
-    $locationAttributes = data_entry_helper::getAttributes($attrArgs, false);
+    $locationAttributes = data_entry_helper::getAttributes($attrArgs, false); // this does not get values
     $termlists=array();
     $requiresConv=array();
     foreach($locationAttributes as $locAttr)
@@ -1151,7 +1151,7 @@ populateExtensions = function(locids){
         template : template});
   }
   jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/location_attribute_value' +
-            '?mode=json&view=list&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&orderby=location_id&callback=?', function(data) {
+            '?mode=json&view=list&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&orderby=location_id'+".$loctypequery."+'&callback=?', function(data) {
     if(data instanceof Array && data.length>0){
       function locBinarySearch(attList, location_id){ // this makes assumptions about the location attribute list contents and order.
         var startIndex = 0,
@@ -2718,7 +2718,7 @@ jQuery(\"#".$options['ChooseParentFieldID']."\").change(function(){
       if (isset($locList['error'])) return $locList['error'];
       $location_attr_list_args=array(
           'nocache'=>true,
-          'extraParams'=>array_merge(array('orderby'=>'id', 'view'=>'list', 'website_id'=>$args['website_id']), $auth['read']),
+          'extraParams'=>array_merge(array('orderby'=>'id', 'view'=>'list', 'website_id'=>$args['website_id'], 'location_type_id'=>$primary), $auth['read']),
           'table'=>'location_attribute_value');
       $locAttrList = data_entry_helper::get_population_data($location_attr_list_args);
       if (isset($locAttrList['error'])) return $locAttrList['error'];
@@ -3714,8 +3714,7 @@ function iform_mnhnl_set_editable($auth, $args, $node, $locList, $force, $loctyp
       $locCheckList[] = $location['id'];
       $locEditList[$location['id']]=true;
     } else {
-      data_entry_helper::$javascript .= "\"".$location['id']."\" : false,
-";
+      data_entry_helper::$javascript .= "\"".$location['id']."\" : false,\n";
     }
   }
   $sample_list_args=array(
@@ -3751,11 +3750,9 @@ function iform_mnhnl_set_editable($auth, $args, $node, $locList, $force, $loctyp
     }
   }
   foreach($locEditList as $id => $state){
-    data_entry_helper::$javascript .= "\"".$id."\" : ".($state ? "true" : "false").",
-";
+    data_entry_helper::$javascript .= "\"".$id."\" : ".($state ? "true" : "false").",\n";
   }
-  data_entry_helper::$javascript .= "};
-";
+  data_entry_helper::$javascript .= "};\n";
 }
 function iform_mnhnl_getTermID($auth,$termListExtKey,$term){
   $termList = helper_base::get_termlist_terms($auth, $termListExtKey, array($term));
