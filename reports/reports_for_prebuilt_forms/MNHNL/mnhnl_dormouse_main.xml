@@ -13,7 +13,7 @@
   		s.date_type
   FROM samples s
   INNER JOIN locations l ON l.id = s.location_id
-  LEFT JOIN locations parent ON parent.id = l.parent_id
+  INNER JOIN locations parent ON parent.id = l.parent_id
   INNER JOIN sample_attribute_values savuser
   		ON savuser.sample_id = s.id AND savuser.sample_attribute_id = #userName_attr_id# and savuser.deleted = FALSE
   WHERE s.survey_id=#survey_id# AND s.deleted = FALSE AND s.parent_id IS NULL
