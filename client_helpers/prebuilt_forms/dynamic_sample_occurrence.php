@@ -114,7 +114,11 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
             "<strong>=*=</strong> indicates a placeholder for putting any custom attribute tabs not defined in this form structure. <br/>".
             "<strong>[control name]</strong> indicates a predefined control is to be added to the form with the following predefined controls available: <br/>".
                 "&nbsp;&nbsp;<strong>[species]</strong> - a species grid or input control<br/>".
-                "&nbsp;&nbsp;<strong>[species attributes]</strong> - any custom attributes for the occurrence, if not using the grid. Also includes a file upload ".
+                "&nbsp;&nbsp;<strong>[species map]</strong> - a species grid or input control: this is the same as the species control, but the sample is broken down ".
+        		"into subsamples, each of which has its own location picked from the map. Only the part of the species grid which is being added to or modified at the ".
+        		"time is displayed. This control should be placed after the map control, with which it integrates. Species recording must be set to a List (grid mode) rather than single entry.<br/>".
+                "&nbsp;&nbsp;<strong>[species map summary]</strong> - a read only grid showing a summary of the data entered using the species map control.<br/>".
+        		"&nbsp;&nbsp;<strong>[species attributes]</strong> - any custom attributes for the occurrence, if not using the grid. Also includes a file upload ".
                 "box if relevant. The attrubutes @resizeWidth and @resizeHeight can specified on subsequent lines, otherwise they default to 1600.<br/>".
                 "&nbsp;&nbsp;<strong>[date]</strong> - a sample must always have a date.<br/>".
                 "&nbsp;&nbsp;<strong>[map]</strong> - a map that links to the spatial reference and location select/autocomplete controls<br/>".
@@ -860,6 +864,15 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   			'</div>';
   }
 
+  /**
+   * Get the control for the summary for the map based species input.
+   */
+  protected static function get_control_speciesmapsummary($auth, $args, $tabalias, $options) {
+    // don't have access to the id for the species map control, and visa versa (has a random element)
+    // have to use a clas to identify it.
+  	return '<div class="control_speciesmapsummary"><table class="ui-widget ui-widget-content species-grid-summary"><thead class="ui-widget-header"/><tbody/></table></div>';
+  }
+  
   /* Set up the control JS and also return the existing data subsample blocks */
   protected static function get_control_speciesmap_controls($options){
     $langStrings = array('InitMessage' => lang::get("Click on a button to choose what you would like to do."),
