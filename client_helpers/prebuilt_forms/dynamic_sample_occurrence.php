@@ -917,8 +917,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       	$blocks .= '<div id="scm-'.$a[1].'-block" class="scm-block">'.
                   '<label>'.lang::get('LANG_SRef_Label').'</label>'.
                   '<input type="text" value="'.$value.'" readonly="readonly" name="'.$key.'">'.
-       /* TODO */           '<input type="text" value="'.data_entry_helper::$entity_to_load[$geomKey].'" name="'.$geomKey.'">'.
-                  '<input type="text" value="'.(isset(data_entry_helper::$entity_to_load[$deletedKey]) ? data_entry_helper::$entity_to_load[$deletedKey] : 'f').'" name="'.$deletedKey.'">'.
+                  '<input type="hidden" value="'.data_entry_helper::$entity_to_load[$geomKey].'" name="'.$geomKey.'">'.
+                  '<input type="hidden" value="'.(isset(data_entry_helper::$entity_to_load[$deletedKey]) ? data_entry_helper::$entity_to_load[$deletedKey] : 'f').'" name="'.$deletedKey.'">'.
                   (isset(data_entry_helper::$entity_to_load[$idKey]) ? '<input type="hidden" value="'.data_entry_helper::$entity_to_load[$idKey].'" name="'.$idKey.'">' : '').
                   '</div>';
       }
