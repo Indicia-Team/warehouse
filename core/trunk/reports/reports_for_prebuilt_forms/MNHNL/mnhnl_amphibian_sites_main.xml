@@ -21,9 +21,9 @@
   INNER JOIN locations l ON l.id = s.location_id
   INNER JOIN sample_attribute_values savuser
   		ON savuser.sample_id = s.id AND savuser.sample_attribute_id = #userName_attr_id# and savuser.deleted = FALSE
-  LEFT JOIN location_attribute_values lav_1 ON lav_1.location_id=s.location_id AND lav_1.deleted=false AND lav_1.location_attribute_id = #attr_id_1#
-  LEFT JOIN location_attribute_values lav_2 ON lav_2.location_id=s.location_id AND lav_2.deleted=false AND lav_2.location_attribute_id = #attr_id_2#
-  LEFT JOIN location_attribute_values lav_3 ON lav_3.location_id=s.location_id AND lav_3.deleted=false AND lav_3.location_attribute_id = #attr_id_3#
+  INNER JOIN location_attribute_values lav_1 ON lav_1.location_id=s.location_id AND lav_1.deleted=false AND lav_1.location_attribute_id = #attr_id_1#
+  INNER JOIN location_attribute_values lav_2 ON lav_2.location_id=s.location_id AND lav_2.deleted=false AND lav_2.location_attribute_id = #attr_id_2#
+  INNER JOIN location_attribute_values lav_3 ON lav_3.location_id=s.location_id AND lav_3.deleted=false AND lav_3.location_attribute_id = #attr_id_3#
   WHERE s.survey_id=#survey_id# AND s.deleted = FALSE AND s.parent_id IS NULL
   AND ((#userID# > 0 AND (EXISTS (SELECT id FROM sample_attribute_values sav2
   								WHERE sav2.sample_id = s.id
