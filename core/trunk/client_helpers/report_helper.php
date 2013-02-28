@@ -1577,7 +1577,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
                 $colsToInclude[$wktCol]='';
                 $record = array_intersect_key($record, $colsToInclude); 
               }
-              $addFeaturesJs.= "div.addPt(features, ".json_encode($record).", '$wktCol', $opts".(empty($rowId) ? '' : ", '".$record[$options['rowId']]."'").", $locationId);\n";
+              $addFeaturesJs.= "div.addPt(features, ".json_encode($record).", '$wktCol', $opts" . (empty($rowId) ? '' : ", '" . $record[$options['rowId']] . "'") . (empty($locationId) ? '' : ", $locationId") . ");\n";
             }
           }
           self::$javascript .= 'indiciaData.geoms=['.implode(',',$geoms)."];\n";
