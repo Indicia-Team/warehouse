@@ -2423,7 +2423,7 @@ jQuery('#".$options['MainFieldID']."').change(function(){mainFieldChange(true)})
     if($args['locationMode'] == 'parent' || $args['locationMode'] == 'multi'){
       if (!isset($args['loctoolsLocTypeID'])) return "locationMode == parent, loctoolsLocTypeID not set.";
       iform_mnhnl_set_editable($auth, $args, $node, array(), $args['locationMode'] == 'parent' ? "conditional" : $options['AdminMode'], $loctypeParam);
-      $locOptions = array('validation' => array('required'),
+      $locOptions = array('validation' => array('required'), // assume as parents they don't change, so cache data
     					'label'=>$options['ChooseParentLabel'],
     					'id'=>$options['ChooseParentFieldID'],
     					'table'=>'location',
@@ -2534,6 +2534,7 @@ jQuery(\"#".$options['ParentFieldID']."\").change(function(){
     					'captionField'=>'name',
     					'template' => 'select',
     					'itemTemplate' => 'select_item',
+      		            'nocache' => true,
     					'extraParams'=>array_merge($auth['read'],
     						array('parent_id'=>data_entry_helper::$entity_to_load["location:parent_id"],
     								'view'=>'detail',
@@ -2651,8 +2652,8 @@ jQuery(\"#".$options['ChooseParentFieldID']."\").change(function(){
       $responseRecords = data_entry_helper::get_population_data($location_list_args);
       if (isset($responseRecords['error'])) return $responseRecords['error'];
       iform_mnhnl_set_editable($auth, $args, $node, $responseRecords, 'conditional', $loctypeParam);
-	$usedCodes = array();
-	$maxCode = 0;
+      $usedCodes = array();
+      $maxCode = 0;
       $NameOpts = '';
       foreach ($responseRecords as $record){
         if($record['name']!=''){
@@ -2723,10 +2724,12 @@ jQuery(\"#".$options['ChooseParentFieldID']."\").change(function(){
       $locAttrList = data_entry_helper::get_population_data($location_attr_list_args);
       if (isset($locAttrList['error'])) return $locAttrList['error'];
       $locTextList = array();
-      for($i=0, $j=0; $i< count($locList); $i++){
-        while($j<count($locAttrList) && $locAttrList[$j]['location_id']<$locList[$i]['id']) $j++;
+      $locListCount = count($locList);
+      $locAttrListCount = count($locAttrList);
+      for($i=0, $j=0; $i< $locListCount; $i++){
+        while($j<$locAttrListCount && $locAttrList[$j]['location_id']<$locList[$i]['id']) $j++;
         $locAttrTextList = array();
-        while($j<count($locAttrList) && $locAttrList[$j]['location_id']==$locList[$i]['id']){
+        while($j<$locAttrListCount && $locAttrList[$j]['location_id']==$locList[$i]['id']){
           $locAttrTextList[] = '"'.$locAttrList[$j]['location_attribute_id'].'":"'.$locAttrList[$j]['raw_value'].'"';
           $j++;
         }
@@ -2801,7 +2804,7 @@ hook_setSref_".$idx." = function(geom){ // map projection
   
 };\n";
                 if($filterAttr[1]=="true"){ // filterable.
-                  // set up the parent list
+                  // set up the parent list, cacheable
                   $locOptions = array(
                   		'label'=>lang::get('LANG_CommonParentLabel'),
                   		'id'=>'filterSelect'.$idx,
@@ -3693,9 +3696,8 @@ function iform_mnhnl_set_editable($auth, $args, $node, $locList, $force, $loctyp
   if (!$userIdAttr) return lang::get('This form must be used with a survey that has the CMS User ID sample attribute associated with it so records can be tagged against their creator.');
   if(count($locList)==0){
     $location_list_args=array(
-          'nocache'=>true,
+          'nocache'=>true, // new locations can be added.
           'extraParams'=>array_merge(array(
-              'orderby'=>'name',
               'view'=>'detail',
               'website_id'=>$args['website_id'],
               'location_type_id'=>$loctypeParam),
@@ -3718,8 +3720,9 @@ function iform_mnhnl_set_editable($auth, $args, $node, $locList, $force, $loctyp
     }
   }
   $sample_list_args=array(
-        'nocache'=>true,
+        'nocache'=>true, // new samples can be added for existing locations.
         'extraParams'=>array_merge(array(
+              'orderby'=>'id',
               'view'=>'detail',
               'website_id'=>$args['website_id'],
               'location_id'=>$locCheckList),
@@ -3727,28 +3730,32 @@ function iform_mnhnl_set_editable($auth, $args, $node, $locList, $force, $loctyp
         'table'=>'sample');
   $smpList = data_entry_helper::get_population_data($sample_list_args);
   if (isset($smpList['error'])) return $smpList['error'];
-  $smpIDs = array();
-  $smpLocList = array();
-  foreach($smpList as $sample){
-    $smpIDs[] = $sample['id'];
-    $smpLocList[$sample['id']] = $sample['location_id'];
-  }
-  $sample_attr_args=array(
-        'nocache'=>true,
+  $smpCount = count($smpList);
+  $smpIdx = 0;
+  $maxPerQuery = 250;
+  if($smpCount > 0)
+   while($smpIdx < $smpCount) {
+    $smpIDs = array();
+  	$smpLocList = array();
+  	for($i = 0; $i < $maxPerQuery && $smpIdx < $smpCount; $i++, $smpIdx++){
+      $smpIDs[] = $smpList[$smpIdx]['id'];
+      $smpLocList[$smpList[$smpIdx]['id']] = $smpList[$smpIdx]['location_id'];
+    }
+    $sample_attr_args=array(
+        // 'nocache'=>true, the user who created a survey should not change.
         'extraParams'=>array_merge(array(
               'website_id'=>$args['website_id'],
               'sample_attribute_id'=>$userIdAttr,
               'sample_id'=>$smpIDs),
             $auth['read']),
         'table'=>'sample_attribute_value');
-  $smpAttr = data_entry_helper::get_population_data($sample_attr_args);
-  foreach($smpAttr as $attribute){
-    if(!empty($attribute['id']) &&
-        $attribute['sample_attribute_id'] == $userIdAttr &&
-        $attribute['raw_value'] != $user->uid){
-      $locEditList[$smpLocList[$attribute['sample_id']]]=false;
+    $smpAttr = data_entry_helper::get_population_data($sample_attr_args);
+    foreach($smpAttr as $attribute){
+      if(!empty($attribute['id']) && $attribute['raw_value'] != $user->uid){
+        $locEditList[$smpLocList[$attribute['sample_id']]]=false;
+      }
     }
-  }
+   }
   foreach($locEditList as $id => $state){
     data_entry_helper::$javascript .= "\"".$id."\" : ".($state ? "true" : "false").",\n";
   }
