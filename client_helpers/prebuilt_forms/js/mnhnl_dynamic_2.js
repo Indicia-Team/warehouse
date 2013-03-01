@@ -85,7 +85,7 @@ set_up_relationships = function(startAttr, parent, setval, duplicates){
   for( myParentRow = jQuery(myParentRow[0]); !myParentRow.hasClass('first') ; myParentRow = myParentRow.prev() );
   for(var i=1; i < attrRestrictionsProcessOrder.length - (duplicates ? 1 : 0); i++){ // don't do first as has no parent, and when duplicate checking don't do last attribute - this is handled later.
     if(start || startAttr==attrRestrictionsProcessOrder[i]){ // skip through list until we reach the attr to start with.
-      start=true; // process all subsequent attributes as well.
+      start=true; // bubble - process all subsequent attributes as well.
       var child = scanForAttr(myParentRow, attrRestrictionsProcessOrder[i]);
       if(!child) break;
       var childOptions = getDisableableElements(child);
@@ -112,7 +112,7 @@ set_up_relationships = function(startAttr, parent, setval, duplicates){
                 });
               }}}}
        }
-       if(child.val()=='' && setval) resetChild=true;
+       if(childVal=='' && setval) resetChild=true;
        if(resetChild) resetChildValue(child);
     }
   }
@@ -159,7 +159,7 @@ set_up_relationships = function(startAttr, parent, setval, duplicates){
 	          childOptions.each(function(index, Element){
 	            for(var m=0; m < relationships[j].values[k].list.length; m++){
 	              if(relationships[j].values[k].list[m] == $(this).val()){
-	                if($(this).val() == child.val() && setval && myParentRow[0]==group.firstRow[0]) resetChild=true;
+	                if($(this).val() == childVal && setval && myParentRow[0]==group.firstRow[0]) resetChild=true;
 	                $(this).attr('disabled','disabled');
 	            }}
 	          });
