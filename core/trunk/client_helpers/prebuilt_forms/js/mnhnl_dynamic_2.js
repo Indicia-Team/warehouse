@@ -184,7 +184,7 @@ set_up_relationships = function(startAttr, parent, setval, duplicates){
           same = false;
         else if(typeof group.Y != 'undefined' && typeof innerGroup.Y != 'undefined' && group.Y.val() != innerGroup.Y.val())
           same = false;
-        else for(var j=0; j < attrRestrictionsDuplicateAttrList.length-1; j++){ 
+        else for(var j=0; j < attrRestrictionsDuplicateAttrList.length; j++){ 
           if(attrRestrictionsDuplicateAttrList[j] == attrRestrictionsProcessOrder[lastAttr]) continue; // don't check last attribute.
           var myVal = getAttrVal(group.attrs[attrRestrictionsDuplicateAttrList[j]]);
           var otherVal = getAttrVal(innerGroup.attrs[attrRestrictionsDuplicateAttrList[j]]);
