@@ -2885,10 +2885,6 @@ jQuery('#filterSelect".$idx."').change(function(){
   } else {
     jQuery('#filterSelect".$idx."').val('');
   }\n";
-					// $loadFunction.="  displayParent(false);\n";
-					if (array_key_exists('location:id', data_entry_helper::$entity_to_load) && data_entry_helper::$entity_to_load['location:id']!="") {
-						$initFunctions .="\ndisplayParent(false);";
-					}
 					$prevFilterAttr=$filterAttr;
 					$prevAttr=$attr;
 					$prevIdx=$idx;
@@ -2938,7 +2934,7 @@ filterReset".$idx." = function(){
       			// 1 = Attribute Caption
        			// 2 = display warning if outside list (will be set to blank)
       			// 3 = optional location type term filter
-      			// Note that for Commune readonly displays, the normal Commune functionality is used, e.g. in the Amphibians Squares where the Ciommune must be kept in line so the Amphibian Sites can use it.
+      			// Note that for Commune readonly displays, the normal Commune functionality is used, e.g. in the Amphibians Squares where the Commune must be kept in line so the Amphibian Sites can use it.
       			$parentLocTypeID = $filterAttr[3]!='' ? iform_mnhnl_getTermID($auth,'indicia:location_types',$filterAttr[3]) : -1;
                 // proxiedurl,featurePrefix,featureType,geometryName,featureNS,srsName,propertyNames
                 if($filterAttr[1]=="Commune") $includeCommune=false;
@@ -3021,6 +3017,7 @@ hook_setSref_".$idx." = function(geom){ // map projection
       } else {\n".
 ($filterAttr[2]=='true'?"        alert(\"".lang::get('LANG_PositionOutside'.$filterAttr[1])."\");\n":'').
 "        jQuery('#locAttr\\\\:".$attr['attributeId']."').val('');
+        jQuery('#filterSelect".$idx."').val('');
       }
     }
   });
