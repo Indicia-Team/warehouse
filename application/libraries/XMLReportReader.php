@@ -89,7 +89,7 @@ class XMLReportReader_Core implements ReportReader
   * @param string $sharing Set to reporting, verification, moderation, peer_review, data_flow or me (=user's data)
   * depending on the type of data from other websites to include in this report.
   */
-  public function __construct($report, $websiteIds, $userId=null, $sharing='reporting')
+  public function __construct($report, $websiteIds, $userId=null, $sharing='reporting', $training='false')
   {
     Kohana::log('debug', "Constructing XMLReportReader for report $report.");
     try
@@ -115,6 +115,9 @@ class XMLReportReader_Core implements ReportReader
                 if (!$websiteFilterField = $reader->getAttribute('website_filter_field'))
                   // default field name for filtering against websites
                   $websiteFilterField = 'w.id';
+                if (!$trainingFilterField = $reader->getAttribute('training_filter_field'))
+                  // default field name for filtering training records
+                  $trainingFilterField = 'o.training';
                 if (!$createdByField = $reader->getAttribute('created_by_field'))
                   // default field name for filtering the user ID that created the record
                   $createdByField = 'o.created_by_id';
@@ -143,6 +146,8 @@ class XMLReportReader_Core implements ReportReader
                 } else
                   // use a dummy filter to return all websites if core admin
                   $this->query = str_replace('#website_filter#', '1=1', $this->query);
+                if ($training==='true')
+                  $this->query = str_replace('#sharing_filter#', "$trainingFilterField=true /* Here */ AND #sharing_filter#", $this->query); 
                 // select the appropriate type of sharing arrangement (i.e. are we reporting, verifying, moderating etc?)
                 if ($sharing==='me' && empty($userId))
                   // revert to website type sharing if we have no known user Id.

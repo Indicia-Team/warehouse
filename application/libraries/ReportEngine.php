@@ -152,7 +152,10 @@ class ReportEngine {
   public function requestReport($report = null, $reportSource = 'local', $reportFormat = null,  $params = array())
   {
     $this->reportFormat = $reportFormat;
-    $this->providedParams = $params;
+    $this->providedParams = array_merge(
+      array('training' => 'false'),
+      $params
+    );
     // is the default sharing mode of "reporting" being overridden?
     if (isset($this->providedParams['sharing']))
       $this->sharingMode = $this->providedParams['sharing'];
@@ -190,7 +193,7 @@ class ReportEngine {
     switch ($this->reportFormat)
     {
       case 'xml':
-        $this->reportReader = new XMLReportReader($this->report, $this->websiteIds, $this->userId, $this->sharingMode);
+        $this->reportReader = new XMLReportReader($this->report, $this->websiteIds, $this->userId, $this->sharingMode, $this->providedParams['training']);
         break;
       default:
         return array('error' => 'Unknown report format specified: '. $this->reportFormat);
