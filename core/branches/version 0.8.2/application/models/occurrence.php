@@ -89,7 +89,8 @@ class Occurrence_Model extends ORM
       'zero_abundance',
       'last_verification_check_date',
       'last_verification_check_taxa_taxon_list_id',
-      'last_verification_check_version'
+      'last_verification_check_version',
+      'training'
     );
     if(array_key_exists('id', $fieldlist)) {
       // existing data must not be set to download_flag=F (final download) otherwise it 
