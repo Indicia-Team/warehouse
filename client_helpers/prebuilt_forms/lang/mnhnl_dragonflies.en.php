@@ -40,7 +40,6 @@ $custom_term_overrides[] = array(
 	,'Dragonfly Survey Method'=>'Survey method'
 	,'Dragonfly stage'=>'Stage'
 	,'LANG_CommuneLookUpFailed' => 'Internal error: Lookup of the Commune for this location failed.'
-	,'LANG_PositionOutsideCommune' => 'The position you have chosen is outside the set of allowable Communes.'
 	,'LANG_PositionInDifferentCommune' => 'The position you have chosen is outside the selected Commune. Do you wish to change the Commune field to match the point?'
 	,'LANG_NumSites'=>'Number of sites in this square'
 	,'LANG_Data_Download' => 'These reports provide details of the sites, conditions and species data entered in the surveys.'
@@ -48,5 +47,14 @@ $custom_term_overrides[] = array(
 	,'LANG_FirstChooseParentFilter' => 'First choose a square'
 	,'LANG_ZoomToParent'=>'Zoom to Commune'
 	,'Add species to list'=>'Add species record to list'
-	);
+
+	,'LANG_PositionOutsideCommune_1' => "The position you have chosen is outside the set of allowable Communes. You will not be able to save this location until you change it so it has a valid Commune."
+	,'LANG_PositionOutsideCommune_2' => "The position you have chosen is outside the set of allowable Communes. Select 'OK' if you wish to keep the currently selected Commune value. (If you choose 'Cancel', the Commune will be cleared, and you will not be able to save this location until you change it so it has a valid Commune field)"
+	,'LANG_PositionOutsideCommune_3' => "The position you have chosen is outside the set of allowable Communes, and is greater then {DISTANCE} metres from a Commune. You will not be able to save this location until you change it so it has a valid Commune, or is within {DISTANCE} metres of a Commune."
+	,'LANG_PositionOutsideCommune_4' => "The position you have chosen is outside the set of allowable Communes, and is greater then {DISTANCE} metres from a Commune. Select 'OK' if you wish to keep the currently selected Commune value. (If you choose 'Cancel', the Commune will be cleared, and you will not be able to save this location until you change it so it has a valid Commune field)"
+	,'LANG_PositionOutsideCommune_5' => "The position you have chosen is outside the set of allowable Communes, but the closest is SHAPE. Select 'OK' if you wish to use SHAPE. (If you choose 'Cancel' you will not be able to save this location until you change it so it has a valid Commune field)"
+	,'LANG_PositionOutsideCommune_5A' => "The position you have chosen is outside the set of allowable Communes, but the closest is SHAPE. The Commune field will be set to SHAPE."
+	,'LANG_PositionOutsideCommune_6' => "The position you have chosen is outside the set of allowable Communes, but the closest is SHAPE, which is also the currently selected value in the Commune field. Select 'OK' if you wish to keep SHAPE. (If you choose 'Cancel', the Commune will be cleared, and you will not be able to save this location until you change it so it has a valid Commune field)"
+	,'LANG_PositionOutsideCommune_7' => "The position you have chosen is outside the set of allowable Communes, but the closest is SHAPE. This differs from the currently selected value in the Commune field of OLD. Select 'OK' if you wish to change the value to SHAPE. If you choose 'Cancel', the Commune will be left as its current value of OLD."
+);
 ?>

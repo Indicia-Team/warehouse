@@ -133,6 +133,14 @@ function iform_mnhnl_getParameters() {
           'group'=>'Other Map Settings',
         ),
         array(
+          'name'=>'communeLayerBuffer',
+          'caption'=>'Commune Lookup Buffer',
+          'description'=>'When the location position is not within a Commune, this is the size of the buffer to look outside the Coummune boundary in order to find the closest Commune to use instead.',
+          'type'=>'int',
+          'required' => false,
+          'group'=>'Other Map Settings',
+        ),
+        array(
           'name'=>'locationLayerLookup',
           'caption'=>'WFS Layer specification for Locations Lookup',
           'description'=>'Comma separated: proxiedurl,featurePrefix,featureType,geometryName,featureNS,srsName,propertyNames',
@@ -2931,9 +2939,11 @@ filterReset".$idx." = function(){
 				break;
 
       		case "Shape": //special case: geoserver shape file look up, assume only one of these in a form.
-      			// 1 = Attribute Caption
+      			// 0 = "Shape"
+      			// 1 = Attribute Caption, e.g. "Commune"
        			// 2 = display warning if outside list (will be set to blank)
       			// 3 = optional location type term filter
+      			// 4 = buffer
       			// Note that for Commune readonly displays, the normal Commune functionality is used, e.g. in the Amphibians Squares where the Commune must be kept in line so the Amphibian Sites can use it.
       			$parentLocTypeID = $filterAttr[3]!='' ? iform_mnhnl_getTermID($auth,'indicia:location_types',$filterAttr[3]) : -1;
                 // proxiedurl,featurePrefix,featureType,geometryName,featureNS,srsName,propertyNames
@@ -3012,16 +3022,91 @@ hook_setSref_".$idx." = function(geom){ // map projection
 				foreach($filterAttrs as $idx1=>$filterAttr1) // just need index, so don't explode
 					if($idx1 > $idx && $idx1<count($filterAttrs)-1) // don't do name
 					  data_entry_helper::$javascript .="            filterLoad".($idx1)."();\n";
-				data_entry_helper::$javascript .="
-        }
-      } else {\n".
-($filterAttr[2]=='true'?"        alert(\"".lang::get('LANG_PositionOutside'.$filterAttr[1])."\");\n":'').
-"        jQuery('#locAttr\\\\:".$attr['attributeId']."').val('');
-        jQuery('#filterSelect".$idx."').val('');
+				data_entry_helper::$javascript .="          } // else user choose not to change
+        } else {\n";
+				if(!isset($args['communeLayerBuffer']) || $args['communeLayerBuffer'] == ""){ // No buffer in definition
+				  data_entry_helper::$javascript .=
+"          if(jQuery('#filterSelect".$idx."').val() == '') { // not currently filled in
+            alert(\"".lang::get('LANG_PositionOutside'.$filterAttr[1]."_1")."\");
+          } else if(!confirm(\"".lang::get('LANG_PositionOutside'.$filterAttr[1]."_2")."\")) {
+            jQuery('#locAttr\\\\:".$attr['attributeId']."').val('');
+            jQuery('#filterSelect".$idx."').val('');
+            ParentLocationLayer.destroyFeatures();
+          }\n";
+                } else { // buffer set
+				  data_entry_helper::$javascript .=
+"          //  Get list of communes within buffer of geom
+          var protocol = new OpenLayers.Protocol.WFS({
+              url:  '".$protocol[0]."',featurePrefix: '".$protocol[1]."',featureType: '".$protocol[2]."',geometryName:'".$protocol[3]."',featureNS: '".$protocol[4]."',srsName: '".$protocol[5]."',version: '1.1.0',propertyNames: [\"".$protocol[6]."\",'".$protocol[3]."']
+             ,callback: function(a1){
+                var replace = false,
+                    reset = false;
+                if(a1.error && (typeof a1.error.success == 'undefined' || a1.error.success == false)){
+                  alert(\"".lang::get('LANG_'.$filterAttr[1].'LookUpFailed')."\");
+                  return;
+                }
+                if(a1.features.length == 0) {
+                  if(jQuery('#filterSelect".$idx."').val() == '') { // not currently filled in
+                    alert(\"".str_replace('{DISTANCE}', $args['communeLayerBuffer'], lang::get('LANG_PositionOutside'.$filterAttr[1]."_3"))."\");
+                  } else if(!confirm(\"".lang::get('LANG_PositionOutside'.$filterAttr[1]."_4")."\")) {
+                    reset = true;
+                  }
+                } else {
+                  var closest = 0;
+                  if(a1.features.length >= 0) {
+                    for(var i=0; i< a1.features.length; i++){
+                      var distance, thisDistance = geom.distanceTo(a1.features[i].geometry, {});
+                      if(i==0 || thisDistance<distance){
+                        closest=i;
+                        distance=thisDistance;
+                      }
+                    }
+                  }
+                  if(jQuery('#filterSelect".$idx."').val() == '') { // not currently filled in
+                    if(confirm(\"".lang::get('LANG_PositionOutside'.$filterAttr[1]."_5")."\".replace(/SHAPE/g, a1.features[closest].attributes['".$protocol[6]."']))){
+                      replace = true;
+                    }
+                  } else if(jQuery('#filterSelect".$idx."').val() == a1.features[closest].attributes[\"".$protocol[6]."\"]){
+                    if(confirm(\"".lang::get('LANG_PositionOutside'.$filterAttr[1]."_6")."\".replace(/SHAPE/g, a1.features[closest].attributes['".$protocol[6]."']))){
+                      replace = true;
+                    } else {
+                      reset = true;
+                    }
+                  } else { // doesn't match
+                    if(confirm(\"".lang::get('LANG_PositionOutside'.$filterAttr[1]."_7")."\".replace(/SHAPE/g, a1.features[closest].attributes['".$protocol[6]."']).replace(/OLD/g, jQuery('#filterSelect".$idx."').val()))){
+                      replace = true;
+                    }
+                  }
+                }
+                if(reset) {
+                  jQuery('#locAttr\\\\:".$attr['attributeId']."').val('');
+                  jQuery('#filterSelect".$idx."').val('');
+                  ParentLocationLayer.destroyFeatures();
+                } else if(replace){
+                  ParentLocationLayer.destroyFeatures();
+                  ParentLocationLayer.addFeatures([a1.features[closest]]); // feature should be in map projection
+                  jQuery('#filterSelect".$idx."').val(a1.features[closest].attributes['".$protocol[6]."']);
+                  jQuery('#locAttr\\\\:".$attr['attributeId']."').val(a1.features[closest].attributes['".$protocol[6]."']);\n";
+                	
+						foreach($filterAttrs as $idx1=>$filterAttr1) // just need index, so don't explode
+							if($idx1 > $idx && $idx1<count($filterAttrs)-1) // don't do name
+							    data_entry_helper::$javascript .="                  filterLoad".($idx1)."();\n";
+						data_entry_helper::$javascript .="
+                }
+              }
+          });
+          var filter = new OpenLayers.Filter.Spatial({type: OpenLayers.Filter.Spatial.DWITHIN, property: '".$protocol[3]."', value: geom, distance: '".$args['communeLayerBuffer']."'});\n".
+($filterAttr[3]!=''?
+"          filter = new OpenLayers.Filter.Logical({type:OpenLayers.Filter.Logical.AND,
+               filters:[filter,
+		                new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.EQUAL_TO, property: 'location_type_id', value: '".$parentLocTypeID."'})]});\n":'').
+"          protocol.read({filter: filter});\n";
+                }
+                data_entry_helper::$javascript .=
+"        }
       }
-    }
   });
-  var filter = new OpenLayers.Filter.Spatial({type: OpenLayers.Filter.Spatial.CONTAINS,property: '".$parts[3]."',value: geom});\n".
+  var filter = new OpenLayers.Filter.Spatial({type: OpenLayers.Filter.Spatial.CONTAINS,property: '".$protocol[3]."',value: geom});\n".
 ($filterAttr[3]!=''?"  filter = new OpenLayers.Filter.Logical({type:OpenLayers.Filter.Logical.AND, filters:[filter, new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.EQUAL_TO, property: 'location_type_id', value: '".$parentLocTypeID."'})]});\n":'').
 "  protocol.read({filter: filter});
 };
@@ -3288,31 +3373,69 @@ hook_set_defaults = function(keepFilter){
 };
 hook_setSref = function(geom){ // geom is in map projection.
   jQuery('#map').ajaxStop(function(event){\n";
-      if($includeCommune)
-          data_entry_helper::$javascript .="    var communeProtocol = new OpenLayers.Protocol.WFS({
-              url:  '".str_replace("{HOST}", $_SERVER['HTTP_HOST'], $parts[0])."',
-              featurePrefix: '".$parts[1]."',
-              featureType: '".$parts[2]."',
-              geometryName:'".$parts[3]."',
-              featureNS: '".$parts[4]."',
-              srsName: '".$parts[5]."', // this should be in map projection.
-              version: '1.1.0'                  
-      		  ,propertyNames: [\"".$parts[6]."\"]});
-    jQuery('[name=locAttr\\:$communeAttr],[name^=locAttr\\:$communeAttr\\:]').val('');
-    var filter = new OpenLayers.Filter.Spatial({
-  		type: OpenLayers.Filter.Spatial.CONTAINS ,
-    	property: '".$parts[3]."',
-    	value: geom});
-    communeProtocol.read({filter: filter, callback: function(a1){
-      if(a1.error && (typeof a1.error.success == 'undefined' || a1.error.success == false)){
-        alert(\"".lang::get('LANG_CommuneLookUpFailed')."\");
-        return;
+      if($includeCommune) {
+          data_entry_helper::$javascript .="
+  jQuery('[name=locAttr\\:$communeAttr],[name^=locAttr\\:$communeAttr\\:]').val('');
+  var communeProtocol = new OpenLayers.Protocol.WFS({
+      url:  '".str_replace("{HOST}", $_SERVER['HTTP_HOST'], $parts[0])."',
+      featurePrefix: '".$parts[1]."',
+      featureType: '".$parts[2]."',
+      geometryName:'".$parts[3]."',
+      featureNS: '".$parts[4]."',
+      srsName: '".$parts[5]."',
+      version: '1.1.0',
+      propertyNames: ['".$parts[6]."']
+     ,callback: function(a1){
+        if(a1.error && (typeof a1.error.success == 'undefined' || a1.error.success == false)){
+          alert(\"".lang::get('LANG_CommuneLookUpFailed')."\");
+          return;
+        }
+        if(a1.features.length > 0) {
+          jQuery('[name=locAttr\\:$communeAttr],[name^=locAttr\\:$communeAttr\\:]').val(a1.features[0].attributes[\"".$parts[6]."\"]);
+        } else {\n";
+				if(!isset($args['communeLayerBuffer']) || $args['communeLayerBuffer'] == ""){ // No buffer in definition
+				  data_entry_helper::$javascript .=
+"          alert(\"".lang::get('LANG_PositionOutsideCommune_1')."\");\n";
+                } else { // buffer set
+				  data_entry_helper::$javascript .=
+"          //  Get list of communes within buffer of geom
+          var protocol = new OpenLayers.Protocol.WFS({
+              url:  '".$parts[0]."',featurePrefix: '".$parts[1]."',featureType: '".$parts[2]."',geometryName:'".$parts[3]."',featureNS: '".$parts[4]."',srsName: '".$parts[5]."',version: '1.1.0',propertyNames: [\"".$parts[6]."\"]
+             ,callback: function(a1){
+                var replace = false,
+                    reset = false;
+                if(a1.error && (typeof a1.error.success == 'undefined' || a1.error.success == false)){
+                  alert(\"".lang::get('LANG_CommuneLookUpFailed')."\");
+                  return;
+                }
+                if(a1.features.length == 0) {
+                  alert(\"".str_replace('{DISTANCE}', $args['communeLayerBuffer'], lang::get('LANG_PositionOutsideCommune_3'))."\");
+                } else {
+                  var closest = 0;
+                  if(a1.features.length >= 0) {
+                    for(var i=0; i< a1.features.length; i++){
+                      var distance, thisDistance = geom.distanceTo(a1.features[i].geometry, {});
+                      if(i==0 || thisDistance<distance){
+                        closest=i;
+                        distance=thisDistance;
+                      }
+                    }
+                  }
+                  alert(\"".lang::get('LANG_PositionOutside'.$filterAttr[1]."_5A")."\".replace(/SHAPE/g, a1.features[closest].attributes['".$parts[6]."']));
+                  jQuery('[name=locAttr\\:$communeAttr],[name^=locAttr\\:$communeAttr\\:]').val(a1.features[closest].attributes[\"".$parts[6]."\"]);
+                }
+              }
+          });
+          var filter = new OpenLayers.Filter.Spatial({type: OpenLayers.Filter.Spatial.DWITHIN, property: '".$parts[3]."', value: geom, distance: '".$args['communeLayerBuffer']."'});
+          protocol.read({filter: filter});\n";
+                }
+                data_entry_helper::$javascript .=
+"        }
       }
-      if(a1.features.length > 0)
-        jQuery('[name=locAttr\\:$communeAttr],[name^=locAttr\\:$communeAttr\\:]').val(a1.features[0].attributes[\"".$parts[6]."\"]);
-      else {
-        alert(\"".lang::get('LANG_PositionOutsideCommune')."\");
-      }}});\n";
+  });
+  var filter = new OpenLayers.Filter.Spatial({type: OpenLayers.Filter.Spatial.CONTAINS,property: '".$parts[3]."',value: geom});
+  communeProtocol.read({filter: filter});\n";
+      }
       foreach($filterAttrs as $idx=>$filterAttr){
         $filterAttr=explode(':',$filterAttr);
         if($filterAttr[0]=="Parent" || $filterAttr[0]=="Shape")
