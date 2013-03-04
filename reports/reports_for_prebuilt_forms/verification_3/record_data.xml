@@ -28,6 +28,7 @@
     <column name='date' display='Sample:Date' sql='s.date_start' />
     <column name='location_name' display='Sample:Site Name' sql="case when co.location_name=s.location_name then co.location_name else co.location_name || COALESCE(' - ' || s.location_name, '') end" />
     <column name='sample_comment' display='Sample:Comment' sql='s.comment' />
+    <column name='survey_title' display='Sample:Survey' sql='co.survey_title' />
     <column name='taxon_external_key' visible="false" sql='co.taxa_taxon_list_external_key' />
     <column name='taxon_meaning_id' visible="false" sql='co.taxon_meaning_id' />
     <column name='record_status' visible="false" sql='o.record_status' />
