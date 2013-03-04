@@ -70,6 +70,10 @@ class Sample_Attribute_Model extends ATTR_ORM {
         'title' => 'Last name',
         'description'=>'A text attribute corresponding to the user\'s last name.'
       ),
+      'full_name' => array(
+        'title' => 'Full name',
+        'description'=>'A text attribute corresponding to the recorder\'s full name.'
+      ),
       'biotope' => array(
         'title' => 'Biotope',
         'description'=>'A text or lookup attribute where the value describes the biotope (often described as the habitat) of the sample.'
