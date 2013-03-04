@@ -16,7 +16,10 @@
               ELSE a.data_type
           END AS data_type, a.caption, 
           CASE a.data_type
-              WHEN 'T'::bpchar THEN av.text_value
+              WHEN 'T'::bpchar THEN CASE WHEN right(a.caption, 4) = 'link' AND left(av.text_value, 4) = 'http' THEN 
+                '&lt;a href="' || av.text_value || '"&gt;' || av.text_value || '&lt;/a&gt;'
+              ELSE 
+                av.text_value END
               WHEN 'L'::bpchar THEN lookup.term::text
               WHEN 'I'::bpchar THEN av.int_value::character varying::text
               WHEN 'B'::bpchar THEN av.int_value::character varying::text
