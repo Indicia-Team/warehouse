@@ -100,8 +100,11 @@ class Upgrade_Model extends Model
           while ($level>=0 && $stuffToDo==false) {
             $currentVersionNumbers[$level]++;
             $version_name = 'version_'.implode('_', $currentVersionNumbers);
-            if (file_exists($baseDir . "db/" . $version_name) || (method_exists($this, $version_name)))
-              $stuffToDo = true;            
+            if (file_exists($baseDir . "db/" . $version_name) || (method_exists($this, $version_name))) {
+              $stuffToDo = true;
+              // reset last run script - as we are starting in a new folder.
+              $last_run_script = '';
+            }
             else {
               // Couldn't find anything of this version name. Move up a level (e.g. we have searched 0.2.5 and found nothing, so try 0.3.0)            
               $currentVersionNumbers[$level]=0;
@@ -181,8 +184,8 @@ class Upgrade_Model extends Model
       $full_upgrade_folder = $baseDir . "db/" . $upgrade_folder;
       
       // get last executed sql file name. If not in the parameter (which loads from the db via the
-      // system model), then it must be from an old version of Indicia pre 0.8 so has the last
-      // run script saved as a file in the db scripts folder.
+      // system model), then it could be from an old version of Indicia pre 0.8 so has the last
+      // run script saved as a file in the db scripts folder. Or we could just be starting a new folder.
       if (empty($last_run_script))
         $last_run_script = $this->get_last_executed_sql_file_name($full_upgrade_folder, $appName);
       $original_last_run_script = $last_run_script;
