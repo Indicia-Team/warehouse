@@ -2047,6 +2047,8 @@ if (typeof mapSettingsHooks!=='undefined') {
       // to the report call as it might be required for filters.
       if (!isset($options['extraParams']['user_id']) && $indiciaUserId = hostsite_get_user_field('indicia_user_id'))
         $options['extraParams']['user_id'] = $indiciaUserId;
+      if (hostsite_get_user_field('training')) 
+        $options['extraParams']['training'] = 'true';
     }
     return $options;
   }
