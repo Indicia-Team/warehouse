@@ -63,7 +63,9 @@ where s.deleted=false
 and s.updated_on>'$last_run_date'";
   $db->query($query);
   $r = $db->query('select count(*) as count from smplist')->result_array(false);
-  echo "Building spatial index for ".$r[0]['count']." sample(s).<br/>";
+  $message = "Building spatial index for ".$r[0]['count']." sample(s)";
+  echo "$message<br/>";
+  Kohana::log('debug', $message);
   return $r[0]['count'];
 }
 
@@ -83,7 +85,9 @@ and l.updated_on>'$last_run_date'
 $where";
   $db->query($query);
   $r = $db->query('select count(*) as count from loclist')->result_array(false);
-  echo "Building spatial index for ".$r[0]['count']." locations(s).<br/>";
+  $message = "Building spatial index for ".$r[0]['count']." locations(s)";
+  echo "$message<br/>";
+  Kohana::log('debug', $message);
   return $r[0]['count'];
 }
 
@@ -112,10 +116,13 @@ function spatial_index_builder_populate($db) {
   // First task - cleanup any existing records for the samples and locations we are about to rescan.
   $query = "delete from index_locations_samples where location_id in (
       select id from loclist union select id from locations where deleted=true
-    ) or sample_id in (
+    );";
+  $db->query($query);
+  $query = "delete from index_locations_samples where sample_id in (
       select id from smplist union select id from samples where deleted=true
     );";
   $db->query($query);
+  Kohana::log('debug', "Cleaned up index_locations_samples before populating new values.");
   // are we filtering by location type?
   $filter=spatial_index_builder_get_type_filter();
   list($join, $where)=$filter;
@@ -129,7 +136,9 @@ function spatial_index_builder_populate($db) {
     and (l.id in (select id from loclist)
     or s.id in (select id from smplist))
     $where";
-  echo $db->query($query)->count().' index entries created.<br/>';
+  $message = $db->query($query)->count().' index_locations_samples entries created.';
+  echo "$message<br/>";
+  Kohana::log('debug', $message);
 }
 
 function spatial_index_builder_cleanup($db) {
