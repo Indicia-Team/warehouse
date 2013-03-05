@@ -618,7 +618,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   url: '".$warehouseUrl."',
   reportGroup: '".$options['reportGroup']."',
   autoParamsForm: '".$options['autoParamsForm']."',
-  rootFolder: '".dirname($_SERVER['PHP_SELF'])."/',
+  rootFolder: '".self::getRootFolder()."',
   imageFolder: '".self::get_uploaded_image_folder()."',
   currentUrl: '".$currentUrl['path']."',
   rowId: '".(isset($options['rowId']) ? $options['rowId'] : '')."',
