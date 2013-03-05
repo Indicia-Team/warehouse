@@ -3048,7 +3048,7 @@ hook_setSref_".$idx." = function(geom){ // map projection
                 if(a1.features.length == 0) {
                   if(jQuery('#filterSelect".$idx."').val() == '') { // not currently filled in
                     alert(\"".str_replace('{DISTANCE}', $args['communeLayerBuffer'], lang::get('LANG_PositionOutside'.$filterAttr[1]."_3"))."\");
-                  } else if(!confirm(\"".lang::get('LANG_PositionOutside'.$filterAttr[1]."_4")."\")) {
+                  } else if(!confirm(\"".str_replace('{DISTANCE}', $args['communeLayerBuffer'], lang::get('LANG_PositionOutside'.$filterAttr[1]."_4"))."\")) {
                     reset = true;
                   }
                 } else {
