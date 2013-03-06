@@ -437,20 +437,29 @@ class ORM extends ORM_Core {
         $i++;
       } 
     }
-    Kohana::log('debug', 'Leaving ORM createRecordsFromCaptions, result is '.print_r($r, true));
+    
     return $r;
   }
 
   /**
-   * Puts each supplied record id into the submission to replace the captions 
+   * When using a sublist control (or any similar multi-value control), non-existing
+   * values added  to the list are posted as captions, These need to be converted to 
+   * IDs in the table identified 
+   Puts each supplied record id into the submission to replace the captions 
    * so we store IDs instead.
+   * @param array $ids 
    * @return boolean.
    */
   private function createIdsFromCaptions($ids) {
-    $keys = array_fill(0, sizeof($ids), 'value');
-    $a = array_fill_keys($keys, $ids);
     $fieldname = $this->submission['fields']['insert_captions_use']['value'];
-    $this->submission['fields'][$fieldname] = $a;
+    if(empty($ids)){
+	$this->submission['fields'][$fieldname] = array('value'=>array());
+    } 
+    else{
+    	$keys = array_fill(0, sizeof($ids), 'value');
+    	$a = array_fill_keys($keys, $ids);
+    	$this->submission['fields'][$fieldname] = $a;
+    }
     return true;
   }
   
@@ -496,10 +505,11 @@ class ORM extends ORM_Core {
       && !empty($this->submission['fields']['insert_captions_to_create']['value'])
       && !empty($this->submission['fields']['insert_captions_use'])
       && !empty($this->submission['fields']['insert_captions_use']['value'])) {
+    
       $ids = $this->createRecordsFromCaptions();
       $this->createIdsFromCaptions($ids);
-      unset($this->submission['fields']['insert_captions_to_create']['value']);
-      unset($this->submission['fields']['insert_captions_use']['value']);
+      unset($this->submission['fields']['insert_captions_to_create']);
+      unset($this->submission['fields']['insert_captions_use']);
     }
   }
   
@@ -1048,6 +1058,7 @@ class ORM extends ORM_Core {
     if ($this->has_attributes) {
       $result = $this->getAttributes(false, $attrTypeFilter);
       foreach($result as $row) {
+
         if ($row->data_type == 'L' && $fk) {
           // Lookup lists store a foreign key
           $fieldname = $this->attrs_field_prefix.':fk_'.$row->id;
@@ -1055,6 +1066,7 @@ class ORM extends ORM_Core {
           $fieldname = $this->attrs_field_prefix.':'.$row->id;
         }
         $fields[$fieldname] = $row->caption;
+
       }
     }
     $fields = array_merge($fields, $this->additional_csv_fields);
