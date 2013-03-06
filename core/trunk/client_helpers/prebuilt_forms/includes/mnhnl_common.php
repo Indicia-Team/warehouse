@@ -3254,6 +3254,7 @@ jQuery('#locAttr\\\\:".$attr['attributeId']."').autocomplete('".data_entry_helpe
         termlist_id: '".$filterAttr[1]."'
       },
       max: 10000,
+      mustMatch : true,
       parse: function(data) {
         var results = [];
         jQuery.each(data, function(i, item) {
