@@ -267,10 +267,19 @@ class ORM extends ORM_Core {
     // the created_by_id field can be specified by web service calls if the caller knows which Indicia user
     // is making the post.
     $fields_to_copy=array_merge(array('created_by_id'), $this->unvalidatedFields);
+    // set the default created/updated information
     $this->set_metadata();
+    $modelFields=$array->as_array();
+    $fields_to_copy=$this->unvalidatedFields;
+    // the created_by_id and updated_by_id fields can be specified by web service calls if the 
+    // caller knows which Indicia user is making the post.
+    if (!empty($modelFields['created_by_id']))
+      $fields_to_copy[] = 'created_by_id';
+    if (!empty($modelFields['updated_by_id']))
+      $fields_to_copy[] = 'updated_by_id';
     foreach ($fields_to_copy as $a)
     {
-      if (array_key_exists($a, $array->as_array())) {
+      if (array_key_exists($a, $modelFields)) {
         // When a field allows nulls, convert empty values to null. Otherwise we end up trying to store '' in non-string
         // fields such as dates.
         if ($array[$a]==='' && isset($this->table_columns[$a]['null']) && $this->table_columns[$a]['null']==1) {
@@ -436,8 +445,12 @@ class ORM extends ORM_Core {
   }
 
   /**
-   * Puts each supplied record id into the submission to replace the captions 
+   * When using a sublist control (or any similar multi-value control), non-existing
+   * values added  to the list are posted as captions, These need to be converted to 
+   * IDs in the table identified 
+   Puts each supplied record id into the submission to replace the captions 
    * so we store IDs instead.
+   * @param array $ids 
    * @return boolean.
    */
   private function createIdsFromCaptions($ids) {
@@ -491,9 +504,12 @@ class ORM extends ORM_Core {
       && !empty($this->submission['fields']['insert_captions_use'])
       && !empty($this->submission['fields']['insert_captions_use']['value'])) {
       $ids = $this->createRecordsFromCaptions();
+      kohana::log('debug', 'IDS: '.print_r($ids, true));
+      if(!empty($ids)) 
       $this->createIdsFromCaptions($ids);
-      unset($this->submission['fields']['insert_captions_to_create']['value']);
-      unset($this->submission['fields']['insert_captions_use']['value']);
+ 
+      unset($this->submission['fields']['insert_captions_to_create']);
+      unset($this->submission['fields']['insert_captions_use']);
     }
   }
   
@@ -723,6 +739,18 @@ class ORM extends ORM_Core {
           ->where($where)
           ->limit(1)
           ->get();
+      if (count($matches)===0) {
+        // try a slower case insensitive search before giving up
+        $this->db
+          ->select('id')
+          ->from(inflector::plural($fkArr['fkTable']))
+          ->where("(".$fkArr['fkSearchField']." ilike '".strtolower($fkArr['fkSearchValue'])."')");
+        if (isset($fkArr['fkSearchFilterField']) && $fkArr['fkSearchFilterField']) 
+          $this->db->where(array($fkArr['fkSearchFilterField']=>$fkArr['fkSearchFilterValue']));
+        $matches = $this->db
+          ->limit(1)
+          ->get();
+      }
       if (count($matches) > 0) {
         $r = $matches[0]->id;
         if (ORM::$cacheFkLookups) {
@@ -1200,6 +1228,7 @@ class ORM extends ORM_Core {
       // value is a term that needs looking up
       $fk = true;
       $attrId = substr($attrId, 3);
+      $value=trim($value);
     }
     
     $attr = $this->db
@@ -1274,7 +1303,7 @@ class ORM extends ORM_Core {
       case 'L':
         // Lookup list
         $vf = 'int_value';
-        if ($fk) {
+        if (!empty($value) && $fk) {
           // value must be looked up 
           $r = $this->fkLookup(array(
             'fkTable' => 'lookup_term',
