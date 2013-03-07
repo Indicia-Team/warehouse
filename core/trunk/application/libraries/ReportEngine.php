@@ -593,12 +593,12 @@ class ReportEngine {
     $downloaded_on = date("Ymd H:i:s");
     $db = new Database(); // use default access so can update.
     $db->query('START TRANSACTION READ WRITE;');
-    $response = $db->in("id", $idList)
+    $response = $db->in("id", $idList)->where("downloaded_flag", ($mode == 'FINAL'? 'I' : 'N'))
         ->update('occurrences',
           array('downloaded_flag' => ($mode == 'FINAL'? 'F' : 'I'),
               'downloaded_on' => $downloaded_on,
               'updated_on' => $downloaded_on));
-    $response = $db->in("id", $idList)
+    $response = $db->in("id", $idList)->where("downloaded_flag", ($mode == 'FINAL'? 'I' : 'N'))
         ->update('cache_occurrences',
           array('downloaded_flag' => ($mode == 'FINAL'? 'F' : 'I')));
     $db->query('COMMIT;');
@@ -953,7 +953,7 @@ class ReportEngine {
       }
       // lookups need special processing for additional joins
       elseif ($attr->data_type=='L') {
-        $query = str_replace('#joins#', "$join list_termlists_terms ltt$id ON ltt$id.id=$type$id.int_value\n #joins#", $query);
+        $query = str_replace('#joins#', $join." ".(class_exists('cache_builder') ? "cache_termlists_terms" : "list_termlists_terms")." ltt$id ON ltt$id.id=$type$id.int_value\n #joins#", $query);
         $alias = preg_replace('/\_value$/', '', "attr_$type"."_term_$uniqueId");
         $query = str_replace('#fields#', ", ltt$id.term as $alias#fields#", $query);
         $query = str_replace('#group_bys#', ", ltt$id.term#group_bys#", $query);
@@ -1017,6 +1017,7 @@ class ReportEngine {
   private function executeQuery()
   {    
     Kohana::log('debug', "Running report query : ".$this->query);
+    // Kohana::log_save();
     $this->response = $this->reportDb->query($this->query);
   }
 
