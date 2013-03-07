@@ -226,7 +226,7 @@ class iform_dynamic_report_explorer extends iform_dynamic {
     return '';
   }
   
-  protected static function getFirstTabAdditionalContent($args, $auth, $attributes) {
+  protected static function getFirstTabAdditionalContent($args, $auth, &$attributes) {
     return '';
   }
  
