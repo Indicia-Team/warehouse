@@ -1,4 +1,4 @@
-<?php
+ï»¿<?php
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -30,34 +30,34 @@ $custom_terms = array(
   'abundance' => 'Nombre',
   'close'=>'Fermer',
   'email'=>'adresse e-mail',
-  'first name'=>'Prénom',
-  'happy for contact'=>'Je suis d\'accord d\'être éventuellement contacté au sujet de cette observation',
+  'first name'=>'PrÃ©nom',
+  'happy for contact'=>'Je suis d\'accord d\'Ãªtre Ã©ventuellement contactÃ© au sujet de cette observation',
   'next step'=>'Suivant',
-  'occurrence:taxa_taxon_list_id'=>'Espèce',
-  'phone number'=>'Téléphone',
-  'prev step'=>'Précédant',
+  'occurrence:taxa_taxon_list_id'=>'EspÃ¨ce',
+  'phone number'=>'TÃ©lÃ©phone',
+  'prev step'=>'PrÃ©cÃ©dant',
   'save'=>'Sauvegarder',
   'sample:comment'=>'Remarque',
   'sample:date' => 'Date',
-  'sample:entered_sref'=>'Coordonnées',
+  'sample:entered_sref'=>'CoordonnÃ©es',
   'search'=>'Chercher',
   'LANG_Georef_Label'=>'Chercher la position sur la carte',
-  'LANG_Georef_SelectPlace' => 'Choisissez la bonne parmi les localités suivantes qui correspondent à votre recherche. (Cliquez dans la liste pour voir l\'endroit sur la carte.)',
-  'LANG_Georef_NothingFound' => 'Aucun endroit n\'a été trouvé avec ce nom. Essayez avec le nom d\'une localité voisine.',
+  'LANG_Georef_SelectPlace' => 'Choisissez la bonne parmi les localitÃ©s suivantes qui correspondent Ã  votre recherche. (Cliquez dans la liste pour voir l\'endroit sur la carte.)',
+  'LANG_Georef_NothingFound' => 'Aucun endroit n\'a Ã©tÃ© trouvÃ© avec ce nom. Essayez avec le nom d\'une localitÃ© voisine.',
   'surname'=>'Nom',
-  'you are recording a'=>'Vous allez enregistrer une observation de: {1}. Veuillez utiliser le formulaire ci-dessous pour indiquer les détails.',
+  'you are recording a'=>'Vous allez enregistrer une observation de: {1}. Veuillez utiliser le formulaire ci-dessous pour indiquer les dÃ©tails.',
 
   // Tab titles (only visible if interface tabbed)
-  'about you'=>'Qui êtes vous?',
+  'about you'=>'Qui Ãªtes vous?',
   'what did you see'=>'Qu\'avez-vous vu?',
-  'where was it'=>'Où était-ce?',
+  'where was it'=>'OÃ¹ Ã©tait-ce?',
   'other information'=>'Autres Informations',
   // Tab instructions
-  'about you tab instructions'=>'<strong>Qui êtes vous?</strong><br/>Dites nous s\'il vous plaît qui vous êtes. Cela pourrait être important pour que nous puissions vous contacter au cas où votre observation serait particulièrement intéressante.',
+  'about you tab instructions'=>'<strong>Qui Ãªtes vous?</strong><br/>Dites nous s\'il vous plaÃ®t qui vous Ãªtes. Cela pourrait Ãªtre important pour que nous puissions vous contacter au cas oÃ¹ votre observation serait particuliÃ¨rement intÃ©ressante.',
   'species tab instructions'=>'<strong>Qu\'avez-vous vu?</strong><br/>Cliquez sur la fleur que vous avez vue, ensuite sur Suivant.',
-  'place tab instructions'=>'<strong>Où était-ce?</strong><br/>1. Veuillez rechercher l\'endroit précis de votre observation sur la carte. Vous pouvez utiliser pour ceci la recherche des localités.'.
-      '<br/>2. Cliquez sur l\'endroit précis de votre observation sur la carte pour enregistrer les coordonnées.',
-  'other tab instructions'=>'<strong>Autres Informations</strong><br/>Indiquez s\'il vous plaît quand vous avez vu cette fleur, combien il y en avait à peu près et si nécessaire d\'autres commentaires.',
+  'place tab instructions'=>'<strong>OÃ¹ Ã©tait-ce?</strong><br/>1. Veuillez rechercher l\'endroit prÃ©cis de votre observation sur la carte. Vous pouvez utiliser pour ceci la recherche des localitÃ©s.'.
+      '<br/>2. Cliquez sur l\'endroit prÃ©cis de votre observation sur la carte pour enregistrer les coordonnÃ©es.',
+  'other tab instructions'=>'<strong>Autres Informations</strong><br/>Indiquez s\'il vous plaÃ®t quand vous avez vu cette fleur, combien il y en avait Ã  peu prÃ¨s et si nÃ©cessaire d\'autres commentaires.',
 
   'validation_required' => 'Veuillez saisir une valeur pour: %s',
   'validation_dateISO' => 'Veuillez indiquer une date valide au format aaaa-mm-jj.',

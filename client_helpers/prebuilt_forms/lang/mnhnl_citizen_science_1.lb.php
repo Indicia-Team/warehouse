@@ -1,4 +1,4 @@
-<?php
+ï»¿<?php
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -31,21 +31,21 @@ $custom_terms = array(
   'close'=>'Zoumaachen',
   'email'=>'Email',
   'first name'=>'Virnumm',
-  'happy for contact'=>'Ech sinn averstan eventuell zu dëser Beobachtung kontaktéiert ze ginn',
+  'happy for contact'=>'Ech sinn averstan eventuell zu dÃ«ser Beobachtung kontaktÃ©iert ze ginn',
   'next step'=>'Weider',
   'occurrence:taxa_taxon_list_id'=>'Art',
   'phone number'=>'Telefonsnummer',
-  'prev step'=>'Zrëck',
-  'save'=>'Späicheren',
+  'prev step'=>'ZrÃ«ck',
+  'save'=>'SpÃ¤icheren',
   'sample:comment'=>'Bemierkung',
   'sample:date' => 'Datum',
   'sample:entered_sref'=>'Koordinaten',
   'search'=>'Sichen',
   'LANG_Georef_Label'=>'Plaatz op der Kaart sichen',
-  'LANG_Georef_SelectPlace' => 'Wielt ënnert den Uertschaften, déi ärer Sich entspriechen, déi richteg aus. (Klickt an d\'Lëscht fir d\'Plaz op der Kaart ze gesinn.)',
-  'LANG_Georef_NothingFound' => 'Et gouf keng Plaz mat dem Numm fonnt. Probéiert mat dem Numm vun enger Nopesch-Uertschaft.',
+  'LANG_Georef_SelectPlace' => 'Wielt Ã«nnert den Uertschaften, dÃ©i Ã¤rer Sich entspriechen, dÃ©i richteg aus. (Klickt an d\'LÃ«scht fir d\'Plaz op der Kaart ze gesinn.)',
+  'LANG_Georef_NothingFound' => 'Et gouf keng Plaz mat dem Numm fonnt. ProbÃ©iert mat dem Numm vun enger Nopesch-Uertschaft.',
   'surname'=>'Nonumm',
-  'you are recording a'=>'Dir sidd am Gaang eng Beobachtung an ze gi vun: {1}. Gebraucht wann ech gelift de Formulaire ënnendrënner fir d\'Detailer an ze ginn.',
+  'you are recording a'=>'Dir sidd am Gaang eng Beobachtung an ze gi vun: {1}. Gebraucht wann ech gelift de Formulaire Ã«nnendrÃ«nner fir d\'Detailer an ze ginn.',
 
   // Tab titles (only visible if interface tabbed
   'about you'=>'Ween ech sinn',
@@ -53,14 +53,14 @@ $custom_terms = array(
   'where was it'=>'Wou et war',
   'other information'=>'Aner Informatiounen',
   // Tab instructions
-  'about you tab instructions'=>'<strong>Ween ech sinn</strong><br/>Sot eis wann ech gelift ween Dir sidd. Dëst kéint wichteg sinn, fir dass mir Iech kontaktéiere kënnen, wann är Beobachtung besonnesch interessant ass.',
-  'species tab instructions'=>'<strong>Wat ech gesinn hunn</strong><br/>Klickt op déi Blumm, déi Dir gesinn hutt, dono op Weider.',
-  'place tab instructions'=>'<strong>Wou et war</strong><br/>1. Sicht wann ech gelift op der Kaart déi genau Plaz wou dir är Beobachtung gemaacht hutt. Heifir kennt Dir d\'Plaze-Sich benotzen.'.
-      '<br/>2. Klickt op déi genau Plaz op der Kaart fir d\'Koordinaten ze iwwerhuelen.',
-  'other tab instructions'=>'<strong>Aner Informatioune</strong><br/>Sot eis wann ech gelift wéini Dir déi Blumm oder d\'Déier gesinn hutt, wéi vill et der ongeféier waren a wann néideg weider Bemierkungen.',
+  'about you tab instructions'=>'<strong>Ween ech sinn</strong><br/>Sot eis wann ech gelift ween Dir sidd. DÃ«st kÃ©int wichteg sinn, fir dass mir Iech kontaktÃ©iere kÃ«nnen, wann Ã¤r Beobachtung besonnesch interessant ass.',
+  'species tab instructions'=>'<strong>Wat ech gesinn hunn</strong><br/>Klickt op dÃ©i Blumm, dÃ©i Dir gesinn hutt, dono op Weider.',
+  'place tab instructions'=>'<strong>Wou et war</strong><br/>1. Sicht wann ech gelift op der Kaart dÃ©i genau Plaz wou dir Ã¤r Beobachtung gemaacht hutt. Heifir kennt Dir d\'Plaze-Sich benotzen.'.
+      '<br/>2. Klickt op dÃ©i genau Plaz op der Kaart fir d\'Koordinaten ze iwwerhuelen.',
+  'other tab instructions'=>'<strong>Aner Informatioune</strong><br/>Sot eis wann ech gelift wÃ©ini Dir dÃ©i Blumm oder d\'DÃ©ier gesinn hutt, wÃ©i vill et der ongefÃ©ier waren a wann nÃ©ideg weider Bemierkungen.',
 
-  'validation_required' => 'Gitt wann ech gelift e Wäert an fir: %s',
-  'validation_dateISO' => 'Gitt wann ech gelift ee gültegen Datum am Format JJJJ-MM-DD un.',
+  'validation_required' => 'Gitt wann ech gelift e WÃ¤ert an fir: %s',
+  'validation_dateISO' => 'Gitt wann ech gelift ee gÃ¼ltegen Datum am Format JJJJ-MM-DD un.',
   'Males present' => 'Males present'
 
 );

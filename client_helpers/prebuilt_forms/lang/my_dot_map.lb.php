@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -28,7 +28,7 @@ global $custom_terms;
  */
 $custom_terms = array(
 	'Species' => 'Art',
-	'Latin Name' => 'Lat�ineschen Numm',
+	'Latin Name' => 'Latäineschen Numm',
 	'Date' => 'Datum',
 	'Spatial Ref' => 'Koordinaten'
 );
