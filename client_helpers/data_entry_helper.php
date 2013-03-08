@@ -173,7 +173,21 @@ class data_entry_helper extends helper_base {
     global $indicia_templates;
     $options = self::check_options($options);
     if (!array_key_exists('id', $options)) $options['id']=$options['fieldname'];
+    
+    // the inputId is the id given to the text field, e.g. occurrence:taxa_taxon_list_id:taxon
     $options['inputId'] = $options['id'].':'.$options['captionField'];
+    
+    // The following format introduced in r4335 to support personal sites
+    $defaultCaption = self::check_default_value('location:' . $options['inputId']);
+    if ( is_null($defaultCaption) ) {
+      // The code prior to r4335 for non-location fields
+      $defaultCaption = self::check_default_value($options['inputId']);
+    }
+    if ( !is_null($defaultCaption) ) {
+      // This computed value overrides a value passed in to the function
+      $options['defaultCaption'] = $defaultCaption;
+    }
+    
     if (!empty(parent::$warehouse_proxy))
       $warehouseUrl = parent::$warehouse_proxy;
     else
@@ -181,12 +195,9 @@ class data_entry_helper extends helper_base {
     $options = array_merge(array(
       'template' => 'autocomplete',
       'url' => $warehouseUrl."index.php/services/data",
-      'inputId' => $options['id'].':'.$options['captionField'],
       // Escape the ids for jQuery selectors
       'escaped_input_id' => self::jq_esc($options['inputId']),
       'escaped_id' => self::jq_esc($options['id']),
-      'defaultCaption' => self::check_default_value('location:'.$options['inputId'],
-          array_key_exists('defaultCaption', $options) ? $options['defaultCaption'] : ''),
       'max' => array_key_exists('numValues', $options) ? ', max : '.$options['numValues'] : '',
       'formatFunction' => 'function(item) { return item.{captionField}; }',
       'simplify' => (isset($options['simplify']) && $options['simplify']) ? 'true' : 'false',
