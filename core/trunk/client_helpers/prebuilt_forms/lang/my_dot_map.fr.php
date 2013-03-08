@@ -1,4 +1,4 @@
-<?php
+Ôªø<?php
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -27,8 +27,8 @@ global $custom_terms;
  * @package	Client
  */
 $custom_terms = array(
-	'Species' => 'EspËce',
+	'Species' => 'Esp√®ce',
 	'Latin Name' => 'Nom Latin',
 	'Date' => 'Date',
-	'Spatial Ref' => 'CoordonnÈes'
+	'Spatial Ref' => 'Coordonn√©es'
 );

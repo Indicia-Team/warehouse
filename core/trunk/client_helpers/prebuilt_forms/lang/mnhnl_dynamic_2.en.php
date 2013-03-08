@@ -1,4 +1,4 @@
-<?php
+ï»¿<?php
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -46,7 +46,7 @@ $custom_terms = array(
 	'LANG_Add_SubSample' => 'Add New Occurrence',
 	'LANG_Add_SubSample_Single' => 'Add Single Occurrence',
 	'LANG_Add_SubSample_Grid' => 'Add List of Occurrences',
-	'LANG_Trailer_Text' => "Coordination of the biodiversity monitoring programme in Luxembourg: <a href='http://www.crpgl.lu' target='_blank'>Centre de Recherche Public - Gabriel Lippmann</a> (Département Environnement et Agro-biotechnologies) & <a href='http://www.environnement.public.lu' target='_blank'>Ministère du Développement durable et des Infrastructures</a> (Département de l'environnement)",
+	'LANG_Trailer_Text' => "Coordination of the biodiversity monitoring programme in Luxembourg: <a href='http://www.crpgl.lu' target='_blank'>Centre de Recherche Public - Gabriel Lippmann</a> (DÃ©partement Environnement et Agro-biotechnologies) & <a href='http://www.environnement.public.lu' target='_blank'>MinistÃ¨re du DÃ©veloppement durable et des Infrastructures</a> (DÃ©partement de l'environnement)",
 	'LANG_Locations'=>'Sites',
 
 	'LANG_Tab_site' => 'Site',

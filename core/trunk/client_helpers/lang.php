@@ -57,7 +57,6 @@ class lang {
       // no translation, so use original requested key
       $output=$key;
     }
-    $output = utf8_encode($output);
     // Now do any replacements using any additional function arguments
     $args = func_get_args();
     if (count($args)>1) {

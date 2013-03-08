@@ -1,4 +1,4 @@
-<?php
+ï»¿<?php
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -39,7 +39,7 @@ $custom_terms = array(
 	'LANG_Grid_Download_Button' => 'Download Grid report',
 	'LANG_Section_Based_Data_Download' => 'The Section Report provides details of the data entered in the Section based tab.',
 	'LANG_Section_Download_Button' => 'Download Section report',
-	'LANG_Trailer_Text' => "Coordination of the biodiversity monitoring programme in Luxembourg: <a href='http://www.crpgl.lu' target='_blank'>Centre de Recherche Public - Gabriel Lippmann</a> (Département Environnement et Agro-biotechnologies) & <a href='http://www.environnement.public.lu' target='_blank'>Ministère du Développement durable et des Infrastructures</a> (Département de l'environnement)",
+	'LANG_Trailer_Text' => "Coordination of the biodiversity monitoring programme in Luxembourg: <a href='http://www.crpgl.lu' target='_blank'>Centre de Recherche Public - Gabriel Lippmann</a> (DÃ©partement Environnement et Agro-biotechnologies) & <a href='http://www.environnement.public.lu' target='_blank'>MinistÃ¨re du DÃ©veloppement durable et des Infrastructures</a> (DÃ©partement de l'environnement)",
 
 	'LANG_Tab_aboutyou' => 'About You',      
 	'LANG_Tab_Instructions_aboutyou' => '<strong>About You</strong><br/>Please tell us about yourself first.',

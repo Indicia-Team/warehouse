@@ -1,4 +1,4 @@
-<?php
+ï»¿<?php
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -35,14 +35,14 @@ $custom_terms = array(
   'next step'=>'Weiter',
   'occurrence:taxa_taxon_list_id'=>'Art',
   'phone number'=>'Telefonnummer',
-  'prev step'=>'Zurück',
+  'prev step'=>'ZurÃ¼ck',
   'save'=>'Speichern',
   'sample:comment'=>'Bemerkung',
   'sample:date' => 'Datum',
   'sample:entered_sref'=>'Koordinaten',
   'search'=>'Suchen',
   'LANG_Georef_Label'=>'Standort auf der Karte suchen',
-  'LANG_Georef_SelectPlace' => 'Wählen Sie zwischen den Ortschaften die Ihrer Suche entsprechen die Richtige aus. (Klicken Sie in die Liste um die Ortschaft auf der Karte zu sehen.)',
+  'LANG_Georef_SelectPlace' => 'WÃ¤hlen Sie zwischen den Ortschaften die Ihrer Suche entsprechen die Richtige aus. (Klicken Sie in die Liste um die Ortschaft auf der Karte zu sehen.)',
   'LANG_Georef_NothingFound' => 'Es wurde kein Ort mit diesem Namen gefunden. Versuchen Sie es mit dem Namen einer benachbarten Ortschaft.',
   'surname'=>'Nachname',
   'you are recording a'=>'Sie sind dabei eine Beobachtung einzugeben von: {1}. Bitte benutzen Sie das unten stehende Formular um die Details einzugeben.',
@@ -53,12 +53,12 @@ $custom_terms = array(
   'where was it'=>'Wo es war',
   'other information'=>'Andere Informationen',
   // Tab instructions
-  'about you tab instructions'=>'<strong>Wer ich bin</strong><br/>Sagen Sie uns bitte wer Sie sind. Dies könnte wichtig sein, damit wir Sie kontaktieren können, falls ihre Beobachtung besonders interessant ist.',
+  'about you tab instructions'=>'<strong>Wer ich bin</strong><br/>Sagen Sie uns bitte wer Sie sind. Dies kÃ¶nnte wichtig sein, damit wir Sie kontaktieren kÃ¶nnen, falls ihre Beobachtung besonders interessant ist.',
   'species tab instructions'=>'<strong>Was ich gesehen habe</strong><br/>Klicken Sie auf die Blume, die Sie gesehen haben, danach auf Weiter.',
-  'place tab instructions'=>'<strong>Wo es war</strong><br/>1. Suchen Sie Bitte auf der Karte den genauen Ort Ihrer Beobachtung. Sie können dazu die Ortschaften Suche benutzen.'.
-      '<br/>2. Klicken Sie auf den genauen Standort der Beobachtung um die Koordinaten zu übernehmen.',
-  'other tab instructions'=>'<strong>Aner Informationen</strong><br/>Sagen Sie uns bitte wann Sie die Blume gesehen haben, wie viele es ungefähr waren und wenn nötig weitere Bemerkungen.',
+  'place tab instructions'=>'<strong>Wo es war</strong><br/>1. Suchen Sie Bitte auf der Karte den genauen Ort Ihrer Beobachtung. Sie kÃ¶nnen dazu die Ortschaften Suche benutzen.'.
+      '<br/>2. Klicken Sie auf den genauen Standort der Beobachtung um die Koordinaten zu Ã¼bernehmen.',
+  'other tab instructions'=>'<strong>Aner Informationen</strong><br/>Sagen Sie uns bitte wann Sie die Blume gesehen haben, wie viele es ungefÃ¤hr waren und wenn nÃ¶tig weitere Bemerkungen.',
 
-  'validation_required' => 'Bitte geben sie einen Wert ein für: %s',
-  'validation_dateISO' => 'Bitte geben Sie ein gültiges Datum im Format JJJJ-MM-TT an.',
+  'validation_required' => 'Bitte geben sie einen Wert ein fÃ¼r: %s',
+  'validation_dateISO' => 'Bitte geben Sie ein gÃ¼ltiges Datum im Format JJJJ-MM-TT an.',
 );
