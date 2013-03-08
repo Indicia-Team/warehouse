@@ -562,7 +562,7 @@ indiciaData.speciesListInTextMax = '".$ctrlArgs[2]."';\n";
     // 3) Overrides for specific target species: Common wall disabled second survey
     $termlist = $targetSpeciesAttr["termlist_id"];
     $extraParams = $auth['read'] + array('termlist_id' => $termlist, 'view'=>'detail');
-    $targetSpecies = data_entry_helper::get_population_data(array('table' => 'termlists_term', 'extraParams' => $extraParams));
+    $targetSpecies = data_entry_helper::get_population_data(array('table' => 'termlists_term', 'extraParams' => $extraParams)); // cachable
     $smpAttributes = data_entry_helper::getAttributes(array(
        'attrtable'=>'sample_attribute'
        ,'key'=>'sample_id'
@@ -1038,7 +1038,7 @@ hook_species_checklist_pre_delete_row=function(e) {
           $rows[]="<tr class='scMeaning-".$rec['taxon']['taxon_meaning_id']." scDataRow last'>
 <td class='ui-widget-content scCommentCell' $colspan>
   <label for='$ctrlId' class='auto-width'>".lang::get("Comment").":</label>
-  <input type='text' class='scComment' name='$ctrlName' id='$ctrlId' value='".htmlspecialchars($existing_value)."'>
+  <input type='text' class='scComment' name='$ctrlName' id='$ctrlId' value=\"".htmlspecialchars($existing_value)."\">
 </td></tr>";
         }
         $rowIdx++;
@@ -1457,7 +1457,8 @@ mapInitialisationHooks.push(function(mapdiv) {
     // unset($extraTaxonOptions['extraParams']['taxon_list_id']);
     unset($extraTaxonOptions['extraParams']['preferred']);
     unset($extraTaxonOptions['extraParams']['language_iso']);
-     // append the taxa to the list to load into the grid
+    unset($extraTaxonOptions['nocache']);
+    // append the taxa to the list to load into the grid
     $fullTaxalist = data_entry_helper::get_population_data($extraTaxonOptions);
     $recordList = array();
     foreach(data_entry_helper::$entity_to_load as $key => $value) {
