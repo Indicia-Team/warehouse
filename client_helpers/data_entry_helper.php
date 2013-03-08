@@ -5380,13 +5380,11 @@ if (errors.length>0) {
     }
 
     $return = null;
-    if (is_null($return) || $return == '') { // need to be careful about valid zero values!
-      // iterate the variable arguments and use the first one with a real value
-      for ($i=1; $i<func_num_args(); $i++) {
-        $return = func_get_arg($i);
-        if (!is_null($return) && $return != '') {
-          break;
-        }
+    // iterate the variable arguments and use the first one with a real value
+    for ($i=1; $i<func_num_args(); $i++) {
+      $return = func_get_arg($i);
+      if (!is_null($return) && $return != '') {
+        break;
       }
     }
     return $return;
