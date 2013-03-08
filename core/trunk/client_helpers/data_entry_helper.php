@@ -2228,7 +2228,7 @@ class data_entry_helper extends helper_base {
    * </ul>
    * @return string Html for the species autocomplete control.
    */   
-  public function species_autocomplete($options) {
+  public static function species_autocomplete($options) {
     global $indicia_templates;
     if (!isset($options['cacheLookup']))
       $options['cacheLookup']=false;
