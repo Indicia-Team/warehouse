@@ -18,9 +18,9 @@
   INNER JOIN locations l ON l.id = s.location_id
   INNER JOIN sample_attribute_values savuser
   		ON savuser.sample_id = s.id AND savuser.sample_attribute_id = #userName_attr_id# and savuser.deleted = FALSE
-  INNER JOIN location_attribute_values lav_1 ON lav_1.location_id=s.location_id AND lav_1.deleted=false AND lav_1.location_attribute_id = #attr_id_1#
-  INNER JOIN location_attribute_values lav_2 ON lav_2.location_id=s.location_id AND lav_2.deleted=false AND lav_2.location_attribute_id = #attr_id_2#
-  INNER JOIN location_attribute_values lav_3 ON lav_3.location_id=s.location_id AND lav_3.deleted=false AND lav_3.location_attribute_id = #attr_id_3#
+  LEFT JOIN location_attribute_values lav_1 ON lav_1.location_id=s.location_id AND lav_1.deleted=false AND lav_1.location_attribute_id = #attr_id_1#
+  LEFT JOIN location_attribute_values lav_2 ON lav_2.location_id=s.location_id AND lav_2.deleted=false AND lav_2.location_attribute_id = #attr_id_2#
+  LEFT JOIN location_attribute_values lav_3 ON lav_3.location_id=s.location_id AND lav_3.deleted=false AND lav_3.location_attribute_id = #attr_id_3#
   INNER JOIN samples s2 ON s2.parent_id = s.id AND s2.deleted = false
   INNER JOIN sample_attribute_values sav ON sav.sample_id = s2.id AND sav.deleted = false AND sav.sample_attribute_id = #target_species_attr_id#
   INNER JOIN detail_termlists_terms dtt ON sav.int_value = dtt.meaning_id AND dtt.preferred = true
