@@ -639,7 +639,8 @@ SitePointLayer = new OpenLayers.Layer.Vector('Site Points',{styleMap: SitePointS
 SitePathLayer = new OpenLayers.Layer.Vector('Site Paths',{styleMap: SiteStyleMap, displayInLayerSwitcher: false});
 SiteAreaLayer = new OpenLayers.Layer.Vector('Site Areas',{styleMap: SiteStyleMap, displayInLayerSwitcher: false});
 SiteLabelLayer = new OpenLayers.Layer.Vector('Site Labels',{//styleMap: SiteLabelStyleMap, 
-displayInLayerSwitcher: false});\n";
+displayInLayerSwitcher: false});
+var SiteNum = 0;\n";
 
     if(isset($args['locationLayerWMS']) && $args['locationLayerWMS'] != ''){
       // define Parent WMS Layer
@@ -2789,12 +2790,12 @@ hook_setSref_".$idx." = function(geom){ // map projection
             loadFeatures(id, '', {initial : false}, false, false, false, false, false); // don't waste time reloading parent, we already have in here.
             ParentLocationLayer.destroyFeatures();
             ParentLocationLayer.addFeatures(a1.features); // TBD check geometry system - convert?
-            jQuery('#filterSelect".$idx."').val(id);\n";
+            jQuery('#filterSelect".$idx."').val(id);
+            jQuery('#".$options['ParentFieldID']."').val(id);\n";
 					foreach($filterAttrs as $idx1=>$filterAttr1) // just need index, so don't explode
 						if($idx1 > $idx && $idx1<count($filterAttrs)-1) // don't do name
 						  data_entry_helper::$javascript .="            filterLoad".($idx1)."();\n"; // update drop downs, but leave values as they are.
-					data_entry_helper::$javascript .="
-          }\n";
+					data_entry_helper::$javascript .="          }\n";
 				} else {
 					data_entry_helper::$javascript .="          jQuery('#".$options['ParentFieldID']."').val(id);
           jQuery('#".$options['ChooseParentFieldID']."').val(a1.features[0].attributes['name']);\n";
@@ -2802,6 +2803,7 @@ hook_setSref_".$idx." = function(geom){ // map projection
 				data_entry_helper::$javascript .="        } else {\n".
 ($filterAttr[2]=='true'?"        alert(\"".lang::get('LANG_PositionOutsideParent')."\");\n":'').
 "          jQuery('#".$options['ParentFieldID']."').val('');
+          jQuery('#".($filterAttr[1]=="true" ? "filterSelect".$idx : $options['ChooseParentFieldID'])."').val('');
         }
       }
     });
@@ -2809,7 +2811,6 @@ hook_setSref_".$idx." = function(geom){ // map projection
   			new OpenLayers.Filter.Spatial({type: OpenLayers.Filter.Spatial.CONTAINS,property: 'boundary_geom',value: geom}),
   			new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.EQUAL_TO, property: 'location_type_id', value: '".$parentLocTypeID."'})]});
   protocol.read({filter: filter});
-  
 };\n";
                 if($filterAttr[1]=="true"){ // filterable.
                   // set up the parent list, cacheable
@@ -2822,6 +2823,7 @@ hook_setSref_".$idx." = function(geom){ // map projection
                   		'captionField'=>'name',
                   		'template' => 'select',
                   		'itemTemplate' => 'select_item',
+                  		'validation'=>array('required'),
                   		'extraParams'=>array_merge($auth['read'],
                   				array('parent_id'=>'NULL',
                   						'view'=>'detail',
@@ -2904,7 +2906,7 @@ jQuery('#filterSelect".$idx."').change(function(){
       					'" type="hidden" value="'.
       					(isset(data_entry_helper::$entity_to_load[$options['ParentFieldName']]) && data_entry_helper::$entity_to_load[$options['ParentFieldName']]!= "" && data_entry_helper::$entity_to_load[$options['ParentFieldName']] != null ? data_entry_helper::$entity_to_load[$options['ParentFieldName']] : '').
       					'">'.
-      					'<input id="'.
+      					'<input id="'. // this holds text name value of parent for display only.
       					$options['ChooseParentFieldID'].
       					'" name="dummy" value="" disabled="disabled" >';
 					$loadFunction .= "  populate".$idx."();\n";
