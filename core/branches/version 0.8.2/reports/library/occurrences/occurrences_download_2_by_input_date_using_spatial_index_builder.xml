@@ -11,14 +11,14 @@
   #agreements_join#
   #joins#
   WHERE #sharing_filter# 
-  AND co.record_status not in ('I','T') AND (#ownData#=1 OR co.record_status not in ('D','R'))
+  AND o.record_status not in ('I','T') AND (#ownData#=1 OR o.record_status not in ('D','R'))
   AND ('#searchArea#'='' OR st_intersects(co.public_geom, st_geomfromtext('#searchArea#',900913)))
   AND (#ownData#=0 OR CAST(co.created_by_id AS character varying)='#currentUser#')
   and (trim('#date_from#')='' or '#date_from#'='Click here' 
     or o.created_on &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date) or o.updated_on &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date) )
   and (trim('#date_to#')='' or '#date_to#'='Click here' 
     or o.created_on &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date) or o.updated_on &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date) )
-  AND quality_check('#quality#', co.record_status, co.certainty)=true
+  AND quality_check('#quality#', o.record_status, co.certainty)=true
   #idlist#
   </query>
   <order_bys>
@@ -56,7 +56,7 @@
     <column name='taxon' display='Species' 
       template="&lt;div class='zero-{zero_abundance}'&gt;{taxon}&lt;/div&gt;"
       sql="co.preferred_taxon" datatype='text' />
-	<column name='common' display='Common name' 
+    <column name='common' display='Common name' 
       template="&lt;div class='zero-{zero_abundance}'&gt;{common}&lt;/div&gt;"
       sql="co.default_common_name" datatype='text' />
     <column name='taxon_group' display='Taxon Group' sql='co.taxon_group' datatype='text' />
@@ -64,7 +64,9 @@
     <column name='taxa_taxon_list_id' visible='false' sql='co.taxa_taxon_list_id' datatype='integer' />
     <column name='record_comment' display='Comment' sql="o.comment" datatype="text" />
     <column name='location_name' display='Site name' sql='co.location_name' datatype='text' />
-    <column name='entered_sref' display='Grid Ref' sql='co.public_entered_sref' datatype='text' />
+    <column name='entered_sref' display='Grid Ref' sql="case s.entered_sref_system when '4326' then co.public_entered_sref else replace(co.public_entered_sref, ' ', '') end" datatype='text' />
+    <column name='lat' display='Latitude' sql="substring(st_astext(st_transform(st_centroid(geom), 4326)) from E'POINT\\(.+ (.+)\\)')" datatype="text" />
+    <column name='long' display='Longitude' sql="substring(st_astext(st_transform(st_centroid(geom), 4326)) from E'POINT\\((.+) ')" datatype="text" />
     <column name='date_start' sql='co.date_start' visible='false' />
     <column name='date_end' sql='co.date_end' visible='false' />
     <column name='date_type' sql='co.date_type' visible='false' />
@@ -73,17 +75,17 @@
     <column name='sample_comment' display='Sample comment' sql="s.comment" datatype="text" />
     <column name='zeroabundance' display='ZeroAbundance' sql='upper(cast (co.zero_abundance as character))' datatype="text" />
     <column name='record_status' display='State' 
-        sql="CASE co.record_status WHEN 'V' THEN 'Verified' WHEN 'D' THEN 'Dubious' WHEN 'R' THEN 'Rejected' WHEN 'I' THEN 'In progress' WHEN 'C' THEN 'Complete' WHEN 'S' THEN 'Awaiting check' ELSE co.record_status END" />
+        sql="CASE o.record_status WHEN 'V' THEN 'Verified' WHEN 'D' THEN 'Queried' WHEN 'R' THEN 'Rejected' WHEN 'I' THEN 'Input still in progress' WHEN 'C' THEN 'Record Submitted' WHEN 'S' THEN 'Awaiting check' ELSE o.record_status END" />
     <column name='belongs_to_user' display='Belongs to User' sql="CASE CAST(co.created_by_id AS character varying) WHEN '#currentUser#' THEN true ELSE false END" visible="false" />
     <column name='certainty' sql="CASE co.certainty WHEN 'C' THEN 'Certain' WHEN 'L' THEN 'Likely' WHEN 'U' THEN 'Uncertain' END" />
     <column name='fillopacity' visible='false' feature_style="fillOpacity" sql='length(co.public_entered_sref) / 24.0' />
-    <column name='strokecolor' visible='false' feature_style="strokeColor" sql="case co.record_status when 'C' then 
+    <column name='strokecolor' visible='false' feature_style="strokeColor" sql="case o.record_status when 'C' then 
       case co.certainty when 'C' then 'green' when 'L' then 'orange' when 'U' then 'red' else 'blue' end
     when 'V' then 'green'
     when 'D' then 'orange'
     when 'R' then 'red'
     else 'black' end" />
-    <column name='fillcolor' visible='false' feature_style="fillColor" sql="case co.record_status when 'V' then 'green' when 'D' then 'orange' when 'R' then 'red' else 'blue' end" />
+    <column name='fillcolor' visible='false' feature_style="fillColor" sql="case o.record_status when 'V' then 'green' when 'D' then 'orange' when 'R' then 'red' else 'blue' end" />
     <column name='geom' visible='false' mappable="true" sql='st_astext(co.public_geom)' />
   </columns>
 </report>
