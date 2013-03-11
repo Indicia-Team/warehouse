@@ -1043,7 +1043,10 @@ class data_entry_helper extends helper_base {
     // Output a select. Use templating to add a wrapper div, so we can keep all the hierarchical selects together. 
     global $indicia_templates;
     $oldTemplate = $indicia_templates['select'];
-    $indicia_templates['select'] = '<div class="hierarchical-select control-box">'.$indicia_templates['select'].'</div>';
+    $classes = array('hierarchical-select', 'control-box');
+    if (!empty($options['class']))
+      $classes[] = $options['class'];
+    $indicia_templates['select'] = '<div class="'.implode(' ', $classes).'">'.$indicia_templates['select'].'</div>';
     $options['class']='hierarchy-select';
     $r = self::select($options);
     $indicia_templates['select'] = $oldTemplate;
@@ -2049,7 +2052,7 @@ class data_entry_helper extends helper_base {
     global $indicia_templates;
     $options = array_merge(array(
         'fieldname'=>'sample:entered_sref_system',
-        'systems'=>array('OSGB'=>lang::get('british national grid'), '4326'=>lang::get('lat long 4326')),
+        'systems'=>array('OSGB'=>lang::get('sref:OSGB'), '4326'=>lang::get('sref:4326')),
         'id'=>'imp-sref-system'
     ), $options);
     $options = self::check_options($options);

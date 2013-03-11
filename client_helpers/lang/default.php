@@ -30,7 +30,6 @@ $default_terms = array(
   'add'=>'Add',
   'add row'=>'Add Row',
   'back'=>'Back',
-  'british national grid'=>'British National Grid',
   'click here'=>'Click here',
   'close'=>'Close',
   'email'=>'Email',
@@ -39,7 +38,6 @@ $default_terms = array(
   'file too big for webserver' => 'The image file cannot be uploaded because it is bigger than the size limit allowed by the server which this data entry page is running on.',
   'file too big for warehouse' => 'The image file cannot be uploaded because it is larger than the maximum file size allowed.',
   'first name'=>'First Name',
-  'lat long 4326'=>'Lat/Long (WGS84)',
   'loading'=>'Loading',
   'locked tool-tip'=>'Click here to unlock the control\'s value for editing.',
   'metaFields'=>'Other Fields',
@@ -71,11 +69,11 @@ $default_terms = array(
   'sample:entered_sref' => 'Spatial Reference',
   
   // Spatial reference systems
-  'OSGB'=>'British National Grid',
-  'OSIE'=>'Irish Grid',
-  'UTM30ED50'=>'Channel Islands Grid (UTM ED50)',
-  '4326'=>'WGS84 (decimal lat,long)',
-  '2169'=>'LUREF (x,y)',
+  'sref:OSGB'=>'British National Grid',
+  'sref:OSIE'=>'Irish Grid',
+  'sref:UTM30ED50'=>'Channel Islands Grid (UTM ED50)',
+  'sref:4326'=>'WGS84 (decimal lat,long)',
+  'sref:2169'=>'LUREF (x,y)',
   
   'import_settings_instructions' => 'Before proceeding with the import, please specify the following settings that will apply to every record in the import file. '.
       'Any settings that you do not specify here can be supplied in the import file on a row by row basis by mapping the setting to the appropriate column in the '.

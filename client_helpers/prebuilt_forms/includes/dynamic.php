@@ -537,7 +537,7 @@ class iform_dynamic {
     $systems=array();
     $list = explode(',', str_replace(' ', '', $args['spatial_systems']));
     foreach($list as $system) {
-      $systems[$system] = lang::get($system);
+      $systems[$system] = lang::get("sref:$system");
     }
     return data_entry_helper::sref_and_system(array_merge(array(
       'label' => lang::get('LANG_SRef_Label'),
