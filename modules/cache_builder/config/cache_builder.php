@@ -739,7 +739,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       and sav.sample_id=co.sample_id and sav.deleted=false
       and nuo.id=co.id;',
     // Sample recorder names in parent sample
-    'Sample recorder names' => 'update cache_occurrences co
+    'Parent sample recorder names' => 'update cache_occurrences co
       set recorders=sp.recorder_names
       from needs_update_occurrences nuo, samples s
       join samples sp on sp.id=s.parent_id and sp.deleted=false
@@ -825,7 +825,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       where sav.sample_id=co.sample_id and sav.deleted=false
       and co.id=#id#;',
     // Sample recorder names in parent sample
-    'Sample recorder names' => "update cache_occurrences co
+    'Parent sample recorder names' => "update cache_occurrences co
       set recorders=sp.recorder_names
       from samples s
       join samples sp on sp.id=s.parent_id and sp.deleted=false
@@ -876,7 +876,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'cms_username\' and sa.deleted=false
       where s.id=co.sample_id and s.deleted=false
       and co.id=#id#;',
-    'Warehouse usersurname' => 'update cache_occurrences co
+    'Warehouse username' => 'update cache_occurrences co
       set recorders=u.username
       from users u
       where u.id=co.created_by_id and u.id<>1
