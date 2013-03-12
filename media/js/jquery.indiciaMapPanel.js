@@ -160,7 +160,9 @@ mapGeoreferenceHooks = [];
       if(wkt){
         var feature = parser.read(wkt);
         // this could be an array of features for a GEOMETRYCOLLECTION
-        if(Array.isArray(feature)==false) feature = [feature];
+        if ($.isArray(feature)===false) {
+          feature = [feature];
+        }
         var styletype = (typeof type !== 'undefined') ? styletype = type : styletype = 'default';
         $.each(feature, function(idx, feat){
           if (typeof transform!=="undefined" && transform && div.map.projection.getCode() != div.indiciaProjection.getCode()) {
