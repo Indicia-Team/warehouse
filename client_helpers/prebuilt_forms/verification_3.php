@@ -568,7 +568,8 @@ idlist=';
     );
     $opts['columns'][] = array(
       'display'=>'',
-      'template' => '<button class="default-button quick-verify" type="button" id="quick-{occurrence_id}" title="Quick verification options">...</button>'
+      'template' => '<button class="default-button quick-verify tools-btn" type="button" id="quick-{occurrence_id}" title="Quick verification options">...</button>'.
+          '<ul class="verify-tools"><li><a href="#" class="quick-verify-tool">Bulk verify similar records</a></li><li><a href="#" class="trust-tool">Recorder\'s trust settings</a></li></ul>'
     );
     if (isset($args['show_map']) && $args['show_map']) {
       $opts['paramsOnly']=true;
@@ -586,6 +587,10 @@ idlist=';
     }
     $link = data_entry_helper::get_reload_link_parts();
     global $user;
+    $auth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
+    data_entry_helper::$javascript .= 'indiciaData.readAuth = "'.$auth['auth_token']."\";\n";
+    data_entry_helper::$javascript .= 'indiciaData.nonce = "'.$auth['nonce']."\";\n";
+    data_entry_helper::$javascript .= 'indiciaData.indiciaSvc = "'.data_entry_helper::$base_url."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.nid = "'.$node->nid."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.username = "'.$user->name."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.userId = "'.$indicia_user_id."\";\n";
@@ -662,6 +667,9 @@ idlist=';
     $body = str_replace(array("\r", "\n"), array('', '\n'), $args['email_subject_dubious']);
     data_entry_helper::$javascript .= 'indiciaData.email_subject_dubious = "'.$body."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.str_month = "'.lang::get('month')."\";\n";
+    data_entry_helper::$javascript .= 'indiciaData.expertise_location = "'.$opts['extraParams']['expertise_location']."\";\n";
+    data_entry_helper::$javascript .= 'indiciaData.expertise_surveys = "'.$opts['extraParams']['expertise_surveys']."\";\n";
+    data_entry_helper::$javascript .= 'indiciaData.expertise_taxon_groups = "'.$opts['extraParams']['expertise_taxon_groups']."\";\n";
     data_entry_helper::add_resource('jqplot');
     data_entry_helper::add_resource('jqplot_bar');
     return $r;
@@ -711,7 +719,7 @@ idlist=';
       'dataSource' => $details_report,
       'readAuth' => $auth,
       'sharing' => 'verification',
-      'extraParams' => array('occurrence_id'=>$_GET['occurrence_id'], 'wantColumns'=>1)
+      'extraParams' => array('occurrence_id'=>$_GET['occurrence_id'], 'wantColumns'=>1, 'locality_type_id' => variable_get('indicia_profile_location_type_id', 0))
     );
     $reportData = report_helper::get_report_data($options);
     // set some values which must exist in the record
@@ -766,20 +774,28 @@ idlist=';
     }
     $r .= "</table>\n";
 
-    $additional=array();
-    $additional['wkt'] = $record['wkt'];
-    $additional['taxon'] = $record['taxon'];
-    $additional['sample_id'] = $record['sample_id'];
-    $additional['date'] = $record['date'];
-    $additional['entered_sref'] = $record['entered_sref'];
-    $additional['taxon_external_key'] = $record['taxon_external_key'];
-    $additional['taxon_meaning_id'] = $record['taxon_meaning_id'];
-    $additional['recorder_email'] = $email;
+    $extra=array();
+    $extra['wkt'] = $record['wkt'];
+    $extra['taxon'] = $record['taxon'];
+    $extra['recorder'] = $record['recorder'];
+    $extra['sample_id'] = $record['sample_id'];
+    $extra['created_by_id'] = $record['created_by_id'];
+    $extra['survey_title'] = $record['survey_title'];
+    $extra['survey_id'] = $record['survey_id'];
+    $extra['date'] = $record['date'];
+    $extra['entered_sref'] = $record['entered_sref'];
+    $extra['taxon_external_key'] = $record['taxon_external_key'];
+    $extra['taxon_meaning_id'] = $record['taxon_meaning_id'];
+    $extra['recorder_email'] = $email;
+    $extra['taxon_group'] = $record['taxon_group'];
+    $extra['taxon_group_id'] = $record['taxon_group_id'];
+    $extra['localities'] = $record['localities'];
+    $extra['locality_ids'] = $record['locality_ids'];
     header('Content-type: application/json');
     echo json_encode(array(
       'content' => $r,
       'data' => $data,
-      'additional' => $additional
+      'extra' => $extra
     ));
   }
 

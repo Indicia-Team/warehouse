@@ -342,16 +342,47 @@ ul.gallery li {
   margin: 0;
 }
 
-/* line 200, sass/verification_3.scss */
+/* line 199, sass/verification_3.scss */
+input[type="button"].tools-btn, button.tools-btn {
+  padding: 0.3em;
+}
+
+/* line 204, sass/verification_3.scss */
 .quick-verify-popup label {
   width: auto;
   margin-left: 2em;
 }
-/* line 204, sass/verification_3.scss */
+/* line 208, sass/verification_3.scss */
 .quick-verify-popup button {
   margin-top: 1em;
 }
-/* line 207, sass/verification_3.scss */
+/* line 211, sass/verification_3.scss */
 .quick-verify-popup .helpText {
   margin-left: 45px;
+}
+
+.quick-verify-popup h2, .quick-verify-popup h3 {
+   margin-bottom: 4px;
+}
+
+.quick-verify-popup a {
+  text-decoration: underline;
+  margin: 0px 6px;
+}
+
+.quick-verify-popup a:hover, .quick-verify-popup a:active {
+  background-color: #ffffcc;
+}
+
+/* line 216, sass/verification_3.scss */
+.verify-tools {
+  display: none;
+  position: absolute;
+  background: white;
+  border: solid silver 1px;
+}
+/* line 221, sass/verification_3.scss */
+.verify-tools li {
+  background-image: none;
+  padding: 0.2em 0.5em;
 }
