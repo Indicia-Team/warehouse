@@ -688,7 +688,7 @@ $('.ui-state-default').live('mouseout', function() {
           'result'=>false,
           'output'=> curl_errno($session) ? curl_error($session) : $response,
           'errno'=>curl_errno($session),
-          'status'=>$statusCode
+          'status'=>$httpCode
       );
     } else {
       $arr_response = explode("\r\n\r\n",$response);
