@@ -1143,6 +1143,141 @@ loadFeatures = function(parent_id, child_id, childArgs, loadParent, setSelectOpt
       jQuery('#".$options['MainFieldID']."').append('<option value=\"\">".lang::get("LANG_CommonChooseParentFirst")."</option>');
   }
 };
+loadChildFeatures = function(parent_id, setSelectOptions){
+// this is only used when changing the parent: need to keep current highlighted features.
+  SiteNum=1;
+  for(var i=SiteLabelLayer.features.length-1; i >= 0; i--) {
+    if(SiteLabelLayer.features[i].attributes.highlighted == false) {
+      SiteLabelLayer.destroyFeatures([SiteLabelLayer.features[i]]);
+    } else {
+      SiteLabelLayer.features[i].attributes.SiteNum == SiteNum;
+    }
+  }
+  for(var i=SiteAreaLayer.features.length-1; i >= 0; i--) {
+    if(SiteAreaLayer.features[i].attributes.highlighted == false) {
+      SiteAreaLayer.destroyFeatures([SiteAreaLayer.features[i]]);
+    } else {
+      SiteAreaLayer.features[i].attributes.SiteNum == SiteNum;
+    }
+  }
+  for(var i=SitePathLayer.features.length-1; i >= 0; i--) {
+    if(SitePathLayer.features[i].attributes.highlighted == false) {
+      SitePathLayer.destroyFeatures([SitePathLayer.features[i]]);
+    } else {
+      SitePathLayer.features[i].attributes.SiteNum == SiteNum;
+    }
+  }
+  for(var i=SitePointLayer.features.length-1; i >= 0; i--) {
+    if(SitePointLayer.features[i].attributes.highlighted == false) {
+      SitePointLayer.destroyFeatures([SitePointLayer.features[i]]);
+      } else {
+      SitePointLayer.features[i].attributes.SiteNum == SiteNum;
+    }
+  }
+  if(setSelectOptions)
+    jQuery('#".$options['MainFieldID']."').find('option').not(':selected').remove();
+".($args['locationMode']!='multi' && $args['siteNameTermListID']!="" ?
+"  jQuery('#location-name').find('option').removeAttr('disabled');\n"
+: "").
+"  recalcNumSites();
+  jQuery.getJSON(\"".data_entry_helper::$base_url."/index.php/services/data/location?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?&orderby=name\"+".$loctypequery."+'&parent_id='+parent_id,
+      function(data) {
+        if (data.length>0) {
+          if(setSelectOptions)
+            jQuery(\"#".$options['MainFieldID']."\").append('<option value=\"\">".lang::get("LANG_CommonEmptyLocationID")."</option>');
+          var parser = new OpenLayers.Format.WKT();
+          var locationList = [];
+          for (var i=0;i<data.length;i++){
+            var centreFeature = false;
+            var feature;
+            SiteNum++;
+            if(data[i].boundary_geom){
+              feature = parser.read(data[i].boundary_geom); // assume map projection=900913, if GEOMETRYCOLLECTION this will be an array or its children!
+              var centre = false;
+              if(data[i].centroid_geom) {
+                centreFeature = parser.read(data[i].centroid_geom); // assume map projection=900913
+                centreFeature=convertFeature(centreFeature, $('#map')[0].map.projection);
+              }
+              var pointFeature = false;
+              var lineFeature = false;
+              var areaFeature = false;
+              if(typeof(feature)=='object'&&(feature instanceof Array)){
+                for(var j=0; j< feature.length; j++){
+                  switch(feature[j].geometry.CLASS_NAME){
+                    case \"OpenLayers.Geometry.Point\":
+                    case \"OpenLayers.Geometry.MultiPoint\":
+                      pointFeature = feature[j];
+                      break;
+                    case \"OpenLayers.Geometry.LineString\":
+                    case \"OpenLayers.Geometry.MultiLineString\":
+                      lineFeature = feature[j];
+                      break;
+                    default:
+                      areaFeature = feature[j];
+                      break;
+                  }
+                }
+              } else {
+                switch(feature.geometry.CLASS_NAME){
+                  case \"OpenLayers.Geometry.Point\":
+                  case \"OpenLayers.Geometry.MultiPoint\":
+                    pointFeature = feature;
+                    break;
+                  case \"OpenLayers.Geometry.LineString\":
+                  case \"OpenLayers.Geometry.MultiLineString\":
+                    lineFeature = feature;
+                    break;
+                  default:
+                    areaFeature = feature;
+                    break;
+                }
+              }
+              if(areaFeature) {
+                areaFeature.attributes = {highlighted: false, 'new': false, canEdit: checkEditable(false, data[i].id), SiteNum: SiteNum, data: data[i]};
+                areaFeature=convertFeature(areaFeature, $('#map')[0].map.projection);
+                SiteAreaLayer.addFeatures([areaFeature]);
+                if(!centreFeature) centreFeature = new OpenLayers.Feature.Vector(getCentroid(areaFeature.geometry));
+              }
+              if(lineFeature) {
+                lineFeature.attributes = {highlighted: false, 'new': false, canEdit: checkEditable(false, data[i].id), SiteNum: SiteNum, data: data[i]};
+                lineFeature=convertFeature(lineFeature, $('#map')[0].map.projection);
+                SitePathLayer.addFeatures([lineFeature]);
+                if(!centreFeature) centreFeature = new OpenLayers.Feature.Vector(getCentroid(lineFeature.geometry));
+              }
+              if(pointFeature) {
+                pointFeature.attributes = {highlighted: false, 'new': false, canEdit: checkEditable(false, data[i].id), SiteNum: SiteNum, data: data[i]};
+                pointFeature=convertFeature(pointFeature, $('#map')[0].map.projection);
+                SitePointLayer.addFeatures([pointFeature]);
+                if(!centreFeature) centreFeature = new OpenLayers.Feature.Vector(getCentroid(pointFeature.geometry));
+              }
+            } else {
+              // no boundary, only a centre point.
+              feature = parser.read(data[i].centroid_geom); // assume map projection=900913
+              feature=convertFeature(feature, $('#map')[0].map.projection);
+              centreFeature = feature.clone();
+              feature.attributes = {highlighted: false, 'new': false, canEdit: checkEditable(false, data[i].id), SiteNum: SiteNum, data: data[i]};
+              SitePointLayer.addFeatures([feature]);
+            }
+            centreFeature.attributes = {highlighted: false, 'new': false, canEdit: checkEditable(false, data[i].id), SiteNum: SiteNum, data: data[i]};
+".($args['SecondaryLocationTypeTerm'] != '' && $options['AdminMode'] ?
+"            if(data[i].location_type_id == $secondary){
+              centreFeature.style = jQuery.extend({}, SiteListSecondaryLabelStyleHash);
+            } else 
+  " : "").
+"            centreFeature.style = jQuery.extend({}, SiteListPrimaryLabelStyleHash);
+            centreFeature.style.label = data[i].name;
+            SiteLabelLayer.addFeatures([centreFeature]);
+            locationList.push({id : data[i].id, feature : centreFeature});
+            if(setSelectOptions){
+              jQuery(\"#".$options['MainFieldID']."\").append('<option value=\"'+data[i].id+'\">'+data[i].name+'</option>');
+            }
+            if(typeof hook_ChildFeatureLoad != 'undefined') hook_ChildFeatureLoad(feature, data[i], '', {});
+          }
+          recalcNumSites();
+          ".($args['locationMode']=='single'||$args['locationMode']=='filtered' ? "" : "if(setSelectOptions) ")."populateExtensions(locationList);
+        }
+  });
+};
 populateExtensions = function(locids){
 // first get the list of attributes, sorted by location_id. Locations are in name order not ID order.
 // rip out the list of attribute captions.
@@ -2728,7 +2863,7 @@ jQuery(\"#".$options['ChooseParentFieldID']."\").change(function(){
       if (isset($locList['error'])) return $locList['error'];
       $location_attr_list_args=array(
           'nocache'=>true,
-          'extraParams'=>array_merge(array('orderby'=>'id', 'view'=>'list', 'website_id'=>$args['website_id'], 'location_type_id'=>$primary), $auth['read']),
+          'extraParams'=>array_merge(array('orderby'=>'location_id', 'view'=>'list', 'website_id'=>$args['website_id'], 'location_type_id'=>$primary), $auth['read']),
           'table'=>'location_attribute_value');
       $locAttrList = data_entry_helper::get_population_data($location_attr_list_args);
       if (isset($locAttrList['error'])) return $locAttrList['error'];
@@ -2787,7 +2922,6 @@ hook_setSref_".$idx." = function(geom){ // map projection
 				if($filterAttr[1]=="true"){
 					data_entry_helper::$javascript .="          if(jQuery('#filterSelect".$idx."').val() == '' || // not currently filled in
               (jQuery('#filterSelect".$idx."').val() != id && confirm(\"".lang::get('LANG_PositionInDifferentParent')."\"))) {
-            loadFeatures(id, '', {initial : false}, false, false, false, false, false); // don't waste time reloading parent, we already have in here.
             ParentLocationLayer.destroyFeatures();
             ParentLocationLayer.addFeatures(a1.features); // TBD check geometry system - convert?
             jQuery('#filterSelect".$idx."').val(id);
@@ -2800,7 +2934,9 @@ hook_setSref_".$idx." = function(geom){ // map projection
 					data_entry_helper::$javascript .="          jQuery('#".$options['ParentFieldID']."').val(id);
           jQuery('#".$options['ChooseParentFieldID']."').val(a1.features[0].attributes['name']);\n";
 				}
-				data_entry_helper::$javascript .="        } else {\n".
+				data_entry_helper::$javascript .="
+          loadChildFeatures(id, true); // load in children onto map
+        } else {\n".
 ($filterAttr[2]=='true'?"        alert(\"".lang::get('LANG_PositionOutsideParent')."\");\n":'').
 "          jQuery('#".$options['ParentFieldID']."').val('');
           jQuery('#".($filterAttr[1]=="true" ? "filterSelect".$idx : $options['ChooseParentFieldID'])."').val('');
