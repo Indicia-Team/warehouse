@@ -74,6 +74,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       'taxa_taxon_list',
       'taxon_relation',
       'taxon_group',
+      'user_trust',
       'notification'
   );
 
@@ -87,6 +88,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       'taxon_group',
       'taxon_image',
       'notification',
+      'user_trust',
       'cache_taxon_searchterm',
       'cache_taxa_taxon_list'
   );
@@ -435,6 +437,11 @@ class Data_Controller extends Data_Service_Base_Controller {
   public function user_identifier()
   {
     $this->handle_call('user_identifier');
+  }
+  
+  public function user_trust()
+  {
+    $this->handle_call('user_trust');
   }
 
   /**
