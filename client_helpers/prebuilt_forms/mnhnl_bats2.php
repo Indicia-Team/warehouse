@@ -704,7 +704,7 @@ hook_species_checklist_pre_delete_row=function(e) {
             $retVal .= '<td class="ui-state-default remove-row" style="width: 1%" rowspan="'.(count($attrsPerRow)).'">X</td>';
             $retVal .= str_replace('{content}', $firstCell, str_replace('{colspan}', 'rowspan="'.(count($attrsPerRow)).'"', $indicia_templates['taxon_label_cell']));
           }
-          $ctrlId = "sc:".$method['meaning_id'].":$ttlid:$existing_record_id:present";
+          $ctrlId = "sc:".$method['meaning_id'].":$ttlid:".($existing_record_id ? $existing_record_id : "x".$rowIdx).":present";
           $retVal .= '<td>'.$method['term'].':</td><td class="scPresenceCell" style="display:none"><input type="hidden" class="scPresence" name="'.$ctrlId.'" value="1" /></td><td><span>';
           foreach ($attrsPerRow[$id] as $attrId) {
           	if ($existing_record_id) {
