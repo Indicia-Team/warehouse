@@ -35,6 +35,7 @@ END)" />
 END)" />
       <attributes separator='|' meaningIdLanguage='preferred'/>
     </subTable>
+    <tabColumn name='id' visible='true' display='Main Survey ID' />
     <tabColumn name='date_start' visible='false'/>
     <tabColumn name='date_end' visible='false'/>
     <tabColumn name='date_type' visible='false'/>
@@ -43,6 +44,7 @@ END)" />
     <tabColumn name='comment' display='Visit comment'/>
     <attributes separator='|' meaningIdLanguage='preferred'/>
     <subTable tablename="samples" tableKey="parent_id" parentKey="id" where="#this#.deleted = FALSE" >
+      <tabColumn name='id' visible='true' display='Survey Method sample ID' />
       <attributes separator='|' meaningIdLanguage='preferred'/>
     </subTable>
   </table>
