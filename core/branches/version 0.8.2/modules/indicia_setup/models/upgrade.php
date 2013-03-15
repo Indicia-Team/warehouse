@@ -18,6 +18,10 @@ class Upgrade_Model extends Model
 {
 
     private $upgrade_error = array();
+    
+    private $scriptsForPgUser = '';
+    
+    public $pgUserScriptsToBeApplied = '';
 
     public function __construct()
     {
@@ -62,7 +66,8 @@ class Upgrade_Model extends Model
           $this->applyUpdateScripts("$path/", basename($path), $old_version, $last_run_script);
         }
       }
-      // @todo set_new_version for diff modules
+      // In case the upgrade involves changes to supported spatial systems...
+      $this->populate_spatial_systems_table();
     }
 
     private function applyUpdateScripts($baseDir, $appName, $old_version, $last_run_script) {
@@ -83,6 +88,7 @@ class Upgrade_Model extends Model
           if (file_exists($baseDir . "db/" . $version_name)) {
             // start transaction for each folder full of scripts
             $this->begin();
+            $this->scriptsForPgUser = '';
             // we have a folder containing scripts
             $this->execute_sql_scripts($baseDir, $version_name, $appName, $last_run_script);
             $updatedTo = implode('.', $currentVersionNumbers);
@@ -90,6 +96,8 @@ class Upgrade_Model extends Model
             $this->set_new_version($updatedTo, $appName);
             // commit transaction
             $this->commit();
+            // only tell the user if there are superuser scripts, when the transaction has been committed.
+            $this->pgUserScriptsToBeApplied .= $this->scriptsForPgUser;
             kohana::log('info', "Scripts ran for $version_name");
           }
           
@@ -100,8 +108,11 @@ class Upgrade_Model extends Model
           while ($level>=0 && $stuffToDo==false) {
             $currentVersionNumbers[$level]++;
             $version_name = 'version_'.implode('_', $currentVersionNumbers);
-            if (file_exists($baseDir . "db/" . $version_name) || (method_exists($this, $version_name)))
-              $stuffToDo = true;            
+            if (file_exists($baseDir . "db/" . $version_name) || (method_exists($this, $version_name))) {
+              $stuffToDo = true;
+              // reset last run script - as we are starting in a new folder.
+              $last_run_script = '';
+            }
             else {
               // Couldn't find anything of this version name. Move up a level (e.g. we have searched 0.2.5 and found nothing, so try 0.3.0)            
               $currentVersionNumbers[$level]=0;
@@ -181,8 +192,8 @@ class Upgrade_Model extends Model
       $full_upgrade_folder = $baseDir . "db/" . $upgrade_folder;
       
       // get last executed sql file name. If not in the parameter (which loads from the db via the
-      // system model), then it must be from an old version of Indicia pre 0.8 so has the last
-      // run script saved as a file in the db scripts folder.
+      // system model), then it could be from an old version of Indicia pre 0.8 so has the last
+      // run script saved as a file in the db scripts folder. Or we could just be starting a new folder.
       if (empty($last_run_script))
         $last_run_script = $this->get_last_executed_sql_file_name($full_upgrade_folder, $appName);
       $original_last_run_script = $last_run_script;
@@ -214,7 +225,10 @@ class Upgrade_Model extends Model
             if (!utf8::is_ascii($_db_file)) {
               $_db_file = utf8::strip_non_ascii($_db_file);
             }
-            $result = $this->db->query($_db_file);
+            if (substr($_db_file, 0, 18) === '-- #postgres user#')
+              $this->scriptsForPgUser .= $_db_file . "\n\n";
+            else
+              $result = $this->db->query($_db_file);
             $last_run_script = $name;
           }
         }
@@ -301,6 +315,38 @@ class Upgrade_Model extends Model
         $session = new Session();
         $session->set_flash('flash_error', kohana::lang('setup.failed_delete_old_upgrade_folder'));
       }
+    }
+  }
+  
+  /**
+   * The upgrade might involve a change to spatial system support in plugins, so now is a good
+   * time to refresh the spatial_systems metadata table.
+   */
+  private function populate_spatial_systems_table() {
+    $system_metadata = spatial_ref::system_metadata(true);
+    $existing = $this->db->select('id', 'code')
+         ->from('spatial_systems')
+         ->get()->result_array(false);
+    foreach ($system_metadata as $system => $metadata) {
+      $id = false;
+      foreach ($existing as $idx => $record) {
+        if ($record['code'] === $system) {
+          // record already exists
+          $id = $record['id'];
+          unset($existing[$idx]);
+          break;
+        }
+      }
+      $metadata['treat_srid_as_x_y_metres'] = isset($metadata['treat_srid_as_x_y_metres']) && $metadata['treat_srid_as_x_y_metres'] ? 't' : 'f';
+      if ($id) {
+        $this->db->update('spatial_systems', array_merge($metadata, array('code' => $system)), array('id'=>$id));
+      } else {
+        $this->db->insert('spatial_systems', array_merge($metadata, array('code' => $system)));
+      }
+    }
+    // delete any that remain in $existing, since they are no longer supported
+    foreach ($existing as $idx => $record) {
+      $this->db->delete('spatial_systems', array('id'=>$record['id']));
     }
   }
 

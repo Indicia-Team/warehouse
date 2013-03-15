@@ -90,7 +90,8 @@ class Occurrence_Model extends ORM
       'last_verification_check_date',
       'last_verification_check_taxa_taxon_list_id',
       'last_verification_check_version',
-      'training'
+      'training',
+      'sensitivity_precision'
     );
     if(array_key_exists('id', $fieldlist)) {
       // existing data must not be set to download_flag=F (final download) otherwise it 
@@ -151,9 +152,9 @@ class Occurrence_Model extends ORM
    */
   public function fixed_values_form() {
     $srefs = array();
-    foreach (kohana::config('sref_notations.sref_notations') as $code=>$caption) {
-      $srefs[] = "$code:$caption";
-    }
+    $systems = spatial_ref::system_metadata();
+    foreach ($systems as $code=>$metadata) 
+      $srefs[] = "$code:".$metadata['title'];
     return array(
       'website_id' => array( 
         'display'=>'Website', 
@@ -197,6 +198,7 @@ class Occurrence_Model extends ORM
   
   /**
    * Force occurrences to appear in the cache so that they are immediately available to report on.
+   * @todo Consider if we should do this at the sample level, to update the whole sample in a single hit.
    */
   protected function postSubmit($isInsert) {
     if (class_exists('cache_builder')) {
@@ -204,6 +206,8 @@ class Occurrence_Model extends ORM
         cache_builder::insert($this->db, 'occurrences', $this->id);
       elseif ($this->deleted==='t')
         cache_builder::delete($this->db, 'occurrences', $this->id);
+      else
+        cache_builder::update($this->db, 'occurrences', $this->id);
     }
     return true;
   }

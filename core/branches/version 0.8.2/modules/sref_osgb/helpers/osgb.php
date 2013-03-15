@@ -58,7 +58,7 @@ class osgb {
     // ignore any spaces in the grid ref
     $sref = str_replace(' ','',$sref);
     if (!self::is_valid($sref))
-      throw new InvalidArgumentException('Spatial reference is not a recognisable grid square.');
+      throw new InvalidArgumentException("Spatial reference $sref is not a recognisable grid square.");
     $sq_100 = self::get_100k_square($sref);
     if (strlen($sref)==5) {
       // Assume DINTY Tetrad format 2km squares
@@ -160,14 +160,6 @@ class osgb {
     $e = floor(($easting - (100000 * $hundredKmE)) / $accuracy);
     $n = floor(($northing - (100000 * $hundredKmN)) / $accuracy);
     return $firstLetter.$secondLetter.str_pad($e, $precision/2, '0', STR_PAD_LEFT).str_pad($n, $precision/2, '0', STR_PAD_LEFT);
-  }
-
-  /**
-   * Return the underying EPSG code for the datum this notation is based on (Airy 1830)
-   */
-  public static function get_srid()
-  {
-          return 27700;
   }
 
   /** Retrieve the easting and northing of the sw corner of a

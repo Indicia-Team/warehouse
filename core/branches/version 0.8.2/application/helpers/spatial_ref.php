@@ -24,6 +24,68 @@ defined('SYSPATH') or die('No direct script access.');
 
 class spatial_ref {
 
+  private static $system_metadata=false;
+
+  /**
+   * Retrieves the metadata for all the supported spatial reference systems.
+   *
+   * @param boolean $refresh Set to true to force a full refresh, otherwise the result is cached.
+   */
+  public static function system_metadata($refresh=false) {
+    $cacheId = 'spatial-ref-systems';
+    if ($refresh) {
+      $cache = Cache::instance();
+      $cache->delete($cacheId); 
+      self::$system_metadata=false;
+    }
+    if (self::$system_metadata === false) {
+      $latlong_systems = Kohana::config('sref_notations.lat_long_systems');
+      $cache = Cache::instance();
+      if ($cached = $cache->get($cacheId)) {
+        self::$system_metadata = $cached;
+      } else {
+        self::$system_metadata = array();
+        // fetch any systems that are just declared as srids, with no notation module required
+        foreach (Kohana::config('sref_notations.sref_notations') as $code => $title) {
+          self::$system_metadata["EPSG:$code"] = array(
+            'title' => $title,
+            'srid' => $code,
+            // make a small assumption here, that a non-lat long system is going to be an x y grid of metres.
+            'treat_srid_as_x_y_metres' => !isset($latlong_systems[$code])
+          );
+        }
+        // Now look for any modules which extend the sref systems available
+        foreach (Kohana::config('config.modules') as $path) {
+          $plugin = basename($path);
+          if (file_exists("$path/plugins/$plugin.php")) {
+            require_once("$path/plugins/$plugin.php");
+            if (function_exists($plugin.'_sref_systems')) {
+              $metadata = call_user_func($plugin.'_sref_systems');
+              self::$system_metadata = array_merge(self::$system_metadata, $metadata);
+            }
+          }
+        }
+        $cache->set($cacheId, self::$system_metadata); 
+      }
+    }
+    return self::$system_metadata;
+  }
+  
+  /**
+   * Retrieves an associative array of supported spatial system codes and titles, suitable for 
+   * passing to a data_entry_helper::select control as the lookupValues option.
+   *
+   * @return array Associative array of supported systems.
+   */
+  public static function system_list() {
+    $systems = self::system_metadata();
+    $r = array();
+    foreach ($systems as $code=>$metadata)
+      $r['code'] = $metadata['title'];
+    return $r;
+    
+  }
+
   /**
    * Provides a wrapper for dynamic calls to a spatial reference module's validate
    * method.
@@ -61,9 +123,8 @@ class spatial_ref {
   private static function validateSystemClass($system) {
     if ($system == '')
       throw new Exception("The spatial reference system is not set.");
-     // Note, do not use method_exists here as it can cause crashes in FastCGI servers.
+    // Note, do not use method_exists here as it can cause crashes in FastCGI servers.
     if (!is_callable(array($system, 'is_valid')) ||
-        !is_callable(array($system, 'get_srid')) ||
         !is_callable(array($system, 'sref_to_wkt')) ||
         !is_callable(array($system, 'wkt_to_sref'))) 
       throw new Exception("The spatial reference system $system is not recognised.");
@@ -79,7 +140,7 @@ class spatial_ref {
     if (is_numeric($system)) {
       $found = $db->count_records('spatial_ref_sys', array('auth_srid' => $system));
     } else {
-      $found = array_key_exists(strtolower($system), kohana::config('sref_notations.sref_notations'));
+      $found = array_key_exists(strtolower($system), self::system_metadata());
     }
     return $found>0;
   }
@@ -109,7 +170,8 @@ class spatial_ref {
     } else {
       self::validateSystemClass($system);
       $wkt = call_user_func("$system::sref_to_wkt", $sref);
-      $srid = call_user_func("$system::get_srid");
+      $systems = self::system_metadata();
+      $srid = $systems[$system]['srid'];
     }
     return self::wkt_to_internal_wkt($wkt, $srid);
   }
@@ -138,7 +200,8 @@ class spatial_ref {
       $srid = $system;
     } else {
       self::validateSystemClass($system);
-      $srid = call_user_func("$system::get_srid");
+      $systems = self::system_metadata();
+      $srid = $systems[$system]['srid'];
     }
     return postgreSQL::transformWkt($wkt, kohana::config('sref_notations.internal_srid'), $srid);
   }
@@ -159,8 +222,9 @@ class spatial_ref {
       $srid = $system;
     else {
       self::validateSystemClass($system);
-      $srid = call_user_func("$system::get_srid");
-	}
+      $systems = self::system_metadata();
+      $srid = $systems[$system]['srid'];
+    }
     
     $transformedWkt = postgreSQL::transformWkt($wkt, kohana::config('sref_notations.internal_srid'), $srid);
     if (is_numeric($system)) {

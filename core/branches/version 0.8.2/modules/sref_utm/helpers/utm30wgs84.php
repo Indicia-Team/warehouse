@@ -28,14 +28,5 @@
  */
 class utm30wgs84 extends utm_grid{
 
-  /**
-  * Return the underying EPSG code for the datum this notation is based on.
-  */
-  public static function get_srid()
-  {
-    return 32630;
-  }
-
-
 }
 ?>

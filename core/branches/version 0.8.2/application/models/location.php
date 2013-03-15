@@ -170,10 +170,10 @@ class Location_Model extends ORM_Tree {
    * Define a form that is used to capture a set of predetermined values that apply to every record during an import.
    */
   public function fixed_values_form() {
-  $srefs = array();
-    foreach (kohana::config('sref_notations.sref_notations') as $code=>$caption) {
-      $srefs[] = "$code:$caption";
-    }
+    $srefs = array();
+    $systems = spatial_ref::system_metadata();
+    foreach ($systems as $code=>$metadata) 
+      $srefs[] = "$code:".$metadata['title'];
     return array(
       'website_id' => array( 
         'display'=>'Website', 

@@ -142,7 +142,7 @@ This page allows you to specify the details of a location.
     'geomFieldname' => 'location:centroid_geom',
     'default' => html::initial_value($values, 'location:centroid_sref'),
     'defaultGeom' => html::initial_value($values, 'location:centroid_geom'),
-    'systems' => kohana::config('sref_notations.sref_notations'),
+    'systems' => spatial_ref::system_list(),
     'defaultSystem' => html::initial_value($values, 'location:centroid_sref_system'),
     'class' => 'control-width-3',
     'validation'=>'required',
