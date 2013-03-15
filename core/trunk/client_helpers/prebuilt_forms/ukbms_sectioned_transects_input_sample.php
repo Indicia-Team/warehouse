@@ -109,7 +109,7 @@ class iform_ukbms_sectioned_transects_input_sample {
           'group'=>'Transects Editor Settings'
         ), array(
           'name'=>'section_type_term',
-          'caption'=>'Transect type term',
+          'caption'=>'Section type term',
           'description'=>'Select the term used for section location types.',
           'type' => 'select',
           'table'=>'termlists_term',
@@ -119,6 +119,14 @@ class iform_ukbms_sectioned_transects_input_sample {
           'required' => true,            
           'group'=>'Transects Editor Settings'
         ), 
+        array(
+          'name'=>'species_tab_1',
+          'caption'=>'Species Tab 1 Title',
+          'description'=>'The title to be used on the species checklist for the main tab.',
+          'type'=>'string',
+          'required' => true,
+          'group'=>'Species'
+        ),
         array(
           'name'=>'taxon_list_id',
           'caption'=>'All Species List',
@@ -193,6 +201,14 @@ class iform_ukbms_sectioned_transects_input_sample {
           'group'=>'Species'
         ),
         array(
+          'name'=>'species_tab_2',
+          'caption'=>'Species Tab 2 Title',
+          'description'=>'The title to be used on the species checklist for the second tab.',
+          'type'=>'string',
+          'required'=>false,
+          'group'=>'Species'
+        ),
+        array(
           'name'=>'second_taxon_list_id',
           'caption'=>'Second Tab Species List',
           'description'=>'The species checklist used to drive the autocomplete in the optional second grid. If not provided, the second grid and its tab are omitted.',
@@ -226,6 +242,14 @@ class iform_ukbms_sectioned_transects_input_sample {
               'values you input in this box. Enter one value per line. E.g. enter a list of taxon group titles if you are filtering by taxon group.',
           'type' => 'textarea',
           'siteSpecific'=>true,
+          'required'=>false,
+          'group'=>'Species'
+        ),
+        array(
+          'name'=>'species_tab_3',
+          'caption'=>'Species Tab 3 Title',
+          'description'=>'The title to be used on the species checklist for the third tab.',
+          'type'=>'string',
           'required'=>false,
           'group'=>'Species'
         ),
@@ -466,6 +490,7 @@ class iform_ukbms_sectioned_transects_input_sample {
     global $user;
   	if (!module_exists('iform_ajaxproxy'))
       return 'This form must be used in Drupal with the Indicia AJAX Proxy module enabled.';
+  	drupal_add_js('misc/tableheader.js'); // for sticky heading
     data_entry_helper::add_resource('jquery_form');
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     // did the parent sample previously exist? Default is no.
@@ -588,19 +613,21 @@ class iform_ukbms_sectioned_transects_input_sample {
       'extraParams' => $auth['read'] + array('view'=>'detail','id'=>$parentLocId)
     ));
     $r = "<h2>".$location[0]['name']." on ".$date."</h2><div id=\"tabs\">\n";
-    $tabs = array('#grid1'=>lang::get('Enter Transect Species Data 1'));
+    $tabs = array('#grid1'=>t($args['species_tab_1']));
     if(isset($args['second_taxon_list_id']) && $args['second_taxon_list_id']!='')
-      $tabs['#grid2']=lang::get('Enter Transect Species Data 2');
+      $tabs['#grid2']=t($args['species_tab_2']);
     if(isset($args['third_taxon_list_id']) && $args['third_taxon_list_id']!='')
-      $tabs['#grid3']=lang::get('Enter Transect Species Data 3');
+      $tabs['#grid3']=t($args['species_tab_3']);
     $tabs['#notes']=lang::get('Notes');
     $r .= data_entry_helper::tab_header(array('tabs'=>$tabs));
     data_entry_helper::enable_tabs(array(
         'divId'=>'tabs',
         'style'=>$args['interface']
     ));
-    $r .= "<div id=\"grid1\">\n";
-    $r .= '<table id="transect-input1" class="ui-widget"><thead>';
+    $r .= '<div id="grid1">'.
+          '<label for="listSelect">'.lang::get('Use species list').' :</label><select id="listSelect"><option value="full">'.lang::get('All species').'</option><option value="common">'.lang::get('Common species').'</option><option value="here">'.lang::get('Species known at this site').'</option><option value="mine">'.lang::get('Species I have recorded').'</option></select>'.
+          '<span id="listSelectMsg"></span>';
+    $r .= '<table id="transect-input1" class="ui-widget species-grid"><thead class="table-header">';
     $r .= '<tr><th class="ui-widget-header">' . lang::get('Sections') . '</th>';
     foreach ($sections as $idx=>$section) {
       $r .= '<th class="ui-widget-header col-'.($idx+1).'">' . $section['code'] . '</th>';
@@ -632,25 +659,24 @@ class iform_ukbms_sectioned_transects_input_sample {
         } else {
           $attr['default']=isset($_POST[$attr['fieldname']]) ? $_POST[$attr['fieldname']] : '';
         }
-        $r .= '<td class="col-'.($idx+1).'">' . data_entry_helper::outputAttribute($attr, $attrOpts) . '</td>';
+        $r .= '<td class="col-'.($idx+1).' '.($idx % 5 == 0 ? 'first' : '').'">' . data_entry_helper::outputAttribute($attr, $attrOpts) . '</td>';
       }
-      $r .= '<td class="ui-state-disabled"></td>';
+      $r .= '<td class="ui-state-disabled first"></td>';
       $r .= '</tr>';
     }
     $r .= '</tbody>';
     $r .= '<tbody class="ui-widget-content occs-body"></tbody>';
     $r .= '<tfoot><tr><td>Total</td>';
     foreach ($sections as $idx=>$section) {
-      $r .= '<td class="col-'.($idx+1).' col-total"></td>';
+      $r .= '<td class="col-'.($idx+1).' '.($idx % 5 == 0 ? 'first' : '').' col-total"></td>';
     }
-    $r .= '<td class="ui-state-disabled"></td></tr></tfoot>';
+    $r .= '<td class="ui-state-disabled first"></td></tr></tfoot>';
     $r .= '</table>'.
-          '<label for="listSelect">'.lang::get('Use species list').' :</label><select id="listSelect"><option value="full">'.lang::get('All species').'</option><option value="common">'.lang::get('Common species').'</option><option value="here">'.lang::get('Species known at this site').'</option><option value="mine">'.lang::get('Species I have recorded').'</option></select>';
-    $r .= '<span id="listSelectMsg"></span><br /><span id="taxonLookupControlContainer"><label for="taxonLookupControl" class="auto-width">'.lang::get('Add species to list').':</label> <input id="taxonLookupControl" name="taxonLookupControl" ></span>';
+          '<span id="taxonLookupControlContainer"><label for="taxonLookupControl" class="auto-width">'.lang::get('Add species to list').':</label> <input id="taxonLookupControl" name="taxonLookupControl" ></span>';
     $r .= '<br /><a href="'.$args['my_walks_page'].'"><button type="button" class="ui-state-default ui-corner-all" />'.lang::get('Finish').'</button></a></div>';
     
     if(isset($args['second_taxon_list_id']) && $args['second_taxon_list_id']!=''){
-      $r .= '<div id="grid2"><p>' . lang::get('LANG_Tab_Msg') . '</p><table id="transect-input2" class="ui-widget"><thead>';
+      $r .= '<div id="grid2"><p>' . lang::get('LANG_Tab_Msg') . '</p><table id="transect-input2" class="ui-widget species-grid"><thead class="table-header">';
       $r .= '<tr><th class="ui-widget-header">' . lang::get('Sections') . '</th>';
       foreach ($sections as $idx=>$section) {
         $r .= '<th class="ui-widget-header col-'.($idx+1).'">' . $section['code'] . '</th>';
@@ -660,14 +686,14 @@ class iform_ukbms_sectioned_transects_input_sample {
       $r .= '<tbody class="ui-widget-content occs-body"></tbody>';
       $r .= '<tfoot><tr><td>Total</td>';
       foreach ($sections as $idx=>$section) {
-        $r .= '<td class="col-'.($idx+1).' col-total"></td>';
+        $r .= '<td class="col-'.($idx+1).' '.($idx % 5 == 0 ? 'first' : '').' col-total"></td>';
       }
-      $r .= '<td class="ui-state-disabled"></td></tr></tfoot></table>';
+      $r .= '<td class="ui-state-disabled first"></td></tr></tfoot></table>';
       $r .= '<label for="taxonLookupControl2" class="auto-width">'.lang::get('Add species to list').':</label> <input id="taxonLookupControl2" name="taxonLookupControl2" >';
       $r .= '<br /><a href="'.$args['my_walks_page'].'"><button type="button" class="ui-state-default ui-corner-all" />'.lang::get('Finish').'</button></a></div>';
     }
     if(isset($args['third_taxon_list_id']) && $args['third_taxon_list_id']!=''){
-      $r .= '<div id="grid3"><p>' . lang::get('LANG_Tab_Msg') . '</p><table id="transect-input3" class="ui-widget"><thead>';
+      $r .= '<div id="grid3"><p>' . lang::get('LANG_Tab_Msg') . '</p><table id="transect-input3" class="ui-widget species-grid"><thead class="table-header">';
       $r .= '<tr><th class="ui-widget-header">' . lang::get('Sections') . '</th>';
       foreach ($sections as $idx=>$section) {
         $r .= '<th class="ui-widget-header col-'.($idx+1).'">' . $section['code'] . '</th>';
@@ -677,9 +703,9 @@ class iform_ukbms_sectioned_transects_input_sample {
       $r .= '<tbody class="ui-widget-content occs-body"></tbody>';
       $r .= '<tfoot><tr><td>Total</td>';
       foreach ($sections as $idx=>$section) {
-        $r .= '<td class="col-'.($idx+1).' col-total"></td>';
+        $r .= '<td class="col-'.($idx+1).' '.($idx % 5 == 0 ? 'first' : '').' col-total"></td>';
       }
-      $r .= '<td class="ui-state-disabled"></td></tr></tfoot></table>';
+      $r .= '<td class="ui-state-disabled first"></td></tr></tfoot></table>';
       $r .= '<label for="taxonLookupControl3" class="auto-width">'.lang::get('Add species to list').':</label> <input id="taxonLookupControl3" name="taxonLookupControl3" >';
       $r .= '<br /><a href="'.$args['my_walks_page'].'"><button type="button" class="ui-state-default ui-corner-all" />'.lang::get('Finish').'</button></a></div>';
     }
@@ -784,8 +810,19 @@ indiciaData.indiciaSvc = '".data_entry_helper::$base_url."';\n";
       data_entry_helper::$javascript .= "indiciaData.CMSUserID = ".$user->uid.";\n";
     }
     // Do an AJAX population of the grid rows.
-    data_entry_helper::$javascript .= "loadSpeciesList();";
-    
+    data_entry_helper::$javascript .= "loadSpeciesList();
+$('#tabs').bind('tabsshow', function(event, ui) {
+    var target = ui.panel;
+    // first get rid of any previous tables
+    $('table.sticky-header').remove();
+    $('table.sticky-enabled thead.tableHeader-processed').removeClass('tableHeader-processed');
+    $('table.species-grid.sticky-enabled').removeClass('sticky-enabled');
+    var table = $('#'+target.id+' table.species-grid');
+    if(table.length > 0) {
+        table.addClass('sticky-enabled');
+        Drupal.behaviors.tableHeader(target);
+    }
+});";
     return $r;
   }
 

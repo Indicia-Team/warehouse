@@ -107,7 +107,7 @@ function addGridRow(species, speciesTableSelector){
     }
     // find current value if there is one - the key is the combination of sample id and ttl meaning id that an existing value would be stored as
     key=indiciaData.samples[section.code] + ':' + species.taxon_meaning_id;
-    row += '<td class="col-'+(idx+1)+'">';
+    row += '<td class="col-'+(idx+1)+(idx % 5 == 0 ? ' first' : '')+'">';
     if (typeof indiciaData.existingOccurrences[key]!=="undefined") {
       indiciaData.existingOccurrences[key]['processed']=true;
       val = indiciaData.existingOccurrences[key]['value'] === null ? '' : indiciaData.existingOccurrences[key]['value'];
@@ -123,7 +123,7 @@ function addGridRow(species, speciesTableSelector){
     }
     row += '<input class="count-input" id="value:'+species.id+':'+section.code+'" type="text" value="'+val+'" /></td>';
   });
-  row += '<td class="row-total">'+rowTotal+'</td>';
+  row += '<td class="row-total first">'+rowTotal+'</td>';
   row += '</tr>';
   row = jQuery(row);
   $(speciesTableSelector+' tbody.occs-body').append(row);
@@ -707,6 +707,11 @@ function bindSpeciesAutocomplete(selectorID, tableSelectorID, url, lookupListId,
     }
     addGridRow(data, tableSelectorID);
     $(event.target).val('');
+    var table = $(tableSelectorID);
+    table.parent().find('.sticky-header').remove();
+    table.find('thead.tableHeader-processed').removeClass('tableHeader-processed');
+    table.addClass('sticky-enabled');
+    Drupal.behaviors.tableHeader(table.parent());
   };
   var extra_params = {
         view : 'detail',
