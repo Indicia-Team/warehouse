@@ -806,6 +806,13 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       from samples s
       where s.id=co.sample_id and s.deleted=false and s.recorder_names is not null and s.recorder_names<>''
       and co.id=#id#;",
+    // Full recorder name
+    'full name' => 'update cache_occurrences co
+      set recorders=sav.text_value
+      from sample_attribute_values sav 
+      join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'full_name\' and sa.deleted=false
+      where sav.sample_id=co.sample_id and sav.deleted=false
+      and co.id=#id#;',
     // surname, firstname
     'First name/surname' => 'update cache_occurrences co
       set recorders=sav.text_value || coalesce(\', \' || savf.text_value, \'\')
@@ -817,13 +824,6 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       where savf.sample_id=co.sample_id
       and sav.sample_id=co.sample_id and sav.deleted=false
       and co.id=#id#;',
-    // Full recorder name
-    'full name' => 'update cache_occurrences co
-      set recorders=sav.text_value
-      from sample_attribute_values sav 
-      join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'full_name\' and sa.deleted=false
-      where sav.sample_id=co.sample_id and sav.deleted=false
-      and co.id=#id#;',
     // Sample recorder names in parent sample
     'Parent sample recorder names' => "update cache_occurrences co
       set recorders=sp.recorder_names
@@ -831,6 +831,15 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       join samples sp on sp.id=s.parent_id and sp.deleted=false
       where s.id=co.sample_id and s.deleted=false and sp.recorder_names is not null and sp.recorder_names<>''
       and co.id=#id#;",
+    // Full recorder name in parent sample
+    'Parent full name' => 'update cache_occurrences co
+      set recorders=sav.text_value
+      from samples s
+      join samples sp on sp.id=s.parent_id and sp.deleted=false
+      join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
+      join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'full_name\' and sa.deleted=false
+      where s.id=co.sample_id and s.deleted=false
+      and co.id=#id#;',
     // surname, firstname in parent sample
     'Parent first name/surname' => 'update cache_occurrences co
       set recorders=sav.text_value || coalesce(\', \' || savf.text_value, \'\')
@@ -843,15 +852,6 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       ) on savf.deleted=false
       where savf.sample_id=sp.id
       and s.id=co.sample_id and s.deleted=false
-      and co.id=#id#;',
-    // Full recorder name in parent sample
-    'Parent full name' => 'update cache_occurrences co
-      set recorders=sav.text_value
-      from samples s
-      join samples sp on sp.id=s.parent_id and sp.deleted=false
-      join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
-      join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'full_name\' and sa.deleted=false
-      where s.id=co.sample_id and s.deleted=false
       and co.id=#id#;',
     // warehouse surname, firstname
     'Warehouse first name/surname' => 'update cache_occurrences co
