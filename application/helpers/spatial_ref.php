@@ -80,8 +80,10 @@ class spatial_ref {
   public static function system_list() {
     $systems = self::system_metadata();
     $r = array();
-    foreach ($systems as $code=>$metadata)
-      $r['code'] = $metadata['title'];
+    foreach ($systems as $code=>$metadata) {
+      $code = strtoupper(preg_replace('/^EPSG:/', '', $code));
+      $r[$code] = $metadata['title'];
+    }
     return $r;
     
   }
