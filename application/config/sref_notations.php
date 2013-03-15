@@ -24,19 +24,14 @@
 defined('SYSPATH') or die('No direct script access.');
 
 /**
- * List of supported spatial reference notations, each of which is defined in a module
- * of the same name.
+ * List of supported spatial reference notations which are just straight translations to an x,y
+ * or lat long format. Any other notations (e.g. grids) need a module to handle the grid notation.
  */
 $config['sref_notations'] = array
 (
-  'osgb'=>'British National Grid',
-  'osie'=>'Irish Grid (TM75)',
-  'guernsey'=>'Guernsey Grid',
-  'jersey'=>'Jersey Grid',
-  'utm30ed50'=>'UTM 30N (ED50)',
-  'utm30wgs84'=>'UTM 30N (WGS84)',
-  '4326'=>'Latitude and Longitude (WGS84)',
-  'mtbqqq'=>'Messtischblattquadranten'
+  '4326' =>'Latitude and Longitude (WGS84)',
+  '2169' =>'Gauss Luxembourg',
+  '27572'=>'EPSG:27572 NTF (Paris) / Lambert zone II'
 );
 
 // Set the internally stored geoms to use spherical mercator projection

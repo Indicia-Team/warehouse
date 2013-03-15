@@ -32,20 +32,29 @@ class cache_builder {
    * Performs the actual task of table population.
    */
   public static function populate_cache_table($db, $table, $last_run_date) {
+    // occurrences are updated into the cache on the fly once initial population done, so no need to process.
+    if ($table==='occurrences' && variable::get("populated-$table"))
+      return;
     $queries = kohana::config("cache_builder.$table");
     cache_builder::get_changelist($db, $table, $queries, $last_run_date);
     try {
       cache_builder::do_delete($db, $table, $queries);
+      // preprocess some of the tags in the queries
+      if (is_array($queries['update']))
+        foreach($queries['update'] as $key=>&$sql)
+          $sql = str_replace('#join_needs_update#', $queries['join_needs_update'], $sql);
+      else 
+        $queries['update'] = str_replace('#join_needs_update#', $queries['join_needs_update'], $queries['update']);
       cache_builder::run_statement($db, $table, $queries['update'], 'update');
       // preprocess some of the tags in the queries
       if (is_array($queries['insert']))
         foreach($queries['insert'] as $key=>&$sql)
-          $sql = str_replace('#insert_join_needs_update#', $queries['insert_join_needs_update'], $sql);
+          $sql = str_replace('#join_needs_update#', $queries['join_needs_update'] . ' and nu.deleted=false', $sql);
       else 
-        $queries['insert'] = str_replace('#insert_join_needs_update#', $queries['insert_join_needs_update'], $queries['insert']);
+        $queries['insert'] = str_replace('#join_needs_update#', $queries['join_needs_update'] . ' and nu.deleted=false', $queries['insert']);
       cache_builder::run_statement($db, $table, $queries['insert'], 'insert');
-      if (isset($queries['final_updates'])) 
-        cache_builder::run_statement($db, $table, $queries['final_updates'], 'final update');
+      if (isset($queries['extra_multi_record_updates'])) 
+        cache_builder::run_statement($db, $table, $queries['extra_multi_record_updates'], 'final update');
       if (!variable::get("populated-$table")) {
         $cacheQuery = $db->query("select count(*) from cache_$table")->result_array(false);
         if (isset($queries['count']))
@@ -72,22 +81,44 @@ class cache_builder {
    */
   public static function insert($db, $table, $id) {
     $queries = kohana::config("cache_builder.$table");
-    if (!isset($queries['insert_key_field']))
-      throw new exception('Cannot do a specific record insert into cache as the insert_key_field configuration not defined in cache_builder configuration');
-    $queries = kohana::config("cache_builder.$table");
-    $insertSql = str_replace('#insert_join_needs_update#', '', $queries['insert']);
-    $insertSql .= ' and '.$queries['insert_key_field']."=$id";
+    if (!isset($queries['key_field']))
+      throw new exception('Cannot do a specific record insert into cache as the key_field configuration not defined in cache_builder configuration');
+    $insertSql = str_replace('#join_needs_update#', '', $queries['insert']);
+    $insertSql .= ' and '.$queries['key_field']."=$id";
     $db->query($insertSql);
-    if (is_array($queries['final_inserts'])) 
-      foreach($queries['final_inserts'] as $key=>&$sql) {
-        $result=$db->query(str_replace('#id#', $id, $sql));
-        if ($result->count()) 
-          break; // we've done an update. So can drop out.
+    self::final_queries($db, $table, $id);
+  }
+  
+  /**
+   * Updates a single record in the cache, e.g. could be used as soon as a record is edited.
+   * @param object $db Database object.
+   * @param string $table Plural form of the table name.
+   * @param integer $id Record ID to insert in the cache
+   */
+  public static function update($db, $table, $id) {
+    $queries = kohana::config("cache_builder.$table");
+    if (!isset($queries['key_field']))
+      throw new exception('Cannot do a specific record update into cache as the key_field configuration not defined in cache_builder configuration');
+    kohana::log('debug', 'Update query: '.$queries['update']);
+    $updateSql = str_replace('#join_needs_update#', '', $queries['update']);
+    $updateSql .= ' and '.$queries['key_field']."=$id";
+    $db->query($updateSql);
+    kohana::log('debug', 'Update SQL: '. $updateSql);
+    self::final_queries($db, $table, $id);
+  }
+  
+  public static function final_queries($db, $table, $id) {
+    $queries = kohana::config("cache_builder.$table");
+    if (isset($queries['extra_single_record_updates'])) {
+      if (is_array($queries['extra_single_record_updates'])) 
+        foreach($queries['extra_single_record_updates'] as $key=>&$sql) {
+          $result=$db->query(str_replace('#id#', $id, $sql));
+          if ($result->count()) 
+            break; // we've done an update. So can drop out.
+        }
+      else {
+        $db->query(str_replace('#id#', $id, $queries['extra_single_record_updates']));
       }
-    else {
-      $queries['final_updates'] = str_replace(array('#needs_update_table#', '#occurrences_filter#'), 
-          array('', "and co.id=$id"), $queries['final_updates']);
-      $db->query($queries['final_updates']);
     }
   }
   

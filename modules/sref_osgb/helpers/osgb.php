@@ -162,14 +162,6 @@ class osgb {
     return $firstLetter.$secondLetter.str_pad($e, $precision/2, '0', STR_PAD_LEFT).str_pad($n, $precision/2, '0', STR_PAD_LEFT);
   }
 
-  /**
-   * Return the underying EPSG code for the datum this notation is based on (Airy 1830)
-   */
-  public static function get_srid()
-  {
-          return 27700;
-  }
-
   /** Retrieve the easting and northing of the sw corner of a
    * 100km square, indicated by the first 2 chars of the grid ref.
    *

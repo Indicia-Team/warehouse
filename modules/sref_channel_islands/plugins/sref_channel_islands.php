@@ -13,20 +13,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Modules
- * @subpackage Channel Islands Grid References
- * @author  Indicia Team
- * @license http://www.gnu.org/licenses/gpl.html GPL 3.0
- * @link  http://code.google.com/p/indicia/
+ * @package	Modules
+ * @subpackage Plugins
+ * @author	Indicia Team
+ * @license	http://www.gnu.org/licenses/gpl.html GPL
+ * @link 	http://code.google.com/p/indicia/
  */
 
-/** 
- * Conversion class for Jersey grid references EPSG:3109.
- * @package Modules
- * @subpackage Channel Islands Grid References
- * @author  Indicia Team
+/**
+ * Declare a handler for Channel Island grid references.
+ * @return array Spatial system metadata
  */
-class jersey extends island_grid{
-
+function sref_channel_islands_sref_systems() {
+  return array(
+    'guernsey' => array(
+      'title' => 'Guernsey Grid',
+      'srid' => 3108,
+      'treat_srid_as_x_y_metres' => true
+    ), 'jersey' => array(
+      'title' => 'Jersey Grid',
+      'srid' => 3109,
+      'treat_srid_as_x_y_metres' => true
+    )
+  );
 }
-?>
