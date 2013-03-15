@@ -153,14 +153,6 @@ class mtbqqq {
       
     }
   }
-
-  /**
-   * Return the underying EPSG code for the datum this notation is based on (Airy 1830)
-   */
-  public static function get_srid()
-  {
-    return 4745;//31468; // 4745 (RD83 Bessel)?
-  }
   
   /**
    * Ensures that the format of an input sref is consistent.

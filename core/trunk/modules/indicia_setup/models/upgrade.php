@@ -66,7 +66,8 @@ class Upgrade_Model extends Model
           $this->applyUpdateScripts("$path/", basename($path), $old_version, $last_run_script);
         }
       }
-      // @todo set_new_version for diff modules
+      // In case the upgrade involves changes to supported spatial systems...
+      $this->populate_spatial_systems_table();
     }
 
     private function applyUpdateScripts($baseDir, $appName, $old_version, $last_run_script) {
@@ -314,6 +315,38 @@ class Upgrade_Model extends Model
         $session = new Session();
         $session->set_flash('flash_error', kohana::lang('setup.failed_delete_old_upgrade_folder'));
       }
+    }
+  }
+  
+  /**
+   * The upgrade might involve a change to spatial system support in plugins, so now is a good
+   * time to refresh the spatial_systems metadata table.
+   */
+  private function populate_spatial_systems_table() {
+    $system_metadata = spatial_ref::system_metadata(true);
+    $existing = $this->db->select('id', 'code')
+         ->from('spatial_systems')
+         ->get()->result_array(false);
+    foreach ($system_metadata as $system => $metadata) {
+      $id = false;
+      foreach ($existing as $idx => $record) {
+        if ($record['code'] === $system) {
+          // record already exists
+          $id = $record['id'];
+          unset($existing[$idx]);
+          break;
+        }
+      }
+      $metadata['treat_srid_as_x_y_metres'] = isset($metadata['treat_srid_as_x_y_metres']) && $metadata['treat_srid_as_x_y_metres'] ? 't' : 'f';
+      if ($id) {
+        $this->db->update('spatial_systems', array_merge($metadata, array('code' => $system)), array('id'=>$id));
+      } else {
+        $this->db->insert('spatial_systems', array_merge($metadata, array('code' => $system)));
+      }
+    }
+    // delete any that remain in $existing, since they are no longer supported
+    foreach ($existing as $idx => $record) {
+      $this->db->delete('spatial_systems', array('id'=>$record['id']));
     }
   }
 

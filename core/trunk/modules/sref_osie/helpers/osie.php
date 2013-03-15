@@ -154,15 +154,6 @@ class osie {
     return $firstLetter.str_pad($e, $precision/2, '0', STR_PAD_LEFT).str_pad($n, $precision/2, '0', STR_PAD_LEFT);
   }
 
-  /**
-   * Return the underying EPSG code for the datum this notation is based on.
-   * See http://www.dnf.org/registry/coordinate_reference_systems/#crs120
-   */
-  public static function get_srid()
-  {
-    return 29901;
-  }
-
   /** Retrieve the easting and northing of the sw corner of a
    * 100km square, indicated by the first character of the grid ref.
    *

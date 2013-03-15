@@ -49,7 +49,7 @@ echo data_entry_helper::sref_and_system(array(
     'geomFieldname' => 'sample:geom',
     'default' => html::initial_value($values, 'sample:entered_sref'),
     'defaultGeom' => html::initial_value($values, 'sample:geom'),
-    'systems' => kohana::config('sref_notations.sref_notations'),
+    'systems' => spatial_ref::system_list(),
     'defaultSystem' => html::initial_value($values, 'sample:entered_sref_system'),
     'class' => 'control-width-3',
     'validation'=>'required'
