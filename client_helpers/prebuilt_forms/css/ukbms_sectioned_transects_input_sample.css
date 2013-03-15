@@ -37,6 +37,13 @@ table td.table-selected  {
   border-right: solid blue 1px;
 }
 
+table thead.table-header {
+  display: table-header-group;
+}
+
+table td.first {
+  border-left: dashed grey 2px;
+}
 
 input.edited[type="text"], input.edited[type="password"], select.edited {
   border: solid green 1px;

@@ -27,9 +27,6 @@ global $custom_terms;
  * @package	Client
  */
 $custom_terms = array(
-  'Enter Transect Species Data 1' => 'Species List 1',
-  'Enter Transect Species Data 2' => 'Species List 2',
-  'Enter Transect Species Data 3' => 'Species List 3',
   'LANG_Duplicate_Taxon' => 'This taxon is already included in one of the lists on this form', 
   'LANG_Tab_Msg' => 'Please note, completing this tab is optional.' 
 );
