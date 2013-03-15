@@ -2,7 +2,7 @@
     title="Explore records"
     description="Report designed for the explore records facility in iRecord."
 >
-  <query website_filter_field="o.website_id">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id">
   SELECT #columns#
   FROM cache_occurrences o
   JOIN websites w on w.id=o.website_id 
