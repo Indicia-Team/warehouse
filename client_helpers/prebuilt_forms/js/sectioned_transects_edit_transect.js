@@ -87,16 +87,22 @@ function confirmSelectSection(section, doFeature, withCancel) {
 
 function selectSection(section, doFeature) {
   sectionDetailsChanged = false;
+  // if the modify control is active, save any changes, unselect any currently selected feature
+  // do this before changing the selection so that the previous selection is tidied up properly.
+  if (typeof indiciaData.mapdiv !== "undefined") {
+    if(typeof indiciaData.modifyFeature !== "undefined") indiciaData.modifyFeature.deactivate();
+    if (doFeature && typeof indiciaData.selectFeature !== "undefined") {
+      indiciaData.selectFeature.unselectAll();
+    }
+  }
   $('.section-select li').removeClass('selected');
   $('#section-select-route-'+section).addClass('selected');
   $('#section-select-'+section).addClass('selected');
   // don't select the feature if this was triggered by selecting the feature (as opposed to the button) otherwise we recurse.
   if (typeof indiciaData.mapdiv !== "undefined") {
-    if(typeof indiciaData.modifyFeature !== "undefined") indiciaData.modifyFeature.deactivate();
     if (doFeature && typeof indiciaData.selectFeature !== "undefined") {
-      indiciaData.selectFeature.unselectAll();
       $.each(indiciaData.mapdiv.map.editLayer.features, function(idx, feature) {
-        if (feature.attributes.section===section && feature.renderIntent !== 'select') {
+        if (feature.attributes.section===section) {
           indiciaData.selectFeature.select(feature);
           selectedFeature = feature;
         }
@@ -253,6 +259,82 @@ $(document).ready(function() {
         var current = $('#section-select-route li.selected').html();
         if(confirm(indiciaData.sectionDeleteConfirm + ' ' + current + '?')) deleteSection(current);
       });
+      $('.erase-route').click(function(evt) {
+        var current = $('#section-select-route li.selected').html(),
+            oldSection = [];
+        // If the draw feature control is active unwind it one point at a time.
+        for(var i = div.map.controls.length-1; i>=0; i--)
+            if(div.map.controls[i].CLASS_NAME == 'OpenLayers.Control.DrawFeature' && div.map.controls[i].active) {
+              if(div.map.controls[i].handler.line){
+                if(div.map.controls[i].handler.line.geometry.components.length == 2) // start point plus current unselected position)
+                  div.map.controls[i].cancel();
+                else 
+                  div.map.controls[i].undo();
+                return;
+              }
+            }
+        current = $('#section-select-route li.selected').html();
+        // label a new feature properly (and remove the undefined that appears)
+        $.each(div.map.editLayer.features, function(idx, feature) {
+          if (feature.attributes.section===current) {
+            oldSection.push(feature);
+          }
+        });
+        if (oldSection.length>0 && oldSection[0].geometry.CLASS_NAME==="OpenLayers.Geometry.LineString") {
+          if (!confirm('Do you wish to erase the route for this section?')) {
+            return;
+          } else {
+            div.map.editLayer.removeFeatures(oldSection, {});
+          }
+        } else return; // no existing route to clear
+        if (typeof indiciaData.sections[current]=="undefined") {
+          return; // not currently stored in database
+        }
+        // have to leave the location in the website (data may have been recorded against it), but can't just empty the geometry
+        var data = {
+          'location:boundary_geom':'',
+          'location:centroid_geom':oldSection[0].geometry.getCentroid().toString(),
+          'location:id':indiciaData.sections[current].id,
+          'website_id':indiciaData.website_id
+        };
+        $.post(
+          indiciaData.ajaxFormPostUrl,
+          data,
+          function(data) {
+            if (typeof(data.error)!=="undefined") {
+              alert(data.error);
+            } else {
+              // Better way of doing this?
+              $('#section-select-route-'+current).addClass('missing');
+              $('#section-select-'+current).addClass('missing');
+            }
+          },
+          'json'
+        );
+
+      });
+      div.map.parentLayer = new OpenLayers.Layer.Vector('Transect Square', {style: div.map.editLayer.style, 'sphericalMercator': true, displayInLayerSwitcher: true});
+      div.map.addLayer(div.map.parentLayer);
+      // If there are any features in the editLayer without a section number, then this is the transect square feature, so move it to the parent layer,
+      // otherwise it will be selectable and will prevent the route features being clicked on to select them. Have to do this each time the tab is displayed
+      // else any changes in the transect will not be reflected here.
+      function copy_over_transects()
+      {
+        $.each(div.map.editLayer.features, function(idx, elem){
+          if(typeof elem.attributes.section == "undefined"){
+            div.map.parentLayer.destroyFeatures();
+            div.map.editLayer.removeFeatures([elem]);
+            div.map.parentLayer.addFeatures([elem]);
+          }
+        });
+      }
+      copy_over_transects();
+      $('.ui-tabs').bind('tabsshow', function(event, ui) {
+        var target = ui.panel;
+        if($('#'+target.id+' #route-map').length > 0){
+          copy_over_transects();
+        }
+      });
       // find the selectFeature control so we can interact with it later
       $.each(div.map.controls, function(idx, control) {
         if (control.CLASS_NAME==='OpenLayers.Control.SelectFeature') {
@@ -325,8 +407,6 @@ $(document).ready(function() {
           current = (typeof evt.feature.attributes.section==="undefined") ? $('#section-select-route li.selected').html() : evt.feature.attributes.section;
           // label a new feature properly (and remove the undefined that appears)
           evt.feature.attributes = {section:current, type:"boundary"};
-          evt.feature.renderIntent = 'select';        
-          div.map.editLayer.redraw();
           $.each(evt.feature.layer.features, function(idx, feature) {
             if (feature.attributes.section===current && feature !== evt.feature) {
               oldSection.push(feature);
@@ -339,6 +419,13 @@ $(document).ready(function() {
             } else {
               evt.feature.layer.removeFeatures(oldSection, {});
             }
+          }
+          // make sure the feature is selected: this ensures that it can be modified straight away
+          // note that selecting or unselecting the feature triggers the afterfeaturemodified event
+          if(selectedFeature != evt.feature) {
+        	  indiciaData.selectFeature.select(evt.feature);
+              selectedFeature = evt.feature;
+              div.map.editLayer.redraw();
           }
           // post the new or edited section to the db
           var data = {
@@ -373,9 +460,7 @@ $(document).ready(function() {
           );
         }
       }
-      
       div.map.editLayer.events.on({'featureadded': featureChangeEvent, 'afterfeaturemodified': featureChangeEvent}); 
-      
     }
   });
   

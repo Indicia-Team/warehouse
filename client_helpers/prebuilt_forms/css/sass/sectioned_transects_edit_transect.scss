@@ -25,6 +25,7 @@ label {
   }
   
   li.selected {
+    @include sassy-button("simple", 3px, 12px, #777700);   
     @include sassy-button-style("inset", #777700);
   }
   
