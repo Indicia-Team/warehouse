@@ -18,7 +18,7 @@
   </query>
   <params>
     <param name='occurrence_id' display='Occurrence ID' description='ID of the occurrence to load' datatype='text' />
-    <param name='locality_type_id' display='Locality Type ID' description='ID of the location type used for verification localities' datatype='text' />
+    <param name='locality_type_id' display='Locality Type ID' description='ID of the location type used for verification localities' datatype='text' emptyvalue="0"/>
   </params>
   <columns>
     <column name='occurrence_id' display='Record:ID' sql='co.id' />
