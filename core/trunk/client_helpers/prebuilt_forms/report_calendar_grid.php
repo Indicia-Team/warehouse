@@ -32,6 +32,9 @@ require_once('includes/user.php');
  */
 class iform_report_calendar_grid {
 
+	private static $locationKey = 'location_id';
+	private static $siteUrlParams;
+	
   /** 
    * Return the form metadata.
    * @return string The definition of the form.
@@ -169,38 +172,17 @@ class iform_report_calendar_grid {
   // Although public, this function is only to be used as a callback.
   public static function build_link($records, $options, $cellContents){
     // siteIDFilter not present if all selected.
-    $retval['cellContents'] = $cellContents;
     $cellclass="newLink";
     foreach($records as $record){
       $location=empty($record["location_name"]) ? $record["entered_sref"] : $record["location_name"];
       $cellContents .= '<a href="'.$options["existingURL"].'sample_id='.$record["sample_id"].'" title="View existing sample for '.$location.' on '.$options['consider_date'].' (ID='.$records[0]["sample_id"].')" >'.$location.'</a> ';
-      if(isset($options['siteIDFilter'])){
-        if($record['location_id']==$options['siteIDFilter']){
-          switch($cellclass){
-            case 'newLink': $cellclass='existingLink';
-            case 'existingLink':
-              break;
-            default: $cellclass="multiLink";
-              break;
-          }
-        } else {
-          switch($cellclass){
-            case 'newLink': $cellclass='otherSite';
-            case 'otherSite':
-              break;
-            default: $cellclass="multiLink";
-              break;
-          }
-        }
-      } else {
-        $cellclass='existingLink';
-      }
+      // we assume that the location has been filtered in the report.
+      $cellclass='existingLink';
     }
-    if(isset($options['siteIDFilter']) && $records[0]['location_id']!=$options['siteIDFilter'])
+    // we want to be able to add more.
+    if(!isset($options['siteIDFilter']) || count($records)==0)
       $cellContents .= ' <a href="'.$options["newURL"].'date='.$options['consider_date'].'" class="newLink" title="Create a new sample on '.$options['consider_date'].
-          ' for the selected location."></a> ';
-    else
-      $cellContents .= ' <a href="'.$options["newURL"].'date='.$options['consider_date'].'" class="newLink" title="Create a new sample on '.$options['consider_date'].'" ></a> ';
+        (isset($options['siteIDFilter']) && $records[0]['location_id']!=$options['siteIDFilter'] ? ' for the selected location.' : '').'"></a> ';
     return array('cellclass'=>$cellclass, 'cellContents'=>$cellContents);
   }
 
@@ -212,6 +194,12 @@ class iform_report_calendar_grid {
    * @return string
    */
   private function  get_report_calendar_options($args, $readAuth) {
+  	self::$siteUrlParams = array(
+  			self::$locationKey => array(
+  					'name' => self::$locationKey,
+  					'value' => isset($_GET[self::$locationKey]) ? $_GET[self::$locationKey] : null
+  			)
+  	);
     $presets = get_options_array_with_user_data($args['param_presets']);
     $reportOptions = array(
       'id' => 'report-grid',
@@ -219,21 +207,15 @@ class iform_report_calendar_grid {
       'mode' => 'report',
       'readAuth' => $readAuth,
       'extraParams' => $presets);
+    $reportOptions['extraParams']['location_id'] = (self::$siteUrlParams[self::$locationKey]['value'] != null ? self::$siteUrlParams[self::$locationKey]['value'] : '');
     return $reportOptions;
   }
 
   private function location_control($args, $readAuth, $node)
   {
     global $user;
-    // loctools is not appropriate here as it is based on a node, for which this is a very simpe one, invoking other nodes for the sample creation
+    // loctools is not appropriate here as it is based on a node, for which this is a very simple one, invoking other nodes for the sample creation
     // need to scan param_presets for survey_id..
-    $locationKey = 'location_id';
-    $siteUrlParams = array(
-      $locationKey => array(
-        'name' => $locationKey,
-        'value' => isset($_GET[$locationKey]) ? $_GET[$locationKey] : null
-      )
-    );
     $presets = get_options_array_with_user_data($args['param_presets']);
     if(!isset($presets['survey_id']) || $presets['survey_id']==''){
       return('<p>'.lang::get('The location selection control requires that survey_id is set in the presets in the form parameters.').'</p>');
@@ -276,9 +258,9 @@ class iform_report_calendar_grid {
     $ctrlid='calendar-location-select-'.$node->nid;
     $ctrl='<label for="'.$ctrlid.'" class="location-select-label">'.lang::get('Filter by site').
           ' :</label><select id="'.$ctrlid.'" class="location-select">'.
-          '<option value="" class="location-select-option" '.($siteUrlParams[$locationKey]['value']==null ? 'selected=\"selected\" ' : '').'>'.lang::get('All sites').'</option>';
+          '<option value="" class="location-select-option" '.(self::$siteUrlParams[self::$locationKey]['value']==null ? 'selected=\"selected\" ' : '').'>'.lang::get('All sites').'</option>';
     foreach($locationList as $location){
-      $ctrl .= '<option value='.$location['id'].' class="location-select-option" '.($siteUrlParams[$locationKey]['value']==$location['id'] ? 'selected=\"selected\" ' : '').'>'.
+      $ctrl .= '<option value='.$location['id'].' class="location-select-option" '.(self::$siteUrlParams[self::$locationKey]['value']==$location['id'] ? 'selected=\"selected\" ' : '').'>'.
                $location['name'].(isset($args['includeSrefInLocationFilter']) && $args['includeSrefInLocationFilter'] ? ' ('.$location['centroid_sref'].')' : '').
                '</option>';
     }
@@ -289,11 +271,11 @@ class iform_report_calendar_grid {
     $reloadUrl = data_entry_helper::get_reload_link_parts();
     // find the names of the params we must not include
     foreach ($reloadUrl['params'] as $key => $value) {
-      if (!array_key_exists($key, $siteUrlParams)){
+      if (!array_key_exists($key, self::$siteUrlParams)){
         $reloadUrl['path'] .= (strpos($reloadUrl['path'],'?')===false ? '?' : '&')."$key=$value";
       }
     }
-    $param=(strpos($reloadUrl['path'],'?')===false ? '?' : '&').$locationKey.'=';
+    $param=(strpos($reloadUrl['path'],'?')===false ? '?' : '&').self::$locationKey.'=';
     data_entry_helper::$javascript .="
 jQuery('#".$ctrlid."').change(function(){
   window.location = '".$reloadUrl['path']."' + (jQuery(this).val()=='' ? '' : '".$param."'+jQuery(this).val());
