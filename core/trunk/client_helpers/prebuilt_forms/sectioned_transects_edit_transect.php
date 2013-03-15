@@ -106,7 +106,7 @@ class iform_sectioned_transects_edit_transect {
             'group'=>'Transects Editor Settings'
           ), array(
             'name'=>'section_type_term',
-            'caption'=>'Transect type term',
+            'caption'=>'Section type term',
             'description'=>'Select the term used for section location types.',
             'type' => 'select',
             'table'=>'termlists_term',
@@ -116,12 +116,18 @@ class iform_sectioned_transects_edit_transect {
             'required' => true,            
             'group'=>'Transects Editor Settings'
           ), array(
-            'name'=>'bottom_blocks',
-            'caption'=>'Form blocks to place at bottom',
-            'description'=>'A list of the blocks which need to be placed at the bottom of the form, below the map.',
+            'name'=>'sites_list_path',
+            'caption'=>'Site list page path',
+            'description'=>'Enter the path to the page which the site list is on.',
+            'type' => 'string',
+            'required' => true,
+            'group'=>'Transects Editor Settings'
+          ), array(
+            'name'=>'site_help',
+            'caption'=>'Site Help Text',
+            'description'=>'Help text to be placed on the Site tab, before the attributes.',
             'type'=>'textarea',
             'group'=>'Transects Editor Settings',
-            'siteSpecific'=>true,
             'required'=>false
           ), array(
             'name'=>'spatial_systems',
@@ -385,6 +391,9 @@ class iform_sectioned_transects_edit_transect {
       $bottom .= get_attribute_html($settings['attributes'], $args, array('extraParams'=>$auth['read'], 'disabled' => isset($settings['cantEdit']) ? ' disabled="disabled" ' : ''), $block);
     }
     // other blocks to go at the top, next to the map
+    if(isset($args['site_help']) && $args['site_help'] != ''){
+      $r .= '<p class="ui-state-highlight page-notice ui-corner-all">'.t($args['site_help']).'</p>';
+    }
     $r .= get_attribute_html($settings['attributes'], $args, array('extraParams'=>$auth['read'])); 
     $r .= '</fieldset>';
     $r .= "</div>"; // left
@@ -458,22 +467,31 @@ $('#delete-transect').click(deleteSurvey);
     if (!isset($settings['cantEdit'])){
       $options['toolbarPrefix'] = self::section_selector($settings, 'section-select-route');
       if(count($settings['sections'])>1) // do not allow deletion of last section.
-        $options['toolbarSuffix'] = '<input type="button" value="'.lang::get('Delete').'" class="remove-section form-button right" title="'.lang::get('Remove the highlighted section. The form will be reloaded after the section is deleted.').'">';
+        $options['toolbarSuffix'] = '<input type="button" value="'.lang::get('Remove Section').'" class="remove-section form-button right" title="'.lang::get('Completely remove the highlighted section. The total number of sections will be reduced by one. The form will be reloaded after the section is deleted.').'">';
+      $options['toolbarSuffix'] .= '<input type="button" value="'.lang::get('Erase Route').'" class="erase-route form-button right" title="'.lang::get('If the Draw Line control is active, this will erase each drawn point one at a time. If not active, then this will erase the whole highlighted route. This keeps the Section, allowing you to redraw the route for it.').'">';
       // also let the user click on a feature to select it. The highlighter just makes it easier to select one.
       // these controls are not present in read-only mode: all you can do is look at the map.
       $options['standardControls'][] = 'selectFeature';
       $options['standardControls'][] = 'hoverFeatureHighlight';
       $options['standardControls'][] = 'drawLine';
       $options['standardControls'][] = 'modifyFeature';
+      $options['switchOffSrefRetrigger'] = true;
       $help = lang::get('Select a section from the list then click on the map to draw the route and double click to finish. '.
-        'You can also select a section using the query tool to click on the section lines. If you make a mistake then use the Modify a feature '.
-        'tool to correct the line shape, or redraw the line to replace it entirely. The Delete button will remove the section completely, '.
-        'reducing the number of sections by one. To increase the number of sections, return to the Site Details tab, and increase the value '.
+        'You can also select a section using the query tool to click on the section lines. If you make a mistake in the middle '.
+        'of drawing a route, then you can use the Erase Route button to remove the last point drawn. After a route has been '.
+        'completed use the Modify a feature tool to correct the line shape (either by dragging one of the circles along the '.
+        'line to form the correct shape, or by placing the mouse over a circle and pressing the Delete button on your keyboard '.
+        'to remove that point). Alternatively you could just redraw the line - this new line will then replace the old one '.
+        'completely. If you are not in the middle of drawing a line, the Erase Route button will erase the whole route for the '.
+        'currently selected section.<br />The Remove Section button will remove the section completely, reducing the number of '.
+      	'sections by one. To increase the number of sections, return to the Site Details tab, and increase the value '.
         'in the No. of sections field there.');
       $r .= '<p class="ui-state-highlight page-notice ui-corner-all">'.$help.'</p>';
     }
     $options['clickForSpatialRef'] = false;
-        // override the map height and buffer size, which are specific to this map.
+    // override the opacity so the parent square does not appear filled in.
+    $options['fillOpacity'] = 0;
+    // override the map height and buffer size, which are specific to this map.
     $options['height'] = $args['route_map_height'];
     $options['maxZoomBuffer'] = $args['route_map_buffer'];
     
