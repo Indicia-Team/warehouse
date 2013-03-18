@@ -330,9 +330,9 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           'group'=>'Species'
         ),
         array(
-          'name'=>'occurrence_confidential',
-          'caption'=>'Occurrence Confidential',
-          'description'=>'Should a checkbox be present for confidential status of each occurrence?',
+          'name'=>'occurrence_sensitivity',
+          'caption'=>'Occurrence Sensitivity',
+          'description'=>'Should a control be present for sensitivity of each record?',
           'type'=>'boolean',
           'required' => false,
           'default'=>false,
@@ -630,6 +630,10 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     // because the caller passes by reference.
     $args['survey_id']=data_entry_helper::$entity_to_load['sample:survey_id'];
     $args['sample_method_id']=data_entry_helper::$entity_to_load['sample:sample_method_id'];
+    if (function_exists('hostsite_get_user_field') &&
+        data_entry_helper::$entity_to_load['sample:created_by_id'] !== 1 &&
+        data_entry_helper::$entity_to_load['sample:created_by_id'] !== hostsite_get_user_field('indicia_user_id'))
+      throw new exception(lang::get('Attempt to access a record you did not create'));
   }
 
   protected static function getAttributes($args, $auth) {
@@ -733,7 +737,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       $r .= '<input type="hidden" id="sample:id" name="sample:id" value="' . data_entry_helper::$entity_to_load['sample:id'] . '" />' . PHP_EOL;
     }
     if (isset(data_entry_helper::$entity_to_load['occurrence:id'])) {
-      $r .= '<input type="hidden" id="occurrence:id" name="occurrence:id" value="' . data_entry_helper::$entity_to_load['occurrence:id'] . '\" />' . PHP_EOL;
+      $r .= '<input type="hidden" id="occurrence:id" name="occurrence:id" value="' . data_entry_helper::$entity_to_load['occurrence:id'] . '" />' . PHP_EOL;
     }
     // Check if Record Status is included as a control. If not, then add it as a hidden.
     $arr = helper_base::explode_lines($args['structure']);
@@ -1049,7 +1053,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         'extraParams'=>$extraParams,
         'survey_id'=>$args['survey_id'],
         'occurrenceComment'=>$args['occurrence_comment'],
-        'occurrenceConfidential'=>(isset($args['occurrence_confidential']) ? $args['occurrence_confidential'] : false),
+        'occurrenceSensitivity'=>(isset($args['occurrence_sensitivity']) ? $args['occurrence_sensitivity'] : false),
         'occurrenceImages'=>$args['occurrence_images'],
         'PHPtaxonLabel' => true,
         'language' => iform_lang_iso_639_2($user->lang), // used for termlists in attributes
@@ -1283,16 +1287,18 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           $defAttrOptions[$option]=$value;
         }
       }
-      $r = get_attribute_html($attributes, $args, $defAttrOptions, $tabAlias, $blockOptions);
+      $r = '';
+      if ($args['occurrence_sensitivity']) {
+        $sensitivity_controls = get_attribute_html($attributes, $args, $defAttrOptions, 'sensitivity', $blockOptions);
+        $r .= data_entry_helper::sensitivity_input(array(
+          'additionalControls' => $sensitivity_controls
+        ));
+      }
+      $r .= get_attribute_html($attributes, $args, $defAttrOptions, $tabAlias, $blockOptions);
       if ($args['occurrence_comment'])
         $r .= data_entry_helper::textarea(array(
           'fieldname'=>'occurrence:comment',
           'label'=>lang::get('Record Comment')
-        ));
-      if ($args['occurrence_confidential'])
-        $r .= data_entry_helper::checkbox(array(
-          'fieldname'=>'occurrence:confidential',
-          'label'=>lang::get('Record Confidental')
         ));
       if ($args['occurrence_images']){
         $opts = array(

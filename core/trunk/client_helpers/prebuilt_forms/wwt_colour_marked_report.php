@@ -1499,7 +1499,7 @@ class iform_wwt_colour_marked_report {
           'extraParams'=>$extraParams,
           'survey_id'=>$args['survey_id'],
           'occurrenceComment'=>$args['occurrence_comment'],
-          'occurrenceConfidential'=>(isset($args['subject_observation_confidential']) ? $args['subject_observation_confidential'] : false),
+          'occurrenceSensitivity'=>(isset($args['subject_observation_confidential']) ? $args['subject_observation_confidential'] : false),
           'occurrenceImages'=>$args['observation_images'],
           'PHPtaxonLabel' => true,
           'language' => iform_lang_iso_639_2($user->lang), // used for termlists in attributes
@@ -1750,9 +1750,9 @@ class iform_wwt_colour_marked_report {
           'label'=>lang::get('Record Comment')
         ));
       if ($args['subject_observation_confidential'])
-        $r .= data_entry_helper::checkbox(array(
-          'fieldname'=>'occurrence:confidential',
-          'label'=>lang::get('Record Confidental')
+        $r .= data_entry_helper::select(array('fieldname'=>'sc:-idx-::occurrence:sensitivity_precision', 
+            'lookupValues' => array('Reduce precision to' => array('100'=>'100m', '1000'=>'1km', '2000'=>'2km', '10000'=>'10km', '100000'=>'100km')),
+            'blankText' => lang::get('Not sensitive')
         ));
       if ($args['observation_images']){
         $opts = array(
