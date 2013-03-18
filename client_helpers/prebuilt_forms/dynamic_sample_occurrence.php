@@ -1614,7 +1614,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    * @param integer $surveyId ID of the survey to load occurrence attributes for.
    */
   protected static function load_custom_occattrs($readAuth, $surveyId) {
-    if (!isset(self::$occAttrs))
+    if (!isset(self::$occAttrs)) {
       // Add any dynamically generated controls
       $attrArgs = array(
          'valuetable'=>'occurrence_attribute_value',
