@@ -381,8 +381,11 @@ class iform_dynamic {
       // keep track on if the tab actually has real content, so we can avoid floating instructions if all the controls 
       // were removed by user profile integration for example.
       $hasControls = false;
-      // get a machine readable alias for the heading
-      $tabalias = 'tab-'.preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tab));
+      // get a machine readable alias for the heading, if we are showing tabs
+      if ($args['interface']==='one_page')
+        $tabalias = null;
+      else
+        $tabalias = 'tab-'.preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tab));
       $html = '';
       if (count($tabHtml)===0 && $firstTabExtras)
         // output the hidden inputs on the first tab
