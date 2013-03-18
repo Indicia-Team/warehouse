@@ -322,7 +322,7 @@ class iform_report_calendar_summary {
         array(
           'name'=>'includeChartItemSeries',
           'caption'=>'Include Item Series',
-          'description'=>'Choose whether to individual series for the counts of each species for each week.',
+          'description'=>'Choose whether to individual series for the counts of each species for each week on the charts. Summary (with optional estimates) data only.',
           'type'=>'boolean',
           'default' => true,
           'required' => false,
@@ -526,9 +526,17 @@ class iform_report_calendar_summary {
         array(
           'name'=>'rowGroupColumn',
           'caption'=>'Vertical Axis',
-          'description'=>'The column in the report which is used as the data series.',
+          'description'=>'The column in the report which is used as the data series label.',
           'type'=>'string',
           'default'=>'taxon',
+          'group' => 'Report Settings'
+        ),
+        array(
+          'name'=>'rowGroupID',
+          'caption'=>'Vertical Axis ID',
+          'description'=>'The column in the report which is used as the data series id. This is used to pass the series displayed as part of a URL which has a restricted length.',
+          'type'=>'string',
+          'default'=>'taxon_meaning_id',
           'group' => 'Report Settings'
         ),
         array(
@@ -539,23 +547,36 @@ class iform_report_calendar_summary {
           'required' => false,
           'group' => 'Report Settings'
         ),
-
         array(
-          'name' => 'includeData',
-          'caption' => 'Include data types:',
-          'description' => 'Define which types of data to output.',
-          'type' => 'select',
-          'lookupValues' => array('raw'=>'Raw only'
-            ,'estimates'=>'Data including estimates'
-            ,'both'=>'Both raw data and data including estimates: user switchable.'
-          ),
-          'required' => true,
-          'default' => 'yes',
+          'name' => 'includeRawData',
+          'caption' => 'Include raw data',
+          'description' => 'Defines whether to include raw data in the chart/grid.',
+          'type' => 'boolean',
+          'required' => false,
+          'default' => true,
           'group' => 'Data Handling'
         ),
         array(
-          'name'=>'rawDataCombining',
-          'caption'=>'Raw Data Combination method',
+          'name' => 'includeSummaryData',
+          'caption' => 'Include summary data',
+          'description' => 'Defines whether to include summary data in the chart/grid.',
+          'type' => 'boolean',
+          'required' => false,
+          'default' => true,
+          'group' => 'Data Handling'
+        ),
+        array(
+          'name' => 'includeEstimatesData',
+          'caption' => 'Include estimates data',
+          'description' => 'Define whether to include summary data with estimates in the chart/grid.',
+          'type' => 'boolean',
+          'required' => false,
+          'default' => false,
+          'group' => 'Data Handling'
+        ),
+        array(
+          'name'=>'summaryDataCombining',
+          'caption'=>'Summary Data Combination method',
           'description'=>'When data is aggregated for a location/week combination, this determines how.',
           'type' => 'select',
           'lookupValues' => array('add'=>'Add all occurrences together',
@@ -632,8 +653,9 @@ class iform_report_calendar_summary {
    */
   protected function getArgDefaults($args) {
       
-    if (!isset($args['includeData'])) $args['includeData'] = 'raw';
-    if (!isset($args['rawDataCombining'])) $args['rawDataCombining'] = 'add';
+    if (!isset($args['includeRawData']) && !isset($args['includeSummaryData']) && !isset($args['includeEstimatesData']))
+        $args['includeRawData'] = true;
+    if (!isset($args['summaryDataCombining'])) $args['summaryDataCombining'] = 'add';
     if (!isset($args['dataRound'])) $args['dataRound'] = 'none';
     if (!isset($args['zeroPointAnchor'])) $args['zeroPointAnchor'] = ',';
     if (!isset($args['interpolation'])) $args['interpolation'] = 'linear';
@@ -860,28 +882,13 @@ class iform_report_calendar_summary {
   }
 
   private function set_up_control_change($ctrlid, $urlparam, $skipParams, $checkBox=false) {
-    // get the url parameters. Don't use $_GET, because it contains any parameters that are not in the
-    // URL when search friendly URLs are used (e.g. a Drupal path node/123 is mapped to index.php?q=node/123
-    // using Apache mod_alias but we don't want to know about that)
-    $reloadUrl = data_entry_helper::get_reload_link_parts();
-    // find the names of the params we must not include
-    foreach ($reloadUrl['params'] as $key => $value) {
-      if ($key!==$urlparam && !in_array($key, $skipParams)){
-        $reloadUrl['path'] .= (strpos($reloadUrl['path'],'?')===false ? '?' : '&')."$key=$value";
-      }
-    }
-    $param=(strpos($reloadUrl['path'],'?')===false ? '?' : '&').$urlparam.'=';
+    // Need to use a global for pageURI as the internal controls may have changed, and we want
+    // their values to be carried over.
     $prop = ($checkBox) ? 'attr("checked")' : 'val()';
-      
     data_entry_helper::$javascript .="
 jQuery('#".$ctrlid."').change(function(){
-  var modeParam;
-  if ($('#simultaneousOutput\\\\:chart').length>0) {
-    modeParam=($('#simultaneousOutput\\\\:chart').attr('checked')) ? '&defaultOutput=chart' : '&defaultOutput=table';
-  } else {
-    modeParam='&defaultOutput='+$('#simultaneousOutput').val();
-  }
-  window.location = '".$reloadUrl['path'].$param."'+jQuery(this).$prop+modeParam;
+  // no need to update other controls on the page, as we jump off it straight away.
+  window.location = rebuild_page_url(pageURI, \"".$urlparam."\", jQuery(this).$prop);
 });
 ";
   }
@@ -914,10 +921,10 @@ jQuery('#".$ctrlid."').change(function(){
           }
         }
         $param=(strpos($reloadUrl['path'],'?')===false ? '?' : '&').self::$yearKey.'=';
-        $r .= "<th><a title=\"".($siteUrlParams[self::$yearKey]['value']-1)."\" rel=\"nofollow\" href=\"".$reloadUrl['path'].$param.($siteUrlParams[self::$yearKey]['value']-1)."\" class=\"ui-datepicker-prev ui-corner-all\"><span class=\"ui-icon ui-icon-circle-triangle-w\">Prev</span></a></th><th><span class=\"thisYear\">".$siteUrlParams[$yearKey]['value']."</span></th>";
+        $r .= "<th><a id=\"year-control-previous\" title=\"".($siteUrlParams[self::$yearKey]['value']-1)."\" rel=\"nofollow\" href=\"".$reloadUrl['path'].$param.($siteUrlParams[self::$yearKey]['value']-1)."\" class=\"ui-datepicker-prev ui-corner-all\"><span class=\"ui-icon ui-icon-circle-triangle-w\">Prev</span></a></th><th><span class=\"thisYear\">".$siteUrlParams[$yearKey]['value']."</span></th>";
         $r .= '<th>'.$siteUrlParams[self::$yearKey]['value'].'</th>';
         if($siteUrlParams[self::$yearKey]['value']<date('Y')){
-          $r .= "<th><a title=\"".($siteUrlParams[self::$yearKey]['value']+1)."\" rel=\"nofollow\" href=\"".$reloadUrl['path'].$param.($siteUrlParams[self::$yearKey]['value']+1)."\" class=\"ui-datepicker-next ui-corner-all\"><span class=\"ui-icon ui-icon-circle-triangle-e\">Next</span></a></th>";
+          $r .= "<th><a id=\"year-control-next\" title=\"".($siteUrlParams[self::$yearKey]['value']+1)."\" rel=\"nofollow\" href=\"".$reloadUrl['path'].$param.($siteUrlParams[self::$yearKey]['value']+1)."\" class=\"ui-datepicker-next ui-corner-all\"><span class=\"ui-icon ui-icon-circle-triangle-e\">Next</span></a></th>";
         }
         $options['date_start'] = $siteUrlParams[self::$yearKey]['value'].'-Jan-01';
         $options['date_end'] = $siteUrlParams[self::$yearKey]['value'].'-Dec-31';
@@ -947,14 +954,20 @@ jQuery('#".$ctrlid."').change(function(){
       self::$removableParams = get_options_array_with_user_data($args['removable_params']);
     self::copy_args($args, $reportOptions,
       array('weekstart','weekOneContains','weekNumberFilter',
-            'outputTable','outputChart','simultaneousOutput','defaultOutput',
+            'outputTable','outputChart','simultaneousOutput',
             'tableHeaders','chartLabels','disableableSeries',
-            'chartType','rowGroupColumn','width','height',
+            'chartType','rowGroupColumn','rowGroupID','width','height',
             'includeTableTotalRow','includeTableTotalColumn','includeChartTotalSeries','includeChartItemSeries',
-            'includeData', 'rawDataCombining', 'dataRound', 'zeroPointAnchor',  'interpolation',  'firstValue',  'lastValue'
+            'includeRawData', 'includeSummaryData', 'includeEstimatesData', 'summaryDataCombining', 'dataRound',
+      		'zeroPointAnchor', 'interpolation', 'firstValue', 'lastValue'
       ));
-    if (isset($_GET['defaultOutput']))
-      $reportOptions['defaultOutput']=$_GET['defaultOutput'];
+    if (isset($_GET['outputSource']))
+      $reportOptions['outputSource']=$_GET['outputSource'];
+    if (isset($_GET['outputFormat']))
+      $reportOptions['outputFormat']=$_GET['outputFormat'];
+    else $reportOptions['outputFormat']=$args['defaultOutput'];
+    if (isset($_GET['outputSeries']))
+      $reportOptions['outputSeries']=$_GET['outputSeries']; // default is all
     // Advanced Chart options
     $rendererOptions = trim($args['renderer_options']);
     if (!empty($rendererOptions))

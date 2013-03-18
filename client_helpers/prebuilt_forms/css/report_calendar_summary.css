@@ -32,6 +32,11 @@ tr.totalrow td {
 	border: navy solid thin;
 	padding: 3px;
 }
+td.total-column {
+	font-weight:bold;
+	border: navy solid thin;
+	padding: 3px;
+}
 tr td.week {
 	border: navy solid thin;
 	padding: 3px;
@@ -66,4 +71,7 @@ tr td.week {
 }
 .forcedZero {
     color: blue; 
+}
+div.report-summary-controls select {
+	margin-top: 0px;
 }
