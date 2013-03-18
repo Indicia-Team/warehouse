@@ -329,11 +329,11 @@ mapGeoreferenceHooks = [];
                   $('#'+div.settings.srefSystemId).val(data[0].centroid_sref_system);
                   // If the sref is in two parts, then we might need to split it across 2 input fields for lat and long
                   if (data[0].centroid_sref.indexOf(' ')!==-1) {
-                    var parts=data[0].centroid_sref.split(' ');
+                    var parts=$.trim(data[0].centroid_sref).split(' ');
                     // part 1 may have a comma at the end, so remove
-                    parts[0]=parts[0].split(',')[0];
-                    $('#'+div.settings.srefLatId).val(parts[0]);
-                    $('#'+div.settings.srefLongId).val(parts[1]);
+                    var part1 = parts.shift().split(',')[0];
+                    $('#'+div.settings.srefLatId).val(part1);
+                    $('#'+div.settings.srefLongId).val(parts.join(''));
                   }                
                 }
               }
@@ -412,16 +412,16 @@ mapGeoreferenceHooks = [];
      */
     function _setClickPoint(data, div) {
       // data holds the sref in _getSystem format, wkt in indiciaProjection, optional mapwkt in mapProjection
-      var feature, parts, helptext=[], helpitem;
+      var feature, helptext=[], helpitem;
       // Update the spatial reference control
       $('#'+opts.srefId).val(data.sref).change();
       // If the sref is in two parts, then we might need to split it across 2 input fields for lat and long
       if (data.sref.indexOf(' ')!==-1) {
-        parts=data.sref.split(' ');
+        var parts=$.trim(data.sref).split(' ');
         // part 1 may have a comma at the end, so remove
-        parts[0]=parts[0].split(',')[0];
-        $('#'+opts.srefLatId).val(parts[0]);
-        $('#'+opts.srefLongId).val(parts[1]);
+        var part1 = parts.shift().split(',')[0];
+        $('#'+opts.srefLatId).val(part1);
+        $('#'+opts.srefLongId).val(parts.join(''));
       }
       removeAllFeatures(div.map.editLayer, 'boundary', true);
       $('#' + opts.geomId).val(data.wkt);
@@ -594,19 +594,19 @@ mapGeoreferenceHooks = [];
                 $('#'+opts.srefId).val(data.sref);
                 // If the sref is in two parts, then we might need to split it across 2 input fields for lat and long
                 if (data.sref.indexOf(' ')!==-1) {
-                  var parts=data.sref.split(' ');
+                  var parts=$.trim(data.sref).split(' ');
                   // part 1 may have a comma at the end, so remove
-                  parts[0]=parts[0].split(',')[0];
-                  $('#'+opts.srefLatId).val(parts[0]);
-                  $('#'+opts.srefLongId).val(parts[1]);
+                  var part1 = parts.shift().split(',')[0];
+                  $('#'+opts.srefLatId).val(part1);
+                  $('#'+opts.srefLongId).val(parts.join(''));
                 }
             }
            }
           );
         } else {
           $('#'+opts.srefId).val(ref);
-          $('#'+opts.srefLatId).val(refxy[0]);
-          $('#'+opts.srefLongId).val(refxy[1]);
+          $('#'+opts.srefLatId).val($.trim(refxy[0]));
+          $('#'+opts.srefLongId).val($.trim(refxy[1]));
         }
       } else {
         // clear the sref so the user doesn't accidentally submit an old one.'
