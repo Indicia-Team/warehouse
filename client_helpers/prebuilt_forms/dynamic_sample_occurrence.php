@@ -136,16 +136,17 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
                 "&nbsp;&nbsp;<strong>[location autocomplete]</strong> - an autocomplete control for picking a stored location. A spatial reference is still required.<br/>".
                 "&nbsp;&nbsp;<strong>[location select]</strong> - a select control for picking a stored location. A spatial reference is still required.<br/>".
                 "&nbsp;&nbsp;<strong>[location map]</strong> - combines location select, map and spatial reference controls for recording only at stored locations.<br/>".
-                "&nbsp;&nbsp;<strong>[photos]</strong> - use when in single record entry mode to provice a control for uploading occurrence photos. Alternatively use the ".
+                "&nbsp;&nbsp;<strong>[photos]</strong> - use when in single record entry mode to provide a control for uploading occurrence photos. Alternatively use the ".
                     "[species attributes] control to output all input controls for the species automatically. The [photos] control overrides the setting <strong>Occurrence Images</strong>.<br/>".
                 "&nbsp;&nbsp;<strong>[place search]</strong> - zooms the map to the entered location.<br/>".
                 "&nbsp;&nbsp;<strong>[recorder names]</strong> - a text box for names. The logged-in user's id is always stored with the record.<br/>".
                 "&nbsp;&nbsp;<strong>[record status]</strong> - allow recorder to mark record as in progress or complete<br/>".
                 "&nbsp;&nbsp;<strong>[sample comment]</strong> - a text box for sample level comment. (Each occurrence may also have a comment.) <br/>".
                 "&nbsp;&nbsp;<strong>[sample photo]</strong>. - a photo upload for sample level images. (Each occurrence may also have photos.) <br/>".
-                "&nbsp;&nbsp;<strong>[sensitiviy]</strong> - outputs a control for setting record sensitivity and the public viewing precision. This control will also output ".
+                "&nbsp;&nbsp;<strong>[sensitivity]</strong> - outputs a control for setting record sensitivity and the public viewing precision. This control will also output ".
                     "any other occurrence custom attributes which are on an outer block called Sensitivity. Any such attributes will then be disabled when the record is ".
                     "not sensitive, so they can be used to capture information that only relates to sensitive records.<br/>".
+                "&nbsp;&nbsp;<strong>[zero abundance]</strong>. - use when in single record entry mode to provide a checkbox for specifying negative records.<br/>".
             "<strong>@option=value</strong> on the line(s) following any control allows you to override one of the options passed to the control. The options ".
             "available depend on the control. For example @label=Abundance would set the untranslated label of a control to Abundance. Where the ".
             "option value is an array, use valid JSON to encode the value. For example an array of strings could be passed as @occAttrClasses=[\"class1\",\"class2\"] ".
@@ -1471,6 +1472,24 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     }
     else 
       return "[sensitivity] control cannot be included in form when in grid entry mode, since photos are automatically included in the grid.";
+  }
+  
+  /**
+   * Get the zero abundance checkbox control
+   */
+  protected static function get_control_zeroabundance($auth, $args, $tabAlias, $options) {
+    if ($args['multiple_occurrence_mode']==='single') {
+      $options = array_merge(array(
+        'label' => 'Zero Abundance',
+        'fieldname' => 'occurrence:zero_abundance',
+        'helpText' => 'Tick this box if this is a record that the species was not found.'
+      ), $options);
+      $options['helpText'] = lang::get($options['helpText']);
+      $options['helpText'] = lang::get($options['helpText']);
+      return data_entry_helper::checkbox($options);
+    }
+    else 
+      return "[zero abundance] control cannot be included in form when in grid entry mode.";
   }
 
   /**
