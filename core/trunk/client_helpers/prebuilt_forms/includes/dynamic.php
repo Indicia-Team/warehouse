@@ -437,17 +437,33 @@ class iform_dynamic {
           //outputs a control for which a specific output function has been written.
           $html .= call_user_func(array(self::$called_class, $method), $auth, $args, $tabalias, $options);
           $hasControls = true;
-        } elseif (($attribKey = array_search(substr($component, 1, -1), $attribNames)) !== false) {
-          //outputs a control for a single custom attribute where component is in the form [smpAttr:167]
+        }
+        elseif (($attribKey = array_search(substr($component, 1, -1), $attribNames)) !== false
+            || preg_match('/^\[[a-zA-Z]+:(?P<ctrlId>[0-9]+)\]/', $component, $matches)) {
+          // control is a smpAttr or other attr control.
           $options['extraParams'] = array_merge($defAttrOptions['extraParams'], (array)$options['extraParams']);
           //merge extraParams first so we don't loose authentication
           $options = array_merge($defAttrOptions, $options);
           foreach ($options as $key=>&$value)
             $value = apply_user_replacements($value);
-          $html .= data_entry_helper::outputAttribute($attributes[$attribKey], $options);
-          $attributes[$attribKey]['handled'] = true;
+          if ($attribKey) {
+            // a smpAttr control
+            $html .= data_entry_helper::outputAttribute($attributes[$attribKey], $options);
+            $attributes[$attribKey]['handled'] = true;
+          } 
+          else {
+            // if the control name of form name:id, then we will call get_control_name passing the id as a parameter
+            $method = 'get_control_'.preg_replace('/[^a-zA-Z]/', '', strtolower($component));
+            if (method_exists(self::$called_class, $method)) {
+              $options['ctrlId'] = $matches['ctrlId'];
+              $html .= call_user_func(array(self::$called_class, $method), $auth, $args, $tabalias, $options);
+            } 
+            else 
+              $html .= "Unsupported control $component<br/>";
+          }
           $hasControls = true;
-        } elseif ($component === '[*]'){
+        }
+        elseif ($component === '[*]'){
           // this outputs any custom attributes that remain for this tab. The custom attributes can be configured in the 
           // settings text using something like @smpAttr:4|label=My label. The next bit of code parses these out into an 
           // array used when building the html.
