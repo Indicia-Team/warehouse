@@ -26,14 +26,14 @@
  * @subpackage PrebuiltForms.
  * @param array $attributes Array of attributes as returned from a call to data_entry_helper::getAttributes.
  * @param array $args Form argument array.
- * @param array $defAttrOptions Array of default options to apply to every attribute control.
+ * @param array $ctrlOptions Array of default options to apply to every attribute control.
  * @param array $outerFilter Name of the outer block to get controls for. Leave null for all outer blocks.
- * @param array $controlSpecificOptions Associative array of control names that have non-default options. Each entry
+ * @param array $attrSpecificOptions Associative array of control names that have non-default options. Each entry
  * is keyed by the control name and has an array of the options and values to override.
  * @param array $idPrefix Optional prefix to give to IDs (e.g. for fieldsets) to allow you to ensure they remain unique.
  */
 
-function get_attribute_html(&$attributes, $args, $defAttrOptions, $outerFilter=null, $controlSpecificOptions=null, $idPrefix='') {
+function get_attribute_html(&$attributes, $args, $ctrlOptions, $outerFilter=null, $attrSpecificOptions=null, $idPrefix='') {
   $lastOuterBlock='';
   $lastInnerBlock='';
   $r = '';
@@ -64,11 +64,11 @@ function get_attribute_html(&$attributes, $args, $defAttrOptions, $outerFilter=n
       }
       $lastInnerBlock=$attribute['inner_structure_block'];
       $lastOuterBlock=$attribute['outer_structure_block'];
-      $options = $defAttrOptions + get_attr_validation($attribute, $args);
+      $options = $ctrlOptions + get_attr_validation($attribute, $args);
       // when getting the options, only use the first 2 parts of the fieldname as any further imply an existing record ID so would differ.
       $fieldNameParts=explode(':',$attribute['fieldname']);
-      if (isset($controlSpecificOptions[$fieldNameParts[0].':'.$fieldNameParts[1]])) {
-        $options = array_merge($options, $controlSpecificOptions[$fieldNameParts[0].':'.$fieldNameParts[1]]);
+      if (isset($attrSpecificOptions[$fieldNameParts[0].':'.$fieldNameParts[1]])) {
+        $options = array_merge($options, $attrSpecificOptions[$fieldNameParts[0].':'.$fieldNameParts[1]]);
       }
       $r .= data_entry_helper::outputAttribute($attribute, $options);
       $attribute['handled']=true;

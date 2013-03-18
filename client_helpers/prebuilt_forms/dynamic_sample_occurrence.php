@@ -125,8 +125,10 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         		"into subsamples, each of which has its own location picked from the map. Only the part of the species grid which is being added to or modified at the ".
         		"time is displayed. This control should be placed after the map control, with which it integrates. Species recording must be set to a List (grid mode) rather than single entry.<br/>".
                 "&nbsp;&nbsp;<strong>[species map summary]</strong> - a read only grid showing a summary of the data entered using the species map control.<br/>".
-        		"&nbsp;&nbsp;<strong>[species attributes]</strong> - any custom attributes for the occurrence, if not using the grid. Also includes a file upload ".
-                "box if relevant. The attrubutes @resizeWidth and @resizeHeight can specified on subsequent lines, otherwise they default to 1600.<br/>".
+                "&nbsp;&nbsp;<strong>[species attributes]</strong> - any custom attributes for the occurrence, if not using the grid. Also includes a file upload ".
+                    "box and sensitivity input control if relevant. The attrubutes @resizeWidth and @resizeHeight can specified on subsequent lines, otherwise they ".
+                    "default to 1600. Note that this control provides a quick way to output all occurrence custom attributes plus photo and sensitivity input controls. ".
+                    "For finer control of the output, see the [occAttr:n], [photos] and [sensitivity] controls.<br/>".
                 "&nbsp;&nbsp;<strong>[date]</strong> - a sample must always have a date.<br/>".
                 "&nbsp;&nbsp;<strong>[map]</strong> - a map that links to the spatial reference and location select/autocomplete controls<br/>".
                 "&nbsp;&nbsp;<strong>[spatial reference]</strong> - a sample must always have a spatial reference.<br/>".
@@ -134,11 +136,16 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
                 "&nbsp;&nbsp;<strong>[location autocomplete]</strong> - an autocomplete control for picking a stored location. A spatial reference is still required.<br/>".
                 "&nbsp;&nbsp;<strong>[location select]</strong> - a select control for picking a stored location. A spatial reference is still required.<br/>".
                 "&nbsp;&nbsp;<strong>[location map]</strong> - combines location select, map and spatial reference controls for recording only at stored locations.<br/>".
+                "&nbsp;&nbsp;<strong>[photos]</strong> - use when in single record entry mode to provice a control for uploading occurrence photos. Alternatively use the ".
+                    "[species attributes] control to output all input controls for the species automatically. The [photos] control overrides the setting <strong>Occurrence Images</strong>.<br/>".
                 "&nbsp;&nbsp;<strong>[place search]</strong> - zooms the map to the entered location.<br/>".
                 "&nbsp;&nbsp;<strong>[recorder names]</strong> - a text box for names. The logged-in user's id is always stored with the record.<br/>".
                 "&nbsp;&nbsp;<strong>[record status]</strong> - allow recorder to mark record as in progress or complete<br/>".
                 "&nbsp;&nbsp;<strong>[sample comment]</strong> - a text box for sample level comment. (Each occurrence may also have a comment.) <br/>".
                 "&nbsp;&nbsp;<strong>[sample photo]</strong>. - a photo upload for sample level images. (Each occurrence may also have photos.) <br/>".
+                "&nbsp;&nbsp;<strong>[sensitiviy]</strong> - outputs a control for setting record sensitivity and the public viewing precision. This control will also output ".
+                    "any other occurrence custom attributes which are on an outer block called Sensitivity. Any such attributes will then be disabled when the record is ".
+                    "not sensitive, so they can be used to capture information that only relates to sensitive records.<br/>".
             "<strong>@option=value</strong> on the line(s) following any control allows you to override one of the options passed to the control. The options ".
             "available depend on the control. For example @label=Abundance would set the untranslated label of a control to Abundance. Where the ".
             "option value is an array, use valid JSON to encode the value. For example an array of strings could be passed as @occAttrClasses=[\"class1\",\"class2\"] ".
@@ -341,7 +348,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         array(
           'name'=>'occurrence_sensitivity',
           'caption'=>'Occurrence Sensitivity',
-          'description'=>'Should a control be present for sensitivity of each record?',
+          'description'=>'Should a control be present for sensitivity of each record?  This applies when using grid entry mode or when using the [species attributes] control '.
+              'to output all the occurrence related input controls automatically. The [sensitivity] control outputs a sensitivity input control independently of this setting.',
           'type'=>'boolean',
           'required' => false,
           'default'=>false,
@@ -350,7 +358,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         array(
           'name'=>'occurrence_images',
           'caption'=>'Occurrence Images',
-          'description'=>'Should occurrences allow images to be uploaded?',
+          'description'=>'Should occurrences allow images to be uploaded? This applies when using grid entry mode or when using the [species attributes] control '.
+              'to output all the occurrence related input controls automatically. The [photos] control outputs a photos input control independently of this setting.',
           'type'=>'boolean',
           'required' => false,
           'default'=>false,
@@ -796,7 +805,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   /**
    * Get the map control.
    */
-  protected static function get_control_map($auth, $args, $tabalias, $options) {
+  protected static function get_control_map($auth, $args, $tabAlias, $options) {
     $options = array_merge(
       iform_map_get_map_options($args, $auth['read']),
       $options
@@ -805,7 +814,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       $options['initialFeatureWkt'] = data_entry_helper::$entity_to_load['sample:wkt'];
     }
     if ($args['interface']!=='one_page')
-      $options['tabDiv'] = $tabalias;
+      $options['tabDiv'] = $tabAlias;
     $olOptions = iform_map_get_ol_options($args);
     if (!isset($options['standardControls']))
       $options['standardControls']=array('layerSwitcher','panZoom');
@@ -816,7 +825,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    * Get the control for map based species input, assumed to be multiple entry: ie a grid. Can be single species though.
    * Uses the normal species grid, so all options that apply to that, apply to this.
    */
-  protected static function get_control_speciesmap($auth, $args, $tabalias, $options) {
+  protected static function get_control_speciesmap($auth, $args, $tabAlias, $options) {
   	// The ID must be done here so it can be accessed by both the species grid and the buttons.
   	$code = rand(0,1000);
   	$defaults = array('id' => 'species-grid-'.$code, buttonsId => 'species-grid-buttons-'.$code);
@@ -880,7 +889,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   /**
    * Get the control for the summary for the map based species input.
    */
-  protected static function get_control_speciesmapsummary($auth, $args, $tabalias, $options) {
+  protected static function get_control_speciesmapsummary($auth, $args, $tabAlias, $options) {
     // don't have access to the id for the species map control, and visa versa (has a random element)
     // have to use a clas to identify it.
   	return '<div class="control_speciesmapsummary"><table class="ui-widget ui-widget-content species-grid-summary"><thead class="ui-widget-header"/><tbody/></table></div>';
@@ -1013,7 +1022,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   /**
    * Get the control for species input, either a grid or a single species input control.
    */
-  protected static function get_control_species($auth, $args, $tabalias, $options) {
+  protected static function get_control_species($auth, $args, $tabAlias, $options) {
     $gridmode = call_user_func(array(self::$called_class, 'getGridMode'), $args);
     if (!isset($args['cache_lookup']) || ($args['species_ctrl'] !== 'autocomplete' && !$gridmode))
       $args['cache_lookup']=false; // default for old form configurations or when not using an autocomplete
@@ -1247,7 +1256,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   /**
    * Get the sample comment control
    */
-  protected static function get_control_samplecomment($auth, $args, $tabalias, $options) {
+  protected static function get_control_samplecomment($auth, $args, $tabAlias, $options) {
     return data_entry_helper::textarea(array_merge(array(
       'fieldname'=>'sample:comment',
       'label'=>lang::get('Overall Comment')
@@ -1257,7 +1266,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   /**
    * Get the sample photo control
    */
-  protected static function get_control_samplephoto($auth, $args, $tabalias, $options) {
+  protected static function get_control_samplephoto($auth, $args, $tabAlias, $options) {
     return data_entry_helper::file_box(array_merge(array(
       'table'=>'sample_image',
       'caption'=>lang::get('Overall Photo')
@@ -1267,46 +1276,27 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   /**
    * Get the block of custom attributes at the species (occurrence) level
    */
-  protected static function get_control_speciesattributes($auth, $args, $tabalias, $options) {
+  protected static function get_control_speciesattributes($auth, $args, $tabAlias, $options) {
     if (!(call_user_func(array(self::$called_class, 'getGridMode'), $args))) {
       self::load_custom_occattrs($auth['read'], $args['survey_id']);
-      $defAttrOptions = array('extraParams'=>$auth['read']);
-      $blockOptions = array();
-      // look for options specific to each attribute
-      foreach ($options as $option => $value) {
-        // split the id of the option into the control name and option name.
-        if (strpos($option, '|')!==false) {
-          $optionId = explode('|', $option);
-          if (!isset($blockOptions[$optionId[0]])) $blockOptions[$optionId[0]]=array();
-          $blockOptions[$optionId[0]][$optionId[1]] = $value;
-        } else {
-          $defAttrOptions[$option]=$value;
-        }
-      }
+      $ctrlOptions = array('extraParams'=>$auth['read']);
+      $attrSpecificOptions = array();
+      self::parseForAttrSpecificOptions($options, $ctrlOptions, $attrSpecificOptions);
       $r = '';
       if ($args['occurrence_sensitivity']) {
-        $sensitivity_controls = get_attribute_html(self::$occAttrs, $args, $defAttrOptions, 'sensitivity', $blockOptions);
+        $sensitivity_controls = get_attribute_html(self::$occAttrs, $args, $ctrlOptions, 'sensitivity', $attrSpecificOptions);
         $r .= data_entry_helper::sensitivity_input(array(
           'additionalControls' => $sensitivity_controls
         ));
       }
-      $r .= get_attribute_html(self::$occAttrs, $args, $defAttrOptions, $tabAlias, $blockOptions);
+      $r .= get_attribute_html(self::$occAttrs, $args, $ctrlOptions, $tabAlias, $attrSpecificOptions);
       if ($args['occurrence_comment'])
         $r .= data_entry_helper::textarea(array(
           'fieldname'=>'occurrence:comment',
           'label'=>lang::get('Record Comment')
         ));
       if ($args['occurrence_images']){
-        $opts = array(
-          'table'=>'occurrence_image',
-          'label'=>lang::get('Upload your photos'),
-        );
-        if ($args['interface']!=='one_page')
-          $opts['tabDiv']=$tabalias;
-        $opts['resizeWidth'] = isset($options['resizeWidth']) ? $options['resizeWidth'] : 1600;
-        $opts['resizeHeight'] = isset($options['resizeHeight']) ? $options['resizeHeight'] : 1600;
-        $opts['caption'] = lang::get('Photos');
-        $r .= data_entry_helper::file_box($opts);
+        $r .= self::occurrence_photo_input($options, $tabAlias);
       }
       return $r;
     } else
@@ -1317,7 +1307,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   /**
    * Get the date control.
    */
-  protected static function get_control_date($auth, $args, $tabalias, $options) {
+  protected static function get_control_date($auth, $args, $tabAlias, $options) {
     if (isset(data_entry_helper::$entity_to_load['sample:date']) && preg_match('/^(\d{4})/', data_entry_helper::$entity_to_load['sample:date'])) {
       // Date has 4 digit year first (ISO style) - convert date to expected output format
       // @todo The date format should be a global configurable option. It should also be applied to reloading of custom date attributes.
@@ -1338,7 +1328,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   /**
    * Get the location control as an autocomplete.
    */
-  protected static function get_control_locationautocomplete($auth, $args, $tabalias, $options) {
+  protected static function get_control_locationautocomplete($auth, $args, $tabAlias, $options) {
     $location_list_args=array_merge(array(
         'label'=>lang::get('LANG_Location_Label'),
         'extraParams'=>array_merge(array('orderby'=>'name', 'website_id'=>$args['website_id']), $auth['read'])
@@ -1356,7 +1346,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   /**
    * Get the location control as a select dropdown.
    */
-  protected static function get_control_locationselect($auth, $args, $tabalias, $options) {
+  protected static function get_control_locationselect($auth, $args, $tabAlias, $options) {
     $location_list_args=array_merge(array(
         'label'=>lang::get('LANG_Location_Label'),
         'view'=>'detail',
@@ -1368,14 +1358,14 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   /**
    * Get the sref by way of choosing a location.
    */
-  protected static function get_control_locationmap($auth, $args, $tabalias, $options) {
+  protected static function get_control_locationmap($auth, $args, $tabAlias, $options) {
     // add a location select control
     $options = array_merge(array(
         'searchUpdatesSref' => true,
         'validation' => "required",
         'blankText' => "Select...",
     ), $options);
-    $r = self::get_control_locationselect($auth, $args, $tabalias, $options);
+    $r = self::get_control_locationselect($auth, $args, $tabAlias, $options);
 
     //only show helpText once
     unset($options['helpText']);
@@ -1389,7 +1379,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         'locationLayerFilter' => "website_id=" . $args['website_id'],
         'clickForSpatialRef' => false,
     ), $options);
-    $r .= self::get_control_map($auth, $args, $tabalias, $options);
+    $r .= self::get_control_map($auth, $args, $tabAlias, $options);
 
     return $r;
   }
@@ -1397,7 +1387,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   /**
    * Get the location name control.
    */
-  protected static function get_control_locationname($auth, $args, $tabalias, $options) {
+  protected static function get_control_locationname($auth, $args, $tabAlias, $options) {
     return data_entry_helper::text_input(array_merge(array(
       'label' => lang::get('LANG_Location_Name'),
       'fieldname' => 'sample:location_name',
@@ -1408,7 +1398,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   /**
    * Get an occurrence attribute control.
    */
-  protected static function get_control_occattr($auth, $args, $tabalias, $options) {
+  protected static function get_control_occattr($auth, $args, $tabAlias, $options) {
     if ($args['multiple_occurrence_mode']==='single') {
       self::load_custom_occattrs($auth['read'], $args['survey_id']);
       $attribName = 'occAttr:' . $options['ctrlId'];
@@ -1423,11 +1413,22 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     else 
       return "Occurrence attribute $attribName cannot be included in form when in grid entry mode.";
   }
+  
+  /**
+   * Get the photos control
+   */
+  protected static function get_control_photos($auth, $args, $tabAlias, $options) {
+    if ($args['multiple_occurrence_mode']==='single') {
+      return self::occurrence_photo_input($options, $tabAlias);
+    }
+    else 
+      return "[photos] control cannot be included in form when in grid entry mode, since photos are automatically included in the grid.";
+  }
 
-   /**
+  /**
    * Get the recorder names control
    */
-  protected static function get_control_recordernames($auth, $args, $tabalias, $options) {
+  protected static function get_control_recordernames($auth, $args, $tabAlias, $options) {
     return data_entry_helper::textarea(array_merge(array(
       'fieldname'=>'sample:recorder_names',
       'label'=>lang::get('Recorder names')
@@ -1453,6 +1454,23 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     }
     $r .= "</select><br/>\n";
       return $r;
+  }
+  
+  /**
+   * Get the sensitivity control
+   */
+  protected static function get_control_sensitivity($auth, $args, $tabAlias, $options) {
+    if ($args['multiple_occurrence_mode']==='single') {
+      $ctrlOptions = array('extraParams'=>$auth['read']);
+      $attrSpecificOptions = array();
+      self::parseForAttrSpecificOptions($options, &$ctrlOptions, &$attrSpecificOptions);
+      $sensitivity_controls = get_attribute_html(self::$occAttrs, $args, $ctrlOptions, 'sensitivity', $attrSpecificOptions);
+      return data_entry_helper::sensitivity_input(array(
+        'additionalControls' => $sensitivity_controls
+      ));
+    }
+    else 
+      return "[sensitivity] control cannot be included in form when in grid entry mode, since photos are automatically included in the grid.";
   }
 
   /**
@@ -1631,5 +1649,49 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       self::$occAttrs = data_entry_helper::getAttributes($attrArgs, false);
     }
   }
+  
+  /**
+   * Provides a control for inputting photos against the record, when in single record mode.
+   *
+   * @param $options Options array for the control.
+   * @param $tabAlias ID of the tab's div if this is being loaded onto a div.
+   */
+  protected static function occurrence_photo_input($options, $tabAlias) {
+    $defaults = array(
+      'table'=>'occurrence_image',
+      'label'=>lang::get('Upload your photos'),
+      'caption'=>lang::get('Photos'),
+      'resizeWidth' => 1600,
+      'resizeHeight' => 1600,
+    );
+    if ($args['interface']!=='one_page')
+      $opts['tabDiv']=$tabAlias;
+    $opts = array_merge(
+      $defaults, 
+      $options
+    );
+    return data_entry_helper::file_box($opts);
+  }
+  
+  /** 
+   * Parses the options provided to a control in the user interface definition and splits the options which 
+   * apply to the entire control (@label=Grid Ref) from ones which apply to a specific custom attribute
+   * (smpAttr:3|label=Quantity).
+   */
+  protected static function parseForAttrSpecificOptions($options, &$ctrlOptions, &$attrSpecificOptions) {
+    // look for options specific to each attribute
+    foreach ($options as $option => $value) {
+      // split the id of the option into the control name and option name.
+      if (strpos($option, '|')!==false) {
+        $optionId = explode('|', $option);
+        if (!isset($attrSpecificOptions[$optionId[0]])) $attrSpecificOptions[$optionId[0]]=array();
+        $attrSpecificOptions[$optionId[0]][$optionId[1]] = $value;
+      } else {
+        $ctrlOptions[$option]=$value;
+      }
+    }
+  }
+  
 }
+  
 
