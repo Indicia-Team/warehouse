@@ -1666,10 +1666,11 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     );
     if ($args['interface']!=='one_page')
       $opts['tabDiv']=$tabAlias;
-    $opts = array_merge(
-      $defaults, 
-      $options
-    );
+    foreach ($options as $key => $value) {
+      // skip attribute specific options as they break the JavaScript.
+      if (strpos($key, ':')===false)
+        $opts[$key]=$value;
+    }
     return data_entry_helper::file_box($opts);
   }
   
