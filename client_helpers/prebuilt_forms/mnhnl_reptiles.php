@@ -768,7 +768,6 @@ hook_species_checklist_pre_delete_row=function(e) {
           'extraParams'=>$extraParams,
           'survey_id'=>$args['survey_id'],
           'occurrenceComment'=>$args['occurrence_comment'],
-          'occurrenceConfidential'=>(isset($args['occurrence_confidential']) ? $args['occurrence_confidential'] : false),
           'occurrenceImages'=>$args['occurrence_images'],
           'PHPtaxonLabel' => true
     ), $options);
@@ -792,8 +791,9 @@ hook_species_checklist_pre_delete_row=function(e) {
     $occAttrControls = array();
     $occAttrs = array();
     // Load any existing sample's occurrence data into $entity_to_load
+    $subSamples = array();
     if (isset(data_entry_helper::$entity_to_load['sample:id']))
-      data_entry_helper::preload_species_checklist_occurrences(data_entry_helper::$entity_to_load['sample:id'], $options['readAuth'], false, array());
+      data_entry_helper::preload_species_checklist_occurrences(data_entry_helper::$entity_to_load['sample:id'], $options['readAuth'], false, array(), $subSamples, false);
     // load the full list of species for the grid, including the main checklist plus any additional species in the reloaded occurrences.
     $options['extraParams']['view'] = 'detail';
     $occList = self::get_species_checklist_occ_list($options);
@@ -869,7 +869,6 @@ hook_species_checklist_pre_delete_row=function(e) {
           $thirdrow .= "\n<td class=\"ui-widget-content scCommentCell\" $colspan><label for=\"sc:$ttlid:$existing_record_id:occurrence:comment\" class=\"auto-width\" >".lang::get("Comment")." : </label><input class=\"scComment\" type=\"text\" name=\"sc:$ttlid:$existing_record_id:occurrence:comment\" ".
           "id=\"sc:$ttlid:$existing_record_id:occurrence:comment\" value=\"".htmlspecialchars(data_entry_helper::$entity_to_load["sc:$ttlid:$existing_record_id:occurrence:comment"])."\" /></td>";
         }
-        // no confidential checkbox.
         $rows[]='<tr>'.$firstrow.'</tr>';
         $rows[]='<tr class="scMeaning-'.$occ['taxon']['taxon_meaning_id'].' scDataRow">'.$secondrow.'</tr>'; // no images.
         if($thirdrow != "") 

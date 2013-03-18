@@ -164,7 +164,6 @@ class iform_mnhnl_dynamic_2 extends iform_mnhnl_dynamic_1 {
         $param['options'] = array('tabs' => 'Tabs', 'wizard' => 'Wizard'); // No one_page
       if($param['name'] != 'no_grid' &&
           $param['name'] != 'occurrence_comment' &&
-          $param['name'] != 'occurrence_confidential' &&
           $param['name'] != 'occurrence_images' &&
           $param['name'] != 'multiple_occurrence_mode' &&
           $param['fieldname'] != 'list_id' &&
@@ -724,7 +723,7 @@ jQuery('[name=".str_replace(':','\\:',$attr['id'])."],[name^=".str_replace(':','
   Whole thing is based on Dynamic_1, but the submission array is more complicated.
   TBD: zoom to session location, also includes display of all occurrences so far.
   Assume grid based input: TBD remove this option.
-  No confidential and no images.
+  No images.
   TBD Add Select (and draw?) controls to the map.
   TBD allow hiding of species not being entered.
   TBD add switch to allow X/Y to be optional: initially mandatory
@@ -1024,7 +1023,6 @@ hook_species_checklist_pre_delete_row=function(e) {
           	$row .= "<td class='ui-widget-content sg-filler' colspan=".($maxCellsPerRow-$numCtrls)."></td>";
             $headerPreRow .= "<td class='ui-widget-content sg-filler' colspan=".($maxCellsPerRow-$numCtrls)."></td>";
           }
-          // no confidential checkbox.
           if($options['useCaptionsInPreRow'])
             $rows[]='<tr class="scMeaning-'.$rec['taxon']['taxon_meaning_id'].' scDataRow">'.$headerPreRow.'</tr>'; // no images.
           $rows[]='<tr class="scMeaning-'.$rec['taxon']['taxon_meaning_id'].' scDataRow'.($i==$numRows && !$options['includeOccurrenceComment'] ?' last':'').'">'.$row.'</tr>'; // no images.
@@ -1197,7 +1195,6 @@ $('#entry_form').before(cloneableDiv);\n";
         'attrCellTemplate'=>'attribute_cell',
         'PHPtaxonLabel' => false,
         'occurrenceComment' => false,
-        'occurrenceConfidential' => false,
         'occurrenceImages' => false,
         'id' => 'mnhnl-species-grid-'.rand(0,1000),
         'colWidths' => array(),
@@ -1288,7 +1285,6 @@ $('#entry_form').before(cloneableDiv);\n";
         
         data_entry_helper::$entity_to_load['sc::'.$smp.':'.$occurrence['taxa_taxon_list_id'].':'.$occurrence['id'].':present'] = true;
         data_entry_helper::$entity_to_load['sc::'.$smp.':'.$occurrence['taxa_taxon_list_id'].':'.$occurrence['id'].':occurrence:comment'] = $occurrence['comment'];
-        data_entry_helper::$entity_to_load['sc::'.$smp.':'.$occurrence['taxa_taxon_list_id'].':'.$occurrence['id'].':occurrence:confidential'] = $occurrence['confidential'];
         // Keep a list of all Ids
         $occurrenceIds[$occurrence['id']] = $occurrence;
       }
@@ -1418,7 +1414,6 @@ mapInitialisationHooks.push(function(mapdiv) {
       	$headerPreRow .= "<td class='ui-widget-content sg-filler' colspan=".($maxCellsPerRow-$numCtrls)."></td>";
       	$row .= "<td class='ui-widget-content sg-filler' colspan=".($maxCellsPerRow-$numCtrls)."></td>";
       }
-      // no confidential checkbox.
       if($options['useCaptionsInPreRow']){
       	$idex++;
       	$r .='<tr class="scClonableRow scDataRow" id="'.$options['id'].'-scClonableRow'.$idex.'">'.$headerPreRow.'</tr>';

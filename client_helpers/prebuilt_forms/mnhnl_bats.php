@@ -472,7 +472,7 @@ hook_species_checklist_pre_delete_row=function(e) {
   return true;
 };
 // possible clash with link_species_popups, so latter disabled. First get the meaning id for the taxon, then all taxa with that meaning.
-hook_species_checklist_new_row=function(rowData) {
+hook_species_checklist_new_row.push(function(rowData) {
   jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/taxa_taxon_list/' + rowData.id +
             '?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?', function(mdata) {
     if(mdata instanceof Array && mdata.length>0){
@@ -506,7 +506,7 @@ hook_species_checklist_new_row=function(rowData) {
       });
     }})
     hook_species_checklist_delete_row();
-}
+});
 hook_species_checklist_delete_row();
 $.validator.addMethod('no_observation', function(arg1, arg2){
   var numRows = jQuery('.scPresence').filter(':checkbox').filter('[checked]').length;
@@ -774,7 +774,6 @@ hook_species_checklist_pre_delete_row=function(e) {
           'extraParams'=>$extraParams,
           'survey_id'=>$args['survey_id'],
           'occurrenceComment'=>$args['occurrence_comment'],
-          'occurrenceConfidential'=>(isset($args['occurrence_confidential']) ? $args['occurrence_confidential'] : false),
           'occurrenceImages'=>$args['occurrence_images'],
           'PHPtaxonLabel' => true,
           'language' => $myLanguage,
@@ -800,13 +799,13 @@ hook_species_checklist_pre_delete_row=function(e) {
     $occAttrControls = array();
     $occAttrs = array();
     // Load any existing sample's occurrence data into $entity_to_load
+    $subSamples = array();
     if (isset(data_entry_helper::$entity_to_load['sample:id']))
-      data_entry_helper::preload_species_checklist_occurrences(data_entry_helper::$entity_to_load['sample:id'], $options['readAuth'], false, array());
+      data_entry_helper::preload_species_checklist_occurrences(data_entry_helper::$entity_to_load['sample:id'], $options['readAuth'], false, array(), $subSamples, false);
     // load the full list of species for the grid, including the main checklist plus any additional species in the reloaded occurrences.
     // Following a recent change, fieldnames are now of the format
     //    sc:<idx>:<occID>:present    This now holds the ttlid.
     //    sc:<idx>:<occID>:occurrence:comment
-    //    sc:<idx>:<occID>:occurrence:confidential
     //    sc:<idx>:<occID>:occAttr:<attrID>[:<valueID>]
     $options['extraParams']['view'] = 'detail';
     $occList = self::get_species_checklist_occ_list($options);
@@ -873,7 +872,6 @@ hook_species_checklist_pre_delete_row=function(e) {
           }
           $secondrow .= str_replace(array('{label}', '{content}'), array(lang::get($attributes[$attrId]['caption']), $oc), $indicia_templates[$options['attrCellTemplate']]);
         }
-        // no confidential checkbox.
         $rows[]='<tr class="scMeaning-'.$occ['taxon']['taxon_meaning_id'].'">'.$firstrow.'</tr>';
         $rows[]='<tr class="scMeaning-'.$occ['taxon']['taxon_meaning_id'].' scDataRow">'.$secondrow.'</tr>'; // no images.
         if ($options['occurrenceComment']) {
