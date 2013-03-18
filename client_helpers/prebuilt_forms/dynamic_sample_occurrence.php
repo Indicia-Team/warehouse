@@ -36,6 +36,13 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   protected static $loadedSampleId;
   protected static $loadedOccurrenceId;
   protected static $occurrenceIds = array();
+  
+  /**
+   * The list of attributes loaded for occurrences. Keep a class level variable, so that we can track the ones we have already
+   * emitted into the form globally.
+   * @var array
+   */
+  protected static $occAttrs;
 
   /**
    * Return the form metadata.
@@ -146,7 +153,9 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
             "You can define the value for a control using the standard replacement tokens for user data, namely {user_id}, {username}, {email} and {profile_*}; ".
             "replace * in the latter to construct an existing profile field name. For example you could set the default value of an email input using @smpAttr:n|default={email} ".
             "where n is the attribute ID.<br/>".
-            "<strong>[smpAttr:<i>n</i>]</strong> is used to insert a particular custom attribute identified by its ID number<br/>".
+            "<strong>[smpAttr:<i>n</i>]</strong> is used to insert a particular custom sample attribute identified by its ID number<br/>".
+            "<strong>[occAttr:<i>n</i>]</strong> is used to insert a particular custom occurrence attribute identified by its ID number when inputting single records at a time. ".
+            "Or use [species attributes] to output the whole lot.<br/>".
             "<strong>?help text?</strong> is used to define help text to add to the tab, e.g. ?Enter the name of the site.? <br/>".
             "<strong>|</strong> is used insert a split so that controls before the split go into a left column and controls after the split go into a right column.<br/>".
             "<strong>all else</strong> is copied to the output html so you can add structure for styling.",
@@ -1260,20 +1269,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    */
   protected static function get_control_speciesattributes($auth, $args, $tabalias, $options) {
     if (!(call_user_func(array(self::$called_class, 'getGridMode'), $args))) {
-      // Add any dynamically generated controls
-      $attrArgs = array(
-         'valuetable'=>'occurrence_attribute_value',
-         'attrtable'=>'occurrence_attribute',
-         'key'=>'occurrence_id',
-         'fieldprefix'=>'occAttr',
-         'extraParams'=>$auth['read'],
-         'survey_id'=>$args['survey_id']
-      );
-      if (count(self::$occurrenceIds)==1) {
-        // if we have a single occurrence Id to load, use it to get attribute values
-        $attrArgs['id'] = self::$occurrenceIds[0];
-      }
-      $attributes = data_entry_helper::getAttributes($attrArgs, false);
+      self::load_custom_occattrs($auth['read'], $args['survey_id']);
       $defAttrOptions = array('extraParams'=>$auth['read']);
       $blockOptions = array();
       // look for options specific to each attribute
@@ -1289,12 +1285,12 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       }
       $r = '';
       if ($args['occurrence_sensitivity']) {
-        $sensitivity_controls = get_attribute_html($attributes, $args, $defAttrOptions, 'sensitivity', $blockOptions);
+        $sensitivity_controls = get_attribute_html(self::$occAttrs, $args, $defAttrOptions, 'sensitivity', $blockOptions);
         $r .= data_entry_helper::sensitivity_input(array(
           'additionalControls' => $sensitivity_controls
         ));
       }
-      $r .= get_attribute_html($attributes, $args, $defAttrOptions, $tabAlias, $blockOptions);
+      $r .= get_attribute_html(self::$occAttrs, $args, $defAttrOptions, $tabAlias, $blockOptions);
       if ($args['occurrence_comment'])
         $r .= data_entry_helper::textarea(array(
           'fieldname'=>'occurrence:comment',
@@ -1407,6 +1403,25 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       'fieldname' => 'sample:location_name',
       'class' => 'control-width-5'
     ), $options));
+  }
+  
+  /**
+   * Get an occurrence attribute control.
+   */
+  protected static function get_control_occattr($auth, $args, $tabalias, $options) {
+    if ($args['multiple_occurrence_mode']==='single') {
+      self::load_custom_occattrs($auth['read'], $args['survey_id']);
+      $attribName = 'occAttr:' . $options['ctrlId'];
+      foreach (self::$occAttrs as $idx => $attr) {
+        if ($attr['id'] === $attribName) {
+          self::$occAttrs[$idx]['handled'] = true;
+          return data_entry_helper::outputAttribute(self::$occAttrs[$idx], $options);
+        }
+      }
+      return "Occurrence attribute $attribName not found.";
+    } 
+    else 
+      return "Occurrence attribute $attribName cannot be included in form when in grid entry mode.";
   }
 
    /**
@@ -1590,6 +1605,31 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     return array(array('display' => 'Actions', 'actions' =>
         array(array('caption' => lang::get('Edit'), 'url'=>'{currentUrl}', 'urlParams'=>array('sample_id'=>'{sample_id}','occurrence_id'=>'{occurrence_id}')))));
   }
-
+  
+  /**
+   * Load the list of occurrence attributes into a static variable. 
+   *
+   * By maintaining a single list of attributes we can track which have already been output.
+   * @param array $readAuth Read authorisation tokens.
+   * @param integer $surveyId ID of the survey to load occurrence attributes for.
+   */
+  protected static function load_custom_occattrs($readAuth, $surveyId) {
+    if (!isset(self::$occAttrs))
+      // Add any dynamically generated controls
+      $attrArgs = array(
+         'valuetable'=>'occurrence_attribute_value',
+         'attrtable'=>'occurrence_attribute',
+         'key'=>'occurrence_id',
+         'fieldprefix'=>'occAttr',
+         'extraParams'=>$readAuth,
+         'survey_id'=>$surveyId
+      );
+      if (count(self::$occurrenceIds)==1) {
+        // if we have a single occurrence Id to load, use it to get attribute values
+        $attrArgs['id'] = self::$occurrenceIds[0];
+      }
+      self::$occAttrs = data_entry_helper::getAttributes($attrArgs, false);
+    }
+  }
 }
 
