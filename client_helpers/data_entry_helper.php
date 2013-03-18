@@ -144,6 +144,9 @@ class data_entry_helper extends helper_base {
   * Required. Table name to get data from for the autocomplete options.</li>
   * <li><b>captionField</b><br/>
   * Required. Field to draw values to show in the control from.</li>
+  * <li><b>captionFieldInEntity</b><br/>
+  * Optional. Field to use in the loaded entity to display the caption, when reloading an existing record. Defaults
+  * to the captionField.</li>
   * <li><b>valueField</b><br/>
   * Optional. Field to draw values to return from the control from. Defaults
   * to the value of captionField.</li>
@@ -173,19 +176,16 @@ class data_entry_helper extends helper_base {
     global $indicia_templates;
     $options = self::check_options($options);
     if (!array_key_exists('id', $options)) $options['id']=$options['fieldname'];
-    
+    if (!array_key_exists('captionFieldInEntity', $options)) $options['captionFieldInEntity']=$options['captionField'];
     // the inputId is the id given to the text field, e.g. occurrence:taxa_taxon_list_id:taxon
-    $options['inputId'] = $options['id'].':'.$options['captionField'];
+    $options['inputId'] = $options['id'].':'.$options['captionFieldInEntity'];
+    $defaultCaption = self::check_default_value($options['inputId']);
     
-    // The following format introduced in r4335 to support personal sites
-    $defaultCaption = self::check_default_value('location:' . $options['inputId']);
-    if ( is_null($defaultCaption) ) {
-      // The code prior to r4335 for non-location fields
-      $defaultCaption = self::check_default_value($options['inputId']);
-    }
     if ( !is_null($defaultCaption) ) {
       // This computed value overrides a value passed in to the function
       $options['defaultCaption'] = $defaultCaption;
+    } elseif (!isset($options['defaultCaption'])) {
+      $options['defaultCaption'] = '';
     }
     
     if (!empty(parent::$warehouse_proxy))
@@ -2254,6 +2254,7 @@ class data_entry_helper extends helper_base {
       'fieldname'=>'occurrence:taxa_taxon_list_id',
       'table'=>$tblTaxon,
       'captionField'=>$colSearch,
+      'captionFieldInEntity'=>'taxon',
       'valueField'=>$colId,
       'formatFunction'=>$indicia_templates['format_species_autocomplete_fn'],
       'simplify'=>$options['cacheLookup'] ? 'true' : 'false'
@@ -2361,8 +2362,8 @@ class data_entry_helper extends helper_base {
   * Optional. Used to determine which attributes are valid for this website/survey combination</li>
   * <li><b>occurrenceComment</b><br/>
   * Optional. If set to true, then an occurrence comment input field is included on each row.</li>
-  * <li><b>occurrenceConfidential</b><br/>
-  * Optional. If set to true, then an occurrence confidential checkbox is included on each row.</li>
+  * <li><b>occurrenceSensitivity</b><br/>
+  * Optional. If set to true, then an occurrence sensitivity selector is included on each row.</li>
   * <li><b>occurrenceImages</b><br/>
   * Optional. If set to true, then images can be uploaded for each occurrence row. Currently not supported for
   * multi-column grids.</li>
@@ -2660,12 +2661,15 @@ class data_entry_helper extends helper_base {
           $row .= "\n<td class=\"ui-widget-content scCommentCell\" headers=\"".$options['id']."-comment-$colIdx\"><input class=\"scComment\" type=\"text\" name=\"sc:$txIdx:$existing_record_id:occurrence:comment\" ".
           "id=\"sc:$txIdx:$existing_record_id:occurrence:comment\" value=\"".self::$entity_to_load["sc:$loadedTxIdx:$existing_record_id:occurrence:comment"]."\" /></td>";
         }
-        if (isset($options['occurrenceConfidential']) && $options['occurrenceConfidential']) {
-          $row .= "\n<td class=\"ui-widget-content scConfidentialCell\" headers=\"".$options['id']."-confidential-$colIdx\">";
-          $row .= self::checkbox(array(
-              'fieldname'=>"sc:$txIdx:$existing_record_id:occurrence:confidential", 
-              'default'=>isset(self::$entity_to_load["sc:$loadedTxIdx:$existing_record_id:occurrence:confidential"]) 
-                  ? self::$entity_to_load["sc:$loadedTxIdx:$existing_record_id:occurrence:confidential"] : false
+        if (isset($options['occurrenceSensitivity']) && $options['occurrenceSensitivity']) {
+          $row .= "\n<td class=\"ui-widget-content scSensitivityCell\" headers=\"".$options['id']."-sensitivity-$colIdx\">";
+          $row .= self::select(array(
+              'fieldname'=>"sc:$txIdx:$existing_record_id:occurrence:sensitivity_precision", 
+              'default'=>isset(self::$entity_to_load["sc:$loadedTxIdx:$existing_record_id:occurrence:sensitivity_precision"]) 
+                  ? self::$entity_to_load["sc:$loadedTxIdx:$existing_record_id:occurrence:sensitivity_precision"] : false,
+              'lookupValues' => array('100'=>lang::get('Blur to 100m'), '1000'=>lang::get('Blur to 1km'), '2000'=>lang::get('Blur to 2km'), 
+                  '10000'=>lang::get('Blur to 10km'), '100000'=>lang::get('Blur to 100km')),
+              'blankText' => lang::get('Not sensitive')
           ));
           $row .= "</td>\n";
         }
@@ -3100,14 +3104,14 @@ $('#".$options['id']."-filter').click(function(evt) {
       ));
       foreach($occurrences as $idx => $occurrence){
         if($useSubSamples){
-  		  foreach($subSamples as $sidx => $subsample){
-  			if($subsample['id'] == $occurrence['sample_id'])
-  				self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':occurrence:sampleIDX'] = $sidx;
-  		  }
+          foreach($subSamples as $sidx => $subsample){
+            if($subsample['id'] == $occurrence['sample_id'])
+              self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':occurrence:sampleIDX'] = $sidx;
+          }
         }
         self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':present'] = $occurrence['taxa_taxon_list_id'];
         self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':occurrence:comment'] = $occurrence['comment'];
-        self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':occurrence:confidential'] = $occurrence['confidential'];
+        self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':occurrence:sensitivity_precision'] = $occurrence['sensitivity_precision'];
         // Warning. I observe that, in cases where more than one occurrence is loaded, the following entries in 
         // $entity_to_load will just take the value of the last loaded occurrence.
         self::$entity_to_load['occurrence:record_status']=$occurrence['record_status'];
@@ -3179,8 +3183,8 @@ $('#".$options['id']."-filter').click(function(evt) {
         if ($options['occurrenceComment']) {
           $r .= self::get_species_checklist_col_header($options['id']."-comment-$i", lang::get('Comment'), $visibleColIdx, $options['colWidths']) ;
         }
-        if ($options['occurrenceConfidential']) {
-          $r .= self::get_species_checklist_col_header($options['id']."-confidential-$i", lang::get('Confidential'), $visibleColIdx, $options['colWidths']) ;
+        if ($options['occurrenceSensitivity']) {
+          $r .= self::get_species_checklist_col_header($options['id']."-sensitivity-$i", lang::get('Sensitivity'), $visibleColIdx, $options['colWidths']) ;
         }
         if ($options['occurrenceImages']) {
           $r .= self::get_species_checklist_col_header($options['id']."-images-$i", lang::get('Images'), $visibleColIdx, $options['colWidths']) ;
@@ -3306,7 +3310,7 @@ $('#".$options['id']."-filter').click(function(evt) {
         'attrCellTemplate'=>'attribute_cell',
         'PHPtaxonLabel' => false,
         'occurrenceComment' => false,
-        'occurrenceConfidential' => false,
+        'occurrenceSensitivity' => null,
         'occurrenceImages' => false,
         'id' => 'species-grid-'.rand(0,1000),
         'colWidths' => array(),
@@ -3440,9 +3444,12 @@ $('#".$options['id']."-filter').click(function(evt) {
       $r .= '<td class="ui-widget-content scCommentCell" headers="'.$options['id'].'-comment-0"><input class="scComment" type="text" ' .
           'id="sc:-idx-::occurrence:comment" name="sc:-idx-::occurrence:comment" value="" /></td>';
     }
-    if (isset($options['occurrenceConfidential']) && $options['occurrenceConfidential']) {
-      $r .= '<td class="ui-widget-content scConfidentialCell" headers="'.$options['id'].'-confidential-0">'.
-          self::checkbox(array('fieldname'=>'sc:-idx-::occurrence:confidential')).
+    if (isset($options['occurrenceSensitivity']) && $options['occurrenceSensitivity']) {
+      $r .= '<td class="ui-widget-content scSCell" headers="'.$options['id'].'-sensitivity-0">'.
+          self::select(array('fieldname'=>'sc:-idx-::occurrence:sensitivity_precision', 
+              'lookupValues' => array('100'=>lang::get('Blur to 100m'), '1000'=>lang::get('Blur to 1km'), '2000'=>lang::get('Blur to 2km'), 
+                  '10000'=>lang::get('Blur to 10km'), '100000'=>lang::get('Blur to 100km')),
+              'blankText' => lang::get('Not sensitive'))).
           '</td>';
     }
     if ($options['occurrenceImages']) {
@@ -3553,6 +3560,81 @@ $('#".$options['id']."-filter').click(function(evt) {
     unset($options['label']);
     $options['suffixTemplate'] = 'nosuffix';
     return self::apply_template('hidden_text', $options);
+  }
+  
+  /**
+  * Helper function to output a set of controls for handling the sensitivity of a record. Includes
+  * a checkbox plus a control for setting the amount to blur the record by for public viewing.  
+  * No Labels allowed, no suffix.
+  * The output of this control can be configured using the following templates: 
+  * <ul>
+  * <li><b>hidden_text</b></br>
+  * HTML template used to generate the hidden input element.
+  * </li>
+  * </ul>
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldname</b><br/>
+  * Required. The name of the database field this control is bound to. Defaults to occurrence:sensitivity_precision.</li>
+  * <li><b>defaultBlur</b><br/>
+  * Optional. The initial value to blur a record by when assigning sensitivity. Defaults to 10000.</li>
+  * <li><b>additionalControls</b><br/>
+  * Optional. Any additional controls to include in the div which is disabled when a record is not sensitive. An example use of this
+  * might be a Reason for sensitivity custom attribute. Provide the controls as an HTML string.</li>
+  * </ul>
+  *
+  * @return string HTML to insert into the page for the hidden text control.
+  */
+  public function sensitivity_input($options) {
+    $options = array_merge(array(
+      'fieldname'=>'occurrence:sensitivity_precision',
+      'defaultBlur' => 10000,
+      'additionalControls' => ''
+    ), $options);
+    $r = '<fieldset><legend>'.lang::get('Sensitivity').'</legend>';
+    $r .= data_entry_helper::checkbox(array(
+      'id' => 'sensitive-checkbox',
+      'fieldname'=>'sensitive',
+      'label'=>lang::get('Is the record sensitive?')
+    ));
+    // Put a hidden input out, so that when the select control is disabled we get an empty value posted to clear the sensitivity
+    $r .= '<input type="hidden" name="'.$options['fieldname'].'">';
+    $r .= '<div id="sensitivity-controls">';
+    $r .= data_entry_helper::select(array(
+      'fieldname'=>$options['fieldname'],
+      'id' => 'sensitive-blur',
+      'label'=>lang::get('Blur record to'),
+      'lookupValues' => array('100'=>lang::get('Blur to 100m'), '1000'=>lang::get('Blur to 1km'), '2000'=>lang::get('Blur to 2km'), 
+                  '10000'=>lang::get('Blur to 10km'), '100000'=>lang::get('Blur to 100km')),
+      'blankText' => lang::get('none'),
+      'helpText' => 'This is the precision that the record will be shown at for public viewing'
+    ));
+    // output any extra controls which should get disabled when the record is not sensitive.
+    $r .= $options['additionalControls'];
+    $r .= '</div></fieldset>';
+    self::$javascript .= "
+var doSensitivityChange = function(evt) {
+  $('#sensitivity-controls input, #sensitivity-controls select').attr('disabled', $('#sensitive-checkbox').attr('checked')===true ? false : true);
+  $('#sensitivity-controls').css('opacity', $('#sensitive-checkbox').attr('checked') ? 1 : .5);
+  if ($('#sensitive-checkbox').attr('checked')=== true && typeof evt!=='undefined' && $('#sensitive-blur').val()==='') {
+    // set a default
+    $('#sensitive-blur').val('".$options['defaultBlur']."');
+  } 
+  else if (typeof evt!=='undefined') {
+    $('#sensitive-blur').val('');
+  }
+};
+$('#sensitive-checkbox').change(doSensitivityChange);
+$('#sensitive-checkbox').attr('checked', $('#sensitive-blur').val()==='' ? false : true);
+doSensitivityChange();
+$('#sensitive-blur').change(function() {
+  if ($('#sensitive-blur').val()==='') {
+    $('#sensitive-checkbox').attr('checked', false);
+    doSensitivityChange();
+  }
+});
+\n";
+    return $r;
   }
 
  /**
