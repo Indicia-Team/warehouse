@@ -160,7 +160,7 @@ function simple_tooltip(target_items, name){
               row.rootFolder += '?'+div.settings.pathParam+'=';
             }
             if (link.substr(0, 12).toLowerCase()!=='{rootfolder}' && link.substr(0, 12).toLowerCase()!=='{currenturl}'
-                && link.substr(0, 4).toLowerCase()!=='{http}') {
+                && link.substr(0, 4).toLowerCase()!=='http') {
               link='{rootFolder}'+link;
             }
             link = mergeParamsIntoTemplate(div, row, link);
