@@ -739,7 +739,6 @@ hook_species_checklist_pre_delete_row=function(e) {
       if ($rowIdx==0) $retVal .= "<tr style=\"display: none\"><td></td></tr>\n";
       $retVal .= "</tbody></table>\n";
       data_entry_helper::$javascript .= "\njQuery('#species,.scClonableRow').find(':checkbox').addClass('sgCheckbox');\n";
-      // no confidential checkbox.
       if ($options['rowInclusionCheck']=='hasData') $r .= '<input name="rowInclusionCheck" value="hasData" type="hidden" />';
       // If the lookupListId parameter is specified then the user is able to add extra rows to the grid,
       // selecting the species from this list. Add the required controls for this.
@@ -829,7 +828,6 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
         data_entry_helper::$entity_to_load['occurrence:record_status']=$occurrence['record_status'];
         data_entry_helper::$entity_to_load['sc::'.$occurrence['taxa_taxon_list_id'].':'.$occurrence['id'].':present'] = true;
         data_entry_helper::$entity_to_load['sc:'.$method.':'.$occurrence['taxa_taxon_list_id'].':'.$occurrence['id'].':occurrence:comment'] = $occurrence['comment'];
-        data_entry_helper::$entity_to_load['sc:'.$method.':'.$occurrence['taxa_taxon_list_id'].':'.$occurrence['id'].':occurrence:confidential'] = $occurrence['confidential'];
         data_entry_helper::$entity_to_load['occurrence:taxa_taxon_list_id']=$occurrence['taxa_taxon_list_id'];
         data_entry_helper::$entity_to_load['occurrence:taxa_taxon_list_id:taxon']=$occurrence['taxon'];
         // Keep a list of all Ids
