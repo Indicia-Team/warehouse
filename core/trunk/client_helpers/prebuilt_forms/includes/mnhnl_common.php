@@ -419,7 +419,7 @@ function iform_mnhnl_locModTool($auth, $args, $node) {
   // location comments are included as a separate control on the main form.
   if(isset($args['includeLocationComment']) && $args['includeLocationComment'])
     $retVal .= data_entry_helper::textarea(array(
-      'ide'=>'location-comment',
+      'id'=>'location-comment',
       'fieldname'=>'location:comment',
       'label'=>lang::get("LANG_LocationModTool_CommentLabel")))."<br />";
   $laArgs = array("lookUpKey"=>"meaning_id", "sep"=>" ","class"=>"wide","tabNameFilter"=>"","numValues"=>10000);
@@ -897,6 +897,7 @@ loadLocation = function(feature){ // loads all the data into the location fields
   // parent_id is left as is in drop down if present. Not multi so must be an existing site.
   jQuery('#location-name,#sample-location-name').val(feature.attributes.data.name);
   jQuery('#location_location_type_id').val(feature.attributes.data.location_type_id);
+  if(feature.attributes.data.comment == null) feature.attributes.data.comment='';
   jQuery('[name=location\\:comment]').val(feature.attributes.data.comment);
   jQuery('[name=location\\:parent_id],[name=dummy\\:parent_id]').val(feature.attributes.data.parent_id);
   jQuery('#location-code').val(feature.attributes.data.code).attr('dbCode',feature.attributes.data.code);
