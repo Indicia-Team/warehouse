@@ -1351,7 +1351,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     $location_list_args=array_merge(array(
         'label'=>lang::get('LANG_Location_Label'),
         'view'=>'detail',
-        'extraParams'=>array_merge(array('orderby'=>'name', 'website_id'=>$args['website_id']), $auth['read'])
+        'extraParams'=>array_merge(array('orderby'=>'name'), $auth['read'])
     ), $options);
     return data_entry_helper::location_select($location_list_args);
   }
