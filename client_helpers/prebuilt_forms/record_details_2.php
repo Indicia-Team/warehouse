@@ -39,8 +39,8 @@ require_once('includes/report.php');
 
 class iform_record_details_2 extends iform_dynamic {
 
-  private static $occurrenceLoaded = false;
   private static $sampleLoaded = false;
+  protected static $record;
     
   /** 
    * Return the form metadata. 
@@ -193,43 +193,43 @@ Record ID',
       'occurrence_id'=>'Record ID',
       'taxon'=>'Species',
       'preferred_taxon'=>'Preferred Species Name',
+      'survey_title'=>'Survey',
       'recorder'=>'Recorder',
+      'record_status'=>'Record Status',
       'verifier'=>'Verified By',
-      'occurrence_comment'=>'Comment',
-      'sample_id'=>'Sample ID',
-      'entered_sref'=>'Grid Ref',
       'date'=>'Date',
+      'entered_sref'=>'Grid Ref',
+      'occurrence_comment'=>'Record Comment',
       'location_name'=>'Site Name',
       'sample_comment'=>'Sample Comment',
     );
+    
+    self::load_record($auth);
+    
+    $details_report = '<div class="record-details-fields">';
     foreach($availableFields as $field=>$caption) {
-      if ($test===in_array(strtolower($caption), $fieldsLower))
-        $detailstemplateHtml .= str_replace(array('{caption}','value'), array($caption, "$field"), $attrsTemplate);      
-    }     
-    //draw the attributes for the occurrence
-    $details_report = report_helper::freeform_report(array(
-      'readAuth' => $auth['read'],
-      'class'=>'record-details-fields',
-      'dataSource'=>'reports_for_prebuilt_forms/verification_3/record_data',
-      'bands'=>array(array('content'=>$detailstemplateHtml)),
-      'useCache' => false,
-      'extraParams'=>array('occurrence_id'=>$_GET['occurrence_id'], 'sharing'=>'reporting', 'locality_type_id'=>'')
-    ));
-    //draw any custom attributes added by the user
-    $attrs_report = report_helper::freeform_report(array(
-      'readAuth' => $auth['read'],
-      'class'=>'record-details-fields',
-      'dataSource'=>'reports_for_prebuilt_forms/record_details_2/record_data_attributes_with_hiddens',
-      'bands'=>array(array('content'=>$attrsTemplate)),
-      'extraParams'=>array(
-        'occurrence_id'=>$_GET['occurrence_id'],
-        //the SQL needs to take a set of the hidden fields, so this needs to be converted from an array.
-        'attrs'=>strtolower(self::convert_array_to_set($fields)),
-        'testagainst'=>$args['testagainst'],
-        'operator'=>$args['operator'],
-        'sharing'=>'reporting'
-      )
-    ));
+      if ($test===in_array(strtolower($caption), $fieldsLower) && !empty(self::$record[$field]))
+        $details_report .= str_replace(array('{caption}','{value}'), array($caption, self::$record[$field]), $attrsTemplate);      
+    }
+    $details_report .= '</div>';
+    
+    if (!self::$record['sensitivity_precision']) {
+      //draw any custom attributes added by the user, but only for a non-sensitive record
+      $attrs_report = report_helper::freeform_report(array(
+        'readAuth' => $auth['read'],
+        'class'=>'record-details-fields',
+        'dataSource'=>'reports_for_prebuilt_forms/record_details_2/record_data_attributes_with_hiddens',
+        'bands'=>array(array('content'=>$attrsTemplate)),
+        'extraParams'=>array(
+          'occurrence_id'=>$_GET['occurrence_id'],
+          //the SQL needs to take a set of the hidden fields, so this needs to be converted from an array.
+          'attrs'=>strtolower(self::convert_array_to_set($fields)),
+          'testagainst'=>$args['testagainst'],
+          'operator'=>$args['operator'],
+          'sharing'=>'reporting'
+        )
+      ));
+    }
 
     $r .= '<h3>Record Details</h3>';
     
@@ -308,16 +308,13 @@ Record ID',
    */
   protected static function get_control_map($auth, $args, $tabalias, $options) {
     iform_load_helpers(array('data_entry_helper'));
-    if (!self::$occurrenceLoaded) {
-      data_entry_helper::load_existing_record($auth['read'], 'occurrence', $_GET['occurrence_id'], 'detail', 'reporting');
-      self::$occurrenceLoaded=true;
-    }
+    self::load_record($auth);
     $options = array_merge(
       iform_map_get_map_options($args, $auth['read']),
       $options
     );
-    if (isset(data_entry_helper::$entity_to_load['occurrence:wkt'])) {
-      $options['initialFeatureWkt'] = data_entry_helper::$entity_to_load['occurrence:wkt'];
+    if (isset(self::$record['geom'])) {
+      $options['initialFeatureWkt'] = self::$record['geom'];
     }
     
     if ($args['interface']!=='one_page')
@@ -452,6 +449,34 @@ Record ID';
    */
   protected static function include_save_buttons() {
     return FALSE;  
+  }
+  
+  /**
+   * Override the standard header as this is not an HTML form.
+   */
+  protected static function getHeader($args) {
+    return '';
+  }
+  
+  /**
+   * Override the standard footer as this is not an HTML form.
+   */
+  protected static function getFooter($args) {
+    return '';
+  }
+  
+  /**
+   * Loads the record associated with the page if not already loaded.
+   */
+  protected static function load_record($auth) {
+    if (!isset(self::$record)) {
+      $records=report_helper::get_report_data(array(
+        'readAuth' => $auth['read'],
+        'dataSource'=>'reports_for_prebuilt_forms/record_details_2/record_data',
+        'extraParams'=>array('occurrence_id'=>$_GET['occurrence_id'], 'sharing'=>'reporting')
+      ));
+      self::$record = $records[0];
+    }
   }
    
 }
