@@ -2587,16 +2587,20 @@ class data_entry_helper extends helper_base {
         } else {
           $checked='';
         }
-        $row .= "\n<td class=\"scPresenceCell\" headers=\"".$options['id']."-present-$colIdx\"$hidden>";
+        $row .= "\n<td class=\"scPresenceCell\" headers=\"$options[id]-present-$colIdx\"$hidden>";
+        $fieldname = "sc:$options[id]-$txIdx:$existing_record_id:present";
         if ($options['rowInclusionCheck']==='hasData')
-          $row .= "<input type=\"hidden\" name=\"sc:$txIdx:$existing_record_id:present\" id=\"sc:$txIdx:$existing_record_id:present\" value=\"".$taxon['id']."\"/>";
+          $row .= "<input type=\"hidden\" name=\"$fieldname\" id=\"$fieldname\" value=\"$taxon[id]\"/>";
         else
           // this includes a control to force out a 0 value when the checkbox is unchecked.
-          $row .= "<input type=\"hidden\" class=\"scPresence\" name=\"sc:$txIdx:$existing_record_id:present\" value=\"0\"/>".
-            "<input type=\"checkbox\" class=\"scPresence\" name=\"sc:$txIdx:$existing_record_id:present\" id=\"sc:$txIdx:$existing_record_id:present\"value=\"".$taxon['id']."\" $checked />";
+          $row .= "<input type=\"hidden\" class=\"scPresence\" name=\"$fieldname\" value=\"0\"/>".
+            "<input type=\"checkbox\" class=\"scPresence\" name=\"$fieldname\" id=\"$fieldname\" value=\"$taxon[id]\" $checked />";
         $row .= "</td>";
         if(isset($options['speciesControlToUseSubSamples']) && $options['speciesControlToUseSubSamples']){
-        	$row .= '<td class="scSampleCell" style="display:none"><input type="hidden" class="scSample" name="sc:'.$txIdx.':'.$existing_record_id.':occurrence:sampleIDX" id="sc:'.$txIdx.':'.$existing_record_id.':occurrence:sampleIDX" value="'.$rowIds['smpIdx'].'" /></td>';
+          $row .= "\n<td class=\"scSampleCell\" style=\"display:none\">";
+          $fieldname = "sc:$options[id]-$txIdx:$existing_record_id:occurrence:sampleIDX";
+          $row .= "<input type=\"hidden\" class=\"scSample\" name=\"$fieldname\" id=\"$fieldname\" value=\"$rowIds[smpIdx]\" />";
+          $row .= "</td>";
         }
         $idx = 0;
         foreach ($occAttrControls as $attrId => $control) {
@@ -2610,20 +2614,20 @@ class data_entry_helper extends helper_base {
               // Warning - if there are multi-values in play here then it will just load one.
               $loadedCtrlFieldName = array_pop($search);
               // Convert loaded field name to our output row index
-              $ctrlId = str_replace("sc:$loadedTxIdx:", "sc:$txIdx:", $loadedCtrlFieldName);
+              $ctrlId = str_replace("sc:$loadedTxIdx:", "sc:$options[id]-$txIdx:", $loadedCtrlFieldName);
               // find out the loaded value record ID
               preg_match("/occAttr:[0-9]+:(?P<valId>[0-9]+)$/", $loadedCtrlFieldName, $matches);
               $valId = $matches['valId'];
             } else {
               // go for the default, which has no suffix.
               $loadedCtrlFieldName = str_replace('-idx-:', $loadedTxIdx.':'.$existing_record_id, $attributes[$attrId]['fieldname']);
-              $ctrlId = str_replace('-idx-:', $txIdx.':'.$existing_record_id, $attributes[$attrId]['fieldname']);
+              $ctrlId = str_replace('-idx-:', "$options[id]-$txIdx:$existing_record_id", $attributes[$attrId]['fieldname']);
             }            
             if (isset(self::$entity_to_load[$loadedCtrlFieldName]))
               $existing_value = self::$entity_to_load[$loadedCtrlFieldName];
           } else {
             // no existing record, so use a default control ID which excludes the existing record ID.
-            $ctrlId = str_replace('-idx-', $txIdx, $attributes[$attrId]['fieldname']);
+            $ctrlId = str_replace('-idx-', "$options[id]-$txIdx", $attributes[$attrId]['fieldname']);
             $loadedCtrlFieldName='-';
           }
 
@@ -2658,13 +2662,15 @@ class data_entry_helper extends helper_base {
           $idx++;
         }
         if ($options['occurrenceComment']) {
-          $row .= "\n<td class=\"ui-widget-content scCommentCell\" headers=\"".$options['id']."-comment-$colIdx\"><input class=\"scComment\" type=\"text\" name=\"sc:$txIdx:$existing_record_id:occurrence:comment\" ".
-          "id=\"sc:$txIdx:$existing_record_id:occurrence:comment\" value=\"".self::$entity_to_load["sc:$loadedTxIdx:$existing_record_id:occurrence:comment"]."\" /></td>";
+          $row .= "\n<td class=\"ui-widget-content scCommentCell\" headers=\"$options[id]-comment-$colIdx\">";
+          $fieldname = "sc:$options[id]-$txIdx:$existing_record_id:occurrence:comment";
+          $row .= "<input class=\"scComment\" type=\"text\" name=\"$fieldname\" id=\"$fieldname\" value=\"".self::$entity_to_load["sc:$loadedTxIdx:$existing_record_id:occurrence:comment"]."\" />";
+          $row .= "</td>";
         }
         if (isset($options['occurrenceSensitivity']) && $options['occurrenceSensitivity']) {
           $row .= "\n<td class=\"ui-widget-content scSensitivityCell\" headers=\"".$options['id']."-sensitivity-$colIdx\">";
           $row .= self::select(array(
-              'fieldname'=>"sc:$txIdx:$existing_record_id:occurrence:sensitivity_precision", 
+              'fieldname'=>"sc:$options[id]-$txIdx:$existing_record_id:occurrence:sensitivity_precision", 
               'default'=>isset(self::$entity_to_load["sc:$loadedTxIdx:$existing_record_id:occurrence:sensitivity_precision"]) 
                   ? self::$entity_to_load["sc:$loadedTxIdx:$existing_record_id:occurrence:sensitivity_precision"] : false,
               'lookupValues' => array('100'=>lang::get('Blur to 100m'), '1000'=>lang::get('Blur to 1km'), '2000'=>lang::get('Blur to 2km'), 
@@ -2675,12 +2681,18 @@ class data_entry_helper extends helper_base {
         }
         if ($options['occurrenceImages']) {
           $existingImages = is_array(self::$entity_to_load) ? preg_grep("/^sc:$loadedTxIdx:$existing_record_id:occurrence_image:id:[a-z0-9]*$/", array_keys(self::$entity_to_load)) : array();
-          if (count($existingImages)===0)
-            $row .= "\n<td class=\"ui-widget-content scImageLinkCell\"><a href=\"\" class=\"add-image-link scImageLink\" id=\"add-images:$txIdx:$existing_record_id\">".
-                str_replace(' ','&nbsp;',lang::get('add images')).'</a></td>';
-          else
-            $row .= "\n<td class=\"ui-widget-content scImageLinkCell\"><a href=\"\" class=\"hide-image-link scImageLink\" id=\"hide-images:$txIdx:$existing_record_id\">".
-                str_replace(' ','&nbsp;',lang::get('hide images')).'</a></td>';
+          if (count($existingImages)===0) {
+            $row .= "\n<td class=\"ui-widget-content scImageLinkCell\">";
+            $fieldname = "add-images:$options[id]-$txIdx:$existing_record_id";
+            $row .= "<a href=\"\" class=\"add-image-link scImageLink\" id=\"$fieldname\">" . str_replace(' ','&nbsp;',lang::get('add images')) . "</a>";
+            $row .= "</td>";
+          }
+          else {
+            $row .= "\n<td class=\"ui-widget-content scImageLinkCell\">";
+            $fieldname = "hide-images:$options[id]-$txIdx:$existing_record_id";
+            $row .= "<a href=\"\" class=\"hide-image-link scImageLink\" id=\"$fieldname\">" . str_replace(' ','&nbsp;',lang::get('hide images')) . "</a>";
+            $row .= "</td>";
+          }
         }
         // Are we in the first column of a multicolumn grid, or doing single column grid? If so start new row. 
         if ($colIdx===0) {
@@ -2694,7 +2706,7 @@ class data_entry_helper extends helper_base {
           if (count($existingImages) > 0) {
             $totalCols = ($options['lookupListId'] ? 2 : 1) + 1 /*checkboxCol*/ + ($options['occurrenceImages'] ? 1 : 0) + count($occAttrControls);
             $rows[$rowIdx]='<td colspan="'.$totalCols.'">'.data_entry_helper::file_box(array(
-              'table'=>"sc:$txIdx:$existing_record_id:occurrence_image",
+              'table'=>"sc:$options[id]-$txIdx:$existing_record_id:occurrence_image",
               'loadExistingRecordKey'=>"sc:$loadedTxIdx:$existing_record_id:occurrence_image",
               'label'=>lang::get('Upload your photos')
             )).'</td>';
