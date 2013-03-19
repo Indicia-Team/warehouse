@@ -681,8 +681,13 @@ class Data_Controller extends Data_Service_Base_Controller {
     // Select all the table columns from the view
     if (!$count) {
       $fields = array_keys($this->db->list_fields($this->viewname));
-      foreach($fields as &$field) 
-        $field = $this->viewname.'.'.$field;
+      foreach($fields as &$field) { 
+        // geom binary data is no good to anyone. So convert to WKT.
+        if (preg_match('/^(.+_)?geom$/', $field))
+          $field = 'st_astext('.$this->viewname.".$field) as $field";
+        else
+          $field = $this->viewname.'.'.$field;
+      }
       $select = implode(', ', $fields);
       $this->db->select($select);
     }
