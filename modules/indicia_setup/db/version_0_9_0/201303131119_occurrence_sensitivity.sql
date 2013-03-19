@@ -1,5 +1,47 @@
-ALTER TABLE occurrences
-   ADD COLUMN sensitivity_precision integer;
+CREATE OR REPLACE function f_add_ddl (OUT success bool)
+    LANGUAGE plpgsql AS
+$func$
+BEGIN 
+  
+success := TRUE;
+
+BEGIN
+  ALTER TABLE occurrences
+    ADD COLUMN sensitivity_precision integer;
+EXCEPTION
+    WHEN duplicate_column THEN 
+      RAISE NOTICE 'column exists.';
+      success := FALSE;
+END;
+
+BEGIN
+  CREATE TABLE spatial_systems
+  (
+    id serial NOT NULL, -- Unique identifier for the spatial system.
+    title character varying NOT NULL, -- Untranslated title of the spatial reference system.
+    code character varying (20) NOT NULL, -- Spatial reference system code.
+    srid integer NOT NULL, -- Underlying SRID used for the system.
+    treat_srid_as_x_y_metres boolean NOT NULL, -- Should the underlying projection be used as an x, y grid system in metres, e.g. when reducing the precision of a sensitive record?
+    CONSTRAINT pk_spatial_systems PRIMARY KEY (id )
+  )
+  WITH (
+    OIDS=FALSE
+  );
+EXCEPTION
+    WHEN duplicate_table THEN 
+      RAISE NOTICE 'table exists.';
+      success := FALSE;
+END;
+
+COMMENT ON COLUMN occurrences.training IS 'Flag indicating if this record was created for training purposes and is therefore not considered real.';
+
+END
+$func$;
+
+SELECT f_add_ddl();
+
+DROP FUNCTION f_add_ddl();
+
 COMMENT ON COLUMN occurrences.sensitivity_precision IS 'Precision of grid references for public access of records that are sensitive. For example, set to 1000 to limit public access to a 1km grid square. If null then not sensitive.';
 
 COMMENT ON COLUMN occurrences.confidential IS 'Flag set to true if this record is confidential. Deprecated, use sensitivity_precision instead.';
@@ -21,19 +63,6 @@ CREATE OR REPLACE VIEW detail_occurrences AS
    JOIN users u ON u.id = o.updated_by_id
   WHERE o.deleted = false;
 
-
-CREATE TABLE spatial_systems
-(
-  id serial NOT NULL, -- Unique identifier for the spatial system.
-  title character varying NOT NULL, -- Untranslated title of the spatial reference system.
-  code character varying (20) NOT NULL, -- Spatial reference system code.
-  srid integer NOT NULL, -- Underlying SRID used for the system.
-  treat_srid_as_x_y_metres boolean NOT NULL, -- Should the underlying projection be used as an x, y grid system in metres, e.g. when reducing the precision of a sensitive record?
-  CONSTRAINT pk_spatial_systems PRIMARY KEY (id )
-)
-WITH (
-  OIDS=FALSE
-);
 
 COMMENT ON TABLE spatial_systems
   IS 'A list of the spatial reference systems supported by plugins in the Indicia warehouse. This table is automatically populated during the upgrade process.';
