@@ -489,6 +489,14 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           'type'=>'textarea',
           'default'=>'occurrence:record_status=C'
         ),
+        array(
+          'name'=>'edit_permission',
+          'caption'=>'Permission required for editing other people\'s data',
+          'description'=>'Set to the name of a permission which is required in order to be able to edit other people\'s data.',
+          'type'=>'text_input',
+          'required'=>false,
+          'default'=>'indicia data admin'
+        ),
       )
     );
     return $retVal;
@@ -649,7 +657,9 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     // because the caller passes by reference.
     $args['survey_id']=data_entry_helper::$entity_to_load['sample:survey_id'];
     $args['sample_method_id']=data_entry_helper::$entity_to_load['sample:sample_method_id'];
-    if (function_exists('hostsite_get_user_field') &&
+    // enforce that people only access their own data, unless explicitly have permissions
+    $editor = !empty($args['edit_permission']) && function_exists('user_access') && user_access($args['edit_permission']);
+    if (!$editor && function_exists('hostsite_get_user_field') &&
         data_entry_helper::$entity_to_load['sample:created_by_id'] !== 1 &&
         data_entry_helper::$entity_to_load['sample:created_by_id'] !== hostsite_get_user_field('indicia_user_id'))
       throw new exception(lang::get('Attempt to access a record you did not create'));
