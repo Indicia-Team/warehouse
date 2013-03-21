@@ -45,9 +45,10 @@ COMMENT ON COLUMN spatial_systems.treat_srid_as_x_y_metres IS 'Should the underl
 
 
 
-CREATE OR REPLACE FUNCTION reduce_precision(geom geometry, confidential boolean, sensitivity_precision integer, sref_system varchar (20))
+CREATE OR REPLACE FUNCTION reduce_precision(geom_in geometry, confidential boolean, sensitivity_precision integer, sref_system varchar (20))
   RETURNS geometry AS
 $BODY$
+DECLARE geom geometry;
 DECLARE r geometry;
 DECLARE precisionM integer;
 DECLARE x float;
@@ -55,6 +56,8 @@ DECLARE y float;
 DECLARE sref_metadata record;
 DECLARE current_srid integer;
 BEGIN
+  -- Copy geom_in as values cannot be assigned to parameters in postgres <= 8.4
+  geom = geom_in;
   IF confidential = true OR sensitivity_precision IS NOT NULL THEN
     precisionM = CASE
       WHEN sensitivity_precision IS NOT NULL THEN sensitivity_precision
