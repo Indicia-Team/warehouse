@@ -1,6 +1,6 @@
 <report
-    title="Explore records"
-    description="Report designed for the explore records facility in iRecord."
+    title="Explore records mappable"
+    description="Report designed for the map output on the explore records facility in iRecord."
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id">
   SELECT #columns#
