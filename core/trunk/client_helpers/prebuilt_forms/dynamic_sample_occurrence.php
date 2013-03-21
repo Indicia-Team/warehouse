@@ -1340,9 +1340,9 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    * Get the location control as an autocomplete.
    */
   protected static function get_control_locationautocomplete($auth, $args, $tabAlias, $options) {
-    $location_list_args=array_merge(array(
+    $location_list_args=array_merge_recursive(array(
         'label'=>lang::get('LANG_Location_Label'),
-        'extraParams'=>array_merge(array('orderby'=>'name', 'website_id'=>$args['website_id']), $auth['read'])
+        'extraParams'=>array_merge(array('orderby'=>'name'), $auth['read'])
     ), $options);
     if (isset($args['users_manage_own_sites']) && $args['users_manage_own_sites']) {
       $userId = hostsite_get_user_field('indicia_user_id');
@@ -1358,7 +1358,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    * Get the location control as a select dropdown.
    */
   protected static function get_control_locationselect($auth, $args, $tabAlias, $options) {
-    $location_list_args=array_merge(array(
+    $location_list_args=array_merge_recursive(array(
         'label'=>lang::get('LANG_Location_Label'),
         'view'=>'detail',
         'extraParams'=>array_merge(array('orderby'=>'name'), $auth['read'])
