@@ -182,6 +182,8 @@ class submission_builder extends helper_config {
         }
       } 
     }
+    if ($entity==='occurrence' && function_exists('hostsite_get_user_field') && hostsite_get_user_field('training')) 
+      $sa['fields']['training'] = array('value' => 'on');
     // useLocationName is a special flag to indicate that an unmatched location can go
     // in the locaiton_name field.
     if (isset($array['useLocationName'])) {
