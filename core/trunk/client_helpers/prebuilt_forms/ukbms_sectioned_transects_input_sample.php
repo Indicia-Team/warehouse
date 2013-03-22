@@ -466,6 +466,18 @@ class iform_ukbms_sectioned_transects_input_sample {
     if (isset(data_entry_helper::$entity_to_load['sample:id']))
       $r .= '<button id="delete-button" type="button" class="ui-state-default ui-corner-all" />'.lang::get('Delete').'</button>';
     $r .= '</form>';
+    // Recorder Name - assume Easy Login uid
+    if (function_exists('module_exists') && module_exists('easy_login')) {
+      $userId = hostsite_get_user_field('indicia_user_id');
+ // For non easy login test only     $userId = 1;
+      foreach($attributes as $attrID => $attr){
+        if(strcasecmp('Recorder Name', $attr["untranslatedCaption"]) == 0 && !empty($userId)){
+          // determining which you have used is difficult from a services based autocomplete, esp when the created_by_id is not available on the data.
+          data_entry_helper::add_resource('autocomplete');
+          data_entry_helper::$javascript .= "bindRecorderNameAutocomplete(".$attrID.", '".$userId."', '".data_entry_helper::$base_url."', '".$args['survey_id']."', '".$auth['read']['auth_token']."', '".$auth['read']['nonce']."');\n";
+        }
+      }
+    }
     if (isset(data_entry_helper::$entity_to_load['sample:id'])){
       // allow deletes if sample id is present.
       data_entry_helper::$javascript .= "jQuery('#delete-button').click(function(){
@@ -625,7 +637,7 @@ class iform_ukbms_sectioned_transects_input_sample {
         'style'=>$args['interface']
     ));
     $r .= '<div id="grid1">'.
-          '<label for="listSelect">'.lang::get('Use species list').' :</label><select id="listSelect"><option value="full">'.lang::get('All species').'</option><option value="common">'.lang::get('Common species').'</option><option value="here">'.lang::get('Species known at this site').'</option><option value="mine">'.lang::get('Species I have recorded').'</option></select>'.
+          '<label for="listSelect">'.lang::get('Use species list').' :</label><select id="listSelect"><option value="full">'.lang::get('All species').'</option><option value="common">'.lang::get('Common species').'</option><option value="here">'.lang::get('Species known at this site').'</option><option value="mine">'.lang::get('Species I have recorded').'</option><option value="filled">'.lang::get('Species with data').'</option></select>'.
           '<span id="listSelectMsg"></span>';
     $r .= '<table id="transect-input1" class="ui-widget species-grid"><thead class="table-header">';
     $r .= '<tr><th class="ui-widget-header">' . lang::get('Sections') . '</th>';
