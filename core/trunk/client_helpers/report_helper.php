@@ -616,28 +616,28 @@ if (typeof indiciaData.reports==='undefined') { indiciaData.reports={}; }
 if (typeof indiciaData.reports.$group==='undefined') { indiciaData.reports.$group={}; }
 simple_tooltip('input.col-filter','tooltip');
 indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
-  id: '".$options['id']."',
-  mode: '".$options['mode']."',
-  dataSource: '".str_replace('\\','/',$options['dataSource'])."',
-  view: '".$options['view']."',
-  itemsPerPage: ".$options['itemsPerPage'].",
-  auth_token: '".$options['readAuth']['auth_token']."',
-  nonce: '".$options['readAuth']['nonce']."',
-  callback: '".$options['callback']."',
-  url: '".$warehouseUrl."',
-  reportGroup: '".$options['reportGroup']."',
-  autoParamsForm: '".$options['autoParamsForm']."',
+  id: '$options[id]',
+  mode: '$options[mode]',
+  dataSource: '" . str_replace('\\','/',$options['dataSource']) . "',
+  view: '$options[view]',
+  itemsPerPage: $options[itemsPerPage],
+  auth_token: '{$options['readAuth']['auth_token']}',
+  nonce: '{$options['readAuth']['nonce']}',
+  callback: '$options[callback]',
+  url: '$warehouseUrl',
+  reportGroup: '$options[reportGroup]',
+  autoParamsForm: '$options[autoParamsForm]',
   rootFolder: '$rootFolder',
   imageFolder: '".self::get_uploaded_image_folder()."',
-  currentUrl: '".$currentUrl['path']."',
-  rowId: '".(isset($options['rowId']) ? $options['rowId'] : '')."',
-  galleryColCount: ".$options['galleryColCount'].",
-  pagingTemplate: '".$indicia_templates['paging']."',
-  pathParam: '".$pathParam."',
+  currentUrl: '$currentUrl[path]',
+  rowId: '" . (isset($options['rowId']) ? $options['rowId'] : '') . "',
+  galleryColCount: $options[galleryColCount],
+  pagingTemplate: '$indicia_templates[paging]',
+  pathParam: '$pathParam',
   sendOutputToMap: ".((isset($options['sendOutputToMap']) && $options['sendOutputToMap']) ? 'true' : 'false').",
   linkFilterToMap: ".(!empty($options['rowId']) && (empty($options['linkFilterToMap']) || $options['linkFilterToMap']===false) ? 'true' : 'false').",
   msgRowLinkedToMapHint: '".lang::get('Click the row to highlight the record on the map. Double click to zoom in.')."',
-  altRowClass: '".$options['altRowClass']."'";
+  altRowClass: '$options[altRowClass]'";
       if (isset($options['sharing'])) {
         if (!isset($options['extraParams']))
           $options['extraParams']=array();
