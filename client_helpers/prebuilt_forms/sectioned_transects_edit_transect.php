@@ -36,6 +36,8 @@ class iform_sectioned_transects_edit_transect {
    * @var int Contains the id of the location attribute used to store the CMS user ID.
    */
   protected static $cmsUserAttrId;
+  protected static $branchLocationAttr;
+  protected static $branchPersonAttr;
   
   /**
    * @var string The Url to post AJAX form saves to.
@@ -137,7 +139,23 @@ class iform_sectioned_transects_edit_transect {
             'group'=>'Other Map Settings'
           ),
           array(
-            'name'=>'route_map_height',
+            'name'=>'maxPrecision',
+            'caption'=>'Max Sref Precision',
+            'description'=>'The maximum precision to be applied when determining the SREF. Leave blank to not set.',
+            'type'=>'int',
+            'required'=>false,
+            'group'=>'Other Map Settings'
+          ),
+          array(
+            'name'=>'minPrecision',
+            'caption'=>'Min Sref Precision',
+            'description'=>'The minimum precision to be applied when determining the SREF. Leave blank to not set.',
+            'type'=>'int',
+            'required'=>false,
+            'group'=>'Other Map Settings'
+          ),
+          array(
+          		'name'=>'route_map_height',
             'caption'=>'Your Route Map Height (px)',
             'description'=>'Height in pixels of the map.',
             'type'=>'int',
@@ -166,6 +184,23 @@ class iform_sectioned_transects_edit_transect {
     if (!isset($args['route_map_buffer'])) $args['route_map_buffer'] = 0.1;
       
     return $args;
+  }
+
+  private function extract_attr(&$attributes, $caption, $unset=true) {
+  	$found=false;
+  	foreach($attributes as $idx => $attr) {
+  		if (strcasecmp($attr['caption'], $caption)===0) { // should this be untranslated?
+  			// found will pick up just the first one
+  			if (!$found)
+  				$found=$attr;
+  			if ($unset)
+  				unset($attributes[$idx]);
+  			else
+  				// don't bother looking further if not unsetting them all
+  				break;
+  		}
+  	}
+  	return $found;
   }
   
   /**
@@ -224,6 +259,25 @@ class iform_sectioned_transects_edit_transect {
       return 'This form is designed to be used with the CMS User ID attribute setup for locations in the survey.';
     // keep a copy of the location_attribute_id so we can use it later.
     self::$cmsUserAttrId = $settings['cmsUserAttr']['attributeId'];
+    // need to check if branch allocatrion is active. This is done by having each location having a branch attribute. In the initial design
+    // this is a single value, assigned from a termlist which holds the branches. Each person also has a branch attribute, also a single
+    // value from the same termlist. When a user creates a location this branch is assigned: single readonly field. When a user or branch
+    // coordinator views the location, it is also readonly. Admins however get a select drop down so they can move the location from
+    // one branch to another. If the branch attribute does not exist in either the main location attributes or the person attributes,
+    // then the whole branch functionality is switched off.
+    $settings['person_attributes'] = data_entry_helper::getAttributes(array(
+        'valuetable'=>'person_attribute_value',
+        'attrtable'=>'person_attribute',
+        'key'=>'person_id',
+        'fieldprefix'=>'perAttr',
+        'extraParams'=>$auth['read'],
+        'survey_id'=>$args['survey_id'],
+        'multiValue' => false
+    ));
+    // keep a copies of the attribute_ids so we can use them later.
+    self::$branchLocationAttr = self::extract_attr($settings['attributes'], "Branch");
+    self::$branchPersonAttr = self::extract_attr($settings['person_attributes'], "Branch");
+    
     data_entry_helper::$javascript .= "indiciaData.sections = {};\n";
     $settings['sections']=array();
     if ($settings['locationId']) {
@@ -245,7 +299,7 @@ class iform_sectioned_transects_edit_transect {
       ));
       foreach($sections as $section) {
         $code = $section['code'];
-        data_entry_helper::$javascript .= "indiciaData.sections.$code = {'geom':'".$section['boundary_geom']."','id':'".$section['id']."'};\n";
+        data_entry_helper::$javascript .= "indiciaData.sections.$code = {'geom':'".$section['boundary_geom']."','id':'".$section['id']."','sref':'".$section['centroid_sref']."','system':'".$section['centroid_sref_system']."'};\n";
         $settings['sections'][$code]=$section;
       }
       $settings['walks'] = data_entry_helper::get_population_data(array(
@@ -410,6 +464,12 @@ class iform_sectioned_transects_edit_transect {
         'georefLang' => $args['language']
       ));
     }
+    if(isset($args['maxPrecision']) && $args['maxPrecision'] != ''){
+      $options['clickedSrefPrecisionMax'] = $args['maxPrecision'];
+    }
+    if(isset($args['minPrecision']) && $args['minPrecision'] != ''){
+      $options['clickedSrefPrecisionMin'] = $args['minPrecision'];
+    }
     $olOptions = iform_map_get_ol_options($args);
     if (isset($settings['cantEdit']))
       $options['clickForSpatialRef']=false;
@@ -417,13 +477,14 @@ class iform_sectioned_transects_edit_transect {
     $r .= '</div></div>'; // right    
     if (!empty($bottom))
       $r .= $bottom;
-    if (user_access('indicia data admin'))
+    if (user_access('indicia data admin')) {
       $r .= self::get_user_assignment_control($auth['read'], $settings['cmsUserAttr'], $args);
-    else if (!$settings['locationId']) {
+    } else if (!$settings['locationId']) {
       // for a new record, we need to link the current user to the location if they are not admin.
       global $user;
       $r .= '<input type="hidden" name="locAttr:'.self::$cmsUserAttrId.'" value="'.$user->uid.'">';
     }
+    $r .= self::get_branch_assignment_control($auth['read'], self::$branchLocationAttr, $args);
     if (!isset($settings['cantEdit']))
       $r .= '<button type="submit" class="indicia-button right">'.lang::get('Save').'</button>';
     
@@ -505,11 +566,27 @@ $('#delete-transect').click(deleteSurvey);
     $r .= '<form method="post" id="section-form" action="'.self::$ajaxFormUrl.'">';
     $r .= '<fieldset><legend>'.lang::get('Section Details').'</legend>';
     // Output a selector for the current section.    
-    $r .= self::section_selector($settings, 'section-select');
+    $r .= self::section_selector($settings, 'section-select')."<br/>";
     if (!isset($settings['cantEdit'])){
       $r .= "<input type=\"hidden\" name=\"location:id\" value=\"\" id=\"section-location-id\" />\n";
       $r .= '<input type="hidden" name="website_id" value="'.$args['website_id']."\" />\n";
     }
+    // for the SRef, we want to be able to edit the sref, but just display the system. Do not want the Geometry.
+    $r .= '<label for="imp-sref">Section Grid Ref.:</label><input type="text" value="" class="required" name="location:centroid_sref" id="section-location-sref"><span class="deh-required">*</span>';
+    // for the system we need to translate the system: easiest way is to have a disabled select plus a hidden field.
+    $systems = array();
+    $list = explode(',', str_replace(' ', '', $args['spatial_systems']));
+    foreach($list as $system) {
+      $systems[$system] = lang::get($system);
+    }
+    $options = array(
+    		'fieldname' => '',
+    		'systems' => $systems,
+    		'disabled' => ' disabled="disabled"',
+    		'id' => 'section-location-system-select');
+    // Output the hidden system control
+    $r .= '<input type="hidden" id="section-location-system" name="location:centroid_sref_system" value="" />';
+    $r .= data_entry_helper::sref_system_select($options);
     // force a blank centroid, so that the Warehouse will recalculate it from the boundary
     //$r .= "<input type=\"hidden\" name=\"location:centroid_geom\" value=\"\" />\n";   
     $r .= get_attribute_html($settings['section_attributes'], $args, array('extraParams'=>$auth['read'], 'disabled' => isset($settings['cantEdit']) ? ' disabled="disabled" ' : ''));
@@ -574,7 +651,18 @@ $('#delete-transect').click(deleteSurvey);
     data_entry_helper::$javascript .= "indiciaData.locCmsUsrAttr = " . self::$cmsUserAttrId . ";\n";
     return $r;
   }
-  
+
+  private static function get_branch_assignment_control($readAuth, $branchLocationAttr, $args) {
+  	if(!$branchLocationAttr) return '<span style="display:none;">No branch location attribute</span>'; // no attribute so don't display
+  	$r = '<fieldset id="alloc-branch"><legend>'.lang::get('Site Branch Allocation').'</legend>';
+    $defAttrOptions = array('extraParams'=>$readAuth, 'survey_id'=>$args['survey_id']);
+    if (!user_access('indicia data admin'))
+      $defAttrOptions['disabled']='disabled';
+    $r .= data_entry_helper::outputAttribute($branchLocationAttr, $defAttrOptions);
+    $r .= '</fieldset>';
+    return $r;
+  }
+    
   /**
    * Construct a submission for the location.
    * @param array $values Associative array of form data values. 
