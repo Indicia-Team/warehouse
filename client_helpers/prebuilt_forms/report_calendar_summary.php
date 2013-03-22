@@ -288,7 +288,15 @@ class iform_report_calendar_summary {
           'required' => false,
           'group' => 'Table Options'
         ),
-
+        array(
+          'name'=>'linkURL',
+          'caption'=>'Link URL',
+          'description'=>'Used when generating link URLs to associated samples. If not included, no links will be generated.',
+          'type'=>'string',
+          'required' => false,
+          'group' => 'Table Options'
+        ),
+      		
         array(
           'name' => 'chartType',
           'caption' => 'Chart Type',
@@ -683,7 +691,16 @@ class iform_report_calendar_summary {
     );
     return $reportOptions;
   }
+
+  // There are 2 options:
+  // 1) easy login: in this case the user restriction is on created_by_id, and refers to the Indicia id
+  // 2) non-easy login: in this case the user restriction is based on the CMS user ID sample attribute, and refers to the CMS ID.
+  // It is left to the report called to handle the user_id parameter as appropriate.
+  // The report helper does the conversion from CMS to Easy Login ID if appropriate, so the user_id passed into the
+  // report helper is always the CMS one.
+  // Locations are always assigned by a CMS user ID attribute, not by who created them.
   
+
   private function location_control($args, $readAuth, $node, &$options)
   {
     global $user;
@@ -694,6 +711,9 @@ class iform_report_calendar_summary {
     // this is user specific: when no user selection control, or all users selected then default to all locations
     // this means it does not get a list of all locations if no user is selected: to be added later?
     $options['extraParams']['location_id'] = $siteUrlParams[self::$locationKey]['value'];
+    if($options['extraParams']['location_id'] == '') // only allow links when a location is specified
+      unset($options['linkURL']);
+    
     if(!isset($args['includeUserFilter']) || !$args['includeUserFilter'] || !isset($options['extraParams']['user_id']) || $options['extraParams']['user_id']=="" || !isset($args['userSpecificLocationLookUp']) || !$args['userSpecificLocationLookUp']){
       // Get list of all locations
       $locationListArgs=array('nocache'=>true,
@@ -767,7 +787,9 @@ class iform_report_calendar_summary {
     if(!isset($args['managerPermission']) || $args['managerPermission']=="" || !user_access($args['managerPermission'])) {
       // user is a normal user
       $userList[$user->uid]=$user;
+      $options['my_user_id']=$user;
     } else {
+      $options['my_user_id']=false; // removes restriction on links to samples based on user_id.
       // user is manager, so need to load the list of users they can choose to report against 
       if(!isset($args['userLookUp']) || !$args['userLookUp']) {
         // look up all users, not just those that have entered data.
@@ -959,7 +981,7 @@ jQuery('#".$ctrlid."').change(function(){
             'chartType','rowGroupColumn','rowGroupID','width','height',
             'includeTableTotalRow','includeTableTotalColumn','includeChartTotalSeries','includeChartItemSeries',
             'includeRawData', 'includeSummaryData', 'includeEstimatesData', 'summaryDataCombining', 'dataRound',
-      		'zeroPointAnchor', 'interpolation', 'firstValue', 'lastValue'
+      		'zeroPointAnchor', 'interpolation', 'firstValue', 'lastValue', 'linkURL'
       ));
     if (isset($_GET['outputSource']))
       $reportOptions['outputSource']=$_GET['outputSource'];
