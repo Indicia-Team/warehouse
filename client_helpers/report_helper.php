@@ -602,15 +602,6 @@ $('.update-input').focus(function(evt) {
         $warehouseUrl = parent::$warehouse_proxy;
       else
         $warehouseUrl = parent::$base_url;
-      
-      // Determine rootFolder
-      $selfDir = dirname($_SERVER['PHP_SELF']);
-      if ($selfDir == '/' || $selfDir == '\\') {
-        // rootFolder is document root
-        $rootFolder = '/';
-      } else {
-        $rootFolder = $selfDir . '/';
-      }
       self::$javascript .= "
 if (typeof indiciaData.reports==='undefined') { indiciaData.reports={}; }
 if (typeof indiciaData.reports.$group==='undefined') { indiciaData.reports.$group={}; }
@@ -627,8 +618,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   url: '$warehouseUrl',
   reportGroup: '$options[reportGroup]',
   autoParamsForm: '$options[autoParamsForm]',
-  rootFolder: '$rootFolder',
-  imageFolder: '".self::get_uploaded_image_folder()."',
+  rootFolder: '" . self::getRootFolder() . "',
+  imageFolder: '" . self::get_uploaded_image_folder() . "',
   currentUrl: '$currentUrl[path]',
   rowId: '" . (isset($options['rowId']) ? $options['rowId'] : '') . "',
   galleryColCount: $options[galleryColCount],
