@@ -2370,6 +2370,7 @@ if (typeof mapSettingsHooks!=='undefined') {
       'user_id' => $user->uid, // Initially CMS User, changed to Indicia User later if in Easy Login mode.
       'cms_user_id' => $user->uid, // CMS User, not Indicia User.
       'smpattrs' => ''), $options["extraParams"]);
+    $options['my_user_id'] = $user->uid; // Initially CMS User, changed to Indicia User later if in Easy Login mode.
     // Note for the calendar reports, the user_id is assumed to be the CMS user id as recorded in the CMS User ID attribute,
     // not the Indicia user id.
     if (function_exists('module_exists') && module_exists('easy_login') && $options["extraParams"]['user_id'] == $options["extraParams"]['cms_user_id']) {
@@ -2377,6 +2378,12 @@ if (typeof mapSettingsHooks!=='undefined') {
       profile_load_profile($account);
       if(isset($account->profile_indicia_user_id))
         $options["extraParams"]['user_id'] = $account->profile_indicia_user_id;
+      if($options['my_user_id']){ // false switches this off.
+        $account = user_load($options['my_user_id']);
+        profile_load_profile($account);
+        if(isset($account->profile_indicia_user_id))
+          $options['my_user_id'] = $account->profile_indicia_user_id;
+      }
     }
     return $options;
   }
@@ -2674,8 +2681,11 @@ update_controls();
         $this_date->modify('+7 days');
         $weekno--;
       }
-      if(!isset($rawArray[$this_index]))
+      if(!isset($rawArray[$this_index])){
         $rawArray[$this_index] = array('weekno'=>$weekno, 'counts'=>array(), 'date'=>$record['date'], 'total'=>0);
+        if(!$options['my_user_id'] || $options['my_user_id'] == $record['user_id'])
+          $rawArray[$this_index]['sample']=$record['sample_id'];
+      }
       $records[$recid]['weekno']=$weekno;
       if(isset($locationSamples[$record['location_id']])){
         if(isset($locationSamples[$record['location_id']][$weekno])) {
@@ -2690,8 +2700,7 @@ update_controls();
       if(($lastTaxonID && $lastTaxonID!=$record[$options['rowGroupID']]) ||
          ($lastLocation && $lastLocation!=$record['location_id'])) {
         foreach($locationArray as $weekno => $data){
-          if($locationArray[$weekno]['max'] < $locationArray[$weekno]['sampleTotal'])
-            $locationArray[$weekno]['max'] = $locationArray[$weekno]['sampleTotal'];
+          $locationArray[$weekno]['max'] = max($locationArray[$weekno]['max'], $locationArray[$weekno]['sampleTotal']);
         }
         self::report_calendar_summary_processEstimates($summaryArray, $locationArray, $locationSamples[$lastLocation], $minWeekNo, $maxWeekNo, $lastTaxonID, $options);
         $locationArray = self::report_calendar_summary_initLocation($records, $record['location_id']);
@@ -2707,31 +2716,29 @@ update_controls();
         $count = 1; // default to single row = single occurrence
       // leave this conditional in - not sure what may happen in future, and it works.
       if(isset($locationArray[$weekno])){
-        if($locationArray[$weekno]['this_sample'] != $record['sample_id']) {
-          if($locationArray[$weekno]['max'] < $locationArray[$weekno]['sampleTotal'])
-            $locationArray[$weekno]['max'] = $locationArray[$weekno]['sampleTotal'];
-          $locationArray[$weekno]['this_sample'] = $record['sample_id'];
+        if($locationArray[$weekno]['this_sample'] != $lastSample) {
+          $locationArray[$weekno]['max'] = max($locationArray[$weekno]['max'], $locationArray[$weekno]['sampleTotal']);
+          $locationArray[$weekno]['this_sample'] = $lastSample;
           $locationArray[$weekno]['numSamples']++;
           $locationArray[$weekno]['sampleTotal'] = $count;
         } else
           $locationArray[$weekno]['sampleTotal'] += $count;
         $locationArray[$weekno]['total'] += $count;
       } else {
-        $locationArray[$weekno] = array('this_sample'=>$record['sample_id'], 'total'=>$count, 'sampleTotal'=>$count, 'max'=>$count, 'numSamples'=>1);
+        $locationArray[$weekno] = array('this_sample'=>$lastSample, 'total'=>$count, 'sampleTotal'=>$count, 'max'=>$count, 'numSamples'=>1);
       }
       $locationArray[$weekno]['forcedZero'] = false;
       $this_date = date_create(str_replace('/','-',$record['date'])); // prevents day/month ordering issues
       $this_index = $this_date->format('z');
-      if(isset($rawArray[$this_index]['counts'][$record[$options['rowGroupID']]]))
-        $rawArray[$this_index]['counts'][$record[$options['rowGroupID']]] += $count;
+      if(isset($rawArray[$this_index]['counts'][$lastTaxonID]))
+        $rawArray[$this_index]['counts'][$lastTaxonID] += $count;
       else
-        $rawArray[$this_index]['counts'][$record[$options['rowGroupID']]] = $count;
+        $rawArray[$this_index]['counts'][$lastTaxonID] = $count;
       $rawArray[$this_index]['total'] += $count;
     }
     if($lastTaxonID || $lastLocation) {
       foreach($locationArray as $weekno => $data){
-        if($locationArray[$weekno]['max'] < $locationArray[$weekno]['sampleTotal'])
-          $locationArray[$weekno]['max'] = $locationArray[$weekno]['sampleTotal'];
+        $locationArray[$weekno]['max'] = max($locationArray[$weekno]['max'], $locationArray[$weekno]['sampleTotal']);
       }
       self::report_calendar_summary_processEstimates($summaryArray, $locationArray, $locationSamples[$lastLocation], $minWeekNo, $maxWeekNo, $lastTaxonID, $options);
     }
@@ -2764,8 +2771,7 @@ update_controls();
     if(count($format)==0) $format['table'] = array('include'=>true);
     $defaultSet=false;
     foreach($format as $type=>$info){
-      if($info['display']==true)
-        $defaultSet=true;
+      $defaultSet=$defaultSet || $info['display'];
     }
     if(!$defaultSet){
       if(isset($format['table'])) $format['table']['display']=true;
@@ -2779,7 +2785,7 @@ update_controls();
     for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
       $tableNumberHeaderRow.= '<td class="week">'.$i.'</td>';
       $tableDateHeaderRow.= '<td class="week">'.$firstWeek_date->format('M').'<br/>'.$firstWeek_date->format('d').'</td>';
-      $chartNumberLabels[] = $i;
+      $chartNumberLabels[] = "".$i;
       $chartDateLabels[] = $firstWeek_date->format('M').'-'.$firstWeek_date->format('d');
       $firstWeek_date->modify('+7 days');
     }
@@ -2973,6 +2979,8 @@ function replot(){
       for(var j=0; j<plots[type].series[i].data.length; j++)
           max=(max>plots[type].series[i].data[j][1]?max:plots[type].series[i].data[j][1]);
   axesOpts.axes.yaxis.max=max+1;
+  axesOpts.axes.yaxis.tickInterval = Math.floor(max/15); // number of ticks - too many takes too long to display
+  if(!axesOpts.axes.yaxis.tickInterval) axesOpts.axes.yaxis.tickInterval=1;
   plots[type].replot(axesOpts);
 };\n";
       // div are full width.
@@ -3091,10 +3099,14 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
         $rawGrandTotal = 0;
         foreach($rawArray as $idx => $rawColumn){
           $this_date = date_create(str_replace('/','-',$rawColumn['date'])); // prevents day/month ordering issues
-          $r .= '<td class="week">'.$this_date->format('M').'<br/>'.$this_date->format('d').'</td>';
+          if(isset($options['linkURL']) && $options['linkURL']!= '' && isset($rawColumn['sample'])){
+            $r .= '<td class="week"><a href="'.$options['linkURL'].$rawColumn['sample'].'" target="_blank">'.$this_date->format('M').'<br/>'.$this_date->format('d').'</a></td>';
+          } else
+            $r .= '<td class="week">'.$this_date->format('M').'<br/>'.$this_date->format('d').'</td>';
           $rawTotalRow .= '<td>'.$rawColumn['total'].'</td>';
           $rawGrandTotal += $rawColumn['total'];
         }
+        
         if(isset($options['includeTableTotalColumn']) && $options['includeTableTotalColumn']){
           $r.= '<td class="total-column">Total</td>';
         }
@@ -3335,9 +3347,7 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
         if(isset($summaryArray[$taxonID][$weekno])){
           if(!$locationArray[$weekno]['forcedZero']) $summaryArray[$taxonID][$weekno]['forcedZero'] = false;
           if($locationArray[$weekno]['summary']){
-            if($summaryArray[$taxonID][$weekno]['summary'])
-              $summaryArray[$taxonID][$weekno]['summary'] += $locationArray[$weekno]['summary'];
-            else $summaryArray[$taxonID][$weekno]['summary'] = $locationArray[$weekno]['summary'];
+            $summaryArray[$taxonID][$weekno]['summary'] += $locationArray[$weekno]['summary'];
           }
           $summaryArray[$taxonID][$weekno]['estimates'] += $locationArray[$weekno]['estimates'];
         } else {
