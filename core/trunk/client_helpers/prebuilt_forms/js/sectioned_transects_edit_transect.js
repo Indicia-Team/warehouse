@@ -5,6 +5,11 @@ var sectionDetailsChanged = false;
 
 function clearSection() {
   $('#section-location-id').val('');
+  $('#section-location-sref').val('');
+  $('#section-location-system,#section-location-system-select').val('');
+  // remove exiting errors:
+  $('#section-form').find('.inline-error').remove();
+  $('#section-form').find('.ui-state-error').removeClass('ui-state-error');
   var nameparts;
   // loop through form controls to make sure they do not have the value id (as these will be new values)
   $.each($('#section-form').find(':input'), function(idx, ctrl) {
@@ -27,6 +32,14 @@ function loadSectionDetails(section) {
   clearSection();
   if (typeof indiciaData.sections[section]!=="undefined") {
     $('#section-location-id').val(indiciaData.sections[section].id);
+    // if the systems on the section and main location do not match, copy the the system and sref from the main site.
+    if(indiciaData.sections[section].system != $('#imp-sref-system').val()) {
+        $('#section-location-sref').val($('#imp-sref').val());
+        $('#section-location-system,#section-location-system-select').val($('#imp-sref-system').val());
+    } else {
+        $('#section-location-sref').val(indiciaData.sections[section].sref);
+        $('#section-location-system,#section-location-system-select').val(indiciaData.sections[section].system);
+    }
     $.getJSON(indiciaData.indiciaSvc + "index.php/services/data/location_attribute_value?location_id=" + indiciaData.sections[section].id +
         "&mode=json&view=list&callback=?&auth_token=" + indiciaData.readAuth.auth_token + "&nonce=" + indiciaData.readAuth.nonce, 
         function(data) {
@@ -236,8 +249,28 @@ $(document).ready(function() {
       // 
     },
     success: function(data) {
-      alert('The section information has been saved.');
-      sectionDetailsChanged = false;
+      // remove exiting errors:
+      $('#section-form').find('.inline-error').remove();
+      $('#section-form').find('.ui-state-error').removeClass('ui-state-error');
+      if(typeof data.errors != "undefined"){
+        for(field in data.errors){
+          var elem = $('#section-form').find('[name='+field+']');
+          var label = $("<label/>")
+					.attr({"for":  elem[0].id, generated: true})
+					.addClass('inline-error')
+					.html(data.errors[field]);
+	      var elementBefore = $(elem).next().hasClass('deh-required') ? $(elem).next() : elem;
+          label.insertAfter(elementBefore);
+          elem.addClass('ui-state-error');
+        }
+      } else {
+        var current = $('#section-select li.selected').html();
+        // store the Sref...
+        indiciaData.sections[current].sref = $('#section-location-sref').val();
+        indiciaData.sections[current].system = $('#section-location-sref-system').val();
+        alert('The section information has been saved.');
+        sectionDetailsChanged = false;
+      }
     }
   });  
   
@@ -440,7 +473,13 @@ $(document).ready(function() {
             data['location:id']=indiciaData.sections[current].id;
           } else {
             data['locations_website:website_id']=indiciaData.website_id;
+            // initially set the section Sref etc to match the parent. Geom will be auto generated on the server
+            indiciaData.sections[current] = {sref : $('#imp-sref').val(),
+            		system : $('#imp-sref-system').val()};
           }
+          indiciaData.sections[current].geom = evt.feature.geometry.toString();
+          data['location:centroid_sref']=indiciaData.sections[current].sref;
+          data['location:centroid_sref_system']=indiciaData.sections[current].system;
           $.post(
             indiciaData.ajaxFormPostUrl,
             data,
@@ -450,7 +489,7 @@ $(document).ready(function() {
               } else {
                 // Better way of doing this?
                 var id = data.outer_id;
-                indiciaData.sections[current] = {id:id, geom: evt.feature.geometry.toString()};
+                indiciaData.sections[current].id = id;
                 $('#section-location-id').val(id);
                 $('#section-select-route-'+current).removeClass('missing');
                 $('#section-select-'+current).removeClass('missing');
