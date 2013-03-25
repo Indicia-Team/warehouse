@@ -61,6 +61,17 @@ class Helper_Vague_Date_Test extends PHPUnit_Framework_TestCase {
     $this->assertEquals($vd[2], 'O', "Date 'Feb 97' is a month (O) date type");
   }
   
+  public function testDateJan2013 () {
+    $vd = vague_date::string_to_vague_date('January 2013');
+    $this->assertEquals($vd[0], '2013-01-01', "Date 'January 2013' starts at 01/01/2013");
+    $this->assertEquals($vd[1], '2013-01-31', "Date 'January 2013' ends at 31/01/2013");
+    $this->assertEquals($vd[2], 'O', "Date 'January 2013' is a month (O) date type");
+    $vd = vague_date::string_to_vague_date('01/2013');
+    $this->assertEquals($vd[0], '2013-01-01', "Date '01/2013' starts at 01/01/2013");
+    $this->assertEquals($vd[1], '2013-01-31', "Date '01/2013' ends at 31/01/2013");
+    $this->assertEquals($vd[2], 'O', "Date '01/2013' is a month (O) date type");
+  }
+  
   public function testDateOct92 () {
     $vd = vague_date::string_to_vague_date('Oct 92');
     $this->assertEquals($vd[0], '1992-10-01', "Date 'Oct 92' starts at 01/10/1992");
