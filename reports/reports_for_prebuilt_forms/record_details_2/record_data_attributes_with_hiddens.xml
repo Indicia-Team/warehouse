@@ -16,7 +16,7 @@
               ELSE a.data_type
           END AS data_type, a.caption, 
           CASE a.data_type
-              WHEN 'T'::bpchar THEN CASE WHEN right(a.caption, 4) = 'link' AND left(av.text_value, 4) = 'http' THEN 
+              WHEN 'T'::bpchar THEN CASE WHEN substring(a.caption from (char_length(a.caption)-5) for 4) = 'link' AND substring(av.text_value from 0 for 4) = 'http' THEN 
                 '&lt;a href="' || av.text_value || '"&gt;' || av.text_value || '&lt;/a&gt;'
               ELSE 
                 av.text_value END
