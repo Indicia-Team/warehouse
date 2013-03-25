@@ -113,14 +113,15 @@ class Spatial_Controller extends Service_Base_Controller {
    */
   public function buffer()
   {
-    if (array_key_exists('wkt', $_GET) && array_key_exists('buffer', $_GET)) {
-      if ($_GET['buffer']==0)
+    $params = array_merge($_GET, $_POST);
+    if (array_key_exists('wkt', $params) && array_key_exists('buffer', $params)) {
+      if ($params['buffer']==0)
         // no need to buffer if width set to zero
-        $r = $_GET['wkt'];
+        $r = $params['wkt'];
       else {
         $db = new Database;
-        $wkt = $_GET['wkt'];
-        $buffer = $_GET['buffer'];
+        $wkt = $params['wkt'];
+        $buffer = $params['buffer'];
         kohana::log('debug', "SELECT st_astext(st_buffer(st_geomfromtext('$wkt'),$buffer)) AS wkt;");
         $result = $db->query("SELECT st_astext(st_buffer(st_geomfromtext('$wkt'),$buffer)) AS wkt;")->current();
         $r = $result->wkt;
