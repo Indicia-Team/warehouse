@@ -46,6 +46,7 @@ class Scheduled_Tasks_Controller extends Controller {
    * If tasks are not specified then everything is run.
    */
   public function index() {
+    $tm = microtime(true);
     $this->db = new Database();
     $system = new System_Model();
     if (isset($_GET['tasks'])) {
@@ -59,6 +60,9 @@ class Scheduled_Tasks_Controller extends Controller {
       $this->last_run_date = $system->getLastScheduledTaskCheck();
       $this->checkTriggers();
     }
+    $tmtask = microtime(true) - $tm;
+    if ($tmtask>3) 
+      kohana::log('alert', "Triggers & notifications scheduled task took $tmtask seconds.");
     $this->runScheduledPlugins($system, $tasks);
     if (in_array('notifications', $tasks)) {
       $swift = email::connect();
@@ -68,6 +72,9 @@ class Scheduled_Tasks_Controller extends Controller {
     // mark the time of the last scheduled task check, so we can get diffs next time
     $this->db->update('system', array('last_scheduled_task_check'=>"'" . date('c', $currentTime) . "'"), array('id' => 1));
     echo "Ok!";
+    $tm = microtime(true) - $tm;
+    if ($tm>20) 
+      kohana::log('alert', "Scheduled tasks for ".implode(', ', $tasks)." took $tm seconds.");
   }
 
   /**
@@ -429,6 +436,7 @@ class Scheduled_Tasks_Controller extends Controller {
     foreach ($plugins as $path) {
       $plugin = basename($path);
       if (in_array('all_modules', $tasks) || in_array($plugin, $tasks)) {
+        $tm = microtime(true);
         require_once("$path/plugins/$plugin.php");
         $last_run_date = $system->getLastScheduledTaskCheck($plugin);
         // grab the time before we start, so there is no chance of a record coming in while we run that is missed.
@@ -446,7 +454,12 @@ class Scheduled_Tasks_Controller extends Controller {
               'last_scheduled_task_check'=>date("Ymd H:i:s", $currentTime),
               'last_run_script'=>null
           ));
+        $tm = microtime(true) - $tm;  
+        if ($tm>3) 
+          kohana::log('alert', "Scheduled plugin $plugin took $tm seconds");    
       }
+      
+      
     }
   }
 
