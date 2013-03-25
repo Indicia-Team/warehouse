@@ -194,7 +194,7 @@ class DateParser_Core {
             $weekdays[strtolower(Kohana::lang('dates.months.'.$i))] = $i;
             $dayStr .= ($i == 0) ? Kohana::lang('dates.months.'.$i) : "|".Kohana::lang('dates.months.'.$i);
           }
-          
+
           $a = preg_match("/^(".$dayStr.")(.*)/i",$sDate,$refs);
           if ($a){
             $nValue = $weekdays[strtolower($refs[1])];
@@ -321,7 +321,7 @@ class DateParser_Core {
     // Copy the date array
     $aStart = $this->aResult;
     // If we're a century
-    if (($a = $aStart['tm_century']) != null){
+    if (($a = $aStart['tm_century']) !== null){
       $aStart['tm_year'] = 100*($a)-1;
       $aStart['tm_mon'] = 11;
       $aStart['tm_mday'] = 31;
@@ -329,10 +329,10 @@ class DateParser_Core {
     }
 
     // Do we have a year, else set it to this year
-    if ($aStart['tm_year'] == null) $aStart['tm_year'] = date("Y");
+    if ($aStart['tm_year'] === null) $aStart['tm_year'] = date("Y");
 
     // Is this a season?
-    if (($a = $aStart['tm_season']) != null){
+    if (($a = $aStart['tm_season']) !== null){
       switch ($a) {
         case 'spring':
           return date("Y-m-d", mktime(0,0,0,6,0, $aStart['tm_year']));
@@ -350,18 +350,18 @@ class DateParser_Core {
     }
 
     // If no month is given, set it to December (indexed to 0)
-    if ($aStart['tm_mon'] == null) 
+    if ($aStart['tm_mon'] === null)
       $aStart['tm_mon'] = 11;
 
     // Because dates before 1970 can't be handled by mktime, we use another year as a dummy date then swap it for the real year.
     // To ensure the calculation is correct for Feb-29, the dummy year must also be a leap year if the actual year is.
     $dummy = date('L', strtotime($aStart['tm_year']."-01-01")) ? 2000 : 2001;
-      
+
     // If no day is given, set day to end of the month using the 't' format which gets the days in the month
-    if ($aStart['tm_mday'] == null) {
+    if ($aStart['tm_mday'] === null) {
       $aStart['tm_mday'] = date('t', mktime(0,0,0,$aStart['tm_mon']+1, 1, $dummy));
-    }    
-    
+    }
+
     // Build our date
     $date = date("Y-m-d", mktime(0,0,0,$aStart['tm_mon'] + 1, $aStart['tm_mday'], $dummy));
     // Swap back to the correct year and return

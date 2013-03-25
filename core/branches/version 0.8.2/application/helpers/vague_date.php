@@ -28,11 +28,11 @@ class vague_date {
    * List of regex strings used to try to capture date ranges. The regex key should, naturally,
    * point to the regular expression. Start should point to the backreference for the string to
    * be parsed for the 'start' date, 'end' to the backreference of the string to be parsed
-   * for the 'end' date. -1 means grab the text before the match, 1 means after, 0 means set the 
+   * for the 'end' date. -1 means grab the text before the match, 1 means after, 0 means set the
    * value to empty. Types are not determined here. Should either 'start' or 'end' contain
    * the string '...', this will be interpreted as one-ended range.
    */
-  private static function dateRangeStrings() { 
+  private static function dateRangeStrings() {
     return Array(
       array(
           'regex' => '/( to | - )/i', // date to date
@@ -147,9 +147,9 @@ class vague_date {
   {
     $start=NULL;
     $end=NULL;
-    if (!$date[0]==NULL)
+    if ($date[0]!=NULL)
       $start = $date[0];
-    if (!$date[1]==NULL)
+    if ($date[1]!=NULL)
       $end = $date[1];
     $type = $date[2];
     if (is_string($start)) {
@@ -238,14 +238,14 @@ class vague_date {
     } else {
       if ($start) {
         $a = self::parseSingleDate($start, $parseFormats);
-        if ($a != null) {
+        if ($a !== null) {
           $startDate = $a;
           $matched = true;
         }
       }
       if ($end) {
         $a = self::parseSingleDate($end, $parseFormats);
-        if ($a != null) {
+        if ($a !== null) {
           $endDate = $a;
           $matched = true;
         }
@@ -271,10 +271,10 @@ class vague_date {
     // or the like.
     try {
 
-      if ($endDate->tm_season != null){
+      if ($endDate->tm_season !== null){
         //We're a season. That means we could be P (if we have a year) or
         //S (if we don't).
-        if ($endDate->tm_year != null){
+        if ($endDate->tm_year !== null){
           // We're a P
           $vagueDate = array(
             $endDate->getImpreciseDateStart(),
@@ -294,7 +294,7 @@ class vague_date {
       }
       // Do we have day precision?
 
-      if ($endDate->tm_mday != null) {
+      if ($endDate->tm_mday !== null) {
         if (!$range) {
           // We're a D
           $vagueDate = array(
@@ -329,11 +329,10 @@ class vague_date {
        * Type 'M' - month, !range
        *
        */
-
-      if ($endDate->tm_mon != null) {
+      if ($endDate->tm_mon !== null) {
         if (!$range) {
           // Either a month in a year or just a month
-          if ($endDate->tm_year != null) {
+          if ($endDate->tm_year !== null) {
             // Then we have a month in a year- type O
             $vagueDate = array(
               $endDate->getImpreciseDateStart(),
@@ -352,7 +351,7 @@ class vague_date {
           }
         } else {
           // We do have a range, OO
-          if ($endDate->tm_year != null){
+          if ($endDate->tm_year !== null){
             // We have a year - so this is OO
             $vagueDate = array(
               $startDate->getImpreciseDateStart(),
@@ -373,7 +372,7 @@ class vague_date {
        */
 
       // Are we a century?
-      if ($endDate->tm_century != null){
+      if ($endDate->tm_century !== null){
         // CC, C, C- or -C
         if (!$range){
           // Type C
@@ -413,7 +412,7 @@ class vague_date {
       }
 
       //Okay, we're one of the year representations.
-      if ($endDate->tm_year != null){
+      if ($endDate->tm_year !== null){
         if (!$range){
           // We're Y
           $vagueDate = array(
@@ -668,9 +667,9 @@ class vague_date {
   {
     return (strcmp($date1->format('Ymd'),$date2->format('Ymd'))<0);
   }
-  
+
   /**
-   * Returns true if the first supplied date is before second or they are the same. Early versions of PHP5.2 do not have valid 
+   * Returns true if the first supplied date is before second or they are the same. Early versions of PHP5.2 do not have valid
    * binary comparison functions
    */
   protected static function is_first_date_first_or_equal($date1, $date2)
@@ -788,9 +787,9 @@ class vague_date {
         kohana::log('debug', 'arg '.gettype($arg));
         if (gettype($arg)=='object')
           $inputs[] = $arg->format(Kohana::lang('dates.format'));
-        elseif (gettype($arg)=='NULL')
+        elseif (gettype($arg)==='NULL')
           $inputs[] = 'null';
-        else 
+        else
           $inputs[] = $arg;
       }
       throw new Exception(vsprintf($message, $inputs));
