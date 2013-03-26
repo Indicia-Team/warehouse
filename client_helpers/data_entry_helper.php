@@ -141,7 +141,9 @@ class data_entry_helper extends helper_base {
   * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
   * <li><b>table</b><br/>
-  * Required. Table name to get data from for the autocomplete options.</li>
+  * Optional. Table name to get data from for the autocomplete options.</li>
+  * <li><b>table</b><br/>
+  * Optional. Report name to get data from for the autocomplete options. If specified then the table option is ignored.</li>
   * <li><b>captionField</b><br/>
   * Required. Field to draw values to show in the control from.</li>
   * <li><b>captionFieldInEntity</b><br/>
@@ -194,7 +196,7 @@ class data_entry_helper extends helper_base {
       $warehouseUrl = parent::$base_url;
     $options = array_merge(array(
       'template' => 'autocomplete',
-      'url' => $warehouseUrl."index.php/services/data",
+      'url' => isset($options['report']) ? $warehouseUrl."index.php/services/report/requestReport" : $warehouseUrl."index.php/services/data/".$options['table'],
       // Escape the ids for jQuery selectors
       'escaped_input_id' => self::jq_esc($options['inputId']),
       'escaped_id' => self::jq_esc($options['id']),
@@ -203,6 +205,10 @@ class data_entry_helper extends helper_base {
       'simplify' => (isset($options['simplify']) && $options['simplify']) ? 'true' : 'false',
       'warnIfNoMatch' => true
     ), $options);
+    if (isset($options['report'])) {
+      $options['extraParams']['report'] = $options['report'].'.xml';
+      $options['extraParams']['reportSource'] = 'local';
+    }
     $options['warnIfNoMatch'] = $options['warnIfNoMatch'] ? 'true' : 'false';
     self::add_resource('autocomplete');
     // Escape the id for jQuery selectors
