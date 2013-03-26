@@ -1085,7 +1085,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         'occurrenceSensitivity'=>(isset($args['occurrence_sensitivity']) ? $args['occurrence_sensitivity'] : false),
         'occurrenceImages'=>$args['occurrence_images'],
         'PHPtaxonLabel' => true,
-        'language' => iform_lang_iso_639_2($user->lang), // used for termlists in attributes
+        'language' => iform_lang_iso_639_2(hostsite_get_user_field('language')), // used for termlists in attributes
         'cacheLookup' => $args['cache_lookup'],
         'speciesNameFilterMode' => self::getSpeciesNameFilterMode($args),
         'userControlsTaxonFilter' => isset($args['user_controls_taxon_filter']) ? $args['user_controls_taxon_filter'] : false,

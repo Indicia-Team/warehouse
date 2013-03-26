@@ -1407,7 +1407,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       $records = $response['records'];
       // find the geom column
       foreach($response['columns'] as $col=>$cfg) {
-        if ($cfg['mappable']=='true') {
+        if (isset($cfg['mappable']) && $cfg['mappable']=='true') {
           $wktCol = $col;
           break;
         }
@@ -1540,7 +1540,6 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         $addFeaturesJs = "";        
         // No need to pass the default type of vector display, so use empty obj to keep JavaScript size down
         $opts = $options['displaySymbol']==='vector' ? '{}' : json_encode(array('type'=>$options['displaySymbol']));
-        $rowId = isset($options['rowId']) ? ' id="row'.$row[$options['rowId']].'"' : '';
         if ($options['clickableLayersOutputMode']<>'popup' && $options['clickableLayersOutputMode']<>'div') {
           // If we don't need record data for every row for feature clicks, then only include necessary columns to minimise JS
           $colsToInclude['occurrence_id']='';
@@ -1577,7 +1576,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
                 $colsToInclude[$wktCol]='';
                 $record = array_intersect_key($record, $colsToInclude); 
               }
-              $addFeaturesJs.= "div.addPt(features, ".json_encode($record).", '$wktCol', $opts" . (empty($rowId) ? '' : ", '" . $record[$options['rowId']] . "'") . (empty($locationId) ? '' : ", $locationId") . ");\n";
+              $addFeaturesJs.= "div.addPt(features, ".json_encode($record).", '$wktCol', $opts" . (isset($options['rowId']) ? '' : ", '" . $record[$options['rowId']] . "'") . (empty($locationId) ? '' : ", $locationId") . ");\n";
             }
           }
           self::$javascript .= 'indiciaData.geoms=['.implode(',',$geoms)."];\n";
@@ -1607,6 +1606,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
           $filter, $style},
       {singleTile: true, isBaseLayer: false, sphericalMercator: true});\n";
       }
+      $setLocationJs = '';
       if (!empty($currentParamValues['location_id'])) {
         $location=data_entry_helper::get_population_data(array(
           'table'=>'location',
@@ -1761,7 +1761,8 @@ mapSettingsHooks.push(function(opts) { $setLocationJs
    */
   private static function get_report_sorting_paging_params($options, $sortAndPageUrlParams) {
     // Work out the names and current values of the params we expect in the report request URL for sort and pagination
-    $page = ($sortAndPageUrlParams['page']['value'] ? $sortAndPageUrlParams['page']['value'] : 0);
+    $page = (isset($sortAndPageUrlParams['page']) && $sortAndPageUrlParams['page']['value'] 
+        ? $sortAndPageUrlParams['page']['value'] : 0);
     // set the limit to one higher than we need, so the extra row can trigger the pagination next link
     $extraParams = '&limit='.($options['itemsPerPage']+1);
     $extraParams .= '&offset=' . $page * $options['itemsPerPage'];
@@ -2458,14 +2459,15 @@ if (typeof mapSettingsHooks!=='undefined') {
       indiciaData.reportlayer.styleMap = styleMap;
     }";  
     }
-    report_helper::$javascript.= "
-    mapInitialisationHooks.push(function(div) {
-      features = [];
-      $addFeaturesJs
-      indiciaData.reportlayer.addFeatures(features);\n";
-        if ($zoomToExtent && !empty($addFeaturesJs))
-          self::$javascript .= "      div.map.zoomToExtent(indiciaData.reportlayer.getDataExtent());\n";
-        self::$javascript .= "      div.map.addLayer(indiciaData.reportlayer);
+    report_helper::$javascript .= "\n    mapInitialisationHooks.push(function(div) {\n";
+    if (!empty($addFeaturesJs)) {
+      report_helper::$javascript .= "      var features = [];\n";
+      report_helper::$javascript .= "$addFeaturesJs\n";
+      report_helper::$javascript .= "      indiciaData.reportlayer.addFeatures(features);\n";
+      if ($zoomToExtent && !empty($addFeaturesJs))
+        self::$javascript .= "      div.map.zoomToExtent(indiciaData.reportlayer.getDataExtent());\n";
+    }
+    self::$javascript .= "      div.map.addLayer(indiciaData.reportlayer);
     });
   }\n";
   }
@@ -2995,9 +2997,13 @@ function replot(){
         $r .= '<div id="'.$options['chartID'].'-estimates" style="height:'.$options['height'].'px;'.(isset($options['width']) && $options['width'] != '' ? 'width:'.$options['width'].'px;':'').'"></div>'."\n";
       if(isset($options['disableableSeries']) && $options['disableableSeries'] &&
            (count($summaryArray)>(isset($options['includeChartTotalSeries']) && $options['includeChartTotalSeries'] ? 0 : 1)) && 
-           isset($options['includeChartItemSeries']) && $options['includeChartItemSeries']){
-        drupal_add_js('misc/collapse.js');
-        $r .= '<fieldset id="'.$options['chartID'].'-series" class="collapsible collapsed series-fieldset"><legend>'.lang::get('Display Series')."</legend><span>\n";
+           isset($options['includeChartItemSeries']) && $options['includeChartItemSeries']) {
+        $class='series-fieldset';
+        if (function_exists('hostsite_add_library') && (!defined('DRUPAL_CORE_COMPATIBILITY') || DRUPAL_CORE_COMPATIBILITY!=='7.x')) {
+          hostsite_add_library('collapse');
+          $class.=' collapsible collapsed';
+        }
+        $r .= '<fieldset id="'.$options['chartID'].'-series" class="'.$class.'"><legend>'.lang::get('Display Series')."</legend><span>\n";
         $idx=0;
         if(isset($options['includeChartTotalSeries']) && $options['includeChartTotalSeries']){
           // use value = 0 for Total

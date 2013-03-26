@@ -98,8 +98,8 @@ class form_helper extends helper_base {
     asort($categories);
     if (isset($options['needWebsiteInputs']) && !$options['needWebsiteInputs']
         && !empty($options['website_id']) && !empty($options['password'])) {
-      $r .= '<input type="hidden" id="website_id" name="website_id" value="'.$options['website_id'].'">';
-      $r .= '<input type="hidden" id="password" name="password" value="'.$options['password'].'">';
+      $r .= '<input type="hidden" id="website_id" name="website_id" value="'.$options['website_id'].'"/>';
+      $r .= '<input type="hidden" id="password" name="password" value="'.$options['password'].'"/>';
     } else {
       $r .= data_entry_helper::text_input(array(
         'label' => lang::get('Website ID'),
@@ -156,7 +156,7 @@ class form_helper extends helper_base {
    * by the picker.
    */
   private function add_form_picker_js($forms) {
-    self::$javascript .= "prebuilt_forms = ".json_encode($forms).";
+    self::$javascript .= "var prebuilt_forms = ".json_encode($forms).";
 
 $('#form-category-picker').change(function(evt) {
   var opts = '<option value=\"\">".lang::get('&lt;Please select&gt;')."</option>';
@@ -167,10 +167,10 @@ $('#form-category-picker').change(function(evt) {
   $('#form-picker').change();
 });
 
-$('#form-picker').change(function(evt) {
+$('#form-picker').change(function() {
+  var details='', def;
   $('#load-params').attr('disabled','');
   $('#form-params').html('');
-  var details='';
   if ($('#form-picker').val()!=='') {
     def = prebuilt_forms[$('#form-category-picker').val()][$('#form-picker').val()];
     if (typeof def.description !== 'undefined') {
@@ -186,7 +186,7 @@ $('#form-picker').change(function(evt) {
   $('#form-def').hide().html(details).fadeIn();
 });
 
-$('#load-params').click(function(evt) {
+$('#load-params').click(function() {
   if ($('#form-picker').val()==='' || $('#website_id').val()==='' || $('#form-picker').val()==='') {
     alert('".lang::get('Please specify a website ID, password and select a form before proceeding.')."');
   } else {
@@ -229,6 +229,7 @@ $('#load-params').click(function(evt) {
    * </ul>
    */
   public static function prebuilt_form_params_form($options) {
+    hostsite_add_library('collapse');
     require_once('data_entry_helper.php');
     // temporarily disable caching because performance is not as important as reflecting
     // the latest available parameters, surveys etc. in the drop downs
@@ -278,7 +279,11 @@ $('#load-params').click(function(evt) {
         
     }
     $class=(isset($options['expandFirst']) && $options['expandFirst']) ? 'collapsible' : 'collapsible collapsed';
-    foreach($fieldsets as $fieldset=>$content) { 
+    foreach($fieldsets as $fieldset=>$content) {
+      // Drupal 7 collapsible fieldsets broken, see http://drupal.org/node/1607822
+      // so we remove the class
+      if (defined('DRUPAL_CORE_COMPATIBILITY') && DRUPAL_CORE_COMPATIBILITY==='7.x')
+        $class='';
       $r .= "<fieldset class=\"$class\"><legend>$fieldset</legend>\n";
       $r .= $fieldsets[$fieldset];
       $r .= "\n</fieldset>\n";

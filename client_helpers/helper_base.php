@@ -60,8 +60,8 @@ $indicia_templates = array(
           var tabselected=false;
           jQuery.each(validator.errorMap, function(ctrlId, error) {
             // select the tab containing the first error control
-            var ctrl = jQuery('[name=' + ctrlId.replace(/:/g, '\\\\:').replace(/\[/g, '\\\\[').replace(/]/g, '\\\\]') + ']');
-            if (!tabselected && typeof(tabs)!=='undefined') {
+            var ctrl = jQuery('[name=' + ctrlId.replace(/:/g, '\\\\:').replace(/\[/g, '\\\\[').replace(/\\]/g, '\\\\]') + ']');
+            if (!tabselected && typeof tabs !=='undefined') {
               tabs.tabs('select',ctrl.filter('input,select').parents('.ui-tabs-panel')[0].id);
               tabselected = true;
             }
@@ -567,7 +567,7 @@ class helper_base extends helper_config {
         'reportPicker' => array('deps' => array('treeview'), 'javascript' => array(self::$js_path."reportPicker.js")),
         'treeview' => array('deps' => array('jquery'), 'stylesheets' => array(self::$css_path."jquery.treeview.css"), 'javascript' => array(self::$js_path."jquery.treeview.js")),
         'treeview_async' => array('deps' => array('treeview'), 'javascript' => array(self::$js_path."jquery.treeview.async.js", self::$js_path."jquery.treeview.edit.js")),
-        'googlemaps' => array('javascript' => array("http://maps.google.com/maps/api/js?v=3.6&amp;sensor=false")),
+        'googlemaps' => array('javascript' => array("http://maps.google.com/maps/api/js?sensor=false")),
         'virtualearth' => array('javascript' => array('http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1')),
         'fancybox' => array('deps' => array('jquery'), 'stylesheets' => array(self::$js_path.'fancybox/jquery.fancybox.css'), 'javascript' => array(self::$js_path.'fancybox/jquery.fancybox.pack.js')),
         'flickr' => array('deps' => array('fancybox'), 'javascript' => array(self::$js_path."jquery.flickr.js")),
@@ -904,7 +904,7 @@ $('.ui-state-default').live('mouseout', function() {
           $javascript .= "  opts.standardControls.push('draw$tool');\n";
         }
         $javascript .= "  opts.standardControls.push('clearEditLayer');
-  }
+  };
   mapSettingsHooks.push(add_map_tools);\n";      
         if (isset($info['allow_buffer']) && $info['allow_buffer']=='true') 
           $javascript .= "}\n";       
@@ -1356,7 +1356,7 @@ $('.ui-state-default').live('mouseout', function() {
 indiciaData.windowLoaded=false;
 ";
       if (!self::$is_ajax)
-        $script .= "jQuery(document).ready(function($) {\n";
+        $script .= "$(document).ready(function() {\n";
       $script .= "$javascript\n$late_javascript\n";
       if (!self::$is_ajax)
         $script .= "});\n";
@@ -1372,8 +1372,8 @@ indiciaData.windowLoaded=false;
               "  $.each(indiciaData.onloadFns, function(idx, fn) {\n".
               "    fn();\n".
               "  });\n".
-              "  indiciaData.windowLoaded=true\n".              
-              "}\n";
+              "  indiciaData.windowLoaded=true;\n".              
+              "};\n";
           }              
       }
       $script .= $includeWrapper ? "/* ]]> */</script>\n" : "";
@@ -1403,7 +1403,7 @@ indiciaData.windowLoaded=false;
           if (jqElement.is(':radio') || jqElement.is(':checkbox')) {
             //if the element is a radio or checkbox group then highlight the group
             var jqBox = jqElement.parents('.control-box');
-            if (jqBox.length != 0) {
+            if (jqBox.length !== 0) {
               jqBox.eq(0).addClass('ui-state-error');
             } else {
               jqElement.addClass('ui-state-error');
@@ -1417,7 +1417,7 @@ indiciaData.windowLoaded=false;
           if (jqElement.is(':radio') || jqElement.is(':checkbox')) {
             //if the element is a radio or checkbox group then highlight the group
             var jqBox = jqElement.parents('.control-box');
-            if (jqBox.length != 0) {
+            if (jqBox.length !== 0) {
               jqBox.eq(0).removeClass('ui-state-error');
             } else {
               jqElement.removeClass('ui-state-error');
@@ -1437,7 +1437,7 @@ indiciaData.windowLoaded=false;
         errorPlacement: function(error, element) {
           if(element.is(':radio')||element.is(':checkbox')){
             var jqBox = element.parents('.control-box');
-            if (jqBox.length != 0) {
+            if (jqBox.length !== 0) {
               error.insertBefore(jqBox);
             } else {
               error.insertAfter(element);
@@ -1732,11 +1732,12 @@ indiciaData.windowLoaded=false;
           || $rule=='integer') {
         $converted[] = $rule.':true';
       // Now any rules which need parsing or conversion
-      } else if ($rule=='date' && !isset($options['allowVagueDates']) || $options['allowVagueDates']===false) {
+      } elseif ($rule=='date' && !isset($options['allowVagueDates']) || 
+            (isset($options['allowVagueDates']) && $options['allowVagueDates']===false)) {
         $converted[] = 'customDate:true';
-      } else if ($rule=='digit') {
+      } elseif ($rule=='digit') {
         $converted[] = 'digits:true';
-      } else if ($rule=='numeric') {
+      } elseif ($rule=='numeric') {
         $converted[] = 'number:true';
       // the next test uses a regexp named expression to find the digit in a maximum rule (maximum[10])
       } elseif (preg_match('/maximum\[(?P<val>-?\d+)\]/', $rule, $matches)) {

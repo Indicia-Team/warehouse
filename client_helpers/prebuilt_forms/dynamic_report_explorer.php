@@ -242,6 +242,8 @@ class iform_dynamic_report_explorer extends iform_dynamic {
   protected static function get_control_params($auth, $args, $tabalias, $options) {
     iform_load_helpers(array('report_helper'));
     $sharing='reporting';
+    // allow us to call iform_report_get_report_options to get a default report setup, then override report_name
+    $args['report_name']='';
     $reportOptions = array_merge(
       iform_report_get_report_options($args, $auth['read']),
       array(
@@ -258,6 +260,9 @@ class iform_dynamic_report_explorer extends iform_dynamic {
  
   protected static function get_control_map($auth, $args, $tabalias, $options) {
     iform_load_helpers(array('map_helper'));
+    // allow us to call iform_report_get_report_options to get a default report setup, then override report_name
+    $args['report_name']='';
+    $sharing='reporting';
     $reportOptions = array_merge(
       iform_report_get_report_options($args, $auth['read']),
       array(
@@ -298,6 +303,7 @@ class iform_dynamic_report_explorer extends iform_dynamic {
       $args['columns_config']=json_encode($columnLists[self::$reportCount]);
     else
       unset($args['columns_config']);
+    $args['report_name']='';
     $sharing='reporting';
     $reportOptions = array_merge(
       iform_report_get_report_options($args, $auth['read']),
