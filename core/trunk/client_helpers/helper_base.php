@@ -212,18 +212,21 @@ $indicia_templates = array(
     'linked_list_javascript' => '
 {fn} = function() {
   $("#{escapedId}").addClass("ui-state-disabled").html("<option>Loading...</option>");
-  $.getJSON("{request}&query={query}", function(data){
-    var $control = $("#{escapedId}");
-    $control.html("");
-    if (data.length>0) {
-      $control.removeClass("ui-state-disabled");
-      $.each(data, function(i) {
-        $control.append("<option value=" + this.{valueField} + ">" + this.{captionField} + "</option>");
-      });
-    } else {
-      $control.html("<option>{instruct}</option>");
-    }
-  });
+  if (!isNaN($(this).val())) { // skip loading for placeholder text
+    $.getJSON("{request}&{query}", function(data){
+      var $control = $("#{escapedId}");
+      $control.html("");
+      if (data.length>0) {
+        $control.removeClass("ui-state-disabled");
+        $.each(data, function(i) {
+          $control.append("<option value=" + this.{valueField} + ">" + this.{captionField} + "</option>");
+        });
+      } else {
+        $control.html("<option>{instruct}</option>");
+      }
+      $control.change();
+    });
+  }
 };
 $("#{parentControlId}").bind("change.indicia", {fn});
 $("#{parentControlId}").trigger("change.indicia");'."\n",

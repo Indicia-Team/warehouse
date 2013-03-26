@@ -1307,7 +1307,7 @@ class data_entry_helper extends helper_base {
           'auth_token': '$authToken',
           'reportSource': 'local',
           'location_id': $('#imp-location').attr('value'),
-          'created_by_id': $createdById,
+          'created_by_id': $createdById
         }
         //If the user changes the Location in the same entry session then we need to clear all the sample attribute
         //values before filling in new ones (otherwise if there isn't a value to load the old one will remain)
@@ -4521,8 +4521,20 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     $parentControlId = str_replace(':','\\\\:',$options['parentControlId']);
     $escapedId = str_replace(':','\\\\:',$options['id']);
     $fn = preg_replace("/[^A-Za-z0-9]/", "", $options['id'])."_populate";
-    $url = parent::$base_url."index.php/services/data";
-    $request = "$url/".$options['table']."?mode=json&callback=?";
+    if (!empty($options['report'])) {
+      $url = parent::$base_url."index.php/services/report/requestReport";
+      $request = "$url?report=".$options['report'].".xml&mode=json&reportSource=local&callback=?";
+      $query = $options['filterField'] . '="+$(this).val()+"';
+    }
+    else {
+      $url = parent::$base_url."index.php/services/data";
+      $request = "$url/".$options['table']."?mode=json&callback=?";
+      $inArray = array('val');
+      if (!isset($options['filterIncludesNulls']) || $options['filterIncludesNulls'])
+        $inArray[] = null;
+      $query = urlencode(json_encode(array('in'=>array($options['filterField'], $inArray))));
+      $query = 'query=' . str_replace('%22val%22', '"+$(this).val()+"', $query);
+    }
     if (isset($options['parentControlLabel']))
       $instruct = str_replace('{0}', $options['parentControlLabel'], lang::get('Please select a {0} first'));
     else
@@ -4530,8 +4542,6 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     if (array_key_exists('extraParams', $options)) {
       $request .= '&'.self::array_to_query_string($options['extraParams']);
     }
-    $query = urlencode(json_encode(array('in'=>array($options['filterField'], array(null, 'val')))));
-    $query = str_replace('%22val%22', '"+$(this).val()+"', $query);
     self::$javascript .= str_replace(
         array('{fn}','{escapedId}','{request}','{query}','{valueField}','{captionField}','{filterField}','{parentControlId}', '{instruct}'),
         array($fn, $escapedId, $request,$query,$options['valueField'],$options['captionField'],$options['filterField'],$parentControlId, $instruct),
