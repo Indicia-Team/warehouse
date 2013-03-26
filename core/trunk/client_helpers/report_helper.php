@@ -3432,5 +3432,3 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
   }
 
 }
-
-?>

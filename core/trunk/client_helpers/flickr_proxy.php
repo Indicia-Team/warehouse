@@ -69,5 +69,3 @@ $response=$f->call($method, $arguments);
 
 // Dump out the response as JSON
 echo indicia_json_encode($response);
-
-?>
