@@ -422,7 +422,6 @@ class iform_dynamic {
         $html .= '<div class="page-notice ui-state-highlight ui-corner-all">'.lang::get($helpText)."</div>";
       } elseif (preg_match('/\A\[[^�]*\]\z/', $component) === 1) {
         // Component surrounded by [] so represents a control or control block
-        $method = 'get_control_'.preg_replace('/[^a-zA-Z0-9]/', '', strtolower($component));
         // Anything following the component that starts with @ is an option to pass to the control
         $options = array();
         while ($i < count($tabContent)-1 && substr($tabContent[$i+1],0,1)=='@' || trim($tabContent[$i])==='') {
@@ -435,11 +434,23 @@ class iform_dynamic {
             if ($options[$option[0]]=='') $options[$option[0]]=$option[1];            
           }
         }
-
-        if (method_exists(self::$called_class, $method)) { 
+        $parts = explode('.', str_replace(array('[', ']'), '', $component));
+        $method = 'get_control_'.preg_replace('/[^a-zA-Z0-9]/', '', strtolower($component));
+        if (count($parts)===1 && method_exists(self::$called_class, $method)) { 
           //outputs a control for which a specific output function has been written.
           $html .= call_user_func(array(self::$called_class, $method), $auth, $args, $tabalias, $options);
           $hasControls = true;
+        }
+        elseif (count($parts)===2) {
+          require_once(dirname($_SERVER['SCRIPT_FILENAME']) . '/' . data_entry_helper::relative_client_helper_path() . '/prebuilt_forms/extensions/'.$parts[0].'.php');
+          if (method_exists('extension_' . $parts[0], $parts[1])) { 
+            //outputs a control for which a specific extension function has been written.
+            $path = call_user_func(array(self::$called_class, 'getReloadPath')); 
+            $html .= call_user_func(array('extension_' . $parts[0], $parts[1]), $auth, $args, $tabalias, $options, $path);
+            $hasControls = true;
+          } 
+          else
+            $html .= lang::get("The $component extension cannot be found.");
         }
         elseif (($attribKey = array_search(substr($component, 1, -1), $attribNames)) !== false
             || preg_match('/^\[[a-zA-Z]+:(?P<ctrlId>[0-9]+)\]/', $component, $matches)) {
