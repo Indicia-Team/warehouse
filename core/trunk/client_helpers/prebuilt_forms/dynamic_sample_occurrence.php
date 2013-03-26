@@ -1343,9 +1343,10 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    */
   protected static function get_control_locationautocomplete($auth, $args, $tabAlias, $options) {
     $location_list_args=array_merge_recursive(array(
-        'label'=>lang::get('LANG_Location_Label'),
-        'extraParams'=>array_merge(array('orderby'=>'name'), $auth['read'])
+      'extraParams'=>array_merge(array('orderby'=>'name'), $auth['read'])
     ), $options);
+    if (!isset($location_list_args['label']))
+      $location_list_args['label'] = lang::get('LANG_Location_Label');
     if (isset($args['users_manage_own_sites']) && $args['users_manage_own_sites']) {
       $userId = hostsite_get_user_field('indicia_user_id');
       if (!empty($userId)) {
@@ -1367,10 +1368,12 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    */
   protected static function get_control_locationselect($auth, $args, $tabAlias, $options) {
     $location_list_args=array_merge_recursive(array(
-        'label'=>lang::get('LANG_Location_Label'),
-        'view'=>'detail',
         'extraParams'=>array_merge(array('orderby'=>'name'), $auth['read'])
     ), $options);
+    $location_list_args = array_merge(array(
+        'label'=>lang::get('LANG_Location_Label'),
+        'view'=>'detail'
+    ), $location_list_args);
     return data_entry_helper::location_select($location_list_args);
   }
 
