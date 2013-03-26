@@ -29,7 +29,8 @@ function saveComment(occurrence_id) {
       } else {
         alert(data.error);
       }
-    }
+    },
+    'json'
   );
 }
 
