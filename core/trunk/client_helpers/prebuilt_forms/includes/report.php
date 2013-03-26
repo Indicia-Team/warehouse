@@ -209,8 +209,10 @@ function iform_report_get_report_options($args, $readAuth) {
   }
   // If in Drupal, allow the params panel to collapse.
   if (function_exists('drupal_add_js')) {
-    drupal_add_js('misc/collapse.js');
-    $reportOptions['fieldsetClass'] = 'collapsible';
+    if (function_exists('hostsite_add_library') && (!defined('DRUPAL_CORE_COMPATIBILITY') || DRUPAL_CORE_COMPATIBILITY!=='7.x')) {
+      hostsite_add_library('collapse');
+      $reportOptions['fieldsetClass'] = 'collapsible';
+    }
   }
   
   if (empty($args['output']) || $args['output']=='default') {
@@ -225,7 +227,7 @@ function iform_report_get_report_options($args, $readAuth) {
     $reportOptions['rowClass'] = $args['row_class'];
   }
   // Set up a page refresh for dynamic update of the report at set intervals
-  if ($args['refresh_timer']!==0 && is_numeric($args['refresh_timer'])) { // is_numeric prevents injection
+  if (isset($args['refresh_timer']) && $args['refresh_timer']!==0 && is_numeric($args['refresh_timer'])) { // is_numeric prevents injection
     if (isset($args['load_on_refresh']) && !empty($args['load_on_refresh']))
       report_helper::$javascript .= "setTimeout('window.location=\"".$args['load_on_refresh']."\";', ".$args['refresh_timer']."*1000 );\n";
     else

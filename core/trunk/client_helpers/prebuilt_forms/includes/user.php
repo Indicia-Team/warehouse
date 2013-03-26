@@ -115,7 +115,11 @@ function apply_user_replacements($text) {
   if (!is_string($text))
     return $text;
   $replace=array('{user_id}', '{username}', '{email}');
-  $replaceWith=array($user->uid, $user->name, $user->mail);
+  $replaceWith=array(
+      $user->uid, 
+      isset($user->name) ? $user->name : '', 
+      isset($user->mail) ? $user->mail : ''
+  );
   // Do basic replacements and trim the data
   $text=trim(str_replace($replace, $replaceWith, $text));  
   // Look for any profile field replacments

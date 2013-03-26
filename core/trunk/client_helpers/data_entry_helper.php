@@ -584,8 +584,7 @@ class data_entry_helper extends helper_base {
     dateFormat : '".$options['dateFormat']."',
     changeMonth: true,
     changeYear: true,
-    constrainInput: false $button
-    ";
+    constrainInput: false $button";
       // Filter out future dates
       if (!array_key_exists('allow_future', $options) || $options['allow_future']==false) {
         self::$javascript .= ",
@@ -5567,8 +5566,7 @@ if (errors.length>0) {
       $blank_configs = array();
       // Run through the expected configuration settings, checking they are present and not empty
       self::check_config('$base_url', isset(self::$base_url), empty(self::$base_url), $missing_configs, $blank_configs);
-      self::check_config('$upload_path', isset(self::$upload_path), empty(self::$upload_path), $missing_configs, $blank_configs);
-      // don't test $indicia_upload_path as it is assumed to be upload/ if missing.
+      // don't test $indicia_upload_path and $interim_image_folder as they are assumed to be upload/ if missing.
       self::check_config('$geoserver_url', isset(self::$geoserver_url), empty(self::$geoserver_url), $missing_configs, $blank_configs);
       if (substr(self::$geoserver_url, 0, 4) != 'http') {
          $r .= '<li class="ui-widget ui-state-error">Warning: The $geoserver_url setting in helper_config.php should include the protocol (e.g. http://).</li>';
@@ -5587,15 +5585,20 @@ if (errors.length>0) {
         $r .= '<li class="ui-widget ui-state-error">Warning: The following configuration entries are not specified in helper_config.php : '.
             implode(', ', $blank_configs).'. This means the respective areas of functionality will not be available.</li>';
       }
-    // Test we have a writeable cache directory
-    $cacheFolder = self::relative_client_helper_path() . (isset(parent::$cache_folder) ? parent::$cache_folder : 'cache/');
-    if (!is_dir($cacheFolder)) {
-      $r .= '<li class="ui-state-error">The cache path setting in helper_config.php points to a missing directory. This will result in slow form loading performance.</li>';
-    } elseif (!is_writeable($cacheFolder)) {
-      $r .= '<li class="ui-state-error">The cache path setting in helper_config.php points to a read only directory (' . $cacheFolder . '). This will result in slow form loading performance.</li>';
-    } elseif ($fullInfo) {
-        $r .= '<li>Success: Cache directory is present and writeable.</li>';
+      // Test we have a writeable cache directory
+      $cacheFolder = self::relative_client_helper_path() . (isset(parent::$cache_folder) ? parent::$cache_folder : 'cache/');
+      if (!is_dir($cacheFolder)) {
+        $r .= '<li class="ui-state-error">The cache path setting in helper_config.php points to a missing directory. This will result in slow form loading performance.</li>';
+      } elseif (!is_writeable($cacheFolder)) {
+        $r .= '<li class="ui-state-error">The cache path setting in helper_config.php points to a read only directory (' . $cacheFolder . '). This will result in slow form loading performance.</li>';
+      } elseif ($fullInfo) {
+          $r .= '<li>Success: Cache directory is present and writeable.</li>';
       }
+      $interim_image_folder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
+      if (!is_writeable(self::relative_client_helper_path() . $interim_image_folder)) 
+        $r .= '<li class="ui-state-error">The interim_image_folder setting in helper_config.php points to a read only directory (' . $interim_image_folder . '). This will prevent image uploading.</li>';
+      elseif ($fullInfo)
+        $r .= '<li>Success: Interim image upload directory is writeable.</li>';
     }
     $r .= '</ul></div>';
     return $r;
