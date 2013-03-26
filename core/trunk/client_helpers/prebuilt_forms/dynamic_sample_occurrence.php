@@ -1338,6 +1338,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
 
   /**
    * Get the location control as an autocomplete.
+   * As well as the standard location_autocomplete options, set personSiteAttrId to the attribute ID of 
+   * a multi-value person attribute used to link people to the sites they record at.
    */
   protected static function get_control_locationautocomplete($auth, $args, $tabAlias, $options) {
     $location_list_args=array_merge_recursive(array(
@@ -1346,8 +1348,14 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     ), $options);
     if (isset($args['users_manage_own_sites']) && $args['users_manage_own_sites']) {
       $userId = hostsite_get_user_field('indicia_user_id');
-      if (!empty($userId))
-        $location_list_args['extraParams']['created_by_id']=$userId;
+      if (!empty($userId)) {
+        if (!empty($options['personSiteAttrId'])) {
+          $location_list_args['extraParams']['user_id']=$userId;
+          $location_list_args['extraParams']['person_site_attr_id']=$options['personSiteAttrId'];
+          $location_list_args['report'] = 'library/locations/my_sites_lookup';
+        } else 
+          $location_list_args['extraParams']['created_by_id']=$userId;
+      }
       $location_list_args['extraParams']['view']='detail';
       $location_list_args['allowCreate']=true;
     }

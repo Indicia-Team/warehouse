@@ -38,7 +38,8 @@ class extension_my_sites {
       'label' => lang::get('Locality to search'),
       'fieldname' => 'locality_id',
       'id' => 'locality_id',
-      'extraParams' => $auth['read']
+      'extraParams' => $auth['read'] + array('orderby' => 'name'),
+      'blankText'=>'<' . lang::get('please select') . '>'
     );
     if (count($locationTypes)>1) {
       $r .= data_entry_helper::select(array(
@@ -47,7 +48,8 @@ class extension_my_sites {
         'table' => 'termlists_term',
         'valueField' => 'id',
         'captionField' => 'term',
-        'extraParams' => $auth['read'] + array('query' => urlencode(json_encode(array('in'=>array('id', $locationTypes)))))
+        'extraParams' => $auth['read'] + array('orderby' => 'term', 'query' => urlencode(json_encode(array('in'=>array('id', $locationTypes))))),
+        'blankText'=>'<' . lang::get('please select') . '>'
       ));
       // link the locality select to the location type select
       $localityOpts = array_merge(array(
@@ -60,6 +62,7 @@ class extension_my_sites {
     else {
       // no need for a locality select, so just filter to the location type
       $localityOpts['extraParams']['location_type_id'] = $locationTypes[0];
+      $localityOpts['default'] = hostsite_get_user_field('location');
     }
     $r .= data_entry_helper::location_select($localityOpts);
     $r .= data_entry_helper::location_select(array(
@@ -72,7 +75,8 @@ class extension_my_sites {
       'parentControlId' => 'locality_id',
       'parentControlLabel' => lang::get('Locality to search'),
       'filterField' => 'parent_id',
-      'filterIncludesNulls' => false
+      'filterIncludesNulls' => false,
+      'blankText'=>'<' . lang::get('please select') . '>'
     ));
     $r .= '<button id="add-site-button" type="button">' . lang::get('Add to My Sites') . '</button>';
     $postUrl = iform_ajaxproxy_url($node, 'person_attribute_value');
