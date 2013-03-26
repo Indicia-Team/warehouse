@@ -101,6 +101,7 @@ function data_cleaner_cleanout_old_messages($rules, $db) {
 function data_cleaner_run_rules($rules, $db) {
   $count=0;
   foreach ($rules as $rule) {
+    $tm = microtime(true);
     if (isset($rule['errorMsgField'])) 
       // rules are able to specify a different field (e.g. from the verification rule data) to provide the error message.
       $errorField = $rule['errorMsgField'];
@@ -128,6 +129,9 @@ function data_cleaner_run_rules($rules, $db) {
         echo $db->last_query().'<br/>';  
       }
     }
+    $tm = microtime(true) - $tm;  
+    if ($tm>3) 
+      kohana::log('alert', "Data cleaner rule ".$rule['testType']." took $tm seconds");
   }
   
   echo "Data cleaner generated $count messages.<br/>";
