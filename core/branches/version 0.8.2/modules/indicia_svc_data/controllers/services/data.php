@@ -893,7 +893,7 @@ class Data_Controller extends Data_Service_Base_Controller {
             $like[$param]=str_replace('*', '%', $value);
           }
         } else {
-          Kohana::log('alert', "Trying to filter on unknown column $param. Ignoring.");
+          Kohana::log('debug', "Trying to filter on unknown column $param. Ignoring.");
         }
       }
     }
