@@ -47,11 +47,11 @@
       je.setView('form');
     });
 
-  }
+  };
 }(jQuery));
 
-$.fn.jsonedit.defaults = {
+jQuery.fn.jsonedit.defaults = {
   schema: {},
   fieldname: 'jsonwidget'
-}
+};
 
