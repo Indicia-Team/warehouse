@@ -115,7 +115,7 @@ $indicia_templates = array(
   'tree_browser_node' => '<span>{caption}</span>',
   'autocomplete' => '<input type="hidden" class="hidden" id="{id}" name="{fieldname}" value="{default}" />'."\n".
       '<input id="{inputId}" name="{inputId}" value="{defaultCaption}" {class} {disabled} {title}/>'."\n",
-  'autocomplete_javascript' => "jQuery('input#{escaped_input_id}').autocomplete('{url}/{table}',
+  'autocomplete_javascript' => "jQuery('input#{escaped_input_id}').autocomplete('{url}',
       {
         extraParams : {
           orderby : '{captionField}',
@@ -218,6 +218,9 @@ $indicia_templates = array(
       $control.html("");
       if (data.length>0) {
         $control.removeClass("ui-state-disabled");
+        if (data.length>1) {
+          $control.append("<option>&lt;Please select&gt;</option>");
+        }
         $.each(data, function(i) {
           $control.append("<option value=" + this.{valueField} + ">" + this.{captionField} + "</option>");
         });
