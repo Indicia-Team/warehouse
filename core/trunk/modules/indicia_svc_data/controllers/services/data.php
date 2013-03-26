@@ -75,7 +75,10 @@ class Data_Controller extends Data_Service_Base_Controller {
       'taxon_relation',
       'taxon_group',
       'user_trust',
-      'notification'
+      'notification',
+      'occurrence_attribute_value',
+      'sample_attribute_value',
+      'person_attribute_value'
   );
 
   // Standard functionality is to use the list_<plural_entity> views to provide a mapping between entity id

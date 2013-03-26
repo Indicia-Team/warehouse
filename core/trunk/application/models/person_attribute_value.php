@@ -37,4 +37,16 @@ class Person_Attribute_Value_Model extends Attribute_Value_ORM {
     self::attribute_validation($array, 'person');    
     return parent::validate($array, $save);
   }
+  
+  /**
+   * Allow submission with a User ID, rather than a Person ID, for simplicity.
+   */
+  protected function preSubmit()
+  {
+    if (array_key_exists('user_id', $this->submission['fields']) && !array_key_exists('person_id', $this->submission['fields'])) {
+      $user = $this->db->select('person_id')->from('users')->where(array('id'=>$this->submission['fields']['user_id']['value']))
+          ->get()->current();
+      $this->submission['fields']['person_id']=array('value'=>$user->person_id);
+    }
+  }
 }
