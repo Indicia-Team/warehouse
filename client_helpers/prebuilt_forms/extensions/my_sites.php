@@ -78,7 +78,7 @@ class extension_my_sites {
       'filterIncludesNulls' => false,
       'blankText'=>'<' . lang::get('please select') . '>'
     ));
-    $r .= '<button id="add-site-button" type="button">' . lang::get('Add to My Sites') . '</button>';
+    $r .= '<button id="add-site-button" type="button">' . lang::get('Add selected site to My Sites') . '</button>';
     $postUrl = iform_ajaxproxy_url($node, 'person_attribute_value');
     data_entry_helper::$javascript .= "
       $('#add-site-button').click(function() {
@@ -112,6 +112,31 @@ class extension_my_sites {
       }
     ";
     return $r;
+  }
+  
+  /**
+   * A select box allowing you to pick one of your sites.
+   * Supply @personSiteAttrId as an option to give the ID of the person custom attribute used
+   * to link people to their sites.
+   */
+  public function my_sites_select($auth, $args, $tabalias, $options, $path) {
+    $location_list_args=array_merge_recursive(array(
+      'extraParams'=>array_merge(array('orderby'=>'name'), $auth['read'])
+    ), $options);
+    if (!isset($location_list_args['label']))
+      $location_list_args['label'] = lang::get('Select site');
+    $userId = hostsite_get_user_field('indicia_user_id');
+    if (!empty($userId)) {
+      if (!empty($options['personSiteAttrId'])) {
+        $location_list_args['extraParams']['user_id']=$userId;
+        $location_list_args['extraParams']['person_site_attr_id']=$options['personSiteAttrId'];
+        $location_list_args['report'] = 'library/locations/my_sites_lookup';
+      } else 
+        $location_list_args['extraParams']['created_by_id']=$userId;
+    }
+    $location_list_args['extraParams']['view']='detail';
+    $location_list_args['allowCreate']=true;
+    return data_entry_helper::location_autocomplete($location_list_args);
   }
   
 }
