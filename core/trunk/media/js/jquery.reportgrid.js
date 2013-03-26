@@ -739,14 +739,15 @@ function simple_tooltip(target_items, name){
         $(div).find('tbody').dblclick(function(evt) {
           if (typeof indiciaData.reportlayer!=="undefined") {
             var tr=$(evt.target).parents('tr')[0], featureId=tr.id.substr(3), 
-                featureArr, map=indiciaData.reportlayer.map, extent;
+                featureArr, map=indiciaData.reportlayer.map, extent, zoom;
             featureArr=map.div.getFeaturesByVal(indiciaData.reportlayer, featureId, div.settings.rowId);
             if (featureArr.length!==0) {
               extent = featureArr[0].geometry.getBounds().clone();
               for(var i=1;i<featureArr.length;i++) {
                   extent.extend(featureArr[i].geometry.getBounds());
               }
-              indiciaData.reportlayer.map.zoomToExtent(extent);
+              zoom = indiciaData.reportlayer.map.getZoomForExtent(extent)-2;
+              indiciaData.reportlayer.map.setCenter(extent.getCenterLonLat(), zoom);
             }
           }
         });
