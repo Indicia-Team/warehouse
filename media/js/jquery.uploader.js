@@ -270,7 +270,7 @@ var checkSubmitInProgress = function () {
 /**
  * Main default options for the uploader
  */
-$.fn.uploader.defaults = {
+jQuery.fn.uploader.defaults = {
   caption : "Files",
   uploadSelectBtnCaption : 'Add file(s)',
   flickrSelectBtnCaption : 'Select photo on Flickr',

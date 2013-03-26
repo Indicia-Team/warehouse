@@ -1692,13 +1692,12 @@ mapGeoreferenceHooks = [];
     });
 
   };
-
 })(jQuery);
-
+  
 /**
  * Main default options for the map
  */
-$.fn.indiciaMapPanel.defaults = {
+jQuery.fn.indiciaMapPanel.defaults = {
     indiciaSvc : '',
     indiciaGeoSvc : '',
     readAuth : '',
@@ -1830,20 +1829,9 @@ $.fn.indiciaMapPanel.defaults = {
 };
 
 /**
- * Settings for the georeference lookup.
- */
-$.fn.indiciaMapPanel.georeferenceLookupSettings = {
-  georefSearchId: 'imp-georef-search',
-  georefSearchBtnId: 'imp-georef-search-btn',
-  georefCloseBtnId: 'imp-georef-close-btn',
-  georefOutputDivId: 'imp-georef-output-div',
-  georefDivId: 'imp-georef-div'
-};
-
-/**
  * Default options to pass to the openlayers map constructor
  */
-$.fn.indiciaMapPanel.openLayersDefaults = {
+jQuery.fn.indiciaMapPanel.openLayersDefaults = {
     projection: 3857,
     displayProjection: 4326,
     units: "m",
@@ -1852,25 +1840,18 @@ $.fn.indiciaMapPanel.openLayersDefaults = {
     maxExtent: new OpenLayers.Bounds(-20037508, -20037508, 20037508, 20037508.34)
 };
 
+
 /**
- * A utility function to convert an OpenLayers filter into text, which can be supplied to a WMS filter call to GeoServer.
+ * Settings for the georeference lookup.
  */
-$.fn.indiciaMapPanel.convertFilterToText = function(filter) {
-  // First, get the filter as XML DOM
-  var dom = new OpenLayers.Format.Filter.v1_0_0().write(filter);
-  // Now, convert the XML to text
-  var serializer, serialized;
-  try {
-    // XMLSerializer exists in current Mozilla browsers
-    serializer = new XMLSerializer();
-    serialized = serializer.serializeToString(dom);
-  }
-  catch (e) {
-    // Internet Explorer has a different approach to serializing XML
-    serialized = dom.xml;
-  }
-  return serialized;
+jQuery.fn.indiciaMapPanel.georeferenceLookupSettings = {
+    georefSearchId: 'imp-georef-search',
+    georefSearchBtnId: 'imp-georef-search-btn',
+    georefCloseBtnId: 'imp-georef-close-btn',
+    georefOutputDivId: 'imp-georef-output-div',
+    georefDivId: 'imp-georef-div'
 };
+
 
 /**
  * Function that formats the response from a SelectFeature action.

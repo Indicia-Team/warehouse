@@ -1390,7 +1390,7 @@ jsonwidget.editor.setFormOnSubmit = function () {
   // submitted, the JSON output is updated.
   // Keep a local var for the editor, so it stays in scope when we submit
   var editor=this;
-  $('#'+this.htmlids.formdiv).parents('form').submit(function () {
+  jQuery('#'+this.htmlids.formdiv).parents('form').submit(function () {
     if (editor.currentView==="form") {
       editor.updateJSON();
     }

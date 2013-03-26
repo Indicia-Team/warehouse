@@ -12,6 +12,10 @@
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  */
 
+var enableBuffering
+
+(function ($) {
+
 /**
  * Method which copies the features on a layer into a WKT in a form input.
  */
@@ -94,7 +98,7 @@ function rebuildBuffer(div) {
   });
 }
 
-function enableBuffering() {
+enableBuffering = function() {
   // add a mapinitialisation hook to add a layer for buffered versions of polygons
   mapInitialisationHooks.push(function(div) {
     var style = $.extend({}, div.settings.boundaryStyle);
@@ -138,4 +142,6 @@ function enableBuffering() {
       }
     });
   });
-}
+};
+
+}(jQuery));
