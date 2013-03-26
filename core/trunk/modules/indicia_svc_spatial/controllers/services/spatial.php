@@ -122,7 +122,6 @@ class Spatial_Controller extends Service_Base_Controller {
         $db = new Database;
         $wkt = $params['wkt'];
         $buffer = $params['buffer'];
-        kohana::log('debug', "SELECT st_astext(st_buffer(st_geomfromtext('$wkt'),$buffer)) AS wkt;");
         $result = $db->query("SELECT st_astext(st_buffer(st_geomfromtext('$wkt'),$buffer)) AS wkt;")->current();
         $r = $result->wkt;
       }
