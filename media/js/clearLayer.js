@@ -26,7 +26,8 @@
  *  - <OpenLayers.Control>
  *  
  */
-OpenLayers.Control.ClearLayer = OpenLayers.Class(OpenLayers.Control, {
+(function($) {
+  OpenLayers.Control.ClearLayer = OpenLayers.Class(OpenLayers.Control, {
 
     /**
      * Property: layers
@@ -93,5 +94,5 @@ OpenLayers.Control.ClearLayer = OpenLayers.Class(OpenLayers.Control, {
    
     
     CLASS_NAME: "OpenLayers.Control.ClearLayer"
-});
-
+  });
+})(jQuery);

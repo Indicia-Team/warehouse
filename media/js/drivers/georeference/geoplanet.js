@@ -18,39 +18,41 @@
  * Yahoo! GeoPlanet API. 
  */
 
-function Georeferencer(mapdiv, callback) {
-  var settings = mapdiv.georefOpts;
-  if (settings.geoplanet_api_key==undefined || settings.geoplanet_api_key.length===0) {
-    alert('Incorrect configuration - Geoplanet API Key not specified.');
-    throw('Incorrect configuration - Geoplanet API Key not specified.');
-  }
-  
-  this.georeference = function(searchtext) {
-    var split=searchtext.split(','), tokens, searchfor, searchedplace;
-    // the name of the town/village to match etc might precede a comma
-    searchedplace=split[0];
-    searchtext = searchtext.replace(/,/gi, ' ');
-    var tokens = [searchtext], searchfor;
-    if (settings.georefPreferredArea!=='') {
-      tokens.push(settings.georefPreferredArea);
+var Georeferencer;
+
+(function ($) {
+  Georeferencer = function(mapdiv, callback) {
+    var settings = mapdiv.georefOpts;
+    if (settings.geoplanet_api_key===undefined || settings.geoplanet_api_key.length===0) {
+      alert('Incorrect configuration - Geoplanet API Key not specified.');
+      throw('Incorrect configuration - Geoplanet API Key not specified.');
     }
-    if (settings.georefCountry!=='') {
-      tokens.push(settings.georefCountry);
-    }
-    searchfor=tokens.join(' ');
-    var request = 'http://where.yahooapis.com/v1/places.q(' + searchfor + ');count=100';
-    $.getJSON(request + "?format=json&lang="+settings.georefLang+
-            "&appid="+settings.geoplanet_api_key+"&callback=?", function(data){
+
+    this.georeference = function(searchtext) {
+      var split=searchtext.split(','), tokens=[searchtext], searchfor, searchedplace, request;
+      // the name of the town/village to match etc might precede a comma
+      searchedplace=split[0];
+      searchtext = searchtext.replace(/,/gi, ' ');
+      if (settings.georefPreferredArea!=='') {
+        tokens.push(settings.georefPreferredArea);
+      }
+      if (settings.georefCountry!=='') {
+        tokens.push(settings.georefCountry);
+      }
+      searchfor=tokens.join(' ');
+      request = 'http://where.yahooapis.com/v1/places.q(' + searchfor + ');count=100';
+      $.getJSON(request + "?format=json&lang="+settings.georefLang+
+            "&appid="+settings.geoplanet_api_key+"&callback=?", function(data) {
           // an array to store the responses in the required country, because GeoPlanet will not limit to a country
           var places = [], converted={};
-          if (typeof data.places.place !== "undefined") {
+          if (data.places.place !== undefined) {
             jQuery.each(data.places.place, function(i,place) {
               // Ignore places outside the chosen country, plus ignore places that were hit because they
               // are similar to the country name or preferred area we are searching in.
-              if ((!settings.georefCountry || place.country.toUpperCase()==settings.georefCountry.toUpperCase()) &&
-                  (place.name.toUpperCase().indexOf(settings.georefCountry.toUpperCase())==-1 &&
-                  (place.name.toUpperCase().indexOf(settings.georefPreferredArea.toUpperCase())==-1 || settings.georefPreferredArea == '') ||
-                  place.name.toUpperCase().indexOf(searchedplace.toUpperCase())!=-1)) {
+              if ((!settings.georefCountry || place.country.toUpperCase()===settings.georefCountry.toUpperCase()) &&
+                  (place.name.toUpperCase().indexOf(settings.georefCountry.toUpperCase())===-1 &&
+                  (place.name.toUpperCase().indexOf(settings.georefPreferredArea.toUpperCase())===-1 || settings.georefPreferredArea === '') ||
+                  place.name.toUpperCase().indexOf(searchedplace.toUpperCase())!==-1)) {
                 // make the place object readable by indicia (i.e. standardised with all drivers)
                 place.centroid.x = place.centroid.longitude;
                 place.centroid.y = place.centroid.latitude;
@@ -63,15 +65,17 @@ function Georeferencer(mapdiv, callback) {
               }
             });
           }
-          callback(mapdiv, places)
-        });
-  }
-};
+          callback(mapdiv, places);
+        }
+      );
+    };
+  };
+}) (jQuery);
 
 /**
  * Default settings for this driver
  */
-$.fn.indiciaMapPanel.georeferenceDriverSettings = {
+jQuery.fn.indiciaMapPanel.georeferenceDriverSettings = {
   georefPreferredArea : 'gb',
   georefCountry : 'United Kingdom',
   georefLang : 'en-EN',

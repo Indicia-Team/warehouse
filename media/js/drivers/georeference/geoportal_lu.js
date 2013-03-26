@@ -18,47 +18,50 @@
  * service at geoportal.lu. 
  */
  
-function Georeferencer(mapdiv, callback) {
+var Georeferencer;
+
+(function ($) {
+  Georeferencer = function(mapdiv, callback) {
   
-  this.georeference = function(searchtext) {
-    var request = mapdiv.georefOpts.proxy +  
-        '?url=http://map.geoportal.lu/locationsearch&query=' + searchtext + '&lang=' + mapdiv.georefOpts.georefLang +
-            '&subtype=Commune,Localite';
-    $.getJSON(request, function(data){
-          // an array to store the responses in the required country
-          var places = [];
-          var converted={};
-          jQuery.each(data.results, function(i,place) {
-            converted = {
-              name : place.label,
-              display : place.listlabel,
-              epsg: 2169,
-              centroid: {
-                x: (place.bbox[0] + place.bbox[2])/2,
-                y: (place.bbox[1] + place.bbox[3])/2
+    this.georeference = function(searchtext) {
+      var request = mapdiv.georefOpts.proxy +  
+          '?url=http://map.geoportal.lu/locationsearch&query=' + searchtext + '&lang=' + mapdiv.georefOpts.georefLang +
+              '&subtype=Commune,Localite';
+      $.getJSON(request, function(data) {
+        // an array to store the responses in the required country
+        var places = [], converted={};
+        jQuery.each(data.results, function(i,place) {
+          converted = {
+            name : place.label,
+            display : place.listlabel,
+            epsg: 2169,
+            centroid: {
+              x: (place.bbox[0] + place.bbox[2])/2,
+              y: (place.bbox[1] + place.bbox[3])/2
+            },
+            boundingBox: {
+              southWest: {
+                x: place.bbox[0], 
+                y: place.bbox[1]
               },
-              boundingBox: {
-                southWest: {
-                  x: place.bbox[0], 
-                  y: place.bbox[1]
-                },
-                northEast: {
-                  x: place.bbox[2], 
-                  y: place.bbox[3]
-                }
-              },
-              obj: place
-            };
-            places.push(converted);
-          });
-          callback(mapdiv, places);
+              northEast: {
+                x: place.bbox[2], 
+                y: place.bbox[3]
+              }
+            },
+            obj: place
+          };
+          places.push(converted);
         });
+        callback(mapdiv, places);
+      });
+    };
   };
-}
+}) (jQuery);
 
 /**
  * Default settings for this driver
  */
-$.fn.indiciaMapPanel.georeferenceDriverSettings = {
+jQuery.fn.indiciaMapPanel.georeferenceDriverSettings = {
   georefLang : 'en'
 };
