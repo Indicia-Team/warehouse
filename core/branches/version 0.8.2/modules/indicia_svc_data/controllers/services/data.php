@@ -33,6 +33,8 @@ class Data_Controller extends Data_Service_Base_Controller {
   // if there is an error
   protected $response;
   protected $content_type;
+  
+  // @todo: THE FOLLOWING SECTION IS NOT USED!
 
   // Read/Write Access to entities: there are several options:
   // 1) Standard: Restricted read and write access dependant on website id.
@@ -66,12 +68,17 @@ class Data_Controller extends Data_Service_Base_Controller {
       'person',
       'sample',
       'sample_comment',
+      'sample_image',
       'survey',
       'user',
       'taxa_taxon_list',
       'taxon_relation',
       'taxon_group',
-      'notification'
+      'user_trust',
+      'notification',
+      'occurrence_attribute_value',
+      'sample_attribute_value',
+      'person_attribute_value'
   );
 
   // Standard functionality is to use the list_<plural_entity> views to provide a mapping between entity id
@@ -82,7 +89,9 @@ class Data_Controller extends Data_Service_Base_Controller {
       'taxa_taxon_list',
       'taxon_relation',
       'taxon_group',
+      'taxon_image',
       'notification',
+      'user_trust',
       'cache_taxon_searchterm',
       'cache_taxa_taxon_list'
   );
@@ -431,6 +440,11 @@ class Data_Controller extends Data_Service_Base_Controller {
   public function user_identifier()
   {
     $this->handle_call('user_identifier');
+  }
+  
+  public function user_trust()
+  {
+    $this->handle_call('user_trust');
   }
 
   /**
