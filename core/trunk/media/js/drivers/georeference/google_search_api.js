@@ -20,65 +20,68 @@
 
 google.load("search", "1");
 
-function Georeferencer(mapdiv, callback) {
-  this.mapdiv = mapdiv;
-  this.localSearch = new google.search.LocalSearch();
-  this.localSearch.setResultSetSize(google.search.Search.LARGE_RESULTSET);
-  // make the place search near the chosen location
-  var tokens = [], near;
-  if (this.mapdiv.georefOpts.georefPreferredArea!=='') {
-    tokens.push(this.mapdiv.georefOpts.georefPreferredArea);
-  }
-  if (this.mapdiv.georefOpts.georefCountry!=='') {
-    tokens.push(this.mapdiv.georefOpts.georefCountry);
-  }
-  near=tokens.join(', ');
-  this.localSearch.setCenterPoint(near);
-  
-  this.callback = callback;
-  
-  this.localSearch.setSearchCompleteCallback(this,
-        function() {
-          // an array to store the responses in the required country, because Google search will not limit to a country
-          var places = [];
-          var converted={};
-          jQuery.each(this.localSearch.results, function(i,place) {
-            converted = {
-              name : place.titleNoFormatting,
-              display : place.title,
-              centroid: {
-                x: place.lng,
-                y: place.lat
+var Georeferencer;
+
+(function ($) {
+  Georeferencer = function(mapdiv, callback) {
+    this.mapdiv = mapdiv;
+    this.localSearch = new google.search.LocalSearch();
+    this.localSearch.setResultSetSize(google.search.Search.LARGE_RESULTSET);
+    // make the place search near the chosen location
+    var tokens = [], near;
+    if (this.mapdiv.georefOpts.georefPreferredArea!=='') {
+      tokens.push(this.mapdiv.georefOpts.georefPreferredArea);
+    }
+    if (this.mapdiv.georefOpts.georefCountry!=='') {
+      tokens.push(this.mapdiv.georefOpts.georefCountry);
+    }
+    near=tokens.join(', ');
+    this.localSearch.setCenterPoint(near);
+
+    this.callback = callback;
+
+    this.localSearch.setSearchCompleteCallback(this,
+      function() {
+        // an array to store the responses in the required country, because Google search will not limit to a country
+        var places = [], converted={};
+        jQuery.each(this.localSearch.results, function(i,place) {
+          converted = {
+            name : place.titleNoFormatting,
+            display : place.title,
+            centroid: {
+              x: place.lng,
+              y: place.lat
+            },
+            // create a nominal bounding box
+            boundingBox: {
+              southWest: {
+                x: parseFloat(place.lng)-0.01, 
+                y: parseFloat(place.lat)-0.01
               },
-              // create a nominal bounding box
-              boundingBox: {
-                southWest: {
-                  x: parseFloat(place.lng)-0.01, 
-                  y: parseFloat(place.lat)-0.01
-                },
-                northEast: {
-                  x: parseFloat(place.lng)+0.01, 
-                  y: parseFloat(place.lat)+0.01 
-                }
-              },
-              obj: place
-            }
-            places.push(converted);
-          });
-          this.callback(this.mapdiv, places);
-        }
-  );
+              northEast: {
+                x: parseFloat(place.lng)+0.01, 
+                y: parseFloat(place.lat)+0.01 
+              }
+            },
+            obj: place
+          };
+          places.push(converted);
+        });
+        this.callback(this.mapdiv, places);
+      }
+    );
 
   
-  this.georeference = function(searchtext) {
-    this.localSearch.execute(searchtext);
-  }
-};
+    this.georeference = function(searchtext) {
+      this.localSearch.execute(searchtext);
+    };
+  };
+}) (jQuery);
 
 /**
  * Default this.mapdiv.georefOpts for this driver
  */
-$.fn.indiciaMapPanel.georeferenceDriverSettings = {
+jQuery.fn.indiciaMapPanel.georeferenceDriverSettings = {
   georefPreferredArea : '',
   georefCountry : 'UK'
 };
