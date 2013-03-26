@@ -55,24 +55,31 @@ function storeGeomsInForm(div) {
 }
 
 function bufferFeature(div, feature) {
+  var storeBuffer = function(buffer) {
+    feature.buffer = buffer;
+    bufferLayer.addFeatures([buffer]);
+    indiciaData.buffering = false;
+    if (typeof indiciaData.submitting!=="undefined" && indiciaData.submitting) {
+      storeGeomsInForm(div);
+      $('#run-report').parents('form')[0].submit();
+    }
+  }
+  
   if (typeof feature.geometry!=="undefined" && feature.geometry!==null) {
-    indiciaData.buffering = true;
-    $.ajax({
-      url: indiciaData.mapdiv.settings.indiciaSvc + 'index.php/services/spatial/buffer'
-          +'?wkt='+feature.geometry.toString()+'&buffer='+$('#geom_buffer').val()+'&callback=?',
-      dataType: 'json',
-      success: function(buffered) {
-        var buffer = new OpenLayers.Feature.Vector(OpenLayers.Geometry.fromWKT(buffered.response));
-        // link the feature to its buffer, for easy removal
-        feature.buffer = buffer;
-        bufferLayer.addFeatures([buffer]);
-        indiciaData.buffering = false;
-        if (typeof indiciaData.submitting!=="undefined" && indiciaData.submitting) {
-          storeGeomsInForm(div);
-          $('#run-report').parents('form')[0].submit();
-        }
-      }
-    });
+    if ($('#geom_buffer').val()==='0') {
+      storeBuffer(new OpenLayers.Feature.Vector(feature.geometry));
+    }
+    else {
+      indiciaData.buffering = true;
+      $.post(indiciaData.mapdiv.settings.indiciaSvc + 'index.php/services/spatial/buffer?callback=?',
+        'wkt='+feature.geometry.toString()+'&buffer='+$('#geom_buffer').val(),
+        function(buffered) {
+          var buffer = new OpenLayers.Feature.Vector(OpenLayers.Geometry.fromWKT(buffered.response));
+          storeBuffer(buffer);
+        },
+        'json'
+      );
+    }
   }
 }
 
