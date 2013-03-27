@@ -40,6 +40,9 @@ mapGeoreferenceHooks = [];
 
     // The ghost grid square drawn when hovering
     var ghost=null;
+    
+    var plusKeyDown=false;
+    var minusKeyDown=false;
 
     /**
      * Adds the distribution point indicated by a record object to a list of features.
@@ -1045,7 +1048,7 @@ mapGeoreferenceHooks = [];
       var metres = div.map.getScale() / 200;
       if (typeof precision === "undefined") {
         // now round to find appropriate square size
-        if (metres < 5) {
+        if (metres < 3) {
           precision = 10;
         } else if (metres < 30) {
           precision = 8;
@@ -1057,6 +1060,10 @@ mapGeoreferenceHooks = [];
           precision = 2;
         }
       }
+      // + and - keys can change the grid square precision
+      precision = plusKeyDown ? precision + 2 : precision;
+      precision = minusKeyDown ? precision - 2 : precision;
+        
       // enforce precision limits if specified in the settings
       if (div.settings.clickedSrefPrecisionMin !== '') {
         precision = Math.max(div.settings.clickedSrefPrecisionMin, precision);
@@ -1258,6 +1265,54 @@ mapGeoreferenceHooks = [];
 
       // Constructs the map
       div.map = new OpenLayers.Map($(this)[0], olOptions);
+      
+      // track plus and minus key presses, which influence selected grid square size
+      $(document).keydown(function(event) {
+        var change=false;
+        switch (event.which) {
+          case 61: case 107:
+            // prevent some browsers autorepeating
+            if (!plusKeyDown) {
+              plusKeyDown = true;
+              change=true;
+            }
+            break;
+          case 173: case 109:
+            if (!minusKeyDown) {
+              minusKeyDown = true;
+              change=true;
+            }
+            break;
+        };
+        if (change) {
+          // force a square redraw when mouse moves
+          removeAllFeatures(div.map.editLayer, 'ghost');
+          ghost=null;
+        }
+      });
+      $(document).keyup(function(event) {
+        var change=false;
+        switch (event.which) {
+          case 61: case 107:
+            // prevent some browsers autorepeating
+            if (plusKeyDown) {
+              plusKeyDown = false;
+              change=true;
+            }
+            break;
+          case 173: case 109:
+            if (minusKeyDown) {
+              minusKeyDown = false;
+              change=true;
+            }
+            break;
+        };
+        if (change) {
+          // force a square redraw when mouse moves
+          removeAllFeatures(div.map.editLayer, 'ghost');
+          ghost=null;
+        }
+      });
 
       // setup the map to save the last position
       if (div.settings.rememberPos && typeof $.cookie !== "undefined") {
@@ -1751,8 +1806,8 @@ jQuery.fn.indiciaMapPanel.defaults = {
     srefSystemId: 'imp-sref-system',
     geomId: 'imp-geom',
     boundaryGeomId: 'imp-boundary-geom',
-    clickedSrefPrecisionMin: '', // depends on sref system, but for OSGB this would be 2,4,6,8,10 etc = length of grid reference
-    clickedSrefPrecisionMax: '8',
+    clickedSrefPrecisionMin: '2', // depends on sref system, but for OSGB this would be 2,4,6,8,10 etc = length of grid reference
+    clickedSrefPrecisionMax: '10',
     msgGeorefSelectPlace: 'Select from the following places that were found matching your search, then click on the map to specify the exact location:',
     msgGeorefNothingFound: 'No locations found with that name. Try a nearby town name.',
     msgGetInfoNothingFound: 'No occurrences were found at the location you clicked.',
