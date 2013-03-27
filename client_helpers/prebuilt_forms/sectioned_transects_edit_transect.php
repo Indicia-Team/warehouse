@@ -118,12 +118,13 @@ class iform_sectioned_transects_edit_transect {
             'required' => true,            
             'group'=>'Transects Editor Settings'
           ), array(
-            'name'=>'sites_list_path',
-            'caption'=>'Site list page path',
-            'description'=>'Enter the path to the page which the site list is on.',
-            'type' => 'string',
-            'required' => true,
-            'group'=>'Transects Editor Settings'
+            'name'=>'bottom_blocks',
+            'caption'=>'Form blocks to place at bottom',
+            'description'=>'A list of the blocks which need to be placed at the bottom of the form, below the map.',
+            'type'=>'textarea',
+            'group'=>'Transects Editor Settings',
+            'siteSpecific'=>true,
+            'required'=>false
           ), array(
             'name'=>'site_help',
             'caption'=>'Site Help Text',
@@ -155,7 +156,7 @@ class iform_sectioned_transects_edit_transect {
             'group'=>'Other Map Settings'
           ),
           array(
-          		'name'=>'route_map_height',
+            'name'=>'route_map_height',
             'caption'=>'Your Route Map Height (px)',
             'description'=>'Height in pixels of the map.',
             'type'=>'int',
