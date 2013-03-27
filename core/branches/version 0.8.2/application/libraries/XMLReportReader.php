@@ -147,7 +147,7 @@ class XMLReportReader_Core implements ReportReader
                   // use a dummy filter to return all websites if core admin
                   $this->query = str_replace('#website_filter#', '1=1', $this->query);
                 if ($training==='true')
-                  $this->query = str_replace('#sharing_filter#', "$trainingFilterField=true /* Here */ AND #sharing_filter#", $this->query); 
+                  $this->query = str_replace('#sharing_filter#', "($trainingFilterField=true OR $trainingFilterField IS NULL) AND #sharing_filter#", $this->query); 
                 // select the appropriate type of sharing arrangement (i.e. are we reporting, verifying, moderating etc?)
                 if ($sharing==='me' && empty($userId))
                   // revert to website type sharing if we have no known user Id.
@@ -170,7 +170,7 @@ class XMLReportReader_Core implements ReportReader
                     $agreementsJoin .= "JOIN users privacyusers ON privacyusers.id=o.created_by_id";
                     $this->query = str_replace(array('#agreements_join#','#sharing_filter#'), 
                         array($agreementsJoin, 
-                        "(iwwa.from_website_id=iwwa.to_website_id OR privacyusers.allow_share_for_$sharing=true)"), $this->query);
+                        "(iwwa.from_website_id=iwwa.to_website_id OR privacyusers.allow_share_for_$sharing=true OR privacyusers.allow_share_for_$sharing IS NULL)"), $this->query);
                   }
                 }
                 $this->query = str_replace('#sharing#', $sharing, $this->query);
