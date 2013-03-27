@@ -1485,7 +1485,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     if ($args['multiple_occurrence_mode']==='single') {
       $ctrlOptions = array('extraParams'=>$auth['read']);
       $attrSpecificOptions = array();
-      self::parseForAttrSpecificOptions($options, &$ctrlOptions, &$attrSpecificOptions);
+      self::parseForAttrSpecificOptions($options, $ctrlOptions, $attrSpecificOptions);
       $sensitivity_controls = get_attribute_html(self::$occAttrs, $args, $ctrlOptions, 'sensitivity', $attrSpecificOptions);
       return data_entry_helper::sensitivity_input(array(
         'additionalControls' => $sensitivity_controls
