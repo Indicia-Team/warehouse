@@ -229,7 +229,9 @@ $('#load-params').click(function() {
    * </ul>
    */
   public static function prebuilt_form_params_form($options) {
-    hostsite_add_library('collapse');
+    if (function_exists('hostsite_add_library') && (!defined('DRUPAL_CORE_COMPATIBILITY') || DRUPAL_CORE_COMPATIBILITY!=='7.x')) {
+      hostsite_add_library('collapse');
+    }
     require_once('data_entry_helper.php');
     // temporarily disable caching because performance is not as important as reflecting
     // the latest available parameters, surveys etc. in the drop downs
