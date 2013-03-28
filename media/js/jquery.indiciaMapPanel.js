@@ -156,7 +156,7 @@ mapGeoreferenceHooks = [];
      * @access private
      */
     function _showWktFeature(div, wkt, layer, invisible, temporary, type, panzoom, transform) {
-      var parser = new OpenLayers.Format.WKT();
+      var parser = new OpenLayers.Format.WKT(), bounds = new OpenLayers.Bounds(), geometry;
       var features = [];
       // This replaces other features of the same type
       removeAllFeatures(layer, type);
@@ -177,6 +177,11 @@ mapGeoreferenceHooks = [];
             feat.attributes.temp = true;
           }
           features.push(feat);
+          // get max extent of just the features we are adding.
+          geometry = feat.geometry;
+          if (geometry) {
+            bounds.extend(geometry.getBounds());
+          }
         });
       }
 
@@ -195,7 +200,6 @@ mapGeoreferenceHooks = [];
       }
       if(features.length == 0) return false;
       layer.addFeatures(features);
-      var bounds=layer.getDataExtent();
 
       if(invisible === null) {
         // extend the boundary to include a buffer, so the map does not zoom too tight.
@@ -247,13 +251,16 @@ mapGeoreferenceHooks = [];
           this.strokeColor = opts.strokeColorSearch;
           break;
         case "ghost":
-        case "boundary":
           this.fillColor = opts.fillColorGhost;
           this.fillOpacity= opts.fillOpacityGhost;
           this.strokeColor = opts.strokeColorGhost;
           this.strokeOpacity = opts.strokeOpacityGhost;
           this.strokeDashstyle = opts.strokeDashstyleGhost;
           break;
+        case "boundary":
+          this.fillColor = opts.fillColorBoundary;
+          this.fillOpacity = opts.fillOpacityBoundary;
+          this.strokeColor = opts.strokeColorBoundary;
         case "invisible":
           this.pointRadius = 0;
           break;
@@ -305,7 +312,7 @@ mapGeoreferenceHooks = [];
         e.preventDefault();
       });
 
-      $('#imp-location').change(function()
+      $('#imp-location,.imp-location').change(function()
       {
         div.map.editLayer.destroyFeatures();
         var intValue = parseInt(this.value);
@@ -325,7 +332,7 @@ mapGeoreferenceHooks = [];
                   var feature = parser.read(wkt);
                   geomwkt = feature.geometry.transform(div.indiciaProjection, div.map.projection).toString();
                 }
-                _showWktFeature(div, geomwkt, div.map.editLayer, null, true, 'clickPoint');
+                _showWktFeature(div, geomwkt, div.map.editLayer, null, true, 'boundary');
 
                 if (typeof indiciaData.searchUpdatesSref !== "undefined" && indiciaData.searchUpdatesSref) {
                   // The location search box must fill in the sample sref box
@@ -345,8 +352,12 @@ mapGeoreferenceHooks = [];
           );
         }
       });
+      // trigger change event, incase imp-location was already populated when the map loaded
+      $('#imp-location').change();
     }
-
+    
+    
+     
     function _getPrecisionHelp(div, value) {
       var helptext = [],info;
       if (div.settings.helpToPickPrecisionMin && typeof indiciaData.srefHandlers!=="undefined" &&
@@ -1852,6 +1863,10 @@ jQuery.fn.indiciaMapPanel.defaults = {
     strokeColorGhost: '#ee9900',
     strokeOpacityGhost: 1,
     strokeDashstyleGhost: 'dash',
+    // Additional options for OpenLayers.Feature.Vector.style for a boundary
+    fillColorBoundary: '#0000FF',
+    fillOpacityBoundary: 0,
+    strokeColorBoundary: '#0000FF',
 
     // Are we using the OpenLayers defaults, or are they all provided?
     useOlDefaults: true,
