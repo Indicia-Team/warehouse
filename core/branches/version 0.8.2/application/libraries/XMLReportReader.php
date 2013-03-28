@@ -27,6 +27,7 @@
 class XMLReportReader_Core implements ReportReader
 {
   public $columns = array();
+  public $defaultParamValues = array();
   private $name;
   private $title;
   private $description;
@@ -602,6 +603,7 @@ class XMLReportReader_Core implements ReportReader
     $fieldname = ($reader===null) ? '' : $reader->getAttribute('fieldname');
     $alias = ($reader===null) ? '' : $reader->getAttribute('alias');
     $emptyvalue = ($reader===null) ? '' : $reader->getAttribute('emptyvalue');
+    $default = ($reader===null) ? null : $reader->getAttribute('default');
     $description = ($reader===null) ? '' : $reader->getAttribute('description');
     $query = ($reader===null) ? '' : $reader->getAttribute('query');
     $lookup_values = ($reader===null) ? '' : $reader->getAttribute('lookup_values');
@@ -614,6 +616,7 @@ class XMLReportReader_Core implements ReportReader
       if ($fieldname != '') $this->params[$name]['fieldname'] = $fieldname;
       if ($alias != '') $this->params[$name]['alias'] = $alias;
       if ($emptyvalue != '') $this->params[$name]['emptyvalue'] = $emptyvalue;
+      if ($default != null) $this->params[$name]['default'] = $default;
       if ($description != '') $this->params[$name]['description'] = $description;
       if ($query != '') $this->params[$name]['query'] = $query;
       if ($lookup_values != '') $this->params[$name]['lookup_values'] = $lookup_values;
@@ -627,12 +630,17 @@ class XMLReportReader_Core implements ReportReader
         'fieldname'=>$fieldname,
         'alias'=>$alias,
         'emptyvalue'=>$emptyvalue,
+        'default'=>$default,
         'display'=>$display,
         'description'=>$description,
         'query' => $query,
         'lookup_values' => $lookup_values,
         'population_call' => $population_call
       );
+    }
+    // if we have a default value, keep a list
+    if (isset($this->params[$name]['default']) && $this->params[$name]['default']!==null) {
+      $this->defaultParamValues[$name] = $this->params[$name]['default'];
     }
     // Does the parameter define optional join elements which are associated with specific parameter values?
     if ($reader!==null) {
