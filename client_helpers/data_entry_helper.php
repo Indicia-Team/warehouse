@@ -4958,7 +4958,7 @@ if (errors.length>0) {
             if (!isset(self::$final_image_folder) || self::$final_image_folder=='warehouse') {
               // Final location is the Warehouse
               // @todo Set PERSIST_AUTH false if last file
-              $success = self::send_file_to_warehouse($image['path'], true);
+              $success = self::send_file_to_warehouse($image['path'], true, $writeTokens);
             } else {
               $success = rename($interim_image_folder.$image['path'], $final_image_folder.$image['path']);
             }
