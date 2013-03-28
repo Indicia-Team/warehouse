@@ -61,7 +61,7 @@ class Scheduled_Tasks_Controller extends Controller {
       $this->checkTriggers();
     }
     $tmtask = microtime(true) - $tm;
-    if ($tmtask>3) 
+    if ($tmtask>5) 
       kohana::log('alert', "Triggers & notifications scheduled task took $tmtask seconds.");
     $this->runScheduledPlugins($system, $tasks);
     if (in_array('notifications', $tasks)) {
@@ -73,7 +73,7 @@ class Scheduled_Tasks_Controller extends Controller {
     $this->db->update('system', array('last_scheduled_task_check'=>"'" . date('c', $currentTime) . "'"), array('id' => 1));
     echo "Ok!";
     $tm = microtime(true) - $tm;
-    if ($tm>20) 
+    if ($tm>30) 
       kohana::log('alert', "Scheduled tasks for ".implode(', ', $tasks)." took $tm seconds.");
   }
 
@@ -455,7 +455,7 @@ class Scheduled_Tasks_Controller extends Controller {
               'last_run_script'=>null
           ));
         $tm = microtime(true) - $tm;  
-        if ($tm>3) 
+        if ($tm>5) 
           kohana::log('alert', "Scheduled plugin $plugin took $tm seconds");    
       }
       
