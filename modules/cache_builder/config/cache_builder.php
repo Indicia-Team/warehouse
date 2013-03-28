@@ -627,7 +627,8 @@ $config['occurrences']['update'] = "update cache_occurrences co
       verifier = pv.surname || ', ' || pv.first_name,
       images=images.list,
       training=o.training,
-      location_id=s.location_id
+      location_id=s.location_id,
+      input_form=s.input_form
     from occurrences o
     #join_needs_update#
     join samples s on s.id=o.sample_id and s.deleted=false
@@ -657,7 +658,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       taxon, authority, preferred_taxon, preferred_authority, default_common_name, 
       search_name, taxa_taxon_list_external_key, taxon_meaning_id, taxon_group_id, taxon_group,
       created_by_id, cache_created_on, cache_updated_on, certainty, location_name, recorders, 
-      verifier, images, training, location_id
+      verifier, images, training, location_id, input_form
     )
   select distinct on (o.id) o.id, o.record_status, o.downloaded_flag, o.zero_abundance,
     su.website_id as website_id, su.id as survey_id, s.id as sample_id, su.title as survey_title,
@@ -681,7 +682,8 @@ $config['occurrences']['insert']="insert into cache_occurrences (
     pv.surname || ', ' || pv.first_name,
     images.list,
     o.training,
-    s.location_id
+    s.location_id,
+    s.input_form
   from occurrences o
   left join cache_occurrences co on co.id=o.id
   join samples s on s.id=o.sample_id 
