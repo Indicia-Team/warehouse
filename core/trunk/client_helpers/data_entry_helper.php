@@ -1456,7 +1456,7 @@ class data_entry_helper extends helper_base {
   * Optional. Number of lines to display in the listbox. Defaults to 3.</li>
   * <li><b>multiselect</b><br/>
   * Optional. Allow multi-select in the list box. Defaults to false.</li>
-  * <li><b>parentControlId}</b><br/>
+  * <li><b>parentControlId</b><br/>
   * Optional. Specifies a parent control for linked lists. If specified then this control is not
   * populated until the parent control's value is set. The parent control's value is used to
   * filter this control's options against the field specified by filterField.</li>
@@ -1467,6 +1467,9 @@ class data_entry_helper extends helper_base {
   * Optional. Specifies the field to filter this control's content against when using a parent
   * control value to set up linked lists. Defaults to parent_id though this is not active
   * unless a parentControlId is specified.</li>
+  * <li><b>filterIncludesNulls</b><br/>
+  * Optional. Defaults to false. If true, then null values for the filter field are included in the filter results
+  * when using a linked list.</li>
   * <li><b>cachetimeout</b><br/>
   * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
   * after a request for data to the Indicia Warehouse before a new request will refetch the data,
@@ -1903,6 +1906,9 @@ class data_entry_helper extends helper_base {
   * Optional. Specifies the field to filter this control's content against when using a parent
   * control value to set up linked lists. Defaults to parent_id though this is not active
   * unless a parentControlId is specified.</li>
+  * <li><b>filterIncludesNulls</b><br/>
+  * Optional. Defaults to false. If true, then null values for the filter field are included in the filter results
+  * when using a linked list.</li>
   * <li><b>cachetimeout</b><br/>
   * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
   * after a request for data to the Indicia Warehouse before a new request will refetch the data,
