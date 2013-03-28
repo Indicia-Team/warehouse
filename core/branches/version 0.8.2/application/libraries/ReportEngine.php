@@ -1010,7 +1010,13 @@ class ReportEngine {
   private function executeQuery()
   {    
     Kohana::log('debug', "Running report query : ".$this->query);
+    $tm = microtime(true);
     $this->response = $this->reportDb->query($this->query);
+    $tm = microtime(true) - $tm;  
+    if ($tm>5) {
+      kohana::log('alert', "Report query took $tm seconds.");
+      kohana::log('alert', $this->query);    
+    }
   }
 
 }
