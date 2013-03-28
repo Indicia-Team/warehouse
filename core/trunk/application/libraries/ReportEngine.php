@@ -236,7 +236,7 @@ class ReportEngine {
     }
 
     // Merge the new parameters in
-    $this->providedParams = array_merge($this->providedParams, $params);
+    $this->providedParams = array_merge($this->reportReader->defaultParamValues, $this->providedParams, $params);
     $this->limit = isset($this->providedParams['limit']) ? $this->providedParams['limit'] : $this->limit;
     $this->offset = isset($this->providedParams['offset']) ? $this->providedParams['offset'] : $this->offset;
     $this->orderby = isset($this->providedParams['orderby']) ? $this->providedParams['orderby'] : $this->orderby;
