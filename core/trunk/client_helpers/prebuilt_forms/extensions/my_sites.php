@@ -35,38 +35,43 @@ class extension_my_sites {
     if (empty($options['mySitesPsnAttrId']) || !preg_match('/^[0-9]+$/', $options['mySitesPsnAttrId']))
       return 'The My sites form is not correctly configured. Please provide the person attribute ID used to store My Sites.';
     $localityOpts = array(
-      'label' => lang::get('Locality to search'),
       'fieldname' => 'locality_id',
       'id' => 'locality_id',
+      'class' => 'imp-location',
       'extraParams' => $auth['read'] + array('orderby' => 'name'),
-      'blankText'=>'<' . lang::get('please select') . '>'
+      'blankText'=>'<' . lang::get('all') . '>',
+      'suffixTemplate' => 'nosuffix'
     );
     if (count($locationTypes)>1) {
+      $r .= '<label>'.lang::get('Select site by type then locality:').'</label> ';
       $r .= data_entry_helper::select(array(
-        'label' => lang::get('Site type to search'),
         'fieldname' => 'location_type_id',
         'table' => 'termlists_term',
         'valueField' => 'id',
         'captionField' => 'term',
         'extraParams' => $auth['read'] + array('orderby' => 'term', 'query' => urlencode(json_encode(array('in'=>array('id', $locationTypes))))),
-        'blankText'=>'<' . lang::get('please select') . '>'
+        'blankText'=>'<' . lang::get('please select') . '>',
+        'suffixTemplate' => 'nosuffix'
       ));
       // link the locality select to the location type select
       $localityOpts = array_merge(array(
         'parentControlId' => 'location_type_id',
         'parentControlLabel' => lang::get('Site type to search'),
         'filterField' => 'location_type_id',
-        'filterIncludesNulls' => false
+        'filterIncludesNulls' => false,
+        'emptyFilterIsUnfiltered' => true
       ), $localityOpts);
     } 
     else {
+      $r .= '<label>'.lang::get('Select site by locality').'</label> ';
       // no need for a locality select, so just filter to the location type
       $localityOpts['extraParams']['location_type_id'] = $locationTypes[0];
       $localityOpts['default'] = hostsite_get_user_field('location');
     }
     $r .= data_entry_helper::location_select($localityOpts);
     $r .= data_entry_helper::location_select(array(
-      'label' => lang::get('Select site'),
+      'id' => 'location-select',
+      'class' => 'imp-location',
       'report' => 'library/locations/locations_for_my_sites',
       'table' => '',
       'valueField' => 'location_id',
@@ -76,25 +81,48 @@ class extension_my_sites {
       'parentControlLabel' => lang::get('Locality to search'),
       'filterField' => 'parent_id',
       'filterIncludesNulls' => false,
-      'blankText'=>'<' . lang::get('please select') . '>'
+      'blankText'=>'<' . lang::get('please select') . '>',
+      'suffixTemplate' => 'nosuffix'
     ));
-    $r .= '<button id="add-site-button" type="button">' . lang::get('Add selected site to My Sites') . '</button>';
+    $r .= '<button id="add-site-button" type="button">' . lang::get('Add to My Sites') . '</button><br/>';
+    $r .= data_entry_helper::location_autocomplete(array(
+      'id' => 'location-search',
+      'class' => 'imp-location',
+      'label' => lang::get('<strong>Or</strong> search for a site'),
+      'report' => 'library/locations/locations_for_my_sites',
+      'table' => '',
+      'valueField' => 'location_id',
+      'extraParams' => $auth['read'] + array('location_type_ids'=>$options['locationTypeResults'], 'locattrs'=>'', 
+          'user_id' => hostsite_get_user_field('indicia_user_id'), 'person_site_attr_id'=>$options['mySitesPsnAttrId'], 
+          'hide_existing' => 1, 'parent_id'=>''),
+      'suffixTemplate' => 'nosuffix'
+    ));
+    $r .= '<button id="add-searched-site-button" type="button">' . lang::get('Add to My Sites') . '</button><br/>';
     $postUrl = iform_ajaxproxy_url($node, 'person_attribute_value');
     data_entry_helper::$javascript .= "
+      function addSite(locationId) {
+        if (!isNaN(locationId) && locationId!=='') {
+          $.post('$postUrl', 
+            {\"website_id\":".$args['website_id'].",\"person_attribute_id\":".$options['mySitesPsnAttrId'].
+                ",\"user_id\":".hostsite_get_user_field('indicia_user_id').",\"int_value\":locationId} ,
+            function (data) {
+              if (typeof data.error === 'undefined') {
+                indiciaData.reports.dynamic.grid_report_grid_0.reload(true);
+              } else {
+                alert(data.error);
+              }
+            },
+            'json'
+          );
+        }
+      }
       $('#add-site-button').click(function() {
-        $.post('$postUrl', 
-          {\"website_id\":".$args['website_id'].",\"person_attribute_id\":".$options['mySitesPsnAttrId'].
-              ",\"user_id\":".hostsite_get_user_field('indicia_user_id').",\"int_value\":$('#imp-location').val()} ,
-          function (data) {
-            if (typeof data.error === 'undefined') {
-              indiciaData.reports.dynamic.grid_report_grid_0.reload(true);
-            } else {
-              alert(data.error);
-            }
-          },
-          'json'
-        );
+        addSite($('#location-select').val());
+        if (!isNaN($('#location-select').val())) {
+          $('#location-select option:selected').remove();
+        }
       });
+      $('#add-searched-site-button').click(function() {addSite($('#location-search').val());});
       
       linked_site_delete = function(pav_id) {
         var userId=".hostsite_get_user_field('indicia_user_id').";
