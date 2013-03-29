@@ -41,6 +41,7 @@
         population_call='direct:survey:id:title' emptyvalue="0" />
     <param name='date_from' display='Date From' datatype='date' />
     <param name='date_to' display='Date To' datatype='date' />
+    <param name='default_input_form' default='' />
   </params>
   <columns>
     <column name='occurrence_id' display='ID' sql='o.id' datatype='integer' template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />
@@ -64,5 +65,6 @@
     <column name='certainty' display='Certainty' sql='o.certainty' visible="false" />
     <column name='belongs_to_user' display='Belongs to User' sql="CASE CAST(o.created_by_id AS character varying) WHEN '#currentUser#' THEN true ELSE false END" visible="false" />
     <column name='images' display='Images' sql='o.images' img='true' />
+    <column name='input_form' visible="false" sql="case when o.input_form is null then '#default_input_form#' else o.input_form end" />
   </columns>
 </report>

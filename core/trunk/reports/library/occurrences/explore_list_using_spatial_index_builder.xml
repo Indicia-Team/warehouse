@@ -35,6 +35,7 @@
     <param name="ownGroups" display="My species groups only?" datatype="checkbox">      
       <join value="1">JOIN taxon_groups tgfilter ON tgfilter.id=o.taxon_group_id AND tgfilter.id IN (#taxon_groups#)</join>
     </param>
+    <param name='default_input_form' default='' />
   </params>
   <columns>
     <column name='occurrence_id' display='ID' sql='o.id' datatype='integer' template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />
@@ -68,5 +69,6 @@
     <column name='zi' visible='false' feature_style='graphicZIndex' sql='length(o.public_entered_sref)' />
     <column name='geom' visible='false' mappable="true" sql='st_astext(o.public_geom)' />
     <column name='images' display='Images' sql='o.images' img='true' />
+    <column name='input_form' visible="false" sql="case when o.input_form is null then '#default_input_form#' else o.input_form end" />
   </columns>
 </report>
