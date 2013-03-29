@@ -259,7 +259,10 @@ class ReportEngine {
     // Do we need any more parameters?
     $unpopulatedParams = array_diff_key($this->expectedParams, $this->providedParams);
     if (isset($this->providedParams['paramsFormExcludes'])) {
-      $includedParams = array_diff_key($this->expectedParams, array_fill_keys(json_decode($this->providedParams['paramsFormExcludes']), ''));
+      $includedParams = array_diff_key($this->expectedParams, 
+          array_fill_keys(json_decode($this->providedParams['paramsFormExcludes']), ''), 
+          // never ask for params with defaults in the params form.
+          $this->reportReader->defaultParamValues);
     }
     if (!empty($unpopulatedParams))
     {
