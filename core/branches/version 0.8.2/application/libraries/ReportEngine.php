@@ -259,7 +259,10 @@ class ReportEngine {
     // Do we need any more parameters?
     $unpopulatedParams = array_diff_key($this->expectedParams, $this->providedParams);
     if (isset($this->providedParams['paramsFormExcludes'])) {
-      $includedParams = array_diff_key($this->expectedParams, array_fill_keys(json_decode($this->providedParams['paramsFormExcludes']), ''));
+      $includedParams = array_diff_key($this->expectedParams, 
+          array_fill_keys(json_decode($this->providedParams['paramsFormExcludes']), ''), 
+          // never ask for params with defaults in the params form.
+          $this->reportReader->defaultParamValues);
     }
     if (!empty($unpopulatedParams))
     {
@@ -594,10 +597,14 @@ class ReportEngine {
     $downloaded_on = date("Ymd H:i:s");
     $db = new Database(); // use default access so can update.
     $db->query('START TRANSACTION READ WRITE;');
-    $response = $db->in("id", $idList)
+    $response = $db->in("id", $idList)->where("downloaded_flag", ($mode == 'FINAL'? 'I' : 'N'))
         ->update('occurrences',
           array('downloaded_flag' => ($mode == 'FINAL'? 'F' : 'I'),
-              'downloaded_on' => $downloaded_on));
+              'downloaded_on' => $downloaded_on,
+              'updated_on' => $downloaded_on));
+    $response = $db->in("id", $idList)->where("downloaded_flag", ($mode == 'FINAL'? 'I' : 'N'))
+        ->update('cache_occurrences',
+          array('downloaded_flag' => ($mode == 'FINAL'? 'F' : 'I')));
     $db->query('COMMIT;');
   }
 
@@ -778,10 +785,13 @@ class ReportEngine {
     $query = str_replace(array('#joins#','#fields#','#group_bys#','#filters#'), array('','','',''), $query);
     // allow the URL to provide a sort order override
     if (!$counting) {
-      if (isset($this->orderby))
-        $order_by = $this->orderby . (isset($this->sortdir) ? ' '.$this->sortdir : '');
-      else
-        $order_by=$this->reportReader->getOrderClause();
+      // prioritise any URL provided sort order, but still keep any other sort ordering in the report.
+      $order_by=$this->reportReader->getOrderClause();
+      if($order_by){
+        if (isset($this->orderby))
+          $order_by = $this->orderby . (isset($this->sortdir) ? ' '.$this->sortdir : '') . ', ' . $order_by;
+      } else if (isset($this->orderby))
+          $order_by = $this->orderby . (isset($this->sortdir) ? ' '.$this->sortdir : '');
       if ($order_by) {
         $order_by = $this->checkOrderByForVagueDate($order_by);
         // Order by will either be appended to the end of the query, or inserted at a #order_by# marker.
@@ -947,7 +957,7 @@ class ReportEngine {
       }
       // lookups need special processing for additional joins
       elseif ($attr->data_type=='L') {
-        $query = str_replace('#joins#', "$join list_termlists_terms ltt$id ON ltt$id.id=$type$id.int_value\n #joins#", $query);
+        $query = str_replace('#joins#', $join." ".(class_exists('cache_builder') ? "cache_termlists_terms" : "list_termlists_terms")." ltt$id ON ltt$id.id=$type$id.int_value\n #joins#", $query);
         $alias = preg_replace('/\_value$/', '', "attr_$type"."_term_$uniqueId");
         $query = str_replace('#fields#', ", ltt$id.term as $alias#fields#", $query);
         $query = str_replace('#group_bys#', ", ltt$id.term#group_bys#", $query);
@@ -970,8 +980,8 @@ class ReportEngine {
     foreach($paramDef['joins'] as $joinDef) {
       if ((!empty($joinDef['operator']) && (($joinDef['operator']==='equal' && $joinDef['value']===$value) ||
           ($joinDef['operator']==='notequal' && $joinDef['value']!==$value)))
-          // operator not provided, so default is to join if param not empty
-          || !empty($value)) {
+          // operator not provided, so default is to join if param not empty (null string passed for empty integers)
+          || (!empty($value) && $value!=="null")) {
         // Join SQL can contain the parameter value as well.
         $join = str_replace("#$paramName#", $value, $joinDef['sql']);
         $query = str_replace('#joins#', $join."\n #joins#", $query);
