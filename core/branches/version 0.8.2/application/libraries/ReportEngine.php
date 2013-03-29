@@ -202,6 +202,8 @@ class ReportEngine {
     }
     // What parameters do we expect?
     $this->expectedParams = $this->reportReader->getParams();
+    // some have defaults in the report XML file
+    $this->providedParams = array_merge($this->reportReader->defaultParamValues, $this->providedParams);
     // Pull out special case params for limit and offset
     $this->limit = isset($this->providedParams['limit']) ? $this->providedParams['limit'] : null;
     $this->offset = isset($this->providedParams['offset']) ? $this->providedParams['offset'] : null;
@@ -236,7 +238,6 @@ class ReportEngine {
     }
 
     // Merge the new parameters in
-    $this->providedParams = array_merge($this->reportReader->defaultParamValues, $this->providedParams, $params);
     $this->limit = isset($this->providedParams['limit']) ? $this->providedParams['limit'] : $this->limit;
     $this->offset = isset($this->providedParams['offset']) ? $this->providedParams['offset'] : $this->offset;
     $this->orderby = isset($this->providedParams['orderby']) ? $this->providedParams['orderby'] : $this->orderby;

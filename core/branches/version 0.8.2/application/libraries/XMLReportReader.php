@@ -492,7 +492,7 @@ class XMLReportReader_Core implements ReportReader
           'description' => $this->getDescription(),
           'row_class' => $this->getRowClass(),
           'columns' => $this->columns,
-          'parameters' => $this->params,
+          'parameters' =>  array_diff_key($this->params, $this->defaultParamValues),
           'query' => $this->query,
           'order_by' => $this->order_by
         );
@@ -507,7 +507,7 @@ class XMLReportReader_Core implements ReportReader
           'description' => $this->getDescription(),
           'row_class' => $this->getRowClass(),
           'columns' => $this->columns,
-          'parameters' => $this->params
+          'parameters' =>  array_diff_key($this->params, $this->defaultParamValues)
         );
     }
   }
