@@ -32,9 +32,6 @@ class cache_builder {
    * Performs the actual task of table population.
    */
   public static function populate_cache_table($db, $table, $last_run_date) {
-    // occurrences are updated into the cache on the fly once initial population done, so no need to process.
-    if ($table==='occurrences' && variable::get("populated-$table"))
-      return;
     $queries = kohana::config("cache_builder.$table");
     cache_builder::get_changelist($db, $table, $queries, $last_run_date);
     try {
