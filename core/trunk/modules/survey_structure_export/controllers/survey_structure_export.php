@@ -564,23 +564,32 @@ class Survey_structure_export_Controller extends Indicia_Controller {
    * @param string $currentTableName The name of the table we are currently looking at.
    * @param integer $currentRowId The id of the table row we are currently looking at.
    */
+/**
+   * When we are searching for rows to create hashes for, then we need to drill-down through the lookups in the database.
+   * 
+   * @param array $data The data from the database we are creating hashes for
+   * @param array $hashes An array of hash values we have accumulated so far.
+   * @param string $currentTableName The name of the table we are currently looking at.
+   * @param integer $currentRowId The id of the table row we are currently looking at.
+   */
   public function drillDown(&$data,&$hashes,$currentTableName,$currentRowId) {
     //If the current table has at least one column that is a lookup that we need to drill down,
     //then call the drillSideways method to see if there is more than one column to drill.
     //If not then we know this is a leaf and there are no further drills to make below this table.
     if(!empty($this->tableLookupToDrillDown[$currentTableName]))
       $this->drillSideways($data,$hashes,$currentTableName,$currentRowId);
-    if ($currentTableName==='termlists') {
-          $hashes[$currentTableName][$currentRowId]=$this->drillThoughTermlistJoin($data,$hashes,$currentRowId);
-    }
+
     //If we reach this point we know we have reached a leaf table.
     //So we search through all the data rows for the table until we find the row that is the one the lookup was pointing to.
     //We can then create a hash for it.
     foreach ($data[$currentTableName] as $index=>$row) {
       if ($row['id']===$currentRowId)
         $hashes[$currentTableName][$currentRowId] = md5(serialize($this->prepareHashRow($data[$currentTableName][$index],$currentTableName))); 
+      if ($currentTableName==='termlists')
+        $hashes[$currentTableName][$currentRowId]=$this->drillThoughTermlistJoin($data,$hashes,$currentRowId);
     }
   }
+
   
   /**We create a hash of different data rows to make it easier to compare
    * the data we are importing to existing data. This means we avoid
