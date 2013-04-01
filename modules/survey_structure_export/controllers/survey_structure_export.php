@@ -217,7 +217,7 @@ class Survey_structure_export_Controller extends Indicia_Controller {
    * @param array $databaseData The data we have collected from the database.
    * @return array The array of names we gave the database columns
    */
-  public function getVitualColumnNames($databaseData) {
+  public function getVirtualColumnNames($databaseData) {
     $virtualColumns = array();
     if (!empty($databaseData[0])) {
       $virtualColumnCounter = 0;
@@ -435,8 +435,8 @@ class Survey_structure_export_Controller extends Indicia_Controller {
         ->get()->result_array(FALSE);
     }
     //Get a nice linear array of all the column names we used in the SQL.
-    $virtualSampleDataColumns = $this->getVitualColumnNames($dataFromQuery['get_termlists_from_sample_attribute']);
-    $virtualOccurrenceDataColumns = $this->getVitualColumnNames($dataFromQuery['get_termlists_from_occurrence_attribute']);
+    $virtualSampleDataColumns = $this->getVirtualColumnNames($dataFromQuery['get_termlists_from_sample_attribute']);
+    $virtualOccurrenceDataColumns = $this->getVirtualColumnNames($dataFromQuery['get_termlists_from_occurrence_attribute']);
     //Cycle through all the types of data we returned.
     foreach($this->queryTypes as $queryType) {
       //Cycle through all the table names in that data
@@ -525,7 +525,7 @@ class Survey_structure_export_Controller extends Indicia_Controller {
             $row[$drillFromColumn.'_hash']=$hashes[$drillToTable][$row[$drillFromColumn]]; 
           }
         }
-      $hashes[$tableToDrillFrom][$row['id']] = md5(serialize($this->prepareHashRow($row,$tableToDrillFrom)));
+        $hashes[$tableToDrillFrom][$row['id']] = md5(serialize($this->prepareHashRow($row,$tableToDrillFrom)));
       }
     }
   }
@@ -535,8 +535,8 @@ class Survey_structure_export_Controller extends Indicia_Controller {
     
     foreach ($data['termlists_terms'] as $termlistsTermsRow) {
       if ($currentRowId===$termlistsTermsRow['termlist_id']) {
-        //drill through each term that is linked to our termlist through termlist_terms
-        $this->drillSideways(&$data,&$hashes,'terms',$termlistsTermsRow['term_id']);
+        // drill through each term that is linked to our termlist through termlist_terms
+        $this->drillSideways($data,$hashes,'terms',$termlistsTermsRow['term_id']);
         //make a note of all the terms linked to the termlist
         array_push($collectedTermIds, $termlistsTermsRow['term_id']);
       }
@@ -557,14 +557,6 @@ class Survey_structure_export_Controller extends Indicia_Controller {
   }
   
   /**
-   * When we are searching for rows to create hashes for, then we need to drill-down through the lookups in the database.
-   * 
-   * @param array $data The data from the database we are creating hashes for
-   * @param array $hashes An array of hash values we have accumulated so far.
-   * @param string $currentTableName The name of the table we are currently looking at.
-   * @param integer $currentRowId The id of the table row we are currently looking at.
-   */
-/**
    * When we are searching for rows to create hashes for, then we need to drill-down through the lookups in the database.
    * 
    * @param array $data The data from the database we are creating hashes for
