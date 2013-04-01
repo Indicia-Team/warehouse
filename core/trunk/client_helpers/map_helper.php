@@ -388,20 +388,15 @@ class map_helper extends helper_base {
       if (isset($options['tabDiv'])) {
         $divId = preg_replace('/[^a-zA-Z0-9]/', '', $options['divId']);
         $javascript .= "var mapTabHandler = function(event, ui) { \n";
-        $javascript .= "  if (ui.panel.id=='".$options['tabDiv']."') {\n";
-        $javascript .= "    indiciaData.".$divId."TabLoaded=true;\n";
-        $javascript .= "    if (indiciaData.windowLoaded) {\n      ";
-        $javascript .= $mapSetupJs;
-        $javascript .= "    }\n    $(this).unbind(event);\n";
+        $javascript .= "  if (ui.panel.id=='".$options['tabDiv']."' && typeof indiciaData.mapdiv !== 'undefined') {\n";
+        $javascript .= "    indiciaData.mapdiv.map.updateSize();\n";
         $javascript .= "  }\n\n};\n";
         $javascript .= "jQuery(jQuery('#".$options['tabDiv']."').parent()).bind('tabsshow', mapTabHandler);\n";
         // Insert this script at the beginning, because it must be done before the tabs are initialised or the 
         // first tab cannot fire the event
         self::$javascript = $javascript . self::$javascript;
-        self::$onload_javascript .= "if (typeof indiciaData.".$divId."TabLoaded!==\"undefined\") {\n$mapSetupJs\n}\n";
-      } else {
-        self::$onload_javascript .= $mapSetupJs;
       }
+      self::$onload_javascript .= $mapSetupJs;
       return self::apply_template('map_panel', $options);
     }
   }
