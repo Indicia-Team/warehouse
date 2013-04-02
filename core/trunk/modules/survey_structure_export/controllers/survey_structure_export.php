@@ -72,6 +72,19 @@ class Survey_structure_export_Controller extends Indicia_Controller {
    * @var array
    */
   private $hashWorkingData = array();
+  
+  /**
+   * The import survey's title. Use a default until we know better.
+   * @var string 
+   */
+  private $surveyTitle = 'This survey';
+  
+  /**
+   * An output log.
+   * @var array
+   */
+  private $log = array();
+  
  
   /**
    * Constructor.
@@ -93,18 +106,18 @@ class Survey_structure_export_Controller extends Indicia_Controller {
     $this->template->content = $this->view;
   }
  
-  /**Perform the import*/
-  //UNCLEAN
-  //BROKEN
+  /**
+   * Perform the import
+   */
   public function save() {
-    $surveyId = $this->uri->last_segment();
+    $surveyId = $_POST['survey_id'];
     try {
       $importData = json_decode($_POST['import_survey_structure'], true);
       $this->doImport($importData,$_POST['survey_id']);
-      $this->template->title = 'The Import Has Been Completed Successfully';
+      $this->template->title = 'Import Complete';
       $this->view = new View('survey_structure_export/import_complete');
+      $this->view->log = $this->log;
       $this->template->content = $this->view;
-      
     } catch (Exception $e) {
       error::log_error('Exception during survey structure import', $e);
       $this->template->title = 'Error during survey structure import';
@@ -113,6 +126,9 @@ class Survey_structure_export_Controller extends Indicia_Controller {
                            'Please make sure the import data is valid. More information can be found in the warehouse logs.';
       $this->template->content = $this->view;
     }
+    $this->page_breadcrumbs[] = html::anchor('survey', 'Surveys');
+    $this->page_breadcrumbs[] = html::anchor('survey/edit/'.$surveyId, $this->surveyTitle);
+    $this->page_breadcrumbs[] = $this->template->title;
   }
 
   /**
@@ -128,12 +144,14 @@ class Survey_structure_export_Controller extends Indicia_Controller {
     $existingData = $this->getDatabaseData(null);
     //We need to get the website_id for the survey we are importing into so we can add it to the rows we are adding for tables
     //that support it
-    $surveyWebsiteIdArray = $this->db
-      ->select('website_id')
+    $survey = $this->db
+      ->select('website_id, title')
       ->from('surveys')
       ->where(array('id'=>$surveyId))
       ->get()->result_array(FALSE);
-    $surveyWebsiteId = $surveyWebsiteIdArray[0]['website_id'];
+    print_r($survey);
+    $surveyWebsiteId = $survey[0]['website_id'];
+    $this->surveyTitle = $survey[0]['title'];
     //Create the hashes for the data we are importing and also the existing data in the database.
     //This is allows us to detect duplicates if hashes match.
     $importHashes = $this->getHashes($importData);
@@ -171,12 +189,11 @@ class Survey_structure_export_Controller extends Indicia_Controller {
     foreach($recordData as $rowData) {
       if ($existingHashRowId = array_search($importHashes[$tableName][$rowData['id']], $existingHashes[$tableName])) {
         $idMappings[$tableName][$rowData['id']] = $existingHashRowId;
-        kohana::log('debug', "Got existing row $tableName.$existingHashRowId");
       }
       else {
         //If we don't find a duplicate, then we add a new row to the database and note the new id.
         $idMappings[$tableName][$rowData['id']] =  $this->importRow($tableName, $rowData, $idMappings, $surveyWebsiteId, $newMeaningIds);
-        kohana::log('debug', "Creating new row $tableName.".$idMappings[$tableName][$rowData['id']]);
+        $this->log[] = "Creating new row in $tableName for ID ".$idMappings[$tableName][$rowData['id']];
       } 
     }
   }

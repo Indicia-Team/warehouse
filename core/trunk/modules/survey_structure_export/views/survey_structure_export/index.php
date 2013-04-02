@@ -24,9 +24,6 @@ echo data_entry_helper::hidden_text(array(
 
 echo '<input type="submit" name="submit" value="Import" class="ui-corner-all ui-state-default button ui-priority-primary" />'."\n"; 
 data_entry_helper::link_default_stylesheet();
-data_entry_helper::$dumped_resources[] = 'jquery';
-data_entry_helper::$dumped_resources[] = 'jquery_ui';
-data_entry_helper::$dumped_resources[] = 'fancybox';
 echo data_entry_helper::dump_javascript();
 ?>
 </fieldset>
