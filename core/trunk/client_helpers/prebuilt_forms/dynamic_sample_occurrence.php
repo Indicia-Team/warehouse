@@ -124,8 +124,10 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
                     "You can change any of the control options for an individual custom attribute control in a grid by putting @control|option=value on the subsequent line(s). ".
                     "For example, if a control is for occAttr:4 then you can set it's default value by specifying @occAttr:4|default=7 on the line after the [species]<br/>".
                 "&nbsp;&nbsp;<strong>[species map]</strong> - a species grid or input control: this is the same as the species control, but the sample is broken down ".
-                    "into subsamples, each of which has its own location picked from the map. Only the part of the species grid which is being added to or modified at the ".
-                    "time is displayed. This control should be placed after the map control, with which it integrates. Species recording must be set to a List (grid mode) rather than single entry.<br/>".
+                "into subsamples, each of which has its own location picked from the map. Only the part of the species grid which is being added to or modified at the ".
+                "time is displayed. This control should be placed after the map control, with which it integrates. Species recording must be set to a List (grid mode) rather than single entry. ".
+                "This control does not currently support mixed spatial reference systems, only the first specified will be used. You do not need a [spatial reference] control on the ".
+                "page when using a [species map] control.<br/>".
                 "&nbsp;&nbsp;<strong>[species map summary]</strong> - a read only grid showing a summary of the data entered using the species map control.<br/>".
                 "&nbsp;&nbsp;<strong>[species attributes]</strong> - any custom attributes for the occurrence, if not using the grid. Also includes a file upload ".
                     "box and sensitivity input control if relevant. The attrubutes @resizeWidth and @resizeHeight can specified on subsequent lines, otherwise they ".
@@ -653,8 +655,11 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         data_entry_helper::$entity_to_load=array();
       }
     }
-    if (self::$loadedSampleId)
+    if (self::$loadedSampleId) {
       data_entry_helper::load_existing_record($auth['read'], 'sample', self::$loadedSampleId);
+      if (!empty(data_entry_helper::$entity_to_load['sample:parent_id'])) 
+        data_entry_helper::load_existing_record($auth['read'], 'sample', data_entry_helper::$entity_to_load['sample:parent_id']);
+    }
     // Ensure that if we are used to load a different survey's data, then we get the correct survey attributes. We can change args
     // because the caller passes by reference.
     $args['survey_id']=data_entry_helper::$entity_to_load['sample:survey_id'];
@@ -667,9 +672,19 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       throw new exception(lang::get('Attempt to access a record you did not create'));
   }
 
+  /**
+   * Load the attributes for the sample defined by $entity_to_load
+   */
   protected static function getAttributes($args, $auth) {
+    return self::getAttributesForSample($args, $auth, data_entry_helper::$entity_to_load['sample:id']);
+  }
+  
+  /**
+   * Load the attributes for the sample defined by a supplied Id.
+   */
+  private static function getAttributesForSample($args, $auth, $id) {
     $attrOpts = array(
-    'id' => data_entry_helper::$entity_to_load['sample:id']
+    'id' => $id
     ,'valuetable'=>'sample_attribute_value'
     ,'attrtable'=>'sample_attribute'
     ,'key'=>'sample_id'
@@ -837,6 +852,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   /**
    * Get the control for map based species input, assumed to be multiple entry: ie a grid. Can be single species though.
    * Uses the normal species grid, so all options that apply to that, apply to this.
+   * An option called sampleMethodId can be used to specify the sample method used for subsamples, and therefore the 
+   * controls to show for subsamples.
    */
   protected static function get_control_speciesmap($auth, $args, $tabAlias, $options) {
   	// The ID must be done here so it can be accessed by both the species grid and the buttons.
@@ -879,24 +896,31 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     foreach($list as $system) {
       $systems[$system] = lang::get($system);
     }
-  	if (count($systems) == 1) {
-      // Hidden field for the system
-      $keys = array_keys($systems);
-      $system = '<input type="hidden" id="imp-sref-system" name="sample:entered_sref_system" value="'.$keys[0].'" />';
-    } else {
-      $options['systems']=$systems;
-      $system = data_entry_helper::sref_system_select($options);
+    // note that this control only uses the first spatial reference system in the list.
+    $keys = array_keys($systems);
+    $system = '<input type="hidden" id="imp-sref-system" name="sample:entered_sref_system" value="'.$keys[0].'" />';
+    if (isset($options['sampleMethodId'])) {
+      $args['sample_method_id'] = $options['sampleMethodId'];
+      $sampleAttrs = self::getAttributes($args, $auth);
+      foreach ($sampleAttrs as &$attr) {
+        $attr['fieldname'] = 'sc:n::'.$attr['fieldname'];
+        $attr['id'] = 'sc:n::'.$attr['id'];
+      }
+      $attrOptions = self::get_attr_specific_options($options);
+      $sampleCtrls = get_attribute_html($sampleAttrs, $args, array('extraParams' => $auth['read']), null, $attrOptions);
+      $r .= '<div id="'.$options['id'].'-subsample-ctrls" style="display: none">'.$sampleCtrls.'</div>';
     }
-  	return '<div id="'.$options['id'].'-container" style="display: none">'.
+  	$r .= '<div id="'.$options['id'].'-container" style="display: none">'.
   	       '<input type="hidden" name="sample:entered_sref" value="'.data_entry_helper::check_default_value('sample:entered_sref', '').'">'.
   	       '<input type="hidden" name="sample:geom" value="'.data_entry_helper::check_default_value('sample:geom', '').'" >'.
   	       $system.
   	       '<div id="'.$options['id'].'-blocks">'.
-  	       self::get_control_speciesmap_controls($options).
+  	       self::get_control_speciesmap_controls($auth, $args, $options).
   	       '</div>'.
   	       '<input type="hidden" value="true" name="speciesgridmapmode" />'.
            $speciesCtrl.
   			'</div>';
+    return $r;
   }
 
   /**
@@ -909,57 +933,87 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   }
   
   /* Set up the control JS and also return the existing data subsample blocks */
-  protected static function get_control_speciesmap_controls($options){
-    $langStrings = array('InitMessage' => lang::get("Click on a button to choose what you would like to do."),
-    		'AddLabel' => lang::get("Add grid ref"),
-            'AddMessage' => lang::get("Please click on the map to add data."),
-            'AddDataMessage' => lang::get("Please enter all the species records for this grid reference. When you have finished, click the Finish button: this will return you to the map where you may choose another grid reference to enter data for."),
-    		'ConfirmAddTitle' => lang::get("Accept this grid square?"),
-    		'ConfirmAddText' => lang::get("Do you wish to add data for this grid reference?"),
-    		
-    		'MoveLabel' => lang::get("Move grid ref"),
-            'MoveMessage1' => lang::get("Please select the square on the map you wish to move."),
-            'MoveMessage2' => lang::get("Please click on the map to choose the new position. Press the Cancel button to choose another square to move instead."),
-            'ConfirmMove1Title' => lang::get("Confirm Move Grid Square"),
-            'ConfirmMove1Text' => lang::get("Are you sure you wish to move the {OLD} grid square?"),
-    		'ConfirmMove2Title' => lang::get("Confirm New Position"),
-    		'ConfirmMove2Text' => lang::get("Are you sure you wish to move the data held for grid square {OLD} to the following new location?"),
-    		
-    		'ModifyLabel' => lang::get("Modify grid ref data"),
-            'ModifyMessage1' => lang::get("Please select the square on the map you wish to change the recorded data for."),
-    		'ModifyMessage2' => lang::get("Change (or add to) the data for this grid reference. When you have finished, click the Finish button: this will return you to the map where you may choose another grid reference to change."),
-    		
-    		'DeleteLabel' => lang::get("Delete grid ref"),
-            'DeleteMessage' => lang::get("Please select the square on the map you wish to delete."),
-    		'ConfirmDeleteTitle' => lang::get("Confirm Delete Grid Square"),
-    		'ConfirmDeleteText' => lang::get("Are you sure you wish to delete all the data for the {OLD} grid square?"),
-    		
-    		'CancelLabel' => lang::get("CANCEL"),
-    		'FinishLabel' => lang::get("Finish"),
-    		'Yes' => lang::get("Yes"),
-    		'No' => lang::get("No"),
-    		'SRefLabel' => lang::get('LANG_SRef_Label'));
+  protected static function get_control_speciesmap_controls($auth, $args, $options){
+    $langStrings = array('AddLabel' => lang::get("Add records to map"),
+        'AddMessage' => lang::get("Please click on the map where you would like to add your records. Zoom the map in for greater precision."),
+        'AddDataMessage' => lang::get("Please enter all the species records for this position into the grid below. When you have finished, click the Finish button to return to the map where you may choose another grid reference to enter data for."),
+        'ConfirmAddTitle' => lang::get("Add records?"),
+        'ConfirmAddText' => lang::get("Do you wish to add records at this position?"),
+        
+        'MoveLabel' => lang::get("Move records"),
+        'MoveMessage1' => lang::get("Please select the records on the map you wish to move."),
+        'MoveMessage2' => lang::get("Please click on the map to choose the new position. Press the Cancel button to choose another set of records to move instead."),
+        'ConfirmMove1Title' => lang::get("Confirm move records"),
+        'ConfirmMove1Text' => lang::get("Are you sure you wish to move the records at {OLD}?"),
+        'ConfirmMove2Title' => lang::get("Confirm new position"),
+        'ConfirmMove2Text' => lang::get("Are you sure you wish to move the records at {OLD} to the following new location?"),
+        
+        'ModifyLabel' => lang::get("Modify records"),
+            'ModifyMessage1' => lang::get("Please select the records on the map you wish to change."),
+        'ModifyMessage2' => lang::get("Change (or add to) the records for this position. When you have finished, click the Finish button: this will return you to the map where you may choose another set of records to change."),
+        
+        'DeleteLabel' => lang::get("Delete records"),
+            'DeleteMessage' => lang::get("Please select the records on the map you wish to delete."),
+        'ConfirmDeleteTitle' => lang::get("Confirm deletion of records"),
+        'ConfirmDeleteText' => lang::get("Are you sure you wish to delete all the records at {OLD}?"),
+        
+        'CancelLabel' => lang::get("Cancel"),
+        'FinishLabel' => lang::get("Finish"),
+        'Yes' => lang::get("Yes"),
+        'No' => lang::get("No"),
+        'LocationLabel' => lang::get('LANG_Location_Label'));
     // make sure we load the JS.
     data_entry_helper::add_resource('control_speciesmap_controls');
     data_entry_helper::$javascript .= "control_speciesmap_addcontrols(".json_encode($options).",".json_encode($langStrings).");\n";
     $blocks = "";
-    foreach(data_entry_helper::$entity_to_load as $key => $value){
-      $a = explode(':', $key, 4);
-      if(count($a)==4 && $a[0] == 'sc' && $a[3] == 'sample:entered_sref'){
-      	$geomKey = $a[0].':'.$a[1].':'.$a[2].':sample:geom';
-      	$idKey = $a[0].':'.$a[1].':'.$a[2].':sample:id';
-      	$deletedKey = $a[0].':'.$a[1].':'.$a[2].':sample:deleted';
-      	$blocks .= '<div id="scm-'.$a[1].'-block" class="scm-block">'.
-                  '<label>'.lang::get('LANG_SRef_Label').'</label>'.
-                  '<input type="text" value="'.$value.'" readonly="readonly" name="'.$key.'">'.
-                  '<input type="hidden" value="'.data_entry_helper::$entity_to_load[$geomKey].'" name="'.$geomKey.'">'.
-                  '<input type="hidden" value="'.(isset(data_entry_helper::$entity_to_load[$deletedKey]) ? data_entry_helper::$entity_to_load[$deletedKey] : 'f').'" name="'.$deletedKey.'">'.
-                  (isset(data_entry_helper::$entity_to_load[$idKey]) ? '<input type="hidden" value="'.data_entry_helper::$entity_to_load[$idKey].'" name="'.$idKey.'">' : '').
-                  '</div>';
+    if (isset(data_entry_helper::$entity_to_load)) {
+      foreach(data_entry_helper::$entity_to_load as $key => $value){
+        $a = explode(':', $key, 4);
+        if(count($a)==4 && $a[0] == 'sc' && $a[3] == 'sample:entered_sref'){
+          $geomKey = $a[0].':'.$a[1].':'.$a[2].':sample:geom';
+          $idKey = $a[0].':'.$a[1].':'.$a[2].':sample:id';
+          $deletedKey = $a[0].':'.$a[1].':'.$a[2].':sample:deleted';
+          $blocks .= '<div id="scm-'.$a[1].'-block" class="scm-block">'.
+                    '<label>'.lang::get('LANG_SRef_Label').'</label>'.
+                    '<input type="text" value="'.$value.'" readonly="readonly" name="'.$key.'">'.
+                    '<input type="hidden" value="'.data_entry_helper::$entity_to_load[$geomKey].'" name="'.$geomKey.'">'.
+                    '<input type="hidden" value="'.(isset(data_entry_helper::$entity_to_load[$deletedKey]) ? data_entry_helper::$entity_to_load[$deletedKey] : 'f').'" name="'.$deletedKey.'">'.
+                    (isset(data_entry_helper::$entity_to_load[$idKey]) ? '<input type="hidden" value="'.data_entry_helper::$entity_to_load[$idKey].'" name="'.$idKey.'">' : '');
+                    
+          if (!empty($options['sampleMethodId'])) {
+            $sampleAttrs = self::getAttributesForSample($args, $auth, $a[2]);
+            foreach ($sampleAttrs as &$attr) {
+              $attr['fieldname'] = 'sc:'.$a[1].':'.$a[2].':'.$attr['fieldname'];
+              $attr['id'] = 'sc:'.$a[1].':'.$a[2].':'.$attr['id'];
+            }
+            $attrOptions = self::get_attr_specific_options($options);
+            $sampleCtrls = get_attribute_html($sampleAttrs, $args, array('extraParams' => $auth['read']), null, $attrOptions);
+            $blocks .= '<div id="scm-'.$a[1].'-subsample-ctrls">' .
+                $sampleCtrls .
+                '</div>';
+          }
+          $blocks .= '</div>';
+        }
       }
     }
     return $blocks;
   }
+  
+  /**
+   * Parses an options array to extract the attribute specific option settings, e.g. smpAttr:4|caption=Habitat etc.
+   */
+  private static function get_attr_specific_options($options) {
+    $attrOptions = array();
+    foreach ($options as $option => $value) {
+      if (preg_match('/^(?P<controlname>[a-z][a-z][a-z]Attr:[0-9]*)\|(?P<option>.*)$/', $option, $matches)) {
+        if (!isset($attrOptions[$matches['controlname']]))
+          $attrOptions[$matches['controlname']] = array();
+        $attrOptions[$matches['controlname']][$matches['option']] = $value;
+      }
+    }
+    return $attrOptions;
+  }
+  
   /**
    * The species filter can be taken from the edit tab or overridden by a URL filter.
    * This method determines the filter to be used.
@@ -1078,7 +1132,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     global $user;
     
     // Build the configuration options
-    
+    if (isset($options['view']))
+      $extraParams['view'] = $options['view'];    
     // There may be options in the form occAttr:n|param => value targetted at specific attributes
     $occAttrOptions = array();
     $optionToUnset = array();
@@ -1287,8 +1342,10 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       $php .= '$r .= "<br/><strong>{taxon_group}</strong>";'."\n";
     // Close the function
     $php .= 'return $r;'."\n";
-    // Set it into the indicia templates
-    $indicia_templates['taxon_label'] = $php;
+    // Set it into the indicia templates, as long as the template has been left at it's default state
+    if ($indicia_templates['taxon_label'] == '<div class="biota"><span class="nobreak sci binomial"><em>{taxon}</em></span> {authority} '.
+        '<span class="nobreak vernacular">{common}</span></div>')
+      $indicia_templates['taxon_label'] = $php;
   }
 
 
