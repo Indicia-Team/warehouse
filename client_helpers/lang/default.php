@@ -1,4 +1,5 @@
-﻿<?php
+<?php
+
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -18,7 +19,7 @@
  * @license	http://www.gnu.org/licenses/gpl.html GPL 3.0
  * @link 	http://code.google.com/p/indicia/
  */
-
+ 
 global $default_terms;
 
 /**
@@ -96,4 +97,3 @@ $default_terms = array(
   'psnAttr' => 'Person Custom Attributes',
   'fkFilter' => 'Lookup Filters'
 );
-

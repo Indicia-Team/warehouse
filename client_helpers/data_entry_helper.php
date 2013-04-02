@@ -1066,62 +1066,66 @@ class data_entry_helper extends helper_base {
     // Now output JavaScript that creates and populates child selects as each option is selected. There is also code for 
     // reloading existing values.    
     self::$javascript .= "
-  function pickHierarchySelectNode$id(select) {
-    select.nextAll().remove();
-    if (typeof indiciaData.selectData$id [select.val()] !== 'undefined') {
-      var html='<select class=\"hierarchy-select\"><option>".$options['blankText']."</option>', obj;
-      $.each(indiciaData.selectData$id [select.val()], function(idx, item) {
-        html += '<option value=\"'+item.id+'\">' + item.caption + '</option>';
+  // enclosure needed in case there are multiple on the page
+  (function () {
+    function pickHierarchySelectNode(select) {
+      select.nextAll().remove();
+      if (typeof indiciaData.selectData$id [select.val()] !== 'undefined') {
+        var html='<select class=\"hierarchy-select\"><option>".$options['blankText']."</option>', obj;
+        $.each(indiciaData.selectData$id [select.val()], function(idx, item) {
+          html += '<option value=\"'+item.id+'\">' + item.caption + '</option>';
+        });
+        html += '</select>';
+        obj=$(html);
+        obj.change(function(evt) { 
+          $('#fld-$safeId').val($(evt.target).val());
+          pickHierarchySelectNode($(evt.target));
+        });
+        select.after(obj);
+      }    
+    }
+    
+    $('#$safeId').change(function(evt) {
+      $('#fld-$safeId').val($(evt.target).val());
+      pickHierarchySelectNode($(evt.target));
+    });
+    
+    pickHierarchySelectNode($('#$safeId')); 
+  
+    // Code from here on is to reload existing values.
+    function findItemParent(idToFind) {
+      var found=false;
+      $.each(indiciaData.selectData$id, function(parentId, items) {
+        $.each(items, function(idx, item) {
+          if (item.id===idToFind) {
+            found=parentId;
+          }
+        });
       });
-      html += '</select>';
-      obj=$(html);
-      obj.change(function(evt) { 
-        $('#fld-$safeId').val($(evt.target).val());
-        pickHierarchySelectNode$id($(evt.target));
-      });
-      select.after(obj);
-    }    
-  }
+      return found;
+    }
+    var found=true, last=$('#fld-$safeId').val(), tree=[last], toselect, thisselect;
+    while (last!=='' && found) {
+      found=findItemParent(last);
+      if (found) {
+        tree.push(found);
+        last=found;
+      }
+    }   
   
-  $('#$safeId').change(function(evt) {
-    $('#fld-$safeId').val($(evt.target).val());
-    pickHierarchySelectNode$id($(evt.target));
-  });
-  
-  pickHierarchySelectNode$id($('#$safeId')); 
-  
-  // Code from here on is to reload existing values.
-  function findItemParent(idToFind) {
-    var found=false;
-    $.each(indiciaData.selectData$id, function(parentId, items) {
-      $.each(items, function(idx, item) {
-        if (item.id===idToFind) {
-          found=parentId;
+    // now we have the tree, work backwards to select each item
+    thisselect = $('#$safeId');
+    while (tree.length>0) {
+      toselect=tree.pop();
+      $.each(thisselect.find('option'), function(idx, option) {
+        if ($(option).val()===toselect) {
+          $(option).attr('selected',true);
+          thisselect.trigger('change');
         }
       });
-    });
-    return found;
-  }
-  var found=true, last=$('#fld-$safeId').val(), tree=[last], toselect, thisselect;
-  while (found) {
-    found=findItemParent(last);
-    if (found) {
-      tree.push(found);
-      last=found;
+      thisselect = thisselect.next();
     }
-  }
-  // now we have the tree, work backwards to select each item
-  thisselect = $('#$safeId');
-  while (tree.length>0) {
-    toselect=tree.pop();
-    $.each(thisselect.find('option'), function(idx, option) {
-      if ($(option).val()===toselect) {
-        $(option).attr('selected',true);
-        thisselect.trigger('change');
-      }
-    });
-    thisselect = thisselect.next();
-  }
+  }) ();
     ";
     return $r;
   }
@@ -5113,99 +5117,100 @@ if (errors.length>0) {
    */
   public static function wrap_species_checklist_with_subsamples($arr, $include_if_any_data=false,
           $zero_attrs = array(), $zero_values=array('0','None','Absent')){
-  	if (array_key_exists('website_id', $arr)){
-  		$website_id = $arr['website_id'];
-  	} else {
-  		throw new Exception('Cannot find website id in POST array!');
-  	}
-  	// determiner and record status can be defined globally for the whole list.
-  	if (array_key_exists('occurrence:determiner_id', $arr)){
-  		$determiner_id = $arr['occurrence:determiner_id'];
-  	}
-  	if (array_key_exists('occurrence:record_status', $arr)){
-  		$record_status = $arr['occurrence:record_status'];
-  	}
+    if (array_key_exists('website_id', $arr)){
+      $website_id = $arr['website_id'];
+    } else {
+      throw new Exception('Cannot find website id in POST array!');
+    }
+    // determiner and record status can be defined globally for the whole list.
+    if (array_key_exists('occurrence:determiner_id', $arr)){
+      $determiner_id = $arr['occurrence:determiner_id'];
+    }
+    if (array_key_exists('occurrence:record_status', $arr)){
+      $record_status = $arr['occurrence:record_status'];
+    }
     if (array_key_exists('sample:entered_sref_system', $arr)){
-  		$sref_system = $arr['sample:entered_sref_system'];
-  	}
-  	// Set the default method of looking for rows to include - either using data, or the checkbox (which could be hidden)
-  	$include_if_any_data = $include_if_any_data || (isset($arr['rowInclusionCheck']) && $arr['rowInclusionCheck']=='hasData');
-  	// Species checklist entries take the following format.
-  	// sc:<subsampleIndex>:[<sample_id>]:sample:deleted
-  	// sc:<subsampleIndex>:[<sample_id>]:sample:geom
-  	// sc:<subsampleIndex>:[<sample_id>]:sample:entered_sref
-  	// sc:<rowIndex>:[<occurrence_id>]:occurrence:sampleIDX (val set to subsample index)
-  	// sc:<rowIndex>:[<occurrence_id>]:present (checkbox with val set to ttl_id
-  	// sc:<rowIndex>:[<occurrence_id>]:occAttr:<occurrence_attribute_id>[:<occurrence_attribute_value_id>]
-  	// sc:<rowIndex>:[<occurrence_id>]:occurrence:comment
-  	// sc:<rowIndex>:[<occurrence_id>]:occurrence_image:fieldname:uniqueImageId
-  	$occurrenceRecords = array();
-  	$sampleRecords = array();
-  	$subModels = array();
-  	foreach ($arr as $key=>$value){
-  		if (substr($key, 0, 3)=='sc:' && substr($key, 2, 7)!=':-idx-:'){ //discard the hidden cloneable rows
-  			// Don't explode the last element for occurrence attributes
-  			$a = explode(':', $key, 4);
-  			$b = explode(':', $a[3], 2);
-  			if($b[0] == "sample"){
-  			  $sampleRecords[$a[1]][$a[3]] = $value;
-              if($a[2]) $sampleRecords[$a[1]]['id'] = $a[2];
-  			} else {
-              $occurrenceRecords[$a[1]][$a[3]] = $value;
-              if($a[2]) $occurrenceRecords[$a[1]]['id'] = $a[2];
-  			}
-  		}
-  	}
-  	foreach ($sampleRecords as $id => $sampleRecord) {
-  		$sampleRecords[$id]['occurrences'] = array();
-  	}
-  	foreach ($occurrenceRecords as $id => $record) {
-  		$sampleIDX = $record['occurrence:sampleIDX'];
-  		unset($record['occurrence:sampleIDX']);
-  		$present = self::wrap_species_checklist_record_present($record, $include_if_any_data,
-  				$zero_attrs, $zero_values);
-  		if (array_key_exists('id', $record) || $present!==null) { // must always handle row if already present in the db
-  			if ($present===null)
-  				// checkboxes do not appear if not checked. If uncheck, delete record.
-  				$record['deleted'] = 't';
-  			else
-  				$record['zero_abundance']=$present ? 'f' : 't';
-  			$record['taxa_taxon_list_id'] = $record['present'];
-  			$record['website_id'] = $website_id;
-  			if (isset($determiner_id)) {
-  				$record['determiner_id'] = $determiner_id;
-  			}
-  			if (isset($record_status)) {
-  				$record['record_status'] = $record_status;
-  			}
-  			$occ = data_entry_helper::wrap($record, 'occurrence');
-  			self::attachOccurrenceImagesToModel($occ, $record);
-  			$sampleRecords[$sampleIDX]['occurrences'][] = array('fkId' => 'sample_id','model' => $occ);
-  		}
-  	}
-  	 
-  	foreach ($sampleRecords as $id => $sampleRecord) {
-  		$occs = $sampleRecord['occurrences'];
-  		unset($sampleRecord['occurrences']);
-  		$sampleRecord['website_id'] = $website_id;
-  		if (isset($sref_system)) {
-  			$sampleRecord['entered_sref_system'] = $sref_system;
-  		}
-  		$subSample = data_entry_helper::wrap($sampleRecord, 'sample');
-  		// Add the subsample/soccurrences in as subModels without overwriting others such as a sample image
-  		if (array_key_exists('subModels', $subSample)) {
-  			$subSample['subModels'] = array_merge($sampleMod['subModels'], $occs);
-  		} else {
-  			$subSample['subModels'] = $occs;
-  		}
-  		$subModel = array('fkId' => 'parent_id', 'model' => $subSample);
-  		$copyFields = array();
-  		if(!isset($sampleRecord['date'])) $copyFields = array('date_start'=>'date_start','date_end'=>'date_end','date_type'=>'date_type');
-  		if(!isset($sampleRecord['survey_id'])) $copyFields['survey_id'] = 'survey_id';
-  		if(count($copyFields)>0) $subModel['copyFields'] = $copyFields; // from parent->to child
-  		$subModels[] = $subModel;
-  	}
-  	return $subModels;
+      $sref_system = $arr['sample:entered_sref_system'];
+    }
+    // Set the default method of looking for rows to include - either using data, or the checkbox (which could be hidden)
+    $include_if_any_data = $include_if_any_data || (isset($arr['rowInclusionCheck']) && $arr['rowInclusionCheck']=='hasData');
+    // Species checklist entries take the following format.
+    // sc:<subsampleIndex>:[<sample_id>]:sample:deleted
+    // sc:<subsampleIndex>:[<sample_id>]:sample:geom
+    // sc:<subsampleIndex>:[<sample_id>]:sample:entered_sref
+    // sc:<subsampleIndex>:[<sample_id>]:smpAttr:[<sample_attribute_id>]
+    // sc:<rowIndex>:[<occurrence_id>]:occurrence:sampleIDX (val set to subsample index)
+    // sc:<rowIndex>:[<occurrence_id>]:present (checkbox with val set to ttl_id
+    // sc:<rowIndex>:[<occurrence_id>]:occAttr:<occurrence_attribute_id>[:<occurrence_attribute_value_id>]
+    // sc:<rowIndex>:[<occurrence_id>]:occurrence:comment
+    // sc:<rowIndex>:[<occurrence_id>]:occurrence_image:fieldname:uniqueImageId
+    $occurrenceRecords = array();
+    $sampleRecords = array();
+    $subModels = array();
+    foreach ($arr as $key=>$value){
+      if (substr($key, 0, 3)=='sc:' && substr($key, 2, 7)!=':-idx-:' && substr($key, 2, 3)!=':n:'){ //discard the hidden cloneable rows
+        // Don't explode the last element for occurrence attributes
+        $a = explode(':', $key, 4);
+        $b = explode(':', $a[3], 2);
+        if($b[0] == "sample" || $b[0] == "smpAttr"){
+          $sampleRecords[$a[1]][$a[3]] = $value;
+          if($a[2]) $sampleRecords[$a[1]]['id'] = $a[2];
+        } else {
+          $occurrenceRecords[$a[1]][$a[3]] = $value;
+          if($a[2]) $occurrenceRecords[$a[1]]['id'] = $a[2];
+        }
+      }
+    }
+    foreach ($sampleRecords as $id => $sampleRecord) {
+      $sampleRecords[$id]['occurrences'] = array();
+    }
+    foreach ($occurrenceRecords as $id => $record) {
+      $sampleIDX = $record['occurrence:sampleIDX'];
+      unset($record['occurrence:sampleIDX']);
+      $present = self::wrap_species_checklist_record_present($record, $include_if_any_data,
+          $zero_attrs, $zero_values);
+      if (array_key_exists('id', $record) || $present!==null) { // must always handle row if already present in the db
+        if ($present===null)
+          // checkboxes do not appear if not checked. If uncheck, delete record.
+          $record['deleted'] = 't';
+        else
+          $record['zero_abundance']=$present ? 'f' : 't';
+        $record['taxa_taxon_list_id'] = $record['present'];
+        $record['website_id'] = $website_id;
+        if (isset($determiner_id)) {
+          $record['determiner_id'] = $determiner_id;
+        }
+        if (isset($record_status)) {
+          $record['record_status'] = $record_status;
+        }
+        $occ = data_entry_helper::wrap($record, 'occurrence');
+        self::attachOccurrenceImagesToModel($occ, $record);
+        $sampleRecords[$sampleIDX]['occurrences'][] = array('fkId' => 'sample_id','model' => $occ);
+      }
+    }
+     
+    foreach ($sampleRecords as $id => $sampleRecord) {
+      $occs = $sampleRecord['occurrences'];
+      unset($sampleRecord['occurrences']);
+      $sampleRecord['website_id'] = $website_id;
+      if (isset($sref_system)) {
+        $sampleRecord['entered_sref_system'] = $sref_system;
+      }
+      $subSample = data_entry_helper::wrap($sampleRecord, 'sample');
+      // Add the subsample/soccurrences in as subModels without overwriting others such as a sample image
+      if (array_key_exists('subModels', $subSample)) {
+        $subSample['subModels'] = array_merge($sampleMod['subModels'], $occs);
+      } else {
+        $subSample['subModels'] = $occs;
+      }
+      $subModel = array('fkId' => 'parent_id', 'model' => $subSample);
+      $copyFields = array();
+      if(!isset($sampleRecord['date'])) $copyFields = array('date_start'=>'date_start','date_end'=>'date_end','date_type'=>'date_type');
+      if(!isset($sampleRecord['survey_id'])) $copyFields['survey_id'] = 'survey_id';
+      if(count($copyFields)>0) $subModel['copyFields'] = $copyFields; // from parent->to child
+      $subModels[] = $subModel;
+    }
+    return $subModels;
   }
   
   /**

@@ -37,7 +37,6 @@ class extension_my_sites {
     $localityOpts = array(
       'fieldname' => 'locality_id',
       'id' => 'locality_id',
-      'class' => 'imp-location',
       'extraParams' => $auth['read'] + array('orderby' => 'name'),
       'blankText'=>'<' . lang::get('all') . '>',
       'suffixTemplate' => 'nosuffix'
@@ -71,10 +70,10 @@ class extension_my_sites {
     $r .= data_entry_helper::location_select($localityOpts);
     $r .= data_entry_helper::location_select(array(
       'id' => 'location-select',
-      'class' => 'imp-location',
       'report' => 'library/locations/locations_for_my_sites',
       'table' => '',
       'valueField' => 'location_id',
+      'captionField' => 'q',
       'extraParams' => $auth['read'] + array('location_type_ids'=>$options['locationTypeResults'], 'locattrs'=>'', 
           'user_id' => hostsite_get_user_field('indicia_user_id'), 'person_site_attr_id'=>$options['mySitesPsnAttrId'], 'hide_existing' => 1),
       'parentControlId' => 'locality_id',
@@ -87,11 +86,11 @@ class extension_my_sites {
     $r .= '<button id="add-site-button" type="button">' . lang::get('Add to My Sites') . '</button><br/>';
     $r .= data_entry_helper::location_autocomplete(array(
       'id' => 'location-search',
-      'class' => 'imp-location',
       'label' => lang::get('<strong>Or</strong> search for a site'),
       'report' => 'library/locations/locations_for_my_sites',
       'table' => '',
       'valueField' => 'location_id',
+      'captionField' => 'q',
       'extraParams' => $auth['read'] + array('location_type_ids'=>$options['locationTypeResults'], 'locattrs'=>'', 
           'user_id' => hostsite_get_user_field('indicia_user_id'), 'person_site_attr_id'=>$options['mySitesPsnAttrId'], 
           'hide_existing' => 1, 'parent_id'=>''),
@@ -123,6 +122,9 @@ class extension_my_sites {
         }
       });
       $('#add-searched-site-button').click(function() {addSite($('#location-search').val());});
+      $('#location-select, #location-search, #locality_id').change(function() {
+        indiciaData.mapdiv.locationSelectedInInput(indiciaData.mapdiv, this.value);
+      });
       
       linked_site_delete = function(pav_id) {
         var userId=".hostsite_get_user_field('indicia_user_id').";

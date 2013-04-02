@@ -67,8 +67,14 @@ function get_attribute_html(&$attributes, $args, $ctrlOptions, $outerFilter=null
       $options = $ctrlOptions + get_attr_validation($attribute, $args);
       // when getting the options, only use the first 2 parts of the fieldname as any further imply an existing record ID so would differ.
       $fieldNameParts=explode(':',$attribute['fieldname']);
-      if (isset($attrSpecificOptions[$fieldNameParts[0].':'.$fieldNameParts[1]])) {
-        $options = array_merge($options, $attrSpecificOptions[$fieldNameParts[0].':'.$fieldNameParts[1]]);
+      if (preg_match('/[a-z][a-z][a-z]Attr/', $fieldNameParts[count($fieldNameParts)-2]))
+        $optionFieldName = $fieldNameParts[count($fieldNameParts)-2] . ':' . $fieldNameParts[count($fieldNameParts)-1];
+      elseif (preg_match('/[a-za-za-z]Attr/', $fieldNameParts[count($fieldNameParts)-3]))
+        $optionFieldName = $fieldNameParts[count($fieldNameParts)-3] . ':' . $fieldNameParts[count($fieldNameParts)-2];
+      else 
+        throw new exception('Option fieldname not found');
+      if (isset($attrSpecificOptions[$optionFieldName])) {
+        $options = array_merge($options, $attrSpecificOptions[$optionFieldName]);
       }
       $r .= data_entry_helper::outputAttribute($attribute, $options);
       $attribute['handled']=true;
