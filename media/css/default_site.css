@@ -755,3 +755,7 @@ div.note-fail, p.note-fail {
   float: right; 
   width: 30%;
 }
+
+.scm-block .control-box {
+  vertical-align: top;
+}

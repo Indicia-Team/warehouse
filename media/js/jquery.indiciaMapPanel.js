@@ -43,6 +43,7 @@ mapGeoreferenceHooks = [];
     
     var plusKeyDown=false;
     var minusKeyDown=false;
+    var overMap=false;
 
     /**
      * Adds the distribution point indicated by a record object to a list of features.
@@ -86,6 +87,50 @@ mapGeoreferenceHooks = [];
         }
       });
       layer.removeFeatures(toRemove, {});
+    }
+    
+    /**
+     * A public method that can be fired when a location is selected in an input control, to load the location's
+     * boundary onto the map. Automatic for #imp-location, but can be attached to other controls as well.
+     */
+    function locationSelectedInInput(div, val) {
+      div.map.editLayer.destroyFeatures();
+      var intValue = parseInt(val);
+      if (!isNaN(intValue)) {
+        // Change the location control requests the location's geometry to place on the map.
+        $.getJSON(div.settings.indiciaSvc + "index.php/services/data/location/"+val +
+          "?mode=json&view=detail" + div.settings.readAuth + "&callback=?", function(data) {
+            // store value in saved field?
+            if (data.length>0) {
+              // TODO not sure best way of doing this using the services, we don't really want
+              // to use the proj4 client transform until its issues are sorted out, but have little choice here as
+              // the wkt for a boundary could be too big to send to the services on the URL
+              var geomwkt = data[0].boundary_geom || data[0].centroid_geom;
+              if(_diffProj(div.indiciaProjection, div.map.projection)){
+                // NB geometry may not be a point (especially if a boundary!)
+                var parser = new OpenLayers.Format.WKT();
+                var feature = parser.read(wkt);
+                geomwkt = feature.geometry.transform(div.indiciaProjection, div.map.projection).toString();
+              }
+              _showWktFeature(div, geomwkt, div.map.editLayer, null, true, 'boundary');
+
+              if (typeof indiciaData.searchUpdatesSref !== "undefined" && indiciaData.searchUpdatesSref) {
+                // The location search box must fill in the sample sref box
+                $('#'+div.settings.srefId).val(data[0].centroid_sref);
+                $('#'+div.settings.srefSystemId).val(data[0].centroid_sref_system);
+                // If the sref is in two parts, then we might need to split it across 2 input fields for lat and long
+                if (data[0].centroid_sref.indexOf(' ')!==-1) {
+                  var parts=$.trim(data[0].centroid_sref).split(' ');
+                  // part 1 may have a comma at the end, so remove
+                  var part1 = parts.shift().split(',')[0];
+                  $('#'+div.settings.srefLatId).val(part1);
+                  $('#'+div.settings.srefLongId).val(parts.join(''));
+                }
+              }
+            }
+          }
+        );
+      }
     }
 
     /**
@@ -261,6 +306,7 @@ mapGeoreferenceHooks = [];
           this.fillColor = opts.fillColorBoundary;
           this.fillOpacity = opts.fillOpacityBoundary;
           this.strokeColor = opts.strokeColorBoundary;
+          this.strokeWidth = opts.strokeWidthBoundary;
         case "invisible":
           this.pointRadius = 0;
           break;
@@ -312,46 +358,7 @@ mapGeoreferenceHooks = [];
         e.preventDefault();
       });
 
-      $('#imp-location,.imp-location').change(function()
-      {
-        div.map.editLayer.destroyFeatures();
-        var intValue = parseInt(this.value);
-        if (!isNaN(intValue)) {
-          // Change the location control requests the location's geometry to place on the map.
-          $.getJSON(div.settings.indiciaSvc + "index.php/services/data/location/"+this.value +
-            "?mode=json&view=detail" + div.settings.readAuth + "&callback=?", function(data) {
-              // store value in saved field?
-              if (data.length>0) {
-                // TODO not sure best way of doing this using the services, we don't really want
-                // to use the proj4 client transform until its issues are sorted out, but have little choice here as
-                // the wkt for a boundary could be too big to send to the services on the URL
-                var geomwkt = data[0].boundary_geom || data[0].centroid_geom;
-                if(_diffProj(div.indiciaProjection, div.map.projection)){
-                  // NB geometry may not be a point (especially if a boundary!)
-                  var parser = new OpenLayers.Format.WKT();
-                  var feature = parser.read(wkt);
-                  geomwkt = feature.geometry.transform(div.indiciaProjection, div.map.projection).toString();
-                }
-                _showWktFeature(div, geomwkt, div.map.editLayer, null, true, 'boundary');
-
-                if (typeof indiciaData.searchUpdatesSref !== "undefined" && indiciaData.searchUpdatesSref) {
-                  // The location search box must fill in the sample sref box
-                  $('#'+div.settings.srefId).val(data[0].centroid_sref);
-                  $('#'+div.settings.srefSystemId).val(data[0].centroid_sref_system);
-                  // If the sref is in two parts, then we might need to split it across 2 input fields for lat and long
-                  if (data[0].centroid_sref.indexOf(' ')!==-1) {
-                    var parts=$.trim(data[0].centroid_sref).split(' ');
-                    // part 1 may have a comma at the end, so remove
-                    var part1 = parts.shift().split(',')[0];
-                    $('#'+div.settings.srefLatId).val(part1);
-                    $('#'+div.settings.srefLongId).val(parts.join(''));
-                  }
-                }
-              }
-            }
-          );
-        }
-      });
+      $('#imp-location').change(function() {locationSelectedInInput(div, this.value);});
       // trigger change event, incase imp-location was already populated when the map loaded
       $('#imp-location').change();
     }
@@ -1213,6 +1220,7 @@ mapGeoreferenceHooks = [];
       this.addPt = addPt;
       this.getFeaturesByVal = getFeaturesByVal;
       this.removeAllFeatures = removeAllFeatures;
+      this.locationSelectedInInput = locationSelectedInInput;
       // wrap the map in a div container
       $(this).wrap('<div id="map-container" style="width:'+opts.width+'" >');
 
@@ -1278,10 +1286,14 @@ mapGeoreferenceHooks = [];
       div.map = new OpenLayers.Map($(this)[0], olOptions);
       
       // track plus and minus key presses, which influence selected grid square size
-      $(document).keydown(function(event) {
+      $(document).keydown(function(evt) {
         var change=false;
-        switch (event.which) {
+        switch (evt.which) {
           case 61: case 107:
+            if (overMap) {
+              // prevent + affecting other controls
+              evt.preventDefault();
+            }
             // prevent some browsers autorepeating
             if (!plusKeyDown) {
               plusKeyDown = true;
@@ -1289,6 +1301,10 @@ mapGeoreferenceHooks = [];
             }
             break;
           case 173: case 109:
+            if (overMap) {
+              // prevent + affecting other controls
+              evt.preventDefault();
+            }
             if (!minusKeyDown) {
               minusKeyDown = true;
               change=true;
@@ -1301,9 +1317,9 @@ mapGeoreferenceHooks = [];
           ghost=null;
         }
       });
-      $(document).keyup(function(event) {
+      $(document).keyup(function(evt) {
         var change=false;
-        switch (event.which) {
+        switch (evt.which) {
           case 61: case 107:
             // prevent some browsers autorepeating
             if (plusKeyDown) {
@@ -1322,7 +1338,14 @@ mapGeoreferenceHooks = [];
           // force a square redraw when mouse moves
           removeAllFeatures(div.map.editLayer, 'ghost');
           ghost=null;
+          evt.preventDefault()
         }
+      });
+      div.map.events.register('mousemove', null, function() {
+        overMap = true;
+      });
+      div.map.events.register('mouseout', null, function() {
+        overMap = false;
       });
 
       // setup the map to save the last position
@@ -1866,7 +1889,8 @@ jQuery.fn.indiciaMapPanel.defaults = {
     // Additional options for OpenLayers.Feature.Vector.style for a boundary
     fillColorBoundary: '#0000FF',
     fillOpacityBoundary: 0,
-    strokeColorBoundary: '#0000FF',
+    strokeColorBoundary: '#FF0000',
+    strokeWidthBoundary: 2,
 
     // Are we using the OpenLayers defaults, or are they all provided?
     useOlDefaults: true,
