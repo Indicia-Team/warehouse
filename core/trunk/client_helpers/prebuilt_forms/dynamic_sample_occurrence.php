@@ -120,10 +120,12 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
             "<strong>=tab/page name=</strong> is used to specify the name of a tab or wizard page. (Alpha-numeric characters only)<br/>".
             "<strong>=*=</strong> indicates a placeholder for putting any custom attribute tabs not defined in this form structure. <br/>".
             "<strong>[control name]</strong> indicates a predefined control is to be added to the form with the following predefined controls available: <br/>".
-                "&nbsp;&nbsp;<strong>[species]</strong> - a species grid or input control<br/>".
+                "&nbsp;&nbsp;<strong>[species]</strong> - a species grid or input control. ".
+                    "You can change any of the control options for an individual custom attribute control in a grid by putting @control|option=value on the subsequent line(s). ".
+                    "For example, if a control is for occAttr:4 then you can set it's default value by specifying @occAttr:4|default=7 on the line after the [species]<br/>".
                 "&nbsp;&nbsp;<strong>[species map]</strong> - a species grid or input control: this is the same as the species control, but the sample is broken down ".
-        		"into subsamples, each of which has its own location picked from the map. Only the part of the species grid which is being added to or modified at the ".
-        		"time is displayed. This control should be placed after the map control, with which it integrates. Species recording must be set to a List (grid mode) rather than single entry.<br/>".
+                    "into subsamples, each of which has its own location picked from the map. Only the part of the species grid which is being added to or modified at the ".
+                    "time is displayed. This control should be placed after the map control, with which it integrates. Species recording must be set to a List (grid mode) rather than single entry.<br/>".
                 "&nbsp;&nbsp;<strong>[species map summary]</strong> - a read only grid showing a summary of the data entered using the species map control.<br/>".
                 "&nbsp;&nbsp;<strong>[species attributes]</strong> - any custom attributes for the occurrence, if not using the grid. Also includes a file upload ".
                     "box and sensitivity input control if relevant. The attrubutes @resizeWidth and @resizeHeight can specified on subsequent lines, otherwise they ".
@@ -1074,16 +1076,42 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    */
   protected static function get_control_species_checklist($auth, $args, $extraParams, $options) {
     global $user;
+    
     // Build the configuration options
+    
+    // There may be options in the form occAttr:n|param => value targetted at specific attributes
+    $occAttrOptions = array();
+    $optionToUnset = array();
+    foreach ($options as $option => $value) {
+      // split the id of the option into the attribute name and option name.
+      $optionParts = explode('|', $option);
+      if ($optionParts[0] != $option) {
+        // an occurrence attribute option was found
+        $attrName = $optionParts[0];
+        $optName = $optionParts[1];
+        // split the attribute name into the type and id (type will always be occAttr)
+        $attrParts = explode(':', $attrName);
+        $attrId = $attrParts[1];      
+        if (!isset($occAttrOptions[$attrId])) $occAttrOptions[$attrId]=array();
+        $occAttrOptions[$attrId][$optName] = apply_user_replacements($value);
+        $optionToUnset[] = $option;
+      }
+    }
+    // tidy up options array
+    foreach ($optionToUnset as $value) {
+      unset($options[$value]);
+    }
+        
     $species_ctrl_opts=array_merge(array(
-        'listId'=>$args['list_id'],
-        'label'=>lang::get('occurrence:taxa_taxon_list_id'),
-        'columns'=>1,
-        'extraParams'=>$extraParams,
-        'survey_id'=>$args['survey_id'],
-        'occurrenceComment'=>$args['occurrence_comment'],
-        'occurrenceSensitivity'=>(isset($args['occurrence_sensitivity']) ? $args['occurrence_sensitivity'] : false),
-        'occurrenceImages'=>$args['occurrence_images'],
+        'occAttrOptions' => $occAttrOptions,
+        'listId' => $args['list_id'],
+        'label' => lang::get('occurrence:taxa_taxon_list_id'),
+        'columns' => 1,
+        'extraParams' => $extraParams,
+        'survey_id' => $args['survey_id'],
+        'occurrenceComment' => $args['occurrence_comment'],
+        'occurrenceSensitivity' => (isset($args['occurrence_sensitivity']) ? $args['occurrence_sensitivity'] : false),
+        'occurrenceImages' => $args['occurrence_images'],
         'PHPtaxonLabel' => true,
         'language' => iform_lang_iso_639_2(hostsite_get_user_field('language')), // used for termlists in attributes
         'cacheLookup' => $args['cache_lookup'],
