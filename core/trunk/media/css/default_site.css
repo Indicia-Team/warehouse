@@ -706,6 +706,26 @@ span.ind-cancel-icon {
   -webkit-border-radius: 4px; 
   border-radius: 4px; 
 }
+.ui-corner-tr{
+  -webkit-border-top-right-radius: 4px;
+  -moz-border-radius-topright: 4px;
+  border-top-right-radius: 4px;
+}
+.ui-corner-br{
+  -webkit-border-bottom-right-radius: 4px;
+  -moz-border-radius-bottomright: 4px;
+  border-bottom-right-radius: 4px;
+}
+.ui-corner-bl{
+  -webkit-border-bottom-left-radius: 4px;
+  -moz-border-radius-bottomleft: 4px;
+  border-bottom-left-radius: 4px;
+}
+.ui-corner-tl{
+  -webkit-border-top-left-radius: 4px;
+  -moz-border-radius-topleft: 4px;
+  border-top-left-radius: 4px;
+}
 
 div.note-success, p.note-success {
   background-color: #eeffee;
