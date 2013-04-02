@@ -2311,6 +2311,9 @@ class data_entry_helper extends helper_base {
   * String array, where each entry corresponds to the css class(es) to apply to the corresponding
   * attribute control (i.e. there is a one to one match with occAttrs). If this array is shorter than
   * occAttrs then all remaining controls re-use the last class.</li>
+  * <li><b>occAttrOptions</b><br/>
+  * array, where the key to each item is the id of an attribute and the item is an array of options
+  * to pass to the control for this atrtribute.</li>
   * <li><b>extraParams</b><br/>
   * Associative array of items to pass via the query string to the service calls used for taxon names lookup. This
   * should at least contain the read authorisation array.</li>
@@ -3379,26 +3382,52 @@ $('#".$options['id']."-filter').click(function(evt) {
     else
       // There is no specified list of occurrence attributes, so use all available for the survey
       $attrs = array_keys($attributes);
+    
     foreach ($attrs as $occAttrId) {
       // test that this occurrence attribute is linked to the survey
       if (!isset($attributes[$occAttrId]))
         throw new Exception("The occurrence attribute $occAttrId requested for the grid is not linked with the survey.");
       $attrDef = array_merge($attributes[$occAttrId]);
-      $occAttrs[$occAttrId] = $attrDef['caption'];
-      // Get the control class if available. If the class array is too short, the last entry gets reused for all remaining.
+      $attrOpts = array();
+      if (isset($options['occAttrOptions'][$occAttrId])) {
+        $attrOpts = array_merge($options['occAttrOptions'][$occAttrId]);
+      }
+      
+      // Build array of attribute captions
+      if (isset($attrOpts['label'])) {
+        // override caption from warehouse with label from client
+        $occAttrs[$occAttrId] = $attrOpts['label'];
+        // but prevent it being added in grid
+        unset($attrOpts['label']);
+      } else {
+        $occAttrs[$occAttrId] = $attrDef['caption'];
+      }
+      
+      // Build array of attribute controls
+      $class = self::species_checklist_occ_attr_class($options, $idx, $attrDef['untranslatedCaption']);
+      $class .= (isset($attrDef['class']) ? ' ' . $attrDef['class'] : '');
+      $class .= ' inactive';
+      if (isset($attrOpts['class'])) {
+        $class .=  ' ' . $attrOpts['class'];
+        unset($attrOpts['class']);
+      }
       $ctrlOptions = array(
-        'class'=>self::species_checklist_occ_attr_class($options, $idx, $attrDef['untranslatedCaption']) .
-            (isset($attrDef['class']) ? ' '.$attrDef['class'] : '') . ' inactive',
+        'class' => $class,
         'extraParams' => $options['readAuth'],
         'suffixTemplate' => 'nosuffix',
         'language' => $options['language'] // required for lists eg radio boxes: kept separate from options extra params as that is used to indicate filtering of species list by language
       );
-      if(isset($options['lookUpKey'])) $ctrlOptions['lookUpKey']=$options['lookUpKey'];
-      if(isset($options['blankText'])) $ctrlOptions['blankText']=$options['blankText'];
+      // Some undocumented checklist options that are applied to all attributes
+      if(isset($options['lookUpKey'])) $ctrlOptions['lookUpKey'] = $options['lookUpKey'];
+      if(isset($options['blankText'])) $ctrlOptions['blankText'] = $options['blankText'];
       // Don't want captions in the grid
       unset($attrDef['caption']);
       $attrDef['fieldname'] = '{fieldname}';
       $attrDef['id'] = '{fieldname}';
+      if (isset($attrOpts)) {
+        // Add in any remaining options for this control
+        $ctrlOptions = array_merge_recursive($ctrlOptions, $attrOpts);
+      }
       $occAttrControls[$occAttrId] = self::outputAttribute($attrDef, $ctrlOptions);
       $idx++;
     }
@@ -3412,9 +3441,9 @@ $('#".$options['id']."-filter').click(function(evt) {
    * @param string $caption Caption of the attribute used to construct a suitable CSS class.
    */
   private static function species_checklist_occ_attr_class($options, $idx, $caption) {
-    return (array_key_exists('occAttrClasses', $options) && $idx<count($options['occAttrClasses'])) ?
+    return (array_key_exists('occAttrClasses', $options) && $idx < count($options['occAttrClasses'])) ?
           $options['occAttrClasses'][$idx] :
-          'sc'.str_replace(' ', '', ucWords($caption)); // provide a default class based on the control caption
+          'sc' . str_replace(' ', '', ucWords($caption)); // provide a default class based on the control caption
   }
 
   /**
