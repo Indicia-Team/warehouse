@@ -32,9 +32,9 @@ require_once('includes/user.php');
  */
 class iform_report_calendar_grid {
 
-	private static $locationKey = 'location_id';
-	private static $siteUrlParams;
-	
+  private static $locationKey = 'location_id';
+  private static $siteUrlParams;
+  
   /** 
    * Return the form metadata.
    * @return string The definition of the form.
@@ -194,12 +194,12 @@ class iform_report_calendar_grid {
    * @return string
    */
   private function  get_report_calendar_options($args, $readAuth) {
-  	self::$siteUrlParams = array(
-  			self::$locationKey => array(
-  					'name' => self::$locationKey,
-  					'value' => isset($_GET[self::$locationKey]) ? $_GET[self::$locationKey] : null
-  			)
-  	);
+    self::$siteUrlParams = array(
+        self::$locationKey => array(
+            'name' => self::$locationKey,
+            'value' => isset($_GET[self::$locationKey]) ? $_GET[self::$locationKey] : null
+        )
+    );
     $presets = get_options_array_with_user_data($args['param_presets']);
     $reportOptions = array(
       'id' => 'report-grid',
@@ -207,7 +207,8 @@ class iform_report_calendar_grid {
       'mode' => 'report',
       'readAuth' => $readAuth,
       'extraParams' => $presets);
-    $reportOptions['extraParams']['location_id'] = (self::$siteUrlParams[self::$locationKey]['value'] != null ? self::$siteUrlParams[self::$locationKey]['value'] : '');
+    if (self::$siteUrlParams[self::$locationKey]['value'] != null)
+      $reportOptions['extraParams']['location_id'] = self::$siteUrlParams[self::$locationKey]['value'];
     return $reportOptions;
   }
 
