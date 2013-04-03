@@ -75,7 +75,7 @@ table td a.newLink {
   background-position: center center;
   background-repeat: no-repeat;
   background-size: auto auto;
-  background-image: url("../../../../media/images/add.png") !important;
+  background-image: url("../../../media/images/add.png") !important;
 }
 /* line 59, sass/report_calendar_grid.scss */
 table tr.datarow td {
