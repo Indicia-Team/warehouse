@@ -1309,45 +1309,43 @@ class data_entry_helper extends helper_base {
       $authToken=$options['extraParams']['auth_token'];
       $resportingServerURL = data_entry_helper::$base_url.'index.php/services/report/requestReport?report=library/sample_attribute_values/get_latest_values_for_site_and_user.xml&callback=?';
       self::$javascript .= "$('#imp-location').change(function() {
-        var reportingURL = '$resportingServerURL';
-        var reportOptions={
-          'mode': 'json',
-          'nonce': '$nonce',
-          'auth_token': '$authToken',
-          'reportSource': 'local',
-          'location_id': $('#imp-location').attr('value'),
-          'created_by_id': $createdById
-        }
-        //If the user changes the Location in the same entry session then we need to clear all the sample attribute
-        //values before filling in new ones (otherwise if there isn't a value to load the old one will remain)
-        $('[id^=smpAttr][type!=hidden][type!=checkbox]').attr('value', '');
-        $('[id^=smpAttr][type=checkbox]').removeAttr('checked'); 
-        //fill in the sample attributes based on what is returned by the report
-        $.getJSON(reportingURL, reportOptions,
-          function(data) {
-            jQuery.each(data, function(i, item) {
-              var selector=\"smpAttr:\"+item.id, input=$('[id=' + selector + ']');
-              if (item.value !== null && item.data_type !== 'Boolean') {
-                input.val(item.value);
-                if (input.is('select') && input.val()==='') {
-                  // not in select list, so have to add it
-                  input.append('<option value=\"'+item.value+'\">'+item.term+'</option>');
-                  input.val(item.value);
-                }
-              }
-              //If there is a date value then we use the date field instead.
-              //This is because the vague date engine returns to this special field
-              if (item.value_date !== null)
-                input.val(item.value_date);
-              //booleans need special treatment because checkboxes rely on using the
-              //'checked' attribute instead of using the value.
-              if (item.value_int === '1' && item.data_type === 'Boolean')
-                input.attr('checked', 'checked');
-              if (item.value_int === '0' && item.data_type === 'Boolean')
-                input.removeAttr('checked'); 
-            });
+        if ($('#imp-location').attr('value')!=='') {
+          var reportingURL = '$resportingServerURL';
+          var reportOptions={
+            'mode': 'json',
+            'nonce': '$nonce',
+            'auth_token': '$authToken',
+            'reportSource': 'local',
+            'location_id': $('#imp-location').attr('value'),
+            'created_by_id': $createdById
           }
-        );
+          //fill in the sample attributes based on what is returned by the report
+          $.getJSON(reportingURL, reportOptions,
+            function(data) {
+              jQuery.each(data, function(i, item) {
+                var selector=\"smpAttr:\"+item.id, input=$('[id=' + selector + ']');
+                if (item.value !== null && item.data_type !== 'Boolean') {
+                  input.val(item.value);
+                  if (input.is('select') && input.val()==='') {
+                    // not in select list, so have to add it
+                    input.append('<option value=\"'+item.value+'\">'+item.term+'</option>');
+                    input.val(item.value);
+                  }
+                }
+                //If there is a date value then we use the date field instead.
+                //This is because the vague date engine returns to this special field
+                if (item.value_date !== null)
+                  input.val(item.value_date);
+                //booleans need special treatment because checkboxes rely on using the
+                //'checked' attribute instead of using the value.
+                if (item.value_int === '1' && item.data_type === 'Boolean')
+                  input.attr('checked', 'checked');
+                if (item.value_int === '0' && item.data_type === 'Boolean')
+                  input.removeAttr('checked'); 
+              });
+            }
+          );
+        }
       });\n";
     }
     return $r;
