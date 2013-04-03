@@ -1,0 +1,36 @@
+<report
+    title='UKBMS Visit Summary list'
+    description='A list of the number of sites and visits recorded for each species, with filters for user, date start and end.'
+>
+  <query website_filter_field='o.website_id'>
+    select #columns#
+    from cache_taxa_taxon_lists cttl
+      JOIN occurrences o ON o.taxa_taxon_list_id = cttl.id AND o.deleted = false AND #website_filter#
+      JOIN samples s ON o.sample_id=s.id and s.deleted=false
+      JOIN samples p ON s.parent_id = p.id AND p.deleted = false AND (CAST(p.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
+        AND (((trim('#date_from#')='' OR '#date_from#'='Click here') AND p.date_end &gt;= CAST(extract(YEAR from NOW())||'-01-01' as date))
+          OR (trim('#date_from#')&lt;&gt;'' AND '#date_from#'&lt;&gt;'Click here' AND p.date_start &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date)))
+        AND (((trim('#date_to#')='' OR '#date_to#'='Click here') AND p.date_start &lt;= CAST(extract(YEAR from NOW())||'-12-31' as date))
+          OR (trim('#date_to#')&lt;&gt;'' AND '#date_to#'&lt;&gt;'Click here' AND p.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date)))
+      JOIN locations l  ON p.location_id = l.id AND l.deleted = false
+      #joins#
+    WHERE (CAST(p.created_by_id AS character varying)='#user_id#' OR '#user_id#' = '')
+  </query>
+  <order_bys>
+    <order_by>coalesce(cttl.default_common_name, cttl.preferred_taxon)</order_by>
+  </order_bys>
+  <params>
+    <param name='survey_id' display='Survey' description='Select the survey, or leave for all surveys' datatype='lookup'
+        population_call='direct:survey:id:title' />
+    <param name='date_from' display='Date From' datatype='date' description = "If not provided, defaults to the start of the current year" />
+    <param name='date_to' display='Date To' datatype='date' description = "If not provided, defaults to the end of the current year" />
+    <param name='user_id' display='Indicia User ID' description='Enter the Indicia ID of the user, or leave blank for all users' datatype='int' />
+  </params>
+  <columns>
+    <column name='id' visible="false" sql="cttl.id" in_count="true"/>
+    <column name='taxon' display='Latin Name' visible="false" sql="cttl.preferred_taxon"/>
+    <column name='common' display='Common Name' sql="coalesce(cttl.default_common_name, cttl.preferred_taxon)"/> />   
+    <column name='num_visits' display='Visits' sql="count(distinct p.id)" aggregate="true"/>    
+    <column name='num_sites' display='Sites' sql="count(distinct l.id)" aggregate="true"/>    
+  </columns> 
+</report>
