@@ -198,7 +198,8 @@ $config['taxa_taxon_lists']['update'] = "update cache_taxa_taxon_lists cttl
       taxon_meaning_id=ttlpref.taxon_meaning_id,
       taxon_group_id = tpref.taxon_group_id,
       taxon_group = tg.title,
-      cache_updated_on=now()
+      cache_updated_on=now(),
+      allow_data_entry=ttlpref.allow_data_entry
     from taxon_lists tl
     join taxa_taxon_lists ttl on ttl.taxon_list_id=tl.id 
     #join_needs_update#
@@ -217,7 +218,7 @@ $config['taxa_taxon_lists']['insert']="insert into cache_taxa_taxon_lists (
       taxon, authority, language_iso, language, preferred_taxon, preferred_authority, 
       preferred_language_iso, preferred_language, default_common_name, search_name, external_key, 
       taxon_meaning_id, taxon_group_id, taxon_group,
-      cache_created_on, cache_updated_on
+      cache_created_on, cache_updated_on, allow_data_entry
     )
     select distinct on (ttl.id) ttl.id, ttl.preferred, 
       tl.id as taxon_list_id, tl.title as taxon_list_title, tl.website_id,
@@ -229,7 +230,7 @@ $config['taxa_taxon_lists']['insert']="insert into cache_taxa_taxon_lists (
       tcommon.taxon as default_common_name,
       regexp_replace(regexp_replace(regexp_replace(lower(t.taxon), E'\\\\(.+\\\\)', '', 'g'), 'ae', 'e', 'g'), E'[^a-z0-9\\\\?\\\\+]', '', 'g'), 
       tpref.external_key, ttlpref.taxon_meaning_id, tpref.taxon_group_id, tg.title,
-      now(), now()
+      now(), now(), ttlpref.allow_data_entry
     from taxon_lists tl
     join taxa_taxon_lists ttl on ttl.taxon_list_id=tl.id 
     left join cache_taxa_taxon_lists cttl on cttl.id=ttl.id
