@@ -296,7 +296,6 @@ class iform_report_calendar_summary {
           'required' => false,
           'group' => 'Table Options'
         ),
-      		
         array(
           'name' => 'chartType',
           'caption' => 'Chart Type',
@@ -981,7 +980,7 @@ jQuery('#".$ctrlid."').change(function(){
             'chartType','rowGroupColumn','rowGroupID','width','height',
             'includeTableTotalRow','includeTableTotalColumn','includeChartTotalSeries','includeChartItemSeries',
             'includeRawData', 'includeSummaryData', 'includeEstimatesData', 'summaryDataCombining', 'dataRound',
-      		'zeroPointAnchor', 'interpolation', 'firstValue', 'lastValue', 'linkURL'
+            'zeroPointAnchor', 'interpolation', 'firstValue', 'lastValue', 'linkURL'
       ));
     if (isset($_GET['outputSource']))
       $reportOptions['outputSource']=$_GET['outputSource'];

@@ -788,7 +788,7 @@ indiciaData.speciesList1Subset = ".(isset($args['common_taxon_list_id'])&&$args[
     if (!empty($args['second_taxon_filter_field']) && !empty($args['second_taxon_filter'])) {
       data_entry_helper::$javascript .= "indiciaData.speciesList2FilterField = '".$args['second_taxon_filter_field']."';\n";
       $filterLines = helper_base::explode_lines($args['second_taxon_filter']);
-      data_entry_helper::$javascript .= "indiciaData.speciesList2FilterValues = '".json_encode($filterLines)."';\n";
+      data_entry_helper::$javascript .= "indiciaData.speciesList2FilterValues = ".json_encode($filterLines).";\n";
     }
     data_entry_helper::$javascript .= "bindSpeciesAutocomplete(\"taxonLookupControl2\",\"table#transect-input2\",\"".data_entry_helper::$base_url."index.php/services/data\", indiciaData.speciesList2,
   indiciaData.speciesList2FilterField, indiciaData.speciesList2FilterValues, {\"auth_token\" : \"".$auth['read']['auth_token']."\", \"nonce\" : \"".$auth['read']['nonce']."\"},
@@ -798,7 +798,7 @@ indiciaData.speciesList3 = ".(isset($args['third_taxon_list_id'])&&$args['third_
     if (!empty($args['third_taxon_filter_field']) && !empty($args['third_taxon_filter'])) {
       data_entry_helper::$javascript .= "indiciaData.speciesList3FilterField = '".$args['third_taxon_filter_field']."';\n";
       $filterLines = helper_base::explode_lines($args['third_taxon_filter']);
-      data_entry_helper::$javascript .= "indiciaData.speciesList3FilterValues = '".json_encode($filterLines)."';\n";
+      data_entry_helper::$javascript .= "indiciaData.speciesList3FilterValues = ".json_encode($filterLines).";\n";
     }
     // allow js to do AJAX by passing in the information it needs to post forms
     data_entry_helper::$javascript .= "bindSpeciesAutocomplete(\"taxonLookupControl3\",\"table#transect-input3\",\"".data_entry_helper::$base_url."index.php/services/data\", indiciaData.speciesList3,
@@ -901,6 +901,7 @@ $('#tabs').bind('tabsshow', function(event, ui) {
                    'model' => array('id' => 'sample',
                      'fields' => array('survey_id' => array('value' => $values['sample:survey_id']),
                                        'website_id' => array('value' => $values['website_id']),
+                                       'date' => array('value' => $values['sample:date']),
                                        'location_id' => array('value' => $section['id']),
                                        'entered_sref' => array('value' => $section['centroid_sref']),
                                        'entered_sref_system' => array('value' => $section['centroid_sref_system']),

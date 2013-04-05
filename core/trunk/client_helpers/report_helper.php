@@ -2685,7 +2685,7 @@ update_controls();
       }
       if(!isset($rawArray[$this_index])){
         $rawArray[$this_index] = array('weekno'=>$weekno, 'counts'=>array(), 'date'=>$record['date'], 'total'=>0);
-        if(!$options['my_user_id'] || $options['my_user_id'] == $record['user_id'])
+        if (function_exists('hostsite_get_user_field') && hostsite_get_user_field('indicia_user_id')==$record['user_id'])        
           $rawArray[$this_index]['sample']=$record['sample_id'];
       }
       $records[$recid]['weekno']=$weekno;
