@@ -181,7 +181,8 @@ class report_helper extends helper_base {
   *      name of a field in the data which contains true or false to define the visibility of this action. The javascript, url
   *      and urlParams values can all use the field names from the report in braces as substitutions, for example {id} is replaced
   *      by the value of the field called id in the respective row. In addition, the url can use {currentUrl} to represent the
-  *      current page's URL, {rootFolder} to represent the folder on the server that the current PHP page is running from, and
+  *      current page's URL, {rootFolder} to represent the folder on the server that the current PHP page is running from, {input_form}
+  *     (provided it is returned by the report) to represent the path to the form that created the record, and
   *      {imageFolder} for the image upload folder. Because the javascript may pass the field values as parameters to functions,
   *      there are escaped versions of each of the replacements available for the javascript action type. Add -escape-quote or
   *      -escape-dblquote to the fieldname for quote escaping, or -escape-htmlquote/-escape-htmldblquote for escaping quotes in HTML
@@ -1972,9 +1973,31 @@ if (typeof mapSettingsHooks!=='undefined') {
         continue;
       if (isset($action['url'])) {
         // Catch lazy cases where the URL does not contain the rootFolder so assumes a relative path
-        if (strcasecmp(substr($action['url'], 0, 12), '{rootfolder}')!==0 && strcasecmp(substr($action['url'], 0, 12), '{currentUrl}')!==0 
-            && strcasecmp(substr($action['url'], 0, 4), 'http')!==0)
-          $action['url']='{rootFolder}'.$action['url'];
+        if ( strcasecmp(substr($action['url'], 0, 12), '{rootfolder}') !== 0 && 
+             strcasecmp(substr($action['url'], 0, 12), '{currentUrl}') !== 0 && 
+             strcasecmp(substr($action['url'], 0, 4), 'http') !== 0 && 
+             strcasecmp(substr($action['url'], 0, 12), '{input_form}') !== 0 ) {
+          $action['url'] = '{rootFolder}'.$action['url'];
+        }
+        
+        // Catch cases where {input_form} is unavailable, a relative path or null
+        // You may want the report to return a default value if input_form is null.
+        if ( strcasecmp(substr($action['url'], 0, 12), '{input_form}') === 0 ) {
+          if ( array_key_exists('input_form', $row) ) {
+            // The input_form field is available
+            if ( !isset($row['input_form']) || $row['input_form'] == '' ) {
+              // If it has no value, use currentUrl as default
+              $action['url'] = '{currentUrl}';
+            } elseif (strcasecmp(substr($row['input_form'], 0, 4), 'http') !== 0 ) {
+              // assume a relative path if it doesn't begin with 'http'
+              $action['url'] = '{rootFolder}'.$action['url'];
+            }
+          } else {
+            // If input_form is not available use surrentUrl as default
+            $action['url'] = '{currentUrl}';
+          }          
+        } 
+                
         $actionUrl = self::mergeParamsIntoTemplate($row, $action['url'], true);
         // include any $_GET parameters to reload the same page, except the parameters that are specified by the action
         if (isset($action['urlParams']))
