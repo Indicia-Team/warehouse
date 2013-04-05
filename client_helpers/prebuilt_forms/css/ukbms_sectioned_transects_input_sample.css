@@ -17,6 +17,7 @@ table#transect-input1 td, table#transect-input1 input, table#transect-input2 td,
 
 table#transect-input1 input,table#transect-input2 input,table#transect-input3 input {
   width: 50px;
+  border: solid silver 1px;
 }
 
 table th, table td {
