@@ -7,8 +7,9 @@
   FROM samples parent
   JOIN samples s ON s.parent_id=parent.id AND s.deleted=false
   JOIN locations l ON parent.location_id=l.id
-  LEFT JOIN occurrences o on o.sample_id=s.id AND o.deleted=false
-  LEFT JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
+  LEFT JOIN (occurrences o 
+    JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
+  ) on o.sample_id=s.id AND o.deleted=false
   #joins#
   WHERE parent.deleted = false
   AND #website_filter#
@@ -17,6 +18,7 @@
       AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
   AND (CAST(parent.created_by_id AS character varying)='#user_id#' OR '#user_id#' = '')
   AND (CAST(parent.location_id AS character varying)='#location_id#' OR '#location_id#'='')
+  AND (CAST(cttl.taxon_list_id AS character varying)='#taxon_list_id#' OR '#taxon_list_id#' = '')
   #order_by#
   </query>
   <field_sql>
@@ -42,6 +44,7 @@
     <param name='date_from' display='Date From' datatype='date' />
     <param name='date_to' display='Date To' datatype='date' />
     <param name='user_id' display='Indicia User ID' description='Enter the Indicia ID of the user' datatype='int' />
+    <param name='taxon_list_id' display='Taxon list ID' description='ID of the taxon list to show' datatype='int' />
     <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
     <param name='location_id' display='Location ID' description='Enter the ID of the location' datatype='int' />
   </params>
