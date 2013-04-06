@@ -4259,10 +4259,6 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    * <li><b>table</b><br/>
    * Singular table name used when loading from a database entity.
    * </li>
-   * <li><b>view</b><br/>
-   * Optional. Use to specify which database view to load for an entity (e.g. list, details, gv or cache).
-   * Defaults to list.
-   * </li>
    * <li><b>report</b><br/>
    * Path to the report file to use when loading data from a report, e.g. "library/occurrences/explore_list", 
    * exc;uding the .xml extension.
@@ -4286,6 +4282,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    * limit - number of records to return.
    * offset - number of records to offset by into the dataset, useful when paginating through the 
    * records.
+   * view - use to specify which database view to load for an entity (e.g. list, detail, gv or cache).
+   * Defaults to list.
    * </li>
    * <li><b>nocache</b><br/>
    * Optional, if set to true then the results will always be loaded from the warehouse not
