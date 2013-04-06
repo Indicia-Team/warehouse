@@ -642,9 +642,35 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     return $r;
   }
 
+/**
+ * Preparing to display an existing sample with occurrences.
+ * When displaying a grid of occurrences, just load the sample and data_entry_helper::species_checklist 
+ * will load the occurrences.
+ * When displaying just one occurrence we must load the sample and the occurrence
+ */
   protected static function getEntity($args, $auth) {
     data_entry_helper::$entity_to_load = array();
-    // Displaying an existing sample. If we know the occurrence ID, and don't know the sample ID or are displaying just one occurrence
+
+    if ( !self::$loadedOccurrenceId && self::$loadedSampleId && !self::getGridMode($args) ) {
+      // For a single occurrence, when we know the sample ID but not the occurrence, we must
+      // first look up the occurrence ID
+      $filter = array(
+        'view' => 'detail',
+        'sample_id' => self::$loadedSampleId
+      );
+      $options = array(
+        'table' => 'occurrence',
+        'extraParams' => $auth['read'] + $filter
+      );
+      $response = data_entry_helper::get_population_data($options);
+      if (count($response) != 0) {
+        //we found an occurrence for this sample
+        self::$loadedOccurrenceId = $response[0]['id'];       
+        self::$occurrenceIds = array(self::$loadedOccurrenceId);
+      }
+    }
+    
+    // If we know the occurrence ID, and don't know the sample ID or are displaying just one occurrence
     // rather than a grid of occurrences then we must load the occurrence data to get the sample id.
     if (self::$loadedOccurrenceId && (!self::$loadedSampleId || !self::getGridMode($args))) {
       data_entry_helper::load_existing_record($auth['read'], 'occurrence', self::$loadedOccurrenceId);
