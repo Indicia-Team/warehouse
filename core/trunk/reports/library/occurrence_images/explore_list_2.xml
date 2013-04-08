@@ -1,6 +1,6 @@
 <report
-    title="Explore photos"
-    description="Report designed for the explore photos facility in iRecord."
+    title="Explore photos 2"
+    description="Report designed for the explore photos facility in iRecord, with additional filter parameters."
 >
   <query website_filter_field="o.website_id">
   SELECT #columns#
@@ -12,6 +12,9 @@
   WHERE #sharing_filter#
   AND o.record_status not in ('I','T') AND (#ownData#=1 OR o.record_status not in ('D','R'))
   AND ('#searchArea#'='' OR st_intersects(o.public_geom, st_geomfromtext('#searchArea#',900913)))
+  AND (o.survey_id=#survey_id# OR #survey_id#=0)
+  AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR o.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+  AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
   #idlist#
   </query>
   <order_bys>
@@ -35,6 +38,10 @@
     <param name="ownGroups" display="My species groups only?" datatype="checkbox">      
       <where value="1">o.taxon_group_id IN (#taxon_groups#)</where>
     </param>
+    <param name='survey_id' display='Survey' description='Select the survey, or leave for all surveys' datatype='lookup'
+        population_call='direct:survey:id:title' emptyvalue="0" />
+    <param name='date_from' display='Date From' datatype='date' />
+    <param name='date_to' display='Date To' datatype='date' />
   </params>
   <columns>
     <column name='occurrence_id' display='ID' sql='o.id' datatype='integer' template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />
