@@ -33,7 +33,6 @@ class XMLReportReader_Core implements ReportReader
   private $description;
   private $row_class;
   private $query;
-  private $extraJoins=array();
   private $countQuery=null;
   private $field_sql;
   private $order_by;
@@ -644,23 +643,31 @@ class XMLReportReader_Core implements ReportReader
     }
     // Does the parameter define optional join elements which are associated with specific parameter values?
     if ($reader!==null) {
-      $joinXml = $reader->readInnerXML();
-      if (!empty($joinXml)) {
-        $joinReader = new XMLReader();
-        $joinReader->XML($joinXml);
-        while ($joinReader->read()) {
-          if ($joinReader->nodeType==XMLREADER::ELEMENT && $joinReader->name=='join') {
+      $paramXml = $reader->readInnerXML();
+      if (!empty($paramXml)) {
+        $reader = new XMLReader();
+        $reader->XML($paramXml);
+        while ($reader->read()) {
+          if ($reader->nodeType==XMLREADER::ELEMENT && $reader->name=='join') {
             if (!isset($this->params[$name]['joins']))
               $this->params[$name]['joins']=array();
             $this->params[$name]['joins'][] = array(
-              'value'=>$joinReader->getAttribute('value'),
-              'operator'=>$joinReader->getAttribute('operator'),
-              'sql'=>$joinReader->readString()
+              'value'=>$reader->getAttribute('value'),
+              'operator'=>$reader->getAttribute('operator'),
+              'sql'=>$reader->readString()
+            );
+          }
+          if ($reader->nodeType==XMLREADER::ELEMENT && $reader->name=='where') {
+            if (!isset($this->params[$name]['wheres']))
+              $this->params[$name]['wheres']=array();
+            $this->params[$name]['wheres'][] = array(
+              'value'=>$reader->getAttribute('value'),
+              'operator'=>$reader->getAttribute('operator'),
+              'sql'=>$reader->readString()
             );
           }
         }
       }
-
     }
   }
 

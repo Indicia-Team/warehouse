@@ -732,6 +732,8 @@ class ReportEngine {
       if (isset($paramDefs[$name])) {
         if (array_key_exists('joins', $paramDefs[$name]))
           $query = $this->addParamJoins($query, $name, $paramDefs[$name], $value);
+        if (array_key_exists('wheres', $paramDefs[$name]))
+          $query = $this->addParamWheres($query, $name, $paramDefs[$name], $value);
       }
     }
     // Now loop through the joins to insert the values into the query
@@ -976,6 +978,9 @@ class ReportEngine {
     return $query;
   }
   
+  /**
+   * Add any joins defined by a used parameter to the query.
+   */
   private function addParamJoins($query, $paramName, $paramDef, $value) {
     foreach($paramDef['joins'] as $joinDef) {
       if ((!empty($joinDef['operator']) && (($joinDef['operator']==='equal' && $joinDef['value']===$value) ||
@@ -985,6 +990,23 @@ class ReportEngine {
         // Join SQL can contain the parameter value as well.
         $join = str_replace("#$paramName#", $value, $joinDef['sql']);
         $query = str_replace('#joins#', $join."\n #joins#", $query);
+      }
+    }
+    return $query;
+  }
+  
+  /**
+   * Add any where clause filters defined by a used parameter to the query.
+   */
+  private function addParamWheres($query, $paramName, $paramDef, $value) {
+    foreach($paramDef['wheres'] as $whereDef) {
+      if ((!empty($whereDef['operator']) && (($whereDef['operator']==='equal' && $whereDef['value']===$value) ||
+          ($whereDef['operator']==='notequal' && $whereDef['value']!==$value)))
+          // operator not provided, so default is to join if param not empty (null string passed for empty integers)
+          || (!empty($value) && $value!=="null")) {
+        // Join SQL can contain the parameter value as well.
+        $filter = str_replace("#$paramName#", $value, $whereDef['sql']);
+        $query = str_replace('#filters#', "AND $filter\n#filters#", $query);
       }
     }
     return $query;
