@@ -1006,7 +1006,7 @@ class ReportEngine {
           || (!empty($value) && $value!=="null")) {
         // Join SQL can contain the parameter value as well.
         $filter = str_replace("#$paramName#", $value, $whereDef['sql']);
-        $query = str_replace('#filters#', $filter."\n#filters#", $query);
+        $query = str_replace('#filters#', "AND $filter\n#filters#", $query);
       }
     }
     return $query;
