@@ -2,20 +2,21 @@
     title="Samples list for map"
     description="A very simple map for the samples in UKBMS"
 >
-  <query website_filter_field="su.website_id">
+  <query website_filter_field="o.website_id">
   SELECT #columns#
-  FROM samples s
-  JOIN surveys su ON su.id=s.survey_id 
+  FROM cache_occurrences o
+  JOIN samples s on s.id=o.sample_id
+  JOIN samples sp on sp.id=s.parent_id
   WHERE #website_filter#
-  AND s.parent_id IS NULL
   </query>
   <columns>
-    <column name='entered_sref' sql='s.entered_sref' distincton="true" />
-    <column name='geom' visible='false' mappable="true" sql='st_astext(st_centroid(s.geom))' />
+    <column name='entered_sref' sql='sp.entered_sref' />
+    <column name='geom' visible='false' mappable="true" sql='st_astext(st_centroid(sp.geom))' />
     <column name='pr' visible='false' feature_style="pointRadius" sql='5' />
-    <column name='sc' visible='false' feature_style="strokeColor" sql="'black'" />
-    <column name='fc' visible='false' feature_style="fillColor" sql="'blue'" />
-    <column name='gn' visible='false' feature_style="graphicName" sql="'circle'" />
-    <column name='fo' visible='false' feature_style="fillOpacity" sql="case extract(year from date_start) when extract(year from now()) then 0.6 else 0 end" />
+    <column name='sc' visible='false' feature_style="strokeColor" sql="'black'" aggregate='true'/>    
+    <column name='gn' visible='false' feature_style="graphicName" sql="'circle'" aggregate='true'/>    
+	<column name='year' aggregate='true' sql='max(extract(year from o.date_start))' />
+	<column name='fo' visible='false' feature_style="fillOpacity" sql="case max(extract(year from o.date_start)) when extract(year from now()) then 0.6 else 0.4 end" aggregate='true'/>
+	<column name='fc' visible='false' feature_style="fillColor" sql="case max(extract(year from o.date_start))when extract(year from now()) then 'red' else 'blue' end" aggregate='true'/>
   </columns>
 </report>
