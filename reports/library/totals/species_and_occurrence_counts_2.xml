@@ -4,11 +4,10 @@
       <query website_filter_field="o.website_id">
       SELECT count(DISTINCT o.taxon_meaning_id) as species_count, count(DISTINCT o.id) as occurrences_count
       FROM cache_occurrences o
-      JOIN samples s on s.id=o.sample_id and s.deleted=false
-      AND o.zero_abundance='f'
+      WHERE o.zero_abundance='f'
       AND #website_filter#
-      AND ('#survey_ids#'='0' OR s.survey_id in (#survey_ids#))
-      AND ('#location_ids#'='0' OR s.location_id in (#location_ids#))
+      AND ('#survey_ids#'='0' OR o.survey_id in (#survey_ids#))
+      AND ('#location_ids#'='0' OR o.location_id in (#location_ids#))
       AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR o.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
       AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
       GROUP BY website_id

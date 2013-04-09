@@ -3,8 +3,7 @@
       <query website_filter_field="o.website_id">
       SELECT count(DISTINCT o.taxon_meaning_id) as species_count, count(DISTINCT o.id) as occurrences_count
       FROM cache_occurrences o
-      JOIN samples s on s.id=o.sample_id and s.deleted=false
-      AND o.zero_abundance='f'
+      WHERE o.zero_abundance='f'
       AND #website_filter#
       AND (CAST(o.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
       AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR o.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
