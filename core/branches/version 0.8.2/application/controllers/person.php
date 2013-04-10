@@ -46,15 +46,17 @@ class Person_Controller extends Gridview_Base_Controller {
       // If not core admin, then you can only edit a person if they have a role on one of your websites that you administer or
       // you created the user
       $list = $this->db
-          ->select('users.person_id')
-          ->from('users')
+          ->select('people.id')
+          ->from('people')
+          ->join('users', 'users.person_id', 'people.id')
           ->join('users_websites','users_websites.user_id','users.id')
-          ->where('users_websites.site_role_id IS NOT ', null) 
+          ->where('users_websites.site_role_id IS NOT ', null)
           ->where('users.core_role_id IS ', null)
+          ->where('people.deleted', 'false')
           ->in('users_websites.website_id', $websites)
           ->get();
-      foreach ($list as $user) {
-        $person_id_values[] = $user->person_id;
+      foreach ($list as $person) {
+        $person_id_values[] = $person->id;
       }
       // Also let you edit people that you created unless they have been promoted to core admin
       $list = $this->db
@@ -63,10 +65,13 @@ class Person_Controller extends Gridview_Base_Controller {
           ->join('users', 'users.person_id', 'people.id', 'LEFT')
           ->where('people.created_by_id', $_SESSION['auth_user']->id)
           ->where('users.core_role_id IS ', null)          
+          ->where('people.deleted', 'false')
           ->get();
       foreach ($list as $person) {
         $person_id_values[] = $person->id;
       }
+      // Remove duplicates
+      $person_id_values = array_unique($person_id_values, SORT_NUMERIC);
       $this->auth_filter = array('field' => 'id', 'values' => $person_id_values);
     }
 
