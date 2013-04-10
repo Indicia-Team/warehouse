@@ -50,6 +50,7 @@ class User_Controller extends Gridview_Base_Controller {
           ->join('users_websites','users_websites.user_id','users.id')
           ->where('users_websites.site_role_id IS NOT ', null)
           ->where('users.core_role_id IS ', null)
+          ->where('people.deleted', 'false')
           ->in('users_websites.website_id', $websites)
           ->get();
       foreach ($list as $item) {
@@ -62,10 +63,13 @@ class User_Controller extends Gridview_Base_Controller {
           ->join('users', 'users.person_id', 'people.id', 'LEFT')
           ->where('people.created_by_id', $_SESSION['auth_user']->id)
           ->where('users.core_role_id IS ', null)
+          ->where('people.deleted', 'false')
           ->get();
       foreach ($list as $item) {
         $people_id_values[] = $item->id;
       }
+      // Remove duplicates
+      $people_id_values = array_unique($people_id_values, SORT_NUMERIC);
       $this->auth_filter = array('field' => 'person_id', 'values' => $people_id_values);
     }
 
