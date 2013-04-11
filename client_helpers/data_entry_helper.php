@@ -4473,11 +4473,14 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       'filterField'=>'parent_id',
       'size'=>3
     ), $options);
-    if (array_key_exists('parentControlId', $options)) {
+    if (array_key_exists('parentControlId', $options) && empty(data_entry_helper::$entity_to_load[$options['parentControlId']])) {
       // no options for now
       $options['items'] = '';
       self::init_linked_lists($options);
     } else {
+      if (array_key_exists('parentControlId', $options))
+        // still want linked lists, even though we will have some items initially populated
+        self::init_linked_lists($options);
       $lookupItems = self::get_list_items_from_options($options);
       $opts = "";
       if (array_key_exists('blankText', $options)) {
@@ -4525,6 +4528,9 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       }
     } else {
       // lookup values need to be obtained from the database
+      if (isset($options['parentControlId']) && !empty(data_entry_helper::$entity_to_load[$options['parentControlId']])) {
+        $options['extraParams'][$options['filterField']] = data_entry_helper::$entity_to_load[$options['parentControlId']];
+      }
       $response = self::get_population_data($options);
       // if the response is empty, and a language has been set, try again without the language but asking for the preferred values.
       if(count($response)==0 && array_key_exists('iso', $options['extraParams'])){
