@@ -2578,6 +2578,12 @@ class data_entry_helper extends helper_base {
           $firstColumnTaxon=$taxon['parent'];
         else
           $firstColumnTaxon=$taxon;
+        // map field names if using a cached lookup
+        if ($options['cacheLookup']) 
+          $firstColumnTaxon = $firstColumnTaxon + array(
+            'preferred_name' => $firstColumnTaxon['preferred_taxon'],
+            'common' => $firstColumnTaxon['default_common_name']
+          );
         // Get the cell content from the taxon_label template
         $firstCell = self::mergeParamsIntoTemplate($firstColumnTaxon, 'taxon_label');
         // If the taxon label template is PHP, evaluate it.
@@ -5405,7 +5411,7 @@ if (errors.length>0) {
     $subModels = data_entry_helper::wrap_species_checklist_with_subsamples($values, $include_if_any_data,
         $zero_attrs, $zero_values);
 
-    // Add the subsample/soccurrences in as subModels without overwriting others such as a sample image
+    // Add the subsamples/occurrences in as subModels without overwriting others such as a sample image
     if (array_key_exists('subModels', $sampleMod)) {
       $sampleMod['subModels'] = array_merge($sampleMod['subModels'], $subModels);
     } else {
