@@ -210,7 +210,7 @@ class report_helper extends helper_base {
   *      contains the value 'Growing on a mountain pasture'. A third column is setup in the report with template set to
   *      '<div>{species} was recorded on {date}.<br/>{comment}</div>'. The json data and the second column's raw value are all
   *      available in the template replacements, so the output is set to
-  *      '<div>Arnice montana was recorded on 14/04/2004.<br/>Growing on a mountain pasture</div>'
+  *      '<div>Arnica montana was recorded on 14/04/2004.<br/>Growing on a mountain pasture</div>'
   *      template
   *  - img: set to true if the column contains a path to an image (relative to the warehouse upload folder). If so then the
   *      path is replaced by an image thumbnail with a fancybox zoom to the full image. Multiple images can be included by
@@ -3146,21 +3146,23 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
         $r .= "<tbody>\n";
         $altRow=false;
         foreach($summaryArray as $seriesID => $summaryRow){ // use the same row headings as the summary table.
-          $total=0;  // row total
-          $r .= "<tr class=\"datarow ".($altRow?$options['altRowClass']:'')."\">";
-          $r.= '<td>'.$seriesLabels[$seriesID].'</td>';
-          foreach($rawArray as $date => $rawColumn){
-            if(isset($rawColumn['counts'][$seriesID])) {
-              $r.= '<td>'.$rawColumn['counts'][$seriesID].'</td>';
-              $total += $rawColumn['counts'][$seriesID];
-            } else
-              $r.= '<td></td>';
+          if (!empty($seriesLabels[$seriesID])) {
+            $total=0;  // row total
+            $r .= "<tr class=\"datarow ".($altRow?$options['altRowClass']:'')."\">";
+            $r.= '<td>'.$seriesLabels[$seriesID].'</td>';
+            foreach($rawArray as $date => $rawColumn){
+              if(isset($rawColumn['counts'][$seriesID])) {
+                $r.= '<td>'.$rawColumn['counts'][$seriesID].'</td>';
+                $total += $rawColumn['counts'][$seriesID];
+              } else
+                $r.= '<td></td>';
+            }
+            if(isset($options['includeTableTotalColumn']) && $options['includeTableTotalColumn']){
+              $r.= '<td class="total-column">'.$total.'</td>';
+            }
+            $r .= "</tr>";
+            $altRow=!$altRow;
           }
-          if(isset($options['includeTableTotalColumn']) && $options['includeTableTotalColumn']){
-            $r.= '<td class="total-column">'.$total.'</td>';
-          }
-          $r .= "</tr>";
-          $altRow=!$altRow;
         }
         if(isset($options['includeTableTotalColumn']) && $options['includeTableTotalColumn']){
         	$r.= '<tr class="totalrow"><td>Total</td>'.$rawTotalRow.
@@ -3195,40 +3197,43 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
       $totalEstimatesRow = array();
       for($i= $minWeekNo; $i <= $maxWeekNo; $i++) $totalRow[$i] = 0;
       foreach($summaryArray as $seriesID => $summaryRow){
-        $total=0;  // row total
-        $estimatesTotal=0;  // row total
-        $r .= "<tr class=\"datarow ".($altRow?$options['altRowClass']:'')."\">";
-        $r.= '<td>'.$seriesLabels[$seriesID].'</td>';
-        for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
-          if(isset($summaryRow[$i])){
-            if($summaryRow[$i]['forcedZero'])
-              $r.= '<td class="'.($options['highlightEstimates'] ? 'forcedZero' : '').'">0</td>';
-            else if($summaryRow[$i]['summary'] && $summaryRow[$i]['summary'] == $summaryRow[$i]['estimates'])
-              $r.= '<td>'.$summaryRow[$i]['summary'].'</td>';
-            else $r.= '<td>'.
-              (isset($options['includeSummaryData']) && $options['includeSummaryData'] ? ($summaryRow[$i]['summary'] ? '<span class="summary">'.$summaryRow[$i]['summary'].'</span>' : '' ) : '').
-              (isset($options['includeEstimatesData']) && $options['includeEstimatesData'] ? '<span class="estimates'.($options['highlightEstimates'] ? " highlight-estimates" : '').'">'.$summaryRow[$i]['estimates'].'<span>' : '').
-              '</td>';
-            if($summaryRow[$i]['summary']){
-              $total += $summaryRow[$i]['summary'];
-              $totalRow[$i] += $summaryRow[$i]['summary'];
-              $grandTotal += $summaryRow[$i]['summary'];
+        // skip rows with no labels, caused by report left joins to fill in all date columns even if no records
+        if (!empty($seriesLabels[$seriesID])) {
+          $total=0;  // row total
+          $estimatesTotal=0;  // row total
+          $r .= "<tr class=\"datarow ".($altRow?$options['altRowClass']:'')."\">";
+          $r.= '<td>'.$seriesLabels[$seriesID].'</td>';
+          for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
+            if(isset($summaryRow[$i])){
+              if($summaryRow[$i]['forcedZero'])
+                $r.= '<td class="'.($options['highlightEstimates'] ? 'forcedZero' : '').'">0</td>';
+              else if($summaryRow[$i]['summary'] && $summaryRow[$i]['summary'] == $summaryRow[$i]['estimates'])
+                $r.= '<td>'.$summaryRow[$i]['summary'].'</td>';
+              else $r.= '<td>'.
+                (isset($options['includeSummaryData']) && $options['includeSummaryData'] ? ($summaryRow[$i]['summary'] ? '<span class="summary">'.$summaryRow[$i]['summary'].'</span>' : '' ) : '').
+                (isset($options['includeEstimatesData']) && $options['includeEstimatesData'] ? '<span class="estimates'.($options['highlightEstimates'] ? " highlight-estimates" : '').'">'.$summaryRow[$i]['estimates'].'<span>' : '').
+                '</td>';
+              if($summaryRow[$i]['summary']){
+                $total += $summaryRow[$i]['summary'];
+                $totalRow[$i] += $summaryRow[$i]['summary'];
+                $grandTotal += $summaryRow[$i]['summary'];
+              }
+              $estimatesTotal += $summaryRow[$i]['estimates'];
+              $totalEstimatesRow[$i] += $summaryRow[$i]['estimates'];
+              $estimatesGrandTotal += $summaryRow[$i]['estimates'];
+            } else {
+              $r.= '<td></td>';
             }
-            $estimatesTotal += $summaryRow[$i]['estimates'];
-            $totalEstimatesRow[$i] += $summaryRow[$i]['estimates'];
-            $estimatesGrandTotal += $summaryRow[$i]['estimates'];
-          } else {
-            $r.= '<td></td>';
           }
+          if(isset($options['includeTableTotalColumn']) && $options['includeTableTotalColumn']){
+            if(isset($options['includeSummaryData']) && $options['includeSummaryData'])
+              $r.= '<td class="total-column">'.$total.'</td>';
+            if(isset($options['includeEstimatesData']) && $options['includeEstimatesData'])
+              $r.= '<td class="total-column estimates">'.$estimatesTotal.'</td>';
+          }
+          $r .= "</tr>";
+          $altRow=!$altRow;
         }
-        if(isset($options['includeTableTotalColumn']) && $options['includeTableTotalColumn']){
-          if(isset($options['includeSummaryData']) && $options['includeSummaryData'])
-            $r.= '<td class="total-column">'.$total.'</td>';
-          if(isset($options['includeEstimatesData']) && $options['includeEstimatesData'])
-            $r.= '<td class="total-column estimates">'.$estimatesTotal.'</td>';
-        }
-        $r .= "</tr>";
-        $altRow=!$altRow;
       }
       if(isset($options['includeTableTotalRow']) && $options['includeTableTotalRow']){
         if(isset($options['includeSummaryData']) && $options['includeSummaryData']){
