@@ -5125,15 +5125,10 @@ if (errors.length>0) {
       throw new Exception('Cannot find website id in POST array!');
     }
     // determiner and record status can be defined globally for the whole list.
-    if (array_key_exists('occurrence:determiner_id', $arr)){
+    if (array_key_exists('occurrence:determiner_id', $arr))
       $determiner_id = $arr['occurrence:determiner_id'];
-    }
-    if (array_key_exists('occurrence:record_status', $arr)){
+    if (array_key_exists('occurrence:record_status', $arr))
       $record_status = $arr['occurrence:record_status'];
-    }
-    if (array_key_exists('sample:entered_sref_system', $arr)){
-      $sref_system = $arr['sample:entered_sref_system'];
-    }
     // Set the default method of looking for rows to include - either using data, or the checkbox (which could be hidden)
     $include_if_any_data = $include_if_any_data || (isset($arr['rowInclusionCheck']) && $arr['rowInclusionCheck']=='hasData');
     // Species checklist entries take the following format.
@@ -5195,9 +5190,15 @@ if (errors.length>0) {
       $occs = $sampleRecord['occurrences'];
       unset($sampleRecord['occurrences']);
       $sampleRecord['website_id'] = $website_id;
-      if (isset($sref_system)) {
-        $sampleRecord['entered_sref_system'] = $sref_system;
-      }
+      // copy essentials down to each subsample
+      if (!empty($arr['survey_id']))
+        $sampleRecord['survey_id'] = $arr['survey_id'];
+      if (!empty($arr['sample:date']))
+        $sampleRecord['date'] = $arr['sample:date'];
+      if (!empty($arr['sample:entered_sref_system']))
+        $sampleRecord['entered_sref_system'] = $arr['sample:entered_sref_system'];
+      if (!empty($arr['sample:input_form']))
+        $sampleRecord['input_form'] = $arr['sample:input_form'];
       $subSample = data_entry_helper::wrap($sampleRecord, 'sample');
       // Add the subsample/soccurrences in as subModels without overwriting others such as a sample image
       if (array_key_exists('subModels', $subSample)) {
@@ -6238,7 +6239,7 @@ if (errors.length>0) {
    * coordinate systems that are entirely described by an EPSG code.
    * @param array $systems List of spatial reference system codes.
    */
-  private static function include_sref_handler_js($systems) {
+  public static function include_sref_handler_js($systems) {
     // extract the codes and make lowercase
     $systems=unserialize(strtolower(serialize(array_keys($systems))));
     // find the systems that have client-side JavaScript handlers

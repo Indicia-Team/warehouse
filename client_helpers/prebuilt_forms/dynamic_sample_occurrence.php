@@ -709,15 +709,16 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    * Load the attributes for the sample defined by a supplied Id.
    */
   private static function getAttributesForSample($args, $auth, $id) {
-    $attrOpts = array(
-    'id' => $id
-    ,'valuetable'=>'sample_attribute_value'
+    $attrOpts = array(   
+    'valuetable'=>'sample_attribute_value'
     ,'attrtable'=>'sample_attribute'
     ,'key'=>'sample_id'
     ,'fieldprefix'=>'smpAttr'
     ,'extraParams'=>$auth['read']
     ,'survey_id'=>$args['survey_id']
     );
+    if (!empty($id))
+      $attrOpts['id'] = $id;
     // select only the custom attributes that are for this sample method or all sample methods, if this
     // form is for a specific sample method.
     if (!empty($args['sample_method_id']))
@@ -917,14 +918,11 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     call_user_func(array(self::$called_class, 'build_grid_autocomplete_function'), $args);
     // the imp-sref & imp-geom are within the dialog so it is updated.
     $speciesCtrl = self::get_control_species_checklist($auth, $args, $extraParams, $options); // this preloads the subsample data.
-    $list = explode(',', str_replace(' ', '', $args['spatial_systems']));
-    $systems=array();
-    foreach($list as $system) {
-      $systems[$system] = lang::get($system);
-    }
+    $systems = explode(',', str_replace(' ', '', $args['spatial_systems']));
     // note that this control only uses the first spatial reference system in the list.
-    $keys = array_keys($systems);
-    $system = '<input type="hidden" id="imp-sref-system" name="sample:entered_sref_system" value="'.$keys[0].'" />';
+    $system = '<input type="hidden" id="imp-sref-system" name="sample:entered_sref_system" value="'.$systems[0].'" />';
+    // since we handle the system ourself, we need to include the system handled js files.
+    data_entry_helper::include_sref_handler_js(array($systems[0]=>''));
     if (isset($options['sampleMethodId'])) {
       $args['sample_method_id'] = $options['sampleMethodId'];
       $sampleAttrs = self::getAttributes($args, $auth);
@@ -937,8 +935,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       $r .= '<div id="'.$options['id'].'-subsample-ctrls" style="display: none">'.$sampleCtrls.'</div>';
     }
     $r .= '<div id="'.$options['id'].'-container" style="display: none">'.
-           '<input type="text" id="imp-sref" />'. // a dummy to capture feedback from the map
-           '<input type="text" id="imp-geom" />'. // a dummy to capture feedback from the map
+           '<input type="hidden" id="imp-sref" />'. // a dummy to capture feedback from the map
+           '<input type="hidden" id="imp-geom" />'. // a dummy to capture feedback from the map
            '<input type="hidden" name="sample:entered_sref" value="'.data_entry_helper::check_default_value('sample:entered_sref', '').'">'.
            '<input type="hidden" name="sample:geom" value="'.data_entry_helper::check_default_value('sample:geom', '').'" >'.
            $system.
@@ -983,7 +981,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         'FinishLabel' => lang::get("Finish"),
         'Yes' => lang::get("Yes"),
         'No' => lang::get("No"),
-        'LocationLabel' => lang::get('LANG_Location_Label'));
+        'SRefLabel' => lang::get('LANG_SRef_Label'));
     // make sure we load the JS.
     data_entry_helper::add_resource('control_speciesmap_controls');
     data_entry_helper::$javascript .= "control_speciesmap_addcontrols(".json_encode($options).",".json_encode($langStrings).");\n";
@@ -996,7 +994,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           $idKey = $a[0].':'.$a[1].':'.$a[2].':sample:id';
           $deletedKey = $a[0].':'.$a[1].':'.$a[2].':sample:deleted';
           $blocks .= '<div id="scm-'.$a[1].'-block" class="scm-block">'.
-                    '<label>'.lang::get('LANG_SRef_Label').'</label>'.
+                    '<label>'.lang::get('LANG_SRef_Label').':</label> '.
                     '<input type="text" value="'.$value.'" readonly="readonly" name="'.$key.'">'.
                     '<input type="hidden" value="'.data_entry_helper::$entity_to_load[$geomKey].'" name="'.$geomKey.'">'.
                     '<input type="hidden" value="'.(isset(data_entry_helper::$entity_to_load[$deletedKey]) ? data_entry_helper::$entity_to_load[$deletedKey] : 'f').'" name="'.$deletedKey.'">'.
