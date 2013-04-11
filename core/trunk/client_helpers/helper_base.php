@@ -232,7 +232,9 @@ $indicia_templates = array(
   }
 };
 $("#{parentControlId}").bind("change.indicia", {fn});
-$("#{parentControlId}").trigger("change.indicia");'."\n",
+if ($("#{escapedId} option").length===0) {
+  $("#{parentControlId}").trigger("change.indicia");
+}'."\n",
     
   'postcode_textbox' => '<input type="text" name="{fieldname}" id="{id}"{class} value="{default}" '.
         'onblur="javascript:decodePostcode(\'{linkedAddressBoxId}\');" />',

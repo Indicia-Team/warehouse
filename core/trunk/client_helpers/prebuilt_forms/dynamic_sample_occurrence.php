@@ -123,6 +123,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
                 "&nbsp;&nbsp;<strong>[species]</strong> - a species grid or input control. ".
                     "You can change any of the control options for an individual custom attribute control in a grid by putting @control|option=value on the subsequent line(s). ".
                     "For example, if a control is for occAttr:4 then you can set it's default value by specifying @occAttr:4|default=7 on the line after the [species]<br/>".
+                    "If in single species entry mode and using a select box for data input, you can put a taxon group select above the species input select by ".
+                    "setting the option @taxonGroupSelect=true. Control the label and helptext for this control using the options @taxonGroupSelectLabel and @taxonGroupSelectHelpText.<br/>".
                 "&nbsp;&nbsp;<strong>[species map]</strong> - a species grid or input control: this is the same as the species control, but the sample is broken down ".
                 "into subsamples, each of which has its own location picked from the map. Only the part of the species grid which is being added to or modified at the ".
                 "time is displayed. This control should be placed after the map control, with which it integrates. Species recording must be set to a List (grid mode) rather than single entry. ".
@@ -1224,12 +1226,41 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    * @return string HTML for the control.
    */
   protected static function get_control_species_single($auth, $args, $extraParams, $options) {
+    $r = '';
     if ($args['extra_list_id']=='')
       $extraParams['taxon_list_id'] = $args['list_id'];
     // @todo At the moment the controls do not support 2 lists. So use just the extra list. Should
     // update to support 2 lists. This is an edge case anyway.
     else
       $extraParams['taxon_list_id'] = empty($args['extra_list_id']) ? $args['list_id'] : $args['extra_list_id'];
+    if (isset($options['taxonGroupSelect']) && $options['taxonGroupSelect']) {
+      $label = isset($options['taxonGroupSelectLabel']) ? $options['taxonGroupSelectLabel'] : 'Species Group';
+      $helpText = isset($options['taxonGroupSelectHelpText']) ? $options['taxonGroupSelectHelpText'] : 'Choose which species group you want to pick a species from.';
+      $default='';
+      if (!empty(data_entry_helper::$entity_to_load['occurrence:taxa_taxon_list_id'])) {
+        // need to find the default value
+        $species = data_entry_helper::get_population_data(array(
+          'table' => 'cache_taxa_taxon_list',
+          'extraParams' => $auth['read'] + array('id' => data_entry_helper::$entity_to_load['occurrence:taxa_taxon_list_id'])
+        ));
+        data_entry_helper::$entity_to_load['taxon_group_id'] = $species[0]['taxon_group_id'];
+      }
+      $r .= data_entry_helper::select(array(
+        'fieldname' => 'taxon_group_id',
+        'id' => 'taxon_group_id',
+        'label' => lang::get($label),
+        'helpText' => lang::get($helpText),
+        'report' => 'library/taxon_groups/taxon_groups_used_in_checklist',
+        'valueField' => 'id',
+        'captionField' => 'title',
+        'extraParams' => $auth['read'] + array('taxon_list_id' => $extraParams['taxon_list_id']),
+      ));
+      // update the select box to link to the species group picker. It must be a select box!
+      $args['species_ctrl'] = 'select';
+      $options['parentControlId'] = 'taxon_group_id';
+      $options['parentControlLabel'] = lang::get($label);
+      $options['filterField'] = 'taxon_group_id';
+    }
     $options['speciesNameFilterMode'] = self::getSpeciesNameFilterMode($args);
     global $indicia_templates;
     $ctrl = $args['species_ctrl'] === 'autocomplete' ? 'species_autocomplete' : $args['species_ctrl'];
@@ -1253,7 +1284,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         $species_ctrl_opts['extraParams'] = array_merge($species_ctrl_opts['extraParams'], data_entry_helper::get_species_names_filter($species_ctrl_opts));
       // for controls which don't know how to do the lookup, we need to tell them
       $species_ctrl_opts = array_merge(array(
-        'table'=>'taxa_taxon_list',
+        'table'=>'cache_taxa_taxon_list',
         'captionField'=>'taxon',
         'valueField'=>'id',
       ), $species_ctrl_opts);
@@ -1265,11 +1296,11 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     extract($db);
     if ($ctrl!=='autocomplete' && isset($args['species_include_both_names']) && $args['species_include_both_names']) {
       if ($args['species_names_filter']==='all')
-        $indicia_templates['species_caption'] = '{'.$colTaxon.'}';
+        $indicia_templates['species_caption'] = '{taxon}';
       elseif ($args['species_names_filter']==='language')
-        $indicia_templates['species_caption'] = '{'.$colTaxon.'} - {'.$colPreferred.'}';
+        $indicia_templates['species_caption'] = '{taxon} - {prefered_taxon}';
       else
-        $indicia_templates['species_caption'] = '{'.$colTaxon.'} - {'.$colCommon.'}';
+        $indicia_templates['species_caption'] = '{taxon} - {default_common_name}';
       $species_ctrl_opts['captionTemplate'] = 'species_caption';
     }
     if ($ctrl=='tree_browser') {
@@ -1279,7 +1310,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           '<span>{caption}</span>';
     }
     // Dynamically generate the species selection control required.
-    return call_user_func(array('data_entry_helper', $ctrl), $species_ctrl_opts);
+    $r .= call_user_func(array('data_entry_helper', $ctrl), $species_ctrl_opts);
+    return $r;
   }
 
   /**
