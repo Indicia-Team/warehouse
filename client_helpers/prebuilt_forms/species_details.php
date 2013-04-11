@@ -21,25 +21,26 @@
  * @link     http://code.google.com/p/indicia/
  */
 
-/**
- * Displays the details of a single taxon. Takes an taxon_id in the URL and displays the following using a configurable
- * page template:
- * Record Details including custom attributes
- * An Explore Species' Records button that links to a custom URL
- * Any photos of occurrences with the same meaning as the taxon
- * A map displaying occurrences of taxa with the same meaning as the taxon
- * A grid showing the details of these occurrences.
- * @package    Client
- * @subpackage PrebuiltForms
- */
-
-
 require_once('includes/dynamic.php');
 require_once('includes/report.php');
 
-
-
+/**
+ * Displays the details of a single taxon. Takes an taxa_taxon_list_id in the URL and displays the following using a configurable
+ * page template:
+ * Species Details including custom attributes
+ * An Explore Species' Records button that links to a custom URL
+ * Any photos of occurrences with the same meaning as the taxon
+ * A map displaying occurrences of taxa with the same meaning as the taxon
+ * @package    Client
+ * @subpackage PrebuiltForms
+ */
 class iform_species_details extends iform_dynamic {
+
+  private static $preferred;
+  private static $synonyms = array();
+  private static $commonNames = array();
+  private static $taxa_taxon_list_id;
+  private static $taxon_meaning_id;
     
   /** 
    * Return the form metadata. 
@@ -49,8 +50,8 @@ class iform_species_details extends iform_dynamic {
     return array(
       'title'=>'View details of a species',
       'category' => 'Utilities',
-      'description'=>'A summary view of a species including occurrence information. Pass a parameter in the URL called taxon to '.
-        'define which species to show.'
+      'description'=>'A summary view of a species including records. Pass a parameter in the URL called taxon, ' .
+        'containing a taxa_taxon_list_id which defines which species to show.'
     );
   }
   
@@ -60,7 +61,7 @@ class iform_species_details extends iform_dynamic {
    */
   public static function get_parameters() {   
     $retVal = array_merge(
-    iform_map_get_map_parameters(),
+      iform_map_get_map_parameters(),
       array(array(
         'name'=>'interface',
         'caption'=>'Interface Style Option',
@@ -75,17 +76,17 @@ class iform_species_details extends iform_dynamic {
         'default' => 'one_page',
         'group' => 'User Interface'
       ),
-      //List of fields to hide in the Record Details section
+      //List of fields to hide in the Species Details section
       array(
         'name' => 'fields',
         'caption' => 'Fields to include or exclude',
-        'description' => 'List of data fields to hide, one per line. '.
-            'Type in the field name as seen exactly in the Record Details section. For custom attributes you should use the system function values '.
+        'description' => 'List of data fields to hide, one per line.'.
+            'Type in the field name as seen exactly in the Species Details section. For custom attributes you should use the system function values '.
             'to filter instead of the caption if defined below.',
         'type' => 'textarea',
         'required'=>false,
         'default' => '',
-        'group' => 'Fields for record details'
+        'group' => 'Fields for Species details'
       ),
       array(
         'name'=>'operator',
@@ -97,7 +98,7 @@ class iform_species_details extends iform_dynamic {
           'not in' => 'Exclude'
         ),
         'default' => 'not in',
-        'group' => 'Fields for record details'
+        'group' => 'Fields for Species details'
       ),
       array(
         'name'=>'testagainst',
@@ -111,128 +112,133 @@ class iform_species_details extends iform_dynamic {
           'system_function'=>'System Function'
         ),
         'default' => 'caption',
-        'group' => 'Fields for record details'
+        'group' => 'Fields for Species details'
       ),
       //Allows the user to define how the page will be displayed.
       array(
-      'name'=>'structure',
+        'name'=>'structure',
         'caption'=>'Form Structure',
         'description'=>'Define the structure of the form. Each component must be placed on a new line. <br/>'.
           "The following types of component can be specified. <br/>".
           "<strong>[control name]</strong> indicates a predefined control is to be added to the form with the following predefined controls available: <br/>".
-              "&nbsp;&nbsp;<strong>[recorddetails]</strong> - displays information relating to the occurrence and its sample<br/>".
-              "&nbsp;&nbsp;<strong>[explore]</strong> - a button “Explore this species’ records” which takes you to explore all records, filtered to the species.<br/>".
+              "&nbsp;&nbsp;<strong>[speciesdetails]</strong> - displays information relating to the occurrence and its sample<br/>".
+              "&nbsp;&nbsp;<strong>[explore]</strong> - a button “Explore this species' records” which takes you to explore all records, filtered to the species.<br/>".
               "&nbsp;&nbsp;<strong>[photos]</strong> - photos associated with the occurrence<br/>".
               "&nbsp;&nbsp;<strong>[map]</strong> - a map that links to the spatial reference and location<br/>".
           "<strong>=tab/page name=</strong> is used to specify the name of a tab or wizard page (alpha-numeric characters only). ".
           "If the page interface type is set to one page, then each tab/page name is displayed as a seperate section on the page. ".
           "Note that in one page mode, the tab/page names are not displayed on the screen.<br/>".
           "<strong>|</strong> is used to split a tab/page/section into two columns, place a [control name] on the previous line and following line to split.<br/>",
-          'type'=>'textarea',
-          'default' => 
-'=Record Details and Comments=
-[recorddetails]
-|
+        'type'=>'textarea',
+        'default' => '
+=General=
+[speciesdetails]
 [photos]
-=Online Map=
-[map]
-=Occurrence Details=
-[occurrencedetails]
-[explore]',
-          'group' => 'User Interface'
-       ),
-       array(
-         'name'=>'explore',
-         'caption'=>'Explore URL',
-         'description'=>'When you click on the Explore this species’ records button you are taken to this URL.
-                        This URL should include http:// at the start as appropriate.',
-         'type' => 'string',
-         'required'=>false,
-         'default' => '',
-         'group' => 'User Interface'
-       ),     
-        array(
-          'name' => 'include_layer_list',
-          'caption' => 'Include Legend',
-          'description' => 'Should a legend be shown on the page?',
-          'type' => 'boolean',
-          'required'=>false,
-          'default'=>true,
-          'group' => 'Other Map Settings'
+[explore]
+| 
+[map]',
+        'group' => 'User Interface'
+      ),
+      array(
+        'name'=>'explore_url',
+        'caption'=>'Explore URL',
+        'description'=>'When you click on the Explore this species\' records button you are taken to this URL. Use {rootfolder} as a replacement '.
+            'token for the site\'s root URL.',
+        'type' => 'string',
+        'required'=>false,
+        'default' => '',
+        'group' => 'User Interface'
+      ),
+      array(
+        'name'=>'explore_param_name',
+        'caption'=>'Explore Parameter Name',
+        'description'=>'Name of the parameter added to the Explore URL to pass through the taxa_taxon_list_id of the species being explored.',
+        'type' => 'string',
+        'required'=>false,
+        'default' => '',
+        'group' => 'User Interface'
+      ),
+      array(
+        'name' => 'include_layer_list',
+        'caption' => 'Include Legend',
+        'description' => 'Should a legend be shown on the page?',
+        'type' => 'boolean',
+        'required'=>false,
+        'default'=>false,
+        'group' => 'Other Map Settings'
+      ),
+      array(
+        'name' => 'include_layer_list_switchers',
+        'caption' => 'Include Layer switchers',
+        'description' => 'Should the legend include checkboxes and/or radio buttons for controlling layer visibility?',
+        'type' => 'boolean',
+        'required'=>false,
+        'default'=>false,
+        'group' => 'Other Map Settings'
+      ),
+      array(
+        'name' => 'include_layer_list_types',
+        'caption' => 'Types of layer to include in legend',
+        'description' => 'Select which types of layer to include in the legend.',
+        'type' => 'select',
+        'options' => array(
+          'base,overlay' => 'All',
+          'base' => 'Base layers only',
+          'overlay' => 'Overlays only'
         ),
-        array(
-          'name' => 'include_layer_list_switchers',
-          'caption' => 'Include Layer switchers',
-          'description' => 'Should the legend include checkboxes and/or radio buttons for controlling layer visibility?',
-          'type' => 'boolean',
-          'required'=>false,
-          'default'=>true,
-          'group' => 'Other Map Settings'
-        ),
-        array(
-          'name' => 'include_layer_list_types',
-          'caption' => 'Types of layer to include in legend',
-          'description' => 'Select which types of layer to include in the legend.',
-          'type' => 'select',
-          'options' => array(
-            'base,overlay' => 'All',
-            'base' => 'Base layers only',
-            'overlay' => 'Overlays only'
-          ),
-          'default' => 'base,overlay',
-          'group' => 'Other Map Settings'
-        ),
-        array(
-          'name' => 'layer_title',
-          'caption' => 'Layer Caption',
-          'description' => 'Caption to display for the species distribution map layer. Can contain replacement strings {species} or {survey}.',
-          'type' => 'textfield',
-          'group' => 'Distribution Layer'
-        ),
-        array(
-          'name' => 'wms_feature_type',
-          'caption' => 'Feature Type',
-          'description' => 'Name of the feature type (layer) exposed in GeoServer to contain the occurrences. This must expose a taxon_meaning_id and a website_id attribute. '.
-              'for the filtering. The detail_occurrences view is suitable for this purpose, though make sure you include the namespace, e.g. indicia:detail_occurrences. '.
-              'The list of feature type names can be viewed by clicking on the Layer Preview link in the GeoServer installation.',
-          'type' => 'textfield',
-          'group' => 'Distribution Layer'
-        ),
-        array(
-          'name' => 'wms_style',
-          'caption' => 'Style',
-          'description' => 'Name of the SLD style file that describes how the distribution points are shown. Leave blank if not sure.',
-          'type' => 'textfield',
-          'required' => false,
-          'group' => 'Distribution Layer'
-        ),
-        array(
-          'name' => 'cql_filter',
-          'caption' => 'Distribution layer filter.',
-          'description' => 'Any additional filter to apply to the loaded data, using the CQL format. For example "record_status<>\'R\'"',
-          'type' => 'textarea',
-          'group' => 'Distribution Layer',
-          'required' => false
-        ),
-        array(
-          'name' => 'refresh_timer',
-          'caption' => 'Automatic reload seconds',
-          'description' => 'Set this value to the number of seconds you want to elapse before the report will be automatically reloaded, useful for '.
-              'displaying live data updates at BioBlitzes. Combine this with Page to reload to define a sequence of pages that load in turn.',
-          'type' => 'int',
-          'required' => false
-        ),
-        array(
-          'name' => 'load_on_refresh',
-          'caption' => 'Page to reload',
-          'description' => 'Provide the full URL of a page to reload after the number of seconds indicated above.',
-          'type' => 'string',
-          'required' => false
-        ),
-       )
-     );
-     return $retVal;
-   }
+        'default' => 'base,overlay',
+        'group' => 'Other Map Settings'
+      ),
+      array(
+        'name' => 'layer_title',
+        'caption' => 'Layer Caption',
+        'description' => 'Caption to display for the species distribution map layer. Can contain replacement strings {species} or {survey}.',
+        'type' => 'textfield',
+        'group' => 'Distribution Layer'
+      ),
+      array(
+        'name' => 'wms_feature_type',
+        'caption' => 'Feature Type',
+        'description' => 'Name of the feature type (layer) exposed in GeoServer to contain the occurrences. This must expose a taxon_meaning_id and a website_id attribute. '.
+            'for the filtering. The detail_occurrences view is suitable for this purpose, though make sure you include the namespace, e.g. indicia:detail_occurrences. '.
+            'The list of feature type names can be viewed by clicking on the Layer Preview link in the GeoServer installation.',
+        'type' => 'textfield',
+        'group' => 'Distribution Layer'
+      ),
+      array(
+        'name' => 'wms_style',
+        'caption' => 'Style',
+        'description' => 'Name of the SLD style file that describes how the distribution points are shown. Leave blank if not sure.',
+        'type' => 'textfield',
+        'required' => false,
+        'group' => 'Distribution Layer'
+      ),
+      array(
+        'name' => 'cql_filter',
+        'caption' => 'Distribution layer filter.',
+        'description' => 'Any additional filter to apply to the loaded data, using the CQL format. For example "record_status<>\'R\'"',
+        'type' => 'textarea',
+        'group' => 'Distribution Layer',
+        'required' => false
+      ),
+      array(
+        'name' => 'refresh_timer',
+        'caption' => 'Automatic reload seconds',
+        'description' => 'Set this value to the number of seconds you want to elapse before the report will be automatically reloaded, useful for '.
+            'displaying live data updates at BioBlitzes. Combine this with Page to reload to define a sequence of pages that load in turn.',
+        'type' => 'int',
+        'required' => false
+      ),
+      array(
+        'name' => 'load_on_refresh',
+        'caption' => 'Page to reload',
+        'description' => 'Provide the full URL of a page to reload after the number of seconds indicated above.',
+        'type' => 'string',
+        'required' => false
+      ))
+    );
+    return $retVal;
+  }
   
    
   /**
@@ -293,16 +299,52 @@ class iform_species_details extends iform_dynamic {
       return $r;
     }  
       
-    if (empty($_GET['taxon'])) {
-      return 'This form requires a taxon parameter in the URL.';
+    if (empty($_GET['taxa_taxon_list_id']) && empty($_GET['taxon_meaning_id'])) {
+      return 'This form requires a taxa_taxon_list_id or taxon_meaning_id parameter in the URL.';
     }
-
-    global $user;
-    data_entry_helper::$javascript .= 'indiciaData.username = "'.$user->name."\";\n";
-    data_entry_helper::$javascript .= 'indiciaData.website_id = '.$args['website_id'].";\n";     
-    data_entry_helper::$javascript .= 'indiciaData.ajaxFormPostUrl="'.iform_ajaxproxy_url($node, 'taxon')."&sharing=verification\";\n";
+    
+    self::get_names($auth);
 
     return parent::get_form_html($args, $auth, $attributes);
+  }
+  
+  /**
+   * Obtains details of all names for this species from the database.
+   */
+  protected static function get_names($auth) {
+    iform_load_helpers(array('report_helper')); 
+    self::$preferred=lang::get('Unknown');
+    //Get all the different names for the species
+    $extraParams = array('sharing'=>'reporting');
+    if (isset($_GET['taxa_taxon_list_id'])) {
+      $extraParams['taxa_taxon_list_id'] = $_GET['taxa_taxon_list_id'];
+      self::$taxa_taxon_list_id=$_GET['taxa_taxon_list_id'];
+    }
+    elseif (isset($_GET['taxon_meaning_id'])) {
+      $extraParams['taxon_meaning_id'] = $_GET['taxon_meaning_id'];
+      self::$taxon_meaning_id=$_GET['taxon_meaning_id'];
+    }
+    $species_details = report_helper::get_report_data(array(
+      'readAuth' => $auth['read'],
+      'class'=>'species-details-fields',
+      'dataSource'=>'library/taxa/taxon_names',
+      'useCache' => false,
+      'extraParams'=>$extraParams
+    ));
+    foreach ($species_details as $speciesData) {
+      if ($speciesData['preferred']==='t') {
+        self::$preferred = $speciesData['taxon'];
+        if (!isset(self::$taxon_meaning_id))
+          self::$taxon_meaning_id = $speciesData['taxon_meaning_id'];
+        if (!isset(self::$taxa_taxon_list_id)) {
+          self::$taxa_taxon_list_id = $speciesData['id'];          
+        }
+      }
+      elseif ($speciesData['language_iso']==='lat')
+        self::$synonyms[] = $speciesData['taxon'];
+      else
+        self::$commonNames[] = $speciesData['taxon'];
+    }
   }
 
   
@@ -313,8 +355,7 @@ class iform_species_details extends iform_dynamic {
    * @package    Client
    * @subpackage PrebuiltForms
    */
-  protected static function get_control_recorddetails($auth, $args, $tabalias, $options) {
-    iform_load_helpers(array('report_helper')); 
+  protected static function get_control_speciesdetails($auth, $args, $tabalias, $options) {
     $fields=helper_base::explode_lines($args['fields']);
     $fieldsLower=helper_base::explode_lines(strtolower($args['fields']));
     
@@ -357,11 +398,11 @@ class iform_species_details extends iform_dynamic {
     //draw any custom attributes for the species added by the user
     $attrs_report = report_helper::freeform_report(array(
       'readAuth' => $auth['read'],
-      'class'=>'record-details-fields',
-      'dataSource'=>'library/taxa/species_data_attributes_with_hiddens',
+      'class'=>'species-details-fields',
+      'dataSource'=>'library/taxa/taxon_attributes_with_hiddens',
       'bands'=>array(array('content'=>$attrsTemplate)),
       'extraParams'=>array(
-        'taxon_id'=>$_GET['taxon'],
+        'taxa_taxon_list_id'=>self::$taxa_taxon_list_id,
         //the SQL needs to take a set of the hidden fields, so this needs to be converted from an array.
         'attrs'=>strtolower(self::convert_array_to_set($fields)),
         'testagainst'=>$args['testagainst'],
@@ -370,12 +411,13 @@ class iform_species_details extends iform_dynamic {
       )
     ));
 
-    $r .= '<h3>Species Details</h3>';
+    $r = '<div class="record-details-fields">';
     //draw the species names and custom attributes
     if (isset($details_report))
       $r .= $details_report;
     if (isset($attrs_report))
       $r .= $attrs_report;
+    $r .= '</div>';
     return $r;
   }
   
@@ -387,65 +429,18 @@ class iform_species_details extends iform_dynamic {
    * @subpackage PrebuiltForms
    */
   protected static function draw_names($auth, $hidePreferred, $hideCommon, $hideSynonym) {
-    //Get all the different names for the species
-    $record_details = report_helper::get_report_data(array(
-      'readAuth' => $auth,
-      'class'=>'record-details-fields',
-      'dataSource'=>'library/taxa/species_data',
-      'useCache' => false,
-      'extraParams'=>array('taxa_taxon_list_id'=>$_GET['taxon'], 'sharing'=>'reporting')
-    ));
-    //Get all the common names for the species
-    foreach ($record_details as $speciesNum=>&$speciesData) {
-      if ($speciesData['name_type']=='common') {
-        $commonNames .= $speciesData['?column?'].', ';
-        //Remove the common names from the original data as we won't use it again 
-        //and we want fewer records to cycle through later
-        unset($record_details[$speciesNum]);
-      }
+    $attrsTemplate='<div class="field ui-helper-clearfix"><span>{caption}:</span><span>{value}</span></div>';
+    $r = '';
+    if (!$hidePreferred)
+      $r .= str_replace(array('{caption}','{value}'), array(lang::get('Species name'), self::$preferred), $attrsTemplate);
+    if ($hideCommon == false && !empty(self::$commonNames)) {
+      $label = (count(self::$commonNames)===1) ? 'Common name' : 'Common names';
+      $r .= str_replace(array('{caption}','{value}'), array(lang::get($label), implode(', ', self::$commonNames)), $attrsTemplate);
     }
-    //chop the space and comma off end of last item
-    $commonNames = substr($commonNames, 0, -2);
-    
-    //Do exactly the same for synonyms as for common names
-    foreach ($record_details as $speciesNum=>&$speciesData) {
-      if ($speciesData['name_type']=='synonym') {
-        $synonymNames .= $speciesData['?column?'].', ';
-        unset($record_details[$speciesNum]);
-      }
+    if ($hideSynonym == false && !empty(self::$synonyms)) {
+      $label = (count(self::$synonyms)===1) ? 'Synonym' : 'Synonyms';
+      $r .= str_replace(array('{caption}','{value}'), array(lang::get($label), implode(', ', self::$synonyms)), $attrsTemplate);
     }
-    //chop the space and comma off end of last item
-    $synonymNames = substr($synonymNames, 0, -2);
-    //Hide items if there are no names in the section or the user has set the name type to be hidden
-    if ($hidePreferred == false && !empty($record_details[0]['?column?']))
-      $details_report .= "<body>Preferred name: ".$record_details[0]['?column?']."</body><br>";
-    if ($hideCommon == false && !empty($commonNames))
-      $details_report .= "Common names: $commonNames<br>";
-    if ($hideSynonym == false && !empty($synonymNames))
-      $details_report .= "Synonym names: $synonymNames</body>";
-    
-    return $details_report;
-  }
-  
-  /**
-   * Draw a grid listing all the occurrences of taxa with the same meaning as the supplied taxon.
-   * @return string The output report grid.
-   * 
-   * @package    Client
-   * @subpackage PrebuiltForms
-   */
-  protected static function get_control_occurrencedetails($auth, $args, $tabalias, $options) {
-    $r = '<h3>Occurrence Details</h3>';
-    $r .= data_entry_helper::report_grid(array(
-    'id' => 'occurrences-grid',
-    'dataSource' => 'library/taxa/species_occurrences',
-    'mode' => 'report',
-    'readAuth' => $auth['read'],
-    'itemsPerPage' =>(isset($args['grid_num_rows']) ? $args['grid_num_rows'] : 10),
-    'extraParams'=>array(
-      'taxon_id'=>$_GET['taxon']
-    )
-    ));
     return $r;
   }
 
@@ -462,7 +457,7 @@ class iform_species_details extends iform_dynamic {
     global $user;
     //default an items per page if not set by administrator
     if ($options['itemsPerPage'] == NULL) {
-      $options['itemsPerPage'] = 12;
+      $options['itemsPerPage'] = 6;
     }  
     //default a column count if not set by administrator
     if ($options['galleryColCount'] == NULL) {
@@ -470,8 +465,8 @@ class iform_species_details extends iform_dynamic {
     }  
     
     //Use this report to return the photos
-    $reportName = 'library/taxa/species_images';
-    return '<h3>Photos</h3>'.report_helper::report_grid(array(
+    $reportName = 'library/occurrence_images/explore_list_2';
+    return report_helper::report_grid(array(
       'readAuth' => $auth['read'],
       'dataSource'=> $reportName,
       'itemsPerPage' => $options['itemsPerPage'],
@@ -487,9 +482,22 @@ class iform_species_details extends iform_dynamic {
       'headers' => false,
       'galleryColCount' => $options['galleryColCount'],
         'extraParams' => array(
-        'taxon_id'=> $_GET['taxon'],
-        'sharing'=>'reporting'
-      )
+          'taxon_meaning_id'=> self::$taxon_meaning_id,
+          'smpattrs'=>'',
+          'occattrs'=>'',
+          'searchArea'=>'',
+          'idlist'=>'',
+          'currentUser'=>'',
+          'ownData'=>0,
+          'location_id'=>'',
+          'ownLocality'=>0,
+          'taxon_groups'=>'',
+          'ownGroups'=>0,
+          'survey_id'=>'',
+          'date_from'=>'',
+          'date_to'=>'',
+          'sharing'=>'reporting'
+        )
     ));    
   }
   
@@ -506,36 +514,13 @@ class iform_species_details extends iform_dynamic {
     // setup the map options
     $options = iform_map_get_map_options($args, $readAuth);
     $olOptions = iform_map_get_ol_options($args);
-    $taxonId= $_GET['taxon'];
-    $fetchOpts = array(
-      'table' => 'taxa_taxon_list',
-      'extraParams' => $auth['read'] + array(
-          'view' => 'detail',
-          'taxon_id' => $taxonId,
-          'preferred' => true
-      )
-    );
-    //Get data associated with the taxon
-    $taxonData = data_entry_helper::get_population_data($fetchOpts);
-    $meaningId = $taxonData[0]['taxon_meaning_id'];
-    //get the records with the same meaning as the supplied taxon
-    $fetchOpts = array(
-      'table' => 'taxa_taxon_list',
-      'extraParams' => $auth['read'] + array(
-      'view' => 'detail',
-      'language_iso' => iform_lang_iso_639_2($user->lang),
-      'taxon_meaning_id' => $meaningId
-      )
-    );
-    //Get taxa with the same meaning as the supplied taxon
-    $taxaWithSameMeaningRecords = data_entry_helper::get_population_data($fetchOpts);
     $url = map_helper::$geoserver_url.'wms';
     // Get the style if there is one selected
     $style = $args["wms_style"] ? ", styles: '".$args["wms_style"]."'" : '';   
     map_helper::$onload_javascript .= "\n    var filter='website_id=".$args['website_id']."';";
 
-    $layerTitle = str_replace('{species}', $taxaWithSameMeaningRecords[0]['taxon'], $args['layer_title']);
-    map_helper::$onload_javascript .= "\n    filter += ' AND taxon_meaning_id=$meaningId';\n";
+    $layerTitle = str_replace('{species}', self::get_best_name(), $args['layer_title']);
+    map_helper::$onload_javascript .= "\n    filter += ' AND taxon_meaning_id=".self::$taxon_meaning_id."';\n";
 
     if ($args['cql_filter']) 
       map_helper::$onload_javascript .= "\n    filter += ' AND(".str_replace("'","\'",$args['cql_filter']).")';\n";
@@ -591,7 +576,14 @@ class iform_species_details extends iform_dynamic {
     
     if (!isset($options['standardControls']))
       $options['standardControls']=array('layerSwitcher','panZoom');
-    return '<h3>Map</h3>'.$r;  
+    return $r;  
+  }
+  
+  /**
+   * Retrieves the best name to display for a species.
+   */
+  protected static function get_best_name() {
+    return (count(self::$commonNames)>0) ? self::$commonNames[0] : self::$preferred;
   }
  
   /**
@@ -602,10 +594,19 @@ class iform_species_details extends iform_dynamic {
    * @subpackage PrebuiltForms
    */
   protected static function get_control_explore($auth, $args) { 
-    if (!empty($args['explore']))
-      $r='<button type="button" onClick="parent.location='."'".$args['explore']."'".'">Explore this species’ records</button>' ;
+    if (!empty($args['explore_url']) && !empty($args['explore_param_name'])) {
+      $url = $args['explore_url'];
+      if (strcasecmp(substr($url, 0, 12), '{rootfolder}')!==0 && strcasecmp(substr($url, 0, 4), 'http')!==0)
+          $url='{rootFolder}'.$url;
+      $pathParam = (function_exists('variable_get') && variable_get('clean_url', 0)=='0') ? 'q' : '';
+      $rootFolder = data_entry_helper::getRootFolder() . (empty($pathParam) ? '' : "?$pathParam=");
+      $url = str_replace('{rootFolder}', $rootFolder, $url);
+      $url.= (strpos($url, '?')===false) ? '?' : '&';
+      $url .= $args['explore_param_name'] . '=' . self::$taxon_meaning_id;
+      $r='<a class="button" href="'.$url.'">' . lang::get('Explore records of {1}', self::get_best_name()) . '</a>' ;
+    }
     else 
-      $r='<h5>The page has been setup to use an explore records button, but an "Explore URL" has not been specified.</h5>';
+      throw new exception('The page has been setup to use an explore records button, but an "Explore URL" or "Explore Parameter Name" has not been specified.');
     return $r;
   }
  
@@ -623,15 +624,12 @@ class iform_species_details extends iform_dynamic {
     
     if (!isset($args['structure']) || empty($args['structure'])) {
       $args['structure'] = 
-'=Record Details and Comments=
-[recorddetails]
-|
+'=General=
+[speciesdetails]
 [photos]
-=Online Map=
-[map]
-=Occurrence Details=
-[occurrencedetails]
-[explore]';
+[explore]
+| 
+[map]';
     }
     return $args;      
   }   
@@ -646,7 +644,7 @@ class iform_species_details extends iform_dynamic {
   
   /**
    * Used to convert an array of attributes to a string formatted like a set,
-   * this is then used by the record_data_attributes_with_hiddens report to return
+   * this is then used by the species_data_attributes_with_hiddens report to return
    * custom attributes which aren't in the hidden attributes list.
    * @return string The set of hidden custom attributes.
    * 
