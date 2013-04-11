@@ -26,11 +26,10 @@ function control_speciesmap_addcontrols(options, translatedStrings) {
             indiciaData.control_speciesmap_new_feature = a1.feature.clone();
             switch (indiciaData.control_speciesmap_mode) {
             case 'Add':
-                indiciaData.control_speciesmap_add_dialog.dialog('open');
+                do_add_sref();
                 break;
             case 'Move':
-                $('.move-dialog2-text').empty().append(translatedStrings.ConfirmMove2Text.replace('{OLD}', indiciaData.control_speciesmap_existing_feature.attributes.sRef));
-                indiciaData.control_speciesmap_move_dialog2.dialog('open');
+                end_move();
                 break;
             }
         },
@@ -52,8 +51,7 @@ function control_speciesmap_addcontrols(options, translatedStrings) {
                 });
                 break;
             case 'Move':
-                $('.move-dialog1').empty().append(translatedStrings.ConfirmMove1Text.replace('{OLD}', a1.feature.attributes.sRef));
-                indiciaData.control_speciesmap_move_dialog1.dialog('open');
+                begin_move();
                 break;
             case 'Delete':
                 $('.delete-dialog').empty().append(translatedStrings.ConfirmDeleteText.replace('{OLD}', a1.feature.attributes.sRef));
@@ -162,30 +160,23 @@ function control_speciesmap_addcontrols(options, translatedStrings) {
             div.map.editLayer.clickControl.deactivate();
             div.map.editLayer.destroyFeatures();
             $('#imp-sref,#imp-geom').val('');
-            indiciaData.control_speciesmap_add_dialog.dialog('close');
             $('#' + indiciaData.control_speciesmap_opts.id + '-container').hide(indiciaData.control_speciesmap_opts.animationDuration).find('.new').removeClass('new');
             $(div).show(indiciaData.control_speciesmap_opts.animationDuration, function() { div.map.updateSize(); });
             $('#' + indiciaData.control_speciesmap_opts.finishButtonId + ',#' + indiciaData.control_speciesmap_opts.cancelButtonId).hide();
             // Switch off Move button functionality
             indiciaData.control_speciesmap_selectFeatureControl.unselectAll();
             indiciaData.control_speciesmap_selectFeatureControl.deactivate();
-            indiciaData.control_speciesmap_move_dialog1.dialog('close');
             // Switch off Delete button functionality
             // select feature is switched off above by Move code
             indiciaData.control_speciesmap_delete_dialog.dialog('close');
             // highlight button and display message.
             $(me).addClass('ui-state-highlight');
             $('#' + indiciaData.control_speciesmap_opts.messageId).empty().append(message);
-            $('#imp-sref,#imp-geom').removeAttr('id').val('');
             switch (mode) {
             case 'Add':
                 div.map.editLayer.clickControl.activate();
-                $('.add-sref').attr('id', 'imp-sref').val('');
-                $('.add-geom').attr('id', 'imp-geom').val('');
                 break;
             case 'Move':
-                $('.move-sref').attr('id', 'imp-sref').val('');
-                $('.move-geom').attr('id', 'imp-geom').val('');
                 indiciaData.control_speciesmap_selectFeatureControl.activate();
                 break;
             case 'Modify':
@@ -194,6 +185,8 @@ function control_speciesmap_addcontrols(options, translatedStrings) {
                 break;
             }
             $('#imp-sref,#imp-geom').val('');
+            // don't fire map events on the sref hidden control, otherwise the map zooms in
+            $('#imp-sref').unbind('change');
             indiciaData.control_speciesmap_mode = mode;
         },
         control_speciesmap_addbutton = function () {
@@ -229,10 +222,8 @@ function control_speciesmap_addcontrols(options, translatedStrings) {
                 indiciaData.control_speciesmap_selectFeatureControl.unselectAll();
                 $('#' + indiciaData.control_speciesmap_opts.messageId).empty().append(indiciaData.control_speciesmap_translatedStrings.MoveMessage1);
                 $('#' + indiciaData.control_speciesmap_opts.cancelButtonId).hide();
-                $('.move-dialog1').empty();
                 div.map.editLayer.destroyFeatures();
                 $('#imp-sref,#imp-geom').val('');
-                indiciaData.control_speciesmap_move_dialog2.dialog('close');
                 indiciaData.control_speciesmap_existing_feature = null;
                 break;
             }
@@ -259,133 +250,83 @@ function control_speciesmap_addcontrols(options, translatedStrings) {
             }
             $('#' + indiciaData.control_speciesmap_opts.finishButtonId + ',#' + indiciaData.control_speciesmap_opts.cancelButtonId).hide();
         },
-        build_add_dialog1 = function () {
-            var buttons = {}, // buttons are language specific
-                Yes = function () {
-                    var div = $(indiciaData.control_speciesmap_opts.mapDiv)[0], subsampleBlock, gridIdx;
-                    div.map.editLayer.destroyFeatures();
-                    indiciaData['gridSampleCounter-' + indiciaData.control_speciesmap_opts.id]++;
-                    indiciaData.control_speciesmap_new_feature.attributes.subSampleIndex = indiciaData['gridSampleCounter-' + indiciaData.control_speciesmap_opts.id];
-                    indiciaData.control_speciesmap_new_feature.attributes.sRef = $('#imp-sref').val();
-                    indiciaData.control_speciesmap_new_feature.attributes.count = 0;
-                    indiciaData.control_speciesmap_new_feature.style = null;
-                    indiciaData.SubSampleLayer.addFeatures([indiciaData.control_speciesmap_new_feature]);
-                    fillInMainSref();
-                    // TODO if map projection != indicia internal projection transform to internal projection
-                    indiciaData.control_speciesmap_add_dialog.dialog('close');
-                    $(indiciaData.control_speciesmap_opts.mapDiv).hide(indiciaData.control_speciesmap_opts.animationDuration);
-                    $('#' + indiciaData.control_speciesmap_opts.id + '-container').show(indiciaData.control_speciesmap_opts.animationDuration).find('.new').removeClass('new');
-                    $('#' + indiciaData.control_speciesmap_opts.id + '-blocks').find(' > div').hide();
-                    $('#' + indiciaData.control_speciesmap_opts.id + ' > tbody > tr').not('.scClonableRow').hide();
-                    $('#' + indiciaData.control_speciesmap_opts.id + ' .scClonableRow').find('[name$=\:sampleIDX]').each(function (idx, field) {
-                        $(field).val(indiciaData.control_speciesmap_new_feature.attributes.subSampleIndex);
-                    });
-                    subsampleBlock = $('<div class="new added scm-block" id="scm-' + indiciaData['gridSampleCounter-' + indiciaData.control_speciesmap_opts.id] + '-block"></div>')
-                        .appendTo('#' + indiciaData.control_speciesmap_opts.id + '-blocks');
-                    $('<label>' + indiciaData.control_speciesmap_translatedStrings.LocationLabel + ':</label>').appendTo(subsampleBlock);
-                    $('<input type="text" name="sc:' + indiciaData['gridSampleCounter-' + indiciaData.control_speciesmap_opts.id] + '::sample:entered_sref" "readonly="readonly" value="' + $('#imp-sref').val() + '" />')
-                        .appendTo(subsampleBlock);
-                    $('<input type="hidden" name="sc:' + indiciaData['gridSampleCounter-' + indiciaData.control_speciesmap_opts.id] + '::sample:geom" value="' + $('#imp-geom').val() + '" />')
-                        .appendTo(subsampleBlock);
-                    // new rows have no deleted field
-                    $('#' + indiciaData.control_speciesmap_opts.messageId).empty().append(indiciaData.control_speciesmap_translatedStrings.AddDataMessage);
-                    $('#' + indiciaData.control_speciesmap_opts.buttonsId).each(function () {window.scroll(0, $(this).offset().top); });
-                    $('#' + indiciaData.control_speciesmap_opts.finishButtonId + ',#' + indiciaData.control_speciesmap_opts.cancelButtonId).show();
-                    gridIdx = indiciaData['gridSampleCounter-' + indiciaData.control_speciesmap_opts.id];
-                    if (typeof indiciaData.control_speciesmap_opts.sampleMethodId !== "undefined" && indiciaData.control_speciesmap_opts.sampleMethodId !== '') {    
-                      $('<input type="hidden" name="sc:' + indiciaData['gridSampleCounter-' + indiciaData.control_speciesmap_opts.id] + '::sample:sample_method_id" value="' + indiciaData.control_speciesmap_opts.sampleMethodId + '" />')
-                          .appendTo(subsampleBlock);
-                      sampleControlsDiv = $('#' + indiciaData.control_speciesmap_opts.id + '-subsample-ctrls').clone(true, true).appendTo(subsampleBlock).show();
-                      // correct the IDs on the cloned block of sample controls
-                      $.each(sampleControlsDiv.find('*'), function(idx, elem) {
-                        if ($(elem).attr('id')) {
-                          $(elem).attr('id', $(elem).attr('id').replace(/^sc:n::/, 'sc:' + gridIdx + '::'));
-                          $(elem).attr('id', $(elem).attr('id').replace(/sc-n--/, 'sc-' + gridIdx + '--'));
-                        }
-                        if ($(elem).attr('name')) {
-                          $(elem).attr('name', $(elem).attr('name').replace(/^sc:n::/, 'sc:' + gridIdx + '::'));
-                        }
-                        if ($(elem).attr('for')) {
-                          $(elem).attr('for', $(elem).attr('for').replace(/^sc:n::/, 'sc:' + gridIdx + '::'));
-                        }
-                      });
-                    }
-                },
-                No = function () {
-                    var div = $(indiciaData.control_speciesmap_opts.mapDiv)[0];
-                    div.map.editLayer.destroyFeatures();
-                    $('#imp-sref,#imp-geom').val('');
-                    indiciaData.control_speciesmap_add_dialog.dialog('close');
-                };
-            buttons[translatedStrings.Yes] = Yes;
-            buttons[translatedStrings.No] = No;
-            // dialog will be set closeOnEscape false as we need to do tidy up after it closes.
-            indiciaData.control_speciesmap_add_dialog = $('<p>' + translatedStrings.ConfirmAddText + '<br/><input class="add-sref" type="text" readonly="readonly" value=""><input type="hidden" value="" class="add-geom"></p>')
-                .dialog({ title: translatedStrings.ConfirmAddTitle, autoOpen: false, buttons: buttons, closeOnEscape: false});
-            // The close button just closes it, but we need to do tidy up after it closes.
-            $('#imp-sref').closest('.ui-dialog').find('.ui-dialog-titlebar-close').remove();
+        do_add_sref = function () {
+          var div = $(indiciaData.control_speciesmap_opts.mapDiv)[0], subsampleBlock, gridIdx;
+          div.map.editLayer.destroyFeatures();
+          indiciaData['gridSampleCounter-' + indiciaData.control_speciesmap_opts.id]++;
+          indiciaData.control_speciesmap_new_feature.attributes.subSampleIndex = indiciaData['gridSampleCounter-' + indiciaData.control_speciesmap_opts.id];
+          indiciaData.control_speciesmap_new_feature.attributes.sRef = $('#imp-sref').val();
+          indiciaData.control_speciesmap_new_feature.attributes.count = 0;
+          indiciaData.control_speciesmap_new_feature.style = null;
+          indiciaData.SubSampleLayer.addFeatures([indiciaData.control_speciesmap_new_feature]);
+          fillInMainSref();
+          // TODO if map projection != indicia internal projection transform to internal projection
+          $(indiciaData.control_speciesmap_opts.mapDiv).hide(indiciaData.control_speciesmap_opts.animationDuration);
+          $('#' + indiciaData.control_speciesmap_opts.id + '-container').show(indiciaData.control_speciesmap_opts.animationDuration).find('.new').removeClass('new');
+          $('#' + indiciaData.control_speciesmap_opts.id + '-blocks').find(' > div').hide();
+          $('#' + indiciaData.control_speciesmap_opts.id + ' > tbody > tr').not('.scClonableRow').hide();
+          $('#' + indiciaData.control_speciesmap_opts.id + ' .scClonableRow').find('[name$=\:sampleIDX]').each(function (idx, field) {
+              $(field).val(indiciaData.control_speciesmap_new_feature.attributes.subSampleIndex);
+          });
+          subsampleBlock = $('<div class="new added scm-block" id="scm-' + indiciaData['gridSampleCounter-' + indiciaData.control_speciesmap_opts.id] + '-block"></div>')
+              .appendTo('#' + indiciaData.control_speciesmap_opts.id + '-blocks');
+          $('<label>' + indiciaData.control_speciesmap_translatedStrings.LocationLabel + ':</label>').appendTo(subsampleBlock);
+          $('<input type="text" name="sc:' + indiciaData['gridSampleCounter-' + indiciaData.control_speciesmap_opts.id] + '::sample:entered_sref" "readonly="readonly" value="' + $('#imp-sref').val() + '" />')
+              .appendTo(subsampleBlock);
+          $('<input type="hidden" name="sc:' + indiciaData['gridSampleCounter-' + indiciaData.control_speciesmap_opts.id] + '::sample:geom" value="' + $('#imp-geom').val() + '" />')
+              .appendTo(subsampleBlock);
+          // new rows have no deleted field
+          $('#' + indiciaData.control_speciesmap_opts.messageId).empty().append(indiciaData.control_speciesmap_translatedStrings.AddDataMessage);
+          $('#' + indiciaData.control_speciesmap_opts.buttonsId).each(function () {window.scroll(0, $(this).offset().top); });
+          $('#' + indiciaData.control_speciesmap_opts.finishButtonId + ',#' + indiciaData.control_speciesmap_opts.cancelButtonId).show();
+          gridIdx = indiciaData['gridSampleCounter-' + indiciaData.control_speciesmap_opts.id];
+          if (typeof indiciaData.control_speciesmap_opts.sampleMethodId !== "undefined" && indiciaData.control_speciesmap_opts.sampleMethodId !== '') {    
+            $('<input type="hidden" name="sc:' + indiciaData['gridSampleCounter-' + indiciaData.control_speciesmap_opts.id] + '::sample:sample_method_id" value="' + indiciaData.control_speciesmap_opts.sampleMethodId + '" />')
+                .appendTo(subsampleBlock);
+            sampleControlsDiv = $('#' + indiciaData.control_speciesmap_opts.id + '-subsample-ctrls').clone(true, true).appendTo(subsampleBlock).show();
+            // correct the IDs on the cloned block of sample controls
+            $.each(sampleControlsDiv.find('*'), function(idx, elem) {
+              if ($(elem).attr('id')) {
+                $(elem).attr('id', $(elem).attr('id').replace(/^sc:n::/, 'sc:' + gridIdx + '::'));
+                $(elem).attr('id', $(elem).attr('id').replace(/sc-n--/, 'sc-' + gridIdx + '--'));
+              }
+              if ($(elem).attr('name')) {
+                $(elem).attr('name', $(elem).attr('name').replace(/^sc:n::/, 'sc:' + gridIdx + '::'));
+              }
+              if ($(elem).attr('for')) {
+                $(elem).attr('for', $(elem).attr('for').replace(/^sc:n::/, 'sc:' + gridIdx + '::'));
+              }
+            });
+          }
         },
-        build_move_dialog1 = function () {
-            var buttons = {}, // buttons are language specific
-                Yes = function () {
-                    var div = $(indiciaData.control_speciesmap_opts.mapDiv)[0];
-                    indiciaData.control_speciesmap_move_dialog1.dialog('close');
-                    indiciaData.control_speciesmap_selectFeatureControl.deactivate();
-                    // deacivating the control still leaves the selected feature highlighted.
-                    div.map.editLayer.clickControl.activate(); // to allow user to select new position.
-                    $('#' + indiciaData.control_speciesmap_opts.messageId).empty().append(indiciaData.control_speciesmap_translatedStrings.MoveMessage2);
-                    $('#' + indiciaData.control_speciesmap_opts.cancelButtonId).show();
-                },
-                No = function () {
-                    indiciaData.control_speciesmap_selectFeatureControl.unselectAll();
-                    indiciaData.control_speciesmap_move_dialog1.dialog('close');
-                };
-            buttons[translatedStrings.Yes] = Yes;
-            buttons[translatedStrings.No] = No;
-            // when we come out of the dialog we need to do stuff, whether yes or no, so can't let user just close the dialog.
-            // Disable closeOnEscape and remove close icon
-            indiciaData.control_speciesmap_move_dialog1 = $('<p class="move-dialog1"></p>')
-                .dialog({ title: translatedStrings.ConfirmMove1Title, autoOpen: false, buttons: buttons, closeOnEscape: false});
-            $('.move-dialog1').closest('.ui-dialog').find('.ui-dialog-titlebar-close').remove();
+        begin_move = function () {
+          var div = $(indiciaData.control_speciesmap_opts.mapDiv)[0];
+          indiciaData.control_speciesmap_selectFeatureControl.deactivate();
+          // deacivating the control still leaves the selected feature highlighted.
+          div.map.editLayer.clickControl.activate(); // to allow user to select new position.
+          $('#' + indiciaData.control_speciesmap_opts.messageId).empty().append(indiciaData.control_speciesmap_translatedStrings.MoveMessage2);
+          $('#' + indiciaData.control_speciesmap_opts.cancelButtonId).show();
         },
-        build_move_dialog2 = function () {
-            var buttons = {}, // buttons are language specific
-                Yes = function () {
-                    var div = $(indiciaData.control_speciesmap_opts.mapDiv)[0],
-                        block = $('#scm-' + indiciaData.control_speciesmap_existing_feature.attributes.subSampleIndex + '-block');
-                    div.map.editLayer.destroyFeatures();
-                    div.map.editLayer.clickControl.deactivate(); // to allow user to select new position.
-                    indiciaData.control_speciesmap_selectFeatureControl.activate();
-                    indiciaData.control_speciesmap_selectFeatureControl.unselectAll();
-                    indiciaData.control_speciesmap_new_feature.attributes.subSampleIndex = indiciaData.control_speciesmap_existing_feature.attributes.subSampleIndex;
-                    indiciaData.control_speciesmap_new_feature.attributes.count = indiciaData.control_speciesmap_existing_feature.attributes.count;
-                    indiciaData.control_speciesmap_new_feature.attributes.sRef = $('#imp-sref').val();
-                    indiciaData.control_speciesmap_new_feature.style = null; // needed so picks up style from new layer, including label
-                    indiciaData.SubSampleLayer.removeFeatures([indiciaData.control_speciesmap_existing_feature]);
-                    indiciaData.SubSampleLayer.addFeatures([indiciaData.control_speciesmap_new_feature]);
-                    fillInMainSref();
-                    indiciaData.control_speciesmap_move_dialog2.dialog('close');
-                    block.find('[name^=\:entered_ref]').val($('#imp-sref').val());
-                    block.find('[name^=\:geom]').val($('#imp-geom').val());
-                    $('#' + indiciaData.control_speciesmap_opts.messageId).empty().append(indiciaData.control_speciesmap_translatedStrings.MoveMessage1);
-                    $('#' + indiciaData.control_speciesmap_opts.cancelButtonId).hide();
-                    $('.move-dialog1,.move-dialog2-text').empty();
-                    indiciaData.control_speciesmap_existing_feature = null;
-                    indiciaData.control_speciesmap_new_feature = null;
-                },
-                No = function () {
-                    var div = $(indiciaData.control_speciesmap_opts.mapDiv)[0];
-                    div.map.editLayer.destroyFeatures();
-                    $('#imp-sref,#imp-geom').val('');
-                    indiciaData.control_speciesmap_move_dialog2.dialog('close');
-                };
-            buttons[translatedStrings.Yes] = Yes;
-            buttons[translatedStrings.No] = No;
-            // when we come out of the dialog we need to do stuff, whether yes or no, so can't let user just close the dialog.
-            // Disable closeOnEscape and remove close icon
-            indiciaData.control_speciesmap_move_dialog2 = $('<p class="move-dialog2"><span class="move-dialog2-text"></span><br/><input class="move-sref" type="text" readonly="readonly" value=""><input type="hidden" value="" class="move-geom" ></p>')
-                .dialog({ title: translatedStrings.ConfirmMove2Title, autoOpen: false, buttons: buttons, closeOnEscape: false});
-            $('.move-dialog2').closest('.ui-dialog').find('.ui-dialog-titlebar-close').remove();
+        end_move = function () {
+          var div = $(indiciaData.control_speciesmap_opts.mapDiv)[0],
+              block = $('#scm-' + indiciaData.control_speciesmap_existing_feature.attributes.subSampleIndex + '-block');
+          div.map.editLayer.destroyFeatures();
+          div.map.editLayer.clickControl.deactivate(); // to allow user to select new position.
+          indiciaData.control_speciesmap_selectFeatureControl.activate();
+          indiciaData.control_speciesmap_selectFeatureControl.unselectAll();
+          indiciaData.control_speciesmap_new_feature.attributes.subSampleIndex = indiciaData.control_speciesmap_existing_feature.attributes.subSampleIndex;
+          indiciaData.control_speciesmap_new_feature.attributes.count = indiciaData.control_speciesmap_existing_feature.attributes.count;
+          indiciaData.control_speciesmap_new_feature.attributes.sRef = $('#imp-sref').val();
+          indiciaData.control_speciesmap_new_feature.style = null; // needed so picks up style from new layer, including label
+          indiciaData.SubSampleLayer.removeFeatures([indiciaData.control_speciesmap_existing_feature]);
+          indiciaData.SubSampleLayer.addFeatures([indiciaData.control_speciesmap_new_feature]);
+          fillInMainSref();
+          block.find('[name$=\:entered_sref]').val($('#imp-sref').val());
+          block.find('[name$=\:geom]').val($('#imp-geom').val());
+          $('#' + indiciaData.control_speciesmap_opts.messageId).empty().append(indiciaData.control_speciesmap_translatedStrings.MoveMessage1);
+          $('#' + indiciaData.control_speciesmap_opts.cancelButtonId).hide();
+          indiciaData.control_speciesmap_existing_feature = null;
+          indiciaData.control_speciesmap_new_feature = null;
         },
         build_delete_dialog = function () {
             var buttons = {}, // buttons are language specific
@@ -393,11 +334,11 @@ function control_speciesmap_addcontrols(options, translatedStrings) {
                     var block = $('#scm-' + indiciaData.control_speciesmap_existing_feature.attributes.subSampleIndex + '-block');
                     indiciaData.control_speciesmap_delete_dialog.dialog('close');
                     // If the indicia sample id for the grid already exists, then have to flag as deleted, otherwise just wipe it.
-                    if (block.filter('added').length === 0) {
-                        block.find('[name$=\:sample\:deleted]').val('t').removeAttr('disabled');
-                        block.hide();
+                    if (block.hasClass('added')) {
+                      block.remove();
                     } else {
-                        block.remove();
+                      block.find('[name$=\:sample\:deleted]').val('t').removeAttr('disabled');
+                      block.hide();
                     }
                     indiciaData.control_speciesmap_selectFeatureControl.unselectAll();
                     $('[name$=\:sampleIDX]').filter('[value=' + indiciaData.control_speciesmap_existing_feature.attributes.subSampleIndex + ']').closest('tr').not('.scClonableRow').remove();
@@ -445,9 +386,6 @@ function control_speciesmap_addcontrols(options, translatedStrings) {
     $('<button id="' + opts.cancelButtonId + '" class="indicia-button" type="button">' + translatedStrings.CancelLabel + '</button>').click(control_speciesmap_cancelbutton).appendTo(container).hide();
     $('<button id="' + opts.finishButtonId + '" class="indicia-button" type="button">' + translatedStrings.FinishLabel + '</button>').click(control_speciesmap_finishbutton).appendTo(container).hide();
     $('<div id="' + opts.messageId + '" class="' + opts.messageClasses + '"></div>').appendTo(container);
-    build_add_dialog1();
-    build_move_dialog1();
-    build_move_dialog2();
     build_delete_dialog();
     indiciaData.control_speciesmap_mode = 'Off';
 
