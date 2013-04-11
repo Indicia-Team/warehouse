@@ -70,7 +70,7 @@ function control_speciesmap_addcontrols(options, translatedStrings) {
             $('.scm-summary-' + sampleIDX).remove();
             if (block.length > 0 && rows.length > 0) {
                 $('.control_speciesmapsummary tbody').append('<tr class="scm-summary-' + sampleIDX + '"><td colspan=' + elements + '><span>' +
-                    indiciaData.control_speciesmap_translatedStrings.LocationLabel + ': ' + block.find('[name$=\:sample\:entered_sref]').val() + '</td></tr>');
+                    indiciaData.control_speciesmap_translatedStrings.SRefLabel + ': ' + block.find('[name$=\:sample\:entered_sref]').val() + '</td></tr>');
             }
             rows.each(function (idx, elem) {
                 var cloned = $(elem).clone();
@@ -270,7 +270,7 @@ function control_speciesmap_addcontrols(options, translatedStrings) {
           });
           subsampleBlock = $('<div class="new added scm-block" id="scm-' + indiciaData['gridSampleCounter-' + indiciaData.control_speciesmap_opts.id] + '-block"></div>')
               .appendTo('#' + indiciaData.control_speciesmap_opts.id + '-blocks');
-          $('<label>' + indiciaData.control_speciesmap_translatedStrings.LocationLabel + ':</label>').appendTo(subsampleBlock);
+          $('<label>' + indiciaData.control_speciesmap_translatedStrings.SRefLabel + ':</label> ').appendTo(subsampleBlock);
           $('<input type="text" name="sc:' + indiciaData['gridSampleCounter-' + indiciaData.control_speciesmap_opts.id] + '::sample:entered_sref" "readonly="readonly" value="' + $('#imp-sref').val() + '" />')
               .appendTo(subsampleBlock);
           $('<input type="hidden" name="sc:' + indiciaData['gridSampleCounter-' + indiciaData.control_speciesmap_opts.id] + '::sample:geom" value="' + $('#imp-geom').val() + '" />')
