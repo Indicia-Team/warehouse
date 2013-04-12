@@ -272,7 +272,6 @@ class iform_sectioned_transects_edit_transect {
         'key'=>'person_id',
         'fieldprefix'=>'perAttr',
         'extraParams'=>$auth['read'],
-        'survey_id'=>$args['survey_id'],
         'multiValue' => false
     ));
     // keep a copies of the attribute_ids so we can use them later.
