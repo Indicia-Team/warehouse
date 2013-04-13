@@ -245,6 +245,7 @@ mapGeoreferenceHooks = [];
       }
       if(features.length == 0) return false;
       layer.addFeatures(features);
+      var bounds=layer.getDataExtent();
 
       if(invisible === null) {
         // extend the boundary to include a buffer, so the map does not zoom too tight.
