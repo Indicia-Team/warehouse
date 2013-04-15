@@ -1290,7 +1290,6 @@ mapGeoreferenceHooks = [];
       $(document).keydown(function(evt) {
         var change=false;
         
-            $('#imp-sref').val(evt.which);
         switch (evt.which) {
           
           case 61: case 107: case 187:
