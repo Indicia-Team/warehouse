@@ -1289,8 +1289,11 @@ mapGeoreferenceHooks = [];
       // track plus and minus key presses, which influence selected grid square size
       $(document).keydown(function(evt) {
         var change=false;
+        
+            $('#imp-sref').val(evt.which);
         switch (evt.which) {
-          case 61: case 107:
+          
+          case 61: case 107: case 187:
             if (overMap) {
               // prevent + affecting other controls
               evt.preventDefault();
@@ -1301,7 +1304,7 @@ mapGeoreferenceHooks = [];
               change=true;
             }
             break;
-          case 173: case 109:
+          case 173: case 109: case 189:
             if (overMap) {
               // prevent + affecting other controls
               evt.preventDefault();
@@ -1321,14 +1324,14 @@ mapGeoreferenceHooks = [];
       $(document).keyup(function(evt) {
         var change=false;
         switch (evt.which) {
-          case 61: case 107:
+          case 61: case 107: case 187:
             // prevent some browsers autorepeating
             if (plusKeyDown) {
               plusKeyDown = false;
               change=true;
             }
             break;
-          case 173: case 109:
+          case 173: case 109: case 189:
             if (minusKeyDown) {
               minusKeyDown = false;
               change=true;
