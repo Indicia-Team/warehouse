@@ -555,6 +555,22 @@ class iform_report_calendar_summary {
           'group' => 'Report Settings'
         ),
         array(
+          'name' => 'sensitivityLocAttrId',
+          'caption' => 'Location attribute used to filter out sensitive sites',
+          'description' => 'A boolean location attribute, set to true if a site is sensitive.',
+          'type' => 'locAttr',
+          'required' => false,
+          'group' => 'Data Handling'
+        ),
+        array(
+          'name' => 'sensitivityAccessPermission',
+          'caption' => 'Sensitivity access permission',
+          'description' => 'A permission, which if granted allows viewing of sensitive sites.',
+          'type' => 'string',
+          'required' => false,
+          'group' => 'Data Handling'
+        ),
+        array(
           'name' => 'includeRawData',
           'caption' => 'Include raw data',
           'description' => 'Defines whether to include raw data in the chart/grid.',
@@ -716,9 +732,9 @@ class iform_report_calendar_summary {
     if(!isset($args['includeUserFilter']) || !$args['includeUserFilter'] || !isset($options['extraParams']['user_id']) || $options['extraParams']['user_id']=="" || !isset($args['userSpecificLocationLookUp']) || !$args['userSpecificLocationLookUp']){
       // Get list of all locations
       $locationListArgs=array('nocache'=>true,
-          'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'], 'orderby'=>'name'),
+          'extraParams'=>array_merge(array('website_id'=>$args['website_id'], 'location_type_id' => ''),
                        $readAuth),
-          'table'=>'location');
+          'report' => 'library/locations/locations_list_exclude_sensitive');
     } else {
       // Get list of locations attached to this user via the cms user id attribute: have to have included the user control to get user id, and set the userSpecificLocationLookUp flag
       // first need to scan param_presets for survey_id..
@@ -742,7 +758,7 @@ class iform_report_calendar_summary {
           'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
                              'location_attribute_id'=>$cmsAttr['attributeId'], 'raw_value'=>$options['extraParams']['user_id']),
                        $readAuth),
-          'table'=>'location_attribute_value');
+          'report'=>'location_attribute_value');
       $attrList = data_entry_helper::get_population_data($attrListArgs);
       if (isset($attrList['error']))
         return $attrList['error'];
@@ -750,10 +766,14 @@ class iform_report_calendar_summary {
       foreach($attrList as $attr)
         $locationIDList[] = $attr['location_id'];
       $locationListArgs=array('nocache'=>true,
-          'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'], 'id'=>$locationIDList, 'orderby'=>'name'),
+          'extraParams'=>array_merge(array('website_id'=>$args['website_id'],  'location_type_id' => '', 'idlist'=>$locationIDList),
                        $readAuth),
-          'table'=>'location');
+          'report'=>'library/locations/locations_list_exclude_sensitive');
     }
+    $allowSensitive = empty($args['sensitivityLocAttrId']) || 
+        (function_exists('user_access') && !empty($args['sensitivityAccessPermission']) && user_access($args['sensitivityAccessPermission']));
+    $locationListArgs['extraParams']['sensattr'] = $allowSensitive ? '' : $args['sensitivityLocAttrId'];
+    $locationListArgs['extraParams']['exclude_sensitive'] = $allowSensitive ? 0 : 1;
     if(isset($args['locationTypeFilter']) && $args['locationTypeFilter']!="")
       $locationListArgs['extraParams']['location_type_id'] = $args['locationTypeFilter'];
     $locationList = data_entry_helper::get_population_data($locationListArgs);
