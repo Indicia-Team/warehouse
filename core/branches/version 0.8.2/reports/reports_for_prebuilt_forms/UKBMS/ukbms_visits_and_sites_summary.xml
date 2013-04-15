@@ -27,7 +27,7 @@
     <param name='user_id' display='Indicia User ID' description='Enter the Indicia ID of the user, or leave blank for all users' datatype='int' />
   </params>
   <columns>
-    <column name='id' visible="false" sql="cttl.id" in_count="true"/>
+    <column name='taxon_meaning_id' visible="false" sql="cttl.taxon_meaning_id" in_count="true"/>
     <column name='taxon' display='Latin Name' visible="false" sql="cttl.preferred_taxon"/>
     <column name='common' display='Common Name' sql="coalesce(cttl.default_common_name, cttl.preferred_taxon)"/> />   
     <column name='num_visits' display='Visits' sql="count(distinct p.id)" aggregate="true"/>    
