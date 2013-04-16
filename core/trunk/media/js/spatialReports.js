@@ -75,14 +75,31 @@ function bufferFeature(div, feature) {
     }
     else {
       indiciaData.buffering = true;
-      $.post(indiciaData.mapdiv.settings.indiciaSvc + 'index.php/services/spatial/buffer?callback=?',
-        'wkt='+feature.geometry.toString()+'&buffer='+$('#geom_buffer').val(),
-        function(buffered) {
+      var geom = feature.geometry.clone();
+      // remove unnecessary precision, as we can't sent much data via GET
+      if (geom.CLASS_NAME=="OpenLayers.Geometry.LineString") {
+        for(var j=0;j<geom.components.length;j++) {
+          geom.components[j].x = Math.round(geom.components[j].x);
+          geom.components[j].y = Math.round(geom.components[j].y);
+        }
+      }
+      else if(geom.CLASS_NAME=="Polygon") {
+        var objFpt = geom.components[0].components;
+        for(var i=0;i<objFpt.length;i++) {
+          objFpt[i].x = Math.round(objFpt[i].x);
+          objFpt[i].y = Math.round(objFpt[i].y);
+        }
+        objFpt[i-1].x = objFpt[0].x;
+      }
+      $.ajax({
+        url: indiciaData.mapdiv.settings.indiciaSvc + 'index.php/services/spatial/buffer?callback=?',
+        data: {'wkt':geom.toString(),'buffer':$('#geom_buffer').val()},
+        success: function(buffered) {
           var buffer = new OpenLayers.Feature.Vector(OpenLayers.Geometry.fromWKT(buffered.response));
           storeBuffer(buffer);
         },
-        'json'
-      );
+        dataType: 'jsonp'
+      });
     }
   }
 }
