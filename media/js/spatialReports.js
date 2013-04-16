@@ -103,9 +103,10 @@ enableBuffering = function() {
   mapInitialisationHooks.push(function(div) {
     var style = $.extend({}, div.settings.boundaryStyle);
     style.strokeDashstyle = 'dash';
-    style.strokeColor = '#777777';
+    style.strokeColor = '#ff7777';
     style.fillOpacity = 0.2;
     style.fillColor = '#777777';
+    style.pointRadius = 6;
     bufferLayer = new OpenLayers.Layer.Vector(
         'buffer outlines',
         {style: style, 'sphericalMercator': true, displayInLayerSwitcher: false}

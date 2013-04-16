@@ -308,6 +308,7 @@ mapGeoreferenceHooks = [];
           this.fillOpacity = opts.fillOpacityBoundary;
           this.strokeColor = opts.strokeColorBoundary;
           this.strokeWidth = opts.strokeWidthBoundary;
+          break;
         case "invisible":
           this.pointRadius = 0;
           break;
@@ -1289,7 +1290,6 @@ mapGeoreferenceHooks = [];
       // track plus and minus key presses, which influence selected grid square size
       $(document).keydown(function(evt) {
         var change=false;
-        
         switch (evt.which) {
           
           case 61: case 107: case 187:
@@ -1668,7 +1668,7 @@ mapGeoreferenceHooks = [];
         if (div.settings.editLayer && div.settings.allowPolygonRecording) {
           c.events.register('featureadded', c, recordPolygon);
         }
-      };
+      }, drawStyle=new style('boundary');
       $.each(div.settings.standardControls, function(i, ctrl) {
         // Add a layer switcher if there are multiple layers
         if (ctrl=='layerSwitcher') {
@@ -1686,7 +1686,7 @@ mapGeoreferenceHooks = [];
           }
           ctrl = new OpenLayers.Control.DrawFeature(div.map.editLayer,
               OpenLayers.Handler.Polygon,
-              {'displayClass': align + 'olControlDrawFeaturePolygon', 'title':hint})
+              {'displayClass': align + 'olControlDrawFeaturePolygon', 'title':hint, handlerOptions:{style:drawStyle}});
           pushDrawCtrl(ctrl);
         } else if (ctrl=='drawLine' && div.settings.editLayer) {
           hint = div.settings.hintDrawLineHint;
@@ -1695,7 +1695,7 @@ mapGeoreferenceHooks = [];
           }
           ctrl = new OpenLayers.Control.DrawFeature(div.map.editLayer,
               OpenLayers.Handler.Path,
-              {'displayClass': align + 'olControlDrawFeaturePath', 'title':hint})
+              {'displayClass': align + 'olControlDrawFeaturePath', 'title':hint, handlerOptions:{style:drawStyle}});
           pushDrawCtrl(ctrl);
         } else if (ctrl=='drawPoint' && div.settings.editLayer) {
           hint = div.settings.hintDrawPointHint;
@@ -1704,7 +1704,7 @@ mapGeoreferenceHooks = [];
           }
           ctrl = new OpenLayers.Control.DrawFeature(div.map.editLayer,
               OpenLayers.Handler.Point,
-              {'displayClass': align + 'olControlDrawFeaturePoint', 'title':hint});
+              {'displayClass': align + 'olControlDrawFeaturePoint', 'title':hint, handlerOptions:{style:drawStyle}});
           pushDrawCtrl(ctrl);
         } else if (ctrl=='selectFeature' && div.settings.editLayer) {
           toolbarControls.push(new OpenLayers.Control.SelectFeature(div.map.editLayer));
