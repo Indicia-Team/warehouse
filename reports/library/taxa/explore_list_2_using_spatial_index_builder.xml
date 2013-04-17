@@ -43,6 +43,9 @@
         population_call='direct:survey:id:title' emptyvalue="0" />
     <param name='date_from' display='Date From' datatype='date' />
     <param name='date_to' display='Date To' datatype='date' />
+    <param name="input_form" default="">
+      <where>o.input_form='#input_form#'</where>
+    </param>
   </params>
   <columns>
     <column name='taxon_meaning_id' display='ID' sql='o.taxon_meaning_id' datatype='integer' visible="false" in_count="true" />
