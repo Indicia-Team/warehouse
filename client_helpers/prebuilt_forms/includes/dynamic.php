@@ -429,9 +429,13 @@ class iform_dynamic {
           // ignore empty lines
           if (trim($tabContent[$i])!=='') {
             $option = explode('=', substr($tabContent[$i],1), 2);
-            $options[$option[0]]=json_decode($option[1], true);
-            // if not json then need to use option value as it is
-            if ($options[$option[0]]=='') $options[$option[0]]=$option[1];            
+            if ($option[1]==='false')
+              $options[$option[0]]=FALSE;
+            else {
+              $options[$option[0]]=json_decode($option[1], TRUE);
+              // if not json then need to use option value as it is
+              if ($options[$option[0]]=='') $options[$option[0]]=$option[1];
+            }
           }
         }
         $parts = explode('.', str_replace(array('[', ']'), '', $component));
@@ -458,8 +462,9 @@ class iform_dynamic {
           $options['extraParams'] = array_merge($defAttrOptions['extraParams'], (array)$options['extraParams']);
           //merge extraParams first so we don't loose authentication
           $options = array_merge($defAttrOptions, $options);
-          foreach ($options as $key=>&$value)
+          foreach ($options as $key=>&$value) {
             $value = apply_user_replacements($value);
+          }
           if ($attribKey!==false) {
             // a smpAttr control
             $html .= data_entry_helper::outputAttribute($attributes[$attribKey], $options);
