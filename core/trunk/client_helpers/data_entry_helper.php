@@ -4267,7 +4267,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    * </li>
    * <li><b>report</b><br/>
    * Path to the report file to use when loading data from a report, e.g. "library/occurrences/explore_list", 
-   * exc;uding the .xml extension.
+   * excluding the .xml extension.
    * </li>
    * <li><b>orderby</b><br/>
    * Optional. For a non-default sort order, provide the field name to sort by. Can be comma separated
@@ -6144,7 +6144,7 @@ if (errors.length>0) {
     if (isset(parent::$maxUploadSize))
       $size = parent::$maxUploadSize;
     else
-      $size = '1M'; // default
+      $size = '4M'; // default
 
     if ( ! preg_match('/[0-9]++[BKMG]/', $size))
       return FALSE;
