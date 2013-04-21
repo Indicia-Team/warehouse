@@ -1048,6 +1048,7 @@ class ReportEngine {
     $tm = microtime(true) - $tm;  
     if ($tm>5) {
       kohana::log('alert', "Report query took $tm seconds.");
+      kohana::log('alert', $this->report);
       kohana::log('alert', $this->query);    
     }
   }
