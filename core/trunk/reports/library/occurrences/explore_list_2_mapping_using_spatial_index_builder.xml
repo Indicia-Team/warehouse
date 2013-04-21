@@ -45,7 +45,7 @@
       <where>('#date_to#'='Click here' OR o.date_start &gt;= CAST(COALESCE('#date_to#','1500-01-01') as date))</where>
     </param>
     <param name="input_form" default="">
-      <where>o.input_form=#input_form#</where>
+      <where>o.input_form='#input_form#'</where>
     </param>
     <param name="taxon_meaning_id" default="">
       <where>o.taxon_meaning_id=#taxon_meaning_id#</where>
@@ -66,7 +66,7 @@
     <column name="date_start" sql="o.date_start" on_demand="true"/>
     <column name="date_end" sql="o.date_end" on_demand="true"/>
     <column name="date_type" sql="o.date_type" on_demand="true"/>
-    <column name="recorder" sql="CASE w.id WHEN iwwa.from_website_id THEN '' ELSE w.title || '-&gt; ' END || CASE WHEN LENGTH(o.recorders)>30 THEN 'Recorder' ELSE o.recorders END" 
+    <column name="recorder" sql="CASE WHEN w.id IN (#website_ids#) THEN '' ELSE w.title || '-&gt; ' END || CASE WHEN LENGTH(o.recorders)>30 THEN 'Recorder' ELSE o.recorders END" 
         on_demand="true" datatype="text" />
     <column name="zero_abundance" sql="o.zero_abundance" on_demand="true" datatype="integer"/>
     <column name="record_status" sql="o.record_status" on_demand="true" in_count="true" datatype="text"/>
