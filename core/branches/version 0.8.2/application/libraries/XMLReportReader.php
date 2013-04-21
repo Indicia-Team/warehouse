@@ -132,50 +132,6 @@ class XMLReportReader_Core implements ReportReader
                   $this->locations_id_field = 'l.id';
                 $reader->read();
                 $this->query = $reader->value;
-                if ($websiteIds) {
-                  if (in_array('', $websiteIds)) {
-                    foreach($websiteIds as $key=>$value) {
-                      if (empty($value))
-                        unset($websiteIds[$key]);
-                    }
-                  }
-                  $idList = implode($websiteIds, ',');
-                  // query can either pull in the filter or just the list of website ids.
-                  $filter = "($websiteFilterField in ($idList) or $websiteFilterField is null)";
-                  $this->query = str_replace(array('#website_filter#', '#website_ids#'), array($filter, $idList), $this->query);
-                } else
-                  // use a dummy filter to return all websites if core admin
-                  $this->query = str_replace('#website_filter#', '1=1', $this->query);
-                if ($training==='true')
-                  $this->query = str_replace('#sharing_filter#', "($trainingFilterField=true OR $trainingFilterField IS NULL) AND #sharing_filter#", $this->query); 
-                else 
-                  $this->query = str_replace('#sharing_filter#', "($trainingFilterField=false OR $trainingFilterField IS NULL) AND #sharing_filter#", $this->query); 
-                // select the appropriate type of sharing arrangement (i.e. are we reporting, verifying, moderating etc?)
-                if ($sharing==='me' && empty($userId))
-                  // revert to website type sharing if we have no known user Id.
-                  $sharing='website';
-                if ($sharing==='me')
-                  // my data only so use the UserId if we have it. Note join to system is just a dummy to keep syntax correct.
-                  $this->query = str_replace(array('#agreements_join#','#sharing_filter#'), array('join system sys on sys.id=1', "$createdByField=".$userId), $this->query);
-                elseif (isset($idList)) {
-                  if ($sharing==='website') 
-                    // this website only
-                    $this->query = str_replace(
-                      array('#agreements_join#','#sharing_filter#'), 
-                      array('join system sys on sys.id=1', "$websiteFilterField in ($idList)"), 
-                    $this->query);
-                  else {
-                    // implement the appropriate sharing agreement across websites
-                    $agreementsJoin="JOIN index_websites_website_agreements iwwa ON iwwa.to_website_id=o.website_id and iwwa.receive_for_$sharing=true AND iwwa.from_website_id in ($idList)\n";
-                    // add a join to users so we can check their privacy preferences. This does not apply if record input
-                    // on this website.
-                    $agreementsJoin .= "JOIN users privacyusers ON privacyusers.id=o.created_by_id";
-                    $this->query = str_replace(array('#agreements_join#','#sharing_filter#'), 
-                        array($agreementsJoin, 
-                        "(iwwa.from_website_id=iwwa.to_website_id OR privacyusers.allow_share_for_$sharing=true OR privacyusers.allow_share_for_$sharing IS NULL)"), $this->query);
-                  }
-                }
-                $this->query = str_replace('#sharing#', $sharing, $this->query);
                 break;
               case 'field_sql':
                 $reader->read();
@@ -261,8 +217,6 @@ class XMLReportReader_Core implements ReportReader
         else
           $this->query .= '#filters#';
       }
-      // cleanup some of the tokens in the SQL if they haven't already been done
-      $this->query = str_replace(array('#agreements_join#','#sharing_filter#'), array('','1=1'), $this->query);
       if ($this->hasColumnsSql) {
         // column sql is defined in the list of column elements, so autogenerate the query.
         $this->autogenColumns();
@@ -280,13 +234,99 @@ class XMLReportReader_Core implements ReportReader
         // Get any extra columns from the query data. Do this at the end so that the specified columns appear first, followed by any unspecified ones.
         $this->inferFromQuery();
       }
+      $this->applyPrivilegesFilters($this->query, $websiteIds, $websiteFilterField, $training, $trainingFilterField, $sharing, $userId, $createdByField);
+      if ($this->countQuery!==null)
+        $this->applyPrivilegesFilters($this->countQuery, $websiteIds, $websiteFilterField, $training, $trainingFilterField, $sharing, $userId, $createdByField);
     }
     catch (Exception $e)
     {
       throw new Exception("Report: $report\n".$e->getMessage());
     }
   }
-
+  
+  /**
+   * Apply the website and sharing related filters to the query.
+   */
+  private function applyPrivilegesFilters(&$query, $websiteIds, $websiteFilterField, $training, $trainingFilterField, $sharing, $userId, $createdByField) {
+    if ($websiteIds) {
+      if (in_array('', $websiteIds)) {
+        foreach($websiteIds as $key=>$value) {
+          if (empty($value))
+            unset($websiteIds[$key]);
+        }
+      }
+      $idList = implode($websiteIds, ',');
+      // query can either pull in the filter or just the list of website ids.
+      $filter = "($websiteFilterField in ($idList) or $websiteFilterField is null)";
+      $query = str_replace(array('#website_filter#', '#website_ids#'), array($filter, $idList), $query);
+    } else
+      // use a dummy filter to return all websites if core admin
+      $query = str_replace('#website_filter#', '1=1', $query);
+    if ($training==='true')
+      $query = str_replace('#sharing_filter#', "($trainingFilterField=true OR $trainingFilterField IS NULL) AND #sharing_filter#", $query); 
+    else 
+      $query = str_replace('#sharing_filter#', "($trainingFilterField=false OR $trainingFilterField IS NULL) AND #sharing_filter#", $query); 
+    // select the appropriate type of sharing arrangement (i.e. are we reporting, verifying, moderating etc?)
+    if ($sharing==='me' && empty($userId))
+      // revert to website type sharing if we have no known user Id.
+      $sharing='website';
+    if ($sharing==='me')
+      // my data only so use the UserId if we have it. Note join to system is just a dummy to keep syntax correct.
+      $query = str_replace(array('#agreements_join#','#sharing_filter#'), array('', "$createdByField=".$userId), $query);
+    elseif (isset($idList)) {
+      if ($sharing==='website') 
+        // this website only
+        $query = str_replace(
+          array('#agreements_join#','#sharing_filter#'), 
+          array('', "$websiteFilterField in ($idList)"), 
+        $query);
+      else {
+        // implement the appropriate sharing agreement across websites
+        $sharedWebsiteIdList = self::getSharedWebsiteList($websiteIds, $sharing);
+        // add a join to users so we can check their privacy preferences. This does not apply if record input
+        // on this website.
+        $agreementsJoin = "JOIN users privacyusers ON privacyusers.id=o.created_by_id";
+        $query = str_replace(array('#agreements_join#','#sharing_filter#'), 
+            array($agreementsJoin, 
+            "($websiteFilterField in ($idList) OR privacyusers.allow_share_for_$sharing=true OR privacyusers.allow_share_for_$sharing IS NULL)\n".
+            "AND $websiteFilterField in ($sharedWebsiteIdList)"), $query);
+      }
+    }
+    $query = str_replace('#sharing#', $sharing, $query);
+    // cleanup some of the tokens in the SQL if they haven't already been done
+    $query = str_replace(array('#agreements_join#','#sharing_filter#'), array('','1=1'), $query);
+  }
+  
+  /**
+  * A cached lookup of the websites that are available for a certain sharing mode.
+  *
+  * Only bother to cache the lookup if there is only 1 website (i.e. we are running a 
+  * report from a client website or the warehouse user can only see 1 website). Otherwise
+  * there are too many possibilities to be worth it. This is mainly to speed up client
+  * website reporting anyway.
+  */ 
+  private function getSharedWebsiteList($websiteIds, $sharing) {
+    if (count($websiteIds ===1)) {
+      $cacheId = 'website-shares-'.implode('', $websiteIds)."-$sharing";
+      $cache = Cache::instance();
+      if ($cached = $cache->get($cacheId)) 
+        return $cached;
+    }
+    $db = new Database();
+    $qry = $db->select('to_website_id')
+        ->from('index_websites_website_agreements')
+        ->where("receive_for_$sharing", 't')
+        ->in('from_website_id', $websiteIds)
+        ->get()->result();
+    $ids = array();
+    foreach($qry as $row) {
+      $ids[] = $row->to_website_id;
+    }
+    $r = implode(',', $ids);
+    $cache->set($cacheId, $r); 
+    return $r;
+  }
+  
   /**
    * Use the sql attributes from the list of columns to auto generate the columns SQL.
    */

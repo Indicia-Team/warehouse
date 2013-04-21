@@ -71,7 +71,7 @@
     <column name='date_end' sql='co.date_end' visible='false' />
     <column name='date_type' sql='co.date_type' visible='false' />
     <column name='date' display='Date' datatype='date' />
-    <column name='recorder' display='Recorder' sql="CASE w.id WHEN iwwa.from_website_id THEN '' ELSE w.title || '-&gt;' END || co.recorders" datatype="text" />
+    <column name='recorder' display='Recorder' sql="CASE WHEN w.id IN (#website_ids#) THEN '' ELSE w.title || '-&gt;' END || co.recorders" datatype="text" />
     <column name='sample_comment' display='Sample comment' sql="s.comment" datatype="text" />
     <column name='zeroabundance' display='ZeroAbundance' sql='upper(cast (co.zero_abundance as character))' datatype="text" />
     <column name='record_status' display='State' 
