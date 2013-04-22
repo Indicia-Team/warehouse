@@ -734,7 +734,7 @@ class iform_report_calendar_summary {
       $locationListArgs=array('nocache'=>true,
           'extraParams'=>array_merge(array('website_id'=>$args['website_id'], 'location_type_id' => ''),
                        $readAuth),
-          'report' => 'library/locations/locations_list_exclude_sensitive');
+          'dataSource' => 'library/locations/locations_list_exclude_sensitive');
     } else {
       // Get list of locations attached to this user via the cms user id attribute: have to have included the user control to get user id, and set the userSpecificLocationLookUp flag
       // first need to scan param_presets for survey_id..
@@ -758,17 +758,18 @@ class iform_report_calendar_summary {
           'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
                              'location_attribute_id'=>$cmsAttr['attributeId'], 'raw_value'=>$options['extraParams']['user_id']),
                        $readAuth),
-          'report'=>'location_attribute_value');
+          'table'=>'location_attribute_value');
       $attrList = data_entry_helper::get_population_data($attrListArgs);
       if (isset($attrList['error']))
         return $attrList['error'];
       $locationIDList=array();
       foreach($attrList as $attr)
         $locationIDList[] = $attr['location_id'];
+      $locationIDList = implode(',', $locationIDList);
       $locationListArgs=array('nocache'=>true,
           'extraParams'=>array_merge(array('website_id'=>$args['website_id'],  'location_type_id' => '', 'idlist'=>$locationIDList),
                        $readAuth),
-          'report'=>'library/locations/locations_list_exclude_sensitive');
+          'dataSource'=>'library/locations/locations_list_exclude_sensitive');
     }
     $allowSensitive = empty($args['sensitivityLocAttrId']) || 
         (function_exists('user_access') && !empty($args['sensitivityAccessPermission']) && user_access($args['sensitivityAccessPermission']));
@@ -776,7 +777,7 @@ class iform_report_calendar_summary {
     $locationListArgs['extraParams']['exclude_sensitive'] = $allowSensitive ? 0 : 1;
     if(isset($args['locationTypeFilter']) && $args['locationTypeFilter']!="")
       $locationListArgs['extraParams']['location_type_id'] = $args['locationTypeFilter'];
-    $locationList = data_entry_helper::get_population_data($locationListArgs);
+    $locationList = report_helper::get_report_data($locationListArgs);
     if (isset($locationList['error']))
       return $locationList['error'];
     $ctrlid='calendar-location-select-'.$node->nid;
