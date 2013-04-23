@@ -126,8 +126,12 @@ class Service_Base_Controller extends Controller {
           if ($authentic) {
             if ($id>0) {
               $this->website_id = $id;
-              if (isset($_REQUEST['user_id']))
+              if (isset($_REQUEST['user_id'])) {
                 $this->user_id=$_REQUEST['user_id'];
+                // if the request included a user ID, put it in the global var so all ORM saves can use it
+                global $remoteUserId;
+                $remoteUserId = $this->user_id;
+              }
             } else {
               $this->in_warehouse = true;
               $this->website_id = 0; // the Warehouse
