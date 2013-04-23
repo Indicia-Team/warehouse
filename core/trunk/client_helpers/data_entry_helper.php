@@ -2541,6 +2541,7 @@ class data_entry_helper extends helper_base {
       $grid .= '<table class="ui-widget ui-widget-content species-grid '.$options['class'].'" id="'.$options['id'].'">';
       $grid .= self::get_species_checklist_header($options, $occAttrs);
       $rows = array();
+      $imageRowIdxs = array();
       $taxonCounter = array();
       $rowIdx = 0;
       // tell the addTowToGrid javascript how many rows are already used, so it has a unique index for new rows
@@ -2732,13 +2733,14 @@ class data_entry_helper extends helper_base {
               'loadExistingRecordKey'=>"sc:$loadedTxIdx:$existing_record_id:occurrence_image",
               'label'=>lang::get('Upload your photos')
             )).'</td>';
+            $imageRowIdxs[]=$rowIdx;
             $rowIdx++;
           }
         }
       }
       $grid .= "\n<tbody>\n";
-      if (count($rows)>0)
-        $grid .= "<tr>".implode("</tr>\n<tr>", $rows)."</tr>\n";
+      if (count($rows)>0) 
+        $grid .= self::species_checklist_implode_rows($rows, $imageRowIdxs);
       else
         $grid .= "<tr style=\"display: none\"><td></td></tr>\n";
       $grid .= "</tbody>\n</table>\n";
@@ -2778,6 +2780,18 @@ class data_entry_helper extends helper_base {
     } else {
       return $taxalist['error'];
     }
+  }
+  
+  /**
+   * Implode the rows we are putting into the species checklist, with application of classes to image rows.
+   */
+  private function species_checklist_implode_rows($rows, $imageRowIdxs) {
+    $r = '';
+    foreach ($rows as $idx => $row) {
+      $class = in_array($idx, $imageRowIdxs) ? ' class="supplementary-row"' : '';
+      $r .= "<tr$class>$row</tr>\n";
+    }
+    return $r;
   }
   
   /**
@@ -2901,7 +2915,16 @@ class data_entry_helper extends helper_base {
           break;
       }
     }
+    if (isset($options['extraParams']))
+      foreach ($options['extraParams'] as $key=>$value) {
+        if ($key!=='nonce' && $key!=='auth_token')
+          $r[$key] = $value;
+      }
     $query=array();
+    if (isset($r['query'])) {
+      $query = json_decode($r['query'], true);
+      unset($r['query']);
+    }
     if (!empty($options['taxonFilterField']) && $options['taxonFilterField']!=='none' && !empty($options['taxonFilter'])) {
       // filter the taxa available to record
       // switch field to filter by if using cached lookup
@@ -2911,8 +2934,8 @@ class data_entry_helper extends helper_base {
     }
     if (!empty($wheres))
       $query['where']=array(implode(' AND ', $wheres));
-    if (!empty($query))
-      $r += array('query'=>json_encode($query));
+    if (!empty($query)) 
+      $r['query']=json_encode($query);
     return $r;
   }
   
@@ -3357,9 +3380,6 @@ $('#".$options['id']."-filter').click(function(evt) {
     ), $options);
     // subspecies columns require cached lookups to be enabled.
     $options['cacheLookup'] = $options['cacheLookup'] || $options['subSpeciesColumn'];
-    // If filtering for a language, then use any taxa of that language. Otherwise, just pick the preferred names.
-    if (!isset($options['extraParams']['language_iso']))
-      $options['extraParams']['preferred'] = 't';
     if (array_key_exists('listId', $options) && !empty($options['listId'])) {
       $options['extraParams']['taxon_list_id']=$options['listId'];
     }

@@ -1178,7 +1178,9 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     foreach ($optionToUnset as $value) {
       unset($options[$value]);
     }
-        
+    // make sure that if extraParams is specified as a config option, it does not replace the essential stuff
+    if (isset($options['extraParams']))
+      $options['extraParams'] = array_merge($extraParams, $options['extraParams']);
     $species_ctrl_opts=array_merge(array(
         'occAttrOptions' => $occAttrOptions,
         'listId' => $args['list_id'],
