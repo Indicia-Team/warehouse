@@ -97,7 +97,7 @@ class extension_my_sites {
       'suffixTemplate' => 'nosuffix'
     ));
     $r .= '<button id="add-searched-site-button" type="button">' . lang::get('Add to My Sites') . '</button><br/>';
-    $postUrl = iform_ajaxproxy_url($node, 'person_attribute_value');
+    $postUrl = iform_ajaxproxy_url(null, 'person_attribute_value');
     data_entry_helper::$javascript .= "
       function addSite(locationId) {
         if (!isNaN(locationId) && locationId!=='') {
