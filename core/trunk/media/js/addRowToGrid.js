@@ -21,18 +21,18 @@
   the newly added rows.
  */
 
-var selectVal = null, cacheLookup=false, mainSpeciesValue = null;
+var cacheLookup=false, mainSpeciesValue = null, formatter;
 
 //Javascript functions using jQuery now need to be defined inside a "(function ($) { }) (jQuery);" wrapper.
 //This means they cannot normally be seen by the outside world, so in order to make a call to one of these 
 //functions, we need to assign it to a global variable.
 
-var addRowToGrid, keyHandler, ConvertControlsToPopup, makeSpareRow, hook_species_checklist_new_row;
+var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new_row, handleSelectedTaxon;
 
 (function ($) {
+  "use strict";
   
   hook_species_checklist_new_row = [];
-  
 
   /**
    * A keyboard event handler for the grid.
@@ -106,30 +106,43 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, makeSpareRow, hook_species
     if (deltaY !== 0) {
       $(rows[rowIndex+deltaY]).find('td[headers=' + $(cell).attr('headers') + '] input').focus();
     }
-  };
+  };  
   
-  /**
-   * Function fired when return pressed in the species selector - adds a new row and focuses it.
+    /**
+   * Ensure field names are consistent independent of whether we are using cached data
+   * or not.
    */
-  var returnPressedInAutocomplete=function(evt) {
-    var rows=$(evt.currentTarget).parents('tbody').children(),
-        rowIndex=rows.index($(evt.currentTarget).parents('tr')[0]);
-    if (rowIndex===rows.length-1) {
-      var ctrl=makeSpareRow(null, true, 13, true);
-      // is return key pressed, if so focus next row
-      setTimeout(function() { $(ctrl).focus(); });
-    } else {
-      // focus the next row
-      $(rows[rowIndex+1]).find('td.scTaxonCell input').focus();
-      evt.preventDefault();
-    }
+  var mapFromCacheTable = function(item) {
+    item.common = item.default_common_name;
+    item.preferred_name = item.preferred_taxon;
+    item.taxon = item.original;
+    item.id = item.taxa_taxon_list_id;
+    return item;
   };
 
-  addRowToGrid = function(url, gridId, lookupListId, readAuth, formatter, useLookupCache) {
-    cacheLookup = typeof useLookupCache !== 'undefined' ? useLookupCache : false;
-    // inner function to handle a selection of a taxon from the autocomplete
-    var handleSelectedTaxon = function(event, data, value) {
-      var i, taxonCell, checkbox, rowNum, row, label, subSpeciesCellId, regex;
+  // Create an inner function for adding blank rows to the bottom of the grid
+  var makeSpareRow = function(gridId, readAuth, lookupListId, url, evt, scroll, keycode, force) {
+  
+    /**
+     * Function fired when return pressed in the species selector - adds a new row and focuses it. Must be enclosed so that
+     * it can refer to things like the gridId if there are multiple grids.
+     */
+    var returnPressedInAutocomplete=function(evt) {
+      var rows=$(evt.currentTarget).parents('tbody').children(),
+          rowIndex=rows.index($(evt.currentTarget).parents('tr')[0]);
+      if (rowIndex===rows.length-1) {
+        var ctrl=makeSpareRow(gridId, readAuth, lookupListId, url, null, true, 13, true);
+        // is return key pressed, if so focus next row
+        setTimeout(function() { $(ctrl).focus(); });
+      } else {
+        // focus the next row
+        $(rows[rowIndex+1]).find('td.scTaxonCell input').focus();
+        evt.preventDefault();
+      }
+    };
+    
+    handleSelectedTaxon = function(event, data, value) {
+      var taxonCell, checkbox, rowNum, row, label, subSpeciesCellId, regex;
       //As soon as the user selects a species, we need to save its id as otherwise the information is lost. 
       //This is used if the user selects a sub-species, but then selects the blank option again, we can then use the main species id
       mainSpeciesValue = value;
@@ -161,129 +174,119 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, makeSpareRow, hook_species
       $(row).find('.species-checklist-select-species').hide();
       $(row).find('.add-image-link').show();
       // auto-check the row
-      checkbox=$(row).find('.scPresenceCell input');
+      checkbox=$(row).find('.scPresenceCell input.scPresence');
       checkbox.attr('checked', 'checked');
       // store the ttlId
       checkbox.val(data.id);
       // Setup a subspecies picker if this option is enabled. Since we don't know for sure if this is matching the 
       // last row in the grid (as the user might be typing ahead), use the presence checkbox to extract the rownum.
-      rowNum = checkbox[0].id.match(/sc:(\d+)/)[1];
+      rowNum = checkbox[0].id.match(/sc:([a-z]+-)?(\d+)/)[2];
       subSpeciesCellId = 'sc:' + rowNum + '::occurrence:subspecies';
       createSubSpeciesList(url, data.preferred_taxa_taxon_list_id, data.preferred_name, lookupListId, subSpeciesCellId, readAuth, 0);
       // Finally, a blank row is added for the next record
-      makeSpareRow(null, true);
+      makeSpareRow(gridId, readAuth, lookupListId, url, null, true);
       // Allow forms to hook into the event of a new row being added
       $.each(hook_species_checklist_new_row, function(idx, fn) {
         fn(data); 
       });
+    };  
+  
+    if (typeof formatter==="undefined" || !$.isFunction(formatter)) {
+      // provide a default format function
+      formatter = function(item) {
+        return item.taxon;
+      };
+    }
+    // only add a spare row if none already exist, or forced to do so
+    if ($('table#'+gridId + ' tr.scClonableRow').length>=1 && !force) {
+      return;
+    }
+    // get a copy of the new row template
+    var extraParams, newRow = $('tr#'+gridId + '-scClonableRow').clone(true), selectorId, speciesSelector, 
+        oldName, oldId, ctrl;
+    // build an auto-complete control for selecting the species to add to the bottom of the grid.
+    // The next line gets a unique id for the autocomplete.
+    selectorId = gridId + '-' + indiciaData['gridCounter-'+gridId];
+    speciesSelector = '<input type="text" id="' + selectorId + '" class="grid-required" />';
+    // put this inside the new row template in place of the species label.
+    $(newRow).html($(newRow.html().replace('{content}', speciesSelector)));
+    // Replace the tags in the row template with a unique row ID
+    $.each($(newRow).children(), function(i, cell) {
+      $.each($(cell).find('*'), function(idx, child) {
+        oldName = $(child).attr('name');
+        if (typeof oldName !== "undefined" && oldName.indexOf('-idx-') !== -1) {
+          $(child).attr('name', $(child).attr('name').replace(/-idx-/g, indiciaData['gridCounter-'+gridId]));
+        }
+        oldId = $(child).attr('id');
+        if (typeof oldId !== "undefined" && oldId.indexOf('-idx-') !== -1) {
+          $(child).attr('id', $(child).attr('id').replace(/-idx-/g, indiciaData['gridCounter-'+gridId]));
+        }
+      });
+    });
+    $(newRow).find('[name$=\\:sampleIDX]').each(function(idx, field) {
+      $(field).val(typeof indiciaData.control_speciesmap_existing_feature==="undefined" || indiciaData.control_speciesmap_existing_feature===null ?
+          indiciaData['gridSampleCounter-'+gridId] :
+          indiciaData.control_speciesmap_existing_feature.attributes.subSampleIndex);
+    });
+    // add the row to the bottom of the grid
+    newRow.appendTo('table#' + gridId +' > tbody').removeAttr('id');
+    extraParams = {
+      orderby : cacheLookup ? 'searchterm_length,original' : 'taxon',
+      mode : 'json',
+      qfield : cacheLookup ? 'searchterm' : 'taxon',
+      auth_token: readAuth.auth_token,
+      nonce: readAuth.nonce,
+      taxon_list_id: lookupListId
     };
-
-    /**
-     * Ensure field names are consistent independent of whether we are using cached data
-     * or not.
-     */
-    var mapFromCacheTable = function(item) {
-      item.common = item.default_common_name;
-      item.preferred_name = item.preferred_taxon;
-      item.taxon = item.original;
-      item.id = item.taxa_taxon_list_id;
-      return item;
-    };
-
-    // Create an inner function for adding blank rows to the bottom of the grid
-    makeSpareRow = function(evt, scroll, keycode, force) {
-      if (!$.isFunction(formatter)) {
-        // provide a default format function
-        formatter = function(item) {
-          return item.taxon;
-        };
-      }
-      // only add a spare row if none already exist, or forced to do so
-      if ($('table#'+gridId + ' tr.scClonableRow').length>=1 && !force) {
-        return;
-      }
-      // get a copy of the new row template
-      var extraParams, newRow = $('tr#'+gridId + '-scClonableRow').clone(true), selectorId, speciesSelector, 
-          oldName, oldId, ctrl;
-      // build an auto-complete control for selecting the species to add to the bottom of the grid.
-      // The next line gets a unique id for the autocomplete.
-      selectorId = gridId + '-' + indiciaData['gridCounter-'+gridId];
-      speciesSelector = '<input type="text" id="' + selectorId + '" class="grid-required" />';
-      // put this inside the new row template in place of the species label.
-      $(newRow).html($(newRow.html().replace('{content}', speciesSelector)));
-      // Replace the tags in the row template with a unique row ID
-      $.each($(newRow).children(), function(i, cell) {
-        $.each($(cell).find('*'), function(idx, child) {
-          oldName = $(child).attr('name');
-          if (typeof oldName !== "undefined" && oldName.indexOf('-idx-') !== -1) {
-            $(child).attr('name', $(child).attr('name').replace(/-idx-/g, indiciaData['gridCounter-'+gridId]));
+    if (typeof indiciaData['taxonExtraParams-'+gridId]!=="undefined") {
+      $.extend(extraParams, indiciaData['taxonExtraParams-'+gridId]);
+    }
+    $(newRow).find('input,select').keydown(keyHandler);
+    // Attach auto-complete code to the input
+    ctrl = $('#' + selectorId).autocomplete(url+'/'+(cacheLookup ? 'cache_taxon_searchterm' : 'taxa_taxon_list'), {
+      extraParams : extraParams,
+      continueOnBlur: true,
+      simplify: cacheLookup, // uses simplified version of search string in cache to remove errors due to punctuation etc.
+      parse: function(data) {
+        var results = [], done={};
+        jQuery.each(data, function(i, item) {
+          // common name can be supplied in a field called common, or default_common_name
+          if (cacheLookup) {
+            item = mapFromCacheTable(item);
+          } else {
+            item.searchterm = item.taxon;
           }
-          oldId = $(child).attr('id');
-          if (typeof oldId !== "undefined" && oldId.indexOf('-idx-') !== -1) {
-            $(child).attr('id', $(child).attr('id').replace(/-idx-/g, indiciaData['gridCounter-'+gridId]));
+          // note we track the distinct ttl_id and display term, so we don't output duplicates
+          if (!done.hasOwnProperty(item.id + '_' + item.display)) {
+            results[results.length] =
+            {
+              'data' : item,
+              'result' : item.searchterm,
+              'value' : item.id
+            };
+            done[item.id + '_' + item.display]=true;
           }
         });
-      });
-      $(newRow).find('[name$=\:sampleIDX]').each(function(idx, field) {
-        $(field).val(indiciaData['gridSampleCounter-'+gridId]);
-      });
-      // add the row to the bottom of the grid
-      newRow.appendTo('table#' + gridId +' > tbody').removeAttr('id');
-      extraParams = {
-        orderby : cacheLookup ? 'searchterm_length,original' : 'taxon',
-        mode : 'json',
-        qfield : cacheLookup ? 'searchterm' : 'taxon',
-        auth_token: readAuth.auth_token,
-        nonce: readAuth.nonce,
-        taxon_list_id: lookupListId
-      };
-      if (typeof indiciaData['taxonExtraParams-'+gridId]!=="undefined") {
-        $.extend(extraParams, indiciaData['taxonExtraParams-'+gridId]);
-      }
-      $(newRow).find('input,select').keydown(keyHandler);
-      // Attach auto-complete code to the input
-      ctrl = $('#' + selectorId).autocomplete(url+'/'+(cacheLookup ? 'cache_taxon_searchterm' : 'taxa_taxon_list'), {
-        extraParams : extraParams,
-        continueOnBlur: true,
-        simplify: cacheLookup, // uses simplified version of search string in cache to remove errors due to punctuation etc.
-        parse: function(data) {
-          var results = [], done={};
-          jQuery.each(data, function(i, item) {
-            // common name can be supplied in a field called common, or default_common_name
-            if (cacheLookup) {
-              item = mapFromCacheTable(item);
-            } else {
-              item.searchterm = item.taxon;
-            }
-            // note we track the distinct ttl_id and display term, so we don't output duplicates
-            if (!done.hasOwnProperty(item.id + '_' + item.display)) {
-              results[results.length] =
-              {
-                'data' : item,
-                'result' : item.searchterm,
-                'value' : item.id
-              };
-              done[item.id + '_' + item.display]=true;
-            }
-          });
-          return results;
-        },
-        formatItem: formatter
-      });
-      ctrl.bind('result', handleSelectedTaxon);
-      ctrl.bind('return', returnPressedInAutocomplete);
-      // Check that the new entry control for taxa will remain in view with enough space for the autocomplete drop down
-      if (scroll && ctrl.offset().top > $(window).scrollTop() + $(window).height() - 180) {
-        var newTop = ctrl.offset().top - $(window).height() + 180;
-        // slide the body upwards so the grid entry box remains in view, as does the drop down content on the autocomplete for taxa
-        $('html,body').animate({scrollTop: newTop}, 500);
-      }
-      // increment the count so it is unique next time and we can generate unique IDs
-      indiciaData['gridCounter-'+gridId]++;
-      return ctrl;
-    };
-
-    makeSpareRow(null, false);
+        return results;
+      },
+      formatItem: formatter
+    });
+    ctrl.bind('result', handleSelectedTaxon);
+    ctrl.bind('return', returnPressedInAutocomplete);
+    // Check that the new entry control for taxa will remain in view with enough space for the autocomplete drop down
+    if (scroll && ctrl.offset().top > $(window).scrollTop() + $(window).height() - 180) {
+      var newTop = ctrl.offset().top - $(window).height() + 180;
+      // slide the body upwards so the grid entry box remains in view, as does the drop down content on the autocomplete for taxa
+      $('html,body').animate({scrollTop: newTop}, 500);
+    }
+    // increment the count so it is unique next time and we can generate unique IDs
+    indiciaData['gridCounter-'+gridId]++;
+    return ctrl;
+  };
+  
+  addRowToGrid = function(url, gridId, lookupListId, readAuth, formatter, useLookupCache) {
+    cacheLookup = typeof useLookupCache !== 'undefined' ? useLookupCache : false;
+    makeSpareRow(gridId, readAuth, lookupListId, url, null, false);
   };
 
   $('.remove-row').live('click', function(e) {
@@ -344,18 +347,18 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, makeSpareRow, hook_species
       msgFileTooBig : 'The image file cannot be uploaded because it is larger than the maximum file size allowed.',
       runtimes : 'html5,silverlight,flash,gears,browserplus,html4',
       imagewidth : '250',
-      uploadScript : uploadSettings.uploadScript,
-      destinationFolder : uploadSettings.destinationFolder,
-      swfAndXapFolder : uploadSettings.swfAndXapFolder,
-      jsPath : uploadSettings.jsPath,
+      uploadScript : indiciaData.uploadSettings.uploadScript,
+      destinationFolder : indiciaData.uploadSettings.destinationFolder,
+      swfAndXapFolder : indiciaData.uploadSettings.swfAndXapFolder,
+      jsPath : indiciaData.uploadSettings.jsPath,
       table : table,
       maxUploadSize : '4000000', // 4mb
       container: ctrlId,
       autopick: true
     };
-    if (typeof uploadSettings.resizeWidth!=="undefined") { opts.resizeWidth=uploadSettings.resizeWidth; }
-    if (typeof uploadSettings.resizeHeight!=="undefined") { opts.resizeHeight=uploadSettings.resizeHeight; }
-    if (typeof uploadSettings.resizeQuality!=="undefined") { opts.resizeQuality=uploadSettings.resizeQuality; }
+    if (typeof indiciaData.uploadSettings.resizeWidth!=="undefined") { opts.resizeWidth=indiciaData.uploadSettings.resizeWidth; }
+    if (typeof indiciaData.uploadSettings.resizeHeight!=="undefined") { opts.resizeHeight=indiciaData.uploadSettings.resizeHeight; }
+    if (typeof indiciaData.uploadSettings.resizeQuality!=="undefined") { opts.resizeQuality=indiciaData.uploadSettings.resizeQuality; }
     if (typeof buttonTemplate!=="undefined") { opts.buttonTemplate=buttonTemplate; }
     if (typeof file_boxTemplate!=="undefined") { opts.file_boxTemplate=file_boxTemplate; }
     if (typeof file_box_initial_file_infoTemplate!=="undefined") { opts.file_box_initial_file_infoTemplate=file_box_initial_file_infoTemplate; }
@@ -418,6 +421,7 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, makeSpareRow, hook_species
 
 
 function createSubSpeciesList(url, selectedItemPrefId, selectedItemPrefName, lookupListId, subSpeciesCtrlId, readAuth, selectedChild) {
+  "use strict";
   var subSpeciesData={
     'mode': 'json',
     'nonce': readAuth.nonce,
@@ -430,7 +434,7 @@ function createSubSpeciesList(url, selectedItemPrefId, selectedItemPrefName, loo
   if (ctrl.length>0) {
     jQuery.getJSON(url+'/cache_taxon_searchterm?callback=?', subSpeciesData, 
       function(data) {
-        var sspRegexString, optionsCount = 0, epithet, nameRegex;
+        var sspRegexString, epithet, nameRegex;
         //clear the sub-species cell ready for new data
         ctrl.empty();
         // build a regex that can remove the species binomial (plus optionally the subsp rank) from the name, so
@@ -470,6 +474,7 @@ function createSubSpeciesList(url, selectedItemPrefId, selectedItemPrefName, loo
 }
 
 function SetHtmlIdsOnSubspeciesChange(subSpeciesId) {
+  "use strict";
   //We can work out the grid row number we are working with by stripping the sub-species id.
   var presentCellId, presentCellSelector, subSpecieSelectorId, subSpeciesValue, gridRowId = subSpeciesId.match(/\d+\.?\d*/g);
   presentCellId = 'sc:' + gridRowId + '::present';
