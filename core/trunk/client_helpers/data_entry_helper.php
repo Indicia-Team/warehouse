@@ -2453,6 +2453,19 @@ class data_entry_helper extends helper_base {
   * <li><b>attribute_cell</b></br>
   * HTML wrapper for cells containing attribute inputs.
   * </li>
+  * <li><b>attributeIds</b><br/>
+  * Provide an array of occurrence attribute IDs if you want to limit those shown in the grid. The default list of
+  * attributes shown is the list associated with the survey on the warehouse, but this option allows you to ignore
+  * some. An example use of this might be when you have multiple grids on the page each supporting a different
+  * species group with different attributes. 
+  * </li>
+  * <li><b>gridIdAttributeId</b><br/>
+  * If you have multiple grids on one input form, then you can create an occurrence attribute (text) for your
+  * survey which will store the ID of the grid used to create the record. Provide the attribute's ID through this
+  * parameter so that the grid can automatically save the value and use it when reloading records, so that the
+  * records are reloaded into the correct grid. To do this, you would need to set a unique ID for each grid using the 
+  * id parameter. You can combine this with the attributeIds parameter to show different columns for each grid.
+  * </li>
   * </ul>
   * @return string HTML for the species checklist input grid.
   */
@@ -2488,7 +2501,7 @@ class data_entry_helper extends helper_base {
       // store some globals that we need later when creating uploaders
       $relpath = self::getRootFolder() . self::client_helper_path();
       $interim_image_folder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
-      self::$javascript .= "uploadSettings = {\n";
+      self::$javascript .= "indiciaData.uploadSettings = {\n";
       self::$javascript .= "  uploadScript: '" . $relpath . "upload.php',\n";
       self::$javascript .= "  destinationFolder: '" . $relpath . $interim_image_folder."',\n";
       self::$javascript .= "  swfAndXapFolder: '" . $relpath . "plupload/',\n";
@@ -2523,7 +2536,7 @@ class data_entry_helper extends helper_base {
     $taxalist = self::get_species_checklist_taxa_list($options, $taxonRows);    
     // If we managed to read the species list data we can proceed
     if (! array_key_exists('error', $taxalist)) {
-      $attributes = self::getAttributes(array(
+      $attrOptions = array(
           'id' => null
            ,'valuetable'=>'occurrence_attribute_value'
            ,'attrtable'=>'occurrence_attribute'
@@ -2531,7 +2544,14 @@ class data_entry_helper extends helper_base {
            ,'fieldprefix'=>"sc:-idx-::occAttr"
            ,'extraParams'=>$options['readAuth']
            ,'survey_id'=>array_key_exists('survey_id', $options) ? $options['survey_id'] : null
-      ));
+      );
+      if (!empty($options['attributeIds'])) {
+        // make sure we load the grid ID attribute
+        if (!empty($options['gridIdAttributeId']) && !in_array($options['gridIdAttributeId'], $options['attributeIds'])) 
+          $options['attributeIds'][] = $options['gridIdAttributeId'];
+        $attrOptions['extraParams'] += array('query'=>json_encode(array('in'=>array('id'=>$options['attributeIds']))));
+      }
+      $attributes = self::getAttributes($attrOptions);
       // Get the attribute and control information required to build the custom occurrence attribute columns
       self::species_checklist_prepare_attributes($options, $attributes, $occAttrControls, $occAttrs);
       $grid = "\n";
@@ -2618,6 +2638,11 @@ class data_entry_helper extends helper_base {
           // this includes a control to force out a 0 value when the checkbox is unchecked.
           $row .= "<input type=\"hidden\" class=\"scPresence\" name=\"$fieldname\" value=\"0\"/>".
             "<input type=\"checkbox\" class=\"scPresence\" name=\"$fieldname\" id=\"$fieldname\" value=\"$taxon[id]\" $checked />";
+        // If we have a grid ID attribute, output a hidden
+        if (!empty($options['gridIdAttributeId'])) {
+          $fieldname = "sc:$options[id]-$txIdx:$existing_record_id:occAttr:$options[gridIdAttributeId]";
+          $row .= "<input type=\"hidden\" name=\"$fieldname\" id=\"$fieldname\" value=\"$options[id]\"/>";
+        }
         $row .= "</td>";
         if(isset($options['speciesControlToUseSubSamples']) && $options['speciesControlToUseSubSamples']){
           $row .= "\n<td class=\"scSampleCell\" style=\"display:none\">";
@@ -3308,7 +3333,18 @@ $('#".$options['id']."-filter').click(function(evt) {
       foreach(self::$entity_to_load as $key => $value) {
         $parts = explode(':', $key);
         // Is this an occurrence?
-        if (count($parts) > 2 && $parts[0] === 'sc' && $parts[1]!='-idx-' && $parts[3]==='present') {
+        $present = count($parts) > 2 && $parts[0] === 'sc' && $parts[1]!='-idx-' && $parts[3]==='present';
+        if ($present && !empty($options['gridIdAttributeId'])) {
+          // filtering records by grid ID. Skip them if from a different input grid (multiple grids on one form scenario).
+          $matches = preg_grep("/^sc:$parts[1]:$parts[2]:occAttr:$options[gridIdAttributeId]:[0-9]+$/", array_keys(self::$entity_to_load));
+          if (count($matches)>0) {
+            $match = array_pop($matches);
+            if (self::$entity_to_load[$match]!==$options['id']) {
+              continue;
+            }
+          }
+        }
+        if ($present) {
           $ttlId = $value;
           if(isset($options['speciesControlToUseSubSamples']) && $options['speciesControlToUseSubSamples']){
             $smpIdx = self::$entity_to_load['sc:'.$parts[1].':'.$parts[2].':occurrence:sampleIDX'];
@@ -3412,6 +3448,9 @@ $('#".$options['id']."-filter').click(function(evt) {
       $attrs = array_keys($attributes);
     
     foreach ($attrs as $occAttrId) {
+      // don't display the grid ID attribute
+      if (!empty($options['gridIdAttributeId']) && $occAttrId===$options['gridIdAttributeId'])
+        continue;
       // test that this occurrence attribute is linked to the survey
       if (!isset($attributes[$occAttrId]))
         throw new Exception("The occurrence attribute $occAttrId requested for the grid is not linked with the survey.");
@@ -3492,15 +3531,22 @@ $('#".$options['id']."-filter').click(function(evt) {
     $r = '<table style="display: none"><tbody><tr class="scClonableRow" id="'.$options['id'].'-scClonableRow">';
     $colspan = isset($options['lookupListId']) || $options['rowInclusionCheck']=='alwaysRemovable' ? ' colspan="2"' : '';
     $r .= str_replace(array('{colspan}','{tableId}','{idx}'), array($colspan, $options['id'],0), $indicia_templates['taxon_label_cell']);
+    $fieldname = "sc:$options[id]--idx-:";
     if ($options['subSpeciesColumn']) {
       $r .= '<td class="ui-widget-content scSubSpeciesCell"><select class="scSubSpecies" style="display: none" ' .
-        'id="sc:-idx-::occurrence:subspecies" name="sc:-idx-::occurrence:subspecies" onchange="SetHtmlIdsOnSubspeciesChange(this.id);">';
+        "id=\"$fieldname:occurrence:subspecies\" name=\"$fieldname:occurrence:subspecies\" onchange=\"SetHtmlIdsOnSubspeciesChange(this.id);\">";
       $r .= '</select><span class="species-checklist-select-species">'.lang::get('select a species first').'</span></td>';
     }
     $hidden = ($options['rowInclusionCheck']=='checkbox' ? '' : ' style="display:none"');
-    $r .= '<td class="scPresenceCell" headers="'.$options['id'].'-present-0"'.$hidden.'><input type="checkbox" class="scPresence" name="sc:-idx-::present" id="sc:-idx-::present" value="" /></td>';
+    $r .= '<td class="scPresenceCell" headers="'.$options['id'].'-present-0"'.$hidden.'>';
+    $r .= "<input type=\"checkbox\" class=\"scPresence\" name=\"$fieldname:present\" id=\"$fieldname:present\" value=\"\" />";
+    // If we have a grid ID attribute, output a hidden
+    if (!empty($options['gridIdAttributeId'])) 
+      $r .= "<input type=\"hidden\" name=\"$fieldname:occAttr:$options[gridIdAttributeId]\" id=\"$fieldname:occAttr:$options[gridIdAttributeId]\" value=\"$options[id]\"/>";
+    $r .= '</td>';
     if(isset($options['speciesControlToUseSubSamples']) && $options['speciesControlToUseSubSamples'])
-      $r .= '<td class="scSampleCell" style="display:none"><input type="hidden" class="scSample" name="sc:-idx-::occurrence:sampleIDX" id="sc:-idx-::occurrence:sampleIDX" value="" /></td>';
+      $r .= '<td class="scSampleCell" style="display:none"><input type="hidden" class="scSample" name="'.
+          $fieldname.':occurrence:sampleIDX" id="'.$fieldname.':occurrence:sampleIDX" value="" /></td>';
     $idx = 0;
     foreach ($occAttrControls as $attrId=>$oc) {
       $class = self::species_checklist_occ_attr_class($options, $idx, $attributes[$attrId]['caption']);
@@ -3515,18 +3561,18 @@ $('#".$options['id']."-filter').click(function(evt) {
         }
       }
       $r .= str_replace(array('{content}', '{class}', '{headers}'),
-          array(str_replace('{fieldname}', "sc:-idx-::occAttr:$attrId", $oc), $class.'Cell', $options['id']."-attr$attrId-0"),
+          array(str_replace('{fieldname}', "$fieldname:occAttr:$attrId", $oc), $class.'Cell', $options['id']."-attr$attrId-0"),
           $indicia_templates['attribute_cell']
       );
       $idx++;
     }
     if ($options['occurrenceComment']) {
       $r .= '<td class="ui-widget-content scCommentCell" headers="'.$options['id'].'-comment-0"><input class="scComment" type="text" ' .
-          'id="sc:-idx-::occurrence:comment" name="sc:-idx-::occurrence:comment" value="" /></td>';
+          "id=\"$fieldname:occurrence:comment\" name=\"$fieldname:occurrence:comment\" value=\"\" /></td>";
     }
     if (isset($options['occurrenceSensitivity']) && $options['occurrenceSensitivity']) {
       $r .= '<td class="ui-widget-content scSCell" headers="'.$options['id'].'-sensitivity-0">'.
-          self::select(array('fieldname'=>'sc:-idx-::occurrence:sensitivity_precision', 
+          self::select(array('fieldname'=>"$fieldname:occurrence:sensitivity_precision",
               'lookupValues' => array('100'=>lang::get('Blur to 100m'), '1000'=>lang::get('Blur to 1km'), '2000'=>lang::get('Blur to 2km'), 
                   '10000'=>lang::get('Blur to 10km'), '100000'=>lang::get('Blur to 100km')),
               'blankText' => lang::get('Not sensitive'))).
@@ -3534,7 +3580,7 @@ $('#".$options['id']."-filter').click(function(evt) {
     }
     if ($options['occurrenceImages']) {
       // Add a link, but make it display none for now as we can't link images till we know what species we are linking to.
-      $r .= '<td class="ui-widget-content scImageLinkCell"><a href="" class="add-image-link scImageLink" style="display: none" id="add-images:-idx-:">'.
+      $r .= '<td class="ui-widget-content scImageLinkCell"><a href="" class="add-image-link scImageLink" style="display: none" id="add-images:'.$options['id'].'--idx-:">'.
           lang::get('add images').'</a><span class="species-checklist-select-species">'.lang::get('select a species first').'</span></td>';
     }
     $r .= "</tr></tbody></table>\n";
@@ -5058,7 +5104,7 @@ if (errors.length>0) {
   * array('0','None','Absent').
   */
   public static function wrap_species_checklist($arr, $include_if_any_data=false,
-      $zero_attrs = array(), $zero_values=array('0','None','Absent')){
+        $zero_attrs = array(), $zero_values=array('0','None','Absent')){
     if (array_key_exists('website_id', $arr)){
       $website_id = $arr['website_id'];
     } else {
