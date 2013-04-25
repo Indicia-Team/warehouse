@@ -11,6 +11,7 @@
           #agreements_join# 
           #joins#
           WHERE l.deleted=false AND l.boundary_geom IS NOT NULL
+          AND l.code not like ('%+%') -- exclude combined polygon sites which have 2 codes separated by a +
           AND (lw.website_id in (#website_ids#) OR l.public=true)
           AND (o.id IS NULL or (
             o.zero_abundance='f'
@@ -25,6 +26,7 @@
       RIGHT JOIN locations l on l.id=stats.id AND l.deleted=false AND l.boundary_geom IS NOT NULL
       LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false 
       WHERE l.deleted=false
+          AND l.code not like ('%+%') -- exclude combined polygon sites which have 2 codes separated by a +
           AND (lw.website_id in (#website_ids#) OR l.public=true)
           AND (CAST(l.location_type_id AS character varying)='#location_type_id#' OR '#location_type_id#'='')
       </query>
