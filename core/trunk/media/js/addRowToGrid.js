@@ -231,7 +231,7 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
     // add the row to the bottom of the grid
     newRow.appendTo('table#' + gridId +' > tbody').removeAttr('id');
     extraParams = {
-      orderby : cacheLookup ? 'searchterm_length,original' : 'taxon',
+      orderby : cacheLookup ? 'searchterm_length,original,preferred_taxon' : 'taxon',
       mode : 'json',
       qfield : cacheLookup ? 'searchterm' : 'taxon',
       auth_token: readAuth.auth_token,
