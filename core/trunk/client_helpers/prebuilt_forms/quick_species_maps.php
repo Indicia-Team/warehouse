@@ -151,7 +151,9 @@ class iform_quick_species_maps {
     $r .= '</div>';
     $websiteIds = iform_get_allowed_website_ids($readAuth);
     if (!empty($args['indicia_species_layer_feature_type']) && !empty(report_helper::$geoserver_url)) {
-      $cql='website_id IN ('.implode(',',$websiteIds).') AND '.$args['indicia_species_layer_filter_field']."='{filterValue}' AND record_status NOT IN ('R', 'I', 'T')";
+      $training = (function_exists('hostsite_get_user_field') && hostsite_get_user_field('training')) ? 't' : 'f';
+      $cql='website_id IN ('.implode(',',$websiteIds).') AND '.$args['indicia_species_layer_filter_field'].
+          "='{filterValue}' AND record_status NOT IN ('R', 'I', 'T') AND training='$training'";
       if (isset($_POST[$reportOptions['reportGroup'].'-quality']))
         $quality=$_POST[$reportOptions['reportGroup'].'-quality'];
       else 
