@@ -180,7 +180,7 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
       checkbox.val(data.id);
       // Setup a subspecies picker if this option is enabled. Since we don't know for sure if this is matching the 
       // last row in the grid (as the user might be typing ahead), use the presence checkbox to extract the rownum.
-      rowNum = checkbox[0].id.match(/sc:([a-z]+-)?(\d+)/)[2];
+      rowNum = checkbox[0].id.match(/sc:([a-z\-_]+-)?(\d+)/)[2];
       subSpeciesCellId = 'sc:' + rowNum + '::occurrence:subspecies';
       createSubSpeciesList(url, data.preferred_taxa_taxon_list_id, data.preferred_name, lookupListId, subSpeciesCellId, readAuth, 0);
       // Finally, a blank row is added for the next record
