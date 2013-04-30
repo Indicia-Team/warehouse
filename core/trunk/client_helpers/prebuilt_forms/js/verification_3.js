@@ -291,7 +291,7 @@ function showComment(comment, username) {
 }
 
 function saveComment(text) {
-  if (text==="undefined" && $('#comment-text')) {
+  if (typeof text==="undefined" && $('#comment-text')) {
     text=$('#comment-text').val();
   }
   var data = {
