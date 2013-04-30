@@ -432,24 +432,27 @@ mapGeoreferenceHooks = [];
     }
 
     /**
-     * Having clicked on the map, and asked warehouse services to transform this to a WKT, add the feature to the map editlayer.
+     * Having clicked on the map, and asked warehouse services to transform this to a WKT, 
+     * add the feature to the map editlayer. If the feature is a plot, enable dragging and
+     * rotating. Finally add relevant help.
      */
     function _setClickPoint(data, div) {
       // data holds the sref in _getSystem format, wkt in indiciaProjection, optional mapwkt in mapProjection
       var feature, helptext=[], helpitem;
       // Update the spatial reference control
-      $('#'+opts.srefId).val(data.sref).change();
+      $('#' + opts.srefId).val(data.sref);
       // If the sref is in two parts, then we might need to split it across 2 input fields for lat and long
       if (data.sref.indexOf(' ')!==-1) {
         var parts=$.trim(data.sref).split(' ');
         // part 1 may have a comma at the end, so remove
         var part1 = parts.shift().split(',')[0];
-        $('#'+opts.srefLatId).val(part1);
-        $('#'+opts.srefLongId).val(parts.join(''));
+        $('#' + opts.srefLatId).val(part1);
+        $('#' + opts.srefLongId).val(parts.join(''));
       }
       removeAllFeatures(div.map.editLayer, 'boundary', true);
       $('#' + opts.geomId).val(data.wkt);
       var parser = new OpenLayers.Format.WKT();
+      var feature;
       // If mapwkt not provided, calculate it
       if (typeof data.mapwkt === "undefined") {
         if (div.indiciaProjection.getCode() === div.map.projection.getCode()) {
@@ -459,10 +462,16 @@ mapGeoreferenceHooks = [];
           data.mapwkt = feature.geometry.transform(div.indiciaProjection, div.map.projection).toString();
         }
       }
-      var feature = parser.read(data.mapwkt);
-      feature.attributes = {type:"clickPoint"};
+      feature = parser.read(data.mapwkt);
+      feature.attributes = {type: "clickPoint"};
       feature.style = new style('default');
       div.map.editLayer.addFeatures([feature]);
+      
+      if (div.settings.clickForPlot) {
+        // if adding a plot, select it for modification
+        div.map.plotModifier.selectFeature(feature);
+      }
+      
       if (div.settings.helpDiv) {
         // Output optional help and zoom in if more precision needed
         helpitem = _getPrecisionHelp(div, data.sref);
@@ -488,6 +497,14 @@ mapGeoreferenceHooks = [];
         } else {
           // Set the default view to show something triple the size of the grid square
           div.map.zoomToExtent(bounds);
+        }
+        // Optional switch to satellite layer when using click_zoom
+        if (div.settings.helpToPickPrecisionSwitchAt && data.sref.length >= div.settings.helpToPickPrecisionSwitchAt) {
+          $.each(div.map.layers, function(idx, layer) {
+            if (layer.isBaseLayer && layer.name.indexOf('Satellite') !== -1 && div.map.baseLayer !== layer) {
+              div.map.setBaseLayer(layer);
+            }
+          });
         }
       }
     }
@@ -1178,19 +1195,90 @@ mapGeoreferenceHooks = [];
     }
 
     /**
-     * Function called by the map click handler. Converts the point clicked to an sref then calls a callback to
-     * process it.
-     * Callback is a function that accepts a data structure as returned by the warehouse conversion from Wkt to Sref.
-     * Should contain properties for sref & wkt, or error if failed.
+     * Event handler for feature modify on the edit layer when clickForPlot is enabled. 
+     * Puts the geom in the hidden input for the sample geom, plus sets the visible spatial 
+     * ref control to the SW corner in the currently selected system.
+     */
+    function modifyPlot(evt) {
+      var modifier = this;
+      var feature = evt.feature;
+      var map = modifier.map;
+      var precision = map.div.settings.plotPrecision;
+      
+      var vertices = feature.geometry.getVertices();
+      // Initialise swVertex to somewhere very northwest. 
+      // This might need modifying for southern hemisphere.
+      var swVertex = new OpenLayers.Geometry.Point(1e10, 1e10);
+      $.each(vertices, function(i, vertex) {
+        if ( (vertex.y < swVertex.y) || (vertex.y === swVertex.y && vertex.x < swVertex.x) ) {
+          // Find the most southerly vertex and, of two equally southerly, take the
+          // most westerly as our reference point.
+          swVertex = vertex;
+        }       
+      });
+      
+      // Put the geometry in the input control 
+      $('#imp-geom').val(feature.geometry.toString());
+      // Get the sref of the swVertex and show in control
+      pointToSref(map.div, swVertex, _getSystem(), function(data) {
+        if (typeof data.sref !== "undefined") {
+          $('#'+map.div.settings.srefId).val(data.sref);
+        }
+      }, undefined, precision);     
+    }
+
+    /**
+     * Function called by the map click handler. Converts the point clicked to an sref then 
+     * calls a callback to process it.
+     * Callback is a function that accepts a data structure as returned by the warehouse 
+     * conversion from Wkt to Sref. Should contain properties for sref & wkt, or error if failed.
      */
     function clickOnMap(xy, div, callback)
     {
       var lonlat = div.map.getLonLatFromPixel(xy);
-      // This is in the SRS of the current base layer, which should but may not be the same projection as the map!
-      // Definitely not indiciaProjection!
+      // This is in the SRS of the current base layer, which should but may not be the same projection 
+      // as the map! Definitely not indiciaProjection!
       // Need to convert this map based Point to a _getSystem based Sref (done by pointToSref) and a
       // indiciaProjection based geometry (done by the callback)
-      pointToSref(div, new OpenLayers.Geometry.Point(lonlat.lon, lonlat.lat), _getSystem(), callback);
+      var point = new OpenLayers.Geometry.Point(lonlat.lon, lonlat.lat);
+
+      if (div.settings.clickForPlot) {
+        // Clicking to locate a plot
+        var width = parseFloat($('#' + div.settings.plotWidthId).val());
+        var length = parseFloat($('#' + div.settings.plotLengthId).val());
+        // Define a polygon the size of the plot with SW corner at the click point
+        var linearRing = new OpenLayers.Geometry.LinearRing([
+          new OpenLayers.Geometry.Point(lonlat.lon, lonlat.lat),
+          new OpenLayers.Geometry.Point(lonlat.lon + width, lonlat.lat),
+          new OpenLayers.Geometry.Point(lonlat.lon + width, lonlat.lat + length),
+          new OpenLayers.Geometry.Point(lonlat.lon, lonlat.lat + length)
+        ]);
+        var polygon = new OpenLayers.Geometry.Polygon([linearRing]);
+        var feature = new OpenLayers.Feature.Vector(polygon);
+        var formatter = new OpenLayers.Format.WKT();
+        // Store plot as WKT in map projection
+        var plot = {};
+        plot.mapwkt = formatter.write(feature);
+        // Convert mapwkt to indicia wkt
+        if (div.indiciaProjection.getCode() === div.map.projection.getCode()) {
+          plot.wkt = plot.mapwkt;
+        } else {
+          plot.wkt = feature.geometry.transform(div.map.projection, div.indiciaProjection).toString();
+        }           
+        var precision = div.settings.plotPrecision;
+        // Request sref of point that was clicked
+        pointToSref(div, point, _getSystem(), function(data){
+          plot.sref = data.sref;
+          callback(plot);     
+        }, undefined, precision);
+      } 
+      else 
+      {
+        // Clicking to locate an sref (eg an OSGB grid square)
+        pointToSref(div, point, _getSystem(), function(data){
+          callback(data);     
+        });
+      }      
     }
 
     // Extend our default options with those provided, basing this on an empty object
@@ -1618,7 +1706,7 @@ mapGeoreferenceHooks = [];
         infoCtrl.activate();
       }
 
-      if (div.settings.editLayer && div.settings.clickForSpatialRef) {
+      if (div.settings.editLayer && (div.settings.clickForSpatialRef || div.settings.clickForPlot)) {
         // Setup a click event handler for the map
         OpenLayers.Control.Click = OpenLayers.Class(OpenLayers.Control, {
           defaultHandlerOptions: {'single': true, 'double': false, 'pixelTolerance': 0, 'stopSingle': false, 'stopDouble': false},
@@ -1724,7 +1812,7 @@ mapGeoreferenceHooks = [];
           graticule.activate();
         }
       });
-      if (div.settings.editLayer && div.settings.clickForSpatialRef) {
+      if (div.settings.editLayer && (div.settings.clickForSpatialRef || div.settings.clickForPlot)) {
         var click = new OpenLayers.Control.Click({'displayClass':align + 'olControlClickSref'});
         div.map.editLayer.clickControl = click;
       }
@@ -1763,6 +1851,19 @@ mapGeoreferenceHooks = [];
         if (clickInfoCtrl !== null) {
           div.map.addControl(clickInfoCtrl);
           clickInfoCtrl.activate();
+        }
+        if (div.settings.editLayer && div.settings.clickForPlot) {
+          // When clickForPlot is true add a ModifyFeature control to the map
+          // so that the plot can be dragged and rotated
+          var modifier = new OpenLayers.Control.ModifyFeature(div.map.editLayer, {
+            standalone: true,
+            mode: OpenLayers.Control.ModifyFeature.DRAG | OpenLayers.Control.ModifyFeature.ROTATE
+          });
+          div.map.addControl(modifier);
+          div.map.editLayer.events.register('featuremodified', modifier, modifyPlot);
+          modifier.activate();
+          // Store a reference to the control
+          div.map.plotModifier = modifier;
         }
       }
 
@@ -1825,6 +1926,7 @@ jQuery.fn.indiciaMapPanel.defaults = {
     helpDiv: false,
     editLayer: true,
     clickForSpatialRef: true, // if true, then enables the click to get spatial references control
+    clickForPlot: false, // if true, overrides clickForSpatialRef to locate a plot instead of a grid square.
     allowPolygonRecording: false,
     editLayerName: 'Selection layer',
     editLayerInSwitcher: false,
@@ -1842,9 +1944,12 @@ jQuery.fn.indiciaMapPanel.defaults = {
     srefLongId: 'imp-sref-long',
     srefSystemId: 'imp-sref-system',
     geomId: 'imp-geom',
+    plotWidthId: 'attr-width', // html id of plot width control
+    plotLengthId: 'attr-length', // html id of plot length control
     boundaryGeomId: 'imp-boundary-geom',
     clickedSrefPrecisionMin: '2', // depends on sref system, but for OSGB this would be 2,4,6,8,10 etc = length of grid reference
     clickedSrefPrecisionMax: '10',
+    plotPrecision: '10', // when clickForPlot is true, the precision of grid ref associated with plot.
     msgGeorefSelectPlace: 'Select from the following places that were found matching your search, then click on the map to specify the exact location:',
     msgGeorefNothingFound: 'No locations found with that name. Try a nearby town name.',
     msgGetInfoNothingFound: 'No occurrences were found at the location you clicked.',
