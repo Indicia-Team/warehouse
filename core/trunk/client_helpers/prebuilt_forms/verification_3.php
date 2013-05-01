@@ -415,7 +415,7 @@ idlist=';
   }
 
   private static function get_template_with_map($args, $auth, $extraParams, $paramDefaults) {
-    $r .= '<div id="outer-with-map" class="ui-helper-clearfix">';
+    $r = '<div id="outer-with-map" class="ui-helper-clearfix">';
     $r .= '<div id="grid" class="left" style="width:65%">{paramsForm}{grid}';
     // Insert a button to verify all visible, only available if viewing the clean records.
     if (isset($_POST['verification-rule']) && $_POST['verification-rule']==='none' && empty($_POST['verification-id']))
