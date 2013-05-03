@@ -3,7 +3,7 @@
     description="An extract of records in a format suitable for creating NBN Exchange format files in combination with the nbn output format, filtered by input date.
         Requires the spatial index builder for location filters."
 >
-  <query>
+  <query website_filter_field="co.website_id">
 select #columns#
 from cache_occurrences co
 join occurrences o on o.id=co.id -- ensure we have the latest status. Would not be needed if cache_occurrences reflects updated immediately
