@@ -1053,7 +1053,6 @@ $('.ui-state-default').live('mouseout', function() {
         explode('&', substr($_SERVER['REQUEST_URI'], $split+1)) :
         array();
     $getsAssoc = array();
-    drupal_set_message(print_r($gets, true));
     foreach ($gets as $get) {
       $tokens = explode('=', $get);
       // ensure a key without value in the URL gets an empty value
