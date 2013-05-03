@@ -1053,9 +1053,12 @@ $('.ui-state-default').live('mouseout', function() {
         explode('&', substr($_SERVER['REQUEST_URI'], $split+1)) :
         array();
     $getsAssoc = array();
+    drupal_set_message(print_r($gets, true));
     foreach ($gets as $get) {
-      list($key, $value) = explode('=', $get);
-      $getsAssoc[$key] = $value;
+      $tokens = explode('=', $get);
+      // ensure a key without value in the URL gets an empty value
+      if (count($tokens)===1) $tokens[] = '';
+      $getsAssoc[$tokens[0]] = $tokens[1];
     }
     $path = $split!==false ? substr($_SERVER['REQUEST_URI'], 0, $split) : $_SERVER['REQUEST_URI'];
     return array(
