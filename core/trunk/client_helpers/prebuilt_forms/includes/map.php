@@ -298,11 +298,9 @@ function iform_map_get_map_options($args, $readAuth) {
     $options['proxy'] = $base_url . '/?q=' . variable_get('iform_proxy_path', 'proxy') . '&url=';
   }
   if (isset($args['display_user_profile_location']) && $args['display_user_profile_location']) {
-    global $user;
-    if (!isset($user->profile_location))
-      profile_load_profile($user);
-    if (!empty($user->profile_location)) {
-      iform_map_zoom_to_location($user->profile_location, $readAuth);
+    $location = hostsite_get_user_field('location');
+    if ($location) {
+      iform_map_zoom_to_location($location, $readAuth);
     }
   } 
   return $options;
