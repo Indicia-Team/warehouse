@@ -462,7 +462,7 @@ class iform_ukbms_sectioned_transects_input_sample {
     $r .= get_attribute_html($attributes, $args, array('extraParams'=>$auth['read']), null, $blockOptions);
     $r .= '<input type="hidden" name="sample:sample_method_id" value="'.$sampleMethods[0]['id'].'" />';
     $r .= '<input type="submit" value="'.lang::get('Next').'" />';
-    $r .= '<a href="'.$args['my_walks_page'].'"><button type="button" class="ui-state-default ui-corner-all" />'.lang::get('Cancel').'</button></a>';
+    $r .= '<a href="'.$args['my_walks_page'].'" class="button">'.lang::get('Cancel').'</a>';
     if (isset(data_entry_helper::$entity_to_load['sample:id']))
       $r .= '<button id="delete-button" type="button" class="ui-state-default ui-corner-all" />'.lang::get('Delete').'</button>';
     $r .= '</form>';
@@ -685,7 +685,7 @@ class iform_ukbms_sectioned_transects_input_sample {
     $r .= '<td class="ui-state-disabled first"></td></tr></tfoot>';
     $r .= '</table>'.
           '<span id="taxonLookupControlContainer"><label for="taxonLookupControl" class="auto-width">'.lang::get('Add species to list').':</label> <input id="taxonLookupControl" name="taxonLookupControl" ></span>';
-    $r .= '<br /><a href="'.$args['my_walks_page'].'"><button type="button" class="ui-state-default ui-corner-all" />'.lang::get('Finish').'</button></a></div>';
+    $r .= '<br /><a href="'.$args['my_walks_page'].'" class="button">'.lang::get('Finish').'</a></div>';
     
     if(isset($args['second_taxon_list_id']) && $args['second_taxon_list_id']!=''){
       $r .= '<div id="grid2"><p>' . lang::get('LANG_Tab_Msg') . '</p><table id="transect-input2" class="ui-widget species-grid"><thead class="table-header">';
@@ -702,7 +702,7 @@ class iform_ukbms_sectioned_transects_input_sample {
       }
       $r .= '<td class="ui-state-disabled first"></td></tr></tfoot></table>';
       $r .= '<label for="taxonLookupControl2" class="auto-width">'.lang::get('Add species to list').':</label> <input id="taxonLookupControl2" name="taxonLookupControl2" >';
-      $r .= '<br /><a href="'.$args['my_walks_page'].'"><button type="button" class="ui-state-default ui-corner-all" />'.lang::get('Finish').'</button></a></div>';
+      $r .= '<br /><a href="'.$args['my_walks_page'].'" class="button">'.lang::get('Finish').'</a></div>';
     }
     if(isset($args['third_taxon_list_id']) && $args['third_taxon_list_id']!=''){
       $r .= '<div id="grid3"><p>' . lang::get('LANG_Tab_Msg') . '</p><table id="transect-input3" class="ui-widget species-grid"><thead class="table-header">';
@@ -719,7 +719,7 @@ class iform_ukbms_sectioned_transects_input_sample {
       }
       $r .= '<td class="ui-state-disabled first"></td></tr></tfoot></table>';
       $r .= '<label for="taxonLookupControl3" class="auto-width">'.lang::get('Add species to list').':</label> <input id="taxonLookupControl3" name="taxonLookupControl3" >';
-      $r .= '<br /><a href="'.$args['my_walks_page'].'"><button type="button" class="ui-state-default ui-corner-all" />'.lang::get('Finish').'</button></a></div>';
+      $r .= '<br /><a href="'.$args['my_walks_page'].'" class="button">'.lang::get('Finish').'</a></div>';
     }
 
     $r .= "<div id=\"notes\">\n";
