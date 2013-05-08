@@ -43,7 +43,7 @@ class postgreSQL {
     if (!$db)
       $db = new Database();
     $db->query("update occurrences as o ".
-      "set created_by_id=$userId, updated_by_id=$user_id, updated_on=now() ".
+      "set created_by_id=$userId, updated_by_id=$userId, updated_on=now() ".
       "from sample_attribute_values sav ".
       "join sample_attributes sa ".
       "    on sa.id=sav.sample_attribute_id ".
