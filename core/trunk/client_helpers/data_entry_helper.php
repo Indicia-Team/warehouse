@@ -2494,7 +2494,15 @@ class data_entry_helper extends helper_base {
     if (count($filterArray)) {
       $filterParam = json_encode($filterArray);
       self::$javascript .= "indiciaData['taxonExtraParams-".$options['id']."'] = $filterParam;\n";
-      $options['extraParams'] = array_merge($options['extraParams'], $filterArray);
+      // Apply a filter to extraParams that can be used when loading the initial species list, to get just the correct names.
+      if (isset($options['speciesNameFilterMode']) && !empty($options['listId'])) {
+        $filterFields = array();
+        $filterWheres = array();
+        self::parse_species_name_filter_mode($options, $filterFields, $filterWheres);
+        if (count($filterWheres))
+          $options['extraParams'] += array('query' => json_encode(array('where' => $filterWheres)));
+        $options['extraParams'] += $filterFields;
+      }
     }
     self::$javascript .= "indiciaData['rowInclusionCheck-".$options['id']."'] = '".$options['rowInclusionCheck']."';\n";
     if ($options['occurrenceImages']) {
@@ -2780,9 +2788,9 @@ class data_entry_helper extends helper_base {
       if (isset($options['lookupListId'])) {
         // Javascript to add further rows to the grid
         if (isset($indicia_templates['format_species_autocomplete_fn'])) {
-          self::$javascript .= 'var formatter = '.$indicia_templates['format_species_autocomplete_fn'];
+          self::$javascript .= 'formatter = '.$indicia_templates['format_species_autocomplete_fn'];
         } else {
-          self::$javascript .= "var formatter = '".$indicia_templates['taxon_label']."';\n";
+          self::$javascript .= "formatter = '".$indicia_templates['taxon_label']."';\n";
         }
         if (!empty(parent::$warehouse_proxy))
           $url = parent::$warehouse_proxy."index.php/services/data";
@@ -2910,37 +2918,9 @@ class data_entry_helper extends helper_base {
     // If we had a rank field for each taxon, then this would be replaced by a rank=species filter.
     if ($options['subSpeciesColumn']) 
       $wheres[] = "(parent_id is null)";
-    if (isset($options['cacheLookup']) && $options['cacheLookup']) {
+    if (isset($options['cacheLookup']) && $options['cacheLookup'])
       $wheres[] = "(simplified='t' or simplified is null)";
-      $colLanguage='language_iso';
-    } else
-      $colLanguage='language';
-    if (isset($options['speciesNameFilterMode'])) {
-      switch($options['speciesNameFilterMode']) {
-        case 'preferred' :
-          if (isset($options['cacheLookup']) && $options['cacheLookup'])
-            $r += array('name_type'=>'L');
-          else
-            $r += array('preferred'=>'t');
-          break;
-        case 'currentLanguage' :
-          // look for Drupal user variable. Will degrade gracefully if it doesn't exist
-          global $user;
-          if (isset($options['language'])) {
-            $r += array($colLanguage=>$options['language']);
-          } elseif (isset($user)) {
-            // if in Drupal we can use the user's language
-            $r += array($colLanguage=>iform_lang_iso_639_2($user->lang));
-          }
-          break;
-        case 'excludeSynonyms':
-          if (isset($options['cacheLookup']) && $options['cacheLookup'])
-            $wheres[] = "(preferred='t' or language_iso<>'lat')";
-          else
-            $wheres[] = "(preferred='t' or language<>'lat')";
-          break;
-      }
-    }
+    self::parse_species_name_filter_mode($options, $r, $wheres);
     if (isset($options['extraParams']))
       foreach ($options['extraParams'] as $key=>$value) {
         if ($key!=='nonce' && $key!=='auth_token')
@@ -2963,6 +2943,39 @@ class data_entry_helper extends helper_base {
     if (!empty($query)) 
       $r['query']=json_encode($query);
     return $r;
+  }
+  
+  /**
+   * Private utility function to extract the fields which need filtering against, plus any complex
+   * SQL where clauses, required to do a species name filter according to the current mode (e.g.
+   * preferred names only, all names etc).
+   * @param array $options Species_checklist options array.
+   * @param array $filterFields Pass an array in - this will be populated with the keys and values
+   * of any fields than need to be filtered.
+   * @param array $filterWheres Pass an array in - this will be populated with a list of any complex
+   * where clauses (to put into a service request's query parameter).
+   */   
+  private static function parse_species_name_filter_mode($options, &$filterFields, &$filterWheres) {
+    if (isset($options['speciesNameFilterMode'])) {
+      $colLanguage = $options['cacheLookup'] ? 'language_iso' : 'language';
+      switch($options['speciesNameFilterMode']) {
+        case 'preferred' :
+          $filterFields += array('preferred'=>'t');
+          break;
+        case 'currentLanguage' :
+          // look for Drupal user variable. Will degrade gracefully if it doesn't exist
+          if (isset($options['language'])) {
+            $filterFields += array($colLanguage=>$options['language']);
+          } elseif (isset($user) && function_exists('hostsite_get_user_field')) {
+            // if in Drupal we can use the user's language
+            $filterFields += array($colLanguage=>iform_lang_iso_639_2(hostsite_get_user_field('language')));
+          }
+          break;
+        case 'excludeSynonyms':
+            $filterWheres[] = "(preferred='t' or $colLanguage<>'lat')";
+            break;
+      }
+    }
   }
   
   /**
