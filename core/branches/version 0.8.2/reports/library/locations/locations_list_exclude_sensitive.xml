@@ -29,7 +29,7 @@
     </param>
     <param name='locattrs' display='Location attribute list' description='Comma separated list of location attribute IDs to include' datatype='locattrs' default='' />
     <param name="idlist" display="Location IDs" description="Comma separated list of location IDs to load" datatype="text" default=''>
-      <where>l.id in (#idlist)</where>
+      <where>l.id in (#idlist#)</where>
     </param>
   </params>
   <columns>
