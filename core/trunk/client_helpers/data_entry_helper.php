@@ -2494,6 +2494,7 @@ class data_entry_helper extends helper_base {
     if (count($filterArray)) {
       $filterParam = json_encode($filterArray);
       self::$javascript .= "indiciaData['taxonExtraParams-".$options['id']."'] = $filterParam;\n";
+      $options['extraParams'] = array_merge($options['extraParams'], $filterArray);
     }
     self::$javascript .= "indiciaData['rowInclusionCheck-".$options['id']."'] = '".$options['rowInclusionCheck']."';\n";
     if ($options['occurrenceImages']) {
