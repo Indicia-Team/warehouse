@@ -5794,7 +5794,7 @@ if (errors.length>0) {
     self::add_resource('json');
     if (isset($options['website_ids'])) {
       $query['in']=array('website_id'=>$options['website_ids']);
-    } else {
+    } elseif ($options['attrtable']!=='person_attribute') {
       $surveys = array(NULL);
       if (isset($options['survey_id']))
         $surveys[] = $options['survey_id'];
