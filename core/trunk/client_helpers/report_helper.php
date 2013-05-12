@@ -1492,8 +1492,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
             strokeWidth=(width===0) ? 1 : %d - (width / feature.layer.map.getResolution());
           return (strokeWidth<%d) ? %d : strokeWidth;
         }";
-        $defStyleFns['getStrokeWidth'] = sprintf($strokeWidthFn, 6, 1, 1);
-        $selStyleFns['getStrokeWidth'] = sprintf($strokeWidthFn, 9, 2, 2);
+        $defStyleFns['getStrokeWidth'] = sprintf($strokeWidthFn, 9, 2, 2);
+        $selStyleFns['getStrokeWidth'] = sprintf($strokeWidthFn, 10, 3, 3);
         if (isset($options['valueOutput'])) {
           foreach($options['valueOutput'] as $type => $outputdef) {
             $value = $outputdef['valueField'];
