@@ -30,6 +30,12 @@
 
 require_once('includes/dynamic.php');
 
+/**
+ * Store remembered field settings, since these need to be accessed from a hook function which runs outside the class.
+ * @var string
+ */
+global $remembered;
+
 class iform_dynamic_sample_occurrence extends iform_dynamic {
 
   // The ids we are loading if editing existing data
@@ -496,6 +502,13 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           'default'=>'occurrence:record_status=C'
         ),
         array(
+          'name'=>'remembered',
+          'caption'=>'Remembered Fields',
+          'description'=>'Supply a list of field names that should be remembered in a cookie, saving re-inputting them if they are likely to repeat. '.
+              'For greater flexibility use the @lockable=true option on each control instead.',
+          'type'=>'textarea'
+        ),
+        array(
           'name'=>'edit_permission',
           'caption'=>'Permission required for editing other people\'s data',
           'description'=>'Set to the name of a permission which is required in order to be able to edit other people\'s data.',
@@ -506,6 +519,16 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       )
     );
     return $retVal;
+  }
+  
+  /**
+   * Override get_form_html so we can store the remembered argument in a global, to make
+   * it available to a hook function which exists outside the form.
+   */
+  protected static function get_form_html($args, $auth, $attributes) { 
+    global $remembered;
+    $remembered = isset($args['remembered']) ? $args['remembered'] : '';
+    return parent::get_form_html($args, $auth, $attributes);
   }
 
   /**
@@ -1659,6 +1682,9 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    * @return array Submission structure.
    */
   public static function get_submission($values, $args) {
+    // Any remembered fields need to be made available to the hook function outside this class.
+    global $remembered;
+    $remembered = isset($args['remembered']) ? $args['remembered'] : '';
     // default for forms setup on old versions is grid - list of occurrences
     // Can't call getGridMode in this context as we might not have the $_GET value to indicate grid
     if (isset($values['speciesgridmapmode']))
@@ -1872,6 +1898,14 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     }
   }
   
+}
+
+/**
+ * A hook function to setup remembered fields whose values are stored in a cookie.
+ */
+function indicia_define_remembered_fields() {
+  global $remembered;
+  data_entry_helper::set_remembered_fields(helper_base::explode_lines($remembered));
 }
   
 
