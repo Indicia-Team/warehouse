@@ -33,35 +33,36 @@ class cache_builder {
    */
   public static function populate_cache_table($db, $table, $last_run_date) {
     $queries = kohana::config("cache_builder.$table");
-    cache_builder::get_changelist($db, $table, $queries, $last_run_date);
     try {
-      cache_builder::do_delete($db, $table, $queries);
-      // preprocess some of the tags in the queries
-      if (is_array($queries['update']))
-        foreach($queries['update'] as $key=>&$sql)
-          $sql = str_replace('#join_needs_update#', $queries['join_needs_update'], $sql);
-      else 
-        $queries['update'] = str_replace('#join_needs_update#', $queries['join_needs_update'], $queries['update']);
-      cache_builder::run_statement($db, $table, $queries['update'], 'update');
-      // preprocess some of the tags in the queries
-      if (is_array($queries['insert']))
-        foreach($queries['insert'] as $key=>&$sql)
-          $sql = str_replace('#join_needs_update#', $queries['join_needs_update'] . ' and nu.deleted=false', $sql);
-      else 
-        $queries['insert'] = str_replace('#join_needs_update#', $queries['join_needs_update'] . ' and nu.deleted=false', $queries['insert']);
-      cache_builder::run_statement($db, $table, $queries['insert'], 'insert');
-      if (isset($queries['extra_multi_record_updates'])) 
-        cache_builder::run_statement($db, $table, $queries['extra_multi_record_updates'], 'final update');
-      if (!variable::get("populated-$table")) {
-        $cacheQuery = $db->query("select count(*) from cache_$table")->result_array(false);
-        if (isset($queries['count']))
-          $totalQuery = $db->query($queries['count'])->result_array(false);
-        else
-          $totalQuery = $db->query("select count(*) from $table where deleted='f'")->result_array(false);
-        $percent = round($cacheQuery[0]['count']*100/$totalQuery[0]['count']);
-        echo "$table population in progress - $percent% done";
+      if (cache_builder::get_changelist($db, $table, $queries, $last_run_date)>0) {
+        cache_builder::do_delete($db, $table, $queries);
+        // preprocess some of the tags in the queries
+        if (is_array($queries['update']))
+          foreach($queries['update'] as $key=>&$sql)
+            $sql = str_replace('#join_needs_update#', $queries['join_needs_update'], $sql);
+        else 
+          $queries['update'] = str_replace('#join_needs_update#', $queries['join_needs_update'], $queries['update']);
+        cache_builder::run_statement($db, $table, $queries['update'], 'update');
+        // preprocess some of the tags in the queries
+        if (is_array($queries['insert']))
+          foreach($queries['insert'] as $key=>&$sql)
+            $sql = str_replace('#join_needs_update#', $queries['join_needs_update'] . ' and nu.deleted=false', $sql);
+        else 
+          $queries['insert'] = str_replace('#join_needs_update#', $queries['join_needs_update'] . ' and nu.deleted=false', $queries['insert']);
+        cache_builder::run_statement($db, $table, $queries['insert'], 'insert');
+        if (isset($queries['extra_multi_record_updates'])) 
+          cache_builder::run_statement($db, $table, $queries['extra_multi_record_updates'], 'final update');
+        if (!variable::get("populated-$table")) {
+          $cacheQuery = $db->query("select count(*) from cache_$table")->result_array(false);
+          if (isset($queries['count']))
+            $totalQuery = $db->query($queries['count'])->result_array(false);
+          else
+            $totalQuery = $db->query("select count(*) from $table where deleted='f'")->result_array(false);
+          $percent = round($cacheQuery[0]['count']*100/$totalQuery[0]['count']);
+          echo "$table population in progress - $percent% done";
+        }
+        echo '<br/>';
       }
-      echo '<br/>';
       $db->query("drop table needs_update_$table");
     } catch (Exception $e) {
       $db->query("drop table needs_update_$table");
@@ -157,13 +158,17 @@ class cache_builder {
         variable::set("populated-$table", true);
         echo "$table population completed<br/>";
       }
-    } else 
-      echo "$table populated<br/>";
+    }
     $db->query("ALTER TABLE needs_update_$table ADD CONSTRAINT ix_nu_$table PRIMARY KEY (id)");
     $r = $db->query("select count(*) as count from needs_update_$table")->result_array(false);
     $row=$r[0];
-    if (variable::get("populated-$table"))
-      echo "Updating $table with ".$row['count']." changes";
+    if (variable::get("populated-$table")) {
+      if ($row['count']>0)
+        echo "Updating $table with {$row['count']} changes<br/>";
+      else
+        echo "No changes for $table<br/>";
+    }
+    return $row['count'];
   }
 
   /**
