@@ -56,10 +56,6 @@ class iform_dynamic {
   const MODE_CLONE = 3; // display form for adding a new sample containing values of an existing sample.
 
 
-  public static function get_perms($nid) {
-    return array('IForm n'.$nid.' admin', 'IForm n'.$nid.' user');
-  }
-
   public static function get_parameters() {    
     $retVal = array_merge(
       iform_map_get_map_parameters(),
