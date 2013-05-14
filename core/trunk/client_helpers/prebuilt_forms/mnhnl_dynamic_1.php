@@ -46,6 +46,14 @@ class iform_mnhnl_dynamic_1 extends iform_dynamic_sample_occurrence {
   }
 
   /**
+   * Get the list of permissions for this form.
+   * @return array List of permissions that this form requires.
+   */
+  public static function get_perms($nid) {
+    return array('IForm n'.$nid.' admin', 'IForm n'.$nid.' user');
+  }
+
+  /**
    * Get the list of parameters for this form.
    * @return array List of parameters that this form requires.
    */
