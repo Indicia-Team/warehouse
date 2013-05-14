@@ -60,7 +60,8 @@ or sp.updated_on>o.last_verification_check_date
 or o.last_verification_check_date is null) limit 200';
   $db->query($query);
   $r = $db->query('select count(*) as count from occlist')->result_array(false);
-  echo "Data cleaning ".$r[0]['count']." record(s).<br/>";
+  kohana::log('alert', "Data cleaning {$r[0]['count']} record(s)");
+  echo "Data cleaning {$r[0]['count']} record(s).<br/>";
   return $r[0]['count'];
 }
 
