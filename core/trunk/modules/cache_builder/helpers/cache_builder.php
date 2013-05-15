@@ -34,7 +34,8 @@ class cache_builder {
   public static function populate_cache_table($db, $table, $last_run_date) {
     $queries = kohana::config("cache_builder.$table");
     try {
-      if (cache_builder::get_changelist($db, $table, $queries, $last_run_date)>0) {
+      $count=cache_builder::get_changelist($db, $table, $queries, $last_run_date);
+      if ($count>0) {
         cache_builder::do_delete($db, $table, $queries);
         // preprocess some of the tags in the queries
         if (is_array($queries['update']))
