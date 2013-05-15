@@ -1840,7 +1840,12 @@ mapGeoreferenceHooks = [];
         toolbar.addControls([nav]);
         toolbar.addControls(toolbarControls);
         div.map.addControl(toolbar);
-        nav.activate();
+        if (typeof click!=="undefined") {
+          click.activate();
+        } 
+        else {
+          nav.activate();
+        }
         // as these all appear on the toolbar, don't need to worry about activating individual controls, as user will pick which one they want.
       } else {
         // no other selectable controls, so no need for a click button on toolbar
