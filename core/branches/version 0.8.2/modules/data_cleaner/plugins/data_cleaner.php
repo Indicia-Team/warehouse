@@ -88,7 +88,7 @@ function data_cleaner_cleanout_old_messages($rules, $db) {
         from notifications
         using occlist o 
         where source='Verifications and comments'
-        and data like '%\"occurrence_id\":\"' || cast(o.id as varchar) || '\"%'";
+        and linked_id = o.id";
       $db->query($query);
       $modulesDone[]=$rule['plugin'];
     }

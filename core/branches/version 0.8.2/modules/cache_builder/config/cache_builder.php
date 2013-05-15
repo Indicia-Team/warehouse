@@ -43,13 +43,13 @@ $config['termlists_terms']['get_changed_items_query']="
       join languages l on l.id=t.language_id 
       join terms tpref on tpref.id=tltpref.term_id 
       join languages lpref on lpref.id=tpref.language_id
-      where tl.created_on>'#date#' or tl.updated_on>'#date#' 
-      or tlt.created_on>'#date#' or tlt.updated_on>'#date#' 
-      or tltpref.created_on>'#date#' or tltpref.updated_on>'#date#' 
-      or t.created_on>'#date#' or t.updated_on>'#date#' 
-      or l.created_on>'#date#' or l.updated_on>'#date#' 
-      or tpref.created_on>'#date#' or tpref.updated_on>'#date#' 
-      or lpref.created_on>'#date#' or lpref.updated_on>'#date#' ";
+      where tl.updated_on>'#date#' 
+      or tlt.updated_on>'#date#' 
+      or tltpref.updated_on>'#date#' 
+      or t.updated_on>'#date#' 
+      or l.updated_on>'#date#' 
+      or tpref.updated_on>'#date#' 
+      or lpref.updated_on>'#date#' ";
 
 $config['termlists_terms']['update'] = "update cache_termlists_terms ctlt
     set preferred=tlt.preferred,
@@ -126,53 +126,53 @@ $config['taxa_taxon_lists']['get_changed_items_query']="
       select sub.id, cast(max(cast(deleted as int)) as boolean) as deleted 
       from (select ttl.id, ttl.deleted
       from taxa_taxon_lists ttl
-      where ttl.created_on>'#date#' or ttl.updated_on>'#date#' 
+      where ttl.updated_on>'#date#' 
       union
       select ttl.id, tl.deleted
       from taxa_taxon_lists ttl
       join taxon_lists tl on tl.id=ttl.taxon_list_id
-      where tl.created_on>'#date#' or tl.updated_on>'#date#' 
+      where tl.updated_on>'#date#' 
       union
       select ttl.id, t.deleted
       from taxa_taxon_lists ttl
       join taxa t on t.id=ttl.taxon_id
-      where t.created_on>'#date#' or t.updated_on>'#date#' 
+      where t.updated_on>'#date#' 
       union
       select ttl.id, l.deleted
       from taxa_taxon_lists ttl
       join taxa t on t.id=ttl.taxon_id
       join languages l on l.id=t.language_id
-      where l.created_on>'#date#' or l.updated_on>'#date#' 
+      where l.updated_on>'#date#' 
       union
       select ttl.id, ttlpref.deleted
       from taxa_taxon_lists ttl
       join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true
-      where ttlpref.created_on>'#date#' or ttlpref.updated_on>'#date#' 
+      where ttlpref.updated_on>'#date#' 
       union
       select ttl.id, tpref.deleted
       from taxa_taxon_lists ttl
       join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true
       join taxa tpref on tpref.id=ttlpref.taxon_id
-      where tpref.created_on>'#date#' or tpref.updated_on>'#date#' 
+      where tpref.updated_on>'#date#' 
       union
       select ttl.id, lpref.deleted
       from taxa_taxon_lists ttl
       join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true
       join taxa tpref on tpref.id=ttlpref.taxon_id
       join languages lpref on lpref.id=tpref.language_id
-      where lpref.created_on>'#date#' or lpref.updated_on>'#date#' 
+      where lpref.updated_on>'#date#' 
       union
       select ttl.id, tg.deleted
       from taxa_taxon_lists ttl
       join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true
       join taxa tpref on tpref.id=ttlpref.taxon_id
       join taxon_groups tg on tg.id=tpref.taxon_group_id
-      where tg.created_on>'#date#' or tg.updated_on>'#date#'
+      where tg.updated_on>'#date#'
       union
       select ttl.id, false
       from taxa_taxon_lists ttl
       join taxa tc on tc.id=ttl.common_taxon_id
-      where tc.created_on>'#date#' or tc.updated_on>'#date#' 
+      where tc.updated_on>'#date#' 
       ) as sub
       group by id";
 
@@ -263,65 +263,66 @@ $config['taxon_searchterms']['get_missing_items_query']="
       left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=ttl.id 
       left join needs_update_taxon_searchterms nu on nu.id=ttl.id 
       where cts.id is null and nu.id is null 
+      and ttl.allow_data_entry=true
       and (tl.deleted or ttl.deleted or ttlpref.deleted or t.deleted 
-        or l.deleted or tpref.deleted or tg.deleted or lpref.deleted) = false ";
+        or l.deleted or tpref.deleted or tg.deleted or lpref.deleted) = false";
       
 $config['taxon_searchterms']['get_changed_items_query']="
-      select sub.id, cast(max(cast(deleted as int)) as boolean) as deleted 
-      from (select ttl.id, ttl.deleted
+      select sub.id, sub.allow_data_entry, cast(max(cast(deleted as int)) as boolean) as deleted 
+      from (select ttl.id, ttl.allow_data_entry, ttl.deleted
       from taxa_taxon_lists ttl
-      where ttl.created_on>'#date#' or ttl.updated_on>'#date#' 
+      where ttl.updated_on>'#date#' 
       union
-      select ttl.id, tl.deleted
+      select ttl.id, ttl.allow_data_entry, tl.deleted
       from taxa_taxon_lists ttl
       join taxon_lists tl on tl.id=ttl.taxon_list_id
-      where tl.created_on>'#date#' or tl.updated_on>'#date#' 
+      where tl.updated_on>'#date#' 
       union
-      select ttl.id, t.deleted
+      select ttl.id, ttl.allow_data_entry, t.deleted
       from taxa_taxon_lists ttl
       join taxa t on t.id=ttl.taxon_id
-      where t.created_on>'#date#' or t.updated_on>'#date#' 
+      where t.updated_on>'#date#' 
       union
-      select ttl.id, l.deleted
+      select ttl.id, ttl.allow_data_entry, l.deleted
       from taxa_taxon_lists ttl
       join taxa t on t.id=ttl.taxon_id
       join languages l on l.id=t.language_id
-      where l.created_on>'#date#' or l.updated_on>'#date#' 
+      where l.updated_on>'#date#' 
       union
-      select ttl.id, ttlpref.deleted
+      select ttl.id, ttl.allow_data_entry, ttlpref.deleted
       from taxa_taxon_lists ttl
       join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true
-      where ttlpref.created_on>'#date#' or ttlpref.updated_on>'#date#' 
+      where ttlpref.updated_on>'#date#' 
       union
-      select ttl.id, tpref.deleted
+      select ttl.id, ttl.allow_data_entry, tpref.deleted
       from taxa_taxon_lists ttl
       join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true
       join taxa tpref on tpref.id=ttlpref.taxon_id
-      where tpref.created_on>'#date#' or tpref.updated_on>'#date#' 
+      where tpref.updated_on>'#date#' 
       union
-      select ttl.id, lpref.deleted
+      select ttl.id, ttl.allow_data_entry, lpref.deleted
       from taxa_taxon_lists ttl
       join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true
       join taxa tpref on tpref.id=ttlpref.taxon_id
       join languages lpref on lpref.id=tpref.language_id
-      where lpref.created_on>'#date#' or lpref.updated_on>'#date#' 
+      where lpref.updated_on>'#date#' 
       union
-      select ttl.id, tg.deleted
+      select ttl.id, ttl.allow_data_entry, tg.deleted
       from taxa_taxon_lists ttl
       join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true
       join taxa tpref on tpref.id=ttlpref.taxon_id
       join taxon_groups tg on tg.id=tpref.taxon_group_id
-      where tg.created_on>'#date#' or tg.updated_on>'#date#'
+      where tg.updated_on>'#date#'
       union
-      select ttl.id, false
+      select ttl.id, ttl.allow_data_entry, false
       from taxa_taxon_lists ttl
       join taxa tc on tc.id=ttl.common_taxon_id
-      where tc.created_on>'#date#' or tc.updated_on>'#date#' 
+      where tc.updated_on>'#date#' 
       ) as sub
-      group by id";
+      group by sub.id, sub.allow_data_entry";
 
 $config['taxon_searchterms']['delete_query']['taxa']="
-  delete from cache_taxon_searchterms where taxa_taxon_list_id in (select id from needs_update_taxon_searchterms where deleted=true)";
+  delete from cache_taxon_searchterms where taxa_taxon_list_id in (select id from needs_update_taxon_searchterms where deleted=true or allow_data_entry=false)";
 
 $config['taxon_searchterms']['delete_query']['codes']="
   delete from cache_taxon_searchterms where name_type='C' and source_id in (
@@ -571,21 +572,45 @@ $config['occurrences']['get_missing_items_query'] = "
     and (o.deleted or s.deleted or coalesce(sp.deleted, false) or su.deleted or (cttl.id is null)) = false";
     
 $config['occurrences']['get_changed_items_query'] = "
-  select distinct o.id, o.deleted or s.deleted or coalesce(sp.deleted, false) or su.deleted or (cttl.id is null) as deleted
+  select sub.id, cast(max(cast(deleted as int)) as boolean) as deleted 
+    from (select o.id, o.deleted 
     from occurrences o
-    join samples s on s.id=o.sample_id 
-    left join samples sp on sp.id=s.parent_id
-    join surveys su on su.id=s.survey_id 
-    join cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
-    left join cache_termlists_terms tmethod on tmethod.id=s.sample_method_id
-    left join occurrence_images oi on oi.occurrence_id=o.id
-    where o.created_on>'#date#' or o.updated_on>'#date#' 
-      or s.created_on>'#date#' or s.updated_on>'#date#' 
-      or sp.created_on>'#date#' or sp.updated_on>'#date#' 
-      or su.created_on>'#date#' or su.updated_on>'#date#'
-      or cttl.cache_updated_on>'#date#'
-      or tmethod.cache_updated_on>'#date#'
-      or oi.created_on>'#date#' or oi.updated_on>'#date#'";
+    where o.updated_on>'#date#' 
+    union
+    select o.id, s.deleted 
+    from occurrences o
+    join samples s on s.id=o.sample_id
+    where s.updated_on>'#date#' 
+    union
+    select o.id, sp.deleted 
+    from occurrences o
+    join samples s on s.id=o.sample_id
+    join samples sp on sp.id=s.parent_id
+    where sp.updated_on>'#date#' 
+    union
+    select o.id, su.deleted 
+    from occurrences o
+    join samples s on s.id=o.sample_id
+    join surveys su on su.id=s.survey_id
+    where su.updated_on>'#date#' 
+    union
+    select o.id, ttl.deleted
+    from occurrences o
+    join taxa_taxon_lists ttl on ttl.id=o.taxa_taxon_list_id
+    where ttl.updated_on>'#date#' 
+    union
+    select o.id, false
+    from occurrences o
+    join samples s on s.id=o.sample_id
+    join cache_termlists_terms tmethod on tmethod.id=s.sample_method_id
+    where tmethod.cache_updated_on>'#date#'
+    union
+    select o.id, false
+    from occurrences o
+    join occurrence_images oi on oi.occurrence_id=o.id
+    where oi.updated_on>'#date#' 
+    ) as sub
+    group by id ";
 
 $config['occurrences']['update'] = "update cache_occurrences co
     set record_status=o.record_status, 
