@@ -2214,8 +2214,8 @@ class data_entry_helper extends helper_base {
     
     $sysOptions['id'] = $options['id'] . '-system';
     $sysOptions['fieldname'] = $options['fieldname'] . '_system';
-    if (!isset($options['defaultSys']))
-      $sysOptions['default']=self::check_default_value($options['sysFieldname']);
+    $sysOptions['default'] = self::check_default_value($sysOptions['fieldname'],
+          array_key_exists('defaultSys', $options) ? $options['defaultSys'] : '');
 
     $r .= self::hidden_text($sysOptions);
         
