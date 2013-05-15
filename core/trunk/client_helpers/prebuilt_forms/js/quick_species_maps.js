@@ -19,12 +19,16 @@
  * @link    http://code.google.com/p/indicia/
  */
  
+var grid_load;
+
+(function ($) {
+ 
 var layers=[];
 
 /**
  * Callback for the grid loading on sort or pagination - resets the icon state of active layers.
  */
-function grid_load() {
+grid_load = function() {
   var img;
   $.each(layers, function(idx, layer) {
     img = $('tr#row'+layer.key+' img');
@@ -94,3 +98,5 @@ $(document).ready(function () {
     }
   });
 });
+
+}(jQuery));

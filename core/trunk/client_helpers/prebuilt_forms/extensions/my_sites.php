@@ -26,7 +26,9 @@
 class extension_my_sites {
 
   public static function my_sites_form($auth, $args, $tabalias, $options, $path) {
-    $r .= "<fieldset><legend>" . lang::get('Find additional sites to store in your sites list') . "</legend>";
+    if (!function_exists('iform_ajaxproxy_url'))
+      return 'An AJAX Proxy module must be enabled for the My Sites Form to work.';
+    $r = "<fieldset><legend>" . lang::get('Find additional sites to store in your sites list') . "</legend>";
     if (empty($options['locationTypes']) || !preg_match('/^([0-9]+,( )?)*[0-9]+$/', $options['locationTypes']))
       return 'The My sites form is not correctly configured. Please provide the location types to allow search by.';
     $locationTypes = explode(',', str_replace(' ', '', $options['locationTypes']));
