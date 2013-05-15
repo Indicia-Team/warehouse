@@ -54,7 +54,7 @@ class postgreSQL {
       "and o.deleted=false ".
       "and o.website_id=$websiteId ".
       "and sav.int_value=$cmsUserId".
-      "and created_by_id<>$userId");
+      "and o.created_by_id<>$userId");
   }
   
   /** 
