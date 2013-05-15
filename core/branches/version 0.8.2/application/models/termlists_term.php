@@ -79,7 +79,7 @@ class Termlists_term_Model extends Base_Name_Model {
     $success = true;
     if ($this->submission['fields']['preferred']['value']=='t') {
       try {
-        if (array_key_exists('synonyms', $this->submission['metaFields'])) {
+        if (isset($this->submission['metaFields']) && array_key_exists('synonyms', $this->submission['metaFields'])) {
           $arrSyn=$this->parseRelatedNames(
             $this->submission['metaFields']['synonyms']['value'],
             'set_synonym_sub_array'
