@@ -267,7 +267,6 @@ class User_Identifier_Controller extends Service_Base_Controller {
     if ($person->loaded)
       $data['id']=$person->id;
     $person->validate(new Validation($data), true);
-    kohana::log('debug', 'Person created');
     $this->checkErrors($person);
     $user = ORM::factory('user');
     // ensure a unique username that fits in the 7-30 char limit
@@ -278,7 +277,6 @@ class User_Identifier_Controller extends Service_Base_Controller {
       $username = substr($uname, 0, 30-strlen($rolling)).$rolling;
       $unique++;
     } while ($this->db->select('id')->from('users')->where(array('username'=>$username))->get()->count()>0);
-    kohana::log('debug', "Username $username");
     $data = array(
       'person_id'=>$person->id,
       'email_visible'=>'f',
