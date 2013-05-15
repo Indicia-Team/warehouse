@@ -2475,7 +2475,7 @@ class data_entry_helper extends helper_base {
     global $indicia_templates;
     $options = self::check_options($options);
     $options = self::get_species_checklist_options($options);
-    if ($options['columns']>1 && $options['occurrenceImages'])
+    if ($options['columns'] > 1 && $options['occurrenceImages'])
       throw new Exception('The species_checklist control does not support having more than one occurrence per row (columns option > 0) '.
           'at the same time has having the occurrenceImages option enabled.');
     self::add_resource('json');
@@ -2594,7 +2594,7 @@ class data_entry_helper extends helper_base {
         $loadedTxIdx = isset($rowIds['loadedTxIdx']) ? $rowIds['loadedTxIdx'] : -1;
         $existing_record_id = isset($rowIds['occId']) ? $rowIds['occId'] : false;
         // Multi-column input does not work when image upload allowed
-        $colIdx = $options['occurrenceImages'] ? 0 : floor($rowIdx / (count($taxonRows)/$options['columns']));
+        $colIdx = $options['occurrenceImages'] ? 0 : (int)floor($rowIdx / (count($taxonRows)/$options['columns']));
         // Find the taxon in our preloaded list data that we want to output for this row
         $taxonIdx = 0;
         while ($taxonIdx < count($taxalist) && $taxalist[$taxonIdx]['id'] != $ttlId) {
@@ -2753,8 +2753,8 @@ class data_entry_helper extends helper_base {
           }
         }
         // Are we in the first column of a multicolumn grid, or doing single column grid? If so start new row. 
-        if ($colIdx===0) {
-          $rows[$rowIdx]=$row;
+        if ($colIdx === 0) {
+          $rows[$rowIdx] = $row;
         } else {
           $rows[$rowIdx % (ceil(count($taxonRows)/$options['columns']))] .= $row;
         }
@@ -2820,7 +2820,7 @@ class data_entry_helper extends helper_base {
   /**
    * Implode the rows we are putting into the species checklist, with application of classes to image rows.
    */
-  private function species_checklist_implode_rows($rows, $imageRowIdxs) {
+  private static function species_checklist_implode_rows($rows, $imageRowIdxs) {
     $r = '';
     foreach ($rows as $idx => $row) {
       $class = in_array($idx, $imageRowIdxs) ? ' class="supplementary-row"' : '';
@@ -2838,7 +2838,7 @@ class data_entry_helper extends helper_base {
    * @param array Options array for the species grid. Used to obtain the row inclusion check mode,
    * read authorisation and lookup list's ID.   
    */  
-  private function species_checklist_get_subsp_cell($taxon, $txIdx, $existing_record_id, $options) {
+  private static function species_checklist_get_subsp_cell($taxon, $txIdx, $existing_record_id, $options) {
     if ($options['subSpeciesColumn']) {
       //Disable the sub-species drop-down if the row delete button is not displayed.
       //Also disable if we are preloading our data from a sample.
@@ -2989,7 +2989,7 @@ class data_entry_helper extends helper_base {
     self::add_resource('fancybox');
     $db=self::get_species_lookup_db_definition(isset($options['cacheLookup']) && $options['cacheLookup']);
     extract($db);
-    $defaultFilterMode=$options['speciesNameFilterMode'];
+    $defaultFilterMode = (isset($options['speciesNameFilterMode'])) ? $options['speciesNameFilterMode'] : 'all';
     self::$javascript .= "var mode,  nameFilter=[];\n";
     //convert the nameFilter php array into a Javascript one
     foreach ($nameFilter as $key=>$theFilter) {
@@ -4160,7 +4160,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    * @param boolean $cached Set to true to use the cached taxon search tables rather than 
    * standard taxa in taxon list views.
    */
-  public function get_species_lookup_db_definition($cached) {
+  public static function get_species_lookup_db_definition($cached) {
     if ($cached) {
       return array (
         'tblTaxon'=>'cache_taxon_searchterm',
