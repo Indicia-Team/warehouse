@@ -267,10 +267,12 @@ class XMLReportReader_Core implements ReportReader
       $query = str_replace('#website_filter#', '1=1', $query);
     if (!empty($trainingFilterField)) {
       if ($training==='true')
-        $query = str_replace('#sharing_filter#', "($trainingFilterField=true OR $trainingFilterField IS NULL) AND #sharing_filter#", $query); 
+        $query = str_replace('#sharing_filter#', array("($trainingFilterField=true OR $trainingFilterField IS NULL) AND #sharing_filter#", $query); 
       else 
         $query = str_replace('#sharing_filter#', "($trainingFilterField=false OR $trainingFilterField IS NULL) AND #sharing_filter#", $query); 
     }
+    // an alternative way to inform a query about training mode....
+    $query = str_replace('#training#', $training, $query); 
     // select the appropriate type of sharing arrangement (i.e. are we reporting, verifying, moderating etc?)
     if ($sharing==='me' && empty($userId))
       // revert to website type sharing if we have no known user Id.
