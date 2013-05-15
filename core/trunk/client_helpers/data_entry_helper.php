@@ -2198,8 +2198,9 @@ class data_entry_helper extends helper_base {
     $options = array_merge(array(
       'id' => 'imp-sref',
       'fieldname' => 'sample:entered_sref',
-      'default' => self::check_default_value($options['fieldname']),
     ), $options);
+    $options['default'] = self::check_default_value($options['fieldname'],
+          array_key_exists('default', $options) ? $options['default'] : '');
     
     // remove validation as field will be hidden
     if (array_key_exists($options['fieldname'], self::$default_validation_rules)) {
