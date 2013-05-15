@@ -281,7 +281,8 @@ class Scheduled_Tasks_Controller extends Controller {
       $recordAsArray = array();
       foreach ($data['content']['columns'] as $column=>$cfg) {
         if ($cfg['visible']!=='false') {
-          $recordAsArray[] = $record[$column];
+          // allow for an incorrect column def in the report, as a broken report can block the scheduled tasks otherwise.
+          $recordAsArray[] = empty($record[$column]) ? '' : $record[$column];
         }
       }
       $websiteRecordData[$record['website_id']][] = $recordAsArray;
