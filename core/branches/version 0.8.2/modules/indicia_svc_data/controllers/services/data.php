@@ -74,6 +74,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       'taxa_taxon_list',
       'taxon_relation',
       'taxon_group',
+      'termlists_term',
       'user_trust',
       'notification',
       'occurrence_attribute_value',
