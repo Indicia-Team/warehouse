@@ -5,9 +5,11 @@
   <query>
   SELECT #columns#
   FROM notifications n
+  LEFT JOIN occurrences o ON o.id=n.linked_id AND n.source='Verifications and comments'
   #joins#
   WHERE n.acknowledged=false
   and n.user_id=#user_id#  
+  and (o.training=#training# or o.id is null)
   #order_by#
   </query>  
   <order_bys>
