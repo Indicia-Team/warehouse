@@ -123,21 +123,19 @@ function apply_user_replacements($text) {
   // Do basic replacements and trim the data
   $text=trim(str_replace($replace, $replaceWith, $text));  
   // Look for any profile field replacments
-  if (preg_match_all('/{([^}]*)}/', $text, $matches)) {
+  if (preg_match_all('/{([^}]*)}/', $text, $matches) && function_exists('hostsite_get_user_field')) {
     $profileLoaded=false;
     foreach($matches[1] as $profileField) {
       // got a request for a user profile field, so copy it's value across into the report parameters
-      if (!$profileLoaded && function_exists('profile_load_profile')) {
-        profile_load_profile($user);
-        $profileLoaded = true;
-      }
-      if (isset($user->$profileField)) {
+      $fieldName = preg_replace('/^profile_/', '', $profileField);
+      $value = hostsite_get_user_field($fieldName);
+      if ($value) {
         // unserialise the data if it is serialised, e.g. when using profile_checkboxes to store a list of values.
-        $value = @unserialize($user->$profileField);
+        $value = @unserialize($value);
         // arrays are returned as a comma separated list
         if (is_array($value))
           $value = implode(',',$value);
-        $value = $value ? $value : $user->$profileField;
+        $value = $value ? $value : hostsite_get_user_field($fieldName);
         // nulls must be passed as empty string params.
         $value = ($value===null ? '' : $value);
       } else

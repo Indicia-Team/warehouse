@@ -455,7 +455,10 @@ class iform_dynamic {
         elseif (($attribKey = array_search(substr($component, 1, -1), $attribNames)) !== false
             || preg_match('/^\[[a-zA-Z]+:(?P<ctrlId>[0-9]+)\]/', $component, $matches)) {
           // control is a smpAttr or other attr control.
-          $options['extraParams'] = array_merge($defAttrOptions['extraParams'], (array)$options['extraParams']);
+          if (empty($options['extraParams'])) 
+            $options['extraParams'] = array_merge($defAttrOptions['extraParams']);
+          else 
+            $options['extraParams'] = array_merge($defAttrOptions['extraParams'], (array)$options['extraParams']);
           //merge extraParams first so we don't loose authentication
           $options = array_merge($defAttrOptions, $options);
           foreach ($options as $key=>&$value) {

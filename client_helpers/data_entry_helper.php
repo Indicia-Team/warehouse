@@ -586,7 +586,7 @@ class data_entry_helper extends helper_base {
     changeYear: true,
     constrainInput: false $button";
       // Filter out future dates
-      if (!array_key_exists('allow_future', $options) || $options['allow_future']==false) {
+      if (!array_key_exists('allowFuture', $options) || $options['allowFuture']==false) {
         self::$javascript .= ",
     maxDate: '0'";
       }

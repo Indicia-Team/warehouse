@@ -109,9 +109,6 @@ class iform_quick_species_maps {
    */
   public static function get_form($args, $node, $response=null) {
     iform_load_helpers(array('report_helper', 'map_helper'));
-    global $user;
-    if (!isset($user->profile_indicia_user_id))
-      profile_load_profile($user);
     $conn = iform_get_connection_details($node);
     $readAuth = report_helper::get_read_auth($conn['website_id'], $conn['password']);
     $r = '<div id="leftcol">';
@@ -178,7 +175,7 @@ class iform_quick_species_maps {
       report_helper::$javascript .= "indiciaData.indiciaSpeciesLayer = {\n".
           '  "title":"'.lang::get('{1}')."\",\n".
           '  "myRecords":"'.lang::get('my records')."\",\n".
-          '  "userId":"'.$user->profile_indicia_user_id."\",\n".
+          '  "userId":"'.hostsite_get_user_field('indicia_user_id')."\",\n".
           '  "featureType":"'.$args['indicia_species_layer_feature_type']."\",\n".
           '  "wmsUrl":"'.data_entry_helper::$geoserver_url."wms\",\n".
           "  \"cqlFilter\":\"$cql\",\n".
