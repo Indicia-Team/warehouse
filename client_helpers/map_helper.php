@@ -379,7 +379,7 @@ class map_helper extends helper_base {
       $srefId = !empty($options['srefId']) ? $options['srefId'] : '';
       if(!(isset($options['switchOffSrefRetrigger']) && $options['switchOffSrefRetrigger'] == true)){
         $mapSetupJs .= "      var srefId = '$srefId'!=='' ? '$srefId' : $.fn.indiciaMapPanel.defaults.srefId;\n".
-                       "      if (srefId && srefId.value!=='') {jQuery('#'+srefId).change();}\n";
+                       "      if (srefId && srefId.value!=='' && indiciaData.mapdiv.settings.initialBoundaryWkt===null) {jQuery('#'+srefId).change();}\n";
       }
       // If the map is displayed on a tab, so we must only generate it when the tab is displayed as creating the 
       // map on a hidden div can cause problems. Also, the map must not be created until onload or later. So 
