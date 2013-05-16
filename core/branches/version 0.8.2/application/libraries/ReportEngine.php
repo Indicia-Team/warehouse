@@ -909,7 +909,7 @@ class ReportEngine {
   private function processSysfuncAttrs(&$query, $type, $attrs, $sysfuncs) {
     // first, join in all the attribute tables we need
     $done = array();
-    $sysfuncFields = array();
+    $sysfuncsList = array();    
     foreach($attrs as $attr) {
       // don't duplicate any attributes as the SQL distinct does not force distinct when loading from a view.
       if (in_array($attr->id, $done))
@@ -918,41 +918,54 @@ class ReportEngine {
       $done[]=$id;
       $join = $this->addJoinForAttr($query, $type, $attr, true);
       // keep track of the output fields for each system function
-      if (!isset($sysfuncFields[$attr->system_function])) {
-        $sysfuncFields[$attr->system_function] = array();
+      if (!isset($sysfuncsList[$attr->system_function])) {
+        $sysfuncsList[$attr->system_function] = array('fields'=>array(), 'data_types'=>array());
       }
       if ($attr->data_type=='L') {
         // lookups need an extra join and a different output field alias
         $query = str_replace('#joins#', $join." ".(class_exists('cache_builder') ? "cache_termlists_terms" : "list_termlists_terms")." ltt$id ON ltt$id.id=$type$id.int_value\n #joins#", $query);
-        $sysfuncFields[$attr->system_function][] = "ltt$id.term";
+        $sysfuncsList[$attr->system_function]['fields'][] = "ltt$id.term";
+        $datatype='text';
       } else {
         switch($attr->data_type) {
           case 'F' :
             $field = 'float_value';
+            $datatype='float';
             break;
           case 'T' :
             $field = 'text_value';
+            $datatype='text';
             break;
           case 'D' : case 'V' :
             $field = 'date_start_value';
+            $datatype='date';
             break;
           default:
             $field = 'int_value';
+            $datatype='int';
         }
-        $sysfuncFields[$attr->system_function][] = "$type$id.$field";
+        $sysfuncsList[$attr->system_function]['fields'][] = "$type$id.$field";
       }
+      // track the list of data types we are using
+      if (!in_array($datatype, $sysfuncsList[$attr->system_function]['data_types']))
+        $sysfuncsList[$attr->system_function]['data_types'][]=$datatype;
     }
     $modelname = "{$type}_attribute";
     $model = ORM::Factory($modelname, -1);
     $defs = $model->get_system_functions();
-    foreach($sysfuncFields as $sysfunc => $fields) {
+    foreach($sysfuncsList as $sysfunc => $metadata) {
       $alias = "attr_$sysfunc";
       $this->attrColumns[$alias] = array(
-        'display' => $defs[$sysfunc]['title']
+        'display' => empty($defs[$sysfunc]['friendly']) ? $defs[$sysfunc]['title'] : $defs[$sysfunc]['friendly']
       );
-      $query = str_replace('#fields#', ", COALESCE(" . implode(', ', $fields) . ") as $alias#fields#", $query);
+      // If we have a mixed data type list, COALESCE requires that we cast them
+      if (count($metadata['data_types'])>1) 
+        $fieldlist = 'CAST(' . implode(' AS VARCHAR), CAST(', $metadata['fields']) . ' AS VARCHAR)';
+      else
+        $fieldlist = implode(', ', $metadata['fields']);
+      $query = str_replace('#fields#', ", COALESCE($fieldlist) as $alias#fields#", $query);
       // this field should also be inserted into any group by part of the query
-      $query = str_replace('#group_bys#', ", COALESCE(" . implode(', ', $fields) . ")#group_bys#", $query);
+      $query = str_replace('#group_bys#', ", COALESCE($fieldlist)#group_bys#", $query);
     }
   }
 
