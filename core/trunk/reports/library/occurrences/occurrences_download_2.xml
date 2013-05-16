@@ -7,6 +7,10 @@
   FROM cache_occurrences co
   JOIN occurrences o on o.id=co.id AND o.deleted=false
   JOIN samples s on s.id=o.sample_id AND s.deleted=false
+  LEFT JOIN (index_locations_samples ils
+    JOIN locations l on l.id=ils.location_id
+    JOIN cache_termlists_terms ctt on ctt.id=l.location_type_id AND ctt.term='Vice County'
+  ) on ils.sample_id=co.sample_id
   JOIN websites w on w.id=co.website_id 
   #agreements_join#
   #joins#
@@ -65,11 +69,23 @@
     <column name='entered_sref' display='Grid Ref' sql="case s.entered_sref_system when '4326' then co.public_entered_sref else replace(co.public_entered_sref, ' ', '') end" datatype='text' />
     <column name='lat' display='Latitude' sql="substring(st_astext(st_transform(st_centroid(geom), 4326)) from E'POINT\\(.+ (.+)\\)')" datatype="text" />
     <column name='long' display='Longitude' sql="substring(st_astext(st_transform(st_centroid(geom), 4326)) from E'POINT\\((.+) ')" datatype="text" />
+    <column name='projection' display='Projection' 
+        sql="case s.entered_sref_system when '4326' then 'WGS84' when '27700' then 'OSGB36' else upper(s.entered_sref_system) end" 
+        datatype="text" />
+    <column name='precision' display='Precision' 
+        sql="case s.entered_sref_system
+    when '4326' then 50 
+    when '27700' then 1
+    else case length(replace(s.entered_sref, ' ', '')) when 5 then 2000 else pow(10, (12-length(replace(s.entered_sref, ' ', '')))/2) end
+  end" 
+        datatype="text" />
+    <column name="vicecounty" display="ViceCounty" sql="array_to_string(array_agg(l.name), ', ')" datatype="text" aggregate="true" />        
     <column name='date_start' sql='co.date_start' visible='false' />
     <column name='date_end' sql='co.date_end' visible='false' />
     <column name='date_type' sql='co.date_type' visible='false' />
     <column name='date' display='Date' datatype='date' />
     <column name='recorder' display='Recorder' sql="CASE WHEN w.id IN (#website_ids#) THEN '' ELSE w.title || '-&gt;' END || co.recorders" datatype="text" />
+    <column name='verifier' display='Verifier' sql='co.verifier' datatype="text" />
     <column name='sample_comment' display='Sample comment' sql="s.comment" datatype="text" />
     <column name='zeroabundance' display='ZeroAbundance' sql='upper(cast (co.zero_abundance as character))' datatype="text" />
     <column name='record_status' display='State' 
