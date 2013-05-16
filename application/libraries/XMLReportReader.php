@@ -267,7 +267,7 @@ class XMLReportReader_Core implements ReportReader
       $query = str_replace('#website_filter#', '1=1', $query);
     if (!empty($trainingFilterField)) {
       if ($training==='true')
-        $query = str_replace('#sharing_filter#', array("($trainingFilterField=true OR $trainingFilterField IS NULL) AND #sharing_filter#", $query)); 
+        $query = str_replace('#sharing_filter#', "($trainingFilterField=true OR $trainingFilterField IS NULL) AND #sharing_filter#", $query); 
       else 
         $query = str_replace('#sharing_filter#', "($trainingFilterField=false OR $trainingFilterField IS NULL) AND #sharing_filter#", $query); 
     }
