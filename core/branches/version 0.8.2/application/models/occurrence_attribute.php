@@ -49,6 +49,14 @@ class Occurrence_Attribute_Model extends ATTR_ORM {
         'title'=>'Sex/stage',
         'description'=>'A text or lookup attribute where the value corresponds to the sex or life stage of the recorded organism(s).'
       ),
+      'sex' => array(
+        'title'=>'Sex',
+        'description'=>'A text or lookup attribute where the value corresponds to the sex of the recorded organism(s).'
+      ),
+      'stage' => array(
+        'title'=>'Stage',
+        'description'=>'A text or lookup attribute where the value corresponds to the life stage of the recorded organism(s).'
+      ),
       'sex_stage_count' => array(
         'title'=>'Count or abundance of a sex or life stage.',
         'description'=>'An attribute corresponding to the abundance of a particular stage, indicated by the caption of the attribute. ' .
