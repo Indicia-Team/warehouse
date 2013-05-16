@@ -71,12 +71,16 @@ class Occurrence_Attribute_Model extends ATTR_ORM {
           '200 or more.'
       ),
       'det_first_name' => array(
-        'title' => 'Determiner First name',
+        'title' => 'Determiner first name',
         'description'=>'A text attribute corresponding to the first name of the person determining (identifying) the record.'
       ),
       'det_last_name' => array(
-        'title' => 'Determiner Last name',
+        'title' => 'Determiner last name',
         'description'=>'A text attribute corresponding to the last name of the person determining (identifying) the record.'
+      ),
+      'det_full_name' => array(
+        'title' => 'Determiner full name',
+        'description'=>'A text attribute corresponding to the full name of the person determining (identifying) the record.'
       ),
     );
   }
