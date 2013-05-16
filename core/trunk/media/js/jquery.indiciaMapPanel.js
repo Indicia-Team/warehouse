@@ -245,7 +245,6 @@ mapGeoreferenceHooks = [];
       }
       if(features.length == 0) return false;
       layer.addFeatures(features);
-      var bounds=layer.getDataExtent();
 
       if(invisible === null) {
         // extend the boundary to include a buffer, so the map does not zoom too tight.
@@ -1565,8 +1564,9 @@ mapGeoreferenceHooks = [];
         }
 
         // Draw the feature to be loaded on startup, if present
+        var zoomToCentroid = (this.settings.initialBoundaryWkt) ? false : true;
         if (this.settings.initialFeatureWkt) {
-          _showWktFeature(this, this.settings.initialFeatureWkt, div.map.editLayer, null, false, "undefined", true, true);
+          _showWktFeature(this, this.settings.initialFeatureWkt, div.map.editLayer, null, false, "clickPoint", zoomToCentroid, true);
         }
         if (this.settings.initialBoundaryWkt) {
           _showWktFeature(this, this.settings.initialBoundaryWkt, div.map.editLayer, null, false, "boundary", true, true);

@@ -361,6 +361,7 @@ var simple_tooltip;
                     feature = new OpenLayers.Feature.Vector(geom, {type: 'linked'});
                     if (div.settings.rowId!=="") {
                       feature.id = row[div.settings.rowId];
+                      feature.attributes[div.settings.rowId] = row[div.settings.rowId];
                     }
                     features.push(feature);
                   }
@@ -399,6 +400,7 @@ var simple_tooltip;
             tbody.find('a.fancybox').fancybox();
             if (features.length>0) {
               indiciaData.reportlayer.addFeatures(features);
+              map.zoomToExtent(indiciaData.reportlayer.getDataExtent());
             }
 
             // Set a class to indicate the sorted column
