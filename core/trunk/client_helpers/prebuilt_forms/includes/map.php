@@ -83,6 +83,14 @@ function iform_map_get_map_parameters() {
       'group'=>'Initial Map View'
     ),
     array(
+      'name' => 'location_boundary_id',
+      'caption' => 'Location boundary to draw',
+      'description' => 'ID of a location whose boundary should be shown on the map (e.g. to define the perimeter of a survey area).',
+      'type' => 'textfield',
+      'group'=>'Initial Map View',
+      'required'=>false
+    ),
+    array(
       'name'=>'preset_layers',
       'caption'=>'Preset Base Layers',
       'description'=>'Select the preset base layers that are available for the map. When using Google map layers, please ensure you adhere to the '.
@@ -173,7 +181,8 @@ function iform_map_get_map_parameters() {
       'name'=>'display_user_profile_location',
       'caption'=>'Display location from user profile',
       'description'=>'Tick this box to display the outline of the user\'s preferred recording location from the user '.
-          'account on the map. The map will be centred and zoomed to this location on first usage.',
+          'account on the map. The map will be centred and zoomed to this location on first usage. This option has no effect if '.
+          '"Location boundary to draw" is ticked.',
       'type'=>'checkbox',
       'required'=>false,
       'group'=>'Initial Map View'
@@ -297,12 +306,15 @@ function iform_map_get_map_options($args, $readAuth) {
     global $base_url;
     $options['proxy'] = $base_url . '/?q=' . variable_get('iform_proxy_path', 'proxy') . '&url=';
   }
-  if (isset($args['display_user_profile_location']) && $args['display_user_profile_location']) {
+  // And a single location boundary if defined
+  if (!empty($args['location_boundary_id'])) 
+    $location = $args['location_boundary_id'];
+  elseif (isset($args['display_user_profile_location']) && $args['display_user_profile_location']) {
     $location = hostsite_get_user_field('location');
-    if ($location) {
-      iform_map_zoom_to_location($location, $readAuth);
-    }
-  } 
+  }
+  if (!empty($location)) {
+    iform_map_zoom_to_location($location, $readAuth);
+  }
   return $options;
 }
 
@@ -311,11 +323,11 @@ function iform_map_get_map_options($args, $readAuth) {
  */
 function iform_map_zoom_to_location($locationId, $readAuth) {
   $getPopDataOpts = array(
-        'table' => 'location',
-        'extraParams' => $readAuth + array('id'=>$locationId,'view' => 'detail')
-      );
-      $response = data_entry_helper::get_population_data($getPopDataOpts);
-      data_entry_helper::$javascript .= "
+    'table' => 'location',
+    'extraParams' => $readAuth + array('id'=>$locationId,'view' => 'detail')
+  );
+  $response = data_entry_helper::get_population_data($getPopDataOpts);
+  data_entry_helper::$javascript .= "
 mapInitialisationHooks.push(function(mapdiv) {
   var parser, feature, loclayer = new OpenLayers.Layer.Vector(
     '".lang::get('My Preferred Locality')."',
@@ -327,7 +339,7 @@ mapInitialisationHooks.push(function(mapdiv) {
   feature.style.fillOpacity=0;
   loclayer.addFeatures([feature]);
   // Don't zoom to the locality if the map is set to remember last position
-  var bounds=loclayer.getDataExtent();
+  var bounds=feature.geometry.getBounds();
   if (typeof $.cookie === 'undefined' || mapdiv.settings.rememberPos===false || $.cookie('maplon')===null) {
     if (mapdiv.map.getZoomForExtent(bounds) > mapdiv.settings.maxZoom) {
       // if showing something small, don't zoom in too far
@@ -335,7 +347,8 @@ mapInitialisationHooks.push(function(mapdiv) {
     }
     else {
       // Set the default view to show something triple the size of the feature
-      mapdiv.map.zoomToExtent(bounds);
+      //mapdiv.map.zoomToExtent(bounds, true);
+      mapdiv.map.setCenter(bounds.getCenterLonLat(), mapdiv.map.getZoomForExtent(bounds)+1);
     }  
   }
   mapdiv.map.addLayer(loclayer);
