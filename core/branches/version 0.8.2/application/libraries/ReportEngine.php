@@ -864,46 +864,111 @@ class ReportEngine {
    */
   private function mergeAttrListParam($query, $type, $attrList) {
     $this->reportDb
-        ->select('distinct a.id, a.data_type, a.caption, a.validation_rules')
-        ->from('list_'.$type.'_attributes as a');
+        ->select('distinct a.id, a.data_type, a.caption, a.validation_rules, a.system_function')
+        ->from("{$type}_attributes as a");
     if ($this->websiteIds)
       $this->reportDb
-          ->join('index_websites_website_agreements as wa', 'wa.from_website_id', 'a.website_id')
+          ->join("{$type}_attributes_websites as aw", "aw.{$type}_attribute_id", 'a.id')
+          ->join('index_websites_website_agreements as wa', 'wa.from_website_id', 'aw.website_id')
           ->in('wa.to_website_id', $this->websiteIds)
           ->where('wa.provide_for_'.$this->sharingMode, 't');
     $ids = array();
     $captions = array();
+    $sysfuncs = array();
     $attrList = explode(',',$attrList);
     foreach($attrList as $attr) {
       if (is_numeric($attr))
-        $ids[] = $attr;
+        $ids[] = $attr;                  // an attribute ID
+      elseif (substr($attr, 0, 1)==='#') 
+        $sysfuncs[] = substr($attr, 1); // a system function
       else
-        $captions[] = $attr;
+        $captions[] = $attr;             // an attribute caption
     }
-    if (count($ids)>0) {
+    if ((count($ids)===0 ? 0 : 1) + (count($captions)===0 ? 0 : 1) + (count($sysfuncs)===0 ? 0 : 1) > 1)
+      throw new exception('Cannot mix numeric IDs, captions and system functions in the list of requested custom attributes');
+    if (count($ids)>0) 
       $this->reportDb->in('a.id', $ids);
-      if (count($captions)>0) 
-        throw new exception('Cannot mix numeric IDs and captions in the list of requested custom attributes');
-    } elseif (count($captions)>0) 
+    elseif (count($captions)>0) 
       $this->reportDb->in('caption', $captions);
-    $usingCaptions=count($captions)>0;
+    elseif (count($sysfuncs)>0) 
+      $this->reportDb->in('system_function', $sysfuncs);
     $attrs = $this->reportDb->get();
-    $done = array();    
+    if (count($sysfuncs)>0)
+      $this->processSysfuncAttrs($query, $type, $attrs, $sysfuncs);
+    else {
+      $usingCaptions=count($captions)>0;
+      $this->processStandardAttrs($query, $type, $attrs, $usingCaptions);    
+    }
+    return $query;
+  }
+  
+  /**
+   * Create the joins and column definitions required to support a set of custom attributes
+   * added to the report by specifying one or more system functions.
+   */
+  private function processSysfuncAttrs(&$query, $type, $attrs, $sysfuncs) {
+    // first, join in all the attribute tables we need
+    $done = array();
+    $sysfuncFields = array();
     foreach($attrs as $attr) {
       // don't duplicate any attributes as the SQL distinct does not force distinct when loading from a view.
       if (in_array($attr->id, $done))
         continue;
-      $done[]=$attr->id;
       $id = $attr->id;
-      // can only use an inner join for definitely required fields. If they are required
-      // only at the per-survey level, we must use left joins as the survey could vary per record.
-      $join = strpos($attr->validation_rules, 'required')===false ? 'LEFT JOIN' : 'JOIN';
-      // find out what alias and field name the query uses for the table & field we need to join to
-      // (samples.id, occurrences.id or locations.id).
-      $rootIdAttr = inflector::plural($type).'_id_field';
-      $rootId = $this->reportReader->$rootIdAttr;
-      // construct a join to the attribute values table so we can get the value out.
-      $query = str_replace('#joins#', "$join ".$type."_attribute_values $type$id ON $type$id.".$type."_id=$rootId AND $type$id.".$type."_attribute_id=$id AND $type$id.deleted=false\n #joins#", $query);
+      $done[]=$id;
+      $join = $this->addJoinForAttr($query, $type, $attr, true);
+      // keep track of the output fields for each system function
+      if (!isset($sysfuncFields[$attr->system_function])) {
+        $sysfuncFields[$attr->system_function] = array();
+      }
+      if ($attr->data_type=='L') {
+        // lookups need an extra join and a different output field alias
+        $query = str_replace('#joins#', $join." ".(class_exists('cache_builder') ? "cache_termlists_terms" : "list_termlists_terms")." ltt$id ON ltt$id.id=$type$id.int_value\n #joins#", $query);
+        $sysfuncFields[$attr->system_function][] = "ltt$id.term";
+      } else {
+        switch($attr->data_type) {
+          case 'F' :
+            $field = 'float_value';
+            break;
+          case 'T' :
+            $field = 'text_value';
+            break;
+          case 'D' : case 'V' :
+            $field = 'date_start_value';
+            break;
+          default:
+            $field = 'int_value';
+        }
+        $sysfuncFields[$attr->system_function][] = "$type$id.$field";
+      }
+    }
+    $modelname = "{$type}_attribute";
+    $model = ORM::Factory($modelname, -1);
+    $defs = $model->get_system_functions();
+    foreach($sysfuncFields as $sysfunc => $fields) {
+      $alias = "attr_$sysfunc";
+      $this->attrColumns[$alias] = array(
+        'display' => $defs[$sysfunc]['title']
+      );
+      $query = str_replace('#fields#', ", COALESCE(" . implode(', ', $fields) . ") as $alias#fields#", $query);
+      // this field should also be inserted into any group by part of the query
+      $query = str_replace('#group_bys#', ", COALESCE(" . implode(', ', $fields) . ")#group_bys#", $query);
+    }
+  }
+
+  /**
+   * Create the joins and column definitions required to support a set of custom attributes
+   * added to the report by specifying one or more attributes by ID or caption.
+   */
+  private function processStandardAttrs(&$query, $type, $attrs, $usingCaptions) {
+    $done = array();  
+    foreach($attrs as $attr) {
+      // don't duplicate any attributes as the SQL distinct does not force distinct when loading from a view.
+      if (in_array($attr->id, $done))
+        continue;
+      $id = $attr->id;
+      $done[]=$id;
+      $join = $this->addJoinForAttr($query, $type, $attr, false);
       // find the query column(s) required for the attribute
       switch($attr->data_type) {
         case 'F' :
@@ -975,7 +1040,23 @@ class ReportEngine {
       // if we know an attribute caption, we want to be able to lookup the ID.
       $this->customAttributeCaptions["$type:".$attr->caption] = $id;
     }
-    return $query;
+  }
+  
+  /**
+   * Adds the join required for a custom attribute to the query.
+   */
+  private function addJoinForAttr(&$query, $type, $attr, $forceOuter) {
+    $id = $attr->id;
+    // can only use an inner join for definitely required fields. If they are required
+    // only at the per-survey level, we must use left joins as the survey could vary per record.
+    $join = (strpos($attr->validation_rules, 'required')===false || $forceOuter) ? 'LEFT JOIN' : 'JOIN';
+    // find out what alias and field name the query uses for the table & field we need to join to
+    // (samples.id, occurrences.id or locations.id).
+    $rootIdAttr = inflector::plural($type).'_id_field';
+    $rootId = $this->reportReader->$rootIdAttr;
+    // construct a join to the attribute values table so we can get the value out.
+    $query = str_replace('#joins#', "$join ".$type."_attribute_values $type$id ON $type$id.".$type."_id=$rootId AND $type$id.".$type."_attribute_id=$id AND $type$id.deleted=false\n #joins#", $query);
+    return $join;
   }
   
   /**
