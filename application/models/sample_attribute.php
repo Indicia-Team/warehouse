@@ -52,6 +52,7 @@ class Sample_Attribute_Model extends ATTR_ORM {
     return array(
       'email' => array(
         'title'=>'Email address',
+        'friendly'=>'Email',
         'description'=>'A text attribute corresponding to an email address.'
       ),
       'cms_user_id' => array(
@@ -76,6 +77,7 @@ class Sample_Attribute_Model extends ATTR_ORM {
       ),
       'biotope' => array(
         'title' => 'Biotope',
+        'friendly'=>'Habitat',
         'description'=>'A text or lookup attribute where the value describes the biotope (often described as the habitat) of the sample.'
       )
       

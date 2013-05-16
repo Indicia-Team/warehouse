@@ -956,7 +956,7 @@ class ReportEngine {
     foreach($sysfuncsList as $sysfunc => $metadata) {
       $alias = "attr_$sysfunc";
       $this->attrColumns[$alias] = array(
-        'display' => $defs[$sysfunc]['title']
+        'display' => empty($defs[$sysfunc]['friendly']) ? $defs[$sysfunc]['title'] : $defs[$sysfunc]['friendly']
       );
       // If we have a mixed data type list, COALESCE requires that we cast them
       if (count($metadata['data_types'])>1) 
