@@ -2803,7 +2803,7 @@ class data_entry_helper extends helper_base {
             " formatter, ".($options['cacheLookup'] ? 'true' : 'false').");\r\n";
       }
       // If options contain a help text, output it at the end if that is the preferred position
-      $options['helpTextClass'] = 'helpTextLeft';
+      $options['helpTextClass'] = (isset($options['helpTextClass'])) ? $options['helpTextClass'] : 'helpTextLeft';
       $r = self::get_help_text($options, 'before');
       $r .= $grid;
       $r .= self::get_help_text($options, 'after');
