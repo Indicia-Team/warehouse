@@ -241,6 +241,7 @@ mapGeoreferenceHooks = [];
             feature.attributes.temp=true;
           }
           features.push(feature);
+          bounds.extend(feature.geometry);
         });
       }
       if(features.length == 0) return false;
