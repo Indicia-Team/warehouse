@@ -427,7 +427,7 @@ var simple_tooltip;
     function getFullRequestPathWithoutPaging(div, sort) {
       var request = getRequest(div), params=getUrlParamsForAllRecords(div);
       $.each(params, function(key, val) {
-        request += '&' + key + '=' + val;
+        request += '&' + key + '=' + encodeURIComponent(val);
       });
       if (sort && div.settings.orderby !== null) {
         request += '&orderby=' + div.settings.orderby + '&sortdir=' + div.settings.sortdir;
