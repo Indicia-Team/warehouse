@@ -111,7 +111,7 @@ Record ID',
           'caption'=>'Test attributes against',
           'description'=>'For custom attributes, do you want to filter the list to show using the caption or the system function? If the latter, then '.
               'any custom attributes referred to in the fields list above should be referred to by their system function which might be one of: email, '.
-              'cms_user_id, cms_username, first_name, last_name, full_name, biotope, sex_stage, sex_stage_count, certainty, det_first_name, det_last_name.',
+              'cms_user_id, cms_username, first_name, last_name, full_name, biotope, sex_stage, sex, stage, sex_stage_count, certainty, det_first_name, det_last_name.',
           'type'=>'select',
           'options' => array(
             'caption'=>'Caption',

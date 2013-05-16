@@ -70,7 +70,7 @@ function data_cleaner_period_within_year_data_cleaner_rules() {
             "join occurrence_attribute_values oav on oav.occurrence_id=co.id and oav.deleted=false ".
             "left join cache_termlists_terms ctt on ctt.id=oav.int_value and string_to_array(lower(vrdstage.value),',') @> string_to_array(lower(ctt.term),'') ".
             "join occurrence_attributes oa on oa.id=oav.occurrence_attribute_id and oav.deleted=false ".
-            "  and lower(oa.system_function) = 'sex_stage' ", 
+            "  and lower(oa.system_function) in ('sex_stage', 'stage') ", 
         'where' =>
             // This logic allows a text value, lookup value or caption of a checked boolean attribute to count as the stage to filter on.
             "(string_to_array(lower(vrdstage.value),',') @> string_to_array(lower(oav.text_value),'') ".
