@@ -129,6 +129,9 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
                 "&nbsp;&nbsp;<strong>[species]</strong> - a species grid or input control. ".
                     "You can change any of the control options for an individual custom attribute control in a grid by putting @control|option=value on the subsequent line(s). ".
                     "For example, if a control is for occAttr:4 then you can set it's default value by specifying @occAttr:4|default=7 on the line after the [species]<br/>".
+                    "If you want to specify a custom template for a grid's species label cell, then override the taxon_label template. If you have multiple grids on the ".
+                    "form, you can override each one individually by setting the @taxonLabelTemplate for each grid to the name of a template that you've added to the ".
+                    "\$indicia_templates global array. ".
                     "If in single species entry mode and using a select box for data input, you can put a taxon group select above the species input select by ".
                     "setting the option @taxonGroupSelect=true. Control the label and helptext for this control using the options @taxonGroupSelectLabel and @taxonGroupSelectHelpText.<br/>".
                 "&nbsp;&nbsp;<strong>[species map]</strong> - a species grid or input control: this is the same as the species control, but the sample is broken down ".
@@ -1232,7 +1235,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       $species_ctrl_opts['taxonFilter']=$filterLines;
     }
     if (isset($args['col_widths']) && $args['col_widths']) $species_ctrl_opts['colWidths']=explode(',', $args['col_widths']);
-    call_user_func(array(self::$called_class, 'build_grid_taxon_label_function'), $args);
+    call_user_func(array(self::$called_class, 'build_grid_taxon_label_function'), $args, $options);
     if (self::$mode == self::MODE_CLONE)
       $species_ctrl_opts['useLoadedExistingRecords'] = true;
     // Start by outputting a hidden value that tells us we are using a grid when the data is posted,
@@ -1397,35 +1400,39 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    * Build a JavaScript function  to format the display of existing taxa added to the species input grid
    * when an existing sample is loaded.
    */
-  protected static function build_grid_taxon_label_function($args) {
+  protected static function build_grid_taxon_label_function($args, $options) {
     global $indicia_templates;
-    // always include the searched name
-    $php = '$r="";'."\n".
-        'if ("{language}"=="lat") {'."\n".
-        '  $r = "<em>{taxon}</em>";'."\n".
-        '} else {'."\n".
-        '  $r = "{taxon}";'."\n".
-        '}'."\n";
-    // This bit optionally adds '- common' or '- latin' depending on what was being searched
-    if (isset($args['species_include_both_names']) && $args['species_include_both_names']) {
-      $php .= "\n\n".'if ("{preferred}"=="t" && "{common}"!="{taxon}" && "{common}"!="") {'."\n\n\n".
-        '  $r .= " - {common}";'."\n".
-        '} else if ("{preferred}"=="f" && "{preferred_name}"!="{taxon}" && "{preferred_name}"!="") {'."\n".
-        '  $r .= " - <em>{preferred_name}</em>";'."\n".
-        '}'."\n";
+    if (!empty($options['taxonLabelTemplate']) && !empty($indicia_templates[$options['taxonLabelTemplate']])) {
+      $indicia_templates['taxon_label'] = $indicia_templates[$options['taxonLabelTemplate']];
+      return;
     }
-    // this bit optionally adds the taxon group
-    if (isset($args['species_include_taxon_group']) && $args['species_include_taxon_group'])
-      $php .= '$r .= "<br/><strong>{taxon_group}</strong>";'."\n";
-    // Close the function
-    $php .= 'return $r;'."\n";
-    // Set it into the indicia templates, as long as the template has been left at it's default state
+    // Set up the indicia templates for taxon labels according to options, as long as the template has been left at it's default state
     if ($indicia_templates['taxon_label'] == '<div class="biota"><span class="nobreak sci binomial"><em>{taxon}</em></span> {authority} '.
-        '<span class="nobreak vernacular">{common}</span></div>')
+        '<span class="nobreak vernacular">{common}</span></div>') {
+      // always include the searched name
+      $php = '$r="";'."\n".
+          'if ("{language}"=="lat") {'."\n".
+          '  $r = "<em>{taxon}</em>";'."\n".
+          '} else {'."\n".
+          '  $r = "{taxon}";'."\n".
+          '}'."\n";
+      // This bit optionally adds '- common' or '- latin' depending on what was being searched
+      if (isset($args['species_include_both_names']) && $args['species_include_both_names']) {
+        $php .= "\n\n".'if ("{preferred}"=="t" && "{common}"!="{taxon}" && "{common}"!="") {'."\n\n\n".
+          '  $r .= " - {common}";'."\n".
+          '} else if ("{preferred}"=="f" && "{preferred_name}"!="{taxon}" && "{preferred_name}"!="") {'."\n".
+          '  $r .= " - <em>{preferred_name}</em>";'."\n".
+          '}'."\n";
+      }
+      // this bit optionally adds the taxon group
+      if (isset($args['species_include_taxon_group']) && $args['species_include_taxon_group'])
+        $php .= '$r .= "<br/><strong>{taxon_group}</strong>";'."\n";
+      // Close the function
+      $php .= 'return $r;'."\n";
       $indicia_templates['taxon_label'] = $php;
+    }
   }
-
-
+  
   /**
    * Get the sample comment control
    */
