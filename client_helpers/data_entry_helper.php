@@ -2911,7 +2911,7 @@ class data_entry_helper extends helper_base {
    * common names and synonyms.
    * @param array $options Options array as passed to the species grid.
    */
-  public static function get_species_names_filter($options) {
+  public static function get_species_names_filter(&$options) {
     // $wheres is an array for building of the filter query
     $wheres = array();
     $r = array();
@@ -3317,7 +3317,7 @@ $('#".$options['id']."-filter').click(function(evt) {
    */
   private static function get_species_checklist_taxa_list($options, &$taxonRows) {
     // Get the list of species that are always added to the grid, by first building a filter
-    if (preg_match('/^(preferred_name|taxon_meaning_id|taxon_group|external_key)$/', $options['taxonFilterField']))  {
+    if (preg_match('/^(preferred_name|preferred_taxon|taxon_meaning_id|taxon_group|external_key)$/', $options['taxonFilterField']))  {
       $qry = array('in'=>array($options['taxonFilterField'], $options['taxonFilter']));
       $options['extraParams']['query']=json_encode($qry);
     }
