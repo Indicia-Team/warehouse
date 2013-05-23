@@ -73,9 +73,12 @@ var checkSubmitInProgress = function () {
       }
       $(this).append(this.settings.file_boxTemplate
           .replace('{caption}', this.settings.caption)
+          .replace('{captionClass}', this.settings.captionClass)
           .replace('{uploadSelectBtn}', uploadSelectBtn)
           .replace('{flickrSelectBtn}', flickrSelectBtn)
           .replace('{uploadStartBtn}', uploadStartBtn)
+          .replace('{helpText}', this.settings.helpText)
+          .replace('{helpTextClass}', this.settings.helpTextClass)  
       );
       // Set up a resize object if required
       var resize = (this.settings.resizeWidth!==0 || this.settings.resizeHeight!==0) ?
@@ -287,7 +290,7 @@ jQuery.fn.uploader.defaults = {
   existingFiles : [],
   buttonTemplate : '<button id="{id}" type="button" class="indicia-button">{caption}</button>',
   file_boxTemplate : '<fieldset class="ui-corner-all">\n<legend>{caption}</legend>\n{uploadSelectBtn}\n{flickrSelectBtn}\n<div class="filelist"></div>' +
-                 '{uploadStartBtn}</fieldset>',
+                 '{uploadStartBtn}</fieldset>\n<p class="{helpTextClass}">{helpText}</p>',
   file_box_initial_file_infoTemplate : '<div id="{id}" class="ui-widget-content ui-corner-all photo"><div class="ui-widget-header ui-corner-all"><span>{filename} ({filesize})</span> ' +
           '<span class="delete-file ui-state-default ui-widget-content ui-corner-all ui-helper-clearfix" id="del-{id}">X</span></div><div class="progress"><div class="progress-bar" style="width: {imagewidth}px"></div>'+
           '<div class="progress-percent"></div><div class="progress-gif"></div></div><span class="photo-wrapper"></span></div>',
