@@ -150,6 +150,7 @@ $lang = array (
     'length' => 'The value is not of the correct length.',
     'required' => 'The value is required.',
     'default' => 'The value is not of the correct format.',
+    'standard_text' => 'The value contains characters that are not allowed.',
   ),
   'term' => array (
     'required' => 'The term must be specified.',
