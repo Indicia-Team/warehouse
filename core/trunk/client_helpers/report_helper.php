@@ -2562,7 +2562,7 @@ if (typeof mapSettingsHooks!=='undefined') {
     // TODO : i8n
     // TODO invariant IDs and names prevents more than one on a page.
     // TODO convert to tabs when switching between chart and table.
-    $warnings="";
+    $warnings = '<span style="display:none;">Starting report_calendar_summary : '.date(DATE_ATOM).'</span>';
     data_entry_helper::add_resource('jquery_ui');
     // there are some report parameters that we can assume for a calendar based request...
     // the report must have a date field, a user_id field if set in the configuration, and a location_id.
@@ -2578,6 +2578,7 @@ if (typeof mapSettingsHooks!=='undefined') {
       return '<p>Internal Error: Report request parameters not set up correctly.<br />'.(print_r($response,true)).'<p>';
     }
     // convert records to a date based array so it can be used when generating the grid.
+    $warnings .= '<span style="display:none;">Report request finish : '.date(DATE_ATOM).'</span>';
     $records = $response['records'];
     $pageUrlParams = self::get_report_calendar_grid_page_url_params($options);
     $pageUrl = self::report_calendar_grid_get_reload_url($pageUrlParams);
@@ -2648,41 +2649,33 @@ update_controls();
       }
     } else
       $weekOne_date = date_create(substr($options['date_start'],0,4).'-Jan-01');
-    while($weekOne_date->format('N')!=$weekstart[1]){
-      $weekOne_date->modify('-1 day'); // scan back to start of week
-    }
+    $weekOne_date_weekday = $weekOne_date->format('N');
+    if($weekOne_date_weekday > $weekstart[1]) // scan back to start of week
+      $weekOne_date->modify('-'.($weekOne_date_weekday-$weekstart[1]).' day'); 
+    else if($weekOne_date_weekday < $weekstart[1])
+      $weekOne_date->modify('-'.(7+$weekOne_date_weekday-$weekstart[1]).' day');
+    // don't do anything if equal.
     $year_start = date_create(substr($options['date_start'],0,4).'-Jan-01');
     $year_end = date_create(substr($options['date_start'],0,4).'-Dec-25'); // don't want to go beyond the end of year: this is 1st Jan minus 1 week: it is the start of the last full week
-    $firstWeek_date = clone $weekOne_date;
-    if($weeknumberfilter[0]!=''){
-      $minWeekNo = 1;
-      while($firstWeek_date > $year_start && $minWeekNo>$weeknumberfilter[0]){
-        $firstWeek_date->modify('-7 days');
-        $minWeekNo--;
-      }
-      while($firstWeek_date < $year_end && $minWeekNo<$weeknumberfilter[0]){
-        $firstWeek_date->modify('+7 days');
-        $minWeekNo++;
-      }
-    } else {
-      $minWeekNo = 1;
-      while($firstWeek_date > $year_start){
-        $firstWeek_date->modify('-7 days');
-        $minWeekNo--;
-      }
-    }
+    $firstWeek_date = clone $weekOne_date; // date we start providing data for
+    $weekOne_date_yearday = $weekOne_date->format('z'); // day within year note year_start_yearDay is by definition 0
+    $weekOne_date_weekday = $weekOne_date->format('N'); // day within week
+    $minWeekNo = $weeknumberfilter[0]!='' ? $weeknumberfilter[0] : 1;
+    $numWeeks = ceil($weekOne_date_yearday/7); // number of weeks in year prior to $weekOne_date - 1st Jan gives zero, 2nd-8th Jan gives 1, etc
+    if($minWeekNo-1 < (-1 * $numWeeks)) $minWeekNo=(-1 * $numWeeks)+1; // have to allow for week zero
+    if($minWeekNo < 1)
+      $firstWeek_date->modify((($minWeekNo-1)*7).' days'); // have to allow for week zero
+    else if($minWeekNo > 1)
+      $firstWeek_date->modify('+'.(($minWeekNo-1)*7).' days');
+    
     if($weeknumberfilter[1]!=''){
       $maxWeekNo = $weeknumberfilter[1];
     } else {
-      $maxWeekNo = 1;
-      $lastWeek_date = clone $weekOne_date;
       $year_end = date_create(substr($options['date_start'],0,4).'-Dec-25'); // don't want to go beyond the end of year: this is 1st Jan minus 1 week: it is the start of the last full week
-      while($lastWeek_date <= $year_end){
-        $lastWeek_date->modify('+7 days');
-        $maxWeekNo++;
-      }
+      $year_end_yearDay = $year_end->format('z'); // day within year
+      $maxWeekNo = 1+ceil(($year_end_yearDay-$weekOne_date_yearday)/7);
     }
-
+    $warnings .= '<span style="display:none;">Initial date processing complete : '.date(DATE_ATOM).'</span>';
     $summaryArray=array(); // this is used for the table output format
     $rawArray=array(); // this is used for the table output format
     // In order to apply the data combination and estmation processing, we assume that the the records are in taxon, location_id, sample_id order.
@@ -2692,29 +2685,27 @@ update_controls();
     $lastTaxonID=false;
     $lastSample=false;
     $locationSamples = array();
+    $dateList = array();
     // we are assuming that there can be more than one occurrence of a given taxon per sample.
     foreach($records as $recid => $record){
       // If the taxon has changed
       $this_date = date_create(str_replace('/','-',$record['date'])); // prevents day/month ordering issues
       $this_index = $this_date->format('z');
-      while($this_date->format('N')!=$weekstart[1]){
-        $this_date->modify('-1 day'); // scan back to start of week
-      }
-      $weekno=1;
-      while($this_date>$weekOne_date){
-        $this_date->modify('-7 days');
-        $weekno++;
-      }
-      while($this_date<$weekOne_date){
-        $this_date->modify('+7 days');
-        $weekno--;
-      }
+      $this_weekday = $this_date->format('N');
+      if($this_weekday > $weekstart[1]) // scan back to start of week
+      	$this_date->modify('-'.($this_weekday-$weekstart[1]).' day');
+      else if($this_weekday < $weekstart[1])
+      	$this_date->modify('-'.(7+$this_weekday-$weekstart[1]).' day');
+      // this_date now points to the start of the week. Next work out the week number.
+      $this_yearday = $this_date->format('z');
+      $weekno = floor(($this_yearday-$weekOne_date_yearday)/7)+1;
       if(!isset($rawArray[$this_index])){
         $rawArray[$this_index] = array('weekno'=>$weekno, 'counts'=>array(), 'date'=>$record['date'], 'total'=>0);
         if (function_exists('hostsite_get_user_field') && hostsite_get_user_field('indicia_user_id')==$record['user_id'])        
           $rawArray[$this_index]['sample']=$record['sample_id'];
       }
       $records[$recid]['weekno']=$weekno;
+      $records[$recid]['date_index']=$this_index;
       if(isset($locationSamples[$record['location_id']])){
         if(isset($locationSamples[$record['location_id']][$weekno])) {
           if(!in_array($record['sample_id'], $locationSamples[$record['location_id']][$weekno]))
@@ -2722,28 +2713,29 @@ update_controls();
         } else $locationSamples[$record['location_id']][$weekno] = array($record['sample_id']);
       } else $locationSamples[$record['location_id']] = array($weekno => array($record['sample_id']));
     }
-    if(count($records)>0) $locationArray = self::report_calendar_summary_initLocation($records, $records[0]['location_id']);
+    $warnings .= '<span style="display:none;">Records date pre-processing complete : '.date(DATE_ATOM).'</span>';
+    $count = count($records);
+    if($count>0) $locationArray = self::report_calendar_summary_initLocation($minWeekNo, $maxWeekNo, $locationSamples[$records[0]['location_id']]);
+    $warnings .= '<span style="display:none;">Number of records processed : '.$count.' : '.date(DATE_ATOM).'</span>';
     foreach($records as $record){
       // If the taxon has changed
       if(($lastTaxonID && $lastTaxonID!=$record[$options['rowGroupID']]) ||
          ($lastLocation && $lastLocation!=$record['location_id'])) {
-        foreach($locationArray as $weekno => $data){
-          $locationArray[$weekno]['max'] = max($locationArray[$weekno]['max'], $locationArray[$weekno]['sampleTotal']);
-        }
         self::report_calendar_summary_processEstimates($summaryArray, $locationArray, $locationSamples[$lastLocation], $minWeekNo, $maxWeekNo, $lastTaxonID, $options);
-        $locationArray = self::report_calendar_summary_initLocation($records, $record['location_id']);
+        $locationArray = self::report_calendar_summary_initLocation($minWeekNo, $maxWeekNo, $locationSamples[$lastLocation]);
       }
       $lastTaxonID=$record[$options['rowGroupID']];
       $seriesLabels[$lastTaxonID]=$record[$options['rowGroupColumn']];
       $lastLocation=$record['location_id'];
       $lastSample=$record['sample_id'];
       $weekno = $record['weekno'];
-      if(isset($options['countColumn']) && $options['countColumn']!=''){
+      if($lastTaxonID == null) $count = 0;
+      else if(isset($options['countColumn']) && $options['countColumn']!=''){
         $count = (isset($record[$options['countColumn']])?$record[$options['countColumn']]:0);
       } else
         $count = 1; // default to single row = single occurrence
       // leave this conditional in - not sure what may happen in future, and it works.
-      if(isset($locationArray[$weekno])){
+      if($weekno >= $minWeekNo && $weekno <= $maxWeekNo){
         if($locationArray[$weekno]['this_sample'] != $lastSample) {
           $locationArray[$weekno]['max'] = max($locationArray[$weekno]['max'], $locationArray[$weekno]['sampleTotal']);
           $locationArray[$weekno]['this_sample'] = $lastSample;
@@ -2752,24 +2744,22 @@ update_controls();
         } else
           $locationArray[$weekno]['sampleTotal'] += $count;
         $locationArray[$weekno]['total'] += $count;
-      } else {
-        $locationArray[$weekno] = array('this_sample'=>$lastSample, 'total'=>$count, 'sampleTotal'=>$count, 'max'=>$count, 'numSamples'=>1);
+        $locationArray[$weekno]['hasData'] = true;
+        $locationArray[$weekno]['forcedZero'] = false;
       }
-      $locationArray[$weekno]['forcedZero'] = false;
-      $this_date = date_create(str_replace('/','-',$record['date'])); // prevents day/month ordering issues
-      $this_index = $this_date->format('z');
-      if(isset($rawArray[$this_index]['counts'][$lastTaxonID]))
-        $rawArray[$this_index]['counts'][$lastTaxonID] += $count;
-      else
-        $rawArray[$this_index]['counts'][$lastTaxonID] = $count;
-      $rawArray[$this_index]['total'] += $count;
+      $this_index = $record['date_index'];
+      if($lastTaxonID != null) {
+      	if(isset($rawArray[$this_index]['counts'][$lastTaxonID]))
+          $rawArray[$this_index]['counts'][$lastTaxonID] += $count;
+        else
+          $rawArray[$this_index]['counts'][$lastTaxonID] = $count;
+        $rawArray[$this_index]['total'] += $count;
+      }
     }
     if($lastTaxonID || $lastLocation) {
-      foreach($locationArray as $weekno => $data){
-        $locationArray[$weekno]['max'] = max($locationArray[$weekno]['max'], $locationArray[$weekno]['sampleTotal']);
-      }
       self::report_calendar_summary_processEstimates($summaryArray, $locationArray, $locationSamples[$lastLocation], $minWeekNo, $maxWeekNo, $lastTaxonID, $options);
     }
+    $warnings .= '<span style="display:none;">Estimate processing finished : '.date(DATE_ATOM).'</span>';
     if(count($summaryArray)==0)
       return $warnings.'<p>'.lang::get('No data returned for this period.').'</p>';
     $r="";
@@ -2874,14 +2864,13 @@ update_controls();
     	} else $r .= '<input type="hidden" id="outputSource" name="outputSource" value="'.
            (isset($options['includeRawData']) && $options['includeRawData'] ? "raw" : 
                (isset($options['includeSummaryData']) && $options['includeSummaryData'] ? "summary" : "estimates")).'"/>';
-    	if($userPicksFormat) {
-    		$defaultTable = !isset($options['outputFormat']) || $options['outputFormat']=='' || $options['outputFormat']=='table';
+        if($userPicksFormat) {
+            $defaultTable = !isset($options['outputFormat']) || $options['outputFormat']=='' || $options['outputFormat']=='table';
             $r .= lang::get(' as a ').'<select id="outputFormat" name="outputFormat">'.
                   '<option '.($defaultTable?'selected="selected"':'').' value="table"/>'.lang::get('table').'</option>'.
                   '<option '.(!$defaultTable?'selected="selected"':'').' value="chart"/>'.lang::get('chart').'</option>'.
                   '</select>';
-    		// TODO was name="simultaneousOutput"
-    		data_entry_helper::$javascript .= "jQuery('[name=outputFormat]').change(function(){
+            data_entry_helper::$javascript .= "jQuery('[name=outputFormat]').change(function(){
   pageURI = rebuild_page_url(pageURI, \"outputFormat\", jQuery(this).val());
   update_controls();
   switch($(this).val()) {
@@ -2907,7 +2896,9 @@ jQuery('[name=outputFormat]').change();\n";
     	}
     }
     $r .= "</div>\n";
+    $warnings .= '<span style="display:none;">Controls complete : '.date(DATE_ATOM).'</span>';
     ksort($rawArray);
+    $warnings .= '<span style="display:none;">Raw data sort : '.date(DATE_ATOM).'</span>';
     if(isset($format['chart'])){
       $seriesToDisplay=(isset($options['outputSeries']) ? explode(',', $options['outputSeries']) : 'all');
       $seriesIDs=array();
@@ -2930,6 +2921,7 @@ jQuery('[name=outputFormat]').change();\n";
       	$rawTicks[] = "\"".$rawData['date']."\"";
       }
       foreach($summaryArray as $seriesID => $summaryRow){
+        if (empty($seriesLabels[$seriesID])) continue;
         $rawValues=array();
         $summaryValues=array();
         $estimatesValues=array();
@@ -3039,6 +3031,7 @@ function replot(){
         }
         $r .= '<input type="button" class="disable-button" id="'.$options['chartID'].'-series-disable" value="'.lang::get('Hide all ').$options['rowGroupColumn']."\"/>\n";
         foreach($summaryArray as $seriesID => $summaryRow){
+          if (empty($seriesLabels[$seriesID])) continue;
           $r .= '<span class="chart-series-span"><input type="checkbox" checked="checked" id="'.$options['chartID'].'-series-'.$idx.'" name="'.$options['chartID'].'-series" value="'.$seriesID.'"/><label for="'.$options['chartID'].'-series-'.$idx.'">'.$seriesLabels[$seriesID]."</label></span>\n";
           $idx++;
           data_entry_helper::$javascript .= "\njQuery('[name=".$options['chartID']."-series]').filter('[value=".$seriesID."]').".($seriesToDisplay == 'all' || in_array($seriesID, $seriesToDisplay) ? 'attr("checked","checked");' : 'removeAttr("checked");');
@@ -3106,6 +3099,7 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
 ";
       }
       $r .= "</div>\n";
+      $warnings .= '<span style="display:none;">Output chart complete : '.date(DATE_ATOM).'</span>';
     }
     if(isset($format['table'])){
       $r .= '<div id="'.$options['tableContainerID'].'">';
@@ -3138,7 +3132,6 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
           $rawTotalRow .= '<td>'.$rawColumn['total'].'</td>';
           $rawGrandTotal += $rawColumn['total'];
         }
-        
         if(isset($options['includeTableTotalColumn']) && $options['includeTableTotalColumn']){
           $r.= '<td class="total-column">Total</td>';
         }
@@ -3171,7 +3164,6 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
         	$r.= '<tr class="totalrow"><td>Total</td>'.$rawTotalRow.
         	(isset($options['includeTableTotalColumn']) && $options['includeTableTotalColumn'] ? '<td>'.$rawGrandTotal.'</td>' : '').'</tr>';
         }
-        
         $r .= "</tbody></table>\n";
       }
       $r .= "\n<table id=\"".$options['tableID']."\" class=\"".$options['tableClass']."\" style=\"".($format['table']['display']?'':'display:none;')."\">";
@@ -3256,9 +3248,11 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
       }
       $r .= "</tbody></table>\n";
       $r .= "</div>";
+      $warnings .= '<span style="display:none;">Output table complete : '.date(DATE_ATOM).'</span>';
     }
     if(count($summaryArray)==0)
       $r .= '<p>'.lang::get('No data returned for this period.').'</p>';
+    $warnings .= '<span style="display:none;">Finish report_calendar_summary : '.date(DATE_ATOM).'</span>';
     return $warnings.$r;
   }
 
@@ -3267,15 +3261,10 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
    * @param array $records Records to scan through.
    * @param integer $locationID ID of the location to check for.
    */
-  private static function report_calendar_summary_initLocation($records, $locationID){
+  private static function report_calendar_summary_initLocation($minWeekNo, $maxWeekNo, $inWeeks){
     $locationArray= array();
-    foreach($records as $record){ // We want to set up a default entry for all weeks in which there was a walk on this location.
-      if($locationID==$record['location_id']) {
-        $weekno = $record['weekno'];
-        if(!isset($locationArray[$weekno]))
-          $locationArray[$weekno] = array('this_sample'=>-1, 'total'=>0, 'sampleTotal'=>0, 'max'=>0, 'numSamples'=>0, 'forcedZero'=>true);
-      }
-    }
+    for($weekno = $minWeekNo; $weekno <= $maxWeekNo; $weekno++)
+        $locationArray[$weekno] = array('this_sample'=>-1, 'total'=>0, 'sampleTotal'=>0, 'max'=>0, 'numSamples'=>0, 'estimates'=>0, 'summary'=>false, 'hasData'=>isset($inWeeks[$weekno]), 'forcedZero'=>isset($inWeeks[$weekno]));
     return $locationArray;
   }
 
@@ -3290,40 +3279,49 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
     *@param array $options
    */
   private static function report_calendar_summary_processEstimates(&$summaryArray, $locationArray, $numSamples, $minWeekNo, $maxWeekNo, $taxonID, $options) {
-    for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
-      if(isset($locationArray[$i])){
-        switch($options['summaryDataCombining']){
-          case 'max': $locationArray[$i]['summary'] = $locationArray[$i]['max'];
-            break;
-          case 'sample':
-            if($locationArray[$i]['numSamples'])
-              $locationArray[$i]['summary'] = ($locationArray[$i]['total'].'.0')/$locationArray[$i]['numSamples'];
-            else $locationArray[$i]['summary'] = 0;
-            break;
-          case 'location': $locationArray[$i]['summary'] = ($locationArray[$i]['total'].'.0')/count($numSamples[$i]); // will always be >=1 sample
-            break;
-          default : 
-          case 'add': $locationArray[$i]['summary'] = $locationArray[$i]['total'];
-            break;
+    switch($options['summaryDataCombining']){
+      case 'max':
+        for($i = $minWeekNo; $i <= $maxWeekNo; $i++)
+            $locationArray[$i]['summary'] = max($locationArray[$i]['max'], $locationArray[$i]['sampleTotal']);
+        break;
+      case 'sample':
+        for($i= $minWeekNo; $i <= $maxWeekNo; $i++) {
+          if($locationArray[$i]['numSamples'])
+            $locationArray[$i]['summary'] = ($locationArray[$i]['total'].'.0')/$locationArray[$i]['numSamples'];
+          else $locationArray[$i]['summary'] = 0;
+          if($locationArray[$i]['summary']>0 && $locationArray[$i]['summary']<1) $locationArray[$i]['summary']=1;
         }
-        if($locationArray[$i]['summary']>0 && $locationArray[$i]['summary']<1) $locationArray[$i]['summary']=1;
-      }
+        break;
+      case 'location':
+        for($i= $minWeekNo; $i <= $maxWeekNo; $i++) {
+      	  $count=count($numSamples[$i]);
+          if($count) $locationArray[$i]['summary'] = ($locationArray[$i]['total'].'.0')/$count;
+          else $locationArray[$i]['summary'] = 0;
+          if($locationArray[$i]['summary']>0 && $locationArray[$i]['summary']<1) $locationArray[$i]['summary']=1;
+        }
+        break;
+      default : 
+      case 'add':
+        for($i= $minWeekNo; $i <= $maxWeekNo; $i++)
+          $locationArray[$i]['summary'] = $locationArray[$i]['total'];
+        break;
     }
-    switch($options['dataRound']){
+    if($options['summaryDataCombining'] == 'sample' || $options['summaryDataCombining'] == 'location') // other 2 are interger anyway : preformance
+     switch($options['dataRound']){
       case 'nearest':
-        for($i= $minWeekNo, $foundFirst=false; $i <= $maxWeekNo; $i++)
+        for($i= $minWeekNo; $i <= $maxWeekNo; $i++)
           if($locationArray[$i]['summary']) $locationArray[$i]['summary'] = round($locationArray[$i]['summary']);
         break;
       case 'up':
-        for($i= $minWeekNo, $foundFirst=false; $i <= $maxWeekNo; $i++)
+        for($i= $minWeekNo; $i <= $maxWeekNo; $i++)
           if($locationArray[$i]['summary']) $locationArray[$i]['summary'] = ceil($locationArray[$i]['summary']);
         break;
       case 'down':
-        for($i= $minWeekNo, $foundFirst=false; $i <= $maxWeekNo; $i++)
+        for($i= $minWeekNo; $i <= $maxWeekNo; $i++)
           if($locationArray[$i]['summary']) $locationArray[$i]['summary'] = floor($locationArray[$i]['summary']);
         break;
-      default : 
-      case 'none': break;
+      case 'none':
+      default : break;
     }
     $anchors=explode(',',$options['zeroPointAnchor']);
     $firstAnchor = false;
@@ -3334,64 +3332,58 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
       $lastAnchor = $anchors[1]!='' ? $anchors[1] : false;
     for($i= $minWeekNo, $foundFirst=false; $i <= $maxWeekNo; $i++){
       if(!$foundFirst) {
-        if(isset($locationArray[$i])){
-          $locationArray[$i]['estimates'] = $locationArray[$i]['summary'];
+        if(($locationArray[$i]['hasData'])){
           if(($firstAnchor===false || $i-1>$firstAnchor) && $options['firstValue']=='half')
             $locationArray[$i-1]['estimates'] = $locationArray[$i]['summary']/2;
           $foundFirst=true;
-        } else
-          $locationArray[$i]= array('estimates'=>0, 'summary'=>false);
+        }
       }
       if($foundFirst){
        $locationArray[$i]['estimates'] = $locationArray[$i]['summary'];
-       if(!isset($locationArray[$i+1])) {
+       if(!$locationArray[$i+1]['hasData']) {
         for($j= $i+2; $j <= $maxWeekNo; $j++)
-          if(isset($locationArray[$j])) break;
+          if($locationArray[$j]['hasData']) break;
         if($j <= $maxWeekNo) { // have found another value later on, so interpolate between them
           for($m=1; $m<($j-$i); $m++)
-            $locationArray[$i+$m] = array('summary'=>false, 'estimates'=>$locationArray[$i]['summary']+$m*($locationArray[$j]['summary']-$locationArray[$i]['summary'])/($j-$i));
+            $locationArray[$i+$m]['estimates']=$locationArray[$i]['summary']+$m*($locationArray[$j]['summary']-$locationArray[$i]['summary'])/($j-$i);
           $i = $j-1;
         } else {
-          if(($lastAnchor===false || $i+1<$lastAnchor) && $options['lastValue']=='half'){
-            $locationArray[$i+1] = array('estimates'=>$locationArray[$i]['summary']/2, 'summary'=>false);;
-            $i++;
+          if(($lastAnchor===false || $i+1<$lastAnchor) && ($i-1>$firstAnchor) && $options['lastValue']=='half'){
+            $locationArray[$i+1]['estimates']= $locationArray[$i]['summary']/2;
           }
-          for($i++; $i <= $maxWeekNo; $i++)
-            $locationArray[$i]= array('estimates'=>0, 'summary'=>false);
+          $i=$maxWeekNo+1;
         }
        }
       }
     }
     switch($options['dataRound']){
       case 'nearest':
-        for($i= $minWeekNo, $foundFirst=false; $i <= $maxWeekNo; $i++)
+        for($i= $minWeekNo; $i <= $maxWeekNo; $i++)
           $locationArray[$i]['estimates'] = round($locationArray[$i]['estimates']);
         break;
       case 'up':
-        for($i= $minWeekNo, $foundFirst=false; $i <= $maxWeekNo; $i++)
+        for($i= $minWeekNo; $i <= $maxWeekNo; $i++)
           $locationArray[$i]['estimates'] = ceil($locationArray[$i]['estimates']);
         break;
       case 'down':
-        for($i= $minWeekNo, $foundFirst=false; $i <= $maxWeekNo; $i++)
+        for($i= $minWeekNo; $i <= $maxWeekNo; $i++)
           $locationArray[$i]['estimates'] = floor($locationArray[$i]['estimates']);
         break;
-      default : 
-      case 'none': break;
+      case 'none':
+      default : break;
     }
     // add the location array into the summary data.
     foreach($locationArray as $weekno => $data){
       if(isset($summaryArray[$taxonID])) {
         if(isset($summaryArray[$taxonID][$weekno])){
-          if(!$locationArray[$weekno]['forcedZero']) $summaryArray[$taxonID][$weekno]['forcedZero'] = false;
-          if($locationArray[$weekno]['summary']){
-            $summaryArray[$taxonID][$weekno]['summary'] += $locationArray[$weekno]['summary'];
-          }
-          $summaryArray[$taxonID][$weekno]['estimates'] += $locationArray[$weekno]['estimates'];
+          if(!$data['forcedZero']) $summaryArray[$taxonID][$weekno]['forcedZero'] = false;
+          $summaryArray[$taxonID][$weekno]['summary'] += $data['summary'];
+          $summaryArray[$taxonID][$weekno]['estimates'] += $data['estimates'];
         } else {
-          $summaryArray[$taxonID][$weekno] = array('summary'=>$locationArray[$weekno]['summary'], 'estimates'=>$locationArray[$weekno]['estimates'], 'forcedZero' => $locationArray[$weekno]['forcedZero']);
+          $summaryArray[$taxonID][$weekno] = array('summary'=>$data['summary'], 'estimates'=>$data['estimates'], 'forcedZero' => $data['forcedZero']);
         }
       } else {
-        $summaryArray[$taxonID] = array($weekno => array('summary'=>$locationArray[$weekno]['summary'], 'estimates'=>$locationArray[$weekno]['estimates'], 'forcedZero' => $locationArray[$weekno]['forcedZero']));
+        $summaryArray[$taxonID] = array($weekno => array('summary'=>$data['summary'], 'estimates'=>$data['estimates'], 'forcedZero' => $data['forcedZero']));
       }
     }
   }
