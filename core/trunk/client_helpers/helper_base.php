@@ -733,7 +733,9 @@ $('.ui-state-default').live('mouseout', function() {
     else {
       $fullpath = str_replace('\\', '/', realpath(__FILE__));
       $root = $_SERVER['DOCUMENT_ROOT'] . self::getRootFolder();
-      return dirname(str_replace($root, '', $fullpath)).'/';
+      $root = str_replace('\\', '/', $root);
+      $client_helper_path = dirname(str_replace($root, '', $fullpath)) . '/';
+      return $client_helper_path;
     }
   }
 
