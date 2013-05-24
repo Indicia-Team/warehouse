@@ -2686,6 +2686,7 @@ update_controls();
     $lastSample=false;
     $locationSamples = array();
     $dateList = array();
+    $weekList = array();
     // we are assuming that there can be more than one occurrence of a given taxon per sample.
     foreach($records as $recid => $record){
       // If the taxon has changed
@@ -2699,6 +2700,7 @@ update_controls();
       // this_date now points to the start of the week. Next work out the week number.
       $this_yearday = $this_date->format('z');
       $weekno = floor(($this_yearday-$weekOne_date_yearday)/7)+1;
+      $weekList[$weekno] = true;
       if(!isset($rawArray[$this_index])){
         $rawArray[$this_index] = array('weekno'=>$weekno, 'counts'=>array(), 'date'=>$record['date'], 'total'=>0);
         if (function_exists('hostsite_get_user_field') && hostsite_get_user_field('indicia_user_id')==$record['user_id'])        
@@ -2715,14 +2717,14 @@ update_controls();
     }
     $warnings .= '<span style="display:none;">Records date pre-processing complete : '.date(DATE_ATOM).'</span>';
     $count = count($records);
-    if($count>0) $locationArray = self::report_calendar_summary_initLocation($minWeekNo, $maxWeekNo, $locationSamples[$records[0]['location_id']]);
+    if($count>0) $locationArray = self::report_calendar_summary_initLocation($minWeekNo, $maxWeekNo, $locationSamples[$records[0]['location_id']], $weekList);
     $warnings .= '<span style="display:none;">Number of records processed : '.$count.' : '.date(DATE_ATOM).'</span>';
     foreach($records as $record){
       // If the taxon has changed
       if(($lastTaxonID && $lastTaxonID!=$record[$options['rowGroupID']]) ||
          ($lastLocation && $lastLocation!=$record['location_id'])) {
         self::report_calendar_summary_processEstimates($summaryArray, $locationArray, $locationSamples[$lastLocation], $minWeekNo, $maxWeekNo, $lastTaxonID, $options);
-        $locationArray = self::report_calendar_summary_initLocation($minWeekNo, $maxWeekNo, $locationSamples[$lastLocation]);
+        $locationArray = self::report_calendar_summary_initLocation($minWeekNo, $maxWeekNo, $locationSamples[$record['location_id']], $weekList);
       }
       $lastTaxonID=$record[$options['rowGroupID']];
       $seriesLabels[$lastTaxonID]=$record[$options['rowGroupColumn']];
@@ -2744,7 +2746,6 @@ update_controls();
         } else
           $locationArray[$weekno]['sampleTotal'] += $count;
         $locationArray[$weekno]['total'] += $count;
-        $locationArray[$weekno]['hasData'] = true;
         $locationArray[$weekno]['forcedZero'] = false;
       }
       $this_index = $record['date_index'];
@@ -3199,15 +3200,65 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
           $r .= "<tr class=\"datarow ".($altRow?$options['altRowClass']:'')."\">";
           $r.= '<td>'.$seriesLabels[$seriesID].'</td>';
           for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
+            $r.= '<td>';
             if(isset($summaryRow[$i])){
-              if($summaryRow[$i]['forcedZero'])
-                $r.= '<td class="'.($options['highlightEstimates'] ? 'forcedZero' : '').'">0</td>';
-              else if($summaryRow[$i]['summary'] && $summaryRow[$i]['summary'] == $summaryRow[$i]['estimates'])
-                $r.= '<td>'.$summaryRow[$i]['summary'].'</td>';
-              else $r.= '<td>'.
-                (isset($options['includeSummaryData']) && $options['includeSummaryData'] ? ($summaryRow[$i]['summary'] ? '<span class="summary">'.$summaryRow[$i]['summary'].'</span>' : '' ) : '').
-                (isset($options['includeEstimatesData']) && $options['includeEstimatesData'] ? '<span class="estimates'.($options['highlightEstimates'] ? " highlight-estimates" : '').'">'.$summaryRow[$i]['estimates'].'<span>' : '').
-                '</td>';
+              if($summaryRow[$i]['hasData']){
+                if($summaryRow[$i]['forcedZero']){
+                  if(isset($options['includeEstimatesData']) && $options['includeEstimatesData']) {
+                    if(isset($options['includeSummaryData']) && $options['includeSummaryData']) {
+                      if($summaryRow[$i]['hasEstimates'] && $summaryRow[$i]['estimates']>0) {
+                        $r.= '<span class="summary'.($options['highlightEstimates'] ? ' forcedZero' : '').'">0</span>'.
+                             '<span class="estimates'.($options['highlightEstimates'] ? ' highlight-estimates' : '').'">'.$summaryRow[$i]['estimates'].'</span>';
+                      } else {
+                        $r.= '<span class="'.($options['highlightEstimates'] ? 'forcedZero' : '').'">0</span>';
+                      }
+                    } else {
+                      if($summaryRow[$i]['hasEstimates'])
+                        $r.= '<span class="'.($options['highlightEstimates'] ? 'highlight-estimates' : '').'">'.$summaryRow[$i]['estimates'].'</span>';
+                    }
+                  } else { // no estimates implies summary
+                    $r.= '<span class="'.($options['highlightEstimates'] ? 'forcedZero' : '').'">0</span>';
+                  }
+                } else { // has real data
+                  if(isset($options['includeEstimatesData']) && $options['includeEstimatesData']) {
+                    if(isset($options['includeSummaryData']) && $options['includeSummaryData']) {
+                      if($summaryRow[$i]['hasEstimates'] && $summaryRow[$i]['summary'] != $summaryRow[$i]['estimates']) {
+                        $r.= '<span class="summary">'.$summaryRow[$i]['summary'].'</span>'.
+                             '<span class="estimates'.($options['highlightEstimates'] ? ' highlight-estimates' : '').'">'.$summaryRow[$i]['estimates'].'</span>';
+                      } else {
+                        $r.= $summaryRow[$i]['summary'];
+                      }
+                    } else {
+                      if($summaryRow[$i]['hasEstimates'])
+                        $r.= '<span class="'.($options['highlightEstimates'] && $summaryRow[$i]['summary'] != $summaryRow[$i]['estimates'] ? 'highlight-estimates' : '').'">'.$summaryRow[$i]['estimates'].'</span>';
+                    }
+                  } else { // no estimates implies summary
+                    $r.= $summaryRow[$i]['summary'];
+                  }
+                }
+              } else { // no data : summary is blank or forced to zero, need to consider estimates
+                if($summaryRow[$i]['forcedZero']){
+                  if(isset($options['includeEstimatesData']) && $options['includeEstimatesData']) {
+                    if(isset($options['includeSummaryData']) && $options['includeSummaryData']) {
+                      if($summaryRow[$i]['hasEstimates']  && $summaryRow[$i]['estimates']>0) {
+                        $r.= '<span class="summary'.($options['highlightEstimates'] ? ' forcedZero' : '').'">0</span>'.
+                             '<span class="estimates'.($options['highlightEstimates'] ? ' highlight-estimates' : '').'">'.$summaryRow[$i]['estimates'].'</span>';
+                      } else {
+                        $r.= '<span class="'.($options['highlightEstimates'] ? 'forcedZero' : '').'">0</span>';
+                      }
+                    } else {
+                      if($summaryRow[$i]['hasEstimates'])
+                        $r.= '<span class="'.($options['highlightEstimates'] ? 'highlight-estimates' : '').'">'.$summaryRow[$i]['estimates'].'</span>';
+                    }
+                  } else { // no estimates implies summary
+                    $r.= '<span class="'.($options['highlightEstimates'] ? 'forcedZero' : '').'">0</span>';
+                  }
+                } else { // has no real data
+                  if(isset($options['includeEstimatesData']) && $options['includeEstimatesData'] && $summaryRow[$i]['hasEstimates']) {
+                    $r.= '<span class="'.(isset($options['includeSummaryData']) && $options['includeSummaryData'] ? 'estimates' : '').($options['highlightEstimates'] ? ' highlight-estimates' : '').'">'.$summaryRow[$i]['estimates'].'</span>';
+                  }
+                }
+              }
               if($summaryRow[$i]['summary']){
                 $total += $summaryRow[$i]['summary'];
                 $totalRow[$i] += $summaryRow[$i]['summary'];
@@ -3216,9 +3267,8 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
               $estimatesTotal += $summaryRow[$i]['estimates'];
               $totalEstimatesRow[$i] += $summaryRow[$i]['estimates'];
               $estimatesGrandTotal += $summaryRow[$i]['estimates'];
-            } else {
-              $r.= '<td></td>';
-            }
+            } // else absolutely nothing - so leave blank.
+            $r .= '</td>';
           }
           if(isset($options['includeTableTotalColumn']) && $options['includeTableTotalColumn']){
             if(isset($options['includeSummaryData']) && $options['includeSummaryData'])
@@ -3261,10 +3311,10 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
    * @param array $records Records to scan through.
    * @param integer $locationID ID of the location to check for.
    */
-  private static function report_calendar_summary_initLocation($minWeekNo, $maxWeekNo, $inWeeks){
+  private static function report_calendar_summary_initLocation($minWeekNo, $maxWeekNo, $inWeeks, $weekList){
     $locationArray= array();
     for($weekno = $minWeekNo; $weekno <= $maxWeekNo; $weekno++)
-        $locationArray[$weekno] = array('this_sample'=>-1, 'total'=>0, 'sampleTotal'=>0, 'max'=>0, 'numSamples'=>0, 'estimates'=>0, 'summary'=>false, 'hasData'=>isset($inWeeks[$weekno]), 'forcedZero'=>isset($inWeeks[$weekno]));
+        $locationArray[$weekno] = array('this_sample'=>-1, 'total'=>0, 'sampleTotal'=>0, 'max'=>0, 'numSamples'=>0, 'estimates'=>0, 'summary'=>false, 'hasData'=>isset($inWeeks[$weekno]), 'hasEstimates'=>false, 'forcedZero'=>isset($weekList[$weekno]));
     return $locationArray;
   }
 
@@ -3333,23 +3383,29 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
     for($i= $minWeekNo, $foundFirst=false; $i <= $maxWeekNo; $i++){
       if(!$foundFirst) {
         if(($locationArray[$i]['hasData'])){
-          if(($firstAnchor===false || $i-1>$firstAnchor) && $options['firstValue']=='half')
+          if(($firstAnchor===false || $i-1>$firstAnchor) && $options['firstValue']=='half') {
             $locationArray[$i-1]['estimates'] = $locationArray[$i]['summary']/2;
+            $locationArray[$i-1]['hasEstimates'] = true;
+          }
           $foundFirst=true;
         }
       }
       if($foundFirst){
        $locationArray[$i]['estimates'] = $locationArray[$i]['summary'];
+       $locationArray[$i]['hasEstimates'] = true;
        if(!$locationArray[$i+1]['hasData']) {
         for($j= $i+2; $j <= $maxWeekNo; $j++)
           if($locationArray[$j]['hasData']) break;
         if($j <= $maxWeekNo) { // have found another value later on, so interpolate between them
-          for($m=1; $m<($j-$i); $m++)
+          for($m=1; $m<($j-$i); $m++) {
             $locationArray[$i+$m]['estimates']=$locationArray[$i]['summary']+$m*($locationArray[$j]['summary']-$locationArray[$i]['summary'])/($j-$i);
+            $locationArray[$i+$m]['hasEstimates'] = true;
+          }
           $i = $j-1;
         } else {
           if(($lastAnchor===false || $i+1<$lastAnchor) && ($i-1>$firstAnchor) && $options['lastValue']=='half'){
             $locationArray[$i+1]['estimates']= $locationArray[$i]['summary']/2;
+            $locationArray[$i+1]['hasEstimates'] = true;
           }
           $i=$maxWeekNo+1;
         }
@@ -3376,14 +3432,16 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
     foreach($locationArray as $weekno => $data){
       if(isset($summaryArray[$taxonID])) {
         if(isset($summaryArray[$taxonID][$weekno])){
-          if(!$data['forcedZero']) $summaryArray[$taxonID][$weekno]['forcedZero'] = false;
+          $summaryArray[$taxonID][$weekno]['forcedZero'] &= $data['forcedZero'];
+          $summaryArray[$taxonID][$weekno]['hasEstimates'] |= $data['hasEstimates'];
+          $summaryArray[$taxonID][$weekno]['hasData'] |= $data['hasData'];
           $summaryArray[$taxonID][$weekno]['summary'] += $data['summary'];
           $summaryArray[$taxonID][$weekno]['estimates'] += $data['estimates'];
         } else {
-          $summaryArray[$taxonID][$weekno] = array('summary'=>$data['summary'], 'estimates'=>$data['estimates'], 'forcedZero' => $data['forcedZero']);
+          $summaryArray[$taxonID][$weekno] = array('summary'=>$data['summary'], 'estimates'=>$data['estimates'], 'forcedZero' => $data['forcedZero'], 'hasEstimates' => $data['hasEstimates'], 'hasData' => $data['hasData']);
         }
       } else {
-        $summaryArray[$taxonID] = array($weekno => array('summary'=>$data['summary'], 'estimates'=>$data['estimates'], 'forcedZero' => $data['forcedZero']));
+        $summaryArray[$taxonID] = array($weekno => array('summary'=>$data['summary'], 'estimates'=>$data['estimates'], 'forcedZero' => $data['forcedZero'], 'hasEstimates' => $data['hasEstimates'], 'hasData' => $data['hasData']));
       }
     }
   }
