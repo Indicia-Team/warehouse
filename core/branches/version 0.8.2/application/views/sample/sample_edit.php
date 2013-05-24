@@ -61,7 +61,7 @@ spatial reference. The more you zoom in, the more accurate the reference will be
 $readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 echo map_helper::map_panel(array(
     'readAuth' => $readAuth,
-    'presetLayers' => array('virtual_earth'),
+    'presetLayers' => array('google_satellite', 'google_streets'),
     'editLayer' => true,
     'layers' => array(),
     'initial_lat'=>52,
