@@ -193,7 +193,7 @@ class ReportEngine {
     switch ($this->reportFormat)
     {
       case 'xml':
-        $this->reportReader = new XMLReportReader($this->report, $this->websiteIds, $this->userId, $this->sharingMode, $this->providedParams['training']);
+        $this->reportReader = new XMLReportReader($this->report, $this->websiteIds, $this->sharingMode);
         break;
       default:
         return array('error' => 'Unknown report format specified: '. $this->reportFormat);
@@ -709,15 +709,17 @@ class ReportEngine {
     // Grab the query from the report reader
     $query = $this->reportReader->getQuery();
     $this->query = $this->mergeQueryWithParams($query);
+    $this->reportReader->applyPrivilegesFilters($this->query, $this->websiteIds, $this->providedParams['training'], $this->sharingMode, $this->userId);
   }
   
   private function mergeCountQuery()
   {
     // Grab the query from the report reader
     $query = $this->reportReader->getCountQuery();
-    if ($query!==null)
+    if ($query!==null) {
       $this->countQuery = $this->mergeQueryWithParams($query, true);
-    else 
+      $this->reportReader->applyPrivilegesFilters($this->countQuery, $this->websiteIds, $this->providedParams['training'], $this->sharingMode, $this->userId);
+    } else 
       $this->countQuery = null;
   }
   
@@ -868,7 +870,7 @@ class ReportEngine {
         ->from("{$type}_attributes as a");
     if ($this->websiteIds)
       $this->reportDb
-          ->join("{$type}_attributes_websites as aw", "aw.{$type}_attribute_id", 'a.id')
+          ->join("{$type}_attributes_websites as aw", array("aw.{$type}_attribute_id" => 'a.id', 'aw.deleted' => false))
           ->join('index_websites_website_agreements as wa', 'wa.from_website_id', 'aw.website_id')
           ->in('wa.to_website_id', $this->websiteIds)
           ->where('wa.provide_for_'.$this->sharingMode, 't');

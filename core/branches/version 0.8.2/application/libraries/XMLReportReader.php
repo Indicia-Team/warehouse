@@ -43,7 +43,10 @@ class XMLReportReader_Core implements ReportReader
   private $vagueDateProcessing = 'true';
   private $download = 'OFF';
   private $surveyParam='survey_id';
-
+  private $websiteFilterField = 'w.id';
+  private $trainingFilterField = 'o.training';
+  private $createdByField;
+  
   /**
    * @var boolean Identify if we have got SQL defined in the columns array. If so we are able to auto-generate the
    * sql for the columns list.
@@ -85,11 +88,10 @@ class XMLReportReader_Core implements ReportReader
   * Constructs a reader for the specified report.
   * @param string $report Report file path
   * @param array $websiteIds List of websites to include data for
-  * @param integer $userId Id of the user requesting the report, if known. Used when $sharing=me.
   * @param string $sharing Set to reporting, verification, moderation, peer_review, data_flow or me (=user's data)
   * depending on the type of data from other websites to include in this report.
   */
-  public function __construct($report, $websiteIds, $userId=null, $sharing='reporting', $training='false')
+  public function __construct($report, $websiteIds, $sharing='reporting')
   {
     Kohana::log('debug', "Constructing XMLReportReader for report $report.");
     try
@@ -112,17 +114,17 @@ class XMLReportReader_Core implements ReportReader
                 $this->row_class = $reader->getAttribute('row_class');
                 break;
               case 'query':
-                $websiteFilterField = $reader->getAttribute('website_filter_field');
-                if ($websiteFilterField===null)
+                $this->websiteFilterField = $reader->getAttribute('website_filter_field');
+                if ($this->websiteFilterField===null)
                   // default field name for filtering against websites
-                  $websiteFilterField = 'w.id';
-                $trainingFilterField = $reader->getAttribute('training_filter_field');
-                if ($trainingFilterField===null)
+                  $this->websiteFilterField = 'w.id';
+                $this->trainingFilterField = $reader->getAttribute('training_filter_field');
+                if ($this->trainingFilterField===null)
                   // default field name for filtering training records
-                  $trainingFilterField = 'o.training';
-                if (!$createdByField = $reader->getAttribute('created_by_field'))
+                  $this->trainingFilterField = 'o.training';
+                if (!$this->createdByField = $reader->getAttribute('created_by_field'))
                   // default field name for filtering the user ID that created the record
-                  $createdByField = 'o.created_by_id';
+                  $this->createdByField = 'o.created_by_id';
                 if (!$this->samples_id_field = $reader->getAttribute('samples_id_field'))
                   // default table alias for the samples table, so we can join to the id
                   $this->samples_id_field = 's.id';
@@ -236,10 +238,6 @@ class XMLReportReader_Core implements ReportReader
         // Get any extra columns from the query data. Do this at the end so that the specified columns appear first, followed by any unspecified ones.
         $this->inferFromQuery();
       }
-      if ($this->query)
-        $this->applyPrivilegesFilters($this->query, $websiteIds, $websiteFilterField, $training, $trainingFilterField, $sharing, $userId, $createdByField);
-      if ($this->countQuery!==null)
-        $this->applyPrivilegesFilters($this->countQuery, $websiteIds, $websiteFilterField, $training, $trainingFilterField, $sharing, $userId, $createdByField);
     }
     catch (Exception $e)
     {
@@ -250,7 +248,7 @@ class XMLReportReader_Core implements ReportReader
   /**
    * Apply the website and sharing related filters to the query.
    */
-  private function applyPrivilegesFilters(&$query, $websiteIds, $websiteFilterField, $training, $trainingFilterField, $sharing, $userId, $createdByField) {
+  public function applyPrivilegesFilters(&$query, $websiteIds, $training, $sharing, $userId) {
     if ($websiteIds) {
       if (in_array('', $websiteIds)) {
         foreach($websiteIds as $key=>$value) {
@@ -260,34 +258,34 @@ class XMLReportReader_Core implements ReportReader
       }
       $idList = implode($websiteIds, ',');
       // query can either pull in the filter or just the list of website ids.
-      $filter = empty($websiteFilterField) ? "1=1" : "($websiteFilterField in ($idList) or $websiteFilterField is null)";
+      $filter = empty($this->websiteFilterField) ? "1=1" : "({$this->websiteFilterField} in ($idList) or {$this->websiteFilterField} is null)";
       $query = str_replace(array('#website_filter#', '#website_ids#'), array($filter, $idList), $query);
     } else
       // use a dummy filter to return all websites if core admin
       $query = str_replace('#website_filter#', '1=1', $query);
-    if (!empty($trainingFilterField)) {
+    if (!empty($this->trainingFilterField)) {
       if ($training==='true')
-        $query = str_replace('#sharing_filter#', "($trainingFilterField=true OR $trainingFilterField IS NULL) AND #sharing_filter#", $query); 
+        $query = str_replace('#sharing_filter#', "({$this->trainingFilterField}=true OR {$this->trainingFilterField} IS NULL) AND #sharing_filter#", $query); 
       else 
-        $query = str_replace('#sharing_filter#', "($trainingFilterField=false OR $trainingFilterField IS NULL) AND #sharing_filter#", $query); 
+        $query = str_replace('#sharing_filter#', "({$this->trainingFilterField}=false OR {$this->trainingFilterField} IS NULL) AND #sharing_filter#", $query); 
     }
     // an alternative way to inform a query about training mode....
-    $query = str_replace('#training#', $training, $query);
+    $query = str_replace('#training#', $training, $query); 
     // select the appropriate type of sharing arrangement (i.e. are we reporting, verifying, moderating etc?)
     if ($sharing==='me' && empty($userId))
       // revert to website type sharing if we have no known user Id.
       $sharing='website';
     if ($sharing==='me')
       // my data only so use the UserId if we have it. Note join to system is just a dummy to keep syntax correct.
-      $query = str_replace(array('#agreements_join#','#sharing_filter#'), array('', "$createdByField=".$userId), $query);
+      $query = str_replace(array('#agreements_join#','#sharing_filter#'), array('', "{$this->createdByField}=$userId"), $query);
     elseif (isset($idList)) {
       if ($sharing==='website') 
         // this website only
         $query = str_replace(
           array('#agreements_join#','#sharing_filter#'), 
-          array('', "$websiteFilterField in ($idList)"), 
+          array('', "{$this->websiteFilterField} in ($idList)"), 
         $query);
-      elseif (!empty($websiteFilterField)) {
+      elseif (!empty($this->websiteFilterField)) {
         // implement the appropriate sharing agreement across websites
         $sharedWebsiteIdList = self::getSharedWebsiteList($websiteIds, $sharing);
         // add a join to users so we can check their privacy preferences. This does not apply if record input
@@ -295,8 +293,8 @@ class XMLReportReader_Core implements ReportReader
         $agreementsJoin = "JOIN users privacyusers ON privacyusers.id=o.created_by_id";
         $query = str_replace(array('#agreements_join#','#sharing_filter#'), 
             array($agreementsJoin, 
-            "($websiteFilterField in ($idList) OR privacyusers.allow_share_for_$sharing=true OR privacyusers.allow_share_for_$sharing IS NULL)\n".
-            "AND $websiteFilterField in ($sharedWebsiteIdList)"), $query);
+            "({$this->websiteFilterField} in ($idList) OR privacyusers.allow_share_for_$sharing=true OR privacyusers.allow_share_for_$sharing IS NULL)\n".
+            "AND {$this->websiteFilterField} in ($sharedWebsiteIdList)"), $query);
       }
     }
     $query = str_replace('#sharing#', $sharing, $query);
