@@ -17,8 +17,8 @@
     ) ON ils.location_id=l.id
     WHERE l.deleted=false
     AND l.location_type_id=#location_type_id#
-    --AND l.public=true
-    --AND l.code not like ('%+%') 
+    AND l.public=true
+    AND l.code not like ('%+%') 
     GROUP BY l.id, l.name
     ) as l2 ON l2.id=l1.id
   </query>
@@ -41,6 +41,6 @@
         <column name="ow" visible="false" feature_style="labelOutlineWidth" sql="5" />
         <column name="fo" visible="false" feature_style="fillOpacity" sql="0" />
         <column name="sw" visible="false" feature_style="strokeWidth" sql="2" />
-        
+        <column name="fs" visible="false" feature_style="fontSize" sql="case when count>1000 then 8 else 9 end" />
   </columns>
 </report>  
