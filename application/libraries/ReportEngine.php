@@ -870,10 +870,10 @@ class ReportEngine {
         ->from("{$type}_attributes as a");
     if ($this->websiteIds)
       $this->reportDb
-          ->join("{$type}_attributes_websites as aw", array("aw.{$type}_attribute_id" => 'a.id', 'aw.deleted' => false))
+          ->join("{$type}_attributes_websites as aw", "aw.{$type}_attribute_id", 'a.id')
           ->join('index_websites_website_agreements as wa', 'wa.from_website_id', 'aw.website_id')
           ->in('wa.to_website_id', $this->websiteIds)
-          ->where('wa.provide_for_'.$this->sharingMode, 't');
+          ->where(array('wa.provide_for_'.$this->sharingMode=>'t', 'aw.deleted' => 'f'));
     $ids = array();
     $captions = array();
     $sysfuncs = array();
