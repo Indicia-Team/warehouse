@@ -2528,6 +2528,16 @@ class data_entry_helper extends helper_base {
   * records are reloaded into the correct grid. To do this, you would need to set a unique ID for each grid using the 
   * id parameter. You can combine this with the attributeIds parameter to show different columns for each grid.
   * </li>
+  * <li><b>speciesControlToUseSubSamples</b>
+  * Optional. Enables support for sub samples in the grid where input records can be allocated to different sub samples, e.g. 
+  * when inputting a list of records at different places. Default false.
+  * </li>
+  * <li><b>subSamplePerRow</b>
+  * Optional. Requires speciesControlToUseSubSamples to be set to true, then if this is also true it generates a sub-sample 
+  * per row in the grid. It is then necessary to write code which processes the submission to at least a spatial reference
+  * for each sub sample. This might be used when an occurrence attribute in the grid can be used to calculate the sub-sample's
+  * spatial reference, such as when capturing the reticules and bearing for a cetacean sighting.
+  * </li>
   * </ul>
   * @return string HTML for the species checklist input grid.
   */
@@ -2536,6 +2546,9 @@ class data_entry_helper extends helper_base {
     global $indicia_templates;
     $options = self::check_options($options);
     $options = self::get_species_checklist_options($options);
+    if ($options['subSamplePerRow'])
+      // we'll track 1 sample per grid row.
+      $smpIdx=0;
     if ($options['columns'] > 1 && $options['occurrenceImages'])
       throw new Exception('The species_checklist control does not support having more than one occurrence per row (columns option > 0) '.
           'at the same time has having the occurrenceImages option enabled.');
@@ -2598,11 +2611,10 @@ class data_entry_helper extends helper_base {
     $occAttrs = array();
     $taxonRows = array();
     $subSampleRows = array();
-    
     // Load any existing sample's occurrence data into $entity_to_load
     if (isset(self::$entity_to_load['sample:id']) && $options['useLoadedExistingRecords']===false)
       self::preload_species_checklist_occurrences(self::$entity_to_load['sample:id'], $options['readAuth'], 
-          $options['occurrenceImages'], $options['reloadExtraParams'], $subSampleRows, isset($options['speciesControlToUseSubSamples']) && $options['speciesControlToUseSubSamples']);
+          $options['occurrenceImages'], $options['reloadExtraParams'], $subSampleRows, $options['speciesControlToUseSubSamples']);
     // load the full list of species for the grid, including the main checklist plus any additional species in the reloaded occurrences.
     $taxalist = self::get_species_checklist_taxa_list($options, $taxonRows);    
     // If we managed to read the species list data we can proceed
@@ -2715,11 +2727,15 @@ class data_entry_helper extends helper_base {
           $row .= "<input type=\"hidden\" name=\"$fieldname\" id=\"$fieldname\" value=\"$options[id]\"/>";
         }
         $row .= "</td>";
-        if(isset($options['speciesControlToUseSubSamples']) && $options['speciesControlToUseSubSamples']){
+        if ($options['speciesControlToUseSubSamples']) {
           $row .= "\n<td class=\"scSampleCell\" style=\"display:none\">";
           $fieldname = "sc:$options[id]-$txIdx:$existing_record_id:occurrence:sampleIDX";
-          $row .= "<input type=\"hidden\" class=\"scSample\" name=\"$fieldname\" id=\"$fieldname\" value=\"$rowIds[smpIdx]\" />";
+          $value = $options['subSamplePerRow'] ? $smpIdx : $rowIds[$smpIdx];
+          $row .= "<input type=\"hidden\" class=\"scSample\" name=\"$fieldname\" id=\"$fieldname\" value=\"$value\" />";
           $row .= "</td>";
+          // always increment the sample index if 1 per row.
+          if ($options['subSamplePerRow'])
+            $smpIdx++;
         }
         $idx = 0;
         foreach ($occAttrControls as $attrId => $control) {
@@ -2736,7 +2752,10 @@ class data_entry_helper extends helper_base {
               $ctrlId = str_replace("sc:$loadedTxIdx:", "sc:$options[id]-$txIdx:", $loadedCtrlFieldName);
               // find out the loaded value record ID
               preg_match("/occAttr:[0-9]+:(?P<valId>[0-9]+)$/", $loadedCtrlFieldName, $matches);
-              $valId = $matches['valId'];
+              if (!empty($matches['valId']))
+                $valId = $matches['valId'];
+              else 
+                $valId = null;
             } else {
               // go for the default, which has no suffix.
               $loadedCtrlFieldName = str_replace('-idx-:', $loadedTxIdx.':'.$existing_record_id, $attributes[$attrId]['fieldname']);
@@ -2872,10 +2891,41 @@ class data_entry_helper extends helper_base {
       //nameFilter is an array containing all the parameters required to return data for each of the
       //"Choose species names available for selection" filter types 
       self::species_checklist_filter_popup($options, $nameFilter);
+      if ($options['subSamplePerRow']) {
+        // output a hidden block to contain sub-sample hidden input values.
+        $r .= '<div id="'.$options['id'].'-blocks">'.
+            self::get_subsample_per_row_hidden_inputs().
+            '</div>';
+      }
       return $r;
     } else {
       return $taxalist['error'];
     }
+  }
+  
+  /**
+  * For each subsample found in the entity to load, output a block of hidden inputs which contain the required
+  * values for the subsample.
+  */  
+  private static function get_subsample_per_row_hidden_inputs() {
+    $blocks = "";
+    if (isset(data_entry_helper::$entity_to_load)) {
+      foreach(data_entry_helper::$entity_to_load as $key => $value){
+        $a = explode(':', $key, 4);
+        if(count($a)==4 && $a[0] == 'sc' && $a[3] == 'sample:entered_sref'){
+          $geomKey = $a[0].':'.$a[1].':'.$a[2].':sample:geom';
+          $idKey = $a[0].':'.$a[1].':'.$a[2].':sample:id';
+          $deletedKey = $a[0].':'.$a[1].':'.$a[2].':sample:deleted';
+          $blocks .= '<div id="scm-'.$a[1].'-block" class="scm-block">'.
+                    '<input type="hidden" value="'.$value.'"  name="'.$key.'">'.
+                    '<input type="hidden" value="'.data_entry_helper::$entity_to_load[$geomKey].'" name="'.$geomKey.'">'.
+                    '<input type="hidden" value="'.(isset(data_entry_helper::$entity_to_load[$deletedKey]) ? data_entry_helper::$entity_to_load[$deletedKey] : 'f').'" name="'.$deletedKey.'">'.
+                    (isset(data_entry_helper::$entity_to_load[$idKey]) ? '<input type="hidden" value="'.data_entry_helper::$entity_to_load[$idKey].'" name="'.$idKey.'">' : '');          
+          $blocks .= '</div>';
+        }
+      }
+    }
+    return $blocks;
   }
   
   /**
@@ -3425,9 +3475,10 @@ $('#".$options['id']."-filter').click(function(evt) {
         }
         if ($present) {
           $ttlId = $value;
-          if(isset($options['speciesControlToUseSubSamples']) && $options['speciesControlToUseSubSamples']){
-            $smpIdx = self::$entity_to_load['sc:'.$parts[1].':'.$parts[2].':occurrence:sampleIDX'];
-          } else $smpIdx = null;
+            if ($options['speciesControlToUseSubSamples']) {
+              $smpIdx = self::$entity_to_load['sc:'.$parts[1].':'.$parts[2].':occurrence:sampleIDX'];
+            } 
+              else $smpIdx = null;
           // Find an existing row for this species that is not already linked to an occurrence
           $done=false;
           foreach($taxonRows as &$row) {
@@ -3491,8 +3542,12 @@ $('#".$options['id']."-filter').click(function(evt) {
         'reloadExtraParams' => array(),
         'useLoadedExistingRecords' => false,
         'subSpeciesColumn' => false,
-        'subSpeciesRemoveSspRank' => false
+        'subSpeciesRemoveSspRank' => false,
+        'speciesControlToUseSubSamples' => false,
+        'subSamplePerRow' => false
     ), $options);
+    // subSamplesPerRow can't be set without speciesControlToUseSubSamples
+    $options['subSamplePerRow'] = $options['subSamplePerRow'] && $options['speciesControlToUseSubSamples'];
     // subspecies columns require cached lookups to be enabled.
     $options['cacheLookup'] = $options['cacheLookup'] || $options['subSpeciesColumn'];
     if (array_key_exists('listId', $options) && !empty($options['listId'])) {
@@ -3623,7 +3678,7 @@ $('#".$options['id']."-filter').click(function(evt) {
     if (!empty($options['gridIdAttributeId'])) 
       $r .= "<input type=\"hidden\" name=\"$fieldname:occAttr:$options[gridIdAttributeId]\" id=\"$fieldname:occAttr:$options[gridIdAttributeId]\" value=\"$options[id]\"/>";
     $r .= '</td>';
-    if(isset($options['speciesControlToUseSubSamples']) && $options['speciesControlToUseSubSamples'])
+    if ($options['speciesControlToUseSubSamples'])
       $r .= '<td class="scSampleCell" style="display:none"><input type="hidden" class="scSample" name="'.
           $fieldname.':occurrence:sampleIDX" id="'.$fieldname.':occurrence:sampleIDX" value="" /></td>';
     $idx = 0;
@@ -5336,7 +5391,6 @@ if (errors.length>0) {
         $sampleRecords[$sampleIDX]['occurrences'][] = array('fkId' => 'sample_id','model' => $occ);
       }
     }
-     
     foreach ($sampleRecords as $id => $sampleRecord) {
       $occs = $sampleRecord['occurrences'];
       unset($sampleRecord['occurrences']);
