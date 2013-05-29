@@ -3323,6 +3323,7 @@ $('#".$options['id']."-filter').click(function(evt) {
     }
     // load the species names that should be initially included in the grid
     if (isset($options['listId']) && !empty($options['listId'])) {
+      $options['extraParams']['orderby'] = 'taxonomic_sort_order';
       $taxalist = self::get_population_data($options);
     } else {
       $taxalist = array();
@@ -3335,6 +3336,8 @@ $('#".$options['id']."-filter').click(function(evt) {
     if (self::$entity_to_load) {
       // copy the options array so we can modify it
       $extraTaxonOptions = array_merge(array(), $options);
+      // force load in order as input
+      unset($extraTaxonOptions['extraParams']['orderby']);
       // We don't want to filter the taxa to be added to a specific list, because if they are in the sample, 
       // then they must be included whatever.
       unset($extraTaxonOptions['extraParams']['taxon_list_id']);
