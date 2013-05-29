@@ -441,6 +441,67 @@ class data_entry_helper extends helper_base {
     return self::apply_template($options['template'], $options);
   }
 
+
+ /**
+  * Helper function to output a checkbox for controlling training mode. 
+  * Occurrences submitted in training mode can be kept apart from normal records.
+  * The output of this control can be configured using the following templates: 
+  * <ul>
+  * <li><b>training</b></br>
+  * HTML template for checkbox with hidden input.
+  * </li>
+  * </ul>
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>id</b><br/>
+  * Optional. The id to assign to the HTML control. If not assigned 'training' is used.</li>
+  * <li><b>default</b><br/>
+  * Optional. Boolean. The default value to assign to the control Defaults to true i.e to training mode. 
+  * This is overridden when reloading a record with existing data for this control.</li>
+  * <li><b>disabled</b><br/>
+  * Optional. Boolean. Determines whether the user is prevented from changing the value. 
+  * Defaults to true i.e control is disabled.</li>
+  * <li><b>class</b><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * <li><b>template</b><br/>
+  * Optional. Name of the template entry used to build the HTML for the control. Defaults to training.</li>
+  * </ul>
+  *
+  * @return string HTML to insert into the page for the checkbox control.
+  */
+  public static function training($options) {
+    // The fieldname is fixed for the specific purpose of this control
+    $options['fieldname'] = 'training';
+    // Apply default options which may be overriden by supplied values
+    $options = array_merge(array(
+      'default' => true,
+      'disabled' => true,
+      'label' => 'Training mode',
+      'helpText' => 'Records submitted in training mode are segregated from genuine records. ',
+      'template'=>'training'
+    ), $options);
+    // Apply standard options and update default value if loading existing record
+    $options = self::check_options($options);
+    // Be flexible about the value to accept as meaning checked.
+    $v = $options['default'];
+    if ($v==='on' || $v === 1 || $v === '1' || $v === 't' || $v === true) {
+      $options['checked'] = ' checked="checked"';
+      $options['default'] = 1;
+    } else {
+      $options['checked'] = '';
+      $options['default'] = 0;
+    }
+    // A disabled or unchecked checkbox sends no value so hidden input has to contain value.
+    if ($options['disabled']) {
+      $options['disabled'] = ' disabled="disabled"';
+      $options['hiddenValue'] = $options['default'];
+    } else {
+      $options['disabled'] = '';
+      $options['hiddenValue'] = 0;
+    }
+    return self::apply_template($options['template'], $options);
+  }
+
  /**
   * Helper function to generate a list of checkboxes from a Indicia core service query.
   *
