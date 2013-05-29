@@ -378,7 +378,7 @@ class report_helper extends helper_base {
             $captionLink=$caption;
           }
           $r .= "<th$fieldId class=\"$thClass$orderStyle\">$captionLink</th>\n";
-          if (isset($field['datatype'])) {
+          if (isset($field['datatype']) && !empty($caption)) {
             switch ($field['datatype']) {
               case 'text':
                 $title=lang::get("$caption text begins with ... search. Use * as a wildcard.");
@@ -958,6 +958,9 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       'seriesOptions' => array(),
       'axesOptions' => array()
     ), $options);
+    $tempOptions = self::get_report_grid_options($options);
+    $options = array_merge($tempOptions, $options);
+    $currentParamValues = self::get_report_grid_current_param_values($options);
     // @todo Check they have supplied a valid set of data & label field names
     self::add_resource('jqplot');
     $opts = array();
@@ -1008,6 +1011,11 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       if (isset($data['error']))
         // data returned must be an error message so may as well display it
         return $data['error'];
+      $r = self::params_form_if_required($data, $options, $currentParamValues);
+      // return the params form, if that is all that is being requested, or the parameters are not complete.
+      if (!isset($options['paramsOnly']) || !isset($data[0])) return $r;
+      $r .= self::build_params_form(array_merge($options, array('form'=>$data['parameterRequest'], 'defaults'=>$params)), $hasVisibleContent);
+
       $lastRequestSource = $options['dataSource'];
       $values=array();
       $xLabelsForSeries=array();
@@ -1083,7 +1091,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   $('#chartdiv').bind('jqplotDataUnhighlight', function(ev, seriesIndex, pointIndex, data) {
     $('table.jqplot-table-legend td').removeClass('highlight');
   });\n";
-    $r = '<div class="'.$options['class'].'" style="width:'.$options['width'].'; ">';
+    $r .= '<div class="'.$options['class'].'" style="width:'.$options['width'].'; ">';
     if (isset($options['title']))
       $r .= '<div class="'.$options['headerClass'].'">'.$options['title'].'</div>';
     $r .= '<div id="'.$options['id'].'" style="height:'.$options['height'].'px;width:'.$options['width'].'px; "></div>'."\n";
@@ -1847,7 +1855,7 @@ mapSettingsHooks.push(function(opts) { $setLocationJs
     if ($options['autoParamsForm'] || $options['paramsOnly']) {
       $r = '';
       // The form must use POST, because polygon parameters can be too large for GET.
-      if ($options['completeParamsForm']==true) {
+      if (isset($options['completeParamsForm']) && $options['completeParamsForm']) {
         $cls = $options['paramsInMapToolbar'] ? 'no-border' : '';
         if (!empty($options['fieldsetClass']))
           $cls .= ' '.$options['fieldsetClass'];
@@ -1872,7 +1880,7 @@ mapSettingsHooks.push(function(opts) { $setLocationJs
         // tell the params form builder to hide the ignored parameters.
         $options['paramsToHide']=$options['ignoreParams'];
       $r .= self::build_params_form(array_merge($options, array('form'=>$response['parameterRequest'], 'defaults'=>$params)), $hasVisibleContent);
-      if ($options['completeParamsForm']==true) {
+      if (isset($options['completeParamsForm']) && $options['completeParamsForm']) {
         $suffix = '<input type="submit" value="'.lang::get($options['paramsFormButtonCaption']).'" id="run-report"/>'.
             '</fieldset></form>';
       } else
