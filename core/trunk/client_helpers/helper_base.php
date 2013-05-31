@@ -62,7 +62,7 @@ $indicia_templates = array(
             // select the tab containing the first error control
             var ctrl = jQuery('[name=' + ctrlId.replace(/:/g, '\\\\:').replace(/\[/g, '\\\\[').replace(/\\]/g, '\\\\]') + ']');
             if (!tabselected && typeof tabs !=='undefined') {
-              tabs.tabs('select',ctrl.filter('input,select').parents('.ui-tabs-panel')[0].id);
+              tabs.tabs('select',ctrl.filter('input,select,textarea').parents('.ui-tabs-panel')[0].id);
               tabselected = true;
             }
             ctrl.parents('fieldset').removeClass('collapsed');
