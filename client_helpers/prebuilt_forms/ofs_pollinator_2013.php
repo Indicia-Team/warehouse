@@ -205,7 +205,7 @@ class iform_ofs_pollinator_2013 extends iform_dynamic_sample_occurrence {
         $grid .= '<tr class="dot-top"><td>Antennae varying lengths</td>'.
           self::dump_one_row(1, $taxonRows[1], $taxalist, $taxonRows, $occAttrControls, $attributes, $options).'</tr>';
       if(count($taxonRows)>2)
-        $grid .= '<tr class="top"><td rowspan="2" class="dot-right"><b>One pair of wings</b><br/>One pair of wings, usually clear<br />Wings, held out from or held along the body</td><td rowspan="2">Antennae usually short</td>'.
+        $grid .= '<tr class="top"><td rowspan="2" class="dot-right"><b>One pair of wings</b><br/>One pair of wings, usually clear<br />Wings, held out from or held along the body</td><td rowspan="2">Antennae usually short<br/><img src="'.$base.drupal_get_path('module', 'iform').'/client_helpers/prebuilt_forms/images/ofs_pollinator/short-antennae.png" alt=""></td>'.
           self::dump_one_row(2, $taxonRows[2], $taxalist, $taxonRows, $occAttrControls, $attributes, $options).'</tr>';
       if(count($taxonRows)>3)
         $grid .= '<tr class="dot-top">'.
@@ -214,7 +214,7 @@ class iform_ofs_pollinator_2013 extends iform_dynamic_sample_occurrence {
         $grid .= '<tr class="top"><td class="dot-right"><b>Two pairs of wings</b><br/>Two pairs of wings, coloured</td><td>Antennae usually long</td>'.
           self::dump_one_row(4, $taxonRows[4], $taxalist, $taxonRows, $occAttrControls, $attributes, $options).'</tr>';
       if(count($taxonRows)>5)
-        $grid .= '<tr class="dot-top"><td rowspan="2" class="dot-right">Two pairs of wings, usually clear<br/>Wings held out from or held along body</td><td rowspan="2">Antennae usually long</td>'.
+        $grid .= '<tr class="dot-top"><td rowspan="2" class="dot-right">Two pairs of wings, usually clear<br/>Wings held out from or held along body</td><td rowspan="2">Antennae usually long<br/><img src="'.$base.drupal_get_path('module', 'iform').'/client_helpers/prebuilt_forms/images/ofs_pollinator/long-antennae.png" alt=""></td>'.
           self::dump_one_row(5, $taxonRows[5], $taxalist, $taxonRows, $occAttrControls, $attributes, $options).'</tr>';
       if(count($taxonRows)>6)
         $grid .= '<tr class="dot-top">'.
