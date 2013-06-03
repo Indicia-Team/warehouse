@@ -509,7 +509,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           'caption'=>'Remembered Fields',
           'description'=>'Supply a list of field names that should be remembered in a cookie, saving re-inputting them if they are likely to repeat. '.
               'For greater flexibility use the @lockable=true option on each control instead.',
-          'type'=>'textarea'
+          'type'=>'textarea',
+          'required'=>false
         ),
         array(
           'name'=>'edit_permission',
