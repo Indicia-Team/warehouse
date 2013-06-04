@@ -1,13 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<report title="Record counts by location for an event" description="Lists locations with mappable boundary output and the number of records within them. Requires the spatial_index_builder warehouse module to be enabled.
-    This version is simpler than the summary report (it does not calculate minima and maxima) so is faster. It also requires survey and date range filters so is ideal for events such as
-    bioblitzes.">
+<report title="Species counts league for event" description="An event (date and survey) filtered league table of taxon counts by location. Requires the spatial index builder.">
   <query website_filter_field="o.website_id">
     SELECT #columns#
     FROM locations l1 
     JOIN (
-    SELECT l.id, count(o.id) as count
+    SELECT l.id, count(distinct o.taxon_meaning_id) as count
     FROM locations l
     JOIN (index_locations_samples ils 
       JOIN cache_occurrences o ON o.sample_id=ils.sample_id 
@@ -16,6 +14,7 @@
       AND o.date_start&lt;='#date_to#'
       AND o.record_status&lt;&gt;'R'
       AND o.training=false
+      AND o.website_id IN (#website_ids#)
     ) ON ils.location_id=l.id
     WHERE l.deleted=false
     AND l.location_type_id=#location_type_id#
@@ -24,6 +23,9 @@
     GROUP BY l.id, l.name
     ) as l2 ON l2.id=l1.id
   </query>
+  <order_bys>
+    <order_by>count DESC</order_by>
+  </order_bys>
   <params>
     <param name="date_from" display="Date From" datatype="date"/>
     <param name="date_to" display="Date To" datatype="date"/>
@@ -32,16 +34,9 @@
     <param name="location_type_id" display="Location Type" description="Select the location type, or leave blank to not filter by location type." datatype="lookup"
         population_call="report:library/terms/terms_list:id:term:termlist_external_key=indicia:location_types,termlist_id="/>
     </params>
-    <param name="simplifyFeatureTo" datatype="integer" default="100" />
   <columns>
         <column name="id" visible="false" sql="l1.id" />
         <column name="name" display="Site Name" sql="l1.name" />
-        <column name="boundary" display="Boundary" sql="st_astext(ST_SnapToGrid(ST_Simplify(COALESCE(l1.boundary_geom, l1.centroid_geom), #simplifyFeatureTo#), #simplifyFeatureTo#, #simplifyFeatureTo#))" visible="false" mappable="true"/>
-        <column name="value" display="No. of Records"  sql="count" feature_style="label"/>
-        <column name="oc" visible="false" feature_style="labelOutlineColor" sql="'white'" />
-        <column name="ow" visible="false" feature_style="labelOutlineWidth" sql="5" />
-        <column name="fo" visible="false" feature_style="fillOpacity" sql="0" />
-        <column name="sw" visible="false" feature_style="strokeWidth" sql="2" />
-        <column name="fs" visible="false" feature_style="fontSize" sql="case when count>1000 then 8 else 9 end" />
+        <column name="value" display="No. of Species"  sql="count"/>
   </columns>
 </report>  

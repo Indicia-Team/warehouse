@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Species, Occurrence and Image Counts" description="Gives a total number of species, occurrence and photos for a filter (e.g. a survey/date range).">
+      <query website_filter_field="o.website_id">
+      SELECT #columns#
+      FROM cache_occurrences o
+      #agreements_join#
+      #joins#
+      WHERE #sharing_filter# 
+      AND o.zero_abundance='f'
+      AND o.record_status &lt;&gt; 'R'
+      </query>
+  <params>
+    <param name="date_from" display="Date From" datatype="date">
+      <where>o.date_end &gt;= '#date_from#'</where>
+    </param>
+    <param name="date_to" display="Date To" datatype="date">
+      <where>o.date_start &lt;= '#date_to#'</where>
+    </param>
+    <param name='survey_id' display='Survey' description='Select the survey to return data for, or leave for all surveys' datatype='lookup'
+        query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title' >
+      <where>o.survey_id=#survey_id#</where>
+    </param>
+    <param name="currentUser" display="Current User ID" description="Current user's warehouse ID. If ownData=1 then used to filter the records." 
+        datatype="text" default=""/>
+    <param name="ownData" display="My data only?" datatype="checkbox">
+      <where value="1">o.created_by_id=#currentUser#</where>
+    </param>
+  </params>
+  <columns>
+        <column name="species_count" display="Species" sql="count(DISTINCT o.taxon_meaning_id)"  />
+        <column name="occurrences_count" display="Records" sql="count(DISTINCT o.id)" />
+        <column name="photos_count" display="Photos" sql="COALESCE(sum(length(images)-length(replace(images,',',''))+1), 0)" />
+  </columns>
+</report>
