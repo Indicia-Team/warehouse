@@ -33,6 +33,9 @@ require_once('user.php');
 require_once('language_utils.php');
 require_once('form_generation.php');
 
+define('HIGH_VOLUME_CACHE_TIMEOUT', 30);
+define('HIGH_VOLUME_CONTROL_CACHE_TIMEOUT', 5);
+
 class iform_dynamic {
   // Hold the single species name to be shown on the page to the user. Inherited by dynamic_sample_occurrence
   protected static $singleSpeciesName;
@@ -150,6 +153,15 @@ class iform_dynamic {
           'valueField'=>'id',
           'siteSpecific'=>true
         ),
+        array(
+          'name'=>'high_volume',
+          'caption'=>'High volume reporting',
+          'description'=>'Tick this box to enable caching which prevents reporting pages with a high number of hits from generating ' .
+              'excessive server load. Currently compatible only with reporting pages that do not integrate with the user profile.',
+          'type'=>'boolean',
+          'default' => false,
+          'required' => false
+        )
       )
     );
     return $retVal;
@@ -160,6 +172,19 @@ class iform_dynamic {
    * @return Form HTML.
    */
   public static function get_form($args, $node) {
+    data_entry_helper::$website_id=$args['website_id'];
+    if (!empty($args['high_volume']) && $args['high_volume']) {
+      // node level caching for most page hits
+      $cached = data_entry_helper::cache_get(array('node'=>$node->nid), HIGH_VOLUME_CACHE_TIMEOUT);
+      if ($cached!==false) {
+        $cached = explode('|!|', $cached);
+        data_entry_helper::$javascript = $cached[1];
+        data_entry_helper::$late_javascript = $cached[2];
+        data_entry_helper::$onload_javascript = $cached[3];
+        data_entry_helper::$required_resources = json_decode($cached[4], true);
+        return $cached[0];
+      }
+    }
     self::$node = $node;
     self::$called_class = 'iform_' . $node->iform;
     
@@ -197,6 +222,11 @@ class iform_dynamic {
           ? call_user_func(array(self::$called_class, 'getAttributes'), $args, $auth)
           : array();
       $r = call_user_func(array(self::$called_class, 'get_form_html'), $args, $auth, $attributes);      
+    }
+    if (!empty($args['high_volume']) && $args['high_volume']) {
+      $c = $r . '|!|' . data_entry_helper::$javascript . '|!|' . data_entry_helper::$late_javascript . '|!|' . 
+          data_entry_helper::$onload_javascript . '|!|' . json_encode(data_entry_helper::$required_resources);
+      data_entry_helper::cache_set(array('node'=>$node->nid), $c, HIGH_VOLUME_CACHE_TIMEOUT);
     }
     return $r;
   }
@@ -436,6 +466,11 @@ class iform_dynamic {
         }
         $parts = explode('.', str_replace(array('[', ']'), '', $component));
         $method = 'get_control_'.preg_replace('/[^a-zA-Z0-9]/', '', strtolower($component));
+        if (!empty($args['high_volume']) && $args['high_volume']) {
+          // enable control level report caching when in high_volume mode
+          $options['caching']=empty($options['caching']) ? true : $options['caching'];
+          $options['cachetimeout']=empty($options['cachetimeout']) ? HIGH_VOLUME_CONTROL_CACHE_TIMEOUT : $options['cachetimeout'];
+        }
         if (count($parts)===1 && method_exists(self::$called_class, $method)) { 
           //outputs a control for which a specific output function has been written.
           $html .= call_user_func(array(self::$called_class, $method), $auth, $args, $tabalias, $options);
