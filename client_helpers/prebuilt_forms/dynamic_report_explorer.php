@@ -214,6 +214,15 @@ class iform_dynamic_report_explorer extends iform_dynamic {
           'required' => false,
           'group'=>'Report Settings'
         ),
+        array(
+          'name'=>'high_volume',
+          'caption'=>'High volume reporting',
+          'description'=>'Tick this box to enable caching which prevents reporting pages with a high number of hits from generating ' .
+              'excessive server load. Currently compatible only with reporting pages that do not integrate with the user profile.',
+          'type'=>'boolean',
+          'default' => false,
+          'required' => false
+        )
       )
     );
   }

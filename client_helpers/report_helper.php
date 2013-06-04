@@ -1026,13 +1026,13 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       foreach ($data as $row) {
         if (isset($options['xValues']))
           // 2 dimensional data
-          $values[] = '['.$row[$options['xValues']].','.$row[$options['yValues']].']';
+          $values[] = array(self::string_or_float($row[$options['xValues']]), self::string_or_float($row[$options['yValues']]));
         else {
           // 1 dimensional data, so we should have labels. For a pie chart these are use as x data values. For other charts they are axis labels.
           if ($options['chartType']=='pie') {
-            $values[] = '["'.$row[$options['xLabels']].'",'.$row[$options['yValues']].']';
+            $values[] = array(lang::get($row[$options['xLabels']]), string_or_int($row[$options['yValues']]));
           } else {
-            $values[] = $row[$options['yValues']];
+            $values[] = self::string_or_float($row[$options['yValues']]);
             if (isset($options['xLabels']))
               $xLabelsForSeries[] = $row[$options['xLabels']];
           }
@@ -1055,8 +1055,9 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         }
       }  
       // each series will occupy an entry in $seriesData
-      $seriesData[] = '['.implode(',', $values).']'; 
+      $seriesData[] = $values;      
     }
+    
     if (isset($options['xLabels']) && $options['chartType']!='pie') {
       // make a renderer to output x axis labels
       $options['axesOptions']['xaxis']['renderer'] = '$.jqplot.CategoryAxisRenderer';
@@ -1067,7 +1068,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         'axes:'.json_encode($options['axesOptions']));
 
     // Finally, dump out the Javascript with our constructed parameters
-    self::$javascript .= "$.jqplot('".$options['id']."',  [".implode(',', $seriesData)."], \n{".implode(",\n", $opts)."});\n";
+    self::$javascript .= "$.jqplot('".$options['id']."', " . json_encode($seriesData) . ", \n{".implode(",\n", $opts)."});\n";
      //once again we only include summary report clicking functionality if user has setup the appropriate options
     if(isset($options['linkToReportPath'])) {
       //get the URL to the report to call
@@ -1097,6 +1098,15 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     $r .= '<div id="'.$options['id'].'" style="height:'.$options['height'].'px;width:'.$options['width'].'px; "></div>'."\n";
     $r .= "</div>\n";
     return $r;
+  }
+  
+  /**
+   * Json_encode puts quotes around numbers read from the db, since they end up in string objects.
+   * So, convert them back to numbers. If the value is a string, then it is run through translation
+   * and returned as a string.
+   */
+  private static function string_or_float($value) {
+    return (string)((float) $value) == $value ? (float) $value : lang::get($value);
   }
 
   /**
@@ -1238,8 +1248,10 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
             }
           }
           // output the band only if it has been triggered, or has no trigger fields specified.
-          if ($outputBand)
+          if ($outputBand) {
+            $row['imageFolder'] = self::get_uploaded_image_folder();
             $r .= self::apply_replacements_to_template($band['content'], $row);
+          }
         }
       }
       // add a footer
@@ -1391,7 +1403,11 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * </li>
   * <li><b>zoomMapToOutput</b>
   * Default true. Defines that the map will automatically zoom to show the records.
-  * </li>  
+  * </li>
+  * <li><b>featureDoubleOutlineColour</b>
+  * If set to a CSS colour class, then feature outlines will be doubled up, for example a 1 pixel dark outline
+  * over a 3 pixel light outline, creating a line halo effect which can make the map clearer.
+  * </li>
   * </ul>
   */
   public static function report_map($options) {
@@ -1401,7 +1417,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       'clickableLayersOutputDiv' => '',
       'displaySymbol'=>'vector',
       'ajax'=>false,
-      'extraParams'=>''
+      'extraParams'=>'',
+      'featureDoubleOutlineColour'=>''
     ), $options);
     $options = self::get_report_grid_options($options);
     // keep track of the columns in the report output which we need to draw the layer
@@ -1440,7 +1457,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         $defsettings = array(
           'fillColor'=> '#0000ff',
           'strokeColor'=> '#0000ff',
-          'strokeWidth'=>"\${getstrokewidth}",
+          'strokeWidth'=>empty($options['featureDoubleOutlineColour']) ? "\${getstrokewidth}" : 1,
           'fillOpacity'=>"\${getfillopacity}",
           'strokeOpacity'=>0.8,
           'pointRadius'=>5,
@@ -1497,14 +1514,16 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         if ($options['displaySymbol']!=='vector')
           $defsettings['graphicName']=$options['displaySymbol'];
         // The following function uses the strokeWidth to pad out the squares which go too small when zooming the map out. Points 
-        // always display the same size so are no problem.
-        $strokeWidthFn = "getstrokewidth: function(feature) {
-          var width=feature.geometry.getBounds().right - feature.geometry.getBounds().left,
-            strokeWidth=(width===0) ? 1 : %d - (width / feature.layer.map.getResolution());
-          return (strokeWidth<%d) ? %d : strokeWidth;
-        }";
-        $defStyleFns['getStrokeWidth'] = sprintf($strokeWidthFn, 9, 2, 2);
-        $selStyleFns['getStrokeWidth'] = sprintf($strokeWidthFn, 10, 3, 3);
+        // always display the same size so are no problem. Also, no need if using a double outline.
+        if (empty($options['featureDoubleOutlineColour'])) {
+          $strokeWidthFn = "getstrokewidth: function(feature) {
+            var width=feature.geometry.getBounds().right - feature.geometry.getBounds().left,
+              strokeWidth=(width===0) ? 1 : %d - (width / feature.layer.map.getResolution());
+            return (strokeWidth<%d) ? %d : strokeWidth;
+          }";
+          $defStyleFns['getStrokeWidth'] = sprintf($strokeWidthFn, 9, 2, 2);
+          $selStyleFns['getStrokeWidth'] = sprintf($strokeWidthFn, 10, 3, 3);
+        }
         if (isset($options['valueOutput'])) {
           foreach($options['valueOutput'] as $type => $outputdef) {
             $value = $outputdef['valueField'];
@@ -1593,7 +1612,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
           }
           self::$javascript .= 'indiciaData.geoms=['.implode(',',$geoms)."];\n";
         }
-        self::addFeaturesLoadingJs($addFeaturesJs, $defsettings, $selsettings, $defStyleFns, $selStyleFns, $options['zoomMapToOutput'] && !$options['ajax']);
+        self::addFeaturesLoadingJs($addFeaturesJs, $defsettings, $selsettings, $defStyleFns, $selStyleFns, $options['zoomMapToOutput'] && !$options['ajax'], $options['featureDoubleOutlineColour']);
       } else {
         // doing WMS reporting via GeoServer
         $replacements = array();
@@ -1750,8 +1769,9 @@ mapSettingsHooks.push(function(opts) { $setLocationJs
         $response = self::_getCachedResponse($cacheFile, $cacheTimeOut, $cacheOpts);
       }
       // no need to proxy the request, as coming from server-side
-      if (!isset($response) || $response===false)
+      if (!isset($response) || $response===false) {
         $response = self::http_post(parent::$base_url.$request, null);
+      }
       $decoded = json_decode($response['output'], true);
       if (!is_array($decoded))
         return array('error'=>print_r($response, true));
@@ -2398,7 +2418,6 @@ if (typeof mapSettingsHooks!=='undefined') {
       'weekstart' => 'weekday=7', // Default Sunday
       'weekNumberFilter' => ':'
     ), $options);
-    drupal_set_message($options['year']);
     $options["extraParams"] = array_merge(array(
       'date_from' => $options["year"].'-01-01',
       'date_to' => $options["year"].'-12-31',
@@ -2476,7 +2495,8 @@ if (typeof mapSettingsHooks!=='undefined') {
    * @param boolean $zoomToExtent If true, then the map will zoom to show the extent of the features added.
    */
   private static function addFeaturesLoadingJs($addFeaturesJs, $defsettings='',
-      $selsettings='{"strokeColor":"#ff0000","fillColor":"#ff0000","strokeWidth":2}', $defStyleFns='', $selStyleFns='', $zoomToExtent=true) {
+      $selsettings='{"strokeColor":"#ff0000","fillColor":"#ff0000","strokeWidth":2}', $defStyleFns='', $selStyleFns='', $zoomToExtent=true,
+      $featureDoubleOutlineColour='') {
     // Note that we still need the Js to add the layer even if using AJAX (when $addFeaturesJs will be empty)
     report_helper::$javascript.= "
   if (typeof OpenLayers !== \"undefined\") {
@@ -2500,9 +2520,22 @@ if (typeof mapSettingsHooks!=='undefined') {
       report_helper::$javascript .= "      indiciaData.reportlayer.addFeatures(features);\n";
       if ($zoomToExtent && !empty($addFeaturesJs))
         self::$javascript .= "      div.map.zoomToExtent(indiciaData.reportlayer.getDataExtent());\n";
+      report_helper::$javascript .= "      div.map.addLayer(indiciaData.reportlayer);\n";
+      if (!empty($featureDoubleOutlineColour)) {
+        // push a clone of the array of features onto a layer which will draw an outline.
+        report_helper::$javascript .= "
+        var defaultStyleOutlines = new OpenLayers.Style({\"strokeWidth\":5,\"strokeColor\":\"$featureDoubleOutlineColour\",
+            \"fillOpacity\":0});
+        var styleMap = new OpenLayers.StyleMap({'default' : defaultStyleOutlines});
+        indiciaData.outlinelayer = new OpenLayers.Layer.Vector('Outlines', {styleMap: defaultStyleOutlines});
+        outlinefeatures=[];
+        $.each(features, function(idx, f) { outlinefeatures.push(f.clone()); });      
+        indiciaData.outlinelayer.addFeatures(outlinefeatures);
+        div.map.addLayer(indiciaData.outlinelayer);
+        div.map.setLayerIndex(indiciaData.outlinelayer, 1);\n";
+      }
     }
-    self::$javascript .= "      div.map.addLayer(indiciaData.reportlayer);
-    });
+    self::$javascript .= "    });
   }\n";
   }
 

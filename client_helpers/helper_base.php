@@ -278,7 +278,7 @@ class helper_base extends helper_config {
   /**
    * @var integer Website ID, stored here to assist with caching.
    */
-  protected static $website_id = null;
+  public static $website_id = null;
 
   /**
    * @var Array List of resources that have been identified as required by the controls used. This defines the
@@ -1817,6 +1817,35 @@ indiciaData.windowLoaded=false;
     $template = str_replace('{class}', $indicia_templates['error_class'], $indicia_templates['validation_message']);
     $template = str_replace('{for}', $fieldname, $template);
     return str_replace('{error}', lang::get($error), $template);
+  }
+  
+  /**
+   * Utility function for external access to the iform cache.
+   * @param array $cacheOpts Options array which defines the cache "key", i.e. the unique set of options being cached.
+   * @param integer $cacheTimeout Timeout in seconds, if overriding the default cache timeout.
+   * @return mixed String read from the cache, or false if not read.
+   */   
+  public function cache_get($cacheOpts, $cacheTimeout=false) {
+    if (!$cacheTimeout)
+      $cacheTimeout = self::_getCacheTimeOut($options);
+    $cacheFolder = data_entry_helper::relative_client_helper_path() . (isset(data_entry_helper::$cache_folder) ? data_entry_helper::$cache_folder : 'cache/');
+    $cacheFile = data_entry_helper::_getCacheFileName($cacheFolder, $cacheOpts, $cacheTimeout);
+    $r = data_entry_helper::_getCachedResponse($cacheFile, $cacheTimeout, $cacheOpts);
+    return $r === false ? $r : $r['output'];
+  }
+  
+  /**
+   * Utility function for external writes to the iform cache. 
+   * @param array $cacheOpts Options array which defines the cache "key", i.e. the unique set of options being cached.
+   * @param string $toCache String data to cache.
+   * @param integer $cacheTimeout Timeout in seconds, if overriding the default cache timeout.
+   */   
+  public function cache_set($cacheOpts, $toCache, $cacheTimeout=false) {
+    if (!$cacheTimeout)
+      $cacheTimeout = self::_getCacheTimeOut($options);
+    $cacheFolder = data_entry_helper::relative_client_helper_path() . (isset(data_entry_helper::$cache_folder) ? data_entry_helper::$cache_folder : 'cache/');
+    $cacheFile = data_entry_helper::_getCacheFileName($cacheFolder, $cacheOpts, $cacheTimeout);
+    self::_cacheResponse($cacheFile, array('output' => $toCache), $cacheOpts);
   }
   
   /**
