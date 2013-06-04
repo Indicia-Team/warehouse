@@ -186,11 +186,11 @@ class iform_ofs_pollinator_2013 extends iform_dynamic_sample_occurrence {
       $grid .= "<thead class=\"ui-widget-header\"><tr><th>Wings</th><th>Other Features</th>";
       for ($i=0; $i<$options['columns']; $i++) {
         $grid .= self::get_species_checklist_col_header($options['id']."-species-$i", lang::get('species_checklist.species'), $visibleColIdx, $options['colWidths'], '', '');
-        $grid .= self::get_species_checklist_col_header($options['id']."-present-$i", lang::get('species_checklist.present'), $visibleColIdx, $options['colWidths'], ' style="display:none"', '');
+        $grid .= self::get_species_checklist_col_header($options['id']."-present-$i", lang::get('species_checklist.present'), $visibleColIdx, $options['colWidths'], 'display:none', '');
         foreach ($occAttrs as $idx=>$a){
           $filename = preg_replace('/\s+/', '-', strtolower($a));
           $grid .= self::get_species_checklist_col_header($options['id']."-attr$idx-$i", lang::get($a), $visibleColIdx, $options['colWidths'], '',
-                   '<br /><img src="'.$base.drupal_get_path('module', 'iform').'/client_helpers/prebuilt_forms/images/ofs_pollinator/'.$filename.'.png" alt="['.$a.' Image]">') ;
+                   $base.drupal_get_path('module', 'iform').'/client_helpers/prebuilt_forms/images/ofs_pollinator/'.$filename.'.png') ;
         }
       }
       $grid .= '</tr></thead>';
@@ -205,7 +205,7 @@ class iform_ofs_pollinator_2013 extends iform_dynamic_sample_occurrence {
         $grid .= '<tr class="dot-top"><td>Antennae varying lengths</td>'.
           self::dump_one_row(1, $taxonRows[1], $taxalist, $taxonRows, $occAttrControls, $attributes, $options).'</tr>';
       if(count($taxonRows)>2)
-        $grid .= '<tr class="top"><td rowspan="2" class="dot-right"><b>One pair of wings</b><br/>One pair of wings, usually clear<br />Wings, held out from or held along the body</td><td rowspan="2">Antennae usually short<br/><img src="'.$base.drupal_get_path('module', 'iform').'/client_helpers/prebuilt_forms/images/ofs_pollinator/short-antennae.png" alt=""></td>'.
+        $grid .= '<tr class="top"><td rowspan="2" class="dot-right"><b>One pair of wings</b><br/>One pair of wings, usually clear<br />Wings, held out from or held along the body</td><td rowspan="2" class="scOtherFeaturesCell" >Antennae usually short<br/><img src="'.$base.drupal_get_path('module', 'iform').'/client_helpers/prebuilt_forms/images/ofs_pollinator/short-antennae.png" alt=""></td>'.
           self::dump_one_row(2, $taxonRows[2], $taxalist, $taxonRows, $occAttrControls, $attributes, $options).'</tr>';
       if(count($taxonRows)>3)
         $grid .= '<tr class="dot-top">'.
@@ -214,7 +214,7 @@ class iform_ofs_pollinator_2013 extends iform_dynamic_sample_occurrence {
         $grid .= '<tr class="top"><td class="dot-right"><b>Two pairs of wings</b><br/>Two pairs of wings, coloured</td><td>Antennae usually long</td>'.
           self::dump_one_row(4, $taxonRows[4], $taxalist, $taxonRows, $occAttrControls, $attributes, $options).'</tr>';
       if(count($taxonRows)>5)
-        $grid .= '<tr class="dot-top"><td rowspan="2" class="dot-right">Two pairs of wings, usually clear<br/>Wings held out from or held along body</td><td rowspan="2">Antennae usually long<br/><img src="'.$base.drupal_get_path('module', 'iform').'/client_helpers/prebuilt_forms/images/ofs_pollinator/long-antennae.png" alt=""></td>'.
+        $grid .= '<tr class="dot-top"><td rowspan="2" class="dot-right">Two pairs of wings, usually clear<br/>Wings held out from or held along body</td><td rowspan="2" class="scOtherFeaturesCell" >Antennae usually long<br/><img src="'.$base.drupal_get_path('module', 'iform').'/client_helpers/prebuilt_forms/images/ofs_pollinator/long-antennae.png" alt=""></td>'.
           self::dump_one_row(5, $taxonRows[5], $taxalist, $taxonRows, $occAttrControls, $attributes, $options).'</tr>';
       if(count($taxonRows)>6)
         $grid .= '<tr class="dot-top">'.
@@ -235,10 +235,14 @@ class iform_ofs_pollinator_2013 extends iform_dynamic_sample_occurrence {
     }
   }
   
-  private static function get_species_checklist_col_header($id, $caption, &$colIdx, $colWidths, $attrs='', $img='') {
-  	$width = count($colWidths)>$colIdx && $colWidths[$colIdx] ? ' style="width: '.$colWidths[$colIdx].'%;"' : '';
-  	if (!strpos($attrs, 'display:none')) $colIdx++;
-  	return "<th id=\"$id\"$attrs$width>".$caption.$img."</th>";
+  private static function get_species_checklist_col_header($id, $caption, &$colIdx, $colWidths, $styles='', $img='') {
+  	if ($styles != 'display:none') {
+  		$colIdx++;
+  	    $styles .= count($colWidths)>$colIdx && $colWidths[$colIdx] ? ' width: '.$colWidths[$colIdx].'%;"' : '';
+  	    $styles .= $img!='' ? ' background-image:url(\''.$img.'\'); background-size: cover; height: 80px; text-align: center;' : '';
+  	    $spanStyle = $img!='' ? ' style="background-color: white;"' : '';
+  	}
+  	return "<th id=\"$id\" style=\"$styles\"><span $spanStyle>".$caption."</span></th>";
   }
   
   private function dump_one_row($txIdx, $rowIds, $taxalist, $taxonRows, $occAttrControls, $attributes, $options)
@@ -261,7 +265,7 @@ class iform_ofs_pollinator_2013 extends iform_dynamic_sample_occurrence {
   				'preferred_name' => $firstColumnTaxon['preferred_taxon'],
   				'common' => $firstColumnTaxon['default_common_name']
   		);
-  	$firstColumnTaxon['taxonComp'] = preg_replace('/\s+/', '-', strtolower($firstColumnTaxon['taxon']));
+  	$firstColumnTaxon['taxonComp'] = preg_replace('/\s+|\//', '-', strtolower($firstColumnTaxon['taxon']));
   	// Get the cell content from the taxon_label template
   	$firstCell = data_entry_helper::mergeParamsIntoTemplate($firstColumnTaxon, 'taxon_label');
   	// Now create the table cell to contain this.
