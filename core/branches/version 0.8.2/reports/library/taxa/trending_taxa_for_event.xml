@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Trending people for an event" description="Gives a list of top 10 recent contributors, with their number of records. Ideal for populating
+        a 'trends cloud'.">
+      <query website_filter_field="o.website_id">
+      SELECT COALESCE(default_common_name, preferred_taxon) as species, records, greatest(11, cast((15 - (sqrt(#records_to_scan#) / sqrt(records)))*2.5 as integer)) as font_size 
+      FROM (
+        SELECT default_common_name, preferred_taxon, count(id) as records
+        FROM (SELECT co.id, co.default_common_name, co.preferred_taxon
+          FROM cache_occurrences co
+          WHERE co.survey_id=#survey_id#
+          AND co.date_start&gt;='#date_from#' 
+          AND co.date_start&lt;='#date_to#'
+          ORDER BY id DESC
+          LIMIT #records_to_scan#) list
+        GROUP BY default_common_name, preferred_taxon
+        ORDER BY count(id) DESC
+        LIMIT #recorders_to_return#
+      ) AS list ORDER BY COALESCE(default_common_name, preferred_taxon) ASC
+      </query>
+  <params>
+    <param name='survey_id' display='Survey' description='Select the survey to return data for, or leave for all surveys' datatype='lookup'
+        query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title'/>
+    <param name="date_from" display="Date From" datatype="date"/>
+    <param name="date_to" display="Date To" datatype="date"/>
+    <param name="records_to_scan" datatype="integer" default="1000" />
+    <param name="recorders_to_return" datatype="integer" default="15" />
+  </params>
+</report>

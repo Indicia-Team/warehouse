@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Group counts for an event" description="Gives the count of species groups recorded at an event.">
+      <query website_filter_field="o.website_id">
+      (SELECT taxon_group, count(*) as count
+      FROM cache_occurrences o
+      WHERE o.survey_id=#survey_id#
+      AND o.date_start&gt;='#date_from#' 
+      AND o.date_start&lt;'#date_to#'
+      GROUP BY taxon_group
+      ORDER BY count(*) DESC
+      LIMIT #top_n_groups_to_include#)
+      UNION
+      SELECT 'Others', sum(count) FROM (
+        SELECT taxon_group, count(*)
+        FROM cache_occurrences o
+        WHERE o.survey_id=#survey_id#
+        AND o.date_start&gt;='#date_from#' 
+        AND o.date_start&lt;='#date_to#'
+        GROUP BY taxon_group
+        ORDER BY count(*) DESC
+        OFFSET #top_n_groups_to_include#
+      ) as sub
+      ORDER BY taxon_group
+      </query>
+  <params>
+    <param name='survey_id' display='Survey' description='Select the survey to return data for, or leave for all surveys' datatype='lookup'
+        query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title'/>      
+    <param name="date_from" display="Date From" datatype="date"/>
+    <param name="date_to" display="Date To" datatype="date"/>
+    <param name="top_n_groups_to_include" datatype="integer" default="8" />
+  </params>
+</report>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="Species counts league for event" description="An event (date and survey) filtered league table of taxon counts by warehouse user.">
+  <query website_filter_field="o.website_id">
+    SELECT #columns#
+    FROM people p
+    JOIN users u ON u.person_id=p.id AND u.deleted=false
+    JOIN cache_occurrences o ON o.created_by_id=u.id
+      AND o.survey_id=#survey_id#
+      AND o.date_start&gt;='#date_from#' 
+      AND o.date_start&lt;='#date_to#'
+      AND o.record_status&lt;&gt;'R'
+      AND o.website_id IN (#website_ids#)
+      AND o.training=false
+    WHERE p.deleted=false
+  </query>
+  <order_bys>
+    <order_by>value DESC</order_by>
+  </order_bys>
+  <params>
+    <param name="date_from" display="Date From" datatype="date"/>
+    <param name="date_to" display="Date To" datatype="date"/>
+    <param name="survey_id" display="Survey" description="Select the survey, or leave for all surveys" datatype="lookup"
+        population_call="direct:survey:id:title"/>
+  </params>
+  <columns>
+        <column name="id" visible="false" sql="u.id" />
+        <column name="name" display="Recorder" sql="COALESCE(p.first_name || ' ', '') || p.surname" />
+        <column name="value" display="No. of Species"  sql="COUNT(DISTINCT o.taxon_meaning_id)" aggregate="true"/>
+  </columns>
+</report>  
