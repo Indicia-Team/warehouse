@@ -29,6 +29,7 @@ include_once 'dynamic.en.php';
 $custom_terms = array_merge($custom_terms, array(
 		'Overall Comment' => 'Did you make any additional observations?',
 		'LANG_SRef_Label' => 'Grid Ref',
-		'LANG_Georef_Label' => 'Search for farm'
+		'LANG_Georef_Label' => 'Search for farm',
+		'species_checklist.species' => 'Insect group'
   )
 );
