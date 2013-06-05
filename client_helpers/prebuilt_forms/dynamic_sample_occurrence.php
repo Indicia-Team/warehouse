@@ -282,6 +282,27 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           'siteSpecific'=>true
         ),
         array(
+          'fieldname'=>'copy_species_row_data_to_new_rows',
+          'label'=>'New species grid rows use previous row\'s data',
+          'helpText'=>'Use this option to enable newly added rows on the species grid to have their default data '.
+              'taken from the previous row rather than being initially blank. Use the "Columns to include" option '.
+              'to specify which columns you wish to include. The data is copied automatically when the new row is '.
+              'created and also when edits are made to the previous row.',
+          'type'=>'checkbox',
+          'default'=>false,
+          'required'=>false,
+          'group'=>'Species',
+        ),
+        array(
+          'name'=>'previous_row_columns_to_include',
+          'caption'=>'Columns to include',
+          'description'=>'Comma seperated list of columns you wish to include when using the "New species grid rows use previous row\'s data" option. ' .
+                'Non-case or white space sensitive. Any unrecognised columns are ignored and the images column cannot be copied.', 
+          'type' => 'textarea',
+          'required'=>false,
+          'group'=>'Species'
+        ),
+        array(
           'fieldname' => 'user_controls_taxon_filter',
           'label' => 'User can filter the Extra Species List',
           'helpText' => 'Tick this box to enable a filter button in the species column title which allows the user to control '.
@@ -1223,7 +1244,9 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         'cacheLookup' => $args['cache_lookup'],
         'speciesNameFilterMode' => self::getSpeciesNameFilterMode($args),
         'userControlsTaxonFilter' => isset($args['user_controls_taxon_filter']) ? $args['user_controls_taxon_filter'] : false,
-        'subSpeciesColumn' => $args['sub_species_column']
+        'subSpeciesColumn' => $args['sub_species_column'],
+        'copyDataFromPreviousRow' => !empty($args['copy_species_row_data_to_new_rows']) && $args['copy_species_row_data_to_new_rows'],
+        'previousRowColumnsToInclude' => empty($args['previous_row_columns_to_include']) ? '' : $args['previous_row_columns_to_include']
     ), $options);
     if ($groups=hostsite_get_user_field('taxon_groups')) {
       $species_ctrl_opts['usersPreferredGroups'] = unserialize($groups);
