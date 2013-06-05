@@ -86,6 +86,14 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
         }
         break;
     }
+    //When the user moves around the grid we need to call the function that copies data into a new row 
+    //from the previous row if that option is set to be used on the edit tab.
+    //$(this).closest('table').attr('id') gets the gridId for use in the option check.
+    if (indiciaData['copyDataFromPreviousRow-'+$(this).closest('table').attr('id')] == true) {
+      if (deltaX + deltaY !== 0) {
+        changeIn2ndToLastRow(this); 
+      }
+    }
     if (deltaX !== 0) {
       var inputs = $(this).closest('table').find(':input:visible');
       // timeout necessary to allow keyup to occur on correct control
@@ -176,7 +184,7 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
       // auto-check the row
       checkbox=$(row).find('.scPresenceCell input.scPresence');
       checkbox.attr('checked', 'checked');
-      // store the ttlId
+      // store the ttlId 
       checkbox.val(data.id);
       // Setup a subspecies picker if this option is enabled. Since we don't know for sure if this is matching the 
       // last row in the grid (as the user might be typing ahead), use the presence checkbox to extract the rownum.
@@ -185,6 +193,11 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
       createSubSpeciesList(url, data.preferred_taxa_taxon_list_id, data.preferred_name, lookupListId, subSpeciesCellId, readAuth, 0);
       // Finally, a blank row is added for the next record
       makeSpareRow(gridId, readAuth, lookupListId, url, null, true);
+      //When user selects a taxon then the new row is created, we want to copy data into that new row from previous row automatically.
+      //when the option to do so is set.
+      if (indiciaData['copyDataFromPreviousRow-'+gridId] == true) {
+        species_checklist_add_another_row(gridId);
+      }
       // Allow forms to hook into the event of a new row being added
       $.each(hook_species_checklist_new_row, function(idx, fn) {
         fn(data); 
@@ -238,7 +251,7 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
       nonce: readAuth.nonce,
       taxon_list_id: lookupListId
     };
-    if (typeof indiciaData['taxonExtraParams-'+gridId]!=="undefined") {
+    if (typeof indiciaData['taxonExtraParams-'+gridId]!=="undefined") { 
       $.extend(extraParams, indiciaData['taxonExtraParams-'+gridId]);
     }
     $(newRow).find('input,select').keydown(keyHandler);
@@ -493,4 +506,85 @@ function SetHtmlIdsOnSubspeciesChange(subSpeciesId) {
   if (subSpeciesValue) {
     jQuery("#"+presentCellSelector).val(subSpeciesValue);
   }
+}
+
+//When working with data in individual occurrence attribute columns, we need to get a nice unique clean class for that column
+//to work with in selectors we want to use. So we just need to grab the class that starts 'sc'.
+function getScClassForColumnCellInput(input) {
+  //get the class for the cell
+  var classesArray = $(input).attr('class').split(/\s+/),
+    //for our purposes we are only interested in the classes beginning sc
+    theInputClass =  classesArray.filter(function(value) {
+      if (value.substr(0,2)=='sc')
+        return value;
+    });
+  if (theInputClass.length>0) {
+    return theInputClass[0];
+  } 
+  else {
+    return false;
+  }
+}
+
+//When the user edits the second last row, then copy the data from the changed cell
+//into the new row.
+function changeIn2ndToLastRow(input) {
+  //get user specified columns to include in the copy
+  var columnsToInclude = indiciaData.previousRowColumnsToInclude.split(",");
+  //get rid of all of the spacing and capital letters
+  for (i=0; i<columnsToInclude.length;i++) {
+    columnsToInclude[i] = 'sc'+columnsToInclude[i].replace(/ /g,'').toLowerCase();
+  }
+  
+  var classToUse = getScClassForColumnCellInput(input),
+      gridId = $(input).closest('table').attr('id'),
+      $newRow = $('table#'+gridId + ' tr.scClonableRow'),
+      //The '.added-row:first' check is there
+      //as the user might of added an image-row which we need to ignore
+      $previousRow = $newRow.prevAll(".added-row:first");
+  //Copy data from the 2nd last row into the new row only if the column 
+  //is in the user's options
+  if (classToUse && ($.inArray(classToUse.toLowerCase(), columnsToInclude)>-1)) {
+    $newRow.find('.'+classToUse).val($previousRow.find('.'+classToUse).val());
+  }
+}
+
+// This proxies the above method so that it can be called from an event with this set to the input, rather
+// than directly passing the input as a parameter.
+function changeIn2ndToLastRowProxy() {
+  changeIn2ndToLastRow(this);
+}
+
+//function to copy the values for a new row from the previous row as the new row is added.
+function species_checklist_add_another_row(gridId) {
+  //get user specified columns to include in the copy
+  var columnsToInclude = indiciaData.previousRowColumnsToInclude.split(",");
+  //get rid of all of the spacing and capital letters
+  for (i=0; i<columnsToInclude.length;i++) {
+    columnsToInclude[i] = 'sc'+columnsToInclude[i].replace(/ /g,'').toLowerCase();
+  }
+  
+  var $newRow = $('table#'+gridId + ' tr.scClonableRow');
+  //Get the previous row to the new row
+  $previousRow = $newRow.prevAll(".added-row:first");
+    
+  //cycle through each input element on the new row
+  $newRow.find(':input').each(function(){
+    //Get a clean class to work with for the column
+    var classToUse = getScClassForColumnCellInput(this);
+    //Only continue if the column is part of the user's options.
+    if (classToUse  && ($.inArray(classToUse.toLowerCase(), columnsToInclude)>-1)) {
+      //Bind the cell in the previous cell so that when it is changed the new row will update
+      $previousRow.find('.'+classToUse).bind('change', changeIn2ndToLastRowProxy);
+      //We set the value for the new row from the previous row if there is a value set on the previous row cell
+      //and the user has included that column in their options. (inArray reurns -1 for items not found)
+      if ($previousRow.find('.'+classToUse).val() && ($.inArray(classToUse.toLowerCase(), columnsToInclude)>-1)) {
+        $(this).val($previousRow.find('.'+classToUse).val());
+      }
+      //We need to unbind the 3rd last row as we no longer what changes for that cell to affect the last row.
+      $previousRow.prevAll(".added-row:first").find('.'+classToUse).unbind('change', changeIn2ndToLastRowProxy);
+    }
+    
+  });
+  
 }

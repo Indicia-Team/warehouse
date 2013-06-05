@@ -2538,6 +2538,16 @@ class data_entry_helper extends helper_base {
   * for each sub sample. This might be used when an occurrence attribute in the grid can be used to calculate the sub-sample's
   * spatial reference, such as when capturing the reticules and bearing for a cetacean sighting.
   * </li>
+  * <li><b>copyDataFromPreviousRow</b>
+  * Optional. When enabled, the system will copy data from the previous row into new rows on the species grid. The data is copied
+  * automatically when the new row is created and also when edits are made to the previous row. The columns to copy are determined 
+  * by the previousRowColumnsToInclude option. 
+  * </li>
+  * <li><b>previousRowColumnsToInclude</b>
+  * Optional. Requires copyDataFromPreviousRow to be set to true. Allows the user to specify which columns of data from the previous 
+  * row will be copied into a new row on the species grid. Comma separated list of column titles, non-case or white space sensitive.
+  * Any unrecognised columns are ignored and the images column cannot be copied.
+  * </li>
   * </ul>
   * @return string HTML for the species checklist input grid.
   */
@@ -2580,6 +2590,11 @@ class data_entry_helper extends helper_base {
       }
     }
     self::$javascript .= "indiciaData['rowInclusionCheck-".$options['id']."'] = '".$options['rowInclusionCheck']."';\n";
+    self::$javascript .= "indiciaData['copyDataFromPreviousRow-".$options['id']."'] = '".$options['copyDataFromPreviousRow']."';\n";
+    if ($options['copyDataFromPreviousRow']) {
+      self::$javascript .= "indiciaData.previousRowColumnsToInclude = '".$options['previousRowColumnsToInclude']."';\n";
+      self::$javascript .= "indiciaData.langAddAnother='" . lang::get('Add another') . "';\n";
+    }
     if ($options['occurrenceImages']) {
       self::add_resource('plupload');
       // store some globals that we need later when creating uploaders
@@ -3544,7 +3559,9 @@ $('#".$options['id']."-filter').click(function(evt) {
         'subSpeciesColumn' => false,
         'subSpeciesRemoveSspRank' => false,
         'speciesControlToUseSubSamples' => false,
-        'subSamplePerRow' => false
+        'subSamplePerRow' => false,
+        'copyDataFromPreviousRow' => false,
+        'previousRowColumnsToInclude' => ''
     ), $options);
     // subSamplesPerRow can't be set without speciesControlToUseSubSamples
     $options['subSamplePerRow'] = $options['subSamplePerRow'] && $options['speciesControlToUseSubSamples'];
@@ -3706,7 +3723,7 @@ $('#".$options['id']."-filter').click(function(evt) {
     }
     if (isset($options['occurrenceSensitivity']) && $options['occurrenceSensitivity']) {
       $r .= '<td class="ui-widget-content scSCell" headers="'.$options['id'].'-sensitivity-0">'.
-          self::select(array('fieldname'=>"$fieldname:occurrence:sensitivity_precision",
+          self::select(array('fieldname'=>"$fieldname:occurrence:sensitivity_precision", 'class'=>'scSensitivity',
               'lookupValues' => array('100'=>lang::get('Blur to 100m'), '1000'=>lang::get('Blur to 1km'), '2000'=>lang::get('Blur to 2km'), 
                   '10000'=>lang::get('Blur to 10km'), '100000'=>lang::get('Blur to 100km')),
               'blankText' => lang::get('Not sensitive'))).
