@@ -107,7 +107,7 @@ class iform_ofs_pollinator_2013 extends iform_dynamic_sample_occurrence {
   	
   	});";
   	 
-  	return '<div id="selected-farm" ></div>';
+  	return '<div id="selected-farm" ></div><input type="hidden" name="sample:location_id" id="sample_location_id" />';
   	 
   }
   /**
