@@ -451,7 +451,7 @@ $.extend($.validator, {
 			// select all valid inputs inside the form (no submit or reset buttons)
 			return $(this.currentForm)
 			.find("input, select, textarea")
-			.not(":submit, :reset, :image, [disabled]")
+			.not(":submit, :reset, :image, :file, [disabled]")
 			.not( this.settings.ignore )
 			.filter(function() {
 				!this.name && validator.settings.debug && window.console && console.error( "%o has no name assigned", this);
