@@ -1014,7 +1014,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       $r = self::params_form_if_required($data, $options, $currentParamValues);
       // return the params form, if that is all that is being requested, or the parameters are not complete.
       if (!isset($options['paramsOnly']) || !isset($data[0])) return $r;
-      $r .= self::build_params_form(array_merge($options, array('form'=>$data['parameterRequest'], 'defaults'=>$params)), $hasVisibleContent);
+      if (isset($data['parameterRequest']))
+        $r .= self::build_params_form(array_merge($options, array('form'=>$data['parameterRequest'], 'defaults'=>$params)), $hasVisibleContent);
 
       $lastRequestSource = $options['dataSource'];
       $values=array();
