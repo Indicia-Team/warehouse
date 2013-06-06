@@ -150,7 +150,7 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
     };
     
     handleSelectedTaxon = function(event, data, value) {
-      var taxonCell, checkbox, rowNum, row, label, subSpeciesCellId, regex;
+      var taxonCell, checkbox, rowId, row, label, subSpeciesCellId, regex;
       //As soon as the user selects a species, we need to save its id as otherwise the information is lost. 
       //This is used if the user selects a sub-species, but then selects the blank option again, we can then use the main species id
       mainSpeciesValue = value;
@@ -187,9 +187,9 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
       // store the ttlId 
       checkbox.val(data.id);
       // Setup a subspecies picker if this option is enabled. Since we don't know for sure if this is matching the 
-      // last row in the grid (as the user might be typing ahead), use the presence checkbox to extract the rownum.
-      rowNum = checkbox[0].id.match(/sc:([a-z\-_]+-)?(\d+)/)[2];
-      subSpeciesCellId = 'sc:' + rowNum + '::occurrence:subspecies';
+      // last row in the grid (as the user might be typing ahead), use the presence checkbox to extract the row unique ID.
+      rowId = checkbox[0].id.match(/sc:([a-z0-9\-]+)/)[1];
+      subSpeciesCellId = 'sc:' + rowId + '::occurrence:subspecies';
       createSubSpeciesList(url, data.preferred_taxa_taxon_list_id, data.preferred_name, lookupListId, subSpeciesCellId, readAuth, 0);
       // Finally, a blank row is added for the next record
       makeSpareRow(gridId, readAuth, lookupListId, url, null, true);
