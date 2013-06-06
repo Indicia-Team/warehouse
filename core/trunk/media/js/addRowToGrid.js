@@ -530,14 +530,14 @@ function getScClassForColumnCellInput(input) {
 //into the new row.
 function changeIn2ndToLastRow(input) {
   //get user specified columns to include in the copy
-  var columnsToInclude = indiciaData.previousRowColumnsToInclude.split(",");
+  var gridId = $(input).closest('table').attr('id'),
+      columnsToInclude = indiciaData['previousRowColumnsToInclude-'+gridId].split(",");
   //get rid of all of the spacing and capital letters
   for (i=0; i<columnsToInclude.length;i++) {
     columnsToInclude[i] = 'sc'+columnsToInclude[i].replace(/ /g,'').toLowerCase();
   }
   
   var classToUse = getScClassForColumnCellInput(input),
-      gridId = $(input).closest('table').attr('id'),
       $newRow = $('table#'+gridId + ' tr.scClonableRow'),
       //The '.added-row:first' check is there
       //as the user might of added an image-row which we need to ignore
@@ -558,7 +558,7 @@ function changeIn2ndToLastRowProxy() {
 //function to copy the values for a new row from the previous row as the new row is added.
 function species_checklist_add_another_row(gridId) {
   //get user specified columns to include in the copy
-  var columnsToInclude = indiciaData.previousRowColumnsToInclude.split(",");
+  var columnsToInclude = indiciaData['previousRowColumnsToInclude-'+gridId].split(",");
   //get rid of all of the spacing and capital letters
   for (i=0; i<columnsToInclude.length;i++) {
     columnsToInclude[i] = 'sc'+columnsToInclude[i].replace(/ /g,'').toLowerCase();
