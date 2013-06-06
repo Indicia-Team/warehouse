@@ -2592,7 +2592,7 @@ class data_entry_helper extends helper_base {
     self::$javascript .= "indiciaData['rowInclusionCheck-".$options['id']."'] = '".$options['rowInclusionCheck']."';\n";
     self::$javascript .= "indiciaData['copyDataFromPreviousRow-".$options['id']."'] = '".$options['copyDataFromPreviousRow']."';\n";
     if ($options['copyDataFromPreviousRow']) {
-      self::$javascript .= "indiciaData.previousRowColumnsToInclude = '".$options['previousRowColumnsToInclude']."';\n";
+      self::$javascript .= "indiciaData['previousRowColumnsToInclude-".$options['id']."'] = '".$options['previousRowColumnsToInclude']."';\n";
       self::$javascript .= "indiciaData.langAddAnother='" . lang::get('Add another') . "';\n";
     }
     if ($options['occurrenceImages']) {
