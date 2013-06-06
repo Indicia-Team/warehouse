@@ -30,6 +30,10 @@ $custom_terms = array_merge($custom_terms, array(
 		'Overall Comment' => 'Did you make any additional observations?',
 		'LANG_SRef_Label' => 'Grid Ref',
 		'LANG_Georef_Label' => 'Search for farm',
-		'species_checklist.species' => 'Insect group'
+		'species_checklist.species' => 'Insect group',
+		'Assistance Provided' => 'Assistance Provided: please tick one',
+		'OFS 2013 Crop' => 'Which Crop habitat are you looking at? Please tick one',
+		'OFS 2013 Other Habitat' => 'Which Other habitat are you looking at? Please tick one',
+		'sunny' => 'Sunny'
   )
 );
