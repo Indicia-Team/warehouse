@@ -1030,7 +1030,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         else {
           // 1 dimensional data, so we should have labels. For a pie chart these are use as x data values. For other charts they are axis labels.
           if ($options['chartType']=='pie') {
-            $values[] = array(lang::get($row[$options['xLabels']]), string_or_int($row[$options['yValues']]));
+            $values[] = array(lang::get($row[$options['xLabels']]), self::string_or_float($row[$options['yValues']]));
           } else {
             $values[] = self::string_or_float($row[$options['yValues']]);
             if (isset($options['xLabels']))
