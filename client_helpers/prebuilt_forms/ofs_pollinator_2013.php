@@ -86,26 +86,31 @@ class iform_ofs_pollinator_2013 extends iform_dynamic_sample_occurrence {
 
 
   protected static function get_control_farm($auth, $args, $tabAlias, $options) {
-  	data_entry_helper::$javascript .= "mapGeoreferenceHooks.push(function(div, ref, corner1, corner2, epsgCode, name, obj) {
-  	var other;
-  	if (typeof(obj.comment) == 'undefined' || obj.comment===null) {
-  	other='Unknown address';
-  	} else {
-  	other = obj.comment.replace(/\\r\\n/g, '<br/>');
-  	other = other.replace(/\\r/g, '<br/>');
-  	other = other.replace(/\\n/g,'<br/>');
-  	}
-  	$('#selected-farm').html('<strong>'+name+'</strong><br/>Address:<br/>'+other);
-  	$('#imp-sref').val(obj.centroid_sref);
-  	$('#imp-geom').val(obj.centroid_geom);
-  	$('#sample_location_id').val(obj.id);
-  	$('#selected-farm').fadeIn('fast');
-  	setTimeout(\"alert('Please check that the farm shown on the map is the correct farm before proceeding. If you know \"+
+    data_entry_helper::$javascript .= "mapGeoreferenceHooks.push(function(div, ref, corner1, corner2, epsgCode, name, obj) {
+  var other;
+  if (typeof(obj.comment) == 'undefined' || obj.comment===null) {
+    other='Unknown address';
+  } else {
+    other = obj.comment.replace(/\\r\\n/g, '<br/>');
+    other = other.replace(/\\r/g, '<br/>');
+    other = other.replace(/\\n/g,'<br/>');
+  }
+  $('#selected-farm').html('<strong>'+name+'</strong><br/>Address:<br/>'+other);
+  $('#imp-sref').val(obj.centroid_sref);
+  $('#imp-geom').val(obj.centroid_geom);
+  $('#sample_location_id').val(obj.id);
+  $('#selected-farm').fadeIn('fast');
+  setTimeout(\"alert('Please check that the farm shown on the map is the correct farm before proceeding. If you know \"+
   	\"exactly where on the farm you did the survey then you can click on the map to set a more precise grid reference or \"+
   	\"you can type the reference into the Grid ref input box. \"+
   	\"Once the grid reference has been set, click the Next Step button at the bottom right of the page.');\");
-  	
-  	});";
+});
+// move required astericks inside span if present
+$('.control-box').each(function(idx,elem){
+  var next = $(elem).next('.deh-required');
+  if (next.length>0)
+    $(elem).append(next);
+});";
   	 
   	return '<div id="selected-farm" ></div><input type="hidden" name="sample:location_id" id="sample_location_id" />';
   	 

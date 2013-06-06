@@ -18,3 +18,10 @@ td.dot-right {
 .species-grid input {
 	border: solid black 1px !important;
 }
+label {
+    width: auto;
+    min-width: 160px;
+}
+.control-box label {
+    min-width: 0px;
+}
