@@ -135,7 +135,8 @@ function apply_user_replacements($text) {
         // arrays are returned as a comma separated list
         if (is_array($value))
           $value = implode(',',$value);
-        $value = $value ? $value : hostsite_get_user_field($fieldName);
+        else 
+          $value = $value ? $value : hostsite_get_user_field($fieldName);
         // nulls must be passed as empty string params.
         $value = ($value===null ? '' : $value);
       } else
