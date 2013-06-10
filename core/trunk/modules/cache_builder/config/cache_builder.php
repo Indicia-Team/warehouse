@@ -755,7 +755,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       from needs_update_occurrences nu, sample_attribute_values sav
       join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'full_name\' and sa.deleted=false
       where co.recorders is null  
-      and sav.sample_id=co.sample_id and sav.deleted=false
+      and sav.sample_id=co.sample_id and sav.deleted=false and sav.text_value <> \', \' 
       and nu.id=co.id;',
     // surname, firstname
     'First name/surname' => 'update cache_occurrences co
@@ -780,7 +780,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       set recorders=sav.text_value
       from needs_update_occurrences nu, samples s
       join samples sp on sp.id=s.parent_id and sp.deleted=false
-      join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
+      join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false and sav.text_value <> \', \' 
       join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'full_name\' and sa.deleted=false
       where co.recorders is null
       and s.id=co.sample_id and s.deleted=false
@@ -841,7 +841,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       set recorders=sav.text_value
       from sample_attribute_values sav 
       join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'full_name\' and sa.deleted=false
-      where sav.sample_id=co.sample_id and sav.deleted=false
+      where sav.sample_id=co.sample_id and sav.deleted=false and sav.text_value <> \', \' 
       and co.id=#id#;',
     // surname, firstname
     'First name/surname' => 'update cache_occurrences co
@@ -866,7 +866,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       set recorders=sav.text_value
       from samples s
       join samples sp on sp.id=s.parent_id and sp.deleted=false
-      join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
+      join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false and sav.text_value <> \', \' 
       join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'full_name\' and sa.deleted=false
       where s.id=co.sample_id and s.deleted=false
       and co.id=#id#;',
