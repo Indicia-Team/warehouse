@@ -172,7 +172,7 @@ class iform_timed_count {
           'type'=>'int',
           'required'=>false,
           'group'=>'Other Map Settings'
-        ),
+        )
       )
     );
     return $params;
@@ -423,7 +423,7 @@ indiciaData.indiciaSvc = '".data_entry_helper::$base_url."';\n";
       ));
       // the report is ordered id desc. REverse it
       $o = array_reverse($o);
-    }
+    } else $o = array(); // empty array of occurrences when no creating a new sample. 
 
     // we pass through the read auth. This makes it possible for the get_submission method to authorise against the warehouse
     // without an additional (expensive) warehouse call.
@@ -495,9 +495,9 @@ $('#C".($i+1)."\\\\:sample\\\\:date' ).datepicker( 'option', 'maxDate', new Date
       $r .= '<tbody class="ui-widget-content">';
       $occs = array();
       // not very many occurrences so no need to optimise.
-      if(isset($subSampleId))
-        foreach($o as $oc)
-          if($oc['sample_id'] == $subSampleId)
+      if (isset($subSampleId) && $existing && count($o)>0)
+        foreach ($o as $oc)
+          if ($oc['sample_id'] == $subSampleId)
             $occs[] = $oc;
       for($j = 0; $j < $args['numberOfSpecies']; $j++){
         $rowClass='';
