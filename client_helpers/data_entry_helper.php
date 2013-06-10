@@ -2591,6 +2591,8 @@ class data_entry_helper extends helper_base {
     }
     self::$javascript .= "indiciaData['rowInclusionCheck-".$options['id']."'] = '".$options['rowInclusionCheck']."';\n";
     self::$javascript .= "indiciaData['copyDataFromPreviousRow-".$options['id']."'] = '".$options['copyDataFromPreviousRow']."';\n";
+    self::$javascript .= "indiciaData['editTaxaNames-".$options['id']."'] = '".$options['editTaxaNames']."';\n";
+    self::$javascript .= "indiciaData['subSpeciesColumn-".$options['id']."'] = '".$options['subSpeciesColumn']."';\n";
     if ($options['copyDataFromPreviousRow']) {
       self::$javascript .= "indiciaData['previousRowColumnsToInclude-".$options['id']."'] = '".$options['previousRowColumnsToInclude']."';\n";
       self::$javascript .= "indiciaData.langAddAnother='" . lang::get('Add another') . "';\n";
@@ -2710,9 +2712,17 @@ class data_entry_helper extends helper_base {
         // Now create the table cell to contain this.
         $colspan = isset($options['lookupListId']) && $options['rowInclusionCheck']!='alwaysRemovable' ? ' colspan="2"' : '';
         $row = '';
-        // Add a X button if the user can remove rows
-        if ($options['rowInclusionCheck']=='alwaysRemovable')
-          $row .= '<td style="width: 1%"><a class="action-button remove-row">X</a></td>';
+        // Add a delete button if the user can remove rows, add an edit button if the user has the edit option set.
+        if ($options['rowInclusionCheck']=='alwaysRemovable') {
+          $imgPath = empty(self::$images_path) ? self::relative_client_helper_path()."../media/images/" : self::$images_path;
+          if ($options['editTaxaNames']) {
+            $row .= '<td style="width: 5%">
+                     <img class="action-button remove-row" src='.$imgPath.'nuvola/cancel-16px.png>
+                     <img class="edit-taxon-name" src='.$imgPath.'nuvola/package_editors-16px.png></td>';
+          } else {
+            $row .= '<td style="width: 1%"><img class="action-button remove-row" src='.$imgPath.'nuvola/cancel-16px.png></td>';
+          }
+        }
         $row .= str_replace(array('{content}','{colspan}','{tableId}','{idx}'), 
             array($firstCell,$colspan,$options['id'],$colIdx), $indicia_templates['taxon_label_cell']);
         $row .= self::species_checklist_get_subsp_cell($taxon, $txIdx, $existing_record_id, $options);
@@ -3561,7 +3571,8 @@ $('#".$options['id']."-filter').click(function(evt) {
         'speciesControlToUseSubSamples' => false,
         'subSamplePerRow' => false,
         'copyDataFromPreviousRow' => false,
-        'previousRowColumnsToInclude' => ''
+        'previousRowColumnsToInclude' => '',
+        'editTaxaNames' => false,
     ), $options);
     // subSamplesPerRow can't be set without speciesControlToUseSubSamples
     $options['subSamplePerRow'] = $options['subSamplePerRow'] && $options['speciesControlToUseSubSamples'];
