@@ -27,13 +27,15 @@ var cacheLookup=false, mainSpeciesValue = null, formatter;
 //This means they cannot normally be seen by the outside world, so in order to make a call to one of these 
 //functions, we need to assign it to a global variable.
 
-var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new_row, handleSelectedTaxon;
+var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new_row, handleSelectedTaxon, 
+    taxonNameBeforeUserEdit,returnPressedInAutocomplete,resetSpeciesTextOnEscape;
 
 (function ($) {
   "use strict";
   
   hook_species_checklist_new_row = [];
-
+  
+  var resetSpeciesText;
   /**
    * A keyboard event handler for the grid.
    */
@@ -115,18 +117,6 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
       $(rows[rowIndex+deltaY]).find('td[headers=' + $(cell).attr('headers') + '] input').focus();
     }
   };  
-  
-    /**
-   * Ensure field names are consistent independent of whether we are using cached data
-   * or not.
-   */
-  var mapFromCacheTable = function(item) {
-    item.common = item.default_common_name;
-    item.preferred_name = item.preferred_taxon;
-    item.taxon = item.original;
-    item.id = item.taxa_taxon_list_id;
-    return item;
-  };
 
   // Create an inner function for adding blank rows to the bottom of the grid
   var makeSpareRow = function(gridId, readAuth, lookupListId, url, evt, scroll, keycode, force) {
@@ -135,7 +125,7 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
      * Function fired when return pressed in the species selector - adds a new row and focuses it. Must be enclosed so that
      * it can refer to things like the gridId if there are multiple grids.
      */
-    var returnPressedInAutocomplete=function(evt) {
+    returnPressedInAutocomplete=function(evt) {
       var rows=$(evt.currentTarget).parents('tbody').children(),
           rowIndex=rows.index($(evt.currentTarget).parents('tr')[0]);
       if (rowIndex===rows.length-1) {
@@ -150,7 +140,7 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
     };
     
     handleSelectedTaxon = function(event, data, value) {
-      var taxonCell, checkbox, rowId, row, label, subSpeciesCellId, regex;
+      var taxonCell, checkbox, rowId, row, label, subSpeciesCellId, regex, deleteAndEditHtml;
       //As soon as the user selects a species, we need to save its id as otherwise the information is lost. 
       //This is used if the user selects a sub-species, but then selects the blank option again, we can then use the main species id
       mainSpeciesValue = value;
@@ -158,15 +148,28 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
       // clear the event handlers
       $(event.target).unbind('result', handleSelectedTaxon);
       $(event.target).unbind('return', returnPressedInAutocomplete);
-      taxonCell=event.target.parentNode;
-      $(taxonCell).before('<td style="width: 1%"><a class="action-button remove-row">X</a></td>');
+      taxonCell=event.target.parentNode; 
+      //Create and edit icons for taxon cells. Only add the edit icon if the user has this functionality available on edit tab.
+      if (indiciaData['editTaxaNames-'+gridId]==true) {
+        deleteAndEditHtml = "<td style='width: 5%'>\n\
+            <img class='action-button remove-row' src=" + Drupal.settings.basePath + "/sites/all/modules/iform/media/images/nuvola/cancel-16px.png>\n\
+            <img class='edit-taxon-name' src=" + Drupal.settings.basePath + "/sites/all/modules/iform/media/images/nuvola/package_editors-16px.png></td>";
+      } else {
+        deleteAndEditHtml = "<td style='width: 1%'>\n\
+            <img class='action-button remove-row' src=" + Drupal.settings.basePath + "/sites/all/modules/iform/media/images/nuvola/cancel-16px.png></td>";
+      }
+      //Put the edit and delete icons just before the taxon name
+      $(taxonCell).before(deleteAndEditHtml);
       // Note case must be colSpan to work in IE!
       $(taxonCell).attr('colSpan',1);
       row=taxonCell.parentNode;
-      $(taxonCell).parent().addClass('added-row');
+      //Only add this class if the user is adding new taxa, if they are editing existing taxa we don't add the class so that when the delete icon is used the
+      //row becomes greyed out instead of deleted.
+      if ($(row).hasClass('scClonableRow'))
+        $(taxonCell).parent().addClass('added-row');
       $(taxonCell).parent().removeClass('scClonableRow');
       $(taxonCell).parent().find('input,select,textarea').removeClass('inactive');
-      // Do we use a JavaScript fn, or a standard template, to format the species label?
+      // Do we use a JavaScript fn, or a standard template, to format the species label?      
       if ($.isFunction(formatter)) {
         $(taxonCell).html(formatter(data));
       } else {
@@ -186,11 +189,13 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
       checkbox.attr('checked', 'checked');
       // store the ttlId 
       checkbox.val(data.id);
-      // Setup a subspecies picker if this option is enabled. Since we don't know for sure if this is matching the 
-      // last row in the grid (as the user might be typing ahead), use the presence checkbox to extract the row unique ID.
-      rowId = checkbox[0].id.match(/sc:([a-z0-9\-]+)/)[1];
-      subSpeciesCellId = 'sc:' + rowId + '::occurrence:subspecies';
-      createSubSpeciesList(url, data.preferred_taxa_taxon_list_id, data.preferred_name, lookupListId, subSpeciesCellId, readAuth, 0);
+      if (indiciaData['subSpeciesColumn-'+gridId]==true) {
+        // Setup a subspecies picker if this option is enabled. Since we don't know for sure if this is matching the 
+        // last row in the grid (as the user might be typing ahead), use the presence checkbox to extract the row unique ID.
+        rowId = checkbox[0].id.match(/sc:([a-z0-9\-]+)/)[1];
+        subSpeciesCellId = 'sc:' + rowId + '::occurrence:subspecies';
+        createSubSpeciesList(url, data.preferred_taxa_taxon_list_id, data.preferred_name, lookupListId, subSpeciesCellId, readAuth, 0);
+      }
       // Finally, a blank row is added for the next record
       makeSpareRow(gridId, readAuth, lookupListId, url, null, true);
       //When user selects a taxon then the new row is created, we want to copy data into that new row from previous row automatically.
@@ -202,8 +207,35 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
       $.each(hook_species_checklist_new_row, function(idx, fn) {
         fn(data); 
       });
-    };  
-  
+    };
+    //If the user chooses to edit a species on the grid, then immediately 'clicks off'
+    //the cell, then we have code that puts the label back to the way it was
+    resetSpeciesText = function(event) {
+      //only do reset if the autocomplete drop down isn't showing, else we assume the user is still working with the cell
+      if ($('.ac_over').length===0) {
+        var row = $($(event.target).parents('tr:first')),
+            taxonCell=$(row).children('.scTaxonCell'),
+            gridId = $(taxonCell).closest('table').attr('id'),
+            selectorId = gridId + '-' + indiciaData['gridCounter-'+gridId];
+        // remove the current contents of the taxon cell
+        $('#'+selectorId).remove();
+        // replace with the previous plain text species name
+        $(taxonCell).text(taxonNameBeforeUserEdit); 
+        var deleteAndEditHtml = "<td style='width: 5%'>\n\
+            <img class='action-button remove-row' src=" + Drupal.settings.basePath + "/sites/all/modules/iform/media/images/nuvola/cancel-16px.png>\n\
+            <img class='edit-taxon-name' src=" + Drupal.settings.basePath + "/sites/all/modules/iform/media/images/nuvola/package_editors-16px.png></td>";
+        $(taxonCell).attr('colSpan',1);
+        //Put the edit and delete icons just before the taxon name
+        $(taxonCell).before(deleteAndEditHtml);
+      }
+    }
+    //If the user presses escape after choosing to edit a taxon name then set it back to a read-only label
+    resetSpeciesTextOnEscape = function(event) {
+      if (event.which===27) {
+        resetSpeciesText(event);
+      }
+    }
+    
     if (typeof formatter==="undefined" || !$.isFunction(formatter)) {
       // provide a default format function
       formatter = function(item) {
@@ -255,35 +287,9 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
       $.extend(extraParams, indiciaData['taxonExtraParams-'+gridId]);
     }
     $(newRow).find('input,select').keydown(keyHandler);
+    var autocompleteSettings = getAutocompleteSettings(extraParams);
     // Attach auto-complete code to the input
-    ctrl = $('#' + selectorId).autocomplete(url+'/'+(cacheLookup ? 'cache_taxon_searchterm' : 'taxa_taxon_list'), {
-      extraParams : extraParams,
-      continueOnBlur: true,
-      simplify: cacheLookup, // uses simplified version of search string in cache to remove errors due to punctuation etc.
-      parse: function(data) {
-        var results = [], done={};
-        jQuery.each(data, function(i, item) {
-          // common name can be supplied in a field called common, or default_common_name
-          if (cacheLookup) {
-            item = mapFromCacheTable(item);
-          } else {
-            item.searchterm = item.taxon;
-          }
-          // note we track the distinct ttl_id and display term, so we don't output duplicates
-          if (!done.hasOwnProperty(item.id + '_' + item.display)) {
-            results[results.length] =
-            {
-              'data' : item,
-              'result' : item.searchterm,
-              'value' : item.id
-            };
-            done[item.id + '_' + item.display]=true;
-          }
-        });
-        return results;
-      },
-      formatItem: formatter
-    });
+    ctrl = $('#' + selectorId).autocomplete(url+'/'+(cacheLookup ? 'cache_taxon_searchterm' : 'taxa_taxon_list'), autocompleteSettings);
     ctrl.bind('result', handleSelectedTaxon);
     ctrl.bind('return', returnPressedInAutocomplete);
     // Check that the new entry control for taxa will remain in view with enough space for the autocomplete drop down
@@ -300,8 +306,51 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
   addRowToGrid = function(url, gridId, lookupListId, readAuth, formatter, useLookupCache) {
     cacheLookup = typeof useLookupCache !== 'undefined' ? useLookupCache : false;
     makeSpareRow(gridId, readAuth, lookupListId, url, null, false);
+    //Deal with user clicking on edit taxon icon
+    $('.edit-taxon-name').live('click', function(e) {
+      var row = $($(e.target).parents('tr:first'));
+      var taxonCell=$(row).children('.scTaxonCell'); 
+      var gridId = $(taxonCell).closest('table').attr('id');
+      var selectorId = gridId + '-' + indiciaData['gridCounter-'+gridId];
+      //When moving into edit mode we need to create an autocomplete box for the user to fill in
+      var speciesAutocomplete = '<input type="text" id="' + selectorId + '" class="grid-required ac_input" autocomplete="off"/>';
+      //remove the edit and delete icons.
+      $(e.target).parent().remove();
+      //add the autocomplete cell
+      $(taxonCell).append(speciesAutocomplete);
+      //Adjust the size of the taxon cell to take up its full allocation of space
+      $(taxonCell).attr('colSpan',2);
+      taxonNameBeforeUserEdit = $(taxonCell).text();
+      //Moving into edit mode, we need to clear the static taxon label otherwise
+      //the name is shown twice (it is also shown in the autocomplete)
+      $(taxonCell).text('');
+      $(taxonCell).append(speciesAutocomplete);
+      var extraParams = {
+        orderby : cacheLookup ? 'searchterm_length,original,preferred_taxon' : 'taxon',
+        mode : 'json',
+        qfield : cacheLookup ? 'searchterm' : 'taxon',
+        auth_token: readAuth.auth_token,
+        nonce: readAuth.nonce,
+        taxon_list_id: lookupListId
+      };
+      var autocompleteSettings = getAutocompleteSettings(extraParams);
+      var ctrl = $(taxonCell).children(':input').autocomplete(url+'/'+(cacheLookup ? 'cache_taxon_searchterm' : 'taxa_taxon_list'), autocompleteSettings);
+      //put the taxon name into the autocomplete ready for editing
+      $('#'+selectorId).val(taxonNameBeforeUserEdit);
+      $('#'+selectorId).focus();
+      //Set the focus to the end of the string, this isn't elegant, but seems to be quickest way to do this.
+      //After we set focus, we add a space to the end of the string to force focus to end, then remove the space
+      $('#'+selectorId).val($('#'+selectorId).val() + ' ');
+      $('#'+selectorId).val($('#'+selectorId).val().slice(0, -1));
+      ctrl.bind('result', handleSelectedTaxon);
+      ctrl.bind('return', returnPressedInAutocomplete);
+      //bind function so that when user loses focus on the taxon cell immediately after clicking edit, we can reset the cell
+      //back to read-only label 
+      ctrl.bind('blur', resetSpeciesText);
+      ctrl.bind('keydown', resetSpeciesTextOnEscape);
+    });
   };
-
+  
   $('.remove-row').live('click', function(e) {
     e.preventDefault();
     // Allow forms to hook into the event of a row being deleted, most likely use would be to have a confirmation dialog
@@ -587,4 +636,49 @@ function species_checklist_add_another_row(gridId) {
     
   });
   
+}
+
+//function to get settings to setup for an autocomplete cell
+function getAutocompleteSettings(extraParams) {
+  /**
+   * Ensure field names are consistent independent of whether we are using cached data
+   * or not.
+   */
+  var mapFromCacheTable = function(item) {
+    item.common = item.default_common_name;
+    item.preferred_name = item.preferred_taxon;
+    item.taxon = item.original;
+    item.id = item.taxa_taxon_list_id;
+    return item;
+  };
+  
+  var autocompleterSettingsToReturn = {
+    extraParams : extraParams,
+    continueOnBlur: true,
+    simplify: cacheLookup, // uses simplified version of search string in cache to remove errors due to punctuation etc.
+    parse: function(data) {
+      var results = [], done={};
+      jQuery.each(data, function(i, item) {
+        // common name can be supplied in a field called common, or default_common_name
+        if (cacheLookup) {
+          item = mapFromCacheTable(item);
+        } else {
+          item.searchterm = item.taxon;
+        }
+        // note we track the distinct ttl_id and display term, so we don't output duplicates
+        if (!done.hasOwnProperty(item.id + '_' + item.display)) {
+          results[results.length] =
+          {
+            'data' : item,
+            'result' : item.searchterm,
+            'value' : item.id
+          };
+          done[item.id + '_' + item.display]=true;
+        }
+      });
+      return results;
+    },
+    formatItem: formatter
+  };
+  return autocompleterSettingsToReturn;
 }

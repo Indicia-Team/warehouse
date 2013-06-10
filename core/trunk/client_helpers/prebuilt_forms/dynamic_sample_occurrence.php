@@ -205,6 +205,15 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           'group' => 'User Interface'
         ),
         array(
+          'name' => 'edit_taxa_names',
+          'caption' => 'Include option to edit entered taxa',
+          'description' => 'Include an icon to allow taxa to be edited after they has been entered into the species grid.',
+          'type'=>'checkbox',
+          'default'=>false,
+          'required'=>false,
+          'group' => 'User Interface',
+        ),
+        array(
           'name' => 'grid_report',
           'caption' => 'Grid Report',
           'description' => 'Name of the report to use to populate the grid for selecting existing data from. The report must return a sample_id '.
@@ -1246,7 +1255,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         'userControlsTaxonFilter' => isset($args['user_controls_taxon_filter']) ? $args['user_controls_taxon_filter'] : false,
         'subSpeciesColumn' => $args['sub_species_column'],
         'copyDataFromPreviousRow' => !empty($args['copy_species_row_data_to_new_rows']) && $args['copy_species_row_data_to_new_rows'],
-        'previousRowColumnsToInclude' => empty($args['previous_row_columns_to_include']) ? '' : $args['previous_row_columns_to_include']
+        'previousRowColumnsToInclude' => empty($args['previous_row_columns_to_include']) ? '' : $args['previous_row_columns_to_include'],
+        'editTaxaNames' => !empty($args['edit_taxa_names']) && $args['edit_taxa_names']
     ), $options);
     if ($groups=hostsite_get_user_field('taxon_groups')) {
       $species_ctrl_opts['usersPreferredGroups'] = unserialize($groups);
