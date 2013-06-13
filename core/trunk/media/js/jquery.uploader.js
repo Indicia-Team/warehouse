@@ -110,8 +110,7 @@ var checkSubmitInProgress = function () {
       // load the existing data if there are any
       var existing, uniqueId, thumbnailfilepath;
       $.each(div.settings.existingFiles, function(i, file) {
-        uniqueId = file.path.split('.')[0];
-        uniqueId = uniqueId.replace(/[^a-zA-Z0-9]+/g,'');
+        uniqueId = $('.filelist .photo').length;
         existing = div.settings.file_box_initial_file_infoTemplate.replace(/\{id\}/g, uniqueId)
             .replace(/\{filename\}/g, div.settings.msgExistingImage)
             .replace(/\{filesize\}/g, '')
@@ -197,31 +196,32 @@ var checkSubmitInProgress = function () {
       this.uploader.bind('FileUploaded', function(uploader, file, response) {
         $('#' + file.id + ' .progress').remove();
         // check the JSON for errors
-        var resp = eval('['+response.response+']');
+        var resp = eval('['+response.response+']'), filepath, uniqueId;
         if (resp[0].error) {
           $('#' + file.id).remove();
           alert(div.settings.msgUploadError + ' ' + resp[0].error.message);
         } else {
-          var filepath = div.settings.destinationFolder + file.name;
+          filepath = div.settings.destinationFolder + file.name;
+          uniqueId = $('.filelist .photo').length;
           // Show the uploaded file, and also set the mini-form values to contain the file details.
           $('#' + file.id + ' .photo-wrapper').append(div.settings.file_box_uploaded_imageTemplate
                 .replace(/\{id\}/g, file.id)
                 .replace(/\{thumbnailfilepath\}/g, filepath)
                 .replace(/\{origfilepath\}/g, filepath)
                 .replace(/\{imagewidth\}/g, div.settings.imageWidth)
-                .replace(/\{captionField\}/g, div.settings.table + ':caption:' + file.id)
+                .replace(/\{captionField\}/g, div.settings.table + ':caption:' + uniqueId)
                 .replace(/\{captionValue\}/g, '')
-                .replace(/\{pathField\}/g, div.settings.table + ':path:' + file.id)
+                .replace(/\{pathField\}/g, div.settings.table + ':path:' + uniqueId)
                 .replace(/\{pathValue\}/g, '')
-                .replace(/\{deletedField\}/g, div.settings.table + ':deleted:' + file.id)
+                .replace(/\{deletedField\}/g, div.settings.table + ':deleted:' + uniqueId)
                 .replace(/\{deletedValue\}/g, 'f')
-                .replace(/\{isNewField\}/g, 'isNew-' + file.id)
+                .replace(/\{isNewField\}/g, 'isNew-' + uniqueId)
                 .replace(/\{isNewValue\}/g, 't')
-                .replace(/\{idField\}/g, div.settings.table + ':id:' + file.id) 
+                .replace(/\{idField\}/g, div.settings.table + ':id:' + uniqueId) 
                 .replace(/\{idValue\}/g, '') // Set ID to blank, as this is a new record.
           );
           // Copy the path into the hidden path input. Watch colon escaping for jQuery selectors.
-          $('#' + div.settings.table.replace(/:/g,'\\:') + '\\:path\\:' + file.id).val(file.name);
+          $('#' + div.settings.table.replace(/:/g,'\\:') + '\\:path\\:' + uniqueId).val(file.name);
         }
         // reset the form handler if this is the last upload in progress
         if ($('.file-box .progress').length===0) {
