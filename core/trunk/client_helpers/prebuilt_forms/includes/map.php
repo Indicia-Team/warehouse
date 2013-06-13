@@ -346,9 +346,9 @@ mapInitialisationHooks.push(function(mapdiv) {
       mapdiv.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
     }
     else {
-      // Set the default view to show something triple the size of the feature
+      // Set the default view to show the feature we are loading
       //mapdiv.map.zoomToExtent(bounds, true);
-      mapdiv.map.setCenter(bounds.getCenterLonLat(), mapdiv.map.getZoomForExtent(bounds)+1);
+      mapdiv.map.setCenter(bounds.getCenterLonLat(), mapdiv.map.getZoomForExtent(bounds));
     }  
   }
   mapdiv.map.addLayer(loclayer);

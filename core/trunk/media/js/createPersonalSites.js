@@ -4,7 +4,13 @@
  * create a new site.
  * 
  */
-function allowCreateSites() {
+ 
+var allowCreateSites;
+
+(function ($) {
+  "use strict";
+  
+allowCreateSites=function() {
   // create a button for saving the location
   $('#imp-location\\:name').after('<button id="save-site" type="button" title="'+indiciaData.msgRememberSiteHint+
       '" id="save-site" style="display: none;" class="ui-corner-all ui-widget-content ui-state-default indicia-button inline-control">'+
@@ -27,8 +33,9 @@ function allowCreateSites() {
       $('#save-site-flag').val('1');
       alert(indiciaData.msgSiteWillBeRemembered);
     }
-  })
-}
+  });
+};
 
+}) (jQuery);
 
 

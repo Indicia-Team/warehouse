@@ -1510,7 +1510,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           'label'=>lang::get('Record Comment')
         ));
       if ($args['occurrence_images']){
-        $r .= self::occurrence_photo_input($options, $tabAlias);
+        $r .= self::occurrence_photo_input($options, $tabAlias, $args);
       }
       return $r;
     } else
@@ -1644,7 +1644,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    */
   protected static function get_control_photos($auth, $args, $tabAlias, $options) {
     if ($args['multiple_occurrence_mode']==='single') {
-      return self::occurrence_photo_input($options, $tabAlias);
+      return self::occurrence_photo_input($options, $tabAlias, $args);
     }
     else 
       return "[photos] control cannot be included in form when in grid entry mode, since photos are automatically included in the grid.";
@@ -1902,7 +1902,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    * @param $options Options array for the control.
    * @param $tabAlias ID of the tab's div if this is being loaded onto a div.
    */
-  protected static function occurrence_photo_input($options, $tabAlias) {
+  protected static function occurrence_photo_input($options, $tabAlias, $args) {
     $defaults = array(
       'table'=>'occurrence_image',
       'label'=>lang::get('Upload your photos'),
@@ -1910,6 +1910,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       'resizeWidth' => 1600,
       'resizeHeight' => 1600,
     );
+    $opts = array();
     if ($args['interface']!=='one_page')
       $opts['tabDiv']=$tabAlias;
     foreach ($options as $key => $value) {

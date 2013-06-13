@@ -227,6 +227,7 @@ class data_entry_helper extends helper_base {
       $duplicateCheckFields = 'item.'.implode(" + '#' + item.", $options['duplicateCheckFields']);
       $options['duplicateCheck']="$.inArray($duplicateCheckFields, done)===-1";
       $options['storeDuplicates']="done.push($duplicateCheckFields);";
+      unset($options['duplicateCheckFields']);
     } else {
       // disable duplicate checking
       $options['duplicateCheck']='true';
@@ -3053,7 +3054,7 @@ class data_entry_helper extends helper_base {
     $r = array();
     // If we are showing sub-species in a seperate column the then main species column should not include any sub-species.
     // If we had a rank field for each taxon, then this would be replaced by a rank=species filter.
-    if ($options['subSpeciesColumn']) 
+    if (isset($options['subSpeciesColumn']) && $options['subSpeciesColumn']) 
       $wheres[] = "(parent_id is null)";
     if (isset($options['cacheLookup']) && $options['cacheLookup'])
       $wheres[] = "(simplified='t' or simplified is null)";
