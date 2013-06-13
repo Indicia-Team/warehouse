@@ -74,7 +74,7 @@
     <column name='zero_abundance' display='Zero Abundance' sql='o.zero_abundance' visible="false" />
     <column name='record_status' display='State' sql='o.record_status' visible="false" />
     <column name='certainty' display='Certainty' sql='o.certainty' visible="false" />
-    <column name='belongs_to_user' display='Belongs to User' sql="CASE CAST(o.created_by_id AS character varying) WHEN '#currentUser#' THEN true ELSE false END" visible="false" />
+    <column name='belongs_to_user' display='Belongs to User' sql="CASE WHEN CAST(o.created_by_id AS character varying) = '#currentUser#' AND o.website_id IN (#website_ids#) THEN true ELSE false END" visible="false" />
     <column name='images' display='Images' sql='o.images' img='true' />
     <column name='input_form' visible="false" sql="case when o.input_form is null then '#default_input_form#' else o.input_form end" />
   </columns>
