@@ -28,6 +28,16 @@
  * to get the validation_rules field if there are any specific to the survey. 
  */
 abstract class Attribute_Value_ORM extends ORM {
+  
+  /**
+   * Override MY_ORM's default behaviour for applying metadata, since attribute value
+   * metadata is specifically set when the parent record iterates the attributes, only if the value
+   * has changed.
+   */
+  public function validate(Validation $array, $save = FALSE) {
+    $this->wantToUpdateMetadata = false;
+    return parent::validate($array, $save);
+  }
 
   /**
   * Function that applies the validation rules for any attribute value (sample, location or occurrence).
