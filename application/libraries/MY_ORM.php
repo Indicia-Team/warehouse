@@ -1352,16 +1352,15 @@ class ORM extends ORM_Core {
         return false;
       }
     }
-
+    // set metadata   
+    $exactMatches = array_intersect_assoc($oldValues, $attrValueModel->as_array());
+    $fieldsWithValuesInSubmission = array_intersect_key($oldValues, $attrValueModel->as_array());
     // Hook to the owning entity (the sample, location, taxa_taxon_list or occurrence)
     $thisFk = $this->object_name.'_id';
     $attrValueModel->$thisFk = $this->id;
     // and hook to the attribute
     $attrFk = $this->object_name.'_attribute_id';
     $attrValueModel->$attrFk = $attrId;
-    // set metadata
-    $exactMatches = array_intersect_assoc($oldValues, $attrValueModel->as_array());
-    $fieldsWithValuesInSubmission = array_intersect_key($oldValues, $attrValueModel->as_array());
     $wantToUpdateAttrMetadata = count($exactMatches)!==count($fieldsWithValuesInSubmission);
     if ($wantToUpdateAttrMetadata)
       $this->set_metadata($attrValueModel);
