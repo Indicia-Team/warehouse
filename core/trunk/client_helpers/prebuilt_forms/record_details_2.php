@@ -371,7 +371,35 @@ Record ID',
     
     return '<h3>Comments</h3>'.$r;
   }
- 
+  
+  /*
+   * Displays a list of determinations associated with an occurrence record.
+   * 
+   * @return string The determinations report grid.
+   */
+  protected static function get_control_previousdeterminations($auth, $args, $tabalias, $options) {
+    iform_load_helpers(array('report_helper'));
+
+    if ($options['itemsPerPage'] == NULL) {
+      $options['itemsPerPage'] = 12;
+    }  
+    if (empty($options['report']))
+      return '<h3>Previous Determinations</h3>'.'<h4><i>Please provide a Previous Determinations report to run in the Form Structure box on the edit tab.</i></h4>';
+    else 
+      return '<h3>Previous Determinations</h3>'.report_helper::report_grid(array(
+        'readAuth' => $auth['read'],
+        'dataSource'=>$options['report'],
+        'itemsPerPage' => $options['itemsPerPage'],
+        'mode' => 'report',
+        'autoParamsForm' => false,
+        'includeAllColumns' => true,
+        'headers' => true,
+        'extraParams' => array(
+          'occurrence_id'=>$_GET['occurrence_id'],
+          'sharing'=>'reporting'
+        ),
+      ));
+  }
   
   /*
    * Convert a timestamp into readable format (... ago) for use on a comment list.
