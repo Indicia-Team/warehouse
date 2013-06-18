@@ -74,6 +74,11 @@ $config['default_map_zoom']=4;
  */
 $config['apply_schema']=true;
 
+/*
+ * When enabled, if a species name associated with an occurrence changes, then the old name and details are logged
+ * into the determinations table.
+ */
+$config['auto_log_determinations']=true;
 /**
  * Declare the different image files that will be created when an image is uploaded.
  * Contains an array of image file sizes. The array keys are the prefixes given to the filenames,
