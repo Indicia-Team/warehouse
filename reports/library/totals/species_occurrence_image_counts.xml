@@ -25,6 +25,9 @@
     <param name="ownData" display="My data only?" datatype="checkbox">
       <where value="1">o.created_by_id=#currentUser#</where>
     </param>
+    <param name="input_form" default="">
+      <where>o.input_form='#input_form#'</where>
+    </param>
   </params>
   <columns>
         <column name="species_count" display="Species" sql="count(DISTINCT o.taxon_meaning_id)"  />

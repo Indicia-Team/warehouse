@@ -5,11 +5,14 @@
       SELECT COALESCE(default_common_name, preferred_taxon) as species, records, greatest(11, cast((15 - (sqrt(#records_to_scan#) / sqrt(records)))*2.5 as integer)) as font_size 
       FROM (
         SELECT default_common_name, preferred_taxon, count(id) as records
-        FROM (SELECT co.id, co.default_common_name, co.preferred_taxon
-          FROM cache_occurrences co
-          WHERE co.survey_id=#survey_id#
-          AND co.date_start&gt;='#date_from#' 
-          AND co.date_start&lt;='#date_to#'
+        FROM (SELECT o.id, o.default_common_name, o.preferred_taxon
+          FROM cache_occurrences o
+          #agreements_join#
+          #joins#
+          WHERE #sharing_filter#
+          AND o.survey_id=#survey_id#
+          AND o.date_start&gt;='#date_from#' 
+          AND o.date_start&lt;='#date_to#'
           ORDER BY id DESC
           LIMIT #records_to_scan#) list
         GROUP BY default_common_name, preferred_taxon
@@ -24,5 +27,8 @@
     <param name="date_to" display="Date To" datatype="date"/>
     <param name="records_to_scan" datatype="integer" default="1000" />
     <param name="recorders_to_return" datatype="integer" default="15" />
+    <param name="input_form" default="">
+      <where>o.input_form='#input_form#'</where>
+    </param>
   </params>
 </report>
