@@ -86,6 +86,12 @@ class ORM extends ORM_Core {
   private $cache;
   
   /**
+   * Default behaviour on save is to update metadata. If we detect no changes we can skip this.
+   * @var boolean
+   */
+  public $wantToUpdateMetadata = true;
+  
+  /**
    * Constructor allows plugins to modify the data model.
    * @var int $id ID of the record to load. If null then creates a new record. If -1 then the ORM 
    * object is not initialised, providing access to the variables only.
@@ -264,6 +270,9 @@ class ORM extends ORM_Core {
    * @param boolean $save Optional. True if this call also saves the data, false to just validate. Default is false.
    */
   public function validate(Validation $array, $save = FALSE) {
+    // set the default created/updated information
+    if ($this->wantToUpdateMetadata)
+      $this->set_metadata();
     // the created_by_id field can be specified by web service calls if the caller knows which Indicia user
     // is making the post.
     $fields_to_copy=array_merge(array('created_by_id'), $this->unvalidatedFields);
@@ -278,7 +287,6 @@ class ORM extends ORM_Core {
         $this->__set($a, $array[$a]);
       }
     }
-    $this->set_metadata();
     try {
       if (parent::validate($array, $save)) {
         return TRUE;
@@ -621,6 +629,18 @@ class ORM extends ORM_Core {
       // grabbing records to their own website ID.
       if (isset($thisValues['website_id']) && $thisValues['website_id'])
         unset($vArray['website_id']);
+       // If there are no changed fields between the current and new record, skip the metadata update.
+      $exactMatches = array_intersect_assoc($thisValues, $vArray);
+      // Allow for different ways of submitting bool. Don't want to trigger metadata updates if submitting 'on' instead of true
+      // for example.
+      foreach ($vArray as $key=>$value) {
+        if (isset($this->$key)
+            && (($this->$key==='t' && ($value==='on' || $value===1))
+            ||  ($this->$key==='f' && ($value==='off' || $value===0))))
+          $exactMatches[$key] = $this->$key;
+      }
+      $fieldsWithValuesInSubmission = array_intersect_key($thisValues, $vArray);
+      $this->wantToUpdateMetadata = count($exactMatches)!==count($fieldsWithValuesInSubmission);
       $vArray = array_merge($thisValues, $vArray);
       $this->existing=true;
     }
@@ -1222,6 +1242,7 @@ class ORM extends ORM_Core {
           ->where(array($this->object_name.'_attribute_id'=>$attrId, $this->object_name.'_id'=>$this->id))->find();
     if (!isset($attrValueModel) || !$attrValueModel->loaded)
       $attrValueModel = ORM::factory($this->object_name.'_attribute_value', $valueId);
+    $oldValues = array_merge($attrValueModel->as_array());
     $dataType = $attr->data_type;
     $vf = null;
     
@@ -1317,14 +1338,18 @@ class ORM extends ORM_Core {
       }
     }
 
+    // set metadata   
+    $exactMatches = array_intersect_assoc($oldValues, $attrValueModel->as_array());
+    $fieldsWithValuesInSubmission = array_intersect_key($oldValues, $attrValueModel->as_array());
     // Hook to the owning entity (the sample, location, taxa_taxon_list or occurrence)
     $thisFk = $this->object_name.'_id';
     $attrValueModel->$thisFk = $this->id;
     // and hook to the attribute
     $attrFk = $this->object_name.'_attribute_id';
     $attrValueModel->$attrFk = $attrId;
-    // set metadata
-    $this->set_metadata($attrValueModel);
+    $wantToUpdateAttrMetadata = count($exactMatches)!==count($fieldsWithValuesInSubmission);
+    if ($wantToUpdateAttrMetadata)
+      $this->set_metadata($attrValueModel);
 
     try {
       $v=$attrValueModel->validate(new Validation($attrValueModel->as_array()));
@@ -1341,6 +1366,12 @@ class ORM extends ORM_Core {
       return false;
     }
     $attrValueModel->save();
+    if ($wantToUpdateAttrMetadata && !$this->wantToUpdateMetadata) {
+      // we didn't update the parent's metadata. But a custom attribute value has changed, so it makes sense to update it now.
+      $this->wantToUpdateMetadata = true;
+      $this->set_metadata();
+      $this->save();
+    }
     $this->nestedChildModelIds[] = $attrValueModel->get_submitted_ids();
 
     return true;
