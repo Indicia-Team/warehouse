@@ -36,7 +36,19 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
   hook_species_checklist_new_row = [];
   
   var resetSpeciesText;
-  /**
+  /*
+   * Validator makes sures user cannot enter junk into the taxon cell and continue with submit
+   */
+  jQuery.validator.addMethod('speciesMustBeFilled',
+            function(value, element) {
+              var presenceCellInput = $(element).parents('tr:first').find('.scPresenceCell').children(':input');
+              if ($(presenceCellInput).val() || !$(element).val()) {
+                return true;
+              }
+            },
+          'A species must be selected');
+          
+  /*
    * A keyboard event handler for the grid.
    */
   keyHandler = function(evt) {
@@ -252,7 +264,7 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
     // build an auto-complete control for selecting the species to add to the bottom of the grid.
     // The next line gets a unique id for the autocomplete.
     selectorId = gridId + '-' + indiciaData['gridCounter-'+gridId];
-    speciesSelector = '<input type="text" id="' + selectorId + '" class="grid-required" />';
+    speciesSelector = '<input type="text" id="' + selectorId + '" class="grid-required {speciesMustBeFilled:true}" />';
     // put this inside the new row template in place of the species label.
     $(newRow).html($(newRow.html().replace('{content}', speciesSelector)));
     // Replace the tags in the row template with a unique row ID
@@ -313,7 +325,7 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
       var gridId = $(taxonCell).closest('table').attr('id');
       var selectorId = gridId + '-' + indiciaData['gridCounter-'+gridId];
       //When moving into edit mode we need to create an autocomplete box for the user to fill in
-      var speciesAutocomplete = '<input type="text" id="' + selectorId + '" class="grid-required ac_input" autocomplete="off"/>';
+      var speciesAutocomplete = '<input type="text" id="' + selectorId + '" class="grid-required ac_input {speciesMustBeFilled:true}" autocomplete="off"/>';
       //remove the edit and delete icons.
       $(e.target).parent().remove();
       //add the autocomplete cell
