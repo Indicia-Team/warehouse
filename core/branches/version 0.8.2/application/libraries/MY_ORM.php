@@ -627,9 +627,9 @@ class ORM extends ORM_Core {
       $thisValues = $this->as_array();
       // don't overwrite existing website_ids otherwise things like shared verification portals end up 
       // grabbing records to their own website ID.
-      if (isset($thisValues['website_id']) && $thisValues['website_id'])
+      if (!empty($thisValues['website_id']) && !empty($vArray['website_id']))
         unset($vArray['website_id']);
-       // If there are no changed fields between the current and new record, skip the metadata update.
+      // If there are no changed fields between the current and new record, skip the metadata update.
       $exactMatches = array_intersect_assoc($thisValues, $vArray);
       // Allow for different ways of submitting bool. Don't want to trigger metadata updates if submitting 'on' instead of true
       // for example.
