@@ -3,7 +3,7 @@
 <report title="Record counts by taxon external key" description="Lists taxa and the number of records of each. Uses the external key to identify each unique taxon">
       <query website_filter_field="o.website_id">
       SELECT #columns#
-      FROM cache_taxa_taxon_lists cttl        
+      FROM cache_taxa_taxon_lists cttl
       JOIN cache_occurrences o on o.taxa_taxon_list_external_key=cttl.external_key
       #agreements_join# 
       #joins#
@@ -13,7 +13,6 @@
       AND quality_check('#quality#', o.record_status, o.certainty)=true
       AND o.record_status&lt;&gt;'R'  
       AND cttl.preferred=true
-      AND cttl.id=cttl.preferred_taxa_taxon_list_id
       </query>
       <order_by>
         count(distinct o.id) desc
