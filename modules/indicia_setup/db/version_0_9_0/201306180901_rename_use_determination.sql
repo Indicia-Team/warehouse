@@ -1,0 +1,2 @@
+ALTER TABLE occurrences
+RENAME COLUMN use_determination TO all_info_in_determinations
