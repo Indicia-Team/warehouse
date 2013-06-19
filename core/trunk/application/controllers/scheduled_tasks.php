@@ -446,7 +446,7 @@ class Scheduled_Tasks_Controller extends Controller {
         call_user_func($plugin.'_scheduled_task', $last_run_date, $this->db);
         // mark the time of the last scheduled task check, so we can get diffs next time
         // insert if not exists
-        if (!$this->db->update('system', array('last_scheduled_task_check'=>"'" . date('c', $currentTime) . "'"), array('name' => $plugin))->count())
+        if (!$this->db->update('system', array('last_scheduled_task_check'=>"'" . date("Ymd H:i:s", $currentTime) . "'"), array('name' => $plugin))->count())
           $this->db->insert('system', array(
               'version' => '0.1.0',
               'name' => $plugin,

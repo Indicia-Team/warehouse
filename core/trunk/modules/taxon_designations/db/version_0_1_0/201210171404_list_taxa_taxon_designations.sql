@@ -1,4 +1,6 @@
--- recreate view in case core upgrader has had to drop it
+-- Switch view to cached tables for better performance.
+DROP VIEW list_taxa_taxon_designations;
+
 CREATE OR REPLACE VIEW list_taxa_taxon_designations AS 
  SELECT ttd.id, td.title, td.code, td.abbreviation, t.taxon, cttl.default_common_name as common, cttl.preferred_taxon as preferred_name, cttl.language, cttl.taxon_group
    FROM taxon_designations td

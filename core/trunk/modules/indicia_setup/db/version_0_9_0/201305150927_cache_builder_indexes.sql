@@ -34,6 +34,3 @@ CREATE INDEX ix_surveys_updated_on ON surveys(updated_on);
 
 DROP INDEX IF EXISTS ix_occurrence_images_updated_on;
 CREATE INDEX ix_occurrence_images_updated_on ON occurrence_images(updated_on);
-
-DROP INDEX IF EXISTS ix_cache_taxa_taxon_lists_updated_on;
-CREATE INDEX ix_cache_taxa_taxon_lists_updated_on ON cache_taxa_taxon_lists(cache_updated_on);
