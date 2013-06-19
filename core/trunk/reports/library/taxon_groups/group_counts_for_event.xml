@@ -3,7 +3,10 @@
       <query website_filter_field="o.website_id">
       (SELECT taxon_group, count(*) as count
       FROM cache_occurrences o
-      WHERE o.survey_id=#survey_id#
+      #agreements_join#
+      #joins#
+      WHERE #sharing_filter#
+      AND o.survey_id=#survey_id#
       AND o.date_start&gt;='#date_from#' 
       AND o.date_start&lt;'#date_to#'
       GROUP BY taxon_group
@@ -13,7 +16,10 @@
       SELECT 'Others', sum(count) FROM (
         SELECT taxon_group, count(*)
         FROM cache_occurrences o
-        WHERE o.survey_id=#survey_id#
+        #agreements_join#
+        #joins#
+        WHERE #sharing_filter#
+        AND o.survey_id=#survey_id#
         AND o.date_start&gt;='#date_from#' 
         AND o.date_start&lt;='#date_to#'
         GROUP BY taxon_group

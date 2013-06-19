@@ -13,7 +13,6 @@
   AND o.date_start&gt;='#date_from#' 
   AND o.date_start&lt;='#date_to#'
   AND o.record_status&lt;&gt;'R'
-  AND o.training=false
   </query>
   <order_bys>
     <order_by>o.id DESC</order_by>
@@ -22,7 +21,10 @@
     <param name="date_from" display="Date From" datatype="date"/>
     <param name="date_to" display="Date To" datatype="date"/>
     <param name="survey_id" display="Survey" description="Select the survey, or leave for all surveys" datatype="lookup"
-        population_call="direct:survey:id:title"/>     
+        population_call="direct:survey:id:title"/>
+    <param name="input_form" default="">
+      <where>o.input_form='#input_form#'</where>
+    </param>
   </params>
   <columns>
     <column name='occurrence_id' display='ID' sql='o.id' datatype='integer' template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />
