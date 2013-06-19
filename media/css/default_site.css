@@ -77,6 +77,11 @@ p.inline-error {
   margin-top: 0em;  
 }
 
+.species-grid p.inline-error {
+  margin: 0;
+  font-size: 80%;
+}
+
 .validation-icon {
   display:-moz-inline-stack;
   display:inline-block;
