@@ -646,6 +646,14 @@ class ORM extends ORM_Core {
         unset($vArray['website_id']);
       // If there are no changed fields between the current and new record, skip the metadata update.
       $exactMatches = array_intersect_assoc($thisValues, $vArray);
+      // Allow for different ways of submitting bool. Don't want to trigger metadata updates if submitting 'on' instead of true
+      // for example.
+      foreach ($vArray as $key=>$value) {
+        if (isset($this->$key)
+            && (($this->$key==='t' && ($value==='on' || $value===1))
+            ||  ($this->$key==='f' && ($value==='off' || $value===0))))
+          $exactMatches[$key] = $this->$key;
+      }
       $fieldsWithValuesInSubmission = array_intersect_key($thisValues, $vArray);
       $this->wantToUpdateMetadata = count($exactMatches)!==count($fieldsWithValuesInSubmission);
       $vArray = array_merge($thisValues, $vArray);
