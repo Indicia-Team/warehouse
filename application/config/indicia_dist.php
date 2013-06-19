@@ -40,6 +40,9 @@ $config['private_key'] = 'Indicia';
  */
 $config['maxUploadSize'] = '1M';
 
+/**
+ * ID of user inserted into the database for records where the user_id is unknown. Defaults to admin.
+ */
 $config['defaultPersonId'] = 1;
 
 /**
