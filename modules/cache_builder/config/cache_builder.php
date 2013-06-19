@@ -124,55 +124,23 @@ $config['taxa_taxon_lists']['get_missing_items_query']="
       
 $config['taxa_taxon_lists']['get_changed_items_query']="
       select sub.id, cast(max(cast(deleted as int)) as boolean) as deleted 
-      from (select ttl.id, ttl.deleted
-      from taxa_taxon_lists ttl
-      where ttl.updated_on>'#date#' 
-      union
-      select ttl.id, tl.deleted
+      from (
+      select ttl.id, ttl.deleted or tl.deleted or t.deleted or l.deleted as deleted
       from taxa_taxon_lists ttl
       join taxon_lists tl on tl.id=ttl.taxon_list_id
-      where tl.updated_on>'#date#' 
-      union
-      select ttl.id, t.deleted
-      from taxa_taxon_lists ttl
-      join taxa t on t.id=ttl.taxon_id
-      where t.updated_on>'#date#' 
-      union
-      select ttl.id, l.deleted
-      from taxa_taxon_lists ttl
       join taxa t on t.id=ttl.taxon_id
       join languages l on l.id=t.language_id
-      where l.updated_on>'#date#' 
+      left join taxa tc on tc.id=ttl.common_taxon_id
+      where ttl.updated_on>'#date#' or tl.updated_on>'#date#' or t.updated_on>'#date#' or l.updated_on>'#date#' 
+        or tc.updated_on>'#date#' 
       union
-      select ttl.id, ttlpref.deleted
-      from taxa_taxon_lists ttl
-      join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true
-      where ttlpref.updated_on>'#date#' 
-      union
-      select ttl.id, tpref.deleted
-      from taxa_taxon_lists ttl
-      join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true
-      join taxa tpref on tpref.id=ttlpref.taxon_id
-      where tpref.updated_on>'#date#' 
-      union
-      select ttl.id, lpref.deleted
+      select ttl.id, ttl.deleted or ttlpref.deleted or tpref.deleted or lpref.deleted or tg.deleted
       from taxa_taxon_lists ttl
       join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true
       join taxa tpref on tpref.id=ttlpref.taxon_id
       join languages lpref on lpref.id=tpref.language_id
-      where lpref.updated_on>'#date#' 
-      union
-      select ttl.id, tg.deleted
-      from taxa_taxon_lists ttl
-      join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true
-      join taxa tpref on tpref.id=ttlpref.taxon_id
       join taxon_groups tg on tg.id=tpref.taxon_group_id
-      where tg.updated_on>'#date#'
-      union
-      select ttl.id, false
-      from taxa_taxon_lists ttl
-      join taxa tc on tc.id=ttl.common_taxon_id
-      where tc.updated_on>'#date#' 
+      where ttlpref.updated_on>'#date#' or tpref.updated_on>'#date#' or lpref.updated_on>'#date#' or tg.updated_on>'#date#'      
       ) as sub
       group by id";
 
@@ -184,11 +152,11 @@ $config['taxa_taxon_lists']['update'] = "update cache_taxa_taxon_lists cttl
       preferred_taxa_taxon_list_id=ttlpref.id,
       parent_id=ttlpref.parent_id,
       taxonomic_sort_order=ttlpref.taxonomic_sort_order,
-      taxon=t.taxon,
+      taxon=t.taxon || coalesce(' ' || t.attribute, ''),
       authority=t.authority,
       language_iso=l.iso,
       language=l.language,
-      preferred_taxon=tpref.taxon,
+      preferred_taxon=tpref.taxon || coalesce(' ' || tpref.attribute, ''),
       preferred_authority=tpref.authority,
       preferred_language_iso=lpref.iso,
       preferred_language=lpref.language,
@@ -223,9 +191,9 @@ $config['taxa_taxon_lists']['insert']="insert into cache_taxa_taxon_lists (
     select distinct on (ttl.id) ttl.id, ttl.preferred, 
       tl.id as taxon_list_id, tl.title as taxon_list_title, tl.website_id,
       ttlpref.id as preferred_taxa_taxon_list_id, ttlpref.parent_id, ttlpref.taxonomic_sort_order,
-      t.taxon, t.authority,
+      t.taxon || coalesce(' ' || t.attribute, ''), t.authority,
       l.iso as language_iso, l.language,
-      tpref.taxon as preferred_taxon, tpref.authority as preferred_authority, 
+      tpref.taxon || coalesce(' ' || tpref.attribute, '') as preferred_taxon, tpref.authority as preferred_authority, 
       lpref.iso as preferred_language_iso, lpref.language as preferred_language,
       tcommon.taxon as default_common_name,
       regexp_replace(regexp_replace(regexp_replace(lower(t.taxon), E'\\\\(.+\\\\)', '', 'g'), 'ae', 'e', 'g'), E'[^a-z0-9\\\\?\\\\+]', '', 'g'), 
@@ -268,56 +236,24 @@ $config['taxon_searchterms']['get_missing_items_query']="
         or l.deleted or tpref.deleted or tg.deleted or lpref.deleted) = false";
       
 $config['taxon_searchterms']['get_changed_items_query']="
-      select sub.id, sub.allow_data_entry, cast(max(cast(deleted as int)) as boolean) as deleted 
-      from (select ttl.id, ttl.allow_data_entry, ttl.deleted
-      from taxa_taxon_lists ttl
-      where ttl.updated_on>'#date#' 
-      union
-      select ttl.id, ttl.allow_data_entry, tl.deleted
+      select sub.id, sub.allow_data_entry, cast(max(cast(deleted as int)) as boolean) as deleted       
+      from (
+      select ttl.id, ttl.allow_data_entry, ttl.deleted or tl.deleted or t.deleted or l.deleted as deleted
       from taxa_taxon_lists ttl
       join taxon_lists tl on tl.id=ttl.taxon_list_id
-      where tl.updated_on>'#date#' 
-      union
-      select ttl.id, ttl.allow_data_entry, t.deleted
-      from taxa_taxon_lists ttl
-      join taxa t on t.id=ttl.taxon_id
-      where t.updated_on>'#date#' 
-      union
-      select ttl.id, ttl.allow_data_entry, l.deleted
-      from taxa_taxon_lists ttl
       join taxa t on t.id=ttl.taxon_id
       join languages l on l.id=t.language_id
-      where l.updated_on>'#date#' 
+      left join taxa tc on tc.id=ttl.common_taxon_id
+      where ttl.updated_on>'#date#' or tl.updated_on>'#date#' or t.updated_on>'#date#' or l.updated_on>'#date#' 
+        or tc.updated_on>'#date#' 
       union
-      select ttl.id, ttl.allow_data_entry, ttlpref.deleted
-      from taxa_taxon_lists ttl
-      join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true
-      where ttlpref.updated_on>'#date#' 
-      union
-      select ttl.id, ttl.allow_data_entry, tpref.deleted
-      from taxa_taxon_lists ttl
-      join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true
-      join taxa tpref on tpref.id=ttlpref.taxon_id
-      where tpref.updated_on>'#date#' 
-      union
-      select ttl.id, ttl.allow_data_entry, lpref.deleted
+      select ttl.id, ttl.allow_data_entry, ttl.deleted or ttlpref.deleted or tpref.deleted or lpref.deleted or tg.deleted
       from taxa_taxon_lists ttl
       join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true
       join taxa tpref on tpref.id=ttlpref.taxon_id
       join languages lpref on lpref.id=tpref.language_id
-      where lpref.updated_on>'#date#' 
-      union
-      select ttl.id, ttl.allow_data_entry, tg.deleted
-      from taxa_taxon_lists ttl
-      join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true
-      join taxa tpref on tpref.id=ttlpref.taxon_id
       join taxon_groups tg on tg.id=tpref.taxon_group_id
-      where tg.updated_on>'#date#'
-      union
-      select ttl.id, ttl.allow_data_entry, false
-      from taxa_taxon_lists ttl
-      join taxa tc on tc.id=ttl.common_taxon_id
-      where tc.updated_on>'#date#' 
+      where ttlpref.updated_on>'#date#' or tpref.updated_on>'#date#' or lpref.updated_on>'#date#' or tg.updated_on>'#date#'      
       ) as sub
       group by sub.id, sub.allow_data_entry";
 
