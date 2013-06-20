@@ -1401,11 +1401,12 @@ indiciaData.windowLoaded=false;
     // We also define the error label to be wrapped in a <p> if it is on a newline.
     if (self::$validated_form_id) {
       global $indicia_templates;
-      self::$javascript .= "$('#".self::$validated_form_id."').validate({
+      self::$javascript .= "
+        var validator = $('#".self::$validated_form_id."').validate({
         ignore: \":hidden,.inactive\",
         errorClass: \"".$indicia_templates['error_class']."\",
         ". (in_array('inline', self::$validation_mode) ? "" : "errorElement: 'p',") ."
-        highlight: function(element, errorClass) {
+          highlight: function(element, errorClass) {
           var jqElement = $(element);
           if (jqElement.is(':radio') || jqElement.is(':checkbox')) {
             //if the element is a radio or checkbox group then highlight the group
@@ -1419,7 +1420,7 @@ indiciaData.windowLoaded=false;
             jqElement.addClass('ui-state-error');
           }
         },
-        unhighlight: function(element, errorClass) {
+        unhighlight: function(element, errorClass) { 
           var jqElement = $(element);
           if (jqElement.is(':radio') || jqElement.is(':checkbox')) {
             //if the element is a radio or checkbox group then highlight the group
@@ -1455,7 +1456,10 @@ indiciaData.windowLoaded=false;
           }
         }" : "
         errorPlacement: function(error, element) {}") ."
-      });\n";
+      });
+      //Don't validate whilst user is still typing in field
+      validator.settings.onkeyup = false;
+      \n";
     }
   }
 
@@ -1595,6 +1599,14 @@ indiciaData.windowLoaded=false;
   */
   public static function enable_validation($form_id) {
     self::$validated_form_id = $form_id;
+    //Only submit once if the user clicks submit button several times
+    data_entry_helper::$javascript .= '
+    $("'.self::$validated_form_id.'").submit(function() {
+      $(this).submit(function() {
+        return false;
+      });
+      return true;
+    });';
     self::add_resource('validation');
   }
   
