@@ -28,5 +28,6 @@ global $custom_terms;
  */
 $custom_terms = array(
   'LANG_Duplicate_Taxon' => 'This taxon is already included in one of the lists on this form', 
-  'LANG_Tab_Msg' => 'Please note, completing this tab is optional.' 
+  'LANG_Tab_Msg' => 'Please note, completing this tab is optional.',
+  'LANG_SRef_Label' => 'Grid Ref'
 );
