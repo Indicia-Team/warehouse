@@ -10,9 +10,7 @@
           #agreements_join#
           #joins#
           WHERE #sharing_filter#
-          AND o.survey_id=#survey_id#
-          AND o.date_start&gt;='#date_from#' 
-          AND o.date_start&lt;='#date_to#'
+          #filters#
           ORDER BY id DESC
           LIMIT #records_to_scan#) list
         GROUP BY default_common_name, preferred_taxon
@@ -22,9 +20,15 @@
       </query>
   <params>
     <param name='survey_id' display='Survey' description='Select the survey to return data for, or leave for all surveys' datatype='lookup'
-        query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title'/>
-    <param name="date_from" display="Date From" datatype="date"/>
-    <param name="date_to" display="Date To" datatype="date"/>
+        query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title'>
+      <where>o.survey_id=#survey_id#</where>
+    </param>
+    <param name="date_from" display="Date From" datatype="date">
+      <where>o.date_start&gt;='#date_from#'</where>
+    </param>
+    <param name="date_to" display="Date To" datatype="date">
+      <where>o.date_start&lt;='#date_to#'</where>
+    </param>
     <param name="records_to_scan" datatype="integer" default="1000" />
     <param name="recorders_to_return" datatype="integer" default="15" />
     <param name="input_form" default="">
