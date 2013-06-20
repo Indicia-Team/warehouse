@@ -24,9 +24,17 @@ var Georeferencer;
   Georeferencer = function(mapdiv, callback) {
 
     this.georeference = function(searchtext) {
-      var request, query={}, queryStr;
+      var request, query={}, queryStr, where={}, hasWhere=false;
       if (mapdiv.georefOpts['public']===undefined || mapdiv.georefOpts['public']==='f') {
-        query = {'where': {'public': 'f'}};
+        where['public'] = 'f';
+        hasWhere=true;
+      }
+      if (mapdiv.georefOpts.locationTypeId!==null) {
+        where.location_type_id=mapdiv.georefOpts.locationTypeId;
+        hasWhere=true;
+      } 
+      if (hasWhere) {
+        query = {'where': where};
       }
       // specifying orlike2 & orlike3 is a fudge to build the object. We replace them with orlike later.
       $.extend(query, {'like': ['name',searchtext],
@@ -107,5 +115,6 @@ jQuery.fn.indiciaMapPanel.georeferenceDriverSettings = {
   warehouseUrl: '',
   auth_token: '',
   nonce: '',
-  zoomToBoxForCentroid: 1000 // set this to control how zoomed in the map will be if we only know the centroid.
+  zoomToBoxForCentroid: 1000, // set this to control how zoomed in the map will be if we only know the centroid.
+  locationTypeId: null
 };
