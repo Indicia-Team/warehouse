@@ -26,13 +26,15 @@
 class extension_event_reports {
 
   /**
-   * Outputs a map with an overlay of regions, showing a count for each. 
-   
+   * Outputs a map with an overlay of regions, showing a count for each. Default is to count records, but can
+   * be configured to count taxa.
+   *
    * @param array $auth Authorisation tokens.
    * @param array $args Form arguments (the settings on the form edit tab).
    * @param string $tabalias The alias of the tab this is being loaded onto.
    * @param array $options The options passed to this control using @option=value settings in the form structure.
-   * Options supported are those which can be passed to the report_helper::report_map method.
+   * Options supported are those which can be passed to the report_helper::report_map method. In addition
+   * set @output=species to configure the report to show a species counts map.   
    * @param string $path The page reload path, in case it is required for the building of links.
    * @return string HTML to insert into the page for the location map. JavaScript is added to the variables in helper_base.
    *
@@ -44,11 +46,15 @@ class extension_event_reports {
     $mapOptions = iform_map_get_map_options($args, $auth['read']);
     $olOptions = iform_map_get_ol_options($args);
     $mapOptions['clickForSpatialRef'] = false;
-    $r = map_helper::map_panel($mapOptions, $olOptions);    
+    $r = map_helper::map_panel($mapOptions, $olOptions);
+    if (!empty($options['output']) && $options['output']==='species')
+      $type='species';
+    else
+      $type='occurrence';
     $reportOptions = array_merge(
       iform_report_get_report_options($args, $auth['read']),
       array(
-        'dataSource' => 'library/locations/occurrence_counts_mappable_for_event',      
+        'dataSource' => "library/locations/{$type}_counts_mappable_for_event",
         'featureDoubleOutlineColour' => '#f7f7f7',
         'rowId' => 'id'
       ),
@@ -241,6 +247,8 @@ class extension_event_reports {
       ),
       $options
     );
+    if (hostsite_get_user_field('training')) 
+      $reportOptions['extraParams']['training'] = 'true';
     $reportOptions['extraParams']['limit']=$reportOptions['limit'];
     $rows = report_helper::get_report_data($reportOptions);
     $r = "<table class=\"league\"><thead><th>Pos</th><th>$label</th><th>Species</th></head><tbody>";
