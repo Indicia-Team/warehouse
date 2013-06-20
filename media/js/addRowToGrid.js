@@ -46,7 +46,7 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
                 return true;
               }
             },
-          'A species must be selected');
+          '');
           
   /*
    * A keyboard event handler for the grid.
