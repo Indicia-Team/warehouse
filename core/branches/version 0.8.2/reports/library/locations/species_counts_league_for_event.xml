@@ -13,10 +13,12 @@
       AND o.date_start&gt;='#date_from#' 
       AND o.date_start&lt;='#date_to#'
       AND o.record_status&lt;&gt;'R'
-      AND o.training=false
-      AND o.website_id IN (#website_ids#)
+      #filters#
     ) ON ils.location_id=l.id
-    WHERE l.deleted=false
+    #agreements_join#
+    #joins#
+    WHERE #sharing_filter# 
+    AND l.deleted=false
     AND l.location_type_id=#location_type_id#
     AND l.public=true
     AND (l.code NOT LIKE ('%+%') OR l.code IS NULL)

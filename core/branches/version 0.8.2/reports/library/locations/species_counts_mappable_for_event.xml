@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<report title="Record counts by location for an event" description="Lists locations with mappable boundary output and the number of records within them. Requires the spatial_index_builder warehouse module to be enabled.
+<report title="Species counts by location for an event" description="Lists locations with mappable boundary output and the number of taxa within them. Requires the spatial_index_builder warehouse module to be enabled.
     This version is simpler than the summary report (it does not calculate minima and maxima) so is faster. It also requires survey and date range filters so is ideal for events such as
     bioblitzes.">
   <query website_filter_field="o.website_id">
     SELECT #columns#
     FROM locations l1 
     JOIN (
-    SELECT l.id, count(o.id) as count
+    SELECT l.id, count(distinct o.taxon_meaning_id) as count
     FROM locations l
     JOIN (index_locations_samples ils 
       JOIN cache_occurrences o ON o.sample_id=ils.sample_id 
@@ -43,7 +43,7 @@
         <column name="id" visible="false" sql="l1.id" />
         <column name="name" display="Site Name" sql="l1.name" />
         <column name="boundary" display="Boundary" sql="st_astext(ST_SnapToGrid(ST_Simplify(COALESCE(l1.boundary_geom, l1.centroid_geom), #simplifyFeatureTo#), #simplifyFeatureTo#, #simplifyFeatureTo#))" visible="false" mappable="true"/>
-        <column name="value" display="No. of Records"  sql="count" feature_style="label"/>
+        <column name="value" display="No. of Taxa"  sql="count" feature_style="label"/>
         <column name="oc" visible="false" feature_style="labelOutlineColor" sql="'white'" />
         <column name="ow" visible="false" feature_style="labelOutlineWidth" sql="5" />
         <column name="fo" visible="false" feature_style="fillOpacity" sql="0" />
