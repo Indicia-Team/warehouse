@@ -9,9 +9,6 @@
     FROM locations l
     JOIN (index_locations_samples ils 
       JOIN cache_occurrences o ON o.sample_id=ils.sample_id 
-      AND o.survey_id=#survey_id#
-      AND o.date_start&gt;='#date_from#' 
-      AND o.date_start&lt;='#date_to#'
       AND o.record_status&lt;&gt;'R'
       #filters#
     ) ON ils.location_id=l.id
@@ -29,10 +26,19 @@
     <order_by>count DESC</order_by>
   </order_bys>
   <params>
-    <param name="date_from" display="Date From" datatype="date"/>
-    <param name="date_to" display="Date To" datatype="date"/>
-    <param name="survey_id" display="Survey" description="Select the survey, or leave for all surveys" datatype="lookup"
-        population_call="direct:survey:id:title"/>      
+    <param name='survey_id' display='Survey' description='Select the survey to return data for, or leave for all surveys' datatype='lookup'
+        query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title'>
+      <where>o.survey_id=#survey_id#</where>
+    </param>
+    <param name="date_from" display="Date From" datatype="date">
+      <where>o.date_start&gt;='#date_from#'</where>
+    </param>
+    <param name="date_to" display="Date To" datatype="date">
+      <where>o.date_start&lt;='#date_to#'</where>
+    </param>
+    <param name="input_form" default="">
+      <where>o.input_form='#input_form#'</where>
+    </param>      
     <param name="location_type_id" display="Location Type" description="Select the location type, or leave blank to not filter by location type." datatype="lookup"
         population_call="report:library/terms/terms_list:id:term:termlist_external_key=indicia:location_types,termlist_id="/>
     </params>
