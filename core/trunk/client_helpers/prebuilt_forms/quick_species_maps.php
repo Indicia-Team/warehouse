@@ -137,6 +137,7 @@ class iform_quick_species_maps {
         count($args['indicia_species_layer_slds']));
     $r .= '<p id="instruct2" style="display: none">'.lang::get('Use the - buttons to permanently remove layers, or untick the box in the legend to temporarily hide them.');
     $mapOptions = iform_map_get_map_options($args, $readAuth);
+    $mapOptions['clickForSpatialRef']=false;
     $olOptions = iform_map_get_ol_options($args, $readAuth);
     $r .= map_helper::layer_list(array(
       'layerTypes'=>array('overlay'),
