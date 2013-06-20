@@ -275,9 +275,12 @@ var checkSubmitInProgress = function () {
  */
 jQuery.fn.uploader.defaults = {
   caption : "Files",
+  captionClass : '',
   uploadSelectBtnCaption : 'Add file(s)',
   flickrSelectBtnCaption : 'Select photo on Flickr',
   uploadStartBtnCaption : 'Start Upload',
+  helpText : '',
+  helpTextClass: 'helpText',
   useFancybox: true,
   imageWidth: 200,
   resizeWidth: 0,
@@ -289,7 +292,7 @@ jQuery.fn.uploader.defaults = {
   maxFileCount : 4,
   existingFiles : [],
   buttonTemplate : '<button id="{id}" type="button" class="indicia-button">{caption}</button>',
-  file_boxTemplate : '<fieldset class="ui-corner-all">\n<legend>{caption}</legend>\n{uploadSelectBtn}\n{flickrSelectBtn}\n<div class="filelist"></div>' +
+  file_boxTemplate : '<fieldset class="ui-corner-all">\n<legend class={captionClass}>{caption}</legend>\n{uploadSelectBtn}\n{flickrSelectBtn}\n<div class="filelist"></div>' +
                  '{uploadStartBtn}</fieldset>\n<p class="{helpTextClass}">{helpText}</p>',
   file_box_initial_file_infoTemplate : '<div id="{id}" class="ui-widget-content ui-corner-all photo"><div class="ui-widget-header ui-corner-all"><span>{filename} ({filesize})</span> ' +
           '<span class="delete-file ui-state-default ui-widget-content ui-corner-all ui-helper-clearfix" id="del-{id}">X</span></div><div class="progress"><div class="progress-bar" style="width: {imagewidth}px"></div>'+
