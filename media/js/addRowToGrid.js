@@ -678,14 +678,14 @@ function getAutocompleteSettings(extraParams) {
           item.searchterm = item.taxon;
         }
         // note we track the distinct ttl_id and display term, so we don't output duplicates
-        if (!done.hasOwnProperty(item.id + '_' + item.display)) {
+        if (!done.hasOwnProperty(item.taxon_meaning_id + '_' + item.display)) {
           results[results.length] =
           {
             'data' : item,
             'result' : item.searchterm,
             'value' : item.id
           };
-          done[item.id + '_' + item.display]=true;
+          done[item.taxon_meaning_id + '_' + item.display]=true;
         }
       });
       return results;
