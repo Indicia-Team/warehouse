@@ -46,7 +46,7 @@ $(document).ready(function () {
    * Catch clicks on the grid icons, to add layers for the species to the map.
    */
   $('table.report-grid tbody').click(function (evt) {
-    if (evt.target.localName!=="img")
+    if ((evt.target.localName || evt.target.nodeName.toLowerCase())!=="img")
       return;
     // Toggle through instructions to get the user started
     if (sequence===0) {
