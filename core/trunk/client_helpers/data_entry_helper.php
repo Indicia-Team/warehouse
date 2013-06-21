@@ -2717,11 +2717,11 @@ class data_entry_helper extends helper_base {
         if ($options['rowInclusionCheck']=='alwaysRemovable') {
           $imgPath = empty(self::$images_path) ? self::relative_client_helper_path()."../media/images/" : self::$images_path;
           if ($options['editTaxaNames']) {
-            $row .= '<td style="width: 5%">
+            $row .= '<td class="row-buttons">
                      <img class="action-button remove-row" src='.$imgPath.'nuvola/cancel-16px.png>
-                     <img class="edit-taxon-name" src='.$imgPath.'nuvola/package_editors-16px.png></td>';
+                     <img class="action-button edit-taxon-name" src='.$imgPath.'nuvola/package_editors-16px.png></td>';
           } else {
-            $row .= '<td style="width: 1%"><img class="action-button remove-row" src='.$imgPath.'nuvola/cancel-16px.png></td>';
+            $row .= '<td class="row-buttons"><img class="action-button remove-row" src='.$imgPath.'nuvola/cancel-16px.png></td>';
           }
         }
         $row .= str_replace(array('{content}','{colspan}','{tableId}','{idx}'), 

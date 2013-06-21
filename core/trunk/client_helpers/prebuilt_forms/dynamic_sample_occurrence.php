@@ -1410,7 +1410,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         "  if (item.$colLanguage!==null && item.$colLanguage.toLowerCase()==='$valLatinLanguage') {\n".
         "    r = '<em>'+item.$colTaxon+'</em>';\n".
         "  } else {\n".
-        "    r = item.$colTaxon;\n".
+        "    r = '<span>'+item.$colTaxon+'</span>';\n".
         "  }\n";
     // This bit optionally adds '- common' or '- latin' depending on what was being searched
     if (isset($args['species_include_both_names']) && $args['species_include_both_names']) {
