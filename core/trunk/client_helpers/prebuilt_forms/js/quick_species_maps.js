@@ -18,11 +18,11 @@
  * @license http://www.gnu.org/licenses/gpl.html GPL 3.0
  * @link    http://code.google.com/p/indicia/
  */
- 
+
 var grid_load;
 
 (function ($) {
- 
+  
 var layers=[];
 
 /**
@@ -37,7 +37,7 @@ grid_load = function() {
       $(img).addClass('on-map');
     }
   });
-}
+};
 
 $(document).ready(function () {
   var sequence=0, remove, removeIdx, img, title, key, filter, sld;
@@ -46,8 +46,9 @@ $(document).ready(function () {
    * Catch clicks on the grid icons, to add layers for the species to the map.
    */
   $('table.report-grid tbody').click(function (evt) {
-    if ((evt.target.localName || evt.target.nodeName.toLowerCase())!=="img")
+    if ((evt.target.localName || evt.target.nodeName.toLowerCase())!=="img") {
       return;
+    }
     // Toggle through instructions to get the user started
     if (sequence===0) {
       $('#instruct').hide("slide", { direction: "up" }, 500);
@@ -80,7 +81,7 @@ $(document).ready(function () {
         title += ' - ' + indiciaData.indiciaSpeciesLayer.myRecords;
       }
       sld=indiciaData.indiciaSpeciesLayer.slds[sequence % indiciaData.indiciaSpeciesLayer.slds.length];
-      layer = new OpenLayers.Layer.WMS(title, indiciaData.indiciaSpeciesLayer.wmsUrl, 
+      var layer = new OpenLayers.Layer.WMS(title, indiciaData.indiciaSpeciesLayer.wmsUrl, 
           {layers: indiciaData.indiciaSpeciesLayer.featureType, transparent: true, CQL_FILTER: filter, STYLES: sld},
           {isBaseLayer: false, sphericalMercator: true, singleTile: true, opacity: 0.5});
       indiciaData.mapdiv.map.addLayer(layer);
