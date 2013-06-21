@@ -1,9 +1,10 @@
-var rowRequest=null, occurrence_id = null, currRec = null, urlSep, validator, speciesLayers = [];
+var rowRequest=null, occurrence_id = null, currRec = null, urlSep, validator, speciesLayers = [], trustsCounter;
 var email = {to:'', subject:'', body:'', type:''};
 
 // IE7 compatability
 if(!Array.indexOf){
   Array.prototype.indexOf = function(obj){
+    "use strict";
     var i;
     for(i=0; i<this.length; i++){
       if(this[i]===obj){
@@ -14,6 +15,7 @@ if(!Array.indexOf){
 }
 
 function selectRow(tr, callback) {
+  "use strict";
   // The row ID is row1234 where 1234 is the occurrence ID.
   if (tr.id.substr(3)===occurrence_id) {
     if (typeof callback!=="undefined") {
@@ -54,7 +56,7 @@ function selectRow(tr, callback) {
           indiciaData.mapdiv.map.removeLayer(layer);
         });
         speciesLayers = [];
-        var layer, thisSpLyrSettings, filter, skip;
+        var layer, thisSpLyrSettings, filter;
         if (typeof indiciaData.wmsSpeciesLayers!=="undefined" && data.extra.taxon_external_key!==null) {
           $.each(indiciaData.wmsSpeciesLayers, function(idx, layerDef) {
             thisSpLyrSettings = $.extend({}, layerDef.settings);
@@ -87,6 +89,7 @@ function selectRow(tr, callback) {
 }
 
 function getAttributeValue(caption) {
+  "use strict";
   //returns the value of the attribute in the currRec.data with the caption supplied
  var r = '';
  $.each(currRec.data, function(){
@@ -104,11 +107,12 @@ function getAttributeValue(caption) {
  * visual indicators of the record's status.
  */
 function postOccurrence(occ) {
+  "use strict";
   var status = occ['occurrence:record_status'], id=occ['occurrence:id'];
   $.post(
     indiciaData.ajaxFormPostUrl,
     occ,
-    function (data) {
+    function () {
       $('#row' + id + ' td:first div, #details-tab td').removeClass('status-V');
       $('#row' + id + ' td:first div, #details-tab td').removeClass('status-C');
       $('#row' + id + ' td:first div, #details-tab td').removeClass('status-R');
@@ -141,6 +145,7 @@ function postOccurrence(occ) {
  * Build an email to send to a verifier or the original recorder, containing the record details.
  */
 function setupRecordCheckEmail(subject, body) {
+  "use strict";
   //Form to create email of record details
   var record = '';
   $.each(currRec.data, function (idx, section) {
@@ -166,6 +171,7 @@ function setupRecordCheckEmail(subject, body) {
  * Build an email for sending to another expert.
  */
 function buildVerifierEmail() {
+  "use strict";
   setupRecordCheckEmail(indiciaData.email_subject_send_to_verifier, indiciaData.email_body_send_to_verifier);
   // Let the user pick the recipient
   email.to = '';
@@ -177,14 +183,15 @@ function buildVerifierEmail() {
  * Build an email for sending to the recorder to request more details.
  */
 function buildRecorderConfirmationEmail() {
+  "use strict";
   setupRecordCheckEmail(indiciaData.email_subject_send_to_recorder, indiciaData.email_body_send_to_recorder);
   email.to=currRec.extra.recorder_email;
   email.subtype='R';
   popupEmail();
 }
 
-function buildRecorderEmail(status, comment)
-{
+function buildRecorderEmail(status, comment) {
+  "use strict";
   if (status === 'V') {
     email.subject = indiciaData.email_subject_verified;
     email.body = indiciaData.email_body_verified;
@@ -216,6 +223,7 @@ function buildRecorderEmail(status, comment)
 }
 
 function popupEmail() {
+  "use strict";
   $.fancybox('<form id="email-form"><fieldset class="popup-form">' +
         '<legend>' + indiciaData.popupTranslations.emailTitle + '</legend>' +
         '<label>To:</label><input type="text" id="email-to" class="email required" value="' + email.to + '"/><br />' +
@@ -230,6 +238,7 @@ function popupEmail() {
 }
 
 function processEmail(){
+  "use strict";
   //Complete creation of email of record details
   if (validator.numberOfInvalids()===0) {
     email.to = $('#email-to').val();
@@ -258,27 +267,29 @@ function processEmail(){
 }
 
 function sendEmail() {
+  "use strict";
   //Send an email
-    // use an AJAX call to get the server to send the email
-    $.post(
-      indiciaData.ajaxUrl + '/email',
-      email,
-      function (response) {
-        if (response === 'OK') {
-          $.fancybox.close();
-          alert(indiciaData.popupTranslations.emailSent);
-        } else {
-          $.fancybox('<div class="manual-email">' + indiciaData.popupTranslations.requestManualEmail +
-              '<div class="ui-helper-clearfix"><span class="left">To:</span><div class="right">' + email.to + '</div></div>' +
-              '<div class="ui-helper-clearfix"><span class="left">Subject:</span><div class="right">' + email.subject + '</div></div>' +
-              '<div class="ui-helper-clearfix"><span class="left">Content:</span><div class="right">' + email.body.replace(/\n/g, '<br/>') + '</div></div>' +
-                '</div>');
-        }
+  // use an AJAX call to get the server to send the email
+  $.post(
+    indiciaData.ajaxUrl + '/email',
+    email,
+    function (response) {
+      if (response === 'OK') {
+        $.fancybox.close();
+        alert(indiciaData.popupTranslations.emailSent);
+      } else {
+        $.fancybox('<div class="manual-email">' + indiciaData.popupTranslations.requestManualEmail +
+            '<div class="ui-helper-clearfix"><span class="left">To:</span><div class="right">' + email.to + '</div></div>' +
+            '<div class="ui-helper-clearfix"><span class="left">Subject:</span><div class="right">' + email.subject + '</div></div>' +
+            '<div class="ui-helper-clearfix"><span class="left">Content:</span><div class="right">' + email.body.replace(/\n/g, '<br/>') + '</div></div>' +
+              '</div>');
       }
-    );
-  }
+    }
+  );
+}
 
 function showComment(comment, username) {
+  "use strict";
   // Remove message that there are no comments
   $('#no-comments').hide();
   var html = '<div class="comment">', c = comment.replace(/\n/g, '<br/>');
@@ -291,6 +302,7 @@ function showComment(comment, username) {
 }
 
 function saveComment(text) {
+  "use strict";
   if (typeof text==="undefined" && $('#comment-text')) {
     text=$('#comment-text').val();
   }
@@ -317,6 +329,7 @@ function saveComment(text) {
 }
 
 function saveVerifyComment() {
+  "use strict";
   var status = $('#set-status').val(),
     comment = indiciaData.statusTranslations[status],
     data, sendEmail = false;
@@ -346,6 +359,7 @@ function saveVerifyComment() {
 }
 
 function showTab() {
+  "use strict";
   if (currRec !== null) {
     if (indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] === 'details') {
       $('#details-tab').html(currRec.content);
@@ -378,6 +392,7 @@ function showTab() {
 }
 
 function setStatus(status) {
+  "use strict";
   $.fancybox('<fieldset class="popup-form">' +
         '<legend>' + indiciaData.popupTranslations.title.replace('{1}', indiciaData.popupTranslations[status]) + '</legend>' +
         '<label>Comment:</label><textarea id="verify-comment" rows="5" cols="80"></textarea><br />' +
@@ -388,6 +403,7 @@ function setStatus(status) {
 }
 
 mapInitialisationHooks.push(function (div) {
+  "use strict";
   div.map.editLayer.style = null;
   div.map.editLayer.styleMap = new OpenLayers.StyleMap({
     'default': {
@@ -403,12 +419,13 @@ mapInitialisationHooks.push(function (div) {
 
 
 $(document).ready(function () {
+  "use strict";
   //Use jQuery to add a button to the top of the verification page. Use this button to access the popup
   //which allows you to verify all trusted records.
-  verifyAllTrustedButton = '<input type="button" value="..." class="default-button verify-grid-trusted tools-btn" id="verify-grid-trusted"/>';
+  var verifyAllTrustedButton = '<input type="button" value="..." class="default-button verify-grid-trusted tools-btn" id="verify-grid-trusted"/>', 
+      trustedHtml, request;
   $('#verification-params #run-report').before(verifyAllTrustedButton);
-  var trustsCounter;
-  $('#verify-grid-trusted').click(function(evt) {
+  $('#verify-grid-trusted').click(function() {
     trustedHtml = '<div class="trusted-verify-popup" style="width: 550px"><h2>Verify records by trusted recorders</h2>'+
                   '<p>This facility allows you to verify all records where the recorder is trusted based on the record\'s '+
                   'survey, taxon group and location. Before using this facility, set up the recorders you wish to trust '+
@@ -418,7 +435,7 @@ $(document).ready(function () {
                    '<button type="button" class="default-button" id="verify-trusted-button">Verify trusted records</button></div>';
     $.fancybox(trustedHtml);
 
-    $('#verify-trusted-button').click(function(evt) {
+    $('#verify-trusted-button').click(function() {
       var params=indiciaData.reports.verification.grid_verification_grid.getUrlParamsForAllRecords();
       //We pass "trusted" as a parameter to the existing verification_list_3 report which has been adjusted
       //to handle verification of all trusted records.
@@ -436,7 +453,7 @@ $(document).ready(function () {
     });
   });
 
-function quickVerifyPopup(row) {
+function quickVerifyPopup() {
   var popupHtml;
   popupHtml = '<div class="quick-verify-popup" style="width: 550px"><h2>Quick verification</h2>'+
       '<p>The following options let you rapidly verify records. The only records affected are those in the grid but they can be on any page of the grid, '+
@@ -453,7 +470,7 @@ function quickVerifyPopup(row) {
   popupHtml += '<button type="button" class="default-button verify-button">Verify chosen records</button>'+
       '<button type="button" class="default-button cancel-button">Cancel</button></p></div>';
   $.fancybox(popupHtml);
-  $('.quick-verify-popup .verify-button').click(function(evt) {
+  $('.quick-verify-popup .verify-button').click(function() {
     var params=indiciaData.reports.verification.grid_verification_grid.getUrlParamsForAllRecords(), request,
         radio=$('.quick-verify-popup input[name=quick-option]:checked');
     if (radio.length===1) {
@@ -477,13 +494,13 @@ function quickVerifyPopup(row) {
       $.fancybox.close();
     }
   });
-  $('.quick-verify-popup .cancel-button').click(function(evt) {
+  $('.quick-verify-popup .cancel-button').click(function() {
     $.fancybox.close();
   });
 }
 
-function trustsPopup(row) {
-  var popupHtml;
+function trustsPopup() {
+  var popupHtml, surveyRadio, taxonGroupRadio, locationInput, i, theDataToRemove;
   popupHtml = '<div class="quick-verify-popup" style="width: 550px"><h2>Recorder\'s trust settings</h2>';
   popupHtml += '<p>Recorders can be trusted for records from a selected region, species group or survey combination. When they add records which meet the criteria ' +
       'that the recorder is trusted for the records will not be automatically verified. However, you can filter the grid to show only "trusted" records and use the ... button at the top ' +
@@ -532,7 +549,7 @@ function trustsPopup(row) {
   }
   popupHtml += '<button type="button" id="trust-button" class="default-button trust-button">Set trust for ' + currRec.extra.recorder + '</button>'+ "</div>\n";
   $.fancybox(popupHtml);
-  $('.quick-verify-popup .trust-button').click(function(evt) {
+  $('.quick-verify-popup .trust-button').click(function() {
     document.getElementById('trust-button').innerHTML = "Please Wait……";
     //As soon as the Trust button is clicked we disable it so that the user can't keep clicking it.
     $(".trust-button").attr('disabled','disabled');
@@ -562,8 +579,8 @@ function trustsPopup(row) {
       document.getElementById('trust-button').innerHTML = "Trust";
     } else {
       var downgradeConfirmRequired = false;
-      var downgradeConfirmed=false
-      var duplicateDetected = false
+      var downgradeConfirmed=false;
+      var duplicateDetected = false;
       var trustNeedsRemoval = [];
       var getTrustsReport = indiciaData.indiciaSvc +'/index.php/services/report/requestReport?report=library/user_trusts/get_user_trust_for_record.xml&callback=?';
       var getTrustsReportParameters = {
@@ -574,7 +591,7 @@ function trustsPopup(row) {
         'auth_token': indiciaData.readAuth,
         'nonce': indiciaData.nonce,
         'reportSource':'local'
-      }
+      };
       //Collect the existing trust data associated with the record so we can compare the new trust data with it
       $.getJSON (
         getTrustsReport,
@@ -588,24 +605,26 @@ function trustsPopup(row) {
           //Cycle through the existing trust data we need for the record
           for (i=0; i<data.length; i++) {
             //If the new selections match an existing record then we flag it as a duplicate not be be added
-            if (theData['user_trust:survey_id'] == data[i].survey_id
-              && theData['user_trust:taxon_group_id'] == data[i].taxon_group_id
-              && theData['user_trust:location_id'] == data[i].location_id
-              && currRec.extra.created_by_id == data[i].user_id)
-                duplicateDetected = true;
+            if (theData['user_trust:survey_id'] === data[i].survey_id &&
+                theData['user_trust:taxon_group_id'] === data[i].taxon_group_id &&
+                theData['user_trust:location_id'] === data[i].location_id &&
+                currRec.extra.created_by_id === data[i].user_id) {
+              duplicateDetected = true;
+            }
             //If any of the 3 trust items the user has entered are smaller than the existing trust item we are looking at,
             //then we flag it as the existing row needs to be at least partially downgraded
-            if (theData['user_trust:survey_id'] && !data[i].survey_id
-              || theData['user_trust:taxon_group_id'] && !data[i].taxon_group_id
-              || theData['user_trust:location_id'] && !data[i].location_id)
-                downgradeDetect++;
+            if (theData['user_trust:survey_id'] && !data[i].survey_id ||
+                theData['user_trust:taxon_group_id'] && !data[i].taxon_group_id ||
+                theData['user_trust:location_id'] && !data[i].location_id) {
+              downgradeDetect++;
+            }
             //If any of the 3 trust items the user has entered are bigger than the existing trust item we are looking at,
             //then we flag it as the existing row needs to be at least partially upgraded
-            if (!theData['user_trust:survey_id'] && data[i].survey_id
-              || !theData['user_trust:taxon_group_id'] && data[i].taxon_group_id
-              || !theData['user_trust:location_id'] && data[i].location_id)
-                upgradeDetect++;
-
+            if (!theData['user_trust:survey_id'] && data[i].survey_id ||
+                !theData['user_trust:taxon_group_id'] && data[i].taxon_group_id ||
+                !theData['user_trust:location_id'] && data[i].location_id) {
+              upgradeDetect++;
+            }
             //If we have detected that there are more items to be downgraded than upgraded for an existing trust then we flag it.
             //We can then warn the user about the downgrade and remove the existing trust
             //e.g. This means if we have a trust which is just a trust for location Dorset and the user upgrades the
@@ -636,7 +655,7 @@ function trustsPopup(row) {
             document.getElementById('trust-button').innerHTML = "Trust";
           }
 
-          if (trustNeedsDowngrade.length!=0 && duplicateDetected===false) {
+          if (trustNeedsDowngrade.length!==0 && duplicateDetected===false) {
             downgradeConfirmRequired=true;
             downgradeConfirmed = confirm("Your new trust settings will result in the existing trust rights for this recorder being lowered.\n"+
                                          "Are you sure you wish to continue?");
@@ -650,6 +669,11 @@ function trustsPopup(row) {
         //if the message was never displayed.
         if (duplicateDetected ===false && (downgradeConfirmRequired===false || downgradeConfirmed === true)) {
           //Go through each trust item we need to remove from the database and do the removal
+          var handlePostResponse = function (data) {
+            if (typeof data.error !== "undefined") {
+              alert(data.error);
+            }
+          };
           for (i=0; i<trustNeedsRemovalIndex; i++) {
             theDataToRemove= {
               'website_id': indiciaData.website_id,
@@ -659,11 +683,7 @@ function trustsPopup(row) {
             $.post (
               indiciaData.ajaxFormPostUrl.replace('occurrence', 'user-trust'),
               theDataToRemove,
-              function (data) {
-                if (typeof data.error !== "undefined") {
-                  alert(data.error);
-                }
-              }
+              handlePostResponse
             );
           }
         }
@@ -715,7 +735,7 @@ $('table.report-grid tbody').click(function (evt) {
   }
 });
 
-  $('#record-details-tabs').bind('tabsshow', function (evt, ui) {
+  $('#record-details-tabs').bind('tabsshow', function () {
     showTab();
   });
 
@@ -743,16 +763,17 @@ $('table.report-grid tbody').click(function (evt) {
 
 //Function to draw any existing trusts from the database
 function drawExistingTrusts() {
-  var getTrustsReport = indiciaData.indiciaSvc +'/index.php/services/report/requestReport?report=library/user_trusts/get_user_trust_for_record.xml&callback=?';
-  var getTrustsReportParameters = {
-    'user_id':currRec.extra.created_by_id,
-    'survey_id':currRec.extra.survey_id,
-    'taxon_group_id':currRec.extra.taxon_group_id,
-    'location_ids':currRec.extra.locality_ids,
-    'auth_token': indiciaData.readAuth,
-    'nonce': indiciaData.nonce,
-    'reportSource':'local'
-  }
+  "use strict";
+  var getTrustsReport = indiciaData.indiciaSvc +'/index.php/services/report/requestReport?report=library/user_trusts/get_user_trust_for_record.xml&callback=?', 
+      getTrustsReportParameters = {
+        'user_id':currRec.extra.created_by_id,
+        'survey_id':currRec.extra.survey_id,
+        'taxon_group_id':currRec.extra.taxon_group_id,
+        'location_ids':currRec.extra.locality_ids,
+        'auth_token': indiciaData.readAuth,
+        'nonce': indiciaData.nonce,
+        'reportSource':'local'
+      }, i, idNum;
   //variable holds our HTML
   var textMessage;
   $.getJSON (
@@ -764,34 +785,43 @@ function drawExistingTrusts() {
           trustsCounter = data.length;
           textMessage = '<h3>Existing trust criteria</h3>';
           //If there is only one trust we put the information into a sentence, else we put it in a bullet list
-          if (data.length===1)
-            textMessage += '<div class="existingTrustSection existingTrustData">' + data[0].recorder_name + ' is trusted for '
-          else
+          if (data.length===1) {
+            textMessage += '<div class="existingTrustSection existingTrustData">' + data[0].recorder_name + ' is trusted for ';
+          }
+          else {
             textMessage += '<div class="existingTrustSection">This record is trusted as ' + data[0].recorder_name + ' has the following trust criteria:<br/><ul><br/>';
+          }
           //for each trust we build the HTML
           for (i=0; i<data.length; i++) {
-            if(data.length>1)
+            if(data.length>1) {
               textMessage += '<li class="existingTrustData" id="trust-' + data[i].trust_id + '">The ';
-            else
+            }
+            else {
               textMessage += 'the ';
+            }
 
-            if (data[i].survey_title)
+            if (data[i].survey_title) {
               textMessage += '<b>survey </b><i>' +  data[i].survey_title +  '</i>, ';
-            if (data[i].taxon_group)
+            }
+            if (data[i].taxon_group) {
               textMessage += '<b> taxon group</b><i> ' +  data[i].taxon_group + '</i>, ';
-            if (data[i].location_name)
+            }
+            if (data[i].location_name) {
               textMessage += '<b> location</b><i> ' +  data[i].location_name + '</i>';
+            }
             //Remove comma from end of trust information if there is a dangling comma because location info isn't present
             if (!data[i].location_name) {
               textMessage = textMessage.substring(0, textMessage.length - 2);
             }
             textMessage += ' <a class="default-button existingTrustRemoveButton" id="deleteTrust-' +
-              data[i].trust_id + '" >Remove</a><br/>';
-            if(data.length>1)
+                data[i].trust_id + '" >Remove</a><br/>';
+            if(data.length>1) {
               textMessage += '</li>';
+            }
           }
-          if(data.length>1)
+          if(data.length>1) {
             textMessage += '</ul>';
+          }
           textMessage += '</div>';
           //Apply the HTML to the HTML tag
           document.getElementById('existingTrusts').innerHTML = textMessage;
@@ -814,6 +844,7 @@ function drawExistingTrusts() {
 }
 
 function removeTrust(RemoveTrustId) {
+  "use strict";
   var removeItem = {
     'website_id': indiciaData.website_id,
     'user_trust:id' : RemoveTrustId,
@@ -831,8 +862,9 @@ function removeTrust(RemoveTrustId) {
         //otherwise we remove the whole trust section
         if (trustsCounter > 1) {
           $("#trust-" + RemoveTrustId).hide();
-        } else
+        } else {
           $(".existingTrustSection").hide();
+        }
         trustsCounter--;
       }
     }
