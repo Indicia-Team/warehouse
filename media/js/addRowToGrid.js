@@ -163,12 +163,12 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
       taxonCell=event.target.parentNode; 
       //Create and edit icons for taxon cells. Only add the edit icon if the user has this functionality available on edit tab.
       if (indiciaData['editTaxaNames-'+gridId]==true) {
-        deleteAndEditHtml = "<td style='width: 5%'>\n\
+        deleteAndEditHtml = "<td class='row-buttons'>\n\
             <img class='action-button remove-row' src=" + Drupal.settings.basePath + "/sites/all/modules/iform/media/images/nuvola/cancel-16px.png>\n\
-            <img class='edit-taxon-name' src=" + Drupal.settings.basePath + "/sites/all/modules/iform/media/images/nuvola/package_editors-16px.png></td>";
+            <img class='action-button edit-taxon-name' src=" + Drupal.settings.basePath + "/sites/all/modules/iform/media/images/nuvola/package_editors-16px.png></td>";
       } else {
-        deleteAndEditHtml = "<td style='width: 1%'>\n\
-            <img class='action-button remove-row' src=" + Drupal.settings.basePath + "/sites/all/modules/iform/media/images/nuvola/cancel-16px.png></td>";
+        deleteAndEditHtml = "<td class='row-buttons'>\n\
+            <img class='action-button action-button remove-row' src=" + Drupal.settings.basePath + "/sites/all/modules/iform/media/images/nuvola/cancel-16px.png></td>";
       }
       //Put the edit and delete icons just before the taxon name
       $(taxonCell).before(deleteAndEditHtml);
@@ -232,7 +232,7 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
         // remove the current contents of the taxon cell
         $('#'+selectorId).remove();
         // replace with the previous plain text species name
-        $(taxonCell).text(taxonNameBeforeUserEdit); 
+        $(taxonCell).html(taxonNameBeforeUserEdit); 
         var deleteAndEditHtml = "<td style='width: 5%'>\n\
             <img class='action-button remove-row' src=" + Drupal.settings.basePath + "/sites/all/modules/iform/media/images/nuvola/cancel-16px.png>\n\
             <img class='edit-taxon-name' src=" + Drupal.settings.basePath + "/sites/all/modules/iform/media/images/nuvola/package_editors-16px.png></td>";
@@ -320,19 +320,26 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
     makeSpareRow(gridId, readAuth, lookupListId, url, null, false);
     //Deal with user clicking on edit taxon icon
     $('.edit-taxon-name').live('click', function(e) {
-      var row = $($(e.target).parents('tr:first'));
-      var taxonCell=$(row).children('.scTaxonCell'); 
-      var gridId = $(taxonCell).closest('table').attr('id');
-      var selectorId = gridId + '-' + indiciaData['gridCounter-'+gridId];
+      if ($('.ac_results:visible').length>0) {
+        // don't go into edit mode if they are picking a species name already
+        return;
+      }
+      var row = $($(e.target).parents('tr:first')),
+          taxonCell=$(row).children('.scTaxonCell'),
+          gridId = $(taxonCell).closest('table').attr('id'),
+          selectorId = gridId + '-' + indiciaData['gridCounter-'+gridId],
+          taxonTextBeforeUserEdit;
       //When moving into edit mode we need to create an autocomplete box for the user to fill in
       var speciesAutocomplete = '<input type="text" id="' + selectorId + '" class="grid-required ac_input {speciesMustBeFilled:true}" autocomplete="off"/>';
       //remove the edit and delete icons.
       $(e.target).parent().remove();
+      taxonNameBeforeUserEdit = $(taxonCell).html();
+      // first span should contain the name as it was entered
+      taxonTextBeforeUserEdit = $($(taxonCell).children()[0]).text();
       //add the autocomplete cell
       $(taxonCell).append(speciesAutocomplete);
       //Adjust the size of the taxon cell to take up its full allocation of space
       $(taxonCell).attr('colSpan',2);
-      taxonNameBeforeUserEdit = $(taxonCell).text();
       //Moving into edit mode, we need to clear the static taxon label otherwise
       //the name is shown twice (it is also shown in the autocomplete)
       $(taxonCell).text('');
@@ -348,7 +355,7 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
       var autocompleteSettings = getAutocompleteSettings(extraParams);
       var ctrl = $(taxonCell).children(':input').autocomplete(url+'/'+(cacheLookup ? 'cache_taxon_searchterm' : 'taxa_taxon_list'), autocompleteSettings);
       //put the taxon name into the autocomplete ready for editing
-      $('#'+selectorId).val(taxonNameBeforeUserEdit);
+      $('#'+selectorId).val(taxonTextBeforeUserEdit);
       $('#'+selectorId).focus();
       //Set the focus to the end of the string, this isn't elegant, but seems to be quickest way to do this.
       //After we set focus, we add a space to the end of the string to force focus to end, then remove the space

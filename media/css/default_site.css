@@ -4,6 +4,11 @@
   border: 1px solid #D3D3D3;
 }
 
+scTaxonCell p.inline-error {
+  /* hide the error in the species input as it messes layout */
+  display: none;
+}
+
 .scTaxonCell .ui-effects-wrapper {
   width: 100% !important;
 }
@@ -386,9 +391,15 @@ table tr.odd {
   margin: 1px;
 }
 
-.remove-row {
+td.row-buttons {
+  width: 16px;
+}
+
+td.row-buttons img {
   cursor: pointer;
-  width: 8px;
+  width: 14px;
+  margin: 1px;
+  padding: 0;
 }
 
 .ui-tabs .ui-tabs-nav li {
