@@ -958,8 +958,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       'seriesOptions' => array(),
       'axesOptions' => array()
     ), $options);
-    $tempOptions = self::get_report_grid_options($options);
-    $options = array_merge($tempOptions, $options);
+    $options = self::get_report_grid_options($options);
     $currentParamValues = self::get_report_grid_current_param_values($options);
     // @todo Check they have supplied a valid set of data & label field names
     self::add_resource('jqplot');
@@ -1585,10 +1584,12 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         $selStyleFns = ", {context: {\n    $selStyleFns\n  }}";
         if ($options['ajax'])
           self::$javascript .= "mapInitialisationHooks.push(function(div) {\n".
-            "  $.each(indiciaData.reports.".$options['reportGroup'].", function(idx, grid) {\n" .
-            "    grid.mapRecords('".$options['dataSource']."');\n" .
-            "    return false;\n" . // only need the first grid to draw the map. 
-            "  });\n" .
+            "  if (typeof indiciaData.reports!==\"undefined\") {\n" .
+            "    $.each(indiciaData.reports.".$options['reportGroup'].", function(idx, grid) {\n" .
+            "      grid.mapRecords('".$options['dataSource']."');\n" .
+            "      return false;\n" . // only need the first grid to draw the map. 
+            "    });\n" .
+            "  }\n" .
             "});\n";
         else {
           $geoms = array();
