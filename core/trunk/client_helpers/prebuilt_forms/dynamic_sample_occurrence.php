@@ -1940,6 +1940,24 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     }
   }
   
+  /** 
+   * Override the default submit buttons to add a delete button where appropriate.
+   */
+  protected static function getSubmitButtons($args) {
+    $r = '';
+    if (!empty(self::$loadedSampleId) && $args['multiple_occurrence_mode']==='single') {
+      $r .= '<input type="submit" class="indicia-button" id="delete-button" name="delete-button" value="'.lang::get('Delete')."\" />\n";
+      data_entry_helper::$javascript .= "$('#delete-button').click(function(e) {
+        if (!confirm(\"Are you sure you want to delete this record?\")) {
+          e.preventDefault();
+          return false;
+        }
+      });\n";
+    }
+    $r .= '<input type="submit" class="indicia-button" id="save-button" value="'.lang::get('Submit')."\" />\n";
+    return $r;
+  }
+  
 }
 
 /**
