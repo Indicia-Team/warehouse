@@ -1350,14 +1350,21 @@ class ORM extends ORM_Core {
 
     if ($vf != null) {
       $attrValueModel->$vf = $value;
-      // Test that ORM accepted the new value - it will reject if the wrong data type for example. Use a string compare to get a
-      // proper test but with type tolerance. A wkt geometry gets translated to a proper geom so this will look different - just check it is not empty.
-      if (strcmp($attrValueModel->$vf,$value)===0 || ($dataType==='G' && !empty($attrValueModel->$vf))) {
+      // Test that ORM accepted the new value - it will reject if the wrong data type for example. 
+      // Use a string compare to get a proper test but with type tolerance. 
+      // A wkt geometry gets translated to a proper geom so this will look different - just check it is not empty.
+      // A float may loose precision or trailing 0 - just check for small percentage difference
+      if ( strcmp($attrValueModel->$vf, $value)===0 || 
+          ($dataType === 'G' && !empty($attrValueModel->$vf)) ) {
         kohana::log('debug', "Accepted value $value into field $vf for attribute $fieldId. Value=".$attrValueModel->$vf);
       } else {
-        $this->errors[$fieldId] = "Invalid value $value for attribute ".$attr->caption;
-        kohana::log('debug', "Could not accept value $value into field $vf for attribute $fieldId.");
-        return false;
+        if ( $dataType === 'F' && abs($attrValueModel->$vf - $value) < 0.00001 * $attrValueModel->$vf ) {
+          kohana::log('alert', "Lost precision accepting value $value into field $vf for attribute $fieldId. Value=".$attrValueModel->$vf);
+        } else {
+          $this->errors[$fieldId] = "Invalid value $value for attribute ".$attr->caption;
+          kohana::log('debug', "Could not accept value $value into field $vf for attribute $fieldId.");
+          return false;
+        }
       }
     }
     // set metadata   
