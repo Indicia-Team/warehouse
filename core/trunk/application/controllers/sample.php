@@ -64,7 +64,8 @@ class Sample_Controller extends Gridview_Base_Controller
     $r = parent::getDefaults();
     if (array_key_exists('sample:survey_id', $_POST)) {
       $r['sample:survey_id'] = $_POST['sample:survey_id'];
-      $r['website_id']=ORM::factory('survey', $r['sample:survey_id'])->website_id;
+      $r['website_id'] = ORM::factory('survey', $r['sample:survey_id'])->website_id;
+      $r['sample:sample_method_id'] = (array_key_exists('sample:sample_method_id', $_POST)) ? $_POST['sample:sample_method_id'] : null;  
       $this->loadAttributes($r, array(
         'website_id'=>array($r['website_id']),
         'restrict_to_survey_id'=>array(null, $r['sample:survey_id']),
