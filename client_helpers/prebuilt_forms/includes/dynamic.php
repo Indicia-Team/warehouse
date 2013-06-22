@@ -303,10 +303,11 @@ class iform_dynamic {
         if (isset($args['verification_panel']) && $args['verification_panel'])
           $r .= '<button type="button" class="indicia-button" id="verify-btn">'.lang::get('Precheck my records')."</button>\n";
         if (call_user_func(array(self::$called_class, 'include_save_buttons')) 
-            && !($args['interface']=='tabs' && isset($args['save_button_below_all_pages']) && $args['save_button_below_all_pages'])) 
+            && !($args['interface']=='tabs' && isset($args['save_button_below_all_pages']) && $args['save_button_below_all_pages'])
+            && method_exists(self::$called_class, 'getSubmitButtons'))
           // last part of a non wizard interface must insert a save button, unless it is tabbed 
           // interface with save button beneath all pages
-          $r .= '<input type="submit" class="indicia-button" id="save-button" value="'.lang::get('Submit')."\" />\n";    
+          $r .= call_user_func(array(self::$called_class, 'getSubmitButtons'), $args);
       }
       $pageIdx++;
       $r .= "</div>\n";      
@@ -373,13 +374,20 @@ class iform_dynamic {
   protected static function getFooter($args) {
     $r = '';
     // add a single submit button outside the tabs if they want a button visible all the time
-    if ($args['interface']=='tabs' && $args['save_button_below_all_pages']) 
-      $r .= "<input type=\"submit\" class=\"indicia-button\" id=\"save-button\" value=\"".lang::get('Submit')."\" />\n";
+    if ($args['interface']=='tabs' && $args['save_button_below_all_pages'] && method_exists(self::$called_class, 'getSubmitButtons'))
+      $r .= call_user_func(array(self::$called_class, 'getSubmitButtons'), $args);
     if(!empty(data_entry_helper::$validation_errors)){
       $r .= data_entry_helper::dump_remaining_errors();
     }   
     $r .= "</form>";
     return $r;
+  }
+  
+  /**
+   * Overridable method to get the buttons to include for form submission. Might be overridden to include a delete button for example.
+   */
+  protected static function getSubmitButtons($args) {
+    return '<input type="submit" class="indicia-button" id="save-button" value="'.lang::get('Submit')."\" />\n";    
   }
 
   protected static function getReloadPath () {

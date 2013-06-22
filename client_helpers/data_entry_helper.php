@@ -5686,10 +5686,11 @@ if (errors.length>0) {
   * @param string $response Return value from a call to forward_post_to().
   * @param boolean $inline Set to true if the errors are to be placed alongside the controls rather than at the top of the page.
   * Default is true.
+  * @param string $successMessage Set to the message to display on success. Leave blank to use the default.
   * @see forward_post_to()
   * @link http://code.google.com/p/indicia/wiki/TutorialBuildingBasicPage#Build_a_data_entry_page
   */
-  public static function dump_errors($response, $inline=true)
+  public static function dump_errors($response, $inline=true, $successMessage='')
   {
     $r = "";
     if (is_array($response)) {
@@ -5729,7 +5730,9 @@ if (errors.length>0) {
         $r .= '<p class="error">'.$response['error']."</p>\n";
       }
       elseif (array_key_exists('success',$response)) {
-        $r .= "<div class=\"ui-widget ui-corner-all ui-state-highlight page-notice\">Thank you for submitting your data.</div>\n";
+        if (empty($successMessage)) 
+          $successMessage = lang::get('Thank you for submitting your data.');
+        $r .= "<div class=\"ui-widget ui-corner-all ui-state-highlight page-notice\">" . $successMessage . "</div>\n";
       }
     }
     else
