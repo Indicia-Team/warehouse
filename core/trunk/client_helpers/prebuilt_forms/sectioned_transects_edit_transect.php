@@ -223,9 +223,6 @@ class iform_sectioned_transects_edit_transect {
     data_entry_helper::add_resource('jquery_form');
     self::$ajaxFormUrl = iform_ajaxproxy_url($node, 'location');
     self::$ajaxFormSampleUrl = iform_ajaxproxy_url($node, 'sample');
-    if (function_exists('url')) {
-      $args['section_edit_path'] = url($args['section_edit_path']);
-    }
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     $typeTerms = array(
       empty($args['transect_type_term']) ? 'Transect' : $args['transect_type_term'],
@@ -321,8 +318,9 @@ class iform_sectioned_transects_edit_transect {
           data_entry_helper::$javascript .= "$('#".str_replace(':','\\\\:',$attr['id'])."').attr('min',1).attr('max',".$args['maxSectionCount'].");\n";
         }
       }
+      $settings['walks'] = array();
     }
-    $r .= '<div id="controls">';
+    $r = '<div id="controls">';
     $headerOptions = array('tabs'=>array('#site-details'=>lang::get('Site Details')));
     if ($settings['locationId']) {
       $headerOptions['tabs']['#your-route'] = lang::get('Your Route');
@@ -332,7 +330,7 @@ class iform_sectioned_transects_edit_transect {
       $r .= data_entry_helper::tab_header($headerOptions);
       data_entry_helper::enable_tabs(array(
           'divId'=>'controls',
-          'style'=>$args['interface'],
+          'style'=>'Tabs',
           'progressBar' => isset($args['tabProgress']) && $args['tabProgress']==true
       ));
     }
@@ -364,7 +362,8 @@ class iform_sectioned_transects_edit_transect {
     data_entry_helper::$javascript .= "indiciaData.sectionDeleteConfirm = \"".lang::get('Are you sure you wish to delete section')."\";\n";
     data_entry_helper::$javascript .= "indiciaData.sectionChangeConfirm = \"".lang::get('Do you wish to save the currently unsaved changes you have made to the Section Details?')."\";\n";
     data_entry_helper::$javascript .= "indiciaData.numSectionsAttrName = \"".$settings['numSectionsAttr']."\";\n";
-    data_entry_helper::$javascript .= "selectSection('S1', true);\n";
+    if ($settings['locationId'])
+      data_entry_helper::$javascript .= "selectSection('S1', true);\n";
     return $r;
   }
   
@@ -461,7 +460,8 @@ class iform_sectioned_transects_edit_transect {
         'driver'=>$args['georefDriver'],
         'georefPreferredArea' => $args['georefPreferredArea'],
         'georefCountry' => $args['georefCountry'],
-        'georefLang' => $args['language']
+        'georefLang' => $args['language'],
+        'readAuth' => $auth['read']
       ));
     }
     if(isset($args['maxPrecision']) && $args['maxPrecision'] != ''){
@@ -622,10 +622,16 @@ $('#delete-transect').click(deleteSurvey);
    * If the user has permissions, then display a control so that they can specify the list of users associated with this site.
    */
   private static function get_user_assignment_control($readAuth, $cmsUserAttr, $args) {
-    $query = db_query("select uid, name from {users} where name<>'' order by name");
+    $query = db_query("select uid, name from {users} where name <> '' order by name");
     $users = array();
-    while ($user = db_fetch_object($query)) 
-      $users[$user->uid] = $user->name;
+    // there have been DB API changes for Drupal7: db_query now returns the result array.
+    if(version_compare(VERSION, '7', '<')) {
+      while ($user = db_fetch_object($query)) 
+        $users[$user->uid] = $user->name;
+    } else {
+      foreach ($query as $user) 
+        $users[$user->uid] = $user->name;
+    }
     $r = '<fieldset id="alloc-recorders"><legend>'.lang::get('Allocate recorders to the site').'</legend>';
     $r .= data_entry_helper::select(array(
       'label' => lang::get('Select user'),
