@@ -2539,6 +2539,9 @@ class data_entry_helper extends helper_base {
   * for each sub sample. This might be used when an occurrence attribute in the grid can be used to calculate the sub-sample's
   * spatial reference, such as when capturing the reticules and bearing for a cetacean sighting.
   * </li>
+  * <li><b>subSampleSampleMethodID</b>
+  * Optional. sample_method_id to use for the subsamples.
+  * </li>
   * <li><b>copyDataFromPreviousRow</b>
   * Optional. When enabled, the system will copy data from the previous row into new rows on the species grid. The data is copied
   * automatically when the new row is created and also when edits are made to the previous row. The columns to copy are determined 
@@ -2576,7 +2579,7 @@ class data_entry_helper extends helper_base {
       $overrideOptions['speciesNameFilterMode'] = $filterType;
       $nameFilter[$filterType] = self::get_species_names_filter($overrideOptions);
       $nameFilter[$filterType] = json_encode($nameFilter[$filterType]);
-    }  
+    }
     if (count($filterArray)) {
       $filterParam = json_encode($filterArray);
       self::$javascript .= "indiciaData['taxonExtraParams-".$options['id']."'] = $filterParam;\n";
@@ -2632,9 +2635,10 @@ class data_entry_helper extends helper_base {
     // Load any existing sample's occurrence data into $entity_to_load
     if (isset(self::$entity_to_load['sample:id']) && $options['useLoadedExistingRecords']===false)
       self::preload_species_checklist_occurrences(self::$entity_to_load['sample:id'], $options['readAuth'], 
-          $options['occurrenceImages'], $options['reloadExtraParams'], $subSampleRows, $options['speciesControlToUseSubSamples']);
+          $options['occurrenceImages'], $options['reloadExtraParams'], $subSampleRows, $options['speciesControlToUseSubSamples'],
+          (isset($options['subSampleSampleMethodID']) ? $options['subSampleSampleMethodID'] : ''));
     // load the full list of species for the grid, including the main checklist plus any additional species in the reloaded occurrences.
-    $taxalist = self::get_species_checklist_taxa_list($options, $taxonRows);    
+    $taxalist = self::get_species_checklist_taxa_list($options, $taxonRows);
     // If we managed to read the species list data we can proceed
     if (! array_key_exists('error', $taxalist)) {
       $attrOptions = array(
@@ -2655,7 +2659,7 @@ class data_entry_helper extends helper_base {
       $attributes = self::getAttributes($attrOptions);
       // Get the attribute and control information required to build the custom occurrence attribute columns
       self::species_checklist_prepare_attributes($options, $attributes, $occAttrControls, $occAttrs);
-      $grid = "\n";
+      $grid = '<span style="display: none;">Step 1</span>'."\n";
       if (isset($options['lookupListId'])) {
         $grid .= self::get_species_checklist_clonable_row($options, $occAttrControls, $attributes);
       }
@@ -2756,7 +2760,7 @@ class data_entry_helper extends helper_base {
         if ($options['speciesControlToUseSubSamples']) {
           $row .= "\n<td class=\"scSampleCell\" style=\"display:none\">";
           $fieldname = "sc:$options[id]-$txIdx:$existing_record_id:occurrence:sampleIDX";
-          $value = $options['subSamplePerRow'] ? $smpIdx : $rowIds[$smpIdx];
+          $value = $options['subSamplePerRow'] ? $smpIdx : $rowIds['smpIdx'];
           $row .= "<input type=\"hidden\" class=\"scSample\" name=\"$fieldname\" id=\"$fieldname\" value=\"$value\" />";
           $row .= "</td>";
           // always increment the sample index if 1 per row.
@@ -3293,7 +3297,7 @@ $('#".$options['id']."-filter').click(function(evt) {
    * @param boolean $extraParams Extra params to pass to the web service call for filtering.
    * @return array Array with key of occurrence_id and value of $taxonInstance.
    */
-  public static function preload_species_checklist_occurrences($sampleId, $readAuth, $loadImages, $extraParams, &$subSamples, $useSubSamples) {
+  public static function preload_species_checklist_occurrences($sampleId, $readAuth, $loadImages, $extraParams, &$subSamples, $useSubSamples, $subSampleMethodID='') {
     $occurrenceIds = array();
     $taxonCounter = array();
     // don't load from the db if there are validation errors, since the $_POST will already contain all the
@@ -3309,6 +3313,8 @@ $('#".$options['id']."-filter').click(function(evt) {
       }
       if($useSubSamples){
       	$extraParams += $readAuth + array('view'=>'detail','parent_id'=>$sampleId,'deleted'=>'f', 'orderby'=>'id', 'sortdir'=>'ASC' );
+      	if($subSampleMethodID != '')
+      		$extraParams['sample_method_id'] = $subSampleMethodID;
       	$subSamples = data_entry_helper::get_population_data(array(
       			'table' => 'sample',
       			'extraParams' => $extraParams,
@@ -3325,58 +3331,66 @@ $('#".$options['id']."-filter').click(function(evt) {
       	    data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:date_start'] = $subsample['date_start'];
       	    data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:date_end'] = $subsample['date_end'];
             data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:date_type'] = $subsample['date_type'];
+            data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:sample_method_id'] = $subsample['sample_method_id'];
       	}
       	unset($extraParams['parent_id']);
+      	unset($extraParams['sample_method_id']);
       	$extraParams['sample_id']=$subSampleList;
+      	$sampleCount = count($subSampleList);
       } else {
         $extraParams += $readAuth + array('view'=>'detail','sample_id'=>$sampleId,'deleted'=>'f', 'orderby'=>'id', 'sortdir'=>'ASC' );
+      	$sampleCount = 1;
       }
-      $occurrences = self::get_population_data(array(
-        'table' => 'occurrence',
-        'extraParams' => $extraParams,
-        'nocache' => true
-      ));
-      foreach($occurrences as $idx => $occurrence){
-        if($useSubSamples){
-          foreach($subSamples as $sidx => $subsample){
-            if($subsample['id'] == $occurrence['sample_id'])
-              self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':occurrence:sampleIDX'] = $sidx;
-          }
-        }
-        self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':present'] = $occurrence['taxa_taxon_list_id'];
-        self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':occurrence:comment'] = $occurrence['comment'];
-        self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':occurrence:sensitivity_precision'] = $occurrence['sensitivity_precision'];
-        // Warning. I observe that, in cases where more than one occurrence is loaded, the following entries in 
-        // $entity_to_load will just take the value of the last loaded occurrence.
-        self::$entity_to_load['occurrence:record_status']=$occurrence['record_status'];
-        self::$entity_to_load['occurrence:taxa_taxon_list_id']=$occurrence['taxa_taxon_list_id'];
-        self::$entity_to_load['occurrence:taxa_taxon_list_id:taxon']=$occurrence['taxon'];
-        // Keep a list of all Ids
-        $occurrenceIds[$occurrence['id']] = $idx;
-      }
-      // load the attribute values into the entity to load as well
-      $attrValues = self::get_population_data(array(
-        'table' => 'occurrence_attribute_value',
-        'extraParams' => $readAuth + array('occurrence_id' => array_keys($occurrenceIds)),
-        'nocache' => true
-      ));
-      foreach($attrValues as $attrValue) {
-        self::$entity_to_load['sc:'.$occurrenceIds[$attrValue['occurrence_id']].':'.$attrValue['occurrence_id'].':occAttr:'.$attrValue['occurrence_attribute_id'].(isset($attrValue['id'])?':'.$attrValue['id']:'')]
-            = $attrValue['raw_value'];
-      }
-      if ($loadImages) {
-        $images = self::get_population_data(array(
-          'table' => 'occurrence_image',
-          'extraParams' => $readAuth + array('occurrence_id' => array_keys($occurrenceIds)),
+      if($sampleCount>0) {
+        $occurrences = self::get_population_data(array(
+          'table' => 'occurrence',
+          'extraParams' => $extraParams,
           'nocache' => true
         ));
-        foreach($images as $image) {
-          self::$entity_to_load['sc:'.$occurrenceIds[$image['occurrence_id']].':'.$image['occurrence_id'].':occurrence_image:id:'.$image['id']]
-              = $image['id'];
-          self::$entity_to_load['sc:'.$occurrenceIds[$image['occurrence_id']].':'.$image['occurrence_id'].':occurrence_image:path:'.$image['id']]
-              = $image['path'];
-          self::$entity_to_load['sc:'.$occurrenceIds[$image['occurrence_id']].':'.$image['occurrence_id'].':occurrence_image:caption:'.$image['id']]
-              = $image['caption'];
+        foreach($occurrences as $idx => $occurrence){
+          if($useSubSamples){
+            foreach($subSamples as $sidx => $subsample){
+              if($subsample['id'] == $occurrence['sample_id'])
+                self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':occurrence:sampleIDX'] = $sidx;
+            }
+          }
+          self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':present'] = $occurrence['taxa_taxon_list_id'];
+          self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':occurrence:comment'] = $occurrence['comment'];
+          self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':occurrence:sensitivity_precision'] = $occurrence['sensitivity_precision'];
+          // Warning. I observe that, in cases where more than one occurrence is loaded, the following entries in 
+          // $entity_to_load will just take the value of the last loaded occurrence.
+          self::$entity_to_load['occurrence:record_status']=$occurrence['record_status'];
+          self::$entity_to_load['occurrence:taxa_taxon_list_id']=$occurrence['taxa_taxon_list_id'];
+          self::$entity_to_load['occurrence:taxa_taxon_list_id:taxon']=$occurrence['taxon'];
+          // Keep a list of all Ids
+          $occurrenceIds[$occurrence['id']] = $idx;
+        }
+        if(count($occurrenceIds)>0) {
+          // load the attribute values into the entity to load as well
+          $attrValues = self::get_population_data(array(
+            'table' => 'occurrence_attribute_value',
+            'extraParams' => $readAuth + array('occurrence_id' => array_keys($occurrenceIds)),
+            'nocache' => true
+          ));
+          foreach($attrValues as $attrValue) {
+            self::$entity_to_load['sc:'.$occurrenceIds[$attrValue['occurrence_id']].':'.$attrValue['occurrence_id'].':occAttr:'.$attrValue['occurrence_attribute_id'].(isset($attrValue['id'])?':'.$attrValue['id']:'')]
+                = $attrValue['raw_value'];
+          }
+          if ($loadImages) {
+            $images = self::get_population_data(array(
+              'table' => 'occurrence_image',
+              'extraParams' => $readAuth + array('occurrence_id' => array_keys($occurrenceIds)),
+              'nocache' => true
+            ));
+            foreach($images as $image) {
+              self::$entity_to_load['sc:'.$occurrenceIds[$image['occurrence_id']].':'.$image['occurrence_id'].':occurrence_image:id:'.$image['id']]
+                  = $image['id'];
+              self::$entity_to_load['sc:'.$occurrenceIds[$image['occurrence_id']].':'.$image['occurrence_id'].':occurrence_image:path:'.$image['id']]
+                  = $image['path'];
+              self::$entity_to_load['sc:'.$occurrenceIds[$image['occurrence_id']].':'.$image['occurrence_id'].':occurrence_image:caption:'.$image['id']]
+                  = $image['caption'];
+            }
+          }
         }
       }
     }
