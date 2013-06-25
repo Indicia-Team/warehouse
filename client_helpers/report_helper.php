@@ -333,7 +333,7 @@ class report_helper extends helper_base {
     if (isset($response['error'])) return $response['error'];
     $r = self::params_form_if_required($response, $options, $currentParamValues);
     // return the params form, if that is all that is being requested, or the parameters are not complete.
-    if ($options['paramsOnly'] || !isset($response['records'])) return $r;
+    if ((isset($options['paramsOnly']) && $options['paramsOnly']) || !isset($response['records'])) return $r;
     $records = $response['records'];
     self::report_grid_get_columns($response, $options);
     $pageUrl = self::report_grid_get_reload_url($sortAndPageUrlParams);
@@ -695,13 +695,13 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     $currentParamValues = self::get_report_grid_current_param_values($options);
     // if loading the parameters form only, we don't need to send the parameter values in the report request but instead
     // mark the request not to return records
-    if ($options['paramsOnly'])
+    if (isset($options['paramsOnly']) && $options['paramsOnly'])
       $extras .= '&wantRecords=0&wantCount=0&wantColumns=0';
     else
       $extras .= '&'.self::array_to_query_string($currentParamValues, true);
     // allow URL parameters to override any extra params that are set. Default params
     // are handled elsewhere.
-    if (isset($options['extraParams'])) {
+    if (isset($options['extraParams']) && isset($options['reportGroup'])) {
       foreach ($options['extraParams'] as $key=>&$value) {
         // allow URL parameters to override the provided params
         if (isset($_REQUEST[$options['reportGroup'] . '-' . $key]))
@@ -2266,7 +2266,7 @@ if (typeof mapSettingsHooks!=='undefined') {
     $pageUrl = self::report_calendar_grid_get_reload_url($pageUrlParams);
     $pageUrl .= (strpos($pageUrl , '?')===false) ? '?' : '&';
     $thClass = $options['thClass'];
-    $r .= "\n<table class=\"".$options['class']."\">";
+    $r = "\n<table class=\"".$options['class']."\">";
     $r .= "\n<thead class=\"$thClass\"><tr>".($options['includeWeekNumber'] ? "<td>".lang::get("Week Number")."</td>" : "")."<td></td><td></td><td></td>".
         "<td colspan=\"3\" class=\"year-picker\"><a title=\"".($options["year"]-1)."\" rel=\"\nofollow\" href=\"".$pageUrl.$pageUrlParams['year']['name']."=".($options["year"]-1).
         "\" class=\"ui-datepicker-prev ui-corner-all\"><span class=\"ui-icon ui-icon-circle-triangle-w\">Prev</span></a>".
@@ -2429,7 +2429,7 @@ if (typeof mapSettingsHooks!=='undefined') {
     $options['my_user_id'] = $user->uid; // Initially CMS User, changed to Indicia User later if in Easy Login mode.
     // Note for the calendar reports, the user_id is assumed to be the CMS user id as recorded in the CMS User ID attribute,
     // not the Indicia user id.
-    if (function_exists('module_exists') && module_exists('easy_login') && $options["extraParams"]['user_id'] == $options["extraParams"]['cms_user_id']) {
+    if (function_exists('profile_load_profile') && function_exists('module_exists') && module_exists('easy_login') && $options["extraParams"]['user_id'] == $options["extraParams"]['cms_user_id']) {
       $account = user_load($options["extraParams"]['user_id']);
       profile_load_profile($account);
       if(isset($account->profile_indicia_user_id))
@@ -3542,7 +3542,7 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
 
     if (isset($options["extraParams"]['user_id'])) {
       $options["extraParams"]['cms_user_id'] = $options["extraParams"]['user_id'];
-      if (function_exists('module_exists') && module_exists('easy_login')) {
+      if (function_exists('profile_load_profile') && function_exists('module_exists') && module_exists('easy_login')) {
         $account = user_load($options["extraParams"]['user_id']);
         profile_load_profile($account);
         if(isset($account->profile_indicia_user_id))

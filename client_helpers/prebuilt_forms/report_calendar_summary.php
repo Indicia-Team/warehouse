@@ -777,6 +777,7 @@ class iform_report_calendar_summary {
     $locationListArgs['extraParams']['exclude_sensitive'] = $allowSensitive ? 0 : 1;
     if(isset($args['locationTypeFilter']) && $args['locationTypeFilter']!="")
       $locationListArgs['extraParams']['location_type_id'] = $args['locationTypeFilter'];
+    $locationListArgs['readAuth'] = $readAuth;
     $locationList = report_helper::get_report_data($locationListArgs);
     if (isset($locationList['error']))
       return $locationList['error'];
@@ -814,10 +815,19 @@ class iform_report_calendar_summary {
       if(!isset($args['userLookUp']) || !$args['userLookUp']) {
         // look up all users, not just those that have entered data.
         $results = db_query('SELECT uid, name FROM {users}');
-        while($result = db_fetch_object($results)){
-          if($result->uid){ // ignore unauthorised user, uid zero
-            $account = user_load($result->uid);
-            $userList[$account->uid] = $account;
+        if(version_compare(VERSION, '7', '<')) {
+          while($result = db_fetch_object($results)){
+            if($result->uid){ // ignore unauthorised user, uid zero
+              $account = user_load($result->uid);
+              $userList[$account->uid] = $account;
+            }
+          }
+        } else {
+          foreach ($results as $result) {  // DB handling is different in 7
+            if($result->uid){ // ignore unauthorised user, uid zero
+              $account = user_load($result->uid);
+              $userList[$account->uid] = $account;
+            }
           }
         }
       } else {
@@ -835,12 +845,23 @@ class iform_report_calendar_summary {
             $uList[intval($sample['created_by_id'])] = true;
           // This next bit is DRUPAL specific
           $results = db_query('SELECT uid, name FROM {users}');
-          while($result = db_fetch_object($results)){
-            if($result->uid){
-              $account = user_load($result->uid);
-              profile_load_profile($account);
-              if(isset($account->profile_indicia_user_id) && isset($uList[$account->profile_indicia_user_id]) && $uList[$account->profile_indicia_user_id])
-                $userList[$account->uid] = $account;
+          if(version_compare(VERSION, '7', '<')) {
+            while($result = db_fetch_object($results)){
+              if($result->uid){
+                $account = user_load($result->uid);
+                profile_load_profile($account);
+                if(isset($account->profile_indicia_user_id) && isset($uList[$account->profile_indicia_user_id]) && $uList[$account->profile_indicia_user_id])
+                  $userList[$account->uid] = $account;
+              }
+            }
+          } else {
+            foreach ($results as $result) { // DB processing is different in 7
+              if($result->uid){
+                $account = user_load($result->uid);
+                profile_load_profile($account);
+                if(isset($account->profile_indicia_user_id) && isset($uList[$account->profile_indicia_user_id]) && $uList[$account->profile_indicia_user_id])
+                  $userList[$account->uid] = $account;
+              }
             }
           }
         } else {
@@ -871,10 +892,18 @@ class iform_report_calendar_summary {
               $userList[intval($attr['raw_value'])] = true;
           // This next bit is DRUPAL specific
           $results = db_query('SELECT uid, name FROM {users}');
-          while($result = db_fetch_object($results)){
-            $account = user_load($result->uid);
-            if($result->uid && isset($userList[$account->uid]) && $userList[$account->uid])
-              $userList[$account->uid] = $account;
+          if(version_compare(VERSION, '7', '<')) {
+            while($result = db_fetch_object($results)){
+              $account = user_load($result->uid);
+              if($result->uid && isset($userList[$account->uid]) && $userList[$account->uid])
+                $userList[$account->uid] = $account;
+            }
+          } else {
+            foreach ($results as $result) { // DB handling is different in 7
+              $account = user_load($result->uid);
+              if($result->uid && isset($userList[$account->uid]) && $userList[$account->uid])
+                $userList[$account->uid] = $account;
+            }
           }
         }
       }
@@ -963,7 +992,7 @@ jQuery('#".$ctrlid."').change(function(){
           }
         }
         $param=(strpos($reloadUrl['path'],'?')===false ? '?' : '&').self::$yearKey.'=';
-        $r .= "<th><a id=\"year-control-previous\" title=\"".($siteUrlParams[self::$yearKey]['value']-1)."\" rel=\"nofollow\" href=\"".$reloadUrl['path'].$param.($siteUrlParams[self::$yearKey]['value']-1)."\" class=\"ui-datepicker-prev ui-corner-all\"><span class=\"ui-icon ui-icon-circle-triangle-w\">Prev</span></a></th><th><span class=\"thisYear\">".$siteUrlParams[$yearKey]['value']."</span></th>";
+        $r = "<th><a id=\"year-control-previous\" title=\"".($siteUrlParams[self::$yearKey]['value']-1)."\" rel=\"nofollow\" href=\"".$reloadUrl['path'].$param.($siteUrlParams[self::$yearKey]['value']-1)."\" class=\"ui-datepicker-prev ui-corner-all\"><span class=\"ui-icon ui-icon-circle-triangle-w\">Prev</span></a></th><th><span class=\"thisYear\">".$siteUrlParams[self::$yearKey]['value']."</span></th>";
         $r .= '<th>'.$siteUrlParams[self::$yearKey]['value'].'</th>';
         if($siteUrlParams[self::$yearKey]['value']<date('Y')){
           $r .= "<th><a id=\"year-control-next\" title=\"".($siteUrlParams[self::$yearKey]['value']+1)."\" rel=\"nofollow\" href=\"".$reloadUrl['path'].$param.($siteUrlParams[self::$yearKey]['value']+1)."\" class=\"ui-datepicker-next ui-corner-all\"><span class=\"ui-icon ui-icon-circle-triangle-e\">Next</span></a></th>";
