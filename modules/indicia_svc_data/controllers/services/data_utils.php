@@ -59,8 +59,9 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
           $count++;
         }
       }
-      $db->from('occurrences')->set(array('record_status'=>'V','updated_by_id'=>$this->user_id,'updated_on'=>date('Y-m-d H:i:s')))->in('id', $ids)->update();
+      $db->from('occurrences')->set(array('record_status'=>'V', 'updated_by_id'=>$this->user_id, 'updated_on'=>date('Y-m-d H:i:s')))->in('id', $ids)->update();
       echo $count;
+      $db->from('cache_occurrences')->set(array('record_status'=>'V', 'cache_updated_on'=>date('Y-m-d H:i:s')))->in('id', $ids)->update();
     } catch (Exception $e) {
       echo $e->getMessage();
       error::log_error('Exception during bulk verify', $e);
