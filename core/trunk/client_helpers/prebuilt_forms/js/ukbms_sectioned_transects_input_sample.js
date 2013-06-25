@@ -301,8 +301,6 @@ function input_blur (evt) {
 };
 
 function loadSpeciesList() {
-  var submittingSample='', secondTaxonData, query;
-  
   // redo alt-row classes
   var redo_alt_row = function (table) {
     var rowCount = 0;
@@ -393,7 +391,7 @@ function loadSpeciesList() {
                 'view': 'cache',
                 'orderby': 'taxonomic_sort_order'
           };
-          query = {"in":{"taxon_meaning_id":indiciaData.allTaxonMeaningIdsAtTransect}};
+          var query = {"in":{"taxon_meaning_id":indiciaData.allTaxonMeaningIdsAtTransect}};
           if(typeof indiciaData.speciesList4FilterField != "undefined")
             query['in'][indiciaData.speciesList4FilterField] = indiciaData.speciesList4FilterValues;
           TaxonData.query = JSON.stringify(query);
@@ -402,7 +400,7 @@ function loadSpeciesList() {
                 'data': TaxonData,
                 'dataType': 'jsonp',
                 'success': function(data) {
-              addSpeciesToGrid(indiciaData.existingOccurrences, data, 'table#transect-input4', true);
+              addSpeciesToGrid(indiciaData.existingOccurrences, data, 'table#transect-input4', false);
               // copy across the col totals
               jQuery.each(indiciaData.sections, function(idx, section) {
                 jQuery('table#transect-input4 tfoot .col-total.col-'+(idx+1)).html(typeof section.total['table#transect-input4']==="undefined" ? 0 : section.total['table#transect-input4']);
@@ -410,7 +408,7 @@ function loadSpeciesList() {
             }
           });
         }
-      };
+      }; // end of function process4
       if(indiciaData.speciesList3>0){
         var TaxonData = {
               'taxon_list_id': indiciaData.speciesList3,
@@ -422,16 +420,16 @@ function loadSpeciesList() {
               'view': 'cache',
               'orderby': 'taxonomic_sort_order'
         };
-        query = {"in":{"taxon_meaning_id":indiciaData.allTaxonMeaningIdsAtTransect}};
+        var query = {"in":{"taxon_meaning_id":indiciaData.allTaxonMeaningIdsAtTransect}};
         if(typeof indiciaData.speciesList3FilterField != "undefined")
           query['in'][indiciaData.speciesList3FilterField] = indiciaData.speciesList3FilterValues;
         TaxonData.query = JSON.stringify(query);
         jQuery.ajax({
               'url': indiciaData.indiciaSvc+'index.php/services/data/taxa_taxon_list',
-              'data': secondTaxonData,
+              'data': TaxonData,
               'dataType': 'jsonp',
               'success': function(data) {
-            addSpeciesToGrid(indiciaData.existingOccurrences, data, 'table#transect-input3', true);
+            addSpeciesToGrid(indiciaData.existingOccurrences, data, 'table#transect-input3', false);
             // copy across the col totals
             jQuery.each(indiciaData.sections, function(idx, section) {
               jQuery('table#transect-input3 tfoot .col-total.col-'+(idx+1)).html(typeof section.total['table#transect-input3']==="undefined" ? 0 : section.total['table#transect-input3']);
@@ -440,7 +438,7 @@ function loadSpeciesList() {
           }
         });
       } else process4();
-    };
+    }; // end of function process3
     if(indiciaData.speciesList2>0){
       var TaxonData = {
             'taxon_list_id': indiciaData.speciesList2,
@@ -452,17 +450,17 @@ function loadSpeciesList() {
             'view': 'cache',
             'orderby': 'taxonomic_sort_order'
       };
-      query = {"in":{"taxon_meaning_id":indiciaData.allTaxonMeaningIdsAtTransect}};
+      var query = {"in":{"taxon_meaning_id":indiciaData.allTaxonMeaningIdsAtTransect}};
       if(typeof indiciaData.speciesList2FilterField != "undefined"){
         query['in'][indiciaData.speciesList2FilterField] = indiciaData.speciesList2FilterValues;
       };
-      secondTaxonData.query = JSON.stringify(query);
+      TaxonData.query = JSON.stringify(query);
       jQuery.ajax({
             'url': indiciaData.indiciaSvc+'index.php/services/data/taxa_taxon_list',
-            'data': secondTaxonData,
+            'data': TaxonData,
             'dataType': 'jsonp',
             'success': function(data) {
-          addSpeciesToGrid(indiciaData.existingOccurrences, data, 'table#transect-input2', true);
+          addSpeciesToGrid(indiciaData.existingOccurrences, data, 'table#transect-input2', false);
           // copy across the col totals
           jQuery.each(indiciaData.sections, function(idx, section) {
             jQuery('table#transect-input2 tfoot .col-total.col-'+(idx+1)).html(typeof section.total['table#transect-input2']==="undefined" ? 0 : section.total['table#transect-input2']);
@@ -471,7 +469,7 @@ function loadSpeciesList() {
         }
       });
     } else process3();
-  };
+  }; // end of function process2
 
   // Only do this once so unbind itself
   jQuery('table#transect-input1').ajaxStop(function(event){
