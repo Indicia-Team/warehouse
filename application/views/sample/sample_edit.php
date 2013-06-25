@@ -95,6 +95,11 @@ echo data_entry_helper::textarea(array(
   'fieldname' => 'sample:comment',
   'default' => html::initial_value($values, 'sample:comment')
 ));
+echo data_entry_helper::text_input(array(
+  'label' => 'External Key',
+  'fieldname' => 'sample:external_key',
+  'default' => html::initial_value($values, 'sample:external_key')
+));
  ?>
  </fieldset>
  <fieldset>
