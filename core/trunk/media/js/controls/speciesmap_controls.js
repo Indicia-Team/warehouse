@@ -19,7 +19,11 @@
  * @link    http://code.google.com/p/indicia/
  */
 
-function control_speciesmap_addcontrols(options, translatedStrings) {
+var control_speciesmap_addcontrols;
+
+(function ($) {
+
+control_speciesmap_addcontrols = function(options, translatedStrings) {
 
     var featureAdded = function (a1) { // on editLayer
             if (a1.feature.attributes.type !== "clickPoint" ) { return true; }
@@ -277,6 +281,9 @@ function control_speciesmap_addcontrols(options, translatedStrings) {
               .appendTo(subsampleBlock);
           $('<input type="hidden" name="sc:' + indiciaData['gridSampleCounter-' + indiciaData.control_speciesmap_opts.id] + '::sample:geom" value="' + $('#imp-geom').val() + '" />')
               .appendTo(subsampleBlock);
+          if(typeof options['subSampleSampleMethodID'] != undefined && options['subSampleSampleMethodID'] != '')
+              $('<input type="hidden" name="sc:' + indiciaData['gridSampleCounter-' + indiciaData.control_speciesmap_opts.id] + '::sample:sample_method_id" value="' + options['subSampleSampleMethodID'] + '" />')
+                .appendTo(subsampleBlock);
           // new rows have no deleted field
           $('#' + indiciaData.control_speciesmap_opts.messageId).empty().append(indiciaData.control_speciesmap_translatedStrings.AddDataMessage);
           $('#' + indiciaData.control_speciesmap_opts.buttonsId).each(function () {window.scroll(0, $(this).offset().top); });
@@ -396,15 +403,25 @@ function control_speciesmap_addcontrols(options, translatedStrings) {
         if ('#' + div.id === opts.mapDiv) {
             var defaultStyle = $.extend(true, {}, div.map.editLayer.style),
                 selectStyle = {fillColor: 'Blue', fillOpacity: 0.3, strokeColor: 'Blue', strokeWidth: 2},
+                parentStyle = {fillOpacity: 0, strokeColor: 'Red', strokeWidth: 2},
                 cloned;
             defaultStyle.label = indiciaData.control_speciesmap_opts.featureLabel;
             defaultStyle.labelOutlineColor = "white";
             defaultStyle.labelOutlineWidth = 3;
             defaultStyle.labelYOffset = 18;
             indiciaData.SubSampleLayer = new OpenLayers.Layer.Vector('Subsample Points', {displayInLayerSwitcher: false,
-                 styleMap: new OpenLayers.StyleMap({'default': new OpenLayers.Style(defaultStyle), 'select': new OpenLayers.Style(selectStyle)})});
+                styleMap: new OpenLayers.StyleMap({'default': new OpenLayers.Style(defaultStyle), 'select': new OpenLayers.Style(selectStyle)})});
+            indiciaData.ParentSampleLayer = new OpenLayers.Layer.Vector('Parent sample', {displayInLayerSwitcher: true,
+                styleMap: new OpenLayers.StyleMap({'default': new OpenLayers.Style(parentStyle)})});
             // note select inherits the label from default
             div.map.addLayer(indiciaData.SubSampleLayer);
+            div.map.addLayer(indiciaData.ParentSampleLayer);
+            if(div.map.editLayer.features.length > 0) {
+              var first = div.map.editLayer.features;
+              div.map.editLayer.removeFeatures(first);
+              first[0].style = null;
+              indiciaData.ParentSampleLayer.addFeatures(first);
+            }
             indiciaData.control_speciesmap_selectFeatureControl = new OpenLayers.Control.SelectFeature(indiciaData.SubSampleLayer);
             div.map.addControl(indiciaData.control_speciesmap_selectFeatureControl);
             indiciaData.control_speciesmap_selectFeatureControl.deactivate();
@@ -431,6 +448,8 @@ function control_speciesmap_addcontrols(options, translatedStrings) {
             });
             if (indiciaData.SubSampleLayer.features.length > 0) {
                 indiciaData.SubSampleLayer.map.zoomToExtent(indiciaData.SubSampleLayer.getDataExtent());
+            } else if (indiciaData.ParentSampleLayer.features.length > 0) {
+                indiciaData.ParentSampleLayer.map.zoomToExtent(indiciaData.ParentSampleLayer.getDataExtent());
             }
             hook_species_checklist_delete_row = function (data) {
                 var feature = (indiciaData.control_speciesmap_mode === 'Add' ? indiciaData.control_speciesmap_new_feature : indiciaData.control_speciesmap_existing_feature);
@@ -450,3 +469,5 @@ function control_speciesmap_addcontrols(options, translatedStrings) {
         }
     });
 }
+
+}(jQuery));
