@@ -36,48 +36,6 @@ $selected-font-color: #ffffff;
   form#verification-grid-params {
     margin-bottom: 0;
   }
-  
-  .pass-icon {
-    width: 16px;
-    height: 16px;
-    padding: 2px;
-    border: solid green 1px;
-    @include border-radius(4px);
-    @include box-shadow(green 1px 1px 3px);
-    @include inline-block;
-    background: url("../images/nuvola/ok-16px.png") no-repeat 2px 2px;
-  }
-  
-  .fail-icon {
-    width: 16px;
-    height: 16px;
-    padding: 2px;
-    border: solid red 1px;
-    @include border-radius(4px);
-    @include box-shadow(red 1px 1px 3px);
-    @include inline-block;
-    background: url("../images/nuvola/help-16px.png") no-repeat 2px 2px;
-  }
-  
-  div.data_cleaner_identification_difficulty {
-    background: url("../images/nuvola/xmag-16px.png") no-repeat 2px 2px;
-  }
-  
-  div.data_cleaner_period {
-    background: url("../images/nuvola/history-16px.png") no-repeat 2px 2px;
-  }
-  
-  div.data_cleaner_period_within_year {
-    background: url("../images/nuvola/date-16px.png") no-repeat 2px 2px;
-  }
-  
-  div.data_cleaner_without_polygon {
-    background: url("../images/nuvola/browser-16px.png") no-repeat 2px 2px;
-  }
-  
-  div.verification_check_species_designation {
-    background: url("../images/nuvola/bottom-16px.png") no-repeat 2px 2px;
-  }
 }
 
 #outer-grid-left #grid {
@@ -113,15 +71,15 @@ ul.gallery li {
 }
 
 #btn-verify, #btn-verify-all {
-  @include sassy-button-colors("simple", $verify-color, darken($verify-color, 20%), true, #ffffff, raised);
+  @include sassy-button("simple", 4px, 11px, $verify-color, darken($verify-color, 20%), white, raised);
 }
 
 #btn-reject {
-  @include sassy-button-colors("simple", $reject-color, darken($reject-color, 20%), true, #ffffff, raised);
+  @include sassy-button("simple", 4px, 11px, $reject-color, darken($reject-color, 20%), white, raised);
 }
 
 #btn-dubious {
-  @include sassy-button-colors("simple", $dubious-color, darken($dubious-color, 20%), true, #ffffff, raised);
+  @include sassy-button("simple", 4px, 11px, $dubious-color, darken($dubious-color, 20%), white, raised);
 }
 
 #comment-text {
@@ -232,5 +190,21 @@ input[type="button"].tools-btn, button.tools-btn {
   li {
     background-image: none;
     padding: 0.2em 0.5em;
+  }
+}
+
+tr {
+  &.verified, &.rejected, &.total {
+    text-align: right;
+    padding-right: 1em;
+  }
+  &.verified {
+    font-color: $verify-color;
+  }
+  &.rejected {
+    font-color: $verify-color;
+  }
+  &.total {
+    font-weight: bold;
   }
 }

@@ -363,6 +363,15 @@ function showTab() {
   if (currRec !== null) {
     if (indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] === 'details') {
       $('#details-tab').html(currRec.content);
+    } else if (indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] === 'experience') {
+      $.get(
+        indiciaData.ajaxUrl + '/experience/' + indiciaData.nid + urlSep +
+            'occurrence_id=' + occurrence_id + '&user_id=' + currRec.extra.created_by_id,
+        null,
+        function (data) {
+          $('#experience-div').html(data);
+        }
+      );
     } else if (indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] === 'phenology') {
       $.getJSON(
         indiciaData.ajaxUrl + '/phenology/' + indiciaData.nid + urlSep +
