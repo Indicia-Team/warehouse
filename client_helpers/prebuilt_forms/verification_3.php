@@ -960,7 +960,6 @@ idlist=';
       'extraParams' => array('occurrence_id'=>$_GET['occurrence_id'])
     ));
     $r = '';
-    if (!empty($node->params['view_records_report_path']))
     foreach($data as $row) {
       if ($row['v_total']===0) {
         $r .= '<p>This recorder has not recorded this ' + $row['type'] + ' before.</p>';
@@ -995,6 +994,9 @@ WHERE vuser_id.value=".$_GET['user_id']);
     echo $r;
   }
   
+  /**
+   * Convert a number on the Experience tab into a link to the Explore page for the underlying records.
+   */
   private static function records_link($row, $value, $node) {
     if (!empty($node->params['view_records_report_path'])) {
       $tokens = explode('_', $value);
@@ -1010,8 +1012,10 @@ WHERE vuser_id.value=".$_GET['user_id']);
       switch ($tokens[1]) {
         case '3months' :
           $params['dynamic-input_date_from'] = date('Y-m-d', strToTime('3 months ago'));
+          break;
         case '1year' :
           $params['dynamic-input_date_from'] = date('Y-m-d', strToTime('1 year ago'));
+          break;
       }
       if ($row['type']==='species')
         $params['dynamic-taxon_meaning_id'] = $row['what_id'];
