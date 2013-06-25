@@ -723,6 +723,12 @@ function trustsPopup() {
 }
 
 function quickVerifyMenu(row) {
+  // can't use User Trusts if the recorder is not linked to a warehouse user.
+  if (currRec.extra.created_by_id==="1") {
+    $('.trust-tool').hide();
+  } else {
+    $('.trust-tool').show();
+  }
   $(row).find('.verify-tools').show();
 }
 
