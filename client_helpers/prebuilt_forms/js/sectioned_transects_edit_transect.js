@@ -2,8 +2,12 @@
 
 var selectedFeature = null;
 var sectionDetailsChanged = false;
+var clearSection, loadSectionDetails, confirmSelectSection, selectSection, asyncPost, deleteWalks,
+    deleteLocation, deleteSections, deleteSection;
 
-function clearSection() {
+(function ($) {
+
+clearSection = function() {
   $('#section-location-id').val('');
   $('#section-location-sref').val('');
   $('#section-location-system,#section-location-system-select').val('');
@@ -28,7 +32,7 @@ function clearSection() {
   });
 }
 
-function loadSectionDetails(section) {
+loadSectionDetails = function(section) {
   clearSection();
   if (typeof indiciaData.sections[section]!=="undefined") {
     $('#section-location-id').val(indiciaData.sections[section].id);
@@ -77,7 +81,7 @@ function loadSectionDetails(section) {
   }
 }
 
-function confirmSelectSection(section, doFeature, withCancel) {
+confirmSelectSection = function(section, doFeature, withCancel) {
   var buttons =  { 
 	  "Yes": function() {
           dialog.dialog('close');
@@ -98,7 +102,7 @@ function confirmSelectSection(section, doFeature, withCancel) {
   } else selectSection(section, doFeature);
 }
 
-function selectSection(section, doFeature) {
+selectSection = function(section, doFeature) {
   sectionDetailsChanged = false;
   // if the modify control is active, save any changes, unselect any currently selected feature
   // do this before changing the selection so that the previous selection is tidied up properly.
@@ -132,7 +136,7 @@ function selectSection(section, doFeature) {
   }
 }
 
-function asyncPost(url, data) {
+asyncPost = function(url, data) {
   $.ajax({
     type: 'POST',
     url: url,
@@ -148,7 +152,7 @@ function asyncPost(url, data) {
   });
 }
 
-function deleteWalks(walkIDs) {
+deleteWalks = function(walkIDs) {
   $.each(walkIDs, function(i, walkID) {
     $('#delete-transect').html('Deleting Walks ' + (Math.round(i/walkIDs.length*100)+'%'));
     var data = {
@@ -161,7 +165,7 @@ function deleteWalks(walkIDs) {
   $('#delete-transect').html('Deleting Walks 100%');
 }
 
-function deleteLocation(ID) {
+deleteLocation = function(ID) {
   var data = {
     'location:id':ID,
     'location:deleted':'t',
@@ -171,7 +175,7 @@ function deleteLocation(ID) {
 }
 
 // delete a set of sections. Does not re-index the other section codes.
-function deleteSections(sectionIDs) {
+deleteSections = function(sectionIDs) {
   $.each(sectionIDs, function(i, sectionID) {
     $('#delete-transect').html('Deleting Sections ' + (Math.round(i/sectionIDs.length*100)+'%'));
     deleteLocation(sectionID);
@@ -180,7 +184,7 @@ function deleteSections(sectionIDs) {
 }
 
 //delete a section
-function deleteSection(section) {
+deleteSection = function(section) {
   // section comes in like "S1"
   // TODO Add progress bar
   $('.remove-section').addClass('waiting-button');
@@ -241,7 +245,7 @@ $(document).ready(function() {
 
   var doingSelection=false; 
   
-  jQuery('#section-form').ajaxForm({
+  $('#section-form').ajaxForm({
     // must be synchronous, otherwise currentCell could change.
     async: false,
     dataType:  'json',
@@ -519,3 +523,5 @@ $(document).ready(function() {
   });
 
 });
+
+}(jQuery));
