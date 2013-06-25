@@ -340,6 +340,13 @@ class iform_verification_3 {
           'required'=>false,
           'group'=>'Other Map Settings'
         ),
+        array(
+          'name'=>'view_records_report_path',
+          'caption'=>'View records report path',
+          'description'=>'Path to page used to show a list of records, e.g. when clicking on the record counts on the Experience tab',
+          'type'=>'string',
+          'required' => 'false'
+        )
       )
     );
     // Set default values for the report
@@ -387,13 +394,14 @@ idlist=';
     $r .= data_entry_helper::tab_header(array(
       'tabs'=>array(
         '#details-tab'=>lang::get('Details'),
+        '#experience-tab'=>lang::get('Experience'),
         '#map-tab'=>lang::get('Map'),
         '#phenology-tab'=>lang::get('Phenology'),
         '#images-tab'=>lang::get('Images'),
         '#comments-tab'=>lang::get('Comments')
       )
     ));
-    data_entry_helper::$javascript .= "indiciaData.detailsTabs = ['details','map','phenology','images','comments'];\n";
+    data_entry_helper::$javascript .= "indiciaData.detailsTabs = ['details','map','experience','phenology','images','comments'];\n";
     data_entry_helper::enable_tabs(array(
       'divId'=>'record-details-tabs'
     ));
@@ -406,11 +414,21 @@ idlist=';
       iform_map_get_ol_options($args)
     );
     $r .= '</div>';
+    $r .= self::other_tab_html();
+    $r .= '</div></div></div></div>';
+    return $r;
+  }
+  
+  /**
+   * Returns the HTML for the standard set of tabs, excluding the details and optional map tab.
+   * @return string HTML to insert onto the page
+   */
+  private static function other_tab_html() {
+    $r .= '<div id="experience-tab"><p>'.lang::get('Recorder\'s other records of this species and species group. Click to explore:').'</p><div id="experience-div"></div></div>';
     $r .= '<div id="phenology-tab"><p>'.lang::get('The following phenology chart shows the relative abundance of records through the '.
         'year for this species, <em>from the verified online recording data only.</em>').'</p><div id="chart-div"></div></div>';
     $r .= '<div id="images-tab"></div>';
     $r .= '<div id="comments-tab"></div>';
-    $r .= '</div></div></div></div>';
     return $r;
   }
 
@@ -466,21 +484,19 @@ idlist=';
     $r .= data_entry_helper::tab_header(array(
       'tabs'=>array(
         '#details-tab'=>lang::get('Details'),
+        '#experience-tab'=>lang::get('Experience'),
         '#phenology-tab'=>lang::get('Phenology'),
         '#images-tab'=>lang::get('Images'),
         '#comments-tab'=>lang::get('Comments')
       )
     ));
-    data_entry_helper::$javascript .= "indiciaData.detailsTabs = ['details','phenology','images','comments'];\n";
+    data_entry_helper::$javascript .= "indiciaData.detailsTabs = ['details','experience','phenology','images','comments'];\n";
     data_entry_helper::enable_tabs(array(
       'divId'=>'record-details-tabs'
     ));
     $r .= '<div id="details-tab"></div>';
-    $r .= '<div id="phenology-tab"><p>'.lang::get('The following phenology chart shows the relative abundance of records through the '.
-        'year for this species, <em>from the verified online recording data only.</em>').'</p><div id="chart-div"></div></div>';
-    $r .= '<div id="images-tab"></div>';
-    $r .= '<div id="comments-tab"></div>';
-    $r .= '</div></div></div></div></div>';
+    $r .= self::other_tab_html();
+    $r .= '</div></div></div></div>';
     return $r;
   }
 
@@ -922,6 +938,90 @@ idlist=';
       echo 'OK';
     else
       echo 'Fail';
+  }
+  
+  /**
+   * AJAX callback method to fill in the record's experience tab.
+   * 
+   * Returns a report detailing the total number of records of the species and
+   * species group, as well as a breakdown by verified and rejected records.
+   * Records link to the Explore report if view_records_report_path is filled in.
+   * 
+   * @param type $website_id
+   * @param type $password
+   * @param type $node 
+   */
+  public static function ajax_experience($website_id, $password, $node) {
+    iform_load_helpers(array('report_helper'));
+    $auth = report_helper::get_read_auth($website_id, $password);
+    $data = report_helper::get_report_data(array(
+      'dataSource' => 'library/totals/user_experience_for_record',
+      'readAuth' => $auth,
+      'extraParams' => array('occurrence_id'=>$_GET['occurrence_id'])
+    ));
+    $r = '';
+    if (!empty($node->params['view_records_report_path']))
+    foreach($data as $row) {
+      if ($row['v_total']===0) {
+        $r .= '<p>This recorder has not recorded this ' + $row['type'] + ' before.</p>';
+      } else {
+        $r .= '<p>Records of ' . $row['what'] . '<p>';
+        $r .= '<table><thead><th></th><th>Last 3 months</th><th>Last year</th><th>All time</th></thead>';
+        $r .= '<tbody>';
+        $r .= '<tr class="verified"><th>Verified</th><td>' . self::records_link($row, 'v_3months', $node) . '</td><td>' . 
+                self::records_link($row, 'v_1year', $node) . '</td><td>' . self::records_link($row, 'v_total', $node) . '</td></tr>';
+        $r .= '<tr class="rejected"><th>Rejected</th><td>' . self::records_link($row, 'r_3months', $node) . '</td><td>' . 
+                self::records_link($row, 'r_1year', $node) . '</td><td>' . self::records_link($row, 'r_total', $node) . '</td></tr>';
+        $r .= '<tr class="total"><th>Total</th><td>' . self::records_link($row, 'total_3months', $node) . '</td><td>' . 
+                self::records_link($row, 'total_1year', $node) . '</td><td>' . self::records_link($row, 'total_total', $node) . '</td></tr>';
+        $r .= "</tbody></table>\n";
+        
+      }
+    }
+    // See if there is a filled in profile_experience field for the user. If so, add
+    // the statement to the response.
+    if (!empty($_GET['user_id'])) {
+      $result = db_query("SELECT vuid.value
+FROM {profile_values} vuser_id
+JOIN {profile_fields} fuser_id ON fuser_id.fid=vuser_id.fid AND fuser_id.name='profile_indicia_user_id'
+JOIN {profile_values} vuid ON vuid.uid=vuser_id.uid
+JOIN {profile_fields} fuid ON fuid.fid=vuid.fid AND fuid.name='profile_experience'
+WHERE vuser_id.value=".$_GET['user_id']);
+      if ($exp = db_fetch_object($result)) {
+        if (!empty($exp->value)) 
+          $r .= "<h3>User's description of their experience</h3>{$exp->value}\n";
+      } 
+    }
+    echo $r;
+  }
+  
+  private static function records_link($row, $value, $node) {
+    if (!empty($node->params['view_records_report_path'])) {
+      $tokens = explode('_', $value);
+      $params = array('dynamic-ownGroups'=>0,'dynamic-recent'=>0,'dynamic-user-filter'=>1);
+      switch ($tokens[0]) {
+        case 'r' : 
+          $params['dynamic-record_status'] = 'R';
+          break;
+        case 'v' :
+          $params['dynamic-record_status'] = 'V';
+          break;
+      }
+      switch ($tokens[1]) {
+        case '3months' :
+          $params['dynamic-input_date_from'] = date('Y-m-d', strToTime('3 months ago'));
+        case '1year' :
+          $params['dynamic-input_date_from'] = date('Y-m-d', strToTime('1 year ago'));
+      }
+      if ($row['type']==='species')
+        $params['dynamic-taxon_meaning_id'] = $row['what_id'];
+      else
+        $params['dynamic-taxon_group_id'] = $row['what_id'];
+      return l($row[$value], $node->params['view_records_report_path'], 
+          array('attributes'=>array('target' => '_blank'), 'query'=>$params));
+      
+    } else
+      return $row[$value];
   }
 
   /**
