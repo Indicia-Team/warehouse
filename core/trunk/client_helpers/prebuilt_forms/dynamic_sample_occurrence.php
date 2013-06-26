@@ -1344,18 +1344,19 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       // For other controls we need to apply the species name filter to the params used for population
       if (!empty($species_ctrl_opts['taxonFilter']))
         $species_ctrl_opts['extraParams'] = array_merge($species_ctrl_opts['extraParams'], data_entry_helper::get_species_names_filter($species_ctrl_opts));
+    
       // for controls which don't know how to do the lookup, we need to tell them
+      $db = data_entry_helper::get_species_lookup_db_definition($args['cache_lookup']);
+      // get local vars for the array
+      $x = extract($db);
       $species_ctrl_opts = array_merge(array(
-        'table'=>'cache_taxa_taxon_list',
-        'captionField'=>'taxon',
-        'valueField'=>'id',
+        'table' => $tblTaxon,
+        'captionField' => $colTaxon,
+        'valueField' => $colId,
       ), $species_ctrl_opts);
     }
     // if using something other than an autocomplete, then set the caption template to include the appropriate names. Autocompletes
     // use a JS function instead.
-    $db = data_entry_helper::get_species_lookup_db_definition($args['cache_lookup']);
-    // get local vars for the array
-    extract($db);
     if ($ctrl!=='autocomplete' && isset($args['species_include_both_names']) && $args['species_include_both_names']) {
       if ($args['species_names_filter']==='all')
         $indicia_templates['species_caption'] = '{taxon}';
