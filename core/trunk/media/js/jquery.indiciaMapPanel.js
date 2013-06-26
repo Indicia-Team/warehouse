@@ -752,8 +752,8 @@ mapGeoreferenceHooks = [];
      * Selects the features in the contents of a bounding box
      */
     function selectBox(position, layers, div) {
-      var testGeom, tolerantGeom, layer, tolerance, testGeoms={},
-          getRadius, getStrokeWidth, radius, strokeWidth, match;;
+      var testGeom, tolerantGeom, pointGeom, layer, tolerance, testGeoms={},
+          getRadius, getStrokeWidth, radius, strokeWidth, match;
       if (position instanceof OpenLayers.Bounds) {
         testGeom=boundsToGeom(position, div);        
         for(var l=0; l<layers.length; ++l) {
@@ -802,41 +802,36 @@ mapGeoreferenceHooks = [];
             // check if the feature is displayed
             if (!feature.onScreen()) {
               continue;
-            }
-            if (feature.geometry.CLASS_NAME === 'OpenLayers.Geometry.Point') {
-              if (getRadius!==null) {
-                // getRadius might be a string (fieldname) or a context function, so overwrite the layer default
-                if (typeof getRadius==='string') {
-                  radius=feature.attributes[getRadius];
-                } else {
-                  radius = getRadius(feature);
-                }
-              }
-              if (getStrokeWidth!==null) {
-                // getStrokeWidth might be a string (fieldname) or a context function, so overwrite the layer default
-                if (typeof getStrokeWidth==='string') {
-                  strokeWidth=feature.attributes[getStrokeWidth];
-                } else {
-                  strokeWidth = getStrokeWidth(feature);
-                }
-              }
-              tolerance = div.map.getResolution() * (radius + (strokeWidth/2));
-              tolerance=Math.round(tolerance);
-              // keep geoms we create so we don't keep rebuilding them
-              if (typeof testGeoms['geom-'+Math.round(tolerance/100)]!=="undefined") {
-                tolerantGeom = testGeoms['geom-'+Math.round(tolerance/100)];
+            }          
+            pointGeom=feature.geometry.getCentroid();            
+            if (getRadius!==null) {
+              // getRadius might be a string (fieldname) or a context function, so overwrite the layer default
+              if (typeof getRadius==='string') {
+                radius=feature.attributes[getRadius];
               } else {
-                tolerantGeom = OpenLayers.Geometry.Polygon.createRegularPolygon(testGeom, tolerance, 20, 0);
-                testGeoms['geom-'+Math.round(tolerance/100)] = tolerantGeom;
+                radius = getRadius(feature);
               }
-            } else {
-              // doing a test against a dragged box, no need to worry about click tolerance.
-              tolerantGeom=testGeom;
             }
-            if (tolerantGeom.intersects(feature.geometry)) {
-              if (OpenLayers.Util.indexOf(layer.selectedFeatures, feature) == -1) {
-                featuresToSelect.push(feature);
+            if (getStrokeWidth!==null) {
+              // getStrokeWidth might be a string (fieldname) or a context function, so overwrite the layer default
+              if (typeof getStrokeWidth==='string') {
+                strokeWidth=feature.attributes[getStrokeWidth];
+              } else {
+                strokeWidth = getStrokeWidth(feature);
               }
+            }
+            tolerance = div.map.getResolution() * (radius + (strokeWidth/2));
+            tolerance=Math.round(tolerance);
+            // keep geoms we create so we don't keep rebuilding them
+            if (typeof testGeoms['geom-'+Math.round(tolerance/100)]!=="undefined") {
+              tolerantGeom = testGeoms['geom-'+Math.round(tolerance/100)];
+            } else {
+              tolerantGeom = OpenLayers.Geometry.Polygon.createRegularPolygon(testGeom, tolerance, 20, 0);
+              testGeoms['geom-'+Math.round(tolerance/100)] = tolerantGeom;
+            }
+            if ((tolerantGeom.intersects(feature.geometry) || testGeom.intersects(feature.geometry))
+                && $.inArray(feature, layer.selectedFeatures)===-1) {
+              featuresToSelect.push(feature);
             }
           }
           layer.map.setSelection(layer, featuresToSelect);
