@@ -1257,8 +1257,8 @@ class ORM extends ORM_Core {
         ->from($this->object_name.'_attributes')
         ->where(array('id'=>$attrId))
         ->get()->result_array();
-    if (count($attr)===0) then 
-      throw new exception("Invalid {$this->object_name} attribute ID $attrId");
+    if (count($attr)===0) 
+      throw new Exception("Invalid {".$this->object_name."} attribute ID $attrId");
     $attr = $attr[0];
     // Create a attribute value, loading the existing value id if it exists, or search for the existing record
     // if not multivalue but no id supplied and not a new record
