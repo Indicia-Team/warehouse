@@ -592,7 +592,6 @@ idlist=';
       $paramsForm = report_helper::report_grid($opts);
       $opts['paramsOnly']=false;
       $opts['autoParamsForm']=false;
-      $opts['sendOutputToMap']=true;
       $opts['zoomMapToOutput']=false;
       $grid = report_helper::report_grid($opts);
       $r = str_replace(array('{grid}','{paramsForm}'), array($grid, $paramsForm),
@@ -998,9 +997,9 @@ WHERE vuser_id.value=".$_GET['user_id']);
    * Convert a number on the Experience tab into a link to the Explore page for the underlying records.
    */
   private static function records_link($row, $value, $node) {
-    if (!empty($node->params['view_records_report_path'])) {
+    if (!empty($node->params['view_records_report_path']) && !empty($_GET['user_id'])) {
       $tokens = explode('_', $value);
-      $params = array('dynamic-ownGroups'=>0,'dynamic-recent'=>0,'dynamic-user-filter'=>1);
+      $params = array('dynamic-ownGroups'=>0,'dynamic-recent'=>0,'dynamic-user_filter'=>$_GET['user_id']);
       switch ($tokens[0]) {
         case 'r' : 
           $params['dynamic-record_status'] = 'R';
