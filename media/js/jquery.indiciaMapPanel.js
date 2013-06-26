@@ -720,34 +720,48 @@ mapGeoreferenceHooks = [];
       }
       return r;
     }
+    
+    /**
+     * Converts a bounds to a point or polygon geom.
+     */
+    function boundsToGeom(position, div) {
+      var geom, bounds, xy, minXY, maxXY
+      if (position.left===position.right && position.top===position.bottom) {
+        // point clicked
+        xy = div.map.getLonLatFromPixel(
+            new OpenLayers.Pixel(position.left, position.bottom)
+        );
+        geom = new OpenLayers.Geometry.Point(xy.lon,xy.lat);
+      } else {
+        // bounding box dragged
+        minXY = div.map.getLonLatFromPixel(
+            new OpenLayers.Pixel(position.left, position.bottom)
+        );
+        maxXY = div.map.getLonLatFromPixel(
+            new OpenLayers.Pixel(position.right, position.top)
+        );
+        bounds = new OpenLayers.Bounds(
+            minXY.lon, minXY.lat, maxXY.lon, maxXY.lat
+        );
+        geom = bounds.toGeometry();
+      }
+      return geom;
+    }
 
     /*
      * Selects the features in the contents of a bounding box
      */
     function selectBox(position, layers, div) {
-      var testGeom, tolerantGeom, layer, bounds, xy, minXY, maxXY, layer, tolerance, testGeoms={},
-          getRadius=null, getStrokeWidth=null, radius, strokeWidth, match;;
+      var testGeom, tolerantGeom, layer, tolerance, testGeoms={},
+          getRadius, getStrokeWidth, radius, strokeWidth, match;;
       if (position instanceof OpenLayers.Bounds) {
-        if (position.left===position.right && position.top===position.bottom) {
-          // point clicked
-          xy = div.map.getLonLatFromPixel(
-              new OpenLayers.Pixel(position.left, position.bottom)
-          );
-          testGeom = new OpenLayers.Geometry.Point(xy.lon,xy.lat);
-        } else {
-          // bounding box dragged
-          minXY = div.map.getLonLatFromPixel(
-              new OpenLayers.Pixel(position.left, position.bottom)
-          );
-          maxXY = div.map.getLonLatFromPixel(
-              new OpenLayers.Pixel(position.right, position.top)
-          );
-          bounds = new OpenLayers.Bounds(
-              minXY.lon, minXY.lat, maxXY.lon, maxXY.lat
-          );
-          testGeom = bounds.toGeometry();
-        }
+        testGeom=boundsToGeom(position, div);        
         for(var l=0; l<layers.length; ++l) {
+          // set defaults
+          getRadius=null;
+          getStrokeWidth=null;
+          radius=6;
+          strokeWidth=1;
           layer = layers[l];
           // when testing a click point, use a circle drawn around the click point so the
           // click does not have to be exact. At this stage, we just look for the layer default
@@ -766,8 +780,6 @@ mapGeoreferenceHooks = [];
                   }
                 }
               }
-            } else {
-              radius=6; // default
             }
             if (typeof layer.styleMap.styles['default'].defaultStyle.strokeWidth!=="undefined") {
               strokeWidth=layer.styleMap.styles['default'].defaultStyle.strokeWidth;
@@ -807,8 +819,6 @@ mapGeoreferenceHooks = [];
                 } else {
                   strokeWidth = getStrokeWidth(feature);
                 }
-              } else {
-                strokeWidth = 1;
               }
               tolerance = div.map.getResolution() * (radius + (strokeWidth/2));
               tolerance=Math.round(tolerance);
@@ -848,8 +858,9 @@ mapGeoreferenceHooks = [];
               wmsUrl = item.url;
             }
             clickableWMSLayerNames.push(item.params.LAYERS);
-          } else if (item.CLASS_NAME==='OpenLayers.Layer.Vector')
+          } else if (item.CLASS_NAME==='OpenLayers.Layer.Vector' && $.inArray(item, clickableVectorLayers)===-1) {
             clickableVectorLayers.push(item);
+          }
         });
 
         clickableWMSLayerNames = clickableWMSLayerNames.join(',');
