@@ -2429,14 +2429,16 @@ if (typeof mapSettingsHooks!=='undefined') {
     $options['my_user_id'] = $user->uid; // Initially CMS User, changed to Indicia User later if in Easy Login mode.
     // Note for the calendar reports, the user_id is assumed to be the CMS user id as recorded in the CMS User ID attribute,
     // not the Indicia user id.
-    if (function_exists('profile_load_profile') && function_exists('module_exists') && module_exists('easy_login') && $options["extraParams"]['user_id'] == $options["extraParams"]['cms_user_id']) {
+    if (function_exists('module_exists') && module_exists('easy_login') && $options["extraParams"]['user_id'] == $options["extraParams"]['cms_user_id']) {
       $account = user_load($options["extraParams"]['user_id']);
-      profile_load_profile($account);
+      if (function_exists('profile_load_profile'))
+        profile_load_profile($account); /* will not be invoked for Drupal7 where the fields are already in the account object */
       if(isset($account->profile_indicia_user_id))
         $options["extraParams"]['user_id'] = $account->profile_indicia_user_id;
       if($options['my_user_id']){ // false switches this off.
         $account = user_load($options['my_user_id']);
-        profile_load_profile($account);
+        if (function_exists('profile_load_profile'))
+          profile_load_profile($account); /* will not be invoked for Drupal7 where the fields are already in the account object */
         if(isset($account->profile_indicia_user_id))
           $options['my_user_id'] = $account->profile_indicia_user_id;
       }
@@ -3542,9 +3544,10 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
 
     if (isset($options["extraParams"]['user_id'])) {
       $options["extraParams"]['cms_user_id'] = $options["extraParams"]['user_id'];
-      if (function_exists('profile_load_profile') && function_exists('module_exists') && module_exists('easy_login')) {
+      if (function_exists('module_exists') && module_exists('easy_login')) {
         $account = user_load($options["extraParams"]['user_id']);
-        profile_load_profile($account);
+        if (function_exists('profile_load_profile'))
+          profile_load_profile($account); /* will not be invoked for Drupal7 where the fields are already in the account object */
         if(isset($account->profile_indicia_user_id))
           $options["extraParams"]['user_id'] = $account->profile_indicia_user_id;
       }

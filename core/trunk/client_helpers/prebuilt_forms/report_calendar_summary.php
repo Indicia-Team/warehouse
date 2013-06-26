@@ -857,8 +857,7 @@ class iform_report_calendar_summary {
           } else {
             foreach ($results as $result) { // DB processing is different in 7
               if($result->uid){
-                $account = user_load($result->uid);
-                profile_load_profile($account);
+                $account = user_load($result->uid); /* this loads the field_ fields, so no need for profile_load_profile */
                 if(isset($account->profile_indicia_user_id) && isset($uList[$account->profile_indicia_user_id]) && $uList[$account->profile_indicia_user_id])
                   $userList[$account->uid] = $account;
               }
