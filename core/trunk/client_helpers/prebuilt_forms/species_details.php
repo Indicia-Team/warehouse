@@ -456,11 +456,11 @@ class iform_species_details extends iform_dynamic {
     data_entry_helper::add_resource('fancybox');
     global $user;
     //default an items per page if not set by administrator
-    if ($options['itemsPerPage'] == NULL) {
+    if (empty($options['itemsPerPage'])) {
       $options['itemsPerPage'] = 6;
     }  
     //default a column count if not set by administrator
-    if ($options['galleryColCount'] == NULL) {
+    if (empty($options['galleryColCount'])) {
       $options['galleryColCount'] = 3;
     }  
     
@@ -512,7 +512,7 @@ class iform_species_details extends iform_dynamic {
     iform_load_helpers(array('map_helper', 'data_entry_helper'));
     global $user;
     // setup the map options
-    $options = iform_map_get_map_options($args, $readAuth);
+    $options = iform_map_get_map_options($args, $auth['read']);
     $olOptions = iform_map_get_ol_options($args);
     $url = map_helper::$geoserver_url.'wms';
     // Get the style if there is one selected
@@ -548,6 +548,7 @@ class iform_species_details extends iform_dynamic {
       $layerTypes = explode(',', $args['include_layer_list_types']);
     else
       $layerTypes = array('base', 'overlay');
+    $r = '';
     //Legend options set by the user
     if (!isset($args['include_layer_list']) || $args['include_layer_list'])
       $r .= map_helper::layer_list(array(
@@ -653,6 +654,27 @@ class iform_species_details extends iform_dynamic {
    */
   protected static function convert_array_to_set($theArray) {
     return "'".implode("','", str_replace("'", "''", $theArray))."'";
+  }
+  
+  /**
+   * Override the standard header as this is not an HTML form.
+   */
+  protected static function getHeader($args) {
+    return '';
+  }
+  
+  /**
+   * Override the standard footer as this is not an HTML form.
+   */
+  protected static function getFooter($args) {
+    return '';
+  }
+  
+  /**
+   * Override some default behaviour in dynamic.
+   */
+  protected static function getFirstTabAdditionalContent($args, $auth, &$attributes) {
+    return '';
   }
 }
 ?>
