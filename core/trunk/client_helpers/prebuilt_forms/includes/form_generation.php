@@ -284,7 +284,7 @@ function profile_load_all_profile(&$user) {
 /**
  * DRUPAL7 profile module API has changed: provide a DRUPAL6 API for DRUPAL7
  */
-if(!version_compare(VERSION, '7', '<') && function_exists('profile_user_load') && !function_exists('profile_load_profile')) {
+if(defined('VERSION') && !version_compare(VERSION, '7', '<') && function_exists('profile_user_load') && !function_exists('profile_load_profile')) {
 	function profile_load_profile($user) {
 		return profile_user_load(array($user));
 	}
