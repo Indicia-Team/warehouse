@@ -45,10 +45,10 @@ class View extends View_Core {
     if (count($tabs)>1) {
       $js = "<script type=\"text/javascript\">
 jQuery(document).ready(function() {
-  var $tabs=$('#tabs').tabs();
+  var $t=$('#tabs').tabs();
   var initTab='".(array_key_exists('tab', $_GET) ? $_GET['tab'] : '')."';
   if (initTab!='') {
-    $tabs.tabs('select', '#' + initTab);
+    $t.tabs('select', '#' + initTab);
   }
 });
 </script>";
