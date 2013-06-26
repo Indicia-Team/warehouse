@@ -1360,7 +1360,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       if ($args['species_names_filter']==='all')
         $indicia_templates['species_caption'] = '{taxon}';
       elseif ($args['species_names_filter']==='language')
-        $indicia_templates['species_caption'] = '{taxon} - {prefered_taxon}';
+        $indicia_templates['species_caption'] = '{taxon} - {preferred_taxon}';
       else
         $indicia_templates['species_caption'] = '{taxon} - {default_common_name}';
       $species_ctrl_opts['captionTemplate'] = 'species_caption';
