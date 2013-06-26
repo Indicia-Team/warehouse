@@ -2579,7 +2579,7 @@ class data_entry_helper extends helper_base {
       $overrideOptions['speciesNameFilterMode'] = $filterType;
       $nameFilter[$filterType] = self::get_species_names_filter($overrideOptions);
       $nameFilter[$filterType] = json_encode($nameFilter[$filterType]);
-    }
+    }  
     if (count($filterArray)) {
       $filterParam = json_encode($filterArray);
       self::$javascript .= "indiciaData['taxonExtraParams-".$options['id']."'] = $filterParam;\n";
@@ -2638,7 +2638,7 @@ class data_entry_helper extends helper_base {
           $options['occurrenceImages'], $options['reloadExtraParams'], $subSampleRows, $options['speciesControlToUseSubSamples'],
           (isset($options['subSampleSampleMethodID']) ? $options['subSampleSampleMethodID'] : ''));
     // load the full list of species for the grid, including the main checklist plus any additional species in the reloaded occurrences.
-    $taxalist = self::get_species_checklist_taxa_list($options, $taxonRows);
+    $taxalist = self::get_species_checklist_taxa_list($options, $taxonRows);    
     // If we managed to read the species list data we can proceed
     if (! array_key_exists('error', $taxalist)) {
       $attrOptions = array(
@@ -3342,56 +3342,56 @@ $('#".$options['id']."-filter').click(function(evt) {
       	$sampleCount = 1;
       }
       if($sampleCount>0) {
-        $occurrences = self::get_population_data(array(
-          'table' => 'occurrence',
-          'extraParams' => $extraParams,
+      $occurrences = self::get_population_data(array(
+        'table' => 'occurrence',
+        'extraParams' => $extraParams,
+        'nocache' => true
+      ));
+      foreach($occurrences as $idx => $occurrence){
+        if($useSubSamples){
+          foreach($subSamples as $sidx => $subsample){
+            if($subsample['id'] == $occurrence['sample_id'])
+              self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':occurrence:sampleIDX'] = $sidx;
+          }
+        }
+        self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':present'] = $occurrence['taxa_taxon_list_id'];
+        self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':occurrence:comment'] = $occurrence['comment'];
+        self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':occurrence:sensitivity_precision'] = $occurrence['sensitivity_precision'];
+        // Warning. I observe that, in cases where more than one occurrence is loaded, the following entries in 
+        // $entity_to_load will just take the value of the last loaded occurrence.
+        self::$entity_to_load['occurrence:record_status']=$occurrence['record_status'];
+        self::$entity_to_load['occurrence:taxa_taxon_list_id']=$occurrence['taxa_taxon_list_id'];
+        self::$entity_to_load['occurrence:taxa_taxon_list_id:taxon']=$occurrence['taxon'];
+        // Keep a list of all Ids
+        $occurrenceIds[$occurrence['id']] = $idx;
+      }
+        if(count($occurrenceIds)>0) {
+      // load the attribute values into the entity to load as well
+      $attrValues = self::get_population_data(array(
+        'table' => 'occurrence_attribute_value',
+        'extraParams' => $readAuth + array('occurrence_id' => array_keys($occurrenceIds)),
+        'nocache' => true
+      ));
+      foreach($attrValues as $attrValue) {
+        self::$entity_to_load['sc:'.$occurrenceIds[$attrValue['occurrence_id']].':'.$attrValue['occurrence_id'].':occAttr:'.$attrValue['occurrence_attribute_id'].(isset($attrValue['id'])?':'.$attrValue['id']:'')]
+            = $attrValue['raw_value'];
+      }
+      if ($loadImages) {
+        $images = self::get_population_data(array(
+          'table' => 'occurrence_image',
+          'extraParams' => $readAuth + array('occurrence_id' => array_keys($occurrenceIds)),
           'nocache' => true
         ));
-        foreach($occurrences as $idx => $occurrence){
-          if($useSubSamples){
-            foreach($subSamples as $sidx => $subsample){
-              if($subsample['id'] == $occurrence['sample_id'])
-                self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':occurrence:sampleIDX'] = $sidx;
-            }
-          }
-          self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':present'] = $occurrence['taxa_taxon_list_id'];
-          self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':occurrence:comment'] = $occurrence['comment'];
-          self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':occurrence:sensitivity_precision'] = $occurrence['sensitivity_precision'];
-          // Warning. I observe that, in cases where more than one occurrence is loaded, the following entries in 
-          // $entity_to_load will just take the value of the last loaded occurrence.
-          self::$entity_to_load['occurrence:record_status']=$occurrence['record_status'];
-          self::$entity_to_load['occurrence:taxa_taxon_list_id']=$occurrence['taxa_taxon_list_id'];
-          self::$entity_to_load['occurrence:taxa_taxon_list_id:taxon']=$occurrence['taxon'];
-          // Keep a list of all Ids
-          $occurrenceIds[$occurrence['id']] = $idx;
+        foreach($images as $image) {
+          self::$entity_to_load['sc:'.$occurrenceIds[$image['occurrence_id']].':'.$image['occurrence_id'].':occurrence_image:id:'.$image['id']]
+              = $image['id'];
+          self::$entity_to_load['sc:'.$occurrenceIds[$image['occurrence_id']].':'.$image['occurrence_id'].':occurrence_image:path:'.$image['id']]
+              = $image['path'];
+          self::$entity_to_load['sc:'.$occurrenceIds[$image['occurrence_id']].':'.$image['occurrence_id'].':occurrence_image:caption:'.$image['id']]
+              = $image['caption'];
         }
-        if(count($occurrenceIds)>0) {
-          // load the attribute values into the entity to load as well
-          $attrValues = self::get_population_data(array(
-            'table' => 'occurrence_attribute_value',
-            'extraParams' => $readAuth + array('occurrence_id' => array_keys($occurrenceIds)),
-            'nocache' => true
-          ));
-          foreach($attrValues as $attrValue) {
-            self::$entity_to_load['sc:'.$occurrenceIds[$attrValue['occurrence_id']].':'.$attrValue['occurrence_id'].':occAttr:'.$attrValue['occurrence_attribute_id'].(isset($attrValue['id'])?':'.$attrValue['id']:'')]
-                = $attrValue['raw_value'];
-          }
-          if ($loadImages) {
-            $images = self::get_population_data(array(
-              'table' => 'occurrence_image',
-              'extraParams' => $readAuth + array('occurrence_id' => array_keys($occurrenceIds)),
-              'nocache' => true
-            ));
-            foreach($images as $image) {
-              self::$entity_to_load['sc:'.$occurrenceIds[$image['occurrence_id']].':'.$image['occurrence_id'].':occurrence_image:id:'.$image['id']]
-                  = $image['id'];
-              self::$entity_to_load['sc:'.$occurrenceIds[$image['occurrence_id']].':'.$image['occurrence_id'].':occurrence_image:path:'.$image['id']]
-                  = $image['path'];
-              self::$entity_to_load['sc:'.$occurrenceIds[$image['occurrence_id']].':'.$image['occurrence_id'].':occurrence_image:caption:'.$image['id']]
-                  = $image['caption'];
-            }
-          }
-        }
+      }
+    }
       }
     }
     return $occurrenceIds;
@@ -4974,15 +4974,6 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         self::$javascript .= "  var current=$('#$divId').tabs('option', 'selected');\n";
         self::validate_inputs_on_current_tab('Before going to the next step, some of the values in the input boxes on this step need checking. '.
             'They have been highlighted on the form for you.');
-        // Use a selector to find the inputs and selects on the current tab and validate them.
-        if (isset(self::$validated_form_id)) {
-          self::$javascript .= "  var tabinputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select,textarea').not(':disabled,[name=]');\n";
-          self::$javascript .= "  if (!tabinputs.valid()) {\n";
-          self::$javascript .= "    alert('".lang::get('Before going to the next step, some of the values in the input boxes on this step need checking. '.
-                  'They have been highlighted on the form for you.')."')\n";
-          self::$javascript .= "    return;\n";
-          self::$javascript .= "  }\n";
-        }
         // If all is well, move to the next tab. Note the code detects if the top of the tabset is not visible, if so
         // it forces it into view. This helps a lot when the tabs vary in height.
         self::$javascript .= "  var a = $('ul.ui-tabs-nav a')[current+1];
@@ -5011,10 +5002,13 @@ $('#$divId').tabs({
       // a taxon name already.
       "var clonableRow = $('.species-grid .scClonableRow');
       var display = clonableRow.css('display');
-      if ($('.species-grid .scClonableRow .scTaxonCell input').val()==='') {
-        clonableRow.css('display', 'none');
-      }
-      isValid = $('#". self::$validated_form_id ."').valid();
+      clonableRow.css('display', 'none');\n" . 
+      //We handle taxon cells seperately. They are excluded from validation in tabinputs as they have no name.
+      //So we need to include them seperately as they are an exception to the rule that the item should not be included in validation if it has no name.
+      "      var current=$('#$divId').tabs('option', 'selected');
+      validationResultTaxon = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+') .scTaxonCell').find('input,select').not(':disabled').valid();
+      validationResult = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select,textarea').not(':disabled,[name=],.scTaxonCell').valid();
+      isValid = (validationResultTaxon && validationResult)===1 ? true : false;
       //restore the clonable row
       clonableRow.css('display', display);
     } else {
@@ -5065,8 +5059,12 @@ if (errors.length>0) {
   private static function validate_inputs_on_current_tab($msg='') {
     // Use a selector to find the inputs and selects on the current tab and validate them.
     if (isset(self::$validated_form_id)) {
-      self::$javascript .= "  var tabinputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select,textarea').not(':disabled,[name=]');\n";
-      self::$javascript .= "  if (tabinputs.length>0 && !tabinputs.valid()) {\n";
+      //We handle taxon cells seperately. They are excluded from validation in tabinputs as they have no name.
+      //So we need to include them seperately as they are an exception to the rule that the item should not be included in validation if it has no name.
+      self::$javascript .= "  var tabinputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select,textarea').not(':disabled,[name=],.scTaxonCell');\n";
+      self::$javascript .= "  var tabtaxoninputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+') .scTaxonCell').find('input,select').not(':disabled');\n";
+      self::$javascript .= "  if ((tabinputs.length>0 && !tabinputs.valid()) ||
+                                  (tabtaxoninputs.length>0 && !tabtaxoninputs.valid())) {\n";
       if ($msg)
         self::$javascript .= "    alert('".lang::get($msg)."');\n";
       self::$javascript .= "    return;\n";
