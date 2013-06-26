@@ -1339,6 +1339,12 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       $species_ctrl_opts['taxonFilterField']=$args['taxon_filter_field']; // applies to autocompletes
       $species_ctrl_opts['taxonFilter']=helper_base::explode_lines($args['taxon_filter']); // applies to autocompletes
     }
+
+    // obtain table to query and hence fields to use     
+    $db = data_entry_helper::get_species_lookup_db_definition($args['cache_lookup']);
+    // get local vars for the array
+    extract($db);
+    
     if ($ctrl!=='species_autocomplete') {
       // The species autocomplete has built in support for the species name filter.
       // For other controls we need to apply the species name filter to the params used for population
@@ -1346,9 +1352,6 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         $species_ctrl_opts['extraParams'] = array_merge($species_ctrl_opts['extraParams'], data_entry_helper::get_species_names_filter($species_ctrl_opts));
     
       // for controls which don't know how to do the lookup, we need to tell them
-      $db = data_entry_helper::get_species_lookup_db_definition($args['cache_lookup']);
-      // get local vars for the array
-      $x = extract($db);
       $species_ctrl_opts = array_merge(array(
         'table' => $tblTaxon,
         'captionField' => $colTaxon,
@@ -1359,11 +1362,11 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     // use a JS function instead.
     if ($ctrl!=='autocomplete' && isset($args['species_include_both_names']) && $args['species_include_both_names']) {
       if ($args['species_names_filter']==='all')
-        $indicia_templates['species_caption'] = '{taxon}';
+        $indicia_templates['species_caption'] = "{{$colTaxon}}";
       elseif ($args['species_names_filter']==='language')
-        $indicia_templates['species_caption'] = '{taxon} - {preferred_taxon}';
+        $indicia_templates['species_caption'] = "{{$colTaxon}} - {{$colPreferred}}";
       else
-        $indicia_templates['species_caption'] = '{taxon} - {default_common_name}';
+        $indicia_templates['species_caption'] = "{{$colTaxon}} - {{$colCommon}}";
       $species_ctrl_opts['captionTemplate'] = 'species_caption';
     }
     if ($ctrl=='tree_browser') {
