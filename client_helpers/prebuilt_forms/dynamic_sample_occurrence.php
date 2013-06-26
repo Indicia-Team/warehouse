@@ -1342,7 +1342,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     if ($ctrl!=='species_autocomplete') {
       // The species autocomplete has built in support for the species name filter.
       // For other controls we need to apply the species name filter to the params used for population
-      if (!empty($species_ctrl_opts['taxonFilter']))
+      if (!empty($species_ctrl_opts['taxonFilter']) || $options['speciesNameFilterMode'])
         $species_ctrl_opts['extraParams'] = array_merge($species_ctrl_opts['extraParams'], data_entry_helper::get_species_names_filter($species_ctrl_opts));
     
       // for controls which don't know how to do the lookup, we need to tell them
