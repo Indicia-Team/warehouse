@@ -992,7 +992,6 @@ jQuery('#".$ctrlid."').change(function(){
         }
         $param=(strpos($reloadUrl['path'],'?')===false ? '?' : '&').self::$yearKey.'=';
         $r = "<th><a id=\"year-control-previous\" title=\"".($siteUrlParams[self::$yearKey]['value']-1)."\" rel=\"nofollow\" href=\"".$reloadUrl['path'].$param.($siteUrlParams[self::$yearKey]['value']-1)."\" class=\"ui-datepicker-prev ui-corner-all\"><span class=\"ui-icon ui-icon-circle-triangle-w\">Prev</span></a></th><th><span class=\"thisYear\">".$siteUrlParams[self::$yearKey]['value']."</span></th>";
-        $r .= '<th>'.$siteUrlParams[self::$yearKey]['value'].'</th>';
         if($siteUrlParams[self::$yearKey]['value']<date('Y')){
           $r .= "<th><a id=\"year-control-next\" title=\"".($siteUrlParams[self::$yearKey]['value']+1)."\" rel=\"nofollow\" href=\"".$reloadUrl['path'].$param.($siteUrlParams[self::$yearKey]['value']+1)."\" class=\"ui-datepicker-next ui-corner-all\"><span class=\"ui-icon ui-icon-circle-triangle-e\">Next</span></a></th>";
         }
