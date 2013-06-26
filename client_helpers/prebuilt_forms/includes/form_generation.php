@@ -267,10 +267,7 @@ function get_user_profile_hidden_inputs(&$attributes, $args, $exists, $readAuth)
 function profile_load_all_profile(&$user) {
   // don't do anything unless in Drupal, with the profile module enabled, and the user logged in.
   if ($user->uid>0 && function_exists('profile_load_profile')) {
-    if(version_compare(VERSION, '7', '<'))
-      $result = db_query('SELECT f.name, f.type, v.value FROM {profile_fields} f LEFT JOIN {profile_values} v ON f.fid = v.fid AND uid = %d', $user->uid);
-    else
-      $result = db_query('SELECT f.name, f.type, v.uid, v.value FROM {profile_field} f INNER JOIN {profile_value} v ON f.fid = v.fid WHERE uid = %d', $user->uid);
+    $result = db_query('SELECT f.name, f.type, v.value FROM {profile_fields} f LEFT JOIN {profile_values} v ON f.fid = v.fid AND uid = %d', $user->uid);
     while ($field = db_fetch_object($result)) {
       if (empty($user->{$field->name})) {
         if (empty($field->value)) 
@@ -280,13 +277,5 @@ function profile_load_all_profile(&$user) {
       }
     }
   }
-}
-/**
- * DRUPAL7 profile module API has changed: provide a DRUPAL6 API for DRUPAL7
- */
-if(defined('VERSION') && !version_compare(VERSION, '7', '<') && function_exists('profile_user_load') && !function_exists('profile_load_profile')) {
-	function profile_load_profile($user) {
-		return profile_user_load(array($user));
-	}
 }
 
