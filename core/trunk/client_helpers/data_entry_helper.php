@@ -3106,11 +3106,12 @@ class data_entry_helper extends helper_base {
           break;
         case 'currentLanguage' :
           // look for Drupal user variable. Will degrade gracefully if it doesn't exist
+          global $user;
           if (isset($options['language'])) {
-            $filterFields += array($colLanguage=>$options['language']);
+            $filterFields += array($colLanguage => $options['language']);
           } elseif (isset($user) && function_exists('hostsite_get_user_field')) {
             // if in Drupal we can use the user's language
-            $filterFields += array($colLanguage=>iform_lang_iso_639_2(hostsite_get_user_field('language')));
+            $filterFields += array($colLanguage => iform_lang_iso_639_2(hostsite_get_user_field('language')));
           }
           break;
         case 'excludeSynonyms':
