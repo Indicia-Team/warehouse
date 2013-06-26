@@ -168,7 +168,7 @@ Record ID',
        
       data_entry_helper::$javascript .= 'indiciaData.username = "'.$user->name."\";\n";
       data_entry_helper::$javascript .= 'indiciaData.website_id = '.$args['website_id'].";\n";
-      data_entry_helper::$javascript .= 'indiciaData.ajaxFormPostUrl="'.iform_ajaxproxy_url($node, 'occurrence')."&sharing=reporting\";\n";
+      data_entry_helper::$javascript .= 'indiciaData.ajaxFormPostUrl="'.iform_ajaxproxy_url(null, 'occurrence')."&sharing=reporting\";\n";
       return parent::get_form_html($args, $auth, $attributes);
     }
   }
@@ -231,7 +231,7 @@ Record ID',
       ));
     }
 
-    $r .= '<h3>Record Details</h3>';
+    $r = '<h3>Record Details</h3>';
     
     if (isset($details_report))
       $r .= $details_report;
@@ -266,11 +266,11 @@ Record ID',
     iform_load_helpers(array('report_helper'));
     data_entry_helper::add_resource('fancybox');
     //default an items per page if not set by administrator
-    if ($options['itemsPerPage'] == NULL) {
+    if (empty($options['itemsPerPage'])) {
       $options['itemsPerPage'] = 12;
     }  
     //default a column count if not set by administrator
-    if ($options['galleryColCount'] == NULL) {
+    if (empty($options['galleryColCount'])) {
       $options['galleryColCount'] = 3;
     }  
 
@@ -506,6 +506,14 @@ Record ID';
       self::$record = $records[0];
     }
   }
+  
+  /**
+   * Override some default behaviour in dynamic.
+   */
+  protected static function getFirstTabAdditionalContent($args, $auth, &$attributes) {
+    return '';
+  }
+   
    
 }
 ?>
