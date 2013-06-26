@@ -69,6 +69,7 @@ function selectRow(tr, callback) {
             layer = new OpenLayers.Layer.WMS(layerDef.title, layerDef.url.replace('{external_key}', data.extra.taxon_external_key),
                 thisSpLyrSettings, layerDef.olSettings);
             indiciaData.mapdiv.map.addLayer(layer);
+            layer.setZIndex(0);
             speciesLayers.push(layer);
           });
         }
@@ -78,6 +79,7 @@ function selectRow(tr, callback) {
               {layers: indiciaData.indiciaSpeciesLayer.featureType, transparent: true, CQL_FILTER: filter, STYLES: indiciaData.indiciaSpeciesLayer.sld},
               {isBaseLayer: false, sphericalMercator: true, singleTile: true, opacity: 0.5});
           indiciaData.mapdiv.map.addLayer(layer);
+          layer.setZIndex(0);
           speciesLayers.push(layer);
         }
       }
@@ -591,7 +593,7 @@ function trustsPopup() {
       var downgradeConfirmed=false;
       var duplicateDetected = false;
       var trustNeedsRemoval = [];
-      var getTrustsReport = indiciaData.indiciaSvc +'/index.php/services/report/requestReport?report=library/user_trusts/get_user_trust_for_record.xml&callback=?';
+      var getTrustsReport = indiciaData.indiciaSvc +'/index.php/services/report/requestReport?report=library/user_trusts/get_user_trust_for_record.xml&mode=json&mode=json&callback=?';
       var getTrustsReportParameters = {
         'user_id':currRec.extra.created_by_id,
         'survey_id':currRec.extra.survey_id,
@@ -779,7 +781,7 @@ $('table.report-grid tbody').click(function (evt) {
 //Function to draw any existing trusts from the database
 function drawExistingTrusts() {
   "use strict";
-  var getTrustsReport = indiciaData.indiciaSvc +'/index.php/services/report/requestReport?report=library/user_trusts/get_user_trust_for_record.xml&callback=?', 
+  var getTrustsReport = indiciaData.indiciaSvc +'/index.php/services/report/requestReport?report=library/user_trusts/get_user_trust_for_record.xml&mode=json&callback=?', 
       getTrustsReportParameters = {
         'user_id':currRec.extra.created_by_id,
         'survey_id':currRec.extra.survey_id,
