@@ -5006,10 +5006,14 @@ $('#$divId').tabs({
     var prev = $(this).tabs('option', 'selected'); 
     var panel = $('.ui-tabs-panel', this).eq(prev);
     if ($('.species-grid', panel).length != 0) {
-      //leaving a panel with a species table so hide the clonable row to prevent trying to validate it.
-      var clonableRow = $('.species-grid .scClonableRow');            
+      ".
+      //leaving a panel with a species table so hide the clonable row to prevent trying to validate it, unless they've started inputting
+      // a taxon name already.
+      "var clonableRow = $('.species-grid .scClonableRow');
       var display = clonableRow.css('display');
-      clonableRow.css('display', 'none');
+      if ($('.species-grid .scClonableRow .scTaxonCell input').val()==='') {
+        clonableRow.css('display', 'none');
+      }
       isValid = $('#". self::$validated_form_id ."').valid();
       //restore the clonable row
       clonableRow.css('display', display);
