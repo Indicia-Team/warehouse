@@ -180,9 +180,10 @@ class iform_report_calendar_grid {
       $cellclass='existingLink';
     }
     // we want to be able to add more.
-    if(!isset($options['siteIDFilter']) || count($records)==0)
+    $c = count($records);
+    if(!isset($options['siteIDFilter']) || $c==0)
       $cellContents .= ' <a href="'.$options["newURL"].'date='.$options['consider_date'].'" class="newLink" title="Create a new sample on '.$options['consider_date'].
-        (isset($options['siteIDFilter']) && $records[0]['location_id']!=$options['siteIDFilter'] ? ' for the selected location.' : '').'"></a> ';
+        (isset($options['siteIDFilter']) && ($c==0 || $records[0]['location_id']!=$options['siteIDFilter']) ? ' for the selected location.' : '').'"></a> ';
     return array('cellclass'=>$cellclass, 'cellContents'=>$cellContents);
   }
 

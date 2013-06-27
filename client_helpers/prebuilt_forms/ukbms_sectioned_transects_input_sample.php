@@ -738,7 +738,7 @@ class iform_ukbms_sectioned_transects_input_sample {
       $params=$params[0];
     } else {
       $url = explode('#', $url[0], 2);
-      if (count($url)>0) $fragment=$url[1];
+      if (count($url)>1) $fragment=$url[1];
     }
     $args['my_walks_page'] = url($url[0], array('query' => $params, 'fragment' => $fragment, 'absolute' => TRUE));
     if (isset($_POST['sample:id'])) {
@@ -782,7 +782,6 @@ class iform_ukbms_sectioned_transects_input_sample {
     // find any attributes that apply to transect section samples.
     $sampleMethods = helper_base::get_termlist_terms($auth, 'indicia:sample_methods', array('Transect Section'));
     $attributes = data_entry_helper::getAttributes(array(
-      'id' => $sampleId,
       'valuetable'=>'sample_attribute_value',
       'attrtable'=>'sample_attribute',
       'key'=>'sample_id',
