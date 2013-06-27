@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
