@@ -547,7 +547,7 @@ class iform_ukbms_sectioned_transects_input_sample {
   public static function get_form($args, $node, $response=null) {
     if (isset($response['error']))
       data_entry_helper::dump_errors($response);
-    if (isset($_REQUEST['page']) && $_REQUEST['page']==='transect' && !isset(data_entry_helper::$validation_errors)) {
+    if (isset($_REQUEST['page']) && $_REQUEST['page']==='mainSample' && !isset(data_entry_helper::$validation_errors)) {
       // we have just saved the sample page, so move on to the occurrences list
       return self::get_occurrences_form($args, $node, $response);
     } else {
@@ -596,8 +596,6 @@ class iform_ukbms_sectioned_transects_input_sample {
       $r .= '<input type="hidden" name="sample:id" value="'.data_entry_helper::$entity_to_load['sample:id'].'"/>';
     }
     $r .= '<input type="hidden" name="sample:survey_id" value="'.$args['survey_id'].'"/>';
-    // pass a param that sets the next page to display
-    $r .= '<input type="hidden" name="page" value="transect"/>';
     if ($locationId) {
       $site = data_entry_helper::get_population_data(array(
         'table' => 'location',
@@ -1630,7 +1628,7 @@ jQuery('#tabs').bind('tabsshow', function(event, ui) {
    * for initial submission of the parent sample.
    */
   public static function get_redirect_on_success($values, $args) {
-    return  ($values['page']==='grid' || $values['page']==='delete') ? $args['my_walks_page'] : '';
+    return  ($values['page']==='speciesmap' || $values['page']==='delete') ? $args['my_walks_page'] : '';
   }
 
 }
