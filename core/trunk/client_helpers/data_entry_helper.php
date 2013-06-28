@@ -4475,8 +4475,9 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    * (reporting, peer_review, verification, data_flow or moderation), then the record can be 
    * loaded from another client website if a sharing agreement is in place.
    * @link https://indicia-docs.readthedocs.org/en/latest/administrating/warehouse/website-agreements.html
+   * @param boolean $loadImages If set to true, then image information is loaded as well.
    */
-  public static function load_existing_record($readAuth, $entity, $id, $view='detail', $sharing=false, $loadImages = false) {
+  public static function load_existing_record($readAuth, $entity, $id, $view = 'detail', $sharing = false, $loadImages = false) {
     $record = self::get_population_data(array(
         'table' => $entity,
         'extraParams' => $readAuth + array('id' => $id, 'view' => $view),
@@ -4497,6 +4498,21 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       // prepare data to work in autocompletes
       if (!empty(self::$entity_to_load['occurrence:taxon']) && empty(self::$entity_to_load['occurrence:taxa_taxon_list:taxon']))
         self::$entity_to_load['occurrence:taxa_taxon_list_id:taxon'] = self::$entity_to_load['occurrence:taxon'];
+    }
+    
+    if ($loadImages) {
+      $images = self::get_population_data(array(
+        'table' => $entity . '_image',
+        'extraParams' => $readAuth + array($entity . '_id' => $id),
+        'nocache' => true,
+        'sharing' => $sharing
+      ));
+      if (isset($images['error'])) throw new Exception($record['error']);
+      foreach($images as $image) {
+        self::$entity_to_load[$entity . '_image:id:' . $image['id']]  = $image['id'];
+        self::$entity_to_load[$entity . '_image:path:' . $image['id']] = $image['path'];
+        self::$entity_to_load[$entity . '_image:caption:' . $image['id']] = $image['caption'];
+      }
     }
   }
 

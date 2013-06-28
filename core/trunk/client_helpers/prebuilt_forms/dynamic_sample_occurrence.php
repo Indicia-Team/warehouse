@@ -743,7 +743,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     
     // Load the sample record
     if (self::$loadedSampleId) {
-      data_entry_helper::load_existing_record($auth['read'], 'sample', self::$loadedSampleId);
+      data_entry_helper::load_existing_record($auth['read'], 'sample', self::$loadedSampleId, 'detail', false, true);
       if (!empty(data_entry_helper::$entity_to_load['sample:parent_id'])) 
         data_entry_helper::load_existing_record($auth['read'], 'sample', data_entry_helper::$entity_to_load['sample:parent_id']);
     }
