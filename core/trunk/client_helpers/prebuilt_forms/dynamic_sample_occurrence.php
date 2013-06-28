@@ -710,18 +710,25 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   protected static function getEntity($args, $auth) {
     data_entry_helper::$entity_to_load = array();
 
-    if ( !self::$loadedOccurrenceId && self::$loadedSampleId && !self::getGridMode($args) ) {
-      // For a single occurrence, when we know the sample ID but not the occurrence, we must
-      // first look up the occurrence ID
-      $filter = array(
-        'view' => 'detail',
-        'sample_id' => self::$loadedSampleId
-      );
-      $options = array(
+    // If we know the occurrence ID but not the sample, we must look it up
+    if ( self::$loadedOccurrenceId && !self::$loadedSampleId  ) {
+      $response = data_entry_helper::get_population_data(array(
         'table' => 'occurrence',
-        'extraParams' => $auth['read'] + $filter
-      );
-      $response = data_entry_helper::get_population_data($options);
+        'extraParams' => $auth['read'] + array('id' => self::$loadedOccurrenceId, 'view' => 'detail')
+      ));
+      if (count($response) != 0) {
+        //we found an occurrence
+        self::$loadedSampleId = $response[0]['sample_id'];       
+      }
+    }
+
+    // For a single occurrence, if we know the sample ID but not the occurrence, we must
+    // look it up
+    if ( !self::$loadedOccurrenceId && self::$loadedSampleId && !self::getGridMode($args) ) {
+     $response = data_entry_helper::get_population_data(array(
+        'table' => 'occurrence',
+        'extraParams' => $auth['read'] + array('sample_id' => self::$loadedSampleId, 'view' => 'detail')          
+      ));
       if (count($response) != 0) {
         //we found an occurrence for this sample
         self::$loadedOccurrenceId = $response[0]['id'];       
@@ -729,17 +736,12 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       }
     }
     
-    // If we know the occurrence ID, and don't know the sample ID or are displaying just one occurrence
-    // rather than a grid of occurrences then we must load the occurrence data to get the sample id.
-    if (self::$loadedOccurrenceId && (!self::$loadedSampleId || !self::getGridMode($args))) {
+    // For a single occurrence we must load the occurrence record.
+    if (self::$loadedOccurrenceId && !self::getGridMode($args)) {
       data_entry_helper::load_existing_record($auth['read'], 'occurrence', self::$loadedOccurrenceId);
-      // Get the sample ID for the occurrence. This overwrites it if supply in GET but did not match the occurrence's sample
-      self::$loadedSampleId = data_entry_helper::$entity_to_load['occurrence:sample_id'];
-      if (self::getGridMode($args)) {
-        // in grid mode, we only needed to load the occurrence to find out the sample id.
-        data_entry_helper::$entity_to_load=array();
-      }
     }
+    
+    // Load the sample record
     if (self::$loadedSampleId) {
       data_entry_helper::load_existing_record($auth['read'], 'sample', self::$loadedSampleId);
       if (!empty(data_entry_helper::$entity_to_load['sample:parent_id'])) 
