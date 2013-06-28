@@ -4476,19 +4476,18 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    * loaded from another client website if a sharing agreement is in place.
    * @link https://indicia-docs.readthedocs.org/en/latest/administrating/warehouse/website-agreements.html
    */
-  public static function load_existing_record($readAuth, $entity, $id, $view='detail', $sharing=false) {
-    $url = self::$base_url."index.php/services/data/$entity/$id";
-    $url .= "?mode=json&view=$view&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce'];
-    if ($sharing) 
-      $url .= "&sharing=$sharing";
-    $response = self::http_post($url);
-    if (!$response['result']) throw new Exception($response['output']);
-    $output = json_decode($response['output'], true); 
-    if (isset($output['error'])) throw new Exception($output['error']);
+  public static function load_existing_record($readAuth, $entity, $id, $view='detail', $sharing=false, $loadImages = false) {
+    $record = self::get_population_data(array(
+        'table' => $entity,
+        'extraParams' => $readAuth + array('id' => $id, 'view' => $view),
+        'nocache' => true,
+        'sharing' => $sharing
+      ));
+    if (isset($record['error'])) throw new Exception($record['error']);
     // set form mode
     if (self::$form_mode===null) self::$form_mode = 'RELOAD';
     // populate the entity to load with the record data
-    foreach($output[0] as $key => $value) {
+    foreach($record[0] as $key => $value) {
       self::$entity_to_load["$entity:$key"] = $value;
     }
     if ($entity=='sample') {
