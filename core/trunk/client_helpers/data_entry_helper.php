@@ -4481,14 +4481,14 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     $url .= "?mode=json&view=$view&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce'];
     if ($sharing) 
       $url .= "&sharing=$sharing";
-    $session = curl_init($url);
-    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-    $response = json_decode(curl_exec($session), true);
-    if (isset($response['error'])) throw new Exception($response['error']);
+    $response = self::http_post($url);
+    if (!$response['result']) throw new Exception($response['output']);
+    $output = json_decode($response['output'], true); 
+    if (isset($output['error'])) throw new Exception($output['error']);
     // set form mode
     if (self::$form_mode===null) self::$form_mode = 'RELOAD';
     // populate the entity to load with the record data
-    foreach($response[0] as $key => $value) {
+    foreach($output[0] as $key => $value) {
       self::$entity_to_load["$entity:$key"] = $value;
     }
     if ($entity=='sample') {
