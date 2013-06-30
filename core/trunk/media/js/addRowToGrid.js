@@ -164,11 +164,11 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
       //Create and edit icons for taxon cells. Only add the edit icon if the user has this functionality available on edit tab.
       if (indiciaData['editTaxaNames-'+gridId]==true) {
         deleteAndEditHtml = "<td class='row-buttons'>\n\
-            <img class='action-button remove-row' src=" + Drupal.settings.basePath + "/sites/all/modules/iform/media/images/nuvola/cancel-16px.png>\n\
-            <img class='action-button edit-taxon-name' src=" + Drupal.settings.basePath + "/sites/all/modules/iform/media/images/nuvola/package_editors-16px.png></td>";
+            <img class='action-button remove-row' src=" + Drupal.settings.basePath + "sites/all/modules/iform/media/images/nuvola/cancel-16px.png>\n\
+            <img class='action-button edit-taxon-name' src=" + Drupal.settings.basePath + "sites/all/modules/iform/media/images/nuvola/package_editors-16px.png></td>";
       } else {
         deleteAndEditHtml = "<td class='row-buttons'>\n\
-            <img class='action-button action-button remove-row' src=" + Drupal.settings.basePath + "/sites/all/modules/iform/media/images/nuvola/cancel-16px.png></td>";
+            <img class='action-button action-button remove-row' src=" + Drupal.settings.basePath + "sites/all/modules/iform/media/images/nuvola/cancel-16px.png></td>";
       }
       //Put the edit and delete icons just before the taxon name
       $(taxonCell).before(deleteAndEditHtml);
@@ -234,8 +234,8 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
         // replace with the previous plain text species name
         $(taxonCell).html(taxonNameBeforeUserEdit); 
         var deleteAndEditHtml = "<td style='width: 5%'>\n\
-            <img class='action-button remove-row' src=" + Drupal.settings.basePath + "/sites/all/modules/iform/media/images/nuvola/cancel-16px.png>\n\
-            <img class='edit-taxon-name' src=" + Drupal.settings.basePath + "/sites/all/modules/iform/media/images/nuvola/package_editors-16px.png></td>";
+            <img class='action-button remove-row' src=" + Drupal.settings.basePath + "sites/all/modules/iform/media/images/nuvola/cancel-16px.png>\n\
+            <img class='edit-taxon-name' src=" + Drupal.settings.basePath + "sites/all/modules/iform/media/images/nuvola/package_editors-16px.png></td>";
         $(taxonCell).attr('colSpan',1);
         //Put the edit and delete icons just before the taxon name
         $(taxonCell).before(deleteAndEditHtml);
@@ -465,13 +465,13 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
   /**
    * Method to assist with converting a control in the grid into a popup link. Example usage:
    * jQuery(document).ready(function() {
-   *   ConvertControlsToPopup($('.scComment'), 'Comment', Drupal.settings.basePath + '/sites/all/modules/iform/media/images/nuvola/package_editors-22px.png');
+   *   ConvertControlsToPopup($('.scComment'), 'Comment', Drupal.settings.basePath + 'sites/all/modules/iform/media/images/nuvola/package_editors-22px.png');
    * });
    *
    * function hook_species_checklist_new_row(data) {
    *   var id='#sc:'+data.id+'::occurrence:comment';
    *   id = id.replace(/:/g, '\\:');
-   *   ConvertControlsToPopup($(id), 'Comment', Drupal.settings.basePath + '/sites/all/modules/iform/media/images/nuvola/package_editors-22px.png');
+   *   ConvertControlsToPopup($(id), 'Comment', Drupal.settings.basePath + 'sites/all/modules/iform/media/images/nuvola/package_editors-22px.png');
    * }
   */
    ConvertControlsToPopup = function (controls, label, icon) {
