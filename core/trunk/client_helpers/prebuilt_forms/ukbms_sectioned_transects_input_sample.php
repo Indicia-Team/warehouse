@@ -213,6 +213,14 @@ class iform_ukbms_sectioned_transects_input_sample {
           'group'=>'Species'
         ),
         array(
+          'name' => 'force_second',
+          'caption' => 'Include full species list in second tab',
+          'description' => 'In the second species tab, include the full species list: if not selected a species control will be provided to add the required taxon to the list.',
+          'type' => 'boolean',
+          'required' => false,
+          'group' => 'Species'
+        ),
+        array(
           'name'=>'second_taxon_list_id',
           'caption'=>'Second Tab Species List',
           'description'=>'The species checklist used to drive the autocomplete in the optional second grid. If not provided, the second grid and its tab are omitted.',
@@ -258,6 +266,14 @@ class iform_ukbms_sectioned_transects_input_sample {
           'group'=>'Species'
         ),
         array(
+          'name' => 'force_third',
+          'caption' => 'Include full species list in third tab',
+          'description' => 'In the third species tab, include the full species list: if not selected a species control will be provided to add the required taxon to the list.',
+          'type' => 'boolean',
+          'required' => false,
+          'group' => 'Species'
+        ),
+        array(
           'name'=>'third_taxon_list_id',
           'caption'=>'Third Tab Species List',
           'description'=>'The species checklist used to drive the autocomplete in the optional third grid. If not provided, the third grid and its tab are omitted.',
@@ -301,6 +317,14 @@ class iform_ukbms_sectioned_transects_input_sample {
           'type'=>'string',
           'required'=>false,
           'group'=>'Species'
+        ),
+        array(
+          'name' => 'force_fourth',
+          'caption' => 'Include full species list in fourth tab',
+          'description' => 'In the fourth species tab, include the full species list: if not selected a species control will be provided to add the required taxon to the list.',
+          'type' => 'boolean',
+          'required' => false,
+          'group' => 'Species'
         ),
         array(
           'name'=>'fourth_taxon_list_id',
@@ -908,7 +932,56 @@ class iform_ukbms_sectioned_transects_input_sample {
     $r .= '</table>'.
           '<span id="taxonLookupControlContainer"><label for="taxonLookupControl" class="auto-width">'.lang::get('Add species to list').':</label> <input id="taxonLookupControl" name="taxonLookupControl" ></span>';
     $r .= '<br /><a href="'.$args['my_walks_page'].'" class="button">'.lang::get('Finish').'</a></div>';
+
+    $extraParams = array_merge($auth['read'],
+                   array('taxon_list_id' => $args['taxon_list_id'],
+                         'preferred' => 't',
+                         'allow_data_entry' => 't',
+                         'view' => 'cache',
+                         'orderby' => 'taxonomic_sort_order'));
+    if (!empty($args['main_taxon_filter_field']) && !empty($args['main_taxon_filter']))
+      $extraParams[$args['main_taxon_filter_field']] = helper_base::explode_lines($args['main_taxon_filter']);
+    $taxa = data_entry_helper::get_population_data(array('table' => 'taxa_taxon_list', 'extraParams' => $extraParams));
+    data_entry_helper::$javascript .= "indiciaData.speciesList1List = [";
+    $first = true;
+    foreach($taxa as $taxon){
+      data_entry_helper::$javascript .= ($first ? "\n" : ",\n")."{'id':".$taxon['id'].",'taxon_meaning_id':".$taxon['taxon_meaning_id'].",'preferred_language_iso':'".$taxon["preferred_language_iso"]."','default_common_name':'".$taxon["default_common_name"]."'}";
+      $first = false;
+    }
+    data_entry_helper::$javascript .= "];\n";
+
+    $extraParams = array_merge($auth['read'],
+    		array('taxon_list_id' => $args['common_taxon_list_id'],
+    				'preferred' => 't',
+    				'allow_data_entry' => 't',
+    				'view' => 'cache',
+    				'orderby' => 'taxonomic_sort_order'));
+    if (!empty($args['common_taxon_filter_field']) && !empty($args['common_taxon_filter']))
+    	$extraParams[$args['common_taxon_filter_field']] = helper_base::explode_lines($args['common_taxon_filter']);
+    $taxa = data_entry_helper::get_population_data(array('table' => 'taxa_taxon_list', 'extraParams' => $extraParams));
+    data_entry_helper::$javascript .= "indiciaData.speciesList1SubsetList = [";
+    $first = true;
+    foreach($taxa as $taxon){
+    	data_entry_helper::$javascript .= ($first ? "\n" : ",\n")."{'id':".$taxon['id'].",'taxon_meaning_id':".$taxon['taxon_meaning_id'].",'preferred_language_iso':'".$taxon["preferred_language_iso"]."','default_common_name':'".$taxon["default_common_name"]."'}";
+    	$first = false;
+    }
+    data_entry_helper::$javascript .= "];\n";
+
+    $allTaxonMeaningIdsAtTransect = data_entry_helper::get_population_data(array(
+        'report' => 'reports_for_prebuilt_forms/UKBMS/ukbms_taxon_meanings_at_transect',
+        'extraParams' => $auth['read'] + array('view'=>'detail', 'location_id' => $parentLocId, 'survey_id'=>$args['survey_id']),
+        // don't cache as this is live data
+        'nocache' => true
+    ));
     
+    data_entry_helper::$javascript .= "indiciaData.allTaxonMeaningIdsAtTransect = [";
+    $first = true;
+    foreach($taxa as $taxon){
+    	data_entry_helper::$javascript .= ($first ? "" : ",").$taxon['taxon_meaning_id'];
+    	$first = false;
+    }
+    data_entry_helper::$javascript .= "];\n";
+
     if(isset($args['second_taxon_list_id']) && $args['second_taxon_list_id']!=''){
       $r .= '<div id="grid2"><p>' . lang::get('LANG_Tab_Msg') . '</p><table id="transect-input2" class="ui-widget species-grid"><thead class="table-header">';
       $r .= '<tr><th class="ui-widget-header">' . lang::get('Sections') . '</th>';
@@ -923,7 +996,8 @@ class iform_ukbms_sectioned_transects_input_sample {
         $r .= '<td class="col-'.($idx+1).' '.($idx % 5 == 0 ? 'first' : '').' col-total"></td>';
       }
       $r .= '<td class="ui-state-disabled first"></td></tr></tfoot></table>';
-      $r .= '<label for="taxonLookupControl2" class="auto-width">'.lang::get('Add species to list').':</label> <input id="taxonLookupControl2" name="taxonLookupControl2" >';
+      if(!isset($args['force_second']) || !$args['force_second'])
+        $r .= '<label for="taxonLookupControl2" class="auto-width">'.lang::get('Add species to list').':</label> <input id="taxonLookupControl2" name="taxonLookupControl2" >';
       $r .= '<br /><a href="'.$args['my_walks_page'].'" class="button">'.lang::get('Finish').'</a></div>';
     }
     if(isset($args['third_taxon_list_id']) && $args['third_taxon_list_id']!=''){
@@ -940,7 +1014,8 @@ class iform_ukbms_sectioned_transects_input_sample {
         $r .= '<td class="col-'.($idx+1).' '.($idx % 5 == 0 ? 'first' : '').' col-total"></td>';
       }
       $r .= '<td class="ui-state-disabled first"></td></tr></tfoot></table>';
-      $r .= '<label for="taxonLookupControl3" class="auto-width">'.lang::get('Add species to list').':</label> <input id="taxonLookupControl3" name="taxonLookupControl3" >';
+      if(!isset($args['force_third']) || !$args['force_third'])
+        $r .= '<label for="taxonLookupControl3" class="auto-width">'.lang::get('Add species to list').':</label> <input id="taxonLookupControl3" name="taxonLookupControl3" >';
       $r .= '<br /><a href="'.$args['my_walks_page'].'" class="button">'.lang::get('Finish').'</a></div>';
     }
     if(isset($args['fourth_taxon_list_id']) && $args['fourth_taxon_list_id']!=''){
@@ -957,7 +1032,8 @@ class iform_ukbms_sectioned_transects_input_sample {
         $r .= '<td class="col-'.($idx+1).' '.($idx % 5 == 0 ? 'first' : '').' col-total"></td>';
       }
       $r .= '<td class="ui-state-disabled first"></td></tr></tfoot></table>';
-      $r .= '<label for="taxonLookupControl4" class="auto-width">'.lang::get('Add species to list').':</label> <input id="taxonLookupControl4" name="taxonLookupControl4" >';
+      if(!isset($args['force_fourth']) || !$args['force_fourth'])
+        $r .= '<label for="taxonLookupControl4" class="auto-width">'.lang::get('Add species to list').':</label> <input id="taxonLookupControl4" name="taxonLookupControl4" >';
       $r .= '<br /><a href="'.$args['my_walks_page'].'" class="button">'.lang::get('Finish').'</a></div>';
     }
     if(isset($args['map_taxon_list_id']) && $args['map_taxon_list_id']!=''){
@@ -968,6 +1044,7 @@ class iform_ukbms_sectioned_transects_input_sample {
       $value = isset($value['occurrence:record_status']) ? $value['occurrence:record_status'] : 'C';
       
       $r .= '<div id="gridmap">'."\n".'<form method="post" id="entry_form" action="'.$reloadPath.'">'.$auth['write'].
+            '<p>When using this page, please remember that the data is not saved to the database as you go (which is the case for the previous tabs). In order to save the data entered in this page you must click on the Save button at the bottom of the page.</p>'.
             '<input type="hidden" id="website_id" name="website_id" value="'.$args["website_id"].'" />'.
             '<input type="hidden" id="survey_id" name="sample:survey_id" value="'.$args["survey_id"].'" />'.
             '<input type="hidden" id="occurrence:record_status" name="occurrence:record_status" value="'.$value.'" />'.
@@ -1080,17 +1157,21 @@ indiciaData.speciesList1Subset = ".(isset($args['common_taxon_list_id']) && $arg
       $filterLines = helper_base::explode_lines($args['second_taxon_filter']);
       data_entry_helper::$javascript .= "indiciaData.speciesList2FilterValues = ".json_encode($filterLines).";\n";
     }
-    data_entry_helper::$javascript .= "bindSpeciesAutocomplete(\"taxonLookupControl2\",\"table#transect-input2\",\"".data_entry_helper::$base_url."index.php/services/data\", indiciaData.speciesList2,
+    data_entry_helper::$javascript .= "indiciaData.speciesList2Force = ".(isset($args['force_second']) && $args['force_second'] ? 'true' : 'false').";\n";
+    if(!isset($args['force_second']) || !$args['force_second'])
+      data_entry_helper::$javascript .= "bindSpeciesAutocomplete(\"taxonLookupControl2\",\"table#transect-input2\",\"".data_entry_helper::$base_url."index.php/services/data\", indiciaData.speciesList2,
   indiciaData.speciesList2FilterField, indiciaData.speciesList2FilterValues, {\"auth_token\" : \"".$auth['read']['auth_token']."\", \"nonce\" : \"".$auth['read']['nonce']."\"},
   \"".lang::get('LANG_Duplicate_Taxon')."\", 25);\n\n";
 
     data_entry_helper::$javascript .= "indiciaData.speciesList3 = ".(isset($args['third_taxon_list_id']) && $args['third_taxon_list_id'] != "" ? $args['third_taxon_list_id'] : "-1").";\n";
     if (!empty($args['third_taxon_filter_field']) && !empty($args['third_taxon_filter'])) {
-    	data_entry_helper::$javascript .= "indiciaData.speciesList3FilterField = '".$args['third_taxon_filter_field']."';\n";
-    	$filterLines = helper_base::explode_lines($args['third_taxon_filter']);
-    	data_entry_helper::$javascript .= "indiciaData.speciesList3FilterValues = ".json_encode($filterLines).";\n";
+      data_entry_helper::$javascript .= "indiciaData.speciesList3FilterField = '".$args['third_taxon_filter_field']."';\n";
+      $filterLines = helper_base::explode_lines($args['third_taxon_filter']);
+      data_entry_helper::$javascript .= "indiciaData.speciesList3FilterValues = ".json_encode($filterLines).";\n";
     }
-    data_entry_helper::$javascript .= "bindSpeciesAutocomplete(\"taxonLookupControl3\",\"table#transect-input3\",\"".data_entry_helper::$base_url."index.php/services/data\", indiciaData.speciesList3,
+    data_entry_helper::$javascript .= "indiciaData.speciesList3Force = ".(isset($args['force_third']) && $args['force_third'] ? 'true' : 'false').";\n";
+    if(!isset($args['force_third']) || !$args['force_third'])
+      data_entry_helper::$javascript .= "bindSpeciesAutocomplete(\"taxonLookupControl3\",\"table#transect-input3\",\"".data_entry_helper::$base_url."index.php/services/data\", indiciaData.speciesList3,
     indiciaData.speciesList3FilterField, indiciaData.speciesList3FilterValues, {\"auth_token\" : \"".$auth['read']['auth_token']."\", \"nonce\" : \"".$auth['read']['nonce']."\"},
     \"".lang::get('LANG_Duplicate_Taxon')."\", 25);\n\n";
     
@@ -1100,8 +1181,10 @@ indiciaData.speciesList1Subset = ".(isset($args['common_taxon_list_id']) && $arg
       $filterLines = helper_base::explode_lines($args['fourth_taxon_filter']);
       data_entry_helper::$javascript .= "indiciaData.speciesList4FilterValues = ".json_encode($filterLines).";\n";
     }
+    data_entry_helper::$javascript .= "indiciaData.speciesList4Force = ".(isset($args['force_fourth']) && $args['force_fourth'] ? 'true' : 'false').";\n";
     // allow js to do AJAX by passing in the information it needs to post forms
-    data_entry_helper::$javascript .= "bindSpeciesAutocomplete(\"taxonLookupControl4\",\"table#transect-input4\",\"".data_entry_helper::$base_url."index.php/services/data\", indiciaData.speciesList4,
+    if(!isset($args['force_fourth']) || !$args['force_fourth'])
+      data_entry_helper::$javascript .= "bindSpeciesAutocomplete(\"taxonLookupControl4\",\"table#transect-input4\",\"".data_entry_helper::$base_url."index.php/services/data\", indiciaData.speciesList4,
   indiciaData.speciesList4FilterField, indiciaData.speciesList4FilterValues, {\"auth_token\" : \"".$auth['read']['auth_token']."\", \"nonce\" : \"".$auth['read']['nonce']."\"},
   \"".lang::get('LANG_Duplicate_Taxon')."\", 25);\n\n";
 
@@ -1132,7 +1215,10 @@ jQuery('#tabs').bind('tabsshow', function(event, ui) {
     var table = jQuery('#'+target.id+' table.species-grid');
     if(table.length > 0) {
         table.addClass('sticky-enabled');
-        Drupal.behaviors.tableHeader(target);
+        if(typeof Drupal.behaviors.tableHeader == 'object') // Drupal 7
+          Drupal.tableHeader(table);
+        else // Drupal6 : it is a function
+          Drupal.behaviors.tableHeader(target);
     }
 });";
     return $r;

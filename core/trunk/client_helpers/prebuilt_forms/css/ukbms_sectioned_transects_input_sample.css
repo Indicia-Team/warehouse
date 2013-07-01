@@ -6,16 +6,16 @@ label {
   margin-left: 144px;
 }
 
-table#transect-input1,table#transect-input2,table#transect-input3 {
+table#transect-input1,table#transect-input2,table#transect-input3,table#transect-input4 {
   width: auto;
 }
 
-table#transect-input1 td, table#transect-input1 input, table#transect-input2 td, table#transect-input2 input, table#transect-input3 td, table#transect-input3 input{
+table#transect-input1 td, table#transect-input1 input, table#transect-input2 td, table#transect-input2 input, table#transect-input3 td, table#transect-input3 input, table#transect-input4 td, table#transect-input4 input{
   margin: 1px;
   padding: 1px;
 }
 
-table#transect-input1 input,table#transect-input2 input,table#transect-input3 input {
+table#transect-input1 input,table#transect-input2 input,table#transect-input3 input,table#transect-input4 input {
   width: 50px;
   border: solid silver 1px;
 }
