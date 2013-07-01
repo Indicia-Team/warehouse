@@ -3236,7 +3236,10 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
       $totalRow = array();
       $estimatesGrandTotal=0;
       $totalEstimatesRow = array();
-      for($i= $minWeekNo; $i <= $maxWeekNo; $i++) $totalRow[$i] = 0;
+      for($i= $minWeekNo; $i <= $maxWeekNo; $i++) {
+        $totalRow[$i] = 0;
+        $totalEstimatesRow[$i] = 0;
+      }
       foreach($summaryArray as $seriesID => $summaryRow){
         // skip rows with no labels, caused by report left joins to fill in all date columns even if no records
         if (!empty($seriesLabels[$seriesID])) {

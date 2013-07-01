@@ -4588,7 +4588,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       }
       // use advanced querying technique if we need to
       if (isset($filterToEncode['in']))
-        $request .= '&query='.json_encode($filterToEncode).'&'.self::array_to_query_string($otherParams, true);
+        $request .= '&query='.urlencode(json_encode($filterToEncode)).'&'.self::array_to_query_string($otherParams, true);
       else
         $request .= '&'.self::array_to_query_string($options['extraParams'], true);
     } else
