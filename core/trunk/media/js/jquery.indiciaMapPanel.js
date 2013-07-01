@@ -389,20 +389,18 @@ mapGeoreferenceHooks = [];
             }
           });
         }
-        // zoom in if need more precision
-        if (info.metres > div.settings.helpToPickPrecisionMax) {
-          var bounds = div.map.editLayer.features[0].geometry.getBounds();
-          bounds = _extendBounds(bounds, div.settings.maxZoomBuffer);
-            if (div.map.getZoomForExtent(bounds) > div.settings.maxZoom) {
-              // if showing something small, don't zoom in too far
-              div.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
-            }
-            else {
-              // Set the default view to show something triple the size of the grid square
-              div.map.zoomToExtent(bounds);
-            }
-          }
+        var features=getFeaturesByVal(div.map.editLayer, 'clickPoint', 'type'),
+            bounds = features[0].geometry.getBounds();
+        bounds = _extendBounds(bounds, div.settings.maxZoomBuffer);
+        if (div.map.getZoomForExtent(bounds) > div.settings.maxZoom) {
+          // if showing something small, don't zoom in too far
+          div.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
         }
+        else {
+          // Set the default view to show something triple the size of the grid square
+          div.map.zoomToExtent(bounds);
+        }
+      }
       return helptext.join(' ');
     }
 
