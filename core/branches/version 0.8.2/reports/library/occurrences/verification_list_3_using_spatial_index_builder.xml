@@ -9,7 +9,11 @@
   FROM cache_occurrences o
   JOIN occurrences xo ON xo.id=o.id AND xo.deleted=false
   JOIN samples s on s.id=xo.sample_id
+  LEFT JOIN index_locations_samples ils on ils.sample_id=s.id
   JOIN websites w on w.id=xo.website_id 
+  LEFT JOIN user_trusts ut on (ut.survey_id=s.survey_id)
+    OR (ut.taxon_group_id=o.taxon_group_id)
+    OR (ut.location_id=ils.location_id or ut.location_id is null)
   LEFT JOIN occurrence_comments oc 
       ON oc.occurrence_id=o.id 
       AND oc.implies_manual_check_required=true 
@@ -19,6 +23,13 @@
   WHERE #sharing_filter# 
   AND ('#records#' = 'all'
     OR ('#records#' IN ('unverified','fail') AND xo.record_status IN ('C','S'))
+    OR ('#records#'='trusted' AND xo.record_status='C'
+      AND 
+       (((s.survey_id = ut.survey_id) or (ut.survey_id is null and (ut.taxon_group_id is not null or ut.location_id is not null)))
+         AND ((o.taxon_group_id = ut.taxon_group_id) or (ut.taxon_group_id is null and (ut.survey_id is not null or ut.location_id is not null)))
+         AND ((ils.location_id = ut.location_id) OR (ut.location_id IS NULL and (ut.survey_id is not null or ut.taxon_group_id is not null)))
+         AND o.created_by_id = ut.user_id
+         AND ut.deleted = false))
     OR ('#records#'='verified' AND xo.record_status='V')
     OR ('#records#'='dubious' AND xo.record_status='D')
     OR ('#records#'='rejected' AND xo.record_status='R'))
@@ -38,7 +49,7 @@
     <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
     <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
     <param name='records' display='Records to include' datatype='lookup'
-        lookup_values='unverified:All unverified records,fail:Unverified records failing automated checks,verified:All verified records,dubious:All dubious records,rejected:All rejected records,all:All records' />
+        lookup_values='unverified:All unverified records,fail:Unverified records failing automated checks,trusted:Unverified records by trusted recorders,verified:All verified records,dubious:All dubious records,rejected:All rejected records,all:All records' />
     <param name='certainty' display='and record was' datatype='lookup'
         lookup_values='C:Certain,L:Certain or likely,U:Uncertain or better' />
     <param name='searchArea' display='Report Search Area' datatype='geometry' allow_buffer='true' />
@@ -48,10 +59,10 @@
         <join>JOIN index_locations_samples lfilter ON lfilter.sample_id=o.sample_id and lfilter.location_id=#expertise_location#</join>  
     </param>
     <param name="expertise_taxon_groups" display="Taxon Group Expertise" description="List of taxon group IDs which the user has expertise in" datatype="text">
-      <where>o.taxon_group_id IN (#expertise_taxon_groups#)</where>
+      <where value="1">o.taxon_group_id IN (#expertise_taxon_groups#)</where>
     </param>
     <param name='expertise_surveys' display='Survey IDs list' description='Comma separated list of surveys IDs to include' datatype='text'>
-      <where>s.survey_id in (#expertise_surveys#)</where>
+      <where value="1">s.survey_id IN (#expertise_surveys#)</where>
     </param>
   </params>
   <columns>
@@ -87,7 +98,7 @@
     <column name='zi' visible='false' feature_style='graphicZIndex' sql='length(o.public_entered_sref)' />
     <column name='pass' visible='false' sql="CASE WHEN oc.id IS NULL AND xo.last_verification_check_date IS NOT NULL THEN '&lt;div class=&quot;pass-icon&quot; title=&quot;This record passes all automated verification checks.&quot;/&gt;&lt;/div&gt;' WHEN not w.verification_checks_enabled THEN '&lt;div title=&quot;This record is not included in the automated verification check system.&quot;/&gt;-&lt;/div&gt;' END" />
     <column name='fails' display='Check' 
-        sql="array_to_string(array_agg('&lt;div class=&quot;fail-icon ' || oc.generated_by || '&quot; title=&quot;' || oc.comment || '&quot;&gt;&lt;/div&gt;'),' ')" aggregate='true' 
+        sql="array_to_string(array_agg(distinct '&lt;div class=&quot;fail-icon ' || oc.generated_by || '&quot; title=&quot;' || oc.comment || '&quot;&gt;&lt;/div&gt;'),' ')" aggregate='true' 
         template="{pass}{fails}"/>
     <column name='images' display='Images' sql='o.images' img='true' />
   </columns>
