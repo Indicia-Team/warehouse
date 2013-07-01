@@ -202,7 +202,7 @@ var checkSubmitInProgress = function () {
           alert(div.settings.msgUploadError + ' ' + resp[0].error.message);
         } else {
           filepath = div.settings.destinationFolder + file.name;
-          uniqueId = $('.filelist .photo').length;
+          uniqueId = $('.filelist .photo-wrapper img').length;
           // Show the uploaded file, and also set the mini-form values to contain the file details.
           $('#' + file.id + ' .photo-wrapper').append(div.settings.file_box_uploaded_imageTemplate
                 .replace(/\{id\}/g, file.id)
