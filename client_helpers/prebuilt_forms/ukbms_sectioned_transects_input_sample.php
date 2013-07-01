@@ -945,7 +945,7 @@ class iform_ukbms_sectioned_transects_input_sample {
     data_entry_helper::$javascript .= "indiciaData.speciesList1List = [";
     $first = true;
     foreach($taxa as $taxon){
-      data_entry_helper::$javascript .= ($first ? "\n" : ",\n")."{'id':".$taxon['id'].",'taxon_meaning_id':".$taxon['taxon_meaning_id'].",'preferred_language_iso':'".$taxon["preferred_language_iso"]."','default_common_name':'".$taxon["default_common_name"]."'}";
+      data_entry_helper::$javascript .= ($first ? "\n" : ",\n")."{'id':".$taxon['id'].",'taxon_meaning_id':".$taxon['taxon_meaning_id'].",'preferred_language_iso':'".$taxon["preferred_language_iso"]."','default_common_name':'".str_replace("'","\\'", $taxon["default_common_name"])."'}";
       $first = false;
     }
     data_entry_helper::$javascript .= "];\n";
@@ -962,7 +962,7 @@ class iform_ukbms_sectioned_transects_input_sample {
     data_entry_helper::$javascript .= "indiciaData.speciesList1SubsetList = [";
     $first = true;
     foreach($taxa as $taxon){
-    	data_entry_helper::$javascript .= ($first ? "\n" : ",\n")."{'id':".$taxon['id'].",'taxon_meaning_id':".$taxon['taxon_meaning_id'].",'preferred_language_iso':'".$taxon["preferred_language_iso"]."','default_common_name':'".$taxon["default_common_name"]."'}";
+    	data_entry_helper::$javascript .= ($first ? "\n" : ",\n")."{'id':".$taxon['id'].",'taxon_meaning_id':".$taxon['taxon_meaning_id'].",'preferred_language_iso':'".$taxon["preferred_language_iso"]."','default_common_name':'".str_replace("'","\\'", $taxon["default_common_name"])."'}";
     	$first = false;
     }
     data_entry_helper::$javascript .= "];\n";
@@ -1216,7 +1216,7 @@ jQuery('#tabs').bind('tabsshow', function(event, ui) {
     if(table.length > 0) {
         table.addClass('sticky-enabled');
         if(typeof Drupal.behaviors.tableHeader == 'object') // Drupal 7
-          Drupal.tableHeader(table);
+          Drupal.behaviors.tableHeader.attach(target);
         else // Drupal6 : it is a function
           Drupal.behaviors.tableHeader(target);
     }
