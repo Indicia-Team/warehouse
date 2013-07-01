@@ -77,7 +77,7 @@ class iform_sectioned_transects_edit_transect {
             'name' => 'maxSectionCount',
             'label' => 'Max. Section Count',
             'type' => 'int',
-            'description' => 'The maximum number of sections a user is allowed to create for a transect site.',
+            'description' => 'The maximum number of sections a user is allowed to create for a transect site. If there is no user selectable attribute to set the number of sections, then the number is fixed at this value and the user will not be able to delete sections.',
             'group' => 'Transects Editor Settings'
           ), array(
             'name'=>'survey_id',
@@ -277,6 +277,8 @@ class iform_sectioned_transects_edit_transect {
     
     data_entry_helper::$javascript .= "indiciaData.sections = {};\n";
     $settings['sections']=array();
+    $settings['numSectionsAttr'] = "";
+    $settings['maxSectionCount'] = $args['maxSectionCount'];
     if ($settings['locationId']) {
       data_entry_helper::load_existing_record($auth['read'], 'location', $settings['locationId']);
       // find the number of sections attribute.
@@ -320,11 +322,17 @@ class iform_sectioned_transects_edit_transect {
       }
       $settings['walks'] = array();
     }
+    if ($settings['numSectionsAttr'] === '') {
+      for ($i=1; $i<=$settings['maxSectionCount']; $i++) {
+        $settings['sections']["S$i"]=null;
+      }
+    }
     $r = '<div id="controls">';
     $headerOptions = array('tabs'=>array('#site-details'=>lang::get('Site Details')));
     if ($settings['locationId']) {
       $headerOptions['tabs']['#your-route'] = lang::get('Your Route');
-      $headerOptions['tabs']['#section-details'] = lang::get('Section Details');
+      if(count($settings['section_attributes']) > 0)
+        $headerOptions['tabs']['#section-details'] = lang::get('Section Details');
     }
     if (count($headerOptions['tabs'])) {
       $r .= data_entry_helper::tab_header($headerOptions);
@@ -337,7 +345,8 @@ class iform_sectioned_transects_edit_transect {
     $r .= self::get_site_tab($auth, $args, $settings);
     if ($settings['locationId']) {
       $r .= self::get_your_route_tab($auth, $args, $settings);
-      $r .= self::get_section_details_tab($auth, $args, $settings);
+      if(count($settings['section_attributes']) > 0)
+        $r .= self::get_section_details_tab($auth, $args, $settings);
     }
     $r .= '</div>'; // controls    
     data_entry_helper::enable_validation('input-form');
@@ -362,6 +371,7 @@ class iform_sectioned_transects_edit_transect {
     data_entry_helper::$javascript .= "indiciaData.sectionDeleteConfirm = \"".lang::get('Are you sure you wish to delete section')."\";\n";
     data_entry_helper::$javascript .= "indiciaData.sectionChangeConfirm = \"".lang::get('Do you wish to save the currently unsaved changes you have made to the Section Details?')."\";\n";
     data_entry_helper::$javascript .= "indiciaData.numSectionsAttrName = \"".$settings['numSectionsAttr']."\";\n";
+    data_entry_helper::$javascript .= "indiciaData.maxSectionCount = \"".$settings['maxSectionCount']."\";\n";
     if ($settings['locationId'])
       data_entry_helper::$javascript .= "selectSection('S1', true);\n";
     return $r;
@@ -527,8 +537,9 @@ $('#delete-transect').click(deleteSurvey);
     $options['tabDiv']='your-route';
     if (!isset($settings['cantEdit'])){
       $options['toolbarPrefix'] = self::section_selector($settings, 'section-select-route');
-      if(count($settings['sections'])>1) // do not allow deletion of last section.
+      if(count($settings['sections'])>1 && $settings['numSectionsAttr'] != "") // do not allow deletion of last section, or if the is no section number attribute
         $options['toolbarSuffix'] = '<input type="button" value="'.lang::get('Remove Section').'" class="remove-section form-button right" title="'.lang::get('Completely remove the highlighted section. The total number of sections will be reduced by one. The form will be reloaded after the section is deleted.').'">';
+      else $options['toolbarSuffix'] = '';
       $options['toolbarSuffix'] .= '<input type="button" value="'.lang::get('Erase Route').'" class="erase-route form-button right" title="'.lang::get('If the Draw Line control is active, this will erase each drawn point one at a time. If not active, then this will erase the whole highlighted route. This keeps the Section, allowing you to redraw the route for it.').'">';
       // also let the user click on a feature to select it. The highlighter just makes it easier to select one.
       // these controls are not present in read-only mode: all you can do is look at the map.
