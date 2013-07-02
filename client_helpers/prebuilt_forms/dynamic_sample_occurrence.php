@@ -738,7 +738,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     
     // For a single occurrence we must load the occurrence record.
     if (self::$loadedOccurrenceId && !self::getGridMode($args)) {
-      data_entry_helper::load_existing_record($auth['read'], 'occurrence', self::$loadedOccurrenceId);
+      data_entry_helper::load_existing_record($auth['read'], 'occurrence', self::$loadedOccurrenceId, 'detail', false, true);
     }
     
     // Load the sample record
