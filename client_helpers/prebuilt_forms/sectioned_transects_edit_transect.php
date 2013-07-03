@@ -555,9 +555,13 @@ $('#delete-transect').click(deleteSurvey);
         'line to form the correct shape, or by placing the mouse over a circle and pressing the Delete button on your keyboard '.
         'to remove that point). Alternatively you could just redraw the line - this new line will then replace the old one '.
         'completely. If you are not in the middle of drawing a line, the Erase Route button will erase the whole route for the '.
-        'currently selected section.<br />The Remove Section button will remove the section completely, reducing the number of '.
-      	'sections by one. To increase the number of sections, return to the Site Details tab, and increase the value '.
-        'in the No. of sections field there.');
+        'currently selected section.').
+        ($settings['numSectionsAttr'] != "" ?
+           '<br />'.(count($settings['sections'])>1 ?
+             lang::get('The Remove Section button will remove the section completely, reducing the number of sections by one.').' '
+             : '').
+           lang::get('To increase the number of sections, return to the Site Details tab, and increase the value in the No. of sections field there.')
+           : '');
       $r .= '<p class="ui-state-highlight page-notice ui-corner-all">'.$help.'</p>';
     }
     $options['clickForSpatialRef'] = false;
