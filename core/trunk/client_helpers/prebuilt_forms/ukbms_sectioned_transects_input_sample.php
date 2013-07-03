@@ -1673,7 +1673,7 @@ jQuery('#tabs').bind('tabsshow', function(event, ui) {
         $exists=false;
         foreach($existingSubSamples as $existingSubSample){
           if($existingSubSample['location_id'] == $section['id']){
-            $exists = true;
+            $exists = $existingSubSample;
             break;
           }
         }
@@ -1697,8 +1697,18 @@ jQuery('#tabs').bind('tabsshow', function(event, ui) {
               }
             }
           }
-          $subsampleModels[] = $smp;
+        } else { // need to ensure any date change is propagated
+        	$smp = array('fkId' => 'parent_id',
+        			'model' => array('id' => 'sample',
+        					'fields' => array('survey_id' => array('value' => $values['sample:survey_id']),
+        							'website_id' => array('value' => $values['website_id']),
+        							'id' => array('value' => $exists['id']),
+                                    'date' => array('value' => $values['sample:date']),
+        							'location_id' => array('value' => $exists['location_id'])
+        					)),
+        			'copyFields' => array('date_start'=>'date_start','date_end'=>'date_end','date_type'=>'date_type'));
         }
+        $subsampleModels[] = $smp;
       }
     }
     $submission = submission_builder::build_submission($values, array('model' => 'sample'));
