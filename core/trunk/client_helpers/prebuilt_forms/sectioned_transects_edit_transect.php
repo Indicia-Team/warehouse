@@ -170,6 +170,14 @@ class iform_sectioned_transects_edit_transect {
             'type'=>'string',
             'group'=>'Initial Map View',
             'default'=>'0.1'
+          ), array(
+            'name' => 'allow_user_assignment',
+            'label' => 'Allow users to be assigned to transects',
+            'type' => 'boolean',
+            'description' => 'Can administrators link users to transects that they are allowed to record at? Requires a multi-value CMS User ID attribute on the locations.',
+            'default'=>true,
+            'required'=>false,
+            'group' => 'Transects Editor Settings'
           )
         )
     );
@@ -183,6 +191,7 @@ class iform_sectioned_transects_edit_transect {
       
     if (!isset($args['route_map_height'])) $args['route_map_height'] = 600;
     if (!isset($args['route_map_buffer'])) $args['route_map_buffer'] = 0.1;
+    if (!isset($args['allow_user_assignment'])) $args['allow_user_assignment'] = true;
       
     return $args;
   }
@@ -253,10 +262,12 @@ class iform_sectioned_transects_edit_transect {
         'location_type_id' => $settings['locationTypes'][1]['id'],
         'multiValue' => true
     ));
-    if (false==$settings['cmsUserAttr'] = extract_cms_user_attr($settings['attributes']))
-      return 'This form is designed to be used with the CMS User ID attribute setup for locations in the survey.';
-    // keep a copy of the location_attribute_id so we can use it later.
-    self::$cmsUserAttrId = $settings['cmsUserAttr']['attributeId'];
+    if ($args['allow_user_assignment']) {
+      if (false==$settings['cmsUserAttr'] = extract_cms_user_attr($settings['attributes']))
+        return 'This form is designed to be used with the CMS User ID attribute setup for locations in the survey, or the "Allow users to be assigned to transects" option unticked.';
+      // keep a copy of the cms user ID attribute so we can use it later.
+      self::$cmsUserAttrId = $settings['cmsUserAttr']['attributeId'];
+    }
     // need to check if branch allocatrion is active. This is done by having each location having a branch attribute. In the initial design
     // this is a single value, assigned from a termlist which holds the branches. Each person also has a branch attribute, also a single
     // value from the same termlist. When a user creates a location this branch is assigned: single readonly field. When a user or branch
@@ -487,12 +498,14 @@ class iform_sectioned_transects_edit_transect {
     $r .= '</div></div>'; // right    
     if (!empty($bottom))
       $r .= $bottom;
-    if (user_access('indicia data admin')) {
-      $r .= self::get_user_assignment_control($auth['read'], $settings['cmsUserAttr'], $args);
-    } else if (!$settings['locationId']) {
-      // for a new record, we need to link the current user to the location if they are not admin.
-      global $user;
-      $r .= '<input type="hidden" name="locAttr:'.self::$cmsUserAttrId.'" value="'.$user->uid.'">';
+    if ($args['allow_user_assignment']) {
+      if (user_access('indicia data admin')) {
+        $r .= self::get_user_assignment_control($auth['read'], $settings['cmsUserAttr'], $args);
+      } else if (!$settings['locationId']) {
+        // for a new record, we need to link the current user to the location if they are not admin.
+        global $user;
+        $r .= '<input type="hidden" name="locAttr:'.self::$cmsUserAttrId.'" value="'.$user->uid.'">';
+      }
     }
     $r .= self::get_branch_assignment_control($auth['read'], self::$branchLocationAttr, $args);
     if (!isset($settings['cantEdit']))
@@ -668,8 +681,10 @@ $('#delete-transect').click(deleteSurvey);
       $rows = '<tr><td colspan="2"></td></tr>';
     $r .= "$rows</table>\n";
     $r .= '</fieldset>';
-    // tell the javascript which attr to save the user ID into
-    data_entry_helper::$javascript .= "indiciaData.locCmsUsrAttr = " . self::$cmsUserAttrId . ";\n";
+    if ($args['allow_location_assignment']) {
+      // tell the javascript which attr to save the user ID into
+      data_entry_helper::$javascript .= "indiciaData.locCmsUsrAttr = " . self::$cmsUserAttrId . ";\n";
+    }
     return $r;
   }
 
