@@ -121,7 +121,7 @@ class Trigger_Controller extends Gridview_Base_Controller {
     // build the parameters JSON value from the params form
     $params = array();
     foreach($_POST as $key=>$value) {
-      if (substr($key, 0, 6)=='param-') {
+      if (substr($key, 0, 7)=='params-') {
         // The last part of the key is the field name
         $tokens = explode('-', $key);
         $param = array_pop($tokens);
