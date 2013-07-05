@@ -93,6 +93,10 @@ class Scheduled_Tasks_Controller extends Controller {
       $params['date'] = $this->last_run_date;
       $reportEngine = new ReportEngine();
       $data=$reportEngine->requestReport($trigger->trigger_template_file.'.xml', 'local', 'xml', $params);
+      if (!isset($data['content']['records'])) {
+ 	      kohana::log('error', 'Error in trigger file ' . $trigger->trigger_template_file . '.xml');
+        continue;
+      }
       if (count($data['content']['records']>0)) {
         $parsedData = $this->parseData($data);
         echo $trigger->name . ": " . count($data['content']['records']) . " records found<br/>";
