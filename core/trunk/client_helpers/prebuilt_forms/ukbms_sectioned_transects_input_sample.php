@@ -210,7 +210,7 @@ class iform_ukbms_sectioned_transects_input_sample {
           'description'=>'The title to be used on the species checklist for the second tab.',
           'type'=>'string',
           'required'=>false,
-          'group'=>'Species'
+          'group'=>'Species 2'
         ),
         array(
           'name' => 'force_second',
@@ -218,7 +218,7 @@ class iform_ukbms_sectioned_transects_input_sample {
           'description' => 'In the second species tab, include the full species list: if not selected a species control will be provided to add the required taxon to the list.',
           'type' => 'boolean',
           'required' => false,
-          'group' => 'Species'
+          'group' => 'Species 2'
         ),
         array(
           'name'=>'second_taxon_list_id',
@@ -230,7 +230,7 @@ class iform_ukbms_sectioned_transects_input_sample {
           'valueField'=>'id',
           'required'=>false,
           'siteSpecific'=>true,
-          'group'=>'Species'
+          'group'=>'Species 2'
         ),
         array(
           'name'=>'second_taxon_filter_field',
@@ -245,7 +245,7 @@ class iform_ukbms_sectioned_transects_input_sample {
           ),
           'siteSpecific'=>true,
           'required'=>false,
-          'group'=>'Species'
+          'group'=>'Species 2'
         ),
         array(
           'name'=>'second_taxon_filter',
@@ -255,7 +255,19 @@ class iform_ukbms_sectioned_transects_input_sample {
           'type' => 'textarea',
           'siteSpecific'=>true,
           'required'=>false,
-          'group'=>'Species'
+          'group'=>'Species 2'
+        ),
+        array(
+          'name'=>'occurrence_attribute_id_2',
+          'caption'=>'Second Tab Occurrence Attribute',
+          'description'=>'The attribute that will be presented in the Second Species Tab grid for input, if different to the Occurrence Attribute above. Omit if using the same.',
+          'type'=>'select',
+          'table'=>'occurrence_attribute',
+          'captionField'=>'caption',
+          'valueField'=>'id',
+          'required' => false,
+          'siteSpecific'=>true,
+          'group'=>'Species 2'
         ),
         array(
           'name'=>'species_tab_3',
@@ -263,7 +275,7 @@ class iform_ukbms_sectioned_transects_input_sample {
           'description'=>'The title to be used on the species checklist for the third tab.',
           'type'=>'string',
           'required'=>false,
-          'group'=>'Species'
+          'group'=>'Species 3'
         ),
         array(
           'name' => 'force_third',
@@ -271,7 +283,7 @@ class iform_ukbms_sectioned_transects_input_sample {
           'description' => 'In the third species tab, include the full species list: if not selected a species control will be provided to add the required taxon to the list.',
           'type' => 'boolean',
           'required' => false,
-          'group' => 'Species'
+          'group' => 'Species 3'
         ),
         array(
           'name'=>'third_taxon_list_id',
@@ -283,7 +295,7 @@ class iform_ukbms_sectioned_transects_input_sample {
           'valueField'=>'id',
           'required'=>false,
           'siteSpecific'=>true,
-          'group'=>'Species'
+          'group'=>'Species 3'
         ),
         array(
           'name'=>'third_taxon_filter_field',
@@ -298,7 +310,7 @@ class iform_ukbms_sectioned_transects_input_sample {
           ),
           'siteSpecific'=>true,
           'required'=>false,
-          'group'=>'Species'
+          'group'=>'Species 3'
         ),
         array(
           'name'=>'third_taxon_filter',
@@ -308,7 +320,19 @@ class iform_ukbms_sectioned_transects_input_sample {
           'type' => 'textarea',
           'siteSpecific'=>true,
           'required'=>false,
-          'group'=>'Species'
+          'group'=>'Species 3'
+        ),
+        array(
+          'name'=>'occurrence_attribute_id_3',
+          'caption'=>'Third Tab Occurrence Attribute',
+          'description'=>'The attribute that will be presented in the Third Species Tab grid for input, if different to the Occurrence Attribute above. Omit if using the same.',
+          'type'=>'select',
+          'table'=>'occurrence_attribute',
+          'captionField'=>'caption',
+          'valueField'=>'id',
+          'required' => false,
+          'siteSpecific'=>true,
+          'group'=>'Species 3'
         ),
         array(
           'name'=>'species_tab_4',
@@ -316,7 +340,7 @@ class iform_ukbms_sectioned_transects_input_sample {
           'description'=>'The title to be used on the species checklist for the fourth tab.',
           'type'=>'string',
           'required'=>false,
-          'group'=>'Species'
+          'group'=>'Species 4'
         ),
         array(
           'name' => 'force_fourth',
@@ -324,7 +348,7 @@ class iform_ukbms_sectioned_transects_input_sample {
           'description' => 'In the fourth species tab, include the full species list: if not selected a species control will be provided to add the required taxon to the list.',
           'type' => 'boolean',
           'required' => false,
-          'group' => 'Species'
+          'group' => 'Species 4'
         ),
         array(
           'name'=>'fourth_taxon_list_id',
@@ -336,7 +360,7 @@ class iform_ukbms_sectioned_transects_input_sample {
           'valueField'=>'id',
           'required'=>'false',
           'siteSpecific'=>true,
-          'group'=>'Species'
+          'group'=>'Species 4'
         ),
         array(
           'name'=>'fourth_taxon_filter_field',
@@ -351,7 +375,7 @@ class iform_ukbms_sectioned_transects_input_sample {
           ),
           'siteSpecific'=>true,
           'required'=>false,
-          'group'=>'Species'
+          'group'=>'Species 4'
         ),
         array(
           'name'=>'fourth_taxon_filter',
@@ -361,7 +385,19 @@ class iform_ukbms_sectioned_transects_input_sample {
           'type' => 'textarea',
           'siteSpecific'=>true,
           'required'=>false,
-          'group'=>'Species'
+          'group'=>'Species 4'
+        ),
+        array(
+          'name'=>'occurrence_attribute_id_4',
+          'caption'=>'Fourth Tab Occurrence Attribute',
+          'description'=>'The attribute that will be presented in the Fourth Species Tab grid for input, if different to the Occurrence Attribute above. Omit if using the same.',
+          'type'=>'select',
+          'table'=>'occurrence_attribute',
+          'captionField'=>'caption',
+          'valueField'=>'id',
+          'required' => false,
+          'siteSpecific'=>true,
+          'group'=>'Species 4'
         ),
         array(
           'name'=>'map_taxon_list_id',
@@ -832,10 +868,14 @@ class iform_ukbms_sectioned_transects_input_sample {
     data_entry_helper::$javascript .= "indiciaData.samples = { ".implode(', ', $subSampleJson)."};\n";
     if ($existing) {
       // Only need to load the occurrences for a pre-existing sample
+      $attrs = array($args['occurrence_attribute_id']);
+      if(isset($args['occurrence_attribute_id_2']) && $args['occurrence_attribute_id_2'] != "") $attrs[] = $args['occurrence_attribute_id_2'];
+      if(isset($args['occurrence_attribute_id_3']) && $args['occurrence_attribute_id_3'] != "") $attrs[] = $args['occurrence_attribute_id_3'];
+      if(isset($args['occurrence_attribute_id_4']) && $args['occurrence_attribute_id_4'] != "") $attrs[] = $args['occurrence_attribute_id_4'];
       $o = data_entry_helper::get_population_data(array(
         'report' => 'reports_for_prebuilt_forms/UKBMS/ukbms_occurrences_list_for_parent_sample',
         'extraParams' => $auth['read'] + array('view'=>'detail','sample_id'=>$parentSampleId,'survey_id'=>$args['survey_id'],'date_from'=>'','date_to'=>'','taxon_group_id'=>'',
-            'smpattrs'=>'', 'occattrs'=>$args['occurrence_attribute_id']),
+            'smpattrs'=>'', 'occattrs'=>implode(',',$attrs)),
         // don't cache as this is live data
         'nocache' => true
       ));
@@ -845,16 +885,40 @@ class iform_ukbms_sectioned_transects_input_sample {
         $occurrences[$occurrence['sample_id'].':'.$occurrence['taxon_meaning_id']] = array(
           'ttl_id'=>$occurrence['taxa_taxon_list_id'],
           'taxon_meaning_id'=>$occurrence['taxon_meaning_id'],
-          'value'=>$occurrence['attr_occurrence_'.$args['occurrence_attribute_id']],
           'o_id'=>$occurrence['occurrence_id'],
-          'a_id'=>$occurrence['attr_id_occurrence_'.$args['occurrence_attribute_id']],
           'processed'=>false
         );
+        foreach($attrs as $attr){
+          $occurrences[$occurrence['sample_id'].':'.$occurrence['taxon_meaning_id']]['value_'.$attr] = $occurrence['attr_occurrence_'.$attr];
+          $occurrences[$occurrence['sample_id'].':'.$occurrence['taxon_meaning_id']]['a_id_'.$attr] = $occurrence['attr_id_occurrence_'.$attr];
+        }
       }
       // store it in data for JS to read when populating the grid
       data_entry_helper::$javascript .= "indiciaData.existingOccurrences = ".json_encode($occurrences).";\n";
     } else {
       data_entry_helper::$javascript .= "indiciaData.existingOccurrences = {};\n";
+    }
+    $occ_attributes = data_entry_helper::getAttributes(array(
+    		'valuetable'=>'occurrence_attribute_value',
+    		'attrtable'=>'occurrence_attribute',
+    		'key'=>'occurrence_id',
+    		'fieldprefix'=>'occAttr',
+    		'extraParams'=>$auth['read'],
+    		'survey_id'=>$args['survey_id'],
+    		'multiValue'=>false // ensures that array_keys are the list of attribute IDs.
+    ));
+    data_entry_helper::$javascript .= "indiciaData.occurrence_attribute = [];\n";
+    data_entry_helper::$javascript .= "indiciaData.occurrence_attribute_ctrl = [];\n";
+    $defAttrOptions = array('extraParams'=>$auth['read']+array('orderby'=>'id'), 'suffixTemplate' => 'nosuffix');
+    foreach(array($args['occurrence_attribute_id'],
+              (isset($args['occurrence_attribute_id_2']) && $args['occurrence_attribute_id_2']!="" ? $args['occurrence_attribute_id_2'] : $args['occurrence_attribute_id']),
+              (isset($args['occurrence_attribute_id_3']) && $args['occurrence_attribute_id_3']!="" ? $args['occurrence_attribute_id_3'] : $args['occurrence_attribute_id']),
+              (isset($args['occurrence_attribute_id_4']) && $args['occurrence_attribute_id_4']!="" ? $args['occurrence_attribute_id_4'] : $args['occurrence_attribute_id']))
+            as $idx => $attr){
+      unset($occ_attributes[$attr]['caption']);
+      $ctrl = data_entry_helper::outputAttribute($occ_attributes[$attr], $defAttrOptions);
+      data_entry_helper::$javascript .= "indiciaData.occurrence_attribute[".($idx+1)."] = $attr;\n";
+      data_entry_helper::$javascript .= "indiciaData.occurrence_attribute_ctrl[".($idx+1)."] = jQuery('".(str_replace("\n","",$ctrl))."');\n";
     }
     $sections = data_entry_helper::get_population_data(array(
       'table' => 'location',
@@ -882,6 +946,7 @@ class iform_ukbms_sectioned_transects_input_sample {
         'divId'=>'tabs',
         'style'=>'Tabs'
     ));
+    // will assume that first table is based on abundance count, so do totals
     $r .= '<div id="grid1">'.
           '<label for="listSelect">'.lang::get('Use species list').' :</label><select id="listSelect"><option value="full">'.lang::get('All species').'</option><option value="common">'.lang::get('Common species').'</option><option value="here">'.lang::get('Species known at this site').'</option><option value="mine">'.lang::get('Species I have recorded').'</option><option value="filled">'.lang::get('Species with data').'</option></select>'.
           '<span id="listSelectMsg"></span>';
@@ -983,55 +1048,70 @@ class iform_ukbms_sectioned_transects_input_sample {
     data_entry_helper::$javascript .= "];\n";
 
     if(isset($args['second_taxon_list_id']) && $args['second_taxon_list_id']!=''){
-      $r .= '<div id="grid2"><p>' . lang::get('LANG_Tab_Msg') . '</p><table id="transect-input2" class="ui-widget species-grid"><thead class="table-header">';
+      $isNumber = ($occ_attributes[(isset($args['occurrence_attribute_id_2']) && $args['occurrence_attribute_id_2']!="" ?
+      		    $args['occurrence_attribute_id_2'] : $args['occurrence_attribute_id'])]["data_type"] == 'I');
+      $r .= '<div id="grid2"><p id="grid2-loading">' . lang::get('Loading - Please Wait') . '</p><p>' . lang::get('LANG_Tab_Msg') . '</p><table id="transect-input2" class="ui-widget species-grid"><thead class="table-header">';
       $r .= '<tr><th class="ui-widget-header">' . lang::get('Sections') . '</th>';
       foreach ($sections as $idx=>$section) {
         $r .= '<th class="ui-widget-header col-'.($idx+1).'">' . $section['code'] . '</th>';
       }
-      $r .= '<th class="ui-widget-header">' . lang::get('Total') . '</th></tr></thead>';
+      $r .= ($isNumber ? '<th class="ui-widget-header">' . lang::get('Total') . '</th>' : '').'</tr></thead>';
       // No output rows at the top for any transect section level sample attributes in second grid.
       $r .= '<tbody class="ui-widget-content occs-body"></tbody>';
-      $r .= '<tfoot><tr><td>Total</td>';
-      foreach ($sections as $idx=>$section) {
-        $r .= '<td class="col-'.($idx+1).' '.($idx % 5 == 0 ? 'first' : '').' col-total"></td>';
+      if($isNumber) {
+        $r .= '<tfoot><tr><td>Total</td>';
+        foreach ($sections as $idx=>$section) {
+          $r .= '<td class="col-'.($idx+1).' '.($idx % 5 == 0 ? 'first' : '').' col-total"></td>';
+        }
+        $r .= '<td class="ui-state-disabled first"></td></tr></tfoot>';
       }
-      $r .= '<td class="ui-state-disabled first"></td></tr></tfoot></table>';
+      $r .= '</table>';
       if(!isset($args['force_second']) || !$args['force_second'])
         $r .= '<label for="taxonLookupControl2" class="auto-width">'.lang::get('Add species to list').':</label> <input id="taxonLookupControl2" name="taxonLookupControl2" >';
       $r .= '<br /><a href="'.$args['my_walks_page'].'" class="button">'.lang::get('Finish').'</a></div>';
     }
     if(isset($args['third_taxon_list_id']) && $args['third_taxon_list_id']!=''){
-      $r .= '<div id="grid3"><p>' . lang::get('LANG_Tab_Msg') . '</p><table id="transect-input3" class="ui-widget species-grid"><thead class="table-header">';
+      $isNumber = ($occ_attributes[(isset($args['occurrence_attribute_id_3']) && $args['occurrence_attribute_id_3']!="" ?
+          $args['occurrence_attribute_id_3'] : $args['occurrence_attribute_id'])]["data_type"] == 'I');
+      $r .= '<div id="grid3"><p id="grid3-loading">' . lang::get('Loading - Please Wait') . '</p><p>' . lang::get('LANG_Tab_Msg') . '</p><table id="transect-input3" class="ui-widget species-grid"><thead class="table-header">';
       $r .= '<tr><th class="ui-widget-header">' . lang::get('Sections') . '</th>';
       foreach ($sections as $idx=>$section) {
         $r .= '<th class="ui-widget-header col-'.($idx+1).'">' . $section['code'] . '</th>';
       }
-      $r .= '<th class="ui-widget-header">' . lang::get('Total') . '</th></tr></thead>';
+      $r .= ($isNumber ? '<th class="ui-widget-header">' . lang::get('Total') . '</th>' : '').'</tr></thead>';
       // No output rows at the top for any transect section level sample attributes in second grid.
       $r .= '<tbody class="ui-widget-content occs-body"></tbody>';
-      $r .= '<tfoot><tr><td>Total</td>';
-      foreach ($sections as $idx=>$section) {
-        $r .= '<td class="col-'.($idx+1).' '.($idx % 5 == 0 ? 'first' : '').' col-total"></td>';
+      if($isNumber) {
+        $r .= '<tfoot><tr><td>Total</td>';
+        foreach ($sections as $idx=>$section) {
+          $r .= '<td class="col-'.($idx+1).' '.($idx % 5 == 0 ? 'first' : '').' col-total"></td>';
+        }
+        $r .= '<td class="ui-state-disabled first"></td></tr></tfoot>';
       }
-      $r .= '<td class="ui-state-disabled first"></td></tr></tfoot></table>';
+      $r .= '</table>';
       if(!isset($args['force_third']) || !$args['force_third'])
         $r .= '<label for="taxonLookupControl3" class="auto-width">'.lang::get('Add species to list').':</label> <input id="taxonLookupControl3" name="taxonLookupControl3" >';
       $r .= '<br /><a href="'.$args['my_walks_page'].'" class="button">'.lang::get('Finish').'</a></div>';
     }
     if(isset($args['fourth_taxon_list_id']) && $args['fourth_taxon_list_id']!=''){
-      $r .= '<div id="grid4"><p>' . lang::get('LANG_Tab_Msg') . '</p><table id="transect-input4" class="ui-widget species-grid"><thead class="table-header">';
+      $isNumber = ($occ_attributes[(isset($args['occurrence_attribute_id_4']) && $args['occurrence_attribute_id_4']!="" ?
+          $args['occurrence_attribute_id_4'] : $args['occurrence_attribute_id'])]["data_type"] == 'I');
+      $r .= '<div id="grid4"><p id="grid4-loading">' . lang::get('Loading - Please Wait') . '</p><p>' . lang::get('LANG_Tab_Msg') . '</p><table id="transect-input4" class="ui-widget species-grid"><thead class="table-header">';
       $r .= '<tr><th class="ui-widget-header">' . lang::get('Sections') . '</th>';
       foreach ($sections as $idx=>$section) {
         $r .= '<th class="ui-widget-header col-'.($idx+1).'">' . $section['code'] . '</th>';
       }
-      $r .= '<th class="ui-widget-header">' . lang::get('Total') . '</th></tr></thead>';
+      $r .= ($isNumber ? '<th class="ui-widget-header">' . lang::get('Total') . '</th>' : '').'</tr></thead>';
       // No output rows at the top for any transect section level sample attributes in second grid.
       $r .= '<tbody class="ui-widget-content occs-body"></tbody>';
-      $r .= '<tfoot><tr><td>Total</td>';
-      foreach ($sections as $idx=>$section) {
-        $r .= '<td class="col-'.($idx+1).' '.($idx % 5 == 0 ? 'first' : '').' col-total"></td>';
+      if($isNumber) {
+        $r .= '<tfoot><tr><td>Total</td>';
+        foreach ($sections as $idx=>$section) {
+          $r .= '<td class="col-'.($idx+1).' '.($idx % 5 == 0 ? 'first' : '').' col-total"></td>';
+        }
+        $r .= '<td class="ui-state-disabled first"></td></tr></tfoot>';
       }
-      $r .= '<td class="ui-state-disabled first"></td></tr></tfoot></table>';
+      $r .= '</table>';
       if(!isset($args['force_fourth']) || !$args['force_fourth'])
         $r .= '<label for="taxonLookupControl4" class="auto-width">'.lang::get('Add species to list').':</label> <input id="taxonLookupControl4" name="taxonLookupControl4" >';
       $r .= '<br /><a href="'.$args['my_walks_page'].'" class="button">'.lang::get('Finish').'</a></div>';
@@ -1143,7 +1223,7 @@ jQuery(jQuery('#".$options["tabDiv"]."').parent()).bind('tabsshow', speciesMapTa
     }
     data_entry_helper::$javascript .= "bindSpeciesAutocomplete(\"taxonLookupControl\",\"table#transect-input1\",\"".data_entry_helper::$base_url."index.php/services/data\", \"".$args['taxon_list_id']."\",
   indiciaData.speciesList1FilterField, indiciaData.speciesList1FilterValues, {\"auth_token\" : \"".$auth['read']['auth_token']."\", \"nonce\" : \"".$auth['read']['nonce']."\"},
-  \"".lang::get('LANG_Duplicate_Taxon')."\", 25);\n
+  \"".lang::get('LANG_Duplicate_Taxon')."\", 25, 1);\n
 indiciaData.speciesList1Subset = ".(isset($args['common_taxon_list_id']) && $args['common_taxon_list_id']!="" ? $args['common_taxon_list_id'] : "-1").";\n";
     if (!empty($args['common_taxon_filter_field']) && !empty($args['common_taxon_filter'])) {
       data_entry_helper::$javascript .= "indiciaData.speciesList1SubsetFilterField = '".$args['common_taxon_filter_field']."';\n";
@@ -1161,7 +1241,7 @@ indiciaData.speciesList1Subset = ".(isset($args['common_taxon_list_id']) && $arg
     if(!isset($args['force_second']) || !$args['force_second'])
       data_entry_helper::$javascript .= "bindSpeciesAutocomplete(\"taxonLookupControl2\",\"table#transect-input2\",\"".data_entry_helper::$base_url."index.php/services/data\", indiciaData.speciesList2,
   indiciaData.speciesList2FilterField, indiciaData.speciesList2FilterValues, {\"auth_token\" : \"".$auth['read']['auth_token']."\", \"nonce\" : \"".$auth['read']['nonce']."\"},
-  \"".lang::get('LANG_Duplicate_Taxon')."\", 25);\n\n";
+  \"".lang::get('LANG_Duplicate_Taxon')."\", 25, 2);\n\n";
 
     data_entry_helper::$javascript .= "indiciaData.speciesList3 = ".(isset($args['third_taxon_list_id']) && $args['third_taxon_list_id'] != "" ? $args['third_taxon_list_id'] : "-1").";\n";
     if (!empty($args['third_taxon_filter_field']) && !empty($args['third_taxon_filter'])) {
@@ -1173,7 +1253,7 @@ indiciaData.speciesList1Subset = ".(isset($args['common_taxon_list_id']) && $arg
     if(!isset($args['force_third']) || !$args['force_third'])
       data_entry_helper::$javascript .= "bindSpeciesAutocomplete(\"taxonLookupControl3\",\"table#transect-input3\",\"".data_entry_helper::$base_url."index.php/services/data\", indiciaData.speciesList3,
     indiciaData.speciesList3FilterField, indiciaData.speciesList3FilterValues, {\"auth_token\" : \"".$auth['read']['auth_token']."\", \"nonce\" : \"".$auth['read']['nonce']."\"},
-    \"".lang::get('LANG_Duplicate_Taxon')."\", 25);\n\n";
+    \"".lang::get('LANG_Duplicate_Taxon')."\", 25, 3);\n\n";
     
     data_entry_helper::$javascript .= "indiciaData.speciesList4 = ".(isset($args['fourth_taxon_list_id']) && $args['fourth_taxon_list_id'] != "" ? $args['fourth_taxon_list_id'] : "-1").";\n";
     if (!empty($args['fourth_taxon_filter_field']) && !empty($args['fourth_taxon_filter'])) {
@@ -1186,14 +1266,13 @@ indiciaData.speciesList1Subset = ".(isset($args['common_taxon_list_id']) && $arg
     if(!isset($args['force_fourth']) || !$args['force_fourth'])
       data_entry_helper::$javascript .= "bindSpeciesAutocomplete(\"taxonLookupControl4\",\"table#transect-input4\",\"".data_entry_helper::$base_url."index.php/services/data\", indiciaData.speciesList4,
   indiciaData.speciesList4FilterField, indiciaData.speciesList4FilterValues, {\"auth_token\" : \"".$auth['read']['auth_token']."\", \"nonce\" : \"".$auth['read']['nonce']."\"},
-  \"".lang::get('LANG_Duplicate_Taxon')."\", 25);\n\n";
+  \"".lang::get('LANG_Duplicate_Taxon')."\", 25, 4);\n\n";
 
     data_entry_helper::$javascript .= "indiciaData.indiciaSvc = '".data_entry_helper::$base_url."';\n";
     data_entry_helper::$javascript .= "indiciaData.readAuth = {nonce: '".$auth['read']['nonce']."', auth_token: '".$auth['read']['auth_token']."'};\n";
     data_entry_helper::$javascript .= "indiciaData.transect = ".$parentLocId.";\n";
     data_entry_helper::$javascript .= "indiciaData.parentSample = ".$parentSampleId.";\n";
     data_entry_helper::$javascript .= "indiciaData.sections = ".json_encode($sections).";\n";
-    data_entry_helper::$javascript .= "indiciaData.occAttrId = ".$args['occurrence_attribute_id'] .";\n";
     if (function_exists('module_exists') && module_exists('easy_login')) {
       data_entry_helper::$javascript .= "indiciaData.easyLogin = true;\n";
       $userId = hostsite_get_user_field('indicia_user_id');
