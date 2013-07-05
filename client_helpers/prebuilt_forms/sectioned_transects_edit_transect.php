@@ -585,6 +585,10 @@ $('#delete-transect').click(deleteSurvey);
     $options['maxZoomBuffer'] = $args['route_map_buffer'];
     
     $r .= map_helper::map_panel($options, $olOptions);
+    if(count($settings['section_attributes']) == 0)
+      $r .= '<button class="indicia-button right" type="button" title="'.
+            lang::get('Returns to My Sites page. Any changes to sections carried out on this page (including creating new ones) are saved to the database as they are done, but changes to the Site Details must be saved using the Save button on that tab.').
+            '" onclick="window.location.href=\'' . url($args['redirect_on_success']) . '\'">'.lang::get('Return to My Sites').'</button>';
     $r .= '</div>';
     return $r;  
   }
@@ -728,7 +732,7 @@ $('#delete-transect').click(deleteSurvey);
   }
   
   /**
-   * After saving a transect, reload the transect so that the user can continue to save the sections.
+   * After saving a new transect, reload the transect so that the user can continue to save the sections.
    */
   public static function get_redirect_on_success($values, $args) {
     if (!isset($values['location:id'])) {

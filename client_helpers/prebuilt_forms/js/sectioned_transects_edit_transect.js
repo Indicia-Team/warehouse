@@ -367,9 +367,27 @@ $(document).ready(function() {
       }
       copy_over_transects();
       $('.ui-tabs').bind('tabsshow', function(event, ui) {
-        var target = ui.panel;
-        if($('#'+target.id+' #route-map').length > 0){
+        function _extendBounds(bounds, buffer) {
+            var dy = (bounds.top-bounds.bottom) * buffer;
+            var dx = (bounds.right-bounds.left) * buffer;
+            bounds.top = bounds.top + dy;
+            bounds.bottom = bounds.bottom - dy;
+            bounds.right = bounds.right + dx;
+            bounds.left = bounds.left - dx;
+            return bounds;
+        }
+
+        var div, target = ui.panel;
+        if((div = $('#'+target.id+' #route-map')).length > 0){
           copy_over_transects();
+          div = div[0];
+          // when the route map is initially created it is hidden, so is not rendered, and the calculations of the map size are wrong
+          // (Width is 100 rather than 100%), so any initial zoom in to the transect by the map panel is wrong.
+          var bounds = div.map.parentLayer.getDataExtent();
+          if(div.map.editLayer.features.length>0)
+            bounds.extend(div.map.editLayer.getDataExtent());
+          _extendBounds(bounds,div.settings.maxZoomBuffer);
+          div.map.zoomToExtent(bounds);
         }
       });
       // find the selectFeature control so we can interact with it later
