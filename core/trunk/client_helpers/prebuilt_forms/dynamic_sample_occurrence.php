@@ -926,7 +926,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       iform_map_get_map_options($args, $auth['read']),
       $options
     );
-    if (isset(data_entry_helper::$entity_to_load['sample:geom'])) {
+    if (!empty(data_entry_helper::$entity_to_load['sample:wkt'])) {
       $options['initialFeatureWkt'] = data_entry_helper::$entity_to_load['sample:wkt'];
     }
     if ($args['interface']!=='one_page')
