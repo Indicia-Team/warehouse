@@ -431,6 +431,7 @@ mapInitialisationHooks.push(function (div) {
 
 $(document).ready(function () {
   "use strict";
+
   //Use jQuery to add a button to the top of the verification page. Use this button to access the popup
   //which allows you to verify all trusted records.
   var verifyAllTrustedButton = '<input type="button" value="..." class="default-button verify-grid-trusted tools-btn" id="verify-grid-trusted"/>', 
@@ -732,25 +733,35 @@ function quickVerifyMenu(row) {
     } else {
       $('.trust-tool').show();
     }
+    // show the menu
     $(row).find('.verify-tools').show();
+    // remove titles from the grid and store in data, so they don't overlay the menu
+    $.each($(row).parents('table:first tbody').find('[title]'), function(idx, ctrl) {
+      $(this).data('title', $(ctrl).attr('title')).removeAttr('title');
+    });
   }
 }
 
 $('table.report-grid tbody').click(function (evt) {
+  var row=$(evt.target).parents('tr:first')[0];
   $('.verify-tools').hide();
+  // reinstate tooltips
+  $.each($(row).parents('table:first tbody').find(':data(title)'), function(idx, ctrl) {
+    $(ctrl).attr('title', $(this).data('title'));
+  });
   // Find the appropriate separator for AJAX url params - depends on clean urls setting.
   urlSep = indiciaData.ajaxUrl.indexOf('?') === -1 ? '?' : '&';
   if ($(evt.target).hasClass('quick-verify')) {
-    selectRow($(evt.target).parents('tr')[0], quickVerifyMenu);
+    selectRow(row, quickVerifyMenu);
   }
   else if ($(evt.target).hasClass('quick-verify-tool')) {
-    quickVerifyPopup($(evt.target).parents('tr')[0]);
+    quickVerifyPopup(row);
   }
   else if ($(evt.target).hasClass('trust-tool')) {
-    trustsPopup($(evt.target).parents('tr')[0]);
+    trustsPopup(row);
   }
   else {
-    selectRow($(evt.target).parents('tr')[0]);
+    selectRow(row);
   }
 });
 
@@ -889,3 +900,4 @@ function removeTrust(RemoveTrustId) {
     }
   );
 }
+
