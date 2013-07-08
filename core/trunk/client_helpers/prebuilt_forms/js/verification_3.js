@@ -547,7 +547,7 @@ function trustsPopup() {
       popupHtml += '<label>Trust will be applied to records from locality:</label><br/>'+
           '<label><input type="radio" name="trust-location" value="all"> All </label><br/>';
       // the record could intersect multiple locality boundaries. So can choose which...
-      var locationIds = currRec.extra.locality_ids.split('|'), locations = currRec.extra.locations.split('|');
+      var locationIds = currRec.extra.locality_ids.split('|'), locations = currRec.extra.localities.split('|');
       // can choose to trust all localities or record's location
       $.each(locationIds, function(idx, id) {
         popupHtml += '<label><input type="radio" name="trust-location" value="' + id + '" checked>' + ' ' + locations[idx] + '</label><br/>';
@@ -726,12 +726,14 @@ function trustsPopup() {
 
 function quickVerifyMenu(row) {
   // can't use User Trusts if the recorder is not linked to a warehouse user.
-  if (currRec.extra.created_by_id==="1") {
-    $('.trust-tool').hide();
-  } else {
-    $('.trust-tool').show();
+  if (typeof currRec!=="undefined") {
+    if (currRec.extra.created_by_id==="1") {
+      $('.trust-tool').hide();
+    } else {
+      $('.trust-tool').show();
+    }
+    $(row).find('.verify-tools').show();
   }
-  $(row).find('.verify-tools').show();
 }
 
 $('table.report-grid tbody').click(function (evt) {
