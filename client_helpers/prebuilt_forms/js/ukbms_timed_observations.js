@@ -1,11 +1,4 @@
 
-jQuery(document).ready(function() {
-  jQuery('#imp-location').change(function(evt) {
-    jQuery('#entered_sref').val(indiciaData.sites[evt.target.value].centroid_sref);
-    jQuery('#entered_sref_system').val(indiciaData.sites[evt.target.value].centroid_sref_system);
-  });
-});
-
 function getTotal(cell) {
   var row=jQuery(cell).parents('tr:first')[0];
   var table=jQuery(cell).closest('table')[0];
@@ -67,7 +60,6 @@ function addGridRow(species, speciesTableSelector, end, tabIDX){
   if (typeof indiciaData.existingOccurrences[species.taxon_meaning_id]!=="undefined") {
     existing = true;
     indiciaData.existingOccurrences[species.taxon_meaning_id]['processed']=true;
-    name = 'value:'+species.id+':'+indiciaData.existingOccurrences[key]['o_id']+':occAttr:'+indiciaData.occurrence_attribute[idx]+':'+indiciaData.existingOccurrences[key]['a_id_'+indiciaData.occurrence_attribute[idx]];
     jQuery('<td>'+name+'<input type="hidden" id="value:'+species.id+':occid" value="'+indiciaData.existingOccurrences[species.taxon_meaning_id]['o_id']+'" /></td>').appendTo(row);
   } else jQuery('<td>'+name+'</td>').appendTo(row);
   var rowTotal = 0;
@@ -89,7 +81,7 @@ function addGridRow(species, speciesTableSelector, end, tabIDX){
         rowTotal += parseInt(val);
         indiciaData.occurrence_totals[idx][speciesTableSelector] += parseInt(val);
       }
-      name = name+indiciaData.existingOccurrences[key]['a_id_'+indiciaData.occurrence_attribute[idx]];
+      name = name+indiciaData.existingOccurrences[species.taxon_meaning_id]['a_id_'+indiciaData.occurrence_attribute[idx]];
     }
     indiciaData.occurrence_attribute_ctrl[idx].clone().attr('id', id).attr('name', name).val(val).addClass(isNumber ? 'count-input' : 'non-count-input').appendTo(cell);
   }
@@ -291,7 +283,6 @@ function loadSpeciesList() {
   // note that when added from the list, the ttlid is the preferred one, but if added from the autocomplete it may/probably
   // will not be.
   addSpeciesToGrid(indiciaData.existingOccurrences, indiciaData.speciesList1List, 'table#observation-input1', true, 1);
-  // get all taxon meanings recorded on this location
   var process2 = function () {
     var process3 = function () {
       var process4 = function () {
@@ -306,7 +297,7 @@ function loadSpeciesList() {
                 'view': 'cache',
                 'orderby': 'taxonomic_sort_order'
           };
-          var query = {"in":{"taxon_meaning_id":indiciaData.allTaxonMeaningIdsAtLocation}};
+          var query = {"in":{"taxon_meaning_id":indiciaData.allTaxonMeaningIdsAtSample}};
           if(typeof indiciaData.speciesList4FilterField != "undefined")
             query['in'][indiciaData.speciesList4FilterField] = indiciaData.speciesList4FilterValues;
           TaxonData.query = JSON.stringify(query);
