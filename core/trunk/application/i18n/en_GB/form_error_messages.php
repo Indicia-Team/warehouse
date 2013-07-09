@@ -3,7 +3,7 @@
 $lang = array (
   'address' => Array (
     'length' => 'The address must be a maximum of 200 characters in length.',
-    'default' => 'Invalid Input.',
+    'default' => 'Invalid input.',
   ),
   'caption' => Array (
     'required' => 'The caption cannot be blank.',
@@ -34,25 +34,28 @@ $lang = array (
   ),
   'description' => Array (
     'standard_text' => 'Only standard characters are allowed.',
-    'default' => 'Invalid Input.',
+    'default' => 'Invalid input.',
   ),
   'determiner_id' => Array (
     'required' => 'The determiner cannot be blank.',
-    'default' => 'Invalid Input.',
+    'default' => 'Invalid input.',
   ),
   'email_address' => Array (
     'required' => 'The email address cannot be blank.',
     'email' => 'This must be a valid email address.',
     'length' => 'The email address must be a maximum of 50 characters in length.',
     'unique' => 'This email address must be unique, i.e. not shared with another person.',
-    'default' => 'Invalid Input.',
+    'default' => 'Invalid input.',
   ),
   'entered_sref' => Array (
     'required' => 'The spatial reference must be supplied.',
     'sref' => 'The spatial reference is not recognised.',
+    'default' => 'Invalid input.',
   ),
   'entered_sref_system' => Array (
+    'required' => 'The spatial reference system must be supplied.',
     'sref_system' => 'The spatial reference system is not a valid EPSG or notation code.',
+    'default' => 'Invalid input.',
   ),
   'external_key' => Array (
     'length' => 'The external key field can be up to 50 characters long.',
@@ -60,7 +63,7 @@ $lang = array (
   'first_name' => Array (
     'required' => 'The first name cannot be blank.',
     'length' => 'The first name must be between 1 and 30 letters.',
-    'default' => 'Invalid Input.',
+    'default' => 'Invalid input.',
   ),
   'float_value' => Array (
     'default' => 'This must be a valid number.',
@@ -74,7 +77,7 @@ $lang = array (
   ),
   'initials' => Array (
     'length' => 'The initials must be a maximum of 6 characters in length.',
-    'default' => 'Invalid Input.',
+    'default' => 'Invalid input.',
   ),
   'int_value' => Array (
     'digit' => 'This must be a valid whole number.',
@@ -104,15 +107,18 @@ $lang = array (
     'length' => 'The password must be between 7 and 30 letters in length.',
     'matches' => 'The password and repeat password fields must match.',
     'matches_post' => 'The password and repeat password fields must match.',
-      'default' => 'Invalid Input.',
+      'default' => 'Invalid input.',
   ),
   'path' => Array (
     'required' => 'The image file must be supplied.',
   ),
+  'sample_id' => Array (
+    'required' => 'The sample must be supplied.',
+  ),
   'surname' => Array (
     'required' => 'The surname cannot be blank.',
     'length' => 'The surname must be between 1 and 30 letters.',
-    'default' => 'Invalid Input.',
+    'default' => 'Invalid input.',
   ),
   'survey_id' => Array (
     'required' => 'The survey must be supplied.',
@@ -162,7 +168,7 @@ $lang = array (
     'required' => 'The title cannot be blank.',
     'standard_text' => 'Only standard characters are allowed.',
     'length' => 'The title supplied is too long.', // note that the title name is used for fields which are of different max lengths, so can't be more specific
-    'default' => 'Invalid Input.',
+    'default' => 'Invalid input.',
   ),
   'url' => Array (
     'required' => 'The website URL cannot be blank.',
@@ -173,7 +179,7 @@ $lang = array (
     'required' => 'The username cannot be blank.',
     'length' => 'The username must be between 7 and 30 letters in length.',
     'unique' => 'This username must be unique, i.e. not shared with another user.',
-    'default' => 'Invalid Input.',
+    'default' => 'Invalid input.',
   ),
   'website_id' => Array (
     'required' => 'The website cannot be blank.',
@@ -181,14 +187,14 @@ $lang = array (
   'website_url' => Array (
     'url' => 'This must be a valid URL (if schema not provided, http:// is assumed).',
     'length' => 'The website URL must be a maximum of 1000 characters in length.',
-    'default' => 'Invalid Input.',
+    'default' => 'Invalid input.',
   ),
   'media_upload' => Array (
     'valid' => 'The file is being tagged as invalid.',
   	'required' => 'The file has not been uploaded to the warehouse. One possible reason is that its size may exceed the server upload limits.',
   	'size' => 'The file size exceeds the maximum allowed.',
     'type' => 'The file is not one of the allowed types [png,gif,jpg,jpeg].',
-    'default' => 'Invalid File.',
+    'default' => 'Invalid file.',
   ),
 );
 
