@@ -1358,7 +1358,7 @@ $('.ui-state-default').live('mouseout', function() {
     if (!empty($javascript) || !empty($late_javascript) || !empty($onload_javascript)) {
       $script = $includeWrapper ? "<script type='text/javascript'>/* <![CDATA[ */\n" : "";
       $script .= "if (typeof indiciaData==='undefined') {
-  indiciaData = {onloadFns: []};
+  indiciaData = {onloadFns: [], imagesPath: '" . self::$images_path . "'};
 }
 indiciaData.windowLoaded=false;
 ";
