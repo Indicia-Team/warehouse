@@ -20,6 +20,7 @@
  * @link  http://code.google.com/p/indicia/
  */
 
+require_once 'includes/map.php';
 require_once 'includes/user.php';
 require_once 'includes/language_utils.php';
 require_once 'includes/form_generation.php';
@@ -56,6 +57,8 @@ class iform_ukbms_timed_observations {
    */
   public static function get_parameters() {
     return array_merge(
+      iform_map_get_map_parameters(),
+      iform_map_get_georef_parameters(),
       array(
         array(
           'name'=>'survey_id',
@@ -74,18 +77,6 @@ class iform_ukbms_timed_observations {
           'type'=>'string',
           'required' => true,
           'siteSpecific'=>true
-        ),
-        array(
-          'name'=>'location_type_term',
-          'caption'=>'Location type term',
-          'description'=>'Select the term used for location location types.',
-          'type' => 'select',
-          'table'=>'termlists_term',
-          'captionField'=>'term',
-          'valueField'=>'term',
-          'extraParams' => array('termlist_external_key'=>'indicia:location_types'),
-          'required' => true,
-          'group'=>'Location Editor Settings'
         ),
         array(
           'name'=>'species_tab_1',
@@ -267,6 +258,15 @@ class iform_ukbms_timed_observations {
           'group'=>'Species Tab 4'
         ),
         array(
+          'name'=>'spatial_systems',
+          'caption'=>'Allowed Spatial Ref Systems',
+          'description'=>'List of allowable spatial reference systems, comma separated. Use the spatial ref system code (e.g. OSGB or the EPSG code number such as 4326). '.
+              'Set to "default" to use the settings defined in the IForm Settings page.',
+          'type'=>'string',
+          'default' => 'default',
+          'group'=>'Other Map Settings'
+        ),
+        array(
           'name'=>'custom_attribute_options',
           'caption'=>'Options for custom attributes',
           'description'=>'A list of additional options to pass through to custom attributes, one per line. Each option should be specified as '.
@@ -311,17 +311,11 @@ class iform_ukbms_timed_observations {
     global $user;
     if (!module_exists('iform_ajaxproxy'))
       return 'This form must be used in Drupal with the Indicia AJAX Proxy module enabled.';
-//    iform_load_helpers(array('map_helper'));
+    iform_load_helpers(array('map_helper'));
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     $sampleId = isset($_GET['sample_id']) ? $_GET['sample_id'] : null;
     if ($sampleId) {
       data_entry_helper::load_existing_record($auth['read'], 'sample', $sampleId);
-      $locationId = data_entry_helper::$entity_to_load['sample:location_id'];
-    } else {
-      $locationId = isset($_GET['site']) ? $_GET['site'] : null;
-      // location ID also might be in the $_POST data after a validation save of a new record
-      if (!$locationId && isset($_POST['sample:location_id']))
-        $locationId = $_POST['sample:location_id'];
     }
     $url = explode('?', $args['my_obs_page'], 2);
     $params = NULL;
@@ -338,62 +332,35 @@ class iform_ukbms_timed_observations {
     $args['my_obs_page'] = url($url[0], array('query' => $params, 'fragment' => $fragment, 'absolute' => TRUE));
     $r = '<form method="post" id="sample">';
     $r .= $auth['write'];
-    // we pass through the read auth. This makes it possible for the get_submission method to authorise against the warehouse
-    // without an additional (expensive) warehouse call, so it can get location details.
     $r .= '<input type="hidden" name="page" value="mainSample"/>';
-    $r .= '<input type="hidden" name="read_nonce" value="'.$auth['read']['nonce'].'"/>';
-    $r .= '<input type="hidden" name="read_auth_token" value="'.$auth['read']['auth_token'].'"/>';
     $r .= '<input type="hidden" name="website_id" value="'.$args['website_id'].'"/>';
     if (isset(data_entry_helper::$entity_to_load['sample:id'])) {
       $r .= '<input type="hidden" name="sample:id" value="'.data_entry_helper::$entity_to_load['sample:id'].'"/>';
     }
     $r .= '<input type="hidden" name="sample:survey_id" value="'.$args['survey_id'].'"/>';
-    if ($locationId) {
-      $site = data_entry_helper::get_population_data(array(
-        'table' => 'location',
-        'extraParams' => $auth['read'] + array('view'=>'detail','id'=>$locationId,'deleted'=>'f')
-      ));
-      $site = $site[0];
-      $r .= '<input type="hidden" name="sample:location_id" value="'.$locationId.'"/>';
-      $r .= '<input type="hidden" name="sample:entered_sref" value="'.$site['centroid_sref'].'"/>';
-      $r .= '<input type="hidden" name="sample:entered_sref_system" value="'.$site['centroid_sref_system'].'"/>';
+    // [spatial reference]
+    $systems=array();
+    foreach(explode(',', str_replace(' ', '', $args['spatial_systems'])) as $system)
+      $systems[$system] = lang::get("sref:$system");
+    $r .= data_entry_helper::sref_and_system(array('label' => lang::get('Grid Ref'), 'systems' => $systems));
+    // [place search]
+    $georefOpts = iform_map_get_georef_options($args, $auth['read']);
+    $georefOpts['label'] = lang::get('Search for Place on Map');
+    // can't use place search without the driver API key
+    if ($georefOpts['driver']=='geoplanet' && empty(helper_config::$geoplanet_api_key))
+      $r .= '<span style="display: none;">The form structure includes a place search but needs a geoplanet api key.</span>';
+    else
+      $r .= data_entry_helper::georeference_lookup($georefOpts);
+    // [map]
+    $options = iform_map_get_map_options($args, $auth['read']);
+    if (!empty(data_entry_helper::$entity_to_load['sample:wkt'])) {
+      $options['initialFeatureWkt'] = data_entry_helper::$entity_to_load['sample:wkt'];
     }
-    if ($locationId && (isset(data_entry_helper::$entity_to_load['sample:id']) || isset($_GET['site']))) {
-      // for reload of existing or the the site is specified in the URL, don't let the user switch the location as that would mess everything up.
-      $r .= '<label>'.lang::get('Location').':</label> <span class="value-label">'.$site['name'].'</span><br/>';
-    } else {
-      // Output only the locations for this website and location type.
-      $typeTerms = array($args['location_type_term']);
-      $locationTypes = helper_base::get_termlist_terms($auth, 'indicia:location_types', array($args['location_type_term']));
-      $availableSites = data_entry_helper::get_population_data(array(
-        'report'=>'library/locations/locations_list',
-        'extraParams' => $auth['read'] + array('website_id' => $args['website_id'], 'location_type_id'=>$locationTypes[0]['id'],
-            'locattrs'=>'CMS User ID', 'attr_location_cms_user_id'=>$user->uid),
-        'nocache' => true
-      ));
-      // convert the report data to an array for the lookup, plus one to pass to the JS so it can keep the hidden sref fields updated
-      $sitesLookup = array();
-      $sitesJs = array();
-      foreach ($availableSites as $site) {
-        $sitesLookup[$site['location_id']]=$site['name'];
-        $sitesJs[$site['location_id']] = $site;
-      }
-      data_entry_helper::$javascript .= "indiciaData.sites = ".json_encode($sitesJs).";\n";
-      $options = array(
-        'label' => lang::get('Select Location'),
-        'validation' => array('required'),
-        'blankText'=>lang::get('Please select'),
-        'lookupValues' => $sitesLookup,
-      );
-      if ($locationId)
-        $options['default'] = $locationId;
-      $r .= data_entry_helper::location_select($options);
-    }
-    if (!$locationId) {
-      $r .= '<input type="hidden" name="sample:entered_sref" value="" id="entered_sref"/>';
-      $r .= '<input type="hidden" name="sample:entered_sref_system" value="" id="entered_sref_system"/>';
-      // sref values for the sample will be populated automatically when the submission is built.
-    }
+    $olOptions = iform_map_get_ol_options($args);
+    if (!isset($options['standardControls']))
+      $options['standardControls']=array('layerSwitcher','panZoomBar');
+    $r .= map_helper::map_panel($options, $olOptions);
+    
     $sampleMethods = helper_base::get_termlist_terms($auth, 'indicia:sample_methods', array('Field Observation'));
     $attributes = data_entry_helper::getAttributes(array(
       'id' => $sampleId,
@@ -488,15 +455,14 @@ class iform_ukbms_timed_observations {
     }
     $args['my_obs_page'] = url($url[0], array('query' => $params, 'fragment' => $fragment, 'absolute' => TRUE));
     if (isset($_POST['sample:id'])) {
-      // have just posted an edit to the existing parent sample, so can use it to get the parent location id.
+      // have just posted an edit to the existing sample
       $sampleId = $_POST['sample:id'];
-      $locationId = $_POST['sample:location_id'];
       $date = $_POST['sample:date'];
       $existing=true;
       data_entry_helper::load_existing_record($auth['read'], 'sample', $sampleId);
     } else {
       if (isset($response['outer_id']))
-        // have just posted a new parent sample, so can use it to get the parent location id.
+        // have just posted a new sample.
         $sampleId = $response['outer_id'];
       else {
         $sampleId = $_GET['sample_id'];
@@ -507,7 +473,6 @@ class iform_ukbms_timed_observations {
         'extraParams' => $auth['read'] + array('view'=>'detail','id'=>$sampleId,'deleted'=>'f')
       ));
       $sample=$sample[0];
-      $locationId = $sample['location_id'];
       $date=$sample['date_start'];
     }
     if (!function_exists('module_exists') || !module_exists('easy_login')) {
@@ -525,6 +490,7 @@ class iform_ukbms_timed_observations {
       if (false== ($cmsUserAttr = extract_cms_user_attr($attributes)))
         return 'Easy Login not active: This form is designed to be used with the CMS User ID attribute setup for samples in the survey.';
     }
+    $allTaxonMeaningIdsAtSample = array();
     if ($existing) {
       // Only need to load the occurrences for a pre-existing sample
       $o = data_entry_helper::get_population_data(array(
@@ -538,9 +504,12 @@ class iform_ukbms_timed_observations {
       $occurrences = array();
       $attrs = explode(',',$args['occurrence_attribute_ids']);
       if(!isset($o['error'])) foreach($o as $occurrence) {
+      	if(!in_array($occurrence['taxon_meaning_id'], $allTaxonMeaningIdsAtSample))
+      		$allTaxonMeaningIdsAtSample[] = $occurrence['taxon_meaning_id'];
         $occurrences[$occurrence['taxon_meaning_id']] = array(
           'ttl_id'=>$occurrence['taxa_taxon_list_id'],
-          'taxon_meaning_id'=>$occurrence['taxon_meaning_id'],
+          'ttl_id'=>$occurrence['taxa_taxon_list_id'],
+          'preferred_ttl_id'=>$occurrence['preferred_ttl_id'],
           'o_id'=>$occurrence['occurrence_id'],
           'processed'=>false
         );
@@ -576,11 +545,8 @@ class iform_ukbms_timed_observations {
       data_entry_helper::$javascript .= "indiciaData.occurrence_attribute[".$idx."] = $attr;\n";
       data_entry_helper::$javascript .= "indiciaData.occurrence_attribute_ctrl[".$idx."] = jQuery('".(str_replace("\n","",$ctrl))."');\n";
     }
-    $location = data_entry_helper::get_population_data(array(
-      'table' => 'location',
-      'extraParams' => $auth['read'] + array('view'=>'detail','id'=>$locationId)
-    ));
-    $r = "<h2>".$location[0]['name']." on ".$date."</h2><div id=\"tabs\">\n";
+//    $r = "<h2>".$location[0]['name']." on ".$date."</h2>\n";
+    $r = '<div id="tabs">';
     $tabs = array('#grid1'=>t($args['species_tab_1'])); // tab 1 is required.
     if(isset($args['taxon_list_id_2']) && $args['taxon_list_id_2']!='')
       $tabs['#grid2']=t(isset($args['species_tab_2']) && $args['species_tab_2'] != '' ? $args['species_tab_2'] : 'Species Tab 2');
@@ -592,7 +558,7 @@ class iform_ukbms_timed_observations {
     $r .= data_entry_helper::tab_header(array('tabs'=>$tabs));
     data_entry_helper::enable_tabs(array('divId'=>'tabs', 'style'=>'Tabs'));
     // will assume that first table is based on abundance count, so do totals
-    $r .= '<div id="grid1"><table id="observation-input1" class="ui-widget species-grid"><thead class="table-header"><tr><th class="ui-widget-header">' . lang::get('Flower Type') . '</th>';
+    $r .= '<div id="grid1"><table id="observation-input1" class="ui-widget species-grid"><thead class="table-header"><tr><th class="ui-widget-header"></th>';
     foreach(explode(',',$args['occurrence_attribute_ids']) as $idx => $attr)
       $r .= '<th class="ui-widget-header col-'.($idx+1).'">' . $occ_attributes_captions[$idx] . '</th>';
     $r .= '<th class="ui-widget-header">' . lang::get('Total') . '</th></tr></thead>';
@@ -618,24 +584,10 @@ class iform_ukbms_timed_observations {
       $first = false;
     }
     data_entry_helper::$javascript .= "];\n";
-
-    // TODO : convert to single level samples
-    $allTaxonMeaningIdsAtLocation = data_entry_helper::get_population_data(array(
-        'report' => 'reports_for_prebuilt_forms/UKBMS/ukbms_taxon_meanings_at_transect',
-        'extraParams' => $auth['read'] + array('view'=>'detail', 'location_id' => $locationId, 'survey_id'=>$args['survey_id']),
-        // don't cache as this is live data
-        'nocache' => true
-    ));
-    data_entry_helper::$javascript .= "indiciaData.allTaxonMeaningIdsAtLocation = [";
-    $first = true;
-    foreach($taxa as $taxon){
-    	data_entry_helper::$javascript .= ($first ? "" : ",").$taxon['taxon_meaning_id'];
-    	$first = false;
-    }
-    data_entry_helper::$javascript .= "];\n";
+    data_entry_helper::$javascript .= "indiciaData.allTaxonMeaningIdsAtSample = [".implode(',', $allTaxonMeaningIdsAtSample)."];\n";
 
     if(isset($args['taxon_list_id_2']) && $args['taxon_list_id_2']!=''){
-      $r .= '<div id="grid2"><p id="grid2-loading">' . lang::get('Loading - Please Wait') . '</p><table id="observation-input2" class="ui-widget species-grid"><thead class="table-header"><tr><th class="ui-widget-header">' . lang::get('Flower Type') . '</th>';
+      $r .= '<div id="grid2"><p id="grid2-loading">' . lang::get('Loading - Please Wait') . '</p><table id="observation-input2" class="ui-widget species-grid"><thead class="table-header"><tr><th class="ui-widget-header"></th>';
       foreach(explode(',',$args['occurrence_attribute_ids']) as $idx => $attr)
         $r .= '<th class="ui-widget-header col-'.($idx+1).'">' . $occ_attributes_captions[$idx] . '</th>';
       $r .= '<th class="ui-widget-header">' . lang::get('Total') . '</th></tr></thead><tbody class="ui-widget-content occs-body"></tbody><tfoot><tr><td>Total</td>';
@@ -644,7 +596,7 @@ class iform_ukbms_timed_observations {
       $r .= '<td class="ui-state-disabled first"></td></tr></tfoot></table><br /><a href="'.$args['my_obs_page'].'" class="button">'.lang::get('Finish').'</a></div>';
     }
     if(isset($args['taxon_list_id_3']) && $args['taxon_list_id_3']!=''){
-      $r .= '<div id="grid3"><p id="grid3-loading">' . lang::get('Loading - Please Wait') . '</p><table id="observation-input3" class="ui-widget species-grid"><thead class="table-header"><tr><th class="ui-widget-header">' . lang::get('Flower Type') . '</th>';
+      $r .= '<div id="grid3"><p id="grid3-loading">' . lang::get('Loading - Please Wait') . '</p><table id="observation-input3" class="ui-widget species-grid"><thead class="table-header"><tr><th class="ui-widget-header"></th>';
       foreach(explode(',',$args['occurrence_attribute_ids']) as $idx => $attr)
         $r .= '<th class="ui-widget-header col-'.($idx+1).'">' . $occ_attributes_captions[$idx] . '</th>';
       $r .= '<th class="ui-widget-header">' . lang::get('Total') . '</th></tr></thead><tbody class="ui-widget-content occs-body"></tbody><tfoot><tr><td>Total</td>';
@@ -653,7 +605,7 @@ class iform_ukbms_timed_observations {
       $r .= '<td class="ui-state-disabled first"></td></tr></tfoot></table><br /><a href="'.$args['my_obs_page'].'" class="button">'.lang::get('Finish').'</a></div>';
     }
     if(isset($args['taxon_list_id_4']) && $args['taxon_list_id_4']!=''){
-      $r .= '<div id="grid4"><p id="grid4-loading">' . lang::get('Loading - Please Wait') . '</p><table id="observation-input4" class="ui-widget species-grid"><thead class="table-header"><tr><th class="ui-widget-header">' . lang::get('Flower Type') . '</th>';
+      $r .= '<div id="grid4"><p id="grid4-loading">' . lang::get('Loading - Please Wait') . '</p><table id="observation-input4" class="ui-widget species-grid"><thead class="table-header"><tr><th class="ui-widget-header"></th>';
       foreach(explode(',',$args['occurrence_attribute_ids']) as $idx => $attr)
         $r .= '<th class="ui-widget-header col-'.($idx+1).'">' . $occ_attributes_captions[$idx] . '</th>';
       $r .= '<th class="ui-widget-header">' . lang::get('Total') . '</th></tr></thead><tbody class="ui-widget-content occs-body"></tbody><tfoot><tr><td>Total</td>';
@@ -726,7 +678,6 @@ class iform_ukbms_timed_observations {
 
     data_entry_helper::$javascript .= "indiciaData.indiciaSvc = '".data_entry_helper::$base_url."';\n";
     data_entry_helper::$javascript .= "indiciaData.readAuth = {nonce: '".$auth['read']['nonce']."', auth_token: '".$auth['read']['auth_token']."'};\n";
-    data_entry_helper::$javascript .= "indiciaData.location = ".$locationId.";\n";
     data_entry_helper::$javascript .= "indiciaData.sample = ".$sampleId.";\n";
     if (function_exists('module_exists') && module_exists('easy_login')) {
       data_entry_helper::$javascript .= "indiciaData.easyLogin = true;\n";
@@ -795,26 +746,7 @@ jQuery('#tabs').bind('tabsshow', function(event, ui) {
    * @return array Submission structure.
    */
   public static function get_submission($values, $args) {
-    if (!isset($values['page']) || ($values['page']=='mainSample')) {
-      // submitting the first page, with top level sample details
-      $read = array(
-        'nonce' => $values['read_nonce'],
-        'auth_token' => $values['read_auth_token']
-      );
-      if (!isset($values['sample:entered_sref'])) {
-        // the sample does not have sref data, as the user has just picked a location at this point. Copy the
-        // site's centroid across to the sample. Should this be cached?
-        $site = data_entry_helper::get_population_data(array(
-          'table' => 'location',
-          'extraParams' => $read + array('view'=>'detail','id'=>$values['sample:location_id'],'deleted'=>'f')
-        ));
-        $site = $site[0];
-        $values['sample:entered_sref'] = $site['centroid_sref'];
-        $values['sample:entered_sref_system'] = $site['centroid_sref_system'];
-      }
-    }
-    $submission = submission_builder::build_submission($values, array('model' => 'sample'));
-    return($submission);
+    return(submission_builder::build_submission($values, array('model' => 'sample')));
   }
   
   /**
