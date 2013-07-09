@@ -6235,7 +6235,8 @@ if (errors.length>0) {
             // or specified by the attribute in survey details
             if (isset($item['control_type']) &&
               ($item['control_type']=='autocomplete' || $item['control_type']=='checkbox_group'
-              || $item['control_type']=='listbox' || $item['control_type']=='radio_group' || $item['control_type']=='select')) {
+              || $item['control_type']=='listbox' || $item['control_type']=='radio_group' || $item['control_type']=='select'
+              || $item['control_type']=='hierarchical_select')) {
               $ctrl = $item['control_type'];
             } else {
               $ctrl = 'select';
