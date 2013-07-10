@@ -42,7 +42,6 @@ function ukbms_stis_sectionSort($a, $b)
   if ($aCode===$bCode) {
     return 0;
   }
-  watchdog('compare', "$aCode = $bCode - ".((int)$aCode < (int)$bCode ? '-1' : '1'));
   return ((int)$aCode < (int)$bCode) ? -1 : 1;
 }
 
@@ -203,6 +202,15 @@ class iform_ukbms_sectioned_transects_input_sample {
           'siteSpecific'=>true,
           'required'=>false,
           'group'=>'Species'
+        ),
+        array(
+          'name' => 'start_with_common_species',
+          'caption' => 'Start with common species',
+          'description' => 'Tick this box to preselect the common species list rather than the all species list.',
+          'type' => 'boolean',
+          'required' => false,
+          'default' => false,
+          'group' => 'Species'
         ),
         array(
           'name'=>'species_tab_2',
@@ -590,6 +598,16 @@ class iform_ukbms_sectioned_transects_input_sample {
           'required'=>true,
           'siteSpecific'=>true
         ),
+        array(
+          'name' => 'user_locations_filter',
+          'caption' => 'User locations filter',
+          'description' => 'Should the locations available be filtered to those which the user is linked to, by a multivalue CMS User ID attribute ' .
+              'in the location data? If not ticked, then all locations are available.',
+          'type' => 'boolean',
+          'required' => false,
+          'default' => true,
+          'group' => 'Transects Editor Settings'
+        ),
       )
     );
   }
@@ -677,10 +695,14 @@ class iform_ukbms_sectioned_transects_input_sample {
         empty($args['section_type_term']) ? 'Section' : $args['section_type_term']
       );
       $locationTypes = helper_base::get_termlist_terms($auth, 'indicia:location_types', $typeTerms);
+      $siteParams = $auth['read'] + array('website_id' => $args['website_id'], 'location_type_id'=>$locationTypes[0]['id']);
+      if (!isset($args['user_locations_filter']) || $args['user_locations_filter'])
+        $siteParams += array('locattrs'=>'CMS User ID', 'attr_location_cms_user_id'=>$user->uid);
+      else
+        $siteParams += array('locattrs'=>'');
       $availableSites = data_entry_helper::get_population_data(array(
         'report'=>'library/locations/locations_list',
-        'extraParams' => $auth['read'] + array('website_id' => $args['website_id'], 'location_type_id'=>$locationTypes[0]['id'],
-            'locattrs'=>'CMS User ID', 'attr_location_cms_user_id'=>$user->uid),
+        'extraParams' => $siteParams,
         'nocache' => true
       ));
       // convert the report data to an array for the lookup, plus one to pass to the JS so it can keep the hidden sref fields updated
@@ -946,9 +968,12 @@ class iform_ukbms_sectioned_transects_input_sample {
         'divId'=>'tabs',
         'style'=>'Tabs'
     ));
+    $commonSelected = isset($args['start_with_common_species']) && $args['start_with_common_species'] ? 'selected="selected"' : '';
     // will assume that first table is based on abundance count, so do totals
     $r .= '<div id="grid1">'.
-          '<label for="listSelect">'.lang::get('Use species list').' :</label><select id="listSelect"><option value="full">'.lang::get('All species').'</option><option value="common">'.lang::get('Common species').'</option><option value="here">'.lang::get('Species known at this site').'</option><option value="mine">'.lang::get('Species I have recorded').'</option><option value="filled">'.lang::get('Species with data').'</option></select>'.
+          '<label for="listSelect">'.lang::get('Use species list').' :</label><select id="listSelect"><option value="full">'.lang::get('All species').
+              '</option><option value="common"'.$commonSelected.'>'.lang::get('Common species').'</option><option value="here">'.lang::get('Species known at this site').
+              '</option><option value="mine">'.lang::get('Species I have recorded').'</option><option value="filled">'.lang::get('Species with data').'</option></select>'.
           '<span id="listSelectMsg"></span>';
     $r .= '<table id="transect-input1" class="ui-widget species-grid"><thead class="table-header">';
     $r .= '<tr><th class="ui-widget-header">' . lang::get('Sections') . '</th>';
@@ -1014,23 +1039,27 @@ class iform_ukbms_sectioned_transects_input_sample {
       $first = false;
     }
     data_entry_helper::$javascript .= "];\n";
-
-    $extraParams = array_merge($auth['read'],
-    		array('taxon_list_id' => $args['common_taxon_list_id'],
-    				'preferred' => 't',
-    				'allow_data_entry' => 't',
-    				'view' => 'cache',
-    				'orderby' => 'taxonomic_sort_order'));
-    if (!empty($args['common_taxon_filter_field']) && !empty($args['common_taxon_filter']))
-    	$extraParams[$args['common_taxon_filter_field']] = helper_base::explode_lines($args['common_taxon_filter']);
-    $taxa = data_entry_helper::get_population_data(array('table' => 'taxa_taxon_list', 'extraParams' => $extraParams));
-    data_entry_helper::$javascript .= "indiciaData.speciesList1SubsetList = [";
-    $first = true;
-    foreach($taxa as $taxon){
-    	data_entry_helper::$javascript .= ($first ? "\n" : ",\n")."{'id':".$taxon['id'].",'taxon_meaning_id':".$taxon['taxon_meaning_id'].",'preferred_language_iso':'".$taxon["preferred_language_iso"]."','default_common_name':'".str_replace("'","\\'", $taxon["default_common_name"])."'}";
-    	$first = false;
+    
+    if (!empty($args['common_taxon_list_id'])) {
+      $extraParams = array_merge($auth['read'],
+          array('taxon_list_id' => $args['common_taxon_list_id'],
+              'preferred' => 't',
+              'allow_data_entry' => 't',
+              'view' => 'cache',
+              'orderby' => 'taxonomic_sort_order'));
+      if (!empty($args['common_taxon_filter_field']) && !empty($args['common_taxon_filter']))
+        $extraParams[$args['common_taxon_filter_field']] = helper_base::explode_lines($args['common_taxon_filter']);
+      $taxa = data_entry_helper::get_population_data(array('table' => 'taxa_taxon_list', 'extraParams' => $extraParams));
+      data_entry_helper::$javascript .= "indiciaData.speciesList1SubsetList = [";
+      $first = true;
+      foreach($taxa as $taxon){
+        data_entry_helper::$javascript .= ($first ? "\n" : ",\n")."{'id':".$taxon['id'].",'taxon_meaning_id':".$taxon['taxon_meaning_id'].",'preferred_language_iso':'".$taxon["preferred_language_iso"]."','default_common_name':'".str_replace("'","\\'", $taxon["default_common_name"])."'}";
+        $first = false;
+      }
+      data_entry_helper::$javascript .= "];\n";
+      $swc = isset($args['start_with_common_species']) && $args['start_with_common_species'] ? 'true' : 'false';
+      data_entry_helper::$javascript .= "indiciaData.startWithCommonSpecies=$swc;\n";
     }
-    data_entry_helper::$javascript .= "];\n";
 
     $allTaxonMeaningIdsAtTransect = data_entry_helper::get_population_data(array(
         'report' => 'reports_for_prebuilt_forms/UKBMS/ukbms_taxon_meanings_at_transect',
@@ -1186,6 +1215,7 @@ jQuery(jQuery('#".$options["tabDiv"]."').parent()).bind('tabsshow', speciesMapTa
     // A stub form for AJAX posting when we need to create an occurrence
     $r .= '<form style="display: none" id="occ-form" method="post" action="'.iform_ajaxproxy_url($node, 'occurrence').'">';
     $r .= '<input name="website_id" value="'.$args['website_id'].'"/>';
+    $r .= '<input name="survey_id" value="'.$args["survey_id"].'" />';
     $r .= '<input name="occurrence:id" id="occid" />';
     $r .= '<input name="occurrence:deleted" id="occdeleted" />';
     $r .= '<input name="occurrence:taxa_taxon_list_id" id="ttlid" />';
