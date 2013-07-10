@@ -79,6 +79,15 @@ class iform_ukbms_timed_observations {
           'siteSpecific'=>true
         ),
         array(
+          'name'=>'percent_width',
+          'caption'=>'Map Percent Width',
+          'description'=>'The percentage width that the map will take on the front page.',
+          'type'=>'int',
+          'required' => true,
+          'default' => 50,
+          'siteSpecific'=>true
+        ),
+        array(
           'name'=>'species_tab_1',
           'caption'=>'Species Tab 1 Title',
           'description'=>'The title to be used on the species checklist for the main tab.',
@@ -338,29 +347,12 @@ class iform_ukbms_timed_observations {
       $r .= '<input type="hidden" name="sample:id" value="'.data_entry_helper::$entity_to_load['sample:id'].'"/>';
     }
     $r .= '<input type="hidden" name="sample:survey_id" value="'.$args['survey_id'].'"/>';
+    $r .= '<div id="cols" class="ui-helper-clearfix"><div class="left" style="width: '.(98-(isset($args['percent_width']) ? $args['percent_width'] : 50)).'%">';
     // [spatial reference]
     $systems=array();
     foreach(explode(',', str_replace(' ', '', $args['spatial_systems'])) as $system)
       $systems[$system] = lang::get("sref:$system");
     $r .= data_entry_helper::sref_and_system(array('label' => lang::get('Grid Ref'), 'systems' => $systems));
-    // [place search]
-    $georefOpts = iform_map_get_georef_options($args, $auth['read']);
-    $georefOpts['label'] = lang::get('Search for Place on Map');
-    // can't use place search without the driver API key
-    if ($georefOpts['driver']=='geoplanet' && empty(helper_config::$geoplanet_api_key))
-      $r .= '<span style="display: none;">The form structure includes a place search but needs a geoplanet api key.</span>';
-    else
-      $r .= data_entry_helper::georeference_lookup($georefOpts);
-    // [map]
-    $options = iform_map_get_map_options($args, $auth['read']);
-    if (!empty(data_entry_helper::$entity_to_load['sample:wkt'])) {
-      $options['initialFeatureWkt'] = data_entry_helper::$entity_to_load['sample:wkt'];
-    }
-    $olOptions = iform_map_get_ol_options($args);
-    if (!isset($options['standardControls']))
-      $options['standardControls']=array('layerSwitcher','panZoomBar');
-    $r .= map_helper::map_panel($options, $olOptions);
-    
     $sampleMethods = helper_base::get_termlist_terms($auth, 'indicia:sample_methods', array('Field Observation'));
     $attributes = data_entry_helper::getAttributes(array(
       'id' => $sampleId,
@@ -399,6 +391,27 @@ class iform_ukbms_timed_observations {
     $r .= '<a href="'.$args['my_obs_page'].'" class="button">'.lang::get('Cancel').'</a>';
     if (isset(data_entry_helper::$entity_to_load['sample:id']))
       $r .= '<button id="delete-button" type="button" class="ui-state-default ui-corner-all" />'.lang::get('Delete').'</button>';
+    $r .= "</div>"; // left
+    $r .= '<div class="right" style="width: '.(isset($args['percent_width']) ? $args['percent_width'] : 50).'%">';
+    // [place search]
+    $georefOpts = iform_map_get_georef_options($args, $auth['read']);
+    $georefOpts['label'] = lang::get('Search for Place on Map');
+    // can't use place search without the driver API key
+    if ($georefOpts['driver']=='geoplanet' && empty(helper_config::$geoplanet_api_key))
+      $r .= '<span style="display: none;">The form structure includes a place search but needs a geoplanet api key.</span>';
+    else
+      $r .= data_entry_helper::georeference_lookup($georefOpts);
+    // [map]
+    $options = iform_map_get_map_options($args, $auth['read']);
+    if (!empty(data_entry_helper::$entity_to_load['sample:wkt'])) {
+      $options['initialFeatureWkt'] = data_entry_helper::$entity_to_load['sample:wkt'];
+    }
+    $olOptions = iform_map_get_ol_options($args);
+    if (!isset($options['standardControls']))
+      $options['standardControls']=array('layerSwitcher','panZoomBar');
+    $r .= map_helper::map_panel($options, $olOptions);
+    
+    $r .= "</div>"; // right
     $r .= '</form>';
     // Recorder Name - assume Easy Login uid
     if (function_exists('module_exists') && module_exists('easy_login')) {
@@ -746,6 +759,7 @@ jQuery('#tabs').bind('tabsshow', function(event, ui) {
    * @return array Submission structure.
    */
   public static function get_submission($values, $args) {
+  	$values['sample:location_name'] = $values['sample:entered_sref'];
     return(submission_builder::build_submission($values, array('model' => 'sample')));
   }
   
