@@ -68,8 +68,9 @@ function addSpeciesToGrid(occurrenceSpecies, taxonList, speciesTableSelector, fo
           found=true;
       });
     }
-    if(found)
+    if (found) {
       addGridRow(species, speciesTableSelector, true, tabIDX);
+    }
   });
 }
 
@@ -85,10 +86,6 @@ function addGridRow(species, speciesTableSelector, end, tabIDX){
   var rowCount = jQuery(speciesTableSelector+' tbody').find('tr').length;
   var rowclass = rowCount%2===0 ? '' : ' class="alt-row"';
   var row = jQuery('<tr id="row-' + species.taxon_meaning_id + '"' + rowclass + '/>');
-  if(end)
-    jQuery(speciesTableSelector+' tbody.occs-body').append(row);
-  else
-    jQuery(speciesTableSelector+' tbody.occs-body').prepend(row);
   jQuery('<td>'+name+'</td>').appendTo(row);
   var rowTotal = 0;
   var isNumber = indiciaData.occurrence_attribute_ctrl[tabIDX].attr('class').indexOf('number:true')>=0; // TBD number:true
@@ -124,6 +121,11 @@ function addGridRow(species, speciesTableSelector, end, tabIDX){
     myCtrl.appendTo(cell);
   });
   if(isNumber) jQuery('<td class="row-total first">'+rowTotal+'</td>').appendTo(row);
+  if(end) {
+    row=jQuery(speciesTableSelector+' tbody.occs-body').append(row);
+  } else {
+    row=jQuery(speciesTableSelector+' tbody.occs-body').prepend(row);
+  }
   row.find('.count-input').keydown(count_keydown).focus(count_focus).change(input_change).blur(input_blur);
   row.find('.non-count-input').focus(count_focus).change(select_change);
 }
@@ -328,11 +330,12 @@ function loadSpeciesList() {
   }
 
   indiciaData.currentCell=null;
-  // first add any data recorded, then populate the tables with any blank rows required. There is a heirarchy: if data is in more than one species list, it is added 
+  // first add any data recorded, then populate the tables with any blank rows required. There is a hierarchy: if data is in more than one species list, it is added 
   // to the first grid it appears in.
   // note that when added from the list, the ttlid is the preferred one, but if added from the autocomplete it may/probably
   // will not be.
-  addSpeciesToGrid(indiciaData.existingOccurrences, indiciaData.speciesList1List, 'table#transect-input1', true, 1);
+  var list = indiciaData.startWithCommonSpecies ? indiciaData.speciesList1SubsetList : indiciaData.speciesList1List;
+  addSpeciesToGrid(indiciaData.existingOccurrences, list, 'table#transect-input1', true, 1);
   // get all taxon meanings recorded on this transect
   var process2 = function () {
     var process3 = function () {
@@ -450,8 +453,8 @@ function loadSpeciesList() {
   // the other 2 grids are to be populated with rows (blank or otherwise) by whatever has been recorded at this site previously.
   // Have to have existing meaning ids rloaded and list 1 completed first.
   process2();
-
-  jQuery('#taxonLookupControlContainer').hide();
+  if (!indiciaData.startWithCommonSpecies)
+    jQuery('#taxonLookupControlContainer').hide();
   jQuery('#listSelect').change(function(evt) {
     jQuery('#taxonLookupControlContainer').show();
     jQuery('#listSelectMsg').empty().append('Please Wait...');
@@ -764,7 +767,7 @@ function bindSpeciesAutocomplete(selectorID, tableSelectorID, url, lookupListId,
           {
             'data' : item,
             'result' : item.taxon,
-            'value' : item.taxa_taxon_list_id
+            'value' : item.id
           };
         });
         return results;
