@@ -54,3 +54,13 @@ input.saving[type="text"], input.saving[type="password"], select.saving {
   background: url(../../../media/images/ajax-loader.gif) no-repeat right;
   font-style: italic;
 }
+
+.ui-widget-header {
+  font-weight: normal;
+  padding-left: 3px;
+  padding-right: 3px;
+    
+}
+table.species-grid thead, table.species-grid tbody {
+    font-size: 80%;
+}
