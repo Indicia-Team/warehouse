@@ -3475,7 +3475,9 @@ $('#".$options['id']."-filter').click(function(evt) {
     }
     // load the species names that should be initially included in the grid
     if (isset($options['listId']) && !empty($options['listId'])) {
-      $options['extraParams']['orderby'] = 'taxonomic_sort_order';
+      // list in taxonomic sort order if order not already specified
+      if( !isset($options['extraParams']['orderby']) )
+        $options['extraParams']['orderby'] = 'taxonomic_sort_order';
       $taxalist = self::get_population_data($options);
     } else {
       $taxalist = array();
