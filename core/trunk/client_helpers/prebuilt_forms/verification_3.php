@@ -725,7 +725,6 @@ idlist=';
    * Ajax handler to provide the content for the details of a single record.
    */
   public static function ajax_details($website_id, $password, $node) {
-
     $details_report = empty($node->params['record_details_report']) ? 'reports_for_prebuilt_forms/verification_3/record_data' : $node->params['record_details_report'];
     $attrs_report = empty($node->params['record_attrs_report']) ? 'reports_for_prebuilt_forms/verification_3/record_data_attributes' : $node->params['record_attrs_report'];
     iform_load_helpers(array('report_helper'));
@@ -744,6 +743,7 @@ idlist=';
     // build an array of all the data. This allows the JS to insert the data into emails etc. Note we
     // use an array rather than an assoc array to build the JSON, so that order is guaranteed.
     $data = array();
+    $email='';
     foreach($reportData['columns'] as $col=>$def) {
       if ($def['visible']!=='false' && !empty($record[$col])) {
         $caption = explode(':', $def['display']);
@@ -752,6 +752,8 @@ idlist=';
           $data[$caption[0]]=array();
         $data[$caption[0]][] = array('caption'=>$caption[1], 'value'=>$record[$col]);
       }
+      if ($col==='email' && !empty($record[$col])) 
+        $email=$record[$col];
     }
 
     // Do the custom attributes
@@ -776,13 +778,12 @@ idlist=';
     if ($record['zero_abundance']==='t')
       $r .= '<br/>' . lang::get('This is a record indicating absence.');
     $r .= "</td></tr>\n";
-    $email='';
     foreach($data as $heading=>$items) {
       $r .= "<tr><td colspan=\"2\" class=\"header\">$heading</td></tr>\n";
       foreach ($items as $item) {
         if (!is_null($item['value']) && $item['value'] != '') {
           $r .= "<tr><td class=\"caption\">".$item['caption']."</td><td>".$item['value'] ."</td></tr>\n";
-          if (strtolower($item['caption'])==='email' || strtolower($item['caption'])==='email address')
+          if ($email==='' && (strtolower($item['caption'])==='email' || strtolower($item['caption'])==='email address'))
             $email=$item['value'];
         }
       }
