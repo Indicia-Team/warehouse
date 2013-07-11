@@ -6516,7 +6516,7 @@ if (errors.length>0) {
     // extract the codes and make lowercase
     $systems=unserialize(strtolower(serialize(array_keys($systems))));
     // find the systems that have client-side JavaScript handlers
-    $handlers = array_intersect($systems, array('osgb'));
+    $handlers = array_intersect($systems, array('osgb','4326'));
     self::get_resources();
     foreach ($handlers as $code) {
       $file = self::$js_path.strtolower("drivers/sref/$code.js");
