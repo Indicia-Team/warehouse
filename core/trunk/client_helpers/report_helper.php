@@ -995,6 +995,9 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     if (count($dataSources)<$seriesCount) $dataSources = array_pad($dataSources, $seriesCount, $dataSources[count($dataSources)-1]);
     if (isset($xValues) && count($xValues)<$seriesCount) $xValues = array_pad($xValues, $seriesCount, $xValues[count($xValues)-1]);
     if (isset($xLabels) && count($xLabels)<$seriesCount) $xLabels = array_pad($xLabels, $seriesCount, $xLabels[count($xLabels)-1]);
+    // other chart options
+    if (isset($options['stackSeries']) && $options['stackSeries'])
+      $opts[] = 'stackSeries: true';
     // build the series data
     $seriesData = array();
     $lastRequestSource = '';
