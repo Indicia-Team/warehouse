@@ -78,6 +78,7 @@ class extension_event_reports {
    * @link http://www.biodiverseit.co.uk/indicia/dev/docs/classes/report_helper.html#method_freeform_report API docs for report_helper::freeform_report
    */
   public static function totals_block($auth, $args, $tabalias, $options, $path) {
+    iform_load_helpers(array('report_helper'));
     $userId=hostsite_get_user_field('indicia_user_id');
     iform_load_helpers(array('report_helper'));
     $reportOptions = array_merge(
@@ -111,6 +112,7 @@ class extension_event_reports {
    * @link http://www.biodiverseit.co.uk/indicia/dev/docs/classes/report_helper.html#method_report_grid API docs for report_helper::report_grid
    */
   public static function photos_block($auth, $args, $tabalias, $options, $path) {
+    iform_load_helpers(array('report_helper'));
     $reportOptions = array_merge(      
       iform_report_get_report_options($args, $auth['read']),
       array(
@@ -142,6 +144,7 @@ class extension_event_reports {
    * @link http://www.biodiverseit.co.uk/indicia/dev/docs/classes/report_helper.html#method_freeform_report API docs for report_helper::freeform_report
    */
   public static function trending_recorders_cloud($auth, $args, $tabalias, $options, $path) {
+    iform_load_helpers(array('report_helper'));
     $reportOptions = array_merge(      
       iform_report_get_report_options($args, $auth['read']),
       array(
@@ -174,6 +177,7 @@ class extension_event_reports {
    * @link http://www.biodiverseit.co.uk/indicia/dev/docs/classes/report_helper.html#method_freeform_report API docs for report_helper::freeform_report
    */
   public static function trending_taxa_cloud($auth, $args, $tabalias, $options, $path) {
+    iform_load_helpers(array('report_helper'));
     $reportOptions = array_merge(      
       iform_report_get_report_options($args, $auth['read']),
       array(
@@ -205,6 +209,7 @@ class extension_event_reports {
    * @link http://www.biodiverseit.co.uk/indicia/dev/docs/classes/report_helper.html#method_report_chart API docs for report_helper::report_chart
    */
   public static function groups_pie($auth, $args, $tabalias, $options, $path) {
+    iform_load_helpers(array('report_helper'));
     $reportOptions = array_merge(      
       iform_report_get_report_options($args, $auth['read']),
       array(
@@ -239,7 +244,8 @@ class extension_event_reports {
   }
   
   private static function league_table($auth, $args, $options, $report, $label) { 
-    $reportOptions = array_merge(      
+    iform_load_helpers(array('report_helper'));
+    $reportOptions = array_merge(
       iform_report_get_report_options($args, $auth['read']),
       array(
         'dataSource' => $report,
