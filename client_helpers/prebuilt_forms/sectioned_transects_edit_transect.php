@@ -299,7 +299,8 @@ class iform_sectioned_transects_edit_transect {
           for ($i=1; $i<=$attr['displayValue']; $i++) {
             $settings['sections']["S$i"]=null;
           }
-          data_entry_helper::$javascript .= "$('#".str_replace(':','\\\\:',$attr['id'])."').attr('min',".$attr['displayValue'].").attr('max',".$args['maxSectionCount'].");\n";
+          $existingSectionCount = empty($attr['displayValue']) ? 1 : $attr['displayValue'];
+          data_entry_helper::$javascript .= "$('#".str_replace(':','\\\\:',$attr['id'])."').attr('min',$existingSectionCount).attr('max',".$args['maxSectionCount'].");\n";
         }
       }
       $sections = data_entry_helper::get_population_data(array(
