@@ -251,6 +251,10 @@ class map_helper extends helper_base {
   * <li><b>helpToPickPrecisionSwitchAt</b><br/>
   * Set to a precision in metres (e.g. 10, 100, 1000) that the map will switch to the satellite layer (if Google or Bing satellite layers active) when
   * the recorder picks a grid square of at least that precision.</li>
+  * <li><b>gridRefHint</b><br/>
+  * Set to true to put the currently hovered over grid ref in an element with id grid-ref-hint. Use the next setting to automate adding this to the page.</li>
+  * <li><b>gridRefHintInFooter</b><br/>
+  * Defaults to true. If there is a grid ref hint, should it go in the footer area of the map? If so, there is no need to add an element id grid-ref-hint to the page.</li>
   * </ul>
   * @param array $olOptions Optional array of settings for the OpenLayers map object. If overriding the projection or
   * displayProjection settings, just pass the EPSG number, e.g. 27700.
@@ -281,7 +285,10 @@ class map_helper extends helper_base {
           'width'=>600,
           'height'=>470,
           'presetLayers'=>$presetLayers,
-          'jsPath'=>self::$js_path
+          'jsPath'=>self::$js_path,
+          'clickForSpatialRef'=>true,
+          'gridRefHintInFooter'=>true,
+          'gridRefHint'=>false
       ), $options);
       // When using tilecache layers, the open layers defaults cannot be used. The caller must take control of openlayers settings
       if (isset($options['tilecacheLayers'])) {
@@ -396,8 +403,21 @@ class map_helper extends helper_base {
         // first tab cannot fire the event
         self::$javascript = $javascript . self::$javascript;
       }
+      $options['suffixTemplate']='blank';
       self::$onload_javascript .= $mapSetupJs;
-      return self::apply_template('map_panel', $options);
+      $r = self::apply_template('map_panel', $options);
+      if ($options['gridRefHintInFooter'] && $options['gridRefHint']) {
+        $div = '<div id="map-footer" class="grid-ref-hints" style="width: '.$options['width'].'">';
+        if ($options['clickForSpatialRef'])
+          $r .= $div . '<h3>' . lang::get('Click to set grid reference') . '</h3>' .
+              '<div class="grid-ref-hint hint-minus"><span class="label"> </span><span class="data"> </span></div>' .
+              '<div class="grid-ref-hint hint-normal"><span class="label"> </span><span class="data"> </span></div>' .
+              '<div class="grid-ref-hint hint-plus"><span class="label"> </span><span class="data"> </span></div>';
+        else
+          $r .= $div . '<h3>' . lang::get('Grid ref under mouse pointer') . '</h3>' .
+              '<div class="grid-ref-hint hint-normal"><span class="label"> </span><span class="data"> </span></div></div>';
+      }
+      return $r;
     }
   }
   
