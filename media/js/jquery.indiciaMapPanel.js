@@ -41,10 +41,8 @@ mapGeoreferenceHooks = [];
     // The ghost grid square drawn when hovering
     var ghost=null;
     
-    var plusKeyDown=false;
-    var minusKeyDown=false;
-    var overMap=false;
-
+    var plusKeyDown=false, minusKeyDown=false, overMap=false, currentMousePixel=null;
+    
     /**
      * Adds the distribution point indicated by a record object to a list of features.
      */
@@ -372,7 +370,7 @@ mapGeoreferenceHooks = [];
       if (div.settings.helpToPickPrecisionMin && typeof indiciaData.srefHandlers!=="undefined" &&
           typeof indiciaData.srefHandlers[_getSystem().toLowerCase()]!=="undefined" &&
           $.inArray('precisions', indiciaData.srefHandlers[_getSystem().toLowerCase()].returns) !== -1) {
-        info = indiciaData.srefHandlers[_getSystem().toLowerCase()].srefToPrecision(value);
+        info = indiciaData.srefHandlers[_getSystem().toLowerCase()].sreflenToPrecision(value.length);
         if (info.metres > div.settings.helpToPickPrecisionMin) {
           helptext.push(div.settings.hlpImproveResolution1.replace('{size}', info.display));
         } else if (info.metres > div.settings.helpToPickPrecisionMax) {
@@ -448,6 +446,8 @@ mapGeoreferenceHooks = [];
         $('#' + opts.srefLongId).val(parts.join(''));
       }
       removeAllFeatures(div.map.editLayer, 'boundary', true);
+      removeAllFeatures(div.map.editLayer, 'ghost');
+      ghost=null;
       $('#' + opts.geomId).val(data.wkt);
       var parser = new OpenLayers.Format.WKT();
       var feature;
@@ -505,6 +505,7 @@ mapGeoreferenceHooks = [];
           });
         }
       }
+      showGridRefHints(div);
     }
 
     function _georeference(div) {
@@ -1082,12 +1083,16 @@ mapGeoreferenceHooks = [];
     /**
      * Gets the precision required for a grid square dependent on the map zoom.
      * Precision parameter is the optional default, overridden by the clickedSrefPrecisionMin and
-     * clickedSrefPrecisionMax settings.
+     * clickedSrefPrecisionMax settings. Set accountForModifierKey to false to disable adjustments
+     * made for the plus and minus key
      */
-    function getPrecisionInfo(div, precision) {
+    function getPrecisionInfo(div, precision, accountForModifierKey) {
+      if (typeof accountForModifierKey==="undefined") {
+        accountForModifierKey=true;
+      }
       // get approx metres accuracy we can expect from the mouse click - about 5mm accuracy.
       var metres = div.map.getScale() / 200;
-      if (typeof precision === "undefined") {
+      if (typeof precision === "undefined" || precision===null) {
         // now round to find appropriate square size
         if (metres < 3) {
           precision = 10;
@@ -1101,10 +1106,11 @@ mapGeoreferenceHooks = [];
           precision = 2;
         }
       }
-      // + and - keys can change the grid square precision
-      precision = plusKeyDown ? precision + 2 : precision;
-      precision = minusKeyDown ? precision - 2 : precision;
-        
+      if (accountForModifierKey) {
+        // + and - keys can change the grid square precision
+        precision = plusKeyDown ? precision + 2 : precision;
+        precision = minusKeyDown ? precision - 2 : precision;
+      }
       // enforce precision limits if specified in the settings
       if (div.settings.clickedSrefPrecisionMin !== '') {
         precision = Math.max(div.settings.clickedSrefPrecisionMin, precision);
@@ -1284,6 +1290,62 @@ mapGeoreferenceHooks = [];
         });
       }      
     }
+    
+    function showGridRefHints(div) {
+      if (div.settings.gridRefHint && typeof indiciaData.srefHandlers!=="undefined" &&
+          typeof indiciaData.srefHandlers[_getSystem().toLowerCase()]!=="undefined") {
+        var ll = div.map.getLonLatFromPixel(currentMousePixel), precisionInfo, 
+              handler=indiciaData.srefHandlers[_getSystem().toLowerCase()], largestSrefLen, pt,
+              proj, recalcGhost = ghost===null || !ghost.atPoint(ll, 0, 0), r;
+        if ($.inArray('precisions', handler.returns)!==-1 && $.inArray('gridNotation', handler.returns)!==-1) {
+          precisionInfo=getPrecisionInfo(div, null, false);
+          proj=new OpenLayers.Projection('EPSG:'+indiciaData.srefHandlers[_getSystem().toLowerCase()].srid);
+          ll.transform(div.map.projection, proj);
+          pt = {x:ll.lon, y:ll.lat};
+          largestSrefLen = precisionInfo.precision;
+          $('.grid-ref-hint').removeClass('active');
+          // If there are multiple precisions available using the +/- keys, activate the current one
+          if (handler.sreflenToPrecision(largestSrefLen+4).metres !== handler.sreflenToPrecision(largestSrefLen).metres) {
+            if (minusKeyDown) {
+              $('.hint-minus').addClass('active');
+            } else if (plusKeyDown) {
+              $('.hint-plus').addClass('active');
+            } else {
+              $('.hint-normal').addClass('active');
+            }
+          }
+          // almost every mouse move causes the smallest + key square to change
+          if (handler.sreflenToPrecision(largestSrefLen+4)!==false && 
+                handler.sreflenToPrecision(largestSrefLen+4).metres !== handler.sreflenToPrecision(largestSrefLen+2).metres) {
+            $('.hint-plus .label').html(handler.sreflenToPrecision(largestSrefLen+4).display + ' (hold +):');
+            $('.hint-plus .data').html(handler.pointToGridNotation(pt, largestSrefLen+2));
+            $('.hint-plus').show();
+          } else {
+            $('.hint-plus').hide();
+          }
+          // don't recalculate if mouse is still over the existing ghost                
+          if (recalcGhost) {
+            // since we've moved a square, redo the grid ref hints
+            if (handler.sreflenToPrecision(largestSrefLen)!==false && 
+                handler.sreflenToPrecision(largestSrefLen).metres !== handler.sreflenToPrecision(largestSrefLen+2).metres) {
+              $('.hint-minus .label').html(handler.sreflenToPrecision(largestSrefLen).display + ' (hold -):');
+              $('.hint-minus .data').html(handler.pointToGridNotation(pt, largestSrefLen-2));
+              $('.hint-minus').show();
+            } else {
+              $('.hint-minus').hide();
+            }
+            $('.hint-normal .label').html(handler.sreflenToPrecision(largestSrefLen+2).display + ':');
+            $('.hint-normal .data').html(handler.pointToGridNotation(pt, largestSrefLen));
+          }
+        }
+      }
+    }
+    
+    function clearGridRefHints() {
+      $('.grid-ref-hint .data').html('');
+      $('.grid-ref-hint .label').html('');
+      $('.grid-ref-hint.active').removeClass('active');
+    }
 
     // Extend our default options with those provided, basing this on an empty object
     // so the defaults don't get changed.
@@ -1410,6 +1472,7 @@ mapGeoreferenceHooks = [];
           // force a square redraw when mouse moves
           removeAllFeatures(div.map.editLayer, 'ghost');
           ghost=null;
+          showGridRefHints(div);
         }
       });
       $(document).keyup(function(evt) {
@@ -1433,14 +1496,27 @@ mapGeoreferenceHooks = [];
           // force a square redraw when mouse moves
           removeAllFeatures(div.map.editLayer, 'ghost');
           ghost=null;
-          evt.preventDefault()
+          evt.preventDefault();
+          showGridRefHints(div);
         }
       });
       div.map.events.register('mousemove', null, function() {
         overMap = true;
       });
-      div.map.events.register('mouseout', null, function() {
-        overMap = false;
+      div.map.events.register('mouseout', null, function(evt) {
+        var testDiv=div.map.viewPortDiv;
+        var target = (evt.relatedTarget) ? evt.relatedTarget : evt.toElement;
+        if (typeof target!=="undefined") {
+          // walk up the DOM tree.
+          while (target != testDiv && target != null) {
+            target = target.parentNode;
+          }
+          // if the target we stop at isn't the div, then we've left the div.
+          if (target != testDiv) {
+            clearGridRefHints();
+            overMap = false;
+          }
+        }
       });
 
       // setup the map to save the last position
@@ -1577,26 +1653,29 @@ mapGeoreferenceHooks = [];
           _showWktFeature(this, this.settings.initialBoundaryWkt, div.map.editLayer, null, false, "boundary", true, true);
         }
 
-        if (div.settings.clickForSpatialRef) {
+        if (div.settings.clickForSpatialRef || div.settings.gridRefHint) {
           div.map.events.register('mousemove', null, function(evt) {
+            currentMousePixel = evt.xy;
+            showGridRefHints(div);
             if (div.map.editLayer.clickControl.active) {
               if (div.map.dragging) {
                 removeAllFeatures(div.map.editLayer, 'ghost');
               } else {
-                var ll = div.map.getLonLatFromPixel(evt.xy);
-                // don't recalculate if mouse is still over the existing ghost
-                if (ghost===null || !ghost.atPoint(ll, 0, 0)) {
-                  if (typeof indiciaData.srefHandlers!=="undefined" &&
+                if (typeof indiciaData.srefHandlers!=="undefined" &&
                     typeof indiciaData.srefHandlers[_getSystem().toLowerCase()]!=="undefined" &&
                     $.inArray('wkt', indiciaData.srefHandlers[_getSystem().toLowerCase()].returns)!==-1) {
-                    // If we have a client-side handler for this system which can return the wkt then we can
-                    // draw a ghost of the proposed sref if they click
-                    var r, pt, feature, parser,
-                        proj=new OpenLayers.Projection('EPSG:'+indiciaData.srefHandlers[_getSystem().toLowerCase()].srid),
-                        precisionInfo=getPrecisionInfo(div);
+                  var ll = div.map.getLonLatFromPixel(evt.xy),
+                      handler=indiciaData.srefHandlers[_getSystem().toLowerCase()], pt,
+                      proj, recalcGhost = ghost===null || !ghost.atPoint(ll, 0, 0), precisionInfo;
+                  if (recalcGhost) {
+                    precisionInfo=getPrecisionInfo(div);
+                    proj=new OpenLayers.Projection('EPSG:'+indiciaData.srefHandlers[_getSystem().toLowerCase()].srid);
                     ll.transform(div.map.projection, proj);
                     pt = {x:ll.lon, y:ll.lat};
-                    r=indiciaData.srefHandlers[_getSystem().toLowerCase()].pointToSref(pt, precisionInfo);
+                    // If we have a client-side handler for this system which can return the wkt then we can
+                    // draw a ghost of the proposed sref if they click
+                    var r, feature, parser;
+                    r=handler.pointToSref(pt, precisionInfo);
                     if (typeof r.error!=="undefined") {
                       removeAllFeatures(div.map.editLayer, 'ghost');
                     } else {
@@ -1762,6 +1841,7 @@ mapGeoreferenceHooks = [];
           c.events.register('featureadded', c, recordPolygon);
         }
       }, drawStyle=new style('boundary');
+      
       $.each(div.settings.standardControls, function(i, ctrl) {
         // Add a layer switcher if there are multiple layers
         if (ctrl=='layerSwitcher') {
@@ -2009,6 +2089,8 @@ jQuery.fn.indiciaMapPanel.defaults = {
     fillOpacityBoundary: 0,
     strokeColorBoundary: '#FF0000',
     strokeWidthBoundary: 2,
+    // hint for the grid ref you are over
+    gridRefHint: false,
 
     // Are we using the OpenLayers defaults, or are they all provided?
     useOlDefaults: true,

@@ -14,8 +14,7 @@
  */
 
 /**
- * A driver to allow the georeference_lookup control to interface with the
- * Yahoo! GeoPlanet API.
+ * A driver to provide OSGB specific functions.
  */
 
 // Check IndiciaData setup, in case we are the first JS file to load
@@ -31,7 +30,7 @@ indiciaData.srefHandlers['osgb'] = {
 
   srid: 27700,
 
-  returns: ['wkt','precisions'], // sref
+  returns: ['wkt','precisions','gridNotation'], // sref
 
   /**
    * Receives a point after a click on the map and converts to a grid square
@@ -58,9 +57,8 @@ indiciaData.srefHandlers['osgb'] = {
     }
   },
 
-  srefToPrecision: function(sref) {
-    switch(sref.length) {
-      case 2: return {display:'100km',metres:100000};
+  sreflenToPrecision: function(len) {
+    switch(len) {
       case 4: return {display:'10km',metres:10000};
       case 5: return {display:'2km',metres:2000};
       case 6: return {display:'1km',metres:1000};
@@ -69,5 +67,46 @@ indiciaData.srefHandlers['osgb'] = {
       case 12: return {display:'1m',metres:1};
     }
     return false;
+  },
+  
+  /**
+   * Converts an easting northing point to a grid ref.
+   * Thanks to Chris Veness, http://www.movable-type.co.uk/scripts/latlong-gridref.html, for the original script.   
+   */
+  pointToGridNotation: function(point, digits) {
+    var e=point.x, n=point.y;
+    if (e==NaN || n==NaN) return '??';
+    
+    // get the 100km-grid indices
+    var e100k = Math.floor(e/100000), n100k = Math.floor(n/100000);
+    
+    if (e100k<0 || e100k>6 || n100k<0 || n100k>12) return '';
+
+    // translate those into numeric equivalents of the grid letters
+    var l1 = (19-n100k) - (19-n100k)%5 + Math.floor((e100k+10)/5);
+    var l2 = (19-n100k)*5%25 + e100k%5;
+
+    // compensate for skipped 'I' and build grid letter-pairs
+    if (l1 > 7) l1++;
+    if (l2 > 7) l2++;
+    var letPair = String.fromCharCode(l1+'A'.charCodeAt(0), l2+'A'.charCodeAt(0));
+
+    // strip 100km-grid indices from easting & northing, and reduce precision
+    e = Math.floor((e%100000)/Math.pow(10,5-digits/2));
+    n = Math.floor((n%100000)/Math.pow(10,5-digits/2));
+
+    var gridRef = letPair + e.padLz(digits/2) + n.padLz(digits/2);
+
+    return gridRef;
   }
 };
+
+/** Pads a number with sufficient leading zeros to make it w chars wide */
+if (typeof Number.prototype.padLz === 'undefined') {
+  Number.prototype.padLz = function(w) {
+    var n = this.toString();
+    var l = n.length;
+    for (var i=0; i<w-l; i++) n = '0' + n;
+    return n;
+  }
+}
