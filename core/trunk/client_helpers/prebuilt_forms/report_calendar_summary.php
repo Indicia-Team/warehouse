@@ -836,25 +836,26 @@ class iform_report_calendar_summary {
         if(!isset($presets['survey_id']) || $presets['survey_id']=='') return(lang::get('User control: survey_id missing from presets.'));
         if (function_exists('module_exists') && module_exists('easy_login')) {
           $sampleArgs=array('nocache'=>true,
-            'extraParams'=>array_merge(array('view'=>'detail', 'website_id'=>$args['website_id']), $readAuth),
+            'extraParams'=>array_merge(array('view'=>'detail', 'website_id'=>$args['website_id'], 'survey_id'=>$presets['survey_id']), $readAuth),
             'table'=>'sample');
           $sampleList = data_entry_helper::get_population_data($sampleArgs);
           if (isset($sampleList['error'])) return $sampleList['error'];
           $uList = array();
           foreach($sampleList as $sample)
             $uList[intval($sample['created_by_id'])] = true;
-          // This next bit is DRUPAL specific
-          $results = db_query('SELECT uid, name FROM {users}');
-          if(version_compare(VERSION, '7', '<')) {
+          // This next bit is DRUPAL specific, but we are using the Easy Login module.
+          if(version_compare(VERSION, '7', '<')) {            
+            $results = db_query("SELECT DISTINCT pv.uid, u.name FROM {users} u " .
+                "JOIN {profile_values} pv ON pv.uid=u.uid " .
+                "JOIN {profile_fields} pf ON pf.fid=pv.fid AND pf.name='profile_indicia_user_id' " .
+                "AND pv.value IN (" . implode(',', array_keys($uList)). ")");
             while($result = db_fetch_object($results)){
-              if($result->uid){
-                $account = user_load($result->uid);
-                profile_load_profile($account);
-                if(isset($account->profile_indicia_user_id) && isset($uList[$account->profile_indicia_user_id]) && $uList[$account->profile_indicia_user_id])
-                  $userList[$account->uid] = $account;
-              }
+              if($result->uid)
+                $userList[$result->uid] = $result;
             }
           } else {
+            // @todo: This needs optimising as in the Drupal 6 version - don't want to load ALL users
+            $results = db_query('SELECT uid, name FROM {users}');
             foreach ($results as $result) { // DB processing is different in 7
               if($result->uid){
                 $account = user_load($result->uid); /* this loads the field_ fields, so no need for profile_load_profile */
