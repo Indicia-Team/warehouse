@@ -407,15 +407,19 @@ class map_helper extends helper_base {
       self::$onload_javascript .= $mapSetupJs;
       $r = self::apply_template('map_panel', $options);
       if ($options['gridRefHintInFooter'] && $options['gridRefHint']) {
-        $div = '<div id="map-footer" class="grid-ref-hints" style="width: '.$options['width'].'">';
+        $div = '<div id="map-footer" class="grid-ref-hints ui-helper-clearfix" style="width: '.$options['width'].'" ' .
+            'title="When you hover the mouse over the map, the grid reference is displayed here. Hold the minus key or plus key when clicking on the map ' .
+            'to decrease or increase the grid square precision respectively.">';
         if ($options['clickForSpatialRef'])
-          $r .= $div . '<h3>' . lang::get('Click to set grid reference') . '</h3>' .
-              '<div class="grid-ref-hint hint-minus"><span class="label"> </span><span class="data"> </span></div>' .
-              '<div class="grid-ref-hint hint-normal"><span class="label"> </span><span class="data"> </span></div>' .
-              '<div class="grid-ref-hint hint-plus"><span class="label"> </span><span class="data"> </span></div>';
+          $r .= $div . '<h3>' . lang::get('Click to set map ref') . '</h3>' .
+              '<div class="grid-ref-hint hint-minus">' .
+                  '<span class="label"></span><span class="data"></span> <span>('.lang::get('hold -').')</span></div>' .
+              '<div class="grid-ref-hint hint-normal"><span class="label"> </span><span class="data"></span></div>' .
+              '<div class="grid-ref-hint hint-plus">' .
+                  '<span class="label"></span><span class="data"></span><span>('.lang::get('hold +').')</span></div>';
         else
-          $r .= $div . '<h3>' . lang::get('Grid ref under mouse pointer') . '</h3>' .
-              '<div class="grid-ref-hint hint-normal"><span class="label"> </span><span class="data"> </span></div></div>';
+          $r .= $div . '<h3>' . lang::get('Map ref at pointer') . '</h3>' .
+              '<div class="grid-ref-hint hint-normal"><span class="label"></span><span class="data"></span></div></div>';
       }
       return $r;
     }
