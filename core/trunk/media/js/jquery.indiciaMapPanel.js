@@ -1305,7 +1305,7 @@ mapGeoreferenceHooks = [];
           largestSrefLen = precisionInfo.precision;
           $('.grid-ref-hint').removeClass('active');
           // If there are multiple precisions available using the +/- keys, activate the current one
-          if (handler.sreflenToPrecision(largestSrefLen+4).metres !== handler.sreflenToPrecision(largestSrefLen).metres) {
+          if (div.settings.clickForSpatialRef && handler.sreflenToPrecision(largestSrefLen+4).metres !== handler.sreflenToPrecision(largestSrefLen).metres) {
             if (minusKeyDown) {
               $('.hint-minus').addClass('active');
             } else if (plusKeyDown) {
@@ -1317,34 +1317,33 @@ mapGeoreferenceHooks = [];
           // almost every mouse move causes the smallest + key square to change
           if (handler.sreflenToPrecision(largestSrefLen+4)!==false && 
                 handler.sreflenToPrecision(largestSrefLen+4).metres !== handler.sreflenToPrecision(largestSrefLen+2).metres) {
-            $('.hint-plus .label').html(handler.sreflenToPrecision(largestSrefLen+4).display + ' (hold +):');
+            $('.hint-plus .label').html(handler.sreflenToPrecision(largestSrefLen+4).display + ':');
             $('.hint-plus .data').html(handler.pointToGridNotation(pt, largestSrefLen+2));
-            $('.hint-plus').show();
+            $('.hint-plus').css('opacity', 1);
           } else {
-            $('.hint-plus').hide();
+            $('.hint-plus').css('opacity', 0);
           }
           // don't recalculate if mouse is still over the existing ghost                
-          if (recalcGhost) {
+          if (recalcGhost || $('.hint-normal').css('opacity')===0) {
             // since we've moved a square, redo the grid ref hints
             if (handler.sreflenToPrecision(largestSrefLen)!==false && 
                 handler.sreflenToPrecision(largestSrefLen).metres !== handler.sreflenToPrecision(largestSrefLen+2).metres) {
-              $('.hint-minus .label').html(handler.sreflenToPrecision(largestSrefLen).display + ' (hold -):');
+              $('.hint-minus .label').html(handler.sreflenToPrecision(largestSrefLen).display + ':');
               $('.hint-minus .data').html(handler.pointToGridNotation(pt, largestSrefLen-2));
-              $('.hint-minus').show();
+              $('.hint-minus').css('opacity', 1);
             } else {
-              $('.hint-minus').hide();
+              $('.hint-minus').css('opacity', 0);
             }
             $('.hint-normal .label').html(handler.sreflenToPrecision(largestSrefLen+2).display + ':');
             $('.hint-normal .data').html(handler.pointToGridNotation(pt, largestSrefLen));
+            $('.hint-normal').css('opacity', 1);
           }
         }
       }
     }
     
     function clearGridRefHints() {
-      $('.grid-ref-hint .data').html('');
-      $('.grid-ref-hint .label').html('');
-      $('.grid-ref-hint.active').removeClass('active');
+      $('.grid-ref-hint').css('opacity', 0);
     }
 
     // Extend our default options with those provided, basing this on an empty object
