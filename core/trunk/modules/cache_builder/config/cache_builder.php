@@ -611,7 +611,7 @@ $config['occurrences']['update'] = "update cache_occurrences co
       training=o.training,
       location_id=s.location_id,
       input_form=s.input_form,
-      data_cleaner_info=case when o.last_verification_check_date is null then null else case when sub.info is null then 'pass' else sub.info end end
+      data_cleaner_info=case when o.last_verification_check_date is null then null else case sub.info when '' then 'pass' else sub.info end end
     from occurrences o
     #join_needs_update#
     join (
