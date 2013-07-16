@@ -607,9 +607,21 @@ $config['occurrences']['update'] = "update cache_occurrences co
       images=images.list,
       training=o.training,
       location_id=s.location_id,
-      input_form=s.input_form
+      input_form=s.input_form,
+      data_cleaner_info=case when o.last_verification_check_date is null then null else case sub.info when '' then 'pass' else sub.info end end
     from occurrences o
     #join_needs_update#
+    join (
+      select o.id, o.last_verification_check_date, 
+        array_to_string(array_agg(distinct '[' || oc.generated_by || ']{' || oc.comment || '}'),' ') as info
+      from occurrences o
+      #join_needs_update#
+      left join occurrence_comments oc 
+            on oc.occurrence_id=o.id 
+            and oc.implies_manual_check_required=true 
+            and oc.deleted=false
+      group by o.id, o.last_verification_check_date
+    ) sub on sub.id=o.id
     join samples s on s.id=o.sample_id and s.deleted=false
     left join locations l on l.id=s.location_id and l.deleted=false
     join surveys su on su.id=s.survey_id and su.deleted=false
@@ -651,10 +663,10 @@ $config['occurrences']['insert']="insert into cache_occurrences (
           || abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[2])::numeric, 3))::varchar 
           || case when ((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[2])::float>0 then 'E' else 'W' end
         when s.entered_sref_system = '4326' and coalesce(s.entered_sref, l.centroid_sref) ~ '^-?[0-9]*\.[0-9]*[NS](, |[, ])*-?[0-9]*\.[0-9]*[EW]' then
-          abs(round(((regexp_split_to_array(coalesce(s.entered_sref, l.centroid_sref), '([NS](, |[, ]))|W'))[1])::numeric, 3))::varchar
+          abs(round(((regexp_split_to_array(coalesce(s.entered_sref, l.centroid_sref), '([NS](, |[, ]))|[EW]'))[1])::numeric, 3))::varchar
           || case when coalesce(s.entered_sref, l.centroid_sref) like '%N%' then 'N' else 'S' end
           || ', '
-          || abs(round(((regexp_split_to_array(coalesce(s.entered_sref, l.centroid_sref), '([NS](, |[, ]))|W'))[2])::numeric, 3))::varchar 
+          || abs(round(((regexp_split_to_array(coalesce(s.entered_sref, l.centroid_sref), '([NS](, |[, ]))|[EW]'))[2])::numeric, 3))::varchar 
           || case when coalesce(s.entered_sref, l.centroid_sref) like '%E%' then 'E' else 'W' end
       else 
         coalesce(s.entered_sref, l.centroid_sref) 
