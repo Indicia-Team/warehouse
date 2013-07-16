@@ -143,6 +143,9 @@ $config['taxa_taxon_lists']['get_changed_items_query']="
       where ttlpref.updated_on>'#date#' or tpref.updated_on>'#date#' or lpref.updated_on>'#date#' or tg.updated_on>'#date#'      
       ) as sub
       group by id";
+      
+$config['taxon_searchterms']['delete_query']['taxa']="
+  delete from cache_taxa_taxon_lists where id in (select id from needs_update_taxon_searchterms where deleted=true)";
 
 $config['taxa_taxon_lists']['update'] = "update cache_taxa_taxon_lists cttl
     set preferred=ttl.preferred,
@@ -384,7 +387,7 @@ $config['taxon_searchterms']['insert']['standard terms']="insert into cache_taxo
       name_type, simplified, code_type_id, preferred, searchterm_length, parent_id, preferred_taxa_taxon_list_id
     )
     select distinct on (cttl.id) cttl.id, cttl.taxon_list_id, cttl.taxon, cttl.taxon, cttl.taxon_group_id, cttl.taxon_group, cttl.taxon_meaning_id, cttl.preferred_taxon,
-      cttl.default_common_name, cttl.authority, cttl.language_iso, 
+      cttl.default_common_name, cttl.preferred_authority, cttl.language_iso, 
       case
         when cttl.language_iso='lat' and cttl.id=cttl.preferred_taxa_taxon_list_id then 'L' 
         when cttl.language_iso='lat' and cttl.id<>cttl.preferred_taxa_taxon_list_id then 'S' 
@@ -607,9 +610,21 @@ $config['occurrences']['update'] = "update cache_occurrences co
       images=images.list,
       training=o.training,
       location_id=s.location_id,
-      input_form=s.input_form
+      input_form=s.input_form,
+      data_cleaner_info=case when o.last_verification_check_date is null then null else case when sub.info is null then 'pass' else sub.info end end
     from occurrences o
     #join_needs_update#
+    join (
+      select o.id, o.last_verification_check_date, 
+        array_to_string(array_agg(distinct '[' || oc.generated_by || ']{' || oc.comment || '}'),' ') as info
+      from occurrences o
+      #join_needs_update#
+      left join occurrence_comments oc 
+            on oc.occurrence_id=o.id 
+            and oc.implies_manual_check_required=true 
+            and oc.deleted=false
+      group by o.id, o.last_verification_check_date
+    ) sub on sub.id=o.id
     join samples s on s.id=o.sample_id and s.deleted=false
     left join locations l on l.id=s.location_id and l.deleted=false
     join surveys su on su.id=s.survey_id and su.deleted=false
