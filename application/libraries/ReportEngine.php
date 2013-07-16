@@ -1082,7 +1082,7 @@ class ReportEngine {
       if ((!empty($joinDef['operator']) && (($joinDef['operator']==='equal' && $joinDef['value']===$value) ||
           ($joinDef['operator']==='notequal' && $joinDef['value']!==$value)))
           // operator not provided, so default is to join if param not empty (null string passed for empty integers)
-          || (!empty($value) && $value!=="null")) {
+          || (empty($joinDef['operator']) && !empty($value) && $value!=="null")) {
         // Join SQL can contain the parameter value as well.
         $join = str_replace("#$paramName#", $value, $joinDef['sql']);
         $query = str_replace('#joins#', $join."\n #joins#", $query);
