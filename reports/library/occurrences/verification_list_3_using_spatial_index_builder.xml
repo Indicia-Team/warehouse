@@ -9,7 +9,6 @@
   FROM cache_occurrences o
   JOIN occurrences xo ON xo.id=o.id AND xo.deleted=false
   JOIN samples s on s.id=xo.sample_id
-  LEFT JOIN index_locations_samples ils on ils.sample_id=s.id
   JOIN websites w on w.id=xo.website_id
   #agreements_join#
   #joins#
@@ -37,7 +36,8 @@
     <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
     <param name='records' display='Records to include' datatype='lookup'
         lookup_values='unverified:All unverified records,fail:Unverified records failing automated checks,trusted:Unverified records by trusted recorders,verified:All verified records,dubious:All dubious records,rejected:All rejected records,all:All records'>
-      <join value="trusted" operator="equal">LEFT JOIN user_trusts ut on (ut.survey_id=s.survey_id
+      <join value="trusted" operator="equal">LEFT JOIN index_locations_samples ils on ils.sample_id=s.id
+      LEFT JOIN user_trusts ut on (ut.survey_id=s.survey_id
       OR ut.taxon_group_id=o.taxon_group_id
       OR (ut.location_id=ils.location_id or ut.location_id is null))
       AND ut.deleted=false
@@ -95,9 +95,9 @@
     else 'black' end" />
     <column name='fc' visible='false' feature_style="fillColor" sql="case xo.record_status when 'V' then 'green' when 'D' then 'orange' when 'R' then 'red' else 'blue' end" />
     <column name='zi' visible='false' feature_style='graphicZIndex' sql='length(o.public_entered_sref)' />
-    <column name='pass' visible='false' sql="CASE WHEN o.data_cleaner_info is null THEN '&lt;div class=&quot;pass-icon&quot; title=&quot;This record passes all automated verification checks.&quot;/&gt;&lt;/div&gt;' WHEN not w.verification_checks_enabled THEN '&lt;div title=&quot;This record is not included in the automated verification check system.&quot;/&gt;-&lt;/div&gt;' END" />
+    <column name='pass' visible='false' sql="CASE WHEN o.data_cleaner_info='pass' THEN '&lt;div class=&quot;pass-icon&quot; title=&quot;This record passes all automated verification checks.&quot;/&gt;&lt;/div&gt;' WHEN not w.verification_checks_enabled THEN '&lt;div title=&quot;This record is not included in the automated verification check system.&quot;/&gt;-&lt;/div&gt;' END" />
     <column name='fails' display='Check' 
-        sql="case when o.data_cleaner_info is not null then 
+        sql="case when o.data_cleaner_info is not null and o.data_cleaner_info&lt;&gt;'pass' then 
             replace(replace(replace(replace(o.data_cleaner_info, '[', '&lt;div class=&quot;fail-icon '), ']', '&quot; '), '{', 'title=&quot;'), '}', '&quot;&gt;&lt;/div&gt;') 
         end"
         template="{pass}{fails}"/>
