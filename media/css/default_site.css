@@ -822,3 +822,19 @@ div.note-fail, p.note-fail {
 .scm-block .control-box {
   vertical-align: top;
 }
+
+@media screen and (max-device-width: 790px) {
+  label {
+    display: block;
+    width: auto;
+  }
+  .control-box label{    
+    display: inline;
+  }
+  textarea  {    
+    width: 80%;
+  }
+  .helpText {
+    margin-left: 0;
+  }
+}
