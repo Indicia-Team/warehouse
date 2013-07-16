@@ -4,7 +4,7 @@
   <query website_filter_field="o.website_id">
     SELECT #columns#
     FROM people p
-    JOIN users u ON u.person_id=p.id AND u.deleted=false
+    JOIN users u ON u.person_id=p.id AND u.deleted=false AND u.id&lt;&gt;1
     JOIN cache_occurrences o ON o.created_by_id=u.id
       AND o.record_status&lt;&gt;'R'
       #filters#
