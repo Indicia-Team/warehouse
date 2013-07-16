@@ -559,7 +559,17 @@ $config['occurrences']['update'] = "update cache_occurrences co
       date_start=s.date_start, 
       date_end=s.date_end, 
       date_type=s.date_type,
-      public_entered_sref=case when o.confidential=true or o.sensitivity_precision is not null then null else coalesce(s.entered_sref, l.centroid_sref) end,
+      public_entered_sref=case when o.confidential=true or o.sensitivity_precision is not null then null else 
+        case when s.entered_sref_system = '4326' and public_entered_sref ~ '^-?[0-9]*\.[0-9]*,[ ]*-?[0-9]*\.[0-9]*' then
+          abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::numeric, 3))::varchar
+          || case when ((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::float>0 then 'N' else 'S' end
+          || ', '
+          || abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[2])::numeric, 3))::varchar 
+          || case when ((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[2])::float>0 then 'E' else 'W' end
+        else 
+          coalesce(s.entered_sref, l.centroid_sref) 
+        end
+      end,
       entered_sref_system=case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end,
       public_geom=reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, o.sensitivity_precision,
           case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end),
@@ -625,7 +635,17 @@ $config['occurrences']['insert']="insert into cache_occurrences (
   select distinct on (o.id) o.id, o.record_status, o.downloaded_flag, o.zero_abundance,
     su.website_id as website_id, su.id as survey_id, s.id as sample_id, su.title as survey_title,
     s.date_start, s.date_end, s.date_type,
-    case when o.confidential=true or o.sensitivity_precision is not null then null else coalesce(s.entered_sref, l.centroid_sref) end as public_entered_sref,
+    case when o.confidential=true or o.sensitivity_precision is not null then null else 
+      case when s.entered_sref_system = '4326' and public_entered_sref ~ '^-?[0-9]*\.[0-9]*,[ ]*-?[0-9]*\.[0-9]*' then
+        abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::numeric, 3))::varchar
+        || case when ((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::float>0 then 'N' else 'S' end
+        || ', '
+        || abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[2])::numeric, 3))::varchar 
+        || case when ((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[2])::float>0 then 'E' else 'W' end
+      else 
+        coalesce(s.entered_sref, l.centroid_sref) 
+      end
+    end as public_entered_sref,
     case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end as entered_sref_system,
     reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, o.sensitivity_precision,
         case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end) as public_geom,
