@@ -244,9 +244,8 @@ class iform_dynamic {
     $customAttributeTabs = get_attribute_tabs($attributes);
     $tabs = self::get_all_tabs($args['structure'], $customAttributeTabs);
     if (isset($tabs['-'])) {
-      $columnsOpen=false;
       $hasControls=false;
-      $r .= self::get_tab_content($auth, $args, '$tab'-'', $tabs['-'], 'above-tabs', $attributes, $columnsOpen, $hasControls);
+      $r .= self::get_tab_content($auth, $args, '$tab'-'', $tabs['-'], 'above-tabs', $attributes, $hasControls);
       unset($tabs['-']);
     }
       
@@ -411,7 +410,6 @@ class iform_dynamic {
   protected static function get_tab_html($tabs, $auth, $args, $attributes, $firstTabExtras) {
     $tabHtml = array();
     foreach ($tabs as $tab=>$tabContent) {
-      $columnsOpen=false;
       // keep track on if the tab actually has real content, so we can avoid floating instructions if all the controls 
       // were removed by user profile integration for example.
       $hasControls = false;
@@ -424,11 +422,7 @@ class iform_dynamic {
       if (count($tabHtml)===0 && $firstTabExtras)
         // output the hidden inputs on the first tab
         $html .= $firstTabExtras;
-      $html .= self::get_tab_content($auth, $args, $tab, $tabContent, $tabalias, $attributes,  
-          $columnsOpen, $hasControls);
-      // close any column layout divs. extra closure for the outer container of the columns
-      if ($columnsOpen) 
-        $html .= '</div></div>';  
+      $html .= self::get_tab_content($auth, $args, $tab, $tabContent, $tabalias, $attributes, $hasControls);
       if (!empty($html) && $hasControls) {
         $tabHtml[$tab] = $html;
       }
@@ -436,8 +430,9 @@ class iform_dynamic {
     return $tabHtml;
   }  
   
-  protected static function get_tab_content($auth, $args, $tab, $tabContent, $tabalias, &$attributes,
-      &$columnsOpen, &$hasControls) {
+  protected static function get_tab_content($auth, $args, $tab, $tabContent, $tabalias, &$attributes, &$hasControls) {
+    // cols array used if we find | splitters
+    $cols = array();
     $defAttrOptions = array('extraParams'=>$auth['read']);
     if(isset($args['attribute_termlist_language_filter']) && $args['attribute_termlist_language_filter'])
       $defAttrOptions['language'] = iform_lang_iso_639_2($args['language']);
@@ -546,14 +541,19 @@ class iform_dynamic {
           $hasControls = true;
         }      
       } elseif ($component === '|') {
-        // a splitter in the structure so put the stuff so far in a 50% width left float div, and the stuff that follows in a 50% width right float div.
-        $html = '<div class="two columns"><div class="column">'.$html.'</div><div class="column">';
-        // need to close the div
-        $columnsOpen=true; 
+        // column splitter. So, store the col html and start on the next column.
+        $cols[] = $html;
+        $html = '';
       } else {
         // output anything else as is. This allow us to add html to the form structure.
         $html .= $component;
       }
+    }
+    if (count($cols)>0) {
+      $cols[] = $html;
+      // a splitter in the structure so put the stuff so far in a 50% width left float div, and the stuff that follows in a 50% width right float div.
+      global $indicia_templates;
+      $html = str_replace(array('{col-1}', '{col-2}'), $cols, $indicia_templates['two-col-50']);
     }
     return $html;
   }

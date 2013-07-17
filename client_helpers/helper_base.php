@@ -258,7 +258,8 @@ if ($("#{escapedId} option").length===0) {
   'jsonwidget' => '<div id="{id}" {class}></div>',
   'report_picker' => '<div id="{id}" {class}>{reports}<div class="report-metadata"></div><div class="ui-helper-clearfix"></div></div>',
   'report_download_link' => '<div class="report-download-link"><a href="{link}">{caption}</a></div>',
-  'verification_panel' => '<div id="verification-panel">{button}<div class="messages" style="display: none"></div></div>'
+  'verification_panel' => '<div id="verification-panel">{button}<div class="messages" style="display: none"></div></div>',
+  'two-col-50' => '<div class="two columns"><div class="column">{col-1}</div><div class="column">{col-2}</div></div>'
 );
 
 
