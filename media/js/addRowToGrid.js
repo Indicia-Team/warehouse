@@ -580,7 +580,7 @@ function SetHtmlIdsOnSubspeciesChange(subSpeciesId) {
 //to work with in selectors we want to use. So we just need to grab the class that starts 'sc'.
 function getScClassForColumnCellInput(input) {
   //get the class for the cell
-  var classesArray = $(input).attr('class').split(/\s+/),
+  var classesArray = jQuery(input).attr('class').split(/\s+/),
     //for our purposes we are only interested in the classes beginning sc
     theInputClass =  classesArray.filter(function(value) {
       if (value.substr(0,2)=='sc')
@@ -598,7 +598,7 @@ function getScClassForColumnCellInput(input) {
 //into the new row.
 function changeIn2ndToLastRow(input) {
   //get user specified columns to include in the copy
-  var gridId = $(input).closest('table').attr('id'),
+  var gridId = jQuery(input).closest('table').attr('id'),
       columnsToInclude = indiciaData['previousRowColumnsToInclude-'+gridId].split(",");
   //get rid of all of the spacing and capital letters
   for (i=0; i<columnsToInclude.length;i++) {
@@ -606,13 +606,13 @@ function changeIn2ndToLastRow(input) {
   }
   
   var classToUse = getScClassForColumnCellInput(input),
-      $newRow = $('table#'+gridId + ' tr.scClonableRow'),
+      $newRow = jQuery('table#'+gridId + ' tr.scClonableRow'),
       //The '.added-row:first' check is there
       //as the user might of added an image-row which we need to ignore
       $previousRow = $newRow.prevAll(".added-row:first");
   //Copy data from the 2nd last row into the new row only if the column 
   //is in the user's options
-  if (classToUse && ($.inArray(classToUse.toLowerCase(), columnsToInclude)>-1)) {
+  if (classToUse && (jQuery.inArray(classToUse.toLowerCase(), columnsToInclude)>-1)) {
     $newRow.find('.'+classToUse).val($previousRow.find('.'+classToUse).val());
   }
 }
@@ -632,7 +632,7 @@ function species_checklist_add_another_row(gridId) {
     columnsToInclude[i] = 'sc'+columnsToInclude[i].replace(/ /g,'').toLowerCase();
   }
   
-  var $newRow = $('table#'+gridId + ' tr.scClonableRow');
+  var $newRow = jQuery('table#'+gridId + ' tr.scClonableRow');
   //Get the previous row to the new row
   $previousRow = $newRow.prevAll(".added-row:first");
     
@@ -641,13 +641,13 @@ function species_checklist_add_another_row(gridId) {
     //Get a clean class to work with for the column
     var classToUse = getScClassForColumnCellInput(this);
     //Only continue if the column is part of the user's options.
-    if (classToUse  && ($.inArray(classToUse.toLowerCase(), columnsToInclude)>-1)) {
+    if (classToUse  && (jQuery.inArray(classToUse.toLowerCase(), columnsToInclude)>-1)) {
       //Bind the cell in the previous cell so that when it is changed the new row will update
       $previousRow.find('.'+classToUse).bind('change', changeIn2ndToLastRowProxy);
       //We set the value for the new row from the previous row if there is a value set on the previous row cell
       //and the user has included that column in their options. (inArray reurns -1 for items not found)
-      if ($previousRow.find('.'+classToUse).val() && ($.inArray(classToUse.toLowerCase(), columnsToInclude)>-1)) {
-        $(this).val($previousRow.find('.'+classToUse).val());
+      if ($previousRow.find('.'+classToUse).val() && (jQuery.inArray(classToUse.toLowerCase(), columnsToInclude)>-1)) {
+        jQuery(this).val($previousRow.find('.'+classToUse).val());
       }
       //We need to unbind the 3rd last row as we no longer what changes for that cell to affect the last row.
       $previousRow.prevAll(".added-row:first").find('.'+classToUse).unbind('change', changeIn2ndToLastRowProxy);
