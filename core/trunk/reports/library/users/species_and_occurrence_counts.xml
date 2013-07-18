@@ -4,17 +4,30 @@
       SELECT #columns#
       FROM cache_occurrences o
       JOIN users u on u.id=o.created_by_id and u.id&lt;&gt;1
-      WHERE (o.zero_abundance='f' OR o.id IS NULL)
-      AND #website_filter#
-      AND (CAST(o.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
-      AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR o.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
-      AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+      #agreements_join#
+      #joins#
+      WHERE #sharing_filter#
+      AND o.zero_abundance='f'
       </query>
   <params>
-    <param name='date_from' display='Date From' datatype='date' />
-    <param name='date_to' display='Date To' datatype='date' />
-    <param name='survey_id' display='Survey' description='Select the survey to return data for, or leave for all surveys' datatype='lookup'
-        query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title' />
+    <param name="survey_id" display="Survey" description="Select the survey, or leave for all surveys" datatype="lookup"
+        population_call="direct:survey:id:title">
+      <where>o.survey_id=#survey_id#</where>
+    </param>
+    <param name="date_from" display="Date From" datatype="date">
+      <where>('#date_from#'='Click here' OR o.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))</where>
+    </param>
+    <param name="date_to" display="Date To" datatype="date">
+      <where>('#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))</where>
+    </param>
+    <param name="website_exclusions" display="List of website IDs to exclude" default=""
+        description="Because some website owners don't like league tables, this allows them to be excluded by providing a comma separated list of IDs" datatype="text">
+      <where>o.website_id not in (#website_exclusions#)</where>
+    </param>
+    <param name="user_exclusions" display="List of user IDs to exclude" 
+        description="Allows special case user IDs to be excluded by providing a comma separated list of warehouse user IDs." datatype="text" default="1" >
+      <where>o.created_by_id not in (#user_exclusions#)</where>
+    </param>
     <param name="currentUser" display="Current User ID" description="Current user's warehouse ID. Allows a column to be output indicating the current user." datatype="text" />
   </params>
       <order_bys>
