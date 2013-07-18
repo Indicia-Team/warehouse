@@ -300,6 +300,9 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
     }
     $(newRow).find('input,select').keydown(keyHandler);
     var autocompleteSettings = getAutocompleteSettings(extraParams);
+    if ($('#' + selectorId).width()<200) {
+      autocompleteSettings.width = 200;
+    }
     // Attach auto-complete code to the input
     ctrl = $('#' + selectorId).autocomplete(url+'/'+(cacheLookup ? 'cache_taxon_searchterm' : 'taxa_taxon_list'), autocompleteSettings);
     ctrl.bind('result', handleSelectedTaxon);
