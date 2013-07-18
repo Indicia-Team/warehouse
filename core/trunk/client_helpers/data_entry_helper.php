@@ -2552,6 +2552,9 @@ class data_entry_helper extends helper_base {
   * row will be copied into a new row on the species grid. Comma separated list of column titles, non-case or white space sensitive.
   * Any unrecognised columns are ignored and the images column cannot be copied.
   * </li>
+  * <li><b>sticky</b>
+  * Optional, defaults to true. Enables sticky table headers if supported by the host site (e.g. Drupal). 
+  * </li>
   * </ul>
   * @return string HTML for the species checklist input grid.
   */
@@ -2560,6 +2563,14 @@ class data_entry_helper extends helper_base {
     global $indicia_templates;
     $options = self::check_options($options);
     $options = self::get_species_checklist_options($options);
+    $classlist = array('ui-widget', 'ui-widget-content', 'species-grid');
+    if (!empty($options['class']))
+      $classlist[] = $options['class'];
+    if ($options['sticky']) {
+      $stickyHeaderClass = self::add_sticky_headers($options);
+      if (!empty($stickyHeaderClass))
+        $classlist[] = $stickyHeaderClass;
+    }
     if ($options['subSamplePerRow'])
       // we'll track 1 sample per grid row.
       $smpIdx=0;
@@ -2663,7 +2674,7 @@ class data_entry_helper extends helper_base {
       if (isset($options['lookupListId'])) {
         $grid .= self::get_species_checklist_clonable_row($options, $occAttrControls, $attributes);
       }
-      $grid .= '<table class="ui-widget ui-widget-content species-grid '.$options['class'].'" id="'.$options['id'].'">';
+      $grid .= '<table class="'.implode(' ', $classlist).'" id="'.$options['id'].'">';
       $grid .= self::get_species_checklist_header($options, $occAttrs);
       $rows = array();
       $imageRowIdxs = array();
@@ -2931,6 +2942,17 @@ class data_entry_helper extends helper_base {
     } else {
       return $taxalist['error'];
     }
+  }
+  
+  /** 
+   * Add sticky table headers, if supported by the host site. Returns the class to add to the table.
+   */
+  private static function add_sticky_headers($options) {
+    if (function_exists('drupal_add_js')) {
+      drupal_add_js('misc/tableheader.js');
+      return 'sticky-enabled';
+    }
+    return '';
   }
   
   /**
@@ -3591,6 +3613,7 @@ $('#".$options['id']."-filter').click(function(evt) {
         'copyDataFromPreviousRow' => false,
         'previousRowColumnsToInclude' => '',
         'editTaxaNames' => false,
+        'sticky' => true
     ), $options);
     // subSamplesPerRow can't be set without speciesControlToUseSubSamples
     $options['subSamplePerRow'] = $options['subSamplePerRow'] && $options['speciesControlToUseSubSamples'];
