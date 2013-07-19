@@ -54,7 +54,7 @@
     <param name="input_date_to" display="Input Date To" datatype="date" default="">
       <where>o.cache_created_on &lt;= '#input_date_to#'</where>
     </param>
-    <param name="user_filter" display="Input Date To" datatype="date" default="" 
+    <param name="user_filter" display="User filter" datatype="date" default="" 
         description="Use this to filter the list to a warehouse user ID other than the current user">
       <where value="1">o.created_by_id=#user_filter#</where>
     </param>
@@ -67,6 +67,9 @@
     </param>
     <param name="recent" display="Recent records only?" datatype="checkbox">
       <where>o.date_start>now()-interval '60 days'</where>
+    </param>
+    <param name="record_status" default="">
+      <where>o.record_status=#record_status#</where>
     </param>
   </params>
   <columns>
