@@ -389,7 +389,8 @@ class report_helper extends helper_base {
               default: $title=lang::get("$caption search. Either enter an exact number, use >, >=, <, or <= before the number to filter for ".
                       "$caption more or less than your search value, or enter a range such as 1000-2000.");
             }
-            $filterRow .= "<th><input title=\"$title\" type=\"text\" class=\"col-filter\" id=\"col-filter-".$field['fieldname']."\"/></th>";
+            //The filter's input id includes the grid id ($options['id']) in its id as there maybe more than one grid and we need to make the id unique.
+            $filterRow .= "<th><input title=\"$title\" type=\"text\" class=\"col-filter\" id=\"col-filter-".$field['fieldname']."-".$options['id']."\"/></th>";
             $wantFilterRow = true;
           } else
             $filterRow .= '<th></th>';
@@ -932,8 +933,12 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * </li>
   * <li><b>linkToReportPath</b>
   * Allows drill down into reports. Holds the URL of the report that is called when the user clicks on 
-  * a chart data item. When this is not set, the report click functionality is disabled. The replacement #param#
-  * is replaced by the Id of the clicked on item.
+  * a chart data item. When this is not set, the report click functionality is disabled. The path will have replacement
+  * tokens replaced where the token is the report output field name wrapped in # and the token will be replaced by the 
+  * report output value for the row clicked on. For example, you can specify id=#id# in the URL to define a URL 
+  * parameter to receive the id field in the report output. In addition, create a global JavaScript function 
+  * on the page called handle_chart_click_path and this will be called with the path, series index, point index and row data as parameters. It can
+  * then return the modified path, so you can write custom logic, e.g. to map the series index to a specific report filter.
   * </li>
   * </ul>
   * @todo look at the ReportEngine to check it is not prone to SQL injection (eg. offset, limit).
@@ -998,6 +1003,9 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     // other chart options
     if (isset($options['stackSeries']) && $options['stackSeries'])
       $opts[] = 'stackSeries: true';
+    if(isset($options['linkToReportPath'])) 
+      // if linking to another report when clicked, store the full data so we can pass it as a parameter to the report
+      self::$javascript .= "indiciaData.reportData=[];\n";
     // build the series data
     $seriesData = array();
     $lastRequestSource = '';
@@ -1026,6 +1034,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       //the number of the bar column (this is different to a pie chart). We use this variable to return the data 
       //from the correct key in the array.
       $trackerForBarGraph = 1;
+      $jsData = array();
       foreach ($data as $row) {
         if (isset($options['xValues']))
           // 2 dimensional data
@@ -1040,25 +1049,16 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
               $xLabelsForSeries[] = $row[$options['xLabels']];
           }
         }
-        //once again we only include summary report clicking functionality if user has setup the appropriate options
-        if(isset($options['linkToReportPath'])) {
-          if ($options['reportGroupOption']=="region"||$options['reportGroupOption']=="taxon_group"||$options['reportGroupOption']=="species") {
-            //we save the same data to two different keys in the array because when we access the array using jplot data[0] as 
-            //the key later on data[0] is different depending on whether we are using a pie or bar chart. So if we have 
-            //saved the data twice, then when we retrieve the data, we don't need to worry which type data[0] is at the time.
-            $clickReportParamData[$row['name']] = $row['id'];
-            $clickReportParamData[$trackerForBarGraph] = $row['id'];
-          }
-          //only if the user is using the month or year summary option do we get our data from the "name" key in the $row array
-          if ($options['reportGroupOption']=="month"||$options['reportGroupOption']=="year") {
-            $clickReportParamData[$row['name']] = $row['name'];
-            $clickReportParamData[$trackerForBarGraph] = $row['name'];
-          }
-          $trackerForBarGraph++;
-        }
+        // pie charts receive click information with the pie segment label. Bar charts receive the bar index.
+        if ($options['chartType']==='pie')
+          $jsData[$row['name']] = $row;
+        else
+          $jsData[] = $row;
       }  
       // each series will occupy an entry in $seriesData
-      $seriesData[] = $values;      
+      $seriesData[] = $values;
+      if(isset($options['linkToReportPath']))
+        self::$javascript .= "indiciaData.reportData[$idx]=" . json_encode($jsData) . ";\n";
     }
     
     if (isset($options['xLabels']) && $options['chartType']!='pie') {
@@ -1074,15 +1074,22 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     self::$javascript .= "$.jqplot('".$options['id']."', " . json_encode($seriesData) . ", \n{".implode(",\n", $opts)."});\n";
      //once again we only include summary report clicking functionality if user has setup the appropriate options
     if(isset($options['linkToReportPath'])) {
-      //get the URL to the report to call
-      $path=$options['linkToReportPath'];
-      $json = json_encode($clickReportParamData);
       //open the report, note that data[0] varies depending on whether we are using a pie or bar. But we have
       //saved the data to the array twice already to handle this
-      self::$javascript .= "$('#chartdiv').bind('jqplotDataClick', 
+      // Note the data[0] is a pie label, or a 1 indexed bar index.
+      self::$javascript .= "$('#{$options[id]}').bind('jqplotDataClick', 
   function(ev, seriesIndex, pointIndex, data) {
-    var reportData = $json;
-    window.location='$path'.replace(/#param#/g, reportData[data[0]]);
+    var path='{$options[linkToReportPath]}';
+    var rowId = " . ($options['chartType']==='pie' ? 'data[0]' : 'data[0]-1') . ";
+    if (typeof handle_chart_click_path!=='undefined') {
+      // custom path handler
+      path=handle_chart_click_path(path, seriesIndex, pointIndex, indiciaData.reportData[seriesIndex][rowId]);
+    }
+    // apply field replacements from the report row that we clicked on
+    $.each(indiciaData.reportData[seriesIndex][rowId], function(field, val) {
+      path = path.replace(new RegExp('#'+field+'#', 'g'), val);
+    });
+    window.location=path.replace(/#series#/g, seriesIndex);
   }
 );\n";
     }
