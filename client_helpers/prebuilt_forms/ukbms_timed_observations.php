@@ -324,7 +324,7 @@ class iform_ukbms_timed_observations {
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     $sampleId = isset($_GET['sample_id']) ? $_GET['sample_id'] : null;
     if ($sampleId) {
-      data_entry_helper::load_existing_record($auth['read'], 'sample', $sampleId);
+      data_entry_helper::load_existing_record($auth['read'], 'sample', $sampleId, 'detail', false, true);
     }
     $url = explode('?', $args['my_obs_page'], 2);
     $params = NULL;
@@ -353,6 +353,7 @@ class iform_ukbms_timed_observations {
     foreach(explode(',', str_replace(' ', '', $args['spatial_systems'])) as $system)
       $systems[$system] = lang::get("sref:$system");
     $r .= data_entry_helper::sref_and_system(array('label' => lang::get('Grid Ref'), 'systems' => $systems));
+    $r .= data_entry_helper::file_box(array('table'=>'sample_image', 'caption'=>lang::get('Upload photo(s) of timed search area')));
     $sampleMethods = helper_base::get_termlist_terms($auth, 'indicia:sample_methods', array('Field Observation'));
     $attributes = data_entry_helper::getAttributes(array(
       'id' => $sampleId,
@@ -760,7 +761,8 @@ jQuery('#tabs').bind('tabsshow', function(event, ui) {
    */
   public static function get_submission($values, $args) {
   	$values['sample:location_name'] = $values['sample:entered_sref'];
-    return(submission_builder::build_submission($values, array('model' => 'sample')));
+    $submission = submission_builder::build_submission($values, array('model' => 'sample'));
+  	return($submission);
   }
   
   /**
