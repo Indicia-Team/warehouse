@@ -6,32 +6,10 @@
   SELECT #columns#
   FROM cache_occurrences o
   JOIN samples s on s.id=o.sample_id
-  LEFT JOIN index_locations_samples ils on ils.sample_id=s.id
-  JOIN websites w on w.id=o.website_id
-  LEFT JOIN user_trusts ut on (ut.survey_id=s.survey_id)
-    OR (ut.taxon_group_id=o.taxon_group_id)
-    OR (ut.location_id=ils.location_id or ut.location_id is null)
-  LEFT JOIN occurrence_comments oc 
-      ON oc.occurrence_id=o.id 
-      AND oc.implies_manual_check_required=true 
-      AND oc.deleted=false
   #agreements_join#
   #joins#
   WHERE #sharing_filter# 
-  AND ('#records#' = 'all'
-    OR ('#records#' IN ('unverified','fail') AND o.record_status IN ('C','S'))
-    OR ('#records#'='trusted' AND o.record_status='C'
-      AND 
-       (((s.survey_id = ut.survey_id) or (ut.survey_id is null and (ut.taxon_group_id is not null or ut.location_id is not null)))
-         AND ((o.taxon_group_id = ut.taxon_group_id) or (ut.taxon_group_id is null and (ut.survey_id is not null or ut.location_id is not null)))
-         AND ((ils.location_id = ut.location_id) OR (ut.location_id IS NULL and (ut.survey_id is not null or ut.taxon_group_id is not null)))
-         AND o.created_by_id = ut.user_id
-         AND ut.deleted = false))
-    OR ('#records#'='verified' AND o.record_status='V')
-    OR ('#records#'='dubious' AND o.record_status='D')
-    OR ('#records#'='rejected' AND o.record_status='R'))
-  AND (o.certainty = 'C' or o.certainty is null)
-  AND ('#records#'&lt;&gt;'fail' OR oc.occurrence_id is not null)
+  AND ('#records#'&lt;&gt;'fail' OR (o.data_cleaner_info is not null and o.data_cleaner_info &lt;&gt;'pass'))
   AND ('#searchArea#'='' OR st_intersects(s.geom, st_geomfromtext('#searchArea#',900913)))
   #idlist#
   </query>
@@ -42,7 +20,33 @@
     <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
     <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
     <param name='records' display='Records to include' datatype='lookup'
-        lookup_values='unverified:All unverified records,fail:Unverified records failing automated checks,trusted:Unverified records by trusted recorders,verified:All verified records,dubious:All dubious records,rejected:All rejected records,all:All records' />
+        lookup_values='unverified:All unverified records,fail:Unverified records failing automated checks,trusted:Unverified records by trusted recorders,verified:All verified records,dubious:All dubious records,rejected:All rejected records,all:All records'>
+      <modifiers>
+        <join value="trusted" operator="equal">LEFT JOIN index_locations_samples ils on ils.sample_id=o.sample_id
+          LEFT JOIN user_trusts ut on (ut.survey_id=o.survey_id
+          OR ut.taxon_group_id=o.taxon_group_id
+          OR (ut.location_id=ils.location_id or ut.location_id is null))
+          AND ut.deleted=false
+          AND ((o.survey_id = ut.survey_id) or (ut.survey_id is null and (ut.taxon_group_id is not null or ut.location_id is not null)))
+             AND ((o.taxon_group_id = ut.taxon_group_id) or (ut.taxon_group_id is null and (ut.survey_id is not null or ut.location_id is not null)))
+             AND ((ils.location_id = ut.location_id) OR (ut.location_id IS NULL and (ut.survey_id is not null or ut.taxon_group_id is not null)))
+             AND o.created_by_id = ut.user_id</join>
+        <where value="unverified" operator="equal">o.record_status IN ('C','S')</where>
+        <where value="fail" operator="equal">o.record_status IN ('C','S')</where>
+        <where value="trusted" operator="equal">o.record_status IN ('C')</where>
+        <where value="verified" operator="equal">o.record_status IN ('V')</where>
+        <where value="dubious" operator="equal">o.record_status IN ('D')</where>
+        <where value="rejected" operator="equal">o.record_status IN ('R')</where>
+      </modifiers>
+    </param>
+    <param name='certainty' display='and record was' datatype='lookup'
+        lookup_values='C:Certain,L:Certain or likely,U:Uncertain or better' >
+      <modifiers>
+        <where value="C" operator="equal">(o.certainty = 'C' or o.certainty is null)</where>
+        <where value="L" operator="equal">(o.certainty in ('C','L') or o.certainty is null)</where>
+        <where value="U" operator="equal">(o.certainty = 'C' or o.certainty is null)</where>
+      </modifiers>
+    </param>
     <param name='searchArea' display='Report Search Area' datatype='geometry' allow_buffer='true' />
     <param name='idlist' display='List of IDs' description='Comma separated list of occurrence IDs to filter to.' datatype='idlist' fieldname='o.id' alias='occurrence_id' />
     <param name='expertise_location' display='Location of Expertise' description='Provide the location in which your expertise applies' datatype='lookup' 
@@ -53,7 +57,10 @@
       <where value="1">o.taxon_group_id IN (#expertise_taxon_groups#)</where>
     </param>
     <param name='expertise_surveys' display='Survey IDs list' description='Comma separated list of surveys IDs to include' datatype='text'>
-      <where value="1">s.survey_id IN (#expertise_surveys#)</where>
+      <where value="1">o.survey_id IN (#expertise_surveys#)</where>
+    </param>
+    <param name="website" default="">
+      <join>JOIN websites w on w.id=o.website_id</join>
     </param>
   </params>
   <columns>
@@ -73,7 +80,7 @@
     <column name='date' datatype='date' on_demand="true" />
     <column name='zero_abundance' sql='o.zero_abundance' on_demand="true"/>
     <column name='taxon_group' sql='o.taxon_group' datatype='text' on_demand="true"/>
-    <column name='record_status' sql='xo.record_status' visible="false" on_demand="true" />
+    <column name='record_status' sql='o.record_status' visible="false" on_demand="true" />
     <column name='geom' visible='false' mappable="true" sql='st_astext(coalesce(s.geom, o.public_geom))' />
     <column name='fo' visible='false' feature_style="fillOpacity" sql='round(length(o.public_entered_sref) / 24.0, 2)' />
     <column name='sc' visible='false' feature_style="strokeColor" sql="case o.record_status when 'C' then 
