@@ -1,53 +1,51 @@
 
 jQuery(document).ready(function($) {
-  //Setup the initial map layer the user sees.
-  indiciaData.initialreportlayer = new OpenLayers.Layer.Vector('Report output');
+  indiciaData.reportlayer = new OpenLayers.Layer.Vector('Report output');
   mapInitialisationHooks.push(function (div) {
     "use strict";
-    //Put into indcia data so we can see the map div elsewhere
+    //Put into indicia data so we can see the map div elsewhere
     indiciaData.mapdiv = div;
-    indiciaData.mapdiv.map.addLayer(indiciaData.initialreportlayer);
-    //Initially we just get the first location type. The parent_id is blank as the user hasn't clicked on anything yet.
-    $.getJSON(indiciaData.layerReportRequest + '&location_type_id='+indiciaData.layerLocationTypes.shift()+ '&parent_id=',
-        null,
-        function(response, textStatus, jqXHR) {
-          var features=[];
-          //add the locations to the map
-          $.each(response, function (idx, obj) {
-            indiciaData.mapdiv.addPt(features, obj, 'boundary_geom', {"type":"vector"}, obj.id);
-          });
-          indiciaData.initialreportlayer.addFeatures(features);
-        }
-    );
-  });
+    //Setup the initial map layer the user sees.
+    add_new_layer_for_site_hierarchy_navigator(null,null);
+  });  
 });
 
 /* 
- * Load the new locations onto the map when the user clicks on a location
+ * Load the sub-locations onto the map when the user clicks on a location.
+ * To do this we need to get the parent location type and name.
+ * Also get the type of the locations we are loading so the layer can have 
+ * an appropriate name, then we call the method to draw the new layer.
  */
 function reload_map_with_sub_sites_for_clicked_feature(features) {
+  var parentId, parentName,locationTypeName;
+  $.each(features, function(idx, feature) {
+    parentId = feature.id;
+    parentName = feature.attributes.name;
+    locationTypeName = feature.attributes.location_type_name;
+  });
+  add_new_layer_for_site_hierarchy_navigator(parentId,parentName);
+}
+
+function add_new_layer_for_site_hierarchy_navigator(parentId,parentName) {
   if (indiciaData.layerLocationTypes.length > 0) {
-    //Get the clicked location and id
-    //TODO - The location name line needs correcting
-    for(var fid in features) {
-      var parentId = features[fid].id;
-      //var parentName = features[fid].name;
-    } 
-    //Give the new layer a name 
-    //Todo - This needs changing to be name of the clicked location.
-    indiciaData.initialreportlayer2 = new OpenLayers.Layer.Vector('Layer' + parentId); 
-    indiciaData.mapdiv.map.addLayer(indiciaData.initialreportlayer2);
     //Get the locations for the next location type and the clicked location.
-    //TODO - Can re-use code here as same as initial screen load so put into seperate function
     $.getJSON(indiciaData.layerReportRequest + '&location_type_id='+indiciaData.layerLocationTypes.shift()+ '&parent_id='+parentId,
         null,
-        function(response, textStatus, jqXHR) {
-          var features=[];
+        function(response, textStatus, jqXHR) { 
+          var currentLayerObjectType;
+          var features=[];       
           $.each(response, function (idx, obj) {
+            currentLayerObjectType = obj.location_type_name;
             indiciaData.mapdiv.addPt(features, obj, 'boundary_geom', {"type":"vector"}, obj.id);
           });
-          indiciaData.initialreportlayer2.addFeatures(features);
+          //Give the layer a name that includes the location type being shown and the parent name
+          if (parentId!==null) {
+            indiciaData.reportlayer = new OpenLayers.Layer.Vector('Locations of type ' + currentLayerObjectType+ ' in ' + parentName);
+          }
+          indiciaData.mapdiv.map.addLayer(indiciaData.reportlayer);
+          indiciaData.reportlayer.addFeatures(features);
         }
     );
   }
 }
+

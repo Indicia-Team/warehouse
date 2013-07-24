@@ -35,7 +35,7 @@ class extension_site_hierarchy_navigator {
     //The location types are supplied by the user in a comma seperated list.
     //The first number is used as the initial location type to display.
     //The second number is used after the user clicks the first time on a feature and so on
-    $layerLocationTypes =  explode(',',$options['layerLocationTypes']);
+    $layerLocationTypes =  explode(',',$options['layerLocationTypes']);  
     $options = iform_map_get_map_options($args, $auth);
     $olOptions = iform_map_get_ol_options($args);
     $options['readAuth'] = $options['readAuth']['read'];
@@ -46,7 +46,7 @@ class extension_site_hierarchy_navigator {
     $options['clickableLayersOutputDiv'] = '';
     //Tell the system which layers we to be clickable. As we initially only use
     //one layer to start with, we only supply one item.
-    $options['clickableLayers']=array('indiciaData.initialreportlayer');
+    $options['clickableLayers']=array('indiciaData.reportlayer');
     $r .= map_helper::map_panel(
       $options,
       $olOptions
