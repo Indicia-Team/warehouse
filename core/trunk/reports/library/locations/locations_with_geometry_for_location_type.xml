@@ -5,6 +5,7 @@
   <query website_filter_field="o.website_id">
     SELECT #columns# 
     FROM locations l
+    join terms t on t.id = l.location_type_id
       #joins#
     WHERE 1=1
       #filters#    
@@ -19,6 +20,8 @@
   </params>
   <columns>
     <column name="id" sql="l.id"/>
+    <column name="name" sql="l.name"/>
+    <column name="location_type_name" sql="t.term"/>
     <column name="boundary_geom" sql="st_astext(l.boundary_geom)" mappable="true"/>
   </columns>
 </report>
