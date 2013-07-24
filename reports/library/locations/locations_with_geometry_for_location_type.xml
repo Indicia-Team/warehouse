@@ -5,7 +5,8 @@
   <query website_filter_field="o.website_id">
     SELECT #columns# 
     FROM locations l
-    join terms t on t.id = l.location_type_id
+    join termlists_terms tt on tt.id = l.location_type_id
+    join terms t on t.id = tt.term_id
       #joins#
     WHERE 1=1
       #filters#    
