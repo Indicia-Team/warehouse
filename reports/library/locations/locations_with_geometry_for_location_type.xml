@@ -1,0 +1,24 @@
+  <report
+    title="Locations with geometry for location type"
+    description="List of locations (with geometry) for a given location type whose parent matches the given parent id."
+>
+  <query website_filter_field="o.website_id">
+    SELECT #columns# 
+    FROM locations l
+      #joins#
+    WHERE 1=1
+      #filters#    
+  </query>
+  <params>
+    <param name="location_type_id" datatype="integer">
+      <where>l.location_type_id=#location_type_id#</where>
+    </param>
+    <param name="parent_id" datatype="integer">
+      <join>join locations lp on st_intersects(lp.boundary_geom, l.boundary_geom) and lp.id=#parent_id#</join>
+    </param>
+  </params>
+  <columns>
+    <column name="id" sql="l.id"/>
+    <column name="boundary_geom" sql="st_astext(l.boundary_geom)" mappable="true"/>
+  </columns>
+</report>
