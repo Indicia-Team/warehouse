@@ -122,12 +122,13 @@ function addGridRow(species, speciesTableSelector, end, tabIDX){
   });
   if(isNumber) jQuery('<td class="row-total first">'+rowTotal+'</td>').appendTo(row);
   if(end) {
-    row=jQuery(speciesTableSelector+' tbody.occs-body').append(row);
+    jQuery(speciesTableSelector+' tbody.occs-body').append(row);
   } else {
-    row=jQuery(speciesTableSelector+' tbody.occs-body').prepend(row);
+    jQuery(speciesTableSelector+' tbody.occs-body').prepend(row);
   }
   row.find('.count-input').keydown(count_keydown).focus(count_focus).change(input_change).blur(input_blur);
-  row.find('.non-count-input').focus(count_focus).change(select_change);
+  row.find('input.non-count-input').keydown(count_keydown).focus(count_focus).change(input_change).blur(input_blur);
+  row.find('select.non-count-input').focus(count_focus).change(select_change);
 }
 
 function smp_keydown(evt) {
@@ -265,6 +266,8 @@ function input_blur (evt) {
         setTimeout("jQuery('#"+evt.target.id+"').focus(); jQuery('#"+evt.target.id+"').select()", 100);
         return;
       }
+    } else {
+      jQuery(selector).val(jQuery(selector).val().toUpperCase());
     }
     if (jQuery(selector).hasClass('count-input') || jQuery(selector).hasClass('non-count-input')) {
       // need to save the occurrence for the current cell
@@ -660,9 +663,9 @@ function loadSpeciesList() {
     async: true,
     dataType:  'json',
     success:   function(data, status, form){
+      var selector = '#'+data.transaction_id.replace(/:/g, '\\:');
+      jQuery(selector).removeClass('saving');
       if (checkErrors(data)) {
-        var selector = '#'+data.transaction_id.replace(/:/g, '\\:');
-        jQuery(selector).removeClass('saving');
         // skip deletions
         if (jQuery(selector).val()!=='0') {
           if (jQuery(selector +'\\:id').length===0) {
@@ -674,7 +677,6 @@ function loadSpeciesList() {
             jQuery(selector).after('<input type="hidden" id="'+data.transaction_id +':attrValId" value="'+data.struct.children[0].id+'"/>');
           }
         }
-
         jQuery(selector).removeClass('edited');
       }
     }
