@@ -276,6 +276,16 @@ class iform_ukbms_timed_observations {
           'group'=>'Other Map Settings'
         ),
         array(
+          'name'=>'locationType',
+          'caption'=>'Restrict locations to type',
+          'description'=>'When choosing the parent location, restrict the locations in the drop down to a particular location type.',
+          'type'=>'select',
+          'table'=>'termlists_term',
+          'captionField'=>'term',
+          'valueField'=>'id',
+          'extraParams'=>array('termlist_external_key'=>'indicia:location_types')
+        ),
+        array(
           'name'=>'custom_attribute_options',
           'caption'=>'Options for custom attributes',
           'description'=>'A list of additional options to pass through to custom attributes, one per line. Each option should be specified as '.
@@ -323,9 +333,15 @@ class iform_ukbms_timed_observations {
     iform_load_helpers(array('map_helper'));
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     $sampleId = isset($_GET['sample_id']) ? $_GET['sample_id'] : null;
+    $locationId = null;
     if ($sampleId) {
       data_entry_helper::load_existing_record($auth['read'], 'sample', $sampleId, 'detail', false, true);
+      $locationId = data_entry_helper::$entity_to_load['sample:location_id'];
+    } else {
+      // location ID also might be in the $_POST data after a validation save of a new record
+      if (isset($_POST['sample:location_id'])) $locationId = $_POST['sample:location_id'];
     }
+    
     $url = explode('?', $args['my_obs_page'], 2);
     $params = NULL;
     $fragment = NULL;
@@ -348,6 +364,45 @@ class iform_ukbms_timed_observations {
     }
     $r .= '<input type="hidden" name="sample:survey_id" value="'.$args['survey_id'].'"/>';
     $r .= '<div id="cols" class="ui-helper-clearfix"><div class="left" style="width: '.(98-(isset($args['percent_width']) ? $args['percent_width'] : 50)).'%">';
+    // Output only the locations for this website and location type.
+    $availableSites = data_entry_helper::get_population_data(array(
+    		'report'=>'library/locations/locations_list',
+    		'extraParams' => $auth['read'] + array('website_id' => $args['website_id'], 'location_type_id'=>$args['locationType'],
+    				'locattrs'=>'CMS User ID', 'attr_location_cms_user_id'=>$user->uid),
+    		'nocache' => true));
+    // convert the report data to an array for the lookup, plus one to pass to the JS so it can keep the map updated
+    $sitesLookup = array();
+    $sitesIds = array();
+    $sitesJs = array();
+    foreach ($availableSites as $site) {
+      $sitesLookup[$site['location_id']]=$site['name'];
+      $sitesIds[] = $site['location_id'];
+    }
+    $sites = data_entry_helper::get_population_data(array(
+        'table'=>'location',
+        'extraParams' => $auth['read'] + array('website_id' => $args['website_id'], 'id'=>$sitesIds,'view'=>'detail')));
+    foreach ($sites as $site) {
+      $sitesJs[$site['id']] = $site;
+    }
+    data_entry_helper::$javascript .= "indiciaData.sites = ".json_encode($sitesJs).";\n";
+    if ($locationId) {
+      $r .= '<input type="hidden" name="sample:location_id" id="sample_location_id" value="'.$locationId.'"/>';
+      // for reload of existing, don't let the user switch the square as that could mess everything up.
+      $r .= '<label>'.lang::get('1km square').':</label><span>'.$sitesJs[$locationId]['name'].'</span><br/>' .
+            lang::get('<p class="ui-state-highlight page-notice ui-corner-all">Please use the map to select a more precise location for your timed observation.</p>');
+      ;
+    } else {
+      $options = array(
+                'label' => lang::get('Select 1km square'),
+                'validation' => array('required'),
+                'blankText'=>lang::get('Please select'),
+                'lookupValues' => $sitesLookup,
+                'id' => "sample_location_id"
+      );
+      // if ($locationId) $options['default'] = $locationId;
+      $r .= data_entry_helper::location_select($options) .
+            lang::get('<p class="ui-state-highlight page-notice ui-corner-all">After selecting the 1km square, use the map to select a more precise location for your timed observation.</p>');
+    }
     // [spatial reference]
     $systems=array();
     foreach(explode(',', str_replace(' ', '', $args['spatial_systems'])) as $system)
@@ -411,7 +466,32 @@ class iform_ukbms_timed_observations {
     if (!isset($options['standardControls']))
       $options['standardControls']=array('layerSwitcher','panZoomBar');
     $r .= map_helper::map_panel($options, $olOptions);
-    
+    data_entry_helper::$javascript .= "
+mapInitialisationHooks.push(function(mapdiv) {
+  var defaultStyle = new OpenLayers.Style({pointRadius: 6,fillOpacity: 0,strokeColor: \"Red\",strokeWidth: 1});
+  var SiteStyleMap = new OpenLayers.StyleMap({\"default\": defaultStyle});
+  indiciaData.SiteLayer = new OpenLayers.Layer.Vector('1km square',{styleMap: SiteStyleMap, displayInLayerSwitcher: true});
+  mapdiv.map.addLayer(indiciaData.SiteLayer);
+  if(jQuery('#sample_location_id').length > 0) {
+    if(jQuery('#sample_location_id').val() != ''){
+      var parser = new OpenLayers.Format.WKT();
+      var feature = parser.read(indiciaData.sites[jQuery('#sample_location_id').val()].geom);
+      indiciaData.SiteLayer.addFeatures([feature]);
+      // for existing data we zoom on the site, not this parent location
+    } 
+    jQuery('#sample_location_id').change(function(){
+      indiciaData.SiteLayer.destroyFeatures();
+      if(jQuery('#sample_location_id').val() != ''){
+        var parser = new OpenLayers.Format.WKT();
+        var feature = parser.read(indiciaData.sites[jQuery('#sample_location_id').val()].geom);
+        indiciaData.SiteLayer.addFeatures([feature]);
+        var layerBounds = indiciaData.SiteLayer.getDataExtent().clone(); // use a clone
+        indiciaData.SiteLayer.map.zoomToExtent(layerBounds);
+      }
+    });
+  }
+});\n";
+
     $r .= "</div>"; // right
     $r .= '</form>';
     // Recorder Name - assume Easy Login uid
