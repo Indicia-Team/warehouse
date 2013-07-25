@@ -574,7 +574,7 @@ var simple_tooltip;
       }
     }
     
-    var BATCH_SIZE=1000, currentMapRequest;
+    var BATCH_SIZE=2000, currentMapRequest;
     
     function _internalMapRecords(div, request, offset, recordCount) {
       if ($('#map-progress').length===0) {
@@ -697,7 +697,7 @@ var simple_tooltip;
       
       var doFilter = function(e) {
         if (e.target.hasChanged) {
-          var fieldname = e.target.id.substr(11);
+          var fieldname = e.target.id.match(new RegExp('^col-filter-(.*)-' + div.id + '$'))[1];
           if ($.trim($(e.target).val())==='') {
             delete div.settings.extraParams[fieldname];
           } else {
