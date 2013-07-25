@@ -110,7 +110,8 @@ class iform_ukbms_sectioned_transects_input_sample {
           'extraParams' => array('termlist_external_key'=>'indicia:location_types'),
           'required' => true,
           'group'=>'Transects Editor Settings'
-        ), array(
+        ),
+        array(
           'name'=>'section_type_term',
           'caption'=>'Section type term',
           'description'=>'Select the term used for section location types.',
@@ -608,6 +609,24 @@ class iform_ukbms_sectioned_transects_input_sample {
           'default' => true,
           'group' => 'Transects Editor Settings'
         ),
+        array(
+          'name' => 'include_map_samples_form',
+          'caption' => 'Include map',
+          'description' => 'Should a map be displayed on the sample details page? This shows the transect picked.',
+          'type' => 'boolean',
+          'required' => false,
+          'default' => false,
+          'group' => 'Transects Editor Settings'
+        ),
+        array(
+          'name'=>'percent_width',
+          'caption'=>'Map Percent Width',
+          'description'=>'The percentage width that the map will take on the front page.',
+          'type'=>'int',
+          'required' => true,
+          'default' => 50,
+          'group' => 'Transects Editor Settings'
+        )
       )
     );
   }
@@ -674,6 +693,10 @@ class iform_ukbms_sectioned_transects_input_sample {
       $r .= '<input type="hidden" name="sample:id" value="'.data_entry_helper::$entity_to_load['sample:id'].'"/>';
     }
     $r .= '<input type="hidden" name="sample:survey_id" value="'.$args['survey_id'].'"/>';
+
+    if(isset($args['include_map_samples_form']) && $args['include_map_samples_form'])
+      $r .= '<div id="cols" class="ui-helper-clearfix"><div class="left" style="width: '.(98-(isset($args['percent_width']) ? $args['percent_width'] : 50)).'%">';
+
     if ($locationId) {
       $site = data_entry_helper::get_population_data(array(
         'table' => 'location',
@@ -766,6 +789,22 @@ class iform_ukbms_sectioned_transects_input_sample {
     $r .= '<a href="'.$args['my_walks_page'].'" class="button">'.lang::get('Cancel').'</a>';
     if (isset(data_entry_helper::$entity_to_load['sample:id']))
       $r .= '<button id="delete-button" type="button" class="ui-state-default ui-corner-all" />'.lang::get('Delete').'</button>';
+
+    if(isset($args['include_map_samples_form']) && $args['include_map_samples_form']){
+      $r .= "</div>" .
+            '<div class="right" style="width: '.(isset($args['percent_width']) ? $args['percent_width'] : 50).'%">';
+      // no place search: [map]
+      $options = iform_map_get_map_options($args, $auth['read']);
+      if (!empty(data_entry_helper::$entity_to_load['sample:wkt'])) {
+        $options['initialFeatureWkt'] = data_entry_helper::$entity_to_load['sample:wkt'];
+      }
+      $olOptions = iform_map_get_ol_options($args);
+      if (!isset($options['standardControls']))
+        $options['standardControls']=array('layerSwitcher','panZoomBar');
+      $r .= map_helper::map_panel($options, $olOptions);
+      $r .= "</div>"; // right
+    }
+
     $r .= '</form>';
     // Recorder Name - assume Easy Login uid
     if (function_exists('module_exists') && module_exists('easy_login')) {
