@@ -98,8 +98,8 @@ class iform_dynamic {
         ),
         array(
           'name'=>'attribute_termlist_language_filter',
-          'caption'=>'Attribute Termlist Language filter',
-          'description'=>'Enable filtering of termlists for attributes using the iso language.',
+          'caption'=>'Internationalise lookups',
+          'description'=>'In lookup custom attribute controls, use the language associated with the current user account to filter to show only the terms in that language.',
           'type'=>'boolean',
           'default' => false,
           'required' => false,
