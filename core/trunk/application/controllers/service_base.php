@@ -183,8 +183,10 @@ class Service_Base_Controller extends Controller {
 
   /**
    * Return an error XML or json document to the client
+   * @param string Id of the transaction calling the service. Optional.
+   * Returned to the calling code.
    */
-  protected function handle_error($e)
+  protected function handle_error($e, $transaction_id = null)
   {
     if($e->getMessage() == 'Unknown Exception: unauthorised') 
       $statusCode = 403;
@@ -203,6 +205,9 @@ class Service_Base_Controller extends Controller {
       $response = array(
         'error'=>$message
       );
+      if ($transaction_id) {
+      	$response['transaction_id'] = $transaction_id;
+      }
       if (get_class($e)=='ArrayException') {
         $response['errors'] = $e->errors();
       } elseif (get_class($e)!='ServiceError') {
