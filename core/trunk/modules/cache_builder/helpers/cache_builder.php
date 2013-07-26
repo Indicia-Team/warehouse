@@ -98,11 +98,9 @@ class cache_builder {
     $queries = kohana::config("cache_builder.$table");
     if (!isset($queries['key_field']))
       throw new exception('Cannot do a specific record update into cache as the key_field configuration not defined in cache_builder configuration');
-    kohana::log('debug', 'Update query: '.$queries['update']);
     $updateSql = str_replace('#join_needs_update#', '', $queries['update']);
     $updateSql .= ' and '.$queries['key_field']."=$id";
     $db->query($updateSql);
-    kohana::log('debug', 'Update SQL: '. $updateSql);
     self::final_queries($db, $table, $id);
   }
   
