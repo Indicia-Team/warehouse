@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Week verification breakdown" description="Breaks down records by week and verification status for the last year.">
+  <query website_filter_field="o.website_id">
+    select #columns#
+    from generate_series(0,52) as weeks(no)
+    left join occurrences o on date_trunc('week', o.verified_on)=date_trunc('week', CURRENT_DATE - (weeks.no*7))
+      and o.verified_on is not null
+    #agreements_join#
+    #joins#
+    where #sharing_filter#
+  </query>
+  <order_bys>
+    <order_by>date_trunc('week', CURRENT_DATE - (weeks.no*7))</order_by>
+  </order_bys>    
+  <params>
+    <param name='survey_id' display='Survey' description='Select the survey to return data for, or leave for all surveys' datatype='lookup'
+        query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title'>
+      <where>o.survey_id=#survey_id#</where>
+    </param>
+    <param name="date_from" display="Date From" datatype="date">
+      <where>o.date_start&gt;='#date_from#'</where>
+    </param>
+    <param name="date_to" display="Date To" datatype="date">
+      <where>o.date_start&lt;='#date_to#'</where>
+    </param>
+    <param name="input_form" default="">
+      <where>o.input_form='#input_form#'</where>
+    </param>
+    <param name="location_id" default="" description="ID of location to return records for. This must be an indexed location using the Spatial Index Builder.">
+      <join>join index_locations_samples ils on ils.sample_id=o.sample_id and ils.location_id=#location_id#</join>
+    </param>
+    <param name="currentUser" default="" description="ID of user to report on.">
+      <where>o.created_by_id=#currentUser#</where>
+    </param>
+  </params>
+  <columns>
+    <column name="week" display="Weeks ago" sql="weeks.no" in_count="true" orderby="weekdate" />
+    <column name="queried" display="Queried" sql="count(case record_status when 'D' then o.id when 'S' then o.id else null end)" aggregate="true" />
+    <column name="verified" display="Verified" sql="count(case record_status when 'V' then o.id else null end)" aggregate="true" />
+    <column name="rejected" display="Rejected" sql="count(case record_status when 'R' then o.id else null end)" aggregate="true" />
+    <column name="total" display="Total" sql="count(distinct o.id)" aggregate="true" />
+    <column name="date_from" display="Date from" sql="to_char(date_trunc('week', CURRENT_DATE - (weeks.no*7)), 'YYYY-MM-DD')" />
+    <column name="date_to" display="Date to" sql="to_char(date_trunc('week', CURRENT_DATE - (weeks.no*7)) + '6 days'::interval, 'YYYY-MM-DD')" />
+  </columns>
+</report>
