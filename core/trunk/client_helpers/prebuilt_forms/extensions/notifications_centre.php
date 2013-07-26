@@ -61,7 +61,11 @@ class extension_notifications_centre {
    
   public static function messages_grid($auth, $args, $tabalias, $options, $path) {
     self::initialise($auth, $args, $tabalias, $options, $path);
-    return self::notifications_grid($auth, $options, variable_get('indicia_website_id', ''), $user->profile_indicia_user_id); // system
+    global $user;
+    if (isset($user->profile_indicia_user_id))
+      return self::notifications_grid($auth, $options, variable_get('indicia_website_id', ''), $user->profile_indicia_user_id); // system
+    else
+      return '<p>'.lang::get('The notifications system will be enabled when you fill in at least your surname on your account.').'</p>';
   }  
   
   private static function initialise($auth, $args, $tabalias, $options, $path) {
@@ -69,29 +73,31 @@ class extension_notifications_centre {
       global $user;
       if (!isset($user->profile_indicia_user_id))
         profile_load_profile($user);
-      report_helper::$javascript .= "indiciaData.website_id = ".variable_get('indicia_website_id', '').";\n";
-      report_helper::$javascript .= "indiciaData.user_id = ".$user->profile_indicia_user_id.";\n";
-      //The proxy url used when interacting with the notifications table in the database.
-      report_helper::$javascript .= "indiciaData.notification_proxy_url = '".iform_ajaxproxy_url(null, 'notification')."';\n";
-      //The proxy url used when interacting with the occurrence comment table in the database.
-      report_helper::$javascript .= "indiciaData.occurrence_comment_proxy_url = '".iform_ajaxproxy_url(null, 'occ-comment')."';\n";
-      report_helper::$javascript .= "indiciaData.read_nonce = '".$auth['read']['nonce']."';\n";
-      report_helper::$javascript .= "indiciaData.read_auth_token = '".$auth['read']['auth_token']."';\n";
-      // The url used for direct access to data services.
-      if (!empty(data_entry_helper::$warehouse_proxy))
-        self::$dataServicesUrl = data_entry_helper::$warehouse_proxy."index.php/services/data";
-      else
-        self::$dataServicesUrl = data_entry_helper::$base_url."index.php/services/data";
-      report_helper::$javascript .= "indiciaData.data_services_url = '".self::$dataServicesUrl."';\n";
-      // include the JavaScript file
-      $jsPath = iform_client_helpers_path().'prebuilt_forms/extensions/notifications_centre.js';
-      drupal_add_js($jsPath);
-      
-      //If the user clicks the Remove Notifications submit button, then a hidden field
-      //called remove-notifications is set. We can check for this when the 
-      //page reloads and then call the remove notifications code.    
-      if ($_POST['remove-notifications']==1)
-        self::build_notifications_removal_submission($_POST, $auth);
+      if (isset($user->profile_indicia_user_id)) {
+        report_helper::$javascript .= "indiciaData.website_id = ".variable_get('indicia_website_id', '').";\n";
+        report_helper::$javascript .= "indiciaData.user_id = ".$user->profile_indicia_user_id.";\n";
+        //The proxy url used when interacting with the notifications table in the database.
+        report_helper::$javascript .= "indiciaData.notification_proxy_url = '".iform_ajaxproxy_url(null, 'notification')."';\n";
+        //The proxy url used when interacting with the occurrence comment table in the database.
+        report_helper::$javascript .= "indiciaData.occurrence_comment_proxy_url = '".iform_ajaxproxy_url(null, 'occ-comment')."';\n";
+        report_helper::$javascript .= "indiciaData.read_nonce = '".$auth['read']['nonce']."';\n";
+        report_helper::$javascript .= "indiciaData.read_auth_token = '".$auth['read']['auth_token']."';\n";
+        // The url used for direct access to data services.
+        if (!empty(data_entry_helper::$warehouse_proxy))
+          self::$dataServicesUrl = data_entry_helper::$warehouse_proxy."index.php/services/data";
+        else
+          self::$dataServicesUrl = data_entry_helper::$base_url."index.php/services/data";
+        report_helper::$javascript .= "indiciaData.data_services_url = '".self::$dataServicesUrl."';\n";
+        // include the JavaScript file
+        $jsPath = iform_client_helpers_path().'prebuilt_forms/extensions/notifications_centre.js';
+        drupal_add_js($jsPath);
+        
+        //If the user clicks the Remove Notifications submit button, then a hidden field
+        //called remove-notifications is set. We can check for this when the 
+        //page reloads and then call the remove notifications code.    
+        if ($_POST['remove-notifications']==1)
+          self::build_notifications_removal_submission($_POST, $auth);
+      }
       self::$initialised = true;
     }
   }
@@ -111,9 +117,8 @@ class extension_notifications_centre {
     $r .= '<input type="hidden" name="remove-notifications" class="remove-notifications"/>';
     $r .= self::get_notifications_html($auth, $sourceType, $website_id, $user_id, $notificationProxyUrl, $occurrenceCommentProxyUrl, $options);
     $r .= self::remove_all_button($options);
-    //We need to store all the user notification ids from the notifications report in a hidden field for use when the user elects
-    //to remove the notifications. This allows us to remove notifications that are on pages not currently visible on the grid.
-    $r .= '<input style="display:none" name="notification_ids" class="notification_ids" value="">';
+    //We need to store a list of source types on the grid, so we know what to clean up when the remove all button is clicked.
+    $r .= '<input style="display:none" name="source_types" class="source_types" value="">';
     $r .= "</form>";
     return $r;
   }
@@ -121,38 +126,10 @@ class extension_notifications_centre {
   /*
    * Get all the notification ids in the grids and put them in hidden fields so we can remove notifications that are on pages that aren't visible
    */
-  public static function setup_notification_ids_hidden_fields($options, $sourceType, $notificationProxyUrl, $website_id, $auth) {
+  public static function setup_source_types_hidden_fields($options, $sourceType, $notificationProxyUrl, $website_id, $auth) {
     global $user, $auth;
-    foreach ($sourceType as &$type)
-      $type="'".$type."'";
-
-    if (!isset($auth))
-      $auth = report_helper::get_read_auth(variable_get('indicia_website_id',''), variable_get('indicia_password',''));
-    $readNonce = $auth['nonce'];
-    $readAuthToken = $auth['auth_token'];
-    
-    foreach ($sourceType as $theSourceType) {
-      report_helper::$javascript .= " 
-      var notificationIdsList = '';
-      var data={
-        'website_id': $website_id,
-        'mode': 'json',
-        'nonce': \"$readNonce\",
-        'auth_token': \"$readAuthToken\",
-        'user_id': $user->profile_indicia_user_id,
-        'acknowledged': 'f',
-        'simplified': 'f',
-        'source_type': $theSourceType
-      }
-
-      jQuery.getJSON(indiciaData.data_services_url + '/notification?callback=?', data, 
-          function(data) {
-            jQuery.each(data, function(i, item) {
-               notificationIdsList=notificationIdsList + item.id + ',';
-            });
-            $('#".$options['id']." .notification_ids').val(notificationIdsList);
-      });";
-    }
+    $sourceTypesList = implode(',', $sourceType);
+    report_helper::$javascript .= "$('#".$options['id']." .source_types').val('$sourceTypesList');\n";
   }
   
   /**
@@ -162,25 +139,32 @@ class extension_notifications_centre {
    * @param type $auth
    */
   public static function build_notifications_removal_submission($_POST, $auth) {
+    global $user;
     //Using 'submission_list' and 'entries' allows us to specify several top-level submissions to the system
     //i.e. we need to be able to submit several notifications.
     $submission['submission_list']['entries'] = array();
     $submission['id']='notification';
-    //Get the ids from the hidden field.
-    $idArrayToSubmit = explode(',', $_POST['notification_ids']);
+    //Get the types (auto-check, comment or verification) of notification from the hidden field.
+    $sourceTypesToClear = explode(',', $_POST['source_types']);
+    $notifications = data_entry_helper::get_population_data(array(
+      'table' => 'notification',
+      'extraParams' => $auth['read'] + array('acknowledged' => 'f', 'user_id'=>$user->profile_indicia_user_id,
+          'query' => json_encode(array('in' => array('source_type' => $sourceTypesToClear)))),
+      'nocache' => true
+    ));
     $count=0;
-    //Setup the structure we need to submit.
-    foreach ($idArrayToSubmit as $value) { 
-      if (!empty($value)) {
+    if (count($notifications)>0) {
+      //Setup the structure we need to submit.
+      foreach ($notifications as $notification) { 
         $data['id']='notification';
-        $data['fields']['id']['value'] = $value;
+        $data['fields']['id']['value'] = $notification['id'];
         $data['fields']['acknowledged']['value'] = 't';
         $submission['submission_list']['entries'][] = $data;
         $count++;
       }
+      //Submit the stucture for processing
+      $response = data_entry_helper::forward_post_to('save', $submission, $auth['write_tokens']);
     }
-    //Submit the stucture for processing
-    $response = data_entry_helper::forward_post_to('save', $submission, $auth['write_tokens']);
     if (is_array($response) && array_key_exists('success', $response)) {
       if ($count===1)
         drupal_set_message(lang::get("1 notification has been removed."));
@@ -213,7 +197,7 @@ class extension_notifications_centre {
     report_helper::$javascript .= "
     indiciaData.reply_to_message = function(notification_id, occurrence_id) {
       if (!$('#reply-row-'+occurrence_id).length) {
-        rowHtml = '<tr id='+\"reply-row-\"+occurrence_id+'><td><textarea style=\"width: 95%\" id='+\"reply-\"+occurrence_id+'></textarea></td>';
+        rowHtml = '<tr id='+\"reply-row-\"+occurrence_id+'><td><label for=\"\">".lang::get('Enter your reply below').":</label><textarea style=\"width: 95%\" id=\"reply-' +occurrence_id+'\"></textarea></td>';
         rowHtml += '<td class=\"actions\">';
         rowHtml += '<div><img class=\"action-button\" src=\"$sendReply\" onclick=\"reply('+occurrence_id+','+notification_id+',true);\" title=\"Send reply\">';
         rowHtml += '<img class=\"action-button\" src=\"$cancelReply\" onclick=\"reply('+occurrence_id+','+notification_id+',false);\" title=\"Cancel reply\">';
@@ -225,7 +209,7 @@ class extension_notifications_centre {
     "; 
     
     //Setup the javascript needed to support the remove notification button.
-    self::setup_notification_ids_hidden_fields($options, $sourceType, $notificationProxyUrl, $website_id, $auth);  
+    self::setup_source_types_hidden_fields($options, $sourceType, $notificationProxyUrl, $website_id, $auth);  
     $auth = report_helper::get_read_auth(variable_get('indicia_website_id',''), variable_get('indicia_password',''));
     
     //Implode the source types so we can submit to the database in one text field.
@@ -235,12 +219,12 @@ class extension_notifications_centre {
 
     $availableActions = 
       array(
-        array('caption'=>lang::get('edit this record'), 'class'=>'edit-notification', 'url'=>'{rootFolder}{editing_form}', 'urlParams'=>array('occurrence_id'=>'{occurrence_id}'),
+        array('caption'=>lang::get('Edit this record'), 'class'=>'edit-notification', 'url'=>'{rootFolder}{editing_form}', 'urlParams'=>array('occurrence_id'=>'{occurrence_id}'),
               'img'=>$imgPath.'nuvola/package_editors-22px.png', 'visibility_field'=>'editable_flag'),
         array('caption'=>lang::get('View this record'), 'class'=>'view-notification', 'url'=>'{rootFolder}{viewing_form}', 'urlParams'=>array('occurrence_id'=>'{occurrence_id}'),
               'img'=>$imgPath.'nuvola/find-22px.png', 'visibility_field'=>'viewable_flag' ),
-        array('caption'=>lang::get('acknowledge this message'), 'javascript'=>'remove_message({notification_id});',
-              'img'=>$imgPath.'nuvola/ok-16px.png'));
+        array('caption'=>lang::get('Mark as read'), 'javascript'=>'remove_message({notification_id});',
+              'img'=>$imgPath.'nuvola/kmail-22px.png'));
     //Only allow replying for 'user' messages.
     if ($options['allowReply']===true)
       $availableActions = array_merge($availableActions,array(array('caption'=>lang::get('Reply to this message'), 'img'=>$imgPath.'nuvola/mail_reply-22px.png', 
