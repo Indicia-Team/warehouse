@@ -37,6 +37,7 @@ class Notification_Model extends ORM {
   public function validate(Validation $array, $save = FALSE) {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
+    $array->add_rules('source', 'required');
     $array->add_rules('source_type', 'required');
     $array->add_rules('data', 'required');
     $array->add_rules('acknowledged', 'required');

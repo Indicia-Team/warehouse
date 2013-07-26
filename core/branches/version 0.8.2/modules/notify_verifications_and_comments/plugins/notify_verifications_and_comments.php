@@ -24,7 +24,7 @@
  * Hook into the task scheduler. Runs a query to find all comments and verification status updates that need
  * to be notified back to the recorder of a record. 
  */
-function notify_verifications_and_comments_scheduled_task($last_run_date) {  
+function notify_verifications_and_comments_scheduled_task($last_run_date) { 
   if (!$last_run_date)
     // first run, so get all records changed in last day. Query will automatically gradually pick up the rest.
     $last_run_date=date('Y-m-d', time()-60*60*24*50);  
@@ -60,8 +60,10 @@ function notify_verifications_and_comments_scheduled_task($last_run_date) {
         }
         elseif ($notification->verified_on>$last_run_date and $notification->record_status!=='I' and $notification->record_status!=='T' and $notification->record_status!=='C')
           $comment = 'Your record of '.$notification->taxon.' at '.$notification->public_entered_sref.' on '.$date.' was examined by an expert.<br/>"';
+        elseif ($notification->record_owner==='t')
+          $comment = 'A comment was added to your record of '.$notification->taxon.' at '.$notification->public_entered_sref.' on '.$date.'.<br/>"';          
         else
-          $comment = 'A comment was added to your record of '.$notification->taxon.' at '.$notification->public_entered_sref.' on '.$date.'.<br/>"';
+          $comment = 'A reply was added to the record of '.$notification->taxon.' at '.$notification->public_entered_sref.' on '.$date.' which you\'ve previously commented on.<br/>"';          
         $comment .= $notification->comment;
         if ($notification->auto_generated==='t') {
           // a difficult ID record is not necessarily important...
@@ -70,19 +72,21 @@ function notify_verifications_and_comments_scheduled_task($last_run_date) {
         } else 
           $comment .= '"<br/>';
       }
-      $db->insert('notifications', array(
-                'source' => 'Verifications and comments',
-                'source_type' => $notification->source_type,
-                'data' => json_encode(array(
-                    'username'=>$notification->username,'occurrence_id'=>$notification->id,'comment'=>$comment,
-                    'taxon'=>$notification->taxon,'date'=>$date,'entered_sref'=>$notification->public_entered_sref,
-                    'auto_generated'=>$notification->auto_generated, 'record_status'=>$notification->record_status, 'updated_on'=>$notification->updated_on
-                )),
-                'linked_id' => $notification->id,
-                'user_id' => $notification->created_by_id,
-                // use digest mode the user selected for this notification, or their default if not specific
-                'digest_mode' => 'N'
-              ));
+      $theNotificationToInsert = array(
+        'source' => 'Verifications and comments',
+        'source_type' => $notification->source_type,
+        'data' => json_encode(array(
+            'username'=>$notification->username,'occurrence_id'=>$notification->id,'comment'=>$comment,
+            'taxon'=>$notification->taxon,'date'=>$date,'entered_sref'=>$notification->public_entered_sref,
+            'auto_generated'=>$notification->auto_generated, 'record_status'=>$notification->record_status, 'updated_on'=>$notification->updated_on
+        )),
+        'linked_id' => $notification->id,
+        'user_id' => $notification->notify_user_id,
+        // use digest mode the user selected for this notification, or their default if not specific
+        'digest_mode' => 'N',
+        'source_detail' => $notification->source_detail
+      );
+      $db->insert('notifications', $theNotificationToInsert);
     }
     echo count($notifications) . ' notifications generated<br/>';
   } catch (Exception $e) {
