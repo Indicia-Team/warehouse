@@ -65,19 +65,40 @@ class postgreSQL {
     if (!$db)
       $db = new Database();
     // note this query excludes user 1 from the notifications (admin user) as they are records which don't
-    // have a warehouse user ID.
-    return $db->query("select case when o.verified_on>'$last_run_date' and o.record_status not in ('I','T','C') then 'V' else 'C' end as source_type,
-        co.id, co.created_by_id, co.taxon, co.date_start, co.date_end, co.date_type, co.public_entered_sref, u.username, 
-        o.verified_on, co.public_entered_sref, oc.comment, oc.auto_generated, oc.generated_by, o.record_status, o.updated_on    
+    // have a warehouse user ID. Also excludes any previous notifications of this exact source for this user.
+    return $db->query("select case when oc.auto_generated=true then 'A' when o.verified_on>'$last_run_date' and o.record_status not in ('I','T','C') then 'V' else 'C' end as source_type,
+        co.id, co.created_by_id as notify_user_id, co.taxon, co.date_start, co.date_end, co.date_type, co.public_entered_sref, u.username, 
+        o.verified_on, co.public_entered_sref, oc.comment, oc.auto_generated, oc.generated_by, o.record_status, o.updated_on, oc.created_by_id as occurrence_comment_created_by_id,
+        case when oc.auto_generated=true then oc.generated_by else 'oc_id:' || oc.id::varchar end as source_detail, 't' as record_owner           
       from occurrences o
       join cache_occurrences co on co.id=o.id
-      left join occurrence_comments oc on oc.occurrence_id=o.id and oc.deleted=false and oc.created_on>'$last_run_date'
+      left join occurrence_comments oc on oc.occurrence_id=o.id and oc.deleted=false and oc.created_on>'$last_run_date' and oc.created_by_id<>o.created_by_id
       join users u on u.id=coalesce(oc.created_by_id, o.verified_by_id)
+      left join notifications n on n.linked_id=o.id 
+          and n.source_type=case when oc.auto_generated=true then 'A' when o.verified_on>'$last_run_date' and o.record_status not in ('I','T','C') then 'V' else 'C' end
+          and n.source_detail=case when oc.auto_generated=true then oc.generated_by else 'oc_id:' || oc.id::varchar end
       where ((o.verified_on>'$last_run_date'
       and o.record_status not in ('I','T','C'))
       or oc.id is not null)
-      and o.created_by_id<>1")->result();
-  }
-  
+      and o.created_by_id<>1
+      and n.id is null
+    union
+    select distinct 'C' as source_type, co.id, ocprev.created_by_id as notify_user_id, co.taxon, co.date_start, co.date_end, co.date_type, co.public_entered_sref, u.username, 
+        o.verified_on, co.public_entered_sref, oc.comment, oc.auto_generated, oc.generated_by, o.record_status, o.updated_on, oc.created_by_id as occurrence_comment_created_by_id,
+        'oc_id:' || oc.id::varchar as source_detail, case ocprev.created_by_id when o.created_by_id then 't' else 'f' end as record_owner
+      from occurrences o
+      join cache_occurrences co on co.id=o.id
+      join occurrence_comments ocprev on ocprev.occurrence_id=o.id and ocprev.deleted=false and ocprev.created_by_id<>o.created_by_id and ocprev.created_by_id<>1
+      join occurrence_comments oc on oc.occurrence_id=o.id and oc.deleted=false and oc.created_on>'$last_run_date' and oc.created_by_id<>ocprev.created_by_id
+      join users u on u.id=coalesce(oc.created_by_id, o.verified_by_id)
+      left join notifications n on n.linked_id=o.id 
+          and n.source_type='C' 
+          and n.source_detail='oc_id:' || oc.id::varchar
+      where o.created_by_id<>1 and oc.created_by_id<>1
+      and n.id is null
+      -- only notify if not the commenter or record owner
+      and ocprev.created_by_id<>oc.created_by_id and ocprev.created_by_id<>o.created_by_id
+      ")->result();
+  }  
 }
 ?>
