@@ -28,7 +28,7 @@ class extension_site_hierarchy_navigator {
   
   public function map($auth, $args, $tabalias, $options, $path) {
     if (empty($options['layerLocationTypes']))
-      return '<h3>Please provide a layerLocationTypes attribute for the [site_hierarchy_navigator.map] map control on the edit tab<h3>';
+      return '<label>Please provide a layerLocationTypes attribute for the [site_hierarchy_navigator.map] map control on the edit tab</label>';
     iform_load_helpers(array('map_helper','report_helper'));
     $jsPath = iform_client_helpers_path().'prebuilt_forms/extensions/site_hierarchy_navigator.js';
     drupal_add_js($jsPath);
@@ -47,6 +47,7 @@ class extension_site_hierarchy_navigator {
     //Tell the system which layers we to be clickable. As we initially only use
     //one layer to start with, we only supply one item.
     $options['clickableLayers']=array('indiciaData.reportlayer');
+    $r .= '<div id="map-breadcrumb"></div>';
     $r .= map_helper::map_panel(
       $options,
       $olOptions
