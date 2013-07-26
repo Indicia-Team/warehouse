@@ -15,7 +15,10 @@
   left join samples sparent on sparent.id=s.parent_id and sparent.deleted=false
   left join (index_locations_samples ils
     join locations locality on locality.id=ils.location_id and locality.location_type_id=#locality_type_id#
-  ) on ils.sample_id=s.id  
+  ) on ils.sample_id=s.id
+  left join (users u
+    join people p on p.id=u.person_id and p.deleted=false
+  ) on u.id=o.created_by_id and u.id&lt;&gt;1 and u.deleted=false
   #agreements_join#
   #joins#
   where co.id=#occurrence_id#
@@ -50,6 +53,6 @@
     <column name="taxon_group_id" sql="co.taxon_group_id" visible="false" />
     <column name="localities" sql="array_to_string(array_agg(locality.name), '|')" aggregate="true" visible="false" />
     <column name="locality_ids" sql="array_to_string(array_agg(locality.id), '|')" aggregate="true" visible="false" />
-  
+    <column name='email' visible='false' sql='p.email_address' />
   </columns>
 </report>
