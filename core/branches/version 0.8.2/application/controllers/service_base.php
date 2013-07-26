@@ -72,7 +72,7 @@ class Service_Base_Controller extends Controller {
    * to filter the response. A value of 0 indicates the warehouse.
    */
   protected $website_id = null;
-  
+
   /**
    * @var int Id of the indicia user ID calling the service. Obtained when performing read authentication and can be used
    * to filter the response. Null if not provided in the report call.
@@ -96,7 +96,6 @@ class Service_Base_Controller extends Controller {
     // Read calls are done using get values, so we merge the two arrays
     $array = array_merge($_POST, $_GET);
     $authentic = FALSE; // default
-    kohana::log('debug', "$mode authenticating ".print_r($array, true));
     if (array_key_exists('nonce', $array) && array_key_exists('auth_token',$array))
     {
       $nonce = $array['nonce'];
@@ -112,7 +111,7 @@ class Service_Base_Controller extends Controller {
           if ($id>0) {
             // normal state, the ID is positive, which means we are authenticating a remote website
             $website = ORM::factory('website', $id);
-            if ($website->id) 
+            if ($website->id)
               $password = $website->password;
           } else
             $password = kohana::config('indicia.private_key');
@@ -121,7 +120,7 @@ class Service_Base_Controller extends Controller {
             Kohana::log('info', "Authentication successful.");
             // cache website_password for subsequent use by controllers
             $this->website_password = $password;
-            $authentic=true;            
+            $authentic=true;
           }
           if ($authentic) {
             if ($id>0) {
@@ -142,7 +141,7 @@ class Service_Base_Controller extends Controller {
               if (!$this->user_is_core_admin) {
                 $this->user_websites = array();
                 $userWebsites = ORM::Factory('users_website')->where(array('user_id'=>$this->user_id, 'site_role_id is not'=>null, 'banned'=>'f'))->find_all();
-                foreach ($userWebsites as $userWebsite) 
+                foreach ($userWebsites as $userWebsite)
                   $this->user_websites[] = $userWebsite->website_id;
               }
             }
@@ -150,14 +149,15 @@ class Service_Base_Controller extends Controller {
             if(array_key_exists('reset_timeout', $array) && $array['reset_timeout']=='true') {
               Kohana::log('info', "Nonce timeout reset.");
               $this->cache->set($nonce, $id, $mode);
-            } 
+            }
           }
-        }        
+        }
       }
     } else {
       $auth = new Auth();
       $authentic = ($auth->logged_in() || $auth->auto_login());
       $this->in_warehouse = $authentic;
+      $this->user_is_core_admin = $auth->logged_in('CoreAdmin');
     }
 
     if (!$authentic)
@@ -166,7 +166,7 @@ class Service_Base_Controller extends Controller {
       throw new ServiceError("unauthorised");
     };
   }
-  
+
   /**
    * Set the content type and then issue the response.
    */
@@ -183,8 +183,10 @@ class Service_Base_Controller extends Controller {
 
   /**
    * Return an error XML or json document to the client
+   * @param string Id of the transaction calling the service. Optional.
+   * Returned to the calling code.
    */
-  protected function handle_error($e)
+  protected function handle_error($e, $transaction_id = null)
   {
     $mode = $this->get_input_mode();
     if ($mode=='xml') {
@@ -195,12 +197,15 @@ class Service_Base_Controller extends Controller {
       $response = array(
         'error'=>$e->getMessage()
       );
+      if ($transaction_id) {
+      	$response['transaction_id'] = $transaction_id;
+      }
       if (get_class($e)=='ArrayException') {
         $response['errors'] = $e->errors();
       } elseif (get_class($e)!='ServiceError') {
         $response['file']=$e->getFile();
         $response['line']=$e->getLine();
-        $response['trace']=array();        
+        $response['trace']=array();
       }
       $a = json_encode($response);
       if (array_key_exists('callback', $_GET))

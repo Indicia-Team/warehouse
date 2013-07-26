@@ -1026,7 +1026,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     }
     catch (Exception $e)
     {
-      $this->handle_error($e);
+      $this->handle_error($e, (isset($s['fields']['transaction_id']['value']) ? $s['fields']['transaction_id']['value'] : null));
     }
   }
 
