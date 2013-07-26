@@ -56,7 +56,6 @@ class extension_site_hierarchy_navigator {
     $options['clickableLayersOutputDiv'] = '';
     //Tell the system which layers we to be clickable.
     $options['clickableLayers']=array('indiciaData.reportlayer');
-    $r .= '<div id="map-breadcrumb"></div>';
     $r .= map_helper::map_panel(
       $options,
       $olOptions
@@ -70,6 +69,16 @@ class extension_site_hierarchy_navigator {
          'dataSource'=>'library/locations/locations_with_geometry_for_location_type',
          'readAuth'=>$auth['read']
        ))."';\n";
+    return $r;
+  }
+  
+  /*
+   * A breadcrumb trail of the site hierarchy locations the user has clicked through as a seperate control
+   */
+  public function breadcrumb($auth, $args, $tabalias, $options, $path) {
+    iform_load_helpers(array('map_helper'));
+    map_helper::$javascript .= "indiciaData.useBreadCrumb=true;\n";
+    $r .= '<ul id="map-breadcrumb"></ul>';
     return $r;
   }
   
