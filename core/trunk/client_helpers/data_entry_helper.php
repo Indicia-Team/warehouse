@@ -5331,9 +5331,12 @@ if (errors.length>0) {
     } else {
       throw new Exception('Cannot find website id in POST array!');
     }
-    // determiner and record status can be defined globally for the whole list.
+    // determiner, training and record status can be defined globally for the whole list.
     if (array_key_exists('occurrence:determiner_id', $arr)){
       $determiner_id = $arr['occurrence:determiner_id'];
+    }
+    if (array_key_exists('occurrence:training', $arr)){
+      $training = $arr['occurrence:training'];
     }
     if (array_key_exists('occurrence:record_status', $arr)){
       $record_status = $arr['occurrence:record_status'];
@@ -5373,7 +5376,10 @@ if (errors.length>0) {
         $record['taxa_taxon_list_id'] = $record['present'];
         $record['website_id'] = $website_id;
         if (isset($determiner_id)) {
-            $record['determiner_id'] = $determiner_id;
+          $record['determiner_id'] = $determiner_id;
+        }
+        if (isset($training)) {
+          $record['training'] = $training;
         }
         if (isset($record_status)) {
           $record['record_status'] = $record_status;
