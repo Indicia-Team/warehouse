@@ -57,15 +57,14 @@ function add_new_layer_for_site_hierarchy_navigator(clickedFeature,breadcrumbLay
             indiciaData.reportlayer.setName('Locations of type ' + currentLayerObjectType);
           }
           //make the breadcrumb
-          breadcrumb(breadcrumbLayerCounter,currentLayerCounter,parentId,parentName);
+          if (indiciaData.useBreadCrumb) {
+            breadcrumb(breadcrumbLayerCounter,currentLayerCounter,parentId,parentName);
+          }
           indiciaData.reportlayer.removeAllFeatures();
           indiciaData.mapdiv.map.addLayer(indiciaData.reportlayer);
           indiciaData.reportlayer.addFeatures(features); 
           zoom_to_area(features);
-          //Increase the number of the layer we are working on, but not if the user has clicked on the breadcrumb.
-          if (breadcrumbLayerCounter==null) {
-            currentLayerCounter++;
-          }
+          currentLayerCounter++;
         }
       }
   );
@@ -81,8 +80,11 @@ function get_parent_name_and_id(clickedFeature,breadcrumbLayerCounter) {
   if (breadcrumbLayerCounter!=null) {
     parentId = parentFromPreviousBreadcrumbs[breadcrumbLayerCounter]['id'];
     parentName = parentFromPreviousBreadcrumbs[breadcrumbLayerCounter]['name'];
-    for (i=breadcrumbLayerCounter+1;i<=currentLayerCounter; i++) {
-      $('#breadcrumb-part-'+i).remove();
+    if (indiciaData.useBreadCrumb) {
+      for (i=breadcrumbLayerCounter+1;i<=currentLayerCounter; i++) {
+        $('#breadcrumb-part-'+i).remove();
+        delete parentFromPreviousBreadcrumbs[i];
+      }
     }
     currentLayerCounter = breadcrumbLayerCounter; 
   } else {
@@ -116,11 +118,11 @@ function breadcrumb(breadcrumbLayerCounter,currentLayerCounter,parentId,parentNa
     parentFromPreviousBreadcrumbs [currentLayerCounter]['name']=parentName;
     //If there is an existing bredcrumb, we need don't want to lose it when drawing the breadcrumb
     if (existingBreadcrumb) {
-      breadcrumbPartFront = existingBreadcrumb + '<div id="breadcrumb-part-'+currentLayerCounter+'">->';
+      breadcrumbPartFront = existingBreadcrumb + '<li id="breadcrumb-part-'+currentLayerCounter+'">';
     } else {
-      breadcrumbPartFront = '<div id = "breadcrumb-part-'+currentLayerCounter+'">';
+      breadcrumbPartFront = '<li id = "breadcrumb-part-'+currentLayerCounter+'">';
     }
-    $('#map-breadcrumb').html(breadcrumbPartFront + "<a onclick='add_new_layer_for_site_hierarchy_navigator(null,"+currentLayerCounter+")'>"+ indiciaData.reportlayer.name + "</a></div>");
+    $('#map-breadcrumb').html(breadcrumbPartFront + "<a onclick='add_new_layer_for_site_hierarchy_navigator(null,"+currentLayerCounter+")'>"+ indiciaData.reportlayer.name + "</a></li>");
   }
 }
 
