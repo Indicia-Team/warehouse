@@ -228,7 +228,8 @@ a {
 }
 
 .action-button {
-  margin-bottom: 4px;
+  margin: 4px;
+  display: block;
 }
 
 .indicia-button span {

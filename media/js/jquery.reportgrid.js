@@ -182,9 +182,6 @@ var simple_tooltip;
           } else {
             href='';
           }
-          if (result !== '') {
-            result += '<br/>';
-          }
           if (typeof action.img!=="undefined") {
             img=action.img.replace(/{rootFolder}/g, div.settings.rootFolder);
             content = '<img src="'+img+'" title="'+action.caption+'" />';
