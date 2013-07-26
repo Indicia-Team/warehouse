@@ -18,6 +18,7 @@ function saveComment(occurrence_id) {
     'occurrence_comment:occurrence_id': occurrence_id,
     'occurrence_comment:comment': $('#comment-text').val(),
     'occurrence_comment:person_name': indiciaData.username,
+    'user_id': indiciaData.user_id
   };
   $.post(
     indiciaData.ajaxFormPostUrl.replace('occurrence', 'occ-comment'),
