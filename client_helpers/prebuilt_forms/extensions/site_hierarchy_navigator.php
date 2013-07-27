@@ -78,9 +78,21 @@ class extension_site_hierarchy_navigator {
   public function breadcrumb($auth, $args, $tabalias, $options, $path) {
     iform_load_helpers(array('map_helper'));
     map_helper::$javascript .= "indiciaData.useBreadCrumb=true;\n";
-    $r .= '<ul id="map-breadcrumb"></ul>';
-    return $r;
+    $breadcrumb = '<div><ul id="map-breadcrumb"></ul></div>';
+    return $breadcrumb;
   }
   
+  /*
+   * A select list that displays the same locations as on the map. Selecting a location
+   * from the select list is the same as clicking on it on the map with the exception that
+   * if there is no data that can be displayed then the select list gives a warning and
+   * the map just ignores the user's click.
+   */
+  public function selectlist($auth, $args, $tabalias, $options, $path) {
+    iform_load_helpers(array('map_helper'));
+    map_helper::$javascript .= "indiciaData.useSelectList=true;\n";
+    $selectlist = '<div><select id="map-selectlist"></select></div>';
+    return $selectlist;
+  }
 }
   

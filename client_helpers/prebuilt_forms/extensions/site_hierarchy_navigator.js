@@ -12,7 +12,7 @@ jQuery(document).ready(function($) {
     indiciaData.mapdiv = div;
     //Setup the initial map layer the user sees.
     //We initially don't have a parent, and the user hasn't clicked on the breadcrumb so these parameters are null.
-    add_new_layer_for_site_hierarchy_navigator(null,null);
+    add_new_layer_for_site_hierarchy_navigator(null,null,false);
   });  
 });
 
@@ -22,7 +22,7 @@ jQuery(document).ready(function($) {
 //TODO, this function is not doing much at the moment, maybe remove
 function reload_map_with_sub_sites_for_clicked_feature(features) {
   if (features.length>0 && indiciaData.layerLocationTypes.length > 0) {
-    add_new_layer_for_site_hierarchy_navigator(features[0],null);
+    add_new_layer_for_site_hierarchy_navigator(features[0].id,null,false);
   }
 }
 
@@ -32,7 +32,8 @@ function reload_map_with_sub_sites_for_clicked_feature(features) {
  * If they click on a feature, then clickedFeature holds the details of the clicked locations (the parent).
  * Note on the first layer this is null as the user hasn't clicked on anything yet.
  */
-function add_new_layer_for_site_hierarchy_navigator(clickedFeature,breadcrumbLayerCounter) {
+function add_new_layer_for_site_hierarchy_navigator(clickedFeatureId,breadcrumbLayerCounter,fromSelectlist) {
+  clickedFeature = indiciaData.reportlayer.getFeatureById(clickedFeatureId);
   //Get id and name of the location clicked on or get previously stored parent details if user clicks on breadcrumb
   var parentIdAndName = get_parent_name_and_id(clickedFeature,breadcrumbLayerCounter);
   var parentId = parentIdAndName[0];
@@ -60,11 +61,19 @@ function add_new_layer_for_site_hierarchy_navigator(clickedFeature,breadcrumbLay
           if (indiciaData.useBreadCrumb) {
             breadcrumb(breadcrumbLayerCounter,currentLayerCounter,parentId,parentName);
           }
+          //make the select list
+          if (indiciaData.useSelectList) {
+            selectlist(features);
+          }
           indiciaData.reportlayer.removeAllFeatures();
           indiciaData.mapdiv.map.addLayer(indiciaData.reportlayer);
           indiciaData.reportlayer.addFeatures(features); 
           zoom_to_area(features);
           currentLayerCounter++;
+        } else {
+          if (fromSelectlist===true) {
+            alert('The selected location does not have any data to display');
+          }
         }
       }
   );
@@ -122,7 +131,7 @@ function breadcrumb(breadcrumbLayerCounter,currentLayerCounter,parentId,parentNa
     } else {
       breadcrumbPartFront = '<li id = "breadcrumb-part-'+currentLayerCounter+'">';
     }
-    $('#map-breadcrumb').html(breadcrumbPartFront + "<a onclick='add_new_layer_for_site_hierarchy_navigator(null,"+currentLayerCounter+")'>"+ indiciaData.reportlayer.name + "</a></li>");
+    $('#map-breadcrumb').html(breadcrumbPartFront + "<a onclick='add_new_layer_for_site_hierarchy_navigator(null,"+currentLayerCounter+",false)'>"+ indiciaData.reportlayer.name + "</a></li>");
   }
 }
 
@@ -160,3 +169,15 @@ function zoom_to_area(features) {
   indiciaData.mapdiv.map.setCenter(boundsOfAllObjects.getCenterLonLat(), zoom); 
 }
 
+/*
+ * A select list that displays the same locations as on the map. Selecting a location
+ * from the select list zooms in the same way map clicking does.
+ */
+function selectlist(features) {
+  var selectListOptions;
+  selectListOptions += '<option value="">Please select a location</option>';
+  $.each(features, function (idx, feature) {
+    selectListOptions += '<option value="'+feature.attributes.name+'" onclick="add_new_layer_for_site_hierarchy_navigator('+feature.id+', null,true)">'+feature.attributes.name+'</option>';
+  });
+  $('#map-selectlist').html(selectListOptions)
+}
