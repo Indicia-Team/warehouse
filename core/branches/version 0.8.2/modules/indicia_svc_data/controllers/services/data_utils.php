@@ -44,10 +44,9 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       $data=$this->reportEngine->requestReport("$report.xml", 'local', 'xml', $params);
       // now get a list of all the occurrence ids
       $ids = array();
-      $count=0;
       foreach ($data['content']['records'] as $record) {
         if ($record['record_status']!=='V' && (!empty($record['pass'])||$_POST['ignore']==='true')) {
-          $ids[] = $record['occurrence_id'];
+          $ids[$record['occurrence_id']] = $record['occurrence_id'];
           $db->insert('occurrence_comments', array(
               'occurrence_id'=>$record['occurrence_id'],
               'comment'=>'This record is assumed to be correct',
@@ -56,11 +55,12 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
               'updated_by_id'=>$this->user_id,
               'updated_on'=>date('Y-m-d H:i:s')
           ));
-          $count++;
         }
       }
-      $db->from('occurrences')->set(array('record_status'=>'V','updated_by_id'=>$this->user_id,'updated_on'=>date('Y-m-d H:i:s')))->in('id', $ids)->update();
-      echo $count;
+      $db->from('occurrences')->set(array('record_status'=>'V', 'verified_by_id'=>$this->user_id, 'verified_on'=>date('Y-m-d H:i:s'),
+          'updated_by_id'=>$this->user_id, 'updated_on'=>date('Y-m-d H:i:s')))->in('id', array_keys($ids))->update();
+      echo count($ids);
+      $db->from('cache_occurrences')->set(array('record_status'=>'V', 'cache_updated_on'=>date('Y-m-d H:i:s')))->in('id', array_keys($ids))->update();
     } catch (Exception $e) {
       echo $e->getMessage();
       error::log_error('Exception during bulk verify', $e);
