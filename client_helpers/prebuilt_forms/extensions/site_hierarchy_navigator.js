@@ -5,7 +5,18 @@ var parentFromPreviousBreadcrumbs  = [];
 //Need to store the number of the current layer level, so we can get the relevant item from layerLocationTypes
 var currentLayerCounter = 0;
 jQuery(document).ready(function($) {
-  indiciaData.reportlayer = new OpenLayers.Layer.Vector('Report output');
+  //setup default styling for the feature points. The type of icon to show is supplied in the report
+  //in a column called 'graphic'.
+  var s = new OpenLayers.StyleMap({
+    'pointRadius': 15,
+    'graphicName': '${graphic}',
+    'fillColor': '#ee9900',
+    'fillOpacity': 0.4,
+    'strokeColor': '#ee9900',
+    'strokeOpacity': 1,
+    'strokeWidth': 1
+  });
+  indiciaData.reportlayer = new OpenLayers.Layer.Vector('Report output', {styleMap: s});
   mapInitialisationHooks.push(function (div) {
     "use strict";
     //Put into indicia data so we can see the map div elsewhere
@@ -46,11 +57,23 @@ function add_new_layer_for_site_hierarchy_navigator(clickedFeatureId,breadcrumbL
           var currentLayerObjectType;
           var features=[];    
           var existingBreadcrumb;
-          //Make nice names for the layers and add geometry to map
-          $.each(response, function (idx, obj) {
-            currentLayerObjectType = obj.location_type_name;
-            indiciaData.mapdiv.addPt(features, obj, 'boundary_geom', {"type":"vector"}, obj.id);
-          });
+          var featureIds=[];
+          //If the user options tell the system to use symbols instead boundaries, then we plot the centroid instead of boundary
+          if (inArray(indiciaData.layerLocationTypes[currentLayerCounter],indiciaData.locationTypesWithSymbols)) {
+            //Make nice names for the layers and add centroid geometry to map
+            $.each(response, function (idx, obj) {
+              currentLayerObjectType = obj.location_type_name;
+              indiciaData.mapdiv.addPt(features, obj, 'centroid_geom', {}, obj.id);
+              featureIds[idx] = obj.id;
+            });
+          } else {
+            //Make nice names for the layers and add boundary geometry to map
+            $.each(response, function (idx, obj) {
+              currentLayerObjectType = obj.location_type_name;
+              indiciaData.mapdiv.addPt(features, obj, 'boundary_geom', {}, obj.id);
+              featureIds[idx] = obj.id;
+            });
+          }
           //Give the layer a name that includes the location type being shown and the parent name
           if (parentName!==null) {
             indiciaData.reportlayer.setName('Locations of type ' + currentLayerObjectType+ ' in ' + parentName);
@@ -64,6 +87,10 @@ function add_new_layer_for_site_hierarchy_navigator(clickedFeatureId,breadcrumbL
           //make the select list
           if (indiciaData.useSelectList) {
             selectlist(features);
+          }
+          //Get the link to report button
+          if (indiciaData.useListReportLink) {
+            list_report_link(indiciaData.layerLocationTypes[currentLayerCounter],featureIds);
           }
           indiciaData.reportlayer.removeAllFeatures();
           indiciaData.mapdiv.map.addLayer(indiciaData.reportlayer);
@@ -161,12 +188,16 @@ function zoom_to_area(features) {
     //As above for north
     if (!boundsOfAllObjects.top || boundsOfAllObjects.top < bounds.top) {
       boundsOfAllObjects.top = bounds.top;
-    }   
+  }   
   });
   //Zoom and center
-  indiciaData.mapdiv.map.zoomToExtent(boundsOfAllObjects, true);
-  zoom = indiciaData.mapdiv.map.getZoomForExtent(boundsOfAllObjects);
-  indiciaData.mapdiv.map.setCenter(boundsOfAllObjects.getCenterLonLat(), zoom); 
+  if (indiciaData.mapdiv.map.getZoomForExtent(bounds) > indiciaData.mapdiv.settings.maxZoom) {
+    //if showing something small, don't zoom in too far
+    indiciaData.mapdiv.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
+  } else {
+    zoom = indiciaData.mapdiv.map.getZoomForExtent(boundsOfAllObjects);
+    indiciaData.mapdiv.map.setCenter(boundsOfAllObjects.getCenterLonLat(), zoom); 
+  }
 }
 
 /*
@@ -180,4 +211,44 @@ function selectlist(features) {
     selectListOptions += '<option value="'+feature.attributes.name+'" onclick="add_new_layer_for_site_hierarchy_navigator('+feature.id+', null,true)">'+feature.attributes.name+'</option>';
   });
   $('#map-selectlist').html(selectListOptions)
+}
+
+  /*
+   * A control where we construct a button linking to a report page whose path and parameter are as per administrator supplied options.
+   * The options format is comma seperated where the format of the elements is "location_type_id|report_path|report_parameter".
+   * If an option is not found for the displayed layer's location type, then the report link button is hidden from view.
+   */
+function list_report_link(currentSiteType,locationIds) {
+  //construct a comma seperated list of location ids shown on the current layer 
+  //which is then put in the report parameter in the url.
+  var locationIdsUrlFormat;
+  $.each(locationIds, function (idx, locationId) {
+    if (!locationIdsUrlFormat) {
+      locationIdsUrlFormat = locationId;
+    } else {
+      locationIdsUrlFormat += ',' + locationId;
+    }
+  });
+  //If the current layer location type is in the administrator specified options list, then we know to draw the report button
+  for (i=0; i<indiciaData.locationTypesForListReport.length;i++) {
+    if (indiciaData.locationTypesForListReport[i] === currentSiteType) {
+      button = '<FORM>';
+      button += "<INPUT TYPE=\"button\" VALUE=\"View Sites and Counts Units list\"\n\
+                    ONCLICK=\"window.location.href='"+indiciaData.reportLinkUrls[i]+locationIdsUrlFormat+"'\">";
+      button += '</FORM>'; 
+      return $('#map-listreportlink').html(button);
+    }
+  }
+  return $('#map-listreportlink').html('');
+}
+
+/*
+ * Returns true if an item is found in an array
+ */
+function inArray(needle, haystack) {
+    var length = haystack.length;
+    for(var i = 0; i < length; i++) {
+        if(haystack[i] == needle) return true;
+    }
+    return false;
 }
