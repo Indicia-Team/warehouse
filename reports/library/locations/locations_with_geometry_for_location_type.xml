@@ -2,21 +2,25 @@
     title="Locations with geometry for location type"
     description="List of locations (with geometry) for a given location type whose parent matches the given parent id."
 >
-  <query website_filter_field="o.website_id">
+  <query website_filter_field="lw.website_id">
     SELECT #columns# 
     FROM locations l
-    join termlists_terms tt on tt.id = l.location_type_id
-    join terms t on t.id = tt.term_id
+      LEFT JOIN locations_websites lw ON lw.location_id=l.id 
+      JOIN termlists_terms tt ON tt.id = l.location_type_id
+      JOIN terms t ON t.id = tt.term_id 
       #joins#
     WHERE 1=1
-      #filters#    
+      #filters#
+      AND #website_filter# AND l.deleted = false
+      AND lw.deleted = false AND tt.deleted = false
+      AND t.deleted = false
   </query>
   <params>
     <param name="location_type_id" datatype="integer">
       <where>l.location_type_id=#location_type_id#</where>
     </param>
     <param name="parent_id" datatype="integer">
-      <join>join locations lp on st_intersects(lp.boundary_geom, l.boundary_geom) and lp.id=#parent_id#</join>
+      <join>JOIN locations lp on st_intersects(lp.boundary_geom, l.centroid_geom) and lp.id=#parent_id#</join>
     </param>
   </params>
   <columns>
@@ -24,5 +28,7 @@
     <column name="name" sql="l.name"/>
     <column name="location_type_name" sql="t.term"/>
     <column name="boundary_geom" sql="st_astext(l.boundary_geom)" mappable="true"/>
+    <column name="centroid_geom" sql="st_astext(st_centroid(l.centroid_geom))" mappable="true"/>
+    <column name="graphic" sql="case when st_astext(l.boundary_geom) is  not null then 'circle' else 'cross' end" mappable="true"/>
   </columns>
 </report>
