@@ -45,7 +45,8 @@ class extension_site_hierarchy_navigator {
     //The location types are supplied by the user in a comma seperated list.
     //The first number is used as the initial location type to display.
     //The second number is used after the user clicks the first time on a feature and so on
-    $layerLocationTypes = explode(',', $options['layerLocationTypes']);  
+    $layerLocationTypes = explode(',', $options['layerLocationTypes']); 
+    $locationTypesWithSymbols = explode(',', $options['locationTypesWithSymbols']); 
     $options = iform_map_get_map_options($args, $auth);
     $olOptions = iform_map_get_ol_options($args);
     $options['readAuth'] = $options['readAuth']['read'];
@@ -62,6 +63,8 @@ class extension_site_hierarchy_navigator {
     );
     //Send the user supplied location type options to Javascript
     map_helper::$javascript .= "indiciaData.layerLocationTypes=".json_encode($layerLocationTypes).";\n";
+    //Send the user supplied options about which layers should display symbols instead of polygons to Javascript
+    map_helper::$javascript .= "indiciaData.locationTypesWithSymbols=".json_encode($locationTypesWithSymbols).";\n";
     //Run the report that shows the locations (features) to the user when the map loads the first time.
     map_helper::$javascript .= "indiciaData.layerReportRequest='".
        report_helper::get_report_data(array(
@@ -92,6 +95,38 @@ class extension_site_hierarchy_navigator {
     iform_load_helpers(array('map_helper'));
     map_helper::$javascript .= "indiciaData.useSelectList=true;\n";
     $selectlist = '<div><select id="map-selectlist"></select></div>';
+    return $selectlist;
+  }
+  
+  /*
+   * A control where we construct a button linking to a report page whose path and parameter are as per administrator supplied options.
+   * The options format is comma seperated where the format of the elements is "location_type_id|report_path|report_parameter".
+   * If an option is not found for the displayed layer's location type, then the report link button is hidden from view.
+   */
+  public function listreportlink($auth, $args, $tabalias, $options, $path) {
+    global $base_root;
+    iform_load_helpers(array('map_helper'));
+    if (!preg_match('/^([0-9]+\|[0-9a-z_\/]*\|[0-9a-z_\-]*,)*[0-9]+\|[0-9a-z_\/]*\|[0-9a-z_\-]*$/', $options['listReportLinks']))
+      return '<p>'.$options['listReportLinks'].'</p><p>The supplied @listReportLinks are not of the required format, a comma separated list of where each element is of the form "location_type_id|report_path|report_parameter"</p>';
+    //Tell the javascript we are using the report link control
+    map_helper::$javascript .= "indiciaData.useListReportLink=true;\n";
+    //Div to put the select list into.
+    $selectlist = '<div id="map-listreportlink"></div>';
+    $reportLinksToCreate=explode(',',$options['listReportLinks']);
+    //Cycle through all the supplied options, get the options and save the locations types and the report path we are going to use.
+    foreach ($reportLinksToCreate as $id=>$reportLinkToCreate) {
+      $differentOptions=explode('|',$reportLinkToCreate);
+      $locationTypesForListReport[$id]=$differentOptions[0];
+      $reportLinkUrls[$id]=
+          $base_root.base_path().
+          //handle whether the drupal installation has clean urls setup.
+          (variable_get('clean_url', 0) ? '' : '?q=').
+          $differentOptions[1].(variable_get('clean_url', 0) ? '?' : '&').
+          $differentOptions[2].'=';
+    }
+    //Send the data to javascript
+    map_helper::$javascript .= "indiciaData.locationTypesForListReport=".json_encode($locationTypesForListReport).";\n";
+    map_helper::$javascript .= "indiciaData.reportLinkUrls=".json_encode($reportLinkUrls).";\n";
     return $selectlist;
   }
 }
