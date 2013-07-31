@@ -99,6 +99,13 @@ function addGridRow(species, speciesTableSelector, end, tabIDX){
     // find current value if there is one - the key is the combination of sample id and ttl meaning id that an existing value would be stored as
     var key=indiciaData.samples[section.code] + ':' + species.taxon_meaning_id;
     var cell = jQuery('<td class="col-'+(idx+1)+(idx % 5 == 0 ? ' first' : '')+'"/>').appendTo(row);
+    // row += '<input class="count-input" id="value:'+species.id+':'+section.code+'" type="text" value="'+val+'" /></td>';
+    // actual control has to be first in cell for cursor keys to work.
+    var myCtrl = indiciaData.occurrence_attribute_ctrl[tabIDX].clone();
+    myCtrl.attr('id', 'value:'+species.id+':'+section.code).attr('name', '').val(val);
+    if(isNumber) myCtrl.addClass('count-input');
+    else myCtrl.addClass('non-count-input');
+    myCtrl.appendTo(cell);
     jQuery('<input type="hidden" id="value:'+species.id+':'+section.code+':attrId" value="'+indiciaData.occurrence_attribute[tabIDX]+'"/>').appendTo(cell);
     if (typeof indiciaData.existingOccurrences[key]!=="undefined") {
       indiciaData.existingOccurrences[key]['processed']=true;
@@ -113,12 +120,6 @@ function addGridRow(species, speciesTableSelector, end, tabIDX){
     } else {
       val='';
     }
-    // row += '<input class="count-input" id="value:'+species.id+':'+section.code+'" type="text" value="'+val+'" /></td>';
-    var myCtrl = indiciaData.occurrence_attribute_ctrl[tabIDX].clone();
-    myCtrl.attr('id', 'value:'+species.id+':'+section.code).attr('name', '').val(val);
-    if(isNumber) myCtrl.addClass('count-input');
-    else myCtrl.addClass('non-count-input');
-    myCtrl.appendTo(cell);
   });
   if(isNumber) jQuery('<td class="row-total first">'+rowTotal+'</td>').appendTo(row);
   if(end) {
@@ -142,7 +143,7 @@ function smp_keydown(evt) {
       type='value';
     }
     if (targetRow.length>0) {
-      targetInput = jQuery('#' + type + '\\:' + targetRow[0].id.substr(4) + '\\:' + code);
+      targetInput = targetRow.find('input[id^='+type+'\\:][id$=\\:'+code+']');
     }
   }
 
@@ -156,7 +157,7 @@ function smp_keydown(evt) {
         targetRow = jQuery(evt.target).parents('tbody').next('tbody').find('tr:first');
       }
       if (targetRow.length>0) {
-        targetInput = targetRow.find('input.count-input:first');
+        targetInput = targetRow.find('input:visible:first');
       }
     }
   }
@@ -167,7 +168,7 @@ function smp_keydown(evt) {
       // before start of row, so move up to previous if there is one
       targetRow = jQuery(evt.target).parents('tr').prev('tr');
       if (targetRow.length>0) {
-        targetInput = targetRow.find('input:last');
+        targetInput = targetRow.find('input:visible:last');
       }
     }
   }
@@ -182,7 +183,7 @@ function smp_keydown(evt) {
 // TBC this should be OK to use as is.
 function count_keydown (evt) {
   var targetRow = [], targetInput=[], code, parts=evt.target.id.split(':'), type='value';
-  code=parts[2];
+  code=parts[2]; // holds the section code
 
   // down arrow or enter key
   if (evt.keyCode===13 || evt.keyCode===40) {
@@ -198,7 +199,7 @@ function count_keydown (evt) {
     }
   }
   if (targetRow.length>0) {
-    targetInput = targetRow.find('input[id^='+type+'\:][id$=\:'+code+']');
+    targetInput = targetRow.find('input[id^='+type+'\\:][id$=\\:'+code+']');
   }
   // right arrow - move to next cell if at end of text
   if (evt.keyCode===39 && evt.target.selectionEnd >= evt.target.value.length) {
@@ -207,7 +208,7 @@ function count_keydown (evt) {
       // end of row, so move down to next if there is one
       targetRow = jQuery(evt.target).parents('tr').next('tr');
       if (targetRow.length>0) {
-        targetInput = targetRow.find('input.count-input:first');
+        targetInput = targetRow.find('input:visible:first');
       }
     }
   }
@@ -222,7 +223,7 @@ function count_keydown (evt) {
         targetRow = jQuery(evt.target).parents('tbody').prev('tbody').find('tr:last');
       }
       if (targetRow.length>0) {
-        targetInput = targetRow.find('input:last');
+        targetInput = targetRow.find('input:visible:last');
       }
     }
   }
@@ -633,12 +634,9 @@ function loadSpeciesList() {
         break;
     }
     jQuery('#listSelectMsg').empty();
-
-//      jQuery('.count-input').keydown(count_keydown).focus(count_focus);
-//      jQuery('.count-input,.smp-input').change(input_change).blur(input_blur);
-      jQuery('.smp-input').keydown(smp_keydown).change(input_change).blur(input_blur);
-//      jQuery(this).unbind(event);
   });
+
+  jQuery('.smp-input').keydown(smp_keydown).change(input_change).blur(input_blur).focus(count_focus);
 
   function checkErrors(data) {
     if (typeof data.error!=="undefined") {
