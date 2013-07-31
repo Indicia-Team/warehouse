@@ -17,7 +17,7 @@
   </query>
   <params>
     <param name="location_type_id" datatype="integer">
-      <where>l.location_type_id=#location_type_id#</where>
+      <where>l.location_type_id in (#location_type_id#)</where>
     </param>
     <param name="parent_id" datatype="integer">
       <join>JOIN locations lp on st_intersects(lp.boundary_geom, l.centroid_geom) and lp.id=#parent_id#</join>
