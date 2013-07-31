@@ -90,58 +90,13 @@ function addGridRow(species, speciesTableSelector, end, tabIDX){
   row.find('.non-count-input').focus(count_focus).change(select_change);
 }
 
-function smp_keydown(evt) {
-  var targetRow = [], targetInput=[], code, parts=evt.target.id.split(':'), type='smpAttr';
-  code=parts[2];
-  if (evt.keyCode===13 || evt.keyCode===40) {
-    targetRow = jQuery(evt.target).parents('tr').next('tr');
-    if (targetRow.length===0) {
-      // moving out of sample attributes area into next tbody for counts
-      targetRow = jQuery(evt.target).parents('tbody').next('tbody').find('tr:first');
-      type='value';
-    }
-    if (targetRow.length>0) {
-      targetInput = jQuery('#' + type + '\\:' + targetRow[0].id.substr(4) + '\\:' + code);
-    }
-  }
-
-  if (evt.keyCode===39 && evt.target.selectionEnd >= evt.target.value.length) {
-    targetInput = jQuery(evt.target).parents('td').next('td').find('input');
-    if (targetInput.length===0) {
-      // end of row, so move down to next if there is one
-      targetRow = jQuery(evt.target).parents('tr').next('tr');
-      if (targetRow.length===0) {
-        // moving out of sample attributes area into next tbody for counts
-        targetRow = jQuery(evt.target).parents('tbody').next('tbody').find('tr:first');
-      }
-      if (targetRow.length>0) {
-        targetInput = targetRow.find('input.count-input:first');
-      }
-    }
-  }
-  // left arrow - move to previous cell if at start of text
-  if (evt.keyCode===37 && evt.target.selectionStart === 0) {
-    targetInput = jQuery(evt.target).parents('td').prev('td').find('input');
-    if (targetInput.length===0) {
-      // before start of row, so move up to previous if there is one
-      targetRow = jQuery(evt.target).parents('tr').prev('tr');
-      if (targetRow.length>0) {
-        targetInput = targetRow.find('input:last');
-      }
-    }
-  }
-  if (targetInput.length > 0) {
-    jQuery(targetInput).get()[0].focus();
-    return false;
-  }
-}
-
 // Not all events can be bound using live() - which is deprecated for later versions of jQuery anyway.
 // Define event handlers.
 // TBC this should be OK to use as is.
 function count_keydown (evt) {
-  var targetRow = [], targetInput=[], code, parts=evt.target.id.split(':'), type='value';
+  var targetRow = [], targetInput=[], code, attrID, parts=evt.target.id.split(':'), type='value';
   code=parts[2];
+  attrID=parts[3];
 
   // down arrow or enter key
   if (evt.keyCode===13 || evt.keyCode===40) {
@@ -150,14 +105,9 @@ function count_keydown (evt) {
   // up arrow
   if (evt.keyCode===38) {
     targetRow = jQuery(evt.target).parents('tr').prev('tr');
-    if (targetRow.length===0) {
-      // moving out of counts area into previous tbody for sample attributes
-      targetRow = jQuery(evt.target).parents('tbody').prev('tbody').find('tr:last');
-      type='smpAttr';
-    }
   }
   if (targetRow.length>0) {
-    targetInput = targetRow.find('input[id^='+type+'\:][id$=\:'+code+']');
+    targetInput = targetRow.find('input[id^='+type+'\\:][id$=\\:'+code+'\\:'+attrID+']');
   }
   // right arrow - move to next cell if at end of text
   if (evt.keyCode===39 && evt.target.selectionEnd >= evt.target.value.length) {
@@ -166,7 +116,7 @@ function count_keydown (evt) {
       // end of row, so move down to next if there is one
       targetRow = jQuery(evt.target).parents('tr').next('tr');
       if (targetRow.length>0) {
-        targetInput = targetRow.find('input.count-input:first');
+        targetInput = targetRow.find('input:visible:first');
       }
     }
   }
@@ -176,12 +126,8 @@ function count_keydown (evt) {
     if (targetInput.length===0) {
       // before start of row, so move up to previous if there is one
       targetRow = jQuery(evt.target).parents('tr').prev('tr');
-      if (targetRow.length===0) {
-        // moving out of counts area into previous tbody for sample attributes
-        targetRow = jQuery(evt.target).parents('tbody').prev('tbody').find('tr:last');
-      }
       if (targetRow.length>0) {
-        targetInput = targetRow.find('input:last');
+        targetInput = targetRow.find('input:visible:last');
       }
     }
   }
