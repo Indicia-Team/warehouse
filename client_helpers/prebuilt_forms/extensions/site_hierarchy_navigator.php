@@ -40,12 +40,18 @@ class extension_site_hierarchy_navigator {
       return '<p>Please provide an @layerLocationTypes option for the [site_hierarchy_navigator.map] map control on the edit tab</p>';
     if (!preg_match('/^([0-9]*,\s*)*[0-9]*\s*$/', $options['layerLocationTypes']))
       return '<p>The supplied @layerLocationTypes is not of the required format, a comma separated list of location type ids (from the termlists_terms table).</p>';
+    //This option is optional, so don't need to check if it isn't present    
+    if (!preg_match('/^([0-9]*,\s*)*[0-9]*\s*$/', $options['showCountUnitsForLayers']))
+      return '<p>The supplied @showCountUnitsForLayers is not of the required format, a comma separated list of location type ids (from the termlists_terms table).</p>';
     iform_load_helpers(array('map_helper','report_helper'));
     drupal_add_js(iform_client_helpers_path().'prebuilt_forms/extensions/site_hierarchy_navigator.js');
     //The location types are supplied by the user in a comma seperated list.
     //The first number is used as the initial location type to display.
     //The second number is used after the user clicks the first time on a feature and so on
     $layerLocationTypes = explode(',', $options['layerLocationTypes']); 
+    //Comma seperated list of location types which signify which layers should also display the Count Unit location type. 
+    //This should be a subset of $layerLocationTypes.
+    $showCountUnitsForLayers = explode(',', $options['showCountUnitsForLayers']); 
     $locationTypesWithSymbols = explode(',', $options['locationTypesWithSymbols']); 
     $options = iform_map_get_map_options($args, $auth);
     $olOptions = iform_map_get_ol_options($args);
@@ -63,6 +69,8 @@ class extension_site_hierarchy_navigator {
     );
     //Send the user supplied location type options to Javascript
     map_helper::$javascript .= "indiciaData.layerLocationTypes=".json_encode($layerLocationTypes).";\n";
+    //Send the user supplied options for layers to display count units to Javascript
+    map_helper::$javascript .= "indiciaData.showCountUnitsForLayers=".json_encode($showCountUnitsForLayers).";\n";
     //Send the user supplied options about which layers should display symbols instead of polygons to Javascript
     map_helper::$javascript .= "indiciaData.locationTypesWithSymbols=".json_encode($locationTypesWithSymbols).";\n";
     //Run the report that shows the locations (features) to the user when the map loads the first time.
@@ -129,5 +137,38 @@ class extension_site_hierarchy_navigator {
     map_helper::$javascript .= "indiciaData.reportLinkUrls=".json_encode($reportLinkUrls).";\n";
     return $selectlist;
   }
+  
+  /*
+   * Control button that takes user to Add Count Unit page whose path and parameter are as per administrator supplied options.
+   * The parameter is used to automatically zoom the map to the area we want to add the count unit.
+   * The options format is comma seperated where the format of the elements is "location_type_id|page_path|parameter_name".
+   * If an option is not found for the displayed layer's location type, then the Add Count Unit button is hidden from view.
+   */
+  public function addcountunit($auth, $args, $tabalias, $options, $path) {
+    global $base_root;
+    iform_load_helpers(array('map_helper'));
+    if (!preg_match('/^([0-9]+\|[0-9a-z_\/]*\|[0-9a-z_\-]*,)*[0-9]+\|[0-9a-z_\/]*\|[0-9a-z_\-]*$/', $options['addCountUnitLinks']))
+      return '<p>'.$options['addCountUnitLinks'].'</p><p>The supplied @addCountUnitLinks are not of the required format, a comma separated list of where each element is of the form "location_type_id|page_path|parameter_name"</p>';
+    map_helper::$javascript .= "indiciaData.useAddCountUnit=true;\n";
+    $addcountunit = '<div id="map-addcountunit"></div>';
+    
+    $linksToCreate=explode(',',$options['addCountUnitLinks']);
+    //Cycle through all the supplied options, get the options and save the locations types and the paths we are going to use.
+    foreach ($linksToCreate as $id=>$linkToCreate) {
+      $differentOptions=explode('|',$linkToCreate);
+      $locationTypesForAddCountUnit[$id]=$differentOptions[0];
+      $linkUrls[$id]=
+          $base_root.base_path().
+          //handle whether the drupal installation has clean urls setup.
+          (variable_get('clean_url', 0) ? '' : '?q=').
+          $differentOptions[1].(variable_get('clean_url', 0) ? '?' : '&').
+          $differentOptions[2].'=';
+    }
+    //Send the data to javascript
+    map_helper::$javascript .= "indiciaData.locationTypesForAddCountUnits=".json_encode($locationTypesForAddCountUnit).";\n";
+    map_helper::$javascript .= "indiciaData.addCountUnitLinkUrls=".json_encode($linkUrls).";\n";
+    return $addcountunit;
+  }
+  
 }
   
