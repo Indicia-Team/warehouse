@@ -49,8 +49,16 @@ function add_new_layer_for_site_hierarchy_navigator(clickedFeatureId,breadcrumbL
   var parentIdAndName = get_parent_name_and_id(clickedFeature,breadcrumbLayerCounter);
   var parentId = parentIdAndName[0];
   var parentName = parentIdAndName[1];
+  var reportRequest;
+  //If the user has specified this layer must also display count units, then add them to the report parameters
+  if (inArray(indiciaData.layerLocationTypes[currentLayerCounter],indiciaData.showCountUnitsForLayers)) {
+    reportRequest = indiciaData.layerReportRequest + '&location_type_id='+indiciaData.layerLocationTypes[currentLayerCounter]+','+indiciaData.layerLocationTypes[indiciaData.layerLocationTypes.length-1]+ '&parent_id='+parentId;
+  } else {
+    reportRequest = indiciaData.layerReportRequest + '&location_type_id='+indiciaData.layerLocationTypes[currentLayerCounter]+'&parent_id='+parentId;
+  }
+  
   //Get the locations for the next location type in the clicked location.
-  $.getJSON(indiciaData.layerReportRequest + '&location_type_id='+indiciaData.layerLocationTypes[currentLayerCounter]+ '&parent_id='+parentId,
+  $.getJSON(reportRequest,
       null,
       function(response, textStatus, jqXHR) { 
         if (response.length>0) {
@@ -90,7 +98,11 @@ function add_new_layer_for_site_hierarchy_navigator(clickedFeatureId,breadcrumbL
           }
           //Get the link to report button
           if (indiciaData.useListReportLink) {
-            list_report_link(indiciaData.layerLocationTypes[currentLayerCounter],featureIds);
+            list_report_link(indiciaData.layerLocationTypes[currentLayerCounter],parentId, parentName);
+          }     
+          //Get the Add Count Unit button
+          if (indiciaData.useAddCountUnit) {
+            add_count_unit_link(indiciaData.layerLocationTypes[currentLayerCounter],parentId);
           }
           indiciaData.reportlayer.removeAllFeatures();
           indiciaData.mapdiv.map.addLayer(indiciaData.reportlayer);
@@ -213,33 +225,47 @@ function selectlist(features) {
   $('#map-selectlist').html(selectListOptions)
 }
 
-  /*
-   * A control where we construct a button linking to a report page whose path and parameter are as per administrator supplied options.
-   * The options format is comma seperated where the format of the elements is "location_type_id|report_path|report_parameter".
-   * If an option is not found for the displayed layer's location type, then the report link button is hidden from view.
-   */
-function list_report_link(currentSiteType,locationIds) {
+/*
+ * A control where we construct a button linking to a report page whose path and parameter are as per administrator supplied options.
+ * The options format is comma seperated where the format of the elements is "location_type_id|report_path|report_parameter".
+ * If an option is not found for the displayed layer's location type, then the report link button is hidden from view.
+ */
+function list_report_link(currentSiteType,parentId, parentName) {
   //construct a comma seperated list of location ids shown on the current layer 
   //which is then put in the report parameter in the url.
-  var locationIdsUrlFormat;
-  $.each(locationIds, function (idx, locationId) {
-    if (!locationIdsUrlFormat) {
-      locationIdsUrlFormat = locationId;
-    } else {
-      locationIdsUrlFormat += ',' + locationId;
-    }
-  });
   //If the current layer location type is in the administrator specified options list, then we know to draw the report button
   for (i=0; i<indiciaData.locationTypesForListReport.length;i++) {
     if (indiciaData.locationTypesForListReport[i] === currentSiteType) {
       button = '<FORM>';
-      button += "<INPUT TYPE=\"button\" VALUE=\"View Sites and Counts Units list\"\n\
-                    ONCLICK=\"window.location.href='"+indiciaData.reportLinkUrls[i]+locationIdsUrlFormat+"'\">";
+      button += "<INPUT TYPE=\"button\" VALUE=\"View Sites and Count Units Within "+parentName+"\"\n\
+                    ONCLICK=\"window.location.href='"+indiciaData.reportLinkUrls[i]+parentId+"'\">";
       button += '</FORM>'; 
       return $('#map-listreportlink').html(button);
     }
   }
   return $('#map-listreportlink').html('');
+}
+
+/*
+ * Control button that takes user to Add Count Unit page whose path and parameter are as per administrator supplied options.
+ * The parameter is used to automatically zoom the map to the area we want to add the count unit.
+ * The options format is comma seperated where the format of the elements is "location_type_id|page_path|parameter_name".
+ * If an option is not found for the displayed layer's location type, then the Add Count Unit button is hidden from view.
+ */
+function add_count_unit_link(currentSiteType,parentLocationId) {
+  if (parentLocationId) {
+    //If the current layer location type is in the administrator specified options list, then we know to draw the add count unit button
+    for (i=0; i<indiciaData.locationTypesForAddCountUnits.length;i++) {
+      if (indiciaData.locationTypesForAddCountUnits[i] === currentSiteType) {
+        button = '<FORM>';
+        button += "<INPUT TYPE=\"button\" VALUE=\"Add Count Unit\"\n\
+                      ONCLICK=\"window.location.href='"+indiciaData.addCountUnitLinkUrls[i]+parentLocationId+"'\">";
+        button += '</FORM>'; 
+        return $('#map-addcountunit').html(button);
+      }
+    }
+  }
+  return $('#map-addcountunit').html('');
 }
 
 /*
