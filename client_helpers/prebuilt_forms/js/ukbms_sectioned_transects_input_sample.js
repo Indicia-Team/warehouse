@@ -737,9 +737,10 @@ function bindSpeciesAutocomplete(selectorID, tableSelectorID, url, lookupListId,
     var table = jQuery(tableSelectorID);
     table.parent().find('.sticky-header').remove();
     table.find('thead.tableHeader-processed').removeClass('tableHeader-processed');
+    table.removeClass('tableheader-processed');
     table.addClass('sticky-enabled');
     if(typeof Drupal.behaviors.tableHeader == 'object') // Drupal 7
-      Drupal.behaviors.tableHeader.attach(target);
+      Drupal.behaviors.tableHeader.attach(table.parent());
     else // Drupal6 : it is a function
       Drupal.behaviors.tableHeader(table.parent());
   };
