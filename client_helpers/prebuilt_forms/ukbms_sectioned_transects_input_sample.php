@@ -626,6 +626,15 @@ class iform_ukbms_sectioned_transects_input_sample {
           'required' => true,
           'default' => 50,
           'group' => 'Transects Editor Settings'
+        ),
+        array(
+          'name' => 'supress_tab_msg',
+          'caption' => 'Supress voluntary message',
+          'description' => 'On the 2nd, 3rd and 4th Species tabs there is a optional message stating that completing the data on the tab is optional. Select this option to remove this message.',
+          'type' => 'boolean',
+          'required' => false,
+          'default' => false,
+          'group' => 'Transects Editor Settings'
         )
       )
     );
@@ -1118,7 +1127,7 @@ class iform_ukbms_sectioned_transects_input_sample {
     if(isset($args['second_taxon_list_id']) && $args['second_taxon_list_id']!=''){
       $isNumber = ($occ_attributes[(isset($args['occurrence_attribute_id_2']) && $args['occurrence_attribute_id_2']!="" ?
       		    $args['occurrence_attribute_id_2'] : $args['occurrence_attribute_id'])]["data_type"] == 'I');
-      $r .= '<div id="grid2"><p id="grid2-loading">' . lang::get('Loading - Please Wait') . '</p><p>' . lang::get('LANG_Tab_Msg') . '</p><table id="transect-input2" class="ui-widget species-grid"><thead class="table-header">';
+      $r .= '<div id="grid2"><p id="grid2-loading">' . lang::get('Loading - Please Wait') . '</p>' . (isset($args['supress_tab_msg']) && $args['supress_tab_msg'] ? '' : '<p>' . lang::get('LANG_Tab_Msg') . '</p>') . '<table id="transect-input2" class="ui-widget species-grid"><thead class="table-header">';
       $r .= '<tr><th class="ui-widget-header">' . lang::get('Sections') . '</th>';
       foreach ($sections as $idx=>$section) {
         $r .= '<th class="ui-widget-header col-'.($idx+1).'">' . $section['code'] . '</th>';
@@ -1141,7 +1150,7 @@ class iform_ukbms_sectioned_transects_input_sample {
     if(isset($args['third_taxon_list_id']) && $args['third_taxon_list_id']!=''){
       $isNumber = ($occ_attributes[(isset($args['occurrence_attribute_id_3']) && $args['occurrence_attribute_id_3']!="" ?
           $args['occurrence_attribute_id_3'] : $args['occurrence_attribute_id'])]["data_type"] == 'I');
-      $r .= '<div id="grid3"><p id="grid3-loading">' . lang::get('Loading - Please Wait') . '</p><p>' . lang::get('LANG_Tab_Msg') . '</p><table id="transect-input3" class="ui-widget species-grid"><thead class="table-header">';
+      $r .= '<div id="grid3"><p id="grid3-loading">' . lang::get('Loading - Please Wait') . '</p>' . (isset($args['supress_tab_msg']) && $args['supress_tab_msg'] ? '' : '<p>' . lang::get('LANG_Tab_Msg') . '</p>') . '<table id="transect-input3" class="ui-widget species-grid"><thead class="table-header">';
       $r .= '<tr><th class="ui-widget-header">' . lang::get('Sections') . '</th>';
       foreach ($sections as $idx=>$section) {
         $r .= '<th class="ui-widget-header col-'.($idx+1).'">' . $section['code'] . '</th>';
@@ -1164,7 +1173,7 @@ class iform_ukbms_sectioned_transects_input_sample {
     if(isset($args['fourth_taxon_list_id']) && $args['fourth_taxon_list_id']!=''){
       $isNumber = ($occ_attributes[(isset($args['occurrence_attribute_id_4']) && $args['occurrence_attribute_id_4']!="" ?
           $args['occurrence_attribute_id_4'] : $args['occurrence_attribute_id'])]["data_type"] == 'I');
-      $r .= '<div id="grid4"><p id="grid4-loading">' . lang::get('Loading - Please Wait') . '</p><p>' . lang::get('LANG_Tab_Msg') . '</p><table id="transect-input4" class="ui-widget species-grid"><thead class="table-header">';
+      $r .= '<div id="grid4"><p id="grid4-loading">' . lang::get('Loading - Please Wait') . '</p>' . (isset($args['supress_tab_msg']) && $args['supress_tab_msg'] ? '' : '<p>' . lang::get('LANG_Tab_Msg') . '</p>') . '<table id="transect-input4" class="ui-widget species-grid"><thead class="table-header">';
       $r .= '<tr><th class="ui-widget-header">' . lang::get('Sections') . '</th>';
       foreach ($sections as $idx=>$section) {
         $r .= '<th class="ui-widget-header col-'.($idx+1).'">' . $section['code'] . '</th>';
