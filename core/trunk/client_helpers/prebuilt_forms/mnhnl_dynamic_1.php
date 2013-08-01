@@ -67,7 +67,7 @@ class iform_mnhnl_dynamic_1 extends iform_dynamic_sample_occurrence {
           'description'=>'Include MNHNL header and footer html.',
           'type'=>'boolean',
           'group' => 'User Interface',
-          'default' => true,
+          'default' => false,
           'required' => false
         ),
       )
