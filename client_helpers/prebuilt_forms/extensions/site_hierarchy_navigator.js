@@ -104,6 +104,10 @@ function add_new_layer_for_site_hierarchy_navigator(clickedFeatureId,breadcrumbL
           if (indiciaData.useAddCountUnit) {
             add_count_unit_link(indiciaData.layerLocationTypes[currentLayerCounter],parentId);
           }
+          //Get the Add Site button
+          if (indiciaData.useAddSite) {
+            add_site_link(indiciaData.layerLocationTypes[currentLayerCounter],parentId);
+          }
           indiciaData.reportlayer.removeAllFeatures();
           indiciaData.mapdiv.map.addLayer(indiciaData.reportlayer);
           indiciaData.reportlayer.addFeatures(features); 
@@ -266,6 +270,28 @@ function add_count_unit_link(currentSiteType,parentLocationId) {
     }
   }
   return $('#map-addcountunit').html('');
+}
+
+/*
+ * Control button that takes user to Add Site page whose path and parameter are as per administrator supplied options.
+ * The parameter is used to automatically zoom the map to the region/site we want to add the new site to.
+ * The options format is comma seperated where the format of the elements is "location_type_id|page_path|parameter_name".
+ * If an option is not found for the displayed layer's location type, then the Add Site button is hidden from view.
+ */
+function add_site_link(currentSiteType,parentLocationId) {
+  if (parentLocationId) {
+    //If the current layer location type is in the administrator specified options list, then we know to draw the add site button
+    for (i=0; i<indiciaData.locationTypesForAddSites.length;i++) {
+      if (indiciaData.locationTypesForAddSites[i] === currentSiteType) {
+        button = '<FORM>';
+        button += "<INPUT TYPE=\"button\" VALUE=\"Add Site\"\n\
+                      ONCLICK=\"window.location.href='"+indiciaData.addSiteLinkUrls[i]+parentLocationId+"'\">";
+        button += '</FORM>'; 
+        return $('#map-addsite').html(button);
+      }
+    }
+  }
+  return $('#map-addsite').html('');
 }
 
 /*
