@@ -170,5 +170,36 @@ class extension_site_hierarchy_navigator {
     return $addcountunit;
   }
   
+  /*
+   * Control button that takes user to Add Site page whose path and parameter are as per administrator supplied options.
+   * The parameter is used to automatically zoom the map to the region/site we want to add the new site to.
+   * The options format is comma seperated where the format of the elements is "location_type_id|page_path|parameter_name".
+   * If an option is not found for the displayed layer's location type, then the Add Site button is hidden from view.
+   */
+  public function addsite($auth, $args, $tabalias, $options, $path) {
+    global $base_root;
+    iform_load_helpers(array('map_helper'));
+    if (!preg_match('/^([0-9]+\|[0-9a-z_\/]*\|[0-9a-z_\-]*,)*[0-9]+\|[0-9a-z_\/]*\|[0-9a-z_\-]*$/', $options['addSiteLinks']))
+      return '<p>'.$options['addSiteLinks'].'</p><p>The supplied @addSiteLinks are not of the required format, a comma separated list of where each element is of the form "location_type_id|page_path|parameter_name"</p>';
+    map_helper::$javascript .= "indiciaData.useAddSite=true;\n";
+    $addsite = '<div id="map-addsite"></div>';
+    
+    $linksToCreate=explode(',',$options['addSiteLinks']);
+    //Cycle through all the supplied options, get the options and save the locations types and the paths we are going to use.
+    foreach ($linksToCreate as $id=>$linkToCreate) {
+      $differentOptions=explode('|',$linkToCreate);
+      $locationTypesForAddSite[$id]=$differentOptions[0];
+      $linkUrls[$id]=
+          $base_root.base_path().
+          //handle whether the drupal installation has clean urls setup.
+          (variable_get('clean_url', 0) ? '' : '?q=').
+          $differentOptions[1].(variable_get('clean_url', 0) ? '?' : '&').
+          $differentOptions[2].'=';
+    }
+    //Send the data to javascript
+    map_helper::$javascript .= "indiciaData.locationTypesForAddSites=".json_encode($locationTypesForAddSite).";\n";
+    map_helper::$javascript .= "indiciaData.addSiteLinkUrls=".json_encode($linkUrls).";\n";
+    return $addsite;
+  }
 }
   
