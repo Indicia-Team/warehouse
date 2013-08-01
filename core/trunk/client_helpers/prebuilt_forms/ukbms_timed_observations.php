@@ -790,12 +790,13 @@ jQuery('#tabs').bind('tabsshow', function(event, ui) {
     // first get rid of any previous tables
     jQuery('table.sticky-header').remove();
     jQuery('table.sticky-enabled thead.tableHeader-processed').removeClass('tableHeader-processed');
+    jQuery('table.sticky-enabled.tableheader-processed').removeClass('tableheader-processed');
     jQuery('table.species-grid.sticky-enabled').removeClass('sticky-enabled');
     var table = jQuery('#'+target.id+' table.species-grid');
     if(table.length > 0) {
         table.addClass('sticky-enabled');
         if(typeof Drupal.behaviors.tableHeader == 'object') // Drupal 7
-          Drupal.behaviors.tableHeader.attach(target);
+          Drupal.behaviors.tableHeader.attach(table.parent());
         else // Drupal6 : it is a function
           Drupal.behaviors.tableHeader(target);
     }

@@ -61,6 +61,6 @@ input.saving[type="text"], input.saving[type="password"], select.saving {
   padding-right: 3px;
     
 }
-table.species-grid thead, table.species-grid tbody {
+table.species-grid thead, table.species-grid tbody, table.sticky-header thead {
     font-size: 80%;
 }
