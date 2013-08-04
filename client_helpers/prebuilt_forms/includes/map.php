@@ -171,7 +171,7 @@ function iform_map_get_map_parameters() {
       'type' => 'textarea',
       'group'=>'Other Map Settings',
       'required'=>false,
-      'default'=>"layerSwitcher\npanZoom"
+      'default'=>"layerSwitcher\npanZoomBar"
     )
   );
   // Check for easy login module to allow integration into profile locations. If no module_exists function then 
@@ -268,7 +268,7 @@ function iform_map_get_map_options($args, $readAuth) {
     'initial_zoom'=>(int) $args['map_zoom'],
     'width'=>$args['map_width'],
     'height'=>$args['map_height'],
-    'standardControls'=>array('layerSwitcher','panZoom'),
+    'standardControls'=>array('layerSwitcher','panZoomBar'),
     'rememberPos'=>isset($args['remember_pos']) ? ($args['remember_pos']==true) : false
   );
   // If they have defined a custom base layer, add it
