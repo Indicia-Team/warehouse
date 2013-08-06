@@ -1199,7 +1199,7 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
   /**
    * Build a PHP function  to format the species added to the grid according to the form parameters
    */
-  protected static function build_grid_taxon_label_function($args) {
+  protected static function build_grid_taxon_label_function($args, $options) {
     global $indicia_templates;
     // always include the searched name
     $php = '$r="";'."\n".

@@ -209,7 +209,7 @@ class iform_dynamic_location extends iform_dynamic {
    * survey ID as well as an existing location's ID.
    * @param type $args 
    */
-  protected static function getFirstTabAdditionalContent($args, $auth, $attributes) {
+  protected static function getFirstTabAdditionalContent($args, $auth, &$attributes) {
     // Get authorisation tokens to update the Warehouse, plus any other hidden data.
     $r = $auth['write'].
           "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n".
