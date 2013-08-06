@@ -8,8 +8,9 @@
       LEFT JOIN locations_websites lw ON lw.location_id=l.id 
       JOIN termlists_terms tt ON tt.id = l.location_type_id
       JOIN terms t ON t.id = tt.term_id
+      LEFT JOIN locations lLatestChild on lLatestChild.created_on in (select max(created_on) from locations where parent_id=l.id)
       LEFT JOIN location_attribute_values lLAV on lLAV.location_id = l.id and lLAV.location_attribute_id = #preferred_boundary_attribute_id#   
-      LEFT JOIN locations lcub on lcub.id = lLAV.int_value and lcub.location_type_id=#count_unit_boundary_type_id#
+      LEFT JOIN locations lcub on lcub.id = COALESCE(lLAV.int_value, lLatestChild.id) and lcub.location_type_id=#count_unit_boundary_type_id#
       #joins#
     WHERE 1=1
       #filters#
