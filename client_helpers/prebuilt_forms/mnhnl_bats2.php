@@ -1104,7 +1104,7 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
    * parameters unless the Edit and Save button is clicked. So, apply some defaults to keep those old forms
    * working.
    */
-  protected function getArgDefaults($args) {
+  protected static function getArgDefaults($args) {
     $args['includeLocTools'] == false; 
     return $args;      
   }
