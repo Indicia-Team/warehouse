@@ -1842,7 +1842,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    * parameters unless the Edit and Save button is clicked. So, apply some defaults to keep those old forms
    * working.
    */
-  protected function getArgDefaults($args) {
+  protected static function getArgDefaults($args) {
      if (!isset($args['structure']) || empty($args['structure']))
       $args['structure'] = "=Species=\r\n".
               "?Please enter the species you saw and any other information about them.?\r\n".
