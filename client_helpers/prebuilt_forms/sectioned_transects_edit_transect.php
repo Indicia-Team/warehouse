@@ -549,6 +549,7 @@ $('#delete-transect').click(deleteSurvey);
     $options['divId'] = 'route-map';
     $options['toolbarDiv'] = 'top';
     $options['tabDiv']='your-route';
+    $options['gridRefHint']=true;
     if (!isset($settings['cantEdit'])){
       $options['toolbarPrefix'] = self::section_selector($settings, 'section-select-route');
       if(count($settings['sections'])>1 && $settings['numSectionsAttr'] != "") // do not allow deletion of last section, or if the is no section number attribute
