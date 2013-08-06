@@ -1,0 +1,24 @@
+  <report
+    title="Location Attribute Values For Location Or Location Attribute Id"
+    description="Get the location attribute values associated with a particular location id or location attribute id (or both)"
+>
+  <query website_filter_field="lw.website_id">
+    SELECT #columns# 
+    FROM location_attribute_values lav
+    WHERE (lav.location_id=#location_id# or lav.location_id=-1)
+    AND (lav.location_attribute_id=#location_attribute_id# or lav.location_attribute_id=-1)
+    AND lav.deleted=false;
+  </query>
+  <params>
+    <param name="location_id" datatype="integer" emptyvalue='-1'/>
+    <param name="location_attribute_id" datatype="integer" emptyvalue='-1'/>
+  </params>
+  <columns>
+    <column name="text_value" display="Text Value" sql="lav.text_value"/>
+    <column name="float_value" display="Float Value" sql="lav.float_value"/>
+    <column name="int_value" display="Int Value" sql="lav.int_value"/>
+    <column name="date_start_value" display="Date Start Value" sql="lav.date_start_value"/>
+    <column name="date_end_value" display="Date End Value" sql="lav.date_end_value"/>
+    <column name="date_type_value" display="Date Type Value" sql="lav.date_type_value"/>
+  </columns>
+</report>
