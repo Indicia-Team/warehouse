@@ -3044,7 +3044,7 @@ class data_entry_helper extends helper_base {
    * @param array $options Options array as passed to the species grid. Provides the read authorisation
    * tokens.
    */
-  private function load_parent_species(&$taxalist, $options) {
+  private static function load_parent_species(&$taxalist, $options) {
     // get a list of the species parent IDs
     $ids = array();
     foreach($taxalist as $taxon) {
