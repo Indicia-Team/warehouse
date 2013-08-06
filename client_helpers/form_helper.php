@@ -155,7 +155,7 @@ class form_helper extends helper_base {
    * @param array $forms List of prebuilt forms and their associated settings required 
    * by the picker.
    */
-  private function add_form_picker_js($forms) {
+  private static function add_form_picker_js($forms) {
     self::$javascript .= "var prebuilt_forms = ".json_encode($forms).";
 
 $('#form-category-picker').change(function(evt) {

@@ -780,7 +780,7 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
    * Build a JavaScript function  to format the autocomplete item list according to the form parameters
    * autocomplete_include_both_names and autocomplete_include_taxon_group.
    */
-  protected static function build_grid_taxon_label_function($args) {
+  protected static function build_grid_taxon_label_function($args, $options) {
     global $indicia_templates;
     // always include the searched name
     $php = '$r="";'."\n".
@@ -853,7 +853,7 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
    * a hidden table is used to store a clonable row which provides the template for new rows
    * to be added to the grid.
    */
-  private static function get_species_checklist_clonable_row($args, $options, $occAttrControls, $attributes) {
+  private static function get_species_checklist_clonable_row($options, $occAttrControls, $attributes) {
     global $indicia_templates;
     // assume always removeable and presence is hidden.
     // first row has X to remove row, plus species
