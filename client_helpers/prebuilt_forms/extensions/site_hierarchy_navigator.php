@@ -62,7 +62,7 @@ class extension_site_hierarchy_navigator {
     $options['customClickFn']='reload_map_with_sub_sites_for_clicked_feature';
     $options['clickableLayersOutputDiv'] = '';
     //Tell the system which layers we to be clickable.
-    $options['clickableLayers']=array('indiciaData.reportlayer');
+    $options['clickableLayers']=array('indiciaData.reportlayer');     
     $r .= map_helper::map_panel(
       $options,
       $olOptions
@@ -73,13 +73,18 @@ class extension_site_hierarchy_navigator {
     map_helper::$javascript .= "indiciaData.showCountUnitsForLayers=".json_encode($showCountUnitsForLayers).";\n";
     //Send the user supplied options about which layers should display symbols instead of polygons to Javascript
     map_helper::$javascript .= "indiciaData.locationTypesWithSymbols=".json_encode($locationTypesWithSymbols).";\n";
+    $options = array(
+      'linkOnly'=>'true',
+      'dataSource'=>'library/locations/locations_with_geometry_for_location_type',
+      'readAuth'=>$auth['read']
+    );
+    //Get the report options such as the Preset Parameters on the Edit Tab
+    $options = array_merge(
+      iform_report_get_report_options($args, $readAuth),
+    $options);    
     //Run the report that shows the locations (features) to the user when the map loads the first time.
     map_helper::$javascript .= "indiciaData.layerReportRequest='".
-       report_helper::get_report_data(array(
-         'linkOnly'=>'true',
-         'dataSource'=>'library/locations/locations_with_geometry_for_location_type',
-         'readAuth'=>$auth['read']
-       ))."';\n";
+       report_helper::get_report_data($options)."';\n";
     return $r;
   }
   
