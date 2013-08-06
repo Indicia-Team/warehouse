@@ -687,7 +687,7 @@ $('#delete-transect').click(deleteSurvey);
       $rows = '<tr><td colspan="2"></td></tr>';
     $r .= "$rows</table>\n";
     $r .= '</fieldset>';
-    if ($args['allow_location_assignment']) {
+    if ($args['allow_user_assignment']) {
       // tell the javascript which attr to save the user ID into
       data_entry_helper::$javascript .= "indiciaData.locCmsUsrAttr = " . self::$cmsUserAttrId . ";\n";
     }
