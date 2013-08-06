@@ -4660,7 +4660,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   /**
    * Helper function to clear the Indicia cache files.
    */
-  public function clear_cache() {
+  public static function clear_cache() {
     $cacheFolder = self::relative_client_helper_path() . (isset(parent::$cache_folder) ? parent::$cache_folder : 'cache/');
     if(!$dh = @opendir($cacheFolder)) {
       return;
