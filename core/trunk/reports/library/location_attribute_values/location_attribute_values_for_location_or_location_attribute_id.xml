@@ -1,24 +1,20 @@
   <report
-    title="Location Attribute Values For Location Or Location Attribute Id"
-    description="Get the location attribute values associated with a particular location id or location attribute id (or both)"
+    title="Get Preferred Boundary ID"
+    description="Get the location id of the preferred boundary for a count unit. 
+                 This is the either from a location attribute, or if that doesn't exist, then the system assumes the latest boundary is the preferred one." 
 >
   <query website_filter_field="lw.website_id">
     SELECT #columns# 
-    FROM location_attribute_values lav
-    WHERE (lav.location_id=#location_id# or lav.location_id=-1)
-    AND (lav.location_attribute_id=#location_attribute_id# or lav.location_attribute_id=-1)
-    AND lav.deleted=false;
+    FROM locations l
+    LEFT JOIN location_attribute_values lav on lav. location_id=l.id AND lav.location_attribute_id=#preferred_boundary_location_attribute_id# AND lav.deleted=false
+    LEFT JOIN locations lLatestChild on lLatestChild.id in (select max(id) from locations where parent_id=#count_unit_id#)
+    WHERE (l.id=#count_unit_id#) AND l.deleted=false;
   </query>
   <params>
-    <param name="location_id" datatype="integer" emptyvalue='-1'/>
-    <param name="location_attribute_id" datatype="integer" emptyvalue='-1'/>
+    <param name="count_unit_id" datatype="integer"/>
+    <param name="preferred_boundary_location_attribute_id" datatype="integer"/>
   </params>
   <columns>
-    <column name="text_value" display="Text Value" sql="lav.text_value"/>
-    <column name="float_value" display="Float Value" sql="lav.float_value"/>
-    <column name="int_value" display="Int Value" sql="lav.int_value"/>
-    <column name="date_start_value" display="Date Start Value" sql="lav.date_start_value"/>
-    <column name="date_end_value" display="Date End Value" sql="lav.date_end_value"/>
-    <column name="date_type_value" display="Date Type Value" sql="lav.date_type_value"/>
+    <column name="preferred_boundary" display="Preferred Boundary" sql="COALESCE(lav.int_value, lLatestChild.id)"/>
   </columns>
 </report>
