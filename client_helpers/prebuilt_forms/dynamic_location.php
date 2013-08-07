@@ -423,7 +423,7 @@ class iform_dynamic_location extends iform_dynamic {
    * parameters unless the Edit and Save button is clicked. So, apply some defaults to keep those old forms
    * working.
    */
-  protected function getArgDefaults($args) {
+  protected static function getArgDefaults($args) {
      if (!isset($args['structure']) || empty($args['structure']))
       $args['structure'] = 
               "=Place=\r\n".
