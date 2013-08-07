@@ -27,13 +27,22 @@
     </param>
     <param name="preferred_boundary_attribute_id" datatype="integer"/>
     <param name="count_unit_boundary_type_id" datatype="integer"/>
+    <param name="count_unit_type_id" datatype="integer"/>
   </params>
   <columns>
     <column name="id" sql="l.id"/>
     <column name="name" sql="l.name"/>
     <column name="location_type_name" sql="t.term"/>
     <column name="boundary_geom" sql="st_astext(COALESCE(l.boundary_geom, lcub.boundary_geom))" mappable="true"/>
-    <column name="centroid_geom" sql="st_astext(st_centroid(l.centroid_geom))" mappable="true"/>
-    <column name="graphic" sql="case when st_astext(l.boundary_geom) is  not null then 'circle' else 'cross' end" mappable="true"/>
+    --Make sure we only return the preferred centroid otherwise we have problems with the symbols and location selection drop-down on the map page. 
+    --Return the preferred count unit boundary centroid if available, otherwise just return the centroid but make sure we don't return it from count units and their boundaries
+    <column name="centroid_geom" sql="
+                  case when lcub.centroid_geom is not null 
+                    then st_astext(st_centroid(lcub.centroid_geom)) 
+                  when l.centroid_geom is not null and l.location_type_id != #count_unit_type_id# and l.location_type_id != #count_unit_boundary_type_id# 
+                    then st_astext(st_centroid(l.centroid_geom)) end" mappable="true"/>
+    <column name="location_type_id" sql="COALESCE(lcub.location_type_id,l.location_type_id)" mappable="true"/>
+    //Return a boundary from the location, but if it isn't available, look at the count unit boundaries to get the preferred count unit boundary
+    <column name="graphic" sql="case when st_astext(COALESCE(l.boundary_geom,lcub.boundary_geom)) is  not null then 'circle' else 'cross' end" mappable="true"/>
   </columns>
 </report>
