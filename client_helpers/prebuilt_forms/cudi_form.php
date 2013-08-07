@@ -209,16 +209,16 @@ class iform_cudi_form extends iform_dynamic {
   }
   
   /*
-   * Return the id of the preferred count unit boundary location if loading an existing count unit location.
+   * Return the id of the preferred count unit boundary location (or latest one if preferred isn't specified) when loading an existing count unit location.
    * If a preferred boundary is not found then return null
    */
   protected static function getIdForCountUnitBoundaryIfApplicable($args, $auth) {
     $preferredBoundaryValueReportData = data_entry_helper::get_report_data(array(
       'dataSource'=>'library/location_attribute_values/location_attribute_values_for_location_or_location_attribute_id',
       'readAuth'=>$auth['read'],
-      'extraParams'=>array('location_id' => $_GET['location_id'], 'location_attribute_id' => $args['preferred_boundary_attribute_id'])
+      'extraParams'=>array('count_unit_id' => $_GET['location_id'], 'preferred_boundary_location_attribute_id' => $args['preferred_boundary_attribute_id'])
     ));
-    $preferredBoundaryValue = $preferredBoundaryValueReportData[0]['int_value'];
+    $preferredBoundaryValue = $preferredBoundaryValueReportData[0]['preferred_boundary'];
     if (empty($preferredBoundaryValue)) //{
       $preferredBoundaryValue = null;
     return $preferredBoundaryValue;
