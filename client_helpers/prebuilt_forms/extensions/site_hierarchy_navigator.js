@@ -62,7 +62,7 @@ function add_new_layer_for_site_hierarchy_navigator(clickedFeatureId,breadcrumbL
       null,
       function(response, textStatus, jqXHR) { 
         if (response.length>0) {
-          var currentLayerObjectType;
+          var currentLayerObjectTypes = [];
           var features=[];    
           var existingBreadcrumb;
           var featureIds=[];
@@ -70,23 +70,43 @@ function add_new_layer_for_site_hierarchy_navigator(clickedFeatureId,breadcrumbL
           if (inArray(indiciaData.layerLocationTypes[currentLayerCounter],indiciaData.locationTypesWithSymbols)) {
             //Make nice names for the layers and add centroid geometry to map
             $.each(response, function (idx, obj) {
-              currentLayerObjectType = obj.location_type_name;
+              //Make a distinct list of the location types being displayed on the current layer
+              if (!inArray(obj.location_type_name,currentLayerObjectTypes)) {
+                currentLayerObjectTypes.push(obj.location_type_name);
+              }
               indiciaData.mapdiv.addPt(features, obj, 'centroid_geom', {}, obj.id);
               featureIds[idx] = obj.id;
             });
           } else {
             //Make nice names for the layers and add boundary geometry to map
             $.each(response, function (idx, obj) {
-              currentLayerObjectType = obj.location_type_name;
+              //Make a distinct list of the location types being displayed on the current layer
+              if (!inArray(obj.location_type_name,currentLayerObjectTypes)) {
+                currentLayerObjectTypes.push(obj.location_type_name);
+              }
               indiciaData.mapdiv.addPt(features, obj, 'boundary_geom', {}, obj.id);
               featureIds[idx] = obj.id;
             });
           }
-          //Give the layer a name that includes the location type being shown and the parent name
+          var currentLayerObjectTypesString;
+          var i;
+          //Convert the list of location types displayed in the current layer into a comma seperated string
+          for (i=0; i<currentLayerObjectTypes.length;i++) {
+            if (i===0) {
+              currentLayerObjectTypesString=currentLayerObjectTypes[i];
+            }
+            if (i!==0) {
+              currentLayerObjectTypesString=currentLayerObjectTypesString+' '+currentLayerObjectTypes[i];
+            }
+            if (i!==currentLayerObjectTypes.length-1) {
+              currentLayerObjectTypesString=currentLayerObjectTypesString+',';
+            }
+          }
+          //Give the layer a name that includes the location types being shown and the parent name
           if (parentName!==null) {
-            indiciaData.reportlayer.setName('Locations of type ' + currentLayerObjectType+ ' in ' + parentName);
+            indiciaData.reportlayer.setName('Locations of type ' + currentLayerObjectTypesString + ' in ' + parentName);
           } else {
-            indiciaData.reportlayer.setName('Locations of type ' + currentLayerObjectType);
+            indiciaData.reportlayer.setName('Locations of type ' + currentLayerObjectTypesString);
           }
           //make the breadcrumb
           if (indiciaData.useBreadCrumb) {
