@@ -38,11 +38,11 @@ class extension_site_hierarchy_navigator {
   public function map($auth, $args, $tabalias, $options, $path) {
     if (empty($options['layerLocationTypes']))
       return '<p>Please provide a @layerLocationTypes option for the [site_hierarchy_navigator.map] map control on the edit tab</p>';
-    if (!preg_match('/^([0-9]*,\s*)*[0-9]*\s*$/', $options['layerLocationTypes']))
-      return '<p>The supplied @layerLocationTypes is not of the required format, a comma separated list of location type ids (from the termlists_terms table).</p>';
-    //This option is optional, so don't need to check if it isn't present    
-    if (!preg_match('/^([0-9]*,\s*)*[0-9]*\s*$/', $options['showCountUnitsForLayers']))
-      return '<p>The supplied @showCountUnitsForLayers is not of the required format, a comma separated list of location type ids (from the termlists_terms table).</p>';
+    $msg=self::check_format($options, 'layerLocationTypes', 'location_type_id (from the termlists term table)', '/^([0-9]*,\s*)*[0-9]*\s*$/'); 
+    if ($msg!==true) return $msg;
+    //This option is optional, so don't need to check if it isn't present
+    $msg=self::check_format($options, 'showCountUnitsForLayers', 'location_type_id (from the termlists term table)', '/^([0-9]*,\s*)*[0-9]*\s*$/');
+    if ($msg!==true) return $msg;
     iform_load_helpers(array('map_helper','report_helper'));
     drupal_add_js(iform_client_helpers_path().'prebuilt_forms/extensions/site_hierarchy_navigator.js');
     //The location types are supplied by the user in a comma seperated list.
@@ -119,10 +119,9 @@ class extension_site_hierarchy_navigator {
   public function listreportlink($auth, $args, $tabalias, $options, $path) {
     global $base_root;
     iform_load_helpers(array('map_helper'));
-    if (!preg_match('/^([0-9]+\|[0-9a-z_\-\/]*\|[0-9a-z_\-]*,)*[0-9]+\|[0-9a-z_\-\/]*\|[0-9a-z_\-]*$/', $options['listReportLinks']))
-      return '<p>'.$options['listReportLinks'].
-          '</p><p>The supplied @listReportLinks are not of the required format, please supply a comma separated list of links where each link is ' .
-          'of the form "location_type_id|report_path|report_parameter"</p>';
+    $msg=self::check_format($options, 'listReportLinks', 'location_type_id|report_path|report_parameter', 
+        '/^([0-9]+\|[0-9a-z_\-\/]*\|[0-9a-z_\-]*,)*[0-9]+\|[0-9a-z_\-\/]*\|[0-9a-z_\-]*$/');
+    if ($msg!==true) return $msg;
     //Tell the javascript we are using the report link control
     map_helper::$javascript .= "indiciaData.useListReportLink=true;\n";
     //Div to put the select list into.
@@ -154,8 +153,9 @@ class extension_site_hierarchy_navigator {
   public function addcountunit($auth, $args, $tabalias, $options, $path) {
     global $base_root;
     iform_load_helpers(array('map_helper'));
-    if (!preg_match('/^([0-9]+\|[0-9a-z_\/]*\|[0-9a-z_\-]*,)*[0-9]+\|[0-9a-z_\/]*\|[0-9a-z_\-]*$/', $options['addCountUnitLinks']))
-      return '<p>'.$options['addCountUnitLinks'].'</p><p>The supplied @addCountUnitLinks are not of the required format, a comma separated list of where each element is of the form "location_type_id|page_path|parameter_name"</p>';
+    $msg=self::check_format($options, 'addCountUnitLinks', 'location_type_id|page_path|parameter_name', 
+        '/^([0-9]+\|[0-9a-z_\/]*\|[0-9a-z_\-]*,)*[0-9]+\|[0-9a-z_\/]*\|[0-9a-z_\-]*$/');
+    if ($msg!==true) return $msg;
     map_helper::$javascript .= "indiciaData.useAddCountUnit=true;\n";
     $addcountunit = '<div id="map-addcountunit"></div>';
     
@@ -186,8 +186,9 @@ class extension_site_hierarchy_navigator {
   public function addsite($auth, $args, $tabalias, $options, $path) {
     global $base_root;
     iform_load_helpers(array('map_helper'));
-    if (!preg_match('/^([0-9]+\|[0-9a-z_\/]*\|[0-9a-z_\-]*,)*[0-9]+\|[0-9a-z_\/]*\|[0-9a-z_\-]*$/', $options['addSiteLinks']))
-      return '<p>'.$options['addSiteLinks'].'</p><p>The supplied @addSiteLinks are not of the required format, a comma separated list of where each element is of the form "location_type_id|page_path|parameter_name"</p>';
+    $msg=self::check_format($options, 'addSiteLinks', 'location_type_id|page_path|parameter_name', 
+        '/^([0-9]+\|[0-9a-z_\-\/]*\|[0-9a-z_\-]*,)*[0-9]+\|[0-9a-z_\-\/]*\|[0-9a-z_\-]*$/');
+    if ($msg!==true) return $msg;
     map_helper::$javascript .= "indiciaData.useAddSite=true;\n";
     $addsite = '<div id="map-addsite"></div>';
     
@@ -208,5 +209,18 @@ class extension_site_hierarchy_navigator {
     map_helper::$javascript .= "indiciaData.addSiteLinkUrls=".json_encode($linkUrls).";\n";
     return $addsite;
   }
+  
+  /**
+   * Internal function that checks a form structure control option against a regular expression to check it's format.
+   */
+  private function check_format($options, $optionName, $friendlyFormat, $regex) {
+    $testval = $options[$optionName];
+    drupal_set_message($optionName . ' - ' . print_r(preg_match($regex, $testval), true)); 
+    if (!preg_match($regex, $testval))
+      return "<p>$testval</p>" .
+          "<p>The supplied @$optionName option is not of the correct format, it should be a comma separated list with each item of the form \"{friendlyFormat}\".</p>";
+    return true;
+  }
+    
 }
   
