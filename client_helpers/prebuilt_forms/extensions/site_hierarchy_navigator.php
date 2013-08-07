@@ -37,7 +37,7 @@ class extension_site_hierarchy_navigator {
    */
   public function map($auth, $args, $tabalias, $options, $path) {
     if (empty($options['layerLocationTypes']))
-      return '<p>Please provide an @layerLocationTypes option for the [site_hierarchy_navigator.map] map control on the edit tab</p>';
+      return '<p>Please provide a @layerLocationTypes option for the [site_hierarchy_navigator.map] map control on the edit tab</p>';
     if (!preg_match('/^([0-9]*,\s*)*[0-9]*\s*$/', $options['layerLocationTypes']))
       return '<p>The supplied @layerLocationTypes is not of the required format, a comma separated list of location type ids (from the termlists_terms table).</p>';
     //This option is optional, so don't need to check if it isn't present    
@@ -119,8 +119,10 @@ class extension_site_hierarchy_navigator {
   public function listreportlink($auth, $args, $tabalias, $options, $path) {
     global $base_root;
     iform_load_helpers(array('map_helper'));
-    if (!preg_match('/^([0-9]+\|[0-9a-z_\/]*\|[0-9a-z_\-]*,)*[0-9]+\|[0-9a-z_\/]*\|[0-9a-z_\-]*$/', $options['listReportLinks']))
-      return '<p>'.$options['listReportLinks'].'</p><p>The supplied @listReportLinks are not of the required format, a comma separated list of where each element is of the form "location_type_id|report_path|report_parameter"</p>';
+    if (!preg_match('/^([0-9]+\|[0-9a-z_\-\/]*\|[0-9a-z_\-]*,)*[0-9]+\|[0-9a-z_\-\/]*\|[0-9a-z_\-]*$/', $options['listReportLinks']))
+      return '<p>'.$options['listReportLinks'].
+          '</p><p>The supplied @listReportLinks are not of the required format, please supply a comma separated list of links where each link is ' .
+          'of the form "location_type_id|report_path|report_parameter"</p>';
     //Tell the javascript we are using the report link control
     map_helper::$javascript .= "indiciaData.useListReportLink=true;\n";
     //Div to put the select list into.
