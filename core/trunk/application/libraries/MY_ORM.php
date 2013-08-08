@@ -637,7 +637,8 @@ class ORM extends ORM_Core {
     // Flatten the array to one that can be validated
     $vArray = array_map($collapseVals, $this->submission['fields']);
     // If we're editing an existing record, merge with the existing data.
-    if (array_key_exists('id', $vArray) && $vArray['id'] != null) {
+    // NB id is 0, not null, when creating a new user
+    if (array_key_exists('id', $vArray) && $vArray['id'] != null && $vArray['id'] != 0) {
       $this->find($vArray['id']);
       $thisValues = $this->as_array();
       // don't overwrite existing website_ids otherwise things like shared verification portals end up 
