@@ -406,6 +406,41 @@ class iform_cudi_form extends iform_dynamic {
     ), $options));
   }
 
+  /*
+   * Control allows a user to select which count unit boundary version they intend to be the preferred one upon saving.
+   * In order for control to operate correctly, the parent count unit must be loaded into the location_id parameter in the URL.
+   */
+  protected static function get_control_boundaryversions($auth, $args, $tabalias, $options) {
+    //When adding a new record, don't show the control at all
+    if (!empty($_GET['location_id'])) {
+      //When the preferred count unit changes, put the value into the text box of the field that holds the preferred count unit location attribute.
+      //Also hide that textbox.
+      //Also default the preferred count unit drop-down to the existing preferred count unit.
+      data_entry_helper::$javascript = "$('#preferred_boundaries').change( function() {
+                                          $('#locAttr\\\\:".$args['preferred_boundary_attribute_id']."').val($(this).val());
+                                        });
+                                        $('#locAttr\\\\:".$args['preferred_boundary_attribute_id']."').hide();\n
+                                        $(\"#preferred_boundaries option[value=\"+$('#locAttr\\\\:".$args['preferred_boundary_attribute_id']."').val()+\"]\").attr('selected', 'selected');
+                                        ";   
+      //Collect all the count unit boundaries
+      $boundaryVersions = data_entry_helper::get_population_data(array(
+        'table' => 'location',
+        'extraParams' => $auth['read'] + array('parent_id' => $_GET['location_id'], 'view' => 'detail'),
+        'nocache' => true,
+        'sharing' => $sharing
+      ));
+      //Put the count unit boundaries into a drop-down
+      $r = '<select id = "preferred_boundaries">';
+      $r .= '<option>Please Select...</option>';
+      foreach ($boundaryVersions as $boundaryVersionData) {
+        $r .= '<option value="'.$boundaryVersionData['id'].'">'.$boundaryVersionData['name'].'</option>';
+      }
+      
+      $r .= "</select>\n";
+      return $r;
+    }
+  }
+  
   protected static function get_control_locationtype($auth, $args, $tabalias, $options) {
     // To limit the terms listed add a terms option to the Form Structure as a JSON array.
     // The terms must exist in the termlist that has external key indidia:location_types
@@ -489,7 +524,7 @@ class iform_cudi_form extends iform_dynamic {
    * @return array Submission structure.
    */
   public static function get_submission($values, $args) {
-    $s = self::prepare_locations_to_save_for_submission($values, $args);    
+    $s = self::prepare_locations_to_save_for_submission($values, $args);
     return $s;
   }
   
