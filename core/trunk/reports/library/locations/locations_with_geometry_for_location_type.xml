@@ -43,6 +43,8 @@
                     then st_astext(st_centroid(l.centroid_geom)) end" mappable="true"/>
     <column name="location_type_id" sql="COALESCE(lcub.location_type_id,l.location_type_id)" mappable="true"/>
     //Return a boundary from the location, but if it isn't available, look at the count unit boundaries to get the preferred count unit boundary
-    <column name="graphic" sql="case when st_astext(COALESCE(l.boundary_geom,lcub.boundary_geom)) is  not null then 'circle' else 'cross' end" mappable="true"/>
+    <column name="graphic" sql="case when st_astext(COALESCE(l.boundary_geom,lcub.boundary_geom)) is  not null then 'circle' 
+                                when st_astext(COALESCE(l.boundary_geom,lcub.boundary_geom)) is  null and l.location_type_id = #count_unit_type_id# or l.location_type_id = #count_unit_boundary_type_id#  then 'triangle' 
+                                else 'cross' end" mappable="true"/>
   </columns>
 </report>
