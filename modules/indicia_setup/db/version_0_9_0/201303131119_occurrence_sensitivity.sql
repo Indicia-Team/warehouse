@@ -72,7 +72,7 @@ COMMENT ON COLUMN spatial_systems.code IS 'Spatial reference system code.';
 COMMENT ON COLUMN spatial_systems.srid IS 'Underlying SRID used for the system. ';
 COMMENT ON COLUMN spatial_systems.treat_srid_as_x_y_metres IS 'Should the underlying projection be used as an x, y grid system in metres, e.g. when reducing the precision of a sensitive record?';
 
-
+DROP FUNCTION IF EXISTS reduce_precision(geometry, boolean, integer, varchar (20));
 
 CREATE OR REPLACE FUNCTION reduce_precision(geom_in geometry, confidential boolean, sensitivity_precision integer, sref_system varchar (20))
   RETURNS geometry AS
