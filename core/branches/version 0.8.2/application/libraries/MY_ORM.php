@@ -622,7 +622,8 @@ class ORM extends ORM_Core {
     // Flatten the array to one that can be validated
     $vArray = array_map($collapseVals, $this->submission['fields']);
     // If we're editing an existing record, merge with the existing data.
-    if (array_key_exists('id', $vArray) && $vArray['id'] != null) {
+    // NB id is 0, not null, when creating a new user
+    if (array_key_exists('id', $vArray) && $vArray['id'] != null && $vArray['id'] != 0) {
       $this->find($vArray['id']);
       $thisValues = $this->as_array();
       // don't overwrite existing website_ids otherwise things like shared verification portals end up 
@@ -1327,9 +1328,13 @@ class ORM extends ORM_Core {
 
     if ($vf != null) {
       $attrValueModel->$vf = $value;
-      // Test that ORM accepted the new value - it will reject if the wrong data type for example. Use a string compare to get a
-      // proper test but with type tolerance. A wkt geometry gets translated to a proper geom so this will look different - just check it is not empty.
-      if (strcmp($attrValueModel->$vf,$value)===0 || ($dataType==='G' && !empty($attrValueModel->$vf))) {
+      // Test that ORM accepted the new value - it will reject if the wrong data type for example. 
+      // Use a string compare to get a proper test but with type tolerance. 
+      // A wkt geometry gets translated to a proper geom so this will look different - just check it is not empty.
+      // A float may have lost precision 
+      if (strcmp($attrValueModel->$vf,$value) === 0 || 
+              ($dataType === 'G' && !empty($attrValueModel->$vf)) ||
+              ($dataType === 'F' && abs() < 0.0001)) {
         kohana::log('debug', "Accepted value $value into field $vf for attribute $fieldId. Value=".$attrValueModel->$vf);
       } else {
         $this->errors[$fieldId] = "Invalid value $value for attribute ".$attr->caption;
