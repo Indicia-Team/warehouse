@@ -215,7 +215,6 @@ class extension_site_hierarchy_navigator {
    */
   private function check_format($options, $optionName, $friendlyFormat, $regex) {
     $testval = $options[$optionName];
-    drupal_set_message($optionName . ' - ' . print_r(preg_match($regex, $testval), true)); 
     if (!preg_match($regex, $testval))
       return "<p>$testval</p>" .
           "<p>The supplied @$optionName option is not of the correct format, it should be a comma separated list with each item of the form \"{friendlyFormat}\".</p>";
