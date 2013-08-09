@@ -299,7 +299,7 @@ class iform_cudi_form extends iform_dynamic {
   protected static function getAttributes($args, $auth) { 
     //Always hide the preferred boundary textbox as the user shouldn't see it.
     //Only hide, don't remove it, as we still need the value from it.
-    data_entry_helper::$javascript = "
+    data_entry_helper::$javascript .= "
       $('#locAttr\\\\:".$args['preferred_boundary_attribute_id']."').hide();
       $('[for=\"locAttr\\\\:".$args['preferred_boundary_attribute_id']."\"]').hide();\n
     ";
@@ -436,12 +436,12 @@ class iform_cudi_form extends iform_dynamic {
       iform_load_helpers(array('report_helper')); 
       //When the preferred count unit changes, put the value into the text box of the field that holds the preferred count unit location attribute.
       //Also default the preferred count unit drop-down to the existing preferred count unit.
-      data_entry_helper::$javascript = "$('#set-preferred').click( function() {
-                                          $('#locAttr\\\\:".$args['preferred_boundary_attribute_id']."').val($('#boundary_versions').val());
-                                          alert('The preferred boundary has been set');
-                                        });
-                                        $(\"#boundary_versions option[value=\"+$('#locAttr\\\\:".$args['preferred_boundary_attribute_id']."').val()+\"]\").attr('selected', 'selected');\n
-                                        ";   
+      data_entry_helper::$javascript .= "$('#set-preferred').click( function() {
+                                           $('#locAttr\\\\:".$args['preferred_boundary_attribute_id']."').val($('#boundary_versions').val());
+                                           alert('The preferred boundary has been set');
+                                         });
+                                         $(\"#boundary_versions option[value=\"+$('#locAttr\\\\:".$args['preferred_boundary_attribute_id']."').val()+\"]\").attr('selected', 'selected');\n
+                                         ";   
       $options = array(
         'dataSource'=>'reports_for_prebuilt_forms/CUDI/get_count_unit_boundaries_for_user_role',
         'readAuth'=>$auth['read'],
@@ -456,12 +456,14 @@ class iform_cudi_form extends iform_dynamic {
       $options);    
       //Collect the boundaries from a report.
       $boundaryVersions = report_helper::get_report_data($options);
-      $r = '<label for="boundary_versions">Boundary Versions:</label> ';
-      //Put the count unit boundaries into a drop-down
-      $r .= '<select id = "boundary_versions">';
-      $r .= '<option>Please Select...</option>';
-      foreach ($boundaryVersions as $boundaryVersionData) {
-        $r .= '<option value="'.$boundaryVersionData['id'].'">'.$boundaryVersionData['id'].' - '.$boundaryVersionData['created_on'].' -> '.$boundaryVersionData['updated_on'].'</option>';
+      if (!empty($boundaryVersions)) {
+        $r = '<label for="boundary_versions">Boundary Versions:</label> ';
+        //Put the count unit boundaries into a drop-down
+        $r .= '<select id = "boundary_versions" name="boundary_versions">';
+        $r .= '<option>Please Select...</option>';
+        foreach ($boundaryVersions as $boundaryVersionData) {
+          $r .= '<option value="'.$boundaryVersionData['id'].'">'.$boundaryVersionData['id'].' - '.$boundaryVersionData['created_on'].' -> '.$boundaryVersionData['updated_on'].'</option>';
+        }
       }
       
       $r .= "</select>\n";
@@ -471,14 +473,17 @@ class iform_cudi_form extends iform_dynamic {
       return $r;
     }
   }
+  
   /*
+   * Control that lets the user overwrite an existing count unit boundary instead of creating a new one
+   */
   protected static function get_control_createnewboundary($auth, $args, $tabalias, $options) {
     if (!empty($_GET['location_id'])) {
-      $r = 'Correct Existing Boundary Rather Than Create New One?: <input type="checkbox" name="update-existing-boundary" value="update-existing-boundary"><br>';
+      $r = 'Correct Existing Boundary Rather Than Create New One?: <input type="checkbox" id="update-existing-boundary" name="update-existing-boundary"><br>';
       return $r;
     }
   }
-  */
+  
   protected static function get_control_locationtype($auth, $args, $tabalias, $options) {
     // To limit the terms listed add a terms option to the Form Structure as a JSON array.
     // The terms must exist in the termlist that has external key indidia:location_types
@@ -585,8 +590,11 @@ class iform_cudi_form extends iform_dynamic {
         unset($values[$key]);
       }
     }
-    // TODO ->at this point, if not creating a new boundary we need to get the boundary id from somewhere
-    unset($values['location:id']);
+    //if not creating a new boundary we need to get the boundary id from the boundary versions drop-down
+    if ($values['update-existing-boundary']==='on') 
+      $values['location:id']=$values['boundary_versions'];
+    else
+      unset($values['location:id']);
     //Write to id 1, as we don't want to overwrite the locations_website submission which is in submodel 0
     $s['subModels'][1]['model'] = self::create_submission($values, $args);
     return $s;
