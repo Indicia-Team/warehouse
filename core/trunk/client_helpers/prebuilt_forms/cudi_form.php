@@ -438,7 +438,9 @@ class iform_cudi_form extends iform_dynamic {
       //Also default the preferred count unit drop-down to the existing preferred count unit.
       data_entry_helper::$javascript .= "$('#set-preferred').click( function() {
                                            $('#locAttr\\\\:".$args['preferred_boundary_attribute_id']."').val($('#boundary_versions').val());
-                                           alert('The preferred boundary has been set');
+                                           $('#update-existing-boundary').attr('checked','checked'); 
+                                           $('#update-existing-boundary').hide();
+                                           $('#update-existing-boundary-label').hide();
                                          });
                                          $(\"#boundary_versions option[value=\"+$('#locAttr\\\\:".$args['preferred_boundary_attribute_id']."').val()+\"]\").attr('selected', 'selected');\n
                                          ";   
@@ -468,7 +470,9 @@ class iform_cudi_form extends iform_dynamic {
       
       $r .= "</select>\n";
       if ($admin_mode)
-        $r .= "<input type='button' id='set-preferred' class='indicia-button'value='Set Preferred'>";
+        $r .= '<form type="post">'.
+                "<input type='submit' id='set-preferred' class='indicia-button'value='Set Preferred and Save Existing Now'>".
+              "</form>";
       $r .= "<br>";
       return $r;
     }
@@ -479,7 +483,7 @@ class iform_cudi_form extends iform_dynamic {
    */
   protected static function get_control_createnewboundary($auth, $args, $tabalias, $options) {
     if (!empty($_GET['location_id'])) {
-      $r = 'Correct Existing Boundary Rather Than Create New One?: <input type="checkbox" id="update-existing-boundary" name="update-existing-boundary"><br>';
+      $r = '<label id="update-existing-boundary-label" for="update-existing-boundary">Correct Existing Boundary Rather Than Create New One?:</label><input type="checkbox" id="update-existing-boundary" name="update-existing-boundary"><br>';
       return $r;
     }
   }
