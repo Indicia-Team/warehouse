@@ -29,6 +29,7 @@
  */
 
 require_once('includes/dynamic.php');
+require_once('includes/report.php');
 global $fieldsToHoldInCountUnitBoundary;
 $fieldsToHoldInCountUnitBoundary = array('boundary_geom','geom','comment');
 class iform_cudi_form extends iform_dynamic {
@@ -159,6 +160,14 @@ class iform_cudi_form extends iform_dynamic {
           'required' => false,
           'group'=>'Configurable Ids'
         ),
+        array(
+          'name'=>'administrator_mode',
+          'caption'=>'Administrator Mode?',
+          'description'=>'Place page into administrator mode. This enables extra functionality and better privileges for performing certain tasks.',
+          'type'=>'boolean',
+          'required' => false,
+          'group'=>'Administrator Mode'
+        ),
       )
     );
     return $retVal;
@@ -288,6 +297,12 @@ class iform_cudi_form extends iform_dynamic {
    * Load the location attributes applicable for use
    */
   protected static function getAttributes($args, $auth) { 
+    //Always hide the preferred boundary textbox as the user shouldn't see it.
+    //Only hide, don't remove it, as we still need the value from it.
+    data_entry_helper::$javascript = "
+      $('#locAttr\\\\:".$args['preferred_boundary_attribute_id']."').hide();
+      $('[for=\"locAttr\\\\:".$args['preferred_boundary_attribute_id']."\"]').hide();\n
+    ";
     //Get attributes associated with the parent
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     $attrOpts = array(
@@ -413,34 +428,57 @@ class iform_cudi_form extends iform_dynamic {
   protected static function get_control_boundaryversions($auth, $args, $tabalias, $options) {
     //When adding a new record, don't show the control at all
     if (!empty($_GET['location_id'])) {
+      global $user;
+      if ($args['administrator_mode']==1) 
+        $admin_mode=1;
+      else
+        $admin_mode=0;
+      iform_load_helpers(array('report_helper')); 
       //When the preferred count unit changes, put the value into the text box of the field that holds the preferred count unit location attribute.
-      //Also hide that textbox.
       //Also default the preferred count unit drop-down to the existing preferred count unit.
-      data_entry_helper::$javascript = "$('#preferred_boundaries').change( function() {
-                                          $('#locAttr\\\\:".$args['preferred_boundary_attribute_id']."').val($(this).val());
+      data_entry_helper::$javascript = "$('#set-preferred').click( function() {
+                                          $('#locAttr\\\\:".$args['preferred_boundary_attribute_id']."').val($('#boundary_versions').val());
+                                          alert('The preferred boundary has been set');
                                         });
-                                        $('#locAttr\\\\:".$args['preferred_boundary_attribute_id']."').hide();\n
-                                        $(\"#preferred_boundaries option[value=\"+$('#locAttr\\\\:".$args['preferred_boundary_attribute_id']."').val()+\"]\").attr('selected', 'selected');
+                                        $(\"#boundary_versions option[value=\"+$('#locAttr\\\\:".$args['preferred_boundary_attribute_id']."').val()+\"]\").attr('selected', 'selected');\n
                                         ";   
-      //Collect all the count unit boundaries
-      $boundaryVersions = data_entry_helper::get_population_data(array(
-        'table' => 'location',
-        'extraParams' => $auth['read'] + array('parent_id' => $_GET['location_id'], 'view' => 'detail'),
-        'nocache' => true,
-        'sharing' => $sharing
-      ));
+      $options = array(
+        'dataSource'=>'reports_for_prebuilt_forms/CUDI/get_count_unit_boundaries_for_user_role',
+        'readAuth'=>$auth['read'],
+        'extraParams' =>array('preferred_boundary_attribute_id'=>$args['preferred_boundary_attribute_id'],
+                              'current_user_id'=>$user->uid,
+                              'count_unit_id'=>$_GET['location_id'],
+                              'admin_role'=>$admin_mode)
+      );
+      //Get the report options such as the Preset Parameters on the Edit Tab
+      $options = array_merge(
+        iform_report_get_report_options($args, $readAuth),
+      $options);    
+      //Collect the boundaries from a report.
+      $boundaryVersions = report_helper::get_report_data($options);
+      $r = '<label for="boundary_versions">Boundary Versions:</label> ';
       //Put the count unit boundaries into a drop-down
-      $r = '<select id = "preferred_boundaries">';
+      $r .= '<select id = "boundary_versions">';
       $r .= '<option>Please Select...</option>';
       foreach ($boundaryVersions as $boundaryVersionData) {
-        $r .= '<option value="'.$boundaryVersionData['id'].'">'.$boundaryVersionData['name'].'</option>';
+        $r .= '<option value="'.$boundaryVersionData['id'].'">'.$boundaryVersionData['id'].' - '.$boundaryVersionData['created_on'].' -> '.$boundaryVersionData['updated_on'].'</option>';
       }
       
       $r .= "</select>\n";
+      if ($admin_mode)
+        $r .= "<input type='button' id='set-preferred' class='indicia-button'value='Set Preferred'>";
+      $r .= "<br>";
       return $r;
     }
   }
-  
+  /*
+  protected static function get_control_createnewboundary($auth, $args, $tabalias, $options) {
+    if (!empty($_GET['location_id'])) {
+      $r = 'Correct Existing Boundary Rather Than Create New One?: <input type="checkbox" name="update-existing-boundary" value="update-existing-boundary"><br>';
+      return $r;
+    }
+  }
+  */
   protected static function get_control_locationtype($auth, $args, $tabalias, $options) {
     // To limit the terms listed add a terms option to the Form Structure as a JSON array.
     // The terms must exist in the termlist that has external key indidia:location_types
