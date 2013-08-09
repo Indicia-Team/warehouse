@@ -102,7 +102,7 @@ function addGridRow(species, speciesTableSelector, end, tabIDX){
     // row += '<input class="count-input" id="value:'+species.id+':'+section.code+'" type="text" value="'+val+'" /></td>';
     // actual control has to be first in cell for cursor keys to work.
     var myCtrl = indiciaData.occurrence_attribute_ctrl[tabIDX].clone();
-    myCtrl.attr('id', 'value:'+species.id+':'+section.code).attr('name', '').val(val);
+    myCtrl.attr('id', 'value:'+species.id+':'+section.code).attr('name', '');
     if(isNumber) myCtrl.addClass('count-input');
     else myCtrl.addClass('non-count-input');
     myCtrl.appendTo(cell);
@@ -120,6 +120,7 @@ function addGridRow(species, speciesTableSelector, end, tabIDX){
     } else {
       val='';
     }
+    myCtrl.val(val);
   });
   if(isNumber) jQuery('<td class="row-total first">'+rowTotal+'</td>').appendTo(row);
   if(end) {
@@ -282,13 +283,18 @@ function input_blur (evt) {
         return;
       }
 
-      // store the actual abundance value we want to save. Use 0 instead of blank
-      // since required for deletions
-      if (jQuery(selector).val()==='') {
-        jQuery(selector).val('0');
+      // store the actual abundance value we want to save.
+      jQuery('#occzero').val('f');
+      jQuery('#occdeleted').val('f');
+      if (jQuery(selector).val()==='0') {
+        jQuery('#occzero').val('t');
       }
-      jQuery('#occattr').val(jQuery(selector).val());
-      jQuery('#occdeleted').val(jQuery(selector).val()==='0' || jQuery(selector).val()==='' ? 't' : 'f');
+      if (jQuery(selector).val()==='') {
+        jQuery('#occdeleted').val('t');
+        jQuery('#occattr').val('0');
+      } else {
+        jQuery('#occattr').val(jQuery(selector).val());
+      }
       // does this cell already have an occurrence?
       if (jQuery(selector +'\\:id').length>0) {
         jQuery('#occid').val(jQuery(selector +'\\:id').val());
@@ -306,9 +312,11 @@ function input_blur (evt) {
       }
       // store the current cell's ID as a transaction ID, so we know which cell we were updating.
       jQuery('#transaction_id').val(evt.target.id);
-      jQuery('#occ-form').submit();
+      if (jQuery(selector +'\\:id').length>0 || jQuery('#occdeleted').val()==='f') {
+        jQuery('#occ-form').submit();
+      }
       // if deleting, then must remove the occurrence ID
-      if (jQuery(selector).val()==='0' || jQuery(selector).val()==='') {
+      if (jQuery('#occdeleted').val()==='t') {
         jQuery(selector +'\\:id').remove();
         jQuery(selector +'\\:attrValId').remove();
       }
@@ -664,16 +672,13 @@ function loadSpeciesList() {
       var selector = '#'+data.transaction_id.replace(/:/g, '\\:');
       jQuery(selector).removeClass('saving');
       if (checkErrors(data)) {
-        // skip deletions
-        if (jQuery(selector).val()!=='0') {
-          if (jQuery(selector +'\\:id').length===0) {
-            // this is a new occurrence, so keep a note of the id in a hidden input
-            jQuery(selector).after('<input type="hidden" id="'+data.transaction_id +':id" value="'+data.outer_id+'"/>');
-          }
-          if (jQuery(selector +'\\:attrValId').length===0) {
-            // this is a new attribute, so keep a note of the id in a hidden input
-            jQuery(selector).after('<input type="hidden" id="'+data.transaction_id +':attrValId" value="'+data.struct.children[0].id+'"/>');
-          }
+        if (jQuery(selector +'\\:id').length===0) {
+          // this is a new occurrence, so keep a note of the id in a hidden input
+          jQuery(selector).after('<input type="hidden" id="'+data.transaction_id +':id" value="'+data.outer_id+'"/>');
+        }
+        if (jQuery(selector +'\\:attrValId').length===0) {
+          // this is a new attribute, so keep a note of the id in a hidden input
+          jQuery(selector).after('<input type="hidden" id="'+data.transaction_id +':attrValId" value="'+data.struct.children[0].id+'"/>');
         }
         jQuery(selector).removeClass('edited');
       }

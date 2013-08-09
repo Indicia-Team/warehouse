@@ -1266,6 +1266,7 @@ jQuery(jQuery('#".$options["tabDiv"]."').parent()).bind('tabsshow', speciesMapTa
     $r .= '<input name="survey_id" value="'.$args["survey_id"].'" />';
     $r .= '<input name="occurrence:id" id="occid" />';
     $r .= '<input name="occurrence:deleted" id="occdeleted" />';
+    $r .= '<input name="occurrence:zero_abundance" id="occzero" />';
     $r .= '<input name="occurrence:taxa_taxon_list_id" id="ttlid" />';
     $r .= '<input name="occurrence:sample_id" id="occ_sampleid"/>';
     $r .= '<input name="occAttr:' . $args['occurrence_attribute_id'] . '" id="occattr"/>';
