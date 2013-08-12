@@ -18,7 +18,7 @@
       OR (l.created_by_id=#current_user_id# and l.created_on > (select created_on from locations where id = COALESCE(lav.int_value,lLatestChild.id)))) 
       OR (#admin_role#=1))
       AND l.deleted = false AND #website_filter# AND l.parent_id=#count_unit_id#
-
+    ORDER BY l.id desc
   </query>
   <params>
     <param name="current_user_id" datatype="integer"/>
