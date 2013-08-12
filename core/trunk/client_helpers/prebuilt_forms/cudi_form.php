@@ -221,7 +221,7 @@ class iform_cudi_form extends iform_dynamic {
    * Return the id of the preferred count unit boundary location (or latest one if preferred isn't specified) when loading an existing count unit location.
    * If a preferred boundary is not found then return null
    */
-  protected static function getIdForCountUnitBoundaryIfApplicable($args, $auth) {
+  protected static function getIdForCountUnitBoundaryIfApplicable($args, $auth) { 
     $preferredBoundaryValueReportData = data_entry_helper::get_report_data(array(
       'dataSource'=>'library/location_attribute_values/location_attribute_values_for_location_or_location_attribute_id',
       'readAuth'=>$auth['read'],
@@ -303,10 +303,21 @@ class iform_cudi_form extends iform_dynamic {
       $('#locAttr\\\\:".$args['preferred_boundary_attribute_id']."').hide();
       $('[for=\"locAttr\\\\:".$args['preferred_boundary_attribute_id']."\"]').hide();\n
     ";
+    //Get the preferred boundary id for use if we are viewing a count unit
+    $preferredBoundaryLocationIdCalculatedFromCountUnit =  self::getIdForCountUnitBoundaryIfApplicable($args, $auth);   
+    if (!empty($_GET['parent_id'])) {
+      //If we are looking at a count unit boundary, then we have both the parent and boundary ids available to us
+      $parentId=$_GET['parent_id'];
+      $boundaryId=$_GET['location_id'];
+    } else {
+      //If we are looking at a count unit instead of a boundary, then we need to get the preferred boundary id
+      $parentId=$_GET['location_id'];
+      $boundaryId=$preferredBoundaryLocationIdCalculatedFromCountUnit;
+    }
     //Get attributes associated with the parent
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     $attrOpts = array(
-      'id' =>$_GET['location_id']  
+      'id' =>$parentId  
       ,'valuetable'=>'location_attribute_value'
       ,'attrtable'=>'location_attribute'
       ,'key'=>'location_id'
@@ -317,12 +328,11 @@ class iform_cudi_form extends iform_dynamic {
     );
     $mainAttributes = data_entry_helper::getAttributes($attrOpts, false);
     
-    //Get attributes associated with the child boundary
-    $boundaryLocationId =  self::getIdForCountUnitBoundaryIfApplicable($args, $auth);
-    if (!empty($boundaryLocationId)) {
+    //Get attributes associated with the boundary
+    if (!empty($boundaryId)) {
       $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
       $attrOpts = array(
-        'id' =>$boundaryLocationId
+        'id' =>$boundaryId
         ,'valuetable'=>'location_attribute_value'
         ,'attrtable'=>'location_attribute'
         ,'key'=>'location_id'
@@ -426,6 +436,12 @@ class iform_cudi_form extends iform_dynamic {
    * In order for control to operate correctly, the parent count unit must be loaded into the location_id parameter in the URL.
    */
   protected static function get_control_boundaryversions($auth, $args, $tabalias, $options) {
+    //If we are looking at a count unit boundary we need to show boundary versions for the parent.
+    //If we are looking at a count unit we need to show boundary versions for the current location.
+    if (!empty($_GET['parent_id']))
+      $parentCountUnitId=$_GET['parent_id'];
+    else
+      $parentCountUnitId=$_GET['location_id'];  
     //When adding a new record, don't show the control at all
     if (!empty($_GET['location_id'])) {
       global $user;
@@ -434,22 +450,50 @@ class iform_cudi_form extends iform_dynamic {
       else
         $admin_mode=0;
       iform_load_helpers(array('report_helper')); 
-      //When the preferred count unit changes, put the value into the text box of the field that holds the preferred count unit location attribute.
-      //Also default the preferred count unit drop-down to the existing preferred count unit.
-      data_entry_helper::$javascript .= "$('#set-preferred').click( function() {
+      //When the "Set Preferred and Save Now button" is clicked, put the drop-down value into the textbox of the preferred count unit location attribute.
+      //Also automatically select the checkbox that indicates we are updating rather creating a boundary. Then hide the checkbox to avoid it being tampered with as save occurs.
+      data_entry_helper::$javascript .= "var preferredWhenScreenLoads = $('#locAttr\\\\:".$args['preferred_boundary_attribute_id']."').val(); 
+                                         $('#set-preferred').click( function() {
                                            $('#locAttr\\\\:".$args['preferred_boundary_attribute_id']."').val($('#boundary_versions').val());
                                            $('#update-existing-boundary').attr('checked','checked'); 
                                            $('#update-existing-boundary').hide();
                                            $('#update-existing-boundary-label').hide();
-                                         });
-                                         $(\"#boundary_versions option[value=\"+$('#locAttr\\\\:".$args['preferred_boundary_attribute_id']."').val()+\"]\").attr('selected', 'selected');\n
+                                         });";
+      //As the Update Existing Boundary and Set Preferred on Save checkboxes are selected and deselected by the user, we need
+      //to manipulate the Preferred Boundary Id textbox. This needs to occur whenever either checkbox is changed.
+      data_entry_helper::$javascript .= "$('#update-existing-boundary').click( function() {
+                                           set_preferred_on_save_checks();
+                                         });";
+      
+      data_entry_helper::$javascript .= "$('#set-preferred-on-save').click( function() {
+                                           set_preferred_on_save_checks();
+                                         });";
+      //User elects to set preferred on save, user elects to update existing boundary and a boundary is selected->Preferred Boundary is set to selected boundary
+      //User elects to set preferred on save, user elects to update existing boundary and a boundary is NOT selected (viewing count unit)->Preferred Boundary remains the same
+      //User elects to set preferred on save, user elects to create new boundary->Preferred Boundary set to empty (latest is assumed to be preferred)
+      //User elects NOT to set preferred on save->Preferred Boundary left as it was
+      data_entry_helper::$javascript .= "function set_preferred_on_save_checks() {
+                                           if ($('#set-preferred-on-save').is(':checked') && $(\"#boundary_versions\").val()) {
+                                             if ($('#update-existing-boundary').is(':checked')) {
+                                               if ($(\"#boundary_versions\").val()) {
+                                                 $('#locAttr\\\\:".$args['preferred_boundary_attribute_id']."').val($(\"#boundary_versions\").val());
+                                               } else {
+                                                 $('#locAttr\\\\:".$args['preferred_boundary_attribute_id']."').val(preferredWhenScreenLoads);
+                                               }
+                                             } else {
+                                               $('#locAttr\\\\:".$args['preferred_boundary_attribute_id']."').val('');
+                                             }
+                                           } else {
+                                             $('#locAttr\\\\:".$args['preferred_boundary_attribute_id']."').val(preferredWhenScreenLoads);
+                                           }
+                                         }
                                          ";   
       $options = array(
         'dataSource'=>'reports_for_prebuilt_forms/CUDI/get_count_unit_boundaries_for_user_role',
         'readAuth'=>$auth['read'],
         'extraParams' =>array('preferred_boundary_attribute_id'=>$args['preferred_boundary_attribute_id'],
                               'current_user_id'=>$user->uid,
-                              'count_unit_id'=>$_GET['location_id'],
+                              'count_unit_id'=>$parentCountUnitId,
                               'admin_role'=>$admin_mode)
       );
       //Get the report options such as the Preset Parameters on the Edit Tab
@@ -460,20 +504,56 @@ class iform_cudi_form extends iform_dynamic {
       $boundaryVersions = report_helper::get_report_data($options);
       if (!empty($boundaryVersions)) {
         $r = '<label for="boundary_versions">Boundary Versions:</label> ';
-        //Put the count unit boundaries into a drop-down
-        $r .= '<select id = "boundary_versions" name="boundary_versions">';
-        $r .= '<option>Please Select...</option>';
+        //Put the count unit boundaries into a drop-down and setup reloading of the page when an item is selected.
+        $r .= '<select id = "boundary_versions" name="boundary_versions" onchange="location = location = this.options[this.selectedIndex].id;">';
         foreach ($boundaryVersions as $boundaryVersionData) {
-          $r .= '<option value="'.$boundaryVersionData['id'].'">'.$boundaryVersionData['id'].' - '.$boundaryVersionData['created_on'].' -> '.$boundaryVersionData['updated_on'].'</option>';
+          //Need to find the biggest id of the boundaries, as if there isn't a preferred one set, then latest is assumed to be preferred.
+          if (empty($maxBoundaryId)||($boundaryVersionData['id'] > $maxBoundaryId))
+            $maxBoundaryId = $boundaryVersionData['id'];   
+          //Link back to page when user clicks on a boundary.
+          $linkToBoundaryPage =
+                url($_GET['q'], array('absolute' => true)).(variable_get('clean_url', 0) ? '?' : '&').
+                'location_id='.$boundaryVersionData['id'].'&parent_id=';
+          //We get the parent count unit id in a different way depending on whether we are already viewing a boundary,
+          //or whether we are looking at the count unit
+          if (!empty($_GET['parent_id'])) {
+            $linkToBoundaryPage = $linkToBoundaryPage.$_GET['parent_id'];
+          } else {
+            $linkToBoundaryPage = $linkToBoundaryPage.$_GET['location_id'];
+          }
+          //Boundary version options setup as we go around the foreach loop.
+          $r .= '<option value="'.$boundaryVersionData['id'].'" id="'.$linkToBoundaryPage.'">'.$boundaryVersionData['id'].' - '.$boundaryVersionData['created_on'].' -> '.$boundaryVersionData['updated_on'].'</option>';         
         }
+        
+        //If preferred boundary is setup, then set the label on screen and put it in a hidden textbox which can be accessed during submission.
+        //If preferred boundary is not setup, then we assume the latest is preferred.
+        data_entry_helper::$javascript .= "if ($('#locAttr\\\\:".$args['preferred_boundary_attribute_id']."').val()) {
+                                            $(\"#preferred_boundary\").html($('#locAttr\\\\:".$args['preferred_boundary_attribute_id']."').val());
+                                            $(\"#preferred_boundary_hidden\").val($('#locAttr\\\\:".$args['preferred_boundary_attribute_id']."').val());
+                                          } else {
+                                            $(\"#preferred_boundary\").html($maxBoundaryId);
+                                            $(\"#preferred_boundary_hidden\").val($maxBoundaryId);
+                                          }\n";
+
+        $r .= "</select>\n";
+        if ($admin_mode)
+          $r .= '<form type="post">'.
+                  "<input type='submit' id='set-preferred' class='indicia-button'value='Set Preferred and Save Now'>".
+                "</form>";
+        $r .= "<br>";
+        $r .= '<label for="preferred_boundary">Preferred Boundary:</label> ';
+        $r .= '<label id="preferred_boundary" name="preferred_boundary"></label>';
+        $r .= '<input id="preferred_boundary_hidden" name="preferred_boundary_hidden" type="hidden"/>';  
+        $r .= "<br>";
       }
-      
-      $r .= "</select>\n";
-      if ($admin_mode)
-        $r .= '<form type="post">'.
-                "<input type='submit' id='set-preferred' class='indicia-button'value='Set Preferred and Save Existing Now'>".
-              "</form>";
-      $r .= "<br>";
+
+      //If we are viewing a boundary, then defalt it in the drop-down else default to preferred item
+      data_entry_helper::$javascript .= "var parentId = '".$_GET['parent_id']."';
+                                         if (parentId!=='') {
+                                           $(\"#boundary_versions option[value='".$_GET['location_id']."']\").attr('selected', 'selected');
+                                         } else {
+                                           $(\"#boundary_versions option[value=\"+$('#preferred_boundary_hidden').val()+\"]\").attr('selected', 'selected');
+                                         }\n";
       return $r;
     }
   }
@@ -484,6 +564,7 @@ class iform_cudi_form extends iform_dynamic {
   protected static function get_control_createnewboundary($auth, $args, $tabalias, $options) {
     if (!empty($_GET['location_id'])) {
       $r = '<label id="update-existing-boundary-label" for="update-existing-boundary">Correct Existing Boundary Rather Than Create New One?:</label><input type="checkbox" id="update-existing-boundary" name="update-existing-boundary"><br>';
+      $r .= '<label id="set-preferred-on-save-label" for="set-preferred-on-save">Set as preferred on save?:</label><input type="checkbox" id="set-preferred-on-save" name="set-preferred-on-save"><br>';
       return $r;
     }
   }
@@ -571,15 +652,19 @@ class iform_cudi_form extends iform_dynamic {
    * @return array Submission structure.
    */
   public static function get_submission($values, $args) {
-    $s = self::prepare_locations_to_save_for_submission($values, $args);
+    //Subission needs to be different depending on whether we are looking at a count unit or a count unit boundary
+    if (!empty($_GET['parent_id']))
+      $s = self::prepare_locations_to_save_for_submission_when_boundary($values, $args);  
+    else
+      $s = self::prepare_locations_to_save_for_submission_when_count_unit($values, $args);
     return $s;
   }
   
-  /*
-   * When we save a Count Unit location, we save most of the information into a seperate Count Unit Boundary location.
-   * We need to prepare the submission for this.
+  /**
+   * Handle the submission setup if we are looking at a boundary
    */
-  protected static function prepare_locations_to_save_for_submission($values, $args) {   
+  protected static function prepare_locations_to_save_for_submission_when_boundary($values, $args) { 
+    $values['location:id']=$_GET['parent_id'];
     $values['location:location_type_id']=$args['count_unit_location_type_id'];
     //Remove the values we are saving into the boundary location from the parent.
     $valuesForParent = self::unsetParentValues($values,$args);
@@ -594,10 +679,41 @@ class iform_cudi_form extends iform_dynamic {
         unset($values[$key]);
       }
     }
+
     //if not creating a new boundary we need to get the boundary id from the boundary versions drop-down
-    if ($values['update-existing-boundary']==='on') 
+    if ($values['update-existing-boundary']==='on') {
       $values['location:id']=$values['boundary_versions'];
-    else
+    } else
+      unset($values['location:id']);
+    //Write to id 1, as we don't want to overwrite the locations_website submission which is in submodel 0
+    $s['subModels'][1]['model'] = self::create_submission($values, $args);
+    return $s;
+  }
+  
+  
+  /*
+   * When we save a Count Unit location, we save most of the information into a seperate Count Unit Boundary location.
+   * We need to prepare the submission for this.
+   */
+  protected static function prepare_locations_to_save_for_submission_when_count_unit($values, $args) { 
+    $values['location:location_type_id']=$args['count_unit_location_type_id'];
+    //Remove the values we are saving into the boundary location from the parent.
+    $valuesForParent = self::unsetParentValues($values,$args);
+    $s = self::create_submission($valuesForParent, $args);
+    $values['location:location_type_id']=$args['count_unit_boundary_location_type_id'];
+    $s['subModels'][1]['fkId'] = 'parent_id';      
+    //The location attribute that points to the boundary should only be saved for the parent, so remove
+    //it from the child boundary
+    foreach ($values as $key=>$value) {
+      $keyParts = explode(':',$key);    
+      if ($keyParts[0] === 'locAttr' && $keyParts[1]===$args['preferred_boundary_attribute_id']) {
+        unset($values[$key]);
+      }
+    }
+    //if not creating new boundary, get the location id from the preferred boundary
+    if ($values['update-existing-boundary']==='on') {
+      $values['location:id']=$values['preferred_boundary_hidden'];
+    } else
       unset($values['location:id']);
     //Write to id 1, as we don't want to overwrite the locations_website submission which is in submodel 0
     $s['subModels'][1]['model'] = self::create_submission($values, $args);
