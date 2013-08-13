@@ -422,9 +422,10 @@ $('#load-params').click(function() {
     $params[] = array(
       'fieldname'=>'additional_templates',
       'label'=>'Additional template files to include',
-      'helpText'=>'Additional CSS files to include on the page. You can use the following replacements to simplify the setting '.
+      'helpText'=>'Additional templates files to include on the page. You can use the following replacements to simplify the setting '.
           'of the correct paths. {prebuiltformtemplates} is replaced by the prebuilt_forms/templates folder. Specify one template file per '.
-          'line.',
+          'line. The structure of template files is described <a target="_blank" href="http://indicia-docs.readthedocs.org/en/latest/site-building/' .
+          'iform/customising-page-functionality.html#overridding-the-html-templates-used-to-output-the-input-controls">in the documentation</a>.',
       'type'=>'textarea',
       'required'=>false
     );
