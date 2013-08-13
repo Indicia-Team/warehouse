@@ -215,7 +215,7 @@ class extension_site_hierarchy_navigator {
    */
   private function check_format($options, $optionName, $friendlyFormat, $regex) {
     $testval = $options[$optionName];
-    if (!preg_match($regex, $testval))
+    if (!preg_match($regex, $testval)&&!empty($testval))
       return "<p>$testval</p>" .
           "<p>The supplied @$optionName option is not of the correct format, it should be a comma separated list with each item of the form \"{friendlyFormat}\".</p>";
     return true;
