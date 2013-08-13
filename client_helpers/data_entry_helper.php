@@ -3914,7 +3914,7 @@ $('#".$options['id']."-filter').click(function(evt) {
   *
   * @return string HTML to insert into the page for the hidden text control.
   */
-  public function sensitivity_input($options) {
+  public static function sensitivity_input($options) {
     $options = array_merge(array(
       'fieldname'=>'occurrence:sensitivity_precision',
       'defaultBlur' => 10000,
