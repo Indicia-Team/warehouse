@@ -419,6 +419,15 @@ $('#load-params').click(function() {
       'type'=>'textarea',
       'required'=>false
     );
+    $params[] = array(
+      'fieldname'=>'additional_templates',
+      'label'=>'Additional template files to include',
+      'helpText'=>'Additional CSS files to include on the page. You can use the following replacements to simplify the setting '.
+          'of the correct paths. {prebuiltformtemplates} is replaced by the prebuilt_forms/templates folder. Specify one template file per '.
+          'line.',
+      'type'=>'textarea',
+      'required'=>false
+    );
     return $params;
   }
 
