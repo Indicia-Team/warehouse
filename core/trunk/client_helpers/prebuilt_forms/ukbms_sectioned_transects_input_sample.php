@@ -1111,14 +1111,14 @@ class iform_ukbms_sectioned_transects_input_sample {
 
     $allTaxonMeaningIdsAtTransect = data_entry_helper::get_population_data(array(
         'report' => 'reports_for_prebuilt_forms/UKBMS/ukbms_taxon_meanings_at_transect',
-        'extraParams' => $auth['read'] + array('view'=>'detail', 'location_id' => $parentLocId, 'survey_id'=>$args['survey_id']),
+        'extraParams' => $auth['read'] + array('location_id' => $parentLocId, 'survey_id'=>$args['survey_id']),
         // don't cache as this is live data
         'nocache' => true
     ));
     
     data_entry_helper::$javascript .= "indiciaData.allTaxonMeaningIdsAtTransect = [";
     $first = true;
-    foreach($taxa as $taxon){
+    foreach($allTaxonMeaningIdsAtTransect as $taxon){
     	data_entry_helper::$javascript .= ($first ? "" : ",").$taxon['taxon_meaning_id'];
     	$first = false;
     }
