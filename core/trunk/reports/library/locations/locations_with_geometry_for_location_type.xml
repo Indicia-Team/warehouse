@@ -39,7 +39,7 @@
     <column name="centroid_geom" sql="
                   case when lcub.centroid_geom is not null 
                     then st_astext(st_centroid(lcub.centroid_geom)) 
-                  when l.centroid_geom is not null and l.location_type_id != #count_unit_type_id# and l.location_type_id != #count_unit_boundary_type_id# 
+                  when l.centroid_geom is not null and l.location_type_id != #count_unit_boundary_type_id# 
                     then st_astext(st_centroid(l.centroid_geom)) end" mappable="true"/>
     <column name="location_type_id" sql="COALESCE(lcub.location_type_id,l.location_type_id)" mappable="true"/>
     //Return a boundary from the location, but if it isn't available, look at the count unit boundaries to get the preferred count unit boundary
