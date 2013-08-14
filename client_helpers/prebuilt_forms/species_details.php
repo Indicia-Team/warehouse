@@ -616,7 +616,7 @@ class iform_species_details extends iform_dynamic {
    * parameters unless the Edit and Save button is clicked. So, apply some defaults to keep those old forms
    * working.
    */
-  protected function getArgDefaults($args) {
+  protected static function getArgDefaults($args) {
     if (!isset($args['interface']) || empty($args['interface']))
       $args['interface'] = 'one_page';
     

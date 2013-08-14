@@ -165,10 +165,8 @@ Record ID',
       return 'This form requires an occurrence_id parameter in the URL.';
     } else {
       global $user;
-      if (!isset($user->profile_indicia_user_id))
-        profile_load_profile($user);
       data_entry_helper::$javascript .= 'indiciaData.username = "'.$user->name."\";\n";
-      data_entry_helper::$javascript .= 'indiciaData.user_id = "'.$user->profile_indicia_user_id."\";\n";
+      data_entry_helper::$javascript .= 'indiciaData.user_id = "'.hostsite_get_user_field('indicia_user_id')."\";\n";
       data_entry_helper::$javascript .= 'indiciaData.website_id = '.$args['website_id'].";\n";
       data_entry_helper::$javascript .= 'indiciaData.ajaxFormPostUrl="'.iform_ajaxproxy_url(null, 'occurrence')."&sharing=reporting\";\n";
       return parent::get_form_html($args, $auth, $attributes);
