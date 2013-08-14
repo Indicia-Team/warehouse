@@ -947,7 +947,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   protected static function get_control_speciesmap($auth, $args, $tabAlias, $options) {
     // The ID must be done here so it can be accessed by both the species grid and the buttons.
     $code = rand(0,1000);
-    $defaults = array('id' => 'species-grid-'.$code, buttonsId => 'species-grid-buttons-'.$code);
+    $defaults = array('id' => 'species-grid-'.$code, 'buttonsId' => 'species-grid-buttons-'.$code);
     $options = array_merge($defaults, $options);
     
     $gridmode = call_user_func(array(self::$called_class, 'getGridMode'), $args);
@@ -985,6 +985,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     $system = '<input type="hidden" id="imp-sref-system" name="sample:entered_sref_system" value="'.$systems[0].'" />';
     // since we handle the system ourself, we need to include the system handled js files.
     data_entry_helper::include_sref_handler_js(array($systems[0]=>''));
+    $r = '';
     if (isset($options['sampleMethodId'])) {
       $args['sample_method_id'] = $options['sampleMethodId'];
       $sampleAttrs = self::getAttributes($args, $auth);
