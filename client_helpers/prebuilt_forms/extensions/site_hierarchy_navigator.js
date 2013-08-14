@@ -65,29 +65,21 @@ function add_new_layer_for_site_hierarchy_navigator(clickedFeatureId,breadcrumbL
           var currentLayerObjectTypes = [];
           var features=[];    
           var existingBreadcrumb;
-          var featureIds=[];
-          //If the user options tell the system to use symbols instead boundaries, then we plot the centroid instead of boundary
-          if (inArray(indiciaData.layerLocationTypes[currentLayerCounter],indiciaData.locationTypesWithSymbols)) {
-            //Make nice names for the layers and add centroid geometry to map
-            $.each(response, function (idx, obj) {
-              //Make a distinct list of the location types being displayed on the current layer
-              if (!inArray(obj.location_type_name,currentLayerObjectTypes)) {
-                currentLayerObjectTypes.push(obj.location_type_name);
-              }
-              indiciaData.mapdiv.addPt(features, obj, 'centroid_geom', {}, obj.id);
-              featureIds[idx] = obj.id;
-            });
-          } else {
-            //Make nice names for the layers and add boundary geometry to map
-            $.each(response, function (idx, obj) {
-              //Make a distinct list of the location types being displayed on the current layer
-              if (!inArray(obj.location_type_name,currentLayerObjectTypes)) {
-                currentLayerObjectTypes.push(obj.location_type_name);
-              }
+          var featureIds=[];          
+          //Make nice names for the layers and add boundary geometry to map
+          $.each(response, function (idx, obj) {
+            //Make a distinct list of the location types being displayed on the current layer
+            if (!inArray(obj.location_type_name,currentLayerObjectTypes)) {
+              currentLayerObjectTypes.push(obj.location_type_name);
+            }
+            if (obj.boundary_geom) {
               indiciaData.mapdiv.addPt(features, obj, 'boundary_geom', {}, obj.id);
-              featureIds[idx] = obj.id;
-            });
-          }
+            } 
+            else {
+              indiciaData.mapdiv.addPt(features, obj, 'centroid_geom', {}, obj.id);
+            }
+            featureIds[idx] = obj.id;
+          });
           var currentLayerObjectTypesString;
           var i;
           //Convert the list of location types displayed in the current layer into a comma seperated string
