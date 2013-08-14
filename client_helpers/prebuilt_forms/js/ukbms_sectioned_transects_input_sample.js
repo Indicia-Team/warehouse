@@ -64,7 +64,7 @@ function addSpeciesToGrid(occurrenceSpecies, taxonList, speciesTableSelector, fo
       jQuery.each(occurrenceSpecies, function(idx, occ){
         // taxonList may or may not be preferred
         // Occ has both a ttl_id and a preferred
-        if(occ['processed']!==true && (occ['ttl_id']==species['id'] || occ['preferred_ttl_id']==species['id']))
+        if(occ['processed']!==true && occ['taxon_meaning_id']===species['taxon_meaning_id'])
           found=true;
       });
     }
