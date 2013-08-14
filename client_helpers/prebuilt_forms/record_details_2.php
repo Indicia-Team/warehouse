@@ -448,7 +448,7 @@ Record ID',
    * working.
    */
  
-  protected function getArgDefaults($args) {
+  protected static function getArgDefaults($args) {
     if (!isset($args['interface']) || empty($args['interface']))
       $args['interface'] = 'one_page';
     
