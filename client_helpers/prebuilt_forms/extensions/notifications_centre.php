@@ -30,6 +30,10 @@ class extension_notifications_centre {
   
   /*
    * Draw the control that displays auto-check notifications.
+   * Pass the following options:
+   * @default_edit_page_path = path to the default page to load for record editing, where the input form used is unknown (normally 
+   * this affects old records only).
+   * @view_record_page_path = path to the view record details page
    */
   public static function auto_check_messages_grid($auth, $args, $tabalias, $options, $path) {
     // set default to show comment and verification notifications
@@ -46,6 +50,10 @@ class extension_notifications_centre {
   /*
    * Draw the control that displays user notifications. These are notifications of
    * source type 'C' or 'V' (comments and verifications) by default - control this using the @sourceType option.
+   * Pass the following options:
+   * @default_edit_page_path = path to the default page to load for record editing, where the input form used is unknown (normally 
+   * this affects old records only). 
+   * @view_record_page_path = path to the view record details page   
    */
   public static function user_messages_grid($auth, $args, $tabalias, $options, $path) {
     // set default to show comment and verification notifications
@@ -61,21 +69,20 @@ class extension_notifications_centre {
    
   public static function messages_grid($auth, $args, $tabalias, $options, $path) {
     self::initialise($auth, $args, $tabalias, $options, $path);
-    global $user;
-    if (isset($user->profile_indicia_user_id))
-      return self::notifications_grid($auth, $options, variable_get('indicia_website_id', ''), $user->profile_indicia_user_id); // system
+    $indicia_user_id=hostsite_get_user_field('indicia_user_id');
+    if ($indicia_user_id)
+      return self::notifications_grid($auth, $options, variable_get('indicia_website_id', ''), $indicia_user_id); // system
     else
       return '<p>'.lang::get('The notifications system will be enabled when you fill in at least your surname on your account.').'</p>';
   }  
   
   private static function initialise($auth, $args, $tabalias, $options, $path) {
     if (!self::$initialised) {
-      global $user;
-      if (!isset($user->profile_indicia_user_id))
-        profile_load_profile($user);
-      if (isset($user->profile_indicia_user_id)) {
+      $indicia_user_id=hostsite_get_user_field('indicia_user_id');
+      if ($indicia_user_id) {
+        iform_load_helpers(array('report_helper'));
         report_helper::$javascript .= "indiciaData.website_id = ".variable_get('indicia_website_id', '').";\n";
-        report_helper::$javascript .= "indiciaData.user_id = ".$user->profile_indicia_user_id.";\n";
+        report_helper::$javascript .= "indiciaData.user_id = ".$indicia_user_id.";\n";
         //The proxy url used when interacting with the notifications table in the database.
         report_helper::$javascript .= "indiciaData.notification_proxy_url = '".iform_ajaxproxy_url(null, 'notification')."';\n";
         //The proxy url used when interacting with the occurrence comment table in the database.
@@ -95,7 +102,7 @@ class extension_notifications_centre {
         //If the user clicks the Remove Notifications submit button, then a hidden field
         //called remove-notifications is set. We can check for this when the 
         //page reloads and then call the remove notifications code.    
-        if ($_POST['remove-notifications']==1)
+        if (!empty($_POST['remove-notifications']) && $_POST['remove-notifications']==1)
           self::build_notifications_removal_submission($_POST, $auth);
       }
       self::$initialised = true;
@@ -115,7 +122,7 @@ class extension_notifications_centre {
     //hidden field is set when Remove Notifications for user notifications is clicked,
     //when the page reloads this is then checked for
     $r .= '<input type="hidden" name="remove-notifications" class="remove-notifications"/>';
-    $r .= self::get_notifications_html($auth, $sourceType, $website_id, $user_id, $notificationProxyUrl, $occurrenceCommentProxyUrl, $options);
+    $r .= self::get_notifications_html($auth, $sourceType, $website_id, $user_id, $options);
     $r .= self::remove_all_button($options);
     //We need to store a list of source types on the grid, so we know what to clean up when the remove all button is clicked.
     $r .= '<input style="display:none" name="source_types" class="source_types" value="">';
@@ -126,8 +133,7 @@ class extension_notifications_centre {
   /*
    * Get all the notification ids in the grids and put them in hidden fields so we can remove notifications that are on pages that aren't visible
    */
-  public static function setup_source_types_hidden_fields($options, $sourceType, $notificationProxyUrl, $website_id, $auth) {
-    global $user, $auth;
+  private static function setup_source_types_hidden_fields($options, $sourceType, $website_id, $auth) {
     $sourceTypesList = implode(',', $sourceType);
     report_helper::$javascript .= "$('#".$options['id']." .source_types').val('$sourceTypesList');\n";
   }
@@ -138,8 +144,7 @@ class extension_notifications_centre {
    * @param type $_POST
    * @param type $auth
    */
-  public static function build_notifications_removal_submission($_POST, $auth) {
-    global $user;
+  private static function build_notifications_removal_submission($_POST, $auth) {
     //Using 'submission_list' and 'entries' allows us to specify several top-level submissions to the system
     //i.e. we need to be able to submit several notifications.
     $submission['submission_list']['entries'] = array();
@@ -148,7 +153,7 @@ class extension_notifications_centre {
     $sourceTypesToClear = explode(',', $_POST['source_types']);
     $notifications = data_entry_helper::get_population_data(array(
       'table' => 'notification',
-      'extraParams' => $auth['read'] + array('acknowledged' => 'f', 'user_id'=>$user->profile_indicia_user_id,
+      'extraParams' => $auth['read'] + array('acknowledged' => 'f', 'user_id'=>hostsite_get_user_field('indicia_user_id'),
           'query' => json_encode(array('in' => array('source_type' => $sourceTypesToClear)))),
       'nocache' => true
     ));
@@ -177,7 +182,7 @@ class extension_notifications_centre {
   /*
    * Draw the remove all notifications button.
    */
-  public static function remove_all_button($options) {
+  private static function remove_all_button($options) {
     return "<input onclick=\"return acknowledge_all_notifications('".$options['id']."', '".$options['title']."')\" type=\"submit\" ".
         "class=\"indicia-button\" value=\"".lang::get('Acknowledge all '.$options['title'])."\"/>\n";
   }
@@ -185,9 +190,9 @@ class extension_notifications_centre {
   /*
    * Draw the notifications grid.
    */
-  public static function get_notifications_html($auth, $sourceType, $website_id, $user_id, $notificationProxyUrl, $occurrenceCommentProxyUrl, $options) {
+  private static function get_notifications_html($auth, $sourceType, $website_id, $user_id, $options) {
     iform_load_helpers(array('report_helper'));
-    global $user, $auth;
+    global $auth;
     $readNonce = $auth['nonce'];
     $readAuthToken = $auth['auth_token'];      
     $imgPath = empty(data_entry_helper::$images_path) ? data_entry_helper::relative_client_helper_path()."../media/images/" : data_entry_helper::$images_path;
@@ -209,7 +214,7 @@ class extension_notifications_centre {
     "; 
     
     //Setup the javascript needed to support the remove notification button.
-    self::setup_source_types_hidden_fields($options, $sourceType, $notificationProxyUrl, $website_id, $auth);  
+    self::setup_source_types_hidden_fields($options, $sourceType, $website_id, $auth);  
     $auth = report_helper::get_read_auth(variable_get('indicia_website_id',''), variable_get('indicia_password',''));
     
     //Implode the source types so we can submit to the database in one text field.
@@ -237,9 +242,19 @@ class extension_notifications_centre {
       'rowId'=>'notification_id',
       'ajax'=>true,
       'mode'=>'report',
-      'extraParams'=>array('user_id'=>$user_id,'system_name'=>'indicia','source_types'=>$sourceType,'orderby'=>'triggered_on','sortdir'=>'DESC', 'default_edit_page_path'=>$options['default_edit_page_path'],'view_record_page_path'=>$options['view_record_page_path'],'website_id'=>$website_id),
+      'extraParams'=>array(
+          'user_id'=>$user_id,
+          'system_name'=>'indicia',
+          'source_types'=>$sourceType,
+          'orderby'=>'triggered_on',
+          'sortdir'=>'DESC',
+          'default_edit_page_path'=>$options['default_edit_page_path'],
+          'view_record_page_path'=>$options['view_record_page_path'],
+          'website_id'=>$website_id),
       'columns'=>array(
-        array('fieldname'=>'data','json'=>true,'template'=>'<div class="type-{source_type}"><div class="status-{record_status}"></div></div><div class="note-type-{source_type}">{comment}</div><div class="comment-from helpText" style="margin-left: 34px; display: block;">from {username} on {triggered_date}</div>', display=>'Message'),
+        array('fieldname'=>'data','json'=>true,
+            'template'=>'<div class="type-{source_type}"><div class="status-{record_status}"></div></div><div class="note-type-{source_type}">{comment}</div>'.
+            '<div class="comment-from helpText" style="margin-left: 34px; display: block;">from {username} on {triggered_date}</div>', 'display'=>'Message'),
         array('actions'=>$availableActions),
         array('fieldname'=>'triggered_date', 'visible' => false)
       ),
