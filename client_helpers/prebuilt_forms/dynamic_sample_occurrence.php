@@ -142,8 +142,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
                 "&nbsp;&nbsp;<strong>[species map summary]</strong> - a read only grid showing a summary of the data entered using the species map control.<br/>".
                 "&nbsp;&nbsp;<strong>[species attributes]</strong> - any custom attributes for the occurrence, if not using the grid. Also includes a file upload ".
                     "box and sensitivity input control if relevant. The attrubutes @resizeWidth and @resizeHeight can specified on subsequent lines, otherwise they ".
-                    "default to 1600. Note that this control provides a quick way to output all occurrence custom attributes plus photo and sensitivity input controls. ".
-                    "For finer control of the output, see the [occAttr:n], [photos] and [sensitivity] controls.<br/>".
+                    "default to 1600. Note that this control provides a quick way to output all occurrence custom attributes plus photo and sensitivity input controls ".
+                    "and outputs all attributes irrespective of the form block or tab. For finer control of the output, see the [occAttr:n], [photos] and [sensitivity] controls.<br/>".
                 "&nbsp;&nbsp;<strong>[date]</strong> - a sample must always have a date.<br/>".
                 "&nbsp;&nbsp;<strong>[map]</strong> - a map that links to the spatial reference and location select/autocomplete controls<br/>".
                 "&nbsp;&nbsp;<strong>[spatial reference]</strong> - a sample must always have a spatial reference.<br/>".
@@ -1511,7 +1511,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           'additionalControls' => $sensitivity_controls
         ));
       }
-      $r .= get_attribute_html(self::$occAttrs, $args, $ctrlOptions, $tabAlias, $attrSpecificOptions);
+      $r .= get_attribute_html(self::$occAttrs, $args, $ctrlOptions, '', $attrSpecificOptions);
       if ($args['occurrence_comment'])
         $r .= data_entry_helper::textarea(array(
           'fieldname'=>'occurrence:comment',
