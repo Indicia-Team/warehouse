@@ -3,11 +3,11 @@
 <report title="My Sites Lookup" description="A list of sites I've created, or added to my list of sites (a custom person attribute). No site summary information returned.">
       <query website_filter_field="lw.website_id">
       SELECT #columns#
-      FROM locations l
-      LEFT JOIN cache_termlists_terms lt ON lt.id=l.location_type_id
+      FROM locations l      
       LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
-      LEFT JOIN person_attribute_values pav ON pav.person_attribute_id=#person_site_attr_id# AND pav.int_value=l.id AND pav.deleted=false
-      LEFT JOIN users u ON u.person_id=pav.person_id AND u.id=#user_id#  
+      LEFT JOIN (person_attribute_values pav 
+        JOIN users u ON u.person_id=pav.person_id AND u.id=#user_id#  
+      ) ON pav.person_attribute_id=#person_site_attr_id# AND pav.int_value=l.id AND pav.deleted=false
       #joins#
       WHERE l.deleted=false
       AND #website_filter#
