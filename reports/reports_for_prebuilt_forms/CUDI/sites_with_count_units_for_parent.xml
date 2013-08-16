@@ -11,8 +11,8 @@
       #joins#
     WHERE 1=1
       #filters#
-      AND #website_filter# AND l.deleted = false
-      AND lw.deleted = false AND tt.deleted = false
+      AND ((#website_filter# AND lw.deleted = false) or l.public=true)
+      AND l.deleted = false AND tt.deleted = false
       AND t.deleted = false 
       AND (l.location_type_id = (#site_type_id#) OR l.location_type_id = (#sub_site_type_id#))
   </query>
