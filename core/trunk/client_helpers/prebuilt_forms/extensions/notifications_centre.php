@@ -87,8 +87,6 @@ class extension_notifications_centre {
         report_helper::$javascript .= "indiciaData.notification_proxy_url = '".iform_ajaxproxy_url(null, 'notification')."';\n";
         //The proxy url used when interacting with the occurrence comment table in the database.
         report_helper::$javascript .= "indiciaData.occurrence_comment_proxy_url = '".iform_ajaxproxy_url(null, 'occ-comment')."';\n";
-        report_helper::$javascript .= "indiciaData.read_nonce = '".$auth['read']['nonce']."';\n";
-        report_helper::$javascript .= "indiciaData.read_auth_token = '".$auth['read']['auth_token']."';\n";
         // The url used for direct access to data services.
         if (!empty(data_entry_helper::$warehouse_proxy))
           self::$dataServicesUrl = data_entry_helper::$warehouse_proxy."index.php/services/data";
