@@ -12,7 +12,7 @@
   #agreements_join#
   #joins#
   WHERE #sharing_filter# 
-  AND o.record_status not in ('I','T') AND (#ownData#=1 OR o.record_status not in ('D','R'))
+  AND ('#record_status#'&lt;&gt;'' OR (o.record_status not in ('I','T') AND (#ownData#=1 OR o.record_status not in ('D','R'))))
   AND ('#searchArea#'='' OR st_intersects(o.public_geom, st_geomfromtext('#searchArea#',900913)))
   AND (#ownData#=0 OR CAST(o.created_by_id AS character varying)='#currentUser#')
   #idlist#
@@ -46,6 +46,16 @@
     <param name="date_to" display="Date To" datatype="date">
       <where>('#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))</where>
     </param>
+    <param name="input_date_from" display="Input Date From" datatype="date" default="">
+      <where>o.cache_created_on &gt;= '#input_date_from#'</where>
+    </param>
+    <param name="input_date_to" display="Input Date To" datatype="date" default="">
+      <where>o.cache_created_on &lt;= '#input_date_to#'</where>
+    </param>
+    <param name="user_filter" display="Input Date To" datatype="date" default="" 
+        description="Use this to filter the list to a warehouse user ID other than the current user">
+      <where value="1">o.created_by_id=#user_filter#</where>
+    </param>
     <param name="input_form" default="">
       <where>o.input_form='#input_form#'</where>
     </param>
@@ -58,8 +68,10 @@
     <column name='taxon' display='Preferred Name' sql="o.preferred_taxon" datatype='text' />
     <column name='common' display='Common Name' sql="o.default_common_name" datatype='text' />
     <column name='taxon_group' display='Taxon Group' sql='o.taxon_group' datatype='text' />
+    <column name='taxon_group_id' display='Taxon Group ID' sql='o.taxon_group_id' datatype='integer' on_demand="true" />
     <column name="first_date" display="First Recorded Date" sql="min(coalesce(o.date_start, o.date_end))" aggregate="true" datatype="date" />
     <column name="last_date" display="Last Recorded Date" sql="max(coalesce(o.date_end, o.date_start))" aggregate="true" datatype="date" />
     <column name="count" display="Number of Records" sql="count(distinct o.id)" aggregate="true" datatype="integer" />
+    <column name="record_status" sql="o.record_status" on_demand="true" datatype="text"/>
   </columns>
 </report>

@@ -24,7 +24,7 @@
         lookup_values='unverified:All unverified records,fail:Unverified records failing automated checks,trusted:Unverified records by trusted recorders,verified:All verified records,dubious:All dubious records,rejected:All rejected records,all:All records'>
       <modifiers>
         <join value="trusted" operator="equal">LEFT JOIN index_locations_samples ils on ils.sample_id=o.sample_id
-          LEFT JOIN user_trusts ut on (ut.survey_id=o.survey_id
+          JOIN user_trusts ut on (ut.survey_id=o.survey_id
           OR ut.taxon_group_id=o.taxon_group_id
           OR (ut.location_id=ils.location_id or ut.location_id is null))
           AND ut.deleted=false
@@ -45,7 +45,6 @@
       <modifiers>
         <where value="C" operator="equal">(o.certainty = 'C' or o.certainty is null)</where>
         <where value="L" operator="equal">(o.certainty in ('C','L') or o.certainty is null)</where>
-        <where value="U" operator="equal">(o.certainty = 'C' or o.certainty is null)</where>
       </modifiers>
     </param>
     <param name='searchArea' display='Report Search Area' datatype='geometry' allow_buffer='true' />

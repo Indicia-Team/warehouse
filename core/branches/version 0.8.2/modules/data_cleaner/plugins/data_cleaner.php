@@ -31,6 +31,7 @@ function data_cleaner_scheduled_task() {
       data_cleaner_cleanout_old_messages($rules, $db);
       data_cleaner_run_rules($rules, $db);
       data_cleaner_update_occurrence_metadata($db);
+      data_cleaner_set_cache_fields($db);
     }    
     $db->query('drop table occlist');
   } catch (Exception $e) {
@@ -151,6 +152,31 @@ set last_verification_check_date=occlist.timepoint,
 from occlist
 where occlist.id=o.id';
   $db->query($query);
+}
+
+/**
+ * Update the cache_occurrences.data_cleaner_info field.
+ */ 
+function data_cleaner_set_cache_fields($db) {
+  if (in_array(MODPATH.'cache_builder', Kohana::config('config.modules'))) {
+    $query = "update cache_occurrences co
+set data_cleaner_info=case when o.last_verification_check_date is null then null else case sub.info when '' then 'pass' else sub.info end end
+from occlist
+join occurrences o on o.id=occlist.id
+join (
+      select o.id, o.last_verification_check_date, 
+        array_to_string(array_agg(distinct '[' || oc.generated_by || ']{' || oc.comment || '}'),' ') as info
+      from occurrences o
+      join occlist on occlist.id=o.id
+            left join occurrence_comments oc 
+            on oc.occurrence_id=o.id 
+            and oc.implies_manual_check_required=true 
+            and oc.deleted=false
+      group by o.id, o.last_verification_check_date
+    ) sub on sub.id=o.id
+where occlist.id=co.id";
+  $db->query($query);
+  }
 }
 
 ?>

@@ -281,7 +281,7 @@ class ReportEngine {
     {
       // Okay, all the parameters have been provided.
       $this->mergeQuery();
-      if ($this->limit===0 || $this->limit==='0') {
+      if ($this->limit===0 || $this->limit==='0' || (isset($_REQUEST['wantRecords']) && $_REQUEST['wantRecords']===0)) {
         // optimisation for zero limited queries
         $data=array();
       }
