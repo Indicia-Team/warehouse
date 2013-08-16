@@ -594,14 +594,14 @@ function trustsPopup() {
       var downgradeConfirmed=false;
       var duplicateDetected = false;
       var trustNeedsRemoval = [];
-      var getTrustsReport = indiciaData.indiciaSvc +'/index.php/services/report/requestReport?report=library/user_trusts/get_user_trust_for_record.xml&mode=json&mode=json&callback=?';
+      var getTrustsReport = indiciaData.read.url +'/index.php/services/report/requestReport?report=library/user_trusts/get_user_trust_for_record.xml&mode=json&mode=json&callback=?';
       var getTrustsReportParameters = {
         'user_id':currRec.extra.created_by_id,
         'survey_id':currRec.extra.survey_id,
         'taxon_group_id':currRec.extra.taxon_group_id,
         'location_ids':currRec.extra.locality_ids,
-        'auth_token': indiciaData.readAuth,
-        'nonce': indiciaData.nonce,
+        'auth_token': indiciaData.read.auth_token,
+        'nonce': indiciaData.read.nonce,
         'reportSource':'local'
       };
       //Collect the existing trust data associated with the record so we can compare the new trust data with it
