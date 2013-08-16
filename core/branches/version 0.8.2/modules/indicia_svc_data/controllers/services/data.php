@@ -94,7 +94,8 @@ class Data_Controller extends Data_Service_Base_Controller {
       'notification',
       'user_trust',
       'cache_taxon_searchterm',
-      'cache_taxa_taxon_list'
+      'cache_taxa_taxon_list',
+      'verification_rule_datum'
   );
   
   // List of tables that do not use views to expose their data.
@@ -102,7 +103,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     'index_websites_website_agreements',
     'cache_taxon_searchterms',
     'cache_taxa_taxon_lists',
-    'notification'
+    'verification_rule_data'
   );
   
   /**
@@ -446,6 +447,15 @@ class Data_Controller extends Data_Service_Base_Controller {
   public function user_trust()
   {
     $this->handle_call('user_trust');
+  }
+  
+  /**
+  * Provides the /services/data/verification_rule_data service.
+  * Retrieves details of a single taxon searchterm.
+  */
+  public function verification_rule_datum()
+  {
+    $this->handle_call('verification_rule_datum');
   }
 
   /**

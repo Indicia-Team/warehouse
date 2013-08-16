@@ -143,6 +143,9 @@ $config['taxa_taxon_lists']['get_changed_items_query']="
       where ttlpref.updated_on>'#date#' or tpref.updated_on>'#date#' or lpref.updated_on>'#date#' or tg.updated_on>'#date#'      
       ) as sub
       group by id";
+      
+$config['taxon_searchterms']['delete_query']['taxa']="
+  delete from cache_taxa_taxon_lists where id in (select id from needs_update_taxon_searchterms where deleted=true)";
 
 $config['taxa_taxon_lists']['update'] = "update cache_taxa_taxon_lists cttl
     set preferred=ttl.preferred,
@@ -378,13 +381,21 @@ $config['taxon_searchterms']['update']['codes'] = "update cache_taxon_searchterm
     join terms tcategory on tcategory.id=tltcategory.term_id and tcategory.term='searchable'
     where cttl.id=cttl.preferred_taxa_taxon_list_id and cts.taxa_taxon_list_id=cttl.id and cts.name_type = 'C' and cts.source_id=tc.id";
 
+$config['taxon_searchterms']['update']['id_diff'] = "update cache_taxon_searchterms cts
+    set identification_difficulty=extkey.value::integer, id_diff_verification_rule_id=vr.id
+      from cache_taxa_taxon_lists cttl
+      #join_needs_update#
+      join verification_rule_data extkey ON extkey.key=LOWER(cttl.external_key) AND extkey.header_name='Data' AND extkey.deleted=false
+      join verification_rules vr ON vr.id=extkey.verification_rule_id AND vr.test_type='IdentificationDifficulty' AND vr.deleted=false
+      where cttl.id=cts.taxa_taxon_list_id"; 
+
 $config['taxon_searchterms']['insert']['standard terms']="insert into cache_taxon_searchterms (
       taxa_taxon_list_id, taxon_list_id, searchterm, original, taxon_group_id, taxon_group, taxon_meaning_id, preferred_taxon,
       default_common_name, preferred_authority, language_iso,
       name_type, simplified, code_type_id, preferred, searchterm_length, parent_id, preferred_taxa_taxon_list_id
     )
     select distinct on (cttl.id) cttl.id, cttl.taxon_list_id, cttl.taxon, cttl.taxon, cttl.taxon_group_id, cttl.taxon_group, cttl.taxon_meaning_id, cttl.preferred_taxon,
-      cttl.default_common_name, cttl.authority, cttl.language_iso, 
+      cttl.default_common_name, cttl.preferred_authority, cttl.language_iso, 
       case
         when cttl.language_iso='lat' and cttl.id=cttl.preferred_taxa_taxon_list_id then 'L' 
         when cttl.language_iso='lat' and cttl.id<>cttl.preferred_taxa_taxon_list_id then 'S' 
@@ -450,6 +461,14 @@ $config['taxon_searchterms']['insert']['codes']="insert into cache_taxon_searcht
     join terms tcategory on tcategory.id=tltcategory.term_id and tcategory.term='searchable' and tcategory.deleted=false
     #join_needs_update#
     where cts.taxa_taxon_list_id is null";
+
+$config['taxon_searchterms']['insert']['id_diff'] = "update cache_taxon_searchterms cts
+    set identification_difficulty=extkey.value::integer, id_diff_verification_rule_id=vr.id
+      from cache_taxa_taxon_lists cttl
+      #join_needs_update#
+      join verification_rule_data extkey ON extkey.key=LOWER(cttl.external_key) AND extkey.header_name='Data' AND extkey.deleted=false
+      join verification_rules vr ON vr.id=extkey.verification_rule_id AND vr.test_type='IdentificationDifficulty' AND vr.deleted=false
+      where cttl.id=cts.taxa_taxon_list_id"; 
 
 $config['taxon_searchterms']['join_needs_update']='join needs_update_taxon_searchterms nu on nu.id=cttl.id';
 $config['taxon_searchterms']['key_field']='cttl.preferred_taxa_taxon_list_id';
