@@ -14,9 +14,8 @@
       #joins#
     WHERE 1=1
       #filters#
-      AND #website_filter# AND l.deleted = false
-      AND lw.deleted = false AND tt.deleted = false
-      AND t.deleted = false
+      AND ((#website_filter# AND lw.deleted = false ) or l.public=true)
+      AND l.deleted = false AND tt.deleted = false AND t.deleted = false
   </query>
   <params>
     <param name="location_type_id" datatype="integer">
