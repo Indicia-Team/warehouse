@@ -383,6 +383,16 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           'group' => 'Species'
         ),
         array(
+          'name' => 'species_include_id_diff',
+          'caption' => 'Include identification_difficulty icons in species autocomplete and added rows',
+          'description' => 'Use data cleaner identification difficulty rules to generate icons indicating when '.
+              'hard to ID taxa have been selected.',
+          'type' => 'boolean',
+          'required' => false,
+          'default'=>true,
+          'group' => 'Species'
+        ),
+        array(
           'name'=>'occurrence_comment',
           'caption'=>'Occurrence Comment',
           'description'=>'Should an input box be present for a comment against each occurrence?',
@@ -1431,8 +1441,14 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     // this bit optionally adds the taxon group
     if (isset($args['species_include_taxon_group']) && $args['species_include_taxon_group'])
       $fn .= "  r += '<br/><strong>' + item.taxon_group + '</strong>'\n";
+    if (!isset($args['species_include_id_diff']) || $args['species_include_id_diff'])
+    $fn .= "  if (item.identification_difficulty && item.identification_difficulty>1) {\n" . 
+        "    item.icon = ' <span class=\"item-icon id-diff id-diff-'+item.identification_difficulty+" .
+        "      '\" data-diff=\"'+item.identification_difficulty+'\" data-rule=\"'+item.id_diff_verification_rule_id+'\"></span>';\n" .
+        "    r += item.icon;\n" .
+        "  }\n";
     // Close the function
-    $fn .= " return r;\n".
+    $fn .= "  return r;\n".
         "}\n";
     // Set it into the indicia templates
     $indicia_templates['format_species_autocomplete_fn'] = $fn;

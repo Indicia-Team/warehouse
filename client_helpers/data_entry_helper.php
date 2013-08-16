@@ -194,6 +194,7 @@ class data_entry_helper extends helper_base {
       $warehouseUrl = parent::$warehouse_proxy;
     else
       $warehouseUrl = parent::$base_url;
+    self::$js_read_tokens = array('auth_token'=>$options['extraParams']['auth_token'], 'nonce'=>$options['extraParams']['nonce']);
     $options = array_merge(array(
       'template' => 'autocomplete',
       'url' => isset($options['report']) ? $warehouseUrl."index.php/services/report/requestReport" : $warehouseUrl."index.php/services/data/".$options['table'],
@@ -2604,6 +2605,7 @@ class data_entry_helper extends helper_base {
         $options['extraParams'] += $filterFields;
       }
     }
+    self::$js_read_tokens = $options['readAuth'];
     self::$javascript .= "indiciaData['rowInclusionCheck-".$options['id']."'] = '".$options['rowInclusionCheck']."';\n";
     self::$javascript .= "indiciaData['copyDataFromPreviousRow-".$options['id']."'] = '".$options['copyDataFromPreviousRow']."';\n";
     self::$javascript .= "indiciaData['editTaxaNames-".$options['id']."'] = '".$options['editTaxaNames']."';\n";
@@ -4235,10 +4237,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       'button'=>$button
     );
     self::add_resource('verification');
-    $url = self::$base_url;
-    self::$javascript .= "indiciaData.indiciaSvc='$url';\n";
-    self::$javascript .= "indiciaData.auth_token='".$options['readAuth']['auth_token']."';\n";
-    self::$javascript .= "indiciaData.nonce='".$options['readAuth']['nonce']."';\n";
+    self::$js_read_tokens = $options['readAuth'];
     self::$javascript .= "indiciaData.verifyMessages=[];\n";
     self::$javascript .= "indiciaData.verifyMessages.nothingToCheck='".
         lang::get('There are no records on this form to check.')."';\n";

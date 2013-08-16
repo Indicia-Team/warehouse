@@ -146,9 +146,13 @@ $indicia_templates = array(
       formatItem: {formatFunction}
       {max}
     });
-    jQuery('input#{escaped_input_id}').result(function(event, data) {
-      jQuery('input#{escaped_id}').attr('value', data.{valueField});
-      jQuery('input#{escaped_id}').change();
+    $('input#{escaped_input_id}').result(function(event, data) {
+      $('input#{escaped_id}').attr('value', data.{valueField});
+      $('.item-icon').remove();
+      if (typeof data.icon!=='undefined') {
+        $('input#{escaped_input_id}').after(data.icon).next().hover(indiciaFns.hoverIdDiffIcon);
+      }
+      $('input#{escaped_id}').change();
     });\r\n",
   'sub_list' => '<div id="{id}:box" class="control-box wide"><div {class}>'."\n".
     '<div>'."\n".
@@ -293,6 +297,13 @@ class helper_base extends helper_config {
    * deps (dependencies), stylesheets and javascripts.
    */
   public static $resource_list=null;
+
+  /**
+   * Any control that wants to access the read authorisation tokens from JavaScript can set them here. They will then
+   * be available from indiciaData.auth.read.
+   * @var Array
+   */
+  public static $js_read_tokens=null;
 
   /**
    * @var string Path to Indicia JavaScript folder. If not specified, then it is calculated from the Warehouse $base_url.
@@ -1338,6 +1349,7 @@ $('.ui-state-default').live('mouseout', function() {
               } else
                 $libraries .= "<script type=\"text/javascript\" src=\"$j\"></script>\n";
             }
+            $libraries .= '<script type="text/javascript" src="'.self::$js_path."indicia.functions.js\"></script>\n";
           }
           // Record the resource as being dumped, so we don't do it again.
           array_push(self::$dumped_resources, $resource);
@@ -1358,12 +1370,18 @@ $('.ui-state-default').live('mouseout', function() {
   public static function get_scripts($javascript, $late_javascript, $onload_javascript, $includeWrapper=false) {
     if (!empty($javascript) || !empty($late_javascript) || !empty($onload_javascript)) {
       $script = $includeWrapper ? "<script type='text/javascript'>/* <![CDATA[ */\n" : "";
-      $script .= "if (typeof indiciaData==='undefined') {
-  indiciaData = {onloadFns: []};
-}
+      $script .= "
 indiciaData.imagesPath='" . self::$images_path . "';
+indiciaData.warehouseUrl='" . self::$base_url . "';
 indiciaData.windowLoaded=false;
 ";
+      if (self::$js_read_tokens) {
+        if (!empty(parent::$warehouse_proxy))
+          self::$js_read_tokens['url'] = parent::$warehouse_proxy;
+        else
+          self::$js_read_tokens['url'] = self::$base_url;
+        $script .= "indiciaData.read = ".json_encode(self::$js_read_tokens).";\n";
+      }
       if (!self::$is_ajax)
         $script .= "$(document).ready(function() {\n";
       $script .= "$javascript\n$late_javascript\n";

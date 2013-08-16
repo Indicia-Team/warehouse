@@ -194,6 +194,7 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
         });
         $(taxonCell).html(label);
       }
+      $(row).find('.id-diff').hover(indiciaFns.hoverIdDiffIcon);
       $(row).find('.species-checklist-select-species').hide();
       $(row).find('.add-image-link').show();
       // auto-check the row
