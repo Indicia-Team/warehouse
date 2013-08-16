@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="ID difficulty message for taxon" description="Given a taxon's external key, returns the ID difficulty message from the associated
+    verification ruls.">
+  <query>
+  select msg.value
+  from verification_rule_data diff
+  join verification_rules vr on vr.id=diff.verification_rule_id and vr.deleted=false
+  join verification_rule_data msg on msg.verification_rule_id=vr.id and msg.deleted=false and msg.key=diff.value
+  where diff.deleted=false
+  and diff.key='#key#'
+  </query>
+  <params>
+    <param name='key' display='External key of taxon' datatype='text' />
+  </params>
+  <columns>
+    <column name="message" sql="msg.value" display="ID Difficulty message" />
+  </columns>
+</report>
