@@ -27,10 +27,12 @@ include_once 'dynamic.en.php';
  * @package	Client
  */
 $custom_terms = array_merge($custom_terms, array(
-  'LANG_Location_Name' => 'Location Name',
+  'LANG_Location_Name' => 'Name',
   'LANG_Location_Code' => 'Abbreviation',
+  'LANG_Location_Created_By' => 'CUDI Form Completed By',
   'LANG_Location_Created_On' => 'Date Completed On',
   'LANG_Location_Type' => 'Location Type',
+  'LANG_Location_Preferred_Boundary' => 'Preferred Boundary',
   'LANG_Add_Location' => 'Add New Location',
   'LANG_No_User_Id' => 'This form is configured to show the user a grid of their existing records which they can add to or edit. ' .
     'To do this, the form requires that a function hostsite_get_user_field exists and returns their Indicia User ID' .
