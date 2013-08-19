@@ -132,7 +132,7 @@ class iform_cudi_form extends iform_dynamic {
         array(
           'name'=>'defaults',
           'caption'=>'Default Values',
-          'description'=>'Supply the ID of the Proferred Boundary Location Attribute in the database.',
+          'description'=>'Supply the ID of the Preferred Boundary Location Attribute in the database.',
           'type'=>'textarea',
           'required' => false,
         ),
@@ -141,7 +141,7 @@ class iform_cudi_form extends iform_dynamic {
           'caption'=>'Preferred Boundary Attribute Id',
           'description'=>'The location type id of the preferred boundary attribute type.',
           'type'=>'string',
-          'required' => false,
+          'required' => true,
           'group'=>'Configurable Ids'
         ),
         array(
@@ -149,7 +149,7 @@ class iform_cudi_form extends iform_dynamic {
           'caption'=>'Count Unit Location Type Id',
           'description'=>'The location type id of the Count Unit location type.',
           'type'=>'string',
-          'required' => false,
+          'required' => true,
           'group'=>'Configurable Ids'
         ),
         array(
@@ -157,8 +157,32 @@ class iform_cudi_form extends iform_dynamic {
           'caption'=>'Count Unit Boundary Location Type Id',
           'description'=>'The location type id of the Count Unit Boundary location type.',
           'type'=>'string',
-          'required' => false,
+          'required' => true,
           'group'=>'Configurable Ids'
+        ),
+        array(
+          'name'=>'attribute_ids_to_store_on_count_unit_boundary',
+          'caption'=>'Location Attributes to be stored in the Count Unit Boundary',
+          'description'=>'Comma seperated list of Location Attribute Ids that are to be stored as part of the Count Unit Boundary.',
+          'type'=>'string',
+          'required' => true,
+          'group'=>'Configurable Ids'
+        ),
+        array(
+          'name'=>'verified_attribute_id',
+          'caption'=>'Verification Attribute Id',
+          'description'=>'Id of the "Verified" location attribute.',
+          'type'=>'string',
+          'required' => true,
+          'group'=>'Configurable Ids'
+        ),  
+        array(
+          'name'=>'boundary_page_path',
+          'caption'=>'Count Unit Boundary Page Path',
+          'description'=>'The path to the Count Unit Boundary page.',
+          'type'=>'string',
+          'required' => true,
+          'group'=>'Page Paths'
         ),
         array(
           'name'=>'administrator_mode',
@@ -214,14 +238,17 @@ class iform_cudi_form extends iform_dynamic {
   // Get an existing location.
   protected static function getEntity($args, $auth) {
     data_entry_helper::$entity_to_load = array();
-    self::load_existing_record($args, $auth, 'location', $_GET['location_id']);
+    if (!empty($_GET['parent_id']))
+      self::load_existing_record($args, $auth, 'location', $_GET['parent_id']);
+    else
+      self::load_existing_record($args, $auth, 'location', $_GET['location_id']);
   }
   
   /*
    * Return the id of the preferred count unit boundary location (or latest one if preferred isn't specified) when loading an existing count unit location.
    * If a preferred boundary is not found then return null
    */
-  protected static function getIdForCountUnitBoundaryIfApplicable($args, $auth) { 
+  protected static function getIdForCountUnitPreferredBoundaryIfApplicable($args, $auth) { 
     $preferredBoundaryValueReportData = data_entry_helper::get_report_data(array(
       'dataSource'=>'library/location_attribute_values/location_attribute_values_for_location_or_location_attribute_id',
       'readAuth'=>$auth['read'],
@@ -254,11 +281,15 @@ class iform_cudi_form extends iform_dynamic {
       'nocache' => true,
       'sharing' => $sharing
     ));
-    $preferredBoundaryId = self::getIdForCountUnitBoundaryIfApplicable($args, $auth);
-    if (!empty($preferredBoundaryId)) {
+    if (!empty($_GET['parent_id']))
+      $boundaryId = $_GET['location_id'];
+    else
+      //If looking at a Count Unit, the boundary info we view comes from the preferred boundary
+      $boundaryId = self::getIdForCountUnitPreferredBoundaryIfApplicable($args, $auth);
+    if (!empty($boundaryId)) {
       $preferredBoundaryRecord = data_entry_helper::get_population_data(array(
         'table' => $entity,
-        'extraParams' => $auth['read'] + array('id' => $preferredBoundaryId, 'view' => $view),
+        'extraParams' => $auth['read'] + array('id' => $boundaryId, 'view' => $view),
         'nocache' => true,
         'sharing' => $sharing
       ));
@@ -304,7 +335,7 @@ class iform_cudi_form extends iform_dynamic {
       $('[for=\"locAttr\\\\:".$args['preferred_boundary_attribute_id']."\"]').hide();\n
     ";
     //Get the preferred boundary id for use if we are viewing a count unit
-    $preferredBoundaryLocationIdCalculatedFromCountUnit =  self::getIdForCountUnitBoundaryIfApplicable($args, $auth);   
+    $preferredBoundaryLocationIdCalculatedFromCountUnit =  self::getIdForCountUnitPreferredBoundaryIfApplicable($args, $auth);   
     if (!empty($_GET['parent_id'])) {
       //If we are looking at a count unit boundary, then we have both the parent and boundary ids available to us
       $parentId=$_GET['parent_id'];
@@ -327,29 +358,33 @@ class iform_cudi_form extends iform_dynamic {
       ,'location_type_id'=>$args['count_unit_location_type_id']      
     );
     $mainAttributes = data_entry_helper::getAttributes($attrOpts, false);
-    
     //Get attributes associated with the boundary
-    if (!empty($boundaryId)) {
-      $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
-      $attrOpts = array(
-        'id' =>$boundaryId
-        ,'valuetable'=>'location_attribute_value'
-        ,'attrtable'=>'location_attribute'
-        ,'key'=>'location_id'
-        ,'fieldprefix'=>'locAttr'
-        ,'extraParams'=>$auth['read']
-        ,'survey_id'=>$args['survey_id']
-        ,'location_type_id'=>$args['count_unit_boundary_location_type_id']      
-      );
-      $boundaryAttributes = data_entry_helper::getAttributes($attrOpts, false); 
-    }
-    //Merge the parent and child boundary attributes if needed to we have both sets of attributes.
+    $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
+    $attrOpts = array(
+      'id' =>$boundaryId
+      ,'valuetable'=>'location_attribute_value'
+      ,'attrtable'=>'location_attribute'
+      ,'key'=>'location_id'
+      ,'fieldprefix'=>'locAttr'
+      ,'extraParams'=>$auth['read']
+      ,'survey_id'=>$args['survey_id']
+      ,'location_type_id'=>$args['count_unit_boundary_location_type_id']      
+    );
+    $boundaryAttributes = data_entry_helper::getAttributes($attrOpts, false);
+    //Merge the parent and child boundary attributes if needed so we have both sets of attributes.
     if (empty($mainAttributes))
       $mainAttributes=array();
     if (empty($boundaryAttributes))
       $boundaryAttributes=array(); 
     $attributes = array_merge($mainAttributes,$boundaryAttributes);
-    
+    //Need to format any dates from the database manually.
+    foreach ($attributes as $attributeNum=>&$attributeData) {
+      if ($attributeData['data_type']==='D' && !empty($attributeData['displayValue'])) {
+        $d = new DateTime($attributeData['displayValue']);
+        $attributeData['displayValue'] = $d->format('d/m/Y');
+        $attributeData['default'] = $attributeData['displayValue'];
+      }
+    }
     return $attributes;
   }
   
@@ -407,12 +442,42 @@ class iform_cudi_form extends iform_dynamic {
     return $r;
   }
 
+  /*
+   * Control displays Count Unit name. 
+   * If existing Count Unit is being displayed then a hidden field is used.
+   * If a boundary is displayed, then the boundary name is set to <count Unit name> + ' - Boundary'
+   * by using a hidden field.
+   */
   protected static function get_control_locationname($auth, $args, $tabalias, $options) {
-    return data_entry_helper::text_input(array_merge(array(
-      'label' => lang::get('LANG_Location_Name'),
-      'fieldname' => 'location:name',
-      'class' => 'control-width-5'
-    ), $options));
+    //Where we get the Count Unit name from varies depending on whether we are 
+    //viewing a Count Unit or Boundary. 
+    //Note: Boundaries don't have names, but the field is mandatory in the database, so we
+    //fill in the boundary name field with the <count Unit name> + ' - Boundary'
+    //The field is not displayed on the boundary page, but it is hidden so it is still submitted.
+    if (!empty($_GET['parent_id']))
+      $countUnitId = $_GET['parent_id'];
+    else 
+      $countUnitId = $_GET['location_id'];
+    //Get the Count Unit Name for use in read only label
+    if (!empty($countUnitId)) {
+      $locationNameData = data_entry_helper::get_population_data(array(
+        'table' => 'location',
+        'extraParams' => $auth['read'] + array('id' => $countUnitId),
+        'nocache' => true,
+        'sharing' => $sharing
+      ));
+    }
+    $locationName = $locationNameData[0]['name'];
+    //If not adding a new Count Unit, we need to put the name in a read only label.
+    if (!empty($countUnitId)) {
+      return "<label>".lang::get('LANG_Location_Name').":</label> <input id='location:name' name='location:name' value='$locationName' readonly><br>";
+    } else {      
+      return data_entry_helper::text_input(array_merge(array(
+        'label' => lang::get('LANG_Location_Name'),
+        'fieldname' => 'location:name',
+        'class' => 'control-width-5'
+      ), $options));
+    }
   }
 
   protected static function get_control_locationcode($auth, $args, $tabalias, $options) {
@@ -421,6 +486,26 @@ class iform_cudi_form extends iform_dynamic {
       'fieldname' => 'location:code',
       'class' => 'control-width-5'
     ), $options));
+  }
+  
+  /*
+   * Display the Count Unit created date.
+   * TODO: NOT CURRENTLY OPERATIONAL AS VIEW NEEDS ALTERATION
+   */
+  protected static function get_control_locationcreatedby($auth, $args, $tabalias, $options) {
+    if (!empty($_GET['parent_id']))
+      $countUnitId = $_GET['parent_id'];
+    else 
+      $countUnitId = $_GET['location_id'];
+    if (!empty($countUnitId)) {
+      $locationCreatedByData = data_entry_helper::get_population_data(array(
+        'table' => 'location',
+        'extraParams' => $auth['read'] + array('id' => $countUnitId, 'view' => 'detail'),
+        'nocache' => true,
+        'sharing' => $sharing
+      ));
+    }
+    return "<label>".lang::get('LANG_Location_Created_By').":</label> <label>".$locationCreatedByData[0]['created_by']."</label><br>";
   }
   
   protected static function get_control_locationcreatedon($auth, $args, $tabalias, $options) {
@@ -487,7 +572,7 @@ class iform_cudi_form extends iform_dynamic {
                                              $('#locAttr\\\\:".$args['preferred_boundary_attribute_id']."').val(preferredWhenScreenLoads);
                                            }
                                          }
-                                         ";   
+                                         ";  
       $options = array(
         'dataSource'=>'reports_for_prebuilt_forms/CUDI/get_count_unit_boundaries_for_user_role',
         'readAuth'=>$auth['read'],
@@ -510,9 +595,9 @@ class iform_cudi_form extends iform_dynamic {
           //Need to find the biggest id of the boundaries, as if there isn't a preferred one set, then latest is assumed to be preferred.
           if (empty($maxBoundaryId)||($boundaryVersionData['id'] > $maxBoundaryId))
             $maxBoundaryId = $boundaryVersionData['id'];   
-          //Link back to page when user clicks on a boundary.
+          //Link to boundary page when user clicks on a boundary.
           $linkToBoundaryPage =
-                url($_GET['q'], array('absolute' => true)).(variable_get('clean_url', 0) ? '?' : '&').
+                url($args['boundary_page_path'], array('absolute' => true)).(variable_get('clean_url', 0) ? '?' : '&').
                 'location_id='.$boundaryVersionData['id'].'&parent_id=';
           //We get the parent count unit id in a different way depending on whether we are already viewing a boundary,
           //or whether we are looking at the count unit
@@ -541,7 +626,7 @@ class iform_cudi_form extends iform_dynamic {
                   "<input type='submit' id='set-preferred' class='indicia-button'value='Set Preferred and Save Now'>".
                 "</form>";
         $r .= "<br>";
-        $r .= '<label for="preferred_boundary">Preferred Boundary:</label> ';
+        $r .= '<label for="preferred_boundary">'.lang::get('LANG_Location_Preferred_Boundary').'</label> ';
         $r .= '<label id="preferred_boundary" name="preferred_boundary"></label>';
         $r .= '<input id="preferred_boundary_hidden" name="preferred_boundary_hidden" type="hidden"/>';  
         $r .= "<br>";
@@ -625,24 +710,56 @@ class iform_cudi_form extends iform_dynamic {
   }
   
   /*
-   * When we a location is a Count Unit, most of the data is saved into the Count Unit Boundary Location.
-   * So we need to remove the data going into the Count Unit Boundary from the original parent.
+   * When we a location is a Count Unit, some of the data is saved into the Count Unit Boundary Location.
+   * So we need to remove the data going into the parent from the boundary.
    */
-  protected static function unsetParentValues($valuesForParent, $args) {
+  protected static function unsetBoundaryValues($values, $args) {
+    //For flexibility, the names of the location table fields to store in the boundary are 
+    //supplied in a variable. 
     global $fieldsToHoldInCountUnitBoundary;
-    foreach($fieldsToHoldInCountUnitBoundary as $fieldToHoldInCountUnitBoundary) {
-      unset($valuesForParent['location:'.$fieldToHoldInCountUnitBoundary]);
-      unset($valuesForParent['location:'.$fieldToHoldInCountUnitBoundary]);
-      unset($valuesForParent['location:'.$fieldToHoldInCountUnitBoundary]);
-    }
-    //Remove all attributes from the parent location apart from the attribute pointing to the boundary itself.
-    foreach ($valuesForParent as $key=>$valueForParent) {
-      $keyParts = explode(':',$key);    
-      if ($keyParts[0] === 'locAttr' && $keyParts[1]!==$args['preferred_boundary_attribute_id']) {
-        unset($valuesForParent[$key]);
+    //The location attributes to associate with a boundary are supplied on the edit tab for flexibility
+    $attributesForBoundary = explode(',',$args['attribute_ids_to_store_on_count_unit_boundary']);
+    //Cycle through all the values from the page
+    foreach($values as $key => $value) {
+      //The key of the values is in the form of "locAttr:5" or "locAttr:5:239" or "location:name" etc,
+      //So this means the part of the key that relates to the field is the second part if we explode on :
+      $keyElements = explode(':',$key);
+      $keyElementToTest = $keyElements[1];
+      //Unset the field from the boundary if it doesn't appear in the fields or attributes we
+      //have specified to save in the boundary.
+      //Name is a special case as it is saved for both parent and boundary
+      if (!in_array($keyElementToTest,$fieldsToHoldInCountUnitBoundary)&&
+          !in_array($keyElementToTest,$attributesForBoundary)&&
+          $key!=='location:name') {    
+        unset($values[$key]);
       }
     }
-    return $valuesForParent;
+    return $values;
+  }
+  /*
+   * When we a location is a Count Unit, some of the data is saved into the Count Unit Boundary Location.
+   * So we need to remove the data going into the Count Unit Boundary from the original parent.
+   */
+  protected static function unsetParentValues($values, $args) {
+    global $fieldsToHoldInCountUnitBoundary;
+    foreach($fieldsToHoldInCountUnitBoundary as $fieldToHoldInCountUnitBoundary) {
+      //The values keys are the form <table>:<field>, so need to match with location: before the field we specified
+      //have specified to store on boundary. If we find a match, then unset it from parent.
+      foreach ($values as $field=>$value) {
+        if (preg_match('/^location:'.$fieldToHoldInCountUnitBoundary.'/',  $field)) {
+          unset($values[$field]);
+        }
+      }
+    }
+    $attributesToUnset = explode(',',$args['attribute_ids_to_store_on_count_unit_boundary']);
+    foreach($attributesToUnset as $attributeToUnset) {
+      foreach ($values as $field=>$value) {
+        if (preg_match('/^locAttr:'.$attributeToUnset.'/',  $field)) {
+            unset($values[$field]);
+          }
+      }
+    }
+    return $values;
   }
   
   /**
@@ -652,74 +769,43 @@ class iform_cudi_form extends iform_dynamic {
    * @return array Submission structure.
    */
   public static function get_submission($values, $args) {
-    //Subission needs to be different depending on whether we are looking at a count unit or a count unit boundary
+    //Get to the Count Unit id to store in the parent submission
     if (!empty($_GET['parent_id']))
-      $s = self::prepare_locations_to_save_for_submission_when_boundary($values, $args);  
-    else
-      $s = self::prepare_locations_to_save_for_submission_when_count_unit($values, $args);
-    return $s;
-  }
-  
-  /**
-   * Handle the submission setup if we are looking at a boundary
-   */
-  protected static function prepare_locations_to_save_for_submission_when_boundary($values, $args) { 
-    $values['location:id']=$_GET['parent_id'];
+      $values['location:id']=$_GET['parent_id'];
     $values['location:location_type_id']=$args['count_unit_location_type_id'];
     //Remove the values we are saving into the boundary location from the parent.
     $valuesForParent = self::unsetParentValues($values,$args);
+    //Create the submission for the parent count unit.
     $s = self::create_submission($valuesForParent, $args);
     $values['location:location_type_id']=$args['count_unit_boundary_location_type_id'];
+    //The Count Unit Id goes into the Count Unit Boundary parent_id field
     $s['subModels'][1]['fkId'] = 'parent_id';      
-    //The location attribute that points to the boundary should only be saved for the parent, so remove
-    //it from the child boundary
-    foreach ($values as $key=>$value) {
-      $keyParts = explode(':',$key);    
-      if ($keyParts[0] === 'locAttr' && $keyParts[1]===$args['preferred_boundary_attribute_id']) {
-        unset($values[$key]);
+    //Remove the values we are saving into the parent location from the boundary.
+    $values = self::unsetBoundaryValues($values, $args);  
+    $values['location:name'] = $values['location:name'].' - boundary'; 
+    //If we are updating an existing boundary, then the id to update is in the boundary drop-down
+    if ($valuesForParent['update-existing-boundary']==='on') {
+      $values['location:id']=$valuesForParent['boundary_versions'];
+    } else {
+      unset($values['location:id']);
+      //We need to create new location_attribute_values associated with the new boundary.
+      //Existing attribute values have a key of the form,
+      //locAttr:<location_attribute_id>:<location_attribute_value_id>.
+      //So we need to remove the location_attribute_value_id from the end of the value key
+      //in order to force the system create new attribute values.
+      foreach ($values as $key=>$value) {
+        $keyParts = explode(':',$key);
+        if (!empty($keyParts[2])) {
+          $values[$keyParts[0].':'.$keyParts[1]] = $values[$key];
+          unset($values[$key]);
+        }  
       }
     }
-
-    //if not creating a new boundary we need to get the boundary id from the boundary versions drop-down
-    if ($values['update-existing-boundary']==='on') {
-      $values['location:id']=$values['boundary_versions'];
-    } else
-      unset($values['location:id']);
     //Write to id 1, as we don't want to overwrite the locations_website submission which is in submodel 0
     $s['subModels'][1]['model'] = self::create_submission($values, $args);
     return $s;
   }
-  
-  
-  /*
-   * When we save a Count Unit location, we save most of the information into a seperate Count Unit Boundary location.
-   * We need to prepare the submission for this.
-   */
-  protected static function prepare_locations_to_save_for_submission_when_count_unit($values, $args) { 
-    $values['location:location_type_id']=$args['count_unit_location_type_id'];
-    //Remove the values we are saving into the boundary location from the parent.
-    $valuesForParent = self::unsetParentValues($values,$args);
-    $s = self::create_submission($valuesForParent, $args);
-    $values['location:location_type_id']=$args['count_unit_boundary_location_type_id'];
-    $s['subModels'][1]['fkId'] = 'parent_id';      
-    //The location attribute that points to the boundary should only be saved for the parent, so remove
-    //it from the child boundary
-    foreach ($values as $key=>$value) {
-      $keyParts = explode(':',$key);    
-      if ($keyParts[0] === 'locAttr' && $keyParts[1]===$args['preferred_boundary_attribute_id']) {
-        unset($values[$key]);
-      }
-    }
-    //if not creating new boundary, get the location id from the preferred boundary
-    if ($values['update-existing-boundary']==='on') {
-      $values['location:id']=$values['preferred_boundary_hidden'];
-    } else
-      unset($values['location:id']);
-    //Write to id 1, as we don't want to overwrite the locations_website submission which is in submodel 0
-    $s['subModels'][1]['model'] = self::create_submission($values, $args);
-    return $s;
-  }
-  
+    
   public static function create_submission($values, $args) {
     $structure = array(
         'model' => 'location',
