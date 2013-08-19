@@ -651,7 +651,7 @@ class data_entry_helper extends helper_base {
       // Filter out future dates
       if (!array_key_exists('allowFuture', $options) || $options['allowFuture']==false) {
         self::$javascript .= ",
-    maxDate: '0'";
+   maxDate: '0'";
       }
       // If the validation plugin is running, we need to trigger it when the datepicker closes.
       if (self::$validated_form_id) {
@@ -6242,6 +6242,8 @@ if (errors.length>0) {
         case 'V': // Vague Date
         case 'Vague Date': // Vague Date
             $attrOptions['class'] = ($item['data_type'] == 'D' ? "date-picker " : "vague-date-picker ");
+            if (strpos($item['validation_rules'],'date_in_past')=== false)
+              $attrOptions['allowFuture']=true;
             $output = self::date_picker($attrOptions);
             break;
         case 'Lookup List':
