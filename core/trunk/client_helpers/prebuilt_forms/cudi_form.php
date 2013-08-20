@@ -777,12 +777,10 @@ class iform_cudi_form extends iform_dynamic {
     $valuesForParent = self::unsetParentValues($values,$args);
     //Create the submission for the parent count unit.
     $s = self::create_submission($valuesForParent, $args);
-    $values['location:location_type_id']=$args['count_unit_boundary_location_type_id'];
     //The Count Unit Id goes into the Count Unit Boundary parent_id field
     $s['subModels'][1]['fkId'] = 'parent_id';      
     //Remove the values we are saving into the parent location from the boundary.
-    $values = self::unsetBoundaryValues($values, $args);  
-    $values['location:name'] = $values['location:name'].' - boundary'; 
+    $values = self::unsetBoundaryValues($values, $args);    
     //If we are updating an existing boundary, then the id to update is in the boundary drop-down
     if ($valuesForParent['update-existing-boundary']==='on') {
       $values['location:id']=$valuesForParent['boundary_versions'];
@@ -801,6 +799,8 @@ class iform_cudi_form extends iform_dynamic {
         }  
       }
     }
+    $values['location:name'] = $values['location:name'].' - boundary'; 
+    $values['location:location_type_id']=$args['count_unit_boundary_location_type_id'];
     //Write to id 1, as we don't want to overwrite the locations_website submission which is in submodel 0
     $s['subModels'][1]['model'] = self::create_submission($values, $args);
     return $s;
