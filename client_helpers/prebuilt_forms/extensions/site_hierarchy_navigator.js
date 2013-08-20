@@ -126,8 +126,12 @@ function add_new_layer_for_site_hierarchy_navigator(clickedFeatureId,breadcrumbL
           zoom_to_area(features);
           currentLayerCounter++;
         } else {
-          if (fromSelectlist===true) {
-            alert('The selected location does not have any data to display');
+          if (!indiciaData.layerLocationTypes[currentLayerCounter]) {
+            location = indiciaData.countUnitPagePath+'location_id='+parentId;
+          } else {
+            if (fromSelectlist===true) {
+              alert('The selected location does not have any data to display');         
+            }
           }
         }
       }
@@ -236,7 +240,9 @@ function selectlist(features) {
   var selectListOptions;
   selectListOptions += '<option value="">Please select a location</option>';
   $.each(features, function (idx, feature) {
-    selectListOptions += '<option value="'+feature.attributes.name+'" onclick="add_new_layer_for_site_hierarchy_navigator('+feature.id+', null,true)">'+feature.attributes.name+'</option>';
+    if (feature.id !== indiciaData.countUnitBoundaryTypeId) {
+      selectListOptions += '<option value="'+feature.attributes.name+'" onclick="add_new_layer_for_site_hierarchy_navigator('+feature.id+', null,true)">'+feature.attributes.name+'</option>';
+    }
   });
   $('#map-selectlist').html(selectListOptions)
 }
