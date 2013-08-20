@@ -36,6 +36,12 @@ class extension_site_hierarchy_navigator {
    * Supply an option @layerLocationTypes with a comma separated array of the location types ID to load in top down order.
    */
   public function map($auth, $args, $tabalias, $options, $path) {
+    global $base_root;
+    $path = $base_root.base_path().
+          //handle whether the drupal installation has clean urls setup.
+          (variable_get('clean_url', 0) ? '' : '?q=').$options['countUnitPagePath'].
+          (variable_get('clean_url', 0) ? '?' : '&');
+    map_helper::$javascript .= "indiciaData.countUnitPagePath='".$path."';\n";
     if (empty($options['layerLocationTypes']))
       return '<p>Please provide a @layerLocationTypes option for the [site_hierarchy_navigator.map] map control on the edit tab</p>';
     $msg=self::check_format($options, 'layerLocationTypes', 'location_type_id (from the termlists term table)', '/^([0-9]*,\s*)*[0-9]*\s*$/'); 
