@@ -725,10 +725,12 @@ class iform_cudi_form extends iform_dynamic {
   }
 
   protected static function get_control_locationcomment($auth, $args, $tabalias, $options) {
-    return data_entry_helper::textarea(array_merge(array(
-      'fieldname'=>'location:comment',
-      'label'=>lang::get('LANG_Comment')
-    ), $options)); 
+    if (!empty($_GET['location_id'])) {
+      return data_entry_helper::textarea(array_merge(array(
+        'fieldname'=>'location:comment',
+        'label'=>lang::get('LANG_Comment')
+      ), $options)); 
+    }
   }
  
   protected static function get_control_spatialreference($auth, $args, $tabalias, $options) {
