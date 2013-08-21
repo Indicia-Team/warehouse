@@ -47,7 +47,6 @@
       <modifiers>
         <where value="C" operator="equal">(o.certainty = 'C' or o.certainty is null)</where>
         <where value="L" operator="equal">(o.certainty in ('C','L') or o.certainty is null)</where>
-        <where value="U" operator="equal">(o.certainty = 'C' or o.certainty is null)</where>
       </modifiers>
     </param>
     <param name='searchArea' display='Report Search Area' datatype='geometry' allow_buffer='true' />
