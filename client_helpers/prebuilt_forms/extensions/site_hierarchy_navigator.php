@@ -160,7 +160,7 @@ class extension_site_hierarchy_navigator {
     global $base_root;
     iform_load_helpers(array('map_helper'));
     $msg=self::check_format($options, 'addCountUnitLinks', 'location_type_id|page_path|parameter_name', 
-        '/^([0-9]+\|[0-9a-z_\/]*\|[0-9a-z_\-]*,)*[0-9]+\|[0-9a-z_\/]*\|[0-9a-z_\-]*$/');
+        '/^([0-9]+\|[0-9a-z_\-\/]*\|[0-9a-z_\-]*,)*[0-9]+\|[0-9a-z_\-\/]*\|[0-9a-z_\-]*$/');
     if ($msg!==true) return $msg;
     map_helper::$javascript .= "indiciaData.useAddCountUnit=true;\n";
     $addcountunit = '<div id="map-addcountunit"></div>';
@@ -223,7 +223,7 @@ class extension_site_hierarchy_navigator {
     $testval = $options[$optionName];
     if (!preg_match($regex, $testval)&&!empty($testval))
       return "<p>$testval</p>" .
-          "<p>The supplied @$optionName option is not of the correct format, it should be a comma separated list with each item of the form \"{friendlyFormat}\".</p>";
+          "<p>The supplied @$optionName option is not of the correct format, it should be a comma separated list with each item of the form \"$friendlyFormat\".</p>";
     return true;
   }
     
