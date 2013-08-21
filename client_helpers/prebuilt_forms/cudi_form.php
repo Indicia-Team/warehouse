@@ -210,7 +210,7 @@ class iform_cudi_form extends iform_dynamic {
     if ($_POST && !is_null(data_entry_helper::$entity_to_load)) {
       // errors with new sample or entity populated with post, so display this data.
       $mode = self::MODE_EXISTING; 
-    } else if (array_key_exists('location_id', $_GET)){
+    } else if (array_key_exists('location_id', $_GET)||array_key_exists('parent_id', $_GET)||array_key_exists('zoom_id', $_GET)){
       // request for display of existing record
       $mode = self::MODE_EXISTING;
     } else if (array_key_exists('new', $_GET)){
@@ -238,10 +238,23 @@ class iform_cudi_form extends iform_dynamic {
   // Get an existing location.
   protected static function getEntity($args, $auth) {
     data_entry_helper::$entity_to_load = array();
-    if (!empty($_GET['parent_id']))
-      self::load_existing_record($args, $auth, 'location', $_GET['parent_id']);
-    else
-      self::load_existing_record($args, $auth, 'location', $_GET['location_id']);
+    //If a zoom_id is supplied, it means we are moving into add mode but for a specific region
+    //so we want an empty page but the map should be zoomed in
+    if (!empty($_GET['zoom_id']))
+      $recordId = $_GET['zoom_id'];
+    if (!empty($recordId)) {
+      self::zoom_map($args, $auth, 'location', $recordId);
+    } else {     
+      if (!empty($_GET['location_id']))
+        $recordId = $_GET['location_id'];
+      //Note: There is still a location_id if there is a parent_id, but we use the parent_id
+      //as the main record id, the system then uses the location_id to load boundary information
+      //for the main record.
+      if (!empty($_GET['parent_id']))
+        $recordId = $_GET['parent_id'];
+      if (!empty($recordId))
+        self::load_existing_record($args, $auth, 'location', $recordId);
+    }
   }
   
   /*
@@ -258,6 +271,30 @@ class iform_cudi_form extends iform_dynamic {
     if (empty($preferredBoundaryValue)) //{
       $preferredBoundaryValue = null;
     return $preferredBoundaryValue;
+  }
+  
+  /*
+   * Function similar in principle to load_existing_record. This function is different if that it is used when the screen is 
+   * in Add Mode and we just want to automatically zoom the map to a region/site we are adding a location to.
+   */
+  public static function zoom_map($args, $auth, $entity, $id, $view = 'detail', $sharing = false, $loadImages = false) {
+    $parentRecord = data_entry_helper::get_population_data(array(
+      'table' => $entity,
+      'extraParams' => $auth['read'] + array('id' => $id, 'view' => $view),
+      'nocache' => true,
+      'sharing' => $sharing
+    ));
+    
+    if (isset($parentRecord['error'])) throw new Exception($parentRecord['error']);
+    
+    // set form mode
+    if (data_entry_helper::$form_mode===null) data_entry_helper::$form_mode = 'RELOAD';
+    //As we are only zooming the map, only populate the entity to load with map related items.
+    foreach($parentRecord[0] as $key => $value) {
+      if ($key==='boundary_geom'||$key==='centroid_sref'||$key==='centroid_sref_system') {
+        data_entry_helper::$entity_to_load["$entity:$key"] = $value;
+      }
+    }
   }
   
   /**
