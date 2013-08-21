@@ -54,7 +54,7 @@ function data_cleaner_identification_difficulty_data_cleaner_postprocess($id, $d
   $db->query("update cache_taxon_searchterms cts " .
       "set identification_difficulty=vrd.value::integer, id_diff_verification_rule_id=vrd.verification_rule_id ".
       "from cache_taxa_taxon_lists cttl ".
-      "join verification_rule_data vrd on vrd.header_name='Data' and upper(vrd.key)=cttl.external_key and vrd.deleted=false".
+      "join verification_rule_data vrd on vrd.header_name='Data' and upper(vrd.key)=cttl.external_key and vrd.deleted=false ".
       "join verification_rules vr on vr.id=vrd.verification_rule_id and vr.deleted=false ".
       "where cttl.id=cts.preferred_taxa_taxon_list_id ".
       "and vr.id=$id");
