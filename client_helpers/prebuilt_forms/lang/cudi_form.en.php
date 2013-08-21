@@ -28,6 +28,7 @@ include_once 'dynamic.en.php';
  */
 $custom_terms = array_merge($custom_terms, array(
   'LANG_Location_Name' => 'Name',
+  'LANG_Comment' => 'Reason For Change',
   'LANG_Location_Code' => 'Abbreviation',
   'LANG_Location_Created_By' => 'CUDI Form Completed By',
   'LANG_Location_Created_On' => 'Date Completed On',
