@@ -561,6 +561,7 @@ class ORM extends ORM_Core {
    * If not, returns null - errors are embedded in the model.
    */
   public function inner_submit(){
+    $this->wantToUpdateMetadata = true;
     $isInsert = $this->id===0 
         && (!isset($this->submission['fields']['id']) || !$this->submission['fields']['id']);
     $this->handleCaptionSubmission();
