@@ -177,14 +177,6 @@ class iform_cudi_form extends iform_dynamic {
           'group'=>'Configurable Ids'
         ),  
         array(
-          'name'=>'boundary_page_path',
-          'caption'=>'Count Unit Boundary Page Path',
-          'description'=>'The path to the Count Unit Boundary page.',
-          'type'=>'string',
-          'required' => true,
-          'group'=>'Page Paths'
-        ),
-        array(
           'name'=>'administrator_mode',
           'caption'=>'Administrator Mode?',
           'description'=>'Place page into administrator mode. This enables extra functionality and better privileges for performing certain tasks.',
