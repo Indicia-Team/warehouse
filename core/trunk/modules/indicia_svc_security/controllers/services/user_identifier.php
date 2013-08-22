@@ -42,6 +42,8 @@ class User_Identifier_Controller extends Service_Base_Controller {
    * Optional. First name of the user, enabling a new user account to be created on the warehouse.</li>
    * <li><strong>cms_user_id</strong/><br/>
    * Required. User ID from the client website's login system.</li>
+   * <li><strong>warehouse_user_id</strong/><br/>
+   * Optional. Where a user ID is already known but a new identifier is being provided (e.g. an email switch), provide the warehouse user ID.</li>
    * <li><strong>force</strong/><br/>
    * Optional. Only relevant after a request has returned an array of several possible matches. Set to 
    * merge or split to define the action.</li>
