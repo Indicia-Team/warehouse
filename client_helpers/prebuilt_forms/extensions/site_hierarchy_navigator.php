@@ -197,12 +197,49 @@ class extension_site_hierarchy_navigator {
     if ($msg!==true) return $msg;
     map_helper::$javascript .= "indiciaData.useAddSite=true;\n";
     $addsite = '<div id="map-addsite"></div>';
-    
-    $linksToCreate=explode(',',$options['addSiteLinks']);
+    //Get the options are speciified in the Form Structure
+    $optionResults = self::get_link_options($options['addSiteLinks']); 
+    //Defines which layers we display the Add Site button for.
+    $locationTypesForAddSite = $optionResults[0];
+    $linkUrls = $optionResults[1]; 
+    //Send the options to javascript
+    map_helper::$javascript .= "indiciaData.locationTypesForAddSites=".json_encode($locationTypesForAddSite).";\n";
+    map_helper::$javascript .= "indiciaData.addSiteLinkUrls=".json_encode($linkUrls).";\n";
+    return $addsite;
+  }
+  
+  /*
+   * Allow the user to specify a button to edit the parent site with
+   */
+  public function editsite($auth, $args, $tabalias, $options, $path) {
+    global $base_root;
+    iform_load_helpers(array('map_helper'));
+    $msg=self::check_format($options, 'editSiteLinks', 'location_type_id|page_path|parameter_name', 
+        '/^([0-9]+\|[0-9a-z_\-\/]*\|[0-9a-z_\-]*,)*[0-9]+\|[0-9a-z_\-\/]*\|[0-9a-z_\-]*$/');
+    if ($msg!==true) return $msg;
+    map_helper::$javascript .= "indiciaData.useEditSite=true;\n";
+    $editsite = '<div id="map-editsite"></div>';  
+    //Get the options are speciified in the Form Structure
+    $optionResults = self::get_link_options($options['editSiteLinks']); 
+    //Defines which layers we display the Edit Site button for.
+    $locationTypesForEditSite = $optionResults[0];
+    $linkUrls = $optionResults[1]; 
+    //Send the options to javascript
+    map_helper::$javascript .= "indiciaData.locationTypesForEditSites=".json_encode($locationTypesForEditSite).";\n";
+    map_helper::$javascript .= "indiciaData.editSiteLinkUrls=".json_encode($linkUrls).";\n";
+    return $editsite;
+  }
+  
+  /*
+   * Collect options from the form sturcture for buttons whose options are in the format
+   * location_type_id_to_display_button_for|path_to_page|parameter_to_send_to_page
+   */
+  private function get_link_options($linkOptions) {
+    $linksToCreate=explode(',',$linkOptions);
     //Cycle through all the supplied options, get the options and save the locations types and the paths we are going to use.
     foreach ($linksToCreate as $id=>$linkToCreate) {
       $differentOptions=explode('|',$linkToCreate);
-      $locationTypesForAddSite[$id]=$differentOptions[0];
+      $locationTypesForToDisplayButtonFor[$id]=$differentOptions[0];
       $linkUrls[$id]=
           $base_root.base_path().
           //handle whether the drupal installation has clean urls setup.
@@ -210,12 +247,11 @@ class extension_site_hierarchy_navigator {
           $differentOptions[1].(variable_get('clean_url', 0) ? '?' : '&').
           $differentOptions[2].'=';
     }
-    //Send the data to javascript
-    map_helper::$javascript .= "indiciaData.locationTypesForAddSites=".json_encode($locationTypesForAddSite).";\n";
-    map_helper::$javascript .= "indiciaData.addSiteLinkUrls=".json_encode($linkUrls).";\n";
-    return $addsite;
-  }
-  
+    $optionResults[0] = $locationTypesForToDisplayButtonFor;
+    $optionResults[1] = $linkUrls;
+    return $optionResults;
+  }        
+          
   /**
    * Internal function that checks a form structure control option against a regular expression to check it's format.
    */
