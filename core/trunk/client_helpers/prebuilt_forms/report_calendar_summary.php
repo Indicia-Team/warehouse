@@ -803,7 +803,7 @@ class iform_report_calendar_summary {
       return '';
     // if the user is changed then we must reset the location
     $siteUrlParams = self::get_site_url_params();
-    $options['extraParams']['user_id'] = $siteUrlParams[self::$userKey]['value'];    
+    $options['extraParams']['user_id'] = $siteUrlParams[self::$userKey]['value'];
     $userList=array();
     if(!isset($args['managerPermission']) || $args['managerPermission']=="" || !user_access($args['managerPermission'])) {
       // user is a normal user
@@ -913,11 +913,11 @@ class iform_report_calendar_summary {
     $ctrlid='calendar-user-select-'.$node->nid;
     $ctrl='<label for="'.$ctrlid.'" class="user-select-label">'.lang::get('Filter by recorder').
           ': </label><select id="'.$ctrlid.'" class="user-select">'.
-          '<option value="" class="user-select-option" '.($siteUrlParams[self::$userKey]['value']=='' ? 'selected="selected" ' : '').'>'.lang::get('All recorders').'</option>';
+          '<option value='.($user->uid).' class="user-select-option" '.($siteUrlParams[self::$userKey]['value']==$user->uid  ? 'selected="selected" ' : '').'>'.lang::get('My data').'</option>'.
+          '<option value="all" class="user-select-option" '.($siteUrlParams[self::$userKey]['value']=='' ? 'selected="selected" ' : '').'>'.lang::get('All recorders').'</option>';
     foreach($userList as $id => $account) {
-      if($account !== true){
-        $name=($account->uid===$user->uid ? lang::get('My data') : $account->name);
-        $ctrl .= '<option value='.$id.' class="user-select-option" '.($siteUrlParams[self::$userKey]['value']==$id ? 'selected="selected" ' : '').'>'.$name.'</option>';
+      if($account !== true && $account->uid!==$user->uid){
+        $ctrl .= '<option value='.$id.' class="user-select-option" '.($siteUrlParams[self::$userKey]['value']==$id ? 'selected="selected" ' : '').'>'.$account->name.'</option>';
       }
     }
     $ctrl.='</select>';
@@ -929,6 +929,7 @@ class iform_report_calendar_summary {
    * Get the parameters required for the current filter.
    */
   private function get_site_url_params() {
+    global $user;
     if (!self::$siteUrlParams) {
       self::$siteUrlParams = array(
         self::$userKey => array(
@@ -944,8 +945,13 @@ class iform_report_calendar_summary {
               'value' => isset($_GET[self::$yearKey]) ? $_GET[self::$yearKey] : date('Y')
         )
       );
+      // Force defaults for the user: if none provided default to user, if all then remove it.
+      if(self::$siteUrlParams[self::$userKey]['value'] == 'all')
+        self::$siteUrlParams[self::$userKey]['value'] = '';
+      elseif(self::$siteUrlParams[self::$userKey]['value'] == '')
+        self::$siteUrlParams[self::$userKey]['value'] = $user->uid;
       foreach (self::$removableParams as $param=>$caption) {
-        $siteUrlParams[$param] = array(
+        self::$siteUrlParams[$param] = array(
           'name' => $param,
           'value' => isset($_GET[$param]) ? $_GET[$param] : ''
         );
