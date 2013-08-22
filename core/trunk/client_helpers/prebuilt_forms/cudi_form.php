@@ -634,7 +634,7 @@ class iform_cudi_form extends iform_dynamic {
             $maxBoundaryId = $boundaryVersionData['id'];   
           //Link to boundary page when user clicks on a boundary.
           $linkToBoundaryPage =
-                url($args['boundary_page_path'], array('absolute' => true)).(variable_get('clean_url', 0) ? '?' : '&').
+                url($_GET['q'], array('absolute' => true)).(variable_get('clean_url', 0) ? '?' : '&').
                 'location_id='.$boundaryVersionData['id'].'&parent_id=';
           //We get the parent count unit id in a different way depending on whether we are already viewing a boundary,
           //or whether we are looking at the count unit
