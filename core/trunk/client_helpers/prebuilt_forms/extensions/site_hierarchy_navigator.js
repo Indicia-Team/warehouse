@@ -120,6 +120,10 @@ function add_new_layer_for_site_hierarchy_navigator(clickedFeatureId,breadcrumbL
           if (indiciaData.useAddSite) {
             add_site_link(indiciaData.layerLocationTypes[currentLayerCounter],parentId);
           }
+          //Get the Edit Site button
+          if (indiciaData.useEditSite) {
+            edit_site_link(indiciaData.layerLocationTypes[currentLayerCounter],parentId,parentName);
+          }
           indiciaData.reportlayer.removeAllFeatures();
           indiciaData.mapdiv.map.addLayer(indiciaData.reportlayer);
           indiciaData.reportlayer.addFeatures(features); 
@@ -178,7 +182,7 @@ function get_parent_name_and_id(clickedFeature,breadcrumbLayerCounter) {
 function breadcrumb(breadcrumbLayerCounter,currentLayerCounter,parentId,parentName) {
   var existingBreadcrumb;
   existingBreadcrumb = $('#map-breadcrumb').html();
-  //If the user hasn't clicked on the breadcrumb then we are either on firt tab or they have clicked on a location.
+  //If the user hasn't clicked on the breadcrumb then we are either on first tab or they have clicked on a location.
   //So we need to store the parent for use in the breadcrumb.
   if (breadcrumbLayerCounter==null) { 
     parentFromPreviousBreadcrumbs [currentLayerCounter]=[];
@@ -303,13 +307,31 @@ function add_site_link(currentSiteType,parentLocationId) {
       if (indiciaData.locationTypesForAddSites[i] === currentSiteType) {
         button = '<FORM>';
         button += "<INPUT TYPE=\"button\" VALUE=\"Add Site\"\n\
-                      ONCLICK=\"window.location.href='"+indiciaData.addSiteLinkUrls[i]+parentLocationId+"'\">";
+                      ONCLICK=\"window.location.href='"+indiciaData.addSiteLinkUrls[i]+parentLocationId+'&location_type_id='+currentSiteType+"'\">";
         button += '</FORM>'; 
         return $('#map-addsite').html(button);
       }
     }
   }
   return $('#map-addsite').html('');
+}
+
+/*
+ * Allow users to edit sites. When button is displayed, it allows the user to edit the parent site.
+ */
+function edit_site_link(currentSiteType, parentSiteId, parentSiteName) {
+  if (parentSiteId) {
+    for (i=0; i<indiciaData.locationTypesForEditSites.length;i++) {
+      if (indiciaData.locationTypesForEditSites[i] === currentSiteType) {
+        button = '<FORM>';
+        button += "<INPUT TYPE=\"button\" VALUE=\"Edit "+parentSiteName+"\"\n\
+                      ONCLICK=\"window.location.href='"+indiciaData.editSiteLinkUrls[i]+parentSiteId+"'\">";
+        button += '</FORM>'; 
+        return $('#map-editsite').html(button);
+      }
+    }
+  }
+  return $('#map-editsite').html('');
 }
 
 /*
