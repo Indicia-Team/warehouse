@@ -42,6 +42,8 @@ class User_Identifier_Controller extends Service_Base_Controller {
    * Optional. First name of the user, enabling a new user account to be created on the warehouse.</li>
    * <li><strong>cms_user_id</strong/><br/>
    * Required. User ID from the client website's login system.</li>
+   * <li><strong>warehouse_user_id</strong/><br/>
+   * Optional. Where a user ID is already known but a new identifier is being provided (e.g. an email switch), provide the warehouse user ID.</li>
    * <li><strong>force</strong/><br/>
    * Optional. Only relevant after a request has returned an array of several possible matches. Set to 
    * merge or split to define the action.</li>
@@ -95,80 +97,85 @@ class User_Identifier_Controller extends Service_Base_Controller {
       // authenticate requesting website for this service. This can create a user, so need write
       // permission.
       $this->authenticate('write');
-      $newIdentifiers = array();
-      $existingUsers = array();
-      // work through the list of identifiers and find the users for the ones we already know about, 
-      // plus find the list of identifiers we've not seen before.
       $this->db = new Database();
-      // email is a special identifier used to create person.
-      $email = null;
-      foreach ($identifiers as $identifier) {
-        // store the email address, since this is always required to create a person
-        if ($identifier->type==='email') {
-          $email=$identifier->identifier;
-          // The query to find an existing user is slightly different for emails, since the 
-          // email can be in the user identifier list or the person record
-          $joinType='LEFT';
-        } else
-          $joinType='INNER';
-        $this->db->select('DISTINCT u.id as user_id, u.person_id')
-            ->from('users as u')
-            ->join('people as p', 'p.id', 'u.person_id')
-            ->join('user_identifiers as um', 'um.user_id', 'u.id', $joinType)
-            ->join('termlists_terms as tlt1', 'tlt1.id', 'um.type_id', $joinType)
-            ->join('termlists_terms as tlt2', 'tlt2.meaning_id', 'tlt1.meaning_id', $joinType)
-            ->join('terms as t', 't.id', 'tlt2.term_id', $joinType)
-            ->where(array('u.deleted'=>'f', 'p.deleted'=>'f'));
-        if ($identifier->type==='email') {
-          // Filter to find either the user identifier or the email in the person record
-          $this->db->where("(um.identifier ='".$identifier->identifier."' OR p.email_address='".$identifier->identifier."')");
-          $this->db->where("(t.term='".$identifier->type."' OR p.email_address='".$identifier->identifier."')");
-        } else {
-          $this->db->where("um.identifier='".$identifier->identifier."'");
-          $this->db->where("t.term IN ('".$identifier->type."')");
+      if (!empty($request['warehouse_user_id'])) {
+        $userId=$request['warehouse_user_id'];
+        $qry = $this->db->select('person_id')->from('users')->where(array('id'=>$userId))->get()->result_array(false);
+        $this->person_id = $qry[0]['person_id'];
+      } else {
+        $existingUsers = array();
+        // work through the list of identifiers and find the users for the ones we already know about, 
+        // plus find the list of identifiers we've not seen before.
+        // email is a special identifier used to create person.
+        $email = null;
+        foreach ($identifiers as $identifier) {
+          // store the email address, since this is always required to create a person
+          if ($identifier->type==='email') {
+            $email=$identifier->identifier;
+            // The query to find an existing user is slightly different for emails, since the 
+            // email can be in the user identifier list or the person record
+            $joinType='LEFT';
+          } else
+            $joinType='INNER';
+          $this->db->select('DISTINCT u.id as user_id, u.person_id')
+              ->from('users as u')
+              ->join('people as p', 'p.id', 'u.person_id')
+              ->join('user_identifiers as um', 'um.user_id', 'u.id', $joinType)
+              ->join('termlists_terms as tlt1', 'tlt1.id', 'um.type_id', $joinType)
+              ->join('termlists_terms as tlt2', 'tlt2.meaning_id', 'tlt1.meaning_id', $joinType)
+              ->join('terms as t', 't.id', 'tlt2.term_id', $joinType)
+              ->where(array('u.deleted'=>'f', 'p.deleted'=>'f'));
+          if ($identifier->type==='email') {
+            // Filter to find either the user identifier or the email in the person record
+            $this->db->where("(um.identifier ='".$identifier->identifier."' OR p.email_address='".$identifier->identifier."')");
+            $this->db->where("(t.term='".$identifier->type."' OR p.email_address='".$identifier->identifier."')");
+          } else {
+            $this->db->where("um.identifier='".$identifier->identifier."'");
+            $this->db->where("t.term IN ('".$identifier->type."')");
+          }
+          
+          if (isset($request['users_to_merge'])) {
+            $usersToMerge = json_decode($request['users_to_merge']);
+            $this->db->in('user_id', $usersToMerge);
+          }
+          $r = $this->db->get()->result_array(true);
+          foreach($r as $existingUser) {
+            // create a placeholder for the known user we just found
+            if (!isset($existingUsers[$existingUser->user_id]))
+              $existingUsers[$existingUser->user_id]=array();
+            // add the identifier detail to this known user
+            $existingUsers[$existingUser->user_id][] = array(
+              'identifier'=>$identifier->identifier,
+              'type'=>$identifier->type,
+              'person_id'=>$existingUser->person_id);
+          }
+          
         }
-        
-        if (isset($request['users_to_merge'])) {
-          $usersToMerge = json_decode($request['users_to_merge']);
-          $this->db->in('user_id', $usersToMerge);
-        }
-        $r = $this->db->get()->result_array(true);
-        foreach($r as $existingUser) {
-          // create a placeholder for the known user we just found
-          if (!isset($existingUsers[$existingUser->user_id]))
-            $existingUsers[$existingUser->user_id]=array();
-          // add the identifier detail to this known user
-          $existingUsers[$existingUser->user_id][] = array(
-            'identifier'=>$identifier->identifier,
-            'type'=>$identifier->type,
-            'person_id'=>$existingUser->person_id);
-        }
-        
-      }
-      if ($email === null)
-        throw new exception('Call to get_user_id requires an email address in the list of provided identifiers.');
-      // Now we have a list of the existing users that match this identifier. If there are none, we 
-      // can create a new user and attach to the current website. If there is one, then we can
-      // just return it. If more than one, then we have a resolution task since it probably
-      // means 2 user records refer to the same physical person, or someone is sharing their
-      // identifiers!
-      if (count($existingUsers)===0)
-        $userId = $this->createUser($email);
-      elseif (count($existingUsers)===1) {
-        // single, known user associated with these identifiers
-        $keys = array_keys($existingUsers);
-        $userId = array_pop($keys);
-        $this->person_id = $existingUsers[$userId][0]['person_id'];
-      }
-      if (!isset($userId)) {
-        $resolution = $this->resolveMultipleUsers($identifiers, $existingUsers);        
-        // response could be a list of possible users to match against, or a single user ID.
-        if (isset($resolution['possibleMatches'])) {
-          echo json_encode($resolution);
-          return;
-        } else {
-          $userId = $resolution['userId'];
+        if ($email === null)
+          throw new exception('Call to get_user_id requires an email address in the list of provided identifiers.');
+        // Now we have a list of the existing users that match this identifier. If there are none, we 
+        // can create a new user and attach to the current website. If there is one, then we can
+        // just return it. If more than one, then we have a resolution task since it probably
+        // means 2 user records refer to the same physical person, or someone is sharing their
+        // identifiers!
+        if (count($existingUsers)===0)
+          $userId = $this->createUser($email);
+        elseif (count($existingUsers)===1) {
+          // single, known user associated with these identifiers
+          $keys = array_keys($existingUsers);
+          $userId = array_pop($keys);
           $this->person_id = $existingUsers[$userId][0]['person_id'];
+        }
+        if (!isset($userId)) {
+          $resolution = $this->resolveMultipleUsers($identifiers, $existingUsers);        
+          // response could be a list of possible users to match against, or a single user ID.
+          if (isset($resolution['possibleMatches'])) {
+            echo json_encode($resolution);
+            return;
+          } else {
+            $userId = $resolution['userId'];
+            $this->person_id = $existingUsers[$userId][0]['person_id'];
+          }
         }
       }
       $this->storeIdentifiers($userId, $identifiers);
@@ -277,7 +284,6 @@ class User_Identifier_Controller extends Service_Base_Controller {
       $username = substr($uname, 0, 30-strlen($rolling)).$rolling;
       $unique++;
     } while ($this->db->select('id')->from('users')->where(array('username'=>$username))->get()->count()>0);
-    
     $data = array(
       'person_id'=>$person->id,
       'email_visible'=>'f',
@@ -308,7 +314,7 @@ class User_Identifier_Controller extends Service_Base_Controller {
       $qry = $this->db->select('t.id')
           ->from('terms as t')
           ->join('termlists_terms as tlt', array('tlt.term_id'=>'t.id'))
-          ->join('termlists as tl', array('tl.id'=>'t.id'))
+          ->join('termlists as tl', array('tl.id'=>'tlt.termlist_id'))
           ->where(array('t.deleted'=>'f', 't.term'=>$term, 'tl.external_key'=>'indicia:user_identifier_types',
                'tlt.deleted'=>'f', 'tl.deleted'=>'f'))
           ->get()->result_array(false);
