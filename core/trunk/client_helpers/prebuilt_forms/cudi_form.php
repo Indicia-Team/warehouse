@@ -184,6 +184,14 @@ class iform_cudi_form extends iform_dynamic {
           'required' => false,
           'group'=>'Administrator Mode'
         ),
+        array(
+          'name'=>'homepage_path',
+          'caption'=>'Homepage Path',
+          'description'=>'Path to the homepage.',
+          'type'=>'string',
+          'required' => true,
+          'group'=>'Page Paths'
+        ),  
       )
     );
     return $retVal;
@@ -960,6 +968,52 @@ class iform_cudi_form extends iform_dynamic {
                                                   'urlParams' => array('location_id'=>'{id}'),
                                                   'visibility_field' => 'editable'))
     ));
+  }
+  
+  /*
+   * Displays a breadcrumb if the user enters the page from the homepage.
+   */
+  protected function get_control_breadcrumb($auth, $args, $tabalias, $options) {
+    $breadCrumbLocationNamesArray=array();
+    //The location ids to display in the breadcrumb are held in the URL if the
+    //user comes from the homepage
+    $breadCrumbLocationIdsArray = explode(',',$_GET['breadcrumb']);
+    $locationRecords = data_entry_helper::get_population_data(array(
+      'table' => 'location',
+      'extraParams' => $auth['read'],
+      'nocache' => true,
+
+    ));
+    //Get the names associated with the ids
+    foreach ($locationRecords as $locationRecord) {
+      if (in_array($locationRecord['id'],$breadCrumbLocationIdsArray)) {
+        $breadCrumbLocationNamesArray[] = $locationRecord['name'];
+      }
+    }
+    $r = '';
+    //Only display links to homepage if we have links to show
+    if (!empty($breadCrumbLocationNamesArray)) {
+      $r .= '<label><h4>Links to homepage</h4></label></br>';
+      $r .= '<div>';
+      $r .= '<ul id="homepage-breadcrumb">';
+      //Loop through the links to show
+      foreach ($breadCrumbLocationNamesArray as $num=>$breadCrumbLocationName) {
+        //For each link back to the homepage, we need to give the homepage some locations IDs to rebuild
+        //its breadcrumb with. So we need to include ids of any locations that are "above" the location we are linking back with.
+        //e.g. If the link is for Guildford, then we would need to supply the ids for Guildford, Surrey and South England
+        //as well to the homepage can make a full breadcrumb trail to guildford.
+        if (empty($breadCrumbParamToSendBack)) 
+          $breadCrumbParamToSendBack='breadcrumb='.$breadCrumbLocationIdsArray[$num];
+        else
+          $breadCrumbParamToSendBack .= ','.$breadCrumbLocationIdsArray[$num];
+        $r .= '<li id="breadcrumb-part-"'.$num.'>';
+        //The breadcrumb link is a name, with url back to the homepage containing ids for the homepage
+        //to show in its breadcrumb
+        $r .= '<a href="'.'http://localhost/cudi/'.(variable_get('clean_url', 0) ? '' : '?q=').$args['homepage_path'].(variable_get('clean_url', 0) ? '?' : '&').$breadCrumbParamToSendBack.'">'.$breadCrumbLocationName.'<a>';
+        $r .= '</li>';
+      }
+    }
+    return $r;
   }
   
 }
