@@ -60,26 +60,27 @@ class Data_Controller extends Data_Service_Base_Controller {
   //
   // default to no updates allowed - must explicity allow updates.
   protected $allow_updates = array(
+      'determination',
+      'filter',
       'location',
+      'notification',
       'occurrence',
+      'occurrence_attribute_value',
       'occurrence_comment',
       'occurrence_image',
-      'determination',
+      'person_attribute_value',
       'person',
       'sample',
+      'sample_attribute_value',
       'sample_comment',
       'sample_image',
       'survey',
-      'user',
       'taxa_taxon_list',
       'taxon_relation',
       'taxon_group',
       'termlists_term',
-      'user_trust',
-      'notification',
-      'occurrence_attribute_value',
-      'sample_attribute_value',
-      'person_attribute_value'
+      'user',      
+      'user_trust'
   );
 
   // Standard functionality is to use the list_<plural_entity> views to provide a mapping between entity id
@@ -87,6 +88,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   // There is a potential issues with this: We may want everyone to have complete access to a particular dataset
   // So if we wish total access to a given dataset, the entity must appear in the following list.
   protected $allow_full_access = array(
+      'filter',
       'taxa_taxon_list',
       'taxon_relation',
       'taxon_group',
@@ -100,9 +102,10 @@ class Data_Controller extends Data_Service_Base_Controller {
   
   // List of tables that do not use views to expose their data.
   protected $tables_without_views = array(
-    'index_websites_website_agreements',
     'cache_taxon_searchterms',
     'cache_taxa_taxon_lists',
+    'filters',
+    'index_websites_website_agreements',
     'verification_rule_data'
   );
   
@@ -123,6 +126,15 @@ class Data_Controller extends Data_Service_Base_Controller {
   public function cache_taxon_searchterm()
   {
     $this->handle_call('cache_taxon_searchterm');
+  }
+  
+  /**
+  * Provides the /services/data/filter service.
+  * Retrieves details of a single filter.
+  */
+  public function filter()
+  {
+    $this->handle_call('filter');
   }
   
   /**
@@ -1018,11 +1030,6 @@ class Data_Controller extends Data_Service_Base_Controller {
         {
           case 'json':
             $s = json_decode($_POST['submission'], true);
-        }
-        // if the request included a user ID, put it in the global var so all ORM saves can use it
-        if ($this->user_id) {
-          global $remoteUserId;
-          $remoteUserId = $this->user_id;
         }
         $response = $this->submit($s);
         // return a success message plus the id of the topmost record, e.g. the sample created, plus a summary structure of any other records created.

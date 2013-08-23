@@ -1,0 +1,22 @@
+<report
+    title="Explore records using standard filters"
+    description="Report designed for the explore records facility in iRecord, with standardised filtering parameters."
+>
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
+  SELECT #columns#
+  FROM cache_occurrences o
+  JOIN websites w on w.id=o.website_id and w.deleted=false
+  #agreements_join#
+  #joins#
+  WHERE #sharing_filter# 
+  #idlist#
+  </query>
+  <params>
+    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
+    <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
+  </params>
+  <columns>
+    <column name="occurrence_ids" visible="false" sql="array_to_string(array_agg(o.id), ',')" aggregate="true" />
+    <column name="geom" visible="false" mappable="true" sql="st_astext(#sample_geom_field#)" />
+  </columns>
+</report>

@@ -344,8 +344,7 @@ class ReportEngine {
 
   private function getVagueDateProcessing() {
     $vagueDateProcessing = $this->reportReader->getVagueDateProcessing();
-     foreach ($this->providedParams as $name => $value)
-    {
+    foreach ($this->providedParams as $name => $value) {
       $vagueDateProcessing = preg_replace("/#$name#/", $value, $vagueDateProcessing);
     }
     return !($vagueDateProcessing == 'false');
@@ -742,9 +741,11 @@ class ReportEngine {
     foreach ($this->providedParams as $name => $value)
     {
       if (isset($paramDefs[$name])) {
-        if ($value==='')
+        if ($value==='') {
+          $empty = isset($paramDefs[$name]['emptyvalue']) ? $paramDefs[$name]['emptyvalue'] : '';
           // empty integer params should be handled as 0 (null would be ideal, but we can't test for it in the same fashion as a number).
-          $query = preg_replace("/#$name#/", $paramDefs[$name]['emptyvalue'], $query);
+          $query = preg_replace("/#$name#/", $empty, $query);
+        }
         else {
           if ($paramDefs[$name]['datatype']=='idlist')
             // idlist is a special parameter type which creates an IN (...) clause. Lets you optionally provide a list
@@ -784,6 +785,15 @@ class ReportEngine {
         $filterClause = $this->getFilterClause($field, 'date', $operator, $value);
         $query = str_replace('#filters#', "AND $filterClause\n#filters#", $query);
       }
+    }
+    // column replacements and additional join to samples for geometry permissions autoswitching
+    if ($this->sharingMode==='me' || $this->sharingMode==='verification') {
+      // don't add the join to samples when it is not necessary.
+      if (strpos($query, '#sample_sref_field#') || strpos($query, '#sample_geom_field#')) 
+        $query = str_replace('#joins#', "JOIN samples s on s.id=o.sample_id AND s.deleted=false \n#joins#", $query);
+      $query = str_replace(array('#sample_sref_field#', '#sample_geom_field#'), array('s.entered_sref', 's.geom'), $query);
+    } else {
+      $query = str_replace(array('#sample_sref_field#', '#sample_geom_field#'), array('o.public_entered_sref', 'o.public_geom'), $query);
     }
     // remove the marker left in the query to show where to insert joins
     $query = str_replace(array('#joins#','#fields#','#group_bys#','#filters#'), array('','','',''), $query);

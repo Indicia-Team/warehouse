@@ -134,6 +134,9 @@ class XMLReportReader_Core implements ReportReader
                 if (!$this->locations_id_field = $reader->getAttribute('locations_id_field'))
                   // default table alias for the locations table, so we can join to the id
                   $this->locations_id_field = 'l.id';
+                // load the standard set of parameters for consistent filtering of reports?
+                if ($reader->getAttribute('standard_params')!==null)
+                  $this->loadStandardParams($sharing);
                 $reader->read();
                 $this->query = $reader->value;
                 break;
@@ -291,10 +294,10 @@ class XMLReportReader_Core implements ReportReader
         // add a join to users so we can check their privacy preferences. This does not apply if record input
         // on this website.
         $agreementsJoin = "JOIN users privacyusers ON privacyusers.id=o.created_by_id";
-        $query = str_replace(array('#agreements_join#','#sharing_filter#'), 
+        $query = str_replace(array('#agreements_join#','#sharing_filter#','#sharing_website_ids#'), 
             array($agreementsJoin, 
             "({$this->websiteFilterField} in ($idList) OR privacyusers.allow_share_for_$sharing=true OR privacyusers.allow_share_for_$sharing IS NULL)\n".
-            "AND {$this->websiteFilterField} in ($sharedWebsiteIdList)"), $query);
+            "AND {$this->websiteFilterField} in ($sharedWebsiteIdList)", $sharedWebsiteIdList), $query);
       }
     }
     $query = str_replace('#sharing#', $sharing, $query);
@@ -331,7 +334,7 @@ class XMLReportReader_Core implements ReportReader
     $cache->set($cacheId, $r); 
     return $r;
   }
-  
+
   /**
    * Use the sql attributes from the list of columns to auto generate the columns SQL.
    */
@@ -427,54 +430,54 @@ class XMLReportReader_Core implements ReportReader
     // In download mode make sure that the occurrences id is in the list
 
       foreach($this->tables[$i]['columns'] as $column){
-    if ($j != 0) $query .= ",";
-    if ($column['func']=='') {
-        $query .= " lt".$i.".".$column['name']." AS lt".$i."_".$column['name'];
-    } else {
+        if ($j != 0) $query .= ",";
+        if ($column['func']=='') {
+          $query .= " lt".$i.".".$column['name']." AS lt".$i."_".$column['name'];
+        } else {
           $query .= " ".preg_replace("/#parent#/", "lt".$this->tables[$i]['parent'], preg_replace("/#this#/", "lt".$i, $column['func']))." AS lt".$i."_".$column['name'];
-    }
+        }
         $j++;
       }
-  }
-  // table list
-  $query .= " FROM ";
-  for($i = 0; $i < count($this->tables); $i++){
-    if ($i == 0) {
-        $query .= $this->tables[$i]['tablename']." lt".$i;
-    } else {
-        if ($this->tables[$i]['join'] != null) {
-          $query .= " LEFT OUTER JOIN ";
-           } else {
-          $query .= " INNER JOIN ";
-        }
-        $query .= $this->tables[$i]['tablename']." lt".$i." ON (".$this->tables[$i]['tableKey']." = ".$this->tables[$i]['parentKey'];
-        if($this->tables[$i]['where'] != null) {
-          $query .= " AND ".preg_replace("/#this#/", "lt".$i, $this->tables[$i]['where']);
-       }
-        $query .= ") ";
     }
-  }
-  // where list
-  $previous=false;
-  if($this->tables[0]['where'] != null) {
-    $query .= " WHERE ".preg_replace("/#this#/", "lt0", $this->tables[0]['where']);
-    $previous = true;
-  }
-  // when in download mode set a where clause
-  // only down load records which are complete or verified, and have not been downloaded before.
-  // for the final download, only download thhose records which have gone through an initial download, and hence assumed been error checked.
-  if($this->download != 'OFF'){
+    // table list
+    $query .= " FROM ";
     for($i = 0; $i < count($this->tables); $i++){
-      if ($this->tables[$i]['tablename'] == "occurrences") {
-        $query .= ($previous ? " AND " : " WHERE ").
-          " (lt".$i.".record_status in ('C'::bpchar, 'V'::bpchar) OR '".$this->download."'::text = 'OFF'::text) ".
-            " AND (lt".$i.".downloaded_flag in ('N'::bpchar, 'I'::bpchar) OR '".$this->download."'::text != 'INITIAL'::text) ".
-            " AND (lt".$i.".downloaded_flag = 'I'::bpchar OR ('".$this->download."'::text != 'CONFIRM'::text AND '".$this->download."'::text != 'FINAL'::text))";
-        break;
+      if ($i == 0) {
+          $query .= $this->tables[$i]['tablename']." lt".$i;
+      } else {
+          if ($this->tables[$i]['join'] != null) {
+            $query .= " LEFT OUTER JOIN ";
+             } else {
+            $query .= " INNER JOIN ";
+          }
+          $query .= $this->tables[$i]['tablename']." lt".$i." ON (".$this->tables[$i]['tableKey']." = ".$this->tables[$i]['parentKey'];
+          if($this->tables[$i]['where'] != null) {
+            $query .= " AND ".preg_replace("/#this#/", "lt".$i, $this->tables[$i]['where']);
+         }
+          $query .= ") ";
       }
     }
-  }
-  return $query;
+    // where list
+    $previous=false;
+    if($this->tables[0]['where'] != null) {
+      $query .= " WHERE ".preg_replace("/#this#/", "lt0", $this->tables[0]['where']);
+      $previous = true;
+    }
+    // when in download mode set a where clause
+    // only down load records which are complete or verified, and have not been downloaded before.
+    // for the final download, only download thhose records which have gone through an initial download, and hence assumed been error checked.
+    if($this->download != 'OFF'){
+      for($i = 0; $i < count($this->tables); $i++){
+        if ($this->tables[$i]['tablename'] == "occurrences") {
+          $query .= ($previous ? " AND " : " WHERE ").
+            " (lt".$i.".record_status in ('C'::bpchar, 'V'::bpchar) OR '".$this->download."'::text = 'OFF'::text) ".
+              " AND (lt".$i.".downloaded_flag in ('N'::bpchar, 'I'::bpchar) OR '".$this->download."'::text != 'INITIAL'::text) ".
+              " AND (lt".$i.".downloaded_flag = 'I'::bpchar OR ('".$this->download."'::text != 'CONFIRM'::text AND '".$this->download."'::text != 'FINAL'::text))";
+          break;
+        }
+      }
+    }
+    return $query;
   }
 
   public function getCountQuery()
@@ -536,7 +539,7 @@ class XMLReportReader_Core implements ReportReader
           'description' => $this->getDescription(),
           'row_class' => $this->getRowClass(),
           'columns' => $this->columns,
-          'parameters' =>  array_diff_key($this->params, $this->defaultParamValues),
+          'parameters' => array_diff_key($this->params, $this->defaultParamValues),
           'query' => $this->query,
           'order_by' => $this->order_by
         );
@@ -551,7 +554,7 @@ class XMLReportReader_Core implements ReportReader
           'description' => $this->getDescription(),
           'row_class' => $this->getRowClass(),
           'columns' => $this->columns,
-          'parameters' =>  array_diff_key($this->params, $this->defaultParamValues)
+          'parameters' => array_diff_key($this->params, $this->defaultParamValues)
         );
     }
   }
@@ -601,20 +604,22 @@ class XMLReportReader_Core implements ReportReader
       at.id, at.caption, at.data_type, at.termlist_id, at.multi_value ";
     $j=0;
     // table list
-    $query .= " FROM ";
-    for($i = 0; $i <= $attributes->parentTableIndex; $i++){
+    $from = ""; // this is built from back to front, to scan up the tree of tables that are only relevent to this attribute request.
+    $i = $attributes->parentTableIndex;
+    while(true){
       if ($i == 0) {
-          $query .= $this->tables[$i]['tablename']." lt".$i;
-      } else { // making assumption to reduce the size of the query that all left outer join tables can be excluded, but make sure parent is included!
-          if ($this->tables[$i]['join'] == null || $i == $attributes->parentTableIndex) {
-            $query .= " INNER JOIN ".$this->tables[$i]['tablename']." lt".$i." ON (".$this->tables[$i]['tableKey']." = ".$this->tables[$i]['parentKey'];
-              if($this->tables[$i]['where'] != null) {
-                $query .= " AND ".preg_replace("/#this#/", "lt".$i, $this->tables[$i]['where']);
-             }
-              $query .= ") ";
-          }
+          $from = $this->tables[$i]['tablename']." lt".$i.$from;
+          break;
+      } else {
+          $from = " INNER JOIN ".$this->tables[$i]['tablename']." lt".$i.
+                  " ON (".$this->tables[$i]['tableKey']." = ".$this->tables[$i]['parentKey'].
+                  ($this->tables[$i]['where'] != null ? 
+                      " AND ".preg_replace("/#this#/", "lt".$i, $this->tables[$i]['where']) :
+                      "").") ".$from;
+          $i = $this->tables[$i]['parent']; // next process the parent for this table, until we've scanned upto zero.
       }
     }
+    $query .= " FROM ".$from;
     $query .= " INNER JOIN ".$parentSingular."_attribute_values vt ON (vt.".$parentSingular."_id = "." lt".$attributes->parentTableIndex.".id and vt.deleted = FALSE) ";
     $query .= " INNER JOIN ".$parentSingular."_attributes at ON (vt.".$parentSingular."_attribute_id = at.id and at.deleted = FALSE) ";
     $query .= " INNER JOIN ".$parentSingular."_attributes_websites rt ON (rt.".$parentSingular."_attribute_id = at.id and rt.deleted = FALSE and (rt.restrict_to_survey_id = #".
@@ -713,7 +718,156 @@ class XMLReportReader_Core implements ReportReader
           }
         }
       }
+
     }
+  }
+  
+  /**
+   * If a report declares that it uses the standard set of parameters, then load them.
+   */
+  private function loadStandardParams($sharing) {
+    $this->params = array_merge(array(
+      'idlist' => array('datatype'=>'idlist', 'default'=>'', 'display'=>'List of IDs', 'emptyvalue'=>'', 'fieldname'=>'o.id', 'alias'=>'occurrence_id',
+          'description'=>'Comma separated list of occurrence IDs to filter to'
+      ),
+      'searchArea' => array('datatype'=>'geometry', 'default'=>'', 'display'=>'Boundary',
+          'description'=>'Boundary to search within',
+          'wheres' => array(
+            array('value'=>'', 'operator'=>'', 'sql'=>"st_intersects(o.public_geom, st_geomfromtext('#searchArea#',900913))")
+          )
+      ),
+      'location_name' => array('datatype'=>'text', 'default'=>'', 'display'=>'Location name', 
+          'description'=>'Name of location to filter to (contains search)',
+          'wheres' => array(
+            array('value'=>'', 'operator'=>'', 'sql'=>"o.location_name ilike '%#location:name#%'")
+          )
+      ),      
+      'location_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>'Location ID', 
+          'description'=>'ID of location to filter to',
+          'joins' => array(
+            array('value'=>'', 'operator'=>'', 'sql'=>"JOIN locations lfilt on lfilt.id=#location_id# and lfilt.deleted=false " .
+                "and st_intersects(coalesce(lfilt.boundary_geom, lfilt.centroid_geom), #sample_geom_field#)")
+          )
+      ),
+      'indexed_location_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>'Location ID (indexed)', 
+          'description'=>'ID of location to filter to, for a location that is indexed using the spatial index builder',
+          'joins' => array(
+            array('value'=>'', 'operator'=>'', 'sql'=>"JOIN index_locations_samples ils on ils.sample_id=o.sample_id and ils.location_id=#indexed_location_id#")
+          )
+      ),
+      'date_from' => array('datatype'=>'date', 'default'=>'', 'display'=>'Date from',
+          'description'=>'Date of first record to include in the output',
+          'wheres' => array(
+            array('value'=>'', 'operator'=>'', 'sql'=>"('#date_from#'='Click here' OR o.date_end >= CAST(COALESCE('#date_from#','1500-01-01') as date))")
+          )
+      ),
+      'date_to' => array('datatype'=>'date', 'default'=>'', 'display'=>'Date to', 
+          'description'=>'Date of last record to include in the output',
+          'wheres' => array(
+            array('value'=>'', 'operator'=>'', 'sql'=>"('#date_to#'='Click here' OR o.date_start <= CAST(COALESCE('#date_to#','1500-01-01') as date))")
+          )
+      ),
+      'date_age' => array('datatype'=>'text', 'default'=>'', 'display'=>'Date from time ago',
+          'description'=>'E.g. enter "1 week" or "3 days" to define the how old records can be before they are dropped from the report.',
+          'wheres' => array(
+            array('value'=>'', 'operator'=>'', 'sql'=>"o.date_start>now()-'#date_age#'::interval")
+          )
+      ),
+      'quality' => array('datatype'=>'lookup', 'default'=>'', 'display'=>'Quality', 
+          'description'=>'Minimum quality of records to include', 
+          'lookup_values'=>'=V:Verified records only,C:Recorder was certain,L:Recorder thought the record was at least likely,' .
+              '!R:Everything except rejected,all:Everything including rejected,D:Queried records only,R:Rejected records only',
+          'wheres' => array(
+            array('value'=>'V', 'operator'=>'equal', 'sql'=>"o.record_status='V'"),
+            array('value'=>'C', 'operator'=>'equal', 'sql'=>"o.record_status<>'R' and o.certainty='C'"),
+            array('value'=>'L', 'operator'=>'equal', 'sql'=>"o.record_status<>'R' and o.certainty in ('C','L')"),
+            array('value'=>'!R', 'operator'=>'equal', 'sql'=>"o.record_status<>'R'"),
+            array('value'=>'D', 'operator'=>'equal', 'sql'=>"o.record_status='D'"),
+            array('value'=>'R', 'operator'=>'equal', 'sql'=>"o.record_status='R'"),
+            // The all filter does not need any SQL
+          )
+      ),
+      'autochecks' => array('datatype'=>'lookup', 'default'=>'', 'display'=>'Automated checks', 
+          'description'=>'Filter to only include records that have passed or failed automated checks', 
+          'lookup_values'=>'N:Not filtered,F:Include only records that fail checks,P:Include only records which pass checks',
+          'wheres' => array(
+            array('value'=>'F', 'operator'=>'equal', 'sql'=>"o.data_cleaner_info is not null and o.data_cleaner_info<>'pass'"),
+            array('value'=>'P', 'operator'=>'equal', 'sql'=>"o.data_cleaner_info = 'pass'")
+          )
+      ),
+      'has_photos' => array('datatype'=>'boolean', 'default'=>'', 'display'=>'Photo records only',
+          'description'=>'Only include records which have photos?',
+          'wheres' => array(
+            array('value'=>'', 'operator'=>'', 'sql'=>"o.images is not null")
+          )
+      ),
+      'user_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>"Current user's warehouse ID"),
+      'my_records' => array('datatype'=>'boolean', 'default'=>'', 'display'=>"Only include my records",
+          'wheres' => array(
+            array('value'=>'1', 'operator'=>'equal', 'sql'=>"o.created_by_id=#user_id#")
+          )
+      ),
+      'website_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Website IDs", 
+          'description'=>'Comma separated list of IDs',
+          'wheres' => array(
+             array('value'=>'', 'operator'=>'', 'sql'=>"o.website_id #website_list_op# (#website_list#)")
+          )
+      ),
+      'website_list_op' => array('datatype'=>'lookup', 'default'=>'in', 'display'=>'Website IDs mode', 
+          'description'=>'Include or exclude the list of websites', 'lookup_values'=>'in:Include,not in:Exclude'
+      ),
+      'survey_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Survey IDs", 
+          'description'=>'Comma separated list of IDs',
+          'wheres' => array(
+             array('value'=>'', 'operator'=>'', 'sql'=>"o.survey_id #survey_list_op# (#survey_list#)")
+          )
+      ),
+      'survey_list_op' => array('datatype'=>'lookup', 'default'=>'in', 'display'=>'Survey IDs mode', 
+          'description'=>'Include or exclude the list of surveys', 'lookup_values'=>'in:Include,not in:Exclude'
+      ),
+      'taxon_group_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Taxon Group IDs", 
+          'description'=>'Comma separated list of IDs',
+          'wheres' => array(
+             array('value'=>'', 'operator'=>'', 'sql'=>"o.taxon_group_id in (#taxon_group_list#)")
+          )
+      ),
+      'taxa_taxon_list_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Taxa taxon list IDs", 
+          'description'=>'Comma separated list of preferred IDs',
+          'joins' => array(
+             array('value'=>'', 'operator'=>'', 'sql'=>"join (with recursive q as ( ".
+                "select id ".
+                "from cache_taxa_taxon_lists t ".
+                "where id in (#taxa_taxon_list_list#) ".
+                "union all ".
+                "select tc.id ".
+                "from q ".
+                "join cache_taxa_taxon_lists tc ".
+                "on tc.parent_id = q.id ".
+                ") select id from q) t on t.id=o.taxa_taxon_list_id")
+          )
+      )
+    ), $this->params);
+    $this->defaultParamValues = array_merge(array(
+        'idlist'=>'',
+        'searchArea'=>'',
+        'location_name'=>'',
+        'location_id'=>'',
+        'indexed_location_id'=>'',
+        'date_from'=>'',
+        'date_to'=>'',
+        'date_age'=>'',
+        'quality'=>'',
+        'autochecks'=>'',
+        'has_photos'=>'',
+        'user_id'=>'',
+        'my_records'=>'',
+        'website_list'=>'',
+        'website_list_op'=>'in',
+        'survey_list'=>'',
+        'survey_list_op'=>'in',
+        'taxon_group_list'=>'',
+        'taxa_taxon_list_list'=>'',
+    ), $this->defaultParamValues);
   }
 
   /**
