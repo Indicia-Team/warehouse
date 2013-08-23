@@ -321,6 +321,7 @@ class report_helper extends helper_base {
   * in a form on the page.
   */
   public static function report_grid($options) {
+    global $indicia_templates;
     self::add_resource('fancybox');
     $sortAndPageUrlParams = self::get_report_grid_sort_page_url_params($options);
     $options = self::get_report_grid_options($options);
@@ -338,6 +339,7 @@ class report_helper extends helper_base {
     self::report_grid_get_columns($response, $options);
     $pageUrl = self::report_grid_get_reload_url($sortAndPageUrlParams);
     $thClass = $options['thClass'];
+    $r .= $indicia_templates['loading_overlay'];
     $r .= "\n<table class=\"".$options['class']."\">";
     if ($options['headers']!==false) {
       $r .= "\n<thead class=\"$thClass\"><tr>\n";
@@ -366,8 +368,9 @@ class report_helper extends helper_base {
             // reverse sort order if already sorted by this field in ascending dir
             if ($sortAndPageUrlParams['orderby']['value']==$field['orderby'] && $sortAndPageUrlParams['sortdir']['value']!='DESC')
               $sortLink .= '&'.$sortAndPageUrlParams['sortdir']['name']."=DESC";
+            $sortLink=htmlspecialchars($sortlink);
             // store the field in a hidden input field
-            $captionLink = "<input type=\"hidden\" value=\"".$field['orderby']."\"><a href=\"$sortLink\" rel=\"nofollow\" title=\"Sort by $caption\">$caption</a>";
+            $captionLink = "<input type=\"hidden\" value=\"".$field['orderby']."\"/><a href=\"$sortLink\" rel=\"nofollow\" title=\"Sort by $caption\">$caption</a>";
             // set a style for the sort order
             $orderStyle = ($sortAndPageUrlParams['orderby']['value']==$field['orderby']) ? ' '.$sortdirval : '';
             $orderStyle .= ' sortable';
@@ -389,6 +392,7 @@ class report_helper extends helper_base {
               default: $title=lang::get("$caption search. Either enter an exact number, use >, >=, <, or <= before the number to filter for ".
                       "$caption more or less than your search value, or enter a range such as 1000-2000.");
             }
+            $title = lang::get('Type here to filter.').' '.$title;
             //The filter's input id includes the grid id ($options['id']) in its id as there maybe more than one grid and we need to make the id unique.
             $filterRow .= "<th><input title=\"$title\" type=\"text\" class=\"col-filter\" id=\"col-filter-".$field['fieldname']."-".$options['id']."\"/></th>";
             $wantFilterRow = true;
@@ -551,6 +555,8 @@ jQuery('#updateform-".$updateformID."').ajaxForm({
       }
       if ($rowInProgress)
         $r .= '</tr>';
+    } else {
+      $r .= '<tr><td></td></tr>';
     }
     $r .= "</tbody></table>\n";
     if($haveUpdates){
@@ -1303,6 +1309,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * Read authorisation tokens.</li>
   * <li><b>dataSource</b><br/>
   * Name of the report file or table/view.</li>
+  * <li><b>dataSourceLoRes</b><br/>
+  * Name of the report file or table/view to use when zoomed out. For example this might aggregate records to 1km or 10km grid squares.</li>
   * <li><b>autoParamsForm</b>
   * Defaults to true. If true, then if a report requires parameters, a parameters input form will be auto-generated
   * at the top of the grid. If set to false, then it is possible to manually build a parameters entry HTML form if you
@@ -1428,7 +1436,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       'displaySymbol'=>'vector',
       'ajax'=>false,
       'extraParams'=>'',
-      'featureDoubleOutlineColour'=>''
+      'featureDoubleOutlineColour'=>'',
+      'dataSourceLoRes'=>'',
     ), $options);
     $options = self::get_report_grid_options($options);
     // keep track of the columns in the report output which we need to draw the layer
@@ -1592,16 +1601,31 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         }
         $defStyleFns = ", {context: {\n    $defStyleFns\n  }}";
         $selStyleFns = ", {context: {\n    $selStyleFns\n  }}";
-        if ($options['ajax'])
+        if ($options['ajax']) {
           self::$javascript .= "mapInitialisationHooks.push(function(div) {\n".
             "  if (typeof indiciaData.reports!==\"undefined\") {\n" .
             "    $.each(indiciaData.reports.".$options['reportGroup'].", function(idx, grid) {\n" .
-            "      grid.mapRecords('".$options['dataSource']."');\n" .
+            "      grid.mapRecords('".$options['dataSource']."', '".$options['dataSourceLoRes']."');\n" .
             "      return false;\n" . // only need the first grid to draw the map. 
             "    });\n" .
-            "  }\n" .
-            "});\n";
-        else {
+            "  }\n";
+          if ($options['dataSourceLoRes']) {
+            // hook up a zoom and pan handler so we can switch reports
+            self::$javascript .= "  div.map.events.on({'moveend': function(){\n".
+              "    if (!indiciaData.disableMapDataLoading) {\n" .
+              "      $.each(indiciaData.reports.".$options['reportGroup'].", function(idx, grid) {\n" .
+              "        indiciaData.selectedRows=[];\n".
+              "        $.each($(grid).find('tr.selected'), function(idx, tr) {\n".
+              "          indiciaData.selectedRows.push($(tr).attr('id').replace(/^row/, ''));\n".
+              "        });\n".
+              "        grid.mapRecords('".$options['dataSource']."', '".$options['dataSourceLoRes']."', true);\n" .
+              "        return false;\n" . // only need the first grid to draw the map. 
+              "      });\n".
+		          "    }\n".
+              "  }});\n";
+          }
+          self::$javascript .= "});\n";
+        } else {
           $geoms = array();
           foreach ($records as $record) { 
             if (!empty($record[$wktCol])) {
@@ -1792,8 +1816,8 @@ mapSettingsHooks.push(function(opts) { $setLocationJs
           self::_cacheResponse($cacheFile, $response, $cacheOpts);
         }
         return $decoded;
+      }
     }
-  }
   }
 
   /**
@@ -2872,10 +2896,10 @@ update_controls();
     					(isset($options['includeSummaryData']) && $options['includeSummaryData'] ? "summary" : "estimates")).'"/>';
     	if(isset($options['simultaneousOutput']) && $options['simultaneousOutput']) {
     		// for combined format its fairly obvious what it is, so no need to add text.
-    		$r .= '<input type="hidden" id="outputFormat" name="outputFormat" value="both">';
+    		$r .= '<input type="hidden" id="outputFormat" name="outputFormat" value="both"/>';
     	} else { // for single format its fairly obvious what it is, so no need to add text.
     		foreach($format as $type => $details){
-    			$r .= '<input type="hidden" id="outputFormat" name="outputFormat" value="'.$type.'">';
+    			$r .= '<input type="hidden" id="outputFormat" name="outputFormat" value="'.$type.'"/>';
     		}
     	}
     	// don't need to set URI as only 1 option.
@@ -2942,10 +2966,10 @@ update_controls();
 jQuery('[name=outputFormat]').change();\n";
     	} else if(isset($options['simultaneousOutput']) && $options['simultaneousOutput']) {
     		// for combined format its fairly obvious what it is, so no need to add text.
-            $r .= '<input type="hidden" id="outputFormat" name="outputFormat" value="both">';
+            $r .= '<input type="hidden" id="outputFormat" name="outputFormat" value="both"/>';
     	} else { // for single format its fairly obvious what it is, so no need to add text.
     		foreach($format as $type => $details){
-    			$r .= '<input type="hidden" id="outputFormat" name="outputFormat" value="'.$type.'">';
+    			$r .= '<input type="hidden" id="outputFormat" name="outputFormat" value="'.$type.'"/>';
     		}
     	}
     }

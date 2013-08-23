@@ -702,9 +702,7 @@ class import_helper extends helper_base {
   * @return string HTMl string 
   */
   private static function items_to_draw_once_per_import_column($r, $column, $itWasSaved, $savedFieldMappings, $multiMatch) {
-    if ($itWasSaved[$column] == 1 || isset($savedFieldMappings['RememberAll'])) {
-      $checked[$column] = 'checked';
-    }
+    $checked[$column] = ($itWasSaved[$column] == 1 || isset($savedFieldMappings['RememberAll'])) ? 'checked' : '';
     $optionID = str_replace(" ", "", $column).'Normal';
     $r = "<option value=\"&lt;Not imported&gt;\">&lt;".lang::get('Not imported').'&gt;</option>'.$r.'</optgroup>';
     if (self::$rememberingMappings) 
