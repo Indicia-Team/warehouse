@@ -80,11 +80,16 @@
         $('#hidden-wkt').val('');
         $('#orig-wkt').val('');
         if (typeof indiciaData.reportlayer!=="undefined") {
-          indiciaData.reportlayer.removeAllFeatures();
           $.each(indiciaData.reports, function(i, reportGroup) {
             $.each(reportGroup, function(j, grid) {
-              grid.mapRecords(grid[0].settings.dataSource);
+              grid[0].settings.extraParams.idlist='';              
               grid[0].settings.offset=0;
+              if (grid[0].settings.extraParams.searchArea) {
+                // remap only if we are removing a search polygon
+                grid[0].settings.extraParams.searchArea='';
+                indiciaData.reportlayer.removeAllFeatures();
+                grid.mapRecords(grid[0].settings.mapDataSource, grid[0].settings.mapDataSourceLoRes);
+              }
               grid.reload(true);
             });
           });

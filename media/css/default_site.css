@@ -703,17 +703,24 @@ ul.ind-sub-list {
 
 ul.ind-sub-list li {
   display: inline-block;
-  width: 165px;
   vertical-align: top;
-  margin-left: 0;
-  padding-left: 0;
+  margin-right: 0.5em;
+  padding: 0 0.25em;
   list-style-type: none;
+  background: #e7e7e7;
+}
+ul.ind-sub-list li:last-child {
+  margin-right: 0;
+}
+ul.ind-sub-list li span {
+  vertical-align: middle;
 }
 
 ul.ind-sub-list .ind-delete-icon, ul.ind-sub-list .ind-add-icon, span.ind-cancel-icon {
   background-repeat: no-repeat;
   display: inline-block;
   width: 16px;
+  height: 16px;
   margin: 0 0.25em 0 0;
   cursor: pointer;
   list-style-type: none;
@@ -838,4 +845,11 @@ div.note-fail, p.note-fail {
   .helpText {
     margin-left: 0;
   }
+}
+
+.loading-overlay {
+  display: none;
+  position:absolute;
+  opacity: 0.9;
+  background: url(../images/ajax-loader2.gif) no-repeat center center #fff;
 }

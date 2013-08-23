@@ -298,6 +298,10 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
     };
     if (typeof indiciaData['taxonExtraParams-'+gridId]!=="undefined") { 
       $.extend(extraParams, indiciaData['taxonExtraParams-'+gridId]);
+      // a custom query on the list id overrides the standard filter..
+      if (typeof extraParams.query!=="undefined" && extraParams.query.indexOf('taxon_list_id')!==-1) {
+        delete extraParams.taxon_list_id;
+      }
     }
     $(newRow).find('input,select').keydown(keyHandler);
     var autocompleteSettings = getAutocompleteSettings(extraParams);
