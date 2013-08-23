@@ -100,5 +100,49 @@ class postgreSQL {
       and ocprev.created_by_id<>oc.created_by_id and ocprev.created_by_id<>o.created_by_id
       ")->result();
   }  
+  
+  /** 
+   * Function to be called on postSubmit of a sample, to make sure that any changed occurrences are linked to their map square entries properly.
+   */
+  public static function insertMapSquaresForSample($id, $size, $db=null) {
+    if (!$db)
+      $db = new Database();
+    $db->query(
+    "INSERT INTO map_squares (geom, x, y, size)
+      SELECT DISTINCT
+        reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, $size), s.entered_sref_system),
+        round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, $size), s.entered_sref_system)))),
+        round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, $size), s.entered_sref_system)))),
+        GREATEST(o.sensitivity_precision, $size)
+      FROM samples s
+      JOIN occurrences o ON o.sample_id=s.id
+      WHERE NOT EXISTS(
+        SELECT id FROM map_squares 
+          WHERE x=round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, $size), s.entered_sref_system))))
+          AND y=round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, $size), s.entered_sref_system))))
+          AND size=GREATEST(o.sensitivity_precision, $size)
+      ) AND s.id=$id"
+    );
+    $db->query(
+    "UPDATE cache_occurrences co
+      SET map_sq_1km_id=msq.id
+      FROM map_squares msq, samples s, occurrences o
+      WHERE s.id=co.sample_id AND o.id=co.id
+      AND msq.x=round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, greatest(o.sensitivity_precision, 1000), s.entered_sref_system))))
+      AND msq.y=round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, greatest(o.sensitivity_precision, 1000), s.entered_sref_system))))
+      AND msq.size=greatest(o.sensitivity_precision, 1000)
+      AND s.id=$id"
+    );
+    $db->query(
+    "UPDATE cache_occurrences co
+      SET map_sq_10km_id=msq.id
+      FROM map_squares msq, samples s, occurrences o
+      WHERE s.id=co.sample_id AND o.id=co.id
+      AND msq.x=round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, greatest(o.sensitivity_precision, 10000), s.entered_sref_system))))
+      AND msq.y=round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, greatest(o.sensitivity_precision, 10000), s.entered_sref_system))))
+      AND msq.size=greatest(o.sensitivity_precision, 10000)
+      AND s.id=$id"
+    );
+  }
 }
 ?>

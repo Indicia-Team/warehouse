@@ -1,8 +1,8 @@
-
 CREATE OR REPLACE FUNCTION reduce_precision(geom_in geometry, confidential boolean, sensitivity_precision integer, sref_system character varying)
   RETURNS geometry AS
 $BODY$
 DECLARE geom geometry;
+DECLARE geomltln geometry;
 DECLARE r geometry;
 DECLARE precisionM integer;
 DECLARE x float;
@@ -23,15 +23,22 @@ BEGIN
     ELSE
       SELECT INTO sref_metadata srid, treat_srid_as_x_y_metres FROM spatial_systems WHERE code=lower(sref_system);
       -- look for some preferred grids to see if we are in range. 
-      geom = st_transform(geom_in, 27700);
-      IF st_x(st_centroid(geom)) BETWEEN 0 AND 700000 AND st_y(st_centroid(geom)) BETWEEN 0 AND 14000000 THEN
-        current_srid = 27700;
-      ELSEIF COALESCE(sref_metadata.treat_srid_as_x_y_metres, false) THEN
-        geom = st_transform(geom_in, sref_metadata.srid);
-        current_srid = sref_metadata.srid;
-      ELSE
-        current_srid = 900913;
-        geom=geom_in;
+      geom = st_transform(st_centroid(geom_in), 4326);
+      current_srid=null;
+      IF st_x(geom) BETWEEN -10 AND 5 AND st_y(geom) BETWEEN 48 AND 65 THEN -- rough check for OSGB
+        geom = st_transform(st_centroid(geom_in), 27700);
+        IF st_x(geom) BETWEEN 0 AND 700000 AND st_y(geom) BETWEEN 0 AND 14000000 THEN -- exact check for OSGB
+          current_srid = 27700;
+        END IF;
+      END IF;
+      IF current_srid IS NULL THEN
+        IF COALESCE(sref_metadata.treat_srid_as_x_y_metres, false) THEN
+          geom = st_transform(geom_in, sref_metadata.srid);
+          current_srid = sref_metadata.srid;
+        ELSE
+          current_srid = 900913;
+          geom=geom_in;
+        END IF;
       END IF;
       -- need to reduce this to a square on the grid
       x = floor(st_xmin(geom)::NUMERIC / precisionM) * precisionM;
