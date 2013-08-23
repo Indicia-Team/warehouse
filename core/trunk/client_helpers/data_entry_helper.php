@@ -276,10 +276,6 @@ class data_entry_helper extends helper_base {
   * Optional. CSS class names to add to the control.</li>
   * <li><b>numValues</b><br/>
   * Optional. Number of returned values in the drop down list. Defaults to 10.</li>
-  * <li><b>hide</b><br/>
-  * Optional. Mixed, controls how quickly the add bar is hidden. May be 'slow', 'normal', 
-  * 'fast', a number (in milliseconds) or 'none'. The latter indicates the add bar 
-  * should not be hideable. Defaults to 'normal'.</li>
   * <li><b>addOnSelect TODO</b><br/>
   * Optional. Boolean, if true, matched items from the autocomplete control are automatically 
   * added to the list when selected. Defaults to false.</li>
@@ -373,11 +369,9 @@ class data_entry_helper extends helper_base {
       // Escape the ids for jQuery selectors
       'escaped_input_id' => self::jq_esc($options['inputId']),
       'escaped_id' => self::jq_esc($options['id']),
-      'escaped_captionField' => self::jq_esc($options['captionField']),
-      'hide' => 'normal',
+      'escaped_captionField' => self::jq_esc($options['captionField'])
     ), $options);
-    if (!is_numeric($options['hide'])) $options['hide'] = '\''.$options['hide'].'\'';
-
+    
     // set up javascript
     $options['subListItem'] = str_replace(array('{caption}', '{value}', '{fieldname}'),  
       array('\'+caption+\'', '\'+value+\'', $options['fieldname']), 
@@ -1328,11 +1322,19 @@ class data_entry_helper extends helper_base {
   * save-site-flag in the form submission data and if true, it must first save the site information
   * to the locations table database then attach the location_id returned to the submitted sample data.
   * </li>
+  * <li><b>fetchLocationAttributesIntoSample</b>
+  * Defaults to true. Defines that when a location is picked, any sample attributes marked as for_location=true
+  * will be populated with their previous values from the same site for this user. For example you might capture
+  * a habitat sample attribute and expect it to default to the previously entered value when a repeat visit to a 
+  * site occurs.
+  * </li>
   * </ul>
   *
   * @return string HTML to insert into the page for the location select control.
   */
   public static function location_autocomplete($options) {
+    if (empty($options['id']))
+      $options['id'] = 'imp-location';
     $options = self::check_options($options);
     $caption = isset(self::$entity_to_load['sample:location']) ? self::$entity_to_load['sample:location'] : null;
     if (!$caption && !empty($options['useLocationName']) && $options['useLocationName'])
@@ -1343,10 +1345,10 @@ class data_entry_helper extends helper_base {
         'valueField'=>'id',
         'captionField'=>'name',
         'defaultCaption'=>$caption,
-        'id'=>'imp-location',
         'useLocationName'=>false,
         'allowCreate'=>false,
-        'searchUpdatesSref'=>false
+        'searchUpdatesSref'=>false,
+        'fetchLocationAttributesIntoSample'=>true
     ), $options);
     // Disable warnings for no matches if the user is allowed to input a vague unmatched location name.
     $options['warnIfNoMatch']=!$options['useLocationName'];
@@ -1367,7 +1369,7 @@ class data_entry_helper extends helper_base {
         self::$javascript .= "indiciaData.searchUpdatesSref=true;\n";
     }
     // If using Easy Login, then this enables auto-population of the site related fields.
-    if (function_exists('hostsite_get_user_field') && $createdById=hostsite_get_user_field('indicia_user_id')) {
+    if (function_exists('hostsite_get_user_field') && $createdById=hostsite_get_user_field('indicia_user_id') && $options['fetchLocationAttributesIntoSample']) {
       $nonce=$options['extraParams']['nonce'];
       $authToken=$options['extraParams']['auth_token'];
       $resportingServerURL = data_entry_helper::$base_url.'index.php/services/report/requestReport?report=library/sample_attribute_values/get_latest_values_for_site_and_user.xml&callback=?';
