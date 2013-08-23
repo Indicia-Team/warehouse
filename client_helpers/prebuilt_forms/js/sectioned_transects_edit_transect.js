@@ -28,16 +28,18 @@ clearSection = function() {
       } else {
         $(ctrl).attr('checked', false);
       }
+    } else if ($(ctrl).hasClass('hierarchy-select')) {
+      $(ctrl).val('');
     }
   });
-}
+};
 
 loadSectionDetails = function(section) {
   clearSection();
   if (typeof indiciaData.sections[section]!=="undefined") {
     $('#section-location-id').val(indiciaData.sections[section].id);
     // if the systems on the section and main location do not match, copy the the system and sref from the main site.
-    if(indiciaData.sections[section].system != $('#imp-sref-system').val()) {
+    if(indiciaData.sections[section].system !== $('#imp-sref-system').val()) {
         $('#section-location-sref').val($('#imp-sref').val());
         $('#section-location-system,#section-location-system-select').val($('#imp-sref-system').val());
     } else {
@@ -65,13 +67,25 @@ loadSectionDetails = function(section) {
               // check the correct radio
               while ($('#section-form #locAttr\\:'+attr.location_attribute_id+'\\:'+radioidx).length>0 && 
                   $('#section-form #locAttr\\:'+attr.location_attribute_id+'\\:'+radioidx).val()!==attr.raw_value) {
-                radioidx ++;
+                radioidx++;
               }
               if ($('#section-form #locAttr\\:'+attr.location_attribute_id+'\\:'+radioidx).length>0 && 
                   $('#section-form #locAttr\\:'+attr.location_attribute_id+'\\:'+radioidx).val()===attr.raw_value) {
                 $('#section-form #locAttr\\:'+attr.location_attribute_id+'\\:'+radioidx).attr('checked', true);
               }
-            } else {
+            } else if ($('#section-form #fld-locAttr\\:'+attr.location_attribute_id).length>0) {
+              // a hierarchy select outputs a fld control, which needs a special case
+              $('#section-form #fld-locAttr\\:'+attr.location_attribute_id).val(attr.raw_value);              
+              $('#section-form #fld-locAttr\\:'+attr.location_attribute_id).attr('name',attrname);
+              // check the option is already in the drop down.
+              if ($('#section-form #locAttr\\:'+attr.location_attribute_id + " option[value='"+attr.raw_value+"']").length===0) {
+                // no - we'll just put it in at the top level
+                // @todo - should really now fetch the top level in the hierarchy then select that.
+                $('#section-form #locAttr\\:'+attr.location_attribute_id).append('<option value="' + 
+                    attr.raw_value + '">' + attr.value + '</option>');
+              }
+              $('#section-form #locAttr\\:'+attr.location_attribute_id).val(attr.raw_value);
+            } else {              
               $('#section-form #locAttr\\:'+attr.location_attribute_id).val(attr.raw_value);              
               $('#section-form #locAttr\\:'+attr.location_attribute_id).attr('name',attrname);
             }
@@ -79,11 +93,11 @@ loadSectionDetails = function(section) {
         }
     );
   }
-}
+};
 
 confirmSelectSection = function(section, doFeature, withCancel) {
   var buttons =  { 
-	  "Yes": function() {
+    "Yes": function() {
           dialog.dialog('close');
           $('#section-form').submit(); // this is synchronous
           selectSection(section, doFeature);
@@ -91,23 +105,28 @@ confirmSelectSection = function(section, doFeature, withCancel) {
         },
       "No":  function() {
           dialog.dialog('close');
-          selectSection(section, doFeature)
+          selectSection(section, doFeature);
         }
      };
-  if(withCancel)
+  if(withCancel) {
     buttons.Cancel = function() { dialog.dialog('close'); };
+  }
 
-  if(sectionDetailsChanged == true) {
+  if(sectionDetailsChanged === true) {
     var dialog = $('<p>'+indiciaData.sectionChangeConfirm+'</p>').dialog({ title: "Save Data?", buttons: buttons });
-  } else selectSection(section, doFeature);
-}
+  } else {
+    selectSection(section, doFeature);
+  }
+};
 
 selectSection = function(section, doFeature) {
   sectionDetailsChanged = false;
   // if the modify control is active, save any changes, unselect any currently selected feature
   // do this before changing the selection so that the previous selection is tidied up properly.
   if (typeof indiciaData.mapdiv !== "undefined") {
-    if(typeof indiciaData.modifyFeature !== "undefined") indiciaData.modifyFeature.deactivate();
+    if(typeof indiciaData.modifyFeature !== "undefined") {
+      indiciaData.modifyFeature.deactivate();
+    }
     if (doFeature && typeof indiciaData.selectFeature !== "undefined") {
       indiciaData.selectFeature.unselectAll();
     }
@@ -134,7 +153,7 @@ selectSection = function(section, doFeature) {
     loadSectionDetails(section);
     indiciaData.currentSection=section;
   }
-}
+};
 
 asyncPost = function(url, data) {
   $.ajax({
@@ -150,7 +169,7 @@ asyncPost = function(url, data) {
     // cannot be synchronous otherwise we navigate away from the page too early
     async: false
   });
-}
+};
 
 deleteWalks = function(walkIDs) {
   $.each(walkIDs, function(i, walkID) {
@@ -163,7 +182,7 @@ deleteWalks = function(walkIDs) {
     asyncPost(indiciaData.ajaxFormPostSampleUrl, data);
   });
   $('#delete-transect').html('Deleting Walks 100%');
-}
+};
 
 deleteLocation = function(ID) {
   var data = {
@@ -172,7 +191,7 @@ deleteLocation = function(ID) {
     'website_id':indiciaData.website_id
   };
   asyncPost(indiciaData.ajaxFormPostUrl, data);
-}
+};
 
 // delete a set of sections. Does not re-index the other section codes.
 deleteSections = function(sectionIDs) {
@@ -181,10 +200,11 @@ deleteSections = function(sectionIDs) {
     deleteLocation(sectionID);
   });
   $('#delete-transect').html('Deleting Sections 100%');
-}
+};
 
 //delete a section
 deleteSection = function(section) {
+  var data;
   // section comes in like "S1"
   // TODO Add progress bar
   $('.remove-section').addClass('waiting-button');
@@ -193,7 +213,7 @@ deleteSection = function(section) {
     $.getJSON(indiciaData.indiciaSvc + "index.php/services/data/sample?location_id=" + indiciaData.sections[section].id +
             "&mode=json&view=detail&callback=?&auth_token=" + indiciaData.readAuth.auth_token + "&nonce=" + indiciaData.readAuth.nonce, 
       function(sdata) {
-        if (typeof sdata.error =="undefined") {
+        if (typeof sdata.error==="undefined") {
           $.each(sdata, function(idx, sample) {
             var postData = {'sample:id':sample.id,'sample:deleted':'t','website_id':indiciaData.website_id};
             $.post(indiciaData.ajaxFormPostSampleUrl, postData,
@@ -204,7 +224,7 @@ deleteSection = function(section) {
       }
     );
     // then delete the section record itself
-    var data = {'location:id':indiciaData.sections[section].id,'location:deleted':'t','website_id':indiciaData.website_id};
+    data = {'location:id':indiciaData.sections[section].id,'location:deleted':'t','website_id':indiciaData.website_id};
     $.post(indiciaData.ajaxFormPostUrl,
           data,
           function(data) { if (typeof(data.error)!=="undefined") { alert(data.error); }},
@@ -217,8 +237,8 @@ deleteSection = function(section) {
   var i;
   var numSections = $('[name='+indiciaData.numSectionsAttrName.replace(/:/g,'\\:')+']').val();
   for(i = parseInt(section.substr(1))+1; i <= numSections; i++){
-    if(typeof indiciaData.sections['S'+i] != "undefined"){
-      var data = {'location:id':indiciaData.sections['S'+i].id,
+    if(typeof indiciaData.sections['S'+i] !== "undefined"){
+      data = {'location:id':indiciaData.sections['S'+i].id,
                   'location:code':'S'+(i-1),
                   'location:name':$('#location\\:name').val() + ' - ' + 'S'+(i-1),
                   'website_id':indiciaData.website_id};
@@ -229,7 +249,7 @@ deleteSection = function(section) {
     }
   }
   // update the attribute value for number of sections.
-  var data = {'location:id':$('#location\\:id').val(), 'website_id':indiciaData.website_id};
+  data = {'location:id':$('#location\\:id').val(), 'website_id':indiciaData.website_id};
   data[indiciaData.numSectionsAttrName] = ''+(numSections-1);
   // reload the form when all ajax done.
   $('.remove-section').ajaxStop(function(event){    
@@ -239,7 +259,7 @@ deleteSection = function(section) {
           data,
           function(data) { if (typeof(data.error)!=="undefined") { alert(data.error); }},
           'json');
-}
+};
 
 $(document).ready(function() {
 
@@ -256,7 +276,7 @@ $(document).ready(function() {
       // remove exiting errors:
       $('#section-form').find('.inline-error').remove();
       $('#section-form').find('.ui-state-error').removeClass('ui-state-error');
-      if(typeof data.errors != "undefined"){
+      if(typeof data.errors !== "undefined"){
         for(field in data.errors){
           var elem = $('#section-form').find('[name='+field+']');
           var label = $("<label/>")
@@ -271,7 +291,7 @@ $(document).ready(function() {
         var current = $('#section-select li.selected').html();
         // store the Sref...
         indiciaData.sections[current].sref = $('#section-location-sref').val();
-        indiciaData.sections[current].system = $('#section-location-sref-system').val();
+        indiciaData.sections[current].system = $('#section-location-system-select').val();
         alert('The section information has been saved.');
         sectionDetailsChanged = false;
       }
