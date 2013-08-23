@@ -24,13 +24,39 @@ ALTER TABLE cache_occurrences ADD COLUMN map_sq_10km_id INTEGER;
 -- create 1km index 
 
 INSERT INTO map_squares (geom, x, y, size)
-SELECT DISTINCT
+SELECT DISTINCT on (round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 1000), s.entered_sref_system)))),
+    round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 1000), s.entered_sref_system)))),
+    GREATEST(o.sensitivity_precision, 1000))    
   reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 1000), s.entered_sref_system),
   round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 1000), s.entered_sref_system)))),
   round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 1000), s.entered_sref_system)))),
   GREATEST(o.sensitivity_precision, 1000)
 FROM samples s
-JOIN occurrences o ON o.sample_id=s.id;
+JOIN occurrences o ON o.sample_id=s.id
+WHERE s.geom IS NOT NULL;
+
+-- create 10km index 
+
+INSERT INTO map_squares (geom, x, y, size)
+SELECT DISTINCT on (round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 10000), s.entered_sref_system)))),
+    round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 10000), s.entered_sref_system)))),
+    GREATEST(o.sensitivity_precision, 10000))    
+  reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 10000), s.entered_sref_system),
+  round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 10000), s.entered_sref_system)))),
+  round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 10000), s.entered_sref_system)))),
+  GREATEST(o.sensitivity_precision, 10000)
+FROM samples s
+JOIN occurrences o ON o.sample_id=s.id
+-- left join to ensure no duplicates, as 1km index includes 10km squares for sensitive records
+LEFT JOIN map_squares msq 
+	ON msq.x=round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 10000), s.entered_sref_system))))
+	AND msq.y=round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 10000), s.entered_sref_system))))
+	AND msq.size=GREATEST(o.sensitivity_precision, 10000)
+WHERE s.geom IS NOT NULL
+AND msq.id IS NULL;
+
+CREATE UNIQUE INDEX ix_map_squares_unique
+   ON map_squares (x ASC NULLS LAST, y ASC NULLS LAST, size ASC NULLS LAST);
 
 UPDATE cache_occurrences co
 SET map_sq_1km_id=msq.id
@@ -45,17 +71,6 @@ CREATE INDEX ix_cache_occurrences_map_sq_1km_id
   USING btree
   (map_sq_1km_id);
 
--- create 10km index 
-
-INSERT INTO map_squares (geom, x, y, size)
-SELECT DISTINCT
-  reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 10000), s.entered_sref_system),
-  round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 10000), s.entered_sref_system)))),
-  round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 10000), s.entered_sref_system)))),
-  GREATEST(o.sensitivity_precision, 10000)
-FROM samples s
-JOIN occurrences o ON o.sample_id=s.id;
-
 UPDATE cache_occurrences co
 SET map_sq_10km_id=msq.id
 FROM map_squares msq, samples s, occurrences o
@@ -68,6 +83,3 @@ CREATE INDEX ix_cache_occurrences_map_sq_10km_id
   ON cache_occurrences
   USING btree
   (map_sq_1km_id);
-  
-CREATE UNIQUE INDEX ix_map_squares_unique
-   ON map_squares (x ASC NULLS LAST, y ASC NULLS LAST, size ASC NULLS LAST);
