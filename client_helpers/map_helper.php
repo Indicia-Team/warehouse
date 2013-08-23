@@ -419,7 +419,7 @@ class map_helper extends helper_base {
                   '<span class="label"></span><span class="data"></span><span>('.lang::get('hold +').')</span></div>';
         else
           $r .= $div . '<h3>' . lang::get('Map ref at pointer') . '</h3>' .
-              '<div class="grid-ref-hint hint-normal"><span class="label"></span><span class="data"></span></div></div>';
+              '<div class="grid-ref-hint hint-normal"><span class="label"></span><span class="data"></span></div>';
         $r .= '</div>';
       }
       return $r;
