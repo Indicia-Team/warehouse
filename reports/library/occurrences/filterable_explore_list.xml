@@ -1,0 +1,45 @@
+<report
+    title="Explore records using standard filters"
+    description="Report designed for the explore records facility in iRecord, with standardised filtering parameters."
+>
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
+  SELECT #columns#
+  FROM cache_occurrences o
+  JOIN websites w on w.id=o.website_id and w.deleted=false
+  #agreements_join#
+  #joins#
+  WHERE #sharing_filter# 
+  #idlist#
+  </query>
+  <order_bys>
+    <order_by>o.id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
+    <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
+  </params>
+  <columns>
+    <column name='occurrence_id' display='ID' sql='o.id' template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />
+    <column name='source' display='Source' sql="w.title || ' | ' || o.survey_title" />
+    <column name='sample_id' visible='false' sql='o.sample_id' />
+    <column name='taxon' display='Species' 
+      template="&lt;div class='zero-{zero_abundance}'&gt;{taxon}&lt;/div&gt;"
+      sql="CASE WHEN o.preferred_taxon=o.default_common_name then o.preferred_taxon ELSE o.preferred_taxon || COALESCE(' | ' || o.default_common_name, '') END" />
+    <column name='taxon_group' display='Taxon Group' sql='o.taxon_group' />
+    <column name='taxon_group_id' display='Taxon Group ID' sql='o.taxon_group_id' on_demand='true' visible='false' />
+    <column name='taxa_taxon_list_id' visible='false' sql='o.taxa_taxon_list_id' />   
+    <column name='location_name' display='Site name' sql='o.location_name' />
+    <column name='entered_sref' display='Grid Ref' sql="regexp_replace(#sample_sref_field#, ',[^ ]', ', ', 'g')" />
+    <column name='date_start' sql='o.date_start' visible='false' />
+    <column name='date_end' sql='o.date_end' visible='false' />
+    <column name='date_type' sql='o.date_type' visible='false' />
+    <column name='date' display='Date' />
+    <column name='recorder' display='Recorder' sql="CASE WHEN w.id IN (#website_ids#) THEN '' ELSE w.title || '-&gt; ' END || CASE WHEN LENGTH(o.recorders)>30 THEN 'Recorder' ELSE o.recorders END" />
+    <column name='zero_abundance' display='Zero Abundance' sql='o.zero_abundance' visible="false" />
+    <column name='record_status' display='State' sql='o.record_status' visible="false" />
+    <column name='certainty' display='Certainty' sql='o.certainty' visible="false" />
+    <column name='belongs_to_user' display='Belongs to User' sql="CASE WHEN CAST(o.created_by_id AS character varying) = '#currentUser#' AND o.website_id IN (#website_ids#) THEN true ELSE false END" visible="false" />
+    <column name='images' display='Images' sql='o.images' img='true' />
+    <column name='input_form' visible="false" sql="case when o.input_form is null then '#default_input_form#' else o.input_form end" />
+  </columns>
+</report>
