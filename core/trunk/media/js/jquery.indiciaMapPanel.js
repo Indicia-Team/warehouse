@@ -68,6 +68,7 @@ mapGeoreferenceHooks = [];
         }
         features.push(feature);
       }
+      return feature;
     }
 
     /**
@@ -306,6 +307,7 @@ mapGeoreferenceHooks = [];
           this.fillOpacity = opts.fillOpacityBoundary;
           this.strokeColor = opts.strokeColorBoundary;
           this.strokeWidth = opts.strokeWidthBoundary;
+          this.strokeDashstyle = opts.strokeDashstyleBoundary;
           break;
         case "invisible":
           this.pointRadius = 0;
@@ -326,17 +328,17 @@ mapGeoreferenceHooks = [];
       // If the spatial ref latitude or longitude input control exists, bind it to the map, so entering a ref updates the map
       $('#'+opts.srefLatId).change(function() {
         // Only do something if both the lat and long are populated
-        if ($($(this).val()).trim()!='' && $($('#'+opts.srefLongId).val()).trim()!='') {
+        if ($.trim($(this).val())!='' && $.trim($('#'+opts.srefLongId).val())!='') {
           // copy the complete sref into the sref field
-          $('#'+opts.srefId).val($($(this).val()).trim() + ', ' + $($('#'+opts.srefLongId).val()).trim());
+          $('#'+opts.srefId).val($.trim($(this).val()) + ', ' + $.trim($('#'+opts.srefLongId).val()));
           _handleEnteredSref($('#'+opts.srefId).val(), div);
         }
       });
       $('#'+opts.srefLongId).change(function() {
         // Only do something if both the lat and long are populated
-        if ($($('#'+opts.srefLatId).val()).trim()!='' && $($(this).val()).trim()!='') {
+        if ($.trim($('#'+opts.srefLatId).val())!='' && $.trim($(this).val())!='') {
           // copy the complete sref into the sref field
-          $('#'+opts.srefId).val($($('#'+opts.srefLatId).val()).trim() + ', ' + $($(this).val()).trim());
+          $('#'+opts.srefId).val($.trim($('#'+opts.srefLatId).val()) + ', ' + $.trim($(this).val()));
           _handleEnteredSref($('#'+opts.srefId).val(), div);
         }
       });
@@ -357,10 +359,10 @@ mapGeoreferenceHooks = [];
         $('#'+div.georefOpts.georefDivId).hide('fast', function() {div.map.updateSize();});
         e.preventDefault();
       });
-
-      $('#imp-location').change(function() {locationSelectedInInput(div, this.value);});
+      var locChange = function() {locationSelectedInInput(div, this.value);};
+      $('#imp-location').change(locChange);
       // trigger change event, incase imp-location was already populated when the map loaded
-      $('#imp-location').change();
+      locChange();
     }
     
     
@@ -989,6 +991,8 @@ mapGeoreferenceHooks = [];
                 if (origfeatures.length!==0 || features.length!==0) {
                   $.each(indiciaData.reports[div.settings.reportGroup], function(name, report) {
                     report[0].settings.offset=0;
+                    // force the param in, in case there is no params form.
+                    report[0].settings.extraParams.idlist=ids.join(',');
                     report.reload(true);
                   });
                 }
@@ -1414,8 +1418,6 @@ mapGeoreferenceHooks = [];
         this.settings.helpDiv='map-help';
       }
 
-      this.settings.featureStyle=new style();
-
       // Sizes the div. Width sized by outer div.
       $(this).css('height', this.settings.height);
       $(this).css('width', '100%');
@@ -1627,7 +1629,7 @@ mapGeoreferenceHooks = [];
         // Add an editable layer to the map
         var editLayer = new OpenLayers.Layer.Vector(
             this.settings.editLayerName,
-            {style: this.settings.featureStyle, 'sphericalMercator': true, displayInLayerSwitcher: this.settings.editLayerInSwitcher}
+            {style: new style('boundary'), 'sphericalMercator': true, displayInLayerSwitcher: this.settings.editLayerInSwitcher}
         );
         div.map.editLayer = editLayer;
         div.map.addLayer(div.map.editLayer);
@@ -2085,9 +2087,10 @@ jQuery.fn.indiciaMapPanel.defaults = {
     strokeDashstyleGhost: 'dash',
     // Additional options for OpenLayers.Feature.Vector.style for a boundary
     fillColorBoundary: '#0000FF',
-    fillOpacityBoundary: 0,
+    fillOpacityBoundary: 0.1,
     strokeColorBoundary: '#FF0000',
     strokeWidthBoundary: 2,
+    strokeDashstyleBoundary: 'dash',
     // hint for the grid ref you are over
     gridRefHint: false,
 

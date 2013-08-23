@@ -297,125 +297,144 @@ var simple_tooltip;
     }
 
     function loadGridFrom (div, request, clearExistingRows) {
-      $.getJSON(request,
-          null,
-          function(response) {
-            var tbody = $(div).find('tbody'), row, rows, rowclass, rowclasses, hasMore=false,
-                value, rowInProgress=false, rowOutput, rowId, features=[],
-                feature, geom, map, valueData;
-            // if we get a count back, then update the stored count
-            if (typeof response.count !== "undefined") {
-              div.settings.recordCount = response.count;
-              rows = response.records;
-            } else {
-              rows = response;
-            }
-            // clear current grid rows
-            if (clearExistingRows) {
-              tbody.children().remove();
-            }
-            if (div.settings.sendOutputToMap && typeof indiciaData.reportlayer!=="undefined") {
-              map=indiciaData.reportlayer.map;
-              indiciaData.mapdiv.removeAllFeatures(indiciaData.reportlayer, 'linked');
-            }
-            rowTitle = (div.settings.rowId && typeof indiciaData.reportlayer!=="undefined") ?
-              ' title="'+div.settings.msgRowLinkedToMapHint+'"' : '';
-            $.each(rows, function(rowidx, row) {
-              if (div.settings.rowClass!=='') {
-                rowclasses=[mergeParamsIntoTemplate(div, row, div.settings.rowClass)];
-              } else {
-                rowclasses=[];
-              }
-              if (div.settings.altRowClass!=='' && rowidx%2===0) {
-                rowclasses.push(div.settings.altRowClass);
-              }
-              rowclass = (rowclasses.length>0) ? 'class="' + rowclasses.join(' ') + '" ' : '';
-              // We asked for one too many rows. If we got it, then we can add a next page button
-              if (div.settings.itemsPerPage !== null && rowidx>=div.settings.itemsPerPage) {
-                hasMore = true;
-              } else {
-                rowId = (div.settings.rowId!=='') ? 'id="row'+row[div.settings.rowId]+'" ' : '';
-                // Initialise a new row, unless this is a gallery with multi-columns and not starting a new line
-                if ((rowidx % div.settings.galleryColCount)===0) {
-                  rowOutput = '<tr ' + rowId + rowclass + rowTitle + '>';
-                  rowInProgress=true;
-                }
-                // decode any json columns
-                $.each(div.settings.columns, function(idx, col) {
-                  if (typeof col.json!=="undefined" && col.json && typeof row[col.fieldname]!=="undefined") {
-                    valueData = JSON.parse(row[col.fieldname]);
-                    $.extend(row, valueData)
-                  }
-                });
-                $.each(div.settings.columns, function(idx, col) {
-                  if (div.settings.sendOutputToMap && typeof indiciaData.reportlayer!=="undefined" &&
-                      typeof col.mappable!=="undefined" && (col.mappable==="true" || col.mappable==true)) {
-                    geom=OpenLayers.Geometry.fromWKT(row[col.fieldname]);
-                    if (map.projection.getCode() != map.div.indiciaProjection.getCode()) {
-                      geom.transform(map.div.indiciaProjection, map.projection);
-                    }
-                    geom = geom.getCentroid();
-                    feature = new OpenLayers.Feature.Vector(geom, {type: 'linked'});
-                    if (div.settings.rowId!=="") {
-                      feature.id = row[div.settings.rowId];
-                      feature.attributes[div.settings.rowId] = row[div.settings.rowId];
-                    }
-                    features.push(feature);
-                  }
-                  if (col.visible!==false && col.visible!=='false') {
-                    // either template the output, or just use the content according to the fieldname
-                    if (typeof col.template !== "undefined") {
-                      value = mergeParamsIntoTemplate(div, row, col.template);
-                    } else if (typeof col.actions !== "undefined") {
-                      value = getActions(div, row, col.actions);
-                    } else {
-                      value = row[col.fieldname];
-                    }
-                    // clear null value cells
-                    value = (value===null || typeof value==="undefined") ? '' : value;
-                    if ((col.img === true || col.img==='true') && value!=='') {
-                      var imgs = value.split(','), imgclass=imgs.length>1 ? 'multi' : 'single';
-                      value='';
-                      $.each(imgs, function(idx, img) {
-                        value += '<a href="'+div.settings.imageFolder+img+'" class="fancybox ' + imgclass + '"><img src="'+div.settings.imageFolder+'thumb-'+img+'" /></a>';
-                      });
-                    }
-                    rowOutput += '<td>' + value + '</td>';
-                  }
-                });
-                if ((rowidx % div.settings.galleryColCount)===div.settings.galleryColCount-1) {
-                  rowOutput += '</tr>';
-                  tbody.append(rowOutput);
-                  rowInProgress=false;
-                }
-              }
-            });
-            if (rowInProgress) {
-              rowOutput += '</tr>';
-              tbody.append(rowOutput);
-            }
-            tbody.find('a.fancybox').fancybox();
-            if (features.length>0) {
-              indiciaData.reportlayer.addFeatures(features);
-              map.zoomToExtent(indiciaData.reportlayer.getDataExtent());
-            }
-
-            // Set a class to indicate the sorted column
-            $('#' + div.id + ' th').removeClass('asc');
-            $('#' + div.id + ' th').removeClass('desc');
-            if (div.settings.orderby) {
-              $('#' + div.id + '-th-' + div.settings.orderby).addClass(div.settings.sortdir.toLowerCase());
-            }
-            updatePager(div, hasMore);
-            div.loading=false;
-            setupReloadLinks(div);
-
-            // execute callback it there is one
-            if (div.settings.callback !== "") {
-              window[div.settings.callback]();
-            }
+      var tbody = $(div).find('tbody');
+      // skip the loading overlay in <IE9 as it is buggy
+      if ($.support.cssFloat) {
+        $(".loading-overlay").css({        
+          top     : $(tbody).position().top+1,
+          left    : $(tbody).position().left+1,
+          width   : $(tbody).outerWidth()-2,
+          height  : $(tbody).outerHeight()-3
+        });
+        $(".loading-overlay").show();
+      }
+      $.ajax({
+        dataType: "json",
+        url: request,
+        data: null,
+        success: function(response) {
+          var tbody = $(div).find('tbody'), row, rows, rowclass, rowclasses, hasMore=false,
+              value, rowInProgress=false, rowOutput, rowId, features=[],
+              feature, geom, map, valueData;
+          // if we get a count back, then update the stored count
+          if (typeof response.count !== "undefined") {
+            div.settings.recordCount = parseInt(response.count);
+            rows = response.records;
+          } else {
+            rows = response;
           }
-      );
+          // clear current grid rows
+          if (clearExistingRows) {
+            tbody.children().remove();
+          }
+          if (div.settings.sendOutputToMap && typeof indiciaData.reportlayer!=="undefined") {
+            map=indiciaData.reportlayer.map;
+            indiciaData.mapdiv.removeAllFeatures(indiciaData.reportlayer, 'linked');
+          }
+          rowTitle = (div.settings.rowId && typeof indiciaData.reportlayer!=="undefined") ?
+            ' title="'+div.settings.msgRowLinkedToMapHint+'"' : '';
+          $.each(rows, function(rowidx, row) {
+            if (div.settings.rowClass!=='') {
+              rowclasses=[mergeParamsIntoTemplate(div, row, div.settings.rowClass)];
+            } else {
+              rowclasses=[];
+            }
+            if (div.settings.altRowClass!=='' && rowidx%2===0) {
+              rowclasses.push(div.settings.altRowClass);
+            }
+            rowclass = (rowclasses.length>0) ? 'class="' + rowclasses.join(' ') + '" ' : '';
+            // We asked for one too many rows. If we got it, then we can add a next page button
+            if (div.settings.itemsPerPage !== null && rowidx>=div.settings.itemsPerPage) {
+              hasMore = true;
+            } else {
+              rowId = (div.settings.rowId!=='') ? 'id="row'+row[div.settings.rowId]+'" ' : '';
+              // Initialise a new row, unless this is a gallery with multi-columns and not starting a new line
+              if ((rowidx % div.settings.galleryColCount)===0) {
+                rowOutput = '<tr ' + rowId + rowclass + rowTitle + '>';
+                rowInProgress=true;
+              }
+              // decode any json columns
+              $.each(div.settings.columns, function(idx, col) {
+                if (typeof col.json!=="undefined" && col.json && typeof row[col.fieldname]!=="undefined") {
+                  valueData = JSON.parse(row[col.fieldname]);
+                  $.extend(row, valueData)
+                }
+              });
+              $.each(div.settings.columns, function(idx, col) {
+                if (div.settings.sendOutputToMap && typeof indiciaData.reportlayer!=="undefined" &&
+                    typeof col.mappable!=="undefined" && (col.mappable==="true" || col.mappable==true)) {
+                  geom=OpenLayers.Geometry.fromWKT(row[col.fieldname]);
+                  if (map.projection.getCode() != map.div.indiciaProjection.getCode()) {
+                    geom.transform(map.div.indiciaProjection, map.projection);
+                  }
+                  geom = geom.getCentroid();
+                  feature = new OpenLayers.Feature.Vector(geom, {type: 'linked'});
+                  if (div.settings.rowId!=="") {
+                    feature.id = row[div.settings.rowId];
+                    feature.attributes[div.settings.rowId] = row[div.settings.rowId];
+                  }
+                  features.push(feature);
+                }
+                if (col.visible!==false && col.visible!=='false') {
+                  // either template the output, or just use the content according to the fieldname
+                  if (typeof col.template !== "undefined") {
+                    value = mergeParamsIntoTemplate(div, row, col.template);
+                  } else if (typeof col.actions !== "undefined") {
+                    value = getActions(div, row, col.actions);
+                  } else {
+                    value = row[col.fieldname];
+                  }
+                  // clear null value cells
+                  value = (value===null || typeof value==="undefined") ? '' : value;
+                  if ((col.img === true || col.img==='true') && value!=='') {
+                    var imgs = value.split(','), imgclass=imgs.length>1 ? 'multi' : 'single';
+                    value='';
+                    $.each(imgs, function(idx, img) {
+                      value += '<a href="'+div.settings.imageFolder+img+'" class="fancybox ' + imgclass + '"><img src="'+div.settings.imageFolder+'thumb-'+img+'" /></a>';
+                    });
+                  }
+                  rowOutput += '<td>' + value + '</td>';
+                }
+              });
+              if ((rowidx % div.settings.galleryColCount)===div.settings.galleryColCount-1) {
+                rowOutput += '</tr>';
+                tbody.append(rowOutput);
+                rowInProgress=false;
+              }
+            }
+          });
+          if (rowInProgress) {
+            rowOutput += '</tr>';
+            tbody.append(rowOutput);
+          }
+          tbody.find('a.fancybox').fancybox();
+          if (features.length>0) {
+            indiciaData.reportlayer.addFeatures(features);
+            map.zoomToExtent(indiciaData.reportlayer.getDataExtent());
+          }
+
+          // Set a class to indicate the sorted column
+          $('#' + div.id + ' th').removeClass('asc');
+          $('#' + div.id + ' th').removeClass('desc');
+          if (div.settings.orderby) {
+            $('#' + div.id + '-th-' + div.settings.orderby).addClass(div.settings.sortdir.toLowerCase());
+          }
+          updatePager(div, hasMore);
+          div.loading=false;
+          setupReloadLinks(div);
+          if ($.support.cssFloat) {$(".loading-overlay").hide();}
+
+          // execute callback it there is one
+          if (div.settings.callback !== "") {
+            window[div.settings.callback]();
+          }
+          
+        },
+        error: function(e) {
+          if ($.support.cssFloat) {$(".loading-overlay").hide();}
+          alert('The report did not load correctly.');
+        }
+      });
     }
 
     /**
@@ -572,6 +591,22 @@ var simple_tooltip;
     }
     
     var BATCH_SIZE=2000, currentMapRequest;
+        
+    function hasIntersection(a, b)
+    {
+      var ai = bi= 0;
+
+      while( ai < a.length && bi < b.length ){
+         if      (a[ai] < b[bi] ){ ai++; }
+         else if (a[ai] > b[bi] ){ bi++; }
+         else /* they're equal */
+         {
+           return true;
+         }
+      }
+
+      return false;
+    }
     
     function _internalMapRecords(div, request, offset, recordCount) {
       if ($('#map-progress').length===0) {
@@ -580,7 +615,7 @@ var simple_tooltip;
       } else {
         $('#map-progress').show();
       }
-      var matchString;
+      var matchString, feature, featuresToSelect=[];
       // first call- get the record count
       $.getJSON(request + '&offset=' + offset + (typeof recordCount==="undefined" ? '&wantCount=1' : ''),
         null,
@@ -600,7 +635,14 @@ var simple_tooltip;
             // whilst that is loading, put the dots on the map
             var features=[];
             $.each(response, function (idx, obj) {
-              indiciaData.mapdiv.addPt(features, obj, 'geom', {"type":"vector"}, obj[div.settings.rowId]);
+              feature=indiciaData.mapdiv.addPt(features, obj, 'geom', {"type":"vector"}, obj[div.settings.rowId]);
+              if (typeof indiciaData.selectedRows!=="undefined" && 
+                  ((typeof obj[div.settings.rowId]!=="undefined" && $.inArray(div.settings.rowId, indiciaData.selectedRows)) ||
+                  // plural - report returns list of IDs
+                  (typeof obj[div.settings.rowId+'s']!=="undefined" && hasIntersection(obj[div.settings.rowId+'s'].split(','), indiciaData.selectedRows)))) {
+                feature.renderIntent='select';
+                indiciaData.reportlayer.selectedFeatures.push(feature);
+              }
             });
             indiciaData.reportlayer.addFeatures(features);
             $('#map-progress').progressbar("option", "value", (offset+BATCH_SIZE) * 100 / recordCount);
@@ -616,27 +658,67 @@ var simple_tooltip;
      * Public function which loads the current report request output onto a map. 
      * The request is handled in chunks of 1000 records.
      */
-    function mapRecords(div) {
+    function mapRecords(div, zooming) {
+      var layerInfo = {bounds: null}, map=indiciaData.mapdiv.map, currentBounds=null;
       // we need to reload the map layer using the mapping report, so temporarily switch the report      
-      var origReport=div.settings.dataSource;
+      var origReport=div.settings.dataSource, request, zoomLayerIdx;
       if (div.settings.mapDataSource!=='') {
-        div.settings.dataSource=div.settings.mapDataSource;
+        if (map.zoom<12 && div.settings.mapDataSourceLoRes) {
+          div.settings.dataSource=div.settings.mapDataSourceLoRes;
+        } else {
+          div.settings.dataSource=div.settings.mapDataSource;
+        }
       }
       try {
-        var request=getFullRequestPathWithoutPaging(div, false)+'&limit='+BATCH_SIZE;
-      }
+        request=getFullRequestPathWithoutPaging(div, false)+'&limit='+BATCH_SIZE;
+        if (map.zoom<=9 && div.settings.mapDataSourceLoRes) {
+          request += '&sq_size=10000';
+          layerInfo.zoomLayerIdx = 0;
+        } else if (map.zoom<12 && div.settings.mapDataSourceLoRes) {
+          request += '&sq_size=1000';
+          layerInfo.zoomLayerIdx = 1;
+        } else {
+          layerInfo.zoomLayerIdx = 2;
+        }
+        layerInfo.report=div.settings.dataSource;
+        if (map.zoom>9 && div.settings.mapDataSourceLoRes) {          
+          // get the current map bounds. If zoomed in close, get a larger bounds so that the map can be panned a bit without reload.          
+          layerInfo.bounds = map.calculateBounds(map.getCenter(), Math.max(39, map.getResolution()));
+          // plus the current bounds to test if a reload is necessary
+          currentBounds = map.calculateBounds();
+          if (map.projection.getCode() != indiciaData.mapdiv.indiciaProjection.getCode()) {
+            layerInfo.bounds.transform(map.projection, indiciaData.mapdiv.indiciaProjection);
+            currentBounds.transform(map.projection, indiciaData.mapdiv.indiciaProjection);
+          }          
+          // SYNC SELECTION WITH GRID ROWS
+          // CHECK POPULATION PERFORMANCE
+          // CHECK MAP REPORT COUNTS ARE OK
+          request += '&bounds='+layerInfo.bounds.toGeometry().toString();        
+        }
+      }      
       finally {
         div.settings.dataSource=origReport;
       }
-      indiciaData.mapdiv.removeAllFeatures(indiciaData.reportlayer, 'linked', true);
-      currentMapRequest = request;
-      _internalMapRecords(div, request, 0);      
+      if (!zooming || typeof indiciaData.loadedReportLayerInfo==="undefined" || layerInfo.report!==indiciaData.loadedReportLayerInfo.report
+          || (indiciaData.loadedReportLayerInfo.bounds!==null && (currentBounds===null || !indiciaData.loadedReportLayerInfo.bounds.containsBounds(currentBounds)))
+          || layerInfo.zoomLayerIdx!==indiciaData.loadedReportLayerInfo.zoomLayerIdx) {
+        indiciaData.mapdiv.removeAllFeatures(indiciaData.reportlayer, 'linked', true);
+        currentMapRequest = request;
+        _internalMapRecords(div, request, 0);
+        indiciaData.loadedReportLayerInfo=layerInfo;
+      }
     }
     
-    this.mapRecords = function(report) {
+    this.mapRecords = function(report, reportLoRes, zooming) {
+      if (typeof zooming==="undefined") {
+        zooming=false;
+      }
       $.each($(this), function(idx, div) {
         div.settings.mapDataSource = report;
-        mapRecords(div);
+        if (reportLoRes) {
+          div.settings.mapDataSourceLoRes = reportLoRes;
+        }
+        mapRecords(div, zooming);
       });
     }
     
@@ -774,6 +856,7 @@ jQuery.fn.reportgrid.defaults = {
   nonce : '',
   dataSource : '',
   mapDataSource: '',
+  mapDataSourceLoRes: '',
   view: 'list',
   columns : null,
   orderby : null,
