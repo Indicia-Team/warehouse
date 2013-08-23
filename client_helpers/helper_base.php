@@ -86,9 +86,7 @@ $indicia_templates = array(
   'list_in_template' => '<ul{class} {title}>{items}</ul>',
   'check_or_radio_group' => '<span {class}>{items}</span>',
   'check_or_radio_group_item' => '<nobr><span><input type="{type}" name="{fieldname}" id="{itemId}" value="{value}"{class}{checked} {disabled}/><label for="{itemId}">{caption}</label></span></nobr>{sep}',
-  'map_panel' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
-    "document.write('<div id=\"{divId}\" style=\"width: {width}; height: {height};\"{class}></div>');\n".
-    "/* ]]> */</script>",
+  'map_panel' => "<div id=\"{divId}\" style=\"width: {width}; height: {height};\"{class}></div>",
   'georeference_lookup' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
     "document.write('<input type=\"text\" id=\"imp-georef-search\"{class} />{searchButton}');\n".
     "document.write('<div id=\"imp-georef-div\" class=\"ui-corner-all ui-widget-content ui-helper-hidden\">');\n".
@@ -156,60 +154,48 @@ $indicia_templates = array(
     });\r\n",
   'sub_list' => '<div id="{id}:box" class="control-box wide"><div {class}>'."\n".
     '<div>'."\n".
-    '{panel_control} <input id="{id}:add" type="button" value="'.lang::get('add').'" />'.
-    '<span class="ind-cancel-icon">&nbsp;</span>'."\n".
+    '{panel_control} <input id="{id}:add" type="button" value="'.lang::get('add').'" />'."\n".
     '</div>'."\n".
     '<ul id="{id}:sublist" class="ind-sub-list">{items}</ul>{subListAdd}'."\n".
     '</div></div>'."\n",
   'sub_list_add' => "\n".'<input type="hidden"  id="{id}:addToTable" name="{mainEntity}:insert_captions_use" value="{basefieldname}" />'.
     '<input type="hidden" name="{mainEntity}:insert_captions_to_create" value="{table}" />',
-  'sub_list_item' => '<li><span class="ind-delete-icon">&nbsp;</span>{caption}'.
-    '<input type="hidden" name="{fieldname}" value="{value}" /></li>',
-  'sub_list_javascript' => "  if ({hide}==='none') {
-    jQuery('#{escaped_id}\\\\:box .ind-cancel-icon').css('display', 'none');
-    }
-  jQuery('#{escaped_id}\\\\:add').click(function(event){
+  'sub_list_item' => '<li class="ui-widget-content ui-corner-all"><span class="ind-delete-icon">&nbsp;</span>{caption}'.
+    '<input type="hidden" name="#fieldname#" value="{value}" /></li>',
+  'sub_list_javascript' => "  var addSublistItem = function(escapedId, escapedCaptionField, fieldname){
     // transfer caption and value from search control to the displayed and hidden lists
-    var search$ = $('#{escaped_id}\\\\:search\\\\:{escaped_captionField}');
-    var hiddenSearch$ = $('#{escaped_id}\\\\:search');
-    var caption = search$.val().trim();
-    if (jQuery('#{escaped_id}\\\\:addToTable').length==0) {
+    var search$ = $('#'+escapedId+'\\\\:search\\\\:'+escapedCaptionField);
+    var hiddenSearch$ = $('#'+escapedId+'\\\\:search');
+    var caption = $.trim(search$.val());
+    if ($('#'+escapedId+'\\\\:addToTable').length==0) {
       // not addToTable mode, so pass IDs
-      var value = hiddenSearch$.val().trim();
+      var value = $.trim(hiddenSearch$.val());
     } else {
       // addToTable mode, so pass text captions
       var value = caption;
     }
-    if (caption!=='') {
-      var sublist$ = $('#{escaped_id}\\\\:sublist');
-      sublist$.append('{subListItem}');
+    if (value!=='' && caption!=='') {
+      var sublist$ = $('#'+escapedId+'\\\\:sublist'), item='{subListItem}';      
+      sublist$.append(item.replace('#fieldname#', fieldname));
       search$.val('');
       hiddenSearch$.val('');
       search$.focus();
     }
-  });
-  jQuery('#{escaped_id}\\\\:box span.ind-cancel-icon').click(function(event){
-    // Hide the delete icons and the add bar. Insert an icon to redisplay add bar
-    if ($('#{escaped_id}\\\\:sublist span.ind-delete-icon').length>0) {
-      $('#{escaped_id}\\\\:sublist span.ind-delete-icon').removeClass('ind-delete-icon').addClass('ind-no-icon');
-      $('#{escaped_id}\\\\:sublist span.ind-no-icon:first').removeClass('ind-no-icon').addClass('ind-add-icon');
-      $(this).closest('div').hide({hide});
+  };
+  $('#{escaped_id}\\\\:search\\\\:{escaped_captionField}').keypress(function(e) {
+    if (e.which===13) {
+      addSublistItem('{escaped_id}', '{escaped_captionField}', '{fieldname}');
     }
   });
-  jQuery('#{escaped_id}\\\\:sublist span.ind-delete-icon').live('click', function(event){
+  $('#{escaped_id}\\\\:add').click(function() {addSublistItem('{escaped_id}', '{escaped_captionField}', '{fieldname}');});  
+  $('#{escaped_id}\\\\:sublist span.ind-delete-icon').live('click', function(event){
     // remove the value from the displayed list and the hidden list
     var li$ = $(this).closest('li');
     li$.remove();
   });
-  jQuery('#{escaped_id}\\\\:sublist span.ind-add-icon').live('click', function(event){
-    // restore delete icons on list and show the add bar
-    $('#{escaped_id}\\\\:sublist span.ind-no-icon').removeClass('ind-no-icon').addClass('ind-delete-icon');
-    $('#{escaped_id}\\\\:sublist span.ind-add-icon').removeClass('ind-add-icon').addClass('ind-delete-icon');
-    $('#{escaped_id}\\\\:add').closest('div').show({hide});
-  });
-  jQuery('form:has(#{escaped_id}\\\\:search)').submit(
+  $('form:has(#{escaped_id}\\\\:search)').submit(
     function(event) {
-      // select autocomplete search controls in this sub_list and disable them to prevent submiting values
+      // select autocomplete search controls in this sub_list and disable them to prevent submitting values
       $('#{escaped_id}\\\\:search, #{escaped_id}\\\\:search\\\\:{escaped_captionField}')
         .attr('disabled', 'disabled');
     });\n",
@@ -263,7 +249,8 @@ if ($("#{escapedId} option").length===0) {
   'report_picker' => '<div id="{id}" {class}>{reports}<div class="report-metadata"></div><div class="ui-helper-clearfix"></div></div>',
   'report_download_link' => '<div class="report-download-link"><a href="{link}">{caption}</a></div>',
   'verification_panel' => '<div id="verification-panel">{button}<div class="messages" style="display: none"></div></div>',
-  'two-col-50' => '<div class="two columns"><div class="column">{col-1}</div><div class="column">{col-2}</div></div>'
+  'two-col-50' => '<div class="two columns"><div class="column">{col-1}</div><div class="column">{col-2}</div></div>',
+  'loading_overlay' => '<div class="loading-overlay"></div>'
 );
 
 
@@ -599,6 +586,7 @@ class helper_base extends helper_config {
         'jqplot_category_axis_renderer' => array('javascript' => array(self::$js_path.'jqplot/plugins/jqplot.categoryAxisRenderer.min.js')),
         'jqplot_trendline' => array('javascript'=>array(self::$js_path.'jqplot/plugins/jqplot.trendline.min.js')),
         'reportgrid' => array('deps' => array('jquery_ui'), 'javascript' => array(self::$js_path.'jquery.reportgrid.js', self::$js_path.'json2.js')),
+        'reportfilters' => array('deps' => array('reportgrid'), 'stylesheets' => array(self::$css_path."report-filters.css"), 'javascript' => array(self::$js_path.'reportFilters.js')),
         'tabs' => array('deps' => array('jquery_ui'), 'javascript' => array(self::$js_path.'tabs.js')),
         'wizardprogress' => array('deps' => array('tabs'), 'stylesheets' => array(self::$css_path."wizard_progress.css")),
         'spatialReports' => array('javascript'=>array(self::$js_path.'spatialReports.js')),

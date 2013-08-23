@@ -22,6 +22,7 @@
 
 require_once('includes/dynamic.php');
 require_once('includes/report.php');
+require_once('includes/report_filters.php');
 
 /**
  * Provides a dynamically output page which can contain a map and several reports, potentially
@@ -222,6 +223,23 @@ class iform_dynamic_report_explorer extends iform_dynamic {
           'type'=>'boolean',
           'default' => false,
           'required' => false
+        ),
+        array(
+          'name'=>'sharing',
+          'caption'=>'Record sharing mode',
+          'description'=>'Tick this box to enable caching which prevents reporting pages with a high number of hits from generating ' .
+              'excessive server load. Currently compatible only with reporting pages that do not integrate with the user profile.',
+          'type'=>'select',
+          'options' => array(
+            'reporting' => 'Reporting',
+            'peer_review' => 'Peer review',
+            'verification' => 'Verification',
+            'data_flow' => 'Data flow',
+            'moderation' => 'Moderation',
+            'me' => 'My records only'
+          ),
+          'default' => 'reporting',
+          'group' => 'Report Settings'
         )
       )
     );
@@ -250,7 +268,7 @@ class iform_dynamic_report_explorer extends iform_dynamic {
    */
   protected static function get_control_params($auth, $args, $tabalias, $options) {
     iform_load_helpers(array('report_helper'));
-    $sharing='reporting';
+    $sharing=empty($args['sharing']) ? 'reporting' : $args['sharing'];
     // allow us to call iform_report_get_report_options to get a default report setup, then override report_name
     $args['report_name']='';
     $reportOptions = array_merge(
@@ -271,7 +289,7 @@ class iform_dynamic_report_explorer extends iform_dynamic {
     iform_load_helpers(array('map_helper'));
     // allow us to call iform_report_get_report_options to get a default report setup, then override report_name
     $args['report_name']='';
-    $sharing='reporting';
+    $sharing=empty($args['sharing']) ? 'reporting' : $args['sharing'];
     $reportOptions = array_merge(
       iform_report_get_report_options($args, $auth['read']),
       array(
@@ -313,7 +331,7 @@ class iform_dynamic_report_explorer extends iform_dynamic {
     else
       unset($args['columns_config']);
     $args['report_name']='';
-    $sharing='reporting';
+    $sharing=empty($args['sharing']) ? 'reporting' : $args['sharing'];
     $reportOptions = array_merge(
       iform_report_get_report_options($args, $auth['read']),
       array(
@@ -328,6 +346,18 @@ class iform_dynamic_report_explorer extends iform_dynamic {
     iform_report_apply_explore_user_own_preferences($reportOptions);
     self::$reportCount++;
     return report_helper::report_grid($reportOptions);
+  }
+  
+  protected static function get_control_standardparams($auth, $args, $tabalias, $options) {
+    $options = array_merge(array(
+      'allowSave' => true,
+      'sharing' => empty($args['sharing']) ? 'reporting' : $args['sharing']
+    ), $options);
+    if ($options['allowSave'] && !function_exists('iform_ajaxproxy_url'))
+      return 'The AJAX Proxy module must be enabled to support saving filters. Set @allowSave=false to disable this in the [standard params] control.';
+    if (!function_exists('hostsite_get_user_field') || !hostsite_get_user_field('indicia_user_id'))
+      return 'The standard params module requires Easy Login.';
+    return report_filter_panel($auth['read'], $options, $args['website_id']);
   }
   
   /**

@@ -164,7 +164,6 @@ Record ID',
     if (empty($_GET['occurrence_id'])) {
       return 'This form requires an occurrence_id parameter in the URL.';
     } else {
-      global $user;
       data_entry_helper::$javascript .= 'indiciaData.username = "'.$user->name."\";\n";
       data_entry_helper::$javascript .= 'indiciaData.user_id = "'.hostsite_get_user_field('indicia_user_id')."\";\n";
       data_entry_helper::$javascript .= 'indiciaData.website_id = '.$args['website_id'].";\n";
