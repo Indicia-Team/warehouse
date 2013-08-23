@@ -35,7 +35,7 @@ class extension_site_hierarchy_navigator {
    *
    * Supply an option @layerLocationTypes with a comma separated array of the location types ID to load in top down order.
    */
-  public function map($auth, $args, $tabalias, $options, $path) {
+  public function map($auth, $args, $tabalias, $options, $path) {  
     global $base_root;
     $path = $base_root.base_path().
           //handle whether the drupal installation has clean urls setup.
@@ -100,6 +100,11 @@ class extension_site_hierarchy_navigator {
   public function breadcrumb($auth, $args, $tabalias, $options, $path) {
     iform_load_helpers(array('map_helper'));
     map_helper::$javascript .= "indiciaData.useBreadCrumb=true;\n";
+    //If the breadcrumb parameter is supplied in the url, it means the user has already been to
+    //this page and is returning and has clicked on another page breadcrumb location to zoom to, so we need to rebuild the 
+    //page breadcrumb trail and zoom the map
+    if ($_GET['breadcrumb'])
+      map_helper::$javascript .= "indiciaData.preloadBreadcrumb='".$_GET['breadcrumb']."';\n";
     $breadcrumb = '<div><ul id="map-breadcrumb"></ul></div>';
     return $breadcrumb;
   }
