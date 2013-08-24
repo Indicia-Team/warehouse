@@ -22,6 +22,11 @@
  */
 
 ?>
+<?php if (!empty($pgUserScriptsToBeApplied)) : ?>
+<p>The following script includes changes which need to be run against the database using the postgres root user account. Please run them manually
+as the upgrade tool does not have the required level of privileges.</p>
+<pre><?php echo $pgUserScriptsToBeApplied; ?></pre>
+<?php endif; ?>
 <?php if ($db_version!=$app_version || isset($error)) : ?>
 <div class="page-notice ui-state-error ui-corner-all"><p><strong>The upgrade failed.</strong></p>
 <?php if ($db_version!=$app_version  && !isset($error)) echo "<p>Database version and application version do not match.</p>"; ?>

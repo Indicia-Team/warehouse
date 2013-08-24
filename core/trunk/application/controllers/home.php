@@ -70,7 +70,7 @@ class Home_Controller extends Indicia_Controller {
     $system = new System_Model;
     $view->db_version=$system->getVersion();
     $view->app_version=kohana::config('version.version');
-
+    $view->pgUserScriptsToBeApplied = $upgrader->pgUserScriptsToBeApplied;
     $this->template->content=$view;
   }
 
