@@ -359,10 +359,12 @@ mapGeoreferenceHooks = [];
         $('#'+div.georefOpts.georefDivId).hide('fast', function() {div.map.updateSize();});
         e.preventDefault();
       });
-      var locChange = function() {locationSelectedInInput(div, this.value);};
-      $('#imp-location').change(locChange);
-      // trigger change event, incase imp-location was already populated when the map loaded
-      locChange();
+      if ($('#imp-location').length) {
+        var locChange = function() {locationSelectedInInput(div, this.value);};
+        $('#imp-location').change(locChange);
+        // trigger change event, incase imp-location was already populated when the map loaded
+        locChange();
+      }
     }
     
     
