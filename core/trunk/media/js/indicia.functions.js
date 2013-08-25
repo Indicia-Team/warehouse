@@ -36,19 +36,25 @@ indiciaFns = {};
       // Hovering over an ID difficulty marker, so load up the message hint. We load the whole 
       // lot for this rule, to save multiple service hits. So check if we've loaded this rule already
       if (typeof indiciaData.idDiffRuleMessages['rule'+$(e.currentTarget).attr('data-rule')]==="undefined") {
-        $.getJSON(indiciaData.read.url+'index.php/services/data/verification_rule_datum',
-            {"verification_rule_id":$(e.currentTarget).attr('data-rule'), "header_name":"INI",
+        $.ajax({
+          dataType: "jsonp",
+          url: indiciaData.read.url+'index.php/services/data/verification_rule_datum',
+          data: {"verification_rule_id":$(e.currentTarget).attr('data-rule'), "header_name":"INI",
             "auth_token":indiciaData.read.auth_token, "nonce":indiciaData.read.nonce},
-            function(data) {
-              indiciaData.idDiffRuleMessages['rule'+$(e.currentTarget).attr('data-rule')]={};
-              $.each(data, function(idx, msg) {
-                indiciaData.idDiffRuleMessages['rule'+$(e.currentTarget).attr('data-rule')]
-                    ['diff'+msg.key] = msg.value;
-              })
-              $(e.currentTarget).attr('title', indiciaData.idDiffRuleMessages['rule'+$(e.currentTarget).attr('data-rule')]
-                  ['diff'+$(e.currentTarget).attr('data-diff')]);
-            }
-        );
+          success: function(data) {
+            indiciaData.idDiffRuleMessages['rule'+$(e.currentTarget).attr('data-rule')]={};
+            $.each(data, function(idx, msg) {
+              indiciaData.idDiffRuleMessages['rule'+$(e.currentTarget).attr('data-rule')]
+                  ['diff'+msg.key] = msg.value;
+            })
+            $(e.currentTarget).attr('title', indiciaData.idDiffRuleMessages['rule'+$(e.currentTarget).attr('data-rule')]
+                ['diff'+$(e.currentTarget).attr('data-diff')]);
+          },
+          error: function(jqXHR, textStatus, errorThrown ) {
+            // put a default in place.
+            $(e.currentTarget).attr('title', 'Caution, identification difficulty level ' + $(e.currentTarget).attr('data-rule') + ' out of 5');
+          }
+        });
       } else {
         $(e.currentTarget).attr('title', indiciaData.idDiffRuleMessages['rule'+$(e.currentTarget).attr('data-rule')]
                   ['diff'+$(e.currentTarget).attr('data-diff')]);
