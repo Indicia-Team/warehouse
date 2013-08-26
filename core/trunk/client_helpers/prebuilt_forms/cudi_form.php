@@ -312,6 +312,12 @@ class iform_cudi_form extends iform_dynamic {
    */
   public static function load_existing_record($args, $auth, $entity, $id, $view = 'detail', $sharing = false, $loadImages = false) {
     global $fieldsToHoldInCountUnitBoundary;
+    //If we are loading a parent count unit rather than a boundary, then a none admin user
+    //will always have the latest boundary loaded (even if preferred is set). So we need to 
+    //get a list of boundary versions they will see so we can load the latest one
+    if (empty($_GET['parent_id'])) {
+      $boundaryVersions = self::getBoundaryVersionsList($args,$_GET['location_id'],$auth);
+    }
     $parentRecord = data_entry_helper::get_population_data(array(
       'table' => $entity,
       'extraParams' => $auth['read'] + array('id' => $id, 'view' => $view),
@@ -320,9 +326,16 @@ class iform_cudi_form extends iform_dynamic {
     ));
     if (!empty($_GET['parent_id']))
       $boundaryId = $_GET['location_id'];
-    else
-      //If looking at a Count Unit, the boundary info we view comes from the preferred boundary
-      $boundaryId = self::getIdForCountUnitPreferredBoundaryIfApplicable($args, $auth);
+    else {
+      //If looking at a Count Unit as an administrator, the boundary info we view comes from the preferred boundary
+      if ($args['administrator_mode']==1) {
+        $boundaryId = self::getIdForCountUnitPreferredBoundaryIfApplicable($args, $auth);
+      } else {
+        //If looking at a Count Unit as an normal, the boundary info we view comes from the latest boundary.
+        //As the report returns data as "order by id desc" it means we can just get the first id.
+        $boundaryId = $boundaryVersions[0]['id'];
+      }
+    }
     if (!empty($boundaryId)) {
       $preferredBoundaryRecord = data_entry_helper::get_population_data(array(
         'table' => $entity,
@@ -554,6 +567,29 @@ class iform_cudi_form extends iform_dynamic {
   }
 
   /*
+   * Get a list of boundary versions
+   */
+  protected static function getBoundaryVersionsList($args,$locationId,$auth) {
+    global $user;
+    iform_load_helpers(array('report_helper')); 
+    $optionsForBoundaryVersionsReport = array(
+      'dataSource'=>'reports_for_prebuilt_forms/CUDI/get_count_unit_boundaries_for_user_role',
+      'readAuth'=>$auth['read'],
+      'extraParams' =>array('preferred_boundary_attribute_id'=>$args['preferred_boundary_attribute_id'],
+                            'current_user_id'=>$user->uid,
+                            'count_unit_id'=>$locationId,
+                            'admin_role'=>$args['administrator_mode'])
+    );
+    //Get the report options such as the Preset Parameters on the Edit Tab
+    $optionsForBoundaryVersionsReport = array_merge(
+      iform_report_get_report_options($args, $readAuth),
+    $optionsForBoundaryVersionsReport);    
+    //Collect the boundaries from a report.
+    $boundaryVersions = report_helper::get_report_data($optionsForBoundaryVersionsReport);
+    return $boundaryVersions;
+  }
+          
+  /*
    * Control allows a user to select which count unit boundary version they intend to be the preferred one upon saving.
    * In order for control to operate correctly, the parent count unit must be loaded into the location_id parameter in the URL.
    */
@@ -610,20 +646,8 @@ class iform_cudi_form extends iform_dynamic {
                                            }
                                          }
                                          ";  
-      $options = array(
-        'dataSource'=>'reports_for_prebuilt_forms/CUDI/get_count_unit_boundaries_for_user_role',
-        'readAuth'=>$auth['read'],
-        'extraParams' =>array('preferred_boundary_attribute_id'=>$args['preferred_boundary_attribute_id'],
-                              'current_user_id'=>$user->uid,
-                              'count_unit_id'=>$parentCountUnitId,
-                              'admin_role'=>$admin_mode)
-      );
-      //Get the report options such as the Preset Parameters on the Edit Tab
-      $options = array_merge(
-        iform_report_get_report_options($args, $readAuth),
-      $options);    
       //Collect the boundaries from a report.
-      $boundaryVersions = report_helper::get_report_data($options);
+      $boundaryVersions = self::getBoundaryVersionsList($args,$parentCountUnitId,$auth);
       if (!empty($boundaryVersions)) {
         $r = '<label for="boundary_versions">Boundary Versions:</label> ';
         //Put the count unit boundaries into a drop-down and setup reloading of the page when an item is selected.
@@ -669,12 +693,17 @@ class iform_cudi_form extends iform_dynamic {
         $r .= "<br>";
       }
 
-      //If we are viewing a boundary, then defalt it in the drop-down else default to preferred item
+      //If we are viewing a boundary, then default it in the drop-down else default to preferred item if admin or latest item
+      //if normal user
       data_entry_helper::$javascript .= "var parentId = '".$_GET['parent_id']."';
                                          if (parentId!=='') {
                                            $(\"#boundary_versions option[value='".$_GET['location_id']."']\").attr('selected', 'selected');
                                          } else {
-                                           $(\"#boundary_versions option[value=\"+$('#preferred_boundary_hidden').val()+\"]\").attr('selected', 'selected');
+                                           if (".$admin_mode."==1) {
+                                             $(\"#boundary_versions option[value=\"+$('#preferred_boundary_hidden').val()+\"]\").attr('selected', 'selected');
+                                           } else {
+                                             $(\"#boundary_versions option[value=\"+$maxBoundaryId+\"]\").attr('selected', 'selected');
+                                           }
                                          }\n";
       return $r;
     }
