@@ -143,7 +143,11 @@ function add_new_layer_for_site_hierarchy_navigator(clickedFeatureId,breadcrumbL
           indiciaData.reportlayer.removeAllFeatures();
           indiciaData.mapdiv.map.addLayer(indiciaData.reportlayer);
           indiciaData.reportlayer.addFeatures(features); 
-          zoom_to_area(features);
+          //When we come back to the page from a breadcrumb on another page, we rebuild the breadcrumb as if the user
+          //had been clicking on the map several times, however we only want to draw the map on the last step of rebuilding the breadcrumb
+          //otherwise we lose performance.
+          if (!(indiciaData.preloadBreadcrumb && currentLayerCounter<breadCrumbIds.length))
+            zoom_to_area(features);
           currentLayerCounter++;
         } else {
           //Open the coun unit page and give it the breadcrumb optiosn it needs
