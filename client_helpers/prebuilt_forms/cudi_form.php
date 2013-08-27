@@ -570,15 +570,24 @@ class iform_cudi_form extends iform_dynamic {
    * Get a list of boundary versions
    */
   protected static function getBoundaryVersionsList($args,$locationId,$auth) {
-    global $user;
+    global $user;   
+    if (!isset($user->profile_indicia_user_id) && function_exists('profile_load_profile'))
+      profile_load_profile($user);
     iform_load_helpers(array('report_helper')); 
-    $optionsForBoundaryVersionsReport = array(
+    if (!empty($user->profile_indicia_user_id))
+      $extraParams=array('preferred_boundary_attribute_id'=>$args['preferred_boundary_attribute_id'],
+                              'current_user_id'=>$user->profile_indicia_user_id,
+                              'count_unit_id'=>$locationId,
+                              'admin_role'=>$args['administrator_mode']);
+    else 
+      $extraParams=array('preferred_boundary_attribute_id'=>$args['preferred_boundary_attribute_id'],
+                          'current_user_id'=>$user->uid,
+                          'count_unit_id'=>$locationId,
+                          'admin_role'=>$args['administrator_mode']);
+      $optionsForBoundaryVersionsReport = array(
       'dataSource'=>'reports_for_prebuilt_forms/CUDI/get_count_unit_boundaries_for_user_role',
       'readAuth'=>$auth['read'],
-      'extraParams' =>array('preferred_boundary_attribute_id'=>$args['preferred_boundary_attribute_id'],
-                            'current_user_id'=>$user->uid,
-                            'count_unit_id'=>$locationId,
-                            'admin_role'=>$args['administrator_mode'])
+      'extraParams' =>$extraParams
     );
     //Get the report options such as the Preset Parameters on the Edit Tab
     $optionsForBoundaryVersionsReport = array_merge(
