@@ -61,133 +61,128 @@ function add_new_layer_for_site_hierarchy_navigator(clickedFeatureId,breadcrumbL
   var parentId = parentIdAndName[0];
   var parentName = parentIdAndName[1];
   var reportRequest;
-  //If the user has specified this layer must also display count units, then add them to the report parameters
-  if (inArray(indiciaData.layerLocationTypes[currentLayerCounter],indiciaData.showCountUnitsForLayers)) {
-    reportRequest = indiciaData.layerReportRequest + '&location_type_id='+indiciaData.layerLocationTypes[currentLayerCounter]+','+indiciaData.layerLocationTypes[indiciaData.layerLocationTypes.length-1]+ '&parent_id='+parentId;
+  if (!indiciaData.layerLocationTypes[currentLayerCounter]) {
+    location = indiciaData.countUnitPagePath+'location_id='+parentId+'&'+breadcrumbIdsToPass;
   } else {
-    reportRequest = indiciaData.layerReportRequest + '&location_type_id='+indiciaData.layerLocationTypes[currentLayerCounter]+'&parent_id='+parentId;
-  }
-  
-  //Get the locations for the next location type in the clicked location.
-  $.getJSON(reportRequest,
-      null,
-      function(response, textStatus, jqXHR) { 
-        //Don't keep zooming once we reach bottom layer
-        if (response.length>0 || clickedFeature) {
-          var currentLayerObjectTypes = [];
-          var features=[];    
-          var existingBreadcrumb;
-          var featureIds=[];          
-          //Make nice names for the layers and add boundary geometry to map
-          $.each(response, function (idx, obj) {
-            //Make a distinct list of the location types being displayed on the current layer
-            if (!inArray(obj.location_type_name,currentLayerObjectTypes)) {
-              currentLayerObjectTypes.push(obj.location_type_name);
-            }
-            if (obj.boundary_geom) {
-              indiciaData.mapdiv.addPt(features, obj, 'boundary_geom', {}, obj.id);
-            } 
-            else {
-              indiciaData.mapdiv.addPt(features, obj, 'centroid_geom', {}, obj.id);
-            }
-            featureIds[idx] = obj.id;
-          });
-          var currentLayerObjectTypesString;
-          var i;
-          //Convert the list of location types displayed in the current layer into a comma seperated string
-          for (i=0; i<currentLayerObjectTypes.length;i++) {
-            if (i===0) {
-              currentLayerObjectTypesString=currentLayerObjectTypes[i];
-            }
-            if (i!==0) {
-              currentLayerObjectTypesString=currentLayerObjectTypesString+' '+currentLayerObjectTypes[i];
-            }
-            if (i!==currentLayerObjectTypes.length-1) {
-              currentLayerObjectTypesString=currentLayerObjectTypesString+',';
-            }
-          }
-          //Give the layer a name that includes the location types being shown and the parent name as applicable
-          if (parentName && currentLayerObjectTypesString) {
-            indiciaData.reportlayer.setName('Locations of type ' + currentLayerObjectTypesString + ' in ' + parentName);
-          } else {
-            if (currentLayerObjectTypesString) {
-              indiciaData.reportlayer.setName('Locations of type ' + currentLayerObjectTypesString);
-            }
-            if (parentName) {
-              indiciaData.reportlayer.setName('Viewing location ' + parentName);
-            }
-          }
-          //make the breadcrumb options we can give to another page by storing up the location ids
-          if (indiciaData.useBreadCrumb) {
-            if (clickedFeatureId) {
-              if (breadcrumbIdsToPass) {
-                breadcrumbIdsToPass = breadcrumbIdsToPass + ',' + clickedFeatureId;
-              } else {
-                breadcrumbIdsToPass = 'breadcrumb='+clickedFeatureId;
+    //If the user has specified this layer must also display count units, then add them to the report parameters
+    if (inArray(indiciaData.layerLocationTypes[currentLayerCounter],indiciaData.showCountUnitsForLayers)) {
+      reportRequest = indiciaData.layerReportRequest + '&location_type_id='+indiciaData.layerLocationTypes[currentLayerCounter]+','+indiciaData.layerLocationTypes[indiciaData.layerLocationTypes.length-1]+ '&parent_id='+parentId;
+    } else {
+      reportRequest = indiciaData.layerReportRequest + '&location_type_id='+indiciaData.layerLocationTypes[currentLayerCounter]+'&parent_id='+parentId;
+    }
+
+    //Get the locations for the next location type in the clicked location.
+    $.getJSON(reportRequest,
+        null,
+        function(response, textStatus, jqXHR) { 
+          //Don't keep zooming once we reach bottom layer
+          if (response.length>0 || clickedFeature) {
+            var currentLayerObjectTypes = [];
+            var features=[];    
+            var existingBreadcrumb;
+            var featureIds=[];          
+            //Make nice names for the layers and add boundary geometry to map
+            $.each(response, function (idx, obj) {
+              //Make a distinct list of the location types being displayed on the current layer
+              if (!inArray(obj.location_type_name,currentLayerObjectTypes)) {
+                currentLayerObjectTypes.push(obj.location_type_name);
+              }
+              if (obj.boundary_geom) {
+                indiciaData.mapdiv.addPt(features, obj, 'boundary_geom', {}, obj.id);
+              } 
+              else {
+                indiciaData.mapdiv.addPt(features, obj, 'centroid_geom', {}, obj.id);
+              }
+              featureIds[idx] = obj.id;
+            });
+            var currentLayerObjectTypesString;
+            var i;
+            //Convert the list of location types displayed in the current layer into a comma seperated string
+            for (i=0; i<currentLayerObjectTypes.length;i++) {
+              if (i===0) {
+                currentLayerObjectTypesString=currentLayerObjectTypes[i];
+              }
+              if (i!==0) {
+                currentLayerObjectTypesString=currentLayerObjectTypesString+' '+currentLayerObjectTypes[i];
+              }
+              if (i!==currentLayerObjectTypes.length-1) {
+                currentLayerObjectTypesString=currentLayerObjectTypesString+',';
               }
             }
-            breadcrumb(breadcrumbLayerCounter,currentLayerCounter,parentId,parentName);
-          }
-          //make the select list
-          if (indiciaData.useSelectList) {
-            selectlist(features);
-          }
-          //Get the link to report button
-          if (indiciaData.useListReportLink) {
-            list_report_link(indiciaData.layerLocationTypes[currentLayerCounter],parentId, parentName);
-          }     
-          //Get the Add Count Unit button
-          if (indiciaData.useAddCountUnit) {
-            add_count_unit_link(indiciaData.layerLocationTypes[currentLayerCounter],parentId);
-          }
-          //Get the Add Site button
-          if (indiciaData.useAddSite) {
-            add_site_link(indiciaData.layerLocationTypes[currentLayerCounter],parentId);
-          }
-          //Get the Edit Site button
-          if (indiciaData.useEditSite) {
-            edit_site_link(indiciaData.layerLocationTypes[currentLayerCounter],parentId,parentName);
-          }
-          indiciaData.reportlayer.removeAllFeatures();
-          indiciaData.clickedParentLayer.removeAllFeatures();
-          indiciaData.mapdiv.map.addLayer(indiciaData.reportlayer);
-          indiciaData.reportlayer.addFeatures(features); 
-          //Add seperate layer for parent location as it isn't a clickable feature
-          if (clickedFeature) {
-            indiciaData.clickedParentLayer.setName(clickedFeature.id)
-            indiciaData.mapdiv.map.addLayer(indiciaData.clickedParentLayer);
-            indiciaData.clickedParentLayer.addFeatures(clickedFeature); 
-          }
-          //When we come back to the page from a breadcrumb on another page, we rebuild the breadcrumb as if the user
-          //had been clicking on the map several times, however we only want to draw the map on the last step of rebuilding the breadcrumb
-          //otherwise we lose performance.
-          if (!(indiciaData.preloadBreadcrumb && currentLayerCounter<breadCrumbIds.length)) {
-            //We need to zoom using both the parent feature and the child features
-            var featuresToZoom = [];
-            featuresToZoom = features;
-            if (clickedFeature) {
-              featuresToZoom.push(clickedFeature);
+            //Give the layer a name that includes the location types being shown and the parent name as applicable
+            if (parentName && currentLayerObjectTypesString) {
+              indiciaData.reportlayer.setName('Locations of type ' + currentLayerObjectTypesString + ' in ' + parentName);
+            } else {
+              if (currentLayerObjectTypesString) {
+                indiciaData.reportlayer.setName('Locations of type ' + currentLayerObjectTypesString);
+              }
+              if (parentName) {
+                indiciaData.reportlayer.setName('Viewing location ' + parentName);
+              }
             }
-            zoom_to_area(featuresToZoom);
-          }
-          currentLayerCounter++;
-        } else {
-          //Open the coun unit page and give it the breadcrumb optiosn it needs
-          if (!indiciaData.layerLocationTypes[currentLayerCounter]) {
-            location = indiciaData.countUnitPagePath+'location_id='+parentId+'&'+breadcrumbIdsToPass;
-          } else {
-            if (fromSelectlist===true) {
-              alert('The selected location does not have any data to display');         
+            //make the breadcrumb options we can give to another page by storing up the location ids
+            if (indiciaData.useBreadCrumb) {
+              if (clickedFeatureId) {
+                if (breadcrumbIdsToPass) {
+                  breadcrumbIdsToPass = breadcrumbIdsToPass + ',' + clickedFeatureId;
+                } else {
+                  breadcrumbIdsToPass = 'breadcrumb='+clickedFeatureId;
+                }
+              }
+              breadcrumb(breadcrumbLayerCounter,currentLayerCounter,parentId,parentName);
             }
+            //make the select list
+            if (indiciaData.useSelectList) {
+              selectlist(features);
+            }
+            //Get the link to report button
+            if (indiciaData.useListReportLink) {
+              list_report_link(indiciaData.layerLocationTypes[currentLayerCounter],parentId, parentName);
+            }     
+            //Get the Add Count Unit button
+            if (indiciaData.useAddCountUnit) {
+              add_count_unit_link(indiciaData.layerLocationTypes[currentLayerCounter],parentId);
+            }
+            //Get the Add Site button
+            if (indiciaData.useAddSite) {
+              add_site_link(indiciaData.layerLocationTypes[currentLayerCounter],parentId);
+            }
+            //Get the Edit Site button
+            if (indiciaData.useEditSite) {
+              edit_site_link(indiciaData.layerLocationTypes[currentLayerCounter],parentId,parentName);
+            }
+            indiciaData.reportlayer.removeAllFeatures();
+            indiciaData.clickedParentLayer.removeAllFeatures();
+            indiciaData.mapdiv.map.addLayer(indiciaData.reportlayer);
+            indiciaData.reportlayer.addFeatures(features); 
+            //Add seperate layer for parent location as it isn't a clickable feature
+            if (clickedFeature) {          
+              indiciaData.clickedParentLayer.setName(clickedFeature.id)
+              indiciaData.mapdiv.map.addLayer(indiciaData.clickedParentLayer);
+              indiciaData.clickedParentLayer.addFeatures(clickedFeature); 
+            }
+            //When we come back to the page from a breadcrumb on another page, we rebuild the breadcrumb as if the user
+            //had been clicking on the map several times, however we only want to draw the map on the last step of rebuilding the breadcrumb
+            //otherwise we lose performance.
+            if (!(indiciaData.preloadBreadcrumb && currentLayerCounter<breadCrumbIds.length)) {
+              //We need to zoom using both the parent feature and the child features
+              var featuresToZoom = [];
+              featuresToZoom = features;
+              if (clickedFeature) {
+                featuresToZoom.push(clickedFeature);
+              }
+              zoom_to_area(featuresToZoom);
+            }
+            currentLayerCounter++;
+          }
+          //If the user is returning from another page, they will have specified a location to zoom to.
+          //Auto loop so we can give them the page in the same state that they left it in
+          if (indiciaData.preloadBreadcrumb && currentLayerCounter<breadCrumbIds.length+1) {
+            add_new_layer_for_site_hierarchy_navigator(breadCrumbIds[currentLayerCounter-1],null,false,breadCrumbIds);
           }
         }
-        //If the user is returning from another page, they will have specified a location to zoom to.
-        //Auto loop so we can give them the page in the same state that they left it in
-        if (indiciaData.preloadBreadcrumb && currentLayerCounter<breadCrumbIds.length+1) {
-          add_new_layer_for_site_hierarchy_navigator(breadCrumbIds[currentLayerCounter-1],null,false,breadCrumbIds);
-        }
-      }
-  );
+    );
+  }
 }
 
 /*
