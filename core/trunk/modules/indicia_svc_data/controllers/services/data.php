@@ -33,8 +33,6 @@ class Data_Controller extends Data_Service_Base_Controller {
   // if there is an error
   protected $response;
   protected $content_type;
-  
-  // @todo: THE FOLLOWING SECTION IS NOT USED!
 
   // Read/Write Access to entities: there are several options:
   // 1) Standard: Restricted read and write access dependant on website id.
@@ -534,6 +532,19 @@ class Data_Controller extends Data_Service_Base_Controller {
    * @param <type> $arguments
    */
   public function __call($name, $arguments) {
+    $extensions = $this->loadExtensions($name);
+    if (array_key_exists(inflector::plural($name), $extensions)) {
+      $this->handle_call($name);
+    } else {
+      echo "Unrecognised entity $name";
+    }
+  }
+  
+  /**
+   * Load any warehouse modules which extend the data services entity list.
+   * @return Array list of extension definitions.
+   */
+  protected function loadExtensions($entity) {
     // use caching, so things don't slow down if there are lots of plugins
     $cacheId = 'extend-data-services';
     $cache = Cache::instance();
@@ -553,12 +564,12 @@ class Data_Controller extends Data_Service_Base_Controller {
       }
       $cache->set($cacheId, $extensions);
     }
-    if (array_key_exists(inflector::plural($name), $extensions)) {
-      $this->extensionOpts = $extensions[inflector::plural($name)];
-      $this->handle_call($name);
-    } else {
-      echo "Unrecognised entity $name";
+    if (array_key_exists(inflector::plural($entity), $extensions)) {
+      $this->extensionOpts = $extensions[inflector::plural($entity)];
     }
+    if (isset($this->extensionOpts) && (!isset($this->extensionOpts['readOnly']) || $this->extensionOpts['readOnly']!==true))
+      $this->allow_updates[] = $entity;
+    return $extensions;
   }
 
   /**
@@ -1088,8 +1099,11 @@ class Data_Controller extends Data_Service_Base_Controller {
   */
   protected function check_update_access($entity, $s)
   {
-    if (!in_array($entity, $this->allow_updates) ||
-        (isset($extensionOpts['readOnly']) && $extensionsOpts['readOnly']===true)) {
+    if (!in_array($entity, $this->allow_updates)) {
+      // check if an extension module declares write access to this entity
+      $extensions = $this->loadExtensions($entity);
+    }
+    if (!in_array($entity, $this->allow_updates)) {
       Kohana::log('info', 'Attempt to write to entity '.$entity.' by website '.$this->website_id.': no write access allowed through services.');
       throw new ServiceError('Attempt to write to entity '.$entity.' failed: no write access allowed through services.');
     }
