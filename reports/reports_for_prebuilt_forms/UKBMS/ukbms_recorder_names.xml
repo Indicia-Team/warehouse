@@ -1,5 +1,5 @@
 <report
-    title='UKBMS REcorder Names list'
+    title='UKBMS Recorder Names list'
     description='An list of text names used for the recorder names attribute entered by the user - this assummes Easy Login.'
 >
   <query>

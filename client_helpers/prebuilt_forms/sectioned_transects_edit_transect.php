@@ -36,8 +36,7 @@ class iform_sectioned_transects_edit_transect {
    * @var int Contains the id of the location attribute used to store the CMS user ID.
    */
   protected static $cmsUserAttrId;
-  protected static $branchLocationAttr;
-  protected static $branchPersonAttr;
+  private static $cmsUserList = null;
   
   /**
    * @var string The Url to post AJAX form saves to.
@@ -73,6 +72,16 @@ class iform_sectioned_transects_edit_transect {
             'description'=>'Enter the Drupal permission name to be used to determine if this user is a manager. Entering this will allow the identified users to delete or modify the site even there are walks (samples) associated with it.',
             'type'=>'string',
             'required' => false
+          ),
+          array(
+            'name' => 'branch_assignment_permission',
+            'label' => 'Drupal Permission name for Branch Manager',
+            'type' => 'string',
+            'description' => 'If you do not want to use the Branch Manager functionality, leave this blank. '.
+                             'Otherwise, specify the name of a permission to which when assigned to a user determines that the user is a branch manager. '.
+                             '<br />Requires a single-value Branch CMS User ID integer attribute on the locations.',
+            'required'=>false,
+            'group' => 'Transects Editor Settings'
           ), array(
             'name' => 'maxSectionCount',
             'label' => 'Max. Section Count',
@@ -170,7 +179,8 @@ class iform_sectioned_transects_edit_transect {
             'type'=>'string',
             'group'=>'Initial Map View',
             'default'=>'0.1'
-          ), array(
+          ),
+          array(
             'name' => 'allow_user_assignment',
             'label' => 'Allow users to be assigned to transects',
             'type' => 'boolean',
@@ -192,7 +202,9 @@ class iform_sectioned_transects_edit_transect {
     if (!isset($args['route_map_height'])) $args['route_map_height'] = 600;
     if (!isset($args['route_map_buffer'])) $args['route_map_buffer'] = 0.1;
     if (!isset($args['allow_user_assignment'])) $args['allow_user_assignment'] = true;
-      
+    if (!isset($args['managerPermission'])) $args['managerPermission'] = '';
+    if (!isset($args['branch_assignment_permission'])) $args['branch_assignment_permission'] = '';
+    
     return $args;
   }
 
@@ -224,6 +236,7 @@ class iform_sectioned_transects_edit_transect {
    * @todo: Implement this method 
    */
   public static function get_form($args, $node, $response=null) {
+    global $user;
     $checks=self::check_prerequisites();
     $args = self::getArgDefaults($args);
     if ($checks!==true)
@@ -239,7 +252,14 @@ class iform_sectioned_transects_edit_transect {
     );
     $settings = array(
       'locationTypes' => helper_base::get_termlist_terms($auth, 'indicia:location_types', $typeTerms),
-      'locationId' => isset($_GET['id']) ? $_GET['id'] : null
+      'locationId' => isset($_GET['id']) ? $_GET['id'] : null,
+      'canEditBody' => true,
+      'canEditSections' => true, // this is specifically the number of sections: so can't delete or change the attribute value.
+      // Allocations of Branch Manager are done by a person holding the managerPermission.
+      'canAllocBranch' => $args['managerPermission']=="" || user_access($args['managerPermission']),
+      // Allocations of Users are done by a person holding the managerPermission or the allocate Branch Manager.
+      // The extra check on this for branch managers is done later
+      'canAllocUser' => $args['managerPermission']=="" || user_access($args['managerPermission']) 
     );
     $settings['attributes'] = data_entry_helper::getAttributes(array(
         'id' => $settings['locationId'],
@@ -268,23 +288,11 @@ class iform_sectioned_transects_edit_transect {
       // keep a copy of the cms user ID attribute so we can use it later.
       self::$cmsUserAttrId = $settings['cmsUserAttr']['attributeId'];
     }
-    // need to check if branch allocatrion is active. This is done by having each location having a branch attribute. In the initial design
-    // this is a single value, assigned from a termlist which holds the branches. Each person also has a branch attribute, also a single
-    // value from the same termlist. When a user creates a location this branch is assigned: single readonly field. When a user or branch
-    // coordinator views the location, it is also readonly. Admins however get a select drop down so they can move the location from
-    // one branch to another. If the branch attribute does not exist in either the main location attributes or the person attributes,
-    // then the whole branch functionality is switched off.
-    $settings['person_attributes'] = data_entry_helper::getAttributes(array(
-        'valuetable'=>'person_attribute_value',
-        'attrtable'=>'person_attribute',
-        'key'=>'person_id',
-        'fieldprefix'=>'perAttr',
-        'extraParams'=>$auth['read'],
-        'multiValue' => false
-    ));
-    // keep a copies of the attribute_ids so we can use them later.
-    self::$branchLocationAttr = self::extract_attr($settings['attributes'], "Branch");
-    self::$branchPersonAttr = self::extract_attr($settings['person_attributes'], "Branch");
+    // need to check if branch allocation is active.
+    if ($args['branch_assignment_permission'] != '') {
+    	if (false== ($settings['branchCmsUserAttr'] = self::extract_attr($settings['attributes'], "Branch CMS User ID")))
+    		return '<br />This form is designed to be used with either<br />1) the Branch CMS User ID attribute setup for locations in the survey, or<br />2) the "Permission name for Branch Manager" option left blank.<br />';
+    }
     
     data_entry_helper::$javascript .= "indiciaData.sections = {};\n";
     $settings['sections']=array();
@@ -292,6 +300,38 @@ class iform_sectioned_transects_edit_transect {
     $settings['maxSectionCount'] = $args['maxSectionCount'];
     if ($settings['locationId']) {
       data_entry_helper::load_existing_record($auth['read'], 'location', $settings['locationId']);
+      $settings['walks'] = data_entry_helper::get_population_data(array(
+        'table' => 'sample',
+        'extraParams' => $auth['read'] + array('view'=>'detail','location_id'=>$settings['locationId'],'deleted'=>'f'),
+        'nocache' => true
+      ));
+      // Work out permissions for this user: note that canAllocBranch setting effectively shows if a manager.
+      if(!$settings['canAllocBranch']) {
+        // Check whether I am a normal user and it is allocated to me, and also if I am a branch manager and it is allocated to me.
+        $settings['canEditBody'] = false;
+        $settings['canEditSections'] = false;
+        if($args['allow_user_assignment'] &&
+            count($settings['walks']) == 0 &&
+            isset($settings['cmsUserAttr']['default']) &&
+            !empty($settings['cmsUserAttr']['default'])) {
+          foreach($settings['cmsUserAttr']['default'] as $value) { // multi value
+            if($value == $user->uid) { // comparing string against int so no triple equals
+              $settings['canEditBody'] = true;
+              $settings['canEditSections'] = true;
+              break;
+            }
+          }
+        }
+        // If a Branch Manager and not a main manager, then can't edit the number of sections
+        if($args['branch_assignment_permission'] != '' &&
+            user_access($args['branch_assignment_permission']) &&
+            isset($settings['branchCmsUserAttr']['default']) &&
+            !empty($settings['branchCmsUserAttr']['default']) &&
+            $settings['branchCmsUserAttr']['default'] == $user->uid) { // comparing string against int so no triple equals
+          $settings['canEditBody'] = true;
+          $settings['canAllocUser'] = true;
+        }
+      } // for an admin user the defaults apply, which will be can do everything.
       // find the number of sections attribute.
       foreach($settings['attributes'] as $attr) {
         if ($attr['caption']==='No. of sections') {
@@ -301,6 +341,8 @@ class iform_sectioned_transects_edit_transect {
           }
           $existingSectionCount = empty($attr['displayValue']) ? 1 : $attr['displayValue'];
           data_entry_helper::$javascript .= "$('#".str_replace(':','\\\\:',$attr['id'])."').attr('min',$existingSectionCount).attr('max',".$args['maxSectionCount'].");\n";
+          if(!$settings['canEditSections'])
+            data_entry_helper::$javascript .= "$('#".str_replace(':','\\\\:',$attr['id'])."').attr('readonly','readonly').css('color','graytext');\n";
         }
       }
       $sections = data_entry_helper::get_population_data(array(
@@ -313,19 +355,7 @@ class iform_sectioned_transects_edit_transect {
         data_entry_helper::$javascript .= "indiciaData.sections.$code = {'geom':'".$section['boundary_geom']."','id':'".$section['id']."','sref':'".$section['centroid_sref']."','system':'".$section['centroid_sref_system']."'};\n";
         $settings['sections'][$code]=$section;
       }
-      $settings['walks'] = data_entry_helper::get_population_data(array(
-        'table' => 'sample',
-        'extraParams' => $auth['read'] + array('view'=>'detail','location_id'=>$settings['locationId'],'deleted'=>'f'),
-        'nocache' => true
-      ));
-      // only set cantEdit if you can't, otherwise is not present
-      if(!(
-           (isset($args['managerPermission']) && $args['managerPermission']!="" && user_access($args['managerPermission'])) ||
-           (count($settings['walks']) == 0)
-          )){
-        $settings['cantEdit'] = true;
-      }
-    } else {
+    } else { // not an existing site therefore no walks. On initial save, no section data is created.
       foreach($settings['attributes'] as $attr) {
         if ($attr['caption']==='No. of sections') {
           $settings['numSectionsAttr'] = $attr['fieldname'];
@@ -427,11 +457,11 @@ class iform_sectioned_transects_edit_transect {
       'fieldname' => 'location:name',
       'label' => lang::get('Transect Name'),
       'class' => 'control-width-4 required',
-      'disabled' => isset($settings['cantEdit']) ? ' disabled="disabled" ' : ''
+      'disabled' => $settings['canEditBody'] ? '' : ' disabled="disabled" '
     ));
-    if (isset($settings['cantEdit'])){
+    if (!$settings['canEditBody']){
       $r .= '<p>'.lang::get('This site cannot be edited because there are walks recorded on it. Please contact the site administrator if you think there are details which need changing.').'</p>';
-    } else if(count($settings['walks']) > 0 && (isset($args['managerPermission']) && $args['managerPermission']!="" && user_access($args['managerPermission']))) {
+    } else if(count($settings['walks']) > 0) { // can edit it
       $r .= '<p>'.lang::get('This site has walks recorded on it. Please do not change the site details without considering the impact on the existing data.').'</p>';
     }
     $list = explode(',', str_replace(' ', '', $args['spatial_systems']));
@@ -445,7 +475,7 @@ class iform_sectioned_transects_edit_transect {
       'systems' => $systems,
       'class' => 'required',
       'helpText' => lang::get('Click on the map to set the central grid reference.'),
-      'disabled' => isset($settings['cantEdit']) ? ' disabled="disabled" ' : ''
+      'disabled' => $settings['canEditBody'] ? '' : ' disabled="disabled" '
     ));
     if ($settings['locationId'] && data_entry_helper::$entity_to_load['location:code']!='' && data_entry_helper::$entity_to_load['location:code'] != null)
       $r .= data_entry_helper::text_input(array(
@@ -463,7 +493,7 @@ class iform_sectioned_transects_edit_transect {
     $bottom = '';
     $bottomBlocks = explode("\n", isset($args['bottom_blocks']) ? $args['bottom_blocks'] : '');
     foreach ($bottomBlocks as $block) {
-      $bottom .= get_attribute_html($settings['attributes'], $args, array('extraParams'=>$auth['read'], 'disabled' => isset($settings['cantEdit']) ? ' disabled="disabled" ' : ''), $block);
+      $bottom .= get_attribute_html($settings['attributes'], $args, array('extraParams'=>$auth['read'], 'disabled' => $settings['canEditBody'] ? '' : ' disabled="disabled" '), $block);
     }
     // other blocks to go at the top, next to the map
     if(isset($args['site_help']) && $args['site_help'] != ''){
@@ -493,14 +523,17 @@ class iform_sectioned_transects_edit_transect {
       $options['clickedSrefPrecisionMin'] = $args['minPrecision'];
     }
     $olOptions = iform_map_get_ol_options($args);
-    if (isset($settings['cantEdit']))
-      $options['clickForSpatialRef']=false;
+    $options['clickForSpatialRef']=$settings['canEditBody'];
     $r .= map_helper::map_panel($options, $olOptions);
     $r .= '</div></div>'; // right    
     if (!empty($bottom))
       $r .= $bottom;
+    if ($args['branch_assignment_permission'] != '') {
+      if ($settings['canAllocBranch'] || $settings['locationId'])
+        $r .= self::get_branch_assignment_control($auth['read'], $settings['branchCmsUserAttr'], $args, $settings);
+    }
     if ($args['allow_user_assignment']) {
-      if (user_access('indicia data admin')) {
+      if ($settings['canAllocUser']) {
         $r .= self::get_user_assignment_control($auth['read'], $settings['cmsUserAttr'], $args);
       } else if (!$settings['locationId']) {
         // for a new record, we need to link the current user to the location if they are not admin.
@@ -508,17 +541,16 @@ class iform_sectioned_transects_edit_transect {
         $r .= '<input type="hidden" name="locAttr:'.self::$cmsUserAttrId.'" value="'.$user->uid.'">';
       }
     }
-    $r .= self::get_branch_assignment_control($auth['read'], self::$branchLocationAttr, $args);
-    if (!isset($settings['cantEdit']))
+    if ($settings['canEditBody'])
       $r .= '<button type="submit" class="indicia-button right">'.lang::get('Save').'</button>';
     
-    if(!isset($settings['cantEdit']) && $settings['locationId'])
+    if($settings['canEditBody'] && $settings['locationId'])
       $r .= '<button type="button" class="indicia-button right" id="delete-transect">'.lang::get('Delete').'</button>' ;
     $r .='</form>';
     $r .= '</div>'; // site-details
     // This must go after the map panel, so it has created its toolbar
     data_entry_helper::$onload_javascript .= "$('#current-section').change(selectSection);\n";
-    if(!isset($settings['cantEdit']) && $settings['locationId']) {
+    if($settings['canEditBody'] && $settings['locationId']) {
       $walkIDs = array();
       foreach($settings['walks'] as $walk) 
         $walkIDs[] = $walk['id'];
@@ -550,9 +582,9 @@ $('#delete-transect').click(deleteSurvey);
     $options['toolbarDiv'] = 'top';
     $options['tabDiv']='your-route';
     $options['gridRefHint']=true;
-    if (!isset($settings['cantEdit'])){
+    if ($settings['canEditBody']){
       $options['toolbarPrefix'] = self::section_selector($settings, 'section-select-route');
-      if(count($settings['sections'])>1 && $settings['numSectionsAttr'] != "") // do not allow deletion of last section, or if the is no section number attribute
+      if($settings['canEditSections'] && count($settings['sections'])>1 && $settings['numSectionsAttr'] != "") // do not allow deletion of last section, or if the is no section number attribute
         $options['toolbarSuffix'] = '<input type="button" value="'.lang::get('Remove Section').'" class="remove-section form-button right" title="'.lang::get('Completely remove the highlighted section. The total number of sections will be reduced by one. The form will be reloaded after the section is deleted.').'">';
       else $options['toolbarSuffix'] = '';
       $options['toolbarSuffix'] .= '<input type="button" value="'.lang::get('Erase Route').'" class="erase-route form-button right" title="'.lang::get('If the Draw Line control is active, this will erase each drawn point one at a time. If not active, then this will erase the whole highlighted route. This keeps the Section, allowing you to redraw the route for it.').'">';
@@ -601,7 +633,7 @@ $('#delete-transect').click(deleteSurvey);
     $r .= '<fieldset><legend>'.lang::get('Section Details').'</legend>';
     // Output a selector for the current section.    
     $r .= self::section_selector($settings, 'section-select')."<br/>";
-    if (!isset($settings['cantEdit'])){
+    if ($settings['canEditBody']){
       $r .= "<input type=\"hidden\" name=\"location:id\" value=\"\" id=\"section-location-id\" />\n";
       $r .= '<input type="hidden" name="website_id" value="'.$args['website_id']."\" />\n";
     }
@@ -623,8 +655,8 @@ $('#delete-transect').click(deleteSurvey);
     $r .= data_entry_helper::sref_system_select($options);
     // force a blank centroid, so that the Warehouse will recalculate it from the boundary
     //$r .= "<input type=\"hidden\" name=\"location:centroid_geom\" value=\"\" />\n";   
-    $r .= get_attribute_html($settings['section_attributes'], $args, array('extraParams'=>$auth['read'], 'disabled' => isset($settings['cantEdit']) ? ' disabled="disabled" ' : ''));
-    if (!isset($settings['cantEdit']))
+    $r .= get_attribute_html($settings['section_attributes'], $args, array('extraParams'=>$auth['read'], 'disabled' => $settings['canEditBody'] ? '' : ' disabled="disabled" '));
+    if ($settings['canEditBody'])
       $r .= '<input type="submit" value="'.lang::get('Save').'" class="form-button right" id="submit-section" />';    
     $r .= '</fieldset></form>';
     $r .= '</div>';
@@ -656,16 +688,19 @@ $('#delete-transect').click(deleteSurvey);
    * If the user has permissions, then display a control so that they can specify the list of users associated with this site.
    */
   private static function get_user_assignment_control($readAuth, $cmsUserAttr, $args) {
-    $query = db_query("select uid, name from {users} where name <> '' order by name");
-    $users = array();
-    // there have been DB API changes for Drupal7: db_query now returns the result array.
-    if(version_compare(VERSION, '7', '<')) {
-      while ($user = db_fetch_object($query)) 
-        $users[$user->uid] = $user->name;
-    } else {
-      foreach ($query as $user) 
-        $users[$user->uid] = $user->name;
-    }
+    if(self::$cmsUserList == null) {
+      $query = db_query("select uid, name from {users} where name <> '' order by name");
+      $users = array();
+      // there have been DB API changes for Drupal7: db_query now returns the result array.
+      if(version_compare(VERSION, '7', '<')) {
+        while ($user = db_fetch_object($query)) 
+          $users[$user->uid] = $user->name;
+      } else {
+        foreach ($query as $user) 
+          $users[$user->uid] = $user->name;
+      }
+      self::$cmsUserList = $users;
+  	} else $users= self::$cmsUserList;
     $r = '<fieldset id="alloc-recorders"><legend>'.lang::get('Allocate recorders to the site').'</legend>';
     $r .= data_entry_helper::select(array(
       'label' => lang::get('Select user'),
@@ -694,13 +729,40 @@ $('#delete-transect').click(deleteSurvey);
     return $r;
   }
 
-  private static function get_branch_assignment_control($readAuth, $branchLocationAttr, $args) {
-  	if(!$branchLocationAttr) return '<span style="display:none;">No branch location attribute</span>'; // no attribute so don't display
-  	$r = '<fieldset id="alloc-branch"><legend>'.lang::get('Site Branch Allocation').'</legend>';
-    $defAttrOptions = array('extraParams'=>$readAuth, 'survey_id'=>$args['survey_id']);
-    if (!user_access('indicia data admin'))
-      $defAttrOptions['disabled']='disabled';
-    $r .= data_entry_helper::outputAttribute($branchLocationAttr, $defAttrOptions);
+  private static function get_branch_assignment_control($readAuth, $branchCmsUserAttr, $args, $settings) {
+    if(!$branchCmsUserAttr) return '<span style="display:none;">No branch location attribute</span>'; // no attribute so don't display
+    if(self::$cmsUserList == null) {
+      $query = db_query("select uid, name from {users} where name <> '' order by name");
+      $users = array();
+      // there have been DB API changes for Drupal7: db_query now returns the result array.
+      if(version_compare(VERSION, '7', '<')) {
+        while ($user = db_fetch_object($query)) 
+          $users[$user->uid] = $user->name;
+      } else {
+        foreach ($query as $user) 
+          $users[$user->uid] = $user->name;
+      }
+      self::$cmsUserList = $users;
+    } else $users= self::$cmsUserList;
+    if($settings['canAllocBranch']){ // only check the users permissions if can change value - for performance reasons.
+      $new_users = array();
+      foreach ($users as $uid=>$name){
+        $account = user_load($uid);
+        if(user_access($args['branch_assignment_permission'], $account))
+          $new_users[$uid]=$name;
+      }
+      $users = array(''=>lang::get('Please select Branch Manager')) + $new_users;
+    } else
+      $users = array(''=>lang::get('Branch Manager not allocated yet')) + $users;
+    $r = '<fieldset id="alloc-branch"><legend>'.lang::get('Site Branch Allocation').'</legend>';
+    $r .= data_entry_helper::select(array(
+    		'label' => lang::get('Branch Manager'),
+    		'id' => $branchCmsUserAttr['id'],
+    		'fieldname' => $branchCmsUserAttr['fieldname'],
+    		'default' => $branchCmsUserAttr['default'],
+    		'disabled' => $settings['canAllocBranch'] ? '' : ' disabled="disabled" ',
+    		'lookupValues' => $users
+    ));
     $r .= '</fieldset>';
     return $r;
   }

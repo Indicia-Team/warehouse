@@ -45,13 +45,16 @@
     <param name='date_from' display='Date From' datatype='date'/>
     <param name='date_to' display='Date To' datatype='date'/>
     <param name='user_id' display='Indicia User ID' description='Enter the Indicia ID of the user' datatype='int' >
-	  <where>parent.created_by_id=#user_id#</where>
-	</param>
+      <where>parent.created_by_id=#user_id#</where>
+    </param>
     <param name='taxon_list_id' display='Taxon list ID' description='ID of the taxon list to show' datatype='int' />
     <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
     <param name='location_id' display='Location ID' description='Enter the ID of the location' datatype='int' >
-	  <where>parent.location_id=#location_id#</where>
-	</param>
+      <where>parent.location_id=#location_id#</where>
+    </param>
+    <param name='location_list' display='Location List' description='Enter a comma separated list of location IDs' datatype='text' >
+      <where>parent.location_id IN (#location_list#)</where>
+    </param>
   </params>
   <columns>
     <column name='occurrence_id' display='ID' />

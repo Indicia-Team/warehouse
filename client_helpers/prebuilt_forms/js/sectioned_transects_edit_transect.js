@@ -554,10 +554,10 @@ $(document).ready(function() {
   });
   
   $('.remove-user').live('click', function(evt) {
-    $(evt.target).parents('tr').css('text-decoration','line-through');
-    $(evt.target).parents('tr').addClass('ui-state-disabled');
+    $(evt.target).closest('tr').css('text-decoration','line-through');
+    $(evt.target).closest('tr').addClass('ui-state-disabled');
     // clear the underlying value
-    $(evt.target).parents('tr').find('input').val('');
+    $(evt.target).closest('tr').find('input').val('');
   });
 
 });

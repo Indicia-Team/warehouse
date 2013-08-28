@@ -1,6 +1,6 @@
 <report
     title="UKBMS: Timed Count Grid Report"
-    description="A report designed to be used with the report_calendar_grid, when configured for Timed Counts. Filtered according to the ID of the user when logged into the content management system. Dates are actually defined on Child samples."
+    description="A report designed to be used with the report_calendar_grid, when configured for Timed Counts. Filtered according to the Indicia ID (not CMS). Dates are actually defined on Child samples."
 >
 <query website_filter_field="su.website_id">
   SELECT #field_sql#

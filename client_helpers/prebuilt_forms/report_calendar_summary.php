@@ -166,7 +166,23 @@ class iform_report_calendar_summary {
         array(
           'name'=>'managerPermission',
           'caption'=>'Drupal Permission for Manager mode',
-          'description'=>'Enter the Drupal permission name to be used to determine if this user is a manager. Entering this will allow the identified users to chose which user to filter by via a drop down list. This will set the user_id in the report parameter list to either the Indicia user id if Easy Login is enabled, or the CMS user id (if not). For non managers the user_id is automatically set to the relevant ID for the logged in user. The selection of the "All Users" option sets the user_id of the report parameter list to a empty string.',
+          'description'=>'Enter the Drupal permission name to be used to determine if this user is a manager (i.e. full access to full data set). This primarily determines the functionality of the User filter, if selected.',
+          'type'=>'string',
+          'required' => false,
+          'group' => 'Controls'
+        ),
+        array(
+          'name'=>'branchManagerPermission',
+          'caption'=>'Drupal Permission for Branch Coordinator mode',
+          'description'=>'Enter the Drupal permission name to be used to determine if this user is a Branch Coordinator. This primarily determines the functionality of the User filter, if selected.',
+          'type'=>'string',
+          'required' => false,
+          'group' => 'Controls'
+        ),
+        array(
+          'name'=>'branchFilterAttribute',
+          'caption'=>'Location Branch Coordinator Attribute',
+          'description'=>'The caption of the location attribute used to assign locations to Branch Coordinators.',
           'type'=>'string',
           'required' => false,
           'group' => 'Controls'
@@ -715,9 +731,10 @@ class iform_report_calendar_summary {
   // report helper is always the CMS one.
   // Locations are always assigned by a CMS user ID attribute, not by who created them.
   
-
   private function location_control($args, $readAuth, $node, &$options)
   {
+  	// note that when in user specific mode it returns the list currently assigned to the user: it does not give 
+  	// locations which the user previously recorded data against, but is no longer allocated to.
     global $user;
     $siteUrlParams = self::get_site_url_params();
     // loctools is not appropriate here as it is based on a node, for which this is a very simple one, invoking other nodes for the sample creation
@@ -726,15 +743,20 @@ class iform_report_calendar_summary {
     // this is user specific: when no user selection control, or all users selected then default to all locations
     // this means it does not get a list of all locations if no user is selected: to be added later?
     $options['extraParams']['location_id'] = $siteUrlParams[self::$locationKey]['value'];
+    $options['extraParams']['location_list'] = '';
     if($options['extraParams']['location_id'] == '') // only allow links when a location is specified
       unset($options['linkURL']);
     
-    if(!isset($args['includeUserFilter']) || !$args['includeUserFilter'] || !isset($options['extraParams']['user_id']) || $options['extraParams']['user_id']=="" || !isset($args['userSpecificLocationLookUp']) || !$args['userSpecificLocationLookUp']){
+    if(!isset($args['includeUserFilter']) || !$args['includeUserFilter'] ||
+        ((!isset($options['extraParams']['user_id']) || $options['extraParams']['user_id']=="") &&
+            $siteUrlParams[self::$userKey]['value']!="branch") ||
+        !isset($args['userSpecificLocationLookUp']) || !$args['userSpecificLocationLookUp']){
       // Get list of all locations
       $locationListArgs=array('nocache'=>true,
           'extraParams'=>array_merge(array('website_id'=>$args['website_id'], 'location_type_id' => ''),
                        $readAuth),
           'dataSource' => 'library/locations/locations_list_exclude_sensitive');
+      $description="All sites";
     } else {
       // Get list of locations attached to this user via the cms user id attribute: have to have included the user control to get user id, and set the userSpecificLocationLookUp flag
       // first need to scan param_presets for survey_id..
@@ -751,17 +773,32 @@ class iform_report_calendar_summary {
       if(isset($args['locationTypeFilter']) && $args['locationTypeFilter']!="")
         $attrArgs['location_type_id'] = $args['locationTypeFilter'];
       $locationAttributes = data_entry_helper::getAttributes($attrArgs, false);
-      $cmsAttr=extract_cms_user_attr($locationAttributes,false);
-      if(!$cmsAttr)
-        return(lang::get('Location control: missing CMS User ID location attribute.'));
-      $attrListArgs=array('nocache'=>true,
-          'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
+      if($siteUrlParams[self::$userKey]['value']=="branch"){
+        $cmsAttr= self::extract_attr($locationAttributes, $args['branchFilterAttribute']);
+        if(!$cmsAttr)
+          return(lang::get('Location control Branch Coordinator mode: missing Branch allocation attribute : ').$args['branchFilterAttribute']);
+        $attrListArgs=array('nocache'=>true,
+            'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
+                             'location_attribute_id'=>$cmsAttr['attributeId'], 'raw_value'=>$user->uid),
+                       $readAuth),
+            'table'=>'location_attribute_value');
+        $description="All branch sites";
+      } else {
+        $cmsAttr=extract_cms_user_attr($locationAttributes,false);
+        if(!$cmsAttr)
+          return(lang::get('Location control: missing CMS User ID location attribute.'));
+        $attrListArgs=array('nocache'=>true,
+            'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
                              'location_attribute_id'=>$cmsAttr['attributeId'], 'raw_value'=>$options['extraParams']['user_id']),
                        $readAuth),
-          'table'=>'location_attribute_value');
+            'table'=>'location_attribute_value');
+        $description="All ".($user->uid == $options['extraParams']['user_id'] ? 'my' : 'user')." sites";
+      }
       $attrList = data_entry_helper::get_population_data($attrListArgs);
       if (isset($attrList['error']))
         return $attrList['error'];
+      if(count($attrList)===0)
+        return(lang::get('[No sites allocated.]'));
       $locationIDList=array();
       foreach($attrList as $attr)
         $locationIDList[] = $attr['location_id'];
@@ -770,6 +807,8 @@ class iform_report_calendar_summary {
           'extraParams'=>array_merge(array('website_id'=>$args['website_id'],  'location_type_id' => '', 'idlist'=>$locationIDList),
                        $readAuth),
           'dataSource'=>'library/locations/locations_list_exclude_sensitive');
+      if($siteUrlParams[self::$userKey]['value']=="branch" && $options['extraParams']['location_id']=='')
+        $options['extraParams']['location_list'] = $locationIDList;
     }
     $allowSensitive = empty($args['sensitivityLocAttrId']) || 
         (function_exists('user_access') && !empty($args['sensitivityAccessPermission']) && user_access($args['sensitivityAccessPermission']));
@@ -784,7 +823,7 @@ class iform_report_calendar_summary {
     $ctrlid='calendar-location-select-'.$node->nid;
     $ctrl='<label for="'.$ctrlid.'" class="location-select-label">'.lang::get('Filter by site').
           ': </label><select id="'.$ctrlid.'" class="location-select">'.
-          '<option value="" class="location-select-option" '.($siteUrlParams[self::$locationKey]['value']=='' ? 'selected="selected" ' : '').'>'.lang::get('All sites').'</option>';
+          '<option value="" class="location-select-option" '.($siteUrlParams[self::$locationKey]['value']=='' ? 'selected="selected" ' : '').'>'.$description.'</option>';
     foreach($locationList as $location){
       $ctrl .= '<option value='.$location['id'].' class="location-select-option" '.($siteUrlParams[self::$locationKey]['value']==$location['id'] ? 'selected="selected" ' : '').'>'.
                $location['name'].(isset($args['includeSrefInLocationFilter']) && $args['includeSrefInLocationFilter'] ? ' ('.$location['centroid_sref'].')' : '').
@@ -803,11 +842,11 @@ class iform_report_calendar_summary {
       return '';
     // if the user is changed then we must reset the location
     $siteUrlParams = self::get_site_url_params();
-    $options['extraParams']['user_id'] = $siteUrlParams[self::$userKey]['value'];
+    $options['extraParams']['user_id'] = $siteUrlParams[self::$userKey]['value'] == "branch" ? '' : $siteUrlParams[self::$userKey]['value'];
     $userList=array();
     if(!isset($args['managerPermission']) || $args['managerPermission']=="" || !user_access($args['managerPermission'])) {
       // user is a normal user
-      $userList[$user->uid]=$user;
+      $userList[$user->uid]=$user; // just me
       $options['my_user_id']=$user;
     } else {
       $options['my_user_id']=false; // removes restriction on links to samples based on user_id.
@@ -914,6 +953,7 @@ class iform_report_calendar_summary {
     $ctrl='<label for="'.$ctrlid.'" class="user-select-label">'.lang::get('Filter by recorder').
           ': </label><select id="'.$ctrlid.'" class="user-select">'.
           '<option value='.($user->uid).' class="user-select-option" '.($siteUrlParams[self::$userKey]['value']==$user->uid  ? 'selected="selected" ' : '').'>'.lang::get('My data').'</option>'.
+          (isset($args['branchManagerPermission']) && $args['branchManagerPermission']!="" && user_access($args['branchManagerPermission']) ? '<option value="branch" class="user-select-option" '.($siteUrlParams[self::$userKey]['value']=="branch"  ? 'selected="selected" ' : '').'>'.lang::get('Branch data').'</option>' : '').
           '<option value="all" class="user-select-option" '.($siteUrlParams[self::$userKey]['value']=='' ? 'selected="selected" ' : '').'>'.lang::get('All recorders').'</option>';
     foreach($userList as $id => $account) {
       if($account !== true && $account->uid!==$user->uid){
@@ -960,6 +1000,23 @@ class iform_report_calendar_summary {
     return self::$siteUrlParams;
   }
 
+  private function extract_attr(&$attributes, $caption, $unset=true) {
+  	$found=false;
+  	foreach($attributes as $idx => $attr) {
+  		if (strcasecmp($attr['caption'], $caption)===0) { // should this be untranslated?
+  			// found will pick up just the first one
+  			if (!$found)
+  				$found=$attr;
+  			if ($unset)
+  				unset($attributes[$idx]);
+  			else
+  				// don't bother looking further if not unsetting them all
+  				break;
+  		}
+  	}
+  	return $found;
+  }
+
   private function set_up_control_change($ctrlid, $urlparam, $skipParams, $checkBox=false) {
     // Need to use a global for pageURI as the internal controls may have changed, and we want
     // their values to be carried over.
@@ -1003,7 +1060,7 @@ jQuery('#".$ctrlid."').change(function(){
         $r = "<th><a id=\"year-control-previous\" title=\"".($siteUrlParams[self::$yearKey]['value']-1)."\" rel=\"nofollow\" href=\"".$reloadUrl['path'].$param.($siteUrlParams[self::$yearKey]['value']-1)."\" class=\"ui-datepicker-prev ui-corner-all\"><span class=\"ui-icon ui-icon-circle-triangle-w\">Prev</span></a></th><th><span class=\"thisYear\">".$siteUrlParams[self::$yearKey]['value']."</span></th>";
         if($siteUrlParams[self::$yearKey]['value']<date('Y')){
           $r .= "<th><a id=\"year-control-next\" title=\"".($siteUrlParams[self::$yearKey]['value']+1)."\" rel=\"nofollow\" href=\"".$reloadUrl['path'].$param.($siteUrlParams[self::$yearKey]['value']+1)."\" class=\"ui-datepicker-next ui-corner-all\"><span class=\"ui-icon ui-icon-circle-triangle-e\">Next</span></a></th>";
-        }
+        } else $r .= '<th/>';
         $options['date_start'] = $siteUrlParams[self::$yearKey]['value'].'-Jan-01';
         $options['date_end'] = $siteUrlParams[self::$yearKey]['value'].'-Dec-31';
         return $r;
@@ -1083,6 +1140,7 @@ jQuery('#".$ctrlid."').change(function(){
       if (isset($_GET[$param]) && $_GET[$param]==='true')    
         $reportOptions['extraParams'][$param]='';
     $reportOptions['highlightEstimates']=true;
+    // $retVal .= print_r($reportOptions[extraParams], true);
     $retVal .= report_helper::report_calendar_summary($reportOptions);
     return $retVal;
   }
