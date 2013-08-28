@@ -20,6 +20,8 @@ jQuery(document).ready(function($) {
     'strokeWidth': 1
   });
   indiciaData.reportlayer = new OpenLayers.Layer.Vector('Report output', {styleMap: s});
+  //Need seperate layer to display parent location feature as we don't want it clickable
+  indiciaData.clickedParentLayer = new OpenLayers.Layer.Vector('Report output', {styleMap: s});
   mapInitialisationHooks.push(function (div) {
     "use strict";
     //Put into indicia data so we can see the map div elsewhere
@@ -70,7 +72,8 @@ function add_new_layer_for_site_hierarchy_navigator(clickedFeatureId,breadcrumbL
   $.getJSON(reportRequest,
       null,
       function(response, textStatus, jqXHR) { 
-        if (response.length>0) {
+        //Don't keep zooming once we reach bottom layer
+        if (response.length>0 || clickedFeature) {
           var currentLayerObjectTypes = [];
           var features=[];    
           var existingBreadcrumb;
@@ -103,11 +106,16 @@ function add_new_layer_for_site_hierarchy_navigator(clickedFeatureId,breadcrumbL
               currentLayerObjectTypesString=currentLayerObjectTypesString+',';
             }
           }
-          //Give the layer a name that includes the location types being shown and the parent name
-          if (parentName!==null) {
+          //Give the layer a name that includes the location types being shown and the parent name as applicable
+          if (parentName && currentLayerObjectTypesString) {
             indiciaData.reportlayer.setName('Locations of type ' + currentLayerObjectTypesString + ' in ' + parentName);
           } else {
-            indiciaData.reportlayer.setName('Locations of type ' + currentLayerObjectTypesString);
+            if (currentLayerObjectTypesString) {
+              indiciaData.reportlayer.setName('Locations of type ' + currentLayerObjectTypesString);
+            }
+            if (parentName) {
+              indiciaData.reportlayer.setName('Viewing location ' + parentName);
+            }
           }
           //make the breadcrumb options we can give to another page by storing up the location ids
           if (indiciaData.useBreadCrumb) {
@@ -141,13 +149,27 @@ function add_new_layer_for_site_hierarchy_navigator(clickedFeatureId,breadcrumbL
             edit_site_link(indiciaData.layerLocationTypes[currentLayerCounter],parentId,parentName);
           }
           indiciaData.reportlayer.removeAllFeatures();
+          indiciaData.clickedParentLayer.removeAllFeatures();
           indiciaData.mapdiv.map.addLayer(indiciaData.reportlayer);
           indiciaData.reportlayer.addFeatures(features); 
+          //Add seperate layer for parent location as it isn't a clickable feature
+          if (clickedFeature) {
+            indiciaData.clickedParentLayer.setName(clickedFeature.id)
+            indiciaData.mapdiv.map.addLayer(indiciaData.clickedParentLayer);
+            indiciaData.clickedParentLayer.addFeatures(clickedFeature); 
+          }
           //When we come back to the page from a breadcrumb on another page, we rebuild the breadcrumb as if the user
           //had been clicking on the map several times, however we only want to draw the map on the last step of rebuilding the breadcrumb
           //otherwise we lose performance.
-          if (!(indiciaData.preloadBreadcrumb && currentLayerCounter<breadCrumbIds.length))
-            zoom_to_area(features);
+          if (!(indiciaData.preloadBreadcrumb && currentLayerCounter<breadCrumbIds.length)) {
+            //We need to zoom using both the parent feature and the child features
+            var featuresToZoom = [];
+            featuresToZoom = features;
+            if (clickedFeature) {
+              featuresToZoom.push(clickedFeature);
+            }
+            zoom_to_area(featuresToZoom);
+          }
           currentLayerCounter++;
         } else {
           //Open the coun unit page and give it the breadcrumb optiosn it needs
@@ -271,7 +293,7 @@ function selectlist(features) {
   selectListOptions += '<option value="">Please select a location</option>';
   $.each(features, function (idx, feature) {
     if (feature.id !== indiciaData.countUnitBoundaryTypeId) {
-      selectListOptions += '<option value="'+feature.attributes.name+'" onclick="add_new_layer_for_site_hierarchy_navigator('+feature.id+', null,true,\"\")">'+feature.attributes.name+'</option>';
+      selectListOptions += '<option value="'+feature.attributes.name+'" onclick="add_new_layer_for_site_hierarchy_navigator('+feature.id+', null,true,null)">'+feature.attributes.name+'</option>';
     }
   });
   $('#map-selectlist').html(selectListOptions)
