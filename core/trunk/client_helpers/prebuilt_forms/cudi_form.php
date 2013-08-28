@@ -1050,7 +1050,8 @@ class iform_cudi_form extends iform_dynamic {
         $r .= '<a href="'.'http://localhost/cudi/'.(variable_get('clean_url', 0) ? '' : '?q=').$args['homepage_path'].(variable_get('clean_url', 0) ? '?' : '&').$breadCrumbParamToSendBack.'">'.$breadCrumbLocationName.'<a>';
         $r .= '</li>';
       }
-    }
+      $r .= '</ul></div>';
+    }   
     return $r;
   }
   
