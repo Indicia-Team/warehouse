@@ -2,6 +2,8 @@
 //Need to store the parent feature from previous layers along the breadcrumb so we can reload the layer
 //using this and the layerLocationTypes.
 var parentFromPreviousBreadcrumbs  = [];
+//Store the parent layers in an array for when the user clicks on the breadcrumb
+var previousParentLayers = [];
 //Need to store the number of the current layer level, so we can get the relevant item from layerLocationTypes
 var currentLayerCounter = 0;
 //When the user enters another page (such as Editing a Count Unit) then we pass the location ids in the 
@@ -61,7 +63,8 @@ function add_new_layer_for_site_hierarchy_navigator(clickedFeatureId,breadcrumbL
   var parentId = parentIdAndName[0];
   var parentName = parentIdAndName[1];
   var reportRequest;
-  if (!indiciaData.layerLocationTypes[currentLayerCounter]) {
+  //Link to Count unit Informatin sheet if we detect a Count Unit has been clicked on/selected
+  if (clickedFeature&&clickedFeature.attributes.location_type_id==indiciaData.countUnitBoundaryTypeId) {
     location = indiciaData.countUnitPagePath+'location_id='+parentId+'&'+breadcrumbIdsToPass;
   } else {
     //If the user has specified this layer must also display count units, then add them to the report parameters
@@ -151,15 +154,38 @@ function add_new_layer_for_site_hierarchy_navigator(clickedFeatureId,breadcrumbL
             if (indiciaData.useEditSite) {
               edit_site_link(indiciaData.layerLocationTypes[currentLayerCounter],parentId,parentName);
             }
-            indiciaData.reportlayer.removeAllFeatures();
-            indiciaData.clickedParentLayer.removeAllFeatures();
-            indiciaData.mapdiv.map.addLayer(indiciaData.reportlayer);
-            indiciaData.reportlayer.addFeatures(features); 
-            //Add seperate layer for parent location as it isn't a clickable feature
-            if (clickedFeature) {          
-              indiciaData.clickedParentLayer.setName(clickedFeature.id)
+            //The following is performed when the user clicks back on the breadcrumb, the main difference is the parent layer
+            //is collected from the array of parent layers we have built.
+            if (previousParentLayers[breadcrumbLayerCounter-1]) { 
+              //Add seperate layer for parent location as it isn't a clickable layer 
+              indiciaData.clickedParentLayer.removeAllFeatures();
+              indiciaData.clickedParentLayer = previousParentLayers[breadcrumbLayerCounter-1].clone();
+              indiciaData.clickedParentLayer.setName(indiciaData.clickedParentLayer.id)
               indiciaData.mapdiv.map.addLayer(indiciaData.clickedParentLayer);
-              indiciaData.clickedParentLayer.addFeatures(clickedFeature); 
+              
+              indiciaData.reportlayer.removeAllFeatures();
+              indiciaData.mapdiv.map.addLayer(indiciaData.reportlayer);
+              indiciaData.reportlayer.addFeatures(features); 
+              //The following is performed if the map is drawn without the user clicking on the breadcrumb.
+              //This is when the map is drawn for first time, or when user has clicked on a feature.
+            } else {
+              indiciaData.reportlayer.removeAllFeatures();
+              indiciaData.clickedParentLayer.removeAllFeatures();
+              indiciaData.mapdiv.map.addLayer(indiciaData.reportlayer);
+              indiciaData.reportlayer.addFeatures(features); 
+              //Add seperate layer for parent location as it isn't a clickable layer
+              //The parent layer is only drawn after the user has clicked on a feature, not when map is first drawn.
+              if (clickedFeature) {  
+                indiciaData.clickedParentLayer.setName(clickedFeature.id)
+                indiciaData.mapdiv.map.addLayer(indiciaData.clickedParentLayer);
+                indiciaData.clickedParentLayer.addFeatures(clickedFeature); 
+                //When we click through the layers, we hold a copy of the parent feature layer for user in the breadcrumb.
+                //We only do this if we not already saved a copy (for instance we might already has saved it if the user
+                //clicks back on the breadcrumb)
+                if (!previousParentLayers[currentLayerCounter-1]) {
+                  previousParentLayers.push(indiciaData.clickedParentLayer.clone());
+                }
+              }
             }
             //When we come back to the page from a breadcrumb on another page, we rebuild the breadcrumb as if the user
             //had been clicking on the map several times, however we only want to draw the map on the last step of rebuilding the breadcrumb
@@ -168,8 +194,13 @@ function add_new_layer_for_site_hierarchy_navigator(clickedFeatureId,breadcrumbL
               //We need to zoom using both the parent feature and the child features
               var featuresToZoom = [];
               featuresToZoom = features;
+              //If the user clicks on a feature, that feature becomes the parent feature to display, so we need to include it when zooming.
               if (clickedFeature) {
                 featuresToZoom.push(clickedFeature);
+              }
+              //If the user clicks select a feature from the breadcrumb, that feature becomes the parent feature to display, so we need to include it when zooming.
+              if (previousParentLayers[breadcrumbLayerCounter-1]) {
+                featuresToZoom.push(indiciaData.clickedParentLayer.features[0]);
               }
               zoom_to_area(featuresToZoom);
             }

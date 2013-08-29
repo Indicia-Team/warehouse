@@ -59,18 +59,18 @@ class extension_site_hierarchy_navigator {
     //This should be a subset of $layerLocationTypes.
     $showCountUnitsForLayers = explode(',', $options['showCountUnitsForLayers']); 
     $locationTypesWithSymbols = explode(',', $options['locationTypesWithSymbols']); 
-    $options = iform_map_get_map_options($args, $auth);
+    $mapOptions = iform_map_get_map_options($args, $auth);
     $olOptions = iform_map_get_ol_options($args);
-    $options['readAuth'] = $options['readAuth']['read'];
-    $options['clickForSpatialRef'] = false;
+    $mapOptions['readAuth'] = $mapOptions['readAuth']['read'];
+    $mapOptions['clickForSpatialRef'] = false;
     //When user clicks on map, run specified Javascript function
-    $options['clickableLayersOutputMode'] = 'customFunction';
-    $options['customClickFn']='reload_map_with_sub_sites_for_clicked_feature';
-    $options['clickableLayersOutputDiv'] = '';
+    $mapOptions['clickableLayersOutputMode'] = 'customFunction';
+    $mapOptions['customClickFn']='reload_map_with_sub_sites_for_clicked_feature';
+    $mapOptions['clickableLayersOutputDiv'] = '';
     //Tell the system which layers we to be clickable.
-    $options['clickableLayers']=array('indiciaData.reportlayer');     
+    $mapOptions['clickableLayers']=array('indiciaData.reportlayer');     
     $r .= map_helper::map_panel(
-      $options,
+      $mapOptions,
       $olOptions
     );
     //Send the user supplied location type options to Javascript
@@ -79,18 +79,20 @@ class extension_site_hierarchy_navigator {
     map_helper::$javascript .= "indiciaData.showCountUnitsForLayers=".json_encode($showCountUnitsForLayers).";\n";
     //Send the user supplied options about which layers should display symbols instead of polygons to Javascript
     map_helper::$javascript .= "indiciaData.locationTypesWithSymbols=".json_encode($locationTypesWithSymbols).";\n";
-    $options = array(
+    map_helper::$javascript .= "indiciaData.countUnitBoundaryTypeId=".$options['countUnitBoundaryTypeId'].";\n";
+    
+    $reportOptions = array(
       'linkOnly'=>'true',
       'dataSource'=>'library/locations/locations_with_geometry_for_location_type',
       'readAuth'=>$auth['read']
     );
     //Get the report options such as the Preset Parameters on the Edit Tab
-    $options = array_merge(
+    $reportOptions = array_merge(
       iform_report_get_report_options($args, $readAuth),
-    $options);    
+    $reportOptions);    
     //Run the report that shows the locations (features) to the user when the map loads the first time.
     map_helper::$javascript .= "indiciaData.layerReportRequest='".
-       report_helper::get_report_data($options)."';\n";
+       report_helper::get_report_data($reportOptions)."';\n";
     return $r;
   }
   
