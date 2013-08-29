@@ -24,7 +24,8 @@
         (locToShow.id = COALESCE(lLatestChildNormalUser.id,prefAttrVal.int_value,lLatestChild.id) and #admin_mode#=0) and    
         locToShow.location_type_id=#count_unit_boundary_type_id#   
       JOIN termlists_terms tt ON tt.id = l.location_type_id
-      JOIN terms t ON t.id = tt.term_id      
+      JOIN terms t ON t.id = tt.term_id 
+      #joins#     
     WHERE 1=1
       #filters#
       AND ((#website_filter# AND lw.deleted = false ) or l.public=true)
@@ -34,7 +35,9 @@
     <param name="location_type_id" datatype="integer">
       <where>l.location_type_id in (#location_type_id#)</where>
     </param>
-    <param name="parent_id" datatype="integer"/>
+    <param name="parent_id" datatype="integer">
+      <join>JOIN locations lp on st_intersects(lp.boundary_geom, l.centroid_geom) and lp.id=#parent_id#</join>
+    </param>
     <param name="preferred_boundary_attribute_id" datatype="integer"/>
     <param name="count_unit_boundary_type_id" datatype="integer"/>
     <param name="count_unit_type_id" datatype="integer"/>
