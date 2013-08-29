@@ -158,7 +158,7 @@ class iform_dynamic_location extends iform_dynamic {
     if ($_POST && !is_null(data_entry_helper::$entity_to_load)) {
       // errors with new sample or entity populated with post, so display this data.
       $mode = self::MODE_EXISTING; 
-    } else if (array_key_exists('location_id', $_GET)){
+    } else if (array_key_exists('location_id', $_GET)||array_key_exists('zoom_id', $_GET)){
       // request for display of existing record
       $mode = self::MODE_EXISTING;
     } else if (array_key_exists('new', $_GET)){
@@ -186,7 +186,35 @@ class iform_dynamic_location extends iform_dynamic {
   // Get an existing location.
   protected static function getEntity($args, $auth) {
     data_entry_helper::$entity_to_load = array();
-    data_entry_helper::load_existing_record($auth['read'], 'location', $_GET['location_id']);    
+    if (!empty($_GET['zoom_id'])) {
+      self::zoom_map_when_adding($auth['read'], 'location', $_GET['zoom_id']); 
+    } else
+      data_entry_helper::load_existing_record($auth['read'], 'location', $_GET['location_id']);    
+  }
+  
+  /*
+   * Function similar in principle to load_existing_record. This function is different if that it is used when the screen is 
+   * appears to be in Add Mode (although technically it will be in edit mode) and we just want to automatically zoom the map 
+   * to an area we are adding a location to.
+   */
+
+  public static function zoom_map_when_adding($readAuth, $entity, $id, $view = 'detail', $sharing = false, $loadImages = false) {
+    $parentRecord = data_entry_helper::get_population_data(array(
+      'table' => $entity,
+      'extraParams' => $readAuth + array('id' => $id, 'view' => $view),
+      'nocache' => true,
+      'sharing' => $sharing
+    ));
+    
+    if (isset($parentRecord['error'])) throw new Exception($parentRecord['error']);   
+    // set form mode
+    if (data_entry_helper::$form_mode===null) data_entry_helper::$form_mode = 'RELOAD';
+    //As we are only zooming the map, only populate the entity to load with map related items.
+    foreach($parentRecord[0] as $key => $value) {
+      if ($key==='boundary_geom'||$key==='centroid_sref'||$key==='centroid_sref_system') {
+        data_entry_helper::$entity_to_load["$entity:$key"] = $value;
+      }
+    }
   }
   
   protected static function getAttributes($args, $auth) {
@@ -334,6 +362,9 @@ class iform_dynamic_location extends iform_dynamic {
    * @return array Submission structure.
    */
   public static function get_submission($values, $args) {
+    //If the location_type_id is supplied in the url, then use this
+    if (!empty($_GET['location_type_id']))
+      $values['location:location_type_id'] = $_GET['location_type_id'];
     $structure = array(
         'model' => 'location',
     );
