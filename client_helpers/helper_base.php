@@ -52,7 +52,7 @@ $indicia_templates = array(
       \"".lang::get('unlocked tool-tip')."\",
       \"{lock_form_mode}\"
       );\n",
-  'validation_message' => '<label for="{for}" class="{class}">{error}</label>'."\n",
+  'validation_message' => '<p for="{for}" class="{class}">{error}</p>'."\n",
   'validation_icon' => '<span class="ui-state-error ui-corner-all validation-icon">'.
       '<span class="ui-icon ui-icon-alert"></span></span>',
   'error_class' => 'inline-error',
@@ -61,8 +61,9 @@ $indicia_templates = array(
           jQuery.each(validator.errorMap, function(ctrlId, error) {
             // select the tab containing the first error control
             var ctrl = jQuery('[name=' + ctrlId.replace(/:/g, '\\\\:').replace(/\[/g, '\\\\[').replace(/\\]/g, '\\\\]') + ']');
-            if (!tabselected && typeof tabs !=='undefined') {
-              tabs.tabs('select',ctrl.filter('input,select,textarea').parents('.ui-tabs-panel')[0].id);
+            if (!tabselected) {
+              var tp=ctrl.filter('input,select,textarea').parents('.ui-tabs-panel')[0];
+              $(tp).parent().tabs('select',tp.id);
               tabselected = true;
             }
             ctrl.parents('fieldset').removeClass('collapsed');
@@ -1451,17 +1452,14 @@ indiciaData.windowLoaded=false;
         // most radio button validation will be "required"
         (in_array('message', self::$validation_mode) ? "
         errorPlacement: function(error, element) {
+          var jqBox, nexts;
           if(element.is(':radio')||element.is(':checkbox')){
-            var jqBox = element.parents('.control-box');
-            if (jqBox.length !== 0) {
-              error.insertBefore(jqBox);
-            } else {
-              error.insertAfter(element);
-            }
-          } else {
-            element = element.next().hasClass('deh-required') ? element.next() : element;
-            error.insertAfter(element);
+            jqBox = element.parents('.control-box');
+            element=jqBox.length === 0 ? element : jqBox;
           }
+          nexts=element.nextAll(':visible');
+          element = nexts && $(nexts[0]).hasClass('deh-required') ? nexts[0] : element;
+          error.insertAfter(element);
         }" : "
         errorPlacement: function(error, element) {}") ."
       });
@@ -1569,7 +1567,9 @@ indiciaData.windowLoaded=false;
         self::add_resource('indicia_locks');
       }
     }
-
+    if (isset($validationClasses) && !empty($validationClasses) && strpos($validationClasses, 'required')!==false) {
+      $r .= self::apply_static_template('requirednosuffix', $options);
+    }
     // Add an error icon to the control if there is an error and this option is set
     if ($error && in_array('icon', $options['validation_mode'])) {
       $r .= $indicia_templates['validation_icon'];
@@ -1582,11 +1582,7 @@ indiciaData.windowLoaded=false;
       $r .= $options['afterControl'];
 
     // Add suffix
-    if (isset($validationClasses) && !empty($validationClasses) && strpos($validationClasses, 'required')!==false) {
-      $r .= self::apply_static_template('requiredsuffix', $options);
-    } else {
-      $r .= self::apply_static_template('suffix', $options);
-    }
+    $r .= self::apply_static_template('suffix', $options);
 
     // If options contain a help text, output it at the end if that is the preferred position
     $r .= self::get_help_text($options, 'after');
@@ -1608,7 +1604,7 @@ indiciaData.windowLoaded=false;
   public static function enable_validation($form_id) {
     self::$validated_form_id = $form_id;
     //Only submit once if the user clicks submit button several times
-    data_entry_helper::$javascript .= '
+    self::$javascript .= '
     $("'.self::$validated_form_id.'").submit(function() {
       $(this).submit(function() {
         return false;
