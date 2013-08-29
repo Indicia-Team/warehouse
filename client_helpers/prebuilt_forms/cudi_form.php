@@ -1046,8 +1046,6 @@ class iform_cudi_form extends iform_dynamic {
           $breadCrumbParamToSendBack='breadcrumb='.$breadCrumbLocationIdsArray[$num];
         else
           $breadCrumbParamToSendBack .= ','.$breadCrumbLocationIdsArray[$num];
-        drupal_set_message($breadCrumbLocationName);
-        drupal_set_message($breadCrumbParamToSendBack);
         $r .= '<li id="breadcrumb-part-"'.$num.'>';
         //The breadcrumb link is a name, with url back to the homepage containing ids for the homepage
         //to show in its breadcrumb
