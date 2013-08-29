@@ -121,6 +121,15 @@ CREATE OR REPLACE VIEW list_groups AS
    FROM groups g
   WHERE g.deleted = false;
 
+CREATE OR REPLACE VIEW detail_groups AS 
+ SELECT g.id, g.title, g.description, g.website_id, g.joining_method, g.filter_id, f.definition as filter_definition, 
+     g.created_by_id, c.username AS created_by, g.updated_by_id, u.username AS updated_by
+   FROM groups g
+   LEFT JOIN filters f ON f.id=g.filter_id AND f.deleted=false
+   JOIN indicia.users c ON c.id = g.created_by_id
+   JOIN indicia.users u ON u.id = g.updated_by_id
+  WHERE g.deleted = false;
+
 CREATE OR REPLACE VIEW list_group_invitations AS 
  SELECT i.id, i.group_id, i.email, i.token, g.website_id, g.title as group_title
    FROM group_invitations i
