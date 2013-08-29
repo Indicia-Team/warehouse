@@ -94,7 +94,7 @@ class Verification_rule_Model extends ORM {
       $errorMsg = $metadata['errormsg'];
     else
       $errorMsg = 'Test failed';
-    $reverseRule = isset($metadata['reverserule']) && $metadata['reverserule']==='true' ? 't' : 'f';
+    $reverseRule = isset($metadata['reverserule']) && strtolower($metadata['reverserule'])==='true' ? 't' : 'f';
     
     $submission = array(
       'verification_rule:title'=>$title,
