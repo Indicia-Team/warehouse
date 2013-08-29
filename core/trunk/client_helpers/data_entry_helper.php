@@ -5065,22 +5065,23 @@ $('#$divId').tabs({
 
       // We put this javascript into $late_javascript so that it can come after the other controls.
       // This prevents some obscure bugs - e.g. OpenLayers maps cannot be centered properly on hidden
-      // tabs because they have no size.
-      self::$late_javascript .= "var tabs = $(\"#$divId\").tabs();\n";
+      // tabs because they have no size
+      $uniq = preg_replace("/[^a-z]+/", "", strtolower($divId));
+      self::$late_javascript .= "var tabs$uniq = $(\"#$divId\").tabs();\n";
       // find any errors on the tabs.
-      self::$late_javascript .= "var errors=$(\"#$divId .ui-state-error\");\n";
+      self::$late_javascript .= "var errors$uniq=$(\"#$divId .ui-state-error\");\n";
       // select the tab containing the first error, if validation errors are present
       self::$late_javascript .= "
-if (errors.length>0) {
-  tabs.tabs('select',$(errors[0]).parents('.ui-tabs-panel')[0].id);
+if (errors$uniq.length>0) {
+  tabs$uniq.tabs('select',$(errors{$uniq}[0]).parents('.ui-tabs-panel')[0].id);
   var panel;
-  for (var i=0; i<errors.length; i++) {
-    panel = $(errors[i]).parents('.ui-tabs-panel')[0];
+  for (var i=0; i<errors$uniq.length; i++) {
+    panel = $(errors{$uniq}[i]).parents('.ui-tabs-panel')[0];
     $('#'+panel.id+'-tab').addClass('ui-state-error');
   }
 }\n";
       if (array_key_exists('active', $options)) {
-        self::$late_javascript .= "else {tabs.tabs('select','".$options['active']."');}\n";
+        self::$late_javascript .= "else {tabs$uniq.tabs('select','".$options['active']."');}\n";
       }
       if (array_key_exists('style', $options) && $options['style']=='wizard') {
         self::$late_javascript .= "$('#$divId .ui-tabs-nav').hide();\n";
