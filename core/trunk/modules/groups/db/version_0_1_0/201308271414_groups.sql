@@ -105,6 +105,9 @@ CREATE TABLE group_invitations (
 
 ) WITHOUT OIDS;
 
+CREATE UNIQUE INDEX ix_group_invitation_token_unique
+   ON group_invitations (token ASC NULLS LAST);
+
 COMMENT ON TABLE group_invitations IS 'List of outstanding invitations to group. Accepted invitations are dropped from this table.';
 COMMENT ON COLUMN group_invitations.id IS 'Unique identifier and primary key for the table.';
 COMMENT ON COLUMN group_invitations.group_id  IS 'Foreign key to the groups table. Identifies the group to which someone is being invited.';
@@ -122,7 +125,7 @@ CREATE OR REPLACE VIEW list_groups AS
   WHERE g.deleted = false;
 
 CREATE OR REPLACE VIEW detail_groups AS 
- SELECT g.id, g.title, g.description, g.website_id, g.joining_method, g.filter_id, f.definition as filter_definition, 
+ SELECT g.id, g.title, g.description, g.website_id, g.joining_method, g.filter_id, f.definition as filter_definitionr, 
      g.created_by_id, c.username AS created_by, g.updated_by_id, u.username AS updated_by
    FROM groups g
    LEFT JOIN filters f ON f.id=g.filter_id AND f.deleted=false
