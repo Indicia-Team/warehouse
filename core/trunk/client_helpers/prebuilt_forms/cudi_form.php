@@ -1012,6 +1012,7 @@ class iform_cudi_form extends iform_dynamic {
    * Displays a breadcrumb if the user enters the page from the homepage.
    */
   protected function get_control_breadcrumb($auth, $args, $tabalias, $options) {
+    global $base_url;
     $breadCrumbLocationNamesArray=array();
     //The location ids to display in the breadcrumb are held in the URL if the
     //user comes from the homepage
@@ -1049,7 +1050,7 @@ class iform_cudi_form extends iform_dynamic {
         $r .= '<li id="breadcrumb-part-"'.$num.'>';
         //The breadcrumb link is a name, with url back to the homepage containing ids for the homepage
         //to show in its breadcrumb
-        $r .= '<a href="'.'http://localhost/cudi/'.(variable_get('clean_url', 0) ? '' : '?q=').$args['homepage_path'].(variable_get('clean_url', 0) ? '?' : '&').$breadCrumbParamToSendBack.'">'.$breadCrumbLocationName.'<a>';
+        $r .= '<a href="'.$base_url.(variable_get('clean_url', 0) ? '' : '?q=').$args['homepage_path'].(variable_get('clean_url', 0) ? '?' : '&').$breadCrumbParamToSendBack.'">'.$breadCrumbLocationName.'<a>';
         $r .= '</li>';
       }
       $r .= '</ul></div>';
