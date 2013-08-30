@@ -221,12 +221,12 @@ class filter_where extends filter_base {
       $r .= map_helper::map_panel(array(
         'divId'=>'filter-pane-map',
         'presetLayers' => array('google_hybrid'),
-        'editLayer' => false,      
-        'initial_lat'=>$args['map_centroid_lat'],
-        'initial_long'=>$args['map_centroid_long'],
-        'initial_zoom'=>(int) $args['map_zoom'],
-        'width'=>600,
-        'height'=>600,
+        'editLayer' => true,      
+        'initial_lat'=>variable_get('indicia_map_centroid_lat', 55),
+        'initial_long'=>variable_get('indicia_map_centroid_long', -1),
+        'initial_zoom'=>(int) variable_get('indicia_map_zoom', 5),
+        'width'=>'100%',
+        'height'=>400,
         'standardControls'=>array('layerSwitcher','panZoomBar','drawPolygon','drawLine','drawPoint','clearEditLayer')
       ));
       $indicia_templates['jsWrap'] = $oldwrap;
@@ -391,18 +391,30 @@ class filter_source extends filter_base {
  *   context_id - can also be passed as URL parameter. Force the initial selection of a particular context (a record which has defines_permissions=true in the
  *   filters table. Set to "default" to select their profile verification settings when sharing=verification.
  *   filter_id - can also be passed as URL parameter. Force the initial selection of a particular filter record in the filters table. 
- *   filterTypes - allows control of the list of filter panels available, e.g. to turn one off. Options are what, where, when, who, quality, source.
+ *   filterTypes - allows control of the list of filter panels available, e.g. to turn one off. Associative array keyed by category
+ *   so that the filter panels can be grouped (use a blank key if not required). The array values are strings with a comma separated list
+ *   of the filter types to included in the category - options are what, where, when, who, quality, source.
  *   filter-#name# - set the initial value of a report filter parameter #name#. 
+ *   allowLoad - set to false to disable the load bar at the top of the panel.
+ *   allowSave - set to false to disable the save bar at the foot of the panel.
  * @param integer $website_id The current website's warehouse ID.
+ * @param string $hiddenStuff Output parameter which will contain the hidden popup HTML that will be shown
+ * using fancybox during filter editing. Should be appended AFTER any form element on the page as nested forms are not allowed.
  */
-function report_filter_panel($readAuth, $options, $website_id) {
+function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
+  iform_load_helpers(array('report_helper'));
   $options = array_merge(array(
-    'sharing' => 'reporting'
+    'sharing' => 'reporting',
+    'allowLoad' => true,
+    'allowSave' => true,
+    'taxon_list_id' => variable_get('iform_master_checklist_id', 0)
   ), $options);
   if (!preg_match('/^(reporting|peer_review|verification|data_flow|moderation)$/', $options['sharing']))
     return 'The @sharing option must be one of reporting, peer_review, verification, data_flow or moderation (currently '.$options['sharing'].').';
   report_helper::add_resource('reportfilters');
   report_helper::add_resource('validation');
+  report_helper::add_resource('fancybox');
+  hostsite_add_library('collapse');
   $filterData = report_filters_load_existing($readAuth, strtoupper(substr($options['sharing'], 0, 1)));
   $existing = '';
   $contexts = '';
@@ -449,21 +461,24 @@ function report_filter_panel($readAuth, $options, $website_id) {
     }
   }
   $r = '<div id="standard-params" class="ui-widget">';
-  $r .= '<div class="header ui-toolbar ui-widget-header ui-helper-clearfix"><h2>'. lang::get('Filter Report') . '</h2><span class="changed" style="display:none" title="This filter has been changed">*</span>';
-  $r .= '<div>';
-  if ($contexts) {
-    data_entry_helper::$javascript .= "indiciaData.filterContextDefs = " . json_encode($contextDefs) . ";\n";
-    $r .= '<label for="context-filter">'.lang::get('Context:')."</label><select id=\"context-filter\">$contexts</select>";
-  }
-  $r .= '<label for="select-filter">'.lang::get('Filter:').'</label><select id="select-filter"><option value="" selected="selected">' . lang::get('Select filter') . "...</option>$existing</select>";
-  $r .= '<button type="button" id="filter-apply">' . lang::get('Load selected filter') . '</button>';
-  $r .= '<button type="button" id="filter-reset">' . lang::get('Reset') . '</button>';
-  $r .= '<button type="button" id="filter-build">' . lang::get('Build filter') . '</button></div>';
-  $r .= '</div>';
-  $r .= '<div id="filter-details" style="display: none">';
-  $r .= '<img src="'.data_entry_helper::$images_path.'nuvola/close-22px.png" width="22" height="22" alt="Close filter builder" title="Close filter builder" class="button" id="filter-done"/>'."\n";
+  if ($options['allowLoad']) {
+    $r .= '<div class="header ui-toolbar ui-widget-header ui-helper-clearfix"><h2>'. lang::get('Filter Report') . '</h2><span class="changed" style="display:none" title="This filter has been changed">*</span>';
+    $r .= '<div>';
+    if ($contexts) {
+      data_entry_helper::$javascript .= "indiciaData.filterContextDefs = " . json_encode($contextDefs) . ";\n";
+      $r .= '<label for="context-filter">'.lang::get('Context:')."</label><select id=\"context-filter\">$contexts</select>";
+    }
+    $r .= '<label for="select-filter">'.lang::get('Filter:').'</label><select id="select-filter"><option value="" selected="selected">' . lang::get('Select filter') . "...</option>$existing</select>";
+    $r .= '<button type="button" id="filter-apply">' . lang::get('Load selected filter') . '</button>';
+    $r .= '<button type="button" id="filter-reset">' . lang::get('Reset') . '</button>';
+    $r .= '<button type="button" id="filter-build">' . lang::get('Build filter') . '</button></div>';
+    $r .= '</div>';
+    $r .= '<div id="filter-details" style="display: none">';
+    $r .= '<img src="'.data_entry_helper::$images_path.'nuvola/close-22px.png" width="22" height="22" alt="Close filter builder" title="Close filter builder" class="button" id="filter-done"/>'."\n";
+  } else 
+    $r .= '<div id="filter-details">';
   $r .= '<div id="filter-panes">';
-  $filterModules = array(
+  $filters = array(
     'filter_what'=>new filter_what(),
     'filter_where'=>new filter_where(), 
     'filter_when'=>new filter_when(), 
@@ -472,32 +487,48 @@ function report_filter_panel($readAuth, $options, $website_id) {
     'filter_source'=>new filter_source()
   );
   if (!empty($options['filterTypes'])) {
-    $options['filterTypes']='filter_'.str_replace(',', ',filter_', $options['filterTypes']);
-    $panes = explode(',', $options['filterTypes']);
-    $filterModules = array_intersect_key($filterModules, array_fill_keys($panes,1));
-  }
-  foreach ($filterModules as $moduleName=>$module) {
-    $r .= "<div class=\"pane\" id=\"pane-$moduleName\"><a class=\"fb-filter-link\" href=\"#controls-$moduleName\"><span class=\"pane-title\">" . $module->get_title() . '</span>';
-    $r .= '<span class="filter-desc"></span></a>';
-    $r .= "</div>\n";
+    $filterModules = array();
+    foreach ($options['filterTypes'] as $category => $list) {
+      $paneNames = 'filter_'.str_replace(',', ',filter_', $list);
+      $paneList = explode(',', $paneNames);
+      $filterModules[$category]=array_intersect_key($filters, array_fill_keys($paneList,1));
+    }
+  } else 
+    $filterModules = array('' => $filters);
+  foreach ($filterModules as $category => $list) {
+    if ($category)
+      $r .= '<fieldset class="collapsible collapsed"><legend>' . $category . '</legend>';
+    foreach ($list as $moduleName=>$module) {
+      $r .= "<div class=\"pane\" id=\"pane-$moduleName\"><a class=\"fb-filter-link\" href=\"#controls-$moduleName\"><span class=\"pane-title\">" . $module->get_title() . '</span>';
+      $r .= '<span class="filter-desc"></span></a>';
+      $r .= "</div>\n";
+    }
+    if ($category)
+      $r .= '</fieldset>';
   }
   $r .= '</div>'; // filter panes
   $r .= '<div class="toolbar">';
-  if (isset($options['allowSave']) && $options['allowSave']) {
+  if ($options['allowSave']) {
     $r .= '<label for="filter-name">Filter name:</label><input id="filter-name"/>' . 
         '<img src="'.data_entry_helper::$images_path.'nuvola/save-22px.png" width="22" height="22" alt="Save filter" title="Save filter" class="button" id="filter-save"/>';
     $r .= '<img src="'.data_entry_helper::$images_path.'trash-22px.png" width="22" height="22" alt="Bin this filter" title="Bin this filter" class="button disabled" id="filter-delete"/>';
   }  
   $r .= '</div></div>'; // toolbar + clearfix
-  foreach ($filterModules as $moduleName=>$module) {
-    $r .= "<div style=\"display: none\"><form id=\"controls-$moduleName\" class=\"filter-controls\" action=\"GET\"><fieldset>" . $module->get_controls($readAuth, $options) . 
+  report_helper::$javascript .= "indiciaData.lang={};\n";
+  // create the hidden panels required to populate the popups for setting each type of filter up.
+  $hiddenStuff = '';
+  foreach ($filterModules as $category => $list) {
+    foreach ($list as $moduleName=>$module) {
+      $hiddenStuff .= "<div style=\"display: none\"><form id=\"controls-$moduleName\" class=\"filter-controls\"><fieldset>" . $module->get_controls($readAuth, $options) . 
         '<button class="fb-close">Cancel</button>' .
         '<button class="fb-apply" type="submit">Apply</button></fieldset></form></div>';
+      $shortName=str_replace('filter_', '', $moduleName);
+      report_helper::$javascript .= "indiciaData.lang.NoDescription$shortName='".lang::get('Click to Filter '.ucfirst($shortName))."';\n";
+    }
+    
   }   
   $r .= '</div>';
   report_helper::$js_read_tokens = $readAuth;
-  report_helper::$javascript .= "indiciaData.lang={};\n";
-  report_helper::$javascript .= "indiciaData.lang.NoDescription='".lang::get('Click to Filter')."';\n";
   report_helper::$javascript .= "indiciaData.lang.FilterReport='".lang::get('Filter Report')."';\n";
   report_helper::$javascript .= "indiciaData.lang.FilterSaved='".lang::get('The filter has been saved')."';\n";
   report_helper::$javascript .= "indiciaData.lang.FilterDeleted='".lang::get('The filter has been deleted')."';\n";

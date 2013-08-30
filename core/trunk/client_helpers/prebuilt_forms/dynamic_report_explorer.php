@@ -357,7 +357,8 @@ class iform_dynamic_report_explorer extends iform_dynamic {
       return 'The AJAX Proxy module must be enabled to support saving filters. Set @allowSave=false to disable this in the [standard params] control.';
     if (!function_exists('hostsite_get_user_field') || !hostsite_get_user_field('indicia_user_id'))
       return 'The standard params module requires Easy Login.';
-    return report_filter_panel($auth['read'], $options, $args['website_id']);
+    $r = report_filter_panel($auth['read'], $options, $args['website_id'], $hiddenStuff);
+    return $r . $hiddenStuff;
   }
   
   /**

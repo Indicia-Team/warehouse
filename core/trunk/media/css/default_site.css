@@ -99,7 +99,7 @@ p.inline-error {
   font-weight: bold;
 }
 
-label {
+label, form label {
   width: 160px;
   display:-moz-inline-stack;
   display:inline-block;

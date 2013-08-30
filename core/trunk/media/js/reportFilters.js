@@ -699,23 +699,26 @@ jQuery(document).ready(function($) {
         }
       });
     }
-    $.each(indiciaData.reports, function(i, group) {
-      $.each(group, function(j, grid) {
-        // store a copy of the original params before any reset, so we can revert.
-        if (typeof grid[0].settings.origParams==="undefined") {
-          grid[0].settings.origParams = $.extend({}, grid[0].settings.extraParams);
-        }
-        // merge in the filter
-        $.extend(grid[0].settings.extraParams, filterDef);
-        if (applyNow) {
-          // reload the report grid
-          grid.ajaxload();
-          if (grid[0].settings.linkFilterToMap) {
-            grid.mapRecords(grid[0].settings.mapDataSource, grid[0].settings.mapDataSourceLoRes);
+    if (indiciaData.reports) {
+      // apply the filter to any reports on the page
+      $.each(indiciaData.reports, function(i, group) {
+        $.each(group, function(j, grid) {
+          // store a copy of the original params before any reset, so we can revert.
+          if (typeof grid[0].settings.origParams==="undefined") {
+            grid[0].settings.origParams = $.extend({}, grid[0].settings.extraParams);
           }
-        }
+          // merge in the filter
+          $.extend(grid[0].settings.extraParams, filterDef);
+          if (applyNow) {
+            // reload the report grid
+            grid.ajaxload();
+            if (grid[0].settings.linkFilterToMap) {
+              grid.mapRecords(grid[0].settings.mapDataSource, grid[0].settings.mapDataSourceLoRes);
+            }
+          }
+        });
       });
-    });
+    }
   };
   
   function applyDefaults() {
@@ -758,14 +761,15 @@ jQuery(document).ready(function($) {
   }
   
   function updateFilterDescriptions() {
-    var description;
+    var description, name;
     $.each($('#filter-panes .pane'), function(idx, pane) {
-      if (paneObjList[pane.id.replace(/^pane-filter_/,'')].loadFilter) {
-        paneObjList[pane.id.replace(/^pane-filter_/,'')].loadFilter();
+      name=pane.id.replace(/^pane-filter_/,'');
+      if (paneObjList[name].loadFilter) {
+        paneObjList[name].loadFilter();
       }
-      description = paneObjList[pane.id.replace(/^pane-filter_/,'')].getDescription();
+      description = paneObjList[name].getDescription();
       if (description==='') {
-        description='Click to filter';
+        description=indiciaData.lang['NoDescription' + name];
       }
       $(pane).find('span.filter-desc').html(description);
     });
@@ -868,7 +872,7 @@ jQuery(document).ready(function($) {
     $.each(paneObjList, function(name, obj) {
       desc=obj.getDescription();
       if (desc==='') {
-        desc=indiciaData.lang.NoDescription;
+        desc=indiciaData.lang['NoDescription' + name];
       }
       $('#pane-filter_'+name+' span.filter-desc').html(desc);
     });    
@@ -908,7 +912,7 @@ jQuery(document).ready(function($) {
   });  
   
   $('.fb-apply').click(function(e) {
-    if (!$($(e.currentTarget).parents('form')[0]).valid() || $(e.currentTarget).data('clicked')) {
+    if (!$($(e.currentTarget).parents('.filter-controls')[0]).valid() || $(e.currentTarget).data('clicked')) {
       return;
     }
     $(e.currentTarget).data('clicked', true);

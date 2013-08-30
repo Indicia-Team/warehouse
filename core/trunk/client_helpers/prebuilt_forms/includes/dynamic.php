@@ -200,10 +200,13 @@ class iform_dynamic {
         return lang::get('LANG_no_permissions');
       }
     }
-    // Get authorisation tokens to update and read from the Warehouse.
-    $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
-    self::$auth = $auth;
-    
+    // Get authorisation tokens to update and read from the Warehouse. We allow child classes to generate this first if subclassed.
+    if (self::$auth)
+      $auth = self::$auth;
+    else {
+      $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
+      self::$auth = $auth;
+    }
     // Determine how the form was requested and therefore what to output
     $mode = (method_exists(self::$called_class, 'getMode'))
       ? call_user_func(array(self::$called_class, 'getMode'), $args, $node)
