@@ -68,7 +68,8 @@ CREATE TABLE groups_users (
       ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT fk_groups_users_updater FOREIGN KEY (updated_by_id)
       REFERENCES users (id) MATCH SIMPLE
-      ON UPDATE NO ACTION ON DELETE NO ACTION
+      ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT uc_groups_users UNIQUE (group_id, user_id)
 ) WITHOUT OIDS;
 
 COMMENT ON TABLE groups_users IS 'Identifies the users that belong to a group.';
@@ -81,6 +82,8 @@ COMMENT ON COLUMN groups_users.created_by_id IS 'Foreign key to the users table 
 COMMENT ON COLUMN groups_users.updated_on IS 'Date this record was last updated.';
 COMMENT ON COLUMN groups_users.updated_by_id IS 'Foreign key to the users table (last updater).';
 COMMENT ON COLUMN groups_users.deleted IS 'Has this record been deleted?';
+
+COMMENT ON CONSTRAINT uc_groups_users ON groups_users IS 'Ensures a user is only a member of a group once.';
 
 CREATE TABLE group_invitations (
     id serial NOT NULL,
@@ -138,3 +141,9 @@ CREATE OR REPLACE VIEW list_group_invitations AS
    FROM group_invitations i
    JOIN groups g on g.id=i.group_id AND g.deleted=false
   WHERE i.deleted = false;
+
+CREATE OR REPLACE VIEW list_groups_users AS 
+ SELECT gu.id, gu.group_id, gu.user_id, gu.administrator, g.website_id
+   FROM groups_users gu
+   JOIN groups g on g.id=gu.group_id AND g.deleted=false
+  WHERE gu.deleted = false;
