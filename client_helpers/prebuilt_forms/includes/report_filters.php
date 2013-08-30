@@ -445,8 +445,6 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
       $contextDefs['default'] = $def;
     }
   }
-  $contextDefs['default']=array('input_form_list_op'=>'in', 'input_form_list'=>'enter-records');
-  $contexts .= "<option value=\"default\" $selected>".lang::get('My verification records')."</option>";
   if (!empty($_GET['context_id'])) $options['context_id']=$_GET['context_id'];
   if (!empty($_GET['filter_id'])) $options['filter_id']=$_GET['filter_id'];
   foreach($filterData as $filter) {
