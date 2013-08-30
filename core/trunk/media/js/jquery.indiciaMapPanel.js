@@ -980,13 +980,19 @@ mapGeoreferenceHooks = [];
               if (div.settings.clickableLayersOutputMode==='report' && div.settings.reportGroup!==null
                   && typeof indiciaData.reports!=="undefined") {
                 // grab the feature ids
-                ids = [];
+                var ids = [], len=0;
                 $.each(features, function(idx, feature) {
+                  if (len>1500) { // approaching 2K IE limit
+                    alert('Too many records have been selected to show them all in the grid. Trying zooming in and selecting fewer records.');
+                    return false;
+                  }
                   if (typeof feature.attributes[div.settings.featureIdField]!=="undefined") {
                     ids.push(feature.attributes[div.settings.featureIdField]);
+                    len += feature.attributes[div.settings.featureIdField].length;
                   } else if (typeof feature.attributes[div.settings.featureIdField+'s']!=="undefined") {
                     // allow for plural, list fields
                     ids.push(feature.attributes[div.settings.featureIdField+'s']);
+                    len += feature.attributes[div.settings.featureIdField+'s'].length;
                   }
                 });
                 $('.'+div.settings.reportGroup+'-idlist-param').val(ids.join(','));

@@ -297,14 +297,15 @@ var simple_tooltip;
     }
 
     function loadGridFrom (div, request, clearExistingRows) {
-      var tbody = $(div).find('tbody');
+      // overlay on the body, unless no records yet loaded as body is empty
+      var elem = div.settings.recordCount ? $(div).find('tbody') :  $(div).find('table');
       // skip the loading overlay in <IE9 as it is buggy
       if ($.support.cssFloat) {
         $(".loading-overlay").css({        
-          top     : $(tbody).position().top+1,
-          left    : $(tbody).position().left+1,
-          width   : $(tbody).outerWidth()-2,
-          height  : $(tbody).outerHeight()-3
+          top     : $(elem).position().top+1,
+          left    : $(elem).position().left+1,
+          width   : $(elem).outerWidth()-2,
+          height  : $(elem).outerHeight()-3
         });
         $(".loading-overlay").show();
       }
