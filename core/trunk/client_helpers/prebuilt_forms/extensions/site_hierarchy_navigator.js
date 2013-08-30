@@ -14,12 +14,13 @@ jQuery(document).ready(function($) {
   //in a column called 'graphic'.
   var s = new OpenLayers.StyleMap({
     'pointRadius': 15,
-    'graphicName': '${graphic}',
-    'fillColor': '#ee9900',
-    'fillOpacity': 0.4,
-    'strokeColor': '#ee9900',
+    'externalGraphic': 'http://localhost/instant/sites/all/modules/iform/client_helpers/prebuilt_forms/images/occ_doubtful.png',
+    'graphicOpacity': 0.8,
+    'fillOpacity': 0,
+    'strokeColor': '#0000ff',
     'strokeOpacity': 1,
-    'strokeWidth': 1
+    'strokeWidth': 2,
+    'strokeDashstyle': 'dash'
   });
   indiciaData.reportlayer = new OpenLayers.Layer.Vector('Report output', {styleMap: s});
   //Need seperate layer to display parent location feature as we don't want it clickable
