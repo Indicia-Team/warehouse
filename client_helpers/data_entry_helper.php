@@ -6245,7 +6245,7 @@ if (errors$uniq.length>0) {
         case 'V': // Vague Date
         case 'Vague Date': // Vague Date
             $attrOptions['class'] = ($item['data_type'] == 'D' ? "date-picker " : "vague-date-picker ");
-            if (strpos($item['validation_rules'],'date_in_past')=== false)
+            if (isset($item['validation_rules']) && strpos($item['validation_rules'],'date_in_past')=== false)
               $attrOptions['allowFuture']=true;
             $output = self::date_picker($attrOptions);
             break;
