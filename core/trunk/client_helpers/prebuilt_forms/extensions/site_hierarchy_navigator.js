@@ -14,7 +14,9 @@ jQuery(document).ready(function($) {
   //in a column called 'graphic'.
   var s = new OpenLayers.StyleMap({
     'pointRadius': 15,
-    'externalGraphic': 'http://localhost/instant/sites/all/modules/iform/client_helpers/prebuilt_forms/images/occ_doubtful.png',
+    'externalGraphic': indiciaData.imagesPath + 'warning.png',
+    'graphicWidth': 16,
+    'graphicHeight': 16,
     'graphicOpacity': 0.8,
     'fillOpacity': 0,
     'strokeColor': '#0000ff',
