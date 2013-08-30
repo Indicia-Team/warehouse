@@ -144,5 +144,114 @@ class postgreSQL {
       AND s.id=$id"
     );
   }
+  
+  /**
+   * A clone of the list_fields methods provided by the Kohana database object, but with caching as it
+   * involves a database hit but is called quite frequently.
+   * @param string $entity Table or view name
+   * @param Database $db Database object if available
+   * @return array Array of field definitions for the object. 
+   */
+  public static function list_fields($entity, $db=null) {
+    $key="list_fields$entity";
+    $cache = Cache::instance();
+    $result = $cache->get($key);
+    if ($result===null) {
+      if (!$db)
+        $db = new Database();
+      $result = $db->query('
+        SELECT column_name, column_default, is_nullable, data_type, udt_name,
+          character_maximum_length, numeric_precision, numeric_precision_radix, numeric_scale
+        FROM information_schema.columns
+        WHERE table_name = \''. $entity .'\'
+        ORDER BY ordinal_position
+      ');
+
+      $cols=$result->result_array(TRUE);
+      $result = NULL;
+
+      foreach ($cols as $row)
+      {
+        // Make an associative array
+        $result[$row->column_name] = self::sql_type($row->data_type);
+
+        if (!strncmp($row->column_default, 'nextval(', 8))
+        {
+          $result[$row->column_name]['sequenced'] = TRUE;
+        }
+
+        if ($row->is_nullable === 'YES')
+        {
+          $result[$row->column_name]['null'] = TRUE;
+        }
+      }
+      if (!isset($result))
+        throw new Kohana_Database_Exception('database.table_not_found', $entity);
+      else 
+        $cache->set($key, $result);
+    }
+    return $result;
+  }
+  
+  /**
+   * A clone of the sql_type method in the PG driver, copied here to support our version of list_fields.
+   * Converts a Kohana data type name to the SQL equivalent.
+   * @staticvar $sql_types Used to cache the sql types config per request
+   * @param string $str Type name
+   * @return type SQL version of the type name
+   */
+  protected static function sql_type($str)
+  {
+    static $sql_types;
+
+    if ($sql_types === NULL)
+    {
+      // Load SQL data types
+      $sql_types = Kohana::config('sql_types');
+    }
+
+    $str = strtolower(trim($str));
+
+    if (($open  = strpos($str, '(')) !== FALSE)
+    {
+      // Find closing bracket
+      $close = strpos($str, ')', $open) - 1;
+
+      // Find the type without the size
+      $type = substr($str, 0, $open);
+    }
+    else
+    {
+      // No length
+      $type = $str;
+    }
+
+    empty($sql_types[$type]) and exit
+    (
+      'Unknown field type: '.$type.'. '.
+      'Please report this: http://trac.kohanaphp.com/newticket'
+    );
+
+    // Fetch the field definition
+    $field = $sql_types[$type];
+
+    switch ($field['type'])
+    {
+      case 'string':
+      case 'float':
+        if (isset($close))
+        {
+          // Add the length to the field info
+          $field['length'] = substr($str, $open + 1, $close - $open);
+        }
+      break;
+      case 'int':
+        // Add unsigned value
+        $field['unsigned'] = (strpos($str, 'unsigned') !== FALSE);
+      break;
+    }
+
+    return $field;
+  }
 }
 ?>

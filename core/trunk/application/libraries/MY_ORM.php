@@ -195,7 +195,7 @@ class ORM extends ORM_Core {
     if ($force === TRUE OR empty($this->table_columns))
     {
       // Load table columns
-      $this->table_columns = $this->db->list_fields($this->table_name);
+      $this->table_columns = postgreSQL::list_fields($this->table_name, $this->db);
       // Vague date
       if (array_key_exists('date_type', $this->table_columns))
       {
