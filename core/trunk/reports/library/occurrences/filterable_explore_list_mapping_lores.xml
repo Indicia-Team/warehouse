@@ -26,6 +26,6 @@
   </params>
   <columns>
     <column name="occurrence_ids" visible="false" sql="array_to_string(array_agg(o.id), ',')" aggregate="true" />
-    <column name="geom" visible="false" mappable="true" sql="st_astext(msq.geom)" />
+    <column name="geom" visible="false" mappable="true" sql="st_astext(msq.geom)" in_count="true" />
   </columns>
 </report>
