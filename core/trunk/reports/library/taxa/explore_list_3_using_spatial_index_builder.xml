@@ -1,5 +1,5 @@
 <report
-    title="Explore distinct species 2 using index_locations_samples"
+    title="Explore distinct species 3 using index_locations_samples"
     description="Report designed for species lists used in the explore records facility in iRecord. 
         Second version has additional parameters. This version depends on the 
         Spatial Index Builder module to index the list of locations that users can set in their preferences
