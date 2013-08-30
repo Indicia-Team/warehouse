@@ -93,7 +93,9 @@ mapGeoreferenceHooks = [];
      * boundary onto the map. Automatic for #imp-location, but can be attached to other controls as well.
      */
     function locationSelectedInInput(div, val) {
-      div.map.editLayer.destroyFeatures();
+      if (div.map.editLayer) {
+        div.map.editLayer.destroyFeatures();
+      }
       var intValue = parseInt(val);
       if (!isNaN(intValue)) {
         // Change the location control requests the location's geometry to place on the map.
