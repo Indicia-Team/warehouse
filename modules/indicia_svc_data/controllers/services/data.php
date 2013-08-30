@@ -645,8 +645,9 @@ class Data_Controller extends Data_Service_Base_Controller {
   protected function read_data() {
     // Store the entity in class member, so less recursion overhead when building XML
     $this->viewname = $this->get_view_name();
-    $this->db = new Database();
-    $this->view_columns=$this->db->list_fields($this->viewname);
+    if (!$this->db)
+      $this->db = new Database();
+    $this->view_columns=postgreSQL::list_fields($this->viewname, $this->db);
     $result=$this->build_query_results();
     kohana::log('debug', 'Query ran for service call: '.$this->db->last_query());
     return array('records'=>$result);
@@ -728,7 +729,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     $this->db->from($this->viewname);
     // Select all the table columns from the view
     if (!$count) {
-      $fields = array_keys($this->db->list_fields($this->viewname));
+      $fields = array_keys(postgreSQL::list_fields($this->viewname, $this->db));
       foreach($fields as &$field) { 
         // geom binary data is no good to anyone. So convert to WKT.
         if (preg_match('/^(.+_)?geom$/', $field))
@@ -1125,14 +1126,15 @@ class Data_Controller extends Data_Service_Base_Controller {
       return true;
     $table = inflector::plural($entity);
     $viewname='list_'.$table;
-    $db = new Database;
-    $fields=$db->list_fields($viewname);
+    if (!$this->db)
+      $this->db = new Database();
+    $fields=postgreSQL::list_fields($viewname, $this->db);
     if(empty($fields)) {
       Kohana::log('info', $viewname.' not present - access denied');
       throw new ServiceError('Access to entity '.$entity.' denied.');
     }
-    $db->from("$viewname as record");
-    $db->where(array('record.id' => $id));
+    $this->db->from("$viewname as record");
+    $this->db->where(array('record.id' => $id));
 
     if(!in_array ($entity, $this->allow_full_access)) {
       if(array_key_exists ('website_id', $fields)) {
@@ -1140,21 +1142,21 @@ class Data_Controller extends Data_Service_Base_Controller {
         if ($sharing && preg_match('/[reporting|peer_review|verification|data_flow|moderation]/', $sharing)) {
           // request specifies the sharing mode (i.e. the task being performed, such as verification, moderation). So 
           // we can use this to work out access to other website data.
-          $db->join('index_websites_website_agreements as iwwa', array(
+          $this->db->join('index_websites_website_agreements as iwwa', array(
               'iwwa.from_website_id'=>'record.website_id',
               'iwwa.receive_for_'.$sharing."='t'"=>''
           ), NULL, 'LEFT');
-          $db->where('record.website_id IS NULL');
-          $db->orwhere('iwwa.to_website_id', $this->website_id);
+          $this->db->where('record.website_id IS NULL');
+          $this->db->orwhere('iwwa.to_website_id', $this->website_id);
         } else {
-          $db->in('record.website_id', array(null, $this->website_id));
+          $this->db->in('record.website_id', array(null, $this->website_id));
         }
       } elseif (!$this->in_warehouse) {
         Kohana::log('info', $viewname.' does not have a website_id - access denied');
         throw new ServiceError('No access to entity '.$entity.' allowed.');
       }
     }
-    $number_rec = $db->count_records();
+    $number_rec = $this->db->count_records();
     return ($number_rec > 0 ? true : false);
   }
   
