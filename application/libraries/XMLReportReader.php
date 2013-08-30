@@ -866,6 +866,7 @@ class XMLReportReader_Core implements ReportReader
         'autochecks'=>'',
         'has_photos'=>'',
         'user_id'=>'',
+        'group_id'=>'',
         'my_records'=>'',
         'website_list'=>'',
         'website_list_op'=>'in',
