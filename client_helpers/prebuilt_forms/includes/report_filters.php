@@ -467,7 +467,7 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
       $r .= '<label for="context-filter">'.lang::get('Context:')."</label><select id=\"context-filter\">$contexts</select>";
     }
     $r .= '<label for="select-filter">'.lang::get('Filter:').'</label><select id="select-filter"><option value="" selected="selected">' . lang::get('Select filter') . "...</option>$existing</select>";
-    $r .= '<button type="button" id="filter-apply">' . lang::get('Load selected filter') . '</button>';
+    $r .= '<button type="button" id="filter-apply">' . lang::get('Apply') . '</button>';
     $r .= '<button type="button" id="filter-reset">' . lang::get('Reset') . '</button>';
     $r .= '<button type="button" id="filter-build">' . lang::get('Build filter') . '</button></div>';
     $r .= '</div>';
