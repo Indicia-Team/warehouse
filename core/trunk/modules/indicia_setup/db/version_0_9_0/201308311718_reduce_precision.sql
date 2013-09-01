@@ -22,10 +22,9 @@ BEGIN
       r = geom;
     ELSE
       SELECT INTO sref_metadata srid, treat_srid_as_x_y_metres FROM spatial_systems WHERE code=lower(sref_system);
-      -- look for some preferred grids to see if we are in range. 
-      geom = st_transform(st_centroid(geom_in), 4326);
+      -- look for some preferred grids to see if we are in range.
       current_srid=null;
-      IF st_x(geom) BETWEEN -10 AND 5 AND st_y(geom) BETWEEN 48 AND 65 THEN -- rough check for OSGB
+      IF st_x(st_centroid(geom)) BETWEEN -857840 AND 254050 AND st_y(st_centroid(geom)) BETWEEN 6635590 AND 6405988 THEN -- rough check for OSGB
         geom = st_transform(st_centroid(geom_in), 27700);
         IF st_x(geom) BETWEEN 0 AND 700000 AND st_y(geom) BETWEEN 0 AND 14000000 THEN -- exact check for OSGB
           current_srid = 27700;

@@ -15,7 +15,7 @@
     <param name="currentUser" display="Current User ID" description="Current user's warehouse ID." datatype="text" />  
   </params>
   <columns>
-    <column name="id" display="ID" sql="g.id" datatype="integer" in_count="true" />
+    <column name="id" visible="false" sql="g.id" datatype="integer" in_count="true" />
     <column name="name" display="Name" sql="g.title" datatype="text" />
     <column name="description" display="Description" sql="g.description" datatype="text" />
     <column name="administrator" display="Admin" sql="gu.administrator" datatype="boolean" />
