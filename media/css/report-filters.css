@@ -1,11 +1,21 @@
-#standard-params .header > div {
-  float: right;
-  width: auto;
-  margin: 0 0.5em;
+#standard-params .header {
+  padding: 1px;
 }
 
-#standard-params .header > div * {
+#standard-params .header > div:first-child {
+  float: left;
+  width: auto;
+}
+#standard-params .header > div:last-child {
+  float: right;
+  width: auto;
+  margin-left: 0.5em;
+}
+
+#standard-params .header * {
   vertical-align: middle;
+  margin: 0 4px 0 0; 
+  padding: 0;
 }
 
 #standard-params .header label {

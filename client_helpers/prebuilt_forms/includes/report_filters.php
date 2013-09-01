@@ -460,7 +460,7 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
   }
   $r = '<div id="standard-params" class="ui-widget">';
   if ($options['allowLoad']) {
-    $r .= '<div class="header ui-toolbar ui-widget-header ui-helper-clearfix"><h2>'. lang::get('New report') . '</h2><span class="changed" style="display:none" title="This filter has been changed">*</span>';
+    $r .= '<div class="header ui-toolbar ui-widget-header ui-helper-clearfix"><div><span>'. lang::get('New report') . '</span></div><span class="changed" style="display:none" title="This filter has been changed">*</span>';
     $r .= '<div>';
     if ($contexts) {
       data_entry_helper::$javascript .= "indiciaData.filterContextDefs = " . json_encode($contextDefs) . ";\n";

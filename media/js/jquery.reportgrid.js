@@ -690,10 +690,7 @@ var simple_tooltip;
           if (map.projection.getCode() != indiciaData.mapdiv.indiciaProjection.getCode()) {
             layerInfo.bounds.transform(map.projection, indiciaData.mapdiv.indiciaProjection);
             currentBounds.transform(map.projection, indiciaData.mapdiv.indiciaProjection);
-          }          
-          // SYNC SELECTION WITH GRID ROWS
-          // CHECK POPULATION PERFORMANCE
-          // CHECK MAP REPORT COUNTS ARE OK
+          }
           request += '&bounds='+layerInfo.bounds.toGeometry().toString();        
         }
       }      
