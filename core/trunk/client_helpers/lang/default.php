@@ -95,5 +95,12 @@ $default_terms = array(
   'locAttr' => 'Location Custom Attributes',
   'taxAttr' => 'Taxon Custom Attributes',
   'psnAttr' => 'Person Custom Attributes',
-  'fkFilter' => 'Lookup Filters'
+  'fkFilter' => 'Lookup Filters',
+  
+  'Click to Filter What' => 'Click here to select a list of species or species groups to include',
+  'Click to Filter Where' => 'Click here to define the geographic area, site or map reference to include',
+  'Click to Filter When' => 'Click here to define a date range for records to include',
+  'Click to Filter Who' => 'Click here to define who\\\'s records to include',
+  'Click to Filter Quality' => 'Click here to include or exclude records based on quality criteria such as verification status or presence of photos',
+  'Click to Filter Source' => 'Click here to include or exclude records based on which website, survey or input form contributed them'
 );

@@ -29,11 +29,5 @@ global $custom_terms;
 $custom_terms = array(
 	'LANG_Filter_Instruct' => 'Please click on the parameters below to define the records that are of interest to this group. For example, '.
       'you might want to specify the species or species groups that relate to your group using the <strong>What</strong> option, '.
-      'as well as the geographic area your group covers using the <strong>Where</strong> option.',
-  'Click to Filter What' => 'Click here to select a list of species or species groups to include',
-  'Click to Filter Where' => 'Click here to define the geographic area, site or map reference to include',
-  'Click to Filter When' => 'Click here to define a date range for records to include',
-  'Click to Filter Who' => 'Click here to define who\'s records to include',
-  'Click to Filter Quality' => 'Click here to include or exclude records based on quality criteria such as verification status or presence of photos',
-  'Click to Filter Source' => 'Click here to include or exclude records based on which website, survey or input form contributed them',
+      'as well as the geographic area your group covers using the <strong>Where</strong> option.'
 );
