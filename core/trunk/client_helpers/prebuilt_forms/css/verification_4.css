@@ -1,0 +1,458 @@
+/* line 15, sass/verification_3.scss */
+#verification-params .report-param {
+  display: -moz-inline-box;
+  -moz-box-orient: vertical;
+  display: inline-block;
+  vertical-align: middle;
+  *vertical-align: auto;
+  vertical-align: middle;
+}
+/* line 7, C:/Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/compass/stylesheets/compass/css3/_inline-block.scss */
+#verification-params .report-param {
+  *display: inline;
+}
+/* line 20, sass/verification_3.scss */
+#verification-params #run-report {
+  vertical-align: middle;
+}
+/* line 24, sass/verification_3.scss */
+#verification-params fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+/* line 28, sass/verification_3.scss */
+#verification-params fieldset legend {
+  display: none;
+}
+
+/* line 36, sass/verification_3.scss */
+#verification-grid form#verification-grid-params {
+  margin-bottom: 0;
+}
+
+/* line 41, sass/verification_3.scss */
+.pass-icon {
+  width: 16px;
+  height: 16px;
+  padding: 2px;
+  border: solid green 1px;
+  -moz-border-radius: 4px;
+  -webkit-border-radius: 4px;
+  -o-border-radius: 4px;
+  -ms-border-radius: 4px;
+  -khtml-border-radius: 4px;
+  border-radius: 4px;
+  -moz-box-shadow: green 1px 1px 3px;
+  -webkit-box-shadow: green 1px 1px 3px;
+  -o-box-shadow: green 1px 1px 3px;
+  box-shadow: green 1px 1px 3px;
+  display: -moz-inline-box;
+  -moz-box-orient: vertical;
+  display: inline-block;
+  vertical-align: middle;
+  *vertical-align: auto;
+  background: url("../images/nuvola/ok-16px.png") no-repeat 2px 2px;
+}
+/* line 7, C:/Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/compass/stylesheets/compass/css3/_inline-block.scss */
+.pass-icon {
+  *display: inline;
+}
+
+/* line 52, sass/verification_3.scss */
+.fail-icon {
+  width: 16px;
+  height: 16px;
+  padding: 2px;
+  border: solid red 1px;
+  -moz-border-radius: 4px;
+  -webkit-border-radius: 4px;
+  -o-border-radius: 4px;
+  -ms-border-radius: 4px;
+  -khtml-border-radius: 4px;
+  border-radius: 4px;
+  -moz-box-shadow: red 1px 1px 3px;
+  -webkit-box-shadow: red 1px 1px 3px;
+  -o-box-shadow: red 1px 1px 3px;
+  box-shadow: red 1px 1px 3px;
+  display: -moz-inline-box;
+  -moz-box-orient: vertical;
+  display: inline-block;
+  vertical-align: middle;
+  *vertical-align: auto;
+  background: url("../images/nuvola/help-16px.png") no-repeat 2px 2px;
+}
+/* line 7, C:/Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/compass/stylesheets/compass/css3/_inline-block.scss */
+.fail-icon {
+  *display: inline;
+}
+
+/* line 63, sass/verification_3.scss */
+div.data_cleaner_identification_difficulty {
+  background: url("../images/nuvola/xmag-16px.png") no-repeat 2px 2px;
+}
+
+/* line 67, sass/verification_3.scss */
+div.data_cleaner_period {
+  background: url("../images/nuvola/history-16px.png") no-repeat 2px 2px;
+}
+
+/* line 71, sass/verification_3.scss */
+div.data_cleaner_period_within_year {
+  background: url("../images/nuvola/date-16px.png") no-repeat 2px 2px;
+}
+
+/* line 75, sass/verification_3.scss */
+div.data_cleaner_without_polygon {
+  background: url("../images/nuvola/browser-16px.png") no-repeat 2px 2px;
+}
+
+/* line 79, sass/verification_3.scss */
+div.verification_check_species_designation {
+  background: url("../images/nuvola/bottom-16px.png") no-repeat 2px 2px;
+}
+
+/* line 83, sass/verification_3.scss */
+#outer-grid-left #grid {
+  width: 55%;
+}
+/* line 86, sass/verification_3.scss */
+#outer-grid-left #grid #record-details-wrap {
+  width: 44%;
+  overflow: auto;
+}
+
+/* line 92, sass/verification_3.scss */
+#grid {
+  overflow: auto;
+}
+
+/* line 96, sass/verification_3.scss */
+table.report-grid {
+  font-size: 80%;
+  width: 100%;
+}
+/* line 99, sass/verification_3.scss */
+table.report-grid tr:hover, table.report-grid table.report-grid tr.odd:hover {
+  background-color: #ffffcc;
+}
+/* line 102, sass/verification_3.scss */
+table.report-grid tr.selected, table.report-grid tr.selected td {
+  background-color: #027ac6;
+  color: white;
+}
+
+/* line 108, sass/verification_3.scss */
+ul.gallery li {
+  display: -moz-inline-box;
+  -moz-box-orient: vertical;
+  display: inline-block;
+  vertical-align: middle;
+  *vertical-align: auto;
+  list-style-type: none;
+  text-align: center;
+  background: none;
+}
+/* line 7, C:/Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/compass/stylesheets/compass/css3/_inline-block.scss */
+ul.gallery li {
+  *display: inline;
+}
+
+/* line 115, sass/verification_3.scss */
+#btn-verify, #btn-verify-all {
+  display: inline-block;
+  width: auto;
+  height: auto;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 0.5em 1.5em;
+  line-height: 1.2em;
+  border-style: solid;
+  border-width: 1px;
+  -moz-border-radius: 4px;
+  -webkit-border-radius: 4px;
+  -o-border-radius: 4px;
+  -ms-border-radius: 4px;
+  -khtml-border-radius: 4px;
+  border-radius: 4px;
+  background-color: #00a000;
+  background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #00a000), color-stop(100%, #003a00));
+  background: -webkit-linear-gradient(#00a000, #003a00);
+  background: -moz-linear-gradient(#00a000, #003a00);
+  background: -o-linear-gradient(#00a000, #003a00);
+  background: -ms-linear-gradient(#00a000, #003a00);
+  background: linear-gradient(#00a000, #003a00);
+  border-color: #003a00;
+  color: white;
+  text-shadow: #003000, 0 1px 0;
+}
+/* line 23, C:/Ruby192/lib/ruby/gems/1.9.1/gems/sassy-buttons-0.0.5/stylesheets/sassy-buttons/_sassy-button-pseudo-states.sass */
+#btn-verify:hover, #btn-verify-all:hover {
+  background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #00ba00), color-stop(100%, #005300));
+  background: -webkit-linear-gradient(#00ba00, #005300);
+  background: -moz-linear-gradient(#00ba00, #005300);
+  background: -o-linear-gradient(#00ba00, #005300);
+  background: -ms-linear-gradient(#00ba00, #005300);
+  background: linear-gradient(#00ba00, #005300);
+}
+
+/* line 119, sass/verification_3.scss */
+#btn-reject {
+  display: inline-block;
+  width: auto;
+  height: auto;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 0.5em 1.5em;
+  line-height: 1.2em;
+  border-style: solid;
+  border-width: 1px;
+  -moz-border-radius: 4px;
+  -webkit-border-radius: 4px;
+  -o-border-radius: 4px;
+  -ms-border-radius: 4px;
+  -khtml-border-radius: 4px;
+  border-radius: 4px;
+  background-color: #a00000;
+  background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #a00000), color-stop(100%, #3a0000));
+  background: -webkit-linear-gradient(#a00000, #3a0000);
+  background: -moz-linear-gradient(#a00000, #3a0000);
+  background: -o-linear-gradient(#a00000, #3a0000);
+  background: -ms-linear-gradient(#a00000, #3a0000);
+  background: linear-gradient(#a00000, #3a0000);
+  border-color: #3a0000;
+  color: white;
+  text-shadow: #300000, 0 1px 0;
+}
+/* line 23, C:/Ruby192/lib/ruby/gems/1.9.1/gems/sassy-buttons-0.0.5/stylesheets/sassy-buttons/_sassy-button-pseudo-states.sass */
+#btn-reject:hover {
+  background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #ba0000), color-stop(100%, #530000));
+  background: -webkit-linear-gradient(#ba0000, #530000);
+  background: -moz-linear-gradient(#ba0000, #530000);
+  background: -o-linear-gradient(#ba0000, #530000);
+  background: -ms-linear-gradient(#ba0000, #530000);
+  background: linear-gradient(#ba0000, #530000);
+}
+
+/* line 123, sass/verification_3.scss */
+#btn-dubious {
+  display: inline-block;
+  width: auto;
+  height: auto;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 0.5em 1.5em;
+  line-height: 1.2em;
+  border-style: solid;
+  border-width: 1px;
+  -moz-border-radius: 4px;
+  -webkit-border-radius: 4px;
+  -o-border-radius: 4px;
+  -ms-border-radius: 4px;
+  -khtml-border-radius: 4px;
+  border-radius: 4px;
+  background-color: #c08000;
+  background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #c08000), color-stop(100%, #5a3c00));
+  background: -webkit-linear-gradient(#c08000, #5a3c00);
+  background: -moz-linear-gradient(#c08000, #5a3c00);
+  background: -o-linear-gradient(#c08000, #5a3c00);
+  background: -ms-linear-gradient(#c08000, #5a3c00);
+  background: linear-gradient(#c08000, #5a3c00);
+  border-color: #5a3c00;
+  color: white;
+  text-shadow: #503500, 0 1px 0;
+}
+/* line 23, C:/Ruby192/lib/ruby/gems/1.9.1/gems/sassy-buttons-0.0.5/stylesheets/sassy-buttons/_sassy-button-pseudo-states.sass */
+#btn-dubious:hover {
+  background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #da9100), color-stop(100%, #744d00));
+  background: -webkit-linear-gradient(#da9100, #744d00);
+  background: -moz-linear-gradient(#da9100, #744d00);
+  background: -o-linear-gradient(#da9100, #744d00);
+  background: -ms-linear-gradient(#da9100, #744d00);
+  background: linear-gradient(#da9100, #744d00);
+}
+
+/* line 127, sass/verification_3.scss */
+#comment-text {
+  display: block;
+  width: 100%;
+}
+
+/* line 132, sass/verification_3.scss */
+.popup-form {
+  width: 500px;
+  line-height: 3;
+}
+/* line 18, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
+.popup-form label {
+  font-weight: bold;
+}
+/* line 19, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
+.popup-form fieldset {
+  padding: 1.4em;
+  margin: 0 0 1.5em 0;
+}
+/* line 20, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
+.popup-form legend {
+  font-weight: bold;
+  font-size: 1.2em;
+}
+/* line 26, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
+.popup-form input.text, .popup-form input.title, .popup-form input[type=email], .popup-form input[type=text], .popup-form input[type=password] {
+  margin: 0.5em 0;
+  background-color: white;
+  padding: 5px;
+}
+/* line 27, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
+.popup-form input.title {
+  font-size: 1.5em;
+}
+/* line 29, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
+.popup-form textarea {
+  margin: 0.5em 0;
+  padding: 5px;
+}
+/* line 30, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
+.popup-form select {
+  margin: 0.5em 0;
+}
+/* line 44, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
+.popup-form input.text, .popup-form input.title, .popup-form input[type=email], .popup-form input[type=text], .popup-form input[type=password] {
+  width: 360px;
+}
+/* line 46, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
+.popup-form textarea {
+  width: 360px;
+  height: 250px;
+}
+/* line 6, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
+.popup-form p {
+  margin-bottom: 0;
+}
+/* line 138, sass/verification_3.scss */
+.popup-form label {
+  width: 120px;
+}
+/* line 140, sass/verification_3.scss */
+.popup-form label.error {
+  width: auto;
+  margin: 0 0 0 120px;
+  line-height: 1em;
+}
+
+/* line 148, sass/verification_3.scss */
+.manual-email {
+  width: 600px;
+}
+/* line 151, sass/verification_3.scss */
+.manual-email .left {
+  width: 120px;
+}
+/* line 154, sass/verification_3.scss */
+.manual-email .right {
+  width: 450px;
+}
+
+/* line 159, sass/verification_3.scss */
+#instructions {
+  padding: 1em;
+  background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #ffffff), color-stop(100%, #c2e0ee));
+  background: -webkit-linear-gradient(top, #ffffff, #c2e0ee);
+  background: -moz-linear-gradient(top, #ffffff, #c2e0ee);
+  background: -o-linear-gradient(top, #ffffff, #c2e0ee);
+  background: -ms-linear-gradient(top, #ffffff, #c2e0ee);
+  background: linear-gradient(top, #ffffff, #c2e0ee);
+}
+/* line 162, sass/verification_3.scss */
+#instructions li {
+  background-image: none;
+  list-style-type: circle;
+  list-style-position: inside;
+  padding-top: 0.1em;
+}
+
+/* line 171, sass/verification_3.scss */
+#record-details-toolbar label {
+  width: 100px;
+}
+
+/* line 179, sass/verification_3.scss */
+#details-tab table td.header {
+  color: #027ac6;
+  font-weight: bold;
+  border-bottom: solid silver 1px;
+}
+/* line 184, sass/verification_3.scss */
+#details-tab table td.caption {
+  padding: 0 1em 0 0.5em;
+  font-weight: bold;
+}
+
+/* line 193, sass/verification_3.scss */
+#phenology-tab p {
+  font-size: 80%;
+  margin: 0;
+}
+
+/* line 199, sass/verification_3.scss */
+input[type="button"].tools-btn, button.tools-btn {
+  padding: 0.3em;
+}
+
+/* line 204, sass/verification_3.scss */
+.quick-verify-popup label {
+  width: auto;
+  margin-left: 2em;
+}
+/* line 208, sass/verification_3.scss */
+.quick-verify-popup button {
+  margin-top: 1em;
+}
+/* line 211, sass/verification_3.scss */
+.quick-verify-popup .helpText {
+  margin-left: 45px;
+}
+/* line 214, sass/verification_3.scss */
+.quick-verify-popup h2, .quick-verify-popup h3 {
+  margin-bottom: 4px;
+}
+/* line 217, sass/verification_3.scss */
+.quick-verify-popup a {
+  text-decoration: underline;
+  margin: 0px 6px;
+}
+/* line 220, sass/verification_3.scss */
+.quick-verify-popup a:hover, .quick-verify-popup a:active {
+  background-color: #ffffcc;
+}
+
+/* line 227, sass/verification_3.scss */
+.verify-tools {
+  display: none;
+  position: absolute;
+  background: white;
+  border: solid silver 1px;
+}
+/* line 232, sass/verification_3.scss */
+.verify-tools li {
+  background-image: none;
+  padding: 0.2em 0.5em;
+}
+
+/* line 239, sass/verification_3.scss */
+tr.verified, tr.rejected, tr.total {
+  text-align: right;
+  padding-right: 1em;
+}
+/* line 243, sass/verification_3.scss */
+tr.verified {
+  font-color: #00a000;
+}
+/* line 246, sass/verification_3.scss */
+tr.rejected {
+  font-color: #00a000;
+}
+/* line 249, sass/verification_3.scss */
+tr.total {
+  font-weight: bold;
+}
