@@ -400,6 +400,25 @@ jQuery(document).ready(function($) {
         }
       }
     },
+    occurrence_id:{
+      getDescription:function() {
+        if (indiciaData.filter.def.occurrence_id) {
+          return $('#occurrence_id_op option[value='+indiciaData.filter.def.occurrence_id_op+']').html()
+              + ' ' + indiciaData.filter.def.occurrence_id;
+        } else {
+          return '';
+        }
+      },
+      limitToContext:function(filterDef,context) {
+        // context limits override the filter def
+        if (context.occurrence_id) {
+          filterDef.occurrence_id=context.occurrence_id;
+          filterDef.occurrence_id_op=context.occurrence_id_op;
+        }
+      },
+      loadForm:function(context) {
+      }
+    },
     quality:{
       getDescription:function() {
         var r=[];
@@ -822,7 +841,7 @@ jQuery(document).ready(function($) {
       $.each(pane.find(':checkbox'), function(idx, ctrl) {
         $(ctrl).attr('checked', typeof indiciaData.filter.def[$(ctrl).attr('name')]!=="undefined" && indiciaData.filter.def[$(ctrl).attr('name')]==$(ctrl).val());
       });
-      var paneName=pane[0].id.replace('controls-filter_', '');
+      var paneName=$(pane).attr('id').replace('controls-filter_', '');
       // if a context is loaded, need to let the forms configure themselves on this basis
       context = $('#context-filter').length ? indiciaData.filterContextDefs[$('#context-filter').val()] : null;
       $('.context-instruct').hide();
