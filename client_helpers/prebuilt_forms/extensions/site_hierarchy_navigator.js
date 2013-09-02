@@ -326,7 +326,7 @@ function selectlist(features) {
     //Don't include annotations in the drop-down as we'll end up with multiple options
     //for the same count unit.
     if (!inArray(feature.attributes.location_type_id,indiciaData.annotationTypeIds)) {
-      selectListOptions += '<option value="'+feature.attributes.name+'" onclick="add_new_layer_for_site_hierarchy_navigator('+feature.id+', null,true,null)">'+feature.attributes.name+'</option>';
+      selectListOptions += '<option value="'+feature.attributes.name+'" featureid="'+feature.id+'">'+feature.attributes.name+'</option>';
     }
   });
   $('#map-selectlist').html(selectListOptions)
