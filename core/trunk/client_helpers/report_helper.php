@@ -1629,9 +1629,6 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
           $geoms = array();
           foreach ($records as $record) { 
             if (!empty($record[$wktCol])) {
-              //grab the locationId so it can be added to the feature data. This is used for 
-              //calling the report when clicking on Summary Report maps.
-              $locationId = $record['id'];
               $record[$wktCol]=preg_replace('/\.(\d+)/', '', $record[$wktCol]);
               // rather than output every geom separately, do a list of distinct geoms to minify the JS
               if (!$geomIdx = array_search('"'.$record[$wktCol].'"', $geoms)) {          
@@ -1643,7 +1640,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
                 $colsToInclude[$wktCol]='';
                 $record = array_intersect_key($record, $colsToInclude); 
               }
-              $addFeaturesJs.= "div.addPt(features, ".json_encode($record).", '$wktCol', $opts" . (isset($options['rowId']) ? '' : ", '" . $record[$options['rowId']] . "'") . (empty($locationId) ? '' : ", $locationId") . ");\n";
+              $addFeaturesJs.= "div.addPt(features, ".json_encode($record).", '$wktCol', $opts" . (isset($options['rowId']) ? '' : ", '" . $record[$options['rowId']] . "'") . ");\n";
             }
           }
           self::$javascript .= 'indiciaData.geoms=['.implode(',',$geoms)."];\n";
