@@ -736,6 +736,15 @@ class XMLReportReader_Core implements ReportReader
             array('value'=>'', 'operator'=>'', 'sql'=>"st_intersects(o.public_geom, st_geomfromtext('#searchArea#',900913))")
           )
       ),
+      'occurrence_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>'ID',
+          'description'=>'Record ID',
+          'wheres' => array(
+            array('value'=>'', 'operator'=>'', 'sql'=>"o.id #occurrence_id_op# #occurrence_id#")
+          )
+      ),
+      'occurrence_id_op' => array('datatype'=>'lookup', 'default'=>'', 'display'=>'ID operation',
+          'description'=>'Record ID lookup operation', 'lookup_values'=>'=:is,>=:is at least,<=:is at most'
+      ),
       'location_name' => array('datatype'=>'text', 'default'=>'', 'display'=>'Location name', 
           'description'=>'Name of location to filter to (contains search)',
           'wheres' => array(
@@ -856,6 +865,8 @@ class XMLReportReader_Core implements ReportReader
     $this->defaultParamValues = array_merge(array(
         'idlist'=>'',
         'searchArea'=>'',
+        'occurrence_id'=>'',
+        'occurrence_id_op'=>'=',
         'location_name'=>'',
         'location_id'=>'',
         'indexed_location_id'=>'',
