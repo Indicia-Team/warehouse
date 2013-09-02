@@ -264,6 +264,33 @@ class filter_who extends filter_base {
 }
 
 /**
+ * Class defining a "id" filter - record selection by known id.
+ */
+class filter_occurrence_id extends filter_base {
+  
+  public function get_title() {
+    return 'Record ID';
+  }
+  
+  /**
+   * Define the HTML required for this filter's UI panel.
+   */
+  public function get_controls($readAuth, $options) { 
+    $r .= data_entry_helper::select(array(
+      'label' => lang::get('Record ID'),
+      'fieldname' => 'occurrence_id_op',
+      'lookupValues'=>array('='=>'is','>='=>'is at least','<='=>'is at most'),
+      'suffixTemplate'=>'nosuffix'
+    ));
+    $r .= data_entry_helper::text_input(array(
+      'fieldname' => 'occurrence_id',
+      'class'=>'control-width-2'
+    ));
+    return $r;  
+  }
+}
+
+/**
  * Class defining a "quality" filter - record status, photos, verification rule check selection.
  */
 class filter_quality extends filter_base {
@@ -481,6 +508,7 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
     'filter_where'=>new filter_where(), 
     'filter_when'=>new filter_when(), 
     'filter_who'=>new filter_who(), 
+    'filter_occurrence_id'=>new filter_occurrence_id(), 
     'filter_quality'=>new filter_quality(),
     'filter_source'=>new filter_source()
   );
@@ -499,7 +527,7 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
     foreach ($list as $moduleName=>$module) {
       $r .= "<div class=\"pane\" id=\"pane-$moduleName\"><a class=\"fb-filter-link\" href=\"#controls-$moduleName\"><span class=\"pane-title\">" . $module->get_title() . '</span>';
       $r .= '<span class="filter-desc"></span></a>';
-      $r .= "</div>\n";
+      $r .= "</div>";
     }
     if ($category)
       $r .= '</fieldset>';
