@@ -177,21 +177,31 @@ class iform_cudi_form extends iform_dynamic {
           'group'=>'Configurable Ids'
         ),  
         array(
+          'name'=>'annotation_location_type_id',
+          'caption'=>'Annotation Location Type Id',
+          'description'=>'Id of the annotation location type.',
+          'type'=>'string',
+          'required' => true,
+          'group'=>'Configurable Ids'
+        ),  
+        //Screen can be used for adding versioned count unit boundaries but can also be used for adding
+        //count unit annotation boundaries  
+        array(
+          'name'=>'annotation_mode',
+          'caption'=>'Annotation Mode?',
+          'description'=>'Place page into annotation mode.',
+          'type'=>'boolean',
+          'required' => false,
+          'group'=>'Annotation Mode'
+        ), 
+        array(
           'name'=>'administrator_mode',
           'caption'=>'Administrator Mode?',
           'description'=>'Place page into administrator mode. This enables extra functionality and better privileges for performing certain tasks.',
           'type'=>'boolean',
           'required' => false,
           'group'=>'Administrator Mode'
-        ),
-        array(
-          'name'=>'homepage_path',
-          'caption'=>'Homepage Path',
-          'description'=>'Path to the homepage.',
-          'type'=>'string',
-          'required' => true,
-          'group'=>'Page Paths'
-        ),  
+        ), 
       )
     );
     return $retVal;
@@ -786,6 +796,19 @@ class iform_cudi_form extends iform_dynamic {
     ), $options));
   }
   
+  /**
+   * Get the Add Annotation button.
+   */
+  protected static function get_control_addannotation($auth, $args, $tabalias, $options) {
+    global $base_url;
+    $maintainAnnotationOptions = explode('|',$options['maintainAnnotationOptions']);
+    $maintainAnnotationPath = $maintainAnnotationOptions[0];
+    $maintainAnnotationParam = $maintainAnnotationOptions[1];
+    $maintainAnnotationUrl=(variable_get('clean_url', 0) ? '' : '?q=').$maintainAnnotationPath.(variable_get('clean_url', 0) ? '?' : '&').$maintainAnnotationParam.'='.$_GET['location_id'].(variable_get('clean_url', 0) ? '?' : '&').'breadcrumb='.$_GET['breadcrumb'];
+    if ($_GET['location_id'])
+      return "<input type=\"button\" value=\"Add Annotation\" onclick=\"window.location.href='$maintainAnnotationUrl'\">";
+  }
+  
   /*
    * When we a location is a Count Unit, some of the data is saved into the Count Unit Boundary Location.
    * So we need to remove the data going into the parent from the boundary.
@@ -846,6 +869,37 @@ class iform_cudi_form extends iform_dynamic {
    * @return array Submission structure.
    */
   public static function get_submission($values, $args) {
+    //Submissions setup depends on whether we are adding a versioned count unit boundary
+    //or a count unit annotation boundary
+    if ($args['annotation_mode']) {
+      return self::get_annotation_submission($values, $args);
+    } else {
+      return self::get_count_unit_and_boundary_submission($values, $args);
+    }
+  }
+  
+  /*
+   * Setup the submission of an annotation.
+   */
+  public static function get_annotation_submission($values, $args) {
+    //Get the Count Unit id to store in the parent_id field for the annotation location
+    if (!empty($_GET['zoom_id']))
+      $values['location:parent_id']=$_GET['zoom_id'];
+    $s = self::create_submission($values, $args);   
+    //Current version only supports creating new annotations
+    $values['update-existing-boundary']==='off';
+    if ($values['update-existing-boundary']==='on') {
+      $values['location:id']=$valuesForParent['boundary_versions'];
+    } else {
+      unset($values['location:id']);
+    }
+    return $s;
+  }
+  
+  /*
+   * Setup submission of a versioned count unit boundary
+   */ 
+  public static function get_count_unit_and_boundary_submission($values, $args) {
     //Get to the Count Unit id to store in the parent submission
     if (!empty($_GET['parent_id']))
       $values['location:id']=$_GET['parent_id'];
@@ -1007,56 +1061,5 @@ class iform_cudi_form extends iform_dynamic {
                                                   'visibility_field' => 'editable'))
     ));
   }
-  
-  /*
-   * Displays a breadcrumb if the user enters the page from the homepage.
-   */
-  protected function get_control_breadcrumb($auth, $args, $tabalias, $options) {
-    global $base_url;
-    $breadCrumbLocationNamesArray=array();
-    //The location ids to display in the breadcrumb are held in the URL if the
-    //user comes from the homepage
-    $breadCrumbLocationIdsArray = explode(',',$_GET['breadcrumb']);
-    $locationRecords = data_entry_helper::get_population_data(array(
-      'table' => 'location',
-      'extraParams' => $auth['read'],
-      'nocache' => true,
-
-    ));
-    //Get the names associated with the ids
-    foreach ($breadCrumbLocationIdsArray as $breadCrumbLocationId) {
-      foreach ($locationRecords as $locationRecord) {
-        if ($locationRecord['id']===$breadCrumbLocationId) {
-          $breadCrumbLocationNamesArray[] = $locationRecord['name'];
-        }
-      }
-    }
-    $r = '';
-    //Only display links to homepage if we have links to show
-    if (!empty($breadCrumbLocationNamesArray)) {
-      $r .= '<label><h4>Links to homepage</h4></label></br>';
-      $r .= '<div>';
-      $r .= '<ul id="homepage-breadcrumb">';
-      //Loop through the links to show
-      foreach ($breadCrumbLocationNamesArray as $num=>$breadCrumbLocationName) {
-        //For each link back to the homepage, we need to give the homepage some locations IDs to rebuild
-        //its breadcrumb with. So we need to include ids of any locations that are "above" the location we are linking back with.
-        //e.g. If the link is for Guildford, then we would need to supply the ids for Guildford, Surrey and South England
-        //as well to the homepage can make a full breadcrumb trail to guildford.
-        if (empty($breadCrumbParamToSendBack)) 
-          $breadCrumbParamToSendBack='breadcrumb='.$breadCrumbLocationIdsArray[$num];
-        else
-          $breadCrumbParamToSendBack .= ','.$breadCrumbLocationIdsArray[$num];
-        $r .= '<li id="breadcrumb-part-"'.$num.'>';
-        //The breadcrumb link is a name, with url back to the homepage containing ids for the homepage
-        //to show in its breadcrumb
-        $r .= '<a href="'.$base_url.(variable_get('clean_url', 0) ? '' : '?q=').$args['homepage_path'].(variable_get('clean_url', 0) ? '?' : '&').$breadCrumbParamToSendBack.'">'.$breadCrumbLocationName.'<a>';
-        $r .= '</li>';
-      }
-      $r .= '</ul></div>';
-    }   
-    return $r;
-  }
-  
 }
 
