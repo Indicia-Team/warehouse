@@ -37,9 +37,6 @@
 #standard-params .header button, #standard-params .header select, #standard-params .toolbar button, #standard-params .toolbar select{  
   padding: 0;
 }
-#standard-params .header button, #standard-params .header select {
-  /*width: 100%;*/
-}
 #standard-params #filter-panes {
   padding-right: 22px;
   box-sizing:border-box;
@@ -51,7 +48,7 @@
   display:inline-block;
   zoom:1;
   *display:inline;
-  margin-right: 3%; 
+  margin-right: 2%; 
   vertical-align: top;
   width: 30%;
 }

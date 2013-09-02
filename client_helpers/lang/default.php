@@ -102,5 +102,5 @@ $default_terms = array(
   'Click to Filter When' => 'Click here to define a date range for records to include',
   'Click to Filter Who' => 'Click here to define who\\\'s records to include',
   'Click to Filter Quality' => 'Click here to include or exclude records based on quality criteria such as verification status or presence of photos',
-  'Click to Filter Source' => 'Click here to include or exclude records based on which website, survey or input form contributed them'
+  'Click to Filter Source' => 'Click here to include or exclude records based on contributing website, survey or input form'
 );
