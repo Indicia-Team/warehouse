@@ -48,33 +48,45 @@
   display:inline-block;
   zoom:1;
   *display:inline;
-  margin-right: 2%; 
+  margin: 2px 0.5% 2px 0; 
   vertical-align: top;
-  width: 30%;
+  width: 24.625%;
+  background-color: #DFDFDE;
+}
+#standard-params .pane:nth-child(3), #standard-params .pane:last-child {
+  margin-right: 0;
+}
+
+#standard-params .pane:nth-child(1), #standard-params .pane:nth-child(2), #standard-params .pane:nth-child(3) {
+  width: 33%;
 }
 
 #pane-filter_what a {
-  background: url(../images/nuvola/viewmag-32px.png) no-repeat left center;
+  background: url(../images/nuvola/viewmag-32px.png) no-repeat 6px 6px;
 }
 
 #pane-filter_when a {
-  background: url(../images/nuvola/date-32px.png) no-repeat left center;
+  background-image: url(../images/nuvola/date-32px.png);
 }
 
 #pane-filter_where a {
-  background: url(../images/nuvola/globe-32px.png) no-repeat left center;
+  background-image: url(../images/nuvola/globe-32px.png);
 }
 
 #pane-filter_who a {
-  background: url(../images/nuvola/people-32px.png) no-repeat left center;
+  background-image: url(../images/nuvola/people-32px.png);
+}
+
+#pane-filter_occurrence_id a {
+  background-image: url(../images/nuvola/number-32px.png);
 }
 
 #pane-filter_source a {
-  background: url(../images/nuvola/source-32px.png) no-repeat left center;
+  background-image: url(../images/nuvola/source-32px.png);
 }
 
 #pane-filter_quality a {
-  background: url(../images/nuvola/ok-32px.png) no-repeat left center;
+  background-image: url(../images/nuvola/ok-32px.png);
 }
 
 #standard-params .pane .filter-desc {
@@ -82,9 +94,12 @@
 }
 
 #standard-params .pane a, #standard-params .pane a:hover {
-  padding: 6px 6px 6px 36px;  
+  padding: 6px 6px 6px 42px;  
   display: block;
-  text-decoration: none;  
+  text-decoration: none;
+  min-height: 54px;
+  background-repeat: no-repeat;
+  background-position: 6px 6px;
 }
 
 #standard-params .pane a:hover {
@@ -232,8 +247,11 @@ input[disabled] {
   vertical-align: middle;
 }
 
-#controls-filter_who {
+#controls-filter_who, #controls-filter_occurrence_id{
   width: 300px;
+}
+#controls-filter_occurrence_id label {
+  width: auto;
 }
 
 #controls-filter_quality {
