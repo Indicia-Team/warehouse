@@ -102,6 +102,6 @@ $default_terms = array(
   'Click to Filter When' => 'Define a date range for records to include',
   'Click to Filter Who' => 'Define who\\\'s records to include',
   'Click to Filter Occurrence_id' => 'Select records by record ID',
-  'Click to Filter Quality' => 'Include or exclude records based on quality criteria such as verification status or presence of photos',
-  'Click to Filter Source' => 'Include or exclude records based on contributing website, survey or input form'
+  'Click to Filter Quality' => 'Select records based on quality criteria such as verification status or presence of photos',
+  'Click to Filter Source' => 'Select records based on source website, survey or input form'
 );
