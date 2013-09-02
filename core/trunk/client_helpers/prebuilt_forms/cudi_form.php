@@ -804,7 +804,13 @@ class iform_cudi_form extends iform_dynamic {
     $maintainAnnotationOptions = explode('|',$options['maintainAnnotationOptions']);
     $maintainAnnotationPath = $maintainAnnotationOptions[0];
     $maintainAnnotationParam = $maintainAnnotationOptions[1];
-    $maintainAnnotationUrl=(variable_get('clean_url', 0) ? '' : '?q=').$maintainAnnotationPath.(variable_get('clean_url', 0) ? '?' : '&').$maintainAnnotationParam.'='.$_GET['location_id'].(variable_get('clean_url', 0) ? '?' : '&').'breadcrumb='.$_GET['breadcrumb'];
+    //If the user chooses to view a boundary before adding an annotation, we need to make sure we are getting the parent count unit
+    //id from the url otherwise the annotation is incorrectly added to the boundary instead of the count unit.
+    if (!empty($_GET['parent_id']))
+      $countUnitLocationId=$_GET['parent_id'];
+    else
+      $countUnitLocationId=$_GET['location_id'];
+    $maintainAnnotationUrl=(variable_get('clean_url', 0) ? '' : '?q=').$maintainAnnotationPath.(variable_get('clean_url', 0) ? '?' : '&').$maintainAnnotationParam.'='.$countUnitLocationId.(variable_get('clean_url', 0) ? '?' : '&').'breadcrumb='.$_GET['breadcrumb'];
     if ($_GET['location_id'])
       return "<input type=\"button\" value=\"Add Annotation\" onclick=\"window.location.href='$maintainAnnotationUrl'\">";
   }
