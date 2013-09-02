@@ -588,11 +588,13 @@ class iform_cudi_form extends iform_dynamic {
       $extraParams=array('preferred_boundary_attribute_id'=>$args['preferred_boundary_attribute_id'],
                               'current_user_id'=>$user->profile_indicia_user_id,
                               'count_unit_id'=>$locationId,
+                              'count_unit_boundary_location_type_id'=>$args['count_unit_boundary_location_type_id'],
                               'admin_role'=>$args['administrator_mode']);
     else 
       $extraParams=array('preferred_boundary_attribute_id'=>$args['preferred_boundary_attribute_id'],
                           'current_user_id'=>$user->uid,
                           'count_unit_id'=>$locationId,
+                          'count_unit_boundary_location_type_id'=>$args['count_unit_boundary_location_type_id'],
                           'admin_role'=>$args['administrator_mode']);
       $optionsForBoundaryVersionsReport = array(
       'dataSource'=>'reports_for_prebuilt_forms/CUDI/get_count_unit_boundaries_for_user_role',
