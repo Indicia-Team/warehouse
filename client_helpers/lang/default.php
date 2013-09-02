@@ -97,10 +97,11 @@ $default_terms = array(
   'psnAttr' => 'Person Custom Attributes',
   'fkFilter' => 'Lookup Filters',
   
-  'Click to Filter What' => 'Click here to select a list of species or species groups to include',
-  'Click to Filter Where' => 'Click here to define the geographic area, site or map reference to include',
-  'Click to Filter When' => 'Click here to define a date range for records to include',
-  'Click to Filter Who' => 'Click here to define who\\\'s records to include',
-  'Click to Filter Quality' => 'Click here to include or exclude records based on quality criteria such as verification status or presence of photos',
-  'Click to Filter Source' => 'Click here to include or exclude records based on contributing website, survey or input form'
+  'Click to Filter What' => 'Select a list of species or species groups to include',
+  'Click to Filter Where' => 'Define the geographic area, site or map reference to include',
+  'Click to Filter When' => 'Define a date range for records to include',
+  'Click to Filter Who' => 'Define who\\\'s records to include',
+  'Click to Filter Occurrence_id' => 'Select records by record ID',
+  'Click to Filter Quality' => 'Include or exclude records based on quality criteria such as verification status or presence of photos',
+  'Click to Filter Source' => 'Include or exclude records based on contributing website, survey or input form'
 );
