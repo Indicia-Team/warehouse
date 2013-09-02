@@ -37,19 +37,23 @@ class extension_site_hierarchy_navigator {
    */
   public function map($auth, $args, $tabalias, $options, $path) {  
     global $base_root;
+    //Setup the path to the cudi information sheets. 
+    //Include the parameter on the end of the path, but leave off the parameter values
+    //as these will change for each path used.
+    iform_load_helpers(array('map_helper','report_helper'));
+    $informationSheetLinkParts = explode('|',$options['informationSheetLink']);
     $path = $base_root.base_path().
           //handle whether the drupal installation has clean urls setup.
-          (variable_get('clean_url', 0) ? '' : '?q=').$options['countUnitPagePath'].
-          (variable_get('clean_url', 0) ? '?' : '&');
-    map_helper::$javascript .= "indiciaData.countUnitPagePath='".$path."';\n";
+          (variable_get('clean_url', 0) ? '' : '?q=').$informationSheetLinkParts[0].
+          (variable_get('clean_url', 0) ? '?' : '&').$informationSheetLinkParts[1].'=';
+    map_helper::$javascript .= "indiciaData.informationSheetLink='".$path."';\n";
     if (empty($options['layerLocationTypes']))
       return '<p>Please provide a @layerLocationTypes option for the [site_hierarchy_navigator.map] map control on the edit tab</p>';
     $msg=self::check_format($options, 'layerLocationTypes', 'location_type_id (from the termlists term table)', '/^([0-9]*,\s*)*[0-9]*\s*$/'); 
     if ($msg!==true) return $msg;
     //This option is optional, so don't need to check if it isn't present
     $msg=self::check_format($options, 'showCountUnitsForLayers', 'location_type_id (from the termlists term table)', '/^([0-9]*,\s*)*[0-9]*\s*$/');
-    if ($msg!==true) return $msg;
-    iform_load_helpers(array('map_helper','report_helper'));
+    if ($msg!==true) return $msg;   
     drupal_add_js(iform_client_helpers_path().'prebuilt_forms/extensions/site_hierarchy_navigator.js');
     //The location types are supplied by the user in a comma seperated list.
     //The first number is used as the initial location type to display.
@@ -59,6 +63,8 @@ class extension_site_hierarchy_navigator {
     //This should be a subset of $layerLocationTypes.
     $showCountUnitsForLayers = explode(',', $options['showCountUnitsForLayers']); 
     $locationTypesWithSymbols = explode(',', $options['locationTypesWithSymbols']); 
+    //Annotation location types as defined on edit tab
+    $annotationTypeIds = explode(',', $options['annotationTypeIds']); 
     $mapOptions = iform_map_get_map_options($args, $auth);
     $olOptions = iform_map_get_ol_options($args);
     $mapOptions['readAuth'] = $mapOptions['readAuth']['read'];
@@ -80,6 +86,7 @@ class extension_site_hierarchy_navigator {
     //Send the user supplied options about which layers should display symbols instead of polygons to Javascript
     map_helper::$javascript .= "indiciaData.locationTypesWithSymbols=".json_encode($locationTypesWithSymbols).";\n";
     map_helper::$javascript .= "indiciaData.countUnitBoundaryTypeId=".$options['countUnitBoundaryTypeId'].";\n";
+    map_helper::$javascript .= "indiciaData.annotationTypeIds=".json_encode($annotationTypeIds).";\n";
     
     $reportOptions = array(
       'linkOnly'=>'true',

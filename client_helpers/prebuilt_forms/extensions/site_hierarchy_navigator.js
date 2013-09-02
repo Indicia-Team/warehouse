@@ -66,9 +66,11 @@ function add_new_layer_for_site_hierarchy_navigator(clickedFeatureId,breadcrumbL
   var parentId = parentIdAndName[0];
   var parentName = parentIdAndName[1];
   var reportRequest;
-  //Link to Count unit Informatin sheet if we detect a Count Unit has been clicked on/selected
-  if (clickedFeature&&clickedFeature.attributes.location_type_id==indiciaData.countUnitBoundaryTypeId) {
-    location = indiciaData.countUnitPagePath+'location_id='+parentId+'&'+breadcrumbIdsToPass;
+  //Link to Count unit Information sheet if we detect a Count Unit has been clicked on/selected
+  if (clickedFeature&&
+     (clickedFeature.attributes.location_type_id==indiciaData.countUnitBoundaryTypeId||
+      inArray(clickedFeature.attributes.location_type_id,indiciaData.annotationTypeIds))) {
+    location = indiciaData.informationSheetLink+parentId+'&'+breadcrumbIdsToPass;
   } else {
     //If the user has specified this layer must also display count units, then add them to the report parameters
     if (inArray(indiciaData.layerLocationTypes[currentLayerCounter],indiciaData.showCountUnitsForLayers)) {
@@ -321,7 +323,9 @@ function selectlist(features) {
   var selectListOptions;
   selectListOptions += '<option value="">Please select a location</option>';
   $.each(features, function (idx, feature) {
-    if (feature.id !== indiciaData.countUnitBoundaryTypeId) {
+    //Don't include annotations in the drop-down as we'll end up with multiple options
+    //for the same count unit.
+    if (!inArray(feature.attributes.location_type_id,indiciaData.annotationTypeIds)) {
       selectListOptions += '<option value="'+feature.attributes.name+'" onclick="add_new_layer_for_site_hierarchy_navigator('+feature.id+', null,true,null)">'+feature.attributes.name+'</option>';
     }
   });
