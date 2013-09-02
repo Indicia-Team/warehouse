@@ -127,7 +127,7 @@ class extension_site_hierarchy_navigator {
   public function selectlist($auth, $args, $tabalias, $options, $path) {
     iform_load_helpers(array('map_helper'));
     map_helper::$javascript .= "indiciaData.useSelectList=true;\n";
-    $selectlist = '<div><select id="map-selectlist"></select></div>';
+    $selectlist = "<div><select id=\"map-selectlist\" onchange=\"add_new_layer_for_site_hierarchy_navigator($('option:selected', this).attr('featureid'),null,true,null)\"></select></div>";
     return $selectlist;
   }
   
