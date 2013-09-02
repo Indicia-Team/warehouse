@@ -637,7 +637,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   pagingTemplate: '$indicia_templates[paging]',
   pathParam: '$pathParam',
   sendOutputToMap: ".((isset($options['sendOutputToMap']) && $options['sendOutputToMap']) ? 'true' : 'false').",
-  linkFilterToMap: ".(!empty($options['rowId']) && (empty($options['linkFilterToMap']) || $options['linkFilterToMap']===false) ? 'true' : 'false').",
+  linkFilterToMap: ".(!empty($options['rowId']) && $options['linkFilterToMap'] ? 'true' : 'false').",
   msgRowLinkedToMapHint: '".lang::get('Click the row to highlight the record on the map. Double click to zoom in.')."',
   altRowClass: '$options[altRowClass]'";
       if (isset($options['sharing'])) {
@@ -2124,7 +2124,8 @@ if (typeof mapSettingsHooks!=='undefined') {
       'caching' => isset($options['paramsOnly']) && $options['paramsOnly'],
       'sendOutputToMap' => false,
       'zoomMapToOutput' => true,
-      'ajax' => false
+      'ajax' => false,
+      'linkFilterToMap' => true
     ), $options);
     // if using AJAX we are only loading parameters and columns, so may as well use local cache
     if ($options['ajax'])
