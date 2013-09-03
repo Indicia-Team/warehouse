@@ -218,8 +218,10 @@ class iform_dynamic_location extends iform_dynamic {
   }
   
   protected static function getAttributes($args, $auth) {
+    $id = isset(data_entry_helper::$entity_to_load['location:id']) ? 
+            data_entry_helper::$entity_to_load['location:id'] : null;
     $attrOpts = array(
-    'id' => data_entry_helper::$entity_to_load['location:id']
+    'id' => $id
     ,'valuetable'=>'location_attribute_value'
     ,'attrtable'=>'location_attribute'
     ,'key'=>'location_id'
