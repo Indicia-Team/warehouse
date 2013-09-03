@@ -849,18 +849,19 @@ class XMLReportReader_Core implements ReportReader
       ),
       'taxa_taxon_list_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Taxa taxon list IDs", 
           'description'=>'Comma separated list of preferred IDs',
-          'joins' => array(
-             array('value'=>'', 'operator'=>'', 'sql'=>"join (with recursive q as ( ".
-                "select id ".
-                "from cache_taxa_taxon_lists t ".
-                "where id in (#taxa_taxon_list_list#) ".
-                "union all ".
-                "select tc.id ".
-                "from q ".
-                "join cache_taxa_taxon_lists tc ".
-                "on tc.parent_id = q.id ".
-                ") select id from q) t on t.id=o.taxa_taxon_list_id")
-          )
+          'wheres' => array(
+            array('value'=>'', 'operator'=>'', 'sql'=>"o.preferred_taxa_taxon_list_id in (#taxa_taxon_list_list#)")
+          ),
+          'preprocess' => // faster than embedding this query in the report            
+"with recursive q as ( 
+  select id 
+  from cache_taxa_taxon_lists t 
+  where id in (#taxa_taxon_list_list#) 
+  union all 
+  select tc.id 
+  from q 
+  join cache_taxa_taxon_lists tc on tc.parent_id = q.id 
+) select array_to_string(array_agg(id::varchar), ',') from q"
       )
     ), $this->params);
     $this->defaultParamValues = array_merge(array(

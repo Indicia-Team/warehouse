@@ -345,7 +345,8 @@ class ReportEngine {
   private function getVagueDateProcessing() {
     $vagueDateProcessing = $this->reportReader->getVagueDateProcessing();
     foreach ($this->providedParams as $name => $value) {
-      $vagueDateProcessing = preg_replace("/#$name#/", $value, $vagueDateProcessing);
+      if (!is_array($value))
+        $vagueDateProcessing = preg_replace("/#$name#/", $value, $vagueDateProcessing);
     }
     return !($vagueDateProcessing == 'false');
   }
@@ -1103,8 +1104,15 @@ class ReportEngine {
   
   /**
    * Add any where clause filters defined by a used parameter to the query.
+   * @todo: Consider caching of the preprocess output.
    */
   private function addParamWheres($query, $paramName, $paramDef, $value) {
+    if (!empty($paramDef['preprocess']) && !empty($value) && $value!=="null") {
+      // use a preprocessing query to calculate the actual param value to use
+      $prequery = str_replace("#$paramName#", $value, $paramDef['preprocess']);
+      $output = $this->reportDb->query($prequery)->result_array(FALSE);
+      $value = implode(',', $output[0]).',3';
+    }
     foreach($paramDef['wheres'] as $whereDef) {
       if ((!empty($whereDef['operator']) && (($whereDef['operator']==='equal' && $whereDef['value']===$value) ||
           ($whereDef['operator']==='notequal' && $whereDef['value']!==$value)))
