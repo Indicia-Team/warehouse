@@ -444,7 +444,7 @@ class iform_dynamic_location extends iform_dynamic {
     ));    
     $r .= '<form>';    
     $r .= '<input type="button" value="' . lang::get('LANG_Add_Location') . '" ' .
-            'onclick="window.location.href=\'' . url('node/'.($node->nid), array('query' => 'new')) . '\'">';    
+            'onclick="window.location.href=\'' . url('node/'.($node->nid), array('query' => array('new' => '1'))) . '\'">';    
     $r .= '</form>';
     return $r;
   }
