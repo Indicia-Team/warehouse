@@ -10,7 +10,6 @@
     ORDER BY l.id desc
   </query>
   <params>
-    <param name="current_user_id" datatype="integer"/>
     <param name="count_unit_id" datatype="integer"/>
     <param name="count_unit_boundary_location_type_id" datatype="integer"/>
   </params>
