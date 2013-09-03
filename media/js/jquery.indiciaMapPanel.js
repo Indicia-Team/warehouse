@@ -1265,19 +1265,27 @@ mapGeoreferenceHooks = [];
       // Need to convert this map based Point to a _getSystem based Sref (done by pointToSref) and a
       // indiciaProjection based geometry (done by the callback)
       var point = new OpenLayers.Geometry.Point(lonlat.lon, lonlat.lat);
+      var polygon;
 
       if (div.settings.clickForPlot) {
-        // Clicking to locate a plot
-        var width = parseFloat($('#' + div.settings.plotWidthId).val());
-        var length = parseFloat($('#' + div.settings.plotLengthId).val());
-        // Define a polygon the size of the plot with SW corner at the click point
-        var linearRing = new OpenLayers.Geometry.LinearRing([
-          new OpenLayers.Geometry.Point(lonlat.lon, lonlat.lat),
-          new OpenLayers.Geometry.Point(lonlat.lon + width, lonlat.lat),
-          new OpenLayers.Geometry.Point(lonlat.lon + width, lonlat.lat + length),
-          new OpenLayers.Geometry.Point(lonlat.lon, lonlat.lat + length)
-        ]);
-        var polygon = new OpenLayers.Geometry.Polygon([linearRing]);
+       // Clicking to locate a plot
+       if (div.settings.plotShape == 'rectangle') {
+         //create a rectangular polygon
+          var width = parseFloat($('#' + div.settings.plotWidthId).val());
+          var length = parseFloat($('#' + div.settings.plotLengthId).val());
+          // Define a polygon the size of the plot with SW corner at the click point
+          var linearRing = new OpenLayers.Geometry.LinearRing([
+            new OpenLayers.Geometry.Point(lonlat.lon, lonlat.lat),
+            new OpenLayers.Geometry.Point(lonlat.lon + width, lonlat.lat),
+            new OpenLayers.Geometry.Point(lonlat.lon + width, lonlat.lat + length),
+            new OpenLayers.Geometry.Point(lonlat.lon, lonlat.lat + length)
+          ]);
+          polygon = new OpenLayers.Geometry.Polygon([linearRing]);
+        } else if (div.settings.plotShape == 'circle') {
+          // create a circular polygon
+          var radius = parseFloat($('#' + div.settings.plotRadiusId).val());
+          polygon = new OpenLayers.Geometry.Polygon.createRegularPolygon(point, radius, 20, 0);
+        }
         var feature = new OpenLayers.Feature.Vector(polygon);
         var formatter = new OpenLayers.Format.WKT();
         // Store plot as WKT in map projection
@@ -2028,6 +2036,7 @@ jQuery.fn.indiciaMapPanel.defaults = {
     editLayer: true,
     clickForSpatialRef: true, // if true, then enables the click to get spatial references control
     clickForPlot: false, // if true, overrides clickForSpatialRef to locate a plot instead of a grid square.
+    plotShape: 'rectangle', // 'rectangle' draws plot with dimensions taken from controls with plotWidthID and plotLengthId, 'circle' from plotRadiusId
     allowPolygonRecording: false,
     editLayerName: 'Selection layer',
     editLayerInSwitcher: false,
@@ -2045,8 +2054,9 @@ jQuery.fn.indiciaMapPanel.defaults = {
     srefLongId: 'imp-sref-long',
     srefSystemId: 'imp-sref-system',
     geomId: 'imp-geom',
-    plotWidthId: 'attr-width', // html id of plot width control
-    plotLengthId: 'attr-length', // html id of plot length control
+    plotWidthId: 'attr-width', // html id of plot width control for plotShape = 'rectangle'
+    plotLengthId: 'attr-length', // html id of plot length control for plotShape = 'rectangle'
+    plotRadiusId: 'attr-radius', // html id of plot radius control for plotShape = 'circle'
     boundaryGeomId: 'imp-boundary-geom',
     clickedSrefPrecisionMin: '2', // depends on sref system, but for OSGB this would be 2,4,6,8,10 etc = length of grid reference
     clickedSrefPrecisionMax: '10',
