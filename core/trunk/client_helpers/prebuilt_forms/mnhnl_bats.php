@@ -1126,7 +1126,7 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
     return $args;      
   }
 
-  protected function getReportActions() {
+  protected static function getReportActions() {
     return
       array(array('display' => lang::get('Actions'),
                   'actions' => array(array('caption' => lang::get('Edit'), 'url'=>'{currentUrl}', 'urlParams'=>array('sample_id'=>'{sample_id}')))),

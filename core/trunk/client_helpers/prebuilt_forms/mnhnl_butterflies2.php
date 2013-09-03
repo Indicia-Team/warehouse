@@ -1229,7 +1229,7 @@ hook_new_site_added = function(feature) {
     return($sampleMod);
   }
   
-  protected function getReportActions() {
+  protected static function getReportActions() {
     return array(array('display' => '', 'actions' => 
             array(array('caption' => lang::get('Edit'), 'url'=>'{currentUrl}', 'urlParams'=>array('sample_id'=>'{sample_id}')))),
         array('display' => '', 'actions' => 
