@@ -312,6 +312,7 @@ class filter_quality extends filter_base {
         'V' => lang::get('Verified records only'),
         'C' => lang::get('Recorder was certain'),
         'L' => lang::get('Recorder thought the record was at least likely'),
+        'P' => lang::get('Pending verification'),
         '!R' => lang::get('Exclude rejected'),
         'all' => lang::get('All records'),
         'D' => lang::get('Queried records only'),
