@@ -59,7 +59,7 @@ class extension_cudi_homepage_links {
         //e.g. If the link is for Guildford, then we would need to supply the ids for Guildford, Surrey and South England
         //as well to the homepage can make a full homepageLink trail to guildford.
         if (empty($homepageLinkParamToSendBack)) 
-          $homepageLinkParamToSendBack='homepageLink='.$homepageLinkLocationIdsArray[$num];
+          $homepageLinkParamToSendBack='breadcrumb='.$homepageLinkLocationIdsArray[$num];
         else
           $homepageLinkParamToSendBack .= ','.$homepageLinkLocationIdsArray[$num];
         $r .= '<li id="homepageLink-part-"'.$num.'>';
