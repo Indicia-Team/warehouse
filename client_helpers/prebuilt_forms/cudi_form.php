@@ -609,7 +609,66 @@ class iform_cudi_form extends iform_dynamic {
     $boundaryVersions = report_helper::get_report_data($optionsForBoundaryVersionsReport);
     return $boundaryVersions;
   }
-          
+  
+  /*
+   * Get a list of existing annotations for a count unit
+   */
+  protected static function getAnnotationsList($args,$locationId,$auth) {
+    iform_load_helpers(array('report_helper')); 
+    $extraParams=array('count_unit_id'=>$locationId,
+                       'count_unit_boundary_location_type_id'=>$args['count_unit_boundary_location_type_id']);
+    $optionsForAnnotationsReport = array(
+      'dataSource'=>'reports_for_prebuilt_forms/CUDI/get_count_unit_annotations',
+      'readAuth'=>$auth['read'],
+      'extraParams' =>$extraParams
+    );
+    //Get the report options such as the Preset Parameters on the Edit Tab
+    $optionsForAnnotationsReport = array_merge(
+      iform_report_get_report_options($args, $readAuth),
+    $optionsForAnnotationsReport);    
+    //Collect the annotations from a report.
+    $annotations = report_helper::get_report_data($optionsForAnnotationsReport);
+    return $annotations;
+  }
+  
+  /*
+   * Control allows user to select from an existing list of annotations related to a Count Unit.
+   * Selecting a annotation loads the page in edit mode.
+   */
+  protected static function get_control_existingannotations($auth, $args, $tabalias, $options) {
+    //If in add mode, the page has a zoom_id in the url to allow it to zoom to the count unit
+    //without entering edit mode
+    if (!empty($_GET['zoom_id'])) {
+      $parentCountUnitId=$_GET['zoom_id'];   
+    } else {
+      //If in add mode, the page has a annotation_count_unit_id in the url to allow it to load the 
+      //annotation for the count unit in edit mode. Note we don't use parent_id here, as we want different behaviour than
+      //if the page was in boundary mode without having to change lots of existing code.
+      $parentCountUnitId=$_GET['annotation_count_unit_id'];   
+    }
+    global $user;
+    iform_load_helpers(array('report_helper')); 
+    //Collect the annotations from a report.
+    $existingAnnotations = self::getAnnotationsList($args,$parentCountUnitId,$auth);
+    //Only display control if there is something to list in it.
+    if (!empty($existingAnnotations)) {
+      $r = '<label for="existing_annotations">Existing Annotations:</label> ';
+      //Put the count unit annotatons into a drop-down and setup reloading of the page when an item is selected.
+      $r .= '<select id = "existing_annotations" name="existing_annotations" onchange="location = location = this.options[this.selectedIndex].id;">';
+      $r .= '<option>select an annotation to edit...</option>';
+      foreach ($existingAnnotations as $existingAnnotationData) { 
+        //Link back to annotations page when user clicks on an annotation.
+        $linkToAnnotationPage =
+              url($_GET['q'], array('absolute' => true)).(variable_get('clean_url', 0) ? '?' : '&').
+              'location_id='.$existingAnnotationData['id'].'&annotation_count_unit_id='.$parentCountUnitId; 
+        //Annotation options setup as we go around the foreach loop.
+        $r .= '<option value="'.$existingAnnotationData['id'].'" id="'.$linkToAnnotationPage.'">'.$existingAnnotationData['name'].'</option>';         
+      }
+
+      $r .= "</select></br>";
+    }
+    return $r;
+  }        
   /*
    * Control allows a user to select which count unit boundary version they intend to be the preferred one upon saving.
    * In order for control to operate correctly, the parent count unit must be loaded into the location_id parameter in the URL.
@@ -799,9 +858,9 @@ class iform_cudi_form extends iform_dynamic {
   }
   
   /**
-   * Get the Add Annotation button.
+   * Get the Add/Edit Annotation button.
    */
-  protected static function get_control_addannotation($auth, $args, $tabalias, $options) {
+  protected static function get_control_addeditannotations($auth, $args, $tabalias, $options) {
     global $base_url;
     $maintainAnnotationOptions = explode('|',$options['maintainAnnotationOptions']);
     $maintainAnnotationPath = $maintainAnnotationOptions[0];
@@ -814,7 +873,7 @@ class iform_cudi_form extends iform_dynamic {
       $countUnitLocationId=$_GET['location_id'];
     $maintainAnnotationUrl=(variable_get('clean_url', 0) ? '' : '?q=').$maintainAnnotationPath.(variable_get('clean_url', 0) ? '?' : '&').$maintainAnnotationParam.'='.$countUnitLocationId.(variable_get('clean_url', 0) ? '?' : '&').'breadcrumb='.$_GET['breadcrumb'];
     if ($_GET['location_id'])
-      return "<input type=\"button\" value=\"Add Annotation\" onclick=\"window.location.href='$maintainAnnotationUrl'\">";
+      return "<input type=\"button\" value=\"Add & Edit Annotations\" onclick=\"window.location.href='$maintainAnnotationUrl'\">";
   }
   
   /*
@@ -890,17 +949,14 @@ class iform_cudi_form extends iform_dynamic {
    * Setup the submission of an annotation.
    */
   public static function get_annotation_submission($values, $args) {
-    //Get the Count Unit id to store in the parent_id field for the annotation location
+    //Get the Count Unit id to store in the parent_id field for the annotation location.
+    //We only need to check the zoom_id for this, as this is only setup when page is in add mode.
     if (!empty($_GET['zoom_id']))
       $values['location:parent_id']=$_GET['zoom_id'];
-    $s = self::create_submission($values, $args);   
-    //Current version only supports creating new annotations
-    $values['update-existing-boundary']==='off';
-    if ($values['update-existing-boundary']==='on') {
-      $values['location:id']=$valuesForParent['boundary_versions'];
-    } else {
-      unset($values['location:id']);
-    }
+    $s = self::create_submission($values, $args);  
+    //Get existing location_id in edit mode
+    if (!empty($_GET['location_id']))
+      $values['location:id'] = $_GET['location_id'];
     return $s;
   }
   
