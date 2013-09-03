@@ -1189,7 +1189,7 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
       (!$include_if_any_data && array_key_exists('present', $record) && $record['present']!='0'); // inclusion of record detected from the presence checkbox
   }
   
-  protected function getReportActions() {
+  protected static function getReportActions() {
     return array(array('display' => '', 'actions' => 
             array(array('caption' => lang::get('Edit'), 'url'=>'{currentUrl}', 'urlParams'=>array('sample_id'=>'{sample_id}')))),
         array('display' => '', 'actions' => 

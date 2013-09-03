@@ -307,7 +307,7 @@ deleteSurvey = function(sampleID){
     $r = '<p>'.lang::get('LANG_SampleListGrid_Preamble').(user_access('IForm n'.parent::$node->nid.' admin') ? lang::get('LANG_All_Users') : $user->name).'</p>';
     return $r;
   }
-  protected function getReportActions() {
+  protected static function getReportActions() {
     return array(array('display' => '', 'actions' => 
             array(array('caption' => lang::get('Edit'), 'url'=>'{currentUrl}', 'urlParams'=>array('sample_id'=>'{sample_id}')))),
         array('display' => '', 'actions' => 
