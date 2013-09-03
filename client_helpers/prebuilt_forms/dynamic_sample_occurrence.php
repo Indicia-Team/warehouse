@@ -1889,7 +1889,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     return $args;
   }
 
-  protected function getReportActions() {
+  protected static function getReportActions() {
     return array(array('display' => 'Actions', 'actions' =>
         array(array('caption' => lang::get('Edit'), 'url'=>'{currentUrl}', 'urlParams'=>array('sample_id'=>'{sample_id}','occurrence_id'=>'{occurrence_id}')))));
   }
