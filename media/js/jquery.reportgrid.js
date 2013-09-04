@@ -301,13 +301,13 @@ var simple_tooltip;
       var elem = div.settings.recordCount ? $(div).find('tbody') :  $(div).find('table');
       // skip the loading overlay in <IE9 as it is buggy
       if ($.support.cssFloat) {
-        $(".loading-overlay").css({        
+        $(div).find(".loading-overlay").css({
           top     : $(elem).position().top+1,
           left    : $(elem).position().left+1,
           width   : $(elem).outerWidth()-2,
           height  : $(elem).outerHeight()-3
         });
-        $(".loading-overlay").show();
+        $(div).find(".loading-overlay").show();
       }
       $.ajax({
         dataType: "json",
@@ -423,7 +423,7 @@ var simple_tooltip;
           updatePager(div, hasMore);
           div.loading=false;
           setupReloadLinks(div);
-          if ($.support.cssFloat) {$(".loading-overlay").hide();}
+          if ($.support.cssFloat) {$(div).find(".loading-overlay").hide();}
 
           // execute callback it there is one
           if (div.settings.callback !== "") {
@@ -432,7 +432,7 @@ var simple_tooltip;
           
         },
         error: function(e) {
-          if ($.support.cssFloat) {$(".loading-overlay").hide();}
+          if ($.support.cssFloat) {$(div).find(".loading-overlay").hide();}
           alert('The report did not load correctly.');
         }
       });
@@ -610,12 +610,13 @@ var simple_tooltip;
     }
     
     function _internalMapRecords(div, request, offset, recordCount) {
-      if ($('#map-progress').length===0) {
-        $(indiciaData.mapdiv).append('<div id="map-progress" style="height: 16px;"></div>');
-        $('#map-progress').progressbar({ value: 0 });
-      } else {
-        $('#map-progress').show();
-      }
+      $(indiciaData.mapdiv).parent().find(".loading-overlay").css({
+          top     : $(indiciaData.mapdiv).position().top+1,
+          left    : $(indiciaData.mapdiv).position().left+1,
+          width   : $(indiciaData.mapdiv).outerWidth()-2,
+          height  : $(indiciaData.mapdiv).outerHeight()-3
+      });
+      $('#map-loading').show();
       var matchString, feature, featuresToSelect=[];
       // first call- get the record count
       $.getJSON(request + '&offset=' + offset + (typeof recordCount==="undefined" ? '&wantCount=1' : ''),
@@ -646,9 +647,8 @@ var simple_tooltip;
               }
             });
             indiciaData.reportlayer.addFeatures(features);
-            $('#map-progress').progressbar("option", "value", (offset+BATCH_SIZE) * 100 / recordCount);
             if (offset+BATCH_SIZE>=recordCount) {
-              $('#map-progress').hide();
+              $('#map-loading').hide();
             }
           }
         }
