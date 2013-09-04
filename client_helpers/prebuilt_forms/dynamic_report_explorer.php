@@ -353,6 +353,9 @@ class iform_dynamic_report_explorer extends iform_dynamic {
       'allowSave' => true,
       'sharing' => empty($args['sharing']) ? 'reporting' : $args['sharing']
     ), $options);
+    foreach ($options as $key=>&$value) {
+      $value = apply_user_replacements($value);
+    }
     if ($options['allowSave'] && !function_exists('iform_ajaxproxy_url'))
       return 'The AJAX Proxy module must be enabled to support saving filters. Set @allowSave=false to disable this in the [standard params] control.';
     if (!function_exists('hostsite_get_user_field') || !hostsite_get_user_field('indicia_user_id'))
