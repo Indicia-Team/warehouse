@@ -402,6 +402,7 @@ idlist=';
     $options['editLayer'] = true;
     $options['editLayerInSwitcher'] = true;
     $options['clickForSpatialRef'] = false;
+    $options['featureIdField']='occurrence_id';
     $r .= map_helper::map_panel(
       $options,
       $olOptions
@@ -539,13 +540,15 @@ idlist=';
           'paramsFormButtonCaption' => lang::get('Filter'),
           'paramPrefix'=>'<div class="report-param">',
           'paramSuffix'=>'</div>',
-          'sharing'=>'verification'
+          'sharing'=>'verification',
+          'ajax'=>TRUE
         )
     );
     $opts['columns'][] = array(
       'display'=>'',
-      'template' => '<button class="default-button quick-verify tools-btn" type="button" id="quick-{occurrence_id}" title="Quick verification options">...</button>'.
-          '<ul class="verify-tools"><li><a href="#" class="quick-verify-tool">Bulk verify similar records</a></li><li><a href="#" class="trust-tool">Recorder\'s trust settings</a></li></ul>'
+      'template' => '<button class="default-button quick-verify tools-btn" type="button" id="quick-{occurrence_id}" title="Record tools">...</button>'.
+          '<input type="hidden" class="row-input-form" value="{rootFolder}{input_form}"/><ul class="verify-tools"><li><a href="#" class="quick-verify-tool">Bulk verify similar records</a></li>'.
+          '<li><a href="#" class="trust-tool">Recorder\'s trust settings</a></li><li><a href="#" class="edit-record">Edit record</a></li></ul>'
     );
     $params = self::report_filter_panel($args, $readAuth);
     $params .= $hiddenStuff;
@@ -1085,7 +1088,8 @@ WHERE vuser_id.value=".$_GET['user_id']);
     $options = array(
       'allowSave' => true,
       'sharing' => 'verification',
-      'linkToMapDiv'=>'map'
+      'linkToMapDiv'=>'map',
+      'filter-quality'=>'P'
     );
     if (!function_exists('iform_ajaxproxy_url'))
       return 'The AJAX Proxy module must be enabled to support saving filters.';
