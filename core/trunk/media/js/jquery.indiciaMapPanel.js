@@ -757,7 +757,7 @@ mapGeoreferenceHooks = [];
      * Selects the features in the contents of a bounding box
      */
     function selectBox(position, layers, div) {
-      var testGeom, tolerantGeom, pointGeom, layer, tolerance, testGeoms={},
+      var testGeom, tolerantGeom, layer, tolerance, testGeoms={},
           getRadius, getStrokeWidth, radius, strokeWidth, match;
       if (position instanceof OpenLayers.Bounds) {
         testGeom=boundsToGeom(position, div);        
@@ -807,8 +807,8 @@ mapGeoreferenceHooks = [];
             // check if the feature is displayed
             if (!feature.onScreen()) {
               continue;
-            }          
-            pointGeom=feature.geometry.getCentroid();            
+            }
+            pointGeom=feature.geometry.getCentroid();
             if (getRadius!==null) {
               // getRadius might be a string (fieldname) or a context function, so overwrite the layer default
               if (typeof getRadius==='string') {
@@ -831,7 +831,7 @@ mapGeoreferenceHooks = [];
             if (typeof testGeoms['geom-'+Math.round(tolerance/100)]!=="undefined") {
               tolerantGeom = testGeoms['geom-'+Math.round(tolerance/100)];
             } else {
-              tolerantGeom = OpenLayers.Geometry.Polygon.createRegularPolygon(testGeom, tolerance, 20, 0);
+              tolerantGeom = OpenLayers.Geometry.Polygon.createRegularPolygon(testGeom, tolerance, 8, 0);
               testGeoms['geom-'+Math.round(tolerance/100)] = tolerantGeom;
             }
             if ((tolerantGeom.intersects(feature.geometry) || testGeom.intersects(feature.geometry))
