@@ -353,8 +353,8 @@ class ReportEngine {
 
   private function getDownloadDetails() {
     $downloadProcessing = $this->reportReader->getDownloadDetails();
-     foreach ($this->providedParams as $name => $value)
-    {
+    foreach ($this->providedParams as $name => $value) {
+      if (!is_array($value))
         $downloadProcessing->mode = preg_replace("/#$name#/", $value, $downloadProcessing->mode);
     }
     return $downloadProcessing;
