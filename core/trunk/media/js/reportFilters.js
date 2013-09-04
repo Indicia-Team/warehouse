@@ -707,17 +707,21 @@ jQuery(document).ready(function($) {
     return days1>days2;
   }
   
-  applyFilterToReports = function(applyNow) {
-    var filterDef = indiciaData.filter.def, context;
+  function applyContextLimits() {
     // if a context is loaded, need to limit the filter to the records in the context
     if ($('#context-filter').length) {
-      context = indiciaData.filterContextDefs[$('#context-filter').val()];
+      var context = indiciaData.filterContextDefs[$('#context-filter').val()];
       $.each(paneObjList, function(name, obj) {
         if (typeof obj.limitToContext!=="undefined") {
-          obj.limitToContext(filterDef, context);
+          obj.limitToContext(indiciaData.filter.def, context);
         }
       });
     }
+  }
+  
+  applyFilterToReports = function(applyNow) {
+    applyContextLimits();
+    var filterDef = indiciaData.filter.def;
     if (indiciaData.reports) {
       // apply the filter to any reports on the page
       $.each(indiciaData.reports, function(i, group) {
@@ -749,16 +753,25 @@ jQuery(document).ready(function($) {
   }
   
   function resetFilter() {
-    indiciaData.filter.def = {};
+    indiciaData.filter.def={};
     applyDefaults();
+    if (typeof indiciaData.filter.orig!=="undefined") {
+      indiciaData.filter.def = $.extend(indiciaData.filter.def, indiciaData.filter.orig);
+    }
     indiciaData.filter.id = null;
     $('#filter-name').val('');
+    $('#select-filter').val('');
     $.each(indiciaData.reports, function(i, group) {
       $.each(group, function(j, grid) {
-        // store a copy of the original params before any reset, so we can revert.
+        // revert any stored original params for the grid.
         if (typeof grid[0].settings.origParams!=="undefined") {
           grid[0].settings.extraParams = $.extend({}, grid[0].settings.origParams);
         }
+      });
+    });
+    applyFilterToReports(true);
+    $.each(indiciaData.reports, function(i, group) {
+      $.each(group, function(j, grid) {
         // reload the report grid
         grid.ajaxload();
         if (grid[0].settings.linkFilterToMap) {
@@ -770,12 +783,11 @@ jQuery(document).ready(function($) {
     if (indiciaData.mapdiv) {
       indiciaData.mapdiv.map.editLayer.removeAllFeatures();
     }
-    $('#standard-params .header h2').html(indiciaData.lang.FilterReport);
     updateFilterDescriptions();
     $('#filter-reset').addClass('disabled');
     $('#filter-delete').addClass('disabled');
     // reset the filter label
-    $('#standard-params .header h2').html(indiciaData.lang.ActiveFilter);
+    $('#standard-params .header h2').html(indiciaData.lang.FilterReport);
     $('#standard-params .header span.changed').hide();
   }
   
