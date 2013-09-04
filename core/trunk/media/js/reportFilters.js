@@ -887,10 +887,6 @@ jQuery(document).ready(function($) {
     }
   }); 
   
-  $('form.filter-controls').submit(function(e){
-    e.preventDefault();
-  });
-  
   $('form.filter-controls :input').change(function(){
     filterParamsChanged();
   });
@@ -947,14 +943,15 @@ jQuery(document).ready(function($) {
     $.fancybox.close();
   });  
   
-  $('.fb-apply').click(function(e) {
-    if (!$($(e.currentTarget).parents('.filter-controls')[0]).valid() || $(e.currentTarget).data('clicked')) {
-      return;
+  $('form.filter-controls').submit(function(e){
+    e.preventDefault();
+    if (!$(e.currentTarget).valid() || $(e.currentTarget).find('.fb-apply').data('clicked')) {
+      return false;
     }
-    $(e.currentTarget).data('clicked', true);
+    $(e.currentTarget).find('.fb-apply').data('clicked', true);
     var arrays={}, arrayName;
     // persist each control value into the stored settings
-    $.each($(e.currentTarget).parents('.filter-controls').find(':input'), function(idx, ctrl) {
+    $.each($(e.currentTarget).find(':input'), function(idx, ctrl) {
       if ($(ctrl).attr('type')!=='checkbox' || $(ctrl).attr('checked')) {
         // array control?
         if ($(ctrl).attr('name').match(/\[\]$/)) {
@@ -978,7 +975,7 @@ jQuery(document).ready(function($) {
     $.each(arrays, function(name, arr) {
       indiciaData.filter.def[name] = arr.join(',');
     });
-    var pane=$(e.currentTarget).parents('form')[0].id.replace('controls-filter_', '');
+    var pane=e.currentTarget.id.replace('controls-filter_', '');
     // Does the pane have any special code for applying it's settings to the definition?
     if (typeof paneObjList[pane].applyFormToDefinition!=="undefined") {
       paneObjList[pane].applyFormToDefinition();
