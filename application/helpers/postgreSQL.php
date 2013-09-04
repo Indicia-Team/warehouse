@@ -130,19 +130,9 @@ class postgreSQL {
       SET map_sq_1km_id=msq.id
       FROM map_squares msq, samples s, occurrences o
       WHERE s.id=co.sample_id AND o.id=co.id
-      AND msq.x=round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, greatest(o.sensitivity_precision, 1000), s.entered_sref_system))))
-      AND msq.y=round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, greatest(o.sensitivity_precision, 1000), s.entered_sref_system))))
-      AND msq.size=greatest(o.sensitivity_precision, 1000)
-      AND s.id=$id"
-    );
-    $db->query(
-    "UPDATE cache_occurrences co
-      SET map_sq_10km_id=msq.id
-      FROM map_squares msq, samples s, occurrences o
-      WHERE s.id=co.sample_id AND o.id=co.id
-      AND msq.x=round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, greatest(o.sensitivity_precision, 10000), s.entered_sref_system))))
-      AND msq.y=round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, greatest(o.sensitivity_precision, 10000), s.entered_sref_system))))
-      AND msq.size=greatest(o.sensitivity_precision, 10000)
+      AND msq.x=round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, greatest(o.sensitivity_precision, $size), s.entered_sref_system))))
+      AND msq.y=round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, greatest(o.sensitivity_precision, $size), s.entered_sref_system))))
+      AND msq.size=greatest(o.sensitivity_precision, $size)
       AND s.id=$id"
     );
   }
