@@ -199,6 +199,7 @@ class Sample_Model extends ORM_Tree
   protected function postSubmit($isInsert) {
     if (class_exists('cache_builder')) {
       postgreSQL::insertMapSquaresForSample($this->id, 1000, $this->db);
+      postgreSQL::insertMapSquaresForSample($this->id, 2000, $this->db);
       postgreSQL::insertMapSquaresForSample($this->id, 10000, $this->db);
     }
     return true;
