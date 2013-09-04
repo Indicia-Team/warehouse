@@ -74,7 +74,7 @@ jQuery(document).ready(function($) {
         // including context websites, so we want an intersection
         context_idlist=context[type + '_list'].split(',');
         idlist=$.grep(filterDef[type + '_list'].split(','), function(elem) {
-          return $.inArray(elem, context_idlist);
+          return $.inArray(elem, context_idlist)!==-1;
         });
         filterDef[type + '_list']=idlist.join(',');
       }
@@ -110,15 +110,18 @@ jQuery(document).ready(function($) {
           if (filterDef.taxon_group_list) {
             context_idlist=context.taxon_group_list.split(',');
             idlist=$.grep(filterDef.taxon_group_list.split(','), function(elem) {
-              return $.inArray(elem, context_idlist);
+              return $.inArray(elem, context_idlist)!==-1;
             });
             filterDef.taxon_group_list=idlist.join(',');
-            filterDef.taxon_group_names=$.grep(filterDef.taxon_group_names, function(elem, idx) {
-              return $.inArray(elem, context_idlist);
+            $.each(filterDef.taxon_group_names, function(id, name) {
+              if ($.inArray(id, context_idlist)===-1) {
+                delete filterDef.taxon_group_names[id];
+              }
             });
+            
           } else {
             filterDef.taxon_group_list=context.taxon_group_list;
-            filterDef.taxon_group_names=context.taxon_group_names;
+            filterDef.taxon_group_names=$.extend({}, context.taxon_group_names);
           }
         } else if (context.taxa_taxon_list_list) {
           // No point having any sort of group level filter
@@ -128,15 +131,17 @@ jQuery(document).ready(function($) {
           if (filterDef.taxa_taxon_names_list) {
             context_idlist=context.taxa_taxon_names_list.split(',');
             idlist=$.grep(filterDef.taxa_taxon_names_list.split(','), function(elem) {
-              return $.inArray(elem, context_idlist);
+              return $.inArray(elem, context_idlist)!==-1;
             });
             filterDef.taxa_taxon_names_list=idlist.join(',');
-            filterDef.taxa_taxon_list_names=$.grep(filterDef.taxa_taxon_list_names, function(elem, idx) {
-              return $.inArray(elem, context_idlist);
+            $.each(filterDef.taxa_taxon_list_names, function(id, name) {
+              if (!$.inArray(id, context_idlist)===-1) {
+                delete filterDef.taxa_taxon_list_names[id];
+              }
             });
           } else {
             filterDef.taxa_taxon_names_list=context.taxa_taxon_names_list;
-            filterDef.taxa_taxon_list_names=context.taxa_taxon_list_names;
+            filterDef.taxa_taxon_list_names=$.extend({}, context.taxa_taxon_list_names);
           }
         }
       },
