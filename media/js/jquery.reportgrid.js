@@ -477,7 +477,7 @@ var simple_tooltip;
           e.preventDefault();
           if (div.loading) {return;}
           div.loading = true;
-          div.settings.offset += div.settings.itemsPerPage;
+          div.settings.offset += $(div).find('tbody').children().length; // in case not showing full page after deletes
           if (div.settings.offset>lastPageOffset) {
             div.settings.offset=lastPageOffset;
           } 
@@ -489,7 +489,7 @@ var simple_tooltip;
           if (div.loading) {return;}
           div.loading = true;
           div.settings.offset -= div.settings.itemsPerPage;
-          // Min offset is zero, shouldn't really happen.
+          // Min offset is zero.
           if (div.settings.offset<0) {div.settings.offset=0;}
           load(div, false);
         });
@@ -727,6 +727,7 @@ var simple_tooltip;
       $.each($(this), function(idx, div) {
         div.settings.recordCount -= count;
         updatePager(div, true);
+        setupReloadLinks(div);
       });
     };
 
