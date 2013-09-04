@@ -662,9 +662,9 @@ var simple_tooltip;
     function mapRecords(div, zooming) {
       var layerInfo = {bounds: null}, map=indiciaData.mapdiv.map, currentBounds=null;
       // we need to reload the map layer using the mapping report, so temporarily switch the report      
-      var origReport=div.settings.dataSource, request, zoomLayerIdx;
+      var origReport=div.settings.dataSource, request;
       if (div.settings.mapDataSource!=='') {
-        if (map.zoom<12 && div.settings.mapDataSourceLoRes) {
+        if (map.zoom<13 && div.settings.mapDataSourceLoRes) {
           div.settings.dataSource=div.settings.mapDataSourceLoRes;
         } else {
           div.settings.dataSource=div.settings.mapDataSource;
@@ -672,17 +672,22 @@ var simple_tooltip;
       }
       try {
         request=getFullRequestPathWithoutPaging(div, false)+'&limit='+BATCH_SIZE;
-        if (map.zoom<=9 && div.settings.mapDataSourceLoRes) {
+        if (map.zoom<=8 && div.settings.mapDataSourceLoRes) {
           request += '&sq_size=10000';
           layerInfo.zoomLayerIdx = 0;
-        } else if (map.zoom<12 && div.settings.mapDataSourceLoRes) {
-          request += '&sq_size=1000';
+        } else if (map.zoom<11 && div.settings.mapDataSourceLoRes) {
+          request += '&sq_size=2000';
           layerInfo.zoomLayerIdx = 1;
-        } else {
+        } else if (map.zoom<13 && div.settings.mapDataSourceLoRes) {
+          request += '&sq_size=1000';
           layerInfo.zoomLayerIdx = 2;
+        } else {
+          layerInfo.zoomLayerIdx = 3;
         }
         layerInfo.report=div.settings.dataSource;
-        if (map.zoom>9 && div.settings.mapDataSourceLoRes) {          
+        // if zoomed in, use the map bounding box to limit the loaded features. Having an indexed site filter changes the threshold as it is less necessary.
+        if (map.zoom>8 && div.settings.mapDataSourceLoRes && 
+            (map.zoom>12 || typeof div.settings.extraParams.indexed_location_id==="undefined" || div.settings.extraParams.indexed_location_id==='')) {
           // get the current map bounds. If zoomed in close, get a larger bounds so that the map can be panned a bit without reload.          
           layerInfo.bounds = map.calculateBounds(map.getCenter(), Math.max(39, map.getResolution()));
           // plus the current bounds to test if a reload is necessary
