@@ -327,8 +327,9 @@ function iform_map_zoom_to_location($locationId, $readAuth) {
     'extraParams' => $readAuth + array('id'=>$locationId,'view' => 'detail')
   );
   $response = data_entry_helper::get_population_data($getPopDataOpts);
+  // Note, since the following moves the map, we want it to be the first mapInitialisationHook
   data_entry_helper::$javascript .= "
-mapInitialisationHooks.push(function(mapdiv) {
+mapInitialisationHooks.unshift(function(mapdiv) {
   var parser, feature, loclayer = new OpenLayers.Layer.Vector(
     '".lang::get('My Preferred Locality')."',
     {'sphericalMercator': true, displayInLayerSwitcher: true}

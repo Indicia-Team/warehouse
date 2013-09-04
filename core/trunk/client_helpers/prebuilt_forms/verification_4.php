@@ -547,7 +547,7 @@ idlist=';
     $opts['columns'][] = array(
       'display'=>'',
       'template' => '<button class="default-button quick-verify tools-btn" type="button" id="quick-{occurrence_id}" title="Record tools">...</button>'.
-          '<input type="hidden" class="row-input-form" value="{rootFolder}{input_form}"/><ul class="verify-tools"><li><a href="#" class="quick-verify-tool">Bulk verify similar records</a></li>'.
+          '<input type="hidden" class="row-input-form" value="{rootFolder}{input_form}"/><input type="hidden" class="row-belongs-to-site" value="{belongs_to_site"/><ul class="verify-tools"><li><a href="#" class="quick-verify-tool">Bulk verify similar records</a></li>'.
           '<li><a href="#" class="trust-tool">Recorder\'s trust settings</a></li><li><a href="#" class="edit-record">Edit record</a></li></ul>'
     );
     $params = self::report_filter_panel($args, $readAuth);

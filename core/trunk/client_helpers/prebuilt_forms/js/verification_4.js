@@ -444,7 +444,7 @@ $(document).ready(function () {
   //which allows you to verify all trusted records.
   var verifyAllTrustedButton = '<input type="button" value="..." class="default-button verify-grid-trusted tools-btn" id="verify-grid-trusted"/>', 
       trustedHtml, request;
-  $('#verification-params #run-report').before(verifyAllTrustedButton);
+  $('#filter-build').after(verifyAllTrustedButton);
   $('#verify-grid-trusted').click(function() {
     trustedHtml = '<div class="trusted-verify-popup" style="width: 550px"><h2>Verify records by trusted recorders</h2>'+
                   '<p>This facility allows you to verify all records where the recorder is trusted based on the record\'s '+
@@ -459,7 +459,7 @@ $(document).ready(function () {
       var params=indiciaData.reports.verification.grid_verification_grid.getUrlParamsForAllRecords();
       //We pass "trusted" as a parameter to the existing verification_list_3 report which has been adjusted
       //to handle verification of all trusted records.
-      params.records="trusted";
+      params.quality="T";
       request = indiciaData.ajaxUrl + '/bulk_verify/'+indiciaData.nid;
       $.post(request,
         'report='+encodeURI(indiciaData.reports.verification.grid_verification_grid[0].settings.dataSource)+'&params='+encodeURI(JSON.stringify(params))+
@@ -740,6 +740,11 @@ function quickVerifyMenu(row) {
       $('.trust-tool').hide();
     } else {
       $('.trust-tool').show();
+    }
+    if ($(row).find('.row-belongs-to-site').html()==='true') {
+      $(row).find('.verify-tools .edit-record').show();
+    } else {
+      $(row).find('.verify-tools .edit-record').hide();
     }
     // show the menu
     $(row).find('.verify-tools').show();
