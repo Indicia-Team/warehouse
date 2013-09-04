@@ -492,11 +492,16 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
     $r .= '<div>';
     if ($contexts) {
       data_entry_helper::$javascript .= "indiciaData.filterContextDefs = " . json_encode($contextDefs) . ";\n";
-      $r .= '<label for="context-filter">'.lang::get('Context:')."</label><select id=\"context-filter\">$contexts</select>";
+      if (count($contextDefs)>1)
+        $r .= '<label for="context-filter">'.lang::get('Context:')."</label><select id=\"context-filter\">$contexts</select>";
+      else {
+        $keys = array_keys($contextDefs);
+        $r .= '<input type="hidden" id="context-filter" value="'.$keys[0].'" />';
+      }
     }
     $r .= '<label for="select-filter">'.lang::get('Filter:').'</label><select id="select-filter"><option value="" selected="selected">' . lang::get('Select filter') . "...</option>$existing</select>";
     $r .= '<button type="button" id="filter-apply">' . lang::get('Apply') . '</button>';
-    $r .= '<button type="button" id="filter-reset">' . lang::get('Reset') . '</button>';
+    $r .= '<button type="button" id="filter-reset" class="disabled">' . lang::get('Reset') . '</button>';
     $r .= '<button type="button" id="filter-build">' . lang::get('Build filter') . '</button></div>';
     $r .= '</div>';
     $r .= '<div id="filter-details" style="display: none">';
@@ -556,7 +561,7 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
   }   
   $r .= '</div>';
   report_helper::$js_read_tokens = $readAuth;
-  report_helper::$javascript .= "indiciaData.lang.FilterReport='".lang::get('Filter Report')."';\n";
+  report_helper::$javascript .= "indiciaData.lang.FilterReport='".lang::get('New report')."';\n";
   report_helper::$javascript .= "indiciaData.lang.FilterSaved='".lang::get('The filter has been saved')."';\n";
   report_helper::$javascript .= "indiciaData.lang.FilterDeleted='".lang::get('The filter has been deleted')."';\n";
   report_helper::$javascript .= "indiciaData.lang.ConfirmFilterChangedLoad='".lang::get('Do you want to load the selected filter and lose your current changes?')."';\n";
@@ -578,7 +583,10 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
       $overrideJs .= "indiciaData.filter.def['".substr($key, 7)."']='".$value."';\n";
     }
   }
-  if (!empty($overrideJs)) $overrideJs .= "applyFilterToReports(false);\n";
+  if (!empty($overrideJs)) {
+    $overrideJs .= "indiciaData.filter.orig=$.extend({}, indiciaData.filter.def);\n";
+    $overrideJs .= "applyFilterToReports(false);\n";
+  }
   report_helper::$onload_javascript = "if ($('#select-filter').val()) {".
       "loadFilter($('#select-filter').val(), false);" .
       "};\n" . $overrideJs . report_helper::$onload_javascript;

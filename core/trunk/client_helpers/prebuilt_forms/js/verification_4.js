@@ -735,7 +735,7 @@ function trustsPopup() {
 
 function quickVerifyMenu(row) {
   // can't use User Trusts if the recorder is not linked to a warehouse user.
-  if (typeof currRec!=="undefined") {
+  if (typeof currRec!=="undefined" && currRec!==null) {
     if (currRec.extra.created_by_id==="1") {
       $('.trust-tool').hide();
     } else {
@@ -751,7 +751,7 @@ function quickVerifyMenu(row) {
 }
 
 $('table.report-grid tbody').click(function (evt) {
-  var row=$(evt.target).parents('tr:first')[0];
+  var row=$(evt.target).parents('tr:first')[0], path, sep;
   $('.verify-tools').hide();
   // reinstate tooltips
   $.each($(row).parents('table:first tbody').find(':data(title)'), function(idx, ctrl) {
@@ -767,6 +767,10 @@ $('table.report-grid tbody').click(function (evt) {
   }
   else if ($(evt.target).hasClass('trust-tool')) {
     trustsPopup(row);
+  } else if ($(evt.target).hasClass('edit-record')) {
+    path=$(row).find('.row-input-form').val();
+    sep=(path.indexOf('?')>=0) ? '&' : '?';
+    window.location=path+sep+'occurrence_id='+$(row).find('.record-id').html();
   }
   else {
     selectRow(row);
