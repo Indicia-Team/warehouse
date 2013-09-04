@@ -500,7 +500,11 @@
           // to stop users updating locked spatial refs by clicking on map
           mapDiv = div;
           srefId = mapDiv.settings.srefId;
-          setWriteStatus(srefId+'_lock');
+          var lock$ = $('#' + srefId+'_lock');
+          if (lock$.length !== 0) {
+            // Only need to do this if a lock has been put on the sref control.
+            setWriteStatus(srefId+'_lock');
+          }
         });
       }
       initialised = true;
