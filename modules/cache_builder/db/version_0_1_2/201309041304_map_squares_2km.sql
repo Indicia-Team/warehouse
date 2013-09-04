@@ -2,22 +2,26 @@ ALTER TABLE cache_occurrences ADD COLUMN map_sq_2km_id INTEGER;
 
 -- create 2km index 
 
-INSERT INTO map_squares (geom, x, y, size)
 SELECT DISTINCT on (round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 2000), s.entered_sref_system)))),
     round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 2000), s.entered_sref_system)))),
     GREATEST(o.sensitivity_precision, 2000))    
-  reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 2000), s.entered_sref_system),
-  round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 2000), s.entered_sref_system)))),
-  round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 2000), s.entered_sref_system)))),
-  GREATEST(o.sensitivity_precision, 2000)
+  reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 2000), s.entered_sref_system) as geom,
+  round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 2000), s.entered_sref_system)))) as x,
+  round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 2000), s.entered_sref_system)))) as y,
+  GREATEST(o.sensitivity_precision, 2000) as size
+INTO temp
 FROM samples s
 JOIN occurrences o ON o.sample_id=s.id
-LEFT JOIN map_squares msq 
-  ON msq.x=round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 2000), s.entered_sref_system))))
-  AND msq.y=round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 2000), s.entered_sref_system))))
-  AND msq.size=GREATEST(o.sensitivity_precision, 2000)
-WHERE s.geom IS NOT NULL
-AND msq.id IS NULL;
+WHERE s.geom IS NOT NULL;
+
+--drop existing, which can happen if records are sensitive.
+DELETE FROM temp 
+USING map_squares msq
+WHERE msq.x=x AND msq.y=y AND msq.size=size;
+
+INSERT INTO map_squares (geom, x, y, size) SELECT * FROM temp;
+
+DROP TABLE temp;
 
 SELECT DISTINCT ON (o.confidential, o.sensitivity_precision, s.entered_sref, s.entered_sref_system) 
     s.geom, o.confidential, o.sensitivity_precision, s.entered_sref, s.entered_sref_system, 
