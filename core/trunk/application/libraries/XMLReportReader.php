@@ -785,16 +785,30 @@ class XMLReportReader_Core implements ReportReader
       'quality' => array('datatype'=>'lookup', 'default'=>'', 'display'=>'Quality', 
           'description'=>'Minimum quality of records to include', 
           'lookup_values'=>'=V:Verified records only,C:Recorder was certain,L:Recorder thought the record was at least likely,P:Pending verification,' .
-              '!R:Everything except rejected,all:Everything including rejected,D:Queried records only,R:Rejected records only',
+              'T:Pending verification for trusted recorders,!R:Everything except rejected,all:Everything including rejected,D:Queried records only,R:Rejected records only',
           'wheres' => array(
             array('value'=>'V', 'operator'=>'equal', 'sql'=>"o.record_status='V'"),
             array('value'=>'C', 'operator'=>'equal', 'sql'=>"o.record_status<>'R' and o.certainty='C'"),
             array('value'=>'L', 'operator'=>'equal', 'sql'=>"o.record_status<>'R' and o.certainty in ('C','L')"),
             array('value'=>'P', 'operator'=>'equal', 'sql'=>"o.record_status in ('C','S')"),
+            array('value'=>'T', 'operator'=>'equal', 'sql'=>"o.record_status in ('C','S')"),
             array('value'=>'!R', 'operator'=>'equal', 'sql'=>"o.record_status<>'R'"),
             array('value'=>'D', 'operator'=>'equal', 'sql'=>"o.record_status='D'"),
             array('value'=>'R', 'operator'=>'equal', 'sql'=>"o.record_status='R'"),
             // The all filter does not need any SQL
+          ),
+          'joins' => array(
+            array('value'=>'T', 'operator'=>'equal', 'sql'=>
+"LEFT JOIN index_locations_samples ils on ils.sample_id=o.sample_id
+JOIN user_trusts ut on (ut.survey_id=o.survey_id
+    OR ut.taxon_group_id=o.taxon_group_id
+    OR (ut.location_id=ils.location_id or ut.location_id is null)
+  )
+  AND ut.deleted=false
+  AND ((o.survey_id = ut.survey_id) or (ut.survey_id is null and (ut.taxon_group_id is not null or ut.location_id is not null)))
+  AND ((o.taxon_group_id = ut.taxon_group_id) or (ut.taxon_group_id is null and (ut.survey_id is not null or ut.location_id is not null)))
+  AND ((ils.location_id = ut.location_id) OR (ut.location_id IS NULL and (ut.survey_id is not null or ut.taxon_group_id is not null)))
+  AND o.created_by_id = ut.user_id")
           )
       ),
       'autochecks' => array('datatype'=>'lookup', 'default'=>'', 'display'=>'Automated checks', 
