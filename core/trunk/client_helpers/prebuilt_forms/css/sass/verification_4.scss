@@ -4,31 +4,12 @@
 
 $verify-color: #00a000;
 $reject-color: #a00000;
-$dubious-color: #c08000;
+$query-color: #f0a000;
 $default-color: #4ba3cc;
 $hover-color: #ffffcc;
 $selected-color: #027AC6;
 $header-font-color: #027AC6;
 $selected-font-color: #ffffff;
-
-#verification-grid {
-  form#verification-grid-params {
-    margin-bottom: 0;
-  }
-}
-
-#outer-grid-left #grid {
-  width: 55%;
-  
-  #record-details-wrap {
-    width: 44%;
-    overflow: auto;
-  }
-}
-
-#grid {
-  overflow: auto;
-}
 
 table.report-grid {
   font-size: 80%;  
@@ -39,6 +20,9 @@ table.report-grid {
   tr.selected, tr.selected td {
     background-color: $selected-color;
     color: white;
+  }
+  .nowrap {
+    whitespace: nowrap;
   }
 }
 
@@ -57,8 +41,17 @@ ul.gallery li {
   @include sassy-button("simple", 4px, 11px, $reject-color, darken($reject-color, 20%), white, raised);
 }
 
-#btn-dubious {
-  @include sassy-button("simple", 4px, 11px, $dubious-color, darken($dubious-color, 20%), white, raised);
+#btn-query {
+  @include sassy-button("simple", 4px, 11px, $query-color, darken($query-color, 20%), white, raised);
+}
+
+#btn-multiple {
+  @include sassy-button("simple", 4px, 11px, $default-color, darken($default-color, 20%), white, raised);
+  @include sassy-button-style("push", $default-color);
+}
+
+#btn-multiple.active {
+  @include sassy-button-style("inset", darken($default-color, 30%))
 }
 
 #comment-text {
@@ -79,6 +72,13 @@ ul.gallery li {
       margin: 0 0 0 120px;
       line-height: 1em;
     }
+  }
+  .warning {
+    line-height: 1.2em;
+    @include box-shadow($reject-color 1px 1px 3px);
+    @include border-radius(4px);
+    padding: 1em;
+    margin: 1em;
   }
 }
 
