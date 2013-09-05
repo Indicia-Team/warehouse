@@ -1,0 +1,24 @@
+<report
+    title='UKBMS Recorder Names list'
+    description='An list of text names used for the recorder names attribute entered by the user - this assummes Easy Login.'
+>
+  <query>
+  SELECT distinct(sav.text_value) as name
+  FROM sample_attribute_values sav
+  JOIN samples s ON s.id = sav.sample_id and s.deleted = FALSE
+  WHERE sav.deleted = FALSE
+  AND sav.sample_attribute_id = #attr_id#
+  AND (CAST(s.survey_id AS character varying)='#survey_id#')
+  AND (CAST(sav.created_by_id AS character varying)='#user_id#')
+  ORDER BY name
+  </query>
+  <params>
+    <param name='survey_id' display='Survey' description='Select the survey, or leave for all surveys' datatype='lookup'
+        population_call='direct:survey:id:title' />
+    <param name='user_id' display='Indicia User ID' description='Enter the Indicia ID of the user' datatype='int' />
+    <param name='attr_id' display='Recorder Name sample attribute ID' description='Recorder Name sample attribute ID' datatype='int' />
+  </params>
+  <columns>
+    <column name='name' display='Name' />
+  </columns>
+</report>

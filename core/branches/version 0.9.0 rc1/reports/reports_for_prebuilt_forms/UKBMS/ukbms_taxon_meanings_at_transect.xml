@@ -1,0 +1,22 @@
+<report
+    title="Taxon meanings at transect"
+    description="Returns the list of taxon meanings ever recorded at a UKBMS transect."
+>
+  <query website_filter_field="o.website_id">
+  SELECT distinct o.taxon_meaning_id
+  FROM cache_occurrences o
+  JOIN samples s ON s.id=o.sample_id AND s.deleted=false
+  JOIN samples sp ON sp.id=s.parent_id AND sp.deleted=false
+  #agreements_join#
+  #joins#
+  WHERE #sharing_filter#
+  AND sp.location_id=#location_id#
+  AND sp.survey_id=#survey_id#
+  </query>
+  <params>
+    <param name='location_id' display='Location' description='Provide the location to display records for' datatype='lookup' emptyvalue="0"
+        population_call='direct:location:id:name' />
+    <param name='survey_id' display='Location' description='Provide the survey to display records for' datatype='lookup' emptyvalue="0"
+        population_call='direct:survey:id:title' />
+  </params>
+</report>

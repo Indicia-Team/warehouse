@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="My Report Title" description="Demonstration of an XML report">
+
+      <query>
+
+      SELECT id, taxon FROM taxa
+
+      WHERE taxon LIKE '#searchstring#'
+
+      </query>
+
+      <order_bys>
+
+            <order_by>taxon ASC</order_by>
+
+      </order_bys>
+
+      <params>
+
+            <param name="searchstring" display="Species Name" datatype="text" description="Taxon name (any language) to search for."/>
+
+      </params>
+
+      <columns>
+
+            <column name="taxon" display="Species Name" style="color: #ff0000;" />
+
+            <column name="id" display="ID" />
+
+      </columns>
+
+</report>

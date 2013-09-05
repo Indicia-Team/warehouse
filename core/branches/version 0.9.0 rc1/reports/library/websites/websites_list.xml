@@ -1,0 +1,24 @@
+<report
+    title="Websites list"
+    description="A general purpose list of websites."
+>
+  <query>
+  SELECT #columns#
+  FROM websites w  
+  #joins#
+  WHERE w.id in (#sharing_website_ids#)
+  #filters#
+  AND w.deleted=false
+  #order_by#
+  </query>  
+  <order_bys>
+    <order_by>w.title ASC</order_by>
+  </order_bys>  
+  <columns>
+    <column name="id" visible="false" sql="w.id" />
+    <column name="title" display='Title' datatype="text" sql="w.title" />
+    <column name="description" display='Description' datatype="text" sql="w.description" />    
+    <column name="url" display='URL' datatype="text" sql="w.url" />    
+  </columns>
+</report>
+

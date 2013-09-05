@@ -1,0 +1,56 @@
+<report
+    title="Species custom attributes with hiddens"
+    description="Report used to retrieve custom attributes of an species which are not included in a list of attributes to ignore."
+>
+  <query>
+  select 
+    ttl.id, 'Record' as attribute_type, a.system_function,
+    CASE a.data_type
+      WHEN 'T'::bpchar THEN 'Text'::bpchar
+      WHEN 'L'::bpchar THEN 'Lookup List'::bpchar
+      WHEN 'I'::bpchar THEN 'Integer'::bpchar
+      WHEN 'B'::bpchar THEN 'Boolean'::bpchar
+      WHEN 'F'::bpchar THEN 'Float'::bpchar
+      WHEN 'D'::bpchar THEN 'Specific Date'::bpchar
+      WHEN 'V'::bpchar THEN 'Vague Date'::bpchar
+      ELSE a.data_type
+    END AS data_type, a.caption, 
+    CASE a.data_type
+      WHEN 'T'::bpchar THEN av.text_value
+      WHEN 'L'::bpchar THEN lookup.term::text
+      WHEN 'I'::bpchar THEN av.int_value::character varying::text
+      WHEN 'B'::bpchar THEN av.int_value::character varying::text
+      WHEN 'F'::bpchar THEN av.float_value::character varying::text
+      WHEN 'D'::bpchar THEN av.date_start_value::character varying::text
+      WHEN 'V'::bpchar THEN (av.date_start_value::character varying::text || ' - '::text) || av.date_end_value::character varying::text
+      ELSE NULL::text
+    END AS value, 
+      CASE a.data_type
+        WHEN 'T'::bpchar THEN av.text_value
+        WHEN 'L'::bpchar THEN av.int_value::character varying::text
+        WHEN 'I'::bpchar THEN av.int_value::character varying::text
+        WHEN 'B'::bpchar THEN av.int_value::character varying::text
+        WHEN 'F'::bpchar THEN av.float_value::character varying::text
+        WHEN 'D'::bpchar THEN av.date_start_value::character varying::text
+        WHEN 'V'::bpchar THEN (av.date_start_value::character varying::text || ' - '::text) || av.date_end_value::character varying::text
+        ELSE NULL::text
+      END AS raw_value
+  FROM taxa_taxon_lists ttl
+    join taxa_taxon_lists ttl2 on ttl2.taxon_meaning_id=ttl.taxon_meaning_id and ttl2.deleted=false
+    join taxa_taxon_list_attribute_values av on av.taxa_taxon_list_id=ttl2.id and av.deleted=false
+    join taxa_taxon_list_attributes a on a.id=av.taxa_taxon_list_attribute_id and a.deleted=false
+    left join cache_termlists_terms lookup on lookup.id=av.int_value 
+  WHERE
+    ttl.id=#taxa_taxon_list_id#
+  AND ttl.deleted=false
+  AND lower(coalesce(#testagainst#,'')) #operator# (#attrs#)
+  </query>
+  <params>
+    <param name='taxa_taxon_list_id' display='Taxon ID' description='ID of the taxon to load' datatype='text' />
+    <param name='attrs' display='Attributes' description='CSV list of attributes to include or exclude. Lowercase.' datatype='text' />
+    <param name='testagainst' display='Test against' description='Test for fields to include or exclude using the caption or the system function of the custom attribute' 
+        datatype='lookup' lookup_values='caption:Caption,system_function:System Function, e.g. email' />
+    <param name='operator' display='Include or exclude' description="Do you want to include only the list of attributes you've defined, or exclude them?" 
+        datatype='lookup' lookup_values='in:Include,not in:Exclude' />
+  </params>
+</report>

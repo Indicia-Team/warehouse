@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="My Sites" description="A list of sites I've created, or added to my list of sites (a custom person attribute).">
+      <query website_filter_field="lw.website_id">
+      SELECT #columns#
+      FROM locations l
+      LEFT JOIN cache_termlists_terms lt ON lt.id=l.location_type_id
+      LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
+      LEFT JOIN cache_occurrences co ON co.created_by_id=#user_id# AND co.created_by_id&lt;&gt;1 AND ST_INTERSECTS(co.public_geom, COALESCE(l.boundary_geom, l.centroid_geom))
+      LEFT JOIN person_attribute_values pav ON pav.person_attribute_id=#person_site_attr_id# AND pav.int_value=l.id AND pav.deleted=false
+      LEFT JOIN users u ON u.person_id=pav.person_id AND u.id=#user_id#  
+      #joins#
+      WHERE l.deleted=false
+      AND #website_filter#
+      AND (l.created_by_id=#user_id# OR u.id IS NOT NULL)
+      </query>
+      <order_bys>
+        <order_by>l.name ASC</order_by>
+      </order_bys>
+      <params>
+        <param name='location_type_ids' display='Location Types' description='Comma separated list of location_type_ids to allow for inclusion in the results.' datatype="text" emptyvalue="0"/>
+        <param name='locattrs' display='Location attribute list' description='Comma separated list of location attribute IDs to include' datatype='locattrs' />
+        <param name="user_id" display="User ID" description="The warehouse user's ID" datatype="integer" />
+        <param name="person_site_attr_id" display="Person Sites Attribute ID" description="The person attribute ID used to store My Sites" datatype="integer" />
+      </params>
+      <columns>
+        <column name="id" visible="false" sql="l.id" unique="true" in_count="true" />
+        <column name="name" display="Site Name" sql="l.name" datatype="text" />
+        <column name="occurrences" display="No. of Records" sql="COUNT(DISTINCT co.id)" aggregate="true" datatype="integer" />
+        <column name="taxa" display="No. of Taxa" sql="COUNT(DISTINCT co.taxon_meaning_id)" aggregate="true" datatype="integer" />
+        <column name="groups" display="No. of Taxon Groups" sql="COUNT(DISTINCT co.taxon_group_id)" aggregate="true" datatype="integer" />
+        <column name="geom" visible="false" mappable="true" sql="st_astext(coalesce(l.boundary_geom, l.centroid_geom))" />
+        <column name="created_by_user" visible="false" sql="CASE l.created_by_id WHEN #user_id# THEN true ELSE false END" />
+        <column name="linked_to_user" visible="false" sql="CASE WHEN pav.id IS NOT NULL THEN true ELSE false END" />
+        <column name="pav_id" visible="false" sql="pav.id" />
+      </columns>
+</report>

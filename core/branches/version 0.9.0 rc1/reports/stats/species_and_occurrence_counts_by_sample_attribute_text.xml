@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Species &amp; Occurrence Counts by Taxon Group" description="Lists taxon groups and the number of species and occurrences within them. Optional date range and survey filters.">
+      <query>
+      SELECT sav.text_value as attr, count(DISTINCT ttl.taxon_meaning_id) as species_count, count(DISTINCT o.id) as occurrences_count, #website_id# as website_id
+      FROM occurrences o
+      JOIN taxa_taxon_lists ttl ON o.taxa_taxon_list_id = ttl.id
+      JOIN samples s on s.id=o.sample_id and s.deleted=false
+      JOIN sample_attribute_values sav on sav.sample_id=s.id and sav.sample_attribute_id=#attr_id# and sav.deleted=false
+      WHERE o.website_id=#website_id#
+      AND o.record_status&lt;&gt;'R'
+      AND (CAST(s.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
+      AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+      AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+      GROUP BY sav.text_value
+    UNION
+      SELECT 'Total' as taxongroup, count(DISTINCT ttl.taxon_meaning_id) as species_count, count(DISTINCT o.id) as occurrences_count, #website_id# as website_id
+      FROM occurrences o
+      JOIN taxa_taxon_lists ttl ON o.taxa_taxon_list_id = ttl.id
+      JOIN samples s on s.id=o.sample_id and s.deleted=false      
+      JOIN sample_attribute_values sav on sav.sample_id=s.id and sav.sample_attribute_id=#attr_id# and sav.deleted=false
+      WHERE o.website_id=#website_id#
+      AND o.record_status&lt;&gt;'R'
+      AND (CAST(s.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
+      AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+      AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+      AND '#include_total#'!='no'
+      </query>
+  <params>
+    <param name='website_id' display='Website ID' description='Select the website to return data for' datatype='integer' />
+    <param name='date_from' display='Date From' datatype='date' />
+    <param name='date_to' display='Date To' datatype='date' />
+    <param name='survey_id' display='Survey' description='Select the survey to return data for, or leave for all surveys' datatype='lookup'
+        query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title' />
+    <param name='include_total' display='Include Total' datatype='lookup' lookup_values='yes:Yes,no:No' />
+    <param name='attr_id' display='Group by attribute' datatype='lookup' population_call='direct:sample_attribute:id:caption' 
+        description='Which attribute should the report be grouped by to produce the species and occurrence counts? The attribute you select must be text datatype.' />
+  </params>
+      <order_bys>
+            <order_by>species_count DESC</order_by>
+      </order_bys>
+      <columns>
+            <column name="attr" display="Attribute Value" style="background-color: #e7e7e7;" />
+            <column name="species_count" display="Total no. of Species" />
+            <column name="occurrences_count" display="Total no. of Occurrences" />
+            <column name="website_id" visible="false" />
+      </columns>
+</report>

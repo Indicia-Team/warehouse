@@ -1,0 +1,321 @@
+/* My new Stuff */
+h1#poll-banner {
+    color: #FF6717;
+    font-family: "Trebuchet MS",Arial,Helvetica,sans-serif;
+    font-size: 1.2em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+}
+
+.ui-accordion-header { padding:7px 10px; text-transform:uppercase; font-size:0.9em; }
+.ui-datepicker-next { left:13.2em; }
+
+#main .previous-button, #main .next-button, #main .new-id-button, #main .doubt-button, #main .poll-id-button, #main .poll-id-cancel,
+#main .reset-button, #main .search-button, #main .submit-button,
+#main .preferred-button { background:#a6d633; border-color:#a6d633; padding:1px 10px; cursor:pointer; text-transform:uppercase; font-size:0.9em; display:inline-block; width:auto; color:#fff; }
+#main .previous-button, #main .next-button, #main .new-id-button, #main .doubt-button,
+#main .reset-button, #main .search-button, #main .submit-button,
+#main .preferred-button { margin-left: 20px; }
+
+.reset-button { float:right; position:relative; left:-10px; top:-1px;}
+
+.collection-button { float:right ; text-transform:uppercase; cursor:pointer;}
+#fo-filter-button { margin-right:20px; }
+
+#collection-details { margin-bottom:0px; border-top:none; }
+#collection-insects { overflow:auto; margin-top:20px; }
+
+#filter .ui-accordion-content .ui-accordion-header { margin-bottom:5px; color:#90a900; background:#e3f09d; border-color:#e3f09d; }
+#filter .ui-accordion-content .ui-accordion-content { margin-bottom:10px; border-top:1px solid #d5d5d5; background-color:#fafafa; }
+#filter-footer { background:#f8fdee; border-top:1px solid #e9f2b0; margin-bottom:20px; text-align:center; }
+#preferred-button-container { background:#f8fdee; text-align:center; margin-top:0px; }
+#fc-delete-collection { background:#f8fdee; text-align:center; margin-top:0px; }
+#filter-spec { border-bottom: none; }
+#fc_location_submit_button, #fc_front_page_submit_button { float: right;}
+
+.filter-insect, .collection-insect { margin-right:2px; margin-left:2px; margin-bottom:5px;  padding:10px 3px; }
+.start-of-row { margin-left:0px; }
+.end-of-row { margin-right:0px; }
+
+.filter-insect .insect-image,
+.collection-insect .insect-image { padding-bottom:5px; cursor:pointer; }
+.filter-insect p, .collection-insect p { font-size:0.8em; }
+
+#location-entry .indicia-button, #location-entry .search-button { margin-right:0; margin-top:-2px; color:#fff; font-size:0.9em; /*width:260px; float:left; text-transform:uppercase; cursor:pointer;*/ }
+div.olMap { clear:both; }
+
+#imp-insee-div { padding:10px; margin-bottom:10px; }
+#location-entry label { clear:both; }
+#location-georef-notes { display: block; clear: both;}
+
+#collection-insects { border:none; padding-left:0; padding-right:0; }
+#results-collections-results .ui-widget-content { border:none; border-bottom:1px solid #e3f09d; padding-bottom:25px;  padding-top:15px; }
+#results-collections-results .collection-details { border-bottom:1px dashed #333; padding-bottom:10px; margin-bottom:20px; }
+#results-collections-results .collection-photoreel { padding:20px 0; margin-left:-3px; }
+#results-collections-results p { font-size:0.9em; color:#333; }
+#results-collections-results p.collection-locality,
+#results-collections-results p.collection-date{ font-size:0.9em; color:#999; }
+
+#main .display-button,#main .preferred-button { color:#ff6717; background-color:#fff; border-color:#ff6717; cursor:pointer; font-size:0.7em; text-transform:uppercase; font-weight:bold; display:inline-block; padding:1px 15px; }
+#collection-user-link  { color:#ff6717; text-transform:uppercase; font-size: 0.8em; }
+
+.new-comment-button { float:right; font-size:0.9em; padding:1px 10px; background:#a6d633; border-color:#a6d633; }
+#fo-comments-header,
+#fo-comment-list,
+#fo-new-comment,
+#fc-comments-header,
+#fc-comment-list,
+#fc-new-comment { background-color:#eff6c7; border-color:#eff6c7; }
+#fo-comments-header span, #fc-comments-header span { color:#85c302; }
+#fo-comment-list,
+#fc-comment-list,
+#fc-new-comment,
+#fo-new-comment { padding:0 15px 10px 10px; }
+#fc-new-comment form,
+#fo-new-comment form { border-top:1px solid #fff;  }
+.sample-comment-block { border-top:1px solid #fff; }
+#fo-comment-list p,
+#fc-comment-list p { font-size:0.8em; color:#000; }
+.sample-comment-block span,
+.sample-comment-body span { font-size:0.8em; color:#616161; }
+.sample-comment-body { padding-bottom:5px; }
+#fc-new-comment textarea,
+#fo-new-comment textarea { width:645px; }
+#fc_comment_submit_button,
+#comment_submit_button { float:right; color:#fff; width:auto; margin:0; cursor:pointer; text-transform:uppercase; font-size:0.8em; float:right; }
+
+#flower-image { margin-bottom:5px; }
+#flower-image-container { margin-bottom:12px; }
+#collection-description p { font-size:0.8em; color: #999; }
+#collection-description p#collection-date { color: black; }
+#collection-description #collection-locality { color: black; }
+#collection-description p strong { color:#ff5900; }
+#collection-description p#collection-user-name { padding-bottom:10px; }
+.collection-value, p#collection-user-name { color: black; }
+
+#fo-header,#fc-header { background: #F8FDEE; border-color:#d5d5d5; border-bottom:none; margin-bottom:0; border-top-style:solid; border-width:1px; font-size:0.8em; }
+#fo-id-buttons,#fo-new-insect-id-buttons,#fo-new-flower-id-buttons,#fo-express-doubt-buttons { background:#f8fdee; }
+
+#fo-insect-addn-info .addn-info-title, #fo-flower-addn-info .addn-info-title{ color:#85c302; border-color:#d5d5d5; font-weight:bold; text-transform:uppercase; display:block; padding-bottom:5px; font-size:0.8em; }
+#fo-insect-addn-info p, #fo-flower-addn-info p { font-size:0.8em; color:#999;}
+#fo-insect-addn-info p span, #fo-flower-addn-info p span { color:#333;}
+#fo-insect-addn-info, #fo-flower-addn-info { margin-bottom:20px; }
+#fo-localisation-info,#fo-new-insect-id,#fo-new-flower-id,#fo-express-doubt,#fo-edit-insect-id,#fo-edit-flower-id {
+  margin-top:20px;
+  border-top: #D5D5D5 solid 1px;
+}
+#fo-picture { margin-bottom:20px; }
+
+.insect-id { padding-bottom:10px; }
+
+#filter select { width:520px; }
+
+/*pagination */
+.page-control { text-align:right; color:#cc0034; margin-bottom:10px; font-size:0.9em; }
+.page-control a { color:#cc0034; }
+.page-control .on { color:#85c302; font-weight:bold; }
+
+input.search-button { font-size:0.9em; }
+
+.insect-image, .flower-image, .environment-image { cursor:pointer; }
+
+/* Our Stuff */
+/* .ui-accordion-header {
+	padding: 4px;
+} */
+
+.addn-info-label {
+	width: 160;
+}
+
+#new-id label {
+	display: block;
+	width: auto;
+}
+
+.collection-image {
+  display: inline-block;
+  margin-right: 10px;
+  height: 180px;
+  width: 240px;
+  background-color:#f7f7f7;
+  border:#ababab 1px solid;
+}
+
+#map2_container {
+  display: inline-block;
+	width: 47%;
+	margin-left: 1%;
+	vertical-align: top;
+    border: #ababab 1px solid;
+}
+
+#flower-image-container {
+	display: inline-block;
+	width: 48%;
+	margin-right: 1%;
+	vertical-align: top;
+}
+#flower-image {
+    border: #ababab 1px  solid;
+}
+#environment-image {
+	display: inline-block;
+	width: 47%;
+	margin-left: 1%;
+	vertical-align: top;
+    border: #ababab 1px solid;
+}
+#collection-description {
+    background-color:#ffffff;
+	display: inline-block;
+	width: 48%;
+	margin-right: 1%;
+	vertical-align: top;
+}
+.collection-insect-container,.filter-insect-container {
+	display: inline-block;
+	width: 33.3%;
+	vertical-align: top;
+}
+#fc-new-location { margin-top: 20px } 
+#fc-new-location label {width: auto; display: inline-block;}
+#fc-new-location input {width: 135px;}
+#fc-front-page {
+    margin-top: 20px;
+    margin-bottom: 0px;
+    padding-bottom: 1em;
+    padding-left: 2.2em;
+    padding-right: 2.2em;
+    padding-top: 1em;
+}
+#fc-front-page-form label {width: auto;}
+.thumb {
+  vertical-align: top;
+  height: 50px;
+  width: 50px;
+  margin: 3px;
+  border: #878787 thin solid;
+  background-color:#878787;
+  display: inline-block;
+  position: relative;
+}
+.thumb-image {
+   width: 100%;
+   height: 100%; /* for IE 6 */
+}
+
+.thumb-text {
+   position: absolute;
+   top: 0%;
+   left: 30%;
+   color: red;
+   font-size: 35px;
+}
+
+.determination-flag {
+    margin-top:0px;
+    margin-bottom:0px;
+    padding:0px;
+    width: 24px;
+    height: 24px;
+}
+.centre-flag {
+    margin-left: auto ;
+    margin-right: auto ;
+}
+.fold-button {
+	float: right;
+    padding:0px;
+    width: 13px;
+    height: 13px;
+    background: url(/misc/arrow-desc.png);
+}
+.fold-button-folded {
+    background: url(/misc/arrow-asc.png);
+}
+.occurrence-unknown {
+    background: url("../images/occ_unknown.png");
+}
+.occurrence-dubious {
+    background: url("../images/occ_doubtful.png");
+}
+.occurrence-valid {
+    background: url(/misc/watchdog-ok.png) no-repeat ;
+}
+.display-button {
+	text-align: center;
+}
+.thumb, .collection-image, .collection-insect-container, .filter-insect-container {
+  *display: inline;
+}
+#map2_container, #flower-image, #environment-image, #collection-description {
+  *display: inline;
+}
+.filter-collection div {
+	*zoom: 1;
+}
+#results-insects-results div {
+	*zoom: 1;
+}
+.loading {  background: transparent url(/misc/throbber.gif) no-repeat 0px -18px;}
+.loading-button {  background: transparent url(/misc/throbber.gif) no-repeat 50% -18px  !important ;}
+.ui-progressbar {
+    height: 1em;
+}
+#fo-localisation-info .addn-info-title,
+#fo-new-insect-id .title,
+#fo-new-flower-id .title,
+#fo-express-doubt .title,
+#fo-edit-insect-id .title,
+#fo-edit-flower-id .title {
+    color: #85C302;
+    font-size: 0.8em;
+    font-weight: bold;
+    padding-bottom: 10px;
+    text-transform: uppercase;
+}
+#fo-localisation-info p {
+    color: #999999;
+    font-size: 0.8em;
+}
+#fo-localisation-info p span {
+    color: #333333;
+}
+.item-list .pager {
+    width: auto;
+}
+.taxon-comment {
+  width: 600px;
+}
+.control-box span label {
+    margin-left: 0;
+    vertical-align: top;
+}
+.control-box span input {
+    margin-top: 4px;
+    margin-bottom: 8px;
+}
+#focus-occurrence .follow-on {
+	display: inline-block;
+}
+#location-entry select {
+  width:277px;
+}
+div.id-specified-group select {
+  width:600px;
+}
+input[type="checkbox"] {
+	border: none !important;
+	margin-top: 6px !important;
+	margin-bottom: 6px !important;
+}
+#imp-sref-lat {
+	margin-right: 20px;
+}
+.species-select {
+	width: 600px;
+}

@@ -1,0 +1,42 @@
+  <report
+    title="Sites With Count Unit For Parent"
+    description="List of sites within a given parent and a comma seperated list of Count Units for each of those sites (Count Unit is a location type)."
+>
+  <query website_filter_field="lw.website_id">
+    SELECT #columns# 
+    FROM locations l
+      LEFT JOIN locations_websites lw ON lw.location_id=l.id 
+      JOIN termlists_terms tt ON tt.id = l.location_type_id
+      JOIN terms t ON t.id = tt.term_id 
+      #joins#
+    WHERE 1=1
+      #filters#
+      AND ((#website_filter# AND lw.deleted = false) or l.public=true)
+      AND l.deleted = false AND tt.deleted = false
+      AND t.deleted = false 
+      AND (l.location_type_id = (#site_type_id#) OR l.location_type_id = (#sub_site_type_id#))
+  </query>
+  <params>
+    <param name="count_unit_type_id" datatype="integer">
+      <join>
+        LEFT JOIN locations LCU
+        LEFT JOIN locations_websites lwLCU ON lwLCU.location_id=LCU.id 
+        JOIN termlists_terms ttLCU ON ttLCU.id = LCU.location_type_id
+        JOIN terms tLCU ON tLCU.id = ttLCU.term_id 
+        --Use COALESCE with boundary_geom as first priority as a geometry could be intersecting whilst the centroid is outside the intersection if it is partially intersecting
+        ON st_intersects(l.boundary_geom, COALESCE(LCU.boundary_geom,LCU.centroid_geom)) 
+          AND LCU.location_type_id = (#count_unit_type_id#)           
+      </join>
+    </param>
+    <param name="site_type_id" datatype="integer"/>
+    <param name="sub_site_type_id" datatype="integer"/>
+    --Only intersect the centroid for child locations otherwise the parent location is returned as well, as the boundaries would intersect each other
+    <param name="parent_id" datatype="integer" default="">    
+      <join>JOIN locations lp on st_intersects(lp.boundary_geom, l.centroid_geom) and lp.id in (#parent_id#)</join>
+    </param>
+  </params>
+  <columns>
+    <column name="name" display="Site/Sub-Site" sql="l.name" in_count="true"/>
+    <column name="count_units" display="Count Units" sql="array_to_string(array_agg(LCU.name), ', ')" aggregate="true" />
+  </columns>
+</report>

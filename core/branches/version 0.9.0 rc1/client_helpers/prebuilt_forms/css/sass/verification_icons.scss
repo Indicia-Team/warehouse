@@ -1,0 +1,51 @@
+@import "compass/css3";
+@import "sassy-buttons";
+@import "blueprint/form";
+
+$verify-color: #00a000;
+$reject-color: #a00000;
+
+@mixin passfailicon {
+  width: 16px;
+  height: 16px;
+  padding: 2px;
+  border: solid 1px;
+  @include border-radius(4px);
+  @include inline-block;
+  background-repeat: no-repeat;
+  background-position: 2px 2px;
+}
+
+.pass-icon {
+  @include passfailicon;
+  border-color: $verify-color;
+  @include box-shadow($verify-color 1px 1px 3px);
+  background-image: url("../images/nuvola/ok-16px.png");
+}
+
+.fail-icon {
+  @include passfailicon;
+  border-color: $reject-color;
+  @include box-shadow($reject-color 1px 1px 3px);
+  background-image: url("../images/nuvola/help-16px.png");
+}
+
+div.data_cleaner_identification_difficulty {
+  background-image: url("../images/nuvola/xmag-16px.png");
+}
+
+div.data_cleaner_period {
+  background-image: url("../images/nuvola/history-16px.png");
+}
+
+div.data_cleaner_period_within_year {
+  background-image: url("../images/nuvola/date-16px.png");
+}
+
+div.data_cleaner_without_polygon {
+  background-image: url("../images/nuvola/browser-16px.png");
+}
+
+div.verification_check_species_designation {
+  background-image: url("../images/nuvola/bottom-16px.png");
+}

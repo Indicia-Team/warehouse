@@ -1,0 +1,57 @@
+div#addCommentToggle {  
+  color: blue;
+  text-decoration: underline;
+  cursor: pointer;
+  margin: 10px 0 10px 0;
+}
+
+div#addComment fieldset {
+  width: 600px;
+  border: solid 1px black;
+}
+
+div#addComment fieldset input {
+  width: 300px;
+}
+
+div#addComment fieldset textarea {
+  width: 560px;
+  display: block;
+}
+
+div#addComment fieldset label {
+  display: inline-block;
+  line-height: 1.8;
+  vertical-align: top;
+  width: 120px; /* Width of labels */
+}
+
+div.comment {
+  width: 600px;
+  margin: 10px 0 10px 0;
+}
+
+div.comment div.header {
+  background-color: rgb(100,200,100);
+  display: block;
+}
+
+div.comment div.header span.user {
+  font-weight: bold;
+  float: left;
+}
+
+div.comment div.header span.timestamp {
+  font-style: italic;
+  float: right;
+}
+
+div.comment div.header:after {
+  display: block;
+  clear: both;
+  content: " ";
+}
+
+div.comment div.commentText {
+  margin-left: 30px;
+}

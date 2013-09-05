@@ -1,0 +1,46 @@
+<report
+    title="Samples List for Dynamic_sample_occurrences form"
+    description="Used by the Samples grid to retrieve the samples associated with a survey and user. User can be identified by a CMS 
+    User ID attribute or by their Indicia User ID"
+>
+  <query>
+  SELECT s.id as sample_id,
+  		COALESCE(l.name, s.location_name) as location_name,
+  		s.entered_sref,
+  		s.date_start,
+  		s.date_end,
+  		s.date_type,
+  		(select count(*) from occurrences o where o.sample_id = s.id and o.deleted = FALSE) as num_occurrences,
+  		(select (count(*) &gt; 0) from occurrences o where o.sample_id = s.id and o.deleted = FALSE and o.record_status = 'C') as completed
+  FROM samples s
+  LEFT JOIN locations l ON l.id=s.location_id
+  WHERE s.survey_id=#survey_id# AND s.deleted = FALSE
+  AND ((#userID# &gt; 0 AND EXISTS (SELECT id FROM sample_attribute_values sav
+  								WHERE sav.sample_id = s.id
+  								AND sav.sample_attribute_id = #userID_attr_id#
+  								AND sav.int_value = #userID#))
+  		OR (#userID# = -1 AND NOT EXISTS (SELECT id FROM sample_attribute_values sav
+  								WHERE sav.sample_id = s.id
+  								AND sav.sample_attribute_id = #userID_attr_id#))
+                OR (#iUserID# &gt; 0 AND s.created_by_id = #iUserID#))
+  #order_by#
+  </query>
+  <order_bys>
+    <order_by>s.id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='survey_id' display='Survey: ' description='Select the survey to return data for?' datatype='lookup'
+        query='SELECT id, title as caption FROM surveys' />
+    <param name='userID_attr_id' display='CMS User Sample Attribute ID' description='Sample Attribute ID used to Identify User' datatype='int' />
+    <param name='userID' display='CMS User ID' description='CMS User ID: use -1 for non logged in people, 0 to ignore' datatype='int' />
+    <param name='iUserID' display='Indicia User ID' description='Indicia User ID: use 0 to ignore' datatype='int' />
+  </params>
+  <columns>
+    <column name='sample_id' display='ID' />
+    <column name='location_name' display='Site name' />
+    <column name='entered_sref' display='SRef' />
+    <column name='date' display='Date' />
+    <column name='num_occurrences' display='# Occurrences' />
+    <column name='completed' display='Completed' />
+  </columns>
+</report>

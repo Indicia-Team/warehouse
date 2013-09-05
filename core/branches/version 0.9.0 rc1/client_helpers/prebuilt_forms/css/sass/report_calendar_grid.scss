@@ -1,0 +1,66 @@
+@import "compass/css3";
+@import "compass/utilities/general/clearfix";
+
+@mixin calendar-button {
+  width: 16px;
+  height: 16px;
+  background-color: transparent; 
+  display: inline-block;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: auto auto;
+}
+
+table {
+  &#report-grid td {
+    font-size: 80%;
+    line-height: 1.3em;
+  }
+  td {
+    &.future {
+      background-color: silver;
+    }
+    &.existingLink {
+      background-color: #ffffd7;
+    }
+    &.otherSite {
+      background-color: yellow;
+    }
+    &.multiLink {
+      background-color: green;
+    }
+    &.day {
+      border: navy solid thin;
+      padding: 3px;
+      width: 12%;
+      text-align: center;
+      font-weight: bold;
+    }
+    &.year-picker {
+      text-align: center; 
+      > * {
+        @include inline-block;
+        margin: 0 1em;
+      }
+    }
+    a {
+      font-weight: normal;
+      border: solid silver 1px;
+      @include border-radius(4px);
+      @include inline-block;
+      padding: 2px;
+      margin: 2px;
+      &.newLink {
+        @include calendar-button;
+        background-image: url("../../../../media/images/add.png") !important;
+      }
+    }
+  }
+  tr.datarow td {
+    border: navy solid thin;
+    padding: 3px;
+    vertical-align: top;
+    font-weight: bold;
+  }
+}
+

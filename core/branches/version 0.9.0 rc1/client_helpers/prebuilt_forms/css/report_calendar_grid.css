@@ -1,0 +1,86 @@
+/* line 15, sass/report_calendar_grid.scss */
+table#report-grid td {
+  font-size: 80%;
+  line-height: 1.3em;
+}
+/* line 20, sass/report_calendar_grid.scss */
+table td.future {
+  background-color: silver;
+}
+/* line 23, sass/report_calendar_grid.scss */
+table td.existingLink {
+  background-color: #ffffd7;
+}
+/* line 26, sass/report_calendar_grid.scss */
+table td.otherSite {
+  background-color: yellow;
+}
+/* line 29, sass/report_calendar_grid.scss */
+table td.multiLink {
+  background-color: green;
+}
+/* line 32, sass/report_calendar_grid.scss */
+table td.day {
+  border: navy solid thin;
+  padding: 3px;
+  width: 12%;
+  text-align: center;
+  font-weight: bold;
+}
+/* line 39, sass/report_calendar_grid.scss */
+table td.year-picker {
+  text-align: center;
+}
+/* line 41, sass/report_calendar_grid.scss */
+table td.year-picker > * {
+  display: -moz-inline-box;
+  -moz-box-orient: vertical;
+  display: inline-block;
+  vertical-align: middle;
+  *vertical-align: auto;
+  margin: 0 1em;
+}
+/* line 7, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/compass/stylesheets/compass/css3/_inline-block.scss */
+table td.year-picker > * {
+  *display: inline;
+}
+/* line 46, sass/report_calendar_grid.scss */
+table td a {
+  font-weight: normal;
+  border: solid silver 1px;
+  -moz-border-radius: 4px;
+  -webkit-border-radius: 4px;
+  -o-border-radius: 4px;
+  -ms-border-radius: 4px;
+  -khtml-border-radius: 4px;
+  border-radius: 4px;
+  display: -moz-inline-box;
+  -moz-box-orient: vertical;
+  display: inline-block;
+  vertical-align: middle;
+  *vertical-align: auto;
+  padding: 2px;
+  margin: 2px;
+}
+/* line 7, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/compass/stylesheets/compass/css3/_inline-block.scss */
+table td a {
+  *display: inline;
+}
+/* line 53, sass/report_calendar_grid.scss */
+table td a.newLink {
+  width: 16px;
+  height: 16px;
+  background-color: transparent;
+  display: inline-block;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: auto auto;
+  background-image: url("../../../media/images/add.png") !important;
+}
+/* line 59, sass/report_calendar_grid.scss */
+table tr.datarow td {
+  border: navy solid thin;
+  padding: 3px;
+  vertical-align: top;
+  font-weight: bold;
+}

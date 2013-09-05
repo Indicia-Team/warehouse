@@ -1,0 +1,54 @@
+<report
+    title="Explore records mappable"
+    description="Report designed for the map output on the explore records facility in iRecord."
+>
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id">
+  SELECT #columns#
+  FROM cache_occurrences o
+  JOIN websites w on w.id=o.website_id 
+  #agreements_join#
+  #joins#
+  WHERE #sharing_filter# 
+  AND o.record_status not in ('I','T') AND (#ownData#=1 OR o.record_status not in ('D','R'))
+  AND ('#searchArea#'='' OR st_intersects(o.public_geom, st_geomfromtext('#searchArea#',900913)))
+  AND o.public_entered_sref like 'TQ%'
+  #idlist#
+  
+  </query>
+  <params>
+    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
+    <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
+    <param name='searchArea' display='Report Search Area' datatype='geometry' allow_buffer='true' />
+    <param name='idlist' display='List of IDs' description='Comma separated list of occurrence IDs to filter to.' datatype='idlist' fieldname='o.id' alias='occurrence_id' />
+    <param name="currentUser" display="Current User ID" description="Current user's warehouse ID. Allows a column to be output indicating that the user owns the record." datatype="text" />
+    <param name="ownData" display="My data only?" datatype="checkbox">
+      <where value="1">o.created_by_id=#currentUser#</where>
+    </param>
+    <param name='location_id' display='Location' description='Provide the location to display records for' datatype='lookup' emptyvalue="0"
+        population_call='direct:location:id:name' />
+    <param name="ownLocality" display="My locality only?" datatype="checkbox">
+      <join value="1">JOIN locations lfilter ON st_intersects(lfilter.boundary_geom, o.public_geom) AND lfilter.id=#location_id#</join>  
+    </param>
+    <param name="taxon_groups" display="Taxon Groups" description="List of taxon group IDs to view data for" datatype="text" emptyvalue="0"/>
+    <param name="ownGroups" display="My species groups only?" datatype="checkbox">      
+      <where value="1">o.taxon_group_id IN (#taxon_groups#)</where>
+    </param>
+  </params>
+  <columns>
+    <column name='fo' visible='false' feature_style="fillOpacity" sql='0.1+sqrt(count(o.id)::float)/10' aggregate="true" />
+    <column name='sc' visible='false' feature_style="strokeColor" sql="case o.record_status when 'C' then 
+      case o.certainty when 'C' then 'green' when 'L' then 'orange' when 'U' then 'red' else 'blue' end
+    when 'V' then 'green'
+    when 'D' then 'orange'
+    when 'R' then 'red'
+    else 'black' end" />
+    <column name='fc' visible='false' feature_style="fillColor" sql="case o.record_status when 'V' then 'green' when 'D' then 'orange' when 'R' then 'red' else 'blue' end"/>
+    <!-- the following 4 columns just allow an accurate count query to run, as we can't count distinct on the output of the case statements -->
+    <column name='record_status' sql='o.record_status' visible='false' in_count='true' />
+    <column name='certainty' sql="coalesce(o.certainty, '')" visible='false' in_count='true' />
+    <column name='sref' sql='o.public_entered_sref' visible='false' in_count='true' />
+    <column name='sref_system' sql='o.entered_sref_system' visible='false' in_count='true' />
+    <column name='geom' visible='false' mappable="true" sql='st_astext(o.public_geom)' />
+    <column name='occurrence_id' visible='false' sql="array_to_string(array_agg(o.id), ',')" aggregate="true" />
+  </columns>
+</report>

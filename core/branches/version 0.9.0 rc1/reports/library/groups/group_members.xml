@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Group members" description="Lists members of a group which you administer.">
+      <query website_filter_field="g.website_id">
+      SELECT #columns#
+      FROM groups g
+      JOIN groups_users gu ON gu.groups_id = g.id AND gu.deleted = false
+      JOIN users u ON u.id = gu.user_id AND u.deleted = false
+      JOIN people p ON p.id = u.person_id and p.deleted = false
+      #joins#
+      WHERE g.id = #group_id#
+      </query>
+  <params>
+    <param name="group_id" display="Group" description="Select the group to administer" datatype="lookup"
+        population_call="report:my_groups:id:title">
+    </param>
+  </params>
+  <order_bys>
+    <order_by>gu.administrator, p.surname, p.first_name</order_by>
+  </order_bys>
+  <columns>
+        <column name="name" display="Name" sql="p.surname || ', ' || p.first_name" datatype="text" />
+        <column name="admin" display="Admin" sql="gu.username" datatype="integer" />
+  </columns>
+</report>

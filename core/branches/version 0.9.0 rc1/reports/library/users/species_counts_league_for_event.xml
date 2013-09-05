@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="Species counts league for event" description="An event (date and survey) filtered league table of taxon counts by warehouse user.">
+  <query website_filter_field="o.website_id">
+    SELECT #columns#
+    FROM people p
+    JOIN users u ON u.person_id=p.id AND u.deleted=false AND u.id&lt;&gt;1
+    JOIN cache_occurrences o ON o.created_by_id=u.id
+      AND o.record_status&lt;&gt;'R'
+      #filters#
+    #agreements_join#
+    #joins#
+    WHERE #sharing_filter#
+    AND p.deleted=false
+  </query>
+  <order_bys>
+    <order_by>value DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='survey_id' display='Survey' description='Select the survey to return data for, or leave for all surveys' datatype='lookup'
+        query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title'>
+      <where>o.survey_id=#survey_id#</where>
+    </param>
+    <param name="date_from" display="Date From" datatype="date">
+      <where>o.date_start&gt;='#date_from#'</where>
+    </param>
+    <param name="date_to" display="Date To" datatype="date">
+      <where>o.date_start&lt;='#date_to#'</where>
+    </param>
+    <param name="input_form" default="">
+      <where>o.input_form='#input_form#'</where>
+    </param>
+  </params>
+  <columns>
+        <column name="id" visible="false" sql="u.id" />
+        <column name="name" display="Recorder" sql="COALESCE(p.first_name || ' ', '') || p.surname" />
+        <column name="value" display="No. of Species"  sql="COUNT(DISTINCT o.taxon_meaning_id)" aggregate="true"/>
+  </columns>
+</report>  

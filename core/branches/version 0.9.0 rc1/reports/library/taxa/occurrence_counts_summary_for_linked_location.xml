@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="Record counts by taxon for linked location" description="Lists taxa and the number of records of each at a linked location. ">
+      <query website_filter_field="o.website_id">
+      SELECT #columns#
+      FROM cache_taxa_taxon_lists cttl
+      JOIN cache_occurrences o on o.taxon_meaning_id=cttl.taxon_meaning_id
+	  JOIN samples s on s.id=o.sample_id and s.deleted=false
+      #agreements_join# 
+      #joins#
+      WHERE  #sharing_filter# 
+      and cttl.id=cttl.preferred_taxa_taxon_list_id
+      AND (o.zero_abundance='f')
+      AND (CAST(o.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
+      AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR o.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+      AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+      AND ( 
+          (o.record_status='V') OR
+          ('#quality#'='C' AND o.certainty='C') OR
+          ('#quality#'='L' AND o.certainty in ('C', 'L')) OR
+          ('#quality#'='!D' AND o.record_status&lt;&gt;'D') OR
+          ('#quality#'='!R')
+      )
+      AND o.record_status&lt;&gt;'R'
+	  AND s.location_id=#location_id#
+      </query>
+      <params>
+        <param name='date_from' display='Date From' datatype='date' />
+        <param name='date_to' display='Date To' datatype='date' />
+        <param name='survey_id' display='Survey' description='Select the survey to return data for, or leave for all surveys' datatype='lookup'
+            query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title' />
+        <param name='quality' display='Data quality' description='Quality level required of data to be included in the report.' datatype='lookup' 
+            lookup_values='V:Data must be verified,C:Data must be verified or certain,L:Data must be at least likely,!D:Include anything not dubious or rejected,!R:Include anything not rejected' />
+	    <param name='location_id' display='Location ID' datatype='text' />
+      </params>
+      <columns>
+            <column name="id" visible="false" sql="cttl.id" unique="true" distincton="true" />
+            <column name="name" display="Taxon Name" sql="cttl.taxon || COALESCE(' ' || cttl.authority, '')" />
+			<column name="preferred_taxon" display="Preferred Name" sql="cttl.preferred_taxon || COALESCE(' ' || cttl.preferred_authority, '')" />
+			<column name="default_common_name" display="Common Name" sql="cttl.default_common_name" />
+            <column name="value" display="No. of Records" distincton="true" sql="count(distinct o.id)" aggregate="true" in_count="false"/>
+      </columns>
+</report>

@@ -1,0 +1,107 @@
+<report
+    title="Verification grid report 3 using index_locations_samples"
+    description="List of occurrences for verification with support for mapping the occurrences and the verification check system, plus expert-survey associations.
+        This version depends on the Spatial Index Builder module to index the list of locations that users can set in their preferences
+        as their locality, for significantly improved performance."
+>
+  <query website_filter_field="o.website_id">
+  SELECT #columns#
+  FROM cache_occurrences o
+  JOIN samples s on s.id=o.sample_id
+  JOIN websites w on w.id=o.website_id
+  #agreements_join#
+  #joins#
+  WHERE #sharing_filter#
+  AND ('#records#'&lt;&gt;'fail' OR (o.data_cleaner_info is not null and o.data_cleaner_info &lt;&gt;'pass'))
+  AND ('#searchArea#'='' OR st_intersects(s.geom, st_geomfromtext('#searchArea#',900913)))
+  #idlist#
+  </query>
+  <order_bys>
+    <order_by>o.id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
+    <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
+    <param name='records' display='Records to include' datatype='lookup'
+        lookup_values='unverified:All unverified records,fail:Unverified records failing automated checks,trusted:Unverified records by trusted recorders,verified:All verified records,dubious:All dubious records,rejected:All rejected records,all:All records'>
+      <modifiers>
+        <join value="trusted" operator="equal">LEFT JOIN index_locations_samples ils on ils.sample_id=o.sample_id
+          JOIN user_trusts ut on (ut.survey_id=o.survey_id
+          OR ut.taxon_group_id=o.taxon_group_id
+          OR (ut.location_id=ils.location_id or ut.location_id is null))
+          AND ut.deleted=false
+          AND ((o.survey_id = ut.survey_id) or (ut.survey_id is null and (ut.taxon_group_id is not null or ut.location_id is not null)))
+             AND ((o.taxon_group_id = ut.taxon_group_id) or (ut.taxon_group_id is null and (ut.survey_id is not null or ut.location_id is not null)))
+             AND ((ils.location_id = ut.location_id) OR (ut.location_id IS NULL and (ut.survey_id is not null or ut.taxon_group_id is not null)))
+             AND o.created_by_id = ut.user_id</join>
+        <where value="unverified" operator="equal">o.record_status IN ('C','S')</where>
+        <where value="fail" operator="equal">o.record_status IN ('C','S')</where>
+        <where value="trusted" operator="equal">o.record_status IN ('C')</where>
+        <where value="verified" operator="equal">o.record_status IN ('V')</where>
+        <where value="dubious" operator="equal">o.record_status IN ('D')</where>
+        <where value="rejected" operator="equal">o.record_status IN ('R')</where>
+      </modifiers>
+    </param>
+    <param name='certainty' display='and record was' datatype='lookup'
+        lookup_values='C:Certain,L:Certain or likely,U:Uncertain or better' >
+      <modifiers>
+        <where value="C" operator="equal">(o.certainty = 'C' or o.certainty is null)</where>
+        <where value="L" operator="equal">(o.certainty in ('C','L') or o.certainty is null)</where>
+      </modifiers>
+    </param>
+    <param name='searchArea' display='Report Search Area' datatype='geometry' allow_buffer='true' />
+    <param name='idlist' display='List of IDs' description='Comma separated list of occurrence IDs to filter to.' datatype='idlist' fieldname='o.id' alias='occurrence_id' />
+    <param name='expertise_location' display='Location of Expertise' description='Provide the location in which your expertise applies' datatype='lookup' 
+        population_call='direct:location:id:name'>
+        <join>JOIN index_locations_samples lfilter ON lfilter.sample_id=o.sample_id and lfilter.location_id=#expertise_location#</join>  
+    </param>
+    <param name="expertise_taxon_groups" display="Taxon Group Expertise" description="List of taxon group IDs which the user has expertise in" datatype="text">
+      <where value="1">o.taxon_group_id IN (#expertise_taxon_groups#)</where>
+    </param>
+    <param name='expertise_surveys' display='Survey IDs list' description='Comma separated list of surveys IDs to include' datatype='text'>
+      <where value="1">o.survey_id IN (#expertise_surveys#)</where>
+    </param>
+  </params>
+  <columns>
+    <column name='occurrence_id' display='ID' sql='o.id' datatype='integer' template="&lt;div class='status-{record_status}'&gt;{occurrence_id}&lt;/div&gt;" in_count="true" />
+    <column name='website' display='Source' sql='w.title' datatype="text" />
+    <column name='survey' display='Survey' sql='o.survey_title' datatype="text"/>
+    <!-- the user col would need to store its untemplated value in a hidden with class user-val if it were templated. -->
+    <column name='user' display='User' sql='o.recorders' datatype="text" />
+    <column name='sample_id' visible='false' sql='o.sample_id' datatype='integer' />
+    <!-- the following col stores the original untemplated taxon val in a hidden, to be used as a filter during bulk verifications. -->
+    <column name='taxon' display='Species' 
+      template='&lt;input type="hidden" class="taxon-val" value="{taxon}"/&gt;&lt;div class="zero-{zero_abundance}"&gt;{taxon}&lt;/div&gt;'
+      sql="o.preferred_taxon" datatype='text' />
+    <column name='common' display='Common name' 
+      template='&lt;div class="zero-{zero_abundance}"&gt;{common}&lt;/div&gt;'
+      sql="CASE WHEN o.preferred_taxon=o.default_common_name THEN null ELSE o.default_common_name END" datatype='text' />
+    <column name='taxa_taxon_list_id' visible='false' sql='o.taxa_taxon_list_id' datatype='integer' />   
+    <column name='location_name' display='Site name' sql='o.location_name' datatype='text' />
+    <column name='entered_sref' display='Grid Ref' sql='coalesce(o.public_entered_sref, s.entered_sref)' datatype='text' />
+    <column name='date_start' sql='o.date_start' visible='false' />
+    <column name='date_end' sql='o.date_end' visible='false' />
+    <column name='date_type' sql='o.date_type' visible='false' />
+    <column name='date' display='Date' datatype='date' />
+    <column name='zero_abundance' display='Zero Abundance' sql='o.zero_abundance' visible="false" />
+    <column name='taxon_group' display='Taxon Group' sql='o.taxon_group' datatype='text' visible="false" />
+    <column name='record_status' display='State' sql='o.record_status' visible="false" />
+    <column name='geom' visible='false' mappable="true" sql='st_astext(coalesce(s.geom, o.public_geom))' />
+    <column name='fo' visible='false' feature_style="fillOpacity" sql='round(length(o.public_entered_sref) / 24.0, 2)' />
+    <column name='sc' visible='false' feature_style="strokeColor" sql="case o.record_status when 'C' then 
+      case o.certainty when 'C' then 'green' when 'L' then 'orange' when 'U' then 'red' else 'blue' end
+    when 'V' then 'green'
+    when 'D' then 'orange'
+    when 'R' then 'red'
+    else 'black' end" />
+    <column name='fc' visible='false' feature_style="fillColor" sql="case o.record_status when 'V' then 'green' when 'D' then 'orange' when 'R' then 'red' else 'blue' end" />
+    <column name='zi' visible='false' feature_style='graphicZIndex' sql='length(o.public_entered_sref)' />
+    <column name='pass' visible='false' sql="CASE WHEN o.data_cleaner_info='pass' THEN '&lt;div class=&quot;pass-icon&quot; title=&quot;This record passes all automated verification checks.&quot;/&gt;&lt;/div&gt;' WHEN not w.verification_checks_enabled THEN '&lt;div title=&quot;This record is not included in the automated verification check system.&quot;/&gt;-&lt;/div&gt;' END" />
+    <column name='fails' display='Check' 
+        sql="case when o.data_cleaner_info is not null and o.data_cleaner_info&lt;&gt;'pass' then 
+            replace(replace(replace(replace(o.data_cleaner_info, '[', '&lt;div class=&quot;fail-icon '), ']', '&quot; '), '{', 'title=&quot;'), '}', '&quot;&gt;&lt;/div&gt;') 
+        end"
+        template="{pass}{fails}"/>
+    <column name='images' display='Images' sql='o.images' img='true' />
+  </columns>
+</report>

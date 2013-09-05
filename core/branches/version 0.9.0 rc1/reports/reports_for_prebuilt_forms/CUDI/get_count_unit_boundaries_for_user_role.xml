@@ -1,0 +1,35 @@
+  <report
+    title="Get Count Unit Boundaries For User Role"
+    description="Return a list of count unit boundaries that are relevant to the user's role. For admin users this is a list of all boundaries associated with
+                 the parent in question. For normal users this is the preferred boundary and any boundaries they have added themselves since. If a preferred boundary
+                 hasn't been set yet, then the latest boundary is assumed to be the preferred one."
+>
+  <query website_filter_field="lw.website_id">
+    SELECT DISTINCT #columns#
+    FROM locations l
+      LEFT JOIN locations_websites lw ON lw.location_id=l.id and lw.deleted=false
+      LEFT JOIN location_attribute_values lav on lav.location_id = #count_unit_id# and lav.location_attribute_id = #preferred_boundary_attribute_id# and lav.deleted=false 
+      --Note that we need to check lLatestChild.parent_id=#count_unit_id# here as the parent boundary and first child are created at exactly the same time and we don't want to return both
+      LEFT JOIN locations lLatestChild on lLatestChild.id in 
+                (select max(id) from locations where parent_id=#count_unit_id# AND deleted=false AND location_type_id=#count_unit_boundary_location_type_id#) 
+    WHERE (
+      --Assume latest boundary is the preferred one if preferred not set yet
+      ((l.id = COALESCE(lav.int_value,lLatestChild.id)) 
+      OR (l.created_by_id=#current_user_id# and l.location_type_id=#count_unit_boundary_location_type_id# and l.created_on > (select created_on from locations where id = COALESCE(lav.int_value,lLatestChild.id)))) 
+      OR (#admin_role#=1 AND l.location_type_id=#count_unit_boundary_location_type_id#))
+      AND l.deleted = false AND #website_filter# AND l.parent_id=#count_unit_id#
+    ORDER BY l.id desc
+  </query>
+  <params>
+    <param name="current_user_id" datatype="integer"/>
+    <param name="admin_role" datatype="integer"/>
+    <param name="preferred_boundary_attribute_id" datatype="integer"/>
+    <param name="count_unit_id" datatype="integer"/>
+    <param name="count_unit_boundary_location_type_id" datatype="integer"/>
+  </params>
+  <columns>
+    <column name="id" display="ID" sql="l.id"/>
+    <column name="created_on" display="Created On" sql="l.created_on"/>
+    <column name="updated_on" display="Updated On" sql="l.updated_on"/>
+  </columns>
+</report>

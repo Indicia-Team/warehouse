@@ -1,0 +1,22 @@
+.active {
+  color: red;
+}
+.id-diff {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  background: url("../images/warning-icons.png");
+}
+
+.id-diff-2 {
+  background-position: -16px 0px;
+}
+.id-diff-3 {
+  background-position: -32px 0px;
+}
+.id-diff-4 {
+  background-position: -48px 0px;
+}
+.id-diff-5 {
+  background-position: -64px 0px;
+}

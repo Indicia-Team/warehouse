@@ -1,0 +1,32 @@
+@import "compass/css3";
+
+$map-container-color: #eeeeee;
+
+#map-container {
+  float: left;
+  clear: left;
+}
+
+#map-toolbar {
+  float: none;
+}
+
+#map-legend, #map-layer-picker {
+  float: right;
+  clear: right;
+  
+  li {
+    div, img {
+      @include inline-block;
+      width: 16px;
+      height: 16px;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+  }
+}
+
+#map-container {
+  background-color: $map-container-color;
+}
+
