@@ -165,7 +165,7 @@ class iform_verification_4 {
           'caption'=>'Send to Expert Email Body',
           'description'=>'Default body for the send to expert email. Replacements allowed include %taxon%, %id% and %record% which is replaced to give details of the record.',
           'type'=>'textarea',
-          'default' => 'The following record requires verification. Please reply to this mail with the word Verified, Rejected or Dubious '.
+          'default' => 'The following record requires verification. Please reply to this mail with the word Verified, Rejected or Query '.
               'in the email body, followed by any comments you have including the proposed re-identification if relevant on the next line.'.
               "\n\n%record%",
           'group' => 'Verifier emails'
@@ -184,79 +184,6 @@ class iform_verification_4 {
           'default' => 'The following record requires confirmation. Please could you reply to this email stating how confident you are that the record is correct '.
               'and any other information you have which may help to confirm this.'.
               "\n\n%record%",
-          'group' => 'Recorder emails'
-        ), array(
-          'name'=>'email_request_attribute',
-          'caption'=>'Email Request Attribute',
-          'description'=>'Enter the caption of a sample attribute and the value will be checked and '.
-             'an email only sent if it is true. Leave blank if recorder emails are not required.',
-          'type'=>'string',
-          'default' => '',
-          'required'=>false,
-          'group' => 'Recorder emails',
-         ), array(
-          'name'=>'email_address_attribute',
-          'caption'=>'Email Address Attribute',
-          'description'=>'Enter the caption of the sample attribute being used to capture the ' .
-          'email address for the recorder.',
-          'type'=>'string',
-          'default' => '',
-          'required'=>false,
-          'group' => 'Recorder emails',
-        ),array(
-          'name'=>'email_subject_verified',
-          'caption'=>'Acceptance Email Subject',
-          'description'=>'Default subject for the acceptance email. Replacements allowed include '.
-              '%id% (occurrence id), %sample_id%, %taxon%.',
-          'type'=>'string',
-          'default' => 'Record of %taxon% verified',
-          'required'=>false,
-          'group' => 'Recorder emails'
-        ), array(
-          'name'=>'email_body_verified',
-          'caption'=>'Acceptance Email Body',
-          'description'=>'Default body for the acceptance email. Replacements allowed include '.
-              '%id% (occurrence id), %sample_id%, %verifier% (username of verifier), %taxon%, %date%, %entered_sref%, %comment%.',
-          'type'=>'textarea',
-          'default' => "Your record of %taxon%, recorded on %date% at grid reference %entered_sref% has been checked by ".
-            "an expert and verified.\nMany thanks for the contribution.\n\n%verifier%",
-          'required'=>false,
-          'group' => 'Recorder emails'
-        ), array(
-          'name'=>'email_subject_rejected',
-          'caption'=>'Rejection Email Subject',
-          'description'=>'Default subject for the rejection email. Replacements as for acceptance.',
-          'type'=>'string',
-          'default' => 'Record of %taxon% not verified',
-          'required'=>false,
-          'group' => 'Recorder emails'
-        ), array(
-          'name'=>'email_body_rejected',
-          'caption'=>'Rejection Email Body',
-          'description'=>'Default body for the rejection email. Replacements as for acceptance.',
-          'type'=>'textarea',
-          'default' => "Your record of %taxon%, recorded on %date% at grid reference %entered_sref% has been checked by ".
-            "an expert but unfortunately it could not be verified because there was a problem with your photo.\n".
-            "Nonetheless we are grateful for your contribution and hope you will be able to send us further records.\n\n%verifier%",
-          'required'=>false,
-          'group' => 'Recorder emails'
-        ), array(
-          'name'=>'email_subject_dubious',
-          'caption'=>'Dubious Email Subject',
-          'description'=>'Default subject for the dubious email. Replacements as for acceptance.',
-          'type'=>'string',
-          'default' => 'Record of %taxon% marked as dubious',
-          'required'=>false,
-          'group' => 'Recorder emails'
-        ), array(
-          'name'=>'email_body_rejected',
-          'caption'=>'Dubious Email Body',
-          'description'=>'Default body for the dubious email. Replacements as for acceptance.',
-          'type'=>'textarea',
-          'default' => "Your record of %taxon%, recorded on %date% at grid reference %entered_sref% has been checked by ".
-            "an expert but unfortunately it has been marked as dubious as they are not sure if the record is correct.\n".
-            "Nonetheless we are grateful for your contribution and hope you will be able to send us further records.\n\n%verifier%",
-          'required'=>false,
           'group' => 'Recorder emails'
         ), array(
           'name'=>'auto_discard_rows',
@@ -434,7 +361,8 @@ idlist=';
     $r .= '<label>Set status:</label>';
     $r .= '<button type="button" id="btn-verify">'.lang::get('Verify').'</button>';
     $r .= '<button type="button" id="btn-reject">'.lang::get('Reject').'</button>';
-    $r .= '<button type="button" id="btn-dubious">'.lang::get('Dubious').'</button>';
+    $r .= '<button type="button" id="btn-query">'.lang::get('Query').'</button>';
+    $r .= '<button type="button" id="btn-multiple" title="'.lang::get('Select this tool to tick off a list of records and action all of the ticked records in one go').'">'.lang::get('Select records').'</button>';
     $r .= '<br/><label>Contact:</label>';
     $r .= '<button type="button" id="btn-email-expert" class="default-button">'.lang::get('Another expert').'</button>';
     $r .= '<button type="button" id="btn-email-recorder" class="default-button">'.lang::get('Recorder').'</button>';
@@ -470,7 +398,7 @@ idlist=';
     $r .= '<li>'.lang::get('Select the records to include in the list of records to verify using the drop-down box above the grid.')."</li>\n";
     $r .= '<li>'.lang::get('Fine tune the list of records by entering search criteria into the boxes at the top of each grid column.')."</li>\n";
     $r .= '<li>'.lang::get("Click on a record in the $gridpos to view the details.")."</li>\n";
-    $r .= '<li>'.lang::get('When viewing the record details, verify, reject, mark as dubious or email the record details for confirmation.')."</li>\n";
+    $r .= '<li>'.lang::get('When viewing the record details, verify, reject, query or email the record details for confirmation.')."</li>\n";
     $r .= '<li>'.lang::get('When viewing the record details, view and add comments on the record.')."</li>\n";
     $r .= '<li>'.lang::get('Use the ... button to the left of each record to view bulk-verification options for similar records.')."</li>\n";
     $r .= '<li>'.lang::get('Use the map tool buttons to draw lines, polygons or points then reload the report using the <strong>Filter</strong> button above the grid.')."</li>\n";
@@ -546,9 +474,10 @@ idlist=';
     );
     $opts['columns'][] = array(
       'display'=>'',
-      'template' => '<button class="default-button quick-verify tools-btn" type="button" id="quick-{occurrence_id}" title="Record tools">...</button>'.
+      'template' => '<div class="nowrap"><button class="default-button quick-verify tools-btn" type="button" id="quick-{occurrence_id}" title="Record tools">...</button>'.
           '<input type="hidden" class="row-input-form" value="{rootFolder}{input_form}"/><input type="hidden" class="row-belongs-to-site" value="{belongs_to_site"/><ul class="verify-tools"><li><a href="#" class="quick-verify-tool">Bulk verify similar records</a></li>'.
-          '<li><a href="#" class="trust-tool">Recorder\'s trust settings</a></li><li><a href="#" class="edit-record">Edit record</a></li></ul>'
+          '<li><a href="#" class="trust-tool">Recorder\'s trust settings</a></li><li><a href="#" class="edit-record">Edit record</a></li></ul>'.
+          '<input type="checkbox" class="check-row" style="display: none" value="{occurrence_id}" /></div>'
     );
     $params = self::report_filter_panel($args, $readAuth);
     $params .= $hiddenStuff;
@@ -590,19 +519,22 @@ idlist=';
     data_entry_helper::$javascript .= 'indiciaData.popupTranslations.save="'.lang::get('Save and {1}')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.popupTranslations.verbV="'.lang::get('verify')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.popupTranslations.verbR="'.lang::get('reject')."\";\n";
-    data_entry_helper::$javascript .= 'indiciaData.popupTranslations.verbD="'.lang::get('mark dubious')."\";\n";
+    data_entry_helper::$javascript .= 'indiciaData.popupTranslations.verbD="'.lang::get('query')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.popupTranslations.V="'.lang::get('Verification')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.popupTranslations.R="'.lang::get('Rejection')."\";\n";
-    data_entry_helper::$javascript .= 'indiciaData.popupTranslations.D="'.lang::get('Mark Dubious')."\";\n";
+    data_entry_helper::$javascript .= 'indiciaData.popupTranslations.D="'.lang::get('Query')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.popupTranslations.emailTitle="'.lang::get('Email record details for checking')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.popupTranslations.sendEmail="'.lang::get('Send Email')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.popupTranslations.emailSent="'.lang::get('The email was sent successfully.')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.popupTranslations.requestManualEmail="'.
         lang::get('The webserver is not correctly configured to send emails. Please send the following email usual your email client:')."\";\n";
+    data_entry_helper::$javascript .= 'indiciaData.popupTranslations.multipleWarning="'.
+        lang::get('You are about to verify multiple records. Please note that this comment will apply to all the ticked records. '.
+        'If you did not intend to do this, please close this box and turn off the Select Records tool before proceeding.')."\";\n";     
     data_entry_helper::$javascript .= "indiciaData.statusTranslations = {};\n";
     data_entry_helper::$javascript .= 'indiciaData.statusTranslations.V = "'.lang::get('Verified')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.statusTranslations.R = "'.lang::get('Rejected')."\";\n";
-    data_entry_helper::$javascript .= 'indiciaData.statusTranslations.D = "'.lang::get('Dubious')."\";\n";
+    data_entry_helper::$javascript .= 'indiciaData.statusTranslations.D = "'.lang::get('Query')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.statusTranslations.I = "'.lang::get('In progress')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.statusTranslations.T = "'.lang::get('Test record')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.statusTranslations.S = "'.lang::get('Sent for verification')."\";\n";
@@ -620,20 +552,6 @@ idlist=';
     $body = str_replace(array("\r", "\n"), array('', '\n'), $args['email_body_send_to_recorder']);
     data_entry_helper::$javascript .= 'indiciaData.email_body_send_to_recorder = "'.$body."\";\n";
 
-    data_entry_helper::$javascript .= 'indiciaData.email_request_attribute = "'.$args['email_request_attribute']."\";\n";
-    data_entry_helper::$javascript .= 'indiciaData.email_address_attribute = "'.$args['email_address_attribute']."\";\n";
-
-    data_entry_helper::$javascript .= 'indiciaData.email_subject_verified = "'.$args['email_subject_verified']."\";\n";
-    $body = str_replace(array("\r", "\n"), array('', '\n'), $args['email_body_verified']);
-    data_entry_helper::$javascript .= 'indiciaData.email_body_verified = "'.$body."\";\n";
-
-    data_entry_helper::$javascript .= 'indiciaData.email_subject_rejected = "'.$args['email_subject_rejected']."\";\n";
-    $body = str_replace(array("\r", "\n"), array('', '\n'), $args['email_body_rejected']);
-    data_entry_helper::$javascript .= 'indiciaData.email_body_rejected = "'.$body."\";\n";
-
-    data_entry_helper::$javascript .= 'indiciaData.email_subject_dubious = "'.$args['email_subject_dubious']."\";\n";
-    $body = str_replace(array("\r", "\n"), array('', '\n'), $args['email_subject_dubious']);
-    data_entry_helper::$javascript .= 'indiciaData.email_subject_dubious = "'.$body."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.str_month = "'.lang::get('month')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.expertise_location = "'.$opts['extraParams']['expertise_location']."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.expertise_surveys = "'.$opts['extraParams']['expertise_surveys']."\";\n";
@@ -779,7 +697,7 @@ idlist=';
       case 'R' :
         return lang::get('Rejected');
       case 'D' :
-        return lang::get('Dubious');
+        return lang::get('Queried');
       case 'I' :
         return lang::get('In progress');
       case 'T' :

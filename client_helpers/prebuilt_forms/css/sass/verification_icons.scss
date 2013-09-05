@@ -9,7 +9,7 @@ $reject-color: #a00000;
   width: 16px;
   height: 16px;
   padding: 2px;
-  border: solid $verify-color 1px;
+  border: solid 1px;
   @include border-radius(4px);
   @include inline-block;
   background-repeat: no-repeat;

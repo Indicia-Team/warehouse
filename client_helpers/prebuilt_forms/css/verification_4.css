@@ -1,39 +1,23 @@
-/* line 15, sass/verification_4.scss */
-#verification-grid form#verification-grid-params {
-  margin-bottom: 0;
-}
-
-/* line 20, sass/verification_4.scss */
-#outer-grid-left #grid {
-  width: 55%;
-}
-/* line 23, sass/verification_4.scss */
-#outer-grid-left #grid #record-details-wrap {
-  width: 44%;
-  overflow: auto;
-}
-
-/* line 29, sass/verification_4.scss */
-#grid {
-  overflow: auto;
-}
-
-/* line 33, sass/verification_4.scss */
+/* line 14, sass/verification_4.scss */
 table.report-grid {
   font-size: 80%;
   width: 100%;
 }
-/* line 36, sass/verification_4.scss */
+/* line 17, sass/verification_4.scss */
 table.report-grid tr:hover, table.report-grid table.report-grid tr.odd:hover {
   background-color: #ffffcc;
 }
-/* line 39, sass/verification_4.scss */
+/* line 20, sass/verification_4.scss */
 table.report-grid tr.selected, table.report-grid tr.selected td {
   background-color: #027ac6;
   color: white;
 }
+/* line 24, sass/verification_4.scss */
+table.report-grid .nowrap {
+  whitespace: nowrap;
+}
 
-/* line 45, sass/verification_4.scss */
+/* line 29, sass/verification_4.scss */
 ul.gallery li {
   display: -moz-inline-box;
   -moz-box-orient: vertical;
@@ -49,7 +33,7 @@ ul.gallery li {
   *display: inline;
 }
 
-/* line 52, sass/verification_4.scss */
+/* line 36, sass/verification_4.scss */
 #btn-verify, #btn-verify-all {
   display: inline-block;
   width: auto;
@@ -87,7 +71,7 @@ ul.gallery li {
   background: linear-gradient(#00ba00, #005300);
 }
 
-/* line 56, sass/verification_4.scss */
+/* line 40, sass/verification_4.scss */
 #btn-reject {
   display: inline-block;
   width: auto;
@@ -125,8 +109,8 @@ ul.gallery li {
   background: linear-gradient(#ba0000, #530000);
 }
 
-/* line 60, sass/verification_4.scss */
-#btn-dubious {
+/* line 44, sass/verification_4.scss */
+#btn-query {
   display: inline-block;
   width: auto;
   height: auto;
@@ -142,34 +126,94 @@ ul.gallery li {
   -ms-border-radius: 4px;
   -khtml-border-radius: 4px;
   border-radius: 4px;
-  background-color: #c08000;
-  background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #c08000), color-stop(100%, #5a3c00));
-  background: -webkit-linear-gradient(#c08000, #5a3c00);
-  background: -moz-linear-gradient(#c08000, #5a3c00);
-  background: -o-linear-gradient(#c08000, #5a3c00);
-  background: -ms-linear-gradient(#c08000, #5a3c00);
-  background: linear-gradient(#c08000, #5a3c00);
-  border-color: #5a3c00;
+  background-color: #f0a000;
+  background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #f0a000), color-stop(100%, #8a5c00));
+  background: -webkit-linear-gradient(#f0a000, #8a5c00);
+  background: -moz-linear-gradient(#f0a000, #8a5c00);
+  background: -o-linear-gradient(#f0a000, #8a5c00);
+  background: -ms-linear-gradient(#f0a000, #8a5c00);
+  background: linear-gradient(#f0a000, #8a5c00);
+  border-color: #8a5c00;
   color: white;
-  text-shadow: #503500, 0 1px 0;
+  text-shadow: #805500, 0 1px 0;
 }
 /* line 23, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/sassy-buttons-0.0.5/stylesheets/sassy-buttons/_sassy-button-pseudo-states.sass */
-#btn-dubious:hover {
-  background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #da9100), color-stop(100%, #744d00));
-  background: -webkit-linear-gradient(#da9100, #744d00);
-  background: -moz-linear-gradient(#da9100, #744d00);
-  background: -o-linear-gradient(#da9100, #744d00);
-  background: -ms-linear-gradient(#da9100, #744d00);
-  background: linear-gradient(#da9100, #744d00);
+#btn-query:hover {
+  background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #ffad0a), color-stop(100%, #a36d00));
+  background: -webkit-linear-gradient(#ffad0a, #a36d00);
+  background: -moz-linear-gradient(#ffad0a, #a36d00);
+  background: -o-linear-gradient(#ffad0a, #a36d00);
+  background: -ms-linear-gradient(#ffad0a, #a36d00);
+  background: linear-gradient(#ffad0a, #a36d00);
 }
 
-/* line 64, sass/verification_4.scss */
+/* line 48, sass/verification_4.scss */
+#btn-multiple {
+  display: inline-block;
+  width: auto;
+  height: auto;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 0.5em 1.5em;
+  line-height: 1.2em;
+  border-style: solid;
+  border-width: 1px;
+  -moz-border-radius: 4px;
+  -webkit-border-radius: 4px;
+  -o-border-radius: 4px;
+  -ms-border-radius: 4px;
+  -khtml-border-radius: 4px;
+  border-radius: 4px;
+  background-color: #4ba3cc;
+  background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #4ba3cc), color-stop(100%, #276b8a));
+  background: -webkit-linear-gradient(#4ba3cc, #276b8a);
+  background: -moz-linear-gradient(#4ba3cc, #276b8a);
+  background: -o-linear-gradient(#4ba3cc, #276b8a);
+  background: -ms-linear-gradient(#4ba3cc, #276b8a);
+  background: linear-gradient(#4ba3cc, #276b8a);
+  border-color: #276b8a;
+  color: white;
+  text-shadow: #256482, 0 1px 0;
+  -moz-box-shadow: 0 0.4em 0px #3899c6;
+  -webkit-box-shadow: 0 0.4em 0px #3899c6;
+  -o-box-shadow: 0 0.4em 0px #3899c6;
+  box-shadow: 0 0.4em 0px #3899c6;
+  border-bottom: solid 1px #57a9cf;
+}
+/* line 23, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/sassy-buttons-0.0.5/stylesheets/sassy-buttons/_sassy-button-pseudo-states.sass */
+#btn-multiple:hover {
+  background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #5fadd2), color-stop(100%, #2d7a9e));
+  background: -webkit-linear-gradient(#5fadd2, #2d7a9e);
+  background: -moz-linear-gradient(#5fadd2, #2d7a9e);
+  background: -o-linear-gradient(#5fadd2, #2d7a9e);
+  background: -ms-linear-gradient(#5fadd2, #2d7a9e);
+  background: linear-gradient(#5fadd2, #2d7a9e);
+}
+/* line 7, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/sassy-buttons-0.0.5/stylesheets/sassy-buttons/_sassy-button-styles.sass */
+#btn-multiple:active {
+  top: 0.3em;
+  -moz-box-shadow: 0 0.2em 0px #358fba;
+  -webkit-box-shadow: 0 0.2em 0px #358fba;
+  -o-box-shadow: 0 0.2em 0px #358fba;
+  box-shadow: 0 0.2em 0px #358fba;
+}
+
+/* line 53, sass/verification_4.scss */
+#btn-multiple.active {
+  -moz-box-shadow: #133342 0 0.2em 0.4em inset;
+  -webkit-box-shadow: #133342 0 0.2em 0.4em inset;
+  -o-box-shadow: #133342 0 0.2em 0.4em inset;
+  box-shadow: #133342 0 0.2em 0.4em inset;
+  border: solid 1px #0b1e27;
+}
+
+/* line 57, sass/verification_4.scss */
 #comment-text {
   display: block;
   width: 100%;
 }
 
-/* line 69, sass/verification_4.scss */
+/* line 62, sass/verification_4.scss */
 .popup-form {
   width: 500px;
   line-height: 3;
@@ -220,15 +264,31 @@ ul.gallery li {
 .popup-form p {
   margin-bottom: 0;
 }
-/* line 75, sass/verification_4.scss */
+/* line 68, sass/verification_4.scss */
 .popup-form label {
   width: 120px;
 }
-/* line 77, sass/verification_4.scss */
+/* line 70, sass/verification_4.scss */
 .popup-form label.error {
   width: auto;
   margin: 0 0 0 120px;
   line-height: 1em;
+}
+/* line 76, sass/verification_4.scss */
+.popup-form .warning {
+  line-height: 1.2em;
+  -moz-box-shadow: #a00000 1px 1px 3px;
+  -webkit-box-shadow: #a00000 1px 1px 3px;
+  -o-box-shadow: #a00000 1px 1px 3px;
+  box-shadow: #a00000 1px 1px 3px;
+  -moz-border-radius: 4px;
+  -webkit-border-radius: 4px;
+  -o-border-radius: 4px;
+  -ms-border-radius: 4px;
+  -khtml-border-radius: 4px;
+  border-radius: 4px;
+  padding: 1em;
+  margin: 1em;
 }
 
 /* line 85, sass/verification_4.scss */
