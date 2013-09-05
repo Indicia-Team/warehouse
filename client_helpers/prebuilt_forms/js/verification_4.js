@@ -46,8 +46,6 @@ var saveComment, saveVerifyComment;
         $('#instructions').hide();
         $('#record-details-content').show();
         if ($row.parents('tbody').length !== 0) {
-          $row.parents('tbody').children('tr').removeClass('selected');
-          $row.addClass('selected');
           // point the image and comments tabs to the correct AJAX call for the selected occurrence.
           $('#record-details-tabs').tabs('url', indiciaData.detailsTabs.indexOf('images'), indiciaData.ajaxUrl + '/images/' + 
               indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id +
@@ -304,14 +302,15 @@ var saveComment, saveVerifyComment;
     if ($('#verify-comment').val()!=='') {
       comment += ".\n" + $('#verify-comment').val();
     }
+    $.fancybox.close();
     if (multimode) {
       $.each($('.check-row:checked'), function(idx, elem) {
+        $($(elem).parents('tr')[0]).css('opacity', 0.2);
         postStatusComment($(elem).val(), status, comment);
       });
     } else {
       postStatusComment(occurrence_id, status, comment);
     }
-    $.fancybox.close();
   }
 
   function showTab() {
