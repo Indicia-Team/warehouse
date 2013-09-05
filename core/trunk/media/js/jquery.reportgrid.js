@@ -813,9 +813,13 @@ var simple_tooltip;
 
       if (div.settings.rowId) {
         // Setup highlighting of features on an associated map when rows are clicked
-        $(div).find('tbody').click(function(evt) {
+        $(div).find('tbody').click(function(e) {
+          if ($(e.target).hasClass('no-select')) {
+            // clicked object might request no auto row selection
+            return;
+          }
           if (typeof indiciaData.reportlayer!=="undefined") {
-            var tr=$(evt.target).parents('tr')[0], featureId=tr.id.substr(3), 
+            var tr=$(e.target).parents('tr')[0], featureId=tr.id.substr(3), 
                 featureArr, map=indiciaData.reportlayer.map;
             featureArr=map.div.getFeaturesByVal(indiciaData.reportlayer, featureId, div.settings.rowId);
             // deselect any existing selection and select the feature
@@ -825,9 +829,9 @@ var simple_tooltip;
             $(tr).addClass('selected');
           }
         });
-        $(div).find('tbody').dblclick(function(evt) {
+        $(div).find('tbody').dblclick(function(e) {
           if (typeof indiciaData.reportlayer!=="undefined") {
-            var tr=$(evt.target).parents('tr')[0], featureId=tr.id.substr(3), 
+            var tr=$(e.target).parents('tr')[0], featureId=tr.id.substr(3), 
                 featureArr, map=indiciaData.reportlayer.map, extent, zoom;
             featureArr=map.div.getFeaturesByVal(indiciaData.reportlayer, featureId, div.settings.rowId);
             if (featureArr.length!==0) {
