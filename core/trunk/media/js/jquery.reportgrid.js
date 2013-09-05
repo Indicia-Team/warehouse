@@ -299,13 +299,14 @@ var simple_tooltip;
     function loadGridFrom (div, request, clearExistingRows) {
       // overlay on the body, unless no records yet loaded as body is empty
       var elem = div.settings.recordCount ? $(div).find('tbody') :  $(div).find('table');
+      var offset = div.settings.recordCount ? [0,0,-1,0] : [0,1,-2,-2];
       // skip the loading overlay in <IE9 as it is buggy
       if ($.support.cssFloat) {
         $(div).find(".loading-overlay").css({
-          top     : $(elem).position().top+1,
-          left    : $(elem).position().left+1,
-          width   : $(elem).outerWidth()-2,
-          height  : $(elem).outerHeight()-3
+          top     : $(elem).position().top+offset[0],
+          left    : $(elem).position().left+offset[1],
+          width   : $(elem).outerWidth()+offset[2],
+          height  : $(elem).outerHeight()+offset[3]
         });
         $(div).find(".loading-overlay").show();
       }
@@ -611,10 +612,10 @@ var simple_tooltip;
     
     function _internalMapRecords(div, request, offset, recordCount) {
       $(indiciaData.mapdiv).parent().find(".loading-overlay").css({
-          top     : $(indiciaData.mapdiv).position().top+1,
-          left    : $(indiciaData.mapdiv).position().left+1,
-          width   : $(indiciaData.mapdiv).outerWidth()-2,
-          height  : $(indiciaData.mapdiv).outerHeight()-3
+          top     : $(indiciaData.mapdiv).position().top,
+          left    : $(indiciaData.mapdiv).position().left,
+          width   : $(indiciaData.mapdiv).outerWidth(),
+          height  : $(indiciaData.mapdiv).outerHeight()
       });
       $('#map-loading').show();
       var matchString, feature, featuresToSelect=[];
