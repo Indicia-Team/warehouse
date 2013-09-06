@@ -1252,6 +1252,9 @@ jQuery(jQuery('#".$options["tabDiv"]."').parent()).bind('tabsshow', speciesMapTa
     $r .= '<input type="hidden" name="website_id" value="'.$args['website_id'].'"/>';
     $r .= '<input type="hidden" name="survey_id" value="'.$args['survey_id'].'"/>';
     $r .= '<input type="hidden" name="page" value="notes"/>';
+    $r .= '<p  class="page-notice ui-state-highlight ui-corner-all">'.
+          lang::get('When using this page, please remember that the data is not saved to the database as you go (which is the case for the previous tabs). In order to save the data entered in this page you must click on the Submit button at the bottom of the page.').
+          '</p>';
     $r .= data_entry_helper::textarea(array(
       'fieldname'=>'sample:comment',
       'label'=>lang::get('Notes'),
