@@ -1,4 +1,6 @@
-var occurrence_id = null, current_record = null;
+var occurrence_id = null, current_record = null, saveComment;
+
+(function($) {
 
 function showComment(comment, username) {
   // Remove message that there are no comments
@@ -12,7 +14,7 @@ function showComment(comment, username) {
   $('#comment-list').prepend(html);
 }
 
-function saveComment(occurrence_id) {
+saveComment = function (occurrence_id) {
   var data = {
     'website_id': indiciaData.website_id,
     'occurrence_comment:occurrence_id': occurrence_id,
@@ -35,3 +37,4 @@ function saveComment(occurrence_id) {
   );
 }
 
+})(jQuery);

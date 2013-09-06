@@ -204,7 +204,7 @@ class submission_builder extends helper_config {
    * sample information in the submission.
    * @param array Form submission data. 
    */
-  private function create_personal_site(&$array) {
+  private static function create_personal_site(&$array) {
     // Check we don't already have a location ID, and have the other stuff we require
     if (!empty($array['sample:location_id']) || !array_key_exists('imp-location:name', $array)
         || !array_key_exists('sample:entered_sref', $array) || !array_key_exists('sample:entered_sref_system', $array))
