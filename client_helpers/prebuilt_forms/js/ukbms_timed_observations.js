@@ -64,10 +64,10 @@ function addGridRow(species, speciesTableSelector, end, tabIDX){
   } else jQuery('<td>'+name+'</td>').appendTo(row);
   var rowTotal = 0;
   for(var idx = 0; idx < indiciaData.occurrence_attribute.length; idx++) {
-    var isNumber = indiciaData.occurrence_attribute_ctrl[idx].attr('class').indexOf('number:true')>=0;
-    var id = 'value:'+species.id+':occAttr:'+indiciaData.occurrence_attribute[idx];
-    var name = 'value:'+species.id+':occAttr:'+indiciaData.occurrence_attribute[idx]+':';
-    var val = '';
+    var isNumber = indiciaData.occurrence_attribute_ctrl[idx].attr('class').indexOf('number:true')>=0,
+        id = 'value:'+species.id+':occAttr:'+indiciaData.occurrence_attribute[idx],
+        name = 'value:'+species.id+':occAttr:'+indiciaData.occurrence_attribute[idx]+':',
+        val = '', valId;
     if (typeof indiciaData.occurrence_totals[idx] === "undefined")
     	indiciaData.occurrence_totals[idx] = {};
     if (typeof indiciaData.occurrence_totals[idx][speciesTableSelector] === "undefined")
@@ -81,7 +81,10 @@ function addGridRow(species, speciesTableSelector, end, tabIDX){
         rowTotal += parseInt(val);
         indiciaData.occurrence_totals[idx][speciesTableSelector] += parseInt(val);
       }
-      name = name+indiciaData.existingOccurrences[species.taxon_meaning_id]['a_id_'+indiciaData.occurrence_attribute[idx]];
+      valId=indiciaData.existingOccurrences[species.taxon_meaning_id]['a_id_'+indiciaData.occurrence_attribute[idx]];
+      if (valId!==null) {
+        name = name+indiciaData.existingOccurrences[species.taxon_meaning_id]['a_id_'+indiciaData.occurrence_attribute[idx]];
+      }
     }
     indiciaData.occurrence_attribute_ctrl[idx].clone().attr('id', id).attr('name', name).val(val).addClass(isNumber ? 'count-input' : 'non-count-input').appendTo(cell);
   }
