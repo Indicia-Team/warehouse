@@ -3197,9 +3197,9 @@ var applyFilterMode = function(type, group_id, nameFilterMode) {
   // re-encode the query part
   currentFilter.query=JSON.stringify(currentFilter.query);
   if (type==='default') {
-    $('#".$options['id']."-filter').removeClass('button-active');
+    $('#".$options['id']." .species-filter').removeClass('button-active');
   } else {
-    $('#".$options['id']."-filter').addClass('button-active');
+    $('#".$options['id']." .species-filter').addClass('button-active');
   }
   
   //Tell the system to use the current filter.
@@ -3226,7 +3226,7 @@ if (userFilter) {
   applyFilterMode(userFilter.type, userFilter.group_id, userFilter.name_filter);
 }\n";
       self::$javascript .= "
-$('#".$options['id']."-filter').click(function(evt) {
+$('#".$options['id']." .species-filter').click(function(evt) {
   var userFilter=$.cookie('user_selected_taxon_filter'), defaultChecked='', userChecked='', selectedChecked='', nameChecked='';
   
   //Select the radio button on the form depending on what is set in the cookie
@@ -3441,7 +3441,7 @@ $('#".$options['id']."-filter').click(function(evt) {
         if ($options['userControlsTaxonFilter'] && !empty($options['lookupListId'])) {
           global $indicia_templates;
           $imgPath = empty(self::$images_path) ? self::relative_client_helper_path()."../media/images/" : self::$images_path;
-          $speciesColTitle .= '<button type="button" id="'.$options['id'].'-filter" class="default-button"><img src="'.
+          $speciesColTitle .= '<button type="button" class="species-filter" class="default-button"><img src="'.
               $imgPath.'/filter.png" alt="'.lang::get('Filter').'" style="vertical-align: middle" title="'.
               lang::get('Filter the list of species you can search').'" width="16" height="16"/></button>';
         }
