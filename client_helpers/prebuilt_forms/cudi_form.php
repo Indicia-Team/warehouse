@@ -469,6 +469,13 @@ class iform_cudi_form extends iform_dynamic {
   }
  
   /** 
+   * Get the survey control.
+   */
+  protected static function get_control_surveys($auth, $args, $tabalias, $options) {
+    $r='';
+    return $r;
+  }
+  /** 
    * Get the map control.
    */
   protected static function get_control_map($auth, $args, $tabalias, $options) {
@@ -992,7 +999,7 @@ class iform_cudi_form extends iform_dynamic {
         }  
       }
     }
-    $values['location:name'] = $values['location:name'].' - boundary'; 
+    
     $values['location:location_type_id']=$args['count_unit_boundary_location_type_id'];
     //Write to id 1, as we don't want to overwrite the locations_website submission which is in submodel 0
     if (!empty($values['location:boundary_geom'])) {
