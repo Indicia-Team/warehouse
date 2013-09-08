@@ -67,6 +67,7 @@ mapGeoreferenceHooks = [];
           feature.id=id;
         }
         features.push(feature);
+        return feature;
       }
       return feature;
     }
