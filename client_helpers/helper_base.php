@@ -114,7 +114,7 @@ $indicia_templates = array(
   'tree_browser' => '<div{outerClass} id="{divId}"></div><input type="hidden" name="{fieldname}" id="{id}" value="{default}"{class}/>',
   'tree_browser_node' => '<span>{caption}</span>',
   'autocomplete' => '<input type="hidden" class="hidden" id="{id}" name="{fieldname}" value="{default}" />'."\n".
-      '<input id="{inputId}" name="{inputId}" value="{defaultCaption}" {class} {disabled} {title}/>'."\n",
+      '<input id="{inputId}" name="{inputId}" type="text" value="{defaultCaption}" {class} {disabled} {title}/>'."\n",
   'autocomplete_javascript' => "jQuery('input#{escaped_input_id}').autocomplete('{url}',
       {
         extraParams : {
@@ -124,6 +124,7 @@ $indicia_templates = array(
           {sParams}
         },
         simplify: {simplify},
+        selectMode: {selectMode},
         warnIfNoMatch: {warnIfNoMatch},
         parse: function(data)
         {

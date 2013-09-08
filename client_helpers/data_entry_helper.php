@@ -158,7 +158,7 @@ class data_entry_helper extends helper_base {
   * <li><b>template</b><br/>
   * Optional. Name of the template entry used to build the HTML for the control. Defaults to autocomplete.</li>
   * <li><b>numValues</b><br/>
-  * Optional. Number of returned values in the drop down list. Defaults to 10.</li>
+  * Optional. Number of returned values in the drop down list. Defaults to 20.</li>
   * <li><b>duplicateCheckFields</b><br/>
   * Optional. Provide an array of field names from the dataset returned from the warehouse. Any duplicates
   * based  values from this list of fields will not be added to the output.</li>
@@ -167,7 +167,10 @@ class data_entry_helper extends helper_base {
   * being searched against is also simplified.</li>
   * <li><b>warnIfNoMatch</b>
   * Should the autocomplete control warn the user if they leave the control whilst searching
-  * and then nothing is matched? Default true.
+  * and then nothing is matched? Default true.</li>
+  * <li><b>selectMode</b>
+  * Should the autocomplete simulate a select drop down control by adding a drop down arrow after the input box which, when clicked,
+  * populates the drop down list with all search results to a maximum of numValues. This is similar to typing * into the box. Default false.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the autocomplete control.
@@ -196,7 +199,7 @@ class data_entry_helper extends helper_base {
       $warehouseUrl = parent::$base_url;
     self::$js_read_tokens = array('auth_token'=>$options['extraParams']['auth_token'], 'nonce'=>$options['extraParams']['nonce']);
     $options = array_merge(array(
-      'template' => 'autocomplete',
+      'template'=>'autocomplete',
       'url' => isset($options['report']) ? $warehouseUrl."index.php/services/report/requestReport" : $warehouseUrl."index.php/services/data/".$options['table'],
       // Escape the ids for jQuery selectors
       'escaped_input_id' => self::jq_esc($options['inputId']),
@@ -204,7 +207,8 @@ class data_entry_helper extends helper_base {
       'max' => array_key_exists('numValues', $options) ? ', max : '.$options['numValues'] : '',
       'formatFunction' => 'function(item) { return item.{captionField}; }',
       'simplify' => (isset($options['simplify']) && $options['simplify']) ? 'true' : 'false',
-      'warnIfNoMatch' => true
+      'warnIfNoMatch' => true,
+      'selectMode' => false
     ), $options);
     if (isset($options['report'])) {
       $options['extraParams']['report'] = $options['report'].'.xml';
@@ -275,7 +279,7 @@ class data_entry_helper extends helper_base {
   * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
   * <li><b>numValues</b><br/>
-  * Optional. Number of returned values in the drop down list. Defaults to 10.</li>
+  * Optional. Number of returned values in the drop down list. Defaults to 20.</li>
   * <li><b>addOnSelect TODO</b><br/>
   * Optional. Boolean, if true, matched items from the autocomplete control are automatically 
   * added to the list when selected. Defaults to false.</li>
@@ -300,6 +304,12 @@ class data_entry_helper extends helper_base {
   * <li><b>sub_list_javascript</b></br>
   * Defines the JavaScript added to the page to implement the click handling for the various 
   * butons. 
+  * </li>
+  * <li><b>numValues</b><br/>
+  * Optional. Number of returned values in the select drop down list. Defaults to 20.</li>
+  * <li><b>selectMode</b>
+  * Should the autocomplete simulate a select drop down control by adding a drop down arrow after the input box which, when clicked,
+  * populates the drop down list with all search results to a maximum of numValues. This is similar to typing * into the box. Default false.
   * </li>
   * </ul>
   *
@@ -359,6 +369,10 @@ class data_entry_helper extends helper_base {
     $list_options['default']='';
     $list_options['lockable']=null;
     $list_options['label'] = null;
+    if (!empty($options['selectMode']) && $options['selectMode'])
+      $list_options['selectMode']=true;
+    if (!empty($options['numValues']))
+      $list_options['numValues']=$options['numValues'];
     // set up add panel
     $options['panel_control'] = self::autocomplete($list_options);
     
@@ -2558,6 +2572,13 @@ class data_entry_helper extends helper_base {
   * <li><b>sticky</b>
   * Optional, defaults to true. Enables sticky table headers if supported by the host site (e.g. Drupal). 
   * </li>
+  * <li><b>numValues</b><br/>
+  * Optional. Number of returned values in the species autocomplete drop down list. Defaults to 20.
+  * </li>
+  * <li><b>selectMode</b>
+  * Should the species autocomplete used for adding new rows simulate a select drop down control by adding a drop down arrow after the input box which, when clicked,
+  * populates the drop down list with all search results to a maximum of numValues. This is similar to typing * into the box. Default false.
+  * </li>
   * </ul>
   * @return string HTML for the species checklist input grid.
   */
@@ -2922,10 +2943,15 @@ class data_entry_helper extends helper_base {
           $url = parent::$warehouse_proxy."index.php/services/data";
         else
           $url = parent::$base_url."index.php/services/data";
+        self::$javascript .= "if (typeof indiciaData.speciesGrid==='undefined') {indiciaData.speciesGrid={};}\n";
+        self::$javascript .= "indiciaData.speciesGrid['$options[id]']={};\n";
+        self::$javascript .= "indiciaData.speciesGrid['$options[id]'].cacheLookup=".($options['cacheLookup'] ? 'true' : 'false').";\n";
+        self::$javascript .= "indiciaData.speciesGrid['$options[id]'].numValues=".(!empty($options['numValues']) ? $options['numValues'] : 20).";\n";
+        self::$javascript .= "indiciaData.speciesGrid['$options[id]'].selectMode=".(!empty($options['selectMode']) && $options['selectMode'] ? 'true' : 'false').";\n";
         self::$javascript .= "addRowToGrid('$url', '".
             $options['id']."', '".$options['lookupListId']."', {'auth_token' : '".
             $options['readAuth']['auth_token']."', 'nonce' : '".$options['readAuth']['nonce']."'},".
-            " formatter, ".($options['cacheLookup'] ? 'true' : 'false').");\r\n";
+            " formatter);\r\n";
       }
       // If options contain a help text, output it at the end if that is the preferred position
       $options['helpTextClass'] = (isset($options['helpTextClass'])) ? $options['helpTextClass'] : 'helpTextLeft';
