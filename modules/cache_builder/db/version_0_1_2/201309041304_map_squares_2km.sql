@@ -17,7 +17,7 @@ WHERE s.geom IS NOT NULL;
 --drop existing, which can happen if records are sensitive.
 DELETE FROM temp 
 USING map_squares msq
-WHERE msq.x=x AND msq.y=y AND msq.size=size;
+WHERE msq.x=temp.x AND msq.y=temp.y AND msq.size=temp.size;
 
 INSERT INTO map_squares (geom, x, y, size) SELECT * FROM temp;
 

@@ -1,7 +1,7 @@
 CREATE TABLE map_squares
 (
   id serial NOT NULL,
-  geom geometry(Polygon,900913) NOT NULL,
+  geom geometry NOT NULL,
   x integer NOT NULL,
   y integer NOT NULL,
   size integer NOT NULL,
@@ -10,6 +10,10 @@ CREATE TABLE map_squares
 WITH (
   OIDS=FALSE
 );
+
+ALTER TABLE map_squares ADD CONSTRAINT enforce_map_squares_geom_polygon CHECK (geometrytype(geom) = 'POLYGON'::text OR geom IS NULL);
+ALTER TABLE map_squares ADD CONSTRAINT enforce_map_squares_geom_900913 CHECK (st_srid(geom) = 900913);
+ALTER TABLE map_squares ADD CONSTRAINT enforce_map_squares_geom_dims CHECK (st_ndims(geom) = 2);
 
 COMMENT ON TABLE map_squares IS 'Distinct list of grid squares in use for records which can be used for report aggregation.';
 COMMENT ON COLUMN map_squares.id IS 'Unique identifier for the map square.';
