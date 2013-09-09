@@ -90,14 +90,15 @@ $.Autocompleter = function(input, options) {
   if (options.selectMode) {
     $input.after('<span class="autocomplete-select"></span>');
     var btn=$input.next('.autocomplete-select');
-    btn.css('height', $input.height());
+    // set height, and adjust for borders
+    btn.css('height', $input.height()+($input.outerHeight()-$input.innerHeight())-(btn.outerHeight()-btn.innerHeight()));
     btn.css('padding-top', $input.css('padding-top'));
     btn.css('padding-bottom', $input.css('padding-bottom'));
     btn.css('margin-top', $input.css('margin-top'));
     btn.css('margin-bottom', $input.css('margin-bottom'));
     btn.css('vertical-align', $input.css('vertical-align'));
     if (btn.parents('.scTaxonCell').length) {
-      btn.css('margin-left', '-19px');
+      btn.css('margin-left', '-'+(btn.outerWidth()+1)+'px');
     }
     btn.click(function() {
       if (select.visible()) {
