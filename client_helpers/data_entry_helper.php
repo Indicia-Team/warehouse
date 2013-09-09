@@ -274,8 +274,8 @@ class data_entry_helper extends helper_base {
   * Optional. The id to assign to the HTML control. Base value defaults to fieldname, but 
   * this is a compound control and the many sub-controls have id values with additiobnal suffixes.</li>
   * <li><b>default</b><br/>
-  * Optional. An associative array of default keys and captions. This is overridden when reloading a
-  * record with existing data for this control.</li>
+  * Optional. An array of items to load into the control on page startup. Each entry must be an associative array
+  * with keys fieldname, caption and value.</li>
   * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
   * <li><b>numValues</b><br/>
@@ -402,17 +402,20 @@ class data_entry_helper extends helper_base {
     
     // load any default values for list items into display and hidden lists
     $items = "";
+    $r = '';
     if (array_key_exists('default', $options) && is_array($options['default'])) {
-      foreach ($options['default'] as $value=>$caption) {
+      foreach ($options['default'] as $item) {
         $items .= str_replace(array('{caption}', '{value}', '{fieldname}'), 
-          array($caption, $value, $options['fieldname']), 
-        $indicia_templates['sub_list_item']);
+          array($item['caption'], $item['default'], $item['fieldname']), 
+          $indicia_templates['sub_list_item']);
+        // a hidden input to put a blank in the submission if it is deleted
+        $r .= "<input type=\"hidden\" value=\"\" name=\"$item[fieldname]\">";
       }
     }
     $options['items'] = $items;
     
     // layout the control
-    $r = self::apply_template($options['template'], $options);
+    $r .= self::apply_template($options['template'], $options);
     return $r;
   }
 
@@ -6110,7 +6113,7 @@ if (errors$uniq.length>0) {
                 $found = true;
             if(!$found)
               $item['values'][] = array('fieldname' => $options['fieldprefix'].':'.$itemId.':'.$value['id'],
-                                'default' => $value['raw_value']);
+                                'default' => $value['raw_value'], 'caption'=>$value['value']);
             $item['displayValue'] = $value['value']; //bit of a bodge but not using multivalue for this at the moment.
           }
         }
