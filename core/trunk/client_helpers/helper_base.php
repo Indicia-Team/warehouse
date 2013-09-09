@@ -163,7 +163,7 @@ $indicia_templates = array(
   'sub_list_add' => "\n".'<input type="hidden"  id="{id}:addToTable" name="{mainEntity}:insert_captions_use" value="{basefieldname}" />'.
     '<input type="hidden" name="{mainEntity}:insert_captions_to_create" value="{table}" />',
   'sub_list_item' => '<li class="ui-widget-content ui-corner-all"><span class="ind-delete-icon">&nbsp;</span>{caption}'.
-    '<input type="hidden" name="#fieldname#" value="{value}" /></li>',
+    '<input type="hidden" name="{fieldname}" value="{value}" /></li>',
   'sub_list_javascript' => "  var addSublistItem = function(escapedId, escapedCaptionField, fieldname){
     // transfer caption and value from search control to the displayed and hidden lists
     var search$ = $('#'+escapedId+'\\\\:search\\\\:'+escapedCaptionField);
@@ -1795,7 +1795,7 @@ indiciaData.windowLoaded=false;
     $r = '';
 
     if (array_key_exists($key, $options)) {
-      //a template has been specified
+      //a template has been specified    
       if (array_key_exists($options[$key], $indicia_templates))
         //the specified template exists
         $r = $indicia_templates[$options[$key]];
