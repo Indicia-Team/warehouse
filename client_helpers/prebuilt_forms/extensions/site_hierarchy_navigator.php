@@ -71,7 +71,7 @@ class extension_site_hierarchy_navigator {
     $mapOptions['clickForSpatialRef'] = false;
     //When user clicks on map, run specified Javascript function
     $mapOptions['clickableLayersOutputMode'] = 'customFunction';
-    $mapOptions['customClickFn']='reload_map_with_sub_sites_for_clicked_feature';
+    $mapOptions['customClickFn']='move_to_new_layer';
     $mapOptions['clickableLayersOutputDiv'] = '';
     //Tell the system which layers we to be clickable.
     $mapOptions['clickableLayers']=array('indiciaData.reportlayer');     
@@ -83,11 +83,10 @@ class extension_site_hierarchy_navigator {
     map_helper::$javascript .= "indiciaData.layerLocationTypes=".json_encode($layerLocationTypes).";\n";
     //Send the user supplied options for layers to display count units to Javascript
     map_helper::$javascript .= "indiciaData.showCountUnitsForLayers=".json_encode($showCountUnitsForLayers).";\n";
-    //Send the user supplied options about which layers should display symbols instead of polygons to Javascript
-    map_helper::$javascript .= "indiciaData.locationTypesWithSymbols=".json_encode($locationTypesWithSymbols).";\n";
     map_helper::$javascript .= "indiciaData.countUnitBoundaryTypeId=".$options['countUnitBoundaryTypeId'].";\n";
     map_helper::$javascript .= "indiciaData.annotationTypeIds=".json_encode($annotationTypeIds).";\n";
-    
+    //Get translatable label for top-level breadcrub item.
+    map_helper::$javascript .= "indiciaData.allSitesLabel='".lang::get('All Sites')."';\n";
     $reportOptions = array(
       'linkOnly'=>'true',
       'dataSource'=>'library/locations/locations_with_geometry_for_location_type',
@@ -99,6 +98,19 @@ class extension_site_hierarchy_navigator {
     $reportOptions);    
     //Run the report that shows the locations (features) to the user when the map loads the first time.
     map_helper::$javascript .= "indiciaData.layerReportRequest='".
+       report_helper::get_report_data($reportOptions)."';\n";
+    //Options for the report that is used to draw the map breadcrumb
+    $reportOptions = array(
+      'linkOnly'=>'true',
+      'dataSource'=>'reports_for_prebuilt_forms/CUDI/get_map_hierarchy_for_current_position',
+      'readAuth'=>$auth['read']
+    );
+    //Get the report options such as the Preset Parameters on the Edit Tab
+    $reportOptions = array_merge(
+      iform_report_get_report_options($args, $readAuth),
+    $reportOptions);    
+    //Run the report that builds the map breadcrumb.
+    map_helper::$javascript .= "indiciaData.breadcrumbReportRequest='".
        report_helper::get_report_data($reportOptions)."';\n";
     return $r;
   }
@@ -127,7 +139,7 @@ class extension_site_hierarchy_navigator {
   public function selectlist($auth, $args, $tabalias, $options, $path) {
     iform_load_helpers(array('map_helper'));
     map_helper::$javascript .= "indiciaData.useSelectList=true;\n";
-    $selectlist = "<div><select id=\"map-selectlist\" onchange=\"add_new_layer_for_site_hierarchy_navigator($('option:selected', this).attr('featureid'),null,true,null)\"></select></div>";
+    $selectlist = "<div><select id=\"map-selectlist\" onchange=\"get_map_hierarchy_for_current_position($('option:selected', this).attr('featureid'),$('option:selected', this).attr('featurelocationtypeid'))\"></select></div>";
     return $selectlist;
   }
   
