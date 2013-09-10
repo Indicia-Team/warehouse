@@ -1,3 +1,5 @@
+DROP FUNCTION reduce_precision(geom_in geometry, confidential boolean, sensitivity_precision integer, sref_system character varying);
+
 CREATE OR REPLACE FUNCTION reduce_precision(geom_in geometry, confidential boolean, sensitivity_precision integer, sref_system character varying)
   RETURNS geometry AS
 $BODY$
