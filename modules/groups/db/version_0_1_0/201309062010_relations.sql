@@ -96,14 +96,10 @@ AND t.term='Recording group';
 ALTER TABLE groups
    ALTER COLUMN group_type_id SET NOT NULL;
 
-DROP VIEW list_groups;
-
 CREATE OR REPLACE VIEW list_groups AS 
  SELECT g.id, g.title, g.code, g.group_type_id, g.description, g.from_date, g.to_date, g.private_records, g.website_id, g.filter_id
    FROM groups g
   WHERE g.deleted = false;
-
-DROP VIEW detail_groups;
 
 CREATE OR REPLACE VIEW detail_groups AS 
  SELECT g.id, g.title, g.code, g.group_type_id, g.description, g.from_date, g.to_date, g.private_records, 
