@@ -215,6 +215,7 @@ class data_entry_helper extends helper_base {
       $options['extraParams']['reportSource'] = 'local';
     }
     $options['warnIfNoMatch'] = $options['warnIfNoMatch'] ? 'true' : 'false';
+    $options['selectMode'] = $options['selectMode'] ? 'true' : 'false';
     self::add_resource('autocomplete');
     // Escape the id for jQuery selectors
     $escaped_id=self::jq_esc($options['id']);
@@ -6254,7 +6255,20 @@ if (errors$uniq.length>0) {
         case 'F':
         case 'Integer':
         case 'I':
-          $output = self::text_input($attrOptions);
+          if (!empty($item['system_function']) && $item['system_function']==='group_id') {
+            // convert to a lookup control to lookup a group
+            $attrOptions = array_merge(array(
+              'report'=>'library/groups/groups_list',
+              'captionField'=>'title',
+              'valueField'=>'id'
+            ), $attrOptions);
+            $attrOptions['extraParams']=array_merge(array(
+              'currentUser'=> hostsite_get_user_field('indicia_user_id'),
+              'userFilterMode'=>'member'
+            ), $attrOptions['extraParams']);
+            $output=self::select($attrOptions);
+          } else
+            $output = self::text_input($attrOptions);
           break;
         case 'Boolean':
         case 'B':
