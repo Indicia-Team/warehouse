@@ -39,8 +39,10 @@ class Group_Model extends ORM {
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
     $array->add_rules('title', 'required');
+    $array->add_rules('group_type_id', 'required');
     $array->add_rules('website_id', 'required');
-    $this->unvalidatedFields = array('description', 'filter_id', 'joining_method', 'deleted');
+    $this->unvalidatedFields = array('code', 'description', 'from_date','to_date','private_records',
+        'filter_id', 'joining_method', 'deleted');
     return parent::validate($array, $save);
   }
 

@@ -30,10 +30,6 @@ WITH (
 )
 ;
 
-ALTER TABLE groups
-  ADD CONSTRAINT groups_joining_method_check CHECK (joining_method = ANY (ARRAY['P'::bpchar, 'R'::bpchar, 'I'::bpchar]));
-
-COMMENT ON TABLE groups IS 'A list of recording user groups.';
 COMMENT ON COLUMN groups.id IS 'Primary key and unique identifier for the table';
 COMMENT ON COLUMN groups.title IS 'Title for the group';
 COMMENT ON COLUMN groups.description IS 'Description of the group';
@@ -122,28 +118,8 @@ COMMENT ON COLUMN group_invitations.updated_on IS 'Date this record was last upd
 COMMENT ON COLUMN group_invitations.updated_by_id IS 'Foreign key to the users table (last updater).';
 COMMENT ON COLUMN group_invitations.deleted IS 'Has this record been deleted?';
 
-CREATE OR REPLACE VIEW list_groups AS 
- SELECT g.id, g.title, g.description, g.website_id, g.filter_id
-   FROM groups g
-  WHERE g.deleted = false;
-
-CREATE OR REPLACE VIEW detail_groups AS 
- SELECT g.id, g.title, g.description, g.website_id, g.joining_method, g.filter_id, f.definition as filter_definitionr, 
-     g.created_by_id, c.username AS created_by, g.updated_by_id, u.username AS updated_by
-   FROM groups g
-   LEFT JOIN filters f ON f.id=g.filter_id AND f.deleted=false
-   JOIN indicia.users c ON c.id = g.created_by_id
-   JOIN indicia.users u ON u.id = g.updated_by_id
-  WHERE g.deleted = false;
-
 CREATE OR REPLACE VIEW list_group_invitations AS 
  SELECT i.id, i.group_id, i.email, i.token, g.website_id, g.title as group_title
    FROM group_invitations i
    JOIN groups g on g.id=i.group_id AND g.deleted=false
   WHERE i.deleted = false;
-
-CREATE OR REPLACE VIEW list_groups_users AS 
- SELECT gu.id, gu.group_id, gu.user_id, gu.administrator, g.website_id
-   FROM groups_users gu
-   JOIN groups g on g.id=gu.group_id AND g.deleted=false
-  WHERE gu.deleted = false;
