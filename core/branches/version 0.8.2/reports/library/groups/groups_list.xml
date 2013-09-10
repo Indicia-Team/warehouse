@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Groups list" description="Lists groups.">
+  <query website_filter_field="g.website_id">
+    SELECT #columns#
+    FROM groups g
+    LEFT JOIN groups_users guc ON guc.group_id=g.id AND guc.deleted=false
+    #joins#
+    WHERE g.deleted = false
+  </query>
+  <order_bys>
+    <order_by>g.id</order_by>
+  </order_bys>
+  <params>
+    <param name="currentUser" display="Current User ID" description="Current user's warehouse ID." datatype="text"/>
+    <param name="userFilterMode" display="userFilterMode" description="Include which groups for the user?"
+        datatype="lookup" default="member" 
+        lookup_values='all:All groups,member:Groups they are a member of,admin:Groups they administer,create:Groups they created,create_admin:Groups they created or administer'>
+      <wheres>
+        <join>LEFT JOIN groups_users gu ON gu.group_id=g.id AND gu.deleted=false</join>
+        <where value="member" operator="equal">gu.user_id=#currentUser#</where>
+        <where value="admin" operator="equal">gu.user_id=#currentUser# and gu.administrator=true</where>
+        <where value="create" operator="equal">g.created_by_id=#currentUser#</where>
+        <where value="create_admin" operator="equal">(gu.user_id=#currentUser# and gu.administrator=true) or g.created_by_id=#currentUser#</where>
+      </wheres>
+    </param>
+    <param name="group_type_id" display="Group Type" description="Limit the report to a certain type of group" datatype="lookup"
+            population_call='report:library/terms/terms_list:id:term:termlist_external_key=indicia:group_types,termlist_id='
+            default="">
+      <where>g.group_type_id=#group_type_id#</where>
+    </param>
+    <param name="from_group_id" display="From parent group" description="Only include groups which are linked to from another group (e.g. an organisation which parents a list of projects)."
+        datatype="text" default="">
+      <join>JOIN group_relations grfrom ON grfrom.to_group_id=g.id AND grfrom.from_group_id=#from_group_id# AND grfrom.deleted=false</join>      
+    </param>
+  </params>
+  <columns>
+    <column name="id" visible="false" sql="g.id" datatype="integer" in_count="true" />
+    <column name="title" display="Name" sql="g.title" datatype="text" />
+    <column name="description" display="Description" sql="g.description" datatype="text" />
+    <column name="administrator" display="Admin" sql="gu.administrator" datatype="boolean" />
+    <column name="members" display="Members" sql="count(guc.id)" datatype="integer" aggregate="true" />
+  </columns>
+</report>
