@@ -113,17 +113,18 @@ class postgreSQL {
       $db = new Database();
     // Seems much faster to break this into small queries than one big left join.
     $smpInfo = $db->query(
-    "SELECT st_astext(s.geom) as geom, o.confidential, GREATEST(o.sensitivity_precision, $size) as size, s.entered_sref_system,
+    "SELECT DISTINCT st_astext(s.geom) as geom, o.confidential, GREATEST(o.sensitivity_precision, $size) as size, s.entered_sref_system,
         round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, $size), s.entered_sref_system)))) as x,
         round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, $size), s.entered_sref_system)))) as y
       FROM samples s
       JOIN occurrences o ON o.sample_id=s.id
       WHERE s.id=$id")->result_array(TRUE);
-    $s = $smpInfo[0];
-    $existing = $db->query("SELECT id FROM map_squares WHERE x={$s->x} AND y={$s->y} AND size={$s->size}")->result_array();
-    if (count($existing)===0) {
-      $db->query("INSERT INTO map_squares (geom, x, y, size)
-        VALUES (reduce_precision(st_geomfromtext('{$s->geom}', $srid), '{$s->confidential}', {$s->size}, '{$s->entered_sref_system}'), {$s->x}, {$s->y}, {$s->size})");
+    foreach ($smpInfo as $s) {
+      $existing = $db->query("SELECT id FROM map_squares WHERE x={$s->x} AND y={$s->y} AND size={$s->size}")->result_array();
+      if (count($existing)===0) {
+        $db->query("INSERT INTO map_squares (geom, x, y, size)
+          VALUES (reduce_precision(st_geomfromtext('{$s->geom}', $srid), '{$s->confidential}', {$s->size}, '{$s->entered_sref_system}'), {$s->x}, {$s->y}, {$s->size})");
+      }
     }
     $db->query(
     "UPDATE cache_occurrences co
