@@ -22,27 +22,26 @@
  */
 
 /**
- * Model class for the groups table.
+ * Model class for the groups_relations table.
  *
  * @package	Core
  * @subpackage Models
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
-class Group_Model extends ORM {
+class Group_relation_Model extends ORM {
 
-  protected $has_one = array('filter');
-      
-  protected $has_and_belongs_to_many = array('users');
-  
-  protected $has_many = array('group_invitations');
+  protected $has_one = array(
+    'from_group'=>'group',
+    'to_group'=>'group',
+    'relationship_type'=>'termlists_term'
+  );
 
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
-    $array->add_rules('title', 'required');
-    $array->add_rules('group_type_id', 'required');
-    $array->add_rules('website_id', 'required');
-    $this->unvalidatedFields = array('code', 'description', 'from_date','to_date','private_records',
-        'filter_id', 'joining_method', 'deleted');
+    $array->add_rules('from_group_id', 'required');
+    $array->add_rules('to_group_id', 'required');
+    $array->add_rules('relationship_type_id', 'required');
+    $this->unvalidatedFields = array('deleted');
     return parent::validate($array, $save);
   }
 
