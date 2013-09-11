@@ -56,7 +56,7 @@ class extension_cudi_homepage_links {
         $homepageLinkParamToSendBack='breadcrumb='.$homepageLinkLocationId.','.$locationTypeIdToZoomTo;
         $r .= '<li id="homepageLink-part-"'.$num.'>';
         //The homepageLink link is a name, with a url back to the homepage containing the location id and location_type_id
-        $r .= '<a href="'.$base_url.(variable_get('clean_url', 0) ? '' : '?q=').$options['homepage_path'].(variable_get('clean_url', 0) ? '?' : '&').$homepageLinkParamToSendBack.'">'.$homepageLinkLocationName.'<a>';
+        $r .= '<a href="'.$base_url.(variable_get('clean_url', 0) ? '' : '?q=').$options['homepage_path'].(variable_get('clean_url', 0) ? '?' : '&').$homepageLinkParamToSendBack.'">'.$homepageLinkLocationName.'</a>';
         $r .= '</li>';
       }
       $r .= '</ul></div>';
