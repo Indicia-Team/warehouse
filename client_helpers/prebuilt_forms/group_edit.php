@@ -228,7 +228,7 @@ class iform_group_edit {
     $r .= self::reportFilterBlock($args, $auth, $hiddenPopupDivs);
     // auto-insert the creator as an admin of the new group, unless the admins are manually specified
     if (!$args['include_administrators'])
-      $r .= '<input type="hidden" name="groups_user:admin_user_id" value="' .hostsite_get_user_field('indicia_user_id'). '"/>';
+      $r .= '<input type="hidden" name="groups_user:admin_user_id[]" value="' .hostsite_get_user_field('indicia_user_id'). '"/>';
     $r .= '<input type="hidden" name="groups_user:administrator" value="t"/>';
     $r .= '<input type="submit" class="indicia-button" id="save-button" value="'.
         (empty(data_entry_helper::$entity_to_load['group:id']) ? 
@@ -382,7 +382,7 @@ $('#entry_form').submit(function() {
   
   private static function extractUserInfoFromFormValues(&$s, $values, $fieldname, $isAdmin) {
     $existingAdmins=preg_grep("/^groups_user\:$fieldname\:[0-9]+$/", array_keys($values));
-    if (!empty($values['groups_user:user_id']) || !empty($existingAdmins)) {
+    if (!empty($values["groups_user:$fieldname"]) || !empty($existingAdmins)) {
       $s['subModels']=array();
       if (!empty($values["groups_user:$fieldname"])) {
         foreach($values["groups_user:$fieldname"] as $userId) {
