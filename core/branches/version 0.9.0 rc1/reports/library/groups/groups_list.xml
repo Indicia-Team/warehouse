@@ -15,13 +15,15 @@
     <param name="userFilterMode" display="userFilterMode" description="Include which groups for the user?"
         datatype="lookup" default="member" 
         lookup_values='all:All groups,member:Groups they are a member of,admin:Groups they administer,create:Groups they created,create_admin:Groups they created or administer'>
-      <wheres>
-        <join>LEFT JOIN groups_users gu ON gu.group_id=g.id AND gu.deleted=false</join>
-        <where value="member" operator="equal">gu.user_id=#currentUser#</where>
-        <where value="admin" operator="equal">gu.user_id=#currentUser# and gu.administrator=true</where>
+      <joins>
+        <join value="member" operator="equal">JOIN groups_users gu ON gu.group_id=g.id AND gu.deleted=false AND gu.user_id=#currentUser#</join>
+        <where value="admin" operator="equal">JOIN groups_users gu ON gu.group_id=g.id AND gu.deleted=false AND gu.user_id=#currentUser# 
+            AND gu.administrator=true</where>
         <where value="create" operator="equal">g.created_by_id=#currentUser#</where>
-        <where value="create_admin" operator="equal">(gu.user_id=#currentUser# and gu.administrator=true) or g.created_by_id=#currentUser#</where>
-      </wheres>
+        <join value="create_admin" operator="equal">LEFT JOIN groups_users gu ON gu.group_id=g.id AND gu.deleted=false 
+            AND gu.user_id=#currentUser# AND gu.administrator=true</join>
+        <where value="create_admin" operator="equal">gu.id IS NOT NULL OR g.created_by_id=#currentUser#</where>
+      </joins>
     </param>
     <param name="group_type_id" display="Group Type" description="Limit the report to a certain type of group" datatype="lookup"
             population_call='report:library/terms/terms_list:id:term:termlist_external_key=indicia:group_types,termlist_id='
