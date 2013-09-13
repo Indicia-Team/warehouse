@@ -98,10 +98,8 @@ function get_map_hierarchy_for_current_position(clickedFeatureId,clickedFeatureL
       } else {
         SupportedLocationTypeIdsAsString=indiciaData.layerLocationTypes[i];
       }
-    //Note: The i < indiciaData.layerLocationTypes.length should not be needed, but is there for double-safety
-    //to stop an infinite loop in unforeseen circumstnces.
     } while (clickedFeatureLocationTypeId != locationLayerTypesWithBoundaryForCountUnit[i] &&
-             i < indiciaData.layerLocationTypes.length) 
+             i < indiciaData.layerLocationTypes.length-1) 
     //Get the map breadcrumb from a report
     reportRequest = indiciaData.breadcrumbReportRequest+'&location_id='+clickedFeatureId+'&location_type_ids='+SupportedLocationTypeIdsAsString;
     $.getJSON(reportRequest,
@@ -275,9 +273,9 @@ function get_map_features_from_report_data(reportdata,currentLayerLocationNames)
         if (obj.boundary_geom) {               
           feature=indiciaData.mapdiv.addPt(features, obj, 'boundary_geom', {}, obj.id);
         } 
-        else {           
+        else {
           //Else fall back on the centroid
-          if (features.length>0) {
+          if (reportdata.length>0) {
             feature=indiciaData.mapdiv.addPt(features, obj, 'centroid_geom', {}, obj.id);
           }
         }
@@ -304,10 +302,15 @@ function get_map_features_from_report_data(reportdata,currentLayerLocationNames)
  * swaps which layer which is clickable.
  */
 function add_features_to_layers (features,clickedFeature,currentLayerLocationNames) { 
-  //If the user has clicked on a count unit boundary, we know we are looking at the last layer.
-  if (clickedFeature && clickedFeature.attributes.location_type_id==indiciaData.countUnitBoundaryTypeId) {
+  //If the user has clicked on a count unit boundary or a count unit (in the case it doesn't have a boundary), 
+  //then we know we are going to be looking at the Count Unit itself.
+  if (clickedFeature && 
+      (clickedFeature.attributes.location_type_id==indiciaData.countUnitBoundaryTypeId ||
+      clickedFeature.attributes.location_type_id==indiciaData.layerLocationTypes[indiciaData.layerLocationTypes.length-1])) {
     //The clickableParent clickedFeature attribute is checked for by the code elsewhere in order for it to detect
-    //we are looking at the last layer (it can then call the count unit information sheet when the user clicks again)
+    //we are looking at a count unit and annotations.
+    //This is a special case as the child layer of annotations is not clickable, neither is it specified by the user in the configuration,
+    //so we need a special way of detecting we are actually looking at a count unit and annotations.
     clickedFeature.attributes.clickableParent=1
     //On the last layer the non-clickable (parent) layer consists of all the main features (the annotations).
     if (clickedFeature) {
