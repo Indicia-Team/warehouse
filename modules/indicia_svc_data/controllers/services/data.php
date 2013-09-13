@@ -745,7 +745,7 @@ class Data_Controller extends Data_Service_Base_Controller {
         !array_key_exists ('from_website_id', $this->view_columns) && !in_array($this->entity, $this->allow_full_access)) {
       // If access is from remote website, then either table allows full access or exposes a website ID to filter on.
       Kohana::log('info', $this->viewname.' does not have a website_id - access denied');
-      throw new ServiceError('No access to entity '.$this->entity.' allowed through view '.$this->viewname);
+      throw new EntityAccessError('No access to entity '.$this->entity.' allowed through view '.$this->viewname);
     }
     if (array_key_exists ('website_id', $this->view_columns))
       $websiteFilterField = 'website_id';

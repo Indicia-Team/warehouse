@@ -53,6 +53,24 @@ class ArrayException extends Kohana_Exception {
 class ServiceError extends Kohana_Exception {
 }
 
+/**
+ * Exception class for authentication failurs.
+ * 
+ * @package Core
+ * @subpackage Controllers
+ */
+class AuthenticationError extends ServiceError {
+}
+
+/**
+ * Exception class for inaccessible entities.
+ * 
+ * @package Core
+ * @subpackage Controllers
+ */
+class EntityAccessError extends ServiceError {
+}
+
 
 /**
  * Base controller class for Indicia Service controllers.
@@ -163,7 +181,7 @@ class Service_Base_Controller extends Controller {
     if (!$authentic)
     {
       Kohana::log('info', "Unable to authenticate.");
-      throw new ServiceError("unauthorised");
+      throw new AuthenticationError("unauthorised");
     };
   }
 
@@ -188,7 +206,11 @@ class Service_Base_Controller extends Controller {
    */
   protected function handle_error($e, $transaction_id = null)
   {
-    if($e->getMessage() == 'Unknown Exception: unauthorised') 
+    if($e instanceof AuthenticationError) 
+      $statusCode = 403;
+    else if($e instanceof EntityAccessError)
+      $statusCode = 404;
+    else if($e->getMessage() == 'Unknown Exception: unauthorised') 
       $statusCode = 403;
     else
       $statusCode = 500;
