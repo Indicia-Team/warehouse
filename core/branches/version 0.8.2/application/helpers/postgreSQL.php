@@ -105,44 +105,146 @@ class postgreSQL {
    * Function to be called on postSubmit of a sample, to make sure that any changed occurrences are linked to their map square entries properly.
    */
   public static function insertMapSquaresForSample($id, $size, $db=null) {
+    static $srid;
+    if (!isset($srid)) {
+      $srid = kohana::config('sref_notations.internal_srid');
+    }
     if (!$db)
       $db = new Database();
-    $db->query(
-    "INSERT INTO map_squares (geom, x, y, size)
-      SELECT DISTINCT
-        reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, $size), s.entered_sref_system),
-        round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, $size), s.entered_sref_system)))),
-        round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, $size), s.entered_sref_system)))),
-        GREATEST(o.sensitivity_precision, $size)
+    // Seems much faster to break this into small queries than one big left join.
+    $smpInfo = $db->query(
+    "SELECT DISTINCT st_astext(s.geom) as geom, o.confidential, GREATEST(o.sensitivity_precision, $size) as size, s.entered_sref_system,
+        round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, $size), s.entered_sref_system)))) as x,
+        round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, $size), s.entered_sref_system)))) as y
       FROM samples s
       JOIN occurrences o ON o.sample_id=s.id
-      WHERE NOT EXISTS(
-        SELECT id FROM map_squares 
-          WHERE x=round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, $size), s.entered_sref_system))))
-          AND y=round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, $size), s.entered_sref_system))))
-          AND size=GREATEST(o.sensitivity_precision, $size)
-      ) AND s.id=$id"
-    );
+      WHERE s.id=$id")->result_array(TRUE);
+    foreach ($smpInfo as $s) {
+      $existing = $db->query("SELECT id FROM map_squares WHERE x={$s->x} AND y={$s->y} AND size={$s->size}")->result_array();
+      if (count($existing)===0) {
+        $db->query("INSERT INTO map_squares (geom, x, y, size)
+          VALUES (reduce_precision(st_geomfromtext('{$s->geom}', $srid), '{$s->confidential}', {$s->size}, '{$s->entered_sref_system}'), {$s->x}, {$s->y}, {$s->size})");
+      }
+    }
     $db->query(
     "UPDATE cache_occurrences co
       SET map_sq_1km_id=msq.id
       FROM map_squares msq, samples s, occurrences o
       WHERE s.id=co.sample_id AND o.id=co.id
-      AND msq.x=round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, greatest(o.sensitivity_precision, 1000), s.entered_sref_system))))
-      AND msq.y=round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, greatest(o.sensitivity_precision, 1000), s.entered_sref_system))))
-      AND msq.size=greatest(o.sensitivity_precision, 1000)
+      AND msq.x=round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, greatest(o.sensitivity_precision, $size), s.entered_sref_system))))
+      AND msq.y=round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, greatest(o.sensitivity_precision, $size), s.entered_sref_system))))
+      AND msq.size=greatest(o.sensitivity_precision, $size)
       AND s.id=$id"
     );
-    $db->query(
-    "UPDATE cache_occurrences co
-      SET map_sq_10km_id=msq.id
-      FROM map_squares msq, samples s, occurrences o
-      WHERE s.id=co.sample_id AND o.id=co.id
-      AND msq.x=round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, greatest(o.sensitivity_precision, 10000), s.entered_sref_system))))
-      AND msq.y=round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, greatest(o.sensitivity_precision, 10000), s.entered_sref_system))))
-      AND msq.size=greatest(o.sensitivity_precision, 10000)
-      AND s.id=$id"
+  }
+  
+  /**
+   * A clone of the list_fields methods provided by the Kohana database object, but with caching as it
+   * involves a database hit but is called quite frequently.
+   * @param string $entity Table or view name
+   * @param Database $db Database object if available
+   * @return array Array of field definitions for the object. 
+   */
+  public static function list_fields($entity, $db=null) {
+    $key="list_fields$entity";
+    $cache = Cache::instance();
+    $result = $cache->get($key);
+    if ($result===null) {
+      if (!$db)
+        $db = new Database();
+      $result = $db->query('
+        SELECT column_name, column_default, is_nullable, data_type, udt_name,
+          character_maximum_length, numeric_precision, numeric_precision_radix, numeric_scale
+        FROM information_schema.columns
+        WHERE table_name = \''. $entity .'\'
+        ORDER BY ordinal_position
+      ');
+
+      $cols=$result->result_array(TRUE);
+      $result = NULL;
+
+      foreach ($cols as $row)
+      {
+        // Make an associative array
+        $result[$row->column_name] = self::sql_type($row->data_type);
+
+        if (!strncmp($row->column_default, 'nextval(', 8))
+        {
+          $result[$row->column_name]['sequenced'] = TRUE;
+        }
+
+        if ($row->is_nullable === 'YES')
+        {
+          $result[$row->column_name]['null'] = TRUE;
+        }
+      }
+      if (!isset($result))
+        throw new Kohana_Database_Exception('database.table_not_found', $entity);
+      else 
+        $cache->set($key, $result);
+    }
+    return $result;
+  }
+  
+  /**
+   * A clone of the sql_type method in the PG driver, copied here to support our version of list_fields.
+   * Converts a Kohana data type name to the SQL equivalent.
+   * @staticvar $sql_types Used to cache the sql types config per request
+   * @param string $str Type name
+   * @return type SQL version of the type name
+   */
+  protected static function sql_type($str)
+  {
+    static $sql_types;
+
+    if ($sql_types === NULL)
+    {
+      // Load SQL data types
+      $sql_types = Kohana::config('sql_types');
+    }
+
+    $str = strtolower(trim($str));
+
+    if (($open  = strpos($str, '(')) !== FALSE)
+    {
+      // Find closing bracket
+      $close = strpos($str, ')', $open) - 1;
+
+      // Find the type without the size
+      $type = substr($str, 0, $open);
+    }
+    else
+    {
+      // No length
+      $type = $str;
+    }
+
+    empty($sql_types[$type]) and exit
+    (
+      'Unknown field type: '.$type.'. '.
+      'Please report this: http://trac.kohanaphp.com/newticket'
     );
+
+    // Fetch the field definition
+    $field = $sql_types[$type];
+
+    switch ($field['type'])
+    {
+      case 'string':
+      case 'float':
+        if (isset($close))
+        {
+          // Add the length to the field info
+          $field['length'] = substr($str, $open + 1, $close - $open);
+        }
+      break;
+      case 'int':
+        // Add unsigned value
+        $field['unsigned'] = (strpos($str, 'unsigned') !== FALSE);
+      break;
+    }
+
+    return $field;
   }
 }
 ?>
