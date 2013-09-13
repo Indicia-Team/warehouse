@@ -1,6 +1,6 @@
 <report
-    title="Explore records using standard filters"
-    description="Report designed for the explore records facility in iRecord, with standardised filtering parameters."
+    title="Explore records using standard filters - mapping"
+    description="Report designed for mapping the explore records facility in iRecord, with standardised filtering parameters."
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
   SELECT #columns#
@@ -17,6 +17,7 @@
   </params>
   <columns>
     <column name="occurrence_ids" visible="false" sql="array_to_string(array_agg(o.id), ',')" aggregate="true" />
-    <column name="geom" visible="false" mappable="true" sql="st_astext(#sample_geom_field#)" />
+    <column name="taxon_meaning_ids" visible="false" sql="array_to_string(array_agg(distinct o.taxon_meaning_id), ',')" aggregate="true" />
+    <column name="geom" visible="false" mappable="true" sql="st_astext(#sample_geom_field#)" in_count="true" />
   </columns>
 </report>

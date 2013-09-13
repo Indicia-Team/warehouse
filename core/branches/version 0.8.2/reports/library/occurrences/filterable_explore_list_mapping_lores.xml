@@ -1,6 +1,6 @@
 <report
-    title="Explore records using standard filters"
-    description="Report designed for the explore records facility in iRecord, with standardised filtering parameters."
+    title="Explore records using standard filters - lores mapping"
+    description="Report designed for mapping on the explore records facility in iRecord, with standardised filtering parameters. Aggregated to grid squares."
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
   SELECT #columns#
@@ -14,9 +14,10 @@
   <params>
     <param name="smpattrs" display="Sample attribute list" description="Comma separated list of sample attribute IDs to include" datatype="smpattrs" />
     <param name="occattrs" display="Occurrence attribute list" description="Comma separated list of occurrence attribute IDs to include" datatype="occattrs" />
-    <param name="sq_size" display="Grid square size" description="Specify either 1000 or 10000 for the grid square resolution as 1km or 1km grid" datatype="integer">
+    <param name="sq_size" display="Grid square size" description="Specify either 1000, 2000 or 10000 for the grid square resolution as 1km, 2km or 10km grid" datatype="integer">
       <joins>
         <join value="1000" operator="equal">JOIN map_squares msq on msq.id=o.map_sq_1km_id and msq.size=1000</join>
+        <join value="2000" operator="equal">JOIN map_squares msq on msq.id=o.map_sq_2km_id and msq.size=2000</join>
         <join value="10000" operator="equal">JOIN map_squares msq on msq.id=o.map_sq_10km_id and msq.size=10000</join>
       </joins>
     </param>
@@ -26,6 +27,7 @@
   </params>
   <columns>
     <column name="occurrence_ids" visible="false" sql="array_to_string(array_agg(o.id), ',')" aggregate="true" />
-    <column name="geom" visible="false" mappable="true" sql="st_astext(msq.geom)" />
+    <column name="taxon_meaning_ids" visible="false" sql="array_to_string(array_agg(distinct o.taxon_meaning_id), ',')" aggregate="true" />
+    <column name="geom" visible="false" mappable="true" sql="st_astext(msq.geom)" in_count="true" />
   </columns>
 </report>
