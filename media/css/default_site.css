@@ -571,6 +571,7 @@ form #map-toolbar {
   width: 59%;
   height: 100%;
   overflow: scroll;
+  margin: 0;
 }
 
 .report-picker-container > div {
