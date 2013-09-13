@@ -226,7 +226,7 @@ class iform_group_edit {
     $r .= self::memberControls($args, $auth);
     $r .= self::reportFilterBlock($args, $auth, $hiddenPopupDivs);
     // auto-insert the creator as an admin of the new group, unless the admins are manually specified
-    if (!$args['include_administrators'])
+    if (!$args['include_administrators'] && empty($_GET['group_id']))
       $r .= '<input type="hidden" name="groups_user:admin_user_id[]" value="' .hostsite_get_user_field('indicia_user_id'). '"/>';
     $r .= '<input type="hidden" name="groups_user:administrator" value="t"/>';
     $r .= '<input type="submit" class="indicia-button" id="save-button" value="'.
