@@ -276,7 +276,7 @@ class filter_occurrence_id extends filter_base {
    * Define the HTML required for this filter's UI panel.
    */
   public function get_controls($readAuth, $options) { 
-    $r .= data_entry_helper::select(array(
+    $r = data_entry_helper::select(array(
       'label' => lang::get('Record ID'),
       'fieldname' => 'occurrence_id_op',
       'lookupValues'=>array('='=>'is','>='=>'is at least','<='=>'is at most'),
