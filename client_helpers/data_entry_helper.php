@@ -319,10 +319,11 @@ class data_entry_helper extends helper_base {
   */
   public static function sub_list($options) {
     global $indicia_templates;
+    static $idx=0; // unique ID for all sublists
     // checks essential options, uses fieldname as id default and 
     // loads defaults if error or edit
     $options = self::check_options($options);
-    if (empty($options['addToTable'])) $options['addToTable']===true;
+    if (!isset($options['addToTable'])) $options['addToTable']=true;
     if ($options['addToTable']===true) {
       // we can only work with the caption field
       $options['captionField'] = 'caption';
@@ -391,8 +392,8 @@ class data_entry_helper extends helper_base {
     $options['subListItem'] = str_replace(array('{caption}', '{value}', '{fieldname}'),  
       array('\'+caption+\'', '\'+value+\'', $options['fieldname']), 
       $indicia_templates['sub_list_item']);
-    $replaceTags=array();
-    $replaceValues=array();
+    $replaceTags=array('{idx}');
+    $replaceValues=array($idx);
     foreach ($options as $option=>$value) {
       if (!is_array($value) && !is_object($value)) {
         array_push($replaceTags, '{'.$option.'}');
@@ -417,6 +418,7 @@ class data_entry_helper extends helper_base {
     
     // layout the control
     $r .= self::apply_template($options['template'], $options);
+    $idx++;
     return $r;
   }
 
