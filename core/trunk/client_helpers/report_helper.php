@@ -49,7 +49,7 @@ class report_helper extends helper_base {
       'class' => ''
     ), $options);
     // add class rather than replacing existing
-    $options['class'] .= ' report-picker-container control-box ui-widget ui-widget-content';
+    $options['class'] .= ' report-picker-container control-box ui-widget ui-widget-content ui-helper-clearfix';
     $reports = '';
     $response = self::http_post(self::$base_url.'index.php/services/report/report_list?nonce='.
         $options['readAuth']['nonce'].'&auth_token='.$options['readAuth']['auth_token']);

@@ -160,7 +160,6 @@ class iform_group_edit {
       'include_administrators'=>false,
       'include_members'=>false
     ), $args);
-    $optionalFields=report_helper::explode_lines($args['optional_fields']);
     $reloadPath = self::getReloadPath();   
     data_entry_helper::$website_id=$args['website_id'];
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
@@ -309,7 +308,8 @@ $('#entry_form').submit(function() {
         'table'=>'user',
         'captionField'=>'person_name',
         'valueField'=>'id',
-        'extraParams'=>$auth['read']+array('view'=>'detail')
+        'extraParams'=>$auth['read']+array('view'=>'detail'),
+        'addToTable'=>false
       ));
     }
     if ($args['include_members']) {
@@ -319,7 +319,8 @@ $('#entry_form').submit(function() {
         'table'=>'user',
         'captionField'=>'person_name',
         'valueField'=>'id',
-        'extraParams'=>$auth['read']+array('view'=>'detail')
+        'extraParams'=>$auth['read']+array('view'=>'detail'),
+        'addToTable'=>false
       ));
     }
     return $r;
@@ -383,7 +384,8 @@ $('#entry_form').submit(function() {
   private static function extractUserInfoFromFormValues(&$s, $values, $fieldname, $isAdmin) {
     $existingAdmins=preg_grep("/^groups_user\:$fieldname\:[0-9]+$/", array_keys($values));
     if (!empty($values["groups_user:$fieldname"]) || !empty($existingAdmins)) {
-      $s['subModels']=array();
+      if (!isset($s['subModels']))
+        $s['subModels']=array();
       if (!empty($values["groups_user:$fieldname"])) {
         foreach($values["groups_user:$fieldname"] as $userId) {
           $s['subModels'][]=array('fkId' => 'group_id', 
@@ -464,7 +466,7 @@ $('#entry_form').submit(function() {
       'filter:id'=>$group[0]['filter_id']
     );
     if ($args['include_report_filter']) {
-      $def=$group[0]['definition'] ? $group[0]['definition'] : '{}';
+      $def=$group[0]['filter_definition'] ? $group[0]['filter_definition'] : '{}';
       data_entry_helper::$javascript .= 
           "indiciaData.filter.def=$def;\n";
     }

@@ -164,7 +164,7 @@ $indicia_templates = array(
     '<input type="hidden" name="{mainEntity}:insert_captions_to_create" value="{table}" />',
   'sub_list_item' => '<li class="ui-widget-content ui-corner-all"><span class="ind-delete-icon">&nbsp;</span>{caption}'.
     '<input type="hidden" name="{fieldname}" value="{value}" /></li>',
-  'sub_list_javascript' => "  var addSublistItem = function(escapedId, escapedCaptionField, fieldname){
+  'sub_list_javascript' => "  var addSublistItem{idx} = function(escapedId, escapedCaptionField, fieldname){
     // transfer caption and value from search control to the displayed and hidden lists
     var search$ = $('#'+escapedId+'\\\\:search\\\\:'+escapedCaptionField);
     var hiddenSearch$ = $('#'+escapedId+'\\\\:search');
@@ -186,10 +186,10 @@ $indicia_templates = array(
   };
   $('#{escaped_id}\\\\:search\\\\:{escaped_captionField}').keypress(function(e) {
     if (e.which===13) {
-      addSublistItem('{escaped_id}', '{escaped_captionField}', '{fieldname}');
+      addSublistItem{idx}('{escaped_id}', '{escaped_captionField}', '{fieldname}');
     }
   });
-  $('#{escaped_id}\\\\:add').click(function() {addSublistItem('{escaped_id}', '{escaped_captionField}', '{fieldname}');});  
+  $('#{escaped_id}\\\\:add').click(function() {addSublistItem{idx}('{escaped_id}', '{escaped_captionField}', '{fieldname}');});  
   $('#{escaped_id}\\\\:sublist span.ind-delete-icon').live('click', function(event){
     // remove the value from the displayed list and the hidden list
     var li$ = $(this).closest('li');
