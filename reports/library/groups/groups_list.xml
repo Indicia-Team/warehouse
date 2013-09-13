@@ -16,9 +16,11 @@
         datatype="lookup" default="member" 
         lookup_values='all:All groups,member:Groups they are a member of,admin:Groups they administer,create:Groups they created,create_admin:Groups they created or administer'>
       <joins>
+        <join value="all" operator="equal">LEFT JOIN groups_users gu ON gu.group_id=g.id AND gu.deleted=false AND gu.user_id=#currentUser#</join>
         <join value="member" operator="equal">JOIN groups_users gu ON gu.group_id=g.id AND gu.deleted=false AND gu.user_id=#currentUser#</join>
-        <where value="admin" operator="equal">JOIN groups_users gu ON gu.group_id=g.id AND gu.deleted=false AND gu.user_id=#currentUser# 
-            AND gu.administrator=true</where>
+        <join value="admin" operator="equal">JOIN groups_users gu ON gu.group_id=g.id AND gu.deleted=false AND gu.user_id=#currentUser#
+            AND gu.administrator=true</join>
+        <join value="create" operator="equal">JOIN groups_users gu ON gu.group_id=g.id AND gu.deleted=false AND gu.user_id=#currentUser#</join>
         <where value="create" operator="equal">g.created_by_id=#currentUser#</where>
         <join value="create_admin" operator="equal">LEFT JOIN groups_users gu ON gu.group_id=g.id AND gu.deleted=false 
             AND gu.user_id=#currentUser# AND gu.administrator=true</join>
@@ -40,6 +42,6 @@
     <column name="title" display="Name" sql="g.title" datatype="text" />
     <column name="description" display="Description" sql="g.description" datatype="text" />
     <column name="administrator" display="Admin" sql="gu.administrator" datatype="boolean" />
-    <column name="members" display="Members" sql="count(guc.id)" datatype="integer" aggregate="true" />
+    <column name="members" display="Members" sql="count(DISTINCT guc.user_id)" datatype="integer" aggregate="true" />
   </columns>
 </report>
