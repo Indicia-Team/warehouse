@@ -342,7 +342,7 @@ $('#entry_form').submit(function() {
         'allowSave' => false,
         'filterTypes' => array('' => 'what,where,when', lang::get('Advanced') => 'source,quality'),
         'embedInExistingForm' => true
-      ), $args['website_id'], $hiddenStuff);
+      ), $args['website_id'], $hiddenPopupDivs);
       // fields to auto-create a filter record for this group's defined set of records
       $r .= data_entry_helper::hidden_text(array('fieldname'=>'filter:id'));
       $r .= '<input type="hidden" name="filter:title" id="filter-title-val"/>';
