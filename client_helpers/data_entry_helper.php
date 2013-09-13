@@ -4565,7 +4565,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         'nocache' => true,
         'sharing' => $sharing
       ));
-      if (isset($images['error'])) throw new Exception($record['error']);
+      if (isset($images['error'])) throw new Exception($images['error']);
       foreach($images as $image) {
         self::$entity_to_load[$entity . '_image:id:' . $image['id']]  = $image['id'];
         self::$entity_to_load[$entity . '_image:path:' . $image['id']] = $image['path'];
