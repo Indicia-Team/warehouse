@@ -1,10 +1,10 @@
 
 
 jQuery(document).ready(function($) {
-  //When the user clicks on the map breadcrumb, we store the id of the location they have clicked on as
-  //well as its location_type_id in variables
-  var clickedFeatureIdFromBreadcrumb = null;
-  var clickedFeatureLocationTypeIdFromBreadcrumb = null;
+  //When the user returns to the homepage from a link, we get the locationid and location type id of the location we
+  //are zooming to from php (these are calculated from the location id supplied in the URL)
+  var preloadBreadcrumbFeatureId = null;
+  var preloadBreadcrumbClickedFeatureLocationTypeId = null;
   //setup default styling for the feature points. The type of icon to show is supplied in the report
   //in a column called 'graphic'.
   //Annotations have their own style as they also have labels
@@ -46,12 +46,12 @@ jQuery(document).ready(function($) {
       //We tell the system that this was the last location the user has clicked on the map (although they
       //actually clicked on the location on another page rather than the map itself).
       var idAndLocationType = indiciaData.preloadBreadcrumb.split(',');
-      clickedFeatureIdFromBreadcrumb = idAndLocationType[0];
-      clickedFeatureLocationTypeIdFromBreadcrumb = idAndLocationType[1];
+      preloadBreadcrumbFeatureId = idAndLocationType[0];
+      preloadBreadcrumbClickedFeatureLocationTypeId = idAndLocationType[1];
     }
     //Firstly we need to call the code which works out the map hierarchy to the current location (region, site, count unit)
     //that the user has selected.
-    get_map_hierarchy_for_current_position(clickedFeatureIdFromBreadcrumb,clickedFeatureLocationTypeIdFromBreadcrumb);
+    get_map_hierarchy_for_current_position(preloadBreadcrumbFeatureId,preloadBreadcrumbClickedFeatureLocationTypeId);
   });  
 });
 

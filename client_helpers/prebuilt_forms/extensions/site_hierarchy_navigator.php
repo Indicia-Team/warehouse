@@ -121,11 +121,16 @@ class extension_site_hierarchy_navigator {
   public function breadcrumb($auth, $args, $tabalias, $options, $path) {
     iform_load_helpers(array('map_helper'));
     map_helper::$javascript .= "indiciaData.useBreadCrumb=true;\n";
-    //If the breadcrumb parameter is supplied in the url, it means the user has already been to
-    //this page and is returning and has clicked on another page breadcrumb location to zoom to, so we need to rebuild the 
-    //page breadcrumb trail and zoom the map
-    if ($_GET['breadcrumb'])
-      map_helper::$javascript .= "indiciaData.preloadBreadcrumb='".$_GET['breadcrumb']."';\n";
+    //If the id parameter is supplied in the url, it means the user has clicked on another page homepage link to zoom to the location, so we need to rebuild the 
+    //map breadcrumb trail and zoom the map. In order to do this we need to supply the location id and location type id to the javascript in indiciaData.
+    $locationTypeId = data_entry_helper::get_population_data(array(
+      'table' => 'location',
+      'extraParams' => $auth['read'] + array('id' => $_GET['id'], 'view' => $view),
+      'nocache' => true,
+      'sharing' => $sharing
+    ));
+    if ($_GET['id'])
+      map_helper::$javascript .= "indiciaData.preloadBreadcrumb='".$_GET['id'].','.$locationTypeId[0]['location_type_id']."';\n";
     $breadcrumb = '<div><ul id="map-breadcrumb"></ul></div>';
     return $breadcrumb;
   }
