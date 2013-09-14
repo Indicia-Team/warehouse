@@ -876,6 +876,22 @@ JOIN user_trusts ut on (ut.survey_id=o.survey_id
   from q 
   join cache_taxa_taxon_lists tc on tc.parent_id = q.id 
 ) select array_to_string(array_agg(id::varchar), ',') from q"
+      ),
+      'taxon_meaning_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Taxon meaning IDs", 
+          'description'=>'Comma separated list of taxon meaning IDs',
+          'wheres' => array(
+            array('value'=>'', 'operator'=>'', 'sql'=>"o.taxon_meaning_id in (#taxon_meaning_list#)")
+          ),
+          'preprocess' => // faster than embedding this query in the report            
+"with recursive q as ( 
+  select id, taxon_meaning_id 
+  from cache_taxa_taxon_lists t 
+  where taxon_meaning_id in (#taxon_meaning_list#) 
+  union all 
+  select tc.id, tc.taxon_meaning_id 
+  from q 
+  join cache_taxa_taxon_lists tc on tc.parent_id = q.id 
+) select array_to_string(array_agg(taxon_meaning_id::varchar), ',') from q"
       )
     ), $this->params);
     $this->defaultParamValues = array_merge(array(
@@ -901,6 +917,7 @@ JOIN user_trusts ut on (ut.survey_id=o.survey_id
         'survey_list_op'=>'in',
         'taxon_group_list'=>'',
         'taxa_taxon_list_list'=>'',
+        'taxon_meaning_list'=>''
     ), $this->defaultParamValues);
   }
 
