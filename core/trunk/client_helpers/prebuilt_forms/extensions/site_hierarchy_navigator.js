@@ -1,8 +1,5 @@
 
-//When the user enters another page (such as Editing a Count Unit) then we pass the location ids in the 
-//map breadcrumb so that new page can create a similar breadcrumb for returning to the homepage with
-var breadcrumbIdsToPassArray = [];
-var breadcrumbIdsToPass;
+
 jQuery(document).ready(function($) {
   //When the user clicks on the map breadcrumb, we store the id of the location they have clicked on as
   //well as its location_type_id in variables
@@ -208,7 +205,7 @@ function add_new_layer_controller(clickedFeature,breadcrumbHierarchy,clickedFeat
   //The final layer is different as it is the parent that is clickable (count unit), and it is the 
   //child locations types (annotations) that are not clickable.
   if (clickedFeature && clickedFeature.attributes.clickableParent) {
-    location = indiciaData.informationSheetLink+clickedFeature.attributes.parent_id+'&'+breadcrumbIdsToPass;
+    location = indiciaData.informationSheetLink+clickedFeature.attributes.parent_id;
   } else {
     //If the user has specified a layer must also display count units, then add them to the report parameters
     if (inArray(childLocationTypesToReport,indiciaData.showCountUnitsForLayers)) {
@@ -226,19 +223,7 @@ function add_new_layer_controller(clickedFeature,breadcrumbHierarchy,clickedFeat
             getMapFeaturesFromReportDataResult = get_map_features_from_report_data(response,currentLayerLocationNames);
             currentLayerLocationNames = getMapFeaturesFromReportDataResult[0];
             features = getMapFeaturesFromReportDataResult[1];
-            //We need to save make a comma seperate list of the location ids in the map breadcrumb so other
-            //pages can have links back to the homepage map. This is given to other pages in the URL.
-            //The IDs are already stored in breadcrumbIdsToPassArray, so we just need to convert to comma seperated list.
             if (indiciaData.useBreadCrumb) {
-              breadcrumbIdsToPass = null;
-              $.each(breadcrumbIdsToPassArray, function(idx,breadcrumbIdToPass) {
-                if (!breadcrumbIdsToPass) {
-                  breadcrumbIdsToPass = breadcrumbIdToPass;
-                } else {
-                  breadcrumbIdsToPass = breadcrumbIdsToPass + ',' + breadcrumbIdToPass;
-                }
-              });
-              breadcrumbIdsToPass = 'breadcrumb='+breadcrumbIdsToPass;
               //create the map breadcrumb itself
               breadcrumb(parentId,parentName,currentLayerLocationNames,breadcrumbHierarchy);
             }
@@ -386,7 +371,6 @@ function setup_additional_controls(currentLayerLocationTypesId,parentId, parentN
  * Make the map breadcrumb (not to be confused with the homepage links found on some pages.)
  */
 function breadcrumb(parentId,parentName,currentLayerLocationNames,breadcrumbHierarchy) {
-  breadcrumbIdsToPassArray = [];
   var i,breadcrumbPartFront,buildUpBreadCrumb;
   //The first item in the breadcrumb is for the top level, this needs to be treated seperately as it doesn't
   //have a parent location.
@@ -396,8 +380,7 @@ function breadcrumb(parentId,parentName,currentLayerLocationNames,breadcrumbHier
   //We need an item in the breadcrumb for each item in the location hierarchy to the location that is currently selected.
   for (i=1;i<=breadcrumbHierarchy.length;i++) {
     breadcrumbPartFront = '<li id = "breadcrumb-part-'+i+'">';
-    breadcrumbIdsToPassArray.push(breadcrumbHierarchy[i-1].id);
-      buildUpBreadCrumb = buildUpBreadCrumb + breadcrumbPartFront + "<a onclick='get_map_hierarchy_for_current_position("+breadcrumbHierarchy[i-1].id+","+breadcrumbHierarchy[i-1].location_type_id+")'>"+ breadcrumbHierarchy[i-1].name + "</a></li>";
+    buildUpBreadCrumb = buildUpBreadCrumb + breadcrumbPartFront + "<a onclick='get_map_hierarchy_for_current_position("+breadcrumbHierarchy[i-1].id+","+breadcrumbHierarchy[i-1].location_type_id+")'>"+ breadcrumbHierarchy[i-1].name + "</a></li>";
   }
   $('#map-breadcrumb').html(buildUpBreadCrumb);
 }
