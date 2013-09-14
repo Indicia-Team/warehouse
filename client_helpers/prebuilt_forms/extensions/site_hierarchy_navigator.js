@@ -4,7 +4,7 @@ jQuery(document).ready(function($) {
   //When the user returns to the homepage from a link, we get the locationid and location type id of the location we
   //are zooming to from php (these are calculated from the location id supplied in the URL)
   var preloadBreadcrumbFeatureId = null;
-  var preloadBreadcrumbClickedFeatureLocationTypeId = null;
+  var preloadBreadcrumbFeatureLocationTypeId = null;
   //setup default styling for the feature points. The type of icon to show is supplied in the report
   //in a column called 'graphic'.
   //Annotations have their own style as they also have labels
@@ -42,16 +42,16 @@ jQuery(document).ready(function($) {
     //and we need to set the map up so it is zoomed into the location the user has requested. This includes
     //setting up the breadcrumb trail correctly.
     if (indiciaData.preloadBreadcrumb) {
-      //The ids required to rebuild the breadcrumb as held as a location id and location type id in the url (supplied by calling page).
-      //We tell the system that this was the last location the user has clicked on the map (although they
-      //actually clicked on the location on another page rather than the map itself).
+      //The ids required to rebuild the breadcrumb are a held as a location id and location type id.
+      //These are calculated from the location id in the URL.
+      //The values are process in the same way as if we had got the id and location type id by clicking on the map itself.
       var idAndLocationType = indiciaData.preloadBreadcrumb.split(',');
       preloadBreadcrumbFeatureId = idAndLocationType[0];
-      preloadBreadcrumbClickedFeatureLocationTypeId = idAndLocationType[1];
+      preloadBreadcrumbFeatureLocationTypeId = idAndLocationType[1];
     }
     //Firstly we need to call the code which works out the map hierarchy to the current location (region, site, count unit)
     //that the user has selected.
-    get_map_hierarchy_for_current_position(preloadBreadcrumbFeatureId,preloadBreadcrumbClickedFeatureLocationTypeId);
+    get_map_hierarchy_for_current_position(preloadBreadcrumbFeatureId,preloadBreadcrumbFeatureLocationTypeId);
   });  
 });
 
@@ -73,21 +73,16 @@ function move_to_new_layer(features) {
  */
 function get_map_hierarchy_for_current_position(clickedFeatureId,clickedFeatureLocationTypeId) {
   //copy array by value. This is a list of the location types for the different layers.
-  var locationLayerTypesWithBoundaryForCountUnit = indiciaData.layerLocationTypes.slice();
-  //In the user supplied indiciaData.layerLocationTypes list, the Count Unit Location Id 
-  //is given, when in fact we need to check the count unit BOUNDARY location type.
-  //So we pop the last item off the list and replace it with the boundary location type.
-  locationLayerTypesWithBoundaryForCountUnit.pop();
-  locationLayerTypesWithBoundaryForCountUnit[locationLayerTypesWithBoundaryForCountUnit.length] = indiciaData.countUnitBoundaryTypeId;
+  var locationLayerTypeIds = indiciaData.layerLocationTypes.slice();
   if (!clickedFeatureId) {
     //If there is no clicked layer, then we are dealing with the first layer.
     add_new_layer_controller(null,[],clickedFeatureLocationTypeId);
   } else {
     var SupportedLocationTypeIdsAsString;
     var i=-1;
-    //Cycle round the list of all Location Types that can be displayed on the map in order.
-    //Then stop when we reach the location type we have currently clicked on to give us the
-    //list up until that point.
+    //Cycle round the list of all Location Types that can be displayed on the homepage map in order.
+    //Then stop when we reach the location type that is the same as the location we have clicked on. This gives us a list of location
+    //types up until that point.
     do {
       i++;
       if (SupportedLocationTypeIdsAsString) {
@@ -95,9 +90,9 @@ function get_map_hierarchy_for_current_position(clickedFeatureId,clickedFeatureL
       } else {
         SupportedLocationTypeIdsAsString=indiciaData.layerLocationTypes[i];
       }
-    } while (clickedFeatureLocationTypeId != locationLayerTypesWithBoundaryForCountUnit[i] &&
+    } while (clickedFeatureLocationTypeId != locationLayerTypeIds[i] &&
              i < indiciaData.layerLocationTypes.length-1) 
-    //Get the map breadcrumb from a report
+    //Use a report to get a list of locations that match the different layer location types and also intersect the location we are interested in.
     reportRequest = indiciaData.breadcrumbReportRequest+'&location_id='+clickedFeatureId+'&location_type_ids='+SupportedLocationTypeIdsAsString;
     $.getJSON(reportRequest,
       null,
