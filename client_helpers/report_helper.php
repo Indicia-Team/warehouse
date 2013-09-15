@@ -690,7 +690,6 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     $extras .= '&wantColumns=1&wantParameters=1';
     if ($wantCount)
       $extras .= '&wantCount=1';
-    drupal_set_message($extras);
     // any extraParams are fixed values that don't need to be available in the params form, so they can be added to the
     // list of parameters to exclude from the params form.
     if (array_key_exists('extraParams', $options) && array_key_exists('ignoreParams', $options))
