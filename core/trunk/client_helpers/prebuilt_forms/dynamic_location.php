@@ -193,28 +193,35 @@ class iform_dynamic_location extends iform_dynamic {
   }
   
   /*
-   * Function similar in principle to load_existing_record. This function is different if that it is used when the screen is 
-   * appears to be in Add Mode (although technically it will be in edit mode) and we just want to automatically zoom the map 
-   * to an area we are adding a location to.
+   * This function is used when an add site screen is in add mode 
+   * and we just want to automatically zoom the map to a region/site we are adding a location to.
+   * This boundary is purely visual and isn't submitted.
    */
 
-  public static function zoom_map_when_adding($readAuth, $entity, $id, $view = 'detail', $sharing = false, $loadImages = false) {
-    $parentRecord = data_entry_helper::get_population_data(array(
+  public static function zoom_map_when_adding($readAuth, $entity, $id, $view = 'detail') {
+    $loc = data_entry_helper::get_population_data(array(
       'table' => $entity,
       'extraParams' => $readAuth + array('id' => $id, 'view' => $view),
-      'nocache' => true,
-      'sharing' => $sharing
+      'nocache' => true
     ));
     
-    if (isset($parentRecord['error'])) throw new Exception($parentRecord['error']);   
-    // set form mode
-    if (data_entry_helper::$form_mode===null) data_entry_helper::$form_mode = 'RELOAD';
-    //As we are only zooming the map, only populate the entity to load with map related items.
-    foreach($parentRecord[0] as $key => $value) {
-      if ($key==='boundary_geom'||$key==='centroid_sref'||$key==='centroid_sref_system') {
-        data_entry_helper::$entity_to_load["$entity:$key"] = $value;
-      }
-    }
+    if (isset($loc['error'])) throw new Exception($loc['error']);
+    $loc=$loc[0];
+    //Just put the feature onto the map, set the feature type to zoomToBoundary so it isn't used for anything
+    //other than being a visual cue to zoom to.
+    data_entry_helper::$javascript .= "
+mapInitialisationHooks.push(function(mapdiv) {
+  var feature, geom=OpenLayers.Geometry.fromWKT('{$loc[boundary_geom]}');
+
+  if (indiciaData.mapdiv.map.projection.getCode() != indiciaData.mapdiv.indiciaProjection.getCode()) {
+      geom.transform(indiciaData.mapdiv.indiciaProjection, indiciaData.mapdiv.map.projection);
+  }
+  feature = new OpenLayers.Feature.Vector(geom);
+  feature.attributes.type = 'zoomToBoundary';
+  indiciaData.mapdiv.map.editLayer.addFeatures([feature]);
+  mapdiv.map.zoomToExtent(feature.geometry.bounds);
+});
+    ";
   }
   
   protected static function getAttributes($args, $auth) {
