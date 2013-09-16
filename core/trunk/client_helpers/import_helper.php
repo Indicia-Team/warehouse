@@ -217,16 +217,14 @@ class import_helper extends helper_base {
     self::clear_website_survey_fields($unlinked_required_fields, $settings);
     $savedFieldMappings=array();
     //get the user's checked preference for the import page
-    if (function_exists('hostsite_get_user_field'))
-      try {
-        $json = hostsite_get_user_field('import_field_mappings','[]');
-        $savedFieldMappings=(json_decode($json, true));
-      } catch (Exception $e) {
-        if ($e->getMessage()==='Missing field') 
-          // user profile does not support our mappings field to store them in, so disable remembering mappings.
+    if (function_exists('hostsite_get_user_field')) {
+      $json = hostsite_get_user_field('import_field_mappings');
+      if ($json===false) {
+        if (!hostsite_set_user_field('import_field_mappings', '[]'))
           self::$rememberingMappings=false;
-      }
-    else
+      } else
+        $savedFieldMappings=json_decode($json, true);
+    } else
       // host does not support user profiles, so we can't remember mappings
       self::$rememberingMappings=false;
     //  if the user checked the Remember All checkbox, save it in a variable  
