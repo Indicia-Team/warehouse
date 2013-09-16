@@ -32,8 +32,7 @@ class extension_cudi_information_sheet {
     $cudiFormOptions = explode('|',$options['cudiFormOptions']);
     $cudiFormPath = $cudiFormOptions[0];
     $cudiFormParam = $cudiFormOptions[1];
-    //avb note, do we need user definable parameters here?
-    $cudi_form_url=(variable_get('clean_url', 0) ? '' : '?q=').$cudiFormPath.(variable_get('clean_url', 0) ? '?' : '&').$cudiFormParam.'='.$_GET['dynamic-location_id'].(variable_get('clean_url', 0) ? '?' : '&').'breadcrumb='.$_GET['breadcrumb'];
+    $cudi_form_url=(variable_get('clean_url', 0) ? '' : '?q=').$cudiFormPath.(variable_get('clean_url', 0) ? '?' : '&').$cudiFormParam.'='.$_GET[$options['urlParameter']];
     $cudiFormButtonLink = '<div>If you think any of this information is incorrect please submit a CUDI form</br>';
     $cudiFormButtonLink .= 
     "<FORM>

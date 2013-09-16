@@ -26,9 +26,11 @@
  */
 class extension_cudi_homepage_links {
   //The layerLocationTypes is specified on the edit tab and must match what is specified on the homepage.
-  private function get_links_hierarchy($auth, $layerLocationTypes,$countUnitBoundaryTypeId) {
+  //$urlParameter is specified on the edit tab by the user. It specifies what parameter holds the location id in the url as
+  //this might vary (e.g it might just be 'id' or it could be dynamic-location_id)
+  private function get_links_hierarchy($auth, $layerLocationTypes,$countUnitBoundaryTypeId,$urlParameter) {
     iform_load_helpers(array('report_helper'));
-    $locationId = $_GET['dynamic-location_id'];
+    $locationId = $_GET[$urlParameter];
     $locationRecord = data_entry_helper::get_population_data(array(
       'table' => 'location',
       'extraParams' => $auth['read'] + array('id' => $locationId),
@@ -88,7 +90,7 @@ class extension_cudi_homepage_links {
     //Get the user specified list of layers they want, this must match the homepage for correct operation.
     $layerLocationTypes = explode(',',$options['layerLocationTypes']);
     //Get the location data to make the links with
-    $breadcrumbHierarchy = self::get_links_hierarchy($auth, $layerLocationTypes,$options['countUnitBoundaryTypeId']);
+    $breadcrumbHierarchy = self::get_links_hierarchy($auth, $layerLocationTypes,$options['countUnitBoundaryTypeId'],$options['urlParameter']);
     $homepageLinkIdsArray = array();
     //Get the ids of the locations
     foreach ($breadcrumbHierarchy as $id => $hierarchyItem) {

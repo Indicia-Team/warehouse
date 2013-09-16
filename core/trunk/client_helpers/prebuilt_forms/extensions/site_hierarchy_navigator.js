@@ -140,7 +140,10 @@ function get_clicked_feature(clickedFeatureId,breadcrumbHierarchy,clickedFeature
   //so we can't collect it by it, we need to collect it from a report
   if (!clickedFeature) {
     //Get all locations for the location type of the location we are clicking on
-    //TODO->We might be able to make this more efficient
+    //avb TODO->We might be able to make this more efficient
+    //avb TODO->There is a bug where the last homepage link doesn't work, this is caused by the system expecting the clickedFeature id
+    //to be a boundary id, but the homepage link giving it as a count unit id, not sure how to fix this nicely yet. Issue occuring
+    //at "if (feature.id==clickedFeatureId) {" in the code below.  
     reportRequest = indiciaData.layerReportRequest + '&location_type_id='+clickedFeatureLocationTypeId+'&parent_id='+null;
     $.getJSON(reportRequest,
       null,
@@ -198,7 +201,7 @@ function add_new_layer_controller(clickedFeature,breadcrumbHierarchy,clickedFeat
   //Link to Count unit Information sheet if we detect a Count Unit has been clicked on/selected
   //and it is the final layer. 
   //The final layer is different as it is the parent that is clickable (count unit), and it is the 
-  //child locations types (annotations) that are not clickable.
+  //child annotations layer that is not cliackable.
   if (clickedFeature && clickedFeature.attributes.clickableParent) {
     location = indiciaData.informationSheetLink+clickedFeature.attributes.parent_id;
   } else {
