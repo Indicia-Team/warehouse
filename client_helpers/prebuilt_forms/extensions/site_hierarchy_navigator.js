@@ -141,19 +141,19 @@ function get_clicked_feature(clickedFeatureId,breadcrumbHierarchy,clickedFeature
   if (!clickedFeature) {
     //Get all locations for the location type of the location we are clicking on
     //avb TODO->We might be able to make this more efficient
-    //avb TODO->There is a bug where the last homepage link doesn't work, this is caused by the system expecting the clickedFeature id
-    //to be a boundary id, but the homepage link giving it as a count unit id, not sure how to fix this nicely yet. Issue occuring
-    //at "if (feature.id==clickedFeatureId) {" in the code below.  
     reportRequest = indiciaData.layerReportRequest + '&location_type_id='+clickedFeatureLocationTypeId+'&parent_id='+null;
     $.getJSON(reportRequest,
       null,
-      function(reportdata, textStatus, jqXHR) {
+      function(reportdata, textStatus, jqXHR) {      
         getMapFeaturesFromReportDataResult = get_map_features_from_report_data(reportdata,[]);
         features = getMapFeaturesFromReportDataResult[1];
         //Cycle through all the features returned by the report until we find the one with the matching id,
         //we can then pass this to the controller function that sets up the child layer
+        //We actually do a comparison with the parent_id report field as if the location doesn't have a parent_id set in the location table, this field
+        //is output to be the same as the location's main id by the report. In the case of boundaries (which do have a parent id filled in the location table) 
+        //the parent_id is output to be the count unit location id
         $.each(features, function (idx, feature) {
-          if (feature.id==clickedFeatureId) {         
+          if (feature.data.parent_id==clickedFeatureId) { 
             clickedFeature = feature;
             add_new_layer_controller(clickedFeature,breadcrumbHierarchy,clickedFeatureLocationTypeId);
           }
