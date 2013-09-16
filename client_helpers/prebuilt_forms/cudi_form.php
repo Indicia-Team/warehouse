@@ -184,16 +184,6 @@ class iform_cudi_form extends iform_dynamic {
           'required' => true,
           'group'=>'Configurable Ids'
         ),  
-        //Screen can be used for adding versioned count unit boundaries but can also be used for adding
-        //count unit annotation boundaries  
-        array(
-          'name'=>'annotation_mode',
-          'caption'=>'Annotation Mode?',
-          'description'=>'Place page into annotation mode.',
-          'type'=>'boolean',
-          'required' => false,
-          'group'=>'Annotation Mode'
-        ), 
         array(
           'name'=>'administrator_mode',
           'caption'=>'Administrator Mode?',
@@ -249,19 +239,19 @@ class iform_cudi_form extends iform_dynamic {
   protected static function getEntity($args, $auth) {
     data_entry_helper::$entity_to_load = array();
     //If a zoom_id is supplied, it means we are moving into add mode but for a specific region
-    //so we want an empty page but the map should be zoomed in
+    //So we want an empty page but the map should be zoomed in to the location boundary.
+    //This boundary acts as a ghost, so it isn't actually submitted, it is purely visual.
     if (!empty($_GET['zoom_id']))
-      $recordId = $_GET['zoom_id'];
-    if (!empty($recordId)) {
-      self::zoom_map($args, $auth, 'location', $recordId);
-    } else {     
-      if (!empty($_GET['location_id']))
-        $recordId = $_GET['location_id'];
-      //Note: There is still a location_id if there is a parent_id, but we use the parent_id
-      //as the main record id, the system then uses the location_id to load boundary information
+      self::zoom_map($auth, $_GET['zoom_id']);
+    else {     
+      //Note:
+      //When the user selects a boundary, the page is reloaded with an additional parent_id parameter in the url.
+      //In this case, we use the parent_id as the main record id, the system then uses the location_id to load boundary information
       //for the main record.
       if (!empty($_GET['parent_id']))
         $recordId = $_GET['parent_id'];
+      elseif (!empty($_GET['location_id']))
+        $recordId = $_GET['location_id'];    
       if (!empty($recordId))
         self::load_existing_record($args, $auth, 'location', $recordId);
     }
@@ -269,13 +259,14 @@ class iform_cudi_form extends iform_dynamic {
   
   /*
    * Return the id of the preferred count unit boundary location (or latest one if preferred isn't specified) when loading an existing count unit location.
-   * If a preferred boundary is not found then return null
+   * If a preferred boundary is not found then return null. The preferred_boundary_location_attribute_id holds the preferred boundary id.
    */
   protected static function getIdForCountUnitPreferredBoundaryIfApplicable($args, $auth) { 
     $preferredBoundaryValueReportData = data_entry_helper::get_report_data(array(
       'dataSource'=>'library/location_attribute_values/location_attribute_values_for_location_or_location_attribute_id',
       'readAuth'=>$auth['read'],
-      'extraParams'=>array('count_unit_id' => $_GET['location_id'], 'preferred_boundary_location_attribute_id' => $args['preferred_boundary_attribute_id'])
+      'extraParams'=>array('count_unit_id' => $_GET['location_id'], 'preferred_boundary_location_attribute_id' => $args['preferred_boundary_attribute_id'],
+                           'count_unit_boundary_location_type_id'=>$args['count_unit_boundary_location_type_id'])
     ));
     $preferredBoundaryValue = $preferredBoundaryValueReportData[0]['preferred_boundary'];
     if (empty($preferredBoundaryValue)) //{
@@ -284,27 +275,34 @@ class iform_cudi_form extends iform_dynamic {
   }
   
   /*
-   * Function similar in principle to load_existing_record. This function is different if that it is used when the screen is 
-   * in Add Mode and we just want to automatically zoom the map to a region/site we are adding a location to.
+   * This function is used when an add site/count unit screen is in Add Mode 
+   * and we just want to automatically zoom the map to a region/site we are adding a location to.
+   * This boundary is purely visual and isn't submitted.
    */
-  public static function zoom_map($args, $auth, $entity, $id, $view = 'detail', $sharing = false, $loadImages = false) {
-    $parentRecord = data_entry_helper::get_population_data(array(
-      'table' => $entity,
-      'extraParams' => $auth['read'] + array('id' => $id, 'view' => $view),
-      'nocache' => true,
-      'sharing' => $sharing
+  private static function zoom_map($auth, $id) {
+    $loc = data_entry_helper::get_population_data(array(
+      'table' => 'location',
+      'extraParams' => $auth['read'] + array('id' => $id, 'view' => 'detail'),
+      'nocache' => true
     ));
     
-    if (isset($parentRecord['error'])) throw new Exception($parentRecord['error']);
-    
-    // set form mode
-    if (data_entry_helper::$form_mode===null) data_entry_helper::$form_mode = 'RELOAD';
-    //As we are only zooming the map, only populate the entity to load with map related items.
-    foreach($parentRecord[0] as $key => $value) {
-      if ($key==='boundary_geom'||$key==='centroid_sref'||$key==='centroid_sref_system') {
-        data_entry_helper::$entity_to_load["$entity:$key"] = $value;
-      }
-    }
+    if (isset($loc['error'])) throw new Exception($loc['error']);
+    $loc=$loc[0];
+    //Just put the feature onto the map, set the feature type to zoomToBoundary so it isn't used for anything
+    //other than being a visual cue to zoom to.
+    data_entry_helper::$javascript .= "
+mapInitialisationHooks.push(function(mapdiv) {
+  var feature, geom=OpenLayers.Geometry.fromWKT('{$loc[boundary_geom]}');
+
+  if (indiciaData.mapdiv.map.projection.getCode() != indiciaData.mapdiv.indiciaProjection.getCode()) {
+      geom.transform(indiciaData.mapdiv.indiciaProjection, indiciaData.mapdiv.map.projection);
+  }
+  feature = new OpenLayers.Feature.Vector(geom);
+  feature.attributes.type = 'zoomToBoundary';
+  indiciaData.mapdiv.map.editLayer.addFeatures([feature]);
+  mapdiv.map.zoomToExtent(feature.geometry.bounds);
+});
+    ";
   }
   
   /**
@@ -475,10 +473,36 @@ class iform_cudi_form extends iform_dynamic {
     $r='';
     return $r;
   }
+  /*
+   * Control button to move into adding/editing annotations mode. Code behind button is handled by javascript
+   */ 
+  protected static function get_control_addeditannotations($auth, $args, $tabalias, $options) {
+    $r = '<div id="add-edit-annotations-button-div"><input id="annotations-mode-on" type="hidden" name="annotations-mode-on" value="">';
+    $r .= '<input type="button" id="toggle-annotations" value="Add & Edit Annotations" onclick="hide_boundary_annotations_panels();"><div>';
+    return $r;
+  }
+  
+  /*
+   * Draw the panel for handling the adding and editing of annotations
+   */
+  protected static function get_control_annotations($auth, $args, $tabalias, $options) {
+    $r='';
+    $r .= "<div id='annotation-details' style='display: none;'>";  
+    $r .= "<input type='hidden' id='boundary-geom-temp' value=''><br>";
+    $r .= "<input type='hidden' id='other-layer-boundary-geom-holder' name='other-layer-boundary-geom-holder' value=''><br>";
+    $r .= "<label>".lang::get('LANG_Annotation_Name').":</label> <input id='annotation:name' name='annotation:name' value=''><br>";
+    $r .= self::existingannotations($auth, $args, $tabalias, $options);
+    $r .= self::control_annotationtype($auth, $args, $tabalias, $options);
+    //Hidden id field used during submission when editing existing annotations, populated by javascript
+    $r .= "<input type='hidden' id='annotation:id' name='annotation:id' value=''><br>";
+    $r .= "</div>";
+    return $r;
+  }
+   
   /** 
    * Get the map control.
    */
-  protected static function get_control_map($auth, $args, $tabalias, $options) {
+  protected static function get_control_map($auth, $args, $tabalias, $options) {   
     $options = array_merge(
       iform_map_get_map_options($args, $auth['read']),
       $options
@@ -491,6 +515,8 @@ class iform_cudi_form extends iform_dynamic {
         break;
       }
     }
+    //Get the zoom_id from the map to allow us to zoom to a specific region in add mode
+    data_entry_helper::$javascript .= "indiciaData.zoomid='".$_GET['zoom_id']."';\n";
     if (isset(data_entry_helper::$entity_to_load['location:centroid_geom'])) 
       $options['initialFeatureWkt'] = data_entry_helper::$entity_to_load['location:centroid_geom'];
     if ($boundaries && isset(data_entry_helper::$entity_to_load['location:boundary_geom'])) 
@@ -640,41 +666,38 @@ class iform_cudi_form extends iform_dynamic {
   
   /*
    * Control allows user to select from an existing list of annotations related to a Count Unit.
-   * Selecting a annotation loads the page in edit mode.
+   * Used to allow users to edit existing annotations
    */
-  protected static function get_control_existingannotations($auth, $args, $tabalias, $options) {
-    //If in add mode, the page has a zoom_id in the url to allow it to zoom to the count unit
-    //without entering edit mode
-    if (!empty($_GET['zoom_id'])) {
-      $parentCountUnitId=$_GET['zoom_id'];   
-    } else {
-      //If in add mode, the page has a annotation_count_unit_id in the url to allow it to load the 
-      //annotation for the count unit in edit mode. Note we don't use parent_id here, as we want different behaviour than
-      //if the page was in boundary mode without having to change lots of existing code.
-      $parentCountUnitId=$_GET['annotation_count_unit_id'];   
-    }
-    global $user;
-    iform_load_helpers(array('report_helper')); 
-    //Collect the annotations from a report.
-    $existingAnnotations = self::getAnnotationsList($args,$parentCountUnitId,$auth);
-    //Only display control if there is something to list in it.
-    if (!empty($existingAnnotations)) {
-      $r = '<label for="existing_annotations">Existing Annotations:</label> ';
-      //Put the count unit annotatons into a drop-down and setup reloading of the page when an item is selected.
-      $r .= '<select id = "existing_annotations" name="existing_annotations" onchange="location = location = this.options[this.selectedIndex].id;">';
-      $r .= '<option>select an annotation to edit...</option>';
-      foreach ($existingAnnotations as $existingAnnotationData) { 
-        //Link back to annotations page when user clicks on an annotation.
-        $linkToAnnotationPage =
-              url($_GET['q'], array('absolute' => true)).(variable_get('clean_url', 0) ? '?' : '&').
-              'location_id='.$existingAnnotationData['id'].'&annotation_count_unit_id='.$parentCountUnitId; 
-        //Annotation options setup as we go around the foreach loop.
-        $r .= '<option value="'.$existingAnnotationData['id'].'" id="'.$linkToAnnotationPage.'">'.$existingAnnotationData['name'].'</option>';         
-      }
+  protected static function existingannotations($auth, $args, $tabalias, $options) {
+    //Don't show control when adding new count units.
+    //The user can still annotations, but there won't be any existing ones to choose from.
+    if (!empty($_GET['location_id'])) {
+      $parentCountUnitId=$_GET['location_id'];       
+      global $user;
+      iform_load_helpers(array('report_helper')); 
+      //Collect the annotations from a report.
+      $existingAnnotations = self::getAnnotationsList($args,$parentCountUnitId,$auth);
+      //Need to pass the list of existing annotations to javascript as that is where the processing is 
+      //handled when user makes a selection.
+      map_helper::$javascript .= "indiciaData.existingannotations=".json_encode($existingAnnotations).";\n";
+      //Only display control if there is something to list in it.
+      if (!empty($existingAnnotations)) {
+        $r = '<label for="existing_annotations">'.lang::get('LANG_Existing_Annotations').':</label> ';
+        //Put the count unit annotatons into a drop-down and setup reloading of the page when an item is selected.
+        $r .= '<select id = "existing_annotations" name="existing_annotations" onchange="load_annotation();">';
+        $r .= '<option>(New Annotation)</option>';
+        foreach ($existingAnnotations as $existingAnnotationData) { 
+          $linkToAnnotationPage =
+                url($_GET['q'], array('absolute' => true)).(variable_get('clean_url', 0) ? '?' : '&').
+                'location_id='.$existingAnnotationData['id'].'&annotation_count_unit_id='.$parentCountUnitId; 
+          //Annotation options setup as we go around the foreach loop.
+          $r .= '<option value="'.$existingAnnotationData['id'].'" id="'.$linkToAnnotationPage.'">'.$existingAnnotationData['name'].'</option>';         
+        }
 
-      $r .= "</select></br>";
+        $r .= "</select></br>";
+      }    
+      return $r;
     }
-    return $r;
   }        
   /*
    * Control allows a user to select which count unit boundary version they intend to be the preferred one upon saving.
@@ -778,21 +801,21 @@ class iform_cudi_form extends iform_dynamic {
         $r .= '<label id="preferred_boundary" name="preferred_boundary"></label>';
         $r .= '<input id="preferred_boundary_hidden" name="preferred_boundary_hidden" type="hidden"/>';  
         $r .= "<br>";
-      }
 
-      //If we are viewing a boundary, then default it in the drop-down else default to preferred item if admin or latest item
-      //if normal user
-      data_entry_helper::$javascript .= "var parentId = '".$_GET['parent_id']."';
-                                         if (parentId!=='') {
-                                           $(\"#boundary_versions option[value='".$_GET['location_id']."']\").attr('selected', 'selected');
-                                         } else {
-                                           if (".$admin_mode."==1) {
-                                             $(\"#boundary_versions option[value=\"+$('#preferred_boundary_hidden').val()+\"]\").attr('selected', 'selected');
+        //If we are viewing a boundary, then default it in the drop-down else default to preferred item if admin or latest item
+        //if normal user
+        data_entry_helper::$javascript .= "var parentId = '".$_GET['parent_id']."';
+                                           if (parentId!=='') {
+                                             $(\"#boundary_versions option[value='".$_GET['location_id']."']\").attr('selected', 'selected');
                                            } else {
-                                             $(\"#boundary_versions option[value=\"+$maxBoundaryId+\"]\").attr('selected', 'selected');
-                                           }
-                                         }\n";
-      return $r;
+                                             if (".$admin_mode."==1) {
+                                               $(\"#boundary_versions option[value=\"+$('#preferred_boundary_hidden').val()+\"]\").attr('selected', 'selected');
+                                             } else {
+                                               $(\"#boundary_versions option[value=\"+$maxBoundaryId+\"]\").attr('selected', 'selected');
+                                             }
+                                           }\n";
+        return $r;
+      }
     }
   }
   
@@ -807,7 +830,12 @@ class iform_cudi_form extends iform_dynamic {
     }
   }
   
-  protected static function get_control_locationtype($auth, $args, $tabalias, $options) {
+  /* 
+   * On the count unit cudi form, the handling of location types is automatic (as it is always a count unit or boundary),
+   * but the user selects a annotation type manually. So use the code from the the usual get_control_locationtype in a
+   * control_annotationtype control.
+   */ 
+  protected static function control_annotationtype($auth, $args, $tabalias, $options) {
     // To limit the terms listed add a terms option to the Form Structure as a JSON array.
     // The terms must exist in the termlist that has external key indidia:location_types
     // e.g.
@@ -832,8 +860,8 @@ class iform_cudi_form extends iform_dynamic {
         $lookup[$term['id']] = $term['term'];
       }
       return data_entry_helper::select(array_merge(array(
-        'label' => lang::get('LANG_Location_Type'),
-        'fieldname' => 'location:location_type_id',
+        'label' => lang::get('LANG_Annotation_Type'),
+        'fieldname' => 'annotation:location_type_id',
         'lookupValues' => $lookup,
         'blankText' => lang::get('LANG_Blank_Text'),
       ), $options));
@@ -849,11 +877,11 @@ class iform_cudi_form extends iform_dynamic {
     }
   }
  
-  protected static function get_control_spatialreference($auth, $args, $tabalias, $options) {
-      $options = array_merge($options, array('fieldname' => 'location:centroid_sref'));
-      return parent::get_control_spatialreference($auth, $args, $tabalias, $options);
-    }
-
+  protected static function get_control_spatialreference($auth, $args, $tabalias, $options) {   
+    $options = array_merge($options, array('fieldname' => 'location:centroid_sref'));
+    return parent::get_control_spatialreference($auth, $args, $tabalias, $options);
+  }
+  
   /**
    * Get the location photo control
    */
@@ -862,25 +890,6 @@ class iform_cudi_form extends iform_dynamic {
       'table'=>'location_image',
       'caption'=>lang::get('File upload')
     ), $options));
-  }
-  
-  /**
-   * Get the Add/Edit Annotation button.
-   */
-  protected static function get_control_addeditannotations($auth, $args, $tabalias, $options) {
-    global $base_url;
-    $maintainAnnotationOptions = explode('|',$options['maintainAnnotationOptions']);
-    $maintainAnnotationPath = $maintainAnnotationOptions[0];
-    $maintainAnnotationParam = $maintainAnnotationOptions[1];
-    //If the user chooses to view a boundary before adding an annotation, we need to make sure we are getting the parent count unit
-    //id from the url otherwise the annotation is incorrectly added to the boundary instead of the count unit.
-    if (!empty($_GET['parent_id']))
-      $countUnitLocationId=$_GET['parent_id'];
-    else
-      $countUnitLocationId=$_GET['location_id'];
-    $maintainAnnotationUrl=(variable_get('clean_url', 0) ? '' : '?q=').$maintainAnnotationPath.(variable_get('clean_url', 0) ? '?' : '&').$maintainAnnotationParam.'='.$countUnitLocationId.(variable_get('clean_url', 0) ? '?' : '&').'breadcrumb='.$_GET['breadcrumb'];
-    if ($_GET['location_id'])
-      return "<input type=\"button\" value=\"Add & Edit Annotations\" onclick=\"window.location.href='$maintainAnnotationUrl'\">";
   }
   
   /*
@@ -943,27 +952,9 @@ class iform_cudi_form extends iform_dynamic {
    * @return array Submission structure.
    */
   public static function get_submission($values, $args) {
-    //Submissions setup depends on whether we are adding a versioned count unit boundary
-    //or a count unit annotation boundary
-    if ($args['annotation_mode']) {
-      return self::get_annotation_submission($values, $args);
-    } else {
-      return self::get_count_unit_and_boundary_submission($values, $args);
-    }
-  }
-  
-  /*
-   * Setup the submission of an annotation.
-   */
-  public static function get_annotation_submission($values, $args) {
-    //Get the Count Unit id to store in the parent_id field for the annotation location.
-    //We only need to check the zoom_id for this, as this is only setup when page is in add mode.
-    if (!empty($_GET['zoom_id']))
-      $values['location:parent_id']=$_GET['zoom_id'];
-    $s = self::create_submission($values, $args);  
-    //Get existing location_id in edit mode
-    if (!empty($_GET['location_id']))
-      $values['location:id'] = $_GET['location_id'];
+    $s=self::get_count_unit_and_boundary_submission($values, $args);
+    if ($values['annotation:name'])
+      $s['subModels'][]=self::get_annotation_submission($values, $args);
     return $s;
   }
   
@@ -971,6 +962,17 @@ class iform_cudi_form extends iform_dynamic {
    * Setup submission of a versioned count unit boundary
    */ 
   public static function get_count_unit_and_boundary_submission($values, $args) {
+    //When the user clicks the submit button, the screen can be in either annotations mode or boundary mode.
+    //The geometry for the item in the current mode is always held in location:boundary_geom.
+    //The geometry for the item in the inactive mode is always held in other-layer-boundary-geom-holder.
+    //These two are swapped over as the user switches between the two modes.
+    //e.g if the user submits in annotation mode, then the annotation geom is held in location:boundary_geom
+    //and the boundary geom is held in other-layer-boundary-geom-holder. So in this case when we are submitting the
+    //boundary geom, we know it needs to come from $values['other-layer-boundary-geom-holder']
+    if ($values['annotations-mode-on']==='yes') {
+      $tempBoundaryHolder = $values['location:boundary_geom'];
+      $values['location:boundary_geom']=$values['other-layer-boundary-geom-holder'];
+    }
     //Get to the Count Unit id to store in the parent submission
     if (!empty($_GET['parent_id']))
       $values['location:id']=$_GET['parent_id'];
@@ -1007,8 +1009,43 @@ class iform_cudi_form extends iform_dynamic {
       $s['subModels'][1]['fkId'] = 'parent_id';    
       $s['subModels'][1]['model'] = self::create_submission($values, $args);
     }
+    $values['location:boundary_geom'] = $tempBoundaryHolder;
     return $s;
   }
+  
+  /*
+   * Setup the submission of an annotation.
+   */
+  public static function get_annotation_submission($values, $args) {
+    //See coding comment next to equivalent code in get_count_unit_and_boundary_submission
+    if ($values['annotations-mode-on']!=='yes') {
+      $tempBoundaryHolder = $values['location:boundary_geom'];
+      $values['location:boundary_geom']=$values['other-layer-boundary-geom-holder'];
+    }
+    //Don't submit fields that aren't relevant to annotations when submitting the annotation sub-model
+    foreach ($values as $field=>$value) {
+      if (substr($field, 0, 10 ) !== "annotation" && 
+        'boundary_geom' !== substr($field, -strlen('boundary_geom')))
+        unset($values[$field]);
+    }
+    //Submit the annotation fields with the location prefix so we can take advantage of existing code.
+    if (!empty($values['annotation:id'])){
+      $values['location:id']=$values['annotation:id'];
+      unset($values['annotation:id']);
+    }
+    $values['location:name']=$values['annotation:name'];
+    unset($values['annotation:name']);
+    $values['location:location_type_id']=$values['annotation:location_type_id'];
+    unset($values['annotation:location_type_id']);
+    //The parent field of the annotation always comes from the count unit (which is submitted as the parent of the 
+    //annotation sub-model
+    $s['fkId'] = 'parent_id';    
+    $s['model'] = self::create_submission($values, $args); 
+    $values['location:boundary_geom'] = $tempBoundaryHolder;
+    return $s;
+  }
+  
+
     
   public static function create_submission($values, $args) {
     $structure = array(
@@ -1023,7 +1060,7 @@ class iform_cudi_form extends iform_dynamic {
           'model' => 'location_image',
           'fk' => 'location_id'
       );
-    }
+    } 
     $s = submission_builder::build_submission($values, $structure);
    
     // On first save of a new location, link it to the website.
