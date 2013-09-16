@@ -193,16 +193,5 @@ class Sample_Model extends ORM_Tree
     return ('Sample on '.$this->date.' at '.$this->entered_sref);
   }
   
-  /**
-   * After a sample and its child occurrences have been updated or inserted, build a cache of map squares.
-   */
-  protected function postSubmit($isInsert) {
-    if (class_exists('cache_builder')) {
-      postgreSQL::insertMapSquaresForSample($this->id, 1000, $this->db);
-      postgreSQL::insertMapSquaresForSample($this->id, 10000, $this->db);
-    }
-    return true;
-  }
-
 }
 ?>
