@@ -110,26 +110,29 @@ ul.gallery li {
   }
 }
 
-#details-tab {
-  table {
-    td {
-      &.header {
-        color: $header-font-color;
-        font-weight: bold;
-        border-bottom: solid silver 1px;
-      }
-      &.caption {
-        padding: 0 1em 0 0.5em;
-        font-weight: bold;
-      }
-    }
-  }  
-}
+#record-details-tabs {
+  font-size: 80%;
 
-#phenology-tab {
-  p {
-    font-size: 80%;
-    margin: 0;
+  #details-tab {
+    table {
+      td {
+        &.header {
+          color: $header-font-color;
+          font-weight: bold;
+          border-bottom: solid silver 1px;
+        }
+        &.caption {
+          padding: 0 1em 0 0.5em;
+          font-weight: bold;
+        }
+      }
+    }  
+  }
+
+  #phenology-tab {
+    p {
+      margin: 0;
+    }
   }
 }
 

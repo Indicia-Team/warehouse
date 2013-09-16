@@ -327,83 +327,85 @@ ul.gallery li {
   width: 100px;
 }
 
-/* line 116, sass/verification_4.scss */
-#details-tab table td.header {
+/* line 113, sass/verification_4.scss */
+#record-details-tabs {
+  font-size: 80%;
+}
+/* line 119, sass/verification_4.scss */
+#record-details-tabs #details-tab table td.header {
   color: #027ac6;
   font-weight: bold;
   border-bottom: solid silver 1px;
 }
-/* line 121, sass/verification_4.scss */
-#details-tab table td.caption {
+/* line 124, sass/verification_4.scss */
+#record-details-tabs #details-tab table td.caption {
   padding: 0 1em 0 0.5em;
   font-weight: bold;
 }
-
-/* line 130, sass/verification_4.scss */
-#phenology-tab p {
-  font-size: 80%;
+/* line 133, sass/verification_4.scss */
+#record-details-tabs #phenology-tab p {
   margin: 0;
 }
 
-/* line 136, sass/verification_4.scss */
+/* line 139, sass/verification_4.scss */
 input[type="button"].tools-btn, button.tools-btn {
   padding: 0.3em;
 }
 
-/* line 141, sass/verification_4.scss */
+/* line 144, sass/verification_4.scss */
 .quick-verify-popup label {
   width: auto;
   margin-left: 2em;
 }
-/* line 145, sass/verification_4.scss */
+/* line 148, sass/verification_4.scss */
 .quick-verify-popup button {
   margin-top: 1em;
 }
-/* line 148, sass/verification_4.scss */
+/* line 151, sass/verification_4.scss */
 .quick-verify-popup .helpText {
   margin-left: 45px;
 }
-/* line 151, sass/verification_4.scss */
+/* line 154, sass/verification_4.scss */
 .quick-verify-popup h2, .quick-verify-popup h3 {
   margin-bottom: 4px;
 }
-/* line 154, sass/verification_4.scss */
+/* line 157, sass/verification_4.scss */
 .quick-verify-popup a {
   text-decoration: underline;
   margin: 0px 6px;
 }
-/* line 157, sass/verification_4.scss */
+/* line 160, sass/verification_4.scss */
 .quick-verify-popup a:hover, .quick-verify-popup a:active {
   background-color: #ffffcc;
 }
 
-/* line 164, sass/verification_4.scss */
+/* line 167, sass/verification_4.scss */
 .verify-tools {
   display: none;
   position: absolute;
   background: white;
   border: solid silver 1px;
 }
-/* line 169, sass/verification_4.scss */
+/* line 172, sass/verification_4.scss */
 .verify-tools li {
   background-image: none;
   padding: 0.2em 0.5em;
 }
 
-/* line 176, sass/verification_4.scss */
+/* line 179, sass/verification_4.scss */
 tr.verified, tr.rejected, tr.total {
   text-align: right;
   padding-right: 1em;
 }
-/* line 180, sass/verification_4.scss */
+/* line 183, sass/verification_4.scss */
 tr.verified {
   font-color: #00a000;
 }
-/* line 183, sass/verification_4.scss */
+/* line 186, sass/verification_4.scss */
 tr.rejected {
   font-color: #00a000;
 }
-/* line 186, sass/verification_4.scss */
+/* line 189, sass/verification_4.scss */
 tr.total {
   font-weight: bold;
 }
