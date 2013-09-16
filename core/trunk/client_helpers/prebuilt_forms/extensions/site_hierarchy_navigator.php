@@ -125,12 +125,12 @@ class extension_site_hierarchy_navigator {
     //map breadcrumb trail and zoom the map. In order to do this we need to supply the location id and location type id to the javascript in indiciaData.
     $locationTypeId = data_entry_helper::get_population_data(array(
       'table' => 'location',
-      'extraParams' => $auth['read'] + array('id' => $_GET['id'], 'view' => $view),
+      'extraParams' => $auth['read'] + array('id' => $_GET[$options['urlParameter']], 'view' => $view),
       'nocache' => true,
       'sharing' => $sharing
     ));
-    if ($_GET['id'])
-      map_helper::$javascript .= "indiciaData.preloadBreadcrumb='".$_GET['id'].','.$locationTypeId[0]['location_type_id']."';\n";
+    if ($_GET[$options['urlParameter']])
+      map_helper::$javascript .= "indiciaData.preloadBreadcrumb='".$_GET[$options['urlParameter']].','.$locationTypeId[0]['location_type_id']."';\n";
     $breadcrumb = '<div><ul id="map-breadcrumb"></ul></div>';
     return $breadcrumb;
   }
