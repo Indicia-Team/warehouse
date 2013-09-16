@@ -205,17 +205,20 @@ class Import_Controller extends Service_Base_Controller {
         $saveArray = $model->getDefaults();
         // Note, the mappings will always be in the same order as the columns of the CSV file
         foreach ($metadata['mappings'] as $col=>$attr) {
-          if (isset($data[$index])) {
-            // '<Please select>' is a value fixed in import_helper::model_field_options
-            if ($attr != '<Please select>' && $data[$index]!=='') {
-              // Add the data to the record save array
-              $saveArray[$attr] = utf8_encode($data[$index]);
+          // skip cols to do with remembered mappings
+          if ($col!=='RememberAll' && substr($col, -9)!=='_Remember') {
+            if (isset($data[$index])) {
+              // '<Please select>' is a value fixed in import_helper::model_field_options
+              if ($attr != '<Please select>' && $data[$index]!=='') {
+                // Add the data to the record save array
+                $saveArray[$attr] = utf8_encode($data[$index]);
+              }
+            } else {
+              // This is one of our static fields at the end
+              $saveArray[$col] = $attr;
             }
-          } else {
-            // This is one of our static fields at the end
-            $saveArray[$col] = $attr;
+            $index++;
           }
-          $index++;
         }
         // copy across the fixed values, including the website id, into the data to save.
         if ($metadata['settings']) {
