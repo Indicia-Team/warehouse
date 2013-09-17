@@ -560,6 +560,15 @@ $(document).ready(function() {
     $(evt.target).closest('tr').find('input').val('');
   });
 
+  $('#add-branch-coord').click(function(evt) {
+    var coordinator=($('#branchCmsUserId')[0]).options[$('#branchCmsUserId')[0].selectedIndex];
+    if ($('#branch-coord-'+coordinator.value).length===0) {
+      $('#branch-coord-list').append('<tr><td id="branch-coord-'+coordinator.value+'">' +
+          '<input type="hidden" name="locAttr:'+indiciaData.locBranchCmsUsrAttr+'::'+coordinator.value+'" value="'+coordinator.value+'"/>'+coordinator.text+'</td>'+
+          '<td><div class="ui-state-default ui-corner-all"><span class="remove-user ui-icon ui-icon-circle-close"></span></div></td></tr>');
+    }
+  });
+
 });
 
 }(jQuery));
