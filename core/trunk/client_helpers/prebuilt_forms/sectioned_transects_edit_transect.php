@@ -39,6 +39,11 @@ class iform_sectioned_transects_edit_transect {
   private static $cmsUserList = null;
   
   /**
+   * @var int Contains the id of the location attribute used to store the CMS user ID.
+   */
+  protected static $branchCmsUserAttrId;
+  
+  /**
    * @var string The Url to post AJAX form saves to.
    */
   private static $ajaxFormUrl = null;
@@ -288,10 +293,13 @@ class iform_sectioned_transects_edit_transect {
       // keep a copy of the cms user ID attribute so we can use it later.
       self::$cmsUserAttrId = $settings['cmsUserAttr']['attributeId'];
     }
+    
     // need to check if branch allocation is active.
     if ($args['branch_assignment_permission'] != '') {
-    	if (false== ($settings['branchCmsUserAttr'] = self::extract_attr($settings['attributes'], "Branch CMS User ID")))
-    		return '<br />This form is designed to be used with either<br />1) the Branch CMS User ID attribute setup for locations in the survey, or<br />2) the "Permission name for Branch Manager" option left blank.<br />';
+      if (false== ($settings['branchCmsUserAttr'] = self::extract_attr($settings['attributes'], "Branch CMS User ID")))
+        return '<br />This form is designed to be used with either<br />1) the Branch CMS User ID attribute setup for locations in the survey, or<br />2) the "Permission name for Branch Manager" option left blank.<br />';
+      // keep a copy of the branch cms user ID attribute so we can use it later.
+      self::$branchCmsUserAttrId = $settings['branchCmsUserAttr']['attributeId'];
     }
     
     data_entry_helper::$javascript .= "indiciaData.sections = {};\n";
@@ -315,7 +323,7 @@ class iform_sectioned_transects_edit_transect {
             isset($settings['cmsUserAttr']['default']) &&
             !empty($settings['cmsUserAttr']['default'])) {
           foreach($settings['cmsUserAttr']['default'] as $value) { // multi value
-            if($value == $user->uid) { // comparing string against int so no triple equals
+            if($value['default'] == $user->uid) { // comparing string against int so no triple equals
               $settings['canEditBody'] = true;
               $settings['canEditSections'] = true;
               break;
@@ -326,10 +334,14 @@ class iform_sectioned_transects_edit_transect {
         if($args['branch_assignment_permission'] != '' &&
             user_access($args['branch_assignment_permission']) &&
             isset($settings['branchCmsUserAttr']['default']) &&
-            !empty($settings['branchCmsUserAttr']['default']) &&
-            $settings['branchCmsUserAttr']['default'] == $user->uid) { // comparing string against int so no triple equals
-          $settings['canEditBody'] = true;
-          $settings['canAllocUser'] = true;
+            !empty($settings['branchCmsUserAttr']['default'])) {
+          foreach($settings['branchCmsUserAttr']['default'] as $value) { // now multi value
+            if($value['default'] == $user->uid) { // comparing string against int so no triple equals
+              $settings['canEditBody'] = true;
+              $settings['canAllocUser'] = true;
+              break;
+            }
+          }
         }
       } // for an admin user the defaults apply, which will be can do everything.
       // find the number of sections attribute.
@@ -744,6 +756,8 @@ $('#delete-transect').click(deleteSurvey);
       }
       self::$cmsUserList = $users;
     } else $users= self::$cmsUserList;
+    
+    // next reduce the list to branch users
     if($settings['canAllocBranch']){ // only check the users permissions if can change value - for performance reasons.
       $new_users = array();
       foreach ($users as $uid=>$name){
@@ -751,19 +765,38 @@ $('#delete-transect').click(deleteSurvey);
         if(user_access($args['branch_assignment_permission'], $account))
           $new_users[$uid]=$name;
       }
-      $users = array(''=>lang::get('Please select Branch Manager')) + $new_users;
-    } else
-      $users = array(''=>lang::get('Branch Manager not allocated yet')) + $users;
+      $users = $new_users;
+    }
+
     $r = '<fieldset id="alloc-branch"><legend>'.lang::get('Site Branch Allocation').'</legend>';
-    $r .= data_entry_helper::select(array(
-    		'label' => lang::get('Branch Manager'),
-    		'id' => $branchCmsUserAttr['id'],
-    		'fieldname' => $branchCmsUserAttr['fieldname'],
-    		'default' => $branchCmsUserAttr['default'],
-    		'disabled' => $settings['canAllocBranch'] ? '' : ' disabled="disabled" ',
-    		'lookupValues' => $users
-    ));
+    if($settings['canAllocBranch']) {
+      $r .= data_entry_helper::select(array(
+        'label' => lang::get('Select Branch Manager'),
+        'fieldname' => 'branchCmsUserId',
+        'lookupValues' => $users,
+        'afterControl' => '<button id="add-branch-coord" type="button">'.lang::get('Add').'</button>'
+      ));
+      // tell the javascript which attr to save the user ID into
+      data_entry_helper::$javascript .= "indiciaData.locBranchCmsUsrAttr = " . self::$branchCmsUserAttrId . ";\n";
+    }
+    $r .= '<table id="branch-coord-list" style="width: auto">';
+    $rows = '';
+    // cmsUserAttr needs to be multivalue
+    if (isset($branchCmsUserAttr['default']) && !empty($branchCmsUserAttr['default'])) {
+      foreach($branchCmsUserAttr['default'] as $value) {
+        if($settings['canAllocBranch'])
+          $rows .= '<tr><td id="branch-coord-'.$value['default'].'"><input type="hidden" name="'.$value['fieldname'].'" '.
+            'value="'.$value['default'].'"/>'.$users[$value['default']].
+            '</td><td><div class="ui-state-default ui-corner-all"><span class="remove-user ui-icon ui-icon-circle-close"></span></div></td></tr>';
+        else
+          $rows .= '<tr><td>'.$users[$value['default']].'</td><td></td></tr>';
+      }
+    }
+    if (empty($rows))
+      $rows = '<tr><td colspan="2"></td></tr>';
+    $r .= "$rows</table>\n";
     $r .= '</fieldset>';
+
     return $r;
   }
     
