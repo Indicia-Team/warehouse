@@ -126,9 +126,10 @@ class postgreSQL {
           VALUES (reduce_precision(st_geomfromtext('{$s->geom}', $srid), '{$s->confidential}', {$s->size}, '{$s->entered_sref_system}'), {$s->x}, {$s->y}, {$s->size})");
       }
     }
+    $km=$size/1000;
     $db->query(
     "UPDATE cache_occurrences co
-      SET map_sq_1km_id=msq.id
+      SET map_sq_{$km}km_id=msq.id
       FROM map_squares msq, samples s, occurrences o
       WHERE s.id=co.sample_id AND o.id=co.id
       AND msq.x=round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, greatest(o.sensitivity_precision, $size), s.entered_sref_system))))
