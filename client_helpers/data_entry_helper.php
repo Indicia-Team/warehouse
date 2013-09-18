@@ -5969,9 +5969,17 @@ if (errors$uniq.length>0) {
       if (!is_dir($cacheFolder)) {
         $r .= '<li class="ui-state-error">The cache path setting in helper_config.php points to a missing directory. This will result in slow form loading performance.</li>';
       } elseif (!is_writeable($cacheFolder)) {
-        $r .= '<li class="ui-state-error">The cache path setting in helper_config.php points to a read only directory (' . $cacheFolder . '). This will result in slow form loading performance.</li>';
-      } elseif ($fullInfo) {
-          $r .= '<li>Success: Cache directory is present and writeable.</li>';
+        $r .= '<li class="ui-state-error">The cache path setting in helper_config.php points to a read only directory (' . $cacheFolder . '). Please change it to writeable.</li>';
+      } else {
+        // need a proper test, as is_writeable can report true when the cache file can't be created.
+        $handle = @fopen("$cacheFolder/test.txt", 'wb');
+        if ($handle) {
+          fclose($handle);
+          if ($fullInfo) 
+            $r .= '<li>Success: Cache directory is present and writeable.</li>';
+        } else
+          $r .= '<li class="ui-state-error">Warning: The cache path setting in helper_config.php points to a directory that I can\'t write a file into (' . $cacheFolder . '). Please change it to writeable.</li>';
+        
       }
       $interim_image_folder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
       if (!is_writeable(self::relative_client_helper_path() . $interim_image_folder)) 
