@@ -3169,6 +3169,7 @@ class data_entry_helper extends helper_base {
             $filterFields += array($colLanguage => $options['language']);
           } elseif (isset($user) && function_exists('hostsite_get_user_field')) {
             // if in Drupal we can use the user's language
+            require_once('prebuilt_forms/includes/language_utils.php');
             $filterFields += array($colLanguage => iform_lang_iso_639_2(hostsite_get_user_field('language')));
           }
           break;
@@ -4565,7 +4566,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         'nocache' => true,
         'sharing' => $sharing
       ));
-      if (isset($images['error'])) throw new Exception($record['error']);
+      if (isset($images['error'])) throw new Exception($images['error']);
       foreach($images as $image) {
         self::$entity_to_load[$entity . '_image:id:' . $image['id']]  = $image['id'];
         self::$entity_to_load[$entity . '_image:path:' . $image['id']] = $image['path'];
