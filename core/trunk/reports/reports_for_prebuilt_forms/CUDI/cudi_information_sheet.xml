@@ -1,6 +1,6 @@
   <report
     title="Cudi Information Sheet"
-    description="List of details of a Count Unit which has a given location_id."
+    description="List of details of a Count Unit which has a given location id (id)."
 >
   <query website_filter_field="lw.website_id">
     SELECT #columns# 
@@ -14,11 +14,11 @@
       #filters#
       AND #website_filter# AND l.deleted = false
       AND lw.deleted = false
-      AND l.id = #location_id#
+      AND l.id = #id#
        
   </query>
   <params>
-    <param name="location_id" datatype="integer" emptyvalue='-1'/>
+    <param name="id" datatype="integer" emptyvalue='-1'/>
     <param name="alternative_1_attr_id" datatype="integer"/>
     <param name="alternative_2_attr_id" datatype="integer"/>
     <param name="country_attr_id" datatype="integer"/>
