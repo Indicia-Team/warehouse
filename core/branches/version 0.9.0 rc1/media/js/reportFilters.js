@@ -871,6 +871,7 @@ jQuery(document).ready(function($) {
       var pane=$(e[0].href.replace(/^[^#]+/, ''));
       if (pane[0].id==='controls-filter_where') {
         indiciaData.mapdiv.map.updateSize();
+        indiciaData.mapdiv.settings.drawObjectType='queryPolygon';
       }
     },
     onClosed: function(e) {
@@ -882,6 +883,7 @@ jQuery(document).ready(function($) {
         $(indiciaData.origMapParent).append(element);
         indiciaData.mapdiv.map.setCenter(indiciaData.mapOrigCentre, indiciaData.mapOrigZoom);
         indiciaData.mapdiv.map.updateSize();
+        indiciaData.mapdiv.settings.drawObjectType='boundary';
         indiciaData.disableMapDataLoading=false;
       }
     }

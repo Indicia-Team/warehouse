@@ -67,6 +67,7 @@ mapGeoreferenceHooks = [];
           feature.id=id;
         }
         features.push(feature);
+        return feature;
       }
       return feature;
     }
@@ -1187,13 +1188,17 @@ mapGeoreferenceHooks = [];
      * input for the sample geom, plus sets the visible spatial ref control to the centroid in the currently selected system.
      */
     function recordPolygon(evt) {
+      evt.feature.attributes.type=this.map.div.settings.drawObjectType;
       // replace old features?
       var oldFeatures=[], map=this.map, separateBoundary=$('#imp-boundary-geom').length>0;
+      //When drawing new features onto the map, we only ask the user
+      //if they want to replace the previous feature when they have the same type.
+      //This allows us to have multiple layers of different types that don't interfere with each other.
       $.each(evt.feature.layer.features, function(idx, feature) {
-        if (feature!==evt.feature && !separateBoundary || feature.attributes.type==="boundary") {
+        if (feature!==evt.feature && feature.attributes.type===evt.feature.attributes.type) {
           oldFeatures.push(feature);
         }
-      });
+      });   
       if (oldFeatures.length>0) {
         if (confirm(this.map.div.settings.msgReplaceBoundary)) {
           evt.feature.layer.removeFeatures(oldFeatures, {});
@@ -1202,19 +1207,20 @@ mapGeoreferenceHooks = [];
           return;
         }
       }
-      evt.feature.attributes.type="boundary";
-      if (separateBoundary) {
-        $('#imp-boundary-geom').val(evt.feature.geometry.toString());
-        evt.feature.style = new style('boundary');
-        map.editLayer.redraw();
-      } else {
-        $('#imp-geom').val(evt.feature.geometry.toString());
-        // as we are not separating the boundary geom, the geom's sref goes in the centroid
-        pointToSref(map.div, evt.feature.geometry.getCentroid(), _getSystem(), function(data) {
-          if (typeof data.sref !== "undefined") {
-            $('#'+map.div.settings.srefId).val(data.sref);
-          }
-        });
+      if (this.map.div.settings.drawObjectType==="boundary"||this.map.div.settings.drawObjectType==="annotation") {
+        if (separateBoundary) {
+          $('#imp-boundary-geom').val(evt.feature.geometry.toString());
+          evt.feature.style = new style('boundary');
+          map.editLayer.redraw();
+        } else {
+          $('#imp-geom').val(evt.feature.geometry.toString());
+          // as we are not separating the boundary geom, the geom's sref goes in the centroid
+          pointToSref(map.div, evt.feature.geometry.getCentroid(), _getSystem(), function(data) {
+            if (typeof data.sref !== "undefined") {
+              $('#'+map.div.settings.srefId).val(data.sref);
+            }
+          });
+        }
       }
     }
 
@@ -1663,14 +1669,24 @@ mapGeoreferenceHooks = [];
           added=this.settings.initialBoundaryWkt = $('#'+this.settings.boundaryGeomId).val();
           added.style = new style('boundary');
         }
-
+        
         // Draw the feature to be loaded on startup, if present
         var zoomToCentroid = (this.settings.initialBoundaryWkt) ? false : true;
         if (this.settings.initialFeatureWkt) {
           _showWktFeature(this, this.settings.initialFeatureWkt, div.map.editLayer, null, false, "clickPoint", zoomToCentroid, true);
         }
         if (this.settings.initialBoundaryWkt) {
-          _showWktFeature(this, this.settings.initialBoundaryWkt, div.map.editLayer, null, false, "boundary", true, true);
+          var featureType;
+          //If the map is zoomed in add mode, then the featuretype is nothing as the boundary should act as a "ghost" that isn't used for 
+          //anything other than zooming.
+          if (indiciaData.zoomid) {
+            featureType="";
+          } else if ($('#annotations-mode-on').val()==='yes') {
+            featureType="annotation";
+          } else {
+            featureType="boundary";
+          }
+          _showWktFeature(this, this.settings.initialBoundaryWkt, div.map.editLayer, null, false, featureType, true, true);
         }
 
         if (div.settings.clickForSpatialRef || div.settings.gridRefHint) {
@@ -1848,7 +1864,7 @@ mapGeoreferenceHooks = [];
           }
         });
       }
-      if (div.settings.editLayer && div.settings.allowPolygonRecording) {
+      if (div.settings.editLayer && div.settings.allowPolygonRecording) {   
         div.map.editLayer.events.on({'featuremodified': function(evt) {
           if ($('#imp-boundary-geom').length>0) {
             $('#imp-boundary-geom').val(evt.feature.geometry.toString());
@@ -2071,6 +2087,7 @@ jQuery.fn.indiciaMapPanel.defaults = {
     msgReplaceBoundary: 'Would you like to replace the existing boundary with the new one?',
     maxZoom: 19, //maximum zoom when relocating to gridref, postcode etc.
     maxZoomBuffer: 0.67, //margin around feature when relocating to gridref
+    drawObjectType: 'boundary',
 
     //options for OpenLayers. Feature. Vector. style
     fillColor: '#ee9900',

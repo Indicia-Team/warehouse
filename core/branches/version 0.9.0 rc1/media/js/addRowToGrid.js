@@ -21,7 +21,7 @@
   the newly added rows.
  */
 
-var cacheLookup=false, mainSpeciesValue = null, formatter;
+var mainSpeciesValue = null, formatter;
 
 //Javascript functions using jQuery now need to be defined inside a "(function ($) { }) (jQuery);" wrapper.
 //This means they cannot normally be seen by the outside world, so in order to make a call to one of these 
@@ -289,9 +289,9 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
     // add the row to the bottom of the grid
     newRow.appendTo('table#' + gridId +' > tbody').removeAttr('id');
     extraParams = {
-      orderby : cacheLookup ? 'searchterm_length,original,preferred_taxon' : 'taxon',
+      orderby : indiciaData.speciesGrid[gridId].cacheLookup ? 'searchterm_length,original,preferred_taxon' : 'taxon',
       mode : 'json',
-      qfield : cacheLookup ? 'searchterm' : 'taxon',
+      qfield : indiciaData.speciesGrid[gridId].cacheLookup ? 'searchterm' : 'taxon',
       auth_token: readAuth.auth_token,
       nonce: readAuth.nonce,
       taxon_list_id: lookupListId
@@ -304,12 +304,12 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
       }
     }
     $(newRow).find('input,select').keydown(keyHandler);
-    var autocompleteSettings = getAutocompleteSettings(extraParams);
+    var autocompleteSettings = getAutocompleteSettings(extraParams, gridId);
     if ($('#' + selectorId).width()<200) {
       autocompleteSettings.width = 200;
     }
     // Attach auto-complete code to the input
-    ctrl = $('#' + selectorId).autocomplete(url+'/'+(cacheLookup ? 'cache_taxon_searchterm' : 'taxa_taxon_list'), autocompleteSettings);
+    ctrl = $('#' + selectorId).autocomplete(url+'/'+(indiciaData.speciesGrid[gridId].cacheLookup ? 'cache_taxon_searchterm' : 'taxa_taxon_list'), autocompleteSettings);
     ctrl.bind('result', handleSelectedTaxon);
     ctrl.bind('return', returnPressedInAutocomplete);
     // Check that the new entry control for taxa will remain in view with enough space for the autocomplete drop down
@@ -323,8 +323,8 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
     return ctrl;
   };
   
-  addRowToGrid = function(url, gridId, lookupListId, readAuth, formatter, useLookupCache) {
-    cacheLookup = typeof useLookupCache !== 'undefined' ? useLookupCache : false;
+  addRowToGrid = function(url, gridId, lookupListId, readAuth, formatter) {
+    var cacheLookup = indiciaData.speciesGrid[gridId].cacheLookup;
     makeSpareRow(gridId, readAuth, lookupListId, url, null, false);
     //Deal with user clicking on edit taxon icon
     $('.edit-taxon-name').live('click', function(e) {
@@ -666,7 +666,7 @@ function species_checklist_add_another_row(gridId) {
 }
 
 //function to get settings to setup for an autocomplete cell
-function getAutocompleteSettings(extraParams) {
+function getAutocompleteSettings(extraParams, gridId) {
   /**
    * Ensure field names are consistent independent of whether we are using cached data
    * or not.
@@ -682,12 +682,14 @@ function getAutocompleteSettings(extraParams) {
   var autocompleterSettingsToReturn = {
     extraParams : extraParams,
     continueOnBlur: true,
-    simplify: cacheLookup, // uses simplified version of search string in cache to remove errors due to punctuation etc.
+    simplify: indiciaData.speciesGrid[gridId].cacheLookup, // uses simplified version of search string in cache to remove errors due to punctuation etc.
+    max: indiciaData.speciesGrid[gridId].numValues,
+    selectMode: indiciaData.speciesGrid[gridId].selectMode,
     parse: function(data) {
       var results = [], done={};
       jQuery.each(data, function(i, item) {
         // common name can be supplied in a field called common, or default_common_name
-        if (cacheLookup) {
+        if (indiciaData.speciesGrid[gridId].cacheLookup) {
           item = mapFromCacheTable(item);
         } else {
           item.searchterm = item.taxon;

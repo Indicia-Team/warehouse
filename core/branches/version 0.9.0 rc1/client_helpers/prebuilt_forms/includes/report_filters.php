@@ -276,7 +276,7 @@ class filter_occurrence_id extends filter_base {
    * Define the HTML required for this filter's UI panel.
    */
   public function get_controls($readAuth, $options) { 
-    $r .= data_entry_helper::select(array(
+    $r = data_entry_helper::select(array(
       'label' => lang::get('Record ID'),
       'fieldname' => 'occurrence_id_op',
       'lookupValues'=>array('='=>'is','>='=>'is at least','<='=>'is at most'),
@@ -313,6 +313,7 @@ class filter_quality extends filter_base {
         'C' => lang::get('Recorder was certain'),
         'L' => lang::get('Recorder thought the record was at least likely'),
         'P' => lang::get('Pending verification'),
+        'T' => lang::get('Pending verification for trusted records'),
         '!R' => lang::get('Exclude rejected'),
         'all' => lang::get('All records'),
         'D' => lang::get('Queried records only'),
@@ -442,7 +443,8 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
   report_helper::add_resource('reportfilters');
   report_helper::add_resource('validation');
   report_helper::add_resource('fancybox');
-  hostsite_add_library('collapse');
+  if (defined('DRUPAL_CORE_COMPATIBILITY') && DRUPAL_CORE_COMPATIBILITY!=='7.x')
+    hostsite_add_library('collapse');
   $filterData = report_filters_load_existing($readAuth, strtoupper(substr($options['sharing'], 0, 1)));
   $existing = '';
   $contexts = '';
@@ -529,7 +531,8 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
     $filterModules = array('' => $filters);
   foreach ($filterModules as $category => $list) {
     if ($category)
-      $r .= '<fieldset class="collapsible collapsed"><legend>' . $category . '</legend>';
+      $class=defined('DRUPAL_CORE_COMPATIBILITY') && DRUPAL_CORE_COMPATIBILITY==='7.x' ? '' : 'collapsible collapsed';
+      $r .= '<fieldset class="$class"><legend>' . $category . '</legend>';
     foreach ($list as $moduleName=>$module) {
       $r .= "<div class=\"pane\" id=\"pane-$moduleName\"><a class=\"fb-filter-link\" href=\"#controls-$moduleName\"><span class=\"pane-title\">" . $module->get_title() . '</span>';
       $r .= '<span class="filter-desc"></span></a>';

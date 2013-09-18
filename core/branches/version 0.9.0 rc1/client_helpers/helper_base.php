@@ -114,7 +114,7 @@ $indicia_templates = array(
   'tree_browser' => '<div{outerClass} id="{divId}"></div><input type="hidden" name="{fieldname}" id="{id}" value="{default}"{class}/>',
   'tree_browser_node' => '<span>{caption}</span>',
   'autocomplete' => '<input type="hidden" class="hidden" id="{id}" name="{fieldname}" value="{default}" />'."\n".
-      '<input id="{inputId}" name="{inputId}" value="{defaultCaption}" {class} {disabled} {title}/>'."\n",
+      '<input id="{inputId}" name="{inputId}" type="text" value="{defaultCaption}" {class} {disabled} {title}/>'."\n",
   'autocomplete_javascript' => "jQuery('input#{escaped_input_id}').autocomplete('{url}',
       {
         extraParams : {
@@ -124,6 +124,7 @@ $indicia_templates = array(
           {sParams}
         },
         simplify: {simplify},
+        selectMode: {selectMode},
         warnIfNoMatch: {warnIfNoMatch},
         parse: function(data)
         {
@@ -162,8 +163,8 @@ $indicia_templates = array(
   'sub_list_add' => "\n".'<input type="hidden"  id="{id}:addToTable" name="{mainEntity}:insert_captions_use" value="{basefieldname}" />'.
     '<input type="hidden" name="{mainEntity}:insert_captions_to_create" value="{table}" />',
   'sub_list_item' => '<li class="ui-widget-content ui-corner-all"><span class="ind-delete-icon">&nbsp;</span>{caption}'.
-    '<input type="hidden" name="#fieldname#" value="{value}" /></li>',
-  'sub_list_javascript' => "  var addSublistItem = function(escapedId, escapedCaptionField, fieldname){
+    '<input type="hidden" name="{fieldname}" value="{value}" /></li>',
+  'sub_list_javascript' => "  var addSublistItem{idx} = function(escapedId, escapedCaptionField, fieldname){
     // transfer caption and value from search control to the displayed and hidden lists
     var search$ = $('#'+escapedId+'\\\\:search\\\\:'+escapedCaptionField);
     var hiddenSearch$ = $('#'+escapedId+'\\\\:search');
@@ -185,10 +186,10 @@ $indicia_templates = array(
   };
   $('#{escaped_id}\\\\:search\\\\:{escaped_captionField}').keypress(function(e) {
     if (e.which===13) {
-      addSublistItem('{escaped_id}', '{escaped_captionField}', '{fieldname}');
+      addSublistItem{idx}('{escaped_id}', '{escaped_captionField}', '{fieldname}');
     }
   });
-  $('#{escaped_id}\\\\:add').click(function() {addSublistItem('{escaped_id}', '{escaped_captionField}', '{fieldname}');});  
+  $('#{escaped_id}\\\\:add').click(function() {addSublistItem{idx}('{escaped_id}', '{escaped_captionField}', '{fieldname}');});  
   $('#{escaped_id}\\\\:sublist span.ind-delete-icon').live('click', function(event){
     // remove the value from the displayed list and the hidden list
     var li$ = $(this).closest('li');
@@ -1794,7 +1795,7 @@ indiciaData.windowLoaded=false;
     $r = '';
 
     if (array_key_exists($key, $options)) {
-      //a template has been specified
+      //a template has been specified    
       if (array_key_exists($options[$key], $indicia_templates))
         //the specified template exists
         $r = $indicia_templates[$options[$key]];

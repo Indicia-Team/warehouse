@@ -571,6 +571,7 @@ form #map-toolbar {
   width: 59%;
   height: 100%;
   overflow: scroll;
+  margin: 0;
 }
 
 .report-picker-container > div {
@@ -853,4 +854,15 @@ div.note-fail, p.note-fail {
   opacity: 0.9;
   background: url(../images/ajax-loader2.gif) no-repeat center center #fff;
   z-index: 10000;
+}
+
+.autocomplete-select {
+  border: solid silver 1px;
+  display:-moz-inline-stack;
+  display:inline-block;
+  zoom:1;
+  *display:inline;
+  background: url(../images/desc.gif) no-repeat center center #eee;
+  width: 16px;
+  margin-left: -1px;
 }

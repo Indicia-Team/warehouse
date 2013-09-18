@@ -158,7 +158,7 @@ class data_entry_helper extends helper_base {
   * <li><b>template</b><br/>
   * Optional. Name of the template entry used to build the HTML for the control. Defaults to autocomplete.</li>
   * <li><b>numValues</b><br/>
-  * Optional. Number of returned values in the drop down list. Defaults to 10.</li>
+  * Optional. Number of returned values in the drop down list. Defaults to 20.</li>
   * <li><b>duplicateCheckFields</b><br/>
   * Optional. Provide an array of field names from the dataset returned from the warehouse. Any duplicates
   * based  values from this list of fields will not be added to the output.</li>
@@ -167,7 +167,10 @@ class data_entry_helper extends helper_base {
   * being searched against is also simplified.</li>
   * <li><b>warnIfNoMatch</b>
   * Should the autocomplete control warn the user if they leave the control whilst searching
-  * and then nothing is matched? Default true.
+  * and then nothing is matched? Default true.</li>
+  * <li><b>selectMode</b>
+  * Should the autocomplete simulate a select drop down control by adding a drop down arrow after the input box which, when clicked,
+  * populates the drop down list with all search results to a maximum of numValues. This is similar to typing * into the box. Default false.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the autocomplete control.
@@ -196,7 +199,7 @@ class data_entry_helper extends helper_base {
       $warehouseUrl = parent::$base_url;
     self::$js_read_tokens = array('auth_token'=>$options['extraParams']['auth_token'], 'nonce'=>$options['extraParams']['nonce']);
     $options = array_merge(array(
-      'template' => 'autocomplete',
+      'template'=>'autocomplete',
       'url' => isset($options['report']) ? $warehouseUrl."index.php/services/report/requestReport" : $warehouseUrl."index.php/services/data/".$options['table'],
       // Escape the ids for jQuery selectors
       'escaped_input_id' => self::jq_esc($options['inputId']),
@@ -204,13 +207,15 @@ class data_entry_helper extends helper_base {
       'max' => array_key_exists('numValues', $options) ? ', max : '.$options['numValues'] : '',
       'formatFunction' => 'function(item) { return item.{captionField}; }',
       'simplify' => (isset($options['simplify']) && $options['simplify']) ? 'true' : 'false',
-      'warnIfNoMatch' => true
+      'warnIfNoMatch' => true,
+      'selectMode' => false
     ), $options);
     if (isset($options['report'])) {
       $options['extraParams']['report'] = $options['report'].'.xml';
       $options['extraParams']['reportSource'] = 'local';
     }
     $options['warnIfNoMatch'] = $options['warnIfNoMatch'] ? 'true' : 'false';
+    $options['selectMode'] = $options['selectMode'] ? 'true' : 'false';
     self::add_resource('autocomplete');
     // Escape the id for jQuery selectors
     $escaped_id=self::jq_esc($options['id']);
@@ -270,12 +275,12 @@ class data_entry_helper extends helper_base {
   * Optional. The id to assign to the HTML control. Base value defaults to fieldname, but 
   * this is a compound control and the many sub-controls have id values with additiobnal suffixes.</li>
   * <li><b>default</b><br/>
-  * Optional. An associative array of default keys and captions. This is overridden when reloading a
-  * record with existing data for this control.</li>
+  * Optional. An array of items to load into the control on page startup. Each entry must be an associative array
+  * with keys fieldname, caption and value.</li>
   * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
   * <li><b>numValues</b><br/>
-  * Optional. Number of returned values in the drop down list. Defaults to 10.</li>
+  * Optional. Number of returned values in the drop down list. Defaults to 20.</li>
   * <li><b>addOnSelect TODO</b><br/>
   * Optional. Boolean, if true, matched items from the autocomplete control are automatically 
   * added to the list when selected. Defaults to false.</li>
@@ -301,6 +306,12 @@ class data_entry_helper extends helper_base {
   * Defines the JavaScript added to the page to implement the click handling for the various 
   * butons. 
   * </li>
+  * <li><b>numValues</b><br/>
+  * Optional. Number of returned values in the select drop down list. Defaults to 20.</li>
+  * <li><b>selectMode</b>
+  * Should the autocomplete simulate a select drop down control by adding a drop down arrow after the input box which, when clicked,
+  * populates the drop down list with all search results to a maximum of numValues. This is similar to typing * into the box. Default false.
+  * </li>
   * </ul>
   *
   * @return string HTML to insert into the page for the sub_list control.
@@ -308,10 +319,11 @@ class data_entry_helper extends helper_base {
   */
   public static function sub_list($options) {
     global $indicia_templates;
+    static $idx=0; // unique ID for all sublists
     // checks essential options, uses fieldname as id default and 
     // loads defaults if error or edit
     $options = self::check_options($options);
-    if (empty($options['addToTable'])) $options['addToTable']===true;
+    if (!isset($options['addToTable'])) $options['addToTable']=true;
     if ($options['addToTable']===true) {
       // we can only work with the caption field
       $options['captionField'] = 'caption';
@@ -359,6 +371,10 @@ class data_entry_helper extends helper_base {
     $list_options['default']='';
     $list_options['lockable']=null;
     $list_options['label'] = null;
+    if (!empty($options['selectMode']) && $options['selectMode'])
+      $list_options['selectMode']=true;
+    if (!empty($options['numValues']))
+      $list_options['numValues']=$options['numValues'];
     // set up add panel
     $options['panel_control'] = self::autocomplete($list_options);
     
@@ -376,8 +392,8 @@ class data_entry_helper extends helper_base {
     $options['subListItem'] = str_replace(array('{caption}', '{value}', '{fieldname}'),  
       array('\'+caption+\'', '\'+value+\'', $options['fieldname']), 
       $indicia_templates['sub_list_item']);
-    $replaceTags=array();
-    $replaceValues=array();
+    $replaceTags=array('{idx}');
+    $replaceValues=array($idx);
     foreach ($options as $option=>$value) {
       if (!is_array($value) && !is_object($value)) {
         array_push($replaceTags, '{'.$option.'}');
@@ -388,17 +404,21 @@ class data_entry_helper extends helper_base {
     
     // load any default values for list items into display and hidden lists
     $items = "";
+    $r = '';
     if (array_key_exists('default', $options) && is_array($options['default'])) {
-      foreach ($options['default'] as $value=>$caption) {
+      foreach ($options['default'] as $item) {
         $items .= str_replace(array('{caption}', '{value}', '{fieldname}'), 
-          array($caption, $value, $options['fieldname']), 
-        $indicia_templates['sub_list_item']);
+          array($item['caption'], $item['default'], $item['fieldname']), 
+          $indicia_templates['sub_list_item']);
+        // a hidden input to put a blank in the submission if it is deleted
+        $r .= "<input type=\"hidden\" value=\"\" name=\"$item[fieldname]\">";
       }
     }
     $options['items'] = $items;
     
     // layout the control
-    $r = self::apply_template($options['template'], $options);
+    $r .= self::apply_template($options['template'], $options);
+    $idx++;
     return $r;
   }
 
@@ -2558,6 +2578,13 @@ class data_entry_helper extends helper_base {
   * <li><b>sticky</b>
   * Optional, defaults to true. Enables sticky table headers if supported by the host site (e.g. Drupal). 
   * </li>
+  * <li><b>numValues</b><br/>
+  * Optional. Number of returned values in the species autocomplete drop down list. Defaults to 20.
+  * </li>
+  * <li><b>selectMode</b>
+  * Should the species autocomplete used for adding new rows simulate a select drop down control by adding a drop down arrow after the input box which, when clicked,
+  * populates the drop down list with all search results to a maximum of numValues. This is similar to typing * into the box. Default false.
+  * </li>
   * </ul>
   * @return string HTML for the species checklist input grid.
   */
@@ -2922,10 +2949,15 @@ class data_entry_helper extends helper_base {
           $url = parent::$warehouse_proxy."index.php/services/data";
         else
           $url = parent::$base_url."index.php/services/data";
+        self::$javascript .= "if (typeof indiciaData.speciesGrid==='undefined') {indiciaData.speciesGrid={};}\n";
+        self::$javascript .= "indiciaData.speciesGrid['$options[id]']={};\n";
+        self::$javascript .= "indiciaData.speciesGrid['$options[id]'].cacheLookup=".($options['cacheLookup'] ? 'true' : 'false').";\n";
+        self::$javascript .= "indiciaData.speciesGrid['$options[id]'].numValues=".(!empty($options['numValues']) ? $options['numValues'] : 20).";\n";
+        self::$javascript .= "indiciaData.speciesGrid['$options[id]'].selectMode=".(!empty($options['selectMode']) && $options['selectMode'] ? 'true' : 'false').";\n";
         self::$javascript .= "addRowToGrid('$url', '".
             $options['id']."', '".$options['lookupListId']."', {'auth_token' : '".
             $options['readAuth']['auth_token']."', 'nonce' : '".$options['readAuth']['nonce']."'},".
-            " formatter, ".($options['cacheLookup'] ? 'true' : 'false').");\r\n";
+            " formatter);\r\n";
       }
       // If options contain a help text, output it at the end if that is the preferred position
       $options['helpTextClass'] = (isset($options['helpTextClass'])) ? $options['helpTextClass'] : 'helpTextLeft';
@@ -3197,9 +3229,9 @@ var applyFilterMode = function(type, group_id, nameFilterMode) {
   // re-encode the query part
   currentFilter.query=JSON.stringify(currentFilter.query);
   if (type==='default') {
-    $('#".$options['id']."-filter').removeClass('button-active');
+    $('#".$options['id']." .species-filter').removeClass('button-active');
   } else {
-    $('#".$options['id']."-filter').addClass('button-active');
+    $('#".$options['id']." .species-filter').addClass('button-active');
   }
   
   //Tell the system to use the current filter.
@@ -3226,7 +3258,7 @@ if (userFilter) {
   applyFilterMode(userFilter.type, userFilter.group_id, userFilter.name_filter);
 }\n";
       self::$javascript .= "
-$('#".$options['id']."-filter').click(function(evt) {
+$('#".$options['id']." .species-filter').click(function(evt) {
   var userFilter=$.cookie('user_selected_taxon_filter'), defaultChecked='', userChecked='', selectedChecked='', nameChecked='';
   
   //Select the radio button on the form depending on what is set in the cookie
@@ -3441,7 +3473,7 @@ $('#".$options['id']."-filter').click(function(evt) {
         if ($options['userControlsTaxonFilter'] && !empty($options['lookupListId'])) {
           global $indicia_templates;
           $imgPath = empty(self::$images_path) ? self::relative_client_helper_path()."../media/images/" : self::$images_path;
-          $speciesColTitle .= '<button type="button" id="'.$options['id'].'-filter" class="default-button"><img src="'.
+          $speciesColTitle .= '<button type="button" class="species-filter" class="default-button"><img src="'.
               $imgPath.'/filter.png" alt="'.lang::get('Filter').'" style="vertical-align: middle" title="'.
               lang::get('Filter the list of species you can search').'" width="16" height="16"/></button>';
         }
@@ -6084,7 +6116,7 @@ if (errors$uniq.length>0) {
                 $found = true;
             if(!$found)
               $item['values'][] = array('fieldname' => $options['fieldprefix'].':'.$itemId.':'.$value['id'],
-                                'default' => $value['raw_value']);
+                                'default' => $value['raw_value'], 'caption'=>$value['value']);
             $item['displayValue'] = $value['value']; //bit of a bodge but not using multivalue for this at the moment.
           }
         }
@@ -6225,7 +6257,20 @@ if (errors$uniq.length>0) {
         case 'F':
         case 'Integer':
         case 'I':
-          $output = self::text_input($attrOptions);
+          if (!empty($item['system_function']) && $item['system_function']==='group_id') {
+            // convert to a lookup control to lookup a group
+            $attrOptions = array_merge(array(
+              'report'=>'library/groups/groups_list',
+              'captionField'=>'title',
+              'valueField'=>'id'
+            ), $attrOptions);
+            $attrOptions['extraParams']=array_merge(array(
+              'currentUser'=> hostsite_get_user_field('indicia_user_id'),
+              'userFilterMode'=>'member'
+            ), $attrOptions['extraParams']);
+            $output=self::select($attrOptions);
+          } else
+            $output = self::text_input($attrOptions);
           break;
         case 'Boolean':
         case 'B':

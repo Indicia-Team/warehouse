@@ -28,44 +28,35 @@ class extension_cudi_homepage_links {
    */
   public function homepage_links($auth, $args, $tabalias, $options) {
     global $base_url;
-    $homepageLinkLocationNamesArray=array();
-    //The location ids to display in the homepageLink are held in the URL if the user
-    //is returning from another page.
-    $homepageLinkLocationIdsArray = explode(',',$_GET['breadcrumb']);
+    //Get the ids of the locations to display in the breadcrumb, these are supplied by the
+    //calling page.
+    $homepageLinkIdsArray = explode(',',$_GET['breadcrumb']);
     $locationRecords = data_entry_helper::get_population_data(array(
       'table' => 'location',
       'extraParams' => $auth['read'],
       'nocache' => true,
-
     ));
-    //Get the names associated with the ids
-    foreach ($homepageLinkLocationIdsArray as $homepageLinkLocationId) {
-      foreach ($locationRecords as $locationRecord) {
-        if ($locationRecord['id']===$homepageLinkLocationId) {
-          $homepageLinkLocationNamesArray[] = $locationRecord['name'];
-        }
-      }
-    }
     $r = '';
     //Only display links to homepage if we have links to show
-    if (!empty($homepageLinkLocationNamesArray)) {
+    if (!empty($homepageLinkIdsArray)) {
       $r .= '<label><h4>Links to homepage</h4></label></br>';
       $r .= '<div>';
       $r .= '<ul id="homepage-homepageLink">';
       //Loop through the links to show
-      foreach ($homepageLinkLocationNamesArray as $num=>$homepageLinkLocationName) {
-        //For each link back to the homepage, we need to give the homepage some locations IDs to rebuild
-        //its homepageLink with. So we need to include ids of any locations that are "above" the location we are linking back with.
-        //e.g. If the link is for Guildford, then we would need to supply the ids for Guildford, Surrey and South England
-        //as well to the homepage can make a full homepageLink trail to guildford.
-        if (empty($homepageLinkParamToSendBack)) 
-          $homepageLinkParamToSendBack='breadcrumb='.$homepageLinkLocationIdsArray[$num];
-        else
-          $homepageLinkParamToSendBack .= ','.$homepageLinkLocationIdsArray[$num];
+      foreach ($homepageLinkIdsArray as $num=>$homepageLinkLocationId) {
+        //Get the name of the location and its location type for each link we are creating
+        foreach ($locationRecords as $locationRecord) {     
+          if ($locationRecord['id']===$homepageLinkLocationId) {
+            $homepageLinkLocationName = $locationRecord['name'];
+            $locationTypeIdToZoomTo = $locationRecord['location_type_id'];
+          }
+        }
+        //For the homepage to recreate its map breadcrumb, we need to supply it with the
+        //location id we want the map to default to, as well as the location type id.
+        $homepageLinkParamToSendBack='breadcrumb='.$homepageLinkLocationId.','.$locationTypeIdToZoomTo;
         $r .= '<li id="homepageLink-part-"'.$num.'>';
-        //The homepageLink link is a name, with a url back to the homepage containing ids for the homepage
-        //to show in its homepageLink
-        $r .= '<a href="'.$base_url.(variable_get('clean_url', 0) ? '' : '?q=').$options['homepage_path'].(variable_get('clean_url', 0) ? '?' : '&').$homepageLinkParamToSendBack.'">'.$homepageLinkLocationName.'<a>';
+        //The homepageLink link is a name, with a url back to the homepage containing the location id and location_type_id
+        $r .= '<a href="'.$base_url.(variable_get('clean_url', 0) ? '' : '?q=').$options['homepage_path'].(variable_get('clean_url', 0) ? '?' : '&').$homepageLinkParamToSendBack.'">'.$homepageLinkLocationName.'</a>';
         $r .= '</li>';
       }
       $r .= '</ul></div>';

@@ -19,7 +19,7 @@
  * @link    http://code.google.com/p/indicia/
  */
  
-$(document).ready(function () {
+jQuery(document).ready(function ($) {
   function setVisibleSurveyControl() {
     if ($('#user-filter\\:1').attr('checked')) {
       $('#survey_expertise').show();

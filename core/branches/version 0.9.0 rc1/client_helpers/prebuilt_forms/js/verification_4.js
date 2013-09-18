@@ -320,7 +320,8 @@ var saveComment, saveVerifyComment;
       } else if (indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] === 'experience') {
         $.get(
           indiciaData.ajaxUrl + '/experience/' + indiciaData.nid + urlSep +
-              'occurrence_id=' + occurrence_id + '&user_id=' + currRec.extra.created_by_id,
+              'occurrence_id=' + occurrence_id + '&user_id=' + currRec.extra.created_by_id +
+              '&nonce=' + indiciaData.read.nonce + '&auth_token=' + indiciaData.read.auth_token,
           null,
           function (data) {
             $('#experience-div').html(data);

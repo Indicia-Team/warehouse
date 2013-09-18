@@ -49,7 +49,7 @@ class report_helper extends helper_base {
       'class' => ''
     ), $options);
     // add class rather than replacing existing
-    $options['class'] .= ' report-picker-container control-box ui-widget ui-widget-content';
+    $options['class'] .= ' report-picker-container control-box ui-widget ui-widget-content ui-helper-clearfix';
     $reports = '';
     $response = self::http_post(self::$base_url.'index.php/services/report/report_list?nonce='.
         $options['readAuth']['nonce'].'&auth_token='.$options['readAuth']['auth_token']);
@@ -314,6 +314,9 @@ class report_helper extends helper_base {
   * the report will load when the tab is first viewed.
   * Default false.
   * </li>
+  * <li><b>pager</b>
+  * Include a pager? Default true. Removing the pager can have a big improvement on performance where there are lots of records to count.
+  * </li>
   * </ul>
   * @todo Allow additional params to filter by table column or report parameters
   * @todo Display a filter form for direct mode
@@ -328,7 +331,7 @@ class report_helper extends helper_base {
     $extras = self::get_report_sorting_paging_params($options, $sortAndPageUrlParams);
     if ($options['ajax'])
       $options['extraParams']['limit']=0;
-    self::request_report($response, $options, $currentParamValues, true, $extras);
+    self::request_report($response, $options, $currentParamValues, $options['pager'], $extras);
     if ($options['ajax'])
       unset($options['extraParams']['limit']);
     if (isset($response['error'])) return $response['error'];
@@ -760,16 +763,20 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
    * @return string The HTML for the paginator.
    */
   private static function output_pager($options, $pageUrl, $sortAndPageUrlParams, $response) {
-    global $indicia_templates;
-    $pagLinkUrl = $pageUrl . ($sortAndPageUrlParams['orderby']['value'] ? $sortAndPageUrlParams['orderby']['name'].'='.$sortAndPageUrlParams['orderby']['value'].'&' : '');
-    $pagLinkUrl .= $sortAndPageUrlParams['sortdir']['value'] ? $sortAndPageUrlParams['sortdir']['name'].'='.$sortAndPageUrlParams['sortdir']['value'].'&' : '';
-    if (!isset($response['count'])) {
-      $r = self::simple_pager($options, $sortAndPageUrlParams, $response, $pagLinkUrl);
-    } else {
-      $r = self::advanced_pager($options, $sortAndPageUrlParams, $response, $pagLinkUrl);
+    if ($options['pager']) {
+      global $indicia_templates;
+      $pagLinkUrl = $pageUrl . ($sortAndPageUrlParams['orderby']['value'] ? $sortAndPageUrlParams['orderby']['name'].'='.$sortAndPageUrlParams['orderby']['value'].'&' : '');
+      $pagLinkUrl .= $sortAndPageUrlParams['sortdir']['value'] ? $sortAndPageUrlParams['sortdir']['name'].'='.$sortAndPageUrlParams['sortdir']['value'].'&' : '';
+      if (!isset($response['count'])) {
+        $r = self::simple_pager($options, $sortAndPageUrlParams, $response, $pagLinkUrl);
+      } else {
+        $r = self::advanced_pager($options, $sortAndPageUrlParams, $response, $pagLinkUrl);
+      }
+      $r = str_replace('{paging}', $r, $indicia_templates['paging_container']);
+      return $r;
     }
-    $r = str_replace('{paging}', $r, $indicia_templates['paging_container']);
-    return $r;
+    else
+      return '';
   }
 
  /**
@@ -2122,7 +2129,8 @@ if (typeof mapSettingsHooks!=='undefined') {
       'sendOutputToMap' => false,
       'zoomMapToOutput' => true,
       'ajax' => false,
-      'linkFilterToMap' => true
+      'linkFilterToMap' => true,
+      'pager' => true
     ), $options);
     // if using AJAX we are only loading parameters and columns, so may as well use local cache
     if ($options['ajax'])

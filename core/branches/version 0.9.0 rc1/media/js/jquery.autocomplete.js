@@ -20,7 +20,8 @@ $.fn.extend({
       url: isUrl ? urlOrData : null,
       data: isUrl ? null : urlOrData,
       delay: isUrl ? $.Autocompleter.defaults.delay : 10,
-      max: options && !options.scroll ? 10 : 150
+      max: options && !options.scroll ? 20 : 150,
+      doneMore: false
     }, options);
     
     // if highlight is set to false, replace it with a do-nothing function
@@ -84,7 +85,32 @@ $.Autocompleter = function(input, options) {
   var select = $.Autocompleter.Select(options, input, selectCurrent, config);
   
   var blockSubmit;
+  var forceSearch=false;
   
+  if (options.selectMode) {
+    $input.after('<span class="autocomplete-select"></span>');
+    var btn=$input.next('.autocomplete-select');
+    // set height, and adjust for borders
+    btn.css('height', $input.height()+($input.outerHeight()-$input.innerHeight())-(btn.outerHeight()-btn.innerHeight()));
+    btn.css('padding-top', $input.css('padding-top'));
+    btn.css('padding-bottom', $input.css('padding-bottom'));
+    btn.css('margin-top', $input.css('margin-top'));
+    btn.css('margin-bottom', $input.css('margin-bottom'));
+    btn.css('vertical-align', $input.css('vertical-align'));
+    if (btn.parents('.scTaxonCell').length) {
+      btn.css('margin-left', '-'+(btn.outerWidth()+1)+'px');
+    }
+    btn.click(function() {
+      if (select.visible()) {
+        hideResultsNow(false);
+      } else {
+        forceSearch='*';
+        $input.val('');
+        onChange(0, true);
+        $input.focus();
+      }
+    });
+  }
   // prevent form submit in opera when selecting with return key
   $.browser.opera && $(input.form).bind("submit.autocomplete", function() {
     if (blockSubmit) {
@@ -168,6 +194,15 @@ $.Autocompleter = function(input, options) {
     if ( hasFocus && !select.visible() ) {
       onChange(0, false);
     }
+  }).bind("moreClick", function() {
+    options.max=options.max * 2;
+    options.doneMore=true;
+    cache.flush();
+    if ($input.val()==='') {
+      forceSearch='*';
+    }
+    hideResultsNow(false);
+    onChange(0, true);
   }).bind("search", function() {
     // TODO why not just specifying both arguments?
     var fn = (arguments.length > 1) ? arguments[1] : null;
@@ -241,7 +276,8 @@ $.Autocompleter = function(input, options) {
       return;
     }
     
-    var currentValue = $input.val();
+    var currentValue = forceSearch ? forceSearch : $input.val();
+    forceSearch = false;
     
     if ( !skipPrevCheck && currentValue == previousValue )
       return;
@@ -260,7 +296,7 @@ $.Autocompleter = function(input, options) {
       stopLoading();
       select.hide();
     }
-  };
+  }
   
   function trimWords(value) {
     if ( !value ) {
@@ -460,6 +496,7 @@ $.Autocompleter.defaults = {
   multiple: false,
   multipleSeparator: ", ",
   continueOnBlur: true,
+  selectMode: false,
   simplify: false,
   highlight: function(value, term) {
     return value ? 
@@ -714,8 +751,13 @@ $.Autocompleter.Select = function (options, input, select, config) {
       listItems.slice(0, 1).addClass(CLASSES.ACTIVE);
       active = 0;
     }
-    if (data.length>options.max) {
+    if (data.length>options.max & !options.doneMore) {
       list.append('<li class="ac_more"><span title="' + options.langMoreDetails + '">' + options.langMore + '...</span></li>');
+      list.find('.ac_more').click(function() {
+        $(input).trigger('moreClick');
+      });
+    } else if (data.length>options.max) {
+      list.append('<li class="ac_more"><span>' + options.langMoreDetails + '...</span></li>');
     }
     // apply bgiframe if available
     if ( $.fn.bgiframe )
