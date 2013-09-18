@@ -21,7 +21,11 @@ class Upgrade_Model extends Model
     
     private $scriptsForPgUser = '';
     
+    private $slowScripts = '';
+    
     public $pgUserScriptsToBeApplied = '';
+    
+    public $slowScriptsToBeApplied = '';
 
     public function __construct()
     {
@@ -89,6 +93,7 @@ class Upgrade_Model extends Model
             // start transaction for each folder full of scripts
             $this->begin();
             $this->scriptsForPgUser = '';
+            $this->slowScripts = '';
             // we have a folder containing scripts
             $this->execute_sql_scripts($baseDir, $version_name, $appName, $last_run_script);
             $updatedTo = implode('.', $currentVersionNumbers);
@@ -96,8 +101,9 @@ class Upgrade_Model extends Model
             $this->set_new_version($updatedTo, $appName);
             // commit transaction
             $this->commit();
-            // only tell the user if there are superuser scripts, when the transaction has been committed.
+            // only tell the user if there are superuser or slow scripts, when the transaction has been committed.
             $this->pgUserScriptsToBeApplied .= $this->scriptsForPgUser;
+            $this->slowScriptsToBeApplied .= $this->slowScripts;
             kohana::log('info', "Scripts ran for $version_name");
           }
           
@@ -227,6 +233,8 @@ class Upgrade_Model extends Model
             }
             if (substr($_db_file, 0, 18) === '-- #postgres user#')
               $this->scriptsForPgUser .= $_db_file . "\n\n";
+            if (substr($_db_file, 0, 16) === '-- #slow script#')
+              $this->slowScripts .= $_db_file . "\n\n";
             else
               $result = $this->db->query($_db_file);
             $last_run_script = $name;

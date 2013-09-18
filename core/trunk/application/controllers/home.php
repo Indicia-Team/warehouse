@@ -71,6 +71,7 @@ class Home_Controller extends Indicia_Controller {
     $view->db_version=$system->getVersion();
     $view->app_version=kohana::config('version.version');
     $view->pgUserScriptsToBeApplied = $upgrader->pgUserScriptsToBeApplied;
+    $view->slowScriptsToBeApplied = $upgrader->slowScriptsToBeApplied;
     $this->template->content=$view;
   }
 
