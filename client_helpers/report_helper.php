@@ -2771,6 +2771,7 @@ update_controls();
     $dateList = array();
     $weekList = array();
     // we are assuming that there can be more than one occurrence of a given taxon per sample.
+    if(count($options['location_list']) == 0) $options['location_list'] = 'none';
     foreach($records as $recid => $record){
       // If the taxon has changed
       $this_date = date_create(str_replace('/','-',$record['date'])); // prevents day/month ordering issues
@@ -2785,10 +2786,14 @@ update_controls();
       $weekno = floor(($this_yearday-$weekOne_date_yearday)/7)+1;
       $weekList[$weekno] = true;
       if(!isset($rawArray[$this_index])){
-        $rawArray[$this_index] = array('weekno'=>$weekno, 'counts'=>array(), 'date'=>$record['date'], 'total'=>0);
-        if (function_exists('hostsite_get_user_field') && hostsite_get_user_field('indicia_user_id')==$record['user_id'])        
-          $rawArray[$this_index]['sample']=$record['sample_id'];
+        $rawArray[$this_index] = array('weekno'=>$weekno, 'counts'=>array(), 'date'=>$record['date'], 'total'=>0, 'samples'=>array());
       }
+      // we assume that the report is configured to return the user_id which matches the method used to generate my_user_id
+      if (($options['my_user_id']==$record['user_id'] ||
+           $options['location_list'] == 'all' ||
+           ($options['location_list'] != 'none' && in_array($record['location_id'], $options['location_list'])))
+          && !isset($rawArray[$this_index]['samples'][$record['sample_id']]))
+        $rawArray[$this_index]['samples'][$record['sample_id']]=array('id'=>$record['sample_id'], 'location_name'=>$record['location_name']);
       $records[$recid]['weekno']=$weekno;
       $records[$recid]['date_index']=$this_index;
       if(isset($locationSamples[$record['location_id']])){
@@ -3209,10 +3214,7 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
         $rawGrandTotal = 0;
         foreach($rawArray as $idx => $rawColumn){
           $this_date = date_create(str_replace('/','-',$rawColumn['date'])); // prevents day/month ordering issues
-          if(isset($options['linkURL']) && $options['linkURL']!= '' && isset($rawColumn['sample'])){
-            $r .= '<td class="week"><a href="'.$options['linkURL'].$rawColumn['sample'].'" target="_blank">'.$this_date->format('M').'<br/>'.$this_date->format('d').'</a></td>';
-          } else
-            $r .= '<td class="week">'.$this_date->format('M').'<br/>'.$this_date->format('d').'</td>';
+          $r .= '<td class="week">'.$this_date->format('M').'<br/>'.$this_date->format('d').'</td>';
           $rawTotalRow .= '<td>'.$rawColumn['total'].'</td>';
           $rawGrandTotal += $rawColumn['total'];
         }
@@ -3220,6 +3222,17 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
           $r.= '<td class="total-column">Total</td>';
         }
         $r .= "</tr>";
+        if(isset($options['linkURL']) && $options['linkURL']!= ''){
+          $r .= '<tr><td>Sample Links</td>';
+          foreach($rawArray as $idx => $rawColumn){
+            $links = array();
+            if(count($rawColumn['samples'])>0)
+              foreach($rawColumn['samples'] as $sample)
+            	$links[] = '<a href="'.$options['linkURL'].$sample['id'].'" target="_blank" title="'.$sample['location_name'].'">('.$sample['id'].')</a>';
+            $r .= '<td class="links">'.implode('<br/>',$links).'</td>';
+          }
+          $r.= ((isset($options['includeTableTotalColumn']) && $options['includeTableTotalColumn']) ? '<td class="total-column"></td>' : '')."</tr>";
+        }
         // $r .= '<tr><td>Week</td>'.$tableNumberHeaderRow.(isset($options['includeTableTotalColumn']) && $options['includeTableTotalColumn'] ? '<td>Total</td>' : '').'</tr>';
         // $r .= '<tr><td>Date</td>'.$tableDateHeaderRow.  (isset($options['includeTableTotalColumn']) && $options['includeTableTotalColumn'] ? '<td></td>' : '').'</tr>';
         $r.= "</thead>\n";

@@ -37,7 +37,8 @@ td.total-column {
 	border: navy solid thin;
 	padding: 3px;
 }
-tr td.week {
+tr td.week,
+tr td.links {
 	border: navy solid thin;
 	padding: 3px;
 }
