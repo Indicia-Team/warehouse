@@ -223,6 +223,8 @@ class extension_site_hierarchy_navigator {
   
   /*
    * Control button that takes user to Add Site page whose path and parameter are as per administrator supplied options.
+   * The location type of the site we are adding is taken from the location layer we are viewing, so this button is
+   * not just limited to the site location type if users want to use it to add other location types.
    * The parameter is used to automatically zoom the map to the region/site we want to add the new site to.
    * The options format is comma seperated where the format of the elements is "location_type_id|page_path|parameter_name".
    * If an option is not found for the displayed layer's location type, then the Add Site button is hidden from view.

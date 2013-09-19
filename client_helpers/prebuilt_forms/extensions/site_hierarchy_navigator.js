@@ -216,11 +216,16 @@ function add_new_layer_controller(clickedFeature,breadcrumbHierarchy,clickedFeat
         null,
         function(response, textStatus, jqXHR) {
           if (response.length>0 || clickedFeature) {
-            var currentLayerLocationNames = [], features=[],feature,getMapFeaturesFromReportDataResult;
+            var currentLayerLocationNames = [], features=[],feature,getMapFeaturesFromReportDataResult,mainCurrentLayerLocationTypeName;
             //Get the child features for the layer, also get the name of their locations type(s)
             getMapFeaturesFromReportDataResult = get_map_features_from_report_data(response,currentLayerLocationNames);
             currentLayerLocationNames = getMapFeaturesFromReportDataResult[0];
             features = getMapFeaturesFromReportDataResult[1];
+            //The main mainCurrentLayerLocationTypeName variable is the name of the location type of the layer we are currently looking at,
+            //this is currently used to make the Add Site button's label change depending on the location type to be added.
+            //Note this is different to the currentLayerLocationNames which might include Count Unit if the user has set the option
+            //to add Count Units to a particular layer.
+            mainCurrentLayerLocationTypeName = getMapFeaturesFromReportDataResult[2];
             if (indiciaData.useBreadCrumb) {
               //create the map breadcrumb itself
               breadcrumb(parentId,parentName,currentLayerLocationNames,breadcrumbHierarchy);
@@ -228,7 +233,7 @@ function add_new_layer_controller(clickedFeature,breadcrumbHierarchy,clickedFeat
             //Add the features to the child (clickable) or parent (non-clickable layers) as appropriate.
             add_features_to_layers(features,clickedFeature,currentLayerLocationNames);
             //Add other controls like Add Site or location drop-down to the page
-            setup_additional_controls(childLocationTypesToReport,parentId, parentName,clickedFeature,features)
+            setup_additional_controls(childLocationTypesToReport,parentId, parentName,clickedFeature,features,mainCurrentLayerLocationTypeName)
             //Finally zoom in to the features
             zoom_to_area(features,clickedFeature)
           }
@@ -243,15 +248,28 @@ function add_new_layer_controller(clickedFeature,breadcrumbHierarchy,clickedFeat
  */
 function get_map_features_from_report_data(reportdata,currentLayerLocationNames) {
   var features = [];
+  //The main mainCurrentLayerLocationTypeName variable is the name of the location type of the layer we are currently looking at,
+  //this is currently used to make the Add Site button's label change depending on the location type to be added.
+  //Note this is different to the currentLayerLocationNames which might include Count Unit if the user has set the option
+  //to add Count Units to a particular layer.
+  var mainCurrentLayerLocationTypeName;
   if (reportdata) {
-
     $.each(reportdata, function (idx, obj) {
       if (obj) {
         //Make a distinct list of the location types being displayed on the current layer.
         //This is used to name layers.
         if (!inArray(obj.location_type_name,currentLayerLocationNames)) {
           currentLayerLocationNames.push(obj.location_type_name);
-        }     
+          //The main mainCurrentLayerLocationTypeName variable is the name of the location type of the layer we are currently looking at,
+          //this is currently used to make the Add Site button's label change depending on the location type to be added.
+          //Note this is different to the currentLayerLocationNames which might include Count Unit if the user has set the option
+          //to add Count Units to a particular layer.
+          //So exclude count units and boundaries from being set as the main location type name for the layer.
+          if (obj.location_type_id!=indiciaData.layerLocationTypes[indiciaData.layerLocationTypes.length-1]&&
+              obj.location_type_id!=indiciaData.countUnitBoundaryTypeId) {
+            mainCurrentLayerLocationTypeName = obj.location_type_name;
+          }
+        } 
         //Use boundary geom by default
         if (obj.boundary_geom) {               
           feature=indiciaData.mapdiv.addPt(features, obj, 'boundary_geom', {}, obj.id);
@@ -273,6 +291,7 @@ function get_map_features_from_report_data(reportdata,currentLayerLocationNames)
   var result = [];
   result[0] = currentLayerLocationNames;
   result[1] = features;
+  result[2] = mainCurrentLayerLocationTypeName;
   return result;
 }
 
@@ -338,7 +357,7 @@ function setup_layer(layerType,featuresForLayer,layerToAdd,nameForLayer) {
 /*
  * Add controls not related to the map to the page
  */
-function setup_additional_controls(currentLayerLocationTypesId,parentId, parentName,clickedFeature,features) {
+function setup_additional_controls(currentLayerLocationTypesId,parentId, parentName,clickedFeature,features,mainCurrentLayerLocationTypeName) {
   //make the select list
   if (indiciaData.useSelectList) {
     if (clickedFeature && clickedFeature.attributes.clickableParent) {
@@ -355,10 +374,10 @@ function setup_additional_controls(currentLayerLocationTypesId,parentId, parentN
   //Get the Add Count Unit button
   if (indiciaData.useAddCountUnit) {
     add_count_unit_link(currentLayerLocationTypesId,parentId);
-  }
-  //Get the Add Site button
+  } 
+  //Get the Add Site (location) button
   if (indiciaData.useAddSite) {
-    add_site_link(currentLayerLocationTypesId,parentId);
+    add_site_link(currentLayerLocationTypesId,parentId, mainCurrentLayerLocationTypeName);
   }
   //Get the Edit Site button
   if (indiciaData.useEditSite) {
@@ -512,17 +531,19 @@ function add_count_unit_link(currentSiteType,parentLocationId) {
 
 /*
  * Control button that takes user to Add Site page whose path and parameter are as per administrator supplied options.
+ * The type location_type of the site we are adding is taken from the location layer we are viewing, so this button is
+ * not just limited to the site location type if users want to use it to add other location types.
  * The parameter is used to automatically zoom the map to the region/site we want to add the new site to.
  * The options format is comma seperated where the format of the elements is "location_type_id|page_path|parameter_name".
  * If an option is not found for the displayed layer's location type, then the Add Site button is hidden from view.
  */
-function add_site_link(currentSiteType,parentLocationId) {
+function add_site_link(currentSiteType,parentLocationId, location_type_of_viewing_layer) {
   if (parentLocationId) {
     //If the current layer location type is in the administrator specified options list, then we know to draw the add site button
     for (i=0; i<indiciaData.locationTypesForAddSites.length;i++) {
       if (indiciaData.locationTypesForAddSites[i] === currentSiteType) {
         button = '<FORM>';
-        button += "<INPUT TYPE=\"button\" VALUE=\"Add Site\"\n\
+        button += "<INPUT TYPE=\"button\" VALUE=\"Add "+location_type_of_viewing_layer+"\"\n\
                       ONCLICK=\"window.location.href='"+indiciaData.addSiteLinkUrls[i]+parentLocationId+'&location_type_id='+currentSiteType+"'\">";
         button += '</FORM>'; 
         return $('#map-addsite').html(button);
