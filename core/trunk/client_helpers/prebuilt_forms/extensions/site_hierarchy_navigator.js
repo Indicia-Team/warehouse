@@ -401,6 +401,10 @@ function breadcrumb(parentId,parentName,currentLayerLocationNames,breadcrumbHier
     buildUpBreadCrumb = buildUpBreadCrumb + breadcrumbPartFront + "<a onclick='get_map_hierarchy_for_current_position("+breadcrumbHierarchy[i-1].id+","+breadcrumbHierarchy[i-1].location_type_id+")'>"+ breadcrumbHierarchy[i-1].name + "</a></li>";
   }
   $('#map-breadcrumb').html(buildUpBreadCrumb);
+  //Call this function to reset the map position as the breadcrumb moves the map which cause the features to become out of alignment
+  //with the map itself. If we didn't call this function, the further the user clicks into the map layers, the more difficulty they will 
+  //have with accurately clicking on features.
+  indiciaData.mapdiv.map.updateSize();
 }
 
 /*
