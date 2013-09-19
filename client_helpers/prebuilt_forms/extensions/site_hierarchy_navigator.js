@@ -342,7 +342,8 @@ function setup_additional_controls(currentLayerLocationTypesId,parentId, parentN
   //make the select list
   if (indiciaData.useSelectList) {
     if (clickedFeature && clickedFeature.attributes.clickableParent) {
-      selectlist([clickedFeature]);
+      //If at bottom level of the tree, the select list would only have one item, so just use a button instead
+      selectlistbutton([clickedFeature]);
     } else { 
       selectlist(features);
     }
@@ -437,6 +438,10 @@ function zoom_to_area(features,clickedFeature) {
  * from the select list zooms in the same way map clicking does.
  */
 function selectlist(featuresForSelectList) {
+  //At the bottom level a button is used instead of a single-option drop-down, this button is only
+  //ever used when the selectlistbutton function is called
+  $('#map-selectlist-button-div').hide();
+  $('#map-selectlist-div').show();
   var selectListOptions;
   selectListOptions += '<option value="">Please select a location</option>';
   $.each(featuresForSelectList, function (idx, featureForSelectList) {
@@ -448,6 +453,18 @@ function selectlist(featuresForSelectList) {
     }
   });
   $('#map-selectlist').html(selectListOptions)
+}
+
+/*
+ * When we reach the count unit level in the map hierarchy we 
+ * use a button to link to the information sheet instead of a drop-down
+ * as there is only ever one option
+ */
+function selectlistbutton(countUnitFeature) {
+  $('#map-selectlist-button-div').show();
+  $('#map-selectlist-div').hide();
+  buttonHtml = '<input id="map-selectlist-bottom-level-button" type="button" value="'+'Information Sheet for '+countUnitFeature[0].attributes.name+'" featureid="'+countUnitFeature[0].id+'" featurelocationtypeid="'+countUnitFeature[0].attributes.location_type_id+'" onclick="get_map_hierarchy_for_current_position('+countUnitFeature[0].id+','+countUnitFeature[0].attributes.location_type_id+')">';
+  $('#map-selectlist-button-div').html(buttonHtml)
 }
 
 /*
