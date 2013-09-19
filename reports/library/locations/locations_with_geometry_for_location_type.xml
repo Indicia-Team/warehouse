@@ -14,7 +14,7 @@
       LEFT JOIN locations lLatestBoundaryChildNormalUser on lLatestBoundaryChildNormalUser.created_on in 
         (select max(created_on) from locations where parent_id=l.id 
           AND created_by_id = #current_user_id#
-          AND created_on > preferredLoc.created_on) 
+          AND created_on > preferredLoc.updated_on) 
         AND lLatestBoundaryChildNormalUser.location_type_id=#count_unit_boundary_type_id#
       --Admin users will always see the preferred boundary, if this is not set then latest is assumed to be preferred.
       --Normal users will see the latest boundary they have added themselves since the preferred boundary was created,
