@@ -143,8 +143,15 @@ class extension_site_hierarchy_navigator {
    */
   public function selectlist($auth, $args, $tabalias, $options, $path) {
     iform_load_helpers(array('map_helper'));
+    //The button is included because if the user is at the bottom level of the tree, they will only be viewing a single count unit item
+    //so the drop-down is changed to be a single button that has the same function as a single item drop-down (handled with jQuery).
     map_helper::$javascript .= "indiciaData.useSelectList=true;\n";
-    $selectlist = "<div><select id=\"map-selectlist\" onchange=\"get_map_hierarchy_for_current_position($('option:selected', this).attr('featureid'),$('option:selected', this).attr('featurelocationtypeid'))\"></select></div>";
+    $selectlist = "<div id=\"map-selectlist-div\">
+                     <select id=\"map-selectlist\" onchange=\"get_map_hierarchy_for_current_position($('option:selected', this).attr('featureid'),$('option:selected', this).attr('featurelocationtypeid'))\">
+                     </select>
+                   </div>
+                   <div id=\"map-selectlist-button-div\">
+                   </div>";
     return $selectlist;
   }
   
