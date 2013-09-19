@@ -52,6 +52,8 @@ class iform_report_calendar_summary {
   
   private static $siteUrlParams = array();
   
+  private static $branchLocationList = array();
+  
   /** 
    * Return the form metadata.
    * @return string The definition of the form.
@@ -313,6 +315,15 @@ class iform_report_calendar_summary {
           'group' => 'Table Options'
         ),
         array(
+          'name'=>'allowMultiLocLinks',
+          'caption'=>'Allow Links for multilocation searches',
+          'description'=>'Used when generating link URLs to associated samples. Select if you wish the links to the associated samples to be generated for all report runs. Leave unselected if you wish the links only to be present when a location is selected.<br />The links are present for all locations for managers, the locations in the branch for branch coordinators, and for the samples that a normal user has produced.',
+          'type'=>'boolean',
+          'default' => false,
+          'required' => false,
+          'group' => 'Table Options'
+        ),
+      	array(
           'name' => 'chartType',
           'caption' => 'Chart Type',
           'description' => 'Type of chart.',
@@ -744,9 +755,11 @@ class iform_report_calendar_summary {
     // this means it does not get a list of all locations if no user is selected: to be added later?
     $options['extraParams']['location_id'] = $siteUrlParams[self::$locationKey]['value'];
     $options['extraParams']['location_list'] = '';
-    if($options['extraParams']['location_id'] == '') // only allow links when a location is specified
+    if((!isset($args['allowMultiLocLinks']) || !$args['allowMultiLocLinks']) &&
+        $options['extraParams']['location_id'] == '') // only allow links when a location is specified
       unset($options['linkURL']);
-    
+    // for branch users we can also provide links to all walks on locations allocated to us as branch coordinator.
+    // normal users only get those we create, managers (admin) get links to all.
     if(!isset($args['includeUserFilter']) || !$args['includeUserFilter'] ||
         ((!isset($options['extraParams']['user_id']) || $options['extraParams']['user_id']=="") &&
             $siteUrlParams[self::$userKey]['value']!="branch") ||
@@ -759,32 +772,28 @@ class iform_report_calendar_summary {
       $description="All sites";
     } else {
       // Get list of locations attached to this user via the cms user id attribute: have to have included the user control to get user id, and set the userSpecificLocationLookUp flag
-      // first need to scan param_presets for survey_id..
-      $presets = get_options_array_with_user_data($args['param_presets']);
-      if(!isset($presets['survey_id']) || $presets['survey_id']=='')
-        return(lang::get('Location control: survey_id missing from presets.'));
-      $attrArgs = array(
+      if($siteUrlParams[self::$userKey]['value']=="branch"){
+        // this can only be done for a branch coordinator, so the self::branchLocationList has already been filled in.
+        $description="All branch sites";
+        if(count(self::$branchLocationList)===0)
+          return(lang::get('[No sites allocated.]'));
+        $locationIDList=self::$branchLocationList;
+      } else {
+        // first need to scan param_presets for survey_id..
+        $presets = get_options_array_with_user_data($args['param_presets']);
+        if(!isset($presets['survey_id']) || $presets['survey_id']=='')
+          return(lang::get('Location control: survey_id missing from presets.'));
+        $attrArgs = array(
           'valuetable'=>'location_attribute_value',
           'attrtable'=>'location_attribute',
           'key'=>'location_id',
           'fieldprefix'=>'locAttr',
           'extraParams'=>$readAuth,
           'survey_id'=>$presets['survey_id']);
-      if(isset($args['locationTypeFilter']) && $args['locationTypeFilter']!="")
-        $attrArgs['location_type_id'] = $args['locationTypeFilter'];
-      $locationAttributes = data_entry_helper::getAttributes($attrArgs, false);
-      if($siteUrlParams[self::$userKey]['value']=="branch"){
-        $cmsAttr= self::extract_attr($locationAttributes, $args['branchFilterAttribute']);
-        if(!$cmsAttr)
-          return(lang::get('Location control Branch Coordinator mode: missing Branch allocation attribute : ').$args['branchFilterAttribute']);
-        $attrListArgs=array('nocache'=>true,
-            'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
-                             'location_attribute_id'=>$cmsAttr['attributeId'], 'raw_value'=>$user->uid),
-                       $readAuth),
-            'table'=>'location_attribute_value');
-        $description="All branch sites";
-      } else {
-        $cmsAttr=extract_cms_user_attr($locationAttributes,false);
+        if(isset($args['locationTypeFilter']) && $args['locationTypeFilter']!="")
+          $attrArgs['location_type_id'] = $args['locationTypeFilter'];
+        $locationAttributes = data_entry_helper::getAttributes($attrArgs, false);
+      	$cmsAttr=extract_cms_user_attr($locationAttributes,false);
         if(!$cmsAttr)
           return(lang::get('Location control: missing CMS User ID location attribute.'));
         $attrListArgs=array('nocache'=>true,
@@ -793,15 +802,15 @@ class iform_report_calendar_summary {
                        $readAuth),
             'table'=>'location_attribute_value');
         $description="All ".($user->uid == $options['extraParams']['user_id'] ? 'my' : 'user')." sites";
+        $attrList = data_entry_helper::get_population_data($attrListArgs);
+        if (isset($attrList['error']))
+          return $attrList['error'];
+        if(count($attrList)===0)
+          return(lang::get('[No sites allocated.]'));
+        $locationIDList=array();
+        foreach($attrList as $attr)
+          $locationIDList[] = $attr['location_id'];
       }
-      $attrList = data_entry_helper::get_population_data($attrListArgs);
-      if (isset($attrList['error']))
-        return $attrList['error'];
-      if(count($attrList)===0)
-        return(lang::get('[No sites allocated.]'));
-      $locationIDList=array();
-      foreach($attrList as $attr)
-        $locationIDList[] = $attr['location_id'];
       $locationIDList = implode(',', $locationIDList);
       $locationListArgs=array('nocache'=>true,
           'extraParams'=>array_merge(array('website_id'=>$args['website_id'],  'location_type_id' => '', 'idlist'=>$locationIDList),
@@ -844,12 +853,15 @@ class iform_report_calendar_summary {
     $siteUrlParams = self::get_site_url_params();
     $options['extraParams']['user_id'] = $siteUrlParams[self::$userKey]['value'] == "branch" ? '' : $siteUrlParams[self::$userKey]['value'];
     $userList=array();
+    if (function_exists('module_exists') && module_exists('easy_login') && function_exists('hostsite_get_user_field')) {
+      $options['my_user_id']=hostsite_get_user_field('indicia_user_id');
+    } else {
+      $options['my_user_id']=$user->uid;
+    }
     if(!isset($args['managerPermission']) || $args['managerPermission']=="" || !user_access($args['managerPermission'])) {
       // user is a normal user
       $userList[$user->uid]=$user; // just me
-      $options['my_user_id']=$user;
     } else {
-      $options['my_user_id']=false; // removes restriction on links to samples based on user_id.
       // user is manager, so need to load the list of users they can choose to report against 
       if(!isset($args['userLookUp']) || !$args['userLookUp']) {
         // look up all users, not just those that have entered data.
@@ -1119,6 +1131,52 @@ jQuery('#".$ctrlid."').change(function(){
       $reportOptions['extraParams']['occattrs']=$args['countColumn'];
     }
 
+    // for a normal user, we can only link to those samples we have created
+    $reportOptions['location_list'] = array();
+    // for a branch user, we have an allowed list of locations for which we can link to the sample.
+    self::$branchLocationList = array();
+    if(isset($args['branchManagerPermission']) && $args['branchManagerPermission']!="" && user_access($args['branchManagerPermission'])) {
+      // Get list of locations attached to this user via the branch cms user id attribute
+      // first need to scan param_presets for survey_id..
+      $presets = get_options_array_with_user_data($args['param_presets']);
+      if(!isset($presets['survey_id']) || $presets['survey_id']=='')
+      	return(lang::get('Branch Manager location list lookup: survey_id missing from presets.'));
+      $attrArgs = array(
+      		'valuetable'=>'location_attribute_value',
+      		'attrtable'=>'location_attribute',
+      		'key'=>'location_id',
+      		'fieldprefix'=>'locAttr',
+      		'extraParams'=>$auth,
+      		'survey_id'=>$presets['survey_id']);
+      if(isset($args['locationTypeFilter']) && $args['locationTypeFilter']!="")
+      	$attrArgs['location_type_id'] = $args['locationTypeFilter'];
+      $locationAttributes = data_entry_helper::getAttributes($attrArgs, false);
+      $cmsAttr= self::extract_attr($locationAttributes, $args['branchFilterAttribute']);
+      if(!$cmsAttr)
+         return(lang::get('Branch Manager location list lookup: missing Branch allocation attribute : ').$args['branchFilterAttribute']);
+      $attrListArgs=array('nocache'=>true,
+      			'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
+      					'location_attribute_id'=>$cmsAttr['attributeId'], 'raw_value'=>$user->uid),
+      					$auth),
+      			'table'=>'location_attribute_value');
+      $attrList = data_entry_helper::get_population_data($attrListArgs);
+      if (isset($attrList['error']))
+        return $attrList['error'];
+      if(count($attrList)>0)
+        foreach($attrList as $attr)
+        	self::$branchLocationList[] = $attr['location_id'];
+      $reportOptions['location_list'] = self::$branchLocationList;
+    }
+    // for an admin, we can link to all samples.
+    if(isset($args['managerPermission']) && $args['managerPermission']!="" && user_access($args['managerPermission'])) {
+    	$reportOptions['location_list'] = 'all';
+    }
+    
+    if (function_exists('module_exists') && module_exists('easy_login') && function_exists('hostsite_get_user_field')) {
+      $reportOptions['my_user_id']=hostsite_get_user_field('indicia_user_id');
+    } else {
+      $reportOptions['my_user_id']=$user->uid;
+    }
     $retVal = '';
     // Add controls first: set up a control bar
     $retVal .= "\n<table id=\"controls-table\" class=\"ui-widget ui-widget-content ui-corner-all controls-table\"><thead class=\"ui-widget-header\"><tr>";
