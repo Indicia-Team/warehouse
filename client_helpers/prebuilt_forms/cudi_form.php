@@ -185,6 +185,22 @@ class iform_cudi_form extends iform_dynamic {
           'group'=>'Configurable Ids'
         ),  
         array(
+          'name'=>'boundary_start_date_id',
+          'caption'=>'Boundary Start Date Id',
+          'description'=>'Id of the start date attribute for a count unit boundary.',
+          'type'=>'string',
+          'required' => true,
+          'group'=>'Configurable Ids'
+        ), 
+        array(
+          'name'=>'boundary_end_date_id',
+          'caption'=>'Boundary End Date Id',
+          'description'=>'Id of the end date attribute for a count unit boundary.',
+          'type'=>'string',
+          'required' => true,
+          'group'=>'Configurable Ids'
+        ),
+        array(
           'name'=>'administrator_mode',
           'caption'=>'Administrator Mode?',
           'description'=>'Place page into administrator mode. This enables extra functionality and better privileges for performing certain tasks.',
@@ -622,13 +638,17 @@ mapInitialisationHooks.push(function(mapdiv) {
                               'current_user_id'=>$user->profile_indicia_user_id,
                               'count_unit_id'=>$locationId,
                               'count_unit_boundary_location_type_id'=>$args['count_unit_boundary_location_type_id'],
-                              'admin_role'=>$args['administrator_mode']);
+                              'admin_role'=>$args['administrator_mode'],
+                              'boundary_start_date_attribute_id'=>$args['boundary_start_date_id'],
+                              'boundary_end_date_attribute_id'=>$args['boundary_end_date_id']);
     else 
       $extraParams=array('preferred_boundary_attribute_id'=>$args['preferred_boundary_attribute_id'],
                           'current_user_id'=>$user->uid,
                           'count_unit_id'=>$locationId,
                           'count_unit_boundary_location_type_id'=>$args['count_unit_boundary_location_type_id'],
-                          'admin_role'=>$args['administrator_mode']);
+                          'admin_role'=>$args['administrator_mode'],
+                          'boundary_start_date_attribute_id'=>$args['boundary_start_date_id'],
+                          'boundary_end_date_attribute_id'=>$args['boundary_end_date_id']);
       $optionsForBoundaryVersionsReport = array(
       'dataSource'=>'reports_for_prebuilt_forms/CUDI/get_count_unit_boundaries_for_user_role',
       'readAuth'=>$auth['read'],
@@ -778,7 +798,24 @@ mapInitialisationHooks.push(function(mapdiv) {
             $linkToBoundaryPage = $linkToBoundaryPage.$_GET['location_id'];
           }
           //Boundary version options setup as we go around the foreach loop.
-          $r .= '<option value="'.$boundaryVersionData['id'].'" id="'.$linkToBoundaryPage.'">'.$boundaryVersionData['id'].' - '.$boundaryVersionData['created_on'].' -> '.$boundaryVersionData['updated_on'].'</option>';         
+          if ($boundaryVersionData['start_date']) {
+            $dateStartUnformatted = new DateTime($boundaryVersionData['start_date']);
+            $boundaryStartDateToShow = $dateStartUnformatted->format('d/m/Y');
+          } else {
+            $boundaryStartDateToShow = 'N/K';
+          }
+          
+          if ($boundaryVersionData['end_date']) {
+            $dateEndUnformatted = new DateTime($boundaryVersionData['end_date']);
+            $boundaryEndDateToShow = $dateEndUnformatted->format('d/m/Y');
+          } else {
+            $boundaryEndDateToShow = 'N/K';
+          }
+          
+          $r .= '<option value="'.$boundaryVersionData['id'].'" id="'.$linkToBoundaryPage.'">'.$boundaryVersionData['id'].
+                ' - Start Date = '.$boundaryStartDateToShow.
+                ', End Date = '.$boundaryEndDateToShow.
+                '</option>';         
         }
         
         //If preferred boundary is setup, then set the label on screen and put it in a hidden textbox which can be accessed during submission.
