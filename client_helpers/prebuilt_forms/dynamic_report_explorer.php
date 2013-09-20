@@ -252,7 +252,7 @@ class iform_dynamic_report_explorer extends iform_dynamic {
   protected static function getFooter($args) {
     return '';
   }
-  
+    
   protected static function getFirstTabAdditionalContent($args, $auth, &$attributes) {
     return '';
   }
@@ -287,6 +287,14 @@ class iform_dynamic_report_explorer extends iform_dynamic {
  
   protected static function get_control_map($auth, $args, $tabalias, $options) {
     iform_load_helpers(array('map_helper'));
+    // $_GET data for standard params can override displayed location
+    if (isset($_GET['filter-location_id']) || isset($_GET['filter-indexed_location_id'])) {
+      $args['display_user_profile_location']=false;
+      if (!empty($_GET['filter-indexed_location_id']))
+        $args['location_boundary_id']=$_GET['filter-indexed_location_id'];
+      elseif (!empty($_GET['filter-location_id']))
+        $args['location_boundary_id']=$_GET['filter-location_id'];
+    }
     // allow us to call iform_report_get_report_options to get a default report setup, then override report_name
     $args['report_name']='';
     $sharing=empty($args['sharing']) ? 'reporting' : $args['sharing'];
