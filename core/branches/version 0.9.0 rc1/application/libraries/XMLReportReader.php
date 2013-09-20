@@ -855,6 +855,15 @@ JOIN user_trusts ut on (ut.survey_id=o.survey_id
       'survey_list_op' => array('datatype'=>'lookup', 'default'=>'in', 'display'=>'Survey IDs mode', 
           'description'=>'Include or exclude the list of surveys', 'lookup_values'=>'in:Include,not in:Exclude'
       ),
+      'input_form_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Input forms", 
+          'description'=>'Comma separated list of input form paths',
+          'wheres' => array(
+             array('value'=>'', 'operator'=>'', 'sql'=>"o.input_form #input_form_list_op# (#input_form_list#)")
+          )
+      ),
+      'input_form_list_op' => array('datatype'=>'lookup', 'default'=>'in', 'display'=>'Input forms mode', 
+          'description'=>'Include or exclude the list of input forms', 'lookup_values'=>'in:Include,not in:Exclude'
+      ),
       'taxon_group_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Taxon Group IDs", 
           'description'=>'Comma separated list of IDs',
           'wheres' => array(
@@ -876,6 +885,22 @@ JOIN user_trusts ut on (ut.survey_id=o.survey_id
   from q 
   join cache_taxa_taxon_lists tc on tc.parent_id = q.id 
 ) select array_to_string(array_agg(id::varchar), ',') from q"
+      ),
+      'taxon_meaning_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Taxon meaning IDs", 
+          'description'=>'Comma separated list of taxon meaning IDs',
+          'wheres' => array(
+            array('value'=>'', 'operator'=>'', 'sql'=>"o.taxon_meaning_id in (#taxon_meaning_list#)")
+          ),
+          'preprocess' => // faster than embedding this query in the report
+"with recursive q as ( 
+  select id, taxon_meaning_id 
+  from cache_taxa_taxon_lists t 
+  where taxon_meaning_id in (#taxon_meaning_list#) 
+  union all 
+  select tc.id, tc.taxon_meaning_id 
+  from q 
+  join cache_taxa_taxon_lists tc on tc.parent_id = q.id 
+) select array_to_string(array_agg(taxon_meaning_id::varchar), ',') from q"
       )
     ), $this->params);
     $this->defaultParamValues = array_merge(array(
@@ -899,8 +924,11 @@ JOIN user_trusts ut on (ut.survey_id=o.survey_id
         'website_list_op'=>'in',
         'survey_list'=>'',
         'survey_list_op'=>'in',
+        'input_form_list'=>'',
+        'input_form_list_op'=>'in',
         'taxon_group_list'=>'',
         'taxa_taxon_list_list'=>'',
+        'taxon_meaning_list'=>''
     ), $this->defaultParamValues);
   }
 
