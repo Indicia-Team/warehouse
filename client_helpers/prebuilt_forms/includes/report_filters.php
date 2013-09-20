@@ -583,7 +583,7 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
   $overrideJs = '';
   foreach(array_merge($options, $_GET) as $key=>$value) {
     if (substr($key, 0, 7)==='filter-') {
-      $overrideJs .= "indiciaData.filter.def['".substr($key, 7)."']='".$value."';\n";
+      $overrideJs .= "indiciaData.filter.def['".substr($key, 7)."']='".str_replace("'", "\\'", $value)."';\n";
     }
   }
   if (!empty($overrideJs)) {
