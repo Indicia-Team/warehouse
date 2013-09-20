@@ -85,6 +85,7 @@ class extension_site_hierarchy_navigator {
     map_helper::$javascript .= "indiciaData.showCountUnitsForLayers=".json_encode($showCountUnitsForLayers).";\n";
     map_helper::$javascript .= "indiciaData.countUnitBoundaryTypeId=".$options['countUnitBoundaryTypeId'].";\n";
     map_helper::$javascript .= "indiciaData.annotationTypeIds=".json_encode($annotationTypeIds).";\n";
+    map_helper::$javascript .= "indiciaData.deactivateSiteAttributeId=".$options['deactivateSiteAttributeId'].";\n";
     //Get translatable label for top-level breadcrub item.
     map_helper::$javascript .= "indiciaData.allSitesLabel='".lang::get('All Sites')."';\n";
     $reportOptions = array(

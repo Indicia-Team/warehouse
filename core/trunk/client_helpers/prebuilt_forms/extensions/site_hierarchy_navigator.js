@@ -141,7 +141,7 @@ function get_clicked_feature(clickedFeatureId,breadcrumbHierarchy,clickedFeature
   if (!clickedFeature) {
     //Get all locations for the location type of the location we are clicking on
     //avb TODO->We might be able to make this more efficient
-    reportRequest = indiciaData.layerReportRequest + '&location_type_id='+clickedFeatureLocationTypeId+'&parent_id='+null;
+    reportRequest = indiciaData.layerReportRequest + '&location_type_id='+clickedFeatureLocationTypeId+'&parent_id='+null+'&deactivate_site_attribute_id='+indiciaData.deactivateSiteAttributeId;
     $.getJSON(reportRequest,
       null,
       function(reportdata, textStatus, jqXHR) {      
@@ -207,9 +207,9 @@ function add_new_layer_controller(clickedFeature,breadcrumbHierarchy,clickedFeat
   } else {
     //If the user has specified a layer must also display count units, then add them to the report parameters
     if (inArray(childLocationTypesToReport,indiciaData.showCountUnitsForLayers)) {
-      reportRequest = indiciaData.layerReportRequest + '&location_type_id='+childLocationTypesToReport+','+indiciaData.layerLocationTypes[indiciaData.layerLocationTypes.length-1]+ '&parent_id='+parentId;
+      reportRequest = indiciaData.layerReportRequest + '&location_type_id='+childLocationTypesToReport+','+indiciaData.layerLocationTypes[indiciaData.layerLocationTypes.length-1]+ '&parent_id='+parentId+'&deactivate_site_attribute_id='+indiciaData.deactivateSiteAttributeId;
     } else {
-      reportRequest = indiciaData.layerReportRequest + '&location_type_id='+childLocationTypesToReport+'&parent_id='+parentId;
+      reportRequest = indiciaData.layerReportRequest + '&location_type_id='+childLocationTypesToReport+'&parent_id='+parentId+'&deactivate_site_attribute_id='+indiciaData.deactivateSiteAttributeId;
     }
     //Get the locations to displayed that are within the parent location (or all locations matching the first location type if it is the first layer)
     $.getJSON(reportRequest,
