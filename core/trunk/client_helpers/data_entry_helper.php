@@ -2452,6 +2452,10 @@ class data_entry_helper extends helper_base {
   * lookupListId is set.<br/>
   * hasData - occurrences are created for any row which has a data value specified in at least one of its columns. <br/>
   * This option supercedes the checkboxCol option which is still recognised for backwards compatibility.</li>
+  * <li><b>hasDataIgnoreAttrs</b><br/>
+  * Optional integer array, where each entry corresponds to the id of an attribute that should be ignored when doing
+  * the hasData row inclusion check. If a column has a default value, especially a gridIdAttribute, you may not want
+  * it to trigger creation of an occurrence so include it in this array.</li>
   * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
   * <li><b>cachetimeout</b><br/>
@@ -2931,10 +2935,15 @@ class data_entry_helper extends helper_base {
       else
         $grid .= "<tr style=\"display: none\"><td></td></tr>\n";
       $grid .= "</tbody>\n</table>\n";
-      // in hasData mode, the wrap_species_checklist method must be notified of the different default way of checking if a row is to be
-      // made into an occurrence.
-      if ($options['rowInclusionCheck']=='hasData')
-        $grid .= '<input name="rowInclusionCheck" value="hasData" type="hidden" />';
+      // in hasData mode, the wrap_species_checklist method must be notified of the different default 
+      // way of checking if a row is to be made into an occurrence. This may differ between grids when
+      // there are multiple grids on a page.
+      if ($options['rowInclusionCheck']=='hasData') {
+        $grid .= '<input name="rowInclusionCheck-' . $options['id'] . '" value="hasData" type="hidden" />';
+        if (!empty($options['hasDataIgnoreAttrs']))
+          $grid .= '<input name="hasDataIgnoreAttrs-' . $options['id'] . '" value="' 
+                . implode(',', $options['hasDataIgnoreAttrs']) . '" type="hidden" />';
+      }
       self::add_resource('addrowtogrid');
       // If the lookupListId parameter is specified then the user is able to add extra rows to the grid,
       // selecting the species from this list. Add the required controls for this.
@@ -5379,17 +5388,22 @@ if (errors$uniq.length>0) {
     // Set the default method of looking for rows to include - either using data, or the checkbox (which could be hidden)
     $include_if_any_data = $include_if_any_data || (isset($arr['rowInclusionCheck']) && $arr['rowInclusionCheck']=='hasData');
     // Species checklist entries take the following format.
-    // sc:<rowIndex>:[<occurrence_id>]:present (checkbox with val set to ttl_id
+    // sc:<grid_id>-<rowIndex>:[<occurrence_id>]:present (checkbox with val set to ttl_id
     // or
-    // sc:<rowIndex>:[<occurrence_id>]:occAttr:<occurrence_attribute_id>[:<occurrence_attribute_value_id>]
+    // sc:<grid_id>-<rowIndex>:[<occurrence_id>]:occAttr:<occurrence_attribute_id>[:<occurrence_attribute_value_id>]
     // or
-    // sc:<rowIndex>:[<occurrence_id>]:occurrence:comment
+    // sc:<grid_id>-<rowIndex>:[<occurrence_id>]:occurrence:comment
     // or
-    // sc:<rowIndex>:[<occurrence_id>]:occurrence_image:fieldname:uniqueImageId
+    // sc:<grid_id>-<rowIndex>:[<occurrence_id>]:occurrence_image:fieldname:uniqueImageId
     $records = array();
+    // $records will be an array containing an entry for every row in every grid on the page
+    $allRowInclusionCheck = array();
+    // $allRowInclusionCheck will be an array containing an entry for every grid that specified a value of hasData
+    $allHasDataIgnoreAttrs = array();
+    // $allHasDataIgnoreAttrs will be an array containing an entry for every grid that specified a value
     $subModels = array();
-    foreach ($arr as $key=>$value){
-      if (substr($key, 0, 3)=='sc:'){ 
+    foreach ($arr as $key => $value){
+      if (substr($key, 0, 3) == 'sc:'){ 
         // Don't explode the last element for occurrence attributes
         $a = explode(':', $key, 4);
         $records[$a[1]][$a[3]] = $value;
@@ -5398,10 +5412,30 @@ if (errors$uniq.length>0) {
           $records[$a[1]]['id'] = $a[2];
         }
       }
-    }
+      else if (substr($key, 0, 19) == 'hasDataIgnoreAttrs-') {
+        $tableId = substr($key, 19);
+        $allHasDataIgnoreAttrs[$tableId] = explode(',', $value);       
+      }
+       else if (substr($key, 0, 18) == 'rowInclusionCheck-') {
+        $tableId = substr($key, 18);
+        $allRowInclusionCheck[$tableId] = $value;       
+      }
+   }
     foreach ($records as $id => $record) {
+      // determine the id of the grid this record is from
+      // $id = <grid_id>-<rowIndex> but <grid_id> could contain a hyphen
+      $a = explode('-', $id);
+      array_pop($a);
+      $tableId = implode('-', $a);
+      // determine any hasDataIgnoreAttrs for this record
+      $hasDataIgnoreAttrs = array_key_exists($tableId, $allHasDataIgnoreAttrs) ? 
+              $allHasDataIgnoreAttrs[$tableId] : array();
+      // use default value of $include_if_any_data or override with a table specific value
+      $include_if_any_data = array_key_exists($tableId, $allRowInclusionCheck) && $allRowInclusionCheck[$tableId] = 'hasData' ? 
+              true : $include_if_any_data;
+      // determine if this record is for presence, absence or nothing
       $present = self::wrap_species_checklist_record_present($record, $include_if_any_data,
-          $zero_attrs, $zero_values);
+          $zero_attrs, $zero_values, $hasDataIgnoreAttrs);
       if (array_key_exists('id', $record) || $present!==null) { // must always handle row if already present in the db
         if ($present===null)
           // checkboxes do not appear if not checked. If uncheck, delete record.
@@ -5558,15 +5592,20 @@ if (errors$uniq.length>0) {
    * or pass true to check all attributes.
    * @param array $zero_values Array of values to consider as zero, which might include localisations of words
    * such as "absent" and "zero" as well as "0".
+   * @param array $hasDataIgnoreAttrs Array or attribute IDs to ignore when checking if record is present.
    * @access Private
    * @return boolean True if present, false if absent (zero abundance record), null if not defined in the data (no occurrence).
    */
-  private static function wrap_species_checklist_record_present($record, $include_if_any_data, $zero_attrs, $zero_values) {
+  private static function wrap_species_checklist_record_present($record, $include_if_any_data, $zero_attrs, $zero_values, $hasDataIgnoreAttrs) {
     // present should contain the ttl ID, or zero if the present box was unchecked
     $gotTtlId=array_key_exists('present', $record) && $record['present']!='0';
     // as we are working on a copy of the record, discard the ID and taxa_taxon_list_id so it is easy to check if there is any other data for the row.
     unset($record['id']);
     unset($record['present']); // stores ttl id
+    // also discard any attributes we included in $hasDataIgnoreAttrs
+    foreach ($hasDataIgnoreAttrs as $attrID) {
+      unset($record['occAttr:' . $attrID]);
+    }
     // if zero attrs not an empty array, we must proceed to check for zeros
     if ($zero_attrs) {
       // check for zero abundance records. First build a regexp that will match the attr IDs to check. Attrs can be
