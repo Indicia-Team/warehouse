@@ -1832,7 +1832,9 @@ jQuery('#tabs').bind('tabsshow', function(event, ui) {
         'sample_method_id'=>$sampleMethods[0]['id'],
         'multiValue'=>false // ensures that array_keys are the list of attribute IDs.
       ));
+      $smpDate = self::parseSingleDate($values['sample:date']);
       foreach($sections as $section){
+      	$smp = false;
         $exists=false;
         foreach($existingSubSamples as $existingSubSample){
           if($existingSubSample['location_id'] == $section['id']){
@@ -1860,7 +1862,9 @@ jQuery('#tabs').bind('tabsshow', function(event, ui) {
               }
             }
           }
-        } else { // need to ensure any date change is propagated
+        } else { // need to ensure any date change is propagated: only do if date has changed for performance reasons.
+          $subSmpDate = self::parseSingleDate($exists['date_start']);
+          if(strcmp($smpDate,$subSmpDate))
         	$smp = array('fkId' => 'parent_id',
         			'model' => array('id' => 'sample',
         					'fields' => array('survey_id' => array('value' => $values['sample:survey_id']),
@@ -1871,15 +1875,24 @@ jQuery('#tabs').bind('tabsshow', function(event, ui) {
         					)),
         			'copyFields' => array('date_start'=>'date_start','date_end'=>'date_end','date_type'=>'date_type'));
         }
-        $subsampleModels[] = $smp;
+        if($smp) $subsampleModels[] = $smp;
       }
     }
     $submission = submission_builder::build_submission($values, array('model' => 'sample'));
     if(count($subsampleModels)>0)
       $submission['subModels'] = $subsampleModels;
     }
-
     return($submission);
+  }
+  
+  // we assume that this is not quite vague: we are looking for variations of YYYY-MM-DD, with diff separators
+  // and possibly reverse ordered: month always in middle.
+  protected static function parseSingleDate($string){
+    if(preg_match('#^\d{2}/\d{2}/\d{4}$#', $string)){ // DD/MM/YYYY
+      $results = preg_split('#/#', $string);
+      return $results[2].'-'.$results[1].'-'.$results[0];
+    }
+    return $string;
   }
   
   /**
