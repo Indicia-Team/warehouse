@@ -396,8 +396,8 @@ class filter_source extends filter_base {
     $obj=array();
     foreach ($sources as $idx=>$source) {
       $r .= '<li class="vis-survey-'.$source['survey_id'].' vis-website-'.$source['website_id'].'">' .
-          '<input type="checkbox" value="'.$source['id'].'" id="check-form-'.$idx.'"/>' .
-          '<label for="check-form-'.$idx.'">'.$source['input_form'].'</label></li>';
+          '<input type="checkbox" value="'.$source['input_form'].'" id="check-form-'.$idx.'"/>' .
+          '<label for="check-form-'.$idx.'">'.ucfirst(trim(preg_replace('/(http:\/\/)|[\/\-_]|(\?q=)/', ' ', $source['input_form']))).'</label></li>';
       $obj[$source['input_form']]=$idx;
     }
     $r .= '</ul></div>';
