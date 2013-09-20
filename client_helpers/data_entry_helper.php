@@ -276,7 +276,7 @@ class data_entry_helper extends helper_base {
   * this is a compound control and the many sub-controls have id values with additiobnal suffixes.</li>
   * <li><b>default</b><br/>
   * Optional. An array of items to load into the control on page startup. Each entry must be an associative array
-  * with keys fieldname, caption and value.</li>
+  * with keys fieldname, caption and default.</li>
   * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
   * <li><b>numValues</b><br/>
