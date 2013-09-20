@@ -855,6 +855,15 @@ JOIN user_trusts ut on (ut.survey_id=o.survey_id
       'survey_list_op' => array('datatype'=>'lookup', 'default'=>'in', 'display'=>'Survey IDs mode', 
           'description'=>'Include or exclude the list of surveys', 'lookup_values'=>'in:Include,not in:Exclude'
       ),
+      'input_form_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Input forms", 
+          'description'=>'Comma separated list of input form paths',
+          'wheres' => array(
+             array('value'=>'', 'operator'=>'', 'sql'=>"o.input_form #input_form_list_op# (#input_form_list#)")
+          )
+      ),
+      'input_form_list_op' => array('datatype'=>'lookup', 'default'=>'in', 'display'=>'Input forms mode', 
+          'description'=>'Include or exclude the list of input forms', 'lookup_values'=>'in:Include,not in:Exclude'
+      ),
       'taxon_group_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Taxon Group IDs", 
           'description'=>'Comma separated list of IDs',
           'wheres' => array(
@@ -915,6 +924,8 @@ JOIN user_trusts ut on (ut.survey_id=o.survey_id
         'website_list_op'=>'in',
         'survey_list'=>'',
         'survey_list_op'=>'in',
+        'input_form_list'=>'',
+        'input_form_list_op'=>'in',
         'taxon_group_list'=>'',
         'taxa_taxon_list_list'=>'',
         'taxon_meaning_list'=>''
