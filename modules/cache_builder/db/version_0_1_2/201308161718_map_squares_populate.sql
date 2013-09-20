@@ -93,13 +93,39 @@ WHERE msq.x=t.x10k
 AND msq.y=t.y10k
 AND msq.size=t.size10k;
 
+UPDATE interim SET sensitivity_precision=0 WHERE sensitivity_precision IS NULL;
+
+SELECT o.id, t.msq_id1k, t.msq_id2k, t.msq_id10k
+INTO interim2
+FROM samples s
+JOIN occurrences o ON o.sample_id=s.id and o.deleted=false
+JOIN interim t ON t.entered_sref=s.entered_sref
+  AND t.entered_sref_system=s.entered_sref_system
+  AND t.confidential=o.confidential
+  AND t.sensitivity_precision=COALESCE(o.sensitivity_precision, 0)
+where s.deleted=false;
+
+CREATE INDEX ix_interim2 ON interim2(id);
+
 UPDATE cache_occurrences co
 SET map_sq_1km_id=t.msq_id1k, map_sq_2km_id=t.msq_id2k, map_sq_10km_id=t.msq_id10k
-FROM interim t, occurrences o, samples s
-WHERE o.id=co.id and s.id=co.sample_id
-and t.confidential=o.confidential
-and coalesce(t.sensitivity_precision, 0)=coalesce(o.sensitivity_precision, 0)
-and t.entered_sref=s.entered_sref
-and t.entered_sref_system=s.entered_sref_system;
+FROM interim2 t
+WHERE t.id=co.id;
 
 DROP TABLE interim;
+DROP TABLE interim2;
+
+CREATE INDEX ix_cache_occurrences_map_sq_1km_id
+  ON cache_occurrences
+  USING btree
+  (map_sq_1km_id);
+  
+CREATE INDEX ix_cache_occurrences_map_sq_2km_id
+  ON cache_occurrences
+  USING btree
+  (map_sq_2km_id);
+
+CREATE INDEX ix_cache_occurrences_map_sq_10km_id
+  ON cache_occurrences
+  USING btree
+  (map_sq_1km_id);

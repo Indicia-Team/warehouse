@@ -28,18 +28,3 @@ ALTER TABLE cache_occurrences ADD COLUMN map_sq_10km_id INTEGER;
 
 CREATE UNIQUE INDEX ix_map_squares_unique
    ON map_squares (x ASC NULLS LAST, y ASC NULLS LAST, size ASC NULLS LAST);
-   
-CREATE INDEX ix_cache_occurrences_map_sq_1km_id
-  ON cache_occurrences
-  USING btree
-  (map_sq_1km_id);
-  
-CREATE INDEX ix_cache_occurrences_map_sq_2km_id
-  ON cache_occurrences
-  USING btree
-  (map_sq_2km_id);
-
-CREATE INDEX ix_cache_occurrences_map_sq_10km_id
-  ON cache_occurrences
-  USING btree
-  (map_sq_1km_id);
