@@ -795,7 +795,7 @@ class iform_report_calendar_summary {
         $locationAttributes = data_entry_helper::getAttributes($attrArgs, false);
       	$cmsAttr=extract_cms_user_attr($locationAttributes,false);
         if(!$cmsAttr)
-          return(lang::get('Location control: missing CMS User ID location attribute.'));
+          return '';
         $attrListArgs=array('nocache'=>true,
             'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
                              'location_attribute_id'=>$cmsAttr['attributeId'], 'raw_value'=>$options['extraParams']['user_id']),
