@@ -507,6 +507,9 @@ jQuery(document).ready(function($) {
         if (context.survey_list_op && context.survey_list) {
           filterDef.survey_list_op=context.survey_list_op;
         }
+        if (context.input_form_list_op && context.input_form_list) {
+          filterDef.input_form_list_op=context.input_form_list_op;
+        }
         // ensure that the selected websites, surveys and forms are in the context limits
         limitSourceToContext('website', filterDef, context);
         limitSourceToContext('survey', filterDef, context);
@@ -541,16 +544,19 @@ jQuery(document).ready(function($) {
         disableSourceControlsForContext('input_form', context);
       },
       applyFormToDefinition:function() {
-        var website_ids = [];
+        var website_ids = [], survey_ids=[], input_forms=[];
         $.each($('#filter-websites input:checked').filter(":visible"), function(idx, ctrl) {
           website_ids.push($(ctrl).val());
         });
         indiciaData.filter.def.website_list = website_ids.join(',');
-        var survey_ids = [];
         $.each($('#filter-surveys input:checked').filter(":visible"), function(idx, ctrl) {
           survey_ids.push($(ctrl).val());
         });
         indiciaData.filter.def.survey_list = survey_ids.join(',');
+        $.each($('#filter-input_forms input:checked').filter(":visible"), function(idx, ctrl) {
+          input_forms.push("'" + $(ctrl).val() + "'");
+        });
+        indiciaData.filter.def.input_form_list = input_forms.join(',');
       }
     }
   };
