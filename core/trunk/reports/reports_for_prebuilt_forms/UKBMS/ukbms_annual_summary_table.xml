@@ -52,7 +52,7 @@
     <param name='location_id' display='Location ID' description='Enter the ID of the location' datatype='int' >
       <where>parent.location_id=#location_id#</where>
     </param>
-    <param name='location_list' display='Location List' description='Enter a comma separated list of location IDs' datatype='text' >
+    <param name='location_list' display='Location List' description='Enter a comma separated list of location IDs' datatype='text' default='' >
       <where>parent.location_id IN (#location_list#)</where>
     </param>
   </params>
