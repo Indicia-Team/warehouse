@@ -33,6 +33,13 @@ class ORM extends ORM_Core {
   * @var bool Should foreign key lookups be cached? Set to true during import for example.
   */
   public static $cacheFkLookups = false;
+  
+  
+  /**
+   * Tracks list of all inserted, updated or deleted records in this transaction.
+   * @var array
+   */
+  public static $changedRecords = array('update'=>array(),'insert'=>array(),'delete'=>array());
 
   public function last_query() {
     return $this->db->last_query();
@@ -548,6 +555,7 @@ class ORM extends ORM_Core {
     $this->db->query('BEGIN;');
     try {
       $res = $this->inner_submit();
+      $this->postProcess();
     } catch (Exception $e) {
       $this->errors['general']='<strong>An error occurred</strong><br/>'.$e->getMessage();
       error::log_error('Exception during inner_submit.', $e);
@@ -561,6 +569,31 @@ class ORM extends ORM_Core {
       $this->db->query('ROLLBACK;');
     }
     return $res;
+  }
+  
+  /**
+   * Handles any index rebuild requirements as a result of new or updated records, e.g. in 
+   * samples or occurrences.
+   */
+  private function postProcess() {
+    if (class_exists('cache_builder')) {
+      if (!empty(self::$changedRecords['insert']['occurrence'])) 
+        cache_builder::insert($this->db, 'occurrences', self::$changedRecords['insert']['occurrence']);
+      if (!empty(self::$changedRecords['update']['occurrence'])) 
+        cache_builder::updated($this->db, 'occurrences', self::$changedRecords['update']['occurrence']);  
+      if (!empty(self::$changedRecords['delete']['occurrence'])) 
+        cache_builder::delete($this->db, 'occurrences', self::$changedRecords['delete']['occurrence']);
+      $samples=array();
+      if (!empty(self::$changedRecords['insert']['sample']))
+        $samples = self::$changedRecords['insert']['sample'];
+      if (!empty(self::$changedRecords['update']['sample']))
+        $samples += self::$changedRecords['update']['sample'];
+      if (!empty($samples)) {
+        postgreSQL::insertMapSquaresForSamples($samples, 1000, $this->db);
+        postgreSQL::insertMapSquaresForSamples($samples, 2000, $this->db);
+        postgreSQL::insertMapSquaresForSamples($samples, 10000, $this->db);
+      }
+    }
   }
 
   /**
@@ -596,6 +629,16 @@ class ORM extends ORM_Core {
         $return = $this->createAttributes() ? $return : null;
         $return = $this->createChildRecords() ? $return : null;
         $return = $this->createJoinRecords() ? $return : null;
+        
+        if ($isInsert) 
+          $addTo=&self::$changedRecords['insert'];
+        elseif ($this->deleted==='t')
+          $addTo=&self::$changedRecords['delete'];
+        else
+          $addTo=&self::$changedRecords['update'];
+        if (!isset($addTo[$this->object_name]))
+          $addTo[$this->object_name] = array();
+        $addTo[$this->object_name][] = $this->id;
       }
       // Call postSubmit
       if ($return) {
