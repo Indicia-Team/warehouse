@@ -580,7 +580,7 @@ class ORM extends ORM_Core {
       if (!empty(self::$changedRecords['insert']['occurrence'])) 
         cache_builder::insert($this->db, 'occurrences', self::$changedRecords['insert']['occurrence']);
       if (!empty(self::$changedRecords['update']['occurrence'])) 
-        cache_builder::updated($this->db, 'occurrences', self::$changedRecords['update']['occurrence']);  
+        cache_builder::update($this->db, 'occurrences', self::$changedRecords['update']['occurrence']);  
       if (!empty(self::$changedRecords['delete']['occurrence'])) 
         cache_builder::delete($this->db, 'occurrences', self::$changedRecords['delete']['occurrence']);
       $samples=array();
