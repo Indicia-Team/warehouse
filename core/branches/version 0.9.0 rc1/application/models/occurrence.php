@@ -447,21 +447,5 @@ class Occurrence_Model extends ORM
     );
   }
   
-  /**
-   * Force occurrences to appear in the cache so that they are immediately available to report on.
-   * @todo Consider if we should do this at the sample level, to update the whole sample in a single hit.
-   */
-  protected function postSubmit($isInsert) {
-    if (class_exists('cache_builder')) {
-      if ($isInsert) 
-        cache_builder::insert($this->db, 'occurrences', $this->id);
-      elseif ($this->deleted==='t')
-        cache_builder::delete($this->db, 'occurrences', $this->id);
-      else
-        cache_builder::update($this->db, 'occurrences', $this->id);
-    }
-    return true;
-  }
-  
 }
 ?>

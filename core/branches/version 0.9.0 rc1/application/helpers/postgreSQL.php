@@ -104,39 +104,36 @@ class postgreSQL {
   /** 
    * Function to be called on postSubmit of a sample, to make sure that any changed occurrences are linked to their map square entries properly.
    */
-  public static function insertMapSquaresForSample($id, $size, $db=null) {
-    static $srid;
-    if (!isset($srid)) {
-      $srid = kohana::config('sref_notations.internal_srid');
-    }
-    if (!$db)
-      $db = new Database();
-    // Seems much faster to break this into small queries than one big left join.
-    $smpInfo = $db->query(
-    "SELECT DISTINCT st_astext(s.geom) as geom, o.confidential, GREATEST(o.sensitivity_precision, $size) as size, s.entered_sref_system,
-        round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, $size), s.entered_sref_system)))) as x,
-        round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, $size), s.entered_sref_system)))) as y
-      FROM samples s
-      JOIN occurrences o ON o.sample_id=s.id
-      WHERE s.id=$id")->result_array(TRUE);
-    foreach ($smpInfo as $s) {
-      $existing = $db->query("SELECT id FROM map_squares WHERE x={$s->x} AND y={$s->y} AND size={$s->size}")->result_array();
-      if (count($existing)===0) {
-        $db->query("INSERT INTO map_squares (geom, x, y, size)
-          VALUES (reduce_precision(st_geomfromtext('{$s->geom}', $srid), '{$s->confidential}', {$s->size}, '{$s->entered_sref_system}'), {$s->x}, {$s->y}, {$s->size})");
+  public static function insertMapSquaresForSamples($ids, $size, $db=null) {
+    if (count($ids)>0) {
+      static $srid;
+      if (!isset($srid)) {
+        $srid = kohana::config('sref_notations.internal_srid');
+      }
+      if (!$db)
+        $db = new Database();
+      $idlist=implode(',', $ids);
+      // Seems much faster to break this into small queries than one big left join.
+      $smpInfo = $db->query(
+      "SELECT DISTINCT s.id, st_astext(s.geom) as geom, o.confidential, GREATEST(o.sensitivity_precision, $size) as size, s.entered_sref_system,
+          round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, $size), s.entered_sref_system)))) as x,
+          round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, $size), s.entered_sref_system)))) as y
+        FROM samples s
+        JOIN occurrences o ON o.sample_id=s.id
+        WHERE s.id IN ($idlist)")->result_array(TRUE);
+      $km=$size/1000;
+      foreach ($smpInfo as $s) {
+        $existing = $db->query("SELECT id FROM map_squares WHERE x={$s->x} AND y={$s->y} AND size={$s->size}")->result_array(FALSE);
+        if (count($existing)===0) {
+          $qry=$db->query("INSERT INTO map_squares (geom, x, y, size)
+            VALUES (reduce_precision(st_geomfromtext('{$s->geom}', $srid), '{$s->confidential}', {$s->size}, '{$s->entered_sref_system}'), {$s->x}, {$s->y}, {$s->size})");
+          $msqId=$qry->insert_id();
+        }
+        else 
+          $msqId=$existing[0]['id'];
+        $db->query("UPDATE cache_occurrences co SET map_sq_{$km}km_id=$msqId WHERE sample_id={$s->id}");
       }
     }
-    $km=$size/1000;
-    $db->query(
-    "UPDATE cache_occurrences co
-      SET map_sq_{$km}km_id=msq.id
-      FROM map_squares msq, samples s, occurrences o
-      WHERE s.id=co.sample_id AND o.id=co.id
-      AND msq.x=round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, greatest(o.sensitivity_precision, $size), s.entered_sref_system))))
-      AND msq.y=round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, greatest(o.sensitivity_precision, $size), s.entered_sref_system))))
-      AND msq.size=greatest(o.sensitivity_precision, $size)
-      AND s.id=$id"
-    );
   }
   
   /**
