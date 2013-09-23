@@ -102,22 +102,19 @@ class iform_dynamic_weekly_counts extends iform_dynamic_sample_occurrence {
     }
     return $r;
   }
-  
-  /**
-   * Handles the construction of a submission array from a set of form values. 
-   *
-   * @param array $values Associative array of form data values. 
-   * @param array $args iform parameters. 
-   * @return array Submission structure.
-   */
-  public static function get_submission($values, $args) {
     
-  }
-  
+  /**
+   * Output the weekly counts grid. This integrates with the dynamic form user interface definition - use [weekly_counts_grid] 
+   * to output the form.
+   * @param array $auth Authorisation tokens
+   * @param array $args Form configuration arguments
+   * @param string $tabAlias ID of the tab this is loaded onto. Not used.
+   * @param array $options Control specific options. Not used.
+   */
   protected static function get_control_weeklycountsgrid($auth, $args, $tabAlias, $options) {
-    $startDate=self::getStartDate($args);
     $r = '<table id="weekly-counts-grid">';
     $r .= '<thead>';
+    $startDate=self::getStartDate($args);
     $currentDate=new DateTime();
     $currentDate->setTimestamp($startDate);
     $headingFormats=explode(',', $args['headings']);
@@ -142,7 +139,6 @@ class iform_dynamic_weekly_counts extends iform_dynamic_sample_occurrence {
                 $useDate=$currentDate;
               }
               $format = str_replace($token, $useDate->format($dateFormat), $format);
-              if ($idx===3 && $i===1) drupal_set_message($token);
             }
           }          
         }
@@ -154,18 +150,28 @@ class iform_dynamic_weekly_counts extends iform_dynamic_sample_occurrence {
       }
       date_add($currentDate, date_interval_create_from_date_string('1 week'));
     }
-    foreach ($headingFormats as $idx=>$format) 
-      $r .= '<tr><th>' . implode('</th><th>', $ths[$idx]) . '</th></tr>';
+    foreach ($headingFormats as $idx=>$format) {
+      $r .= '<tr><th>' . implode('</th><th>', $ths[$idx]) . '</th>';
+      if ($idx===count($headingFormats)-1)
+        $r .= '<th>'.lang::get('Max').'</th><th>'.lang::get('Weeks').'</th>';
+      $r .= '</tr>';
+    }
     $r .= '</thead>';
     $r .= '<tbody>';
-    $r .= self::speciesRows($args, $auth);
+    $r .= self::speciesRows($args, $auth, $tableData, $sampleIdsByDate);
     $r .= '</tbody></table>';
+    if (!empty($sampleIdsByDate)) 
+      // store existing sample IDs in form so we can post edits against them
+      $r .= '<input type="hidden" name="samples-dates" value="'.htmlspecialchars(json_encode($sampleIdsByDate)).'"/>';
+    // JavaScript will populate this for us to post the count data.
+    $r .= '<input id="table-data" name="table-data" type="hidden" value="'.htmlspecialchars(json_encode($tableData)).'"/>';
     return $r;
   }
   
   /**
    * Retrieves the start date for the series of weeks. Uses this year's season, unless before the 
    * start in which case it returns last year's season.
+   * @param array $args Form configuration arguments
    */
   private static function getStartDate($args) {
     $now = getdate();
@@ -179,11 +185,12 @@ class iform_dynamic_weekly_counts extends iform_dynamic_sample_occurrence {
   /**
    * Retrieves the start date for the series of weeks, given a year of the season start.
    * @param array $args Form arguments array, containing start setting (ddmm format) and optional weekday (full name day of week).
+   * @param int $yr Year
    * @return timestamp Start date
    */
   private static function getStartDateForYear($args, $yr) {
-    $day = substr($args['start'], 0, 2);
-    $month = substr($args['start'], 2, 2);
+    $day = substr($args['season_start'], 0, 2);
+    $month = substr($args['season_start'], 2, 2);
     $proposedStart=mkTime(0, 0, 0, $month, $day, $yr);
     if ($args['weekday']) {
       $dateArr = getdate($proposedStart);
@@ -193,20 +200,155 @@ class iform_dynamic_weekly_counts extends iform_dynamic_sample_occurrence {
     return $proposedStart;
   }
   
-  private static function speciesRows($args, $auth) {
+  /** 
+   * Returns the rows for the species grid.
+   * @param array $args Form configuration arguments
+   * @param array $auth Authorisation tokens
+   * @param array $tableData For any existing data loaded into the grid, returns an array of values keyed by fieldname.
+   * @param array $tableData For any existing samples loaded, returns an array of sample IDs keyed by start timestamp.
+   * @return string HTML for the list of tr elements to insert.
+   */
+  private static function speciesRows($args, $auth, &$tableData, &$sampleIdsByDate) {
+    $sampleIdsByDate=array();
+    $tableData=array();
+    if (!empty($_GET['sample_id'])) {
+      $existingSamples=data_entry_helper::get_population_data(array(
+        'table'=>'sample',
+        'extraParams'=>$auth['read'] + array('parent_id'=>$_GET['sample_id'], 'view'=>'detail'),
+        'nocache'=>true
+      ));
+      // want a list of sample IDs, keyed by date for lookup later.      
+      foreach ($existingSamples as $sample) {
+        $sampleIdsByDate[strtotime($sample['date_start'])]=$sample['id'];
+      }
+      $existingValues=data_entry_helper::get_population_data(array(
+        'report'=>'library/occurrence_attribute_values/occurrence_attribute_values_list',
+        'extraParams'=>$auth['read'] + array('parent_sample_id'=>$_GET['sample_id']),
+        'nocache'=>true
+      ));
+      // want a list of attribute value IDs and values, keyed by sample ID and ttl ID for lookup later.
+      $valuesBySampleTtl=array();
+      foreach ($existingValues as $value) {
+        $valuesBySampleTtl["{$value[sample_id]}|{$value[taxa_taxon_list_id]}"]="{$value[id]}|{$value[occurrence_id]}|{$value[value]}";
+      }
+    }
+    $attrOptions = array(
+        'id' => null,
+         'valuetable'=>'occurrence_attribute_value',
+         'attrtable'=>'occurrence_attribute',
+         'key'=>'occurrence_id',
+         'fieldprefix'=>'sc#wk#:#ttlId#:#occId#:occAttr',
+         'extraParams'=>$auth['read'],
+         'survey_id'=>$args['survey_id']
+    );
+    $attributes = data_entry_helper::getAttributes($attrOptions);
+    if (count($attributes)!==1)
+      throw new exception('There must be a single integer occurrence attribute set up for the survey associated with this form.');
+    $attr=array_pop($attributes);
+    if (!preg_match('/^[TI]$/', $attr['data_type']))
+      throw new exception('The occurrence attribute configured for the survey associated with this form must be an integer.');
     $speciesList = data_entry_helper::get_population_data(array(
       'table'=>'cache_taxa_taxon_list',
       'extraParams' => array('taxon_list_id'=>$args['list_id'], 'preferred'=>'t') + $auth['read']
     ));
-    $r = '';
     foreach ($speciesList as $species) {
       $r .= '<tr><td>' . $species['default_common_name'] . '</td>';
+      $weekstart=self::getStartDate($args);
       for ($i=0; $i<$args['weeks']; $i++) {
-        $r .= "<td><input type=\"text\" name=\"count-{$species[id]}-{$i}\"/></td>";
+        $valId='';
+        $occId='';
+        $val='';
+        if (isset($sampleIdsByDate[$weekstart])) {
+          $sampleId=$sampleIdsByDate[$weekstart];
+          if (!empty($valuesBySampleTtl["$sampleId|{$species[id]}"])) {
+            $tokens=explode('|', $valuesBySampleTtl["$sampleId|{$species[id]}"]);
+            $valId=$tokens[0];
+            $occId=$tokens[1];
+            $val=$tokens[2];
+          }
+        }
+        $fieldname = str_replace(array('#wk#', '#ttlId#', '#occId#'), array($i, $species['id'], $occId), $attr['fieldname']);
+        if ($valId) {
+          $fieldname .= ':'.$valId;
+          $tableData[$fieldname]=$val;
+        }
+        if ($weekstart>time())
+          $r .= "<td class=\"col-$i\"><span class=\"disabled\"></span></td>";
+        else 
+          // we don't use name for the inputs, as there are too many to post! JS will store all info in a single JSON hidden input.
+          $r .= "<td class=\"col-$i\"><input type=\"text\" class=\"count-input\" id=\"$fieldname\" value=\"$val\"/></td>";
+        $weekstart=strtotime('+7 days', $weekstart);
       }
-      $r .= '</tr>';
+      $r .= '<td class="max"></td><td class="weeks"></td></tr>';
     }
+    $r .= '<tr class="species-totals"><td>Number of species</td>';
+    for ($i=0; $i<$args['weeks']; $i++) {
+      $r .= "<td class=\"col-$i\">0</td>";
+    }
+    $r .= '</tr>';
     return $r;
   }
+  
+  /**
+   * Handles the construction of a submission array from a set of form values. 
+   *
+   * @param array $values Associative array of form data values. 
+   * @param array $args iform parameters. 
+   * @return array Submission structure.
+   */
+  public static function get_submission($values, $args) {
+    $startDate=self::getStartDate($args);
+    $fromDate=new DateTime();
+    $fromDate->setTimestamp($startDate);
+    $values['sample:date_start']=$fromDate->format('Y-m-d');
+    $dateEnd=clone $fromDate;
+    $dateEnd->add(date_interval_create_from_date_string(($args['weeks']*7-1) . ' days'));
+    // force max date to today to pass validation.
+    if (new DateTime()>$dateEnd) $dateEnd=new DateTime();
+    $values['sample:date_end']=$dateEnd->format('Y-m-d');
+    $values['sample:date_type']='DD';
+    $weekData=array();
+    $countValues = json_decode($values['table-data']);
+    // existing samples being posted?
+    $samplesDates=array();
+    if (!empty($values['samples-dates']))
+      $samplesDates=json_decode($values['samples-dates'], true);
+    unset($values['table-data']);
+    unset($values['samples-dates']);
+    $parentSample = submission_builder::wrap_with_images($values, 'sample');
+    foreach ($countValues as $key=>$value) {
+      $tokens=explode(':', $key);
+      // consider existing values, or filled in values only
+      if (($value!=='' || count($tokens)===6) && preg_match('/^sc([0-9]+):/', $key, $matches)) {
+        $weekIdx=$matches[1];
+        if (!isset($weekData["week$weekIdx"]))
+          $weekData["week$weekIdx"]=array();        
+        $datelessKey=preg_replace('/^sc([0-9]+):/', 'sc:', $key);
+        $weekData["week$weekIdx"][$datelessKey]=$value;
+        $presenceKey=preg_replace('/occAttr:[0-9]+(:[0-9]+)?$/', 'present', $datelessKey);
+        $weekData["week$weekIdx"][$presenceKey]=$tokens[1];
+      }
+    }
+    $parentSample['subModels']=array();
+    foreach ($weekData as $week => $data) {
+      $weekno=substr($week, 4);
+      $weekstart = clone $fromDate;
+      $weekstart->add(date_interval_create_from_date_string(($weekno) . ' weeks'));
+      if (isset($samplesDates[$weekstart->getTimestamp()]))
+        $data['sample:id']=$samplesDates[$weekstart->getTimestamp()];
+      $data['sample:date_start']=$weekstart->format('Y-m-d');
+      $data['sample:date_end']=$weekstart->add(date_interval_create_from_date_string('6 days'))->format('Y-m-d');
+      $data['sample:date_type']='DD';
+      $data['website_id']=$values['website_id'];
+      $data['survey_id']=$values['survey_id'];
+      $data['entered_sref']=$values['sample:entered_sref'];
+      $data['entered_sref_system']=$values['sample:entered_sref_system'];
+      $data['geom']=$values['sample:geom'];
+      $subSampleAndOccs = data_entry_helper::build_sample_occurrences_list_submission($data);
+      $parentSample['subModels'][] = array('fkId'=>'parent_id', 'model'=>$subSampleAndOccs);
+    }
+    return $parentSample;
+  }
+  
 
 }
