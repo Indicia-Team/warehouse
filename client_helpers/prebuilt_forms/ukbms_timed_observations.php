@@ -318,8 +318,10 @@ class iform_ukbms_timed_observations {
   public static function get_form($args, $node, $response=null) {
     if (isset($response['error']))
       data_entry_helper::dump_errors($response);
-    if (isset($_REQUEST['page']) && $_REQUEST['page']==='mainSample' && !isset(data_entry_helper::$validation_errors)) {
-      // we have just saved the sample page, so move on to the occurrences list
+    if ((isset($_REQUEST['page']) && $_REQUEST['page']==='mainSample' && !isset(data_entry_helper::$validation_errors) && !isset($response['error'])) ||
+        (isset($_REQUEST['page']) && $_REQUEST['page']==='notes')) {
+      // we have just saved the sample page, so move on to the occurrences list,
+      // or we have had an error in the notes page
       return self::get_occurrences_form($args, $node, $response);
     } else {
       return self::get_sample_form($args, $node, $response);
@@ -551,7 +553,6 @@ mapInitialisationHooks.push(function(mapdiv) {
     if (isset($_POST['sample:id'])) {
       // have just posted an edit to the existing sample
       $sampleId = $_POST['sample:id'];
-      $date = $_POST['sample:date'];
       $existing=true;
       data_entry_helper::load_existing_record($auth['read'], 'sample', $sampleId);
     } else {
@@ -562,13 +563,13 @@ mapInitialisationHooks.push(function(mapdiv) {
         $sampleId = $_GET['sample_id'];
         $existing=true;
       }
-      $sample = data_entry_helper::get_population_data(array(
+    }
+    $sample = data_entry_helper::get_population_data(array(
         'table' => 'sample',
         'extraParams' => $auth['read'] + array('view'=>'detail','id'=>$sampleId,'deleted'=>'f')
-      ));
-      $sample=$sample[0];
-      $date=$sample['date_start'];
-    }
+    ));
+    $sample=$sample[0];
+    $date=$sample['date_start'];
     if (!function_exists('module_exists') || !module_exists('easy_login')) {
       // work out the CMS User sample ID.
       $sampleMethods = helper_base::get_termlist_terms($auth, 'indicia:sample_methods', array('Field Observation'));
@@ -710,7 +711,23 @@ mapInitialisationHooks.push(function(mapdiv) {
       $r .= '<br /><a href="'.$args['my_obs_page'].'" class="button">'.lang::get('Finish').'</a></div>';
     }
 
-    $r .= "<div id=\"notes\"><form method=\"post\">\n";
+    // for the comment form, we want to ensure that if there is a timeout error that it reloads the
+    // data as stored in the DB.
+    $reload = data_entry_helper::get_reload_link_parts();
+    $reload['params']['sample_id'] = $parentSampleId;
+    unset($reload['params']['new']);
+    $reloadPath = $reload['path'];
+    if(count($reload['params'])) {
+    	// decode params prior to encoding to prevent double encoding.
+    	foreach ($reload['params'] as $key => $param) {
+    		$reload['params'][$key] = urldecode($param);
+    	}
+    	$reloadPath .= '?'.http_build_query($reload['params']);
+    }
+    // fragment is always at the end. discard this.
+    $reloadPath = explode('#', $reloadPath, 2);
+    $reloadPath = $reloadPath[0];
+    $r .= "<div id=\"notes\"><form method=\"post\" action=\"".$reloadPath."#notes\">\n";
     $r .= $auth['write'];
     $r .= '<input type="hidden" name="sample:id" value="'.$sampleId.'" />' .
           '<input type="hidden" name="website_id" value="'.$args['website_id'].'"/>' .
@@ -724,7 +741,8 @@ mapInitialisationHooks.push(function(mapdiv) {
       'label'=>lang::get('Notes'),
       'helpText'=>"Use this space to input comments about this week's walk."
     ));    
-    $r .= '<input type="submit" value="'.lang::get('Submit').'" id="save-button"/></form></div></div>';
+    $r .= '<input type="submit" value="'.lang::get('Submit').'" id="save-button"/></form>';
+    $r .= '<br /><a href="'.$args['my_walks_page'].'" class="button">'.lang::get('Finish').'</a></div></div>';
 
     // A stub form for AJAX posting when we need to create an occurrence
     $r .= '<form style="display: none" id="occ-form" method="post" action="'.iform_ajaxproxy_url($node, 'occurrence').'">';
