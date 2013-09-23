@@ -598,14 +598,45 @@ mapInitialisationHooks.push(function(mapdiv) {
   }
   
   /*
-   * Display the Count Unit created date.
-   * TODO: NOT CURRENTLY OPERATIONAL AS VIEW NEEDS ALTERATION
+   * Display the person who created the Count Unit.
    */
   protected static function get_control_locationcreatedby($auth, $args, $tabalias, $options) {
+    //The URL parameter varies depending on whether we are viewing a count unit record or have selected a boundary to views
     if (!empty($_GET['parent_id']))
       $countUnitId = $_GET['parent_id'];
-    else 
+    if ($_GET['location_id']) 
       $countUnitId = $_GET['location_id'];
+    //Get the created by id from view before putting it into the report. This might not be the quickest way
+    //of doing this, but is perhaps more elegant as we don't write another report that is specific only to a very small part of a single project.
+    //Only show in add mode
+    if (!empty($countUnitId)) {
+      $locationCreatedByData = data_entry_helper::get_population_data(array(
+        'table' => 'location',
+        'extraParams' => $auth['read'] + array('id' => $countUnitId, 'view' => 'detail'),
+        'nocache' => true,
+        'sharing' => $sharing
+      )); 
+      $reportOptions = array(
+        'dataSource'=>'library/users/get_people_for_user_id',
+        'readAuth'=>$auth['read'],
+        'mode'=>'report',
+        'extraParams' => array('user_id'=>$locationCreatedByData[0]['created_by_id'])
+      );
+      $userData = data_entry_helper::get_report_data($reportOptions);
+      return "<label>".lang::get('LANG_Location_Created_By').":</label> <label>".$userData[0]['fullname']."</label><br>";
+    }
+  }
+  
+  /*
+   * Display the Count Unit created date.
+   */
+  protected static function get_control_locationcreatedon($auth, $args, $tabalias, $options) {
+    //The URL parameter varies depending on whether we are viewing a count unit record or have selected a boundary to view
+    if (!empty($_GET['parent_id']))
+      $countUnitId = $_GET['parent_id'];
+    if ($_GET['location_id']) 
+      $countUnitId = $_GET['location_id'];
+    //Only show in add mode
     if (!empty($countUnitId)) {
       $locationCreatedByData = data_entry_helper::get_population_data(array(
         'table' => 'location',
@@ -613,16 +644,11 @@ mapInitialisationHooks.push(function(mapdiv) {
         'nocache' => true,
         'sharing' => $sharing
       ));
+       
+      $createdDataUnformatted = new DateTime($locationCreatedByData[0]['created_on']);
+      $createdDateToShow = $createdDataUnformatted->format('d/m/Y');
+      return "<label>".lang::get('LANG_Location_Created_On').":</label> <label>".$createdDateToShow."</label><br>";
     }
-    return "<label>".lang::get('LANG_Location_Created_By').":</label> <label>".$locationCreatedByData[0]['created_by']."</label><br>";
-  }
-  
-  protected static function get_control_locationcreatedon($auth, $args, $tabalias, $options) {
-    return data_entry_helper::text_input(array_merge(array(
-      'label' => lang::get('LANG_Location_Created_On'),
-      'fieldname' => 'location:created_on',
-      'class' => 'control-width-5'
-    ), $options));
   }
 
   /*
