@@ -653,8 +653,10 @@ class iform_ukbms_sectioned_transects_input_sample {
   public static function get_form($args, $node, $response=null) {
     if (isset($response['error']))
       data_entry_helper::dump_errors($response);
-    if (isset($_REQUEST['page']) && $_REQUEST['page']==='mainSample' && !isset(data_entry_helper::$validation_errors)) {
-      // we have just saved the sample page, so move on to the occurrences list
+    if ((isset($_REQUEST['page']) && $_REQUEST['page']==='mainSample' && !isset(data_entry_helper::$validation_errors) && !isset($response['error'])) ||
+        (isset($_REQUEST['page']) && $_REQUEST['page']==='notes')) {
+      // we have just saved the sample page, so move on to the occurrences list,
+      // or we have had an error in the notes page
       return self::get_occurrences_form($args, $node, $response);
     } else {
       return self::get_sample_form($args, $node, $response);
@@ -872,8 +874,6 @@ class iform_ukbms_sectioned_transects_input_sample {
     if (isset($_POST['sample:id'])) {
       // have just posted an edit to the existing parent sample, so can use it to get the parent location id.
       $parentSampleId = $_POST['sample:id'];
-      $parentLocId = $_POST['sample:location_id'];
-      $date = $_POST['sample:date'];
       $existing=true;
       data_entry_helper::load_existing_record($auth['read'], 'sample', $parentSampleId);
     } else {
@@ -884,14 +884,14 @@ class iform_ukbms_sectioned_transects_input_sample {
         $parentSampleId = $_GET['sample_id'];
         $existing=true;
       }
-      $sample = data_entry_helper::get_population_data(array(
-        'table' => 'sample',
-        'extraParams' => $auth['read'] + array('view'=>'detail','id'=>$parentSampleId,'deleted'=>'f')
-      ));
-      $sample=$sample[0];
-      $parentLocId = $sample['location_id'];
-      $date=$sample['date_start'];
     }
+    $sample = data_entry_helper::get_population_data(array(
+      'table' => 'sample',
+      'extraParams' => $auth['read'] + array('view'=>'detail','id'=>$parentSampleId,'deleted'=>'f')
+    ));
+    $sample=$sample[0];
+    $parentLocId = $sample['location_id'];
+    $date=$sample['date_start'];
     if (!function_exists('module_exists') || !module_exists('easy_login')) {
       // work out the CMS User sample ID.
       $sampleMethods = helper_base::get_termlist_terms($auth, 'indicia:sample_methods', array('Transect'));
@@ -1245,8 +1245,20 @@ class iform_ukbms_sectioned_transects_input_sample {
 jQuery(jQuery('#".$options["tabDiv"]."').parent()).bind('tabsshow', speciesMapTabHandler);\n";
     }
     
+    // for the comment form, we want to ensure that if there is a timeout error that it reloads the 
+    // data as stored in the DB.
+    $reloadParts = explode('?', $reloadPath, 2);
+    // fragment is always at the end. discard this.
+    if(count($reloadParts)>1){
+    	$params = explode('#', $reloadParts[1], 2);
+    	$params=$params[0]."&sample_id=".$parentSampleId;
+    } else {
+    	$reloadParts = explode('#', $reloadParts[0], 2);
+    	$params = "sample_id=".$parentSampleId;
+    }
+    
     $r .= "<div id=\"notes\">\n";
-    $r .= "<form method=\"post\">\n";
+    $r .= "<form method=\"post\" action=\"".$reloadParts[0].'?'.$params."#notes\">\n";
     $r .= $auth['write'];
     $r .= '<input type="hidden" name="sample:id" value="'.$parentSampleId.'" />';
     $r .= '<input type="hidden" name="website_id" value="'.$args['website_id'].'"/>';
@@ -1262,6 +1274,7 @@ jQuery(jQuery('#".$options["tabDiv"]."').parent()).bind('tabsshow', speciesMapTa
     ));    
     $r .= '<input type="submit" value="'.lang::get('Submit').'" id="save-button"/>';
     $r .= '</form>';
+    $r .= '<br /><a href="'.$args['my_walks_page'].'" class="button">'.lang::get('Finish').'</a>';
     $r .= '</div></div>';
     // A stub form for AJAX posting when we need to create an occurrence
     $r .= '<form style="display: none" id="occ-form" method="post" action="'.iform_ajaxproxy_url($node, 'occurrence').'">';
