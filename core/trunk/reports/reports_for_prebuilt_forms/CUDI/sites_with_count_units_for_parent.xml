@@ -36,6 +36,9 @@
           AND LCU.location_type_id = (#count_unit_type_id#)   
       </join>
     </param>
+    <param name="clean_url" datatype="string"/>
+    <param name="information_sheet_url" datatype="string"/>
+    <param name="homepage_url" datatype="string"/>
     <param name="deactivate_site_attribute_id" datatype="integer"/>
     <param name="site_type_id" datatype="integer"/>
     <param name="sub_site_type_id" datatype="integer"/>
@@ -46,7 +49,21 @@
     <param name="admin_mode" datatype="integer"/>
   </params>
   <columns>
-    <column name="name" display="Site/Sub-Site" sql="l.name" in_count="true"/>
-    <column name="count_units" display="Count Units" sql="array_to_string(array_agg(LCU.name), ', ')" aggregate="true" />
+    <column name="name" display="Site/Sub-Site" sql="
+    case '#clean_url#'
+      WHEN '1'
+        THEN '&lt;a href=&quot;'||#homepage_url#||'?id='||l.id||'&quot;&gt;' || l.name
+      ELSE
+        '&lt;a href=&quot;?q='||#homepage_url#||'&amp;id='||l.id||'&quot;&gt;' || l.name
+    END
+" in_count="true" />
+    <column name="count_units" display="Count Units" sql="
+    case '#clean_url#'
+      WHEN '1'
+        THEN array_to_string(array_agg('&lt;a href=&quot;'||#information_sheet_url#||'?id='||lcu.id||'&quot;&gt;' || LCU.name), ', ')
+      ELSE
+        array_to_string(array_agg('&lt;a href=&quot;?q='||#information_sheet_url#||'&amp;id='||lcu.id||'&quot;&gt;' || LCU.name), ', ')
+    END
+" aggregate="true" />
   </columns>
 </report>
