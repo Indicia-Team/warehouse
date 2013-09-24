@@ -45,15 +45,23 @@ function load_annotation() {
       $("#annotation\\:location_type_id").val(annotation.location_type_id);
       $("#imp-boundary-geom").val(annotation.boundary_geom);
       record = annotation;
+      
+      //Convert geom from the database into polygon format we can work with in code
+      var feature, geom=OpenLayers.Geometry.fromWKT($('#imp-boundary-geom').val());
+      if (indiciaData.mapdiv.map.projection.getCode() != indiciaData.mapdiv.indiciaProjection.getCode()) {
+          geom.transform(indiciaData.mapdiv.indiciaProjection, indiciaData.mapdiv.map.projection);
+      }
+      feature = new OpenLayers.Feature.Vector(geom, record);
+      feature.attributes.type = 'annotation';
+      indiciaData.mapdiv.map.editLayer.addFeatures([feature]);
+    }
+    
+    if ($('#existing_annotations').val()==='(New Annotation)') {
+      $("#annotation\\:id").val(null);
+      $("#annotation\\:name").val(null);
+      $("#annotation\\:code").val(null);
+      $("#annotation\\:location_type_id").val(null);
+      $("#imp-boundary-geom").val(null);
     }
   });
-  //Convert geom from the database into polygon format we can work with in code
-  var feature, geom=OpenLayers.Geometry.fromWKT($('#imp-boundary-geom').val());
-  if (indiciaData.mapdiv.map.projection.getCode() != indiciaData.mapdiv.indiciaProjection.getCode()) {
-      geom.transform(indiciaData.mapdiv.indiciaProjection, indiciaData.mapdiv.map.projection);
-  }
-  feature = new OpenLayers.Feature.Vector(geom, record);
-  feature.attributes.type = 'annotation';
-  indiciaData.mapdiv.map.editLayer.addFeatures([feature]);
-  
 }
