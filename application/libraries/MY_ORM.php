@@ -632,7 +632,7 @@ class ORM extends ORM_Core {
         
         if ($isInsert) 
           $addTo=&self::$changedRecords['insert'];
-        elseif ($this->deleted==='t')
+        elseif (isset($this->deleted) && $this->deleted==='t')
           $addTo=&self::$changedRecords['delete'];
         else
           $addTo=&self::$changedRecords['update'];
