@@ -530,8 +530,9 @@ function loadSpeciesList() {
       case 'mine':
         // get all species on samples that I have recorded.
         if(indiciaData.easyLogin === true){
+          // here we just get the occurrences I have created.
           jQuery.ajax({
-               'url': indiciaData.indiciaSvc+'index.php/services/data/sample',
+               'url': indiciaData.indiciaSvc+'index.php/services/data/occurrence',
                'data': {
                  'created_by_id': indiciaData.UserID,
                  'auth_token': indiciaData.readAuth.auth_token,
@@ -540,41 +541,26 @@ function loadSpeciesList() {
                  'view': 'detail'
                },
                'dataType': 'jsonp',
-               'success': function(ssdata) {
-                   // finally get all occurrences
-                   var subSampleList = [];
-                   for(var i=0; i<ssdata.length; i++) subSampleList.push(ssdata[i].id);
-                   jQuery.ajax({
-                       'url': indiciaData.indiciaSvc+'index.php/services/data/occurrence',
-                       'data': {
-                         'query': JSON.stringify({'in': {'sample_id': subSampleList}}),
-                         'auth_token': indiciaData.readAuth.auth_token,
-                         'nonce': indiciaData.readAuth.nonce,
-                         'mode': 'json',
-                         'view': 'detail'
-                       },
-                       'dataType': 'jsonp',
-                       'success': function(odata) {
-                           for(var j=0; j<odata.length; j++){
-                             var last = false, me;
-                             // we assume that existing data in grid is in taxanomic order
-                             if(jQuery('#row-'+odata[j]['taxon_meaning_id']).length==0){ // not on list already
-                               for(var i=0; i<indiciaData.speciesList1List.length; i++){
-                                 if(odata[j].taxon_meaning_id == indiciaData.speciesList1List[i].taxon_meaning_id) {
-                                   addGridRow(indiciaData.speciesList1List[i], 'table#transect-input1', false, 1);
-                                   if(last)
-                                     jQuery('#row-'+indiciaData.speciesList1List[i]['taxon_meaning_id']).insertAfter(last);
-                                   break;
-                                 } else {
-                                   me = jQuery('#row-'+indiciaData.speciesList1List[i]['taxon_meaning_id']);
-                                   if(me.length>0) last = me;
-                                 }
-                               }
-                             }
-                           }
-                           redo_alt_row('table#transect-input1');
-                       }});
-                   }});
+               'success': function(odata) {
+                   for(var j=0; j<odata.length; j++){
+                     var last = false, me;
+                     // we assume that existing data in grid is in taxanomic order
+                     if(jQuery('#row-'+odata[j]['taxon_meaning_id']).length==0){ // not on list already
+                       for(var i=0; i<indiciaData.speciesList1List.length; i++){
+                         if(odata[j].taxon_meaning_id == indiciaData.speciesList1List[i].taxon_meaning_id) {
+                           addGridRow(indiciaData.speciesList1List[i], 'table#transect-input1', false, 1);
+                           if(last)
+                             jQuery('#row-'+indiciaData.speciesList1List[i]['taxon_meaning_id']).insertAfter(last);
+                           break;
+                         } else {
+                           me = jQuery('#row-'+indiciaData.speciesList1List[i]['taxon_meaning_id']);
+                           if(me.length>0) last = me;
+                         }
+                       }
+                     }
+                   }
+                   redo_alt_row('table#transect-input1');
+               }});
         } else {
           jQuery.ajax({
             'url': indiciaData.indiciaSvc+'index.php/services/data/sample_attribute_value',
