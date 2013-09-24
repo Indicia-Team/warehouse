@@ -1287,7 +1287,7 @@ jQuery(jQuery('#".$options["tabDiv"]."').parent()).bind('tabsshow', speciesMapTa
     $r .= '<input name="occurrence:sample_id" id="occ_sampleid"/>';
     $r .= '<input name="occAttr:' . $args['occurrence_attribute_id'] . '" id="occattr"/>';
     $r .= '<input name="transaction_id" id="transaction_id"/>';
-    $r .= '<input name="user_id" value="'.hostsite_get_user_field('id').'"/>';
+    $r .= '<input name="user_id" value="'.hostsite_get_user_field('user_id', 1).'"/>';
     $r .= '</form>';
     // A stub form for AJAX posting when we need to update a sample
     $r .= '<form style="display: none" id="smp-form" method="post" action="'.iform_ajaxproxy_url($node, 'sample').'">';
