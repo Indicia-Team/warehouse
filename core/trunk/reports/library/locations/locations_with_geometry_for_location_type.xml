@@ -36,6 +36,9 @@
       AND (deactivateSiteLav.int_value is null or deactivateSiteLav.int_value = 0 or (deactivateSiteLav.int_value=1 AND #admin_mode#=1))  
   </query>
   <params>
+    <param name="location_id" datatype="integer" emptyvalue="-1">
+      <where>l.id in (#location_id#)</where>
+    </param>
     <param name="location_type_id" datatype="integer" emptyvalue="-1">
       <where>l.location_type_id in (#location_type_id#)</where>
     </param>
