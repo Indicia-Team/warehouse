@@ -286,7 +286,7 @@ class iform_dynamic_report_explorer extends iform_dynamic {
   }
  
   protected static function get_control_map($auth, $args, $tabalias, $options) {
-    iform_load_helpers(array('map_helper'));
+    iform_load_helpers(array('map_helper','report_helper'));
     // $_GET data for standard params can override displayed location
     if (isset($_GET['filter-location_id']) || isset($_GET['filter-indexed_location_id'])) {
       $args['display_user_profile_location']=false;
