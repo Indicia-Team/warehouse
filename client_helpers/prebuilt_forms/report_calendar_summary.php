@@ -765,7 +765,7 @@ class iform_report_calendar_summary {
             $siteUrlParams[self::$userKey]['value']!="branch") ||
         !isset($args['userSpecificLocationLookUp']) || !$args['userSpecificLocationLookUp']){
       // Get list of all locations
-      $locationListArgs=array('nocache'=>true,
+      $locationListArgs=array(// 'nocache'=>true,
           'extraParams'=>array_merge(array('website_id'=>$args['website_id'], 'location_type_id' => ''),
                        $readAuth),
           'dataSource' => 'library/locations/locations_list_exclude_sensitive');
@@ -796,7 +796,7 @@ class iform_report_calendar_summary {
       	$cmsAttr=extract_cms_user_attr($locationAttributes,false);
         if(!$cmsAttr)
           return '';
-        $attrListArgs=array('nocache'=>true,
+        $attrListArgs=array(// 'nocache'=>true,
             'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
                              'location_attribute_id'=>$cmsAttr['attributeId'], 'raw_value'=>$options['extraParams']['user_id']),
                        $readAuth),
@@ -812,7 +812,7 @@ class iform_report_calendar_summary {
           $locationIDList[] = $attr['location_id'];
       }
       $locationIDList = implode(',', $locationIDList);
-      $locationListArgs=array('nocache'=>true,
+      $locationListArgs=array(// 'nocache'=>true,
           'extraParams'=>array_merge(array('website_id'=>$args['website_id'],  'location_type_id' => '', 'idlist'=>$locationIDList),
                        $readAuth),
           'dataSource'=>'library/locations/locations_list_exclude_sensitive');
@@ -826,6 +826,7 @@ class iform_report_calendar_summary {
     if(isset($args['locationTypeFilter']) && $args['locationTypeFilter']!="")
       $locationListArgs['extraParams']['location_type_id'] = $args['locationTypeFilter'];
     $locationListArgs['readAuth'] = $readAuth;
+    $locationListArgs['caching']=true;
     $locationList = report_helper::get_report_data($locationListArgs);
     if (isset($locationList['error']))
       return $locationList['error'];
@@ -843,6 +844,51 @@ class iform_report_calendar_summary {
     return $ctrl;
   }
 
+  private static function _getCacheFileName($userID)
+  {
+    /* If timeout is not set, we're not caching */
+  	$path = data_entry_helper::relative_client_helper_path() . (isset(data_entry_helper::$cache_folder) ? data_entry_helper::$cache_folder : 'cache/');
+    if(!is_dir($path) || !is_writeable($path)) return false;
+    return $path.'cache_'.data_entry_helper::$website_id.'_CMS_User_List_'.$userID;
+  }
+  
+  // Idea here is to not just cache the query used to get the user data, but also the user_loads also run
+  private static function _fetchDBCache($userID)
+  {
+    if (is_numeric(data_entry_helper::$cache_timeout) && data_entry_helper::$cache_timeout > 0) {
+      $cacheTimeOut = data_entry_helper::$cache_timeout;
+    } else {
+      $cacheTimeOut = false;
+    }
+    $cacheFile = self::_getCacheFileName($userID);
+    
+    if ($cacheTimeOut && $cacheFile && is_file($cacheFile) && filemtime($cacheFile) >= (time() - $cacheTimeOut))
+    {
+      $handle = fopen($cacheFile, 'rb');
+      if(!$handle) return false;
+      // no tags as only determined by user id
+      $response = fread($handle, filesize($cacheFile));
+      fclose($handle);
+      return(json_decode($response, true));
+    }
+    if ($cacheFile && is_file($cacheFile)) {
+      unlink($cacheFile);
+    }
+    return false;
+  }
+
+  protected static function _cacheResponse($userID, $response)
+  {
+  	// need to create the file as a binary event - so create a temp file and move across.
+    $cacheFile = self::_getCacheFileName($userID);
+  	if ($cacheFile && !is_file($cacheFile) && isset($response)) {
+  		$handle = fopen($cacheFile.getmypid(), 'wb');
+  		fwrite($handle, json_encode($response));
+  		fclose($handle);
+  		rename($cacheFile.getmypid(),$cacheFile);
+  	}
+  }
+  
   private function user_control($args, $readAuth, $node, &$options)
   {
     // we don't use the userID option as the user_id can be blank, and will force the parameter request if left as a blank
@@ -863,9 +909,10 @@ class iform_report_calendar_summary {
       $userList[$user->uid]=$user; // just me
     } else {
       // user is manager, so need to load the list of users they can choose to report against 
-      if(!isset($args['userLookUp']) || !$args['userLookUp']) {
+      if(!($userList = self::_fetchDBCache($user->uid))) {
+       if(!isset($args['userLookUp']) || !$args['userLookUp']) {
         // look up all users, not just those that have entered data.
-        $results = db_query('SELECT uid, name FROM {users}');
+               $results = db_query('SELECT uid, name FROM {users}');
         if(version_compare(VERSION, '7', '<')) {
           while($result = db_fetch_object($results)){
             if($result->uid){ // ignore unauthorised user, uid zero
@@ -881,12 +928,12 @@ class iform_report_calendar_summary {
             }
           }
         }
-      } else {
+       } else {
         // need to scan param_presets for survey_id.
         $presets = get_options_array_with_user_data($args['param_presets']);
         if(!isset($presets['survey_id']) || $presets['survey_id']=='') return(lang::get('User control: survey_id missing from presets.'));
         if (function_exists('module_exists') && module_exists('easy_login')) {
-          $sampleArgs=array('nocache'=>true,
+          $sampleArgs=array(// 'nocache'=>true,
             'extraParams'=>array_merge(array('view'=>'detail', 'website_id'=>$args['website_id'], 'survey_id'=>$presets['survey_id']), $readAuth),
             'table'=>'sample');
           $sampleList = data_entry_helper::get_population_data($sampleArgs);
@@ -933,7 +980,7 @@ class iform_report_calendar_summary {
           $sampleAttributes = data_entry_helper::getAttributes($attrArgs, false);
           if (false== ($cmsAttr = extract_cms_user_attr($sampleAttributes)))
             return(lang::get('User control: CMS User ID sample attribute missing.'));
-          $attrListArgs=array('nocache'=>true,
+          $attrListArgs=array(// 'nocache'=>true,
             'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
                              'sample_attribute_id'=>$cmsAttr['attributeId']),
                        $readAuth),
@@ -947,18 +994,18 @@ class iform_report_calendar_summary {
           $results = db_query('SELECT uid, name FROM {users}');
           if(version_compare(VERSION, '7', '<')) {
             while($result = db_fetch_object($results)){
-              $account = user_load($result->uid);
-              if($result->uid && isset($userList[$account->uid]) && $userList[$account->uid])
-                $userList[$account->uid] = $account;
+              if($result->uid && isset($userList[$result->uid]) && $userList[$result->uid])
+                $userList[$account->uid] = user_load($result->uid);;
             }
           } else {
             foreach ($results as $result) { // DB handling is different in 7
-              $account = user_load($result->uid);
-              if($result->uid && isset($userList[$account->uid]) && $userList[$account->uid])
-                $userList[$account->uid] = $account;
+              if($result->uid && isset($userList[$result->uid]) && $userList[$result->uid])
+                $userList[$account->uid] = user_load($result->uid);;
             }
           }
         }
+       }
+       self::_cacheResponse($user->uid, $userList);
       }
     }
     $ctrlid='calendar-user-select-'.$node->nid;
@@ -968,10 +1015,14 @@ class iform_report_calendar_summary {
           (isset($args['branchManagerPermission']) && $args['branchManagerPermission']!="" && user_access($args['branchManagerPermission']) ? '<option value="branch" class="user-select-option" '.($siteUrlParams[self::$userKey]['value']=="branch"  ? 'selected="selected" ' : '').'>'.lang::get('Branch data').'</option>' : '').
           '<option value="all" class="user-select-option" '.($siteUrlParams[self::$userKey]['value']=='' ? 'selected="selected" ' : '').'>'.lang::get('All recorders').'</option>';
     foreach($userList as $id => $account) {
-      if($account !== true && $account->uid!==$user->uid){
-        $ctrl .= '<option value='.$id.' class="user-select-option" '.($siteUrlParams[self::$userKey]['value']==$id ? 'selected="selected" ' : '').'>'.$account->name.'</option>';
+      // if account comes from cache, then it is an array, if from drupal an object.
+      if(!is_array($account))
+        $account = get_object_vars($account);
+      if($account !== true && $account['uid']!==$user->uid){
+        $ctrl .= '<option value='.$id.' class="user-select-option" '.($siteUrlParams[self::$userKey]['value']==$id ? 'selected="selected" ' : '').'>'.$account['name'].'</option>';
       }
     }
+    
     $ctrl.='</select>';
     self::set_up_control_change($ctrlid, self::$userKey, array('locationID'));
     return $ctrl;
@@ -1088,6 +1139,7 @@ jQuery('#".$ctrlid."').change(function(){
    */
   public static function get_form($args, $node, $response) {
     global $user;
+    $retVal = '<span>Starting get_form : '.date(DATE_ATOM).'</span><br/>';
     $logged_in = $user->uid>0;
     if(!$logged_in) {
       return('<p>'.lang::get('Please log in before attempting to use this form.').'</p>');
@@ -1154,7 +1206,7 @@ jQuery('#".$ctrlid."').change(function(){
       $cmsAttr= self::extract_attr($locationAttributes, $args['branchFilterAttribute']);
       if(!$cmsAttr)
          return(lang::get('Branch Manager location list lookup: missing Branch allocation attribute : ').$args['branchFilterAttribute']);
-      $attrListArgs=array('nocache'=>true,
+      $attrListArgs=array(// 'nocache'=>true,
       			'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
       					'location_attribute_id'=>$cmsAttr['attributeId'], 'raw_value'=>$user->uid),
       					$auth),
@@ -1177,7 +1229,7 @@ jQuery('#".$ctrlid."').change(function(){
     } else {
       $reportOptions['my_user_id']=$user->uid;
     }
-    $retVal = '';
+//     $retVal = '';
     // Add controls first: set up a control bar
     $retVal .= "\n<table id=\"controls-table\" class=\"ui-widget ui-widget-content ui-corner-all controls-table\"><thead class=\"ui-widget-header\"><tr>";
     $retVal .= self::date_control($args, $auth, $node, $reportOptions);
@@ -1198,8 +1250,11 @@ jQuery('#".$ctrlid."').change(function(){
       if (isset($_GET[$param]) && $_GET[$param]==='true')    
         $reportOptions['extraParams'][$param]='';
     $reportOptions['highlightEstimates']=true;
+    if(self::$siteUrlParams[self::$userKey]['value'] == '' && self::$siteUrlParams[self::$locationKey]['value'] == '')
+      $reportOptions['caching']=true;
     // $retVal .= print_r($reportOptions[extraParams], true);
     $retVal .= report_helper::report_calendar_summary($reportOptions);
+    $retVal .= '<span>Ending get_form : '.date(DATE_ATOM).'</span><br/>';
     return $retVal;
   }
 
