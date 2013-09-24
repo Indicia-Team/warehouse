@@ -748,7 +748,7 @@ class XMLReportReader_Core implements ReportReader
       'location_name' => array('datatype'=>'text', 'default'=>'', 'display'=>'Location name', 
           'description'=>'Name of location to filter to (contains search)',
           'wheres' => array(
-            array('value'=>'', 'operator'=>'', 'sql'=>"o.location_name ilike '%#location:name#%'")
+            array('value'=>'', 'operator'=>'', 'sql'=>"o.location_name ilike '%#location_name#%'")
           )
       ),      
       'location_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>'Location ID', 
