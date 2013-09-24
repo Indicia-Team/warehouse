@@ -137,27 +137,17 @@ function get_clicked_feature(clickedFeatureId,breadcrumbHierarchy,clickedFeature
   var features=[];
   clickedFeature = indiciaData.reportlayer.getFeatureById(clickedFeatureId);
   //clickedFeature might still be empty if the user clicks on the breadcrumb as the feature isn't already on the child layer
-  //so we can't collect it by it, we need to collect it from a report
+  //so we can't collect it by using indiciaData.reportlayer.getFeatureById, we need to collect it from a report
   if (!clickedFeature) {
-    //Get all locations for the location type of the location we are clicking on
-    //avb TODO->We might be able to make this more efficient
-    reportRequest = indiciaData.layerReportRequest + '&location_type_id='+clickedFeatureLocationTypeId+'&parent_id='+null+'&deactivate_site_attribute_id='+indiciaData.deactivateSiteAttributeId;
+    reportRequest = indiciaData.layerReportRequest + '&location_type_id='+clickedFeatureLocationTypeId+'&parent_id='+null+
+    '&deactivate_site_attribute_id='+indiciaData.deactivateSiteAttributeId+'&location_id='+clickedFeatureId;
     $.getJSON(reportRequest,
       null,
-      function(reportdata, textStatus, jqXHR) {      
+      function(reportdata, textStatus, jqXHR) {     
         getMapFeaturesFromReportDataResult = get_map_features_from_report_data(reportdata,[]);
         features = getMapFeaturesFromReportDataResult[1];
-        //Cycle through all the features returned by the report until we find the one with the matching id,
-        //we can then pass this to the controller function that sets up the child layer
-        //We actually do a comparison with the parent_id report field as if the location doesn't have a parent_id set in the location table, this field
-        //is output to be the same as the location's main id by the report. In the case of boundaries (which do have a parent id filled in the location table) 
-        //the parent_id is output to be the count unit location id
-        $.each(features, function (idx, feature) {
-          if (feature.data.parent_id==clickedFeatureId) { 
-            clickedFeature = feature;
-            add_new_layer_controller(clickedFeature,breadcrumbHierarchy,clickedFeatureLocationTypeId);
-          }
-        });
+        clickedFeature = features[0];
+        add_new_layer_controller(clickedFeature,breadcrumbHierarchy,clickedFeatureLocationTypeId);
       }
     );
   } else {
@@ -207,9 +197,11 @@ function add_new_layer_controller(clickedFeature,breadcrumbHierarchy,clickedFeat
   } else {
     //If the user has specified a layer must also display count units, then add them to the report parameters
     if (inArray(childLocationTypesToReport,indiciaData.showCountUnitsForLayers)) {
-      reportRequest = indiciaData.layerReportRequest + '&location_type_id='+childLocationTypesToReport+','+indiciaData.layerLocationTypes[indiciaData.layerLocationTypes.length-1]+ '&parent_id='+parentId+'&deactivate_site_attribute_id='+indiciaData.deactivateSiteAttributeId;
+      reportRequest = indiciaData.layerReportRequest + '&location_type_id='+childLocationTypesToReport+','+indiciaData.layerLocationTypes[indiciaData.layerLocationTypes.length-1]+ '&parent_id='+parentId+
+                      '&deactivate_site_attribute_id='+indiciaData.deactivateSiteAttributeId+'&location_id=null';
     } else {
-      reportRequest = indiciaData.layerReportRequest + '&location_type_id='+childLocationTypesToReport+'&parent_id='+parentId+'&deactivate_site_attribute_id='+indiciaData.deactivateSiteAttributeId;
+      reportRequest = indiciaData.layerReportRequest + '&location_type_id='+childLocationTypesToReport+'&parent_id='+parentId+
+                      '&deactivate_site_attribute_id='+indiciaData.deactivateSiteAttributeId+'&location_id=null';
     }
     //Get the locations to displayed that are within the parent location (or all locations matching the first location type if it is the first layer)
     $.getJSON(reportRequest,
