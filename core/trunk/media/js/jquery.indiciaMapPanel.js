@@ -877,7 +877,7 @@ mapGeoreferenceHooks = [];
           displayClass: align + 'olControlSelectFeature',
           title: div.settings.reportGroup===null ? '' : div.settings.hintQueryDataPointsTool,
           lastclick: {},
-          allowBox: false,
+          allowBox: clickableVectorLayers.length>0,
           activate: function() {
             var handlerOptions = {
               'single': true,
@@ -892,7 +892,6 @@ mapGeoreferenceHooks = [];
                 )
               };
               this.handlers.box.activate();
-              this.allowBox = true;
             } else {
               // allow click or bounding box actions
               this.handlers = {click: new OpenLayers.Handler.Click(this, {
