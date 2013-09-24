@@ -748,7 +748,7 @@ class XMLReportReader_Core implements ReportReader
       'location_name' => array('datatype'=>'text', 'default'=>'', 'display'=>'Location name', 
           'description'=>'Name of location to filter to (contains search)',
           'wheres' => array(
-            array('value'=>'', 'operator'=>'', 'sql'=>"o.location_name ilike '%#location:name#%'")
+            array('value'=>'', 'operator'=>'', 'sql'=>"o.location_name ilike '%#location_name#%'")
           )
       ),      
       'location_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>'Location ID', 
@@ -891,7 +891,7 @@ JOIN user_trusts ut on (ut.survey_id=o.survey_id
           'wheres' => array(
             array('value'=>'', 'operator'=>'', 'sql'=>"o.taxon_meaning_id in (#taxon_meaning_list#)")
           ),
-          'preprocess' => // faster than embedding this query in the report
+          'preprocess' => // faster than embedding this query in the report            
 "with recursive q as ( 
   select id, taxon_meaning_id 
   from cache_taxa_taxon_lists t 
