@@ -233,7 +233,7 @@ class Upgrade_Model extends Model
             }
             if (substr($_db_file, 0, 18) === '-- #postgres user#')
               $this->scriptsForPgUser .= $_db_file . "\n\n";
-            if (substr($_db_file, 0, 16) === '-- #slow script#')
+            elseif (substr($_db_file, 0, 16) === '-- #slow script#')
               $this->slowScripts .= $_db_file . "\n\n";
             else
               $result = $this->db->query($_db_file);
