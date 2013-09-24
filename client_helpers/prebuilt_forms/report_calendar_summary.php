@@ -912,7 +912,7 @@ class iform_report_calendar_summary {
       if(!($userList = self::_fetchDBCache($user->uid))) {
        if(!isset($args['userLookUp']) || !$args['userLookUp']) {
         // look up all users, not just those that have entered data.
-               $results = db_query('SELECT uid, name FROM {users}');
+        $results = db_query('SELECT uid, name FROM {users}');
         if(version_compare(VERSION, '7', '<')) {
           while($result = db_fetch_object($results)){
             if($result->uid){ // ignore unauthorised user, uid zero
@@ -1139,7 +1139,6 @@ jQuery('#".$ctrlid."').change(function(){
    */
   public static function get_form($args, $node, $response) {
     global $user;
-    $retVal = '<span>Starting get_form : '.date(DATE_ATOM).'</span><br/>';
     $logged_in = $user->uid>0;
     if(!$logged_in) {
       return('<p>'.lang::get('Please log in before attempting to use this form.').'</p>');
@@ -1229,7 +1228,7 @@ jQuery('#".$ctrlid."').change(function(){
     } else {
       $reportOptions['my_user_id']=$user->uid;
     }
-//     $retVal = '';
+    $retVal = '';
     // Add controls first: set up a control bar
     $retVal .= "\n<table id=\"controls-table\" class=\"ui-widget ui-widget-content ui-corner-all controls-table\"><thead class=\"ui-widget-header\"><tr>";
     $retVal .= self::date_control($args, $auth, $node, $reportOptions);
@@ -1254,7 +1253,6 @@ jQuery('#".$ctrlid."').change(function(){
       $reportOptions['caching']=true;
     // $retVal .= print_r($reportOptions[extraParams], true);
     $retVal .= report_helper::report_calendar_summary($reportOptions);
-    $retVal .= '<span>Ending get_form : '.date(DATE_ATOM).'</span><br/>';
     return $retVal;
   }
 
