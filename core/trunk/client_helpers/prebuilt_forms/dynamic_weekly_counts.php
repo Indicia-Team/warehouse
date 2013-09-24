@@ -114,16 +114,13 @@ class iform_dynamic_weekly_counts extends iform_dynamic_sample_occurrence {
   protected static function get_control_weeklycountsgrid($auth, $args, $tabAlias, $options) {
     $r = '<table id="weekly-counts-grid">';
     $r .= '<thead>';
-    $startDate=self::getStartDate($args);
-    $currentDate=new DateTime();
-    $currentDate->setTimestamp($startDate);
+    $currentDate=self::getStartDate($args);
     $headingFormats=explode(',', $args['headings']);
     // array to capture multiple header rows of th elements.
     $ths=array_fill(0, count($headingFormats), array(''));
     $lastHeadings=array_fill(0, count($headingFormats), '');
     for ($i=1; $i<=$args['weeks']; $i++) {
-      $weekEnd = clone $currentDate;
-      date_add($weekEnd, date_interval_create_from_date_string('6 days'));
+      $weekEnd = strtotime('+6 days', $currentDate);
       foreach ($headingFormats as $idx => $format) {
         preg_match_all('/[a-zA-Z]+/', $format, $matches);
         if (!empty($matches)) {
@@ -138,7 +135,7 @@ class iform_dynamic_weekly_counts extends iform_dynamic_sample_occurrence {
                 $dateFormat=preg_replace('/^start/', '', $token);
                 $useDate=$currentDate;
               }
-              $format = str_replace($token, $useDate->format($dateFormat), $format);
+              $format = str_replace($token, date($dateFormat, $useDate), $format);
             }
           }          
         }
@@ -148,7 +145,7 @@ class iform_dynamic_weekly_counts extends iform_dynamic_sample_occurrence {
         } else
           $ths[$idx][]='';        
       }
-      date_add($currentDate, date_interval_create_from_date_string('1 week'));
+      $currentDate = strtotime('+1 week', $currentDate);
     }
     foreach ($headingFormats as $idx=>$format) {
       $r .= '<tr><th>' . implode('</th><th>', $ths[$idx]) . '</th>';
@@ -297,15 +294,12 @@ class iform_dynamic_weekly_counts extends iform_dynamic_sample_occurrence {
    * @return array Submission structure.
    */
   public static function get_submission($values, $args) {
-    $startDate=self::getStartDate($args);
-    $fromDate=new DateTime();
-    $fromDate->setTimestamp($startDate);
-    $values['sample:date_start']=$fromDate->format('Y-m-d');
-    $dateEnd=clone $fromDate;
-    $dateEnd->add(date_interval_create_from_date_string(($args['weeks']*7-1) . ' days'));
+    $fromDate=self::getStartDate($args);
+    $values['sample:date_start']=date('Y-m-d', $fromDate);
+    $dateEnd=strtotime('+' . ($args['weeks']*7-1) . ' days', $fromDate);
     // force max date to today to pass validation.
-    if (new DateTime()>$dateEnd) $dateEnd=new DateTime();
-    $values['sample:date_end']=$dateEnd->format('Y-m-d');
+    if ($dateEnd>time()) $dateEnd=time();
+    $values['sample:date_end']=date('Y-m-d', $dateEnd);
     $values['sample:date_type']='DD';
     $weekData=array();
     $countValues = json_decode($values['table-data']);
@@ -332,12 +326,11 @@ class iform_dynamic_weekly_counts extends iform_dynamic_sample_occurrence {
     $parentSample['subModels']=array();
     foreach ($weekData as $week => $data) {
       $weekno=substr($week, 4);
-      $weekstart = clone $fromDate;
-      $weekstart->add(date_interval_create_from_date_string(($weekno) . ' weeks'));
-      if (isset($samplesDates[$weekstart->getTimestamp()]))
-        $data['sample:id']=$samplesDates[$weekstart->getTimestamp()];
-      $data['sample:date_start']=$weekstart->format('Y-m-d');
-      $data['sample:date_end']=$weekstart->add(date_interval_create_from_date_string('6 days'))->format('Y-m-d');
+      $weekstart = strtotime('+' . ($weekno) . ' weeks', $fromDate);
+      if (isset($samplesDates[$weekstart]))
+        $data['sample:id']=$samplesDates[$weekstart];
+      $data['sample:date_start']=date('Y-m-d', $weekstart);
+      $data['sample:date_end']=date('Y-m-d', strtotime('+6 days', $weekstart));
       $data['sample:date_type']='DD';
       $data['website_id']=$values['website_id'];
       $data['survey_id']=$values['survey_id'];
