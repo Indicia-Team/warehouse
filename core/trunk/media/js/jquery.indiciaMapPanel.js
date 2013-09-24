@@ -75,6 +75,7 @@ mapGeoreferenceHooks = [];
     /**
      * Remove all features of a specific type or not of a specific type
      * This functionality allows a location to havea centroid and separate boundary.
+     * Note that inverse mode does not interfere with annotations mode as this is a seperate mode added after code was originally created.
      */
     function removeAllFeatures(layer, type, inverse) {
       var toRemove = [];
@@ -82,7 +83,8 @@ mapGeoreferenceHooks = [];
         inverse=false;
       }
       $.each(layer.features, function(idx, feature) {
-        if ((!inverse && feature.attributes.type===type) || (inverse && feature.attributes.type!==type)) {
+        //Annotations is a special seperate mode added after original code was written, so do not interfere with annotations even in inverse mode.
+        if ((!inverse && feature.attributes.type===type) || (inverse && feature.attributes.type!==type && feature.attributes.type!=='annotation')) {
           toRemove.push(feature);
         }
       });
@@ -452,8 +454,13 @@ mapGeoreferenceHooks = [];
         $('#' + opts.srefLatId).val(part1);
         $('#' + opts.srefLongId).val(parts.join(''));
       }
-      removeAllFeatures(div.map.editLayer, 'boundary', true);
-      removeAllFeatures(div.map.editLayer, 'ghost');
+      if ($('#annotations-mode-on').length && $('#annotations-mode-on').val()==='yes') { 
+        //When in annotations mode, if the user sets the centroid on the map, we only want the previous centroid point to be removed.
+        removeAllFeatures(div.map.editLayer, 'clickPoint');
+      } else {
+        removeAllFeatures(div.map.editLayer, 'boundary', true);
+        removeAllFeatures(div.map.editLayer, 'ghost');
+      }
       ghost=null;
       $('#' + opts.geomId).val(data.wkt);
       var parser = new OpenLayers.Format.WKT();
