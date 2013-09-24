@@ -752,6 +752,7 @@ mapInitialisationHooks.push(function(mapdiv) {
     $r .= '<input name="occurrence:sample_id" value="'.$sampleId.'"/>';
     $r .= '<input name="occAttr:" id="occattr"/>';
     $r .= '<input name="transaction_id" id="transaction_id"/>';
+    $r .= '<input name="user_id" value="'.hostsite_get_user_field('user_id', 1).'"/>';
     $r .= '</form>';
 
     // tell the Javascript where to get species from.
