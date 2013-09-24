@@ -26,10 +26,22 @@ BEGIN
       SELECT INTO sref_metadata srid, treat_srid_as_x_y_metres FROM spatial_systems WHERE code=lower(sref_system);
       -- look for some preferred grids to see if we are in range.
       current_srid=null;
-      IF st_x(st_centroid(geom)) BETWEEN -1081873 AND 422933 AND st_y(st_centroid(geom)) BETWEEN 6405988 AND 8944478 THEN -- rough check for OSGB
+      IF (current_srid IS NULL) AND (st_x(st_centroid(geom)) BETWEEN -1196000 AND -599200) AND (st_y(st_centroid(geom)) BETWEEN 6687800 AND 7442470) THEN -- rough check for OSIE
+        geom = st_transform(st_centroid(geom_in), 29901); 
+        IF (st_x(geom) BETWEEN 10000 AND 367300) AND (st_y(geom) BETWEEN 10000 AND 468100) AND (st_x(geom)<332000 OR st_y(geom)<445900) THEN -- exact check for OSIE. Cut out top right corner.
+          current_srid = 29901;
+        END IF;
+      END IF;
+      IF (current_srid IS NULL) AND (st_x(st_centroid(geom)) BETWEEN -1081873 AND 422933) AND (st_y(st_centroid(geom)) BETWEEN 6405988 AND 8944478) THEN -- rough check for OSGB
         geom = st_transform(st_centroid(geom_in), 27700);
         IF st_x(geom) BETWEEN 0 AND 700000 AND st_y(geom) BETWEEN 0 AND 14000000 THEN -- exact check for OSGB
           current_srid = 27700;
+        END IF;
+      END IF;
+      IF (current_srid IS NULL) AND (st_x(st_centroid(geom)) BETWEEN 634030 AND 729730) AND (st_y(st_centroid(geom)) BETWEEN 6348260 AND 6484930) THEN -- rough check for LUGR
+        geom = st_transform(st_centroid(geom_in), 2169);
+        IF (st_x(geom) BETWEEN 46000 AND 108000) AND (st_y(geom) BETWEEN 55000 AND 141000) THEN -- exact check for OSGB
+          current_srid = 2169;
         END IF;
       END IF;
       IF current_srid IS NULL THEN
