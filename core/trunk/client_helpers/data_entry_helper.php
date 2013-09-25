@@ -5533,7 +5533,7 @@ if (errors$uniq.length>0) {
       $sampleIDX = $record['occurrence:sampleIDX'];
       unset($record['occurrence:sampleIDX']);
       $present = self::wrap_species_checklist_record_present($record, $include_if_any_data,
-          $zero_attrs, $zero_values);
+          $zero_attrs, $zero_values, array());
       if (array_key_exists('id', $record) || $present!==null) { // must always handle row if already present in the db
         if ($present===null)
           // checkboxes do not appear if not checked. If uncheck, delete record.
@@ -5564,6 +5564,8 @@ if (errors$uniq.length>0) {
         $sampleRecord['date'] = $arr['sample:date'];
       if (!empty($arr['sample:entered_sref_system']))
         $sampleRecord['entered_sref_system'] = $arr['sample:entered_sref_system'];
+      if (!empty($arr['sample:location_name']) && empty($sampleRecord['location_name']))
+        $sampleRecord['location_name'] = $arr['sample:location_name'];
       if (!empty($arr['sample:input_form']))
         $sampleRecord['input_form'] = $arr['sample:input_form'];
       $subSample = data_entry_helper::wrap($sampleRecord, 'sample');
