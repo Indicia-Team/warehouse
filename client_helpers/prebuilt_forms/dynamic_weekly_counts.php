@@ -249,7 +249,8 @@ class iform_dynamic_weekly_counts extends iform_dynamic_sample_occurrence {
       'extraParams' => array('taxon_list_id'=>$args['list_id'], 'preferred'=>'t') + $auth['read']
     ));
     foreach ($speciesList as $species) {
-      $r .= '<tr><td>' . $species['default_common_name'] . '</td>';
+      $name=empty($species['default_common_name']) ? '<em>' . $species['preferred_taxon'] . '</em>' : $species['default_common_name'];
+      $r .= "<tr><td>$name</td>";
       $weekstart=self::getStartDate($args);
       for ($i=0; $i<$args['weeks']; $i++) {
         $valId='';
