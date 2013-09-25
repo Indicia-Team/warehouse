@@ -79,8 +79,25 @@ class extension_site_hierarchy_navigator {
       $mapOptions,
       $olOptions
     );
-    //Send the user supplied location type options to Javascript
     map_helper::$javascript .= "indiciaData.layerLocationTypes=".json_encode($layerLocationTypes).";\n";
+    $reportOptions = array(
+      'dataSource'=>'reports_for_prebuilt_forms/CUDI/get_layer_list_names',
+      'readAuth'=>$auth['read'],
+      'mode'=>'report',
+      'extraParams' => array('layer_ids'=>$options['layerLocationTypes'])
+    );
+    //Return a list of location type names for the location type id layers list
+    //provided by the user in the form structure.
+    $locationTypeNamesDirty = data_entry_helper::get_report_data($reportOptions);
+    //The data returned by the database is not a simple array of names, so convert the data and put into correct order
+    foreach ($layerLocationTypes as $originalLayerIndex=>$layerLocationTypeFromOriginalList) {
+      foreach ($locationTypeNamesDirty as $locationTypeNamesData) {
+        if ($locationTypeNamesData['id']===$layerLocationTypeFromOriginalList)
+          $locationTypeNamesClean[$originalLayerIndex] = $locationTypeNamesData['name'];
+      }
+    }
+    //Send the array of names to javascript
+    map_helper::$javascript .= "indiciaData.layerLocationTypesNames=".json_encode($locationTypeNamesClean).";\n";   
     //Send the user supplied options for layers to display count units to Javascript
     map_helper::$javascript .= "indiciaData.showCountUnitsForLayers=".json_encode($showCountUnitsForLayers).";\n";
     map_helper::$javascript .= "indiciaData.countUnitBoundaryTypeId=".$options['countUnitBoundaryTypeId'].";\n";
