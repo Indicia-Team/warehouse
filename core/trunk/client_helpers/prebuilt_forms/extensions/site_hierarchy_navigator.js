@@ -144,8 +144,7 @@ function get_clicked_feature(clickedFeatureId,breadcrumbHierarchy,clickedFeature
     $.getJSON(reportRequest,
       null,
       function(reportdata, textStatus, jqXHR) {     
-        getMapFeaturesFromReportDataResult = get_map_features_from_report_data(reportdata,[]);
-        features = getMapFeaturesFromReportDataResult[1];
+        features = get_map_features_from_report_data(reportdata,[]);
         clickedFeature = features[0];
         add_new_layer_controller(clickedFeature,breadcrumbHierarchy,clickedFeatureLocationTypeId);
       }
@@ -207,17 +206,21 @@ function add_new_layer_controller(clickedFeature,breadcrumbHierarchy,clickedFeat
     $.getJSON(reportRequest,
         null,
         function(response, textStatus, jqXHR) {
-          if (response.length>0 || clickedFeature) {
+          if (response.length>0 || clickedFeature) {           
             var currentLayerLocationNames = [], features=[],feature,getMapFeaturesFromReportDataResult,mainCurrentLayerLocationTypeName;
-            //Get the child features for the layer, also get the name of their locations type(s)
-            getMapFeaturesFromReportDataResult = get_map_features_from_report_data(response,currentLayerLocationNames);
-            currentLayerLocationNames = getMapFeaturesFromReportDataResult[0];
-            features = getMapFeaturesFromReportDataResult[1];
+            //If the user has specified that a layer must also display count units, then get the Count Unit location type name (we don't want to hard code it so collect from database)
+            if (inArray(childLocationTypesToReport,indiciaData.showCountUnitsForLayers)) {
+              currentLayerLocationNames = get_names_from_location_types(childLocationTypesToReport+','+indiciaData.layerLocationTypes[indiciaData.layerLocationTypes.length-1]);
+            } else {
+              currentLayerLocationNames = get_names_from_location_types(childLocationTypesToReport);
+            }
             //The main mainCurrentLayerLocationTypeName variable is the name of the location type of the layer we are currently looking at,
             //this is currently used to make the Add Site button's label change depending on the location type to be added.
             //Note this is different to the currentLayerLocationNames which might include Count Unit if the user has set the option
             //to add Count Units to a particular layer.
-            mainCurrentLayerLocationTypeName = getMapFeaturesFromReportDataResult[2];
+            mainCurrentLayerLocationTypeName = currentLayerLocationNames.split(',')[0];
+            //Get the child features for the layer
+            features = get_map_features_from_report_data(response,currentLayerLocationNames);
             if (indiciaData.useBreadCrumb) {
               //create the map breadcrumb itself
               breadcrumb(parentId,parentName,currentLayerLocationNames,breadcrumbHierarchy);
@@ -235,33 +238,54 @@ function add_new_layer_controller(clickedFeature,breadcrumbHierarchy,clickedFeat
 }
 
 /*
+ * The layer the user is looking at consists of at least one location type.
+ * Get the names of those location types and return it in a comma seperated format
+ */
+function get_names_from_location_types(currentLayerIds) {
+  //Get an array of the loction type ids relevant to the current layer
+  var currentLayerIdsArray = [];
+  if (typeof currentLayerIds == 'string' || currentLayerIds instanceof String) {
+    currentLayerIdsArray = currentLayerIds.split(',');
+  } else {
+    currentLayerIdsArray = currentLayerIds;
+  }
+  //We are building the list of names from scratch so we start with empty list.
+  var currentLayerNames = '';
+  //Cycle through the location ids of the layer we are viewing
+  $.each(currentLayerIdsArray, function (currentLayerListIndex, theCurrentIdToCheck) {
+    //Try and find the same id in the list of layer location type ids sepcified by the user 
+    $.each(indiciaData.layerLocationTypes, function (originalListIndex, originalLayerListId) {
+      //Once we have a match then we know the position of the id in the list of layer location type ids originally specified by the user.
+      //We already have a list of equivalent names in indiciaData.layerLocationTypesNames which is in the same order, so we can collect the name
+      //from indiciaData.layerLocationTypesNames
+      if (theCurrentIdToCheck===originalLayerListId) {
+        if (currentLayerNames) {
+        currentLayerNames = currentLayerNames + ',' + indiciaData.layerLocationTypesNames[originalListIndex];
+        } else {
+          currentLayerNames = indiciaData.layerLocationTypesNames[originalListIndex];
+        }
+      }
+    });  
+  });
+  //If we haven't been able to locate the location type names by using the layer list supplied by the user, it means we are looking at the 
+  //annotation layer
+  if (!currentLayerNames) {
+    currentLayerNames = 'annotation';
+  }
+  return currentLayerNames;
+}
+
+/*
  * Once we have returned the data of what locations we want to display on a map layer, we need to 
  * actually add those features to the map itself.
  */
 function get_map_features_from_report_data(reportdata,currentLayerLocationNames) {
   var features = [];
-  //The main mainCurrentLayerLocationTypeName variable is the name of the location type of the layer we are currently looking at,
-  //this is currently used to make the Add Site button's label change depending on the location type to be added.
-  //Note this is different to the currentLayerLocationNames which might include Count Unit if the user has set the option
-  //to add Count Units to a particular layer.
+
   var mainCurrentLayerLocationTypeName;
   if (reportdata) {
     $.each(reportdata, function (idx, obj) {
       if (obj) {
-        //Make a distinct list of the location types being displayed on the current layer.
-        //This is used to name layers.
-        if (!inArray(obj.location_type_name,currentLayerLocationNames)) {
-          currentLayerLocationNames.push(obj.location_type_name);
-          //The main mainCurrentLayerLocationTypeName variable is the name of the location type of the layer we are currently looking at,
-          //this is currently used to make the Add Site button's label change depending on the location type to be added.
-          //Note this is different to the currentLayerLocationNames which might include Count Unit if the user has set the option
-          //to add Count Units to a particular layer.
-          //So exclude count units and boundaries from being set as the main location type name for the layer.
-          if (obj.location_type_id!=indiciaData.layerLocationTypes[indiciaData.layerLocationTypes.length-1]&&
-              obj.location_type_id!=indiciaData.countUnitBoundaryTypeId) {
-            mainCurrentLayerLocationTypeName = obj.location_type_name;
-          }
-        } 
         //Use boundary geom by default
         if (obj.boundary_geom) {               
           feature=indiciaData.mapdiv.addPt(features, obj, 'boundary_geom', {}, obj.id);
@@ -280,11 +304,7 @@ function get_map_features_from_report_data(reportdata,currentLayerLocationNames)
       }
     });
   }
-  var result = [];
-  result[0] = currentLayerLocationNames;
-  result[1] = features;
-  result[2] = mainCurrentLayerLocationTypeName;
-  return result;
+  return features;
 }
 
 /*
