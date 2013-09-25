@@ -175,7 +175,7 @@ class iform_report_calendar_grid {
     $cellclass="newLink";
     foreach($records as $record){
       $location=empty($record["location_name"]) ? $record["entered_sref"] : $record["location_name"];
-      $cellContents .= '<a href="'.$options["existingURL"].'sample_id='.$record["sample_id"].'" title="View existing sample for '.$location.' on '.$options['consider_date'].' (ID='.$records[0]["sample_id"].')" >'.$location.'</a> ';
+      $cellContents .= '<a href="'.$options["existingURL"].'sample_id='.$record["sample_id"].'" title="View existing sample for '.$location.' on '.$options['consider_date'].' (ID='.$record["sample_id"].')" >'.$location.'</a> ';
       // we assume that the location has been filtered in the report.
       $cellclass='existingLink';
     }
