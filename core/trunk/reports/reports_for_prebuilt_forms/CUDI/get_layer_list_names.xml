@@ -13,5 +13,6 @@
   </params>
   <columns>
     <column name="name" display="Name" sql="t.term"/>
+    <column name="id" display="Id" sql="tt.id"/>
   </columns>
 </report>
