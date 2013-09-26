@@ -27,7 +27,6 @@
   #joins#
   WHERE #sharing_filter# 
   AND co.record_status not in ('I','T') AND (#ownData#=1 OR co.record_status not in ('D','R'))
-  AND (#ownData#=0 OR CAST(co.created_by_id AS character varying)='#currentUser#')
   #idlist#
   </query>
   <order_bys>
@@ -57,7 +56,9 @@
     </param>
     <param name='idlist' display='List of IDs' description='Comma separated list of occurrence IDs to filter tco.' datatype='idlist' fieldname='co.id' alias='occurrence_id' />
 	  <param name="currentUser" display="Current User ID" description="Current user's warehouse ID. Allows a column to be output indicating that the user owns the record." datatype="text" />
-    <param name="ownData" display="My data only?" datatype="checkbox" />
+    <param name="ownData" display="My data only?" datatype="checkbox">
+      <where>co.created_by_id=#currentUser#</where>
+    </param>
     <param name='location_id' display='Location' description='Provide the location to display records for' datatype='lookup' emptyvalue="0"
         population_call='direct:location:id:name' />
     <param name="ownLocality" display="My locality only?" datatype="checkbox">
