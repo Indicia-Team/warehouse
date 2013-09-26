@@ -107,7 +107,7 @@ class extension_site_hierarchy_navigator {
     map_helper::$javascript .= "indiciaData.allSitesLabel='".lang::get('All Sites')."';\n";
     $reportOptions = array(
       'linkOnly'=>'true',
-      'dataSource'=>'library/locations/locations_with_geometry_for_location_type',
+      'dataSource'=>'reports_for_prebuilt_forms/cudi/get_boundaries_and_locations_for_cudi_map',
       'readAuth'=>$auth['read']
     );
     //Get the report options such as the Preset Parameters on the Edit Tab

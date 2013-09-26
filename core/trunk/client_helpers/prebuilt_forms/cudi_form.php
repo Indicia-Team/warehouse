@@ -279,7 +279,7 @@ class iform_cudi_form extends iform_dynamic {
    */
   protected static function getIdForCountUnitPreferredBoundaryIfApplicable($args, $auth) { 
     $preferredBoundaryValueReportData = data_entry_helper::get_report_data(array(
-      'dataSource'=>'library/location_attribute_values/location_attribute_values_for_location_or_location_attribute_id',
+      'dataSource'=>'reports_for_prebuilt_forms/cudi/get_preferred_boundary_id',
       'readAuth'=>$auth['read'],
       'extraParams'=>array('count_unit_id' => $_GET['location_id'], 'preferred_boundary_location_attribute_id' => $args['preferred_boundary_attribute_id'],
                            'count_unit_boundary_location_type_id'=>$args['count_unit_boundary_location_type_id'])
