@@ -326,27 +326,40 @@ mapGeoreferenceHooks = [];
      */
     function _bindControls(div) {
 
-      // If the spatial ref input control exists, bind it to the map, so entering a ref updates the map
-      $('#'+opts.srefId).change(function() {
-        _handleEnteredSref($(this).val(), div);
-      });
-      // If the spatial ref latitude or longitude input control exists, bind it to the map, so entering a ref updates the map
-      $('#'+opts.srefLatId).change(function() {
-        // Only do something if both the lat and long are populated
-        if ($.trim($(this).val())!='' && $.trim($('#'+opts.srefLongId).val())!='') {
-          // copy the complete sref into the sref field
-          $('#'+opts.srefId).val($.trim($(this).val()) + ', ' + $.trim($('#'+opts.srefLongId).val()));
-          _handleEnteredSref($('#'+opts.srefId).val(), div);
-        }
-      });
-      $('#'+opts.srefLongId).change(function() {
-        // Only do something if both the lat and long are populated
-        if ($.trim($('#'+opts.srefLatId).val())!='' && $.trim($(this).val())!='') {
-          // copy the complete sref into the sref field
-          $('#'+opts.srefId).val($.trim($('#'+opts.srefLatId).val()) + ', ' + $.trim($(this).val()));
-          _handleEnteredSref($('#'+opts.srefId).val(), div);
-        }
-      });
+      // If clickForPlot then do not bind to spatial ref input as currently it will 
+      // do the wrong thing.
+      if (opts.clickForPlot) {
+        // Disable the spatial ref input so users do not think they can enter a value
+        var version = $().jquery;
+        var aryVersion = version.split('.');
+        if (aryVersion[0] == 1 && aryVersion[1] < 6 ) {
+          $('#'+opts.srefId).attr('readonly', true);
+        } else {
+          $('#'+opts.srefId).prop('readonly', true);
+        }        
+      } else {
+        // If the spatial ref input control exists, bind it to the map, so entering a ref updates the map
+        $('#'+opts.srefId).change(function() {
+          _handleEnteredSref($(this).val(), div);
+        });
+        // If the spatial ref latitude or longitude input control exists, bind it to the map, so entering a ref updates the map
+        $('#'+opts.srefLatId).change(function() {
+          // Only do something if both the lat and long are populated
+          if ($.trim($(this).val())!='' && $.trim($('#'+opts.srefLongId).val())!='') {
+            // copy the complete sref into the sref field
+            $('#'+opts.srefId).val($.trim($(this).val()) + ', ' + $.trim($('#'+opts.srefLongId).val()));
+            _handleEnteredSref($('#'+opts.srefId).val(), div);
+          }
+        });
+        $('#'+opts.srefLongId).change(function() {
+          // Only do something if both the lat and long are populated
+          if ($.trim($('#'+opts.srefLatId).val())!='' && $.trim($(this).val())!='') {
+            // copy the complete sref into the sref field
+            $('#'+opts.srefId).val($.trim($('#'+opts.srefLatId).val()) + ', ' + $.trim($(this).val()));
+            _handleEnteredSref($('#'+opts.srefId).val(), div);
+          }
+        });
+      }
 
       // If a place search (georeference) control exists, bind it to the map.
       $('#'+div.georefOpts.georefSearchId).keypress(function(e) {
@@ -1281,7 +1294,8 @@ mapGeoreferenceHooks = [];
 
       if (div.settings.clickForPlot) {
        // Clicking to locate a plot
-       if (div.settings.plotShape == 'rectangle') {
+       var plotShape = $('#' + div.settings.plotShapeId).val();
+       if (plotShape === 'rectangle') {
          //create a rectangular polygon
           var width = parseFloat($('#' + div.settings.plotWidthId).val());
           var length = parseFloat($('#' + div.settings.plotLengthId).val());
@@ -1293,7 +1307,7 @@ mapGeoreferenceHooks = [];
             new OpenLayers.Geometry.Point(lonlat.lon, lonlat.lat + length)
           ]);
           polygon = new OpenLayers.Geometry.Polygon([linearRing]);
-        } else if (div.settings.plotShape == 'circle') {
+        } else if (plotShape === 'circle') {
           // create a circular polygon
           var radius = parseFloat($('#' + div.settings.plotRadiusId).val());
           polygon = new OpenLayers.Geometry.Polygon.createRegularPolygon(point, radius, 20, 0);
@@ -2059,7 +2073,6 @@ jQuery.fn.indiciaMapPanel.defaults = {
     editLayer: true,
     clickForSpatialRef: true, // if true, then enables the click to get spatial references control
     clickForPlot: false, // if true, overrides clickForSpatialRef to locate a plot instead of a grid square.
-    plotShape: 'rectangle', // 'rectangle' draws plot with dimensions taken from controls with plotWidthID and plotLengthId, 'circle' from plotRadiusId
     allowPolygonRecording: false,
     editLayerName: 'Selection layer',
     editLayerInSwitcher: false,
@@ -2077,6 +2090,7 @@ jQuery.fn.indiciaMapPanel.defaults = {
     srefLongId: 'imp-sref-long',
     srefSystemId: 'imp-sref-system',
     geomId: 'imp-geom',
+    plotShapeId: 'attr-shape', // html id of plot shape control. Can be 'rectangle' or 'circle'.
     plotWidthId: 'attr-width', // html id of plot width control for plotShape = 'rectangle'
     plotLengthId: 'attr-length', // html id of plot length control for plotShape = 'rectangle'
     plotRadiusId: 'attr-radius', // html id of plot radius control for plotShape = 'circle'
