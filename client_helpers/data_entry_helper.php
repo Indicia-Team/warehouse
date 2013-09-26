@@ -2819,7 +2819,7 @@ class data_entry_helper extends helper_base {
           $valId=false;
           if (!empty(data_entry_helper::$entity_to_load)) {
             // Search for the control in the data to load. It has a suffix containing the attr_value_id which we don't know, hence preg.
-            $search = preg_grep("/^sc:$loadedTxIdx:$existing_record_id:occAttr:$attrId".'[:[0-9]*]?$/', array_keys(self::$entity_to_load));
+            $search = preg_grep("/^sc:$loadedTxIdx:$existing_record_id:occAttr:$attrId:".'[0-9]*$/', array_keys(self::$entity_to_load));
             if (count($search)>0) {
               // use our preg search result as the field name to load from the existing data array.
               // Warning - if there are multi-values in play here then it will just load one.
