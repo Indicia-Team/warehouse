@@ -1228,6 +1228,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * </ul>
   */
   public static function freeform_report($options) {
+    $options = array_merge(array('class'=>''), $options);
     $options = self::get_report_grid_options($options);
     self::request_report($response, $options, $currentParamValues, false);
     if (isset($response['error'])) return $response['error'];
