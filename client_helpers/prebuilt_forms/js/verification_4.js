@@ -441,10 +441,10 @@ var saveComment, saveVerifyComment;
             radio=$('.quick-verify-popup input[name=quick-option]:checked');
         if (radio.length===1) {
           if ($(radio).val().indexOf('recorder')!==-1) {
-            params.user=currRec.extra.recorder;
+            params.recorder=currRec.extra.recorder;
           }
           if ($(radio).val().indexOf('species')!==-1) {
-            params.taxon=currRec.extra.taxon;
+            params.taxon_meaning_list=currRec.extra.taxon_meaning_id;
           }
           // We now have parameters that can be applied to a report and we know the report, so we can ask the warehouse
           // to verify the occurrences provided by the report that match the filter.
@@ -687,7 +687,7 @@ var saveComment, saveVerifyComment;
         } else {
           $('.trust-tool').show();
         }
-        if ($(row).find('.row-belongs-to-site').html()==='true') {
+        if ($(row).find('.row-belongs-to-site').val()==='t') {
           $(row).find('.verify-tools .edit-record').show();
         } else {
           $(row).find('.verify-tools .edit-record').hide();
