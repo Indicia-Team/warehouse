@@ -86,7 +86,6 @@ class extension_cudi_homepage_links {
    * Each link returns to the appropriate position on the homepage map
    */
   public function homepage_links($auth, $args, $tabalias, $options) {
-    global $base_url;
     //Get the user specified list of layers they want, this must match the homepage for correct operation.
     $layerLocationTypes = explode(',',$options['layerLocationTypes']);
     //Get the location data to make the links with
@@ -120,7 +119,8 @@ class extension_cudi_homepage_links {
         $homepageLinkParamToSendBack='id='.$homepageLinkLocationId;
         $r .= '<li id="homepageLink-part-"'.$num.'>';
         //The homepageLink link is a name, with a url back to the homepage containing the location id
-        $r .= '<a href="'.$base_url.(variable_get('clean_url', 0) ? '' : '?q=').$options['homepage_path'].(variable_get('clean_url', 0) ? '?' : '&').$homepageLinkParamToSendBack.'">'.$homepageLinkLocationName.'</a>';
+        $nodeurl = url($options['homepage_path']).(variable_get('clean_url', 0) ? '?' : '&').$homepageLinkParamToSendBack;
+        $r .= '<a href="'.$nodeurl.'">'.$homepageLinkLocationName.'</a>';
         $r .= '</li>';
       }
       $r .= '</ul></div>';
