@@ -149,7 +149,10 @@ class extension_site_hierarchy_navigator {
     ));
     if ($_GET[$options['urlParameter']])
       map_helper::$javascript .= "indiciaData.preloadBreadcrumb='".$_GET[$options['urlParameter']].','.$locationTypeId[0]['location_type_id']."';\n";
-    $breadcrumb = '<div><ul id="map-breadcrumb"></ul></div>';
+    $breadcrumb = '<div>
+                      <h4>Map breadcrumb</h4>
+                      <ul id="map-breadcrumb"></ul>
+                   </div>';
     return $breadcrumb;
   }
   
