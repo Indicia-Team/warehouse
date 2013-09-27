@@ -1243,8 +1243,9 @@ class iform_ukbms_sectioned_transects_input_sample {
   }
 };
 jQuery(jQuery('#".$options["tabDiv"]."').parent()).bind('tabsshow', speciesMapTabHandler);\n";
-    }
-    
+    } else // enable validation on the comments form in order to include the simplified ajax queuing for the autocomplete.
+      data_entry_helper::enable_validation('notes_form');
+
     // for the comment form, we want to ensure that if there is a timeout error that it reloads the 
     // data as stored in the DB.
     $reloadParts = explode('?', $reloadPath, 2);
@@ -1258,7 +1259,7 @@ jQuery(jQuery('#".$options["tabDiv"]."').parent()).bind('tabsshow', speciesMapTa
     }
     
     $r .= "<div id=\"notes\">\n";
-    $r .= "<form method=\"post\" action=\"".$reloadParts[0].'?'.$params."#notes\">\n";
+    $r .= "<form method=\"post\" id=\"notes_form\" action=\"".$reloadParts[0].'?'.$params."#notes\">\n";
     $r .= $auth['write'];
     $r .= '<input type="hidden" name="sample:id" value="'.$parentSampleId.'" />';
     $r .= '<input type="hidden" name="website_id" value="'.$args['website_id'].'"/>';
@@ -1396,6 +1397,8 @@ jQuery('#tabs').bind('tabsshow', function(event, ui) {
         else // Drupal6 : it is a function
           Drupal.behaviors.tableHeader(target);
     }
+    // remove any hanging autocomplete select list.
+    jQuery('.ac_results').hide();
 });";
     return $r;
   }
