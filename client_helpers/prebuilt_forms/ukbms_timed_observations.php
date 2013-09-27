@@ -727,7 +727,7 @@ mapInitialisationHooks.push(function(mapdiv) {
     // fragment is always at the end. discard this.
     $reloadPath = explode('#', $reloadPath, 2);
     $reloadPath = $reloadPath[0];
-    $r .= "<div id=\"notes\"><form method=\"post\" action=\"".$reloadPath."#notes\">\n";
+    $r .= "<div id=\"notes\"><form method=\"post\" id=\"notes_form\" action=\"".$reloadPath."#notes\">\n";
     $r .= $auth['write'];
     $r .= '<input type="hidden" name="sample:id" value="'.$sampleId.'" />' .
           '<input type="hidden" name="website_id" value="'.$args['website_id'].'"/>' .
@@ -743,7 +743,9 @@ mapInitialisationHooks.push(function(mapdiv) {
     ));    
     $r .= '<input type="submit" value="'.lang::get('Submit').'" id="save-button"/></form>';
     $r .= '<br /><a href="'.$args['my_walks_page'].'" class="button">'.lang::get('Finish').'</a></div></div>';
-
+    // enable validation on the comments form in order to include the simplified ajax queuing for the autocomplete.
+    data_entry_helper::enable_validation('notes_form');
+    
     // A stub form for AJAX posting when we need to create an occurrence
     $r .= '<form style="display: none" id="occ-form" method="post" action="'.iform_ajaxproxy_url($node, 'occurrence').'">';
     $r .= '<input name="website_id" value="'.$args['website_id'].'"/>';
@@ -822,6 +824,8 @@ jQuery('#tabs').bind('tabsshow', function(event, ui) {
         else // Drupal6 : it is a function
           Drupal.behaviors.tableHeader(target);
     }
+    // remove any hanging autocomplete select list.
+    jQuery('.ac_results').hide();
 });";
     return $r;
   }
