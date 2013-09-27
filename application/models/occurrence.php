@@ -28,8 +28,7 @@
  * @subpackage Models
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
-global $occurrenceIdToUpdateDeterminerFor;
-class Occurrence_Model extends ORM  
+class Occurrence_Model extends ORM
 {
   protected $has_many=array(
     'occurrence_attribute_values',
@@ -58,6 +57,12 @@ class Occurrence_Model extends ORM
     'occurrence_image:path:4'=>'Image Path 4',
     'occurrence_image:caption:4'=>'Image Caption 4'    
   );
+  
+  /**
+   * Should a determination be logged if this is a changed record?
+   * @var boolean
+   */
+  protected $logDetermination=false;
 
   /**
    * Returns a caption to identify this model instance.
@@ -68,44 +73,14 @@ class Occurrence_Model extends ORM
   }
   
   public function validate(Validation $array, $save = false) {
-    global $occurrenceIdToUpdateDeterminerFor;
-    $occurrenceIdToUpdateDeterminerFor = null;
-    //Only log a determination for the occurrence if the species is not new and not deleted.
-    //Also the all_info_in_determinations flag must be off to avoid clashing with other functionality
-    //and the config setting must be enabled.
-    if (!empty($this->{'object'}['taxa_taxon_list_id']) && !empty($this->submission['fields']['taxa_taxon_list_id']['value'])
-           && $this->{'object'}['all_info_in_determinations']!=='Y' && kohana::config('indicia.auto_log_determinations')!==false) {
-      //Only log a determination if the taxon has been changed by the user. Do this by comparing the old and submission values.
-      if ($this->{'object'}['taxa_taxon_list_id'] != $this->submission['fields']['taxa_taxon_list_id']['value']) {
-        $occurrenceIdToUpdateDeterminerFor = $this->{'object'}['id'];
-        $currentUserId = self::get_current_user_id();     
-        //We log the old taxon
-        $rowToAdd['taxa_taxon_list_id']=$this->{'object'}['taxa_taxon_list_id'];
-        $rowToAdd['determination_type'] = 'B';
-        $rowToAdd['occurrence_id'] = $this->{'object'}['id'];
-        //Set the determination metadata to the metadata for the occurrence when it was previously updated
-        $rowToAdd['created_by_id'] = $this->{'object'}['updated_by_id'];
-        $rowToAdd['updated_by_id'] = $this->{'object'}['updated_by_id'];
-        $rowToAdd['created_on'] = $this->{'object'}['updated_on'];
-        $rowToAdd['updated_on'] = $this->{'object'}['updated_on'];
-        $rowToAdd['person_name'] = self::get_person_name_and_update_determiner($this->{'object'}, $currentUserId);
-        
-        $insert = $this->db
-         ->from('determinations')
-         ->set($rowToAdd)
-         ->insert();
-        
-        if ($currentUserId!==1)
-          $this->submission['fields']['determiner_id']['value'] = $currentUserId;
-        
-      }
-    }
+    if ($save) 
+      $this->logDeterminations($array);
     $array->pre_filter('trim');
     $array->add_rules('sample_id', 'required');
     $array->add_rules('website_id', 'required');
     $fieldlist = $array->as_array();
     if(!array_key_exists('all_info_in_determinations', $fieldlist) || $fieldlist['all_info_in_determinations'] == 'N') {
-        $array->add_rules('taxa_taxon_list_id', 'required');
+      $array->add_rules('taxa_taxon_list_id', 'required');
     }
     // Explicitly add those fields for which we don't do validation
     $this->unvalidatedFields = array(
@@ -132,6 +107,37 @@ class Occurrence_Model extends ORM
       $array->add_rules('downloaded_flag', 'chars[N,I]');
     }
     return parent::validate($array, $save);
+  }
+  
+  private function logDeterminations(Validation $array) {
+
+    //Only log a determination for the occurrence if the species is changed.
+    //Also the all_info_in_determinations flag must be off to avoid clashing with other functionality
+    //and the config setting must be enabled.
+    if (kohana::config('indicia.auto_log_determinations')===true && !empty($this->taxa_taxon_list_id) && 
+      !empty($this->submission['fields']['taxa_taxon_list_id']['value']) && $this->all_info_in_determinations!=='Y' &&
+      $this->taxa_taxon_list_id != $this->submission['fields']['taxa_taxon_list_id']['value']) {
+      $this->logDetermination = true;
+      $currentUserId = $this->get_current_user_id();
+      //We log the old taxon
+      $rowToAdd['taxa_taxon_list_id']=$this->taxa_taxon_list_id;
+      $rowToAdd['determination_type'] = 'B';
+      $rowToAdd['occurrence_id'] = $this->id;
+      //Set the determination metadata to the metadata for the occurrence when it was previously updated
+      $rowToAdd['created_by_id'] = $this->updated_by_id;
+      $rowToAdd['updated_by_id'] = $this->updated_by_id;
+      $rowToAdd['created_on'] = $this->updated_on;
+      $rowToAdd['updated_on'] = $this->updated_on;
+      $rowToAdd['person_name'] = $this->get_person_name_and_update_determiner($this->as_array(), $currentUserId);
+      
+      $insert = $this->db
+       ->from('determinations')
+       ->set($rowToAdd)
+       ->insert();
+      
+      if ($currentUserId!==1)
+        $this->submission['fields']['determiner_id']['value'] = $currentUserId;
+    }
   }
   
   /**Method that adds a created by, created date, updated by, updated date to a row of data
@@ -162,7 +168,7 @@ class Occurrence_Model extends ORM
   }
   
   /*
-   * Collect the user id for the current user, this will be 1 unless Easy Login is enabled in instant-indicia.
+   * Collect the user id for the current user, this will be 1 unless logged into warehouse or Easy Login is enabled in instant-indicia.
    */
   public function get_current_user_id() {
     if (isset($_SESSION['auth_user'])) 
@@ -174,13 +180,13 @@ class Occurrence_Model extends ORM
       else {
         // Don't force overwrite of user IDs that already exist in the record, since
         // we are just using a default.
-        $force=false;
         $defaultUserId = Kohana::config('indicia.defaultPersonId');
         $userId = ($defaultUserId ? $defaultUserId : 1);
       }
     }
     return $userId;
   }
+  
   /*
    * Method that is called when attempting to fill in determinations.person_name using a determination
    * occurrence attribute value. Code has its own method as the code could be called several times for
@@ -216,7 +222,7 @@ class Occurrence_Model extends ORM
       }
 
       $nameToAddRow = array('text_value'=>$theNameToAdd);
-      self::set_metadata_for_row_array($nameToAddRow, 'occurrence_attribute_values');
+      $this->set_metadata_for_row_array($nameToAddRow, 'occurrence_attribute_values');
       $update = $this->db
         ->from('occurrence_attribute_values')
         ->set($nameToAddRow)
@@ -238,7 +244,7 @@ class Occurrence_Model extends ORM
     //we need to update the determiner for the original occurrence to the current user as the current
     //user has changed the occurrence.
     if ($currentUserId !== 1) {
-      $currentUserNames = self::get_user_firstname_and_surname($currentUserId);
+      $currentUserNames = $this->get_user_firstname_and_surname($currentUserId);
       //Find the occurrence attributes that have a determiner name system function set
       $occurrenceAttributesWithDetFuncs = $this->db
         ->select('id','system_function')
@@ -271,14 +277,14 @@ class Occurrence_Model extends ORM
       $occurrenceId = $oldValues['id'];
       if (!empty($determinerFullNameAttributeId)) {
         //Try and get the name from the occurrence attribute with the full name system function first.
-        $determinerName = self::get_and_update_occ_attr_determiner($determinerFullNameAttributeId, $occurrenceId, 'det_full_name', $currentUserNames);
+        $determinerName = $this->get_and_update_occ_attr_determiner($determinerFullNameAttributeId, $occurrenceId, 'det_full_name', $currentUserNames);
       } 
       //if we can't set the person_name from the fullname occurrence attribute, see if we can do it with the last name    
       if (!empty($determinerLastNameAttributeId) && empty($determinerName)) {
-        $determinerName = self::get_and_update_occ_attr_determiner($determinerLastNameAttributeId, $occurrenceId, 'det_last_name', $currentUserNames);
+        $determinerName = $this->get_and_update_occ_attr_determiner($determinerLastNameAttributeId, $occurrenceId, 'det_last_name', $currentUserNames);
         //If we have managed to find a surname then we can attempt to find their first name
         if (!empty($determinerName)) {
-          $determinerFirstName = self::get_and_update_occ_attr_determiner($determinerFirstNameAttributeId, $occurrenceId, 'det_first_name', $currentUserNames);
+          $determinerFirstName = $this->get_and_update_occ_attr_determiner($determinerFirstNameAttributeId, $occurrenceId, 'det_first_name', $currentUserNames);
           //If we have found a first name then add it to the variable we are going to put in determinations.person_name
           if (!empty($determinerFirstName))
             $determinerName = $determinerName.', '.$determinerFirstName;
@@ -307,7 +313,7 @@ class Occurrence_Model extends ORM
     //If we still haven't got a person name, try to get the previous updater's name
     if (empty($determinerName)) {
       if($oldValues['updated_by_id'] !== 1) {
-        $determinerNames = self::get_user_firstname_and_surname($oldValues['updated_by_id']);
+        $determinerNames = $this->get_user_firstname_and_surname($oldValues['updated_by_id']);
         $determinerName = $determinerNames->surname.', '.$determinerNames->first_name;
       }
     }
@@ -329,32 +335,24 @@ class Occurrence_Model extends ORM
       ->from('users')
       ->where(array('id'=>$userId))
       ->get()->as_array();
-    $dertminerNameArray = $this->db
+    $determinerNameArray = $this->db
       ->select('first_name','surname')
       ->from('people')
       ->where(array('id'=>$updatedByPersonId[0]->person_id))
       ->get()->as_array();
-    return $dertminerNameArray[0];
+    return $determinerNameArray[0];
   }
   
   // Override preSubmit to add in the verifier (verified_by_id) and verification date (verified_on) if the
   // occurrence is being set to status=V(erified) or R(ejected).
   protected function preSubmit()
-  { 
-    global $occurrenceIdToUpdateDeterminerFor;
-    //If determination logging is on and the occurrence species has changed ($occurrenceIdToUpdateDeterminerFor has a value), we can
+  {     
+    //If determination logging is on and the occurrence species has changed ($logDetermination is true), we can
     //set the determiner_id on the occurrence to the current user providing easy login is on ($currentUserId!==1).
-    if (!empty($occurrenceIdToUpdateDeterminerFor)) {
-      $currentUserId = self::get_current_user_id(); 
-      if ($currentUserId!==1) {
-        $determinerToUpdateRow = array('determiner_id'=>$currentUserId);  
-        self::set_metadata_for_row_array($determinerToUpdateRow, 'occurrences');
-        $update = $this->db
-          ->from('occurrences')
-          ->set($determinerToUpdateRow)
-          ->where(array('id'=>$occurrenceIdToUpdateDeterminerFor))
-          ->update();
-      }
+    if ($this->logDetermination) {
+      $currentUserId = $this->get_current_user_id(); 
+      if ($currentUserId!==1) 
+        $this->submission['fields']['determiner_id']['value']=$currentUserId;
     }
     if (array_key_exists('record_status', $this->submission['fields']))
     { 
