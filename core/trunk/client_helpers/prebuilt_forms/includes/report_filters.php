@@ -453,7 +453,8 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
     // apply legacy verification settings from their profile
     $location_id = hostsite_get_user_field('location_expertise');
     $taxon_group_ids = hostsite_get_user_field('taxon_groups_expertise');
-    if ($location_id || $taxon_group_ids) {
+    $survey_ids = hostsite_get_user_field('surveys_expertise');
+    if ($location_id || $taxon_group_ids || $survey_ids) {
       $selected = (!empty($options['context_id']) && $options['context_id']==='default') ? 'selected="selected" ' : '';
       $contexts .= "<option value=\"default\" $selected>".lang::get('My verification records')."</option>";
       $def = array();
@@ -471,6 +472,10 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
         foreach ($groups as $group) {
           $def['taxon_group_names'][$group['id']]=$group['title'];
         }
+      }
+      if ($survey_ids) {
+        $arr=unserialize($survey_ids);
+        $def['survey_list']=implode(',', $arr);
       }
       $contextDefs['default'] = $def;
     }
