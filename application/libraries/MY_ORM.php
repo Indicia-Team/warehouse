@@ -685,6 +685,8 @@ class ORM extends ORM_Core {
     if (array_key_exists('id', $vArray) && $vArray['id'] != null && $vArray['id'] != 0) {
       $this->find($vArray['id']);
       $thisValues = $this->as_array();
+      unset($thisValues['updated_by_id']);
+      unset($thisValues['updated_on']);
       // don't overwrite existing website_ids otherwise things like shared verification portals end up 
       // grabbing records to their own website ID.
       if (!empty($thisValues['website_id']) && !empty($vArray['website_id']))
