@@ -360,7 +360,7 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
         nonce: readAuth.nonce,
         taxon_list_id: lookupListId
       };
-      var autocompleteSettings = getAutocompleteSettings(extraParams);
+      var autocompleteSettings = getAutocompleteSettings(extraParams, gridId);
       var ctrl = $(taxonCell).children(':input').autocomplete(url+'/'+(cacheLookup ? 'cache_taxon_searchterm' : 'taxa_taxon_list'), autocompleteSettings);
       //put the taxon name into the autocomplete ready for editing
       $('#'+selectorId).val(taxonTextBeforeUserEdit);
