@@ -123,12 +123,12 @@ class Occurrence_Model extends ORM
       $rowToAdd['taxa_taxon_list_id']=$this->taxa_taxon_list_id;
       $rowToAdd['determination_type'] = 'B';
       $rowToAdd['occurrence_id'] = $this->id;
-      //Set the determination metadata to the metadata for the occurrence when it was previously updated
+      //Last change to the occurrence is really the create metadata for this determination, since we are copying it out of the existing occurrence record.
       $rowToAdd['created_by_id'] = $this->updated_by_id;
       $rowToAdd['updated_by_id'] = $this->updated_by_id;
       $rowToAdd['created_on'] = $this->updated_on;
       $rowToAdd['updated_on'] = $this->updated_on;
-      $rowToAdd['person_name'] = $this->get_person_name_and_update_determiner($this->as_array(), $currentUserId);
+      $rowToAdd['person_name'] = $this->get_person_name_and_update_determiner($this->as_array(), $this->updated_by_id);
       
       $insert = $this->db
        ->from('determinations')
