@@ -131,6 +131,7 @@ Record ID',
                 "&nbsp;&nbsp;<strong>[comments]</strong> - lists any comments associated with the occurrence. Also includes the ability to add a comment<br/>".
                 "&nbsp;&nbsp;<strong>[photos]</strong> - photos associated with the occurrence<br/>".
                 "&nbsp;&nbsp;<strong>[map]</strong> - a map that links to the spatial reference and location<br/>".
+                "&nbsp;&nbsp;<strong>[previous determinations]</strong> - a list of previous determinations for this record<br/>".
             "<strong>=tab/page name=</strong> is used to specify the name of a tab or wizard page (alpha-numeric characters only). ".
             "If the page interface type is set to one page, then each tab/page name is displayed as a seperate section on the page. ".
             "Note that in one page mode, the tab/page names are not displayed on the screen.<br/>".
@@ -378,26 +379,23 @@ Record ID',
    */
   protected static function get_control_previousdeterminations($auth, $args, $tabalias, $options) {
     iform_load_helpers(array('report_helper'));
-
-    if ($options['itemsPerPage'] == NULL) {
-      $options['itemsPerPage'] = 12;
-    }  
-    if (empty($options['report']))
-      return '<h3>Previous Determinations</h3>'.'<h4><i>Please provide a Previous Determinations report to run in the Form Structure box on the edit tab.</i></h4>';
-    else 
-      return '<h3>Previous Determinations</h3>'.report_helper::report_grid(array(
+    $options = array_merge(array(
+      'report'=>'library/determinations/determinations_list'
+    ));
+    return report_helper::freeform_report(array(
         'readAuth' => $auth['read'],
         'dataSource'=>$options['report'],
         'itemsPerPage' => $options['itemsPerPage'],
         'mode' => 'report',
         'autoParamsForm' => false,
         'includeAllColumns' => true,
-        'headers' => true,
+        'header' => '<h3>Previous Determinations</h3>',
+        'bands'=>array(array('content'=>'<div class="field ui-helper-clearfix">{taxon_html} by {person_name} on {date}</div>')),
         'extraParams' => array(
           'occurrence_id'=>$_GET['occurrence_id'],
           'sharing'=>'reporting'
         ),
-      ));
+    ));
   }
   
   /*
