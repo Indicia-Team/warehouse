@@ -82,17 +82,25 @@ class extension_cudi_information_sheet {
    * A button link to the cudi form for the same location as being viewed on the information sheet
    */
   public function cudiFormButtonLink($auth, $args, $tabalias, $options, $path) {
-    //Get the "Is Complete?" location attribute from the database.
-    $locData = data_entry_helper::get_population_data(array(
-      'table' => 'location_attribute_value',
-      'extraParams' => $auth['read'] + array('location_id' => $_GET['id'], 'location_attribute_id'=>$options['is_complete_attribute_id']),
-      'nocache' => true
+    global $user;
+    //Get the Count Units that are in the user's tasks list using the same report.
+    $getNormalUserEditableCountUnitData  = data_entry_helper::get_report_data(array(
+      'dataSource'=>'reports_for_prebuilt_forms/cudi/my_cudi_tasks',
+      'readAuth'=>$auth['read'],
+      'extraParams'=>array('preferred_boundary_attribute_id' => $options['preferred_boundary_attribute_id'],
+                           'count_unit_boundary_type_id'=>$options['count_unit_boundary_type_id'],
+                           'count_unit_type_id'=>$options['count_unit_type_id'],
+                           'is_complete_attribute_id'=>$options['is_complete_attribute_id'],
+                           'preferred_sites_attribute_id'=>$options['preferred_sites_attribute_id'],
+                           'current_user_id'=>$user->profile_indicia_user_id)
     ));
-
-    $isComplete = $locData[0]['value'];
-    $normalUser = !$options['admin_mode'];
-    //Hide the Cudi Form button link if the user is a "normal user" and the Count Unit has been marked as "Is Complete". Other situations link is visible.
-    if (!($isComplete && $normalUser)) {
+    $isNormalUserAccessibleCountUnitIds = array();
+    //Convert the Count Units in the user's task list into an array of ids only.
+    foreach($getNormalUserEditableCountUnitData as $idx => $isNormalUserAccessibleDirtyItem) {
+      $isNormalUserAccessibleCountUnitIds[$idx] = $isNormalUserAccessibleDirtyItem['id'];
+    }
+    //Only show the Cudi Form button for admin users or the Count Unit is the user's task list 
+    if (in_array($_GET['id'],$isNormalUserAccessibleCountUnitIds)||$options['admin_mode']) {
       global $base_url;
       $cudiFormOptions = explode('|',$options['cudiFormOptions']);
       $cudiFormPath = $cudiFormOptions[0];
