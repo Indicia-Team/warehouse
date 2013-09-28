@@ -3576,7 +3576,8 @@ $('#".$options['id']." .species-filter').click(function(evt) {
         $present = count($parts) > 2 && $parts[0] === 'sc' && $parts[1]!='-idx-' && $parts[3]==='present';
         if ($present && !empty($options['gridIdAttributeId'])) {
           // filtering records by grid ID. Skip them if from a different input grid (multiple grids on one form scenario).
-          $matches = preg_grep("/^sc:$parts[1]:$parts[2]:occAttr:$options[gridIdAttributeId]:[0-9]+$/", array_keys(self::$entity_to_load));
+          // The suffix containing attr_value_id will not be present if reloading due to error on submission
+          $matches = preg_grep("/^sc:$parts[1]:$parts[2]:occAttr:$options[gridIdAttributeId](:[0-9]+)?$/", array_keys(self::$entity_to_load));
           if (count($matches)>0) {
             $match = array_pop($matches);
             if (self::$entity_to_load[$match]!==$options['id']) {
