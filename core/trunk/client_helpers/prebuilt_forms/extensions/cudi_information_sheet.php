@@ -87,7 +87,8 @@ class extension_cudi_information_sheet {
     $getNormalUserEditableCountUnitData  = data_entry_helper::get_report_data(array(
       'dataSource'=>'reports_for_prebuilt_forms/cudi/my_cudi_tasks',
       'readAuth'=>$auth['read'],
-      'extraParams'=>array('preferred_boundary_attribute_id' => $options['preferred_boundary_attribute_id'],
+      'extraParams'=>array('deactivate_site_attribute_id' => $options['deactivate_site_attribute_id'],
+                           'preferred_boundary_attribute_id' => $options['preferred_boundary_attribute_id'],
                            'count_unit_boundary_type_id'=>$options['count_unit_boundary_type_id'],
                            'count_unit_type_id'=>$options['count_unit_type_id'],
                            'is_complete_attribute_id'=>$options['is_complete_attribute_id'],
