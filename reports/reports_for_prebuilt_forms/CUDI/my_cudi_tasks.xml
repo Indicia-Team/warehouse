@@ -24,7 +24,11 @@
             --Get the person's preferred sites
             LEFT JOIN person_attribute_values pavPreferredSites ON  pavPreferredSites.person_attribute_id = #preferred_sites_attribute_id# and pavPreferredSites.person_id = #current_user_id# 
             LEFT JOIN locations mySites ON mySites.id = pavPreferredSites.int_value
-            WHERE st_intersects(coalesce(mySites.boundary_geom, mySites.centroid_geom),coalesce(actualPrefBound.boundary_geom,myLocationsIntersectingSites.boundary_geom, myLocationsIntersectingSites.centroid_geom)))     
+            LEFT JOIN location_attribute_values deactivateSiteLav on deactivateSiteLav.location_attribute_id=#deactivate_site_attribute_id# AND deactivateSiteLav.int_value = 1
+            --Deactivated sites override the preferred sites
+            LEFT JOIN locations deactivatedSites on deactivatedSites.id=deactivateSiteLav.location_id
+            WHERE st_intersects(coalesce(mySites.boundary_geom, mySites.centroid_geom),coalesce(actualPrefBound.boundary_geom,myLocationsIntersectingSites.boundary_geom, myLocationsIntersectingSites.centroid_geom)) AND
+            (deactivatedSites.id IS NULL OR NOT st_intersects(coalesce(deactivatedSites.boundary_geom, deactivatedSites.centroid_geom),coalesce(actualPrefBound.boundary_geom,myLocationsIntersectingSites.boundary_geom, myLocationsIntersectingSites.centroid_geom))))    
   </query>
   <params>
     <param name="current_user_id" datatype="integer"/>
@@ -33,6 +37,7 @@
     <param name="count_unit_type_id" datatype="integer"/>
     <param name="count_unit_boundary_type_id" datatype="integer"/>
     <param name="preferred_boundary_attribute_id" datatype="integer"/>
+    <param name="deactivate_site_attribute_id" datatype="integer"/>
   </params>
   <columns>
     <column name="id" display="Count Unit Id" sql="cu.id" visible="false" in_count="true"/>  
