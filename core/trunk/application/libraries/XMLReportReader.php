@@ -884,7 +884,7 @@ JOIN user_trusts ut on (ut.survey_id=o.survey_id
   select tc.id 
   from q 
   join cache_taxa_taxon_lists tc on tc.parent_id = q.id 
-) select array_to_string(array_agg(id::varchar), ',') from q"
+) select array_to_string(array_agg(distinct id::varchar), ',') from q"
       ),
       'taxon_meaning_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Taxon meaning IDs", 
           'description'=>'Comma separated list of taxon meaning IDs',
@@ -900,7 +900,7 @@ JOIN user_trusts ut on (ut.survey_id=o.survey_id
   select tc.id, tc.taxon_meaning_id 
   from q 
   join cache_taxa_taxon_lists tc on tc.parent_id = q.id 
-) select array_to_string(array_agg(taxon_meaning_id::varchar), ',') from q"
+) select array_to_string(array_agg(distinct taxon_meaning_id::varchar), ',') from q"
       )
     ), $this->params);
     $this->defaultParamValues = array_merge(array(
