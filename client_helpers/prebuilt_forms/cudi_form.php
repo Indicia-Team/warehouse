@@ -489,6 +489,22 @@ mapInitialisationHooks.push(function(mapdiv) {
     $r='';
     return $r;
   }
+  
+  /*
+   * Control warns normal users when a boundary is not filled in at all.
+   */
+  protected static function get_control_noboundarywarning($auth, $args, $tabalias, $options) {
+    //Only show warning in edit mode
+    if ($_GET['location_id']) {
+      data_entry_helper::$javascript .= "
+      if (!$('#imp-boundary-geom').val()) {
+        $('#no-boundary-warning').text('Please provide details of the count unit’s boundary.');
+      }
+      ";
+      return '<div><h3><font color="red" id="no-boundary-warning"></font></h3></div>';
+    }
+  } 
+  
   /*
    * Control button to move into adding/editing annotations mode. Code behind button is handled by javascript
    */ 
