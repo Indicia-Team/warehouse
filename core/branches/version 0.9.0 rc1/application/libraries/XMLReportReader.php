@@ -831,12 +831,6 @@ JOIN user_trusts ut on (ut.survey_id=o.survey_id
             array('value'=>'1', 'operator'=>'equal', 'sql'=>"o.created_by_id=#user_id#")
           )
       ),
-      'recorder' => array('datatype'=>'text', 'default'=>'', 'display'=>"Recorder's name",
-          'description' => "Recorder's name as freetext",
-          'wheres' => array(
-            array('value'=>'', 'operator'=>'', 'sql'=>"o.recorders='#recorder#'")
-          )
-      ),
       'group_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>"ID of a group to filter to the members of",
           'description'=>'Specify the ID of a recording group. This filters the report to the members of the group.',
           'joins' => array(
@@ -926,7 +920,6 @@ JOIN user_trusts ut on (ut.survey_id=o.survey_id
         'user_id'=>'',
         'group_id'=>'',
         'my_records'=>'',
-        'recorder'=>'',
         'website_list'=>'',
         'website_list_op'=>'in',
         'survey_list'=>'',
