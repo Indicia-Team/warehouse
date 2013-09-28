@@ -31,6 +31,8 @@
             (deactivatedSites.id IS NULL OR NOT st_intersects(coalesce(deactivatedSites.boundary_geom, deactivatedSites.centroid_geom),coalesce(actualPrefBound.boundary_geom,myLocationsIntersectingSites.boundary_geom, myLocationsIntersectingSites.centroid_geom))))    
   </query>
   <params>
+    <param name="clean_url" datatype="string"/>
+    <param name="cudi_form_url" datatype="string"/>
     <param name="current_user_id" datatype="integer"/>
     <param name="preferred_sites_attribute_id" datatype="integer"/>
     <param name="is_complete_attribute_id" datatype="integer"/>
@@ -41,6 +43,13 @@
   </params>
   <columns>
     <column name="id" display="Count Unit Id" sql="cu.id" visible="false" in_count="true"/>  
-    <column name="name" display="Please provide details of the following Count Units" sql="cu.name"/>  
+    <column name="name" display="Please provide details of the following Count Units" sql="
+      case '#clean_url#'
+        WHEN '1'
+          THEN '&lt;a href=&quot;'||#cudi_form_url#||'?location_id='||cu.id||'&quot;&gt;' || cu.name
+        ELSE
+          '&lt;a href=&quot;?q='||#cudi_form_url#||'&amp;location_id='||cu.id||'&quot;&gt;' || cu.name
+      END
+    "/>  
   </columns>
 </report>
