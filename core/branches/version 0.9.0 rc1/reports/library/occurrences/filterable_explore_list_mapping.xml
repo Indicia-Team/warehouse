@@ -33,6 +33,7 @@
     <column name='date' on_demand="true" datatype="date" />
     <column name='recorder' on_demand="true" 
         sql="CASE WHEN w.id IN (#website_ids#) THEN '' ELSE w.title || '-&gt; ' END || CASE WHEN LENGTH(o.recorders)>30 THEN 'Recorder' ELSE o.recorders END" datatype="text" />
+    <column name='created_by_id' visible='false' sql='o.created_by_id' on_demand="true" datatype="integer" />
     <column name='input_form' visible="false" sql="case when o.input_form is null then '#default_input_form#' else o.input_form end" on_demand="true" datatype="text" />
     <column name="occurrence_ids" visible="false" sql="array_to_string(array_agg(o.id), ',')" aggregate="true" />
     <column name="taxon_meaning_ids" visible="false" sql="array_to_string(array_agg(distinct o.taxon_meaning_id), ',')" aggregate="true" />
