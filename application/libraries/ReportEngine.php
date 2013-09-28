@@ -1111,7 +1111,7 @@ class ReportEngine {
       // use a preprocessing query to calculate the actual param value to use
       $prequery = str_replace("#$paramName#", $value, $paramDef['preprocess']);
       $output = $this->reportDb->query($prequery)->result_array(FALSE);
-      $value = implode(',', $output[0]).',3';
+      $value = implode(',', $output[0]);
     }
     foreach($paramDef['wheres'] as $whereDef) {
       if ((!empty($whereDef['operator']) && (($whereDef['operator']==='equal' && $whereDef['value']===$value) ||
