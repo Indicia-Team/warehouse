@@ -426,7 +426,7 @@ var saveComment, saveVerifyComment;
           'so please ensure you have set the grid\'s filter correctly before proceeding. You should only proceed if you are certain that data you are verifying '+
           'can be trusted without further investigation.</p>'+
           '<label><input type="radio" name="quick-option" value="species" /> Verify grid\'s records of <span class="quick-taxon">'+currRec.extra.taxon+'</span></label><br/>';
-      if (currRec.extra.recorder!=='') {
+      if (currRec.extra.recorder!=='' && currRec.extra.recorder!==null && currRec.extra.created_by_id!=='1') {
         popupHtml += '<label><input type="radio" name="quick-option" value="recorder"/> Verify grid\'s records by <span class="quick-user">'+currRec.extra.recorder+'</span></label><br/>'+
             '<label><input type="radio" name="quick-option" value="species-recorder" /> Verify grid\'s records of <span class="quick-taxon">'+currRec.extra.taxon+
             '</span> by <span class="quick-user">'+currRec.extra.recorder+'</span></label><br/>';
@@ -441,7 +441,7 @@ var saveComment, saveVerifyComment;
             radio=$('.quick-verify-popup input[name=quick-option]:checked');
         if (radio.length===1) {
           if ($(radio).val().indexOf('recorder')!==-1) {
-            params.recorder=currRec.extra.recorder;
+            params.created_by_id=currRec.extra.created_by_id;
           }
           if ($(radio).val().indexOf('species')!==-1) {
             params.taxon_meaning_list=currRec.extra.taxon_meaning_id;
