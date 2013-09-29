@@ -725,7 +725,7 @@ idlist=';
     iform_load_helpers(array('data_entry_helper'));
     $images = data_entry_helper::get_population_data(array(
       'table' => 'occurrence_image',
-      'extraParams'=>$auth + array('occurrence_id'=>$_GET['occurrence_id']),
+      'extraParams'=>$readAuth + array('occurrence_id'=>$_GET['occurrence_id']),
       'nocache'=>true,
       'sharing'=>'verification'
     ));
