@@ -231,7 +231,7 @@ mapGeoreferenceHooks = [];
           if (geometry) {
             bounds.extend(geometry.getBounds());
           }
-        });
+        });        
       }
 
       if(invisible !== null){
@@ -1669,13 +1669,22 @@ mapGeoreferenceHooks = [];
         // after half a second, reset the map size
         setTimeout("tmp.style.height = (parseInt(tmp.style.height) + 1) + 'px'", 500);
       });
-
+      
       if (this.settings.editLayer) {
-        // Add an editable layer to the map
-        var editLayer = new OpenLayers.Layer.Vector(
-            this.settings.editLayerName,
-            {style: new style('boundary'), 'sphericalMercator': true, displayInLayerSwitcher: this.settings.editLayerInSwitcher}
-        );
+        if (indiciaData.zoomid) {
+          //Change the feature colour to make it a ghost when we are in add mode and zoomed into a location (as the location boundary isn't
+          //used, it is only visual)
+          var editLayer = new OpenLayers.Layer.Vector(
+              this.settings.editLayerName,
+              {style: new style('ghost'), 'sphericalMercator': true, displayInLayerSwitcher: this.settings.editLayerInSwitcher}
+          );
+        } else {
+          // Add an editable layer to the map
+          var editLayer = new OpenLayers.Layer.Vector(
+              this.settings.editLayerName,
+              {style: new style('boundary'), 'sphericalMercator': true, displayInLayerSwitcher: this.settings.editLayerInSwitcher}
+          );
+        }
         div.map.editLayer = editLayer;
         div.map.addLayer(div.map.editLayer);
 
