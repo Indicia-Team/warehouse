@@ -27,7 +27,7 @@
  * @package	Core
  * @subpackage Controllers
  */
-class ServiceError extends Kohana_Exception {
+class ServiceError extends Exception {
 }
 
 /**
@@ -42,10 +42,10 @@ class ArrayException extends ServiceError {
   /**
    * Override constructor to accept an errors array
    */
-  public function __construct($message, $errors) {
+  public function __construct($message, $code, $errors) {
     $this->errors = $errors;
     // make sure everything is assigned properly
-    parent::__construct($message);
+    parent::__construct($message, $code);
   }
 
   public function errors() {
@@ -249,7 +249,7 @@ class Service_Base_Controller extends Controller {
       if ($transaction_id) {
       	$response['transaction_id'] = $transaction_id;
       }
-      if (get_class($e)=='ArrayException') {
+      if ($e instanceof ArrayException) {
         $response['errors'] = $e->errors();
       } elseif (!$e instanceof ServiceError) {
         $response['file']=$e->getFile();
