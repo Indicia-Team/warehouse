@@ -1193,9 +1193,9 @@ class iform_ukbms_sectioned_transects_input_sample {
         $r .= '<label for="taxonLookupControl4" class="auto-width">'.lang::get('Add species to list').':</label> <input id="taxonLookupControl4" name="taxonLookupControl4" >';
       $r .= '<br /><a href="'.$args['my_walks_page'].'" class="button">'.lang::get('Finish').'</a></div>';
     }
+    $reloadPath = self::getReloadPath();
     if(isset($args['map_taxon_list_id']) && $args['map_taxon_list_id']!=''){
       // TODO convert to AJAX.
-      $reloadPath = self::getReloadPath();
       data_entry_helper::enable_validation('entry_form');
       $value = helper_base::explode_lines_key_value_pairs($args['defaults']);
       $value = isset($value['occurrence:record_status']) ? $value['occurrence:record_status'] : 'C';
