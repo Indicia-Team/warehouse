@@ -631,7 +631,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       $this->delete_nonce();
     }
     else if (isset($model) && is_array($model->getAllErrors()))
-      Throw new ValidationError('Error occurred on model submission', $model->getAllErrors(), 2003);
+      Throw new ValidationError('Error occurred on model submission', 2003, $model->getAllErrors());
     else
       Throw new Exception('Unknown error on submission of the model');
 
@@ -707,7 +707,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       else
       {
         kohana::log('info', 'Validation errors uploading media '. $_FILES['media_upload']['name']);
-        Throw new ValidationError('Validation error', $_FILES->errors('form_error_messages'), 2003);
+        Throw new ValidationError('Validation error', 2003, $_FILES->errors('form_error_messages'));
       }
     }
     catch (Exception $e)
@@ -1087,7 +1087,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     $model::$authorisedWebsiteId=$this->website_id;
     $result = $model->submit();
     if (!$result) 
-      throw new ValidationError('Validation error', $model->getAllErrors(), 2003);
+      throw new ValidationError('Validation error', 2003, $model->getAllErrors());
     // return the outermost model's id
     return array('id'=>$model->id, 'struct'=>$model->get_submitted_ids());
   }
