@@ -1722,7 +1722,7 @@ mapGeoreferenceHooks = [];
           div.map.events.register('mousemove', null, function(evt) {
             currentMousePixel = evt.xy;
             showGridRefHints(div);
-            if (div.map.editLayer.clickControl.active) {
+            if (typeof div.map.editLayer.clickControl!=="undefined" && div.map.editLayer.clickControl.active) {
               if (div.map.dragging) {
                 removeAllFeatures(div.map.editLayer, 'ghost');
               } else {
