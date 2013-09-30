@@ -50,7 +50,7 @@ class Site_User_Controller extends Service_Base_Controller {
       // decrypt and check the input
       $input = secure_msg::unseal_request($_POST, $this->website_password);
       if (array_key_exists(secure_msg::ERROR_MSG, $input)) {
-        throw new ServiceError($input[secure_msg::ERROR_MSG]);
+        throw new ServiceError($input[secure_msg::ERROR_MSG], 3001);
       }
       kohana::log('debug', 'Site_User_Controller::authenticate_user, unsealed input is '.print_r($input, true));
       $options = array_key_exists('options', $input) ? $input['options'] : array();
