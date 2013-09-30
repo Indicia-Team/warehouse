@@ -199,6 +199,8 @@ class iform_dynamic_location extends iform_dynamic {
    */
 
   public static function zoom_map_when_adding($readAuth, $entity, $id, $view = 'detail') {
+    //Get the zoom_id from the url to allow us to zoom to a specific region in add mode
+    data_entry_helper::$javascript .= "indiciaData.zoomid='".$_GET['zoom_id']."';\n";
     $loc = data_entry_helper::get_population_data(array(
       'table' => $entity,
       'extraParams' => $readAuth + array('id' => $id, 'view' => $view),
