@@ -84,7 +84,7 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
       {
         kohana::log('error', 'Validation errors uploading file '. $_FILES['csv_upload']['name']);
         kohana::log('error', print_r($_FILES->errors('form_error_messages'), true));
-        Throw new ArrayException('Validation error', $_FILES->errors('form_error_messages'));
+        Throw new ValidationError('Validation error', $_FILES->errors('form_error_messages'), 2004);
       }
     }
     catch (Exception $e)

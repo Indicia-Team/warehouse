@@ -20,13 +20,22 @@
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
  */
+ 
+/**
+ * Exception class for Indicia services.
+ *
+ * @package	Core
+ * @subpackage Controllers
+ */
+class ServiceError extends Kohana_Exception {
+}
 
 /**
- * Controller providing CRUD access to the sample attributes list.
+ * Exception class for exception that contain an array of sub-errors, such as a submission validation failure.
  *
  * @package	Core
  */
-class ArrayException extends Kohana_Exception {
+class ArrayException extends ServiceError {
 
   private $errors = array();
 
@@ -45,16 +54,16 @@ class ArrayException extends Kohana_Exception {
 }
 
 /**
- * Exception class for Indicia services.
- *
- * @package	Core
+ * Exception class for submission validation problems.
+ * 
+ * @package Core
  * @subpackage Controllers
  */
-class ServiceError extends Kohana_Exception {
+class ValidationError extends ArrayException {
 }
 
 /**
- * Exception class for authentication failurs.
+ * Exception class for authentication failures.
  * 
  * @package Core
  * @subpackage Controllers
@@ -63,14 +72,22 @@ class AuthenticationError extends ServiceError {
 }
 
 /**
- * Exception class for inaccessible entities.
+ * Exception class for authorisation failures.
+ * 
+ * @package Core
+ * @subpackage Controllers
+ */
+class AuthorisationError extends ServiceError {
+}
+
+/**
+ * Exception class for inaccessible entities or view combinations.
  * 
  * @package Core
  * @subpackage Controllers
  */
 class EntityAccessError extends ServiceError {
 }
-
 
 /**
  * Base controller class for Indicia Service controllers.
@@ -181,7 +198,7 @@ class Service_Base_Controller extends Controller {
     if (!$authentic)
     {
       Kohana::log('info', "Unable to authenticate.");
-      throw new AuthenticationError("unauthorised");
+      throw new AuthenticationError("unauthorised", 1);
     };
   }
 
@@ -206,12 +223,12 @@ class Service_Base_Controller extends Controller {
    */
   protected function handle_error($e, $transaction_id = null)
   {
-    if($e instanceof AuthenticationError) 
-      $statusCode = 403;
-    else if($e instanceof EntityAccessError)
+    if($e instanceof ValidationError)
+      $statusCode = 400;
+    elseif($e instanceof AuthenticationError || $e instanceof AuthorisationError) 
+      $statusCode = 403; // not 401 as not using browser or official digest authentication
+    elseif($e instanceof EntityAccessError)
       $statusCode = 404;
-    else if($e->getMessage() == 'Unknown Exception: unauthorised') 
-      $statusCode = 403;
     else
       $statusCode = 500;
     $message=kohana::lang('general_errors.'.$e->getMessage());
@@ -221,18 +238,20 @@ class Service_Base_Controller extends Controller {
     if ($mode=='xml') {
       $view = new View("services/error");
       $view->message = $message;
+      $view->code = $e->getCode();
       $view->render(true);
     } else {
       header("Content-Type: application/json");
       $response = array(
-        'error'=>$message
+        'error'=>$message,
+        'code'=>$e->getCode()
       );
       if ($transaction_id) {
       	$response['transaction_id'] = $transaction_id;
       }
       if (get_class($e)=='ArrayException') {
         $response['errors'] = $e->errors();
-      } elseif (get_class($e)!='ServiceError') {
+      } elseif (!$e instanceof ServiceError) {
         $response['file']=$e->getFile();
         $response['line']=$e->getLine();
         $response['trace']=array();

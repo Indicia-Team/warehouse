@@ -105,7 +105,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
         }
         else
         {
-          throw new ServiceError("$this->entity data cannot be output using mode $mode.");
+          throw new EntityAccessError("$this->entity data cannot be read using mode $mode.", 1002);
         }
     }
   }

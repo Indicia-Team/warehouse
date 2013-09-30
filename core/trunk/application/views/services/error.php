@@ -23,6 +23,8 @@
 header("Content-Type: application/xml");
 echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 <error>
-  <message>$message</message>
-</error>";
+  <message>$message</message>\n";
+if (!empty($code)) 
+  echo "  <code>$code</code>\n";
+echo "</error>";
 ?>

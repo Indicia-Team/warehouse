@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Filterable Species, Occurrence and Image Counts" description="Gives a total number of species, occurrence and photos for a filter (e.g. a survey/date range). 
+    Filterable by standard params.">
+      <query website_filter_field="o.website_id" standard_params="true">
+      SELECT #columns#
+      FROM cache_occurrences o
+      #agreements_join#
+      #joins#
+      WHERE #sharing_filter#
+      </query>
+  <columns>
+        <column name="species_count" display="Species" sql="COUNT(DISTINCT CASE WHEN o.zero_abundance IS NULL THEN NULL ELSE o.taxa_taxon_list_external_key END)"  />
+        <column name="occurrences_count" display="Records" sql="COUNT(DISTINCT o.id)" />
+        <column name="photos_count" display="Photos" sql="COALESCE(sum(length(images)-length(replace(images,',',''))+1), 0)" />
+  </columns>
+</report>
