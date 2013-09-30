@@ -549,7 +549,7 @@ class helper_base extends helper_config {
         $indicia_theme_path .= '/';
       self::$resource_list = array (
         'jquery' => array('javascript' => array(self::$js_path."jquery.js",self::$js_path."ie_vml_sizzlepatch_2.js")),
-        'openlayers' => array('javascript' => array(self::$js_path."OpenLayers.js", self::$js_path."proj4js.js", self::$js_path."proj4defs.js")),
+        'openlayers' => array('javascript' => array(self::$js_path."OpenLayers.js", self::$js_path."proj4js.js", self::$js_path."proj4defs.js", self::$js_path."lang/en.js")),
         'graticule' => array('deps' =>array('openlayers'), 'javascript' => array(self::$js_path."indiciaGraticule.js")),
         'clearLayer' => array('deps' =>array('openlayers'), 'javascript' => array(self::$js_path."clearLayer.js")),
         'addrowtogrid' => array('deps' => array('validation'), 'javascript' => array(self::$js_path."addRowToGrid.js")),
