@@ -600,6 +600,22 @@ class iform_ukbms_sectioned_transects_input_sample {
           'siteSpecific'=>true
         ),
         array(
+            'name'=>'managerPermission',
+            'caption'=>'Drupal Permission for Manager mode',
+            'description'=>'Enter the Drupal permission name to be used to determine if this user is a manager. Entering this will allow the identified users access to the full locations list when entering a walk.',
+            'type'=>'string',
+            'required' => false,
+            'group' => 'Transects Editor Settings'
+        ),
+        array(
+            'name' => 'branch_assignment_permission',
+            'label' => 'Drupal Permission name for Branch Manager',
+            'type' => 'string',
+            'description' => 'Enter the Drupal permission name to be used to determine if this user is a Branch Manager. Entering this will allow the identified users access to locations identified as theirs using the Branch CMS User ID integer attribute on the locations.',
+            'required'=>false,
+            'group' => 'Transects Editor Settings'
+        ),
+        array(
           'name' => 'user_locations_filter',
           'caption' => 'User locations filter',
           'description' => 'Should the locations available be filtered to those which the user is linked to, by a multivalue CMS User ID attribute ' .
@@ -730,9 +746,10 @@ class iform_ukbms_sectioned_transects_input_sample {
       );
       $locationTypes = helper_base::get_termlist_terms($auth, 'indicia:location_types', $typeTerms);
       $siteParams = $auth['read'] + array('website_id' => $args['website_id'], 'location_type_id'=>$locationTypes[0]['id']);
-      if (!isset($args['user_locations_filter']) || $args['user_locations_filter'])
+      if ((!isset($args['user_locations_filter']) || $args['user_locations_filter']) &&
+          (!isset($args['managerPermission']) || !user_access($args['managerPermission']))) {
         $siteParams += array('locattrs'=>'CMS User ID', 'attr_location_cms_user_id'=>$user->uid);
-      else
+      } else
         $siteParams += array('locattrs'=>'');
       $availableSites = data_entry_helper::get_population_data(array(
         'report'=>'library/locations/locations_list',
@@ -745,6 +762,21 @@ class iform_ukbms_sectioned_transects_input_sample {
       foreach ($availableSites as $site) {
         $sitesLookup[$site['location_id']]=$site['name'];
         $sitesJs[$site['location_id']] = $site;
+      }
+      // bolt in branch locations. Don't assume that branch list is superset of normal sites list
+      if(isset($args['branch_assignment_permission']) && user_access($args['branch_assignment_permission'])) {
+        $siteParams['locattrs']='Branch CMS User ID';
+        $siteParams['attr_location_branch_cms_user_id']=$user->uid;
+        unset($siteParams['attr_location_cms_user_id']);
+        $availableSites = data_entry_helper::get_population_data(array(
+            'report'=>'library/locations/locations_list',
+            'extraParams' => $siteParams,
+            'nocache' => true
+        ));
+        foreach ($availableSites as $site) {
+          $sitesLookup[$site['location_id']]=$site['name'];
+          $sitesJs[$site['location_id']] = $site;
+        }
       }
       data_entry_helper::$javascript .= "indiciaData.sites = ".json_encode($sitesJs).";\n";
       $options = array(
