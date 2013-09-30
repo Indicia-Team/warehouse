@@ -29,8 +29,15 @@
  * object, saving hits on the database etc.
  */
 class ORM extends ORM_Core {
+
   /**
-  * @var bool Should foreign key lookups be cached? Set to true during import for example.
+   * Authorised website ID from the service authentication.
+   * @var integer
+   */
+  public static $authorisedWebsiteId=0;
+  /**
+  * Should foreign key lookups be cached? Set to true during import for example.
+  * @var bool 
   */
   public static $cacheFkLookups = false;
   
@@ -680,6 +687,8 @@ class ORM extends ORM_Core {
          }');
     // Flatten the array to one that can be validated
     $vArray = array_map($collapseVals, $this->submission['fields']);
+    if (!empty($vArray['website_id']) && !empty(self::$authorisedWebsiteId) && $vArray['website_id']!==self::$authorisedWebsiteId)
+      throw new Exception('Access to write to this website denied.', 2001);
     // If we're editing an existing record, merge with the existing data.
     // NB id is 0, not null, when creating a new user
     if (array_key_exists('id', $vArray) && $vArray['id'] != null && $vArray['id'] != 0) {
@@ -1537,6 +1546,7 @@ class ORM extends ORM_Core {
            $fkTable = $fieldName;
         }
         // Create model without initialisting, so we can just check the lookup variables
+        kohana::log('debug', $fkTable);
         $fkModel = ORM::Factory($fkTable, -1);
         // let the model map the lookup against a view if necessary
         $lookupAgainst = isset($fkModel->lookup_against) ? $fkModel->lookup_against : $fkTable;

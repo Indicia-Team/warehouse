@@ -232,7 +232,7 @@ class Verification_rule_Model extends ORM {
    * and metadata.
    * @param array $currentRule Definition of the rule.
    */
-  public function postProcess($currentRule) {
+  public function postProcessRule($currentRule) {
     $ppMethod = $currentRule['plugin'].'_data_cleaner_postprocess';
     require_once(MODPATH.$currentRule['plugin'].'/plugins/'.$currentRule['plugin'].'.php');
     if (function_exists($ppMethod)) {
@@ -301,12 +301,10 @@ class Verification_rule_Model extends ORM {
         $this->save_verification_rule_metadata($currentRule, $metadata);
         $data = data_cleaner::parse_test_file($this->submission['metaFields']['data']['value']);
         $this->save_verification_rule_data($currentRule, $data);
-        $this->postProcess($currentRule);
+        $this->postProcessRule($currentRule);
       }
     }
     return true;
-    
-    
   }
   
 }

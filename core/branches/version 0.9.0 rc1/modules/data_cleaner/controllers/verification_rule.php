@@ -399,7 +399,7 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
     if (!empty($rulesettings))
       $this->model->save_verification_rule_data($currentRule, $rulesettings);
     
-    $this->model->postProcess($currentRule);
+    $this->model->postProcessRule($currentRule);
 
   }
   
@@ -427,7 +427,7 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
       {
         kohana::log('error', 'Validation errors uploading file '. $_FILES['csv_upload']['name']);
         kohana::log('error', print_r($_FILES->errors('form_error_messages'), true));
-        Throw new ArrayException('Validation error', $_FILES->errors('form_error_messages'));
+        Throw new ValidationError('Validation error', $_FILES->errors('form_error_messages'), 2004);
       }
     }
     catch (Exception $e)

@@ -631,7 +631,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       $this->delete_nonce();
     }
     else if (isset($model) && is_array($model->getAllErrors()))
-      Throw new ArrayException('Error occurred on model submission', $model->getAllErrors());
+      Throw new ValidationError('Error occurred on model submission', $model->getAllErrors(), 2003);
     else
       Throw new Exception('Unknown error on submission of the model');
 
@@ -707,7 +707,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       else
       {
         kohana::log('info', 'Validation errors uploading media '. $_FILES['media_upload']['name']);
-        Throw new ArrayException('Validation error', $_FILES->errors('form_error_messages'));
+        Throw new ValidationError('Validation error', $_FILES->errors('form_error_messages'), 2003);
       }
     }
     catch (Exception $e)
@@ -745,7 +745,7 @@ class Data_Controller extends Data_Service_Base_Controller {
         !array_key_exists ('from_website_id', $this->view_columns) && !in_array($this->entity, $this->allow_full_access)) {
       // If access is from remote website, then either table allows full access or exposes a website ID to filter on.
       Kohana::log('info', $this->viewname.' does not have a website_id - access denied');
-      throw new ServiceError('No access to entity '.$this->entity.' allowed through view '.$this->viewname);
+      throw new EntityAccessError('No access to entity '.$this->entity.' allowed through view '.$this->viewname, 1004);
     }
     if (array_key_exists ('website_id', $this->view_columns))
       $websiteFilterField = 'website_id';
@@ -789,7 +789,7 @@ class Data_Controller extends Data_Service_Base_Controller {
         // If we got no record but asked for a specific one, check if this was a permissions issue?
         if (!count($r) && $this->uri->total_arguments()!==0 && !$this->check_record_access($this->entity, $this->uri->argument(1), $this->website_id, isset($_REQUEST['sharing']) ? $_REQUEST['sharing'] : false)) {
           Kohana::log('info', 'Attempt to access existing record failed - website_id '.$this->website_id.' does not match website for '.$this->entity.' id '.$this->uri->argument(1));
-          throw new ServiceError('Attempt to access existing record failed - website_id '.$this->website_id.' does not match website for '.$this->entity.' id '.$this->uri->argument(1));
+          throw new AuthorisationError('Attempt to access existing record failed - website_id '.$this->website_id.' does not match website for '.$this->entity.' id '.$this->uri->argument(1), 1001);
         }
         return $r;
       }
@@ -1084,11 +1084,10 @@ class Data_Controller extends Data_Service_Base_Controller {
     $model = ORM::factory($item['id']); // id is the entity.
     $this->check_update_access($item['id'], $item);
     $model->submission = $item;
+    $model::$authorisedWebsiteId=$this->website_id;
     $result = $model->submit();
-    if (!$result)
-    {
-      Throw new ArrayException('Validation error', $model->getAllErrors());
-    }
+    if (!$result) 
+      throw new ValidationError('Validation error', $model->getAllErrors(), 2003);
     // return the outermost model's id
     return array('id'=>$model->id, 'struct'=>$model->get_submitted_ids());
   }
@@ -1106,7 +1105,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     }
     if (!in_array($entity, $this->allow_updates)) {
       Kohana::log('info', 'Attempt to write to entity '.$entity.' by website '.$this->website_id.': no write access allowed through services.');
-      throw new ServiceError('Attempt to write to entity '.$entity.' failed: no write access allowed through services.');
+      throw new EntityAccessError('Attempt to write to entity '.$entity.' failed: no write access allowed through services.', 2002);
     }
     if(array_key_exists('id', $s['fields']))
       if (is_numeric($s['fields']['id']['value']))
@@ -1114,7 +1113,7 @@ class Data_Controller extends Data_Service_Base_Controller {
         if (!$this->check_record_access($entity, $s['fields']['id']['value'], $this->website_id, isset($_REQUEST['sharing']) ? $_REQUEST['sharing'] : false))
         {
           Kohana::log('info', 'Attempt to update existing record failed - website_id '.$this->website_id.' does not match website for '.$entity.' id '.$s['fields']['id']['value']);
-          throw new ServiceError('Attempt to update existing record failed - website_id '.$this->website_id.' does not match website for '.$entity.' id '.$s['fields']['id']['value']);
+          throw new AuthorisationError('Attempt to update existing record failed - website_id '.$this->website_id.' does not match website for '.$entity.' id '.$s['fields']['id']['value'], 2001);
         }
     return true;
   }
@@ -1130,8 +1129,8 @@ class Data_Controller extends Data_Service_Base_Controller {
       $this->db = new Database();
     $fields=postgreSQL::list_fields($viewname, $this->db);
     if(empty($fields)) {
-      Kohana::log('info', $viewname.' not present - access denied');
-      throw new ServiceError('Access to entity '.$entity.' denied.');
+      Kohana::log('info', $viewname.' not present so cannot access entity');
+      throw new EntityAccessError('Access to entity '.$entity.' not available via requested view.', 1003);
     }
     $this->db->from("$viewname as record");
     $this->db->where(array('record.id' => $id));
@@ -1153,7 +1152,7 @@ class Data_Controller extends Data_Service_Base_Controller {
         }
       } elseif (!$this->in_warehouse) {
         Kohana::log('info', $viewname.' does not have a website_id - access denied');
-        throw new ServiceError('No access to entity '.$entity.' allowed.');
+        throw new EntityAccessError('No access to entity '.$entity.' allowed.', 1004);
       }
     }
     $number_rec = $this->db->count_records();
