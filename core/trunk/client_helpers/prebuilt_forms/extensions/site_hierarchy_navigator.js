@@ -38,6 +38,14 @@ jQuery(document).ready(function($) {
     "use strict";
     //Put into indicia data so we can see the map div elsewhere
     indiciaData.mapdiv = div;
+    //Set the click "?" map control to be the default one
+    $.each(div.map.controls, function(idx, ctrl) {
+      if (ctrl.CLASS_NAME==="OpenLayers.Control") {
+        ctrl.activate();
+      } else if (ctrl.CLASS_NAME==="OpenLayers.Control.Navigation") {
+        ctrl.deactivate();
+      }
+    });
     //if preloadBrumb is populated, it indicates the user is returning to the page from another page
     //and we need to set the map up so it is zoomed into the location the user has requested. This includes
     //setting up the breadcrumb trail correctly.
