@@ -475,7 +475,7 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
       }
       if ($survey_ids) {
         $arr=unserialize($survey_ids);
-        $def['survey_list']=implode(',', $arr);
+        $def['survey_list']=implode(',', array_filter($arr));
       }
       $contextDefs['default'] = $def;
     }
