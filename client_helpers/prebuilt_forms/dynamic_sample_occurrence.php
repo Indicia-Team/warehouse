@@ -604,11 +604,11 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         $mode = self::MODE_EXISTING;
       } // else valid save, so go back to gridview: default mode 0
     }
-    if (array_key_exists('sample_id', $_GET) && $_GET['sample_id']!='{sample_id}'){
+    if (!empty($_GET['sample_id']) && $_GET['sample_id']!='{sample_id}'){
       $mode = self::MODE_EXISTING;
       self::$loadedSampleId = $_GET['sample_id'];
     }
-    if (array_key_exists('occurrence_id', $_GET) && $_GET['occurrence_id']!='{occurrence_id}'){
+    if (!empty($_GET['occurrence_id']) && $_GET['occurrence_id']!='{occurrence_id}'){
       $mode = self::MODE_EXISTING;
       self::$loadedOccurrenceId = $_GET['occurrence_id'];
       self::$occurrenceIds = array(self::$loadedOccurrenceId);
