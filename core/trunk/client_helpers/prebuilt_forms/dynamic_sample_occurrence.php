@@ -149,6 +149,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
                 "&nbsp;&nbsp;<strong>[spatial reference]</strong> - a sample must always have a spatial reference.<br/>".
                 "&nbsp;&nbsp;<strong>[location name]</strong> - a text box to enter a place name.<br/>".
                 "&nbsp;&nbsp;<strong>[location autocomplete]</strong> - an autocomplete control for picking a stored location. A spatial reference is still required.<br/>".
+                "&nbsp;&nbsp;<strong>[location url param]</strong> - a set of hidden inputs that insert the location ID read from a URL parameter called location_id into the form. Uses the ".
+                "location's centroid as the sample map reference.<br/>".
                 "&nbsp;&nbsp;<strong>[location select]</strong> - a select control for picking a stored location. A spatial reference is still required.<br/>".
                 "&nbsp;&nbsp;<strong>[location map]</strong> - combines location select, map and spatial reference controls for recording only at stored locations.<br/>".
                 "&nbsp;&nbsp;<strong>[photos]</strong> - use when in single record entry mode to provide a control for uploading occurrence photos. Alternatively use the ".
@@ -1588,6 +1590,35 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       $location_list_args['allowCreate']=true;
     }
     return data_entry_helper::location_autocomplete($location_list_args);
+  }
+  
+  /**
+   * Implements the [location url param] control, for accepting the site to record against using a location_id URL parameter.
+   *
+   * Outputs hidden inputs into the form to specify the location_id for the sample. Uses the location's centroid and spatial ref system to 
+   * fill in the sample's geometry data. If loading an existing sample, then the location_id in the URL is ignored.
+   */
+  protected static function get_control_locationurlparam($auth, $args, $tabAlias, $options) {
+    $location_id=isset(data_entry_helper::$entity_to_load['sample:location_id']) ? data_entry_helper::$entity_to_load['sample:location_id'] : 
+        (empty($_GET['location_id']) ? '' : $_GET['location_id']);
+    if (empty($location_id))
+      return 'This form requires a URL parameter called location_id to specify which site to record against.';
+    if (!preg_match('/^[0-9]+$/', $location_id))
+      return 'The location_id parameter must be an integer.';
+    if (isset(data_entry_helper::$entity_to_load['sample:location_id'])) {
+      // no need for values as the entity to load will override any defaults.
+      $location=array('id'=>'', 'centroid_sref'=>'', 'centroid_sref_system'=>'');
+    } else {
+      $response = data_entry_helper::get_population_data(array(
+        'table'=>'location',
+        'extraParams'=>$auth['read'] + array('id'=>$_GET['location_id'], 'view'=>'detail')
+      ));
+      $location=$response[0];
+    }
+    $r = data_entry_helper::hidden_text(array('fieldname'=>'sample:location_id', 'default'=>$location['id']));
+    $r .= data_entry_helper::hidden_text(array('fieldname'=>'sample:entered_sref', 'default'=>$location['centroid_sref']));
+    $r .= data_entry_helper::hidden_text(array('fieldname'=>'sample:entered_sref_system', 'default'=>$location['centroid_sref_system']));
+    return $r;
   }
 
   /**
