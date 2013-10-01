@@ -385,10 +385,8 @@ Record ID',
     return report_helper::freeform_report(array(
         'readAuth' => $auth['read'],
         'dataSource'=>$options['report'],
-        'itemsPerPage' => $options['itemsPerPage'],
         'mode' => 'report',
         'autoParamsForm' => false,
-        'includeAllColumns' => true,
         'header' => '<h3>Previous Determinations</h3>',
         'bands'=>array(array('content'=>'<div class="field ui-helper-clearfix">{taxon_html} by {person_name} on {date}</div>')),
         'extraParams' => array(
