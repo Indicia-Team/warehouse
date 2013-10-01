@@ -3931,10 +3931,11 @@ $('#".$options['id']." .species-filter').click(function(evt) {
   */
   public static function hidden_text($options) {
     $options = array_merge(array(
-      'default'=>''
+      'default'=>'',
+      'suffixTemplate'=>'nullsuffix',
+      'requirednosuffixTemplate'=>'nullsuffix'
     ), self::check_options($options));
     unset($options['label']);
-    $options['suffixTemplate'] = 'nosuffix';
     return self::apply_template('hidden_text', $options);
   }
   
