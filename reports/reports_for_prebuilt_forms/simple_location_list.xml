@@ -6,7 +6,8 @@
   SELECT l.id,
     l.name,
     l.centroid_sref,
-    (select count(*) from samples s where s.location_id = l.id and s.deleted = FALSE) as num_samples
+    (select count(*) from samples s where s.location_id = l.id and s.deleted = FALSE) as num_samples,
+    true as editable
   FROM locations l
   JOIN locations_websites lw on lw.location_id = l.id and lw.deleted = false
   WHERE CAST(l.created_by_id AS character varying)='#iUserID#'
@@ -27,5 +28,6 @@
     <column name='name' display='Site name' />
     <column name='centroid_sref' display='Grid Ref' />
     <column name='num_samples' display='No. samples' />
+    <column name='editable' visible='false' />
   </columns>
 </report>
