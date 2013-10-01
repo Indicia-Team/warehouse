@@ -4,8 +4,10 @@
     select #columns#
     from locations l
     left join locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
-    left join samples slast on date_part('year', slast.date_start)=date_part('year', now())-1 and slast.location_id=l.id and slast.deleted=false
-    left join samples sthis on date_part('year', sthis.date_start)=date_part('year', now()) and sthis.location_id=l.id and sthis.deleted=false
+    left join samples slast on date_part('year', slast.date_start)=date_part('year', now())-1 and slast.location_id=l.id 
+        and slast.deleted=false and slast.parent_id is null
+    left join samples sthis on date_part('year', sthis.date_start)=date_part('year', now()) and sthis.location_id=l.id 
+        and sthis.deleted=false and sthis.parent_id is null
     where l.deleted=false
     and #website_filter#
     #filters#
