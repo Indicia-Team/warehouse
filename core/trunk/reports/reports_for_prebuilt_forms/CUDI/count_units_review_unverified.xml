@@ -1,0 +1,21 @@
+  <report
+    title="Count Units Review - Unverified"
+    description="A list of Count Units which do not have their Verified attribute set."
+>
+  <query website_filter_field="lw.website_id">
+    SELECT #columns#
+       FROM locations cu
+         LEFT JOIN locations_websites lw ON lw.location_id=cu.id
+         LEFT JOIN location_attribute_values lav ON lav.location_id=cu.id AND lav.location_attribute_id=#unverified_attribute_id# and lav.deleted = false
+    WHERE cu.deleted = false AND lw.deleted = false
+    AND cu.location_type_id=#count_unit_location_type_id#
+    AND (lav.int_value is null OR lav.int_value=0)
+  </query>
+  <params>
+    <param name="unverified_attribute_id" datatype="integer"/>
+    <param name="count_unit_location_type_id" datatype="integer"/>
+  </params>
+  <columns>
+    <column name="name" display="Count Unit Name" sql="cu.name" /> 
+  </columns>
+</report>
