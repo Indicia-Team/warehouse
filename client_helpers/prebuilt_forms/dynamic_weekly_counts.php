@@ -172,6 +172,13 @@ class iform_dynamic_weekly_counts extends iform_dynamic_sample_occurrence {
    */
   private static function getStartDate($args) {
     $now = getdate();
+    if (!empty($_GET['sample_id']) && preg_match('/^[0-9]+$/', $_GET['sample_id'])) {
+      $date=data_entry_helper::$entity_to_load['sample:date_start'];
+      preg_match('/(?P<year>[0-9]{4})/', $date, $matches);
+      return self::getStartDateForYear($args, $matches['year']);
+    }
+    if (!empty($_GET['year']) && preg_match('/^[0-9]{4}$/', $_GET['year']))
+      return self::getStartDateForYear($args, $_GET['year']);
     $startDate = self::getStartDateForYear($args, $now['year']);
     // if before start of season, may as well show last year's form.
     if (time()<$startDate)
