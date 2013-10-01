@@ -2589,6 +2589,11 @@ class data_entry_helper extends helper_base {
   * Should the species autocomplete used for adding new rows simulate a select drop down control by adding a drop down arrow after the input box which, when clicked,
   * populates the drop down list with all search results to a maximum of numValues. This is similar to typing * into the box. Default false.
   * </li>
+  * <li><b>speciesColTitle</b>
+  * Title for the species column which will be looked up in lang files. If not set, uses
+  * species_checklist.species.
+  * </li>
+  * 
   * </ul>
   * @return string HTML for the species checklist input grid.
   */
@@ -3479,7 +3484,7 @@ $('#".$options['id']." .species-filter').click(function(evt) {
       $r .= "<thead class=\"ui-widget-header\"><tr>";
       for ($i=0; $i<$options['columns']; $i++) {
         $colspan = isset($options['lookupListId']) || $options['rowInclusionCheck']=='alwaysRemovable' ? ' colspan="2"' : '';
-        $speciesColTitle = lang::get('species_checklist.species');
+        $speciesColTitle = empty($options['speciesColTitle']) ? lang::get('species_checklist.species') : lang::get($options['speciesColTitle']);
         if ($options['userControlsTaxonFilter'] && !empty($options['lookupListId'])) {
           global $indicia_templates;
           $imgPath = empty(self::$images_path) ? self::relative_client_helper_path()."../media/images/" : self::$images_path;
