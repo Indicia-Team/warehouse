@@ -236,7 +236,7 @@ function add_new_layer_controller(clickedFeature,breadcrumbHierarchy,clickedFeat
             //Add the features to the child (clickable) or parent (non-clickable layers) as appropriate.
             add_features_to_layers(features,clickedFeature,currentLayerLocationNames);
             //Add other controls like Add Site or location drop-down to the page
-            setup_additional_controls(childLocationTypesToReport,parentId, parentName,clickedFeature,features,mainCurrentLayerLocationTypeName)
+            setup_additional_controls(childLocationTypesToReport,parentId, parentName,clickedFeature,features,mainCurrentLayerLocationTypeName,breadcrumbHierarchy)
             //Finally zoom in to the features
             zoom_to_area(features,clickedFeature)
           }
@@ -377,15 +377,26 @@ function setup_layer(layerType,featuresForLayer,layerToAdd,nameForLayer) {
 /*
  * Add controls not related to the map to the page
  */
-function setup_additional_controls(currentLayerLocationTypesId,parentId, parentName,clickedFeature,features,mainCurrentLayerLocationTypeName) {
-  //make the select list
-  if (indiciaData.useSelectList) {
+function setup_additional_controls(currentLayerLocationTypesId,parentId, parentName,clickedFeature,features,mainCurrentLayerLocationTypeName,breadcrumbHierarchy) {
+  //This code gets the url id. This is used on the Cudi Information Sheet which also contains the map.
+  if (indiciaData.preloadBreadcrumb) {
+    var idAndLocationType = indiciaData.preloadBreadcrumb.split(',');
+    var preloadBreadcrumbFeatureId = idAndLocationType[0];
+  }
+  //Don't show the control at all in the situation where the item that is being shown on the map in the same as the what is shown on the Cudi Information Sheet.
+  //This avoids a link button being shown to the same Cudi Information Sheet as the user is already on. As the user moves to other Count Units on the map, then the link is shown again.
+  //Note that breadcrumbHierarchy.length==0 is needed as a test as there is no breadcrumb hierarchy at the top level.
+  //The preloadBreadcrumbFeatureId is the url id, breadcrumbHierarchy[breadcrumbHierarchy.length-1]['id'] is the id of the Count Unit being viewed,
+  //(the clickedFeature id can't be used here as that would give us the boundary id, not the parent).
+  if (indiciaData.useSelectList && (breadcrumbHierarchy.length==0 || preloadBreadcrumbFeatureId != breadcrumbHierarchy[breadcrumbHierarchy.length-1]['id'])) {
     if (clickedFeature && clickedFeature.attributes.clickableParent) {
       //If at bottom level of the tree, the select list would only have one item, so just use a button instead
       selectlistbutton([clickedFeature]);
     } else { 
       selectlist(features);
     }
+  } else {
+    $('#map-selectlist-div').hide();
   }
   //Get the link to the View Sites and Count Units report button
   if (indiciaData.useListReportLink) {
