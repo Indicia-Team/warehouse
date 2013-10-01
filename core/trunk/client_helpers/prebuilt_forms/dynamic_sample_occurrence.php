@@ -1471,7 +1471,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         '<span class="nobreak vernacular">{common}</span></div>') {
       // always include the searched name
       $php = '$r="";'."\n".
-          'if ("{language}"=="lat") {'."\n".
+          'if ("{language}"=="lat" || "{language_iso}"=="lat") {'."\n".
           '  $r = "<em>{taxon}</em>";'."\n".
           '} else {'."\n".
           '  $r = "{taxon}";'."\n".
