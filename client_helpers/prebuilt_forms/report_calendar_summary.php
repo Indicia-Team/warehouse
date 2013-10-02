@@ -246,7 +246,85 @@ class iform_report_calendar_summary {
           'required' => false,
           'group' => 'Controls'
         ),
-        
+
+        array(
+          'name'=>'includeRawGridDownload',
+          'caption'=>'Raw Grid Download',
+          'description'=>'Choose whether to include the ability to download the Raw data as a grid. The inclusion of raw data is a pre-requisite for this.',
+          'type'=>'boolean',
+          'default' => false,
+          'required' => false,
+          'group' => 'Downloads'
+        ),
+        array(
+          'name'=>'includeRawListDownload',
+          'caption'=>'Raw List Download',
+          'description'=>'Choose whether to include the ability to download the Raw data as a List. The inclusion of raw data is a pre-requisite for this.',
+          'type'=>'boolean',
+          'default' => false,
+          'required' => false,
+          'group' => 'Downloads'
+        ),
+        array(
+          'name'=>'includeSummaryGridDownload',
+          'caption'=>'Summary Grid Download',
+          'description'=>'Choose whether to include the ability to download the Summary data as a grid. The inclusion of Summary data is a pre-requisite for this.',
+          'type'=>'boolean',
+          'default' => false,
+          'required' => false,
+          'group' => 'Downloads'
+        ),
+        array(
+          'name'=>'includeEstimatesGridDownload',
+          'caption'=>'Estimates Grid Download',
+          'description'=>'Choose whether to include the ability to download the Estimates data as a grid. The inclusion of Estimates data is a pre-requisite for this.',
+          'type'=>'boolean',
+          'default' => false,
+          'required' => false,
+          'group' => 'Downloads'
+        ),
+        array(
+          'name'=>'includeListDownload',
+          'caption'=>'List Download',
+          'description'=>'Choose whether to include the ability to download the data as a List. This is the summary and/or the estimates data, depending on their inclusion.',
+          'type'=>'boolean',
+          'default' => false,
+          'required' => false,
+          'group' => 'Downloads'
+        ),
+        array(
+          'name'=>'Download1Caption',
+          'caption'=>'Report 1 Download Caption',
+          'description'=>'Caption for the first download report.',
+          'type'=>'string',
+          'default' => 'report-1',
+          'group' => 'Downloads'
+        ),
+        array(
+          'name'=>'download_report_1',
+          'caption'=>'Download Report 1',
+          'description'=>'Select the report to provide the first download report.',
+          'type'=>'report_helper::report_picker',
+          'required' => false,
+          'group'=>'Downloads'
+        ),
+        array(
+          'name'=>'Download2Caption',
+          'caption'=>'Report 2 Download Caption',
+          'description'=>'Caption for the second download report.',
+          'type'=>'string',
+          'default' => 'report-2',
+          'group' => 'Downloads'
+        ),
+        array(
+          'name'=>'download_report_2',
+          'caption'=>'Download Report 2',
+          'description'=>'Select the report to provide the second download report.',
+          'type'=>'report_helper::report_picker',
+          'required' => false,
+          'group'=>'Downloads'
+        ),
+
         array(
           'name'=>'weekstart',
           'caption'=>'Start of week definition',
@@ -838,6 +916,8 @@ class iform_report_calendar_summary {
       $ctrl .= '<option value='.$location['id'].' class="location-select-option" '.($siteUrlParams[self::$locationKey]['value']==$location['id'] ? 'selected="selected" ' : '').'>'.
                $location['name'].(isset($args['includeSrefInLocationFilter']) && $args['includeSrefInLocationFilter'] ? ' ('.$location['centroid_sref'].')' : '').
                '</option>';
+      if($siteUrlParams[self::$locationKey]['value']==$location['id'])
+        $options['description'] = $location['name'];
     }
     $ctrl.='</select>';
     self::set_up_control_change($ctrlid, self::$locationKey, array());
@@ -1022,7 +1102,16 @@ class iform_report_calendar_summary {
         $ctrl .= '<option value='.$id.' class="user-select-option" '.($siteUrlParams[self::$userKey]['value']==$id ? 'selected="selected" ' : '').'>'.$account['name'].'</option>';
       }
     }
-    
+    switch($siteUrlParams[self::$userKey]['value']){
+      case '' : $options['userDescription'] = lang::get('All data');
+    	break;
+      case $user->uid : $options['userDescription'] = lang::get('My data');
+        break;
+      case "branch" : $options['userDescription'] = lang::get('Branch data');
+        break;
+      default : $options['userDescription'] = $userList[$siteUrlParams[self::$userKey]['value']]['name'];
+    	break;
+    }
     $ctrl.='</select>';
     self::set_up_control_change($ctrlid, self::$userKey, array('locationID'));
     return $ctrl;
@@ -1157,7 +1246,9 @@ jQuery('#".$ctrlid."').change(function(){
             'chartType','rowGroupColumn','rowGroupID','width','height',
             'includeTableTotalRow','includeTableTotalColumn','includeChartTotalSeries','includeChartItemSeries',
             'includeRawData', 'includeSummaryData', 'includeEstimatesData', 'summaryDataCombining', 'dataRound',
-            'zeroPointAnchor', 'interpolation', 'firstValue', 'lastValue', 'linkURL'
+            'zeroPointAnchor', 'interpolation', 'firstValue', 'lastValue', 'linkURL',
+            'includeRawGridDownload', 'includeRawListDownload', 'includeSummaryGridDownload',
+            'includeEstimatesGridDownload', 'includeListDownload'
       ));
     if (isset($_GET['outputSource']))
       $reportOptions['outputSource']=$_GET['outputSource'];
@@ -1186,12 +1277,12 @@ jQuery('#".$ctrlid."').change(function(){
     $reportOptions['location_list'] = array();
     // for a branch user, we have an allowed list of locations for which we can link to the sample.
     self::$branchLocationList = array();
+    $presets = get_options_array_with_user_data($args['param_presets']);
+    if(!isset($presets['survey_id']) || $presets['survey_id']=='')
+      return(lang::get('Survey_id missing from presets.'));
     if(isset($args['branchManagerPermission']) && $args['branchManagerPermission']!="" && user_access($args['branchManagerPermission'])) {
       // Get list of locations attached to this user via the branch cms user id attribute
       // first need to scan param_presets for survey_id..
-      $presets = get_options_array_with_user_data($args['param_presets']);
-      if(!isset($presets['survey_id']) || $presets['survey_id']=='')
-      	return(lang::get('Branch Manager location list lookup: survey_id missing from presets.'));
       $attrArgs = array(
       		'valuetable'=>'location_attribute_value',
       		'attrtable'=>'location_attribute',
@@ -1232,8 +1323,8 @@ jQuery('#".$ctrlid."').change(function(){
     // Add controls first: set up a control bar
     $retVal .= "\n<table id=\"controls-table\" class=\"ui-widget ui-widget-content ui-corner-all controls-table\"><thead class=\"ui-widget-header\"><tr>";
     $retVal .= self::date_control($args, $auth, $node, $reportOptions);
-    $retVal .= '<th></th><th>'.self::user_control($args, $auth, $node, $reportOptions).'</th>';
-    $retVal .= '<th></th><th>'.self::location_control($args, $auth, $node, $reportOptions).'</th>';
+    $retVal .= '<th>'.self::user_control($args, $auth, $node, $reportOptions).'</th>';
+    $retVal .= '<th>'.self::location_control($args, $auth, $node, $reportOptions).'</th>';
     $siteUrlParams = self::get_site_url_params();
     if (!empty($args['removable_params'])) {      
       foreach(self::$removableParams as $param=>$caption) {
@@ -1243,15 +1334,40 @@ jQuery('#".$ctrlid."').change(function(){
       }
       self::set_up_control_change('removeParam-'.$param, $param, array(), true);
     }
-    $retVal.= '</tr></thead></table>';
     // are there any params that should be set to blank using one of the removable params tickboxes?
     foreach (self::$removableParams as $param=>$caption)
-      if (isset($_GET[$param]) && $_GET[$param]==='true')    
+      if (isset($_GET[$param]) && $_GET[$param]==='true')
         $reportOptions['extraParams'][$param]='';
+    $retVal.= '</tr></thead></table>';
     $reportOptions['highlightEstimates']=true;
     if(self::$siteUrlParams[self::$userKey]['value'] == '' && self::$siteUrlParams[self::$locationKey]['value'] == '')
       $reportOptions['caching']=true;
-    // $retVal .= print_r($reportOptions[extraParams], true);
+    $reportOptions['downloads']=array();
+    if((isset($args['managerPermission']) && $args['managerPermission']!="" && user_access($args['managerPermission'])) ||
+          $reportOptions['location_list'] != '' || $reportOptions['user_id'] != '' || $reportOptions['location_id'] != '') {
+      data_entry_helper::$warehouse_proxy = ''; // TODO remove
+      global $indicia_templates;
+      $indicia_templates['report_download_link'] = '<a href="{link}"><button type="button">{caption}</button></a>';
+      // format is assumed to be CSV
+      $downloadOptions = array('caption' => $args['Download1Caption'],
+              'readAuth'=>$auth,
+              'dataSource'=>$args["download_report_1"],
+              'extraParams'=>array_merge($reportOptions['extraParams'], array('date_from' => $reportOptions['date_start'], 'date_to' => $reportOptions['date_end'])),
+              'itemsPerPage' => false
+      );
+      // there are problems dealing with location_list as an array if empty, so connvert
+      if($downloadOptions['extraParams']['location_list']=="")
+        $downloadOptions['extraParams']['location_list']="(-1)";
+      else $downloadOptions['extraParams']['location_list']='('.$downloadOptions['extraParams']['location_list'].')';
+      if(isset($args['Download1Caption']) && $args['Download1Caption'] != "" && isset($args['download_report_1']) && $args['download_report_1'] != ""){
+        $reportOptions['downloads'][] =  data_entry_helper::report_download_link($downloadOptions);
+      }
+      if(isset($args['Download2Caption']) && $args['Download2Caption'] != "" && isset($args['download_report_2']) && $args['download_report_2'] != ""){
+        $downloadOptions['caption' ]=$args['Download2Caption'];
+        $downloadOptions['dataSource']=$args["download_report_2"];
+        $reportOptions['downloads'][] =  data_entry_helper::report_download_link($downloadOptions);
+      }
+    }
     $retVal .= report_helper::report_calendar_summary($reportOptions);
     return $retVal;
   }

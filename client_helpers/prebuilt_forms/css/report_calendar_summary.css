@@ -76,3 +76,9 @@ tr td.links {
 div.report-summary-controls select {
 	margin-top: 0px;
 }
+#downloads-table label {
+	width: auto;
+	margin-left: 5px;
+	margin-right: 5px;
+
+}
