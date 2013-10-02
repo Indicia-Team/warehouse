@@ -201,6 +201,14 @@ class iform_cudi_form extends iform_dynamic {
           'group'=>'Configurable Ids'
         ),
         array(
+          'name'=>'official_reason_for_change_attribute_id',
+          'caption'=>'Official Reason For Change Id',
+          'description'=>'Id of the Official Reason For Change location attribute.',
+          'type'=>'string',
+          'required' => true,
+          'group'=>'Configurable Ids'
+        ),
+        array(
           'name'=>'administrator_mode',
           'caption'=>'Administrator Mode?',
           'description'=>'Place page into administrator mode. This enables extra functionality and better privileges for performing certain tasks.',
@@ -258,7 +266,7 @@ class iform_cudi_form extends iform_dynamic {
     //So we want an empty page but the map should be zoomed in to the location boundary.
     //This boundary acts as a ghost, so it isn't actually submitted, it is purely visual.
     if (!empty($_GET['zoom_id']))
-      self::zoom_map($auth, $_GET['zoom_id']);
+      self::zoom_map($auth, $_GET['zoom_id'],$args);
     else {     
       //Note:
       //When the user selects a boundary, the page is reloaded with an additional parent_id parameter in the url.
@@ -295,7 +303,10 @@ class iform_cudi_form extends iform_dynamic {
    * and we just want to automatically zoom the map to a region/site we are adding a location to.
    * This boundary is purely visual and isn't submitted.
    */
-  private static function zoom_map($auth, $id) {
+  private static function zoom_map($auth, $id,$args) {
+    //In add mode hide the official reason for change
+    data_entry_helper::$javascript .= "$('[for=\"locAttr\\\\:".$args['official_reason_for_change_attribute_id']."\"]').remove();\n 
+                                       $('#locAttr\\\\:".$args['official_reason_for_change_attribute_id']."').remove();\n";
     $loc = data_entry_helper::get_population_data(array(
       'table' => 'location',
       'extraParams' => $auth['read'] + array('id' => $id, 'view' => 'detail'),
@@ -1033,7 +1044,7 @@ mapInitialisationHooks.push(function(mapdiv) {
   public static function get_submission($values, $args) {
     $s=self::get_count_unit_and_boundary_submission($values, $args);
     if ($values['annotation:name'])
-      $s['subModels'][]=self::get_annotation_submission($values, $args);
+      $s['subModels'][]=self::get_annotation_submission($values, $args); 
     return $s;
   }
   
