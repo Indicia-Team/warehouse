@@ -119,7 +119,7 @@ class extension_cudi_homepage_links {
         $homepageLinkParamToSendBack='id='.$homepageLinkLocationId;
         $r .= '<li id="homepageLink-part-"'.$num.'>';
         //The homepageLink link is a name, with a url back to the homepage containing the location id
-        $nodeurl = url($options['homepage_path']).(variable_get('clean_url', 0) ? '?' : '&').$homepageLinkParamToSendBack;
+        $nodeurl = url($options['homepage_path'], array('query'=>$homepageLinkParamToSendBack));
         $r .= '<a href="'.$nodeurl.'">'.$homepageLinkLocationName.'</a>';
         $r .= '</li>';
       }
