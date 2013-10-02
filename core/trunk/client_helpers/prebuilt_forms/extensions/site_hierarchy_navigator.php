@@ -243,6 +243,37 @@ class extension_site_hierarchy_navigator {
   }
   
   /*
+   * Control button that takes user to Review Count Units page whose path is per an administrator supplied option.
+   * The options format is comma seperated where the format of the elements is "location_type_id|page_path".
+   * If an option is not found for the displayed layer's location type, then the View Count Units Review button is hidden from view.
+   */
+  public function viwcountunitsreport($auth, $args, $tabalias, $options, $path) {
+    global $base_root;
+    iform_load_helpers(array('map_helper'));
+    $msg=self::check_format($options, 'viewCountUnitsReportLinks', 'location_type_id|page_path', 
+        '/^([0-9]+\|[0-9a-z_\-\/]*\|[0-9a-z_\-]*,)*[0-9]+\|[0-9a-z_\-\/]*/');
+    if ($msg!==true) return $msg;
+    map_helper::$javascript .= "indiciaData.useCountUnitsReview=true;\n";
+    //Setup a div that the javascript can then use to put the button in.
+    $reviewcountunits = '<div id="map-viewcountunitsreview"></div>';
+    $linksToCreate=explode(',',$options['viewCountUnitsReviewLinks']);
+    //Cycle through all the supplied options, get the options and save the locations types and the paths we are going to use.
+    foreach ($linksToCreate as $id=>$linkToCreate) {
+      $differentOptions=explode('|',$linkToCreate);
+      $locationTypesForCountUnitsReview[$id]=$differentOptions[0];
+      $linkUrls[$id]=
+          $base_root.base_path().
+          //handle whether the drupal installation has clean urls setup.
+          (variable_get('clean_url', 0) ? '' : '?q=').
+          $differentOptions[1];
+    }
+    //Send the data to javascript
+    map_helper::$javascript .= "indiciaData.locationTypesFoCountUnitsReview=".json_encode($locationTypesForCountUnitsReview).";\n";
+    map_helper::$javascript .= "indiciaData.countUnitsReviewLinkUrls=".json_encode($linkUrls).";\n";
+    return $reviewcountunits;
+  }
+  
+  /*
    * Control button that takes user to Add Site page whose path and parameter are as per administrator supplied options.
    * The location type of the site we are adding is taken from the location layer we are viewing, so this button is
    * not just limited to the site location type if users want to use it to add other location types.

@@ -406,6 +406,10 @@ function setup_additional_controls(currentLayerLocationTypesId,parentId, parentN
   if (indiciaData.useAddCountUnit) {
     add_count_unit_link(currentLayerLocationTypesId,parentId);
   } 
+  //Get the View Count Units Review button
+  if (indiciaData.useCountUnitsReview) {
+    count_units_review_link(currentLayerLocationTypesId);
+  } 
   //Get the Add Site (location) button
   if (indiciaData.useAddSite) {
     add_site_link(currentLayerLocationTypesId,parentId, mainCurrentLayerLocationTypeName);
@@ -562,6 +566,24 @@ function add_count_unit_link(currentSiteType,parentLocationId) {
     }
   }
   return $('#map-addcountunit').html('');
+}
+
+/*
+ * Control button that takes user to the Count Units Review Report page whose path is per the administrator supplied option.
+ * The options format is comma seperated where the format of the elements is "location_type_id|page_path".
+ * If an option is not found for the displayed layer's location type, then the View Count Units Review button is hidden from view.
+ */
+function count_units_review_link(currentSiteType) {
+  //If the current layer location type is in the administrator specified options list, then we know to draw the View Count Units Review button
+  for (i=0; i<indiciaData.locationTypesFoCountUnitsReview.length;i++) {
+    if (indiciaData.locationTypesFoCountUnitsReview[i] === currentSiteType) {
+      button = '<FORM>';
+      button += "<INPUT TYPE=\"button\" VALUE=\"View Count Units Review Report\"\n\
+                    ONCLICK=\"window.location.href='"+indiciaData.countUnitsReviewLinkUrls[i]+"'\">";
+      button += '</FORM>'; 
+      return $('#map-viewcountunitsreview').html(button);
+    }
+  }
 }
 
 /*
