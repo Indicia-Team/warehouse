@@ -606,7 +606,7 @@ mapInitialisationHooks.push(function(mapdiv) {
     $locationName = $locationNameData[0]['name'];
     //If not adding a new Count Unit, we need to put the name in a read only label.
     if (!empty($countUnitId)) {
-      return "<label>".lang::get('LANG_Location_Name').":</label> <input id='location:name' name='location:name' value='$locationName' readonly><br>";
+      return "<label>".lang::get('LANG_Location_Name').':</label> <input id="location:name" name="location:name" value="'.$locationName.'" readonly><br>';
     } else {      
       return data_entry_helper::text_input(array_merge(array(
         'label' => lang::get('LANG_Location_Name'),
