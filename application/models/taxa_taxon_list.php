@@ -63,7 +63,8 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
       'deleted',
       'allow_data_entry',
       'preferred',
-      'description'
+      'description',
+      'common_taxon_id'
     );
     return parent::validate($array, $save);
   }
