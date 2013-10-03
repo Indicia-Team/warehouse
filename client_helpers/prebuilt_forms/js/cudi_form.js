@@ -65,3 +65,42 @@ function load_annotation() {
     }
   });
 }
+
+/*
+ * Function that is run when the user clicks to add a Survey and Date combination using the Surveys multi-select.
+ */
+function select_survey_and_date() {
+  //Don't run if the Please Select option is still selected
+  if ($("#survey-select option:selected").attr('id') !== 'please-select-surveys-item') { 
+    //Add an item to the last row in the results grid.
+    $("#surveys-table tr:last").after(
+      //Note we use the Survey Id on the end of the various html ids. The fields that will be used in submission also have a 
+      //"name" otherwise they won't show in the submission $values variable
+      "<tr id='selected-survey-row-"+$('#survey-select option:selected').val()+"'>"+
+        "<td>"+
+          "<input id='selected-survey-id-"+$('#survey-select option:selected').val()+"' name='selected-survey-id-"+$('#survey-select option:selected').val()+"' value='"+$('#survey-select').val()+"'>"+
+        "</td>"+
+        "<td>"+
+          "<input id='selected-survey-name-"+$('#survey-select option:selected').val()+"' value='"+$('#survey-select option:selected').text()+"'>"+
+        "</td>" +
+        "<td>" +
+          "<input  id='selected-survey-date-"+$('#survey-select option:selected').val()+"' name='selected-survey-date-"+$('#survey-select option:selected').val()+"' value='"+$("#survey\\:date").val()+"'>"+
+        "</td>"+
+        "<td>"+
+          "<img class='action-button' src='"+indiciaData.deleteImagePath+"' onclick='remove_survey_selection("+$('#survey-select option:selected').val()+",\""+$('#survey-select option:selected').text()+"\")'>" +
+        "</td>"+                                   
+      "</tr>"
+    );
+    $("#survey-select option:selected").remove();
+  }
+}
+
+/*
+ * Function that is run when the user removes one of the surveys they have selected in the grid.
+ */
+function remove_survey_selection(id,title) {
+  $('#selected-survey-deleted-'+id).val('true');
+  $('#selected-survey-row-'+id).hide();
+  //Put the option that was removed back into the Surveys drop-down so the user can reselect the option if they so wish.
+  $('#survey-select').append('<option id="survey-select-'+id+'" value="'+id+'">'+title+'</option>');
+}

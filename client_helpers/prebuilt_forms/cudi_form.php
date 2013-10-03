@@ -209,6 +209,14 @@ class iform_cudi_form extends iform_dynamic {
           'group'=>'Configurable Ids'
         ),
         array(
+          'name'=>'surveys_attribute_id',
+          'caption'=>'Surveys Attribute Id',
+          'description'=>'Id of the Surveys location attribute.',
+          'type'=>'string',
+          'required' => true,
+          'group'=>'Configurable Ids'
+        ),
+        array(
           'name'=>'administrator_mode',
           'caption'=>'Administrator Mode?',
           'description'=>'Place page into administrator mode. This enables extra functionality and better privileges for performing certain tasks.',
@@ -494,10 +502,111 @@ mapInitialisationHooks.push(function(mapdiv) {
   }
  
   /** 
-   * Get the survey control.
+   * Survey control that supports multiple surveys each with a date
    */
   protected static function get_control_surveys($auth, $args, $tabalias, $options) {
-    $r='';
+    //Get the Delete icon for the Surveys Grid
+    $imgPath = empty(data_entry_helper::$images_path) ? data_entry_helper::relative_client_helper_path()."../media/images/" : data_entry_helper::$images_path;
+    $deleteIcon = $imgPath."delete.png";
+    //Pass the delete icon to javascript
+    data_entry_helper::$javascript .= "indiciaData.deleteImagePath='".$deleteIcon."';\n";
+    
+    if (!empty($_GET['parent_id']))
+      $countUnitId = $_GET['parent_id'];
+    else 
+      $countUnitId = $_GET['location_id'];  
+    //Get the data for all surveys that are relevant
+    $surveysData = data_entry_helper::get_population_data(array(
+      'table' => 'survey',
+      'extraParams' => $auth['read'],
+      'nocache' => true,
+      'sharing' => $sharing
+    ));
+    //If we are in edit mode, then collect the data relating to the previously selected surveys, the ID and Date are
+    //held as JSON, so we need to decode it.
+    if ($countUnitId) {
+      $selectedSurveysData = data_entry_helper::get_population_data(array(
+        'table' => 'location_attribute_value',
+        'extraParams' => $auth['read'] + array('location_attribute_id'=>$args['surveys_attribute_id'], 'location_id'=>$countUnitId),
+        'nocache' => true,
+        'sharing' => $sharing
+      ));
+      if (!empty($selectedSurveysData)) {       
+        foreach ($selectedSurveysData as $idx=>$theSurveyData) {
+          $decodedSavedSurvey[$idx] = json_decode($theSurveyData['raw_value']);
+          $decodedSavedSurveyIds[$idx] = $decodedSavedSurvey[$idx][0];
+        }
+      }
+    }
+    //We need to populate the surveys drop-down but not include items that are already on the grid.
+    $r = '';
+    $r .='<div id="surveys-control">';
+    $r .= '<label>Surveys: </label><select id = "survey-select">';
+    $r .= '<option id="please-select-surveys-item">Please Select</option>';
+    if (!empty($surveysData)) {
+      foreach ($surveysData as $surveyData) {
+        if (empty($decodedSavedSurveyIds) || !in_array($surveyData['id'],$decodedSavedSurveyIds)) {
+          $r .= '<option id="survey-select-'.$surveyData['id'].'" value="'.$surveyData['id'].'">'.$surveyData['title'].'</option>';
+        }
+        //Get the names of the survey items in the grid and save them in an array where the ids are the keys - for use in a minute
+        if (!empty($decodedSavedSurveyIds)) {
+          if (in_array($surveyData['id'],$decodedSavedSurveyIds)) {
+            $surveyNameInGrid[$surveyData['id']]['title']=$surveyData['title'];
+          }
+        }
+      }
+    }
+    $r .= '</select><br>';
+    $r .= data_entry_helper::date_picker(array_merge(array(
+      'label'=>lang::get('LANG_Location_Surveys_Date'),
+      'fieldname'=>'survey:date',
+    ), $options));
+    
+    $r .= '</br>';
+    $r .= '<input type="button" id="select-surveys-add" value="Add" onclick="select_survey_and_date();"><br>';
+    $r .= 
+    '<table id="surveys-table" id="surveys-table" border="3">'.
+      '<tr>'.
+        '<th>Survey Id</th>'.
+        '<th>Survey Name</th>'.
+        '<th>Date</th>'.
+        '<th>Remove</th>'.
+        '<th style="display:none;">Existing Attribute Id</th>'.
+        '<th style="display:none;" type="hidden">Deleted</th></tr>'.
+        '<tr>'.
+      '</tr>';   
+    if ($countUnitId) {
+      if (!empty($selectedSurveysData)) {
+        foreach ($selectedSurveysData as $idx => $theSurveyData) {
+        //Add a row to the grid of Selected Suveys and Dates for each existing survey that has been saved against the Count Unit
+        //Note we use the Survey Id on the end of the various html ids. The fields that will be used in submission also have a 
+        //"name" otherwise they won't show in the submission $values variable
+        $r .= "
+        <tr id='"."selected-survey-row-".$decodedSavedSurvey[$idx][0]."'>
+          <td>
+            <input id='"."selected-survey-id-".$decodedSavedSurvey[$idx][0]."' name='"."selected-survey-id-".$decodedSavedSurvey[$idx][0]."' value='".$decodedSavedSurvey[$idx][0]."'>
+          </td>
+          <td>
+            <input id='"."selected-survey-name-".$decodedSavedSurvey[$idx][0]."' value='".$surveyNameInGrid[$decodedSavedSurvey[$idx][0]]['title']."'>
+          </td>
+          <td>
+            <input id='"."selected-survey-date-".$decodedSavedSurvey[$idx][0]."' name='"."selected-survey-date-".$decodedSavedSurvey[$idx][0]."' value='".$decodedSavedSurvey[$idx][1]."'>
+          </td>
+          <td>
+            <img class=\"action-button\" src=\"$deleteIcon\" onclick=\"remove_survey_selection(".$decodedSavedSurvey[$idx][0].",'".$surveyNameInGrid[$decodedSavedSurvey[$idx][0]]['title']."');\" title=\"Delete Survey Selection\">
+          </td>
+          <td style='display:none;'>
+            <input id='"."selected-survey-existing-".$decodedSavedSurvey[$idx][0]."' name='"."selected-survey-existing-".$decodedSavedSurvey[$idx][0]."' value='".$theSurveyData['id']."'>
+          </td>
+          <td style='display:none;'>
+            <input id='"."selected-survey-deleted-".$decodedSavedSurvey[$idx][0]."' name='"."selected-survey-deleted-".$decodedSavedSurvey[$idx][0]."' value='false'>
+          </td>
+        </tr>";
+        }
+      }          
+    }   
+    $r .= '</table>'; 
+    $r .= '</div>';
     return $r;
   }
   
@@ -1042,6 +1151,8 @@ mapInitialisationHooks.push(function(mapdiv) {
    * @return array Submission structure.
    */
   public static function get_submission($values, $args) {
+    //The Surveys control uses a multiple selection of Surveys along with their dates, so these need preparing for submission sperately.
+    self::prepare_multi_survey_field($values, $args);
     $s=self::get_count_unit_and_boundary_submission($values, $args);
     if ($values['annotation:name'])
       $s['subModels'][]=self::get_annotation_submission($values, $args); 
@@ -1049,9 +1160,57 @@ mapInitialisationHooks.push(function(mapdiv) {
   }
   
   /*
+   * The Surveys control uses a multiple selection of Surveys along with their dates, so these need preparing for submission sperately.
+   */
+  protected static function prepare_multi_survey_field(&$values, $args) {
+    $existingIdsHolder = array();
+    //We need to find any Survey/Date selections which are already saved in the database.
+    foreach ($values as $fieldName => $theAttributeId) {
+      if (0 === strpos($fieldName, 'selected-survey-existing-')) {
+        $fieldNameParts = explode('-',$fieldName);
+        $surveyId = array_pop($fieldNameParts);
+        //Create an array where the Survey Id in is the key and the id of the location attribute value this is saved in
+        $existingIdsHolder[$surveyId] = $theAttributeId;
+      }
+    }
+    
+    $jsonResultsHolder = array();
+    foreach ($values as $fieldName => $theValue) {
+      if (0 === strpos($fieldName, 'selected-survey-id-')) {
+        $fieldNameParts = explode('-',$fieldName);
+        $surveyId = array_pop($fieldNameParts);
+        //If the user is removing the Surveys/Data Selection item
+        if ($values['selected-survey-deleted-'.$theValue]==='true') {
+          //If the removal didn't previously exist in the database then we don't need to submit it at all
+          if (empty($existingIdsHolder[$surveyId])) {
+            unset($values['selected-survey-deleted-'.$theValue]);
+          } else {
+            //If we are removing an item that previously existed in the database, then submit it with an empty value to remove it
+            $values['locAttr:'.$args['surveys_attribute_id'].':'.$existingIdsHolder[$surveyId]]='';
+          }
+        //If the user is adding or changing an existing selection
+        } else {
+          //If the item already exists in the database, and the user is not removing it, then submit it with values from the grid and the location_attribute_value id appended to the $values key
+          if (array_key_exists($surveyId,$existingIdsHolder)) {
+            $values['locAttr:'.$args['surveys_attribute_id'].':'.$existingIdsHolder[$surveyId]] = json_encode(array($values['selected-survey-id-'.$surveyId],$values['selected-survey-date-'.$surveyId]));
+          } else {
+            //If the user is adding a new Surveys selection the we don't use the location_attribute_value id
+            //As we might be submitting several new items, we use an array which is store in a multi-value attribute setup on the wrehouse
+            array_push($jsonResultsHolder, json_encode(array($theValue,$values['selected-survey-date-'.$theValue])));
+          }
+        }
+      }
+    }
+    //This is used for adding new entries to the surveys grid, we need to use an array here as there might be several new items
+    foreach ($jsonResultsHolder as $idx => $theJson) {
+      $values['locAttr:'.$args['surveys_attribute_id']][$idx] = $theJson;
+    }
+  }
+  
+  /*
    * Setup submission of a versioned count unit boundary
    */ 
-  public static function get_count_unit_and_boundary_submission($values, $args) {
+  protected static function get_count_unit_and_boundary_submission($values, $args) {
     //When the user clicks the submit button, the screen can be in either annotations mode or boundary mode.
     //The geometry for the item in the current mode is always held in location:boundary_geom.
     //The geometry for the item in the inactive mode is always held in other-layer-boundary-geom-holder.
@@ -1106,7 +1265,7 @@ mapInitialisationHooks.push(function(mapdiv) {
   /*
    * Setup the submission of an annotation.
    */
-  public static function get_annotation_submission($values, $args) {
+  protected static function get_annotation_submission($values, $args) {
     //See coding comment next to equivalent code in get_count_unit_and_boundary_submission
     if ($values['annotations-mode-on']!=='yes') {
       $tempBoundaryHolder = $values['location:boundary_geom'];

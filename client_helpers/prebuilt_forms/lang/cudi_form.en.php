@@ -33,6 +33,7 @@ $custom_terms = array_merge($custom_terms, array(
   'LANG_Location_Code' => 'Abbreviation',
   'LANG_Location_Created_By' => 'CUDI Form Completed By',
   'LANG_Location_Created_On' => 'Date Completed On',
+  'LANG_Location_Surveys_Date' => 'Survey\'s Date Of First Use',
   'LANG_Location_Type' => 'Location Type',
   'LANG_Existing_Annotations' => 'Existing Annotations',
   'LANG_Annotation_Type' => 'Annotation Type',
