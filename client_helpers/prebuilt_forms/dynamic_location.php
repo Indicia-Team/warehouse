@@ -189,7 +189,7 @@ class iform_dynamic_location extends iform_dynamic {
     if (!empty($_GET['zoom_id'])) {
       self::zoom_map_when_adding($auth['read'], 'location', $_GET['zoom_id']); 
     } else
-      data_entry_helper::load_existing_record($auth['read'], 'location', $_GET['location_id']);    
+      data_entry_helper::load_existing_record($auth['read'], 'location', $_GET['location_id'], 'detail', false, true);    
   }
   
   /*
