@@ -78,10 +78,10 @@ function select_survey_and_date() {
       //"name" otherwise they won't show in the submission $values variable
       "<tr id='selected-survey-row-"+$('#survey-select option:selected').val()+"'>"+
         "<td>"+
-          "<input id='selected-survey-id-"+$('#survey-select option:selected').val()+"' name='selected-survey-id-"+$('#survey-select option:selected').val()+"' value='"+$('#survey-select').val()+"'>"+
+          "<input style='border: none;' id='selected-survey-id-"+$('#survey-select option:selected').val()+"' name='selected-survey-id-"+$('#survey-select option:selected').val()+"' value='"+$('#survey-select').val()+"' readonly>"+
         "</td>"+
         "<td>"+
-          "<input id='selected-survey-name-"+$('#survey-select option:selected').val()+"' value='"+$('#survey-select option:selected').text()+"'>"+
+          "<input style='border: none;' id='selected-survey-name-"+$('#survey-select option:selected').val()+"' value='"+$('#survey-select option:selected').text()+"' readonly>"+
         "</td>" +
         "<td>" +
           "<input  id='selected-survey-date-"+$('#survey-select option:selected').val()+"' name='selected-survey-date-"+$('#survey-select option:selected').val()+"' value='"+$("#survey\\:date").val()+"'>"+
