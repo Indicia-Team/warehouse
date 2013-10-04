@@ -55,7 +55,14 @@ class extension_cudi_information_sheet {
     );
     foreach ($fields as $caption=>$databaseValue) {
       $attrsTemplate.='<div class="field ui-helper-clearfix"><span>'.$caption.':</span><span>{'.$databaseValue.'}</span></div>';
-    }  
+    } 
+    if (!empty($options['alternative_1_attr_id'])&&
+        !empty($options['alternative_2_attr_id'])&&
+        !empty($options['country_attr_id'])&&
+        !empty($options['habitat_attr_id'])&&   
+        !empty($options['official_reason_for_change_attr_id'])&&
+        !empty($options['site_location_type_id'])&&
+        !empty($options['loc_org_reg_attr_id'])) { 
     //Call the report to populate the html template
     return $attrs_report = report_helper::freeform_report(array(
         'readAuth' => $auth['read'],
@@ -77,12 +84,15 @@ class extension_cudi_information_sheet {
           'sharing'=>'reporting'
         )
       ));
+    } else {
+      return '<div><h2>Plesse configure the Form Structure for the CUDI Information Sheet report</h2></div>';
+    }
   }
   
   /*
    * Control used to display the Surveys associated with a Count Unit on the Cudi Information Sheet
    */
-  /*
+  
   public function informationSheetSurveysReport($auth, $args, $tabalias, $options, $path) {
     //The Surveys associated with the Count Unit are held as location_attribute_values so collect these
     $surveysAttributeData = data_entry_helper::get_population_data(array(
@@ -116,7 +126,7 @@ class extension_cudi_information_sheet {
     $r .= '</table></div>';
     return $r;
   }
-  */
+  
   /*
    * A button link to the cudi form for the same location as being viewed on the information sheet
    */
