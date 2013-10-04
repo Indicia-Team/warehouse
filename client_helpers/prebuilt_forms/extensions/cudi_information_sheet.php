@@ -56,6 +56,14 @@ class extension_cudi_information_sheet {
     foreach ($fields as $caption=>$databaseValue) {
       $attrsTemplate.='<div class="field ui-helper-clearfix"><span>'.$caption.':</span><span>{'.$databaseValue.'}</span></div>';
     } 
+    drupal_set_message($options['alternative_1_attr_id']);
+    drupal_set_message($options['alternative_2_attr_id']);
+    drupal_set_message($options['country_attr_id']);
+    drupal_set_message($options['habitat_attr_id']);
+    drupal_set_message($options['official_reason_for_change_attr_id']);
+    drupal_set_message($options['site_location_type_id']);
+    drupal_set_message($options['loc_org_reg_attr_id']);
+    /*
     if (!empty($options['alternative_1_attr_id'])&&
         !empty($options['alternative_2_attr_id'])&&
         !empty($options['country_attr_id'])&&
@@ -64,6 +72,7 @@ class extension_cudi_information_sheet {
         !empty($options['site_location_type_id'])&&
         !empty($options['loc_org_reg_attr_id'])) { 
     //Call the report to populate the html template
+      
     return $attrs_report = report_helper::freeform_report(array(
         'readAuth' => $auth['read'],
         'class'=>'information-sheet-details-fields',
@@ -84,9 +93,10 @@ class extension_cudi_information_sheet {
           'sharing'=>'reporting'
         )
       ));
-    } else {
+    } else {*/
+      
       return '<div><h2>Plesse configure the Form Structure for the CUDI Information Sheet report</h2></div>';
-    }
+    //}
   }
   
   /*
