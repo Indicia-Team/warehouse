@@ -82,6 +82,7 @@ class extension_cudi_information_sheet {
   /*
    * Control used to display the Surveys associated with a Count Unit on the Cudi Information Sheet
    */
+  /*
   public function informationSheetSurveysReport($auth, $args, $tabalias, $options, $path) {
     //The Surveys associated with the Count Unit are held as location_attribute_values so collect these
     $surveysAttributeData = data_entry_helper::get_population_data(array(
@@ -115,7 +116,7 @@ class extension_cudi_information_sheet {
     $r .= '</table></div>';
     return $r;
   }
-  
+  */
   /*
    * A button link to the cudi form for the same location as being viewed on the information sheet
    */
