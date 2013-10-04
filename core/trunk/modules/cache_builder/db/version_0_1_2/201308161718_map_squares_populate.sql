@@ -3,30 +3,46 @@
 -- create 1km index 
 
 INSERT INTO map_squares (geom, x, y, size)
-SELECT DISTINCT on (round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 1000), s.entered_sref_system)))),
-    round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 1000), s.entered_sref_system)))),
-    GREATEST(o.sensitivity_precision, 1000))    
-  reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 1000), s.entered_sref_system),
-  round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 1000), s.entered_sref_system)))),
-  round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 1000), s.entered_sref_system)))),
+SELECT DISTINCT on (
+      round(st_x(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
+          GREATEST(o.sensitivity_precision, 1000), coalesce(s.entered_sref_system, l.centroid_sref_system))))),
+      round(st_y(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
+          GREATEST(o.sensitivity_precision, 1000), coalesce(s.entered_sref_system, l.centroid_sref_system))))),
+      GREATEST(o.sensitivity_precision, 1000)
+  )
+  reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
+      GREATEST(o.sensitivity_precision, 1000), coalesce(s.entered_sref_system, l.centroid_sref_system)),
+  round(st_x(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
+      GREATEST(o.sensitivity_precision, 1000), coalesce(s.entered_sref_system, l.centroid_sref_system))))),
+  round(st_y(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
+      GREATEST(o.sensitivity_precision, 1000), coalesce(s.entered_sref_system, l.centroid_sref_system))))),
   GREATEST(o.sensitivity_precision, 1000)
 FROM samples s
 JOIN occurrences o ON o.sample_id=s.id
-WHERE s.geom IS NOT NULL;
+LEFT JOIN locations l on l.id=s.location_id AND l.deleted=false
+WHERE coalesce(s.geom, l.centroid_geom) IS NOT NULL;
 
 -- create 2km index
 
-SELECT DISTINCT on (round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 2000), s.entered_sref_system)))),
-    round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 2000), s.entered_sref_system)))),
-    GREATEST(o.sensitivity_precision, 2000))    
-  reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 2000), s.entered_sref_system) as geom,
-  round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 2000), s.entered_sref_system)))) as x,
-  round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 2000), s.entered_sref_system)))) as y,
+SELECT DISTINCT on (
+      round(st_x(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
+          GREATEST(o.sensitivity_precision, 2000), coalesce(s.entered_sref_system, l.centroid_sref_system))))),
+      round(st_y(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
+          GREATEST(o.sensitivity_precision, 2000), coalesce(s.entered_sref_system, l.centroid_sref_system))))),
+      GREATEST(o.sensitivity_precision, 2000)
+  )
+  reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
+      GREATEST(o.sensitivity_precision, 2000), coalesce(s.entered_sref_system, l.centroid_sref_system)) as geom,
+  round(st_x(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
+      GREATEST(o.sensitivity_precision, 2000), coalesce(s.entered_sref_system, l.centroid_sref_system))))) as x,
+  round(st_y(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
+      GREATEST(o.sensitivity_precision, 2000), coalesce(s.entered_sref_system, l.centroid_sref_system))))) as y,
   GREATEST(o.sensitivity_precision, 2000) as size
 INTO temp
 FROM samples s
 JOIN occurrences o ON o.sample_id=s.id
-WHERE s.geom IS NOT NULL;
+LEFT JOIN locations l on l.id=s.location_id AND l.deleted=false
+WHERE coalesce(s.geom, l.centroid_geom) IS NOT NULL;
 
 DELETE FROM temp 
 USING map_squares msq
@@ -38,17 +54,25 @@ DROP TABLE temp;
 
 -- create 10km index 
 
-SELECT DISTINCT on (round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 10000), s.entered_sref_system)))),
-    round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 10000), s.entered_sref_system)))),
-    GREATEST(o.sensitivity_precision, 10000))    
-  reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 10000), s.entered_sref_system) as geom,
-  round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 10000), s.entered_sref_system)))) as x,
-  round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, 10000), s.entered_sref_system)))) as y,
+SELECT DISTINCT on (
+      round(st_x(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
+          GREATEST(o.sensitivity_precision, 10000), coalesce(s.entered_sref_system, l.centroid_sref_system))))),
+      round(st_y(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
+          GREATEST(o.sensitivity_precision, 10000), coalesce(s.entered_sref_system, l.centroid_sref_system))))),
+      GREATEST(o.sensitivity_precision, 10000)
+  )
+  reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
+      GREATEST(o.sensitivity_precision, 10000), coalesce(s.entered_sref_system, l.centroid_sref_system)) as geom,
+  round(st_x(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
+      GREATEST(o.sensitivity_precision, 10000), coalesce(s.entered_sref_system, l.centroid_sref_system))))) as x,
+  round(st_y(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
+      GREATEST(o.sensitivity_precision, 10000), coalesce(s.entered_sref_system, l.centroid_sref_system))))) as y,
   GREATEST(o.sensitivity_precision, 10000) as size
 INTO temp
 FROM samples s
 JOIN occurrences o ON o.sample_id=s.id
-WHERE s.geom IS NOT NULL;
+LEFT JOIN locations l on l.id=s.location_id AND l.deleted=false
+WHERE coalesce(s.geom, l.centroid_geom) IS NOT NULL;
 
 DELETE FROM temp 
 USING map_squares msq
@@ -58,21 +82,29 @@ INSERT INTO map_squares (geom, x, y, size) SELECT * FROM temp;
 
 DROP TABLE temp;
 
-SELECT DISTINCT ON (o.confidential, o.sensitivity_precision, s.entered_sref, s.entered_sref_system) 
-    s.geom, o.confidential, o.sensitivity_precision, s.entered_sref, s.entered_sref_system, 
-    round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, greatest(o.sensitivity_precision, 1000), s.entered_sref_system)))) as x1k,
-    round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, greatest(o.sensitivity_precision, 1000), s.entered_sref_system)))) as y1k,
+SELECT DISTINCT ON (o.confidential, o.sensitivity_precision, coalesce(s.entered_sref, l.centroid_sref), coalesce(s.entered_sref_system, l.centroid_sref_system)) 
+    coalesce(s.geom, l.centroid_geom) as geom, o.confidential, o.sensitivity_precision, 
+    coalesce(s.entered_sref, l.centroid_sref), coalesce(s.entered_sref_system, l.centroid_sref_system) as entered_sref_system, 
+    round(st_x(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
+        greatest(o.sensitivity_precision, 1000), coalesce(s.entered_sref_system, l.centroid_sref_system))))) as x1k,
+    round(st_y(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
+        greatest(o.sensitivity_precision, 1000), coalesce(s.entered_sref_system, l.centroid_sref_system))))) as y1k,
     greatest(o.sensitivity_precision, 1000) as size1k,
-    round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, greatest(o.sensitivity_precision, 2000), s.entered_sref_system)))) as x2k,
-    round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, greatest(o.sensitivity_precision, 2000), s.entered_sref_system)))) as y2k,
+    round(st_x(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
+        greatest(o.sensitivity_precision, 2000), coalesce(s.entered_sref_system, l.centroid_sref_system))))) as x2k,
+    round(st_y(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
+        greatest(o.sensitivity_precision, 2000), coalesce(s.entered_sref_system, l.centroid_sref_system))))) as y2k,
     greatest(o.sensitivity_precision, 2000) as size2k,    
-    round(st_x(st_centroid(reduce_precision(s.geom, o.confidential, greatest(o.sensitivity_precision, 10000), s.entered_sref_system)))) as x10k,
-    round(st_y(st_centroid(reduce_precision(s.geom, o.confidential, greatest(o.sensitivity_precision, 10000), s.entered_sref_system)))) as y10k,
+    round(st_x(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
+        greatest(o.sensitivity_precision, 10000), coalesce(s.entered_sref_system, l.centroid_sref_system))))) as x10k,
+    round(st_y(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
+        greatest(o.sensitivity_precision, 10000), coalesce(s.entered_sref_system, l.centroid_sref_system))))) as y10k,
     greatest(o.sensitivity_precision, 10000) as size10k,
     cast(null as integer) as msq_id1k, cast(null as integer) as msq_id2k, cast(null as integer) as msq_id10k
 INTO temporary interim
 FROM occurrences o
 JOIN samples s on s.id=o.sample_id AND s.deleted=false
+LEFT JOIN locations l on l.id=s.location_id AND l.deleted=false
 WHERE o.deleted=false;
 
 UPDATE interim t SET msq_id1k=msq.id
@@ -99,8 +131,9 @@ SELECT o.id, t.msq_id1k, t.msq_id2k, t.msq_id10k
 INTO interim2
 FROM samples s
 JOIN occurrences o ON o.sample_id=s.id and o.deleted=false
-JOIN interim t ON t.entered_sref=s.entered_sref
-  AND t.entered_sref_system=s.entered_sref_system
+LEFT JOIN locations l on l.id=s.location_id AND l.deleted=false
+JOIN interim t ON t.entered_sref=coalesce(s.entered_sref, l.centroid_sref)
+  AND t.entered_sref_system=coalesce(s.entered_sref_system, l.centroid_sref_system)
   AND t.confidential=o.confidential
   AND t.sensitivity_precision=COALESCE(o.sensitivity_precision, 0)
 where s.deleted=false;
