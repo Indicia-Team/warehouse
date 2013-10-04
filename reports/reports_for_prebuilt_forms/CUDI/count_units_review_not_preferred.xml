@@ -21,8 +21,8 @@
   </params>
   <columns>
     <column name="id" display="Count Unit Boundary Id" sql="cub.id" in_count="true"/> 
-    <column name="start_date" display="Count Unit Boundary Start Date" sql="lavStartDate.date_start_value" /> 
-    <column name="end_date" display="Count Unit Boundary End Date" sql="lavEndDate.date_start_value" /> 
+    <column name="start_date" display="Count Unit Boundary Start Date" sql="to_char(lavStartDate.date_start_value, 'DD/MM/YYYY')" /> 
+    <column name="end_date" display="Count Unit Boundary End Date" sql="to_char(lavEndDate.date_start_value, 'DD/MM/YYYY')" /> 
   </columns>
 </report>
 
