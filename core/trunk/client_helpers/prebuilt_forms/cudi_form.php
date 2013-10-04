@@ -539,8 +539,8 @@ mapInitialisationHooks.push(function(mapdiv) {
       }
     }
     //We need to populate the surveys drop-down but not include items that are already on the grid.
-    $r = '';
-    $r .='<div id="surveys-control">';
+    $r = '<div id="surveys-control">';
+    $r .='<h3>Surveys</h3>';
     $r .= '<label>Surveys: </label><select id = "survey-select">';
     $r .= '<option id="please-select-surveys-item">Please Select</option>';
     if (!empty($surveysData)) {
@@ -584,10 +584,10 @@ mapInitialisationHooks.push(function(mapdiv) {
         $r .= "
         <tr id='"."selected-survey-row-".$decodedSavedSurvey[$idx][0]."'>
           <td>
-            <input id='"."selected-survey-id-".$decodedSavedSurvey[$idx][0]."' name='"."selected-survey-id-".$decodedSavedSurvey[$idx][0]."' value='".$decodedSavedSurvey[$idx][0]."'>
+            <input style='border: none;' id='"."selected-survey-id-".$decodedSavedSurvey[$idx][0]."' name='"."selected-survey-id-".$decodedSavedSurvey[$idx][0]."' value='".$decodedSavedSurvey[$idx][0]."' readonly>
           </td>
           <td>
-            <input id='"."selected-survey-name-".$decodedSavedSurvey[$idx][0]."' value='".$surveyNameInGrid[$decodedSavedSurvey[$idx][0]]['title']."'>
+            <input style='border: none;' id='"."selected-survey-name-".$decodedSavedSurvey[$idx][0]."' value='".$surveyNameInGrid[$decodedSavedSurvey[$idx][0]]['title']."' readonly>
           </td>
           <td>
             <input id='"."selected-survey-date-".$decodedSavedSurvey[$idx][0]."' name='"."selected-survey-date-".$decodedSavedSurvey[$idx][0]."' value='".$decodedSavedSurvey[$idx][1]."'>
