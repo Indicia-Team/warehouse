@@ -39,6 +39,8 @@
     <param name="clean_url" datatype="string"/>
     <param name="information_sheet_url" datatype="string"/>
     <param name="homepage_url" datatype="string"/>
+    --Note that you need to include front and trailing slashes for this e.g. '/cudi/live/'
+    <param name="drupal_installation_folder" datatype="string"/>
     <param name="deactivate_site_attribute_id" datatype="integer"/>
     <param name="site_type_id" datatype="integer"/>
     <param name="sub_site_type_id" datatype="integer"/>
@@ -52,17 +54,17 @@
     <column name="name" display="Site/Sub-Site" sql="
     case '#clean_url#'
       WHEN '1'
-        THEN '&lt;a href=&quot;'||#homepage_url#||'?id='||l.id||'&quot;&gt;' || l.name
+        THEN '&lt;a href=&quot;'||#drupal_installation_folder#||#homepage_url#||'?id='||l.id||'&quot;&gt;' || l.name
       ELSE
-        '&lt;a href=&quot;?q='||#homepage_url#||'&amp;id='||l.id||'&quot;&gt;' || l.name
+        '&lt;a href=&quot;'||#drupal_installation_folder#||'?q='||#homepage_url#||'&amp;id='||l.id||'&quot;&gt;' || l.name
     END
 " in_count="true" />
     <column name="count_units" display="Count Units" sql="
     case '#clean_url#'
       WHEN '1'
-        THEN array_to_string(array_agg('&lt;a href=&quot;'||#information_sheet_url#||'?id='||lcu.id||'&quot;&gt;' || LCU.name), ', ')
+        THEN array_to_string(array_agg('&lt;a href=&quot;'||#drupal_installation_folder#||#information_sheet_url#||'?id='||lcu.id||'&quot;&gt;' || LCU.name), ', ')
       ELSE
-        array_to_string(array_agg('&lt;a href=&quot;?q='||#information_sheet_url#||'&amp;id='||lcu.id||'&quot;&gt;' || LCU.name), ', ')
+        array_to_string(array_agg('&lt;a href=&quot;'||#drupal_installation_folder#||'?q='||#information_sheet_url#||'&amp;id='||lcu.id||'&quot;&gt;' || LCU.name), ', ')
     END
 " aggregate="true" />
   </columns>
