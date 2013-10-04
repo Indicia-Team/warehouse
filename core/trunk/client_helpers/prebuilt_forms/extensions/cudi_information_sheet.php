@@ -50,9 +50,7 @@ class extension_cudi_information_sheet {
         'Parent Loction Name'=>'parent_location_name',
         'Country'=>'country',
         'Habitat'=>'habitat',
-        'local_organiser_region'=>'Local Organiser Region',
-        'survey'=>'Survey',
-        'first_used_date'=>'Survey First Used Date',
+        'Local Organiser Region'=>'local_organiser_region',
         'Official Reason For Change'=>'official_reason_for_change',
     );
     foreach ($fields as $caption=>$databaseValue) {
@@ -74,10 +72,50 @@ class extension_cudi_information_sheet {
           'country_attr_id'=>$options['country_attr_id'],
           'habitat_attr_id'=>$options['habitat_attr_id'],
           'official_reason_for_change_attr_id'=>$options['official_reason_for_change_attr_id'],
+          'site_location_type_id'=>$options['site_location_type_id'],
+          'loc_org_reg_attr_id'=>$options['loc_org_reg_attr_id'],
           'sharing'=>'reporting'
         )
       ));
   }
+  
+  /*
+   * Control used to display the Surveys associated with a Count Unit on the Cudi Information Sheet
+   */
+  public function informationSheetSurveysReport($auth, $args, $tabalias, $options, $path) {
+    //The Surveys associated with the Count Unit are held as location_attribute_values so collect these
+    $surveysAttributeData = data_entry_helper::get_population_data(array(
+      'table' => 'location_attribute_value',
+      'extraParams' => $auth['read'] + array('location_id' => $_GET['id'], 'location_attribute_id'=>$options['surveys_attribute_id']),
+      'nocache' => true,
+      'sharing' => $sharing
+    ));
+    //Create a table to put the data in
+    $r = '<div><h3>Surveys</h3><table><tr><th>Name</th><th>Date</th></tr>';
+    //Cycle around each Survey associated with the Count Unit and add rows to the grid.
+    foreach ($surveysAttributeData as $surveysAttributeDataItem) {
+      //The Survey Id and Date are json_encoded in the location_atribute_value so decode.
+      $decoded = json_decode($surveysAttributeDataItem['value']);
+      //The stored data does not include the Survey name, so we need to collect it.
+      $surveysData = data_entry_helper::get_population_data(array(
+        'table' => 'survey',
+        'extraParams' => $auth['read'] + array('id' => $decoded[0]),
+        'nocache' => true,
+        'sharing' => $sharing
+      ));
+      $r .= '<tr><td>';
+      $r .= $surveysData[0]['title'];
+      $r .= '</td>';
+      $r .= '<td>';
+      //The second item in the $decoded array holds the date associated with the Survey entry.
+      $r .= $decoded[1];
+      $r .= '</td>';
+      $r .= '</tr>';
+    }
+    $r .= '</table></div>';
+    return $r;
+  }
+  
   /*
    * A button link to the cudi form for the same location as being viewed on the information sheet
    */
