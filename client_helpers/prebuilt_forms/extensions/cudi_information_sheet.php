@@ -42,7 +42,7 @@ class extension_cudi_information_sheet {
     //We then loop around an html template of one report line inserting each label and database value name until we have a 
     //full template.
     //We then call a freeform report that then populates this template.
-    /*
+    
     $fields = array(
         'Count Unit Name'=>'name',
         'Alternative Name 1'=>'alternative_1',
@@ -57,16 +57,7 @@ class extension_cudi_information_sheet {
     foreach ($fields as $caption=>$databaseValue) {
       $attrsTemplate.='<div class="field ui-helper-clearfix"><span>'.$caption.':</span><span>{'.$databaseValue.'}</span></div>';
     } 
-     * 
-     */
-    drupal_set_message($options['alternative_1_attr_id']);
-    drupal_set_message($options['alternative_2_attr_id']);
-    drupal_set_message($options['country_attr_id']);
-    drupal_set_message($options['habitat_attr_id']);
-    drupal_set_message($options['official_reason_for_change_attr_id']);
-    drupal_set_message($options['site_location_type_id']);
-    drupal_set_message($options['loc_org_reg_attr_id']);
-    /*
+
     if (!empty($options['alternative_1_attr_id'])&&
         !empty($options['alternative_2_attr_id'])&&
         !empty($options['country_attr_id'])&&
@@ -96,16 +87,15 @@ class extension_cudi_information_sheet {
           'sharing'=>'reporting'
         )
       ));
-    } else {*/
-      
+    } else {      
       return '<div><h2>Plesse configure the Form Structure for the CUDI Information Sheet report</h2></div>';
-    //}
+    }
   }
   
   /*
    * Control used to display the Surveys associated with a Count Unit on the Cudi Information Sheet
    */
-  /*
+  
   public function informationSheetSurveysReport($auth, $args, $tabalias, $options, $path) {
     //The Surveys associated with the Count Unit are held as location_attribute_values so collect these
     $surveysAttributeData = data_entry_helper::get_population_data(array(
@@ -139,7 +129,7 @@ class extension_cudi_information_sheet {
     $r .= '</table></div>';
     return $r;
   }
-  */
+ 
   /*
    * A button link to the cudi form for the same location as being viewed on the information sheet
    */
