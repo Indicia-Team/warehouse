@@ -72,25 +72,40 @@ function load_annotation() {
 function select_survey_and_date() {
   //Don't run if the Please Select option is still selected
   if ($("#survey-select option:selected").attr('id') !== 'please-select-surveys-item') { 
-    //Add an item to the last row in the results grid.
-    $("#surveys-table tr:last").after(
-      //Note we use the Survey Id on the end of the various html ids. The fields that will be used in submission also have a 
-      //"name" otherwise they won't show in the submission $values variable
-      "<tr id='selected-survey-row-"+$('#survey-select option:selected').val()+"'>"+
-        "<td>"+
-          "<input style='border: none;' id='selected-survey-id-"+$('#survey-select option:selected').val()+"' name='selected-survey-id-"+$('#survey-select option:selected').val()+"' value='"+$('#survey-select').val()+"' readonly>"+
-        "</td>"+
-        "<td>"+
-          "<input style='border: none;' id='selected-survey-name-"+$('#survey-select option:selected').val()+"' value='"+$('#survey-select option:selected').text()+"' readonly>"+
-        "</td>" +
-        "<td>" +
-          "<input  id='selected-survey-date-"+$('#survey-select option:selected').val()+"' name='selected-survey-date-"+$('#survey-select option:selected').val()+"' value='"+$("#survey\\:date").val()+"'>"+
-        "</td>"+
-        "<td>"+
-          "<img class='action-button' src='"+indiciaData.deleteImagePath+"' onclick='remove_survey_selection("+$('#survey-select option:selected').val()+",\""+$('#survey-select option:selected').text()+"\")'>" +
-        "</td>"+                                   
-      "</tr>"
-    );
+    //If the option we are selecting is already on the grid, it means it was previously there but has been hidden as the user removed it, so
+    //show the item again rather than add new one.
+    if ($('#selected-survey-row-'+$('#survey-select option:selected').val()).length != 0) {
+      $('#selected-survey-row-'+$('#survey-select option:selected').val()).show();
+      //When we reshow the grid item, make sure we update the date to the user selected value
+      $('#selected-survey-date-'+$('#survey-select option:selected').val()).val($('#survey\\:date').val());
+      $('#selected-survey-deleted-'+$('#survey-select option:selected').val()).val('false');
+    } else {
+      //Add an item to the last row in the results grid.
+      $("#surveys-table tr:last").after(
+        //Note we use the Survey Id on the end of the various html ids. The fields that will be used in submission also have a 
+        //"name" otherwise they won't show in the submission $values variable
+        "<tr id='selected-survey-row-"+$('#survey-select option:selected').val()+"'>"+
+          "<td>"+
+            "<input style='border: none;' id='selected-survey-id-"+$('#survey-select option:selected').val()+"' name='selected-survey-id-"+$('#survey-select option:selected').val()+"' value='"+$('#survey-select').val()+"' readonly>"+
+          "</td>"+
+          "<td>"+
+            "<input style='border: none;' id='selected-survey-name-"+$('#survey-select option:selected').val()+"' value='"+$('#survey-select option:selected').text()+"' readonly>"+
+          "</td>" +
+          "<td>" +
+            "<input  id='selected-survey-date-"+$('#survey-select option:selected').val()+"' name='selected-survey-date-"+$('#survey-select option:selected').val()+"' value='"+$("#survey\\:date").val()+"'>"+
+          "</td>"+
+          "<td>"+
+            "<img class='action-button' src='"+indiciaData.deleteImagePath+"' onclick=\"remove_survey_selection("+$('#survey-select option:selected').val()+",'"+$('#survey-select option:selected').text()+"');\" title=\"Delete Survey Selection\">" +
+          "</td>"+ 
+          "<td style='display:none;'>"+
+            "<input id='selected-survey-existing-"+$('#survey-select option:selected').val()+"' name='selected-survey-existing-"+$('#survey-select option:selected').val()+"' value=''>"+
+          "</td>"+
+          "<td style='display:none;'>"+
+            "<input id='selected-survey-deleted-"+$('#survey-select option:selected').val()+"' name='selected-survey-deleted-"+$('#survey-select option:selected').val()+"' value='false'>"+
+          "</td>"+
+        "</tr>"
+      );
+    }
     $("#survey-select option:selected").remove();
   }
 }
