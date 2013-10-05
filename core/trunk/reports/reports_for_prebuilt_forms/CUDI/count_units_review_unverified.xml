@@ -10,6 +10,8 @@
     WHERE cu.deleted = false AND lw.deleted = false
     AND cu.location_type_id=#count_unit_location_type_id#
     AND (lav.int_value is null OR lav.int_value=0)
+    GROUP BY cu.name
+    ORDER BY cu.name asc
   </query>
   <params>
     <param name="unverified_attribute_id" datatype="integer"/>
