@@ -19,11 +19,6 @@
       LEFT JOIN location_attribute_values LorganiserR ON LorganiserR.location_id = pl.id AND LorganiserR.location_attribute_id = #loc_org_reg_attr_id# 
       LEFT JOIN termlists_terms ttLocal on ttLocal.id = LorganiserR.int_value
       LEFT JOIN terms tLocal on tLocal.id = ttLocal.term_id
-      --LEFT JOIN location_attribute_values lav on lav.location_id=l.id
-      --JOIN location_attributes la on la.id=lav.location_attribute_id 
-      --  AND (la.id = #alternative_1_attr_id# OR la.id = #alternative_2_attr_id# OR la.id = #country_attr_id# OR la.id = #habitat_attr_id# and la.id = #official_reason_for_change_attr_id#)
-      
-      #joins#
     WHERE 1=1
       #filters#
       AND #website_filter# AND l.deleted = false
@@ -42,12 +37,13 @@
     <param name="loc_org_reg_attr_id" datatype="integer"/>
   </params>
   <columns>
-    <column name="name" display="Count Unit Name" sql="l.name" in_count="true"/>  
-    <column name="alternative_1" display="Alternative Name 1" sql="Alt1.text_value" in_count="true"/> 
-    <column name="alternative_2" display="Alternative Name 2" sql="Alt2.text_value" in_count="true"/>
-    <column name="abbreviation" display="Abbreviation" sql="l.code" in_count="true"/>
-    <column name="parent_location_name" display="Parent Location" sql="pl.name" in_count="true"/>
+    <column name="name" display="Count Unit Name" sql="l.name"/>  
+    <column name="alternative_1" display="Alternative Name 1" sql="Alt1.text_value"/> 
+    <column name="alternative_2" display="Alternative Name 2" sql="Alt2.text_value"/>
+    <column name="abbreviation" display="Abbreviation" sql="l.code"/>
+    <column name="parent_location_name" display="Parent Location" sql="pl.name"/>
     <column name="country" display="Country" sql="tCountry.term" />
+    <column name="centroid" display="Country" sql="l.centroid_sref" />
     <column name="habitat" display="Habitat" sql="tHab.term" />
     <column name="local_organiser_region" display="Local Organiser Region" sql="tLocal.term" />   
     <column name="official_reason_for_change" display="Official Reason for Change" sql="offReason.text_value" />
