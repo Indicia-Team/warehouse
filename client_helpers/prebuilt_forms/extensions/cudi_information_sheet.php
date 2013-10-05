@@ -31,15 +31,13 @@ class extension_cudi_information_sheet {
    * The parameter is currently always 'id' because if a count unit page is saved and the user is returned to the Cudi Information
    * Sheet, then the code that automatically handles that return is designed to supply 'id' as the parameter to the Cudi Information Sheet.
    */
-  /*
   public function autoLoadReportParamFromGet($auth, $args, $tabalias, $options, $path) {
     $_REQUEST['dynamic-id']=$_GET['id'];
   }
-  */
+  
   /*
    * Freeform report about a count unit.
    */
- /*
   public function informationSheetReport($auth, $args, $tabalias, $options, $path) {
     //List an array of display labels and their database values.
     //We then loop around an html template of one report line inserting each label and database value name until we have a 
@@ -96,11 +94,10 @@ class extension_cudi_information_sheet {
     }
      
   }
-  */
+  
   /*
    * Control used to display the Surveys associated with a Count Unit on the Cudi Information Sheet
-   */
-  /*
+   */ 
   public function informationSheetSurveysReport($auth, $args, $tabalias, $options, $path) {
     //The Surveys associated with the Count Unit are held as location_attribute_values so collect these
     $surveysAttributeData = data_entry_helper::get_population_data(array(
@@ -134,11 +131,10 @@ class extension_cudi_information_sheet {
     $r .= '</table></div>';
     return $r;
   }
-  */
+  
   /*
    * A button link to the cudi form for the same location as being viewed on the information sheet
    */
-  /*
   public function cudiFormButtonLink($auth, $args, $tabalias, $options, $path) {
     global $user;
     //Get the Count Units that are in the user's tasks list using the same report.
@@ -175,6 +171,5 @@ class extension_cudi_information_sheet {
       return $cudiFormButtonLink;
     }
   }  
-  */
 }
   
