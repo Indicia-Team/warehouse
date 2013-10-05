@@ -33,16 +33,16 @@ class extension_cudi_information_sheet {
   public function autoLoadReportParamFromGet($auth, $args, $tabalias, $options, $path) {
     $_REQUEST['dynamic-id']=$_GET['id'];
   }
-  
   /*
    * Freeform report about a count unit.
    */
+  /*
   public function informationSheetReport($auth, $args, $tabalias, $options, $path) {
     //List an array of display labels and their database values.
     //We then loop around an html template of one report line inserting each label and database value name until we have a 
     //full template.
     //We then call a freeform report that then populates this template.
-    /*
+    
     $fields = array(
         'Count Unit Name'=>'name',
         'Alternative Name 1'=>'alternative_1',
@@ -91,9 +91,9 @@ class extension_cudi_information_sheet {
     } else {      
       return '<div><h2>Plesse configure the Form Structure for the CUDI Information Sheet report</h2></div>';
     }
-     */
+     
   }
-  
+  */
   /*
    * Control used to display the Surveys associated with a Count Unit on the Cudi Information Sheet
    */
