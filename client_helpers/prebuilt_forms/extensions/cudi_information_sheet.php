@@ -42,7 +42,7 @@ class extension_cudi_information_sheet {
     //We then loop around an html template of one report line inserting each label and database value name until we have a 
     //full template.
     //We then call a freeform report that then populates this template.
-    
+    /*
     $fields = array(
         'Count Unit Name'=>'name',
         'Alternative Name 1'=>'alternative_1',
@@ -91,6 +91,7 @@ class extension_cudi_information_sheet {
     } else {      
       return '<div><h2>Plesse configure the Form Structure for the CUDI Information Sheet report</h2></div>';
     }
+     */
   }
   
   /*
