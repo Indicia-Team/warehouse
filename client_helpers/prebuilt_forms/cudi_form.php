@@ -1155,7 +1155,7 @@ mapInitialisationHooks.push(function(mapdiv) {
     self::prepare_multi_survey_field($values, $args);
     $s=self::get_count_unit_and_boundary_submission($values, $args);
     if ($values['annotation:name'])
-      $s['subModels'][]=self::get_annotation_submission($values, $args); 
+      $s['subModels'][]=self::get_annotation_submission($values, $args);
     return $s;
   }
   
@@ -1166,11 +1166,13 @@ mapInitialisationHooks.push(function(mapdiv) {
     $existingIdsHolder = array();
     //We need to find any Survey/Date selections which are already saved in the database.
     foreach ($values as $fieldName => $theAttributeId) {
-      if (0 === strpos($fieldName, 'selected-survey-existing-')) {
-        $fieldNameParts = explode('-',$fieldName);
-        $surveyId = array_pop($fieldNameParts);
-        //Create an array where the Survey Id in is the key and the id of the location attribute value this is saved in
-        $existingIdsHolder[$surveyId] = $theAttributeId;
+      if (0 === strpos($fieldName, 'selected-survey-existing-')) { 
+        if (!empty($values[$fieldName])) {
+          $fieldNameParts = explode('-',$fieldName);
+          $surveyId = array_pop($fieldNameParts);
+          //Create an array where the Survey Id in is the key and the id of the location attribute value this is saved in
+          $existingIdsHolder[$surveyId] = $theAttributeId;
+        }
       }
     }
     
@@ -1180,7 +1182,7 @@ mapInitialisationHooks.push(function(mapdiv) {
         $fieldNameParts = explode('-',$fieldName);
         $surveyId = array_pop($fieldNameParts);
         //If the user is removing the Surveys/Data Selection item
-        if ($values['selected-survey-deleted-'.$theValue]==='true') {
+        if ($values['selected-survey-deleted-'.$theValue]==='true') {          
           //If the removal didn't previously exist in the database then we don't need to submit it at all
           if (empty($existingIdsHolder[$surveyId])) {
             unset($values['selected-survey-deleted-'.$theValue]);
