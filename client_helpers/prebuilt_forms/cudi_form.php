@@ -315,6 +315,9 @@ class iform_cudi_form extends iform_dynamic {
     //In add mode hide the official reason for change
     data_entry_helper::$javascript .= "$('[for=\"locAttr\\\\:".$args['official_reason_for_change_attribute_id']."\"]').remove();\n 
                                        $('#locAttr\\\\:".$args['official_reason_for_change_attribute_id']."').remove();\n";
+    //In add mode hide the verified checkbox and label
+    data_entry_helper::$javascript .= "$('[for=\"locAttr\\\\:".$args['verified_attribute_id']."\"]').remove();\n 
+                                       $('#locAttr\\\\:".$args['verified_attribute_id']."').remove();\n";
     $loc = data_entry_helper::get_population_data(array(
       'table' => 'location',
       'extraParams' => $auth['read'] + array('id' => $id, 'view' => 'detail'),
@@ -367,7 +370,7 @@ mapInitialisationHooks.push(function(mapdiv) {
       'nocache' => true,
       'sharing' => $sharing
     ));
-    if (!empty($_GET['parent_id']))
+    if (!empty($_GET['parent_id'])) 
       $boundaryId = $_GET['location_id'];
     else {
       //If looking at a Count Unit as an administrator, the boundary info we view comes from the preferred boundary
@@ -477,6 +480,11 @@ mapInitialisationHooks.push(function(mapdiv) {
         $attributeData['displayValue'] = $d->format('d/m/Y');
         $attributeData['default'] = $attributeData['displayValue'];
       }
+    }
+    //Disable Verified checkbox for normal users, note that we use a selector for a field whose name starts with locAttr:<Verified Attribute ID>
+    //as there is a hidden field with the same name but no id and we want to disable both so they are not submitted in the post.
+    if ($args['administrator_mode']==0) {
+      data_entry_helper::$javascript .= "$(\"input[name^='locAttr\\\\:".$args['verified_attribute_id']."']\").attr('disabled','true');";
     }
     return $attributes;
   }
