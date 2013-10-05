@@ -24,19 +24,22 @@
  * Extension class that supplies a new control which allows the user to click on a button to navigate to the cudi form page.
  */
 class extension_cudi_information_sheet {
+  
   /*
    * Control is not visible to user, instead it appends "dynamic-" to the front of the $_GET parameter which is then used
    * by the system "behind the scenes" to automatically load that parameter into reports on that page.
    * The parameter is currently always 'id' because if a count unit page is saved and the user is returned to the Cudi Information
    * Sheet, then the code that automatically handles that return is designed to supply 'id' as the parameter to the Cudi Information Sheet.
    */
+  /*
   public function autoLoadReportParamFromGet($auth, $args, $tabalias, $options, $path) {
     $_REQUEST['dynamic-id']=$_GET['id'];
   }
+  */
   /*
    * Freeform report about a count unit.
    */
-  /*
+ /*
   public function informationSheetReport($auth, $args, $tabalias, $options, $path) {
     //List an array of display labels and their database values.
     //We then loop around an html template of one report line inserting each label and database value name until we have a 
@@ -131,10 +134,11 @@ class extension_cudi_information_sheet {
     $r .= '</table></div>';
     return $r;
   }
- */
+  */
   /*
    * A button link to the cudi form for the same location as being viewed on the information sheet
    */
+  /*
   public function cudiFormButtonLink($auth, $args, $tabalias, $options, $path) {
     global $user;
     //Get the Count Units that are in the user's tasks list using the same report.
@@ -171,5 +175,6 @@ class extension_cudi_information_sheet {
       return $cudiFormButtonLink;
     }
   }  
+  */
 }
   
