@@ -10,14 +10,22 @@
     WHERE cu.deleted = false AND lw.deleted = false
     AND cu.location_type_id=#count_unit_location_type_id#
     AND (lav.int_value is null OR lav.int_value=0)
-    GROUP BY cu.name
-    ORDER BY cu.name asc
   </query>
   <params>
     <param name="unverified_attribute_id" datatype="integer"/>
     <param name="count_unit_location_type_id" datatype="integer"/>
+    <param name="cudi_form_url" datatype="string"/>
+    <param name="drupal_installation_folder" datatype="string"/>
+    <param name="clean_url" datatype="integer"/>
   </params>
   <columns>
-    <column name="name" display="Count Unit Name" sql="cu.name" /> 
+    <column name="name" display="Count Unit Name" sql="
+      case '#clean_url#'
+        WHEN '1'
+          THEN '&lt;a href=&quot;'||#drupal_installation_folder#||#cudi_form_url#||'?location_id='||cu.id||'&quot;&gt;' || cu.name
+        ELSE
+          '&lt;a href=&quot;'||#drupal_installation_folder#||'?q='||#cudi_form_url#||'&amp;location_id='||cu.id||'&quot;&gt;' || cu.name
+      END
+    " /> 
   </columns>
 </report>
