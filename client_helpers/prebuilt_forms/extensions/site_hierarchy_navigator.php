@@ -301,6 +301,35 @@ class extension_site_hierarchy_navigator {
   }
   
   /*
+   * An extension that can be added to the Site Details page to limit the Local Organiser Region field so that it is 
+   * displayed only when the location type is Site.
+   */
+  public function site_detail_ext_local_organiser_site_limiter($auth, $args, $tabalias, $options, $path) {
+    //If in edit mode, get the details of the site we are viewing.
+    if (!empty($_GET['location_id'])) {
+      $existingLocationDetail = data_entry_helper::get_population_data(array(
+        'table' => 'location',
+        'extraParams' => $auth['read'] + array('id' => $_GET['location_id']),
+        'nocache' => true,
+        'sharing' => $sharing
+      ));
+    }
+    //If in edit mode and the location type is not site then hide Local Organiser region
+    if (!empty($_GET['location_id'])) {
+      if ($existingLocationDetail[0]['location_type_id']!=$options['site_location_type_id']) {
+        data_entry_helper::$javascript .= "$('[for=\"locAttr\\\\:".$options['local_org_reg_attribute_id']."\"]').remove();\n
+                                     $('#locAttr\\\\:".$options['local_org_reg_attribute_id']."').remove();\n";
+      }
+    } else {
+      //If in add mode and the type we are adding is not site then hide Local Organiser region 
+      if ($_GET['location_type_id']!=$options['site_location_type_id']) {
+        data_entry_helper::$javascript .= "$('[for=\"locAttr\\\\:".$options['local_org_reg_attribute_id']."\"]').remove();\n
+                                           $('#locAttr\\\\:".$options['local_org_reg_attribute_id']."').remove();\n";  
+      }  
+    }
+  }
+  
+  /*
    * Allow the user to specify a button to edit the parent site with
    */
   public function editsite($auth, $args, $tabalias, $options, $path) {
