@@ -509,6 +509,35 @@ mapInitialisationHooks.push(function(mapdiv) {
     return $r;
   }
  
+  /*
+   * Not Now button appears if the calling page is the data entry screen and there is no boundary.
+   * The data entry screen must provide its URL name in a parameter called calling_page. The button then
+   * returns no_boundary_warning=true in the URL back to the data entry page, this page can then look for this
+   * in the URL so it stops warning the user about the missing boundary.
+   * 
+   */
+  protected static function get_control_notnow($auth, $args, $tabalias, $options) {
+    //We only ever need to worry about the location_id in this case as parent_id only appears if there is a boundary,
+    //in which case the Not Now button doesn't appear anyway.
+    $parentCountUnitId=$_GET['location_id'];  
+    //Only display Not Now if user have come from data-entry page
+    if ($_GET['calling_page']==$options['data_entry_page_name']) {
+      //Return the count unit id and a parameter to say stop showing the no boundary warning.
+      $urlQuery='no_boundary_warning=true&'.$options['data_entry_page_param'].'='.$parentCountUnitId;
+      //Get drupal to generate the URL for us
+      $notNowUrl = url($options['data_entry_page_name'], array('query'=>"$urlQuery"));
+      $r = "<div id='notnow-button'><input type='button' value='Not Now' ONCLICK='window.location.href=\"".$notNowUrl."\"'></div>";
+      //Only show the Not Now button when there isn't a boundary
+      data_entry_helper::$javascript .= "
+        $('#notnow-button').hide();
+        if (!$('#imp-boundary-geom').val()) {
+         $('#notnow-button').show();
+        }
+      ";     
+      return $r;
+    }
+  }
+  
   /** 
    * Survey control that supports multiple surveys each with a date
    */
