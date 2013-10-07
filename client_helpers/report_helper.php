@@ -395,7 +395,7 @@ class report_helper extends helper_base {
               default: $title=lang::get("$caption search. Either enter an exact number, use >, >=, <, or <= before the number to filter for ".
                       "$caption more or less than your search value, or enter a range such as 1000-2000.");
             }
-            $title = lang::get('Type here to filter.').' '.$title;
+            $title = htmlspecialchars(lang::get('Type here to filter.').' '.$title);
             //The filter's input id includes the grid id ($options['id']) in its id as there maybe more than one grid and we need to make the id unique.
             $filterRow .= "<th><input title=\"$title\" type=\"text\" class=\"col-filter\" id=\"col-filter-".$field['fieldname']."-".$options['id']."\"/></th>";
             $wantFilterRow = true;
@@ -1795,7 +1795,7 @@ mapSettingsHooks.push(function(opts) { $setLocationJs
       $request .= '&user_id='.$options['userId'];
     if (isset($options['linkOnly']) && $options['linkOnly']) {
       // a link must be proxied as can be used client-site 
-      return (empty(parent::$warehouse_proxy) ? parent::$base_url : parent::$warehouse_proxy).$request;
+      return (empty(parent::$warehouse_proxy) ? parent::$base_url : parent::$warehouse_proxy).htmlspecialchars($request);
     }
     else {
       if (isset($options['caching']) && $options['caching']) {

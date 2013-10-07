@@ -207,7 +207,7 @@ class filter_where extends filter_base {
       data_entry_helper::$javascript .= "indiciaData.myLocality='".$loc[0]['name']."';\n";
       $r .= '<fieldset class="exclusive">';
       $r .= '<label for="indexed_location_id">' . lang::get('Or, records in {1}:', $loc[0]['name']) . '</label> ' .
-          '<input id="indexed_location_id" type="checkbox" value="' . $locality . '" name="indexed_location_id">';
+          '<input id="indexed_location_id" type="checkbox" value="' . $locality . '" name="indexed_location_id"/>';
       $r .= '</fieldset>';
     }
     $r .= '</fieldset>';
@@ -560,7 +560,7 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
   $hiddenStuff = '';
   foreach ($filterModules as $category => $list) {
     foreach ($list as $moduleName=>$module) {
-      $hiddenStuff .= "<div style=\"display: none\"><form id=\"controls-$moduleName\" class=\"filter-controls\"><fieldset>" . $module->get_controls($readAuth, $options) . 
+      $hiddenStuff .= "<div style=\"display: none\"><form id=\"controls-$moduleName\" action=\"#\" class=\"filter-controls\"><fieldset>" . $module->get_controls($readAuth, $options) . 
         '<button class="fb-close">Cancel</button>' .
         '<button class="fb-apply" type="submit">Apply</button></fieldset></form></div>';
       $shortName=str_replace('filter_', '', $moduleName);
