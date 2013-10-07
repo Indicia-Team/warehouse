@@ -4856,7 +4856,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       foreach ($options['lookupValues'] as $key=>$value) {
         $r[$key] = str_replace(
             array('{value}', '{caption}'),
-            array($key, $value),
+            array(htmlspecialchars($key), htmlspecialchars($value)),
             $indicia_templates[$options['itemTemplate']]
         );
       }
