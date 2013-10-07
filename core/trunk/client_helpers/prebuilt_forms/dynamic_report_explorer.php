@@ -32,8 +32,18 @@ require_once('includes/report_filters.php');
  */
 class iform_dynamic_report_explorer extends iform_dynamic {
   
-  // count the reports, to generate unique ids
+  /**
+   * Count the reports, to generate unique ids
+   * @var integer
+   */
   private static $reportCount=0;
+  
+  /**
+   * If using the standard params system then the way of supplying user prefs is different. Default to 
+   * use the old ownData/ownGroups/ownLocality way. 
+   * @var bool
+   */
+  private static $applyUserPrefs=true;
   
   /** 
    * Return the form metadata.
@@ -281,7 +291,8 @@ class iform_dynamic_report_explorer extends iform_dynamic {
       ),
       $options
     );
-    iform_report_apply_explore_user_own_preferences($reportOptions);
+    if (self::$applyUserPrefs)
+      iform_report_apply_explore_user_own_preferences($reportOptions);
     return report_helper::report_grid($reportOptions);
   }
  
@@ -314,7 +325,8 @@ class iform_dynamic_report_explorer extends iform_dynamic {
       ),
       $options
     );
-    iform_report_apply_explore_user_own_preferences($reportOptions);
+    if (self::$applyUserPrefs)
+      iform_report_apply_explore_user_own_preferences($reportOptions);
     $r = report_helper::report_map($reportOptions);
     $options = array_merge(
       iform_map_get_map_options($args, $auth['read']),
@@ -351,12 +363,14 @@ class iform_dynamic_report_explorer extends iform_dynamic {
       ),
       $options
     );
-    iform_report_apply_explore_user_own_preferences($reportOptions);
+    if (self::$applyUserPrefs)
+      iform_report_apply_explore_user_own_preferences($reportOptions);
     self::$reportCount++;
     return report_helper::report_grid($reportOptions);
   }
   
   protected static function get_control_standardparams($auth, $args, $tabalias, $options) {
+    self::$applyUserPrefs=false;
     $options = array_merge(array(
       'allowSave' => true,
       'sharing' => empty($args['sharing']) ? 'reporting' : $args['sharing']
