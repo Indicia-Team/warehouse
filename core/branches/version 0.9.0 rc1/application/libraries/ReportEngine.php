@@ -489,7 +489,7 @@ class ReportEngine {
                   											" and l.iso = '".$attributeDefn->meaningIdLanguage."'").
                   										 "ORDER by tt.meaning_id;");
                 else
-                  $termResponse = $this->reportDb->query("select t.id, t.term from terms t, termlists_terms tt where tt.termlist_id =".$row["termlist_id"]." and tt.term_id = t.id and t.deleted=FALSE and tt.deleted = FALSE ORDER by t.id;");
+                  $termResponse = $this->reportDb->query("select tt.id, t.term from terms t, termlists_terms tt where tt.termlist_id =".$row["termlist_id"]." and tt.term_id = t.id and t.deleted=FALSE and tt.deleted = FALSE ORDER by tt.id;");
                 $newColumns[$row[$attributeDefn->id]]['lookup'] = $termResponse->result_array(FALSE);
                 // allow follow through so Lookup follows normal format of a singular field.
               default:
