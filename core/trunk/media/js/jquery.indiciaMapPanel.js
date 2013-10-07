@@ -29,6 +29,11 @@ mapInitialisationHooks = [];
 mapGeoreferenceHooks = [];
 
 /**
+ * Add functions to this array for them to be called when a location is picked in an input control.
+ */
+mapLocationSelectedHooks = [];
+
+/**
 * Class: indiciaMapPanel
 * JavaScript & OpenLayers based map implementation class for Indicia data entry forms.
 * This code file supports read only maps. A separate plugin will then run on top of this to provide editing support
@@ -113,7 +118,7 @@ mapGeoreferenceHooks = [];
               if(_diffProj(div.indiciaProjection, div.map.projection)){
                 // NB geometry may not be a point (especially if a boundary!)
                 var parser = new OpenLayers.Format.WKT();
-                var feature = parser.read(wkt);
+                var feature = parser.read(geomwkt);
                 geomwkt = feature.geometry.transform(div.indiciaProjection, div.map.projection).toString();
               }
               _showWktFeature(div, geomwkt, div.map.editLayer, null, true, 'boundary');
@@ -131,6 +136,9 @@ mapGeoreferenceHooks = [];
                   $('#'+div.settings.srefLongId).val(parts.join(''));
                 }
               }
+              $.each(mapLocationSelectedHooks, function(idx, hook) {
+                hook(div, data);
+              });
             }
           }
         );
