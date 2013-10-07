@@ -807,7 +807,8 @@ class iform_report_calendar_summary {
       'dataSource' => $args['report_name'],
       'mode' => 'report',
       'readAuth' => $readAuth,
-      'extraParams' => $presets
+      'extraParams' => $presets,
+      'downloadFilePrefix' => ''
     );
     return $reportOptions;
   }
@@ -853,8 +854,10 @@ class iform_report_calendar_summary {
       if($siteUrlParams[self::$userKey]['value']=="branch"){
         // this can only be done for a branch coordinator, so the self::branchLocationList has already been filled in.
         $description="All branch sites";
-        if(count(self::$branchLocationList)===0)
+        if(count(self::$branchLocationList)===0) {
+          $options['downloadFilePrefix'] .= 'NS_';
           return(lang::get('[No sites allocated.]'));
+        }
         $locationIDList=self::$branchLocationList;
       } else {
         // first need to scan param_presets for survey_id..
@@ -883,8 +886,10 @@ class iform_report_calendar_summary {
         $attrList = data_entry_helper::get_population_data($attrListArgs);
         if (isset($attrList['error']))
           return $attrList['error'];
-        if(count($attrList)===0)
+        if(count($attrList)===0) {
+          $options['downloadFilePrefix'] .= 'NS_';
           return(lang::get('[No sites allocated.]'));
+        }
         $locationIDList=array();
         foreach($attrList as $attr)
           $locationIDList[] = $attr['location_id'];
@@ -912,12 +917,14 @@ class iform_report_calendar_summary {
     $ctrl='<label for="'.$ctrlid.'" class="location-select-label">'.lang::get('Filter by site').
           ': </label><select id="'.$ctrlid.'" class="location-select">'.
           '<option value="" class="location-select-option" '.($siteUrlParams[self::$locationKey]['value']=='' ? 'selected="selected" ' : '').'>'.$description.'</option>';
+    if($siteUrlParams[self::$locationKey]['value']=='')
+      $options['downloadFilePrefix'] .= preg_replace('/[^A-Za-z0-9]/i', '', $description).'_';
     foreach($locationList as $location){
       $ctrl .= '<option value='.$location['id'].' class="location-select-option" '.($siteUrlParams[self::$locationKey]['value']==$location['id'] ? 'selected="selected" ' : '').'>'.
                $location['name'].(isset($args['includeSrefInLocationFilter']) && $args['includeSrefInLocationFilter'] ? ' ('.$location['centroid_sref'].')' : '').
                '</option>';
       if($siteUrlParams[self::$locationKey]['value']==$location['id'])
-        $options['description'] = $location['name'];
+        $options['downloadFilePrefix'] .= preg_replace('/[^A-Za-z0-9]/i', '', $location['name']).'_';
     }
     $ctrl.='</select>';
     self::set_up_control_change($ctrlid, self::$locationKey, array());
@@ -1103,14 +1110,14 @@ class iform_report_calendar_summary {
       }
     }
     switch($siteUrlParams[self::$userKey]['value']){
-      case '' : $options['userDescription'] = lang::get('All data');
-    	break;
-      case $user->uid : $options['userDescription'] = lang::get('My data');
+      case '' : $options['downloadFilePrefix'] .= lang::get('AllRecorders').'_';
         break;
-      case "branch" : $options['userDescription'] = lang::get('Branch data');
+      case $user->uid : $options['downloadFilePrefix'] .= lang::get('MyData').'_';
         break;
-      default : $options['userDescription'] = $userList[$siteUrlParams[self::$userKey]['value']]['name'];
-    	break;
+      case "branch" : $options['downloadFilePrefix'] .= lang::get('MyBranch').'_';
+        break;
+      default : $options['downloadFilePrefix'] .= preg_replace('/[^A-Za-z0-9]/i', '', $userList[$siteUrlParams[self::$userKey]['value']]['name']).'_';
+        break;
     }
     $ctrl.='</select>';
     self::set_up_control_change($ctrlid, self::$userKey, array('locationID'));
@@ -1197,6 +1204,7 @@ jQuery('#".$ctrlid."').change(function(){
       case 'currentyear':
         $options['date_start'] = date('Y').'-Jan-01';
         $options['date_end'] = date('Y').'-Dec-31';
+        $options['downloadFilePrefix'] .= date('Y').'_';
         return '<th>'.lang::get('Data for ').date('Y').'</th>';
       default: // case year
         // Add year paginator where it can have an impact for both tables and plots.
@@ -1215,6 +1223,7 @@ jQuery('#".$ctrlid."').change(function(){
         } else $r .= '<th/>';
         $options['date_start'] = $siteUrlParams[self::$yearKey]['value'].'-Jan-01';
         $options['date_end'] = $siteUrlParams[self::$yearKey]['value'].'-Dec-31';
+        $options['downloadFilePrefix'] .= $siteUrlParams[self::$yearKey]['value'].'_';
         return $r;
     }
   }
@@ -1353,7 +1362,8 @@ jQuery('#".$ctrlid."').change(function(){
               'readAuth'=>$auth,
               'dataSource'=>$args["download_report_1"],
               'extraParams'=>array_merge($reportOptions['extraParams'], array('date_from' => $reportOptions['date_start'], 'date_to' => $reportOptions['date_end'])),
-              'itemsPerPage' => false
+              'itemsPerPage' => false,
+              'filename' => $reportOptions['downloadFilePrefix'].preg_replace('/[^A-Za-z0-9]/i', '', $args['Download1Caption'])
       );
       // there are problems dealing with location_list as an array if empty, so connvert
       if($downloadOptions['extraParams']['location_list']=="")
@@ -1365,6 +1375,7 @@ jQuery('#".$ctrlid."').change(function(){
       if(isset($args['Download2Caption']) && $args['Download2Caption'] != "" && isset($args['download_report_2']) && $args['download_report_2'] != ""){
         $downloadOptions['caption' ]=$args['Download2Caption'];
         $downloadOptions['dataSource']=$args["download_report_2"];
+        $downloadOptions['filename']=$reportOptions['downloadFilePrefix'].preg_replace('/[^A-Za-z0-9]/i', '', $args['Download2Caption']);
         $reportOptions['downloads'][] =  data_entry_helper::report_download_link($downloadOptions);
       }
     }
