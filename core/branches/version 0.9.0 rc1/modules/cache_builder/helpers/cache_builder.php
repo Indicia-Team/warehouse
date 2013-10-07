@@ -47,9 +47,9 @@ class cache_builder {
         // preprocess some of the tags in the queries
         if (is_array($queries['insert']))
           foreach($queries['insert'] as $key=>&$sql)
-            $sql = str_replace('#join_needs_update#', $queries['join_needs_update'] . ' and nu.deleted=false', $sql);
+            $sql = str_replace('#join_needs_update#', $queries['join_needs_update'] . ' and (nu.deleted=false or nu.deleted is null)', $sql);
         else 
-          $queries['insert'] = str_replace('#join_needs_update#', $queries['join_needs_update'] . ' and nu.deleted=false', $queries['insert']);
+          $queries['insert'] = str_replace('#join_needs_update#', $queries['join_needs_update'] . ' and (nu.deleted=false or nu.deleted is null)', $queries['insert']);
         cache_builder::run_statement($db, $table, $queries['insert'], 'insert');
         if (isset($queries['extra_multi_record_updates'])) 
           cache_builder::run_statement($db, $table, $queries['extra_multi_record_updates'], 'final update');
