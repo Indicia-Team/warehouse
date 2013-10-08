@@ -27,6 +27,6 @@
       <tabColumn name='id' visible='false' />
       <tabColumn name='name' display='Site name'/>
     </subTable>
-    <attributes separator='|' meaningIdLanguage='preferred'/>
+    <attributes separator='|' />
   </table>
 </report>
