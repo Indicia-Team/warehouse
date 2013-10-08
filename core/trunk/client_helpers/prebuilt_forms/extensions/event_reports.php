@@ -257,7 +257,7 @@ class extension_event_reports {
       $reportOptions['extraParams']['training'] = 'true';
     $reportOptions['extraParams']['limit']=$reportOptions['limit'];
     $rows = report_helper::get_report_data($reportOptions);
-    $r = "<table class=\"league\"><thead><th>Pos</th><th>$label</th><th>Species</th></head><tbody>";
+    $r = "<table class=\"league\"><thead><th>Pos</th><th>$label</th><th>Species</th></thead><tbody>";
     if (count($rows)) {
       $pos = 1;
       $lastVal = $rows[0]['value'];
