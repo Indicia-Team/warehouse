@@ -1796,7 +1796,7 @@ mapSettingsHooks.push(function(opts) { $setLocationJs
       $request .= '&user_id='.$options['userId'];
     if (isset($options['linkOnly']) && $options['linkOnly']) {
       // a link must be proxied as can be used client-site 
-      return (empty(parent::$warehouse_proxy) ? parent::$base_url : parent::$warehouse_proxy).$request
+      return (empty(parent::$warehouse_proxy) ? parent::$base_url : parent::$warehouse_proxy).$request;
     }
     else {
       if (isset($options['caching']) && $options['caching']) {
