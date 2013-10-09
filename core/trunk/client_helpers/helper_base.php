@@ -502,6 +502,7 @@ class helper_base extends helper_config {
    * <li>jsonwidget</li>
    * <li>timeentry</li>
    * <li>verification</li>
+   * <li>complexAttrGrid</li>
    * </ul>
    */
   public static function add_resource($resource)
@@ -598,7 +599,8 @@ class helper_base extends helper_config {
             self::$js_path."jquery.jsonwidget.js"), 'stylesheets'=>array(self::$css_path."jsonwidget.css")),
         'timeentry' => array('javascript'=>array(self::$js_path."jquery.timeentry.pack.js")),
         'verification' => array('javascript'=>array(self::$js_path."verification.js")),
-        'control_speciesmap_controls' => array('deps' =>array('jquery', 'openlayers', 'addrowtogrid', 'validation'), 'javascript' => array(self::$js_path."controls/speciesmap_controls.js"))
+        'control_speciesmap_controls' => array('deps' =>array('jquery', 'openlayers', 'addrowtogrid', 'validation'), 'javascript' => array(self::$js_path."controls/speciesmap_controls.js")),
+        'complexAttrGrid' => array('javascript'=>array(self::$js_path."complexAttrGrid.js"))
       );
     }
     return self::$resource_list;

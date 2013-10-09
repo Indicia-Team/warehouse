@@ -247,6 +247,77 @@ class data_entry_helper extends helper_base {
     $r = self::apply_template($options['template'], $options);
     return $r;
   }
+  
+  /**
+   * A control that can be used to output a multi-value text attribute where the text value holds a json record 
+   * structure. The control is a simple grid with each row representing a single attribute value and each column representing
+   * a field in the JSON stored in the value.
+   * 
+   * @param array $options Options array with the following possibilities:
+   * * **fieldname** - The fieldname of the attribute, e.g. smpAttr:10.
+   * **defaultRows** - Number of rows to show in the grid by default. An Add Another button is available to add more. 
+   *   Defaults to 3.
+   * * **columns** - An array defining the columns available in the grid which map to fields in the JSON stored for each value.
+   *   The array key is the column name and the value is a sub-array with a column definition. The column definition can contain
+   *   the following:
+   *   * label - The column label. Will be automatically translated.
+   *   * datatyoe - The column's data type. Currently only text is supported.
+   *   * unit - An optional unit label to display after the control (e.g. 'cm', 'kg').
+   *   * regex - A regular expression which validates the controls input value.
+   * * **default** - An array of default values, as obtained by a call to loadAttributes.
+   */
+  public static function complex_attr_grid($options) {
+    self::add_resource('complexAttrGrid');
+    $options = array_merge(array(
+      'defaultRows'=>3,
+      'columns'=>array('x'=>array('label'=>'x','datatype'=>'text','unit'=>'cm','regex'=>'/^[0-9]+$/'),
+          'y'=>array('label'=>'y','datatype'=>'text','unit'=>'cm')),
+      'default'=>array()
+    ), $options);    
+    list($attrTypeTag, $attrId) = explode(':', $options['fieldname']);
+    if (preg_match('/\[\]$/', $attrId))
+      $attrId=str_replace('[]', '', $attrId);
+    else
+      return 'The complex attribute grid control must be used with a mult-value attribute.';
+    $r = "<table class=\"complex-attr-grid\" id=\"complex-attr-grid-$attrTypeTag-$attrId\">";
+    $r .= '<thead><tr>';
+    foreach ($options['columns'] as $name => &$def) {
+      $r .= '<th>'.lang::get($def['label']).'</th>';
+      // apply i18n to unit now, as it will be used in JS later
+      $def['unit'] = lang::get($def['unit']);
+    }
+    $jsData = array('cols'=>$options['columns'],'rowCount'=>$options['defaultRows']);
+    self::$javascript .= "indiciaData['complexAttrGrid-$attrTypeTag-$attrId']=".json_encode($jsData).";\n"; 
+    $r .= '<th></th></th></thead>';
+    $r .= '<tbody>';
+    $rowCount = $options['defaultRows'] > count($options['default']) ? $options['defaultRows'] : count($options['default']);
+    for ($i = 0; $i<=$rowCount-1; $i++) {
+      $r .= '<tr>';
+      $defaults=isset($options['default'][$i]) ? json_decode($options['default'][$i]['default'], true) : array();
+      foreach ($options['columns'] as $name => $def) {
+        if (isset($options['default'][$i]))
+          $fieldname = str_replace('Attr:', 'Attr+:', $options['default'][$i]['fieldname']);
+        else
+          $fieldname = "$attrTypeTag+:$attrId:";
+        $class = empty($def['regex']) ? '' : ' class="{pattern:'.$def['regex'].'}"';
+        $value = isset($defaults[$name]) ? ' value="'.$defaults[$name].'"' : '';
+        $r .= "<td><input type=\"text\" name=\"$fieldname:$i:$name\"$class$value/>";
+        if (!empty($def['unit']))
+          $r .= '<span class="unit">'.lang::get($def['unit']).'</span>';
+        $r .= '</td>';
+      }
+      $r .= "<td><input type=\"hidden\" name=\"$fieldname:$i:deleted\" value=\"f\" class=\"delete-flag\"/><span class=\"ind-delete-icon\"/></td></tr>";
+    }
+    $r .= '</tbody>';
+    $r .= '<tfoot>';
+    $r .= '<tr><td colspan="'.(count($options['columns'])+1).'"><button class="add-btn" type="button">Add another</button></td></tr>';
+    $r .= '</tfoot>';
+    $r .= '</table>';
+    
+    
+    
+    return $r;  
+  }
 
  /**
   * Helper function to generate a sub list UI control. This control allows a user to create a new list 
@@ -5184,6 +5255,8 @@ if (errors$uniq.length>0) {
       } else {
         $address = (substr($link, 0, 1) == '#') ? substr($link, 1) : $link;
       }
+      // safe single quotes to render into JS
+      $caption = str_replace("'","\'",$caption);
       $tabs .= "<li id=\"$tabId\"><a href=\"$link\" rel=\"address:/$address\"><span>$caption</span></a></li>";
     }
     $options['tabs'] = $tabs;
@@ -6303,7 +6376,7 @@ if (errors$uniq.length>0) {
           if (isset($item['control_type']) &&
               ($item['control_type']=='text_input' || $item['control_type']=='textarea'
               || $item['control_type']=='postcode_textbox' || $item['control_type']=='time_input'
-              || $item['control_type']=='hidden_text' )) {
+              || $item['control_type']=='hidden_text' || $item['control_type']=='complex_attr_grid' )) {
             $ctrl = $item['control_type'];
           } else {
             $ctrl = 'text_input';

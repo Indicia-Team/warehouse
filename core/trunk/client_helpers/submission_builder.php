@@ -164,6 +164,8 @@ class submission_builder extends helper_config {
       $sa['field_prefix']=$field_prefix;
     }
     $attrEntity = self::get_attr_entity_prefix($entity, false).'Attr';
+    // complex json multivalue attributes need special handling
+    $complexAttrs[$attrKey]=array();
     // Iterate through the array
     foreach ($array as $key => $value)
     {
@@ -179,8 +181,46 @@ class submission_builder extends helper_config {
         } elseif ($attrEntity && (strpos($key, "$attrEntity:")===0)) {
           // custom attribute data can also go straight into the submission for the "master" table
           $sa['fields'][$key] = array('value' => $value);
+        } elseif ($attrEntity && (strpos($key, "$attrEntity+:")===0)) {
+          // a complex custom attribute data value which will need to be json encoded.
+          $tokens=explode(':', $key);
+          if ($tokens[4]==='deleted') {
+            if ($value==='t') {
+              $complexAttrs[$attrKey]='deleted';
+            } 
+          } else {
+            $attrKey = str_replace('+', '', $tokens[0]) . ':' . $tokens[1];
+            if (!empty($tokens[2]))
+              // existing value record
+              $attrKey .= ':'.$tokens[2];
+            $exists = isset($complexAttrs[$attrKey]) ? $complexAttrs[$attrKey] : array();
+            if ($exists!=='deleted') {
+              $exists[$tokens[3]][$tokens[4]] = $value;
+              $complexAttrs[$attrKey]=$exists;
+            }
+          }
         }
       } 
+    }
+    foreach($complexAttrs as $attrKey=>$data) {
+      if ($data==='deleted')
+        $sa['fields'][$attrKey]=array('value'=>'');
+      else {
+        $sa['fields'][$attrKey]=array('value'=>array());
+        $exists = count(explode(':', $attrKey))===3;
+        foreach (array_values($data) as $row)
+          if (implode('', array_values($row))<>'') {
+            if ($exists)
+              // existing value, so no need to send an array
+              $sa['fields'][$attrKey]['value'] = json_encode($row);
+            else
+              // could be multiple new values, so send an array
+              $sa['fields'][$attrKey]['value'][] = json_encode($row);
+          } elseif ($exists) {
+            // submitting an empty set for existing row, so deleted
+            $sa['fields'][$attrKey]=array('value'=>'');
+          }
+      }
     }
     if ($entity==='occurrence' && function_exists('hostsite_get_user_field') && hostsite_get_user_field('training')) 
       $sa['fields']['training'] = array('value' => 'on');
