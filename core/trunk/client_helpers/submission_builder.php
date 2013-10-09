@@ -165,7 +165,7 @@ class submission_builder extends helper_config {
     }
     $attrEntity = self::get_attr_entity_prefix($entity, false).'Attr';
     // complex json multivalue attributes need special handling
-    $complexAttrs[$attrKey]=array();
+    $complexAttrs=array();
     // Iterate through the array
     foreach ($array as $key => $value)
     {
@@ -186,7 +186,7 @@ class submission_builder extends helper_config {
           $tokens=explode(':', $key);
           if ($tokens[4]==='deleted') {
             if ($value==='t') {
-              $complexAttrs[$attrKey]='deleted';
+              $complexAttrs[$key]='deleted';
             } 
           } else {
             $attrKey = str_replace('+', '', $tokens[0]) . ':' . $tokens[1];
@@ -208,7 +208,15 @@ class submission_builder extends helper_config {
       else {
         $sa['fields'][$attrKey]=array('value'=>array());
         $exists = count(explode(':', $attrKey))===3;
-        foreach (array_values($data) as $row)
+        foreach (array_values($data) as $row) {
+          // find any term submissions in form id:term, and split into 2 json fields.
+          foreach ($row as $key=>&$val) {
+            if (preg_match('/^[0-9]+\:.+$/', $val)) {
+              $split=explode(':', $val, 2);
+              $val = $split[0];
+              $row[$key.'_term']=$split[1];
+            }
+          }
           if (implode('', array_values($row))<>'') {
             if ($exists)
               // existing value, so no need to send an array
@@ -220,6 +228,7 @@ class submission_builder extends helper_config {
             // submitting an empty set for existing row, so deleted
             $sa['fields'][$attrKey]=array('value'=>'');
           }
+        }
       }
     }
     if ($entity==='occurrence' && function_exists('hostsite_get_user_field') && hostsite_get_user_field('training')) 

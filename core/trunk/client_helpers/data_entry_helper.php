@@ -301,6 +301,7 @@ class data_entry_helper extends helper_base {
         self::$javascript .= "indiciaData.tl$def[termlist_id]=".json_encode($minified).";\n";
       }
     }
+    self::$javascript .= "indiciaData.langPleaseSelect='".lang::get('Please select')."'\n";
     // need to unset the variable used in &$def, otherwise it doesn't work in the next iterator.
     unset($def);
     $jsData = array('cols'=>$options['columns'],'rowCount'=>$options['defaultRows']);
@@ -321,10 +322,10 @@ class data_entry_helper extends helper_base {
             (isset($defaults[$name]) ? $defaults[$name] : '');
         $r .= "<td>";
         if ($def['datatype']==='lookup') {
-          $r .= "<select name=\"$fieldname\">";
+          $r .= "<select name=\"$fieldname\"><option value=''>&lt;".lang::get('Please select')."&gt;</option>";
           foreach ($lookupData['tl'.$def['termlist_id']] as $term) {
-            $selected = $default==$term[0] ? ' selected="selected"' : '';
-            $r .= "<option value=\"$term[0]\"$selected>$term[1]</option>";
+            $selected = $default=="$term[0]" ? ' selected="selected"' : '';
+            $r .= "<option value=\"$term[0]:$term[1]\"$selected>$term[1]</option>";
           }
           $r .= "</select>";
         } else {
