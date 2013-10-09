@@ -261,7 +261,8 @@ class data_entry_helper extends helper_base {
    *   The array key is the column name and the value is a sub-array with a column definition. The column definition can contain
    *   the following:
    *   * label - The column label. Will be automatically translated.
-   *   * datatyoe - The column's data type. Currently only text is supported.
+   *   * datatype - The column's data type. Currently only text and lookup is supported.
+   *   * termlist_id - If datatype=lookup, then provide the termlist_id of the list to load terms for as options in the control.
    *   * unit - An optional unit label to display after the control (e.g. 'cm', 'kg').
    *   * regex - A regular expression which validates the controls input value.
    * * **default** - An array of default values, as obtained by a call to loadAttributes.
@@ -271,9 +272,9 @@ class data_entry_helper extends helper_base {
     $options = array_merge(array(
       'defaultRows'=>3,
       'columns'=>array('x'=>array('label'=>'x','datatype'=>'text','unit'=>'cm','regex'=>'/^[0-9]+$/'),
-          'y'=>array('label'=>'y','datatype'=>'text','unit'=>'cm')),
+          'y'=>array('label'=>'y','datatype'=>'lookup','termlist_id'=>'5','unit'=>'cm')),
       'default'=>array()
-    ), $options);    
+    ), $options);
     list($attrTypeTag, $attrId) = explode(':', $options['fieldname']);
     if (preg_match('/\[\]$/', $attrId))
       $attrId=str_replace('[]', '', $attrId);
@@ -281,11 +282,27 @@ class data_entry_helper extends helper_base {
       return 'The complex attribute grid control must be used with a mult-value attribute.';
     $r = "<table class=\"complex-attr-grid\" id=\"complex-attr-grid-$attrTypeTag-$attrId\">";
     $r .= '<thead><tr>';
+    $lookupData = array();
     foreach ($options['columns'] as $name => &$def) {
       $r .= '<th>'.lang::get($def['label']).'</th>';
+      // whilst we are iterating the columns, may as well do some setup.
       // apply i18n to unit now, as it will be used in JS later
       $def['unit'] = lang::get($def['unit']);
+      if ($def['datatype']==='lookup' && !empty($def['termlist_id'])) {
+        $termlistData = self::get_population_data(array(
+          'table'=>'termlists_term',
+          'extraParams'=>$options['extraParams'] + array('termlist_id'=>$def['termlist_id'], 'view'=>'cache')
+        ));
+        $minified = array();
+        foreach ($termlistData as $term) {
+          $minified[] = array($term['id'], $term['term']);
+        }
+        $lookupData['tl'.$def['termlist_id']] = $minified;
+        self::$javascript .= "indiciaData.tl$def[termlist_id]=".json_encode($minified).";\n";
+      }
     }
+    // need to unset the variable used in &$def, otherwise it doesn't work in the next iterator.
+    unset($def);
     $jsData = array('cols'=>$options['columns'],'rowCount'=>$options['defaultRows']);
     self::$javascript .= "indiciaData['complexAttrGrid-$attrTypeTag-$attrId']=".json_encode($jsData).";\n"; 
     $r .= '<th></th></th></thead>';
@@ -296,17 +313,29 @@ class data_entry_helper extends helper_base {
       $defaults=isset($options['default'][$i]) ? json_decode($options['default'][$i]['default'], true) : array();
       foreach ($options['columns'] as $name => $def) {
         if (isset($options['default'][$i]))
-          $fieldname = str_replace('Attr:', 'Attr+:', $options['default'][$i]['fieldname']);
+          $fieldnamePrefix = str_replace('Attr:', 'Attr+:', $options['default'][$i]['fieldname']);
         else
-          $fieldname = "$attrTypeTag+:$attrId:";
-        $class = empty($def['regex']) ? '' : ' class="{pattern:'.$def['regex'].'}"';
-        $value = isset($defaults[$name]) ? ' value="'.$defaults[$name].'"' : '';
-        $r .= "<td><input type=\"text\" name=\"$fieldname:$i:$name\"$class$value/>";
+          $fieldnamePrefix = "$attrTypeTag+:$attrId:";
+        $fieldname="$fieldnamePrefix:$i:$name";
+        $default = isset(self::$entity_to_load[$fieldname]) ? self::$entity_to_load[$fieldname] :
+            (isset($defaults[$name]) ? $defaults[$name] : '');
+        $r .= "<td>";
+        if ($def['datatype']==='lookup') {
+          $r .= "<select name=\"$fieldname\">";
+          foreach ($lookupData['tl'.$def['termlist_id']] as $term) {
+            $selected = $default==$term[0] ? ' selected="selected"' : '';
+            $r .= "<option value=\"$term[0]\"$selected>$term[1]</option>";
+          }
+          $r .= "</select>";
+        } else {
+          $class = empty($def['regex']) ? '' : ' class="{pattern:'.$def['regex'].'}"';          
+          $r .= "<input type=\"text\" name=\"$fieldname\" value=\"$default\"$class/>";
+        }
         if (!empty($def['unit']))
           $r .= '<span class="unit">'.lang::get($def['unit']).'</span>';
         $r .= '</td>';
       }
-      $r .= "<td><input type=\"hidden\" name=\"$fieldname:$i:deleted\" value=\"f\" class=\"delete-flag\"/><span class=\"ind-delete-icon\"/></td></tr>";
+      $r .= "<td><input type=\"hidden\" name=\"$fieldnamePrefix:$i:deleted\" value=\"f\" class=\"delete-flag\"/><span class=\"ind-delete-icon\"/></td></tr>";
     }
     $r .= '</tbody>';
     $r .= '<tfoot>';
