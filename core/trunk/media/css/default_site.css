@@ -717,7 +717,7 @@ ul.ind-sub-list li span {
   vertical-align: middle;
 }
 
-ul.ind-sub-list .ind-delete-icon, ul.ind-sub-list .ind-add-icon, span.ind-cancel-icon {
+span.ind-delete-icon, span.ind-add-icon, span.ind-cancel-icon {
   background-repeat: no-repeat;
   display: inline-block;
   width: 16px;
@@ -727,11 +727,11 @@ ul.ind-sub-list .ind-delete-icon, ul.ind-sub-list .ind-add-icon, span.ind-cancel
   list-style-type: none;
 }
 
-ul.ind-sub-list .ind-delete-icon {
+span.ind-delete-icon {
   background-image: url(../images/delete.png);
 }
 
-ul.ind-sub-list .ind-add-icon {
+span.ind-add-icon {
   background-image: url(../images/add.png);
 }
 
