@@ -14,9 +14,9 @@ $(document).ready(function($) {
       fieldname = attrTypeTag+"+:"+attrId+"::"+gridDef.rowCount+":"+name;
       row += '<td>';
       if (def.datatype==='lookup') {
-        row += '<select name="'+fieldname+'">';
+        row += '<select name="'+fieldname+'"><option value="">'+indiciaData.langPleaseSelect+'</option>';
         $.each(indiciaData['tl'+def.termlist_id], function(idx, term) {
-          row += '<option value="'+term[0]+'">'+term[1]+'</option>';
+          row += '<option value="'+term[0]+':' + term[1] + '">'+term[1]+'</option>';
         });
         row += '</select>';
       } else {
@@ -27,7 +27,7 @@ $(document).ready(function($) {
       }
       row += '</td>';
     });
-    fieldname = attrTypeTag+"+:"+attrId+":"+gridDef.rowCount+":deleted";
+    fieldname = attrTypeTag+"+:"+attrId+"::"+gridDef.rowCount+":deleted";
     row += '<td><input type="hidden" name="'+fieldname+'" value="f" class="delete-flag"/><span class="ind-delete-icon"/></td></tr>';
     $(table).find('tbody').append(row);
   });
