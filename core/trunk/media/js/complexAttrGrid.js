@@ -12,7 +12,16 @@ $(document).ready(function($) {
     gridDef.rowCount++; 
     $.each(gridDef.cols, function(name, def) {
       fieldname = attrTypeTag+"+:"+attrId+"::"+gridDef.rowCount+":"+name;
-      row += '<td><input type="text" name="'+fieldname+'" id="'+fieldname+'"/>';
+      row += '<td>';
+      if (def.datatype==='lookup') {
+        row += '<select name="'+fieldname+'">';
+        $.each(indiciaData['tl'+def.termlist_id], function(idx, term) {
+          row += '<option value="'+term[0]+'">'+term[1]+'</option>';
+        });
+        row += '</select>';
+      } else {
+        row += '<input type="text" name="'+fieldname+'" id="'+fieldname+'"/>';
+      }
       if (typeof def.unit!=="undefined" && def.unit!=="") {
         row += '<span class="unit">'+def.unit+'</span>';
       }
