@@ -341,7 +341,10 @@ class data_entry_helper extends helper_base {
           $r .= '<span class="unit">'.lang::get($def['unit']).'</span>';
         $r .= '</td>';
       }
-      $r .= "<td><input type=\"hidden\" name=\"$fieldnamePrefix:$i:deleted\" value=\"f\" class=\"delete-flag\"/><span class=\"ind-delete-icon\"/></td></tr>";
+      $r .= "<td><input type=\"hidden\" name=\"$fieldnamePrefix:$i:deleted\" value=\"f\" class=\"delete-flag\"/>";
+      if (empty($options['rowCountControl']))
+        $r .= "<span class=\"ind-delete-icon\"/>";
+      $r .= "</td></tr>";
     }
     $r .= '</tbody>';
     if (empty($options['rowCountControl'])) {
