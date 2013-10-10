@@ -30,7 +30,11 @@ $(document).ready(function($) {
       row += '</td>';
     });
     fieldname = attrTypeTag+"+:"+attrId+"::"+gridDef.rowCount+":deleted";
-    row += '<td><input type="hidden" name="'+fieldname+'" value="f" class="delete-flag"/><span class="ind-delete-icon"/></td></tr>';
+    row += '<td><input type="hidden" name="'+fieldname+'" value="f" class="delete-flag"/>';
+    if (gridDef.rowCountControl==='') {
+      row += '<span class="ind-delete-icon"/>';
+    }
+    row += '</td></tr>';
     $(table).find('tbody').append(row);
   }
   
