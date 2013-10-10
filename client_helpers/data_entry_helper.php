@@ -266,6 +266,8 @@ class data_entry_helper extends helper_base {
    *   * unit - An optional unit label to display after the control (e.g. 'cm', 'kg').
    *   * regex - A regular expression which validates the controls input value.
    * * **default** - An array of default values, as obtained by a call to loadAttributes.
+   * * **rowCountControl** - Pass the ID of an input control that will contain an integer value to define the number of rows in the
+   *   grid. If not set, then a button is shown allowing additional rows to be added.
    */
   public static function complex_attr_grid($options) {
     self::add_resource('complexAttrGrid');
@@ -273,7 +275,8 @@ class data_entry_helper extends helper_base {
       'defaultRows'=>3,
       'columns'=>array('x'=>array('label'=>'x','datatype'=>'text','unit'=>'cm','regex'=>'/^[0-9]+$/'),
           'y'=>array('label'=>'y','datatype'=>'lookup','termlist_id'=>'5','unit'=>'cm')),
-      'default'=>array()
+      'default'=>array(),
+      'rowCountControl'=>''
     ), $options);
     list($attrTypeTag, $attrId) = explode(':', $options['fieldname']);
     if (preg_match('/\[\]$/', $attrId))
@@ -302,9 +305,11 @@ class data_entry_helper extends helper_base {
       }
     }
     self::$javascript .= "indiciaData.langPleaseSelect='".lang::get('Please select')."'\n";
+    self::$javascript .= "indiciaData.langCantRemoveEnoughRows='".lang::get('Please clear the values in some more rows before trying to reduce the number of rows further.')."'\n";
     // need to unset the variable used in &$def, otherwise it doesn't work in the next iterator.
     unset($def);
-    $jsData = array('cols'=>$options['columns'],'rowCount'=>$options['defaultRows']);
+    $jsData = array('cols'=>$options['columns'],'rowCount'=>$options['defaultRows'],
+        'rowCountControl'=>$options['rowCountControl']);
     self::$javascript .= "indiciaData['complexAttrGrid-$attrTypeTag-$attrId']=".json_encode($jsData).";\n"; 
     $r .= '<th></th></th></thead>';
     $r .= '<tbody>';
@@ -339,9 +344,18 @@ class data_entry_helper extends helper_base {
       $r .= "<td><input type=\"hidden\" name=\"$fieldnamePrefix:$i:deleted\" value=\"f\" class=\"delete-flag\"/><span class=\"ind-delete-icon\"/></td></tr>";
     }
     $r .= '</tbody>';
-    $r .= '<tfoot>';
-    $r .= '<tr><td colspan="'.(count($options['columns'])+1).'"><button class="add-btn" type="button">Add another</button></td></tr>';
-    $r .= '</tfoot>';
+    if (empty($options['rowCountControl'])) {
+      $r .= '<tfoot>';
+      $r .= '<tr><td colspan="'.(count($options['columns'])+1).'"><button class="add-btn" type="button">Add another</button></td></tr>';
+      $r .= '</tfoot>';
+    } else {
+      $escaped = str_replace(':', '\\\\:', $options['rowCountControl']);
+      data_entry_helper::$javascript .= 
+"$('#$escaped').val($rowCount);
+$('#$escaped').change(function(e) {
+  changeComplexGridRowCount('$escaped', '$attrTypeTag', '$attrId');
+});\n";
+    }
     $r .= '</table>';
     
     
