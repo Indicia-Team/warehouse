@@ -360,6 +360,7 @@ function get_controls($block_id, $controlfilter) {
   $child_controls = ORM::factory($_GET['type'].'_attributes_website')->
         where('form_structure_block_id',$block_id)->
         where($controlfilter)->
+        where('deleted','f')->
         orderby('weight', 'ASC')->find_all();
   foreach($child_controls as $control) {
     echo '<li class="control-drop"></li>';
