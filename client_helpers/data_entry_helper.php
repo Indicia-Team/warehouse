@@ -274,7 +274,7 @@ class data_entry_helper extends helper_base {
     $options = array_merge(array(
       'defaultRows'=>3,
       'columns'=>array('x'=>array('label'=>'x','datatype'=>'text','unit'=>'cm','regex'=>'/^[0-9]+$/'),
-          'y'=>array('label'=>'y','datatype'=>'lookup','termlist_id'=>'5','unit'=>'cm')),
+          'y'=>array('label'=>'y','datatype'=>'lookup','termlist_id'=>'5')),
       'default'=>array(),
       'rowCountControl'=>''
     ), $options);
@@ -290,7 +290,8 @@ class data_entry_helper extends helper_base {
       $r .= '<th>'.lang::get($def['label']).'</th>';
       // whilst we are iterating the columns, may as well do some setup.
       // apply i18n to unit now, as it will be used in JS later
-      $def['unit'] = lang::get($def['unit']);
+      if ($def['unit'])
+        $def['unit'] = lang::get($def['unit']);
       if ($def['datatype']==='lookup' && !empty($def['termlist_id'])) {
         $termlistData = self::get_population_data(array(
           'table'=>'termlists_term',
