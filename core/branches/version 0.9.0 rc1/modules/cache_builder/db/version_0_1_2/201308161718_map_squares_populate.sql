@@ -84,7 +84,7 @@ DROP TABLE temp;
 
 SELECT DISTINCT ON (o.confidential, o.sensitivity_precision, coalesce(s.entered_sref, l.centroid_sref), coalesce(s.entered_sref_system, l.centroid_sref_system)) 
     coalesce(s.geom, l.centroid_geom) as geom, o.confidential, o.sensitivity_precision, 
-    coalesce(s.entered_sref, l.centroid_sref), coalesce(s.entered_sref_system, l.centroid_sref_system) as entered_sref_system, 
+    coalesce(s.entered_sref, l.centroid_sref) as entered_sref, coalesce(s.entered_sref_system, l.centroid_sref_system) as entered_sref_system, 
     round(st_x(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
         greatest(o.sensitivity_precision, 1000), coalesce(s.entered_sref_system, l.centroid_sref_system))))) as x1k,
     round(st_y(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
