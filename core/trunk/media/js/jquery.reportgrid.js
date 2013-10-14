@@ -161,9 +161,10 @@ var simple_tooltip;
             if (div.settings.pathParam !== '' && link.indexOf('?'+div.settings.pathParam+'=') === -1) {
               //if there is a path param but it is not in the link already then add it to the rootFolder
               row.rootFolder += '?'+div.settings.pathParam+'=';
-            }
-            if (link.substr(0, 12).toLowerCase()!=='{rootfolder}' && link.substr(0, 12).toLowerCase()!=='{currenturl}'
-                && link.substr(0, 4).toLowerCase()!=='http') {
+            }  
+            //Need to convert the link into a real url before we test whether it needs current server url added to the front.
+            convertedLink = mergeParamsIntoTemplate(div, row, link);
+            if (convertedLink.substr(0, 4).toLowerCase()!=='http') {
               link='{rootFolder}'+link;
             }
             link = mergeParamsIntoTemplate(div, row, link);
@@ -628,8 +629,8 @@ var simple_tooltip;
             response = response.records;
           }
           // implement a crude way of aborting out of date requests, since jsonp does not support xhr
-          // therefore no xhr.abort...
-          matchString = this.url.replace(/(jsonp\d+)/, '?').substring(0, currentMapRequest.length);
+          // therefore no xhr.abort...&jsonp
+          matchString = this.url.replace(/((jsonp\d+)|(jQuery\d+_\d+))/, '?').substring(0, currentMapRequest.length);
           if (matchString===currentMapRequest) {
             // start the load of the next batch
             if (offset+BATCH_SIZE<recordCount) {
