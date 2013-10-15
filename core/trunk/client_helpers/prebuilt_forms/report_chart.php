@@ -391,7 +391,7 @@ class iform_report_chart {
     if (!empty($axesOptions))
       $chartOptions['axesOptions'] = json_decode($axesOptions, true);
     // now the chart itself
-    $r .= '<br/>'.report_helper::report_chart($chartOptions);
+    $r = '<br/>'.report_helper::report_chart($chartOptions);
     return $r;
   }
 
