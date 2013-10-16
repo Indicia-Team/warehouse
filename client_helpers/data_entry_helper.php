@@ -1511,7 +1511,7 @@ $('#$escaped').change(function(e) {
     if (function_exists('hostsite_get_user_field') && $createdById=hostsite_get_user_field('indicia_user_id') && $options['fetchLocationAttributesIntoSample']) {
       $nonce=$options['extraParams']['nonce'];
       $authToken=$options['extraParams']['auth_token'];
-      $resportingServerURL = data_entry_helper::$base_url.'index.php/services/report/requestReport?report=library/sample_attribute_values/get_latest_values_for_site_and_user.xml&callback=?';
+      $resportingServerURL = (!empty(data_entry_helper::$warehouse_proxy))?data_entry_helper::$warehouse_proxy:data_entry_helper::$base_url.'index.php/services/report/requestReport?report=library/sample_attribute_values/get_latest_values_for_site_and_user.xml&callback=?';
       self::$javascript .= "$('#imp-location').change(function() {
         if ($('#imp-location').attr('value')!=='') {
           var reportingURL = '$resportingServerURL';
