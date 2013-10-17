@@ -106,7 +106,7 @@
     <column name='date_end' sql='co.date_end' visible='false' />
     <column name='date_type' sql='co.date_type' visible='false' />
     <column name='date' display='Date' datatype='date' />
-    <column name='recorder' display='Recorder' sql="CASE WHEN w.id IN (#website_ids#) THEN '' ELSE w.title || '-&gt;' END || co.recorders" datatype="text" />
+    <column name='recorder' display='Recorder' sql="co.recorders" datatype="text" />
     <column name='determiner' display='Determiner' datatype="text" 
       sql="CASE WHEN det_full_val.text_value IS NULL THEN 
         CASE WHEN det_last_val.text_value IS NULL THEN NULL ELSE det_last_val.text_value || COALESCE(', ' || det_first_val.text_value, '') END
