@@ -441,12 +441,14 @@ var simple_tooltip;
     }
 
     /**
-     * Build the URL required for a report request, excluding the pagination (limit + offset) parameters.
+     * Build the URL required for a report request, excluding the pagination (limit + offset) parameters. Option to exclude the sort info and idlist param.
      */
-    function getFullRequestPathWithoutPaging(div, sort) {
+    function getFullRequestPathWithoutPaging(div, sort, idlist) {
       var request = getRequest(div), params=getUrlParamsForAllRecords(div);
       $.each(params, function(key, val) {
-        request += '&' + key + '=' + encodeURIComponent(val);
+        if (idlist || key!=='idlist') {
+          request += '&' + key + '=' + encodeURIComponent(val);
+        }
       });
       if (sort && div.settings.orderby !== null) {
         request += '&orderby=' + div.settings.orderby + '&sortdir=' + div.settings.sortdir;
@@ -458,7 +460,7 @@ var simple_tooltip;
      * Function to make a service call to load the grid data.
      */
     function load (div, recount) {
-      var request = getFullRequestPathWithoutPaging(div, true);
+      var request = getFullRequestPathWithoutPaging(div, true, true);
       request += '&offset=' + div.settings.offset;
       if (recount) {
         request += '&wantCount=1';
@@ -673,7 +675,7 @@ var simple_tooltip;
         }
       }
       try {
-        request=getFullRequestPathWithoutPaging(div, false)+'&limit='+BATCH_SIZE;
+        request=getFullRequestPathWithoutPaging(div, false, false)+'&limit='+BATCH_SIZE;
         if (map.zoom<=8 && div.settings.mapDataSourceLoRes) {
           request += '&sq_size=10000';
           layerInfo.zoomLayerIdx = 0;
