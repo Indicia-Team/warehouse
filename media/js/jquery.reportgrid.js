@@ -668,7 +668,7 @@ var simple_tooltip;
       // we need to reload the map layer using the mapping report, so temporarily switch the report      
       var origReport=div.settings.dataSource, request;
       if (div.settings.mapDataSource!=='') {
-        if (map.zoom<13 && div.settings.mapDataSourceLoRes) {
+        if (map.resolution>30 && div.settings.mapDataSourceLoRes) {
           div.settings.dataSource=div.settings.mapDataSourceLoRes;
         } else {
           div.settings.dataSource=div.settings.mapDataSource;
