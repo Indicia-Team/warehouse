@@ -676,13 +676,13 @@ var simple_tooltip;
       }
       try {
         request=getFullRequestPathWithoutPaging(div, false, false)+'&limit='+BATCH_SIZE;
-        if (map.zoom<=8 && div.settings.mapDataSourceLoRes) {
+        if (map.resolution>600 && div.settings.mapDataSourceLoRes) {
           request += '&sq_size=10000';
           layerInfo.zoomLayerIdx = 0;
-        } else if (map.zoom<11 && div.settings.mapDataSourceLoRes) {
+        } else if (map.resolution>120 && div.settings.mapDataSourceLoRes) {
           request += '&sq_size=2000';
           layerInfo.zoomLayerIdx = 1;
-        } else if (map.zoom<13 && div.settings.mapDataSourceLoRes) {
+        } else if (map.resolution>30 && div.settings.mapDataSourceLoRes) {
           request += '&sq_size=1000';
           layerInfo.zoomLayerIdx = 2;
         } else {
