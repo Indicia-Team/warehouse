@@ -1,0 +1,20 @@
+<report
+    title="Get sightings for sample."
+    description="Report that returns sightings and their verification status for any given sample_id. Note that there is a none standard
+structure to the the samples and occurrences as each occurrence has its own sample which links to a parent sample."
+>
+  <query>
+    SELECT #columns#
+    FROM occurrences o
+      JOIN samples s ON s.id=o.sample_id
+    WHERE 
+      o.deleted = false AND s.parent_id=#sample_id#
+  </query>
+  <params>
+    <param name="sample_id" display="Sample Id" datatype="integer"/>
+  </params>
+  <columns>
+    <column name='id' display='Id' sql="o.id" datatype='integer'/>
+    <column name='verification_status' display='Status' sql='o.record_status' datatype='integer'/>
+  </columns>
+</report>
