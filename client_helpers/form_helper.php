@@ -169,7 +169,7 @@ $('#form-category-picker').change(function(evt) {
 
 $('#form-picker').change(function() {
   var details='', def;
-  $('#load-params').attr('disabled','');
+  $('#load-params').attr('disabled', false);
   $('#form-params').html('');
   if ($('#form-picker').val()!=='') {
     def = prebuilt_forms[$('#form-category-picker').val()][$('#form-picker').val()];
