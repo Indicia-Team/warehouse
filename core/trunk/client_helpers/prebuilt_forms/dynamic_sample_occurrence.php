@@ -1645,6 +1645,10 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         'validation' => "required",
         'blankText' => "Select...",
     ), $options);
+    // Choose autocomplete control if specified in $options
+if($options["locationControl"]="autocomplete")
+    $r = self::get_control_locationautocomplete($auth, $args, $tabAlias, $options);
+else
     $r = self::get_control_locationselect($auth, $args, $tabAlias, $options);
 
     //only show helpText once
