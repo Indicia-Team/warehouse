@@ -681,6 +681,32 @@ $('.ui-state-default').live('mouseout', function() {
     curl_setopt ($session, CURLOPT_URL, $url);
     if ($postargs!==null) {
       curl_setopt ($session, CURLOPT_POST, true);
+      if (is_array($postargs) && version_compare(phpversion(), '5.5.0') >= 0) {
+        // posting a file using @ prefix is deprecated as of version 5.5.0
+        foreach ($postargs as $key => $value) {
+          // loop through postargs to find files
+          if ($value[0] == '@') {
+            // found a file - could be in form @path/to/file;type=mimetype
+            $fileparts = explode(';', substr($value, 1));
+            $filename = $fileparts[0];
+            if (count($fileparts) == 1) {
+              // only filename specified
+              $postargs[$key] = new CurlFile($filename);
+            } else {
+              //mimetype may be specified too
+              $fileparam = explode('=', $fileparts[1]);
+              if ($fileparam[0] == 'type' && isset($fileparam[1])) {
+                // found a mimetype
+                $mimetype = $fileparam[1];
+                $postargs[$key] = new CurlFile($filename, $mimetype);
+              } else {
+                // the fileparam didn't seem to be a mimetype
+                $postargs[$key] = new CurlFile($filename);
+              }
+            }
+          }
+        }
+      } 
       curl_setopt ($session, CURLOPT_POSTFIELDS, $postargs);
     }
     curl_setopt($session, CURLOPT_HEADER, false);
