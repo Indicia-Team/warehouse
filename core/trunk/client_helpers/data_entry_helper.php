@@ -2800,6 +2800,7 @@ $('#$escaped').change(function(e) {
     }
     $occAttrControls = array();
     $occAttrs = array();
+    $occAttrControlsExisting = array();
     $taxonRows = array();
     $subSampleRows = array();
     // Load any existing sample's occurrence data into $entity_to_load
@@ -2827,8 +2828,15 @@ $('#$escaped').change(function(e) {
         $attrOptions['extraParams'] += array('query'=>json_encode(array('in'=>array('id'=>$options['attributeIds']))));
       }
       $attributes = self::getAttributes($attrOptions);
+      // Merge in the attribute options passed into the control which can override the warehouse config
+      if (isset($options['occAttrOptions'])) {
+        foreach ($options['occAttrOptions'] as $attrId => $attr) {
+          if (isset($attributes[$attrId]))
+            $attributes[$attrId] = array_merge($attributes[$attrId], $attr); 
+        }
+      }
       // Get the attribute and control information required to build the custom occurrence attribute columns
-      self::species_checklist_prepare_attributes($options, $attributes, $occAttrControls, $occAttrs);
+      self::species_checklist_prepare_attributes($options, $attributes, $occAttrControls, $occAttrControlsExisting, $occAttrs);
       $grid = '<span style="display: none;">Step 1</span>'."\n";
       if (isset($options['lookupListId'])) {
         $grid .= self::get_species_checklist_clonable_row($options, $occAttrControls, $attributes);
@@ -2938,7 +2946,7 @@ $('#$escaped').change(function(e) {
             $smpIdx++;
         }
         $idx = 0;
-        foreach ($occAttrControls as $attrId => $control) {
+        foreach ($occAttrControlsExisting as $attrId => $control) {
           $existing_value='';
           $valId=false;
           if (!empty(data_entry_helper::$entity_to_load)) {
@@ -2960,7 +2968,7 @@ $('#$escaped').change(function(e) {
               // go for the default, which has no suffix.
               $loadedCtrlFieldName = str_replace('-idx-:', $loadedTxIdx.':'.$existing_record_id, $attributes[$attrId]['fieldname']);
               $ctrlId = str_replace('-idx-:', "$options[id]-$txIdx:$existing_record_id", $attributes[$attrId]['fieldname']);
-            }            
+            }
             if (isset(self::$entity_to_load[$loadedCtrlFieldName]))
               $existing_value = self::$entity_to_load[$loadedCtrlFieldName];
           } else {
@@ -2968,18 +2976,17 @@ $('#$escaped').change(function(e) {
             $ctrlId = str_replace('-idx-', "$options[id]-$txIdx", $attributes[$attrId]['fieldname']);
             $loadedCtrlFieldName='-';
           }
-
-          if ($existing_value==='' && array_key_exists('default', $attributes[$attrId]))
+          if (!$existing_record_id && $existing_value==='' && array_key_exists('default', $attributes[$attrId]))
             // this case happens when reloading an existing record
             $existing_value = $attributes[$attrId]['default'];
           // inject the field name into the control HTML
           $oc = str_replace('{fieldname}', $ctrlId, $control);
           if ($existing_value<>"") {
             // For select controls, specify which option is selected from the existing value
-            if (substr($oc, 0, 7)=='<select') {
+            if (substr($oc, 0, 7)==='<select') {
               $oc = str_replace('value="'.$existing_value.'"',
                   'value="'.$existing_value.'" selected="selected"', $oc);
-            } else if(strpos($oc, 'checkbox') !== false) {
+            } else if(strpos($oc, 'type="checkbox"') !== false) {
               if($existing_value=="1")
                 $oc = str_replace('type="checkbox"', 'type="checkbox" checked="checked"', $oc);
             } else {
@@ -3810,10 +3817,12 @@ $('#".$options['id']." .species-filter').click(function(evt) {
    * @param array $options Options array as passed to the species checklist grid control.
    * @param array $attributes Array of custom attributes as loaded from the database.
    * @param array $occAttrControls Empty array which will be populated with the controls required for each 
-   * custom attribute.
-   * @param array $occAttrs Empty array which will be populated with the captions for each custom attribute.
+   * custom attribute. This copy of the control applies for new data and is populated with defaults.
+   * @param array $occAttrControlsExisting Empty array which will be populated with the controls required for each 
+   * custom attribute. This copy of the control applies for existing data and is not populated with defaults. 
+   * @param array $occAttrCaptions Empty array which will be populated with the captions for each custom attribute.
    */
-  public static function species_checklist_prepare_attributes($options, $attributes, &$occAttrControls, &$occAttrs) {
+  public static function species_checklist_prepare_attributes($options, $attributes, &$occAttrControls, &$occAttrControlsExisting, &$occAttrCaptions) {
     $idx=0;
     if (array_key_exists('occAttrs', $options))
       $attrs = $options['occAttrs'];
@@ -3837,11 +3846,11 @@ $('#".$options['id']." .species-filter').click(function(evt) {
       // Build array of attribute captions
       if (isset($attrOpts['label'])) {
         // override caption from warehouse with label from client
-        $occAttrs[$occAttrId] = $attrOpts['label'];
+        $occAttrCaptions[$occAttrId] = $attrOpts['label'];
         // but prevent it being added in grid
         unset($attrOpts['label']);
       } else {
-        $occAttrs[$occAttrId] = $attrDef['caption'];
+        $occAttrCaptions[$occAttrId] = $attrDef['caption'];
       }
       
       // Build array of attribute controls
@@ -3870,6 +3879,10 @@ $('#".$options['id']." .species-filter').click(function(evt) {
         $ctrlOptions = array_merge_recursive($ctrlOptions, $attrOpts);
       }
       $occAttrControls[$occAttrId] = self::outputAttribute($attrDef, $ctrlOptions);
+      // The controls for creating rows for existing occurrences must not use defaults.
+      unset($attrDef['default']);
+      unset($ctrlOptions['default']);
+      $occAttrControlsExisting[$occAttrId] = self::outputAttribute($attrDef, $ctrlOptions);
       $idx++;
     }
   }
@@ -3924,16 +3937,6 @@ $('#".$options['id']." .species-filter').click(function(evt) {
     $idx = 0;
     foreach ($occAttrControls as $attrId=>$oc) {
       $class = self::species_checklist_occ_attr_class($options, $idx, $attributes[$attrId]['caption']);
-      if (isset($attributes[$attrId]['default']) && !empty($attributes[$attrId]['default'])) {
-        $existing_value=$attributes[$attrId]['default'];
-        // For select controls, specify which option is selected from the existing value
-        if (substr($oc, 0, 7)=='<select') {
-          $oc = str_replace('value="'.$existing_value.'"',
-              'value="'.$existing_value.'" selected="selected"', $oc);
-        } else {
-          $oc = str_replace('value=""', 'value="'.$existing_value.'"', $oc);
-        }
-      }
       $r .= str_replace(array('{content}', '{class}', '{headers}'),
           array(str_replace('{fieldname}', "$fieldname:occAttr:$attrId", $oc), $class.'Cell', $options['id']."-attr$attrId-0"),
           $indicia_templates['attribute_cell']
@@ -6329,6 +6332,7 @@ if (errors$uniq.length>0) {
         return $item['default_float_value'];
       case 'I':
       case 'L':
+      case 'B':
         return $item['default_int_value'];
       case 'D':
       case 'V':
