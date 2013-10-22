@@ -655,7 +655,7 @@ mapInitialisationHooks.push(function(mapdiv) {
     if ($_GET['location_id']) {
       data_entry_helper::$javascript .= "
       if (!$('#imp-boundary-geom').val()) {
-        $('#no-boundary-warning').text('Please provide details of the count unit’s boundary.');
+        $('#no-boundary-warning').text('Please provide boundary details for this count unit.');
       }
       ";
       return '<div><h3><font color="red" id="no-boundary-warning"></font></h3></div>';
@@ -790,13 +790,13 @@ mapInitialisationHooks.push(function(mapdiv) {
         'sharing' => $sharing
       )); 
       $reportOptions = array(
-        'dataSource'=>'library/users/get_people_for_user_id',
+        'dataSource'=>'library/users/get_people_details_for_website_or_user',
         'readAuth'=>$auth['read'],
         'mode'=>'report',
         'extraParams' => array('user_id'=>$locationCreatedByData[0]['created_by_id'])
       );
       $userData = data_entry_helper::get_report_data($reportOptions);
-      return "<label>".lang::get('LANG_Location_Created_By').":</label> <label>".$userData[0]['fullname']."</label><br>";
+      return "<label>".lang::get('LANG_Location_Created_By').":</label> <label>".$userData[0]['fullname_firstname_first']."</label><br>";
     }
   }
   
