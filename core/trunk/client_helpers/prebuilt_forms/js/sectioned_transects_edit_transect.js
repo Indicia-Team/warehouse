@@ -234,9 +234,8 @@ deleteSection = function(section) {
   // subsamples are attached to the location and parent, but the location_name is not filled in, so don't need to change that
   // Update the code and the name for the locations.
   // Note that the subsections may not have been saved, so may not exist.
-  var i;
-  var numSections = $('[name='+indiciaData.numSectionsAttrName.replace(/:/g,'\\:')+']').val();
-  for(i = parseInt(section.substr(1))+1; i <= numSections; i++){
+  var numSections = parseInt($('[name='+indiciaData.numSectionsAttrName.replace(/:/g,'\\:')+']').val(),10);
+  for(var i = parseInt(section.substr(1))+1; i <= numSections; i++){
     if(typeof indiciaData.sections['S'+i] !== "undefined"){
       data = {'location:id':indiciaData.sections['S'+i].id,
                   'location:code':'S'+(i-1),
@@ -253,6 +252,42 @@ deleteSection = function(section) {
   data[indiciaData.numSectionsAttrName] = ''+(numSections-1);
   // reload the form when all ajax done.
   $('.remove-section').ajaxStop(function(event){    
+    window.location = window.location.href.split('#')[0]; // want to GET even if last was a POST. Plus don't want to go to the tab bookmark after #
+  });
+  $.post(indiciaData.ajaxFormPostUrl,
+          data,
+          function(data) { if (typeof(data.error)!=="undefined") { alert(data.error); }},
+          'json');
+};
+
+//insert a section
+insertSection = function(section) {
+  var data;
+  // section comes in like "S1"
+  // TODO Add progress bar
+  $('.insert-section').addClass('waiting-button');
+  // loop through all the subsections with a greater section number
+  // subsamples are attached to the location and parent, but the location_name is not filled in, so don't need to change that
+  // Update the code and the name for the locations.
+  // Note that the subsections may not have been saved, so may not exist.
+  var numSections = parseInt($('[name='+indiciaData.numSectionsAttrName.replace(/:/g,'\\:')+']').val(),10);
+  for(var i = parseInt(section.substr(1))+1; i <= numSections; i++){
+    if(typeof indiciaData.sections['S'+i] !== "undefined"){
+      data = {'location:id':indiciaData.sections['S'+i].id,
+                  'location:code':'S'+(i+1),
+                  'location:name':$('#location\\:name').val() + ' - ' + 'S'+(i+1),
+                  'website_id':indiciaData.website_id};
+      $.post(indiciaData.ajaxFormPostUrl,
+            data,
+            function(data) { if (typeof(data.error)!=="undefined") { alert(data.error); }},
+            'json');
+    }
+  }
+  // update the attribute value for number of sections.
+  data = {'location:id':$('#location\\:id').val(), 'website_id':indiciaData.website_id};
+  data[indiciaData.numSectionsAttrName] = ''+(numSections+1);
+  // reload the form when all ajax done.
+  $('.insert-section').ajaxStop(function(event){    
     window.location = window.location.href.split('#')[0]; // want to GET even if last was a POST. Plus don't want to go to the tab bookmark after #
   });
   $.post(indiciaData.ajaxFormPostUrl,
@@ -315,6 +350,10 @@ $(document).ready(function() {
       $('.remove-section').click(function(evt) {
         var current = $('#section-select-route li.selected').html();
         if(confirm(indiciaData.sectionDeleteConfirm + ' ' + current + '?')) deleteSection(current);
+      });
+      $('.insert-section').click(function(evt) {
+        var current = $('#section-select-route li.selected').html();
+        if(confirm(indiciaData.sectionInsertConfirm + ' ' + current + '?')) insertSection(current);
       });
       $('.erase-route').click(function(evt) {
         var current = $('#section-select-route li.selected').html(),
