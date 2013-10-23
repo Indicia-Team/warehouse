@@ -45,8 +45,14 @@ class iform_report_calendar_summary {
   /* This is the URL parameter used to pass the location_id filter through */
   private static $locationKey = 'locationID';
   
-  /* This is the URL parameter used to pass the location_id filter through */
+  /* This is the URL parameter used to pass the year filter through */
   private static $yearKey = 'year';
+
+  /* This is the URL parameter used to pass the caching filter through */
+  private static $cacheKey = 'caching';
+  
+  /* This is the URL parameter used to pass the download filter through */
+  private static $downloadKey = 'downloads';
   
   private static $removableParams = array();
   
@@ -1142,6 +1148,14 @@ class iform_report_calendar_summary {
         self::$yearKey => array(
               'name' => self::$yearKey,
               'value' => isset($_GET[self::$yearKey]) ? $_GET[self::$yearKey] : date('Y')
+        ),
+        self::$cacheKey => array(
+              'name' => self::$cacheKey,
+              'value' => isset($_GET[self::$cacheKey]) ? $_GET[self::$cacheKey] : 'true'
+        ),
+        self::$downloadKey => array(
+              'name' => self::$downloadKey,
+              'value' => isset($_GET[self::$downloadKey]) ? $_GET[self::$downloadKey] : 'false'
         )
       );
       // Force defaults for the user: if none provided default to user, if all then remove it.
@@ -1182,6 +1196,7 @@ class iform_report_calendar_summary {
     $prop = ($checkBox) ? 'attr("checked")' : 'val()';
     data_entry_helper::$javascript .="
 jQuery('#".$ctrlid."').change(function(){
+  var dialog = $('<p>Please wait whilst the next set of data is loaded.</p>').dialog({ title: 'Loading...', buttons: { 'OK': function() { dialog.dialog('close'); }}});
   // no need to update other controls on the page, as we jump off it straight away.
   window.location = rebuild_page_url(pageURI, \"".$urlparam."\", jQuery(this).$prop);
 });
@@ -1347,39 +1362,58 @@ jQuery('#".$ctrlid."').change(function(){
     foreach (self::$removableParams as $param=>$caption)
       if (isset($_GET[$param]) && $_GET[$param]==='true')
         $reportOptions['extraParams'][$param]='';
+    if(self::$siteUrlParams[self::$userKey]['value'] == '' && self::$siteUrlParams[self::$locationKey]['value'] == '') {
+      $checked=self::$siteUrlParams[self::$cacheKey]['value']==='true' ? ' checked="checked"' : '';
+      $retVal .= '<th><input type="checkbox" name="cachingParam" id="cachingParam" class="cachingParam"'.$checked.'/>'.
+            '<label for="cachingParam" title="'.lang::get("When fetching the full data set, selcting this improves performance by not going to the warehouse to get the data. Occassionally, even when selected, the data will be refreshed, which will appear to slow down the response.").'" >'.lang::get("Use cached data").'</label></th>';
+      $reportOptions['caching']=self::$siteUrlParams[self::$cacheKey]['value']==='true' ? true : 'store';
+      self::set_up_control_change('cachingParam', self::$cacheKey, array(), true);
+      
+      $checked=self::$siteUrlParams[self::$downloadKey]['value']==='true' ? ' checked="checked"' : '';
+      $retVal .= '<th><input type="checkbox" name="downloadParam" id="downloadParam" class="downloadParam"'.$checked.'/>'.
+            '<label for="downloadParam" title="'.lang::get("When fetching the full data set, unselecting this improves performance by not including the download data in the page. This extra data can lead to a significantly increase in download time.").'" >'.lang::get("Include Downloads").'</label></th>';
+      if(self::$siteUrlParams[self::$downloadKey]['value']!=='true'){
+        $reportOptions['includeRawGridDownload'] = false;
+        $reportOptions['includeRawListDownload'] = false;
+        $reportOptions['includeSummaryGridDownload'] = false;
+        $reportOptions['includeEstimatesGridDownload'] = false;
+        $reportOptions['includeListDownload'] = false;
+        unset($args['Download1Caption']);
+        unset($args['download_report_1']);
+        unset($args['Download2Caption']);
+        unset($args['download_report_2']);
+      }
+      self::set_up_control_change('downloadParam', self::$downloadKey, array(), true);
+    }
     $retVal.= '</tr></thead></table>';
     $reportOptions['highlightEstimates']=true;
-    if(self::$siteUrlParams[self::$userKey]['value'] == '' && self::$siteUrlParams[self::$locationKey]['value'] == '')
-      $reportOptions['caching']=true;
-    $reportOptions['downloads']=array();
+    $retVal .= report_helper::report_calendar_summary($reportOptions);
     if((isset($args['managerPermission']) && $args['managerPermission']!="" && user_access($args['managerPermission'])) ||
-          $reportOptions['location_list'] != '' || $reportOptions['user_id'] != '' || $reportOptions['location_id'] != '') {
-      data_entry_helper::$warehouse_proxy = ''; // TODO remove
+        $reportOptions['location_list'] != '' || $reportOptions['user_id'] != '' || $reportOptions['location_id'] != '') {
       global $indicia_templates;
-      $indicia_templates['report_download_link'] = '<a href="{link}"><button type="button">{caption}</button></a>';
+      $indicia_templates['report_download_link'] = '<th><a href="{link}"><button type="button">{caption}</button></a></th>';
       // format is assumed to be CSV
-      $downloadOptions = array('caption' => $args['Download1Caption'],
-              'readAuth'=>$auth,
-              'dataSource'=>$args["download_report_1"],
-              'extraParams'=>array_merge($reportOptions['extraParams'], array('date_from' => $reportOptions['date_start'], 'date_to' => $reportOptions['date_end'])),
-              'itemsPerPage' => false,
-              'filename' => $reportOptions['downloadFilePrefix'].preg_replace('/[^A-Za-z0-9]/i', '', $args['Download1Caption'])
+      $downloadOptions = array('caption' => isset($args['Download1Caption']) ? $args['Download1Caption'] : '',
+        'readAuth'=>$auth,
+        'dataSource'=> isset($args['download_report_1']) ? $args["download_report_1"] : '',
+        'extraParams'=>array_merge($reportOptions['extraParams'], array('date_from' => $reportOptions['date_start'], 'date_to' => $reportOptions['date_end'])),
+        'itemsPerPage' => false,
+        'filename' => $reportOptions['downloadFilePrefix'].preg_replace('/[^A-Za-z0-9]/i', '', isset($args['Download1Caption']) ? $args['Download1Caption'] : '')
       );
       // there are problems dealing with location_list as an array if empty, so connvert
       if($downloadOptions['extraParams']['location_list']=="")
         $downloadOptions['extraParams']['location_list']="(-1)";
       else $downloadOptions['extraParams']['location_list']='('.$downloadOptions['extraParams']['location_list'].')';
-      if(isset($args['Download1Caption']) && $args['Download1Caption'] != "" && isset($args['download_report_1']) && $args['download_report_1'] != ""){
-        $reportOptions['downloads'][] =  data_entry_helper::report_download_link($downloadOptions);
-      }
+      if(isset($args['Download1Caption']) && $args['Download1Caption'] != "" && isset($args['download_report_1']) && $args['download_report_1'] != "")
+        data_entry_helper::$javascript .="\njQuery('#downloads-table thead tr').append('".data_entry_helper::report_download_link($downloadOptions)."');\n";
       if(isset($args['Download2Caption']) && $args['Download2Caption'] != "" && isset($args['download_report_2']) && $args['download_report_2'] != ""){
         $downloadOptions['caption' ]=$args['Download2Caption'];
         $downloadOptions['dataSource']=$args["download_report_2"];
         $downloadOptions['filename']=$reportOptions['downloadFilePrefix'].preg_replace('/[^A-Za-z0-9]/i', '', $args['Download2Caption']);
-        $reportOptions['downloads'][] =  data_entry_helper::report_download_link($downloadOptions);
+        data_entry_helper::$javascript .="\njQuery('#downloads-table thead tr').append('".data_entry_helper::report_download_link($downloadOptions)."');\n";
       }
     }
-    $retVal .= report_helper::report_calendar_summary($reportOptions);
+
     return $retVal;
   }
 
