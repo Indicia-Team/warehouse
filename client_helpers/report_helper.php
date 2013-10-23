@@ -1739,6 +1739,8 @@ mapSettingsHooks.push(function(opts) { $setLocationJs
    * If sharing=me, then this must contain the Indicia user ID of the user to return data for.
    * <li><b>caching</b>
    * If true, then the response will be cached and the cached copy used for future calls. Default false.
+   * If 'store' then although the response is not fetched from a cache, the response will be stored in the cache for possible
+   * later use.
    * </li>
    * </ul>
 
@@ -1799,9 +1801,9 @@ mapSettingsHooks.push(function(opts) { $setLocationJs
       return (empty(parent::$warehouse_proxy) ? parent::$base_url : parent::$warehouse_proxy).$request;
     }
     else {
-      if (isset($options['caching']) && $options['caching']) {
+      if (isset($options['caching']) && $options['caching'] && $options['caching'] !== 'store') {
         // Get the URL params, so we know what the unique thing is we are caching
-        $query=parse_url(parent::$base_url.$request, PHP_URL_QUERY);                
+        $query=parse_url(parent::$base_url.$request, PHP_URL_QUERY);
         parse_str($query, $cacheOpts);
         unset($cacheOpts['auth_token']);
         unset($cacheOpts['nonce']);
@@ -2648,7 +2650,7 @@ if (typeof mapSettingsHooks!=='undefined') {
     // TODO : i8n
     // TODO invariant IDs and names prevents more than one on a page.
     // TODO convert to tabs when switching between chart and table.
-    $warnings = '<span style="display:none;">Starting report_calendar_summary : '.date(DATE_ATOM).'</span>';
+    $warnings = '<span style="display:none;">Starting report_calendar_summary : '.date(DATE_ATOM).'</span>'."\n";
     data_entry_helper::add_resource('jquery_ui');
     // there are some report parameters that we can assume for a calendar based request...
     // the report must have a date field, a user_id field if set in the configuration, and a location_id.
@@ -2664,7 +2666,7 @@ if (typeof mapSettingsHooks!=='undefined') {
       return '<p>Internal Error: Report request parameters not set up correctly.<br />'.(print_r($response,true)).'<p>';
     }
     // convert records to a date based array so it can be used when generating the grid.
-    $warnings .= '<span style="display:none;">Report request finish : '.date(DATE_ATOM).'</span>';
+    $warnings .= '<span style="display:none;">Report request finish : '.date(DATE_ATOM).'</span>'."\n";
     $records = $response['records'];
     $pageUrlParams = self::get_report_calendar_grid_page_url_params($options);
     $pageUrl = self::report_calendar_grid_get_reload_url($pageUrlParams);
@@ -2674,7 +2676,7 @@ var pageURI = \"".$_SERVER['REQUEST_URI']."\";
 function rebuild_page_url(oldURL, overrideparam, overridevalue) {
   var parts = oldURL.split('?');
   var params = [];
-  if(overridevalue!='') params.push(overrideparam+'='+overridevalue);
+  if(overridevalue!=='') params.push(overrideparam+'='+overridevalue);
   if(parts.length > 1) {
     var oldparams = parts[1].split('&');
     for(var i = 0; i < oldparams.length; i++){
@@ -2761,7 +2763,24 @@ update_controls();
       $year_end_yearDay = $year_end->format('z'); // day within year
       $maxWeekNo = 1+ceil(($year_end_yearDay-$weekOne_date_yearday)/7);
     }
-    $warnings .= '<span style="display:none;">Initial date processing complete : '.date(DATE_ATOM).'</span>';
+    $warnings .= '<span style="display:none;">Initial date processing complete : '.date(DATE_ATOM).'</span>'."\n";
+    $tableNumberHeaderRow = "";
+    $tableDateHeaderRow = "";
+    $downloadNumberHeaderRow = "";
+    $downloadDateHeaderRow = "";
+    $chartNumberLabels=array();
+    $chartDateLabels=array();
+    $fullDates=array();
+    for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
+      $tableNumberHeaderRow.= '<td class="week">'.$i.'</td>';
+      $tableDateHeaderRow.= '<td class="week">'.$firstWeek_date->format('M').'<br/>'.$firstWeek_date->format('d').'</td>';
+      $downloadNumberHeaderRow.= '%2C'.$i;
+      $downloadDateHeaderRow.= '%2C'.$firstWeek_date->format('Y-M-d');
+      $chartNumberLabels[] = "".$i;
+      $chartDateLabels[] = $firstWeek_date->format('M-d');
+      $fullDates[$i] = $firstWeek_date->format('Y-M-d');
+      $firstWeek_date->modify('+7 days');
+    }
     $summaryArray=array(); // this is used for the table output format
     $rawArray=array(); // this is used for the table output format
     // In order to apply the data combination and estmation processing, we assume that the the records are in taxon, location_id, sample_id order.
@@ -2786,7 +2805,7 @@ update_controls();
       	$this_date->modify('-'.(7+$this_weekday-$weekstart[1]).' day');
       // this_date now points to the start of the week. Next work out the week number.
       $this_yearday = $this_date->format('z');
-      $weekno = floor(($this_yearday-$weekOne_date_yearday)/7)+1;
+      $weekno = (int)floor(($this_yearday-$weekOne_date_yearday)/7)+1;
       if(isset($weekList[$weekno])){
         if(!in_array($record['location_name'],$weekList[$weekno])) $weekList[$weekno][] = $record['location_name'];
       } else $weekList[$weekno] = array($record['location_name']);
@@ -2808,16 +2827,20 @@ update_controls();
         } else $locationSamples[$record['location_id']][$weekno] = array($record['sample_id']);
       } else $locationSamples[$record['location_id']] = array($weekno => array($record['sample_id']));
     }
-    $warnings .= '<span style="display:none;">Records date pre-processing complete : '.date(DATE_ATOM).'</span>';
+    $warnings .= '<span style="display:none;">Records date pre-processing complete : '.date(DATE_ATOM).'</span>'."\n";
     $count = count($records);
-    if($count>0) $locationArray = self::report_calendar_summary_initLocation($minWeekNo, $maxWeekNo, $locationSamples[$records[0]['location_id']], $weekList);
-    $warnings .= '<span style="display:none;">Number of records processed : '.$count.' : '.date(DATE_ATOM).'</span>';
-    foreach($records as $record){
+    self::report_calendar_summary_initLoc1($minWeekNo, $maxWeekNo, $weekList);
+    if($count>0) $locationArray = self::report_calendar_summary_initLoc2($minWeekNo, $maxWeekNo, $locationSamples[$records[0]['location_id']]);
+    $warnings .= '<span style="display:none;">Number of records processed : '.$count.' : '.date(DATE_ATOM).'</span>'."\n";
+    $downloadList = 'Location%2C'.
+          ($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number' ? lang::get('Week Number').'%2C' : '').
+          lang::get('Week Commencing').'%2C'.lang::get('Species').'%2C'.lang::get('Type').'%2C'.lang::get('Value').'%0A';
+    foreach($records as $idex => $record){
       // If the taxon has changed
       if(($lastTaxonID && $lastTaxonID!=$record[$options['rowGroupID']]) ||
          ($lastLocation && $lastLocation!=$record['location_id'])) {
-        self::report_calendar_summary_processEstimates($summaryArray, $locationArray, $locationSamples[$lastLocation], $minWeekNo, $maxWeekNo, $lastTaxonID, $options);
-        $locationArray = self::report_calendar_summary_initLocation($minWeekNo, $maxWeekNo, $locationSamples[$record['location_id']], $weekList);
+        self::report_calendar_summary_processEstimates($summaryArray, $locationArray, $locationSamples[$lastLocation], $minWeekNo, $maxWeekNo, $fullDates, $lastTaxonID, $seriesLabels[$lastTaxonID], $options, $downloadList);
+        $locationArray = self::report_calendar_summary_initLoc2($minWeekNo, $maxWeekNo, $locationSamples[$record['location_id']]);
       }
       $lastTaxonID=$record[$options['rowGroupID']];
       $seriesLabels[$lastTaxonID]=$record[$options['rowGroupColumn']];
@@ -2840,7 +2863,7 @@ update_controls();
           $locationArray[$weekno]['sampleTotal'] += $count;
         $locationArray[$weekno]['total'] += $count;
         $locationArray[$weekno]['forcedZero'] = false;
-        $locationArray[$weekno]['locations'] = array($record['location_name']);
+        $locationArray[$weekno]['location'] = $record['location_name'];
       }
       $this_index = $record['date_index'];
       if($lastTaxonID != null) {
@@ -2852,9 +2875,9 @@ update_controls();
       }
     }
     if($lastTaxonID || $lastLocation) {
-      self::report_calendar_summary_processEstimates($summaryArray, $locationArray, $locationSamples[$lastLocation], $minWeekNo, $maxWeekNo, $lastTaxonID, $options);
+      self::report_calendar_summary_processEstimates($summaryArray, $locationArray, $locationSamples[$lastLocation], $minWeekNo, $maxWeekNo, $fullDates, $lastTaxonID, $seriesLabels[$lastTaxonID], $options, $downloadList);
     }
-    $warnings .= '<span style="display:none;">Estimate processing finished : '.date(DATE_ATOM).'</span>';
+    $warnings .= '<span style="display:none;">Estimate processing finished : '.date(DATE_ATOM).'</span>'."\n";
     if(count($summaryArray)==0)
       return $warnings.'<p>'.lang::get('No data returned for this period.').'</p>';
     $r="";
@@ -2890,24 +2913,7 @@ update_controls();
       if(isset($format['table'])) $format['table']['display']=true;
       else if(isset($format['chart'])) $format['chart']['display']=true;
     }
-    $chartDateLabels=array();
-    $chartNumberLabels=array();
-    $tableDateHeaderRow = "";
-    $tableNumberHeaderRow = "";
-    $downloadDateHeaderRow = "";
-    $downloadNumberHeaderRow = "";
-    $fullDates=array();
     $seriesData=array();
-    for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
-      $tableNumberHeaderRow.= '<td class="week">'.$i.'</td>';
-      $tableDateHeaderRow.= '<td class="week">'.$firstWeek_date->format('M').'<br/>'.$firstWeek_date->format('d').'</td>';
-      $downloadNumberHeaderRow.= '%2C'.$i;
-      $downloadDateHeaderRow.= '%2C'.$firstWeek_date->format('Y-M-d');
-      $chartNumberLabels[] = "".$i;
-      $chartDateLabels[] = $firstWeek_date->format('M-d');
-      $fullDates[$i] = $firstWeek_date->format('Y-M-d');
-      $firstWeek_date->modify('+7 days');
-    }
     $r .= "\n<div class=\"inline-control report-summary-controls\">";
     $userPicksFormat = count($format)>1 && !(isset($options['simultaneousOutput']) && $options['simultaneousOutput']);
     $userPicksSource = ($options['includeRawData'] ? 1 : 0) +
@@ -2997,9 +3003,9 @@ jQuery('[name=outputFormat]').change();\n";
     	}
     }
     $r .= "</div>\n";
-    $warnings .= '<span style="display:none;">Controls complete : '.date(DATE_ATOM).'</span>';
+    $warnings .= '<span style="display:none;">Controls complete : '.date(DATE_ATOM).'</span>'."\n";
     ksort($rawArray);
-    $warnings .= '<span style="display:none;">Raw data sort : '.date(DATE_ATOM).'</span>';
+    $warnings .= '<span style="display:none;">Raw data sort : '.date(DATE_ATOM).'</span>'."\n";
     if(isset($format['chart'])){
       $seriesToDisplay=(isset($options['outputSeries']) ? explode(',', $options['outputSeries']) : 'all');
       $seriesIDs=array();
@@ -3200,7 +3206,7 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
 ";
       }
       $r .= "</div>\n";
-      $warnings .= '<span style="display:none;">Output chart complete : '.date(DATE_ATOM).'</span>';
+      $warnings .= '<span style="display:none;">Output chart complete : '.date(DATE_ATOM).'</span>'."\n";
     }
     if(isset($format['table'])){
       $r .= '<div id="'.$options['tableContainerID'].'">';
@@ -3301,9 +3307,6 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
       }
       $summaryDataDownloadGrid="";
       $estimateDataDownloadGrid="";
-      $downloadList = 'Location%2C'.
-          ($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number' ? lang::get('Week Number').'%2C' : '').
-          lang::get('Week Commencing').'%2C'.lang::get('Species').'%2C'.lang::get('Type').'%2C'.lang::get('Value').'%0A';
       $r .= "\n<table id=\"".$options['tableID']."\" class=\"".$options['tableClass']."\" style=\"".($format['table']['display']?'':'display:none;')."\">";
       $r .= "\n<thead class=\"$thClass\">";
       if($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number'){
@@ -3369,16 +3372,6 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
               }
               if(!$options['includeSummaryData'] || ($options['includeEstimatesData'] && $summaryRow[$i]['hasEstimates'] && $summaryRow[$i]['estimates']!==$summaryValue))
                 $r.= '<span class="'.$estimatesClass.'">'.$summaryRow[$i]['estimates'].'</span>';
-              if($summaryValue !== ''){
-              	$downloadList .= implode(': ', $summaryRow[$i]['locations']).'%2C'.
-              			($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number' ? $i.'%2C' : '').
-              			$fullDates[$i].'%2C'.$seriesLabels[$seriesID].'%2C'.lang::get('Actual').'%2C'.$summaryValue.'%0A';
-              }
-              if($options['includeEstimatesData'] && $summaryRow[$i]['hasEstimates'] && ($summaryValue !== $summaryRow[$i]['estimates'] || count(array_diff($summaryRow[$i]['estimatesLocations'],$summaryRow[$i]['locations']))>0)){
-              	$downloadList .= implode(': ', $summaryRow[$i]['estimatesLocations']).'%2C'.
-              			($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number' ? $i.'%2C' : '').
-              			$fullDates[$i].'%2C'.$seriesLabels[$seriesID].'%2C'.lang::get('Estimate').'%2C'.$summaryRow[$i]['estimates'].'%0A';
-              }
               if($summaryValue !== '' && $summaryValue !== 0){
                 $total += $summaryValue;
                 $totalRow[$i] += $summaryValue;
@@ -3450,35 +3443,60 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
         $downloads .= '<th><a download="'.$options['downloadFilePrefix'].'estimateDataGrid.csv" href="data:application/csv;charset=utf-8,'.str_replace(' ','%20',$estimateDataDownloadGrid).'"><button type="button">Estimate Grid Data</button></a></th>'."\n";
       if(($options['includeSummaryData'] || $options['includeEstimatesData']) && $options['includeListDownload'])
         $downloads .= '<th><a download="'.$options['downloadFilePrefix'].'dataList.csv" href="data:application/csv;charset=utf-8,'.str_replace(' ','%20',$downloadList).'"><button type="button">List Data</button></a></th>'."\n";
-      if(isset($options['downloads']) && is_array($options['downloads']) && count($options['downloads'])>0) {
-        foreach($options['downloads'] as $download){
-          $downloads .= '<th>'.$download."</th>\n";
-        }
-      }
       if($downloads!=""){
       	$r .= '<br/><table id="downloads-table" class="ui-widget ui-widget-content ui-corner-all downloads-table"><thead class="ui-widget-header"><tr>';
         $r .= '<th>Downloads</th>'.$downloads."</tr></thead></table>\n";
       }
-      $warnings .= '<span style="display:none;">Output table complete : '.date(DATE_ATOM).'</span>';
+      $warnings .= '<span style="display:none;">Output table complete : '.date(DATE_ATOM).'</span>'."\n";
     }
     if(count($summaryArray)==0)
       $r .= '<p>'.lang::get('No data returned for this period.').'</p>';
-    $warnings .= '<span style="display:none;">Finish report_calendar_summary : '.date(DATE_ATOM).'</span>';
+    $warnings .= '<span style="display:none;">Finish report_calendar_summary : '.date(DATE_ATOM).'</span>'."\n";
     return $warnings.$r;
   }
 
   /**
-   * Creates an array of week numbers which have a record for the provided location.
-   * @param array $records Records to scan through.
-   * @param integer $locationID ID of the location to check for.
+   * Creates a default array of entries for any location.
+   * @param integer $minWeekNo start week number : index in array.
+   * @param integer $maxWeekNo end week number : index in array
+   * @param array $weekList list of samples in a particular week.
    */
-  private static function report_calendar_summary_initLocation($minWeekNo, $maxWeekNo, $inWeeks, $weekList){
-    $locationArray= array();
-    for($weekno = $minWeekNo; $weekno <= $maxWeekNo; $weekno++)
-        $locationArray[$weekno] = array('this_sample'=>-1, 'total'=>0, 'sampleTotal'=>0, 'max'=>0, 'numSamples'=>0, 'estimates'=>0, 'summary'=>false, 'hasData'=>isset($inWeeks[$weekno]), 'hasEstimates'=>false, 'forcedZero'=>isset($weekList[$weekno]), 'locations'=>isset($weekList[$weekno])?$weekList[$weekno]:array());
-    return $locationArray;
+  private static function report_calendar_summary_initLoc1($minWeekNo, $maxWeekNo, $weekList){
+  	$locationArray= array();
+  	for($weekno = $minWeekNo; $weekno <= $maxWeekNo; $weekno++)
+  		$locationArray[$weekno] = array('this_sample'=>-1,
+  				'total'=>0,
+  				'sampleTotal'=>0,
+  				'max'=>0,
+  				'numSamples'=>0,
+  				'estimates'=>0,
+  				'summary'=>false,
+  				'hasData'=>false,
+  				'hasEstimates'=>false,
+  				'forcedZero'=>isset($weekList[$weekno]),
+  				'location'=>'');
+  	self::$initLoc = $locationArray;
   }
-
+  
+  /*
+   * store the initial default location array, so doesn't have to be rebuilt each time.
+   */
+  private static $initLoc;
+  
+  /**
+   * Creates an array of entries for a specific location.
+   * @param integer $minWeekNo start week number : index in array.
+   * @param integer $maxWeekNo end week number : index in array
+   * @param array $weekList list of samples in a particular week for the location.
+   */
+  private static function report_calendar_summary_initLoc2($minWeekNo, $maxWeekNo, $inWeeks){
+  	$locationArray= self::$initLoc;
+  	for($weekno = $minWeekNo; $weekno <= $maxWeekNo; $weekno++) {
+  		$locationArray[$weekno]['hasData']=isset($inWeeks[$weekno]);
+    }
+  	return $locationArray;
+  }
+  
   /**
    * @todo: document this method
    * @param array $summaryArray
@@ -3489,7 +3507,7 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
    * @param string $taxon
     *@param array $options
    */
-  private static function report_calendar_summary_processEstimates(&$summaryArray, $locationArray, $numSamples, $minWeekNo, $maxWeekNo, $taxonID, $options) {
+  private static function report_calendar_summary_processEstimates(&$summaryArray, $locationArray, $numSamples, $minWeekNo, $maxWeekNo, $weekList, $taxonID, $taxon, $options, &$download) {
   	switch($options['summaryDataCombining']){
       case 'max':
         for($i = $minWeekNo; $i <= $maxWeekNo; $i++)
@@ -3541,6 +3559,7 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
       $firstAnchor = $anchors[0]!='' ? $anchors[0] : false;
     if(count($anchors)>1)
       $lastAnchor = $anchors[1]!='' ? $anchors[1] : false;
+    $thisLocation=false;
     for($i= $minWeekNo, $foundFirst=false; $i <= $maxWeekNo; $i++){
       if(!$foundFirst) {
         if(($locationArray[$i]['hasData'])){
@@ -3549,9 +3568,10 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
             $locationArray[$i-1]['hasEstimates'] = true;
           }
           $foundFirst=true;
-          $thisLocation = $locationArray[$i]['locations'];
         }
       }
+      if(!$thisLocation && $locationArray[$i]['numSamples'] > 0)
+        $thisLocation = $locationArray[$i]['location'];
       if($foundFirst){
        $locationArray[$i]['estimates'] = $locationArray[$i]['summary'];
        $locationArray[$i]['hasEstimates'] = true;
@@ -3592,25 +3612,30 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
     }
     // add the location array into the summary data.
     foreach($locationArray as $weekno => $data){
+      if($data['hasData']) {
+        $download .= str_replace(',','', $thisLocation).'%2C'.
+            ($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number' ? $weekno.'%2C' : '').
+            $weekList[$weekno].'%2C'.$taxon.'%2C'.lang::get('Actual').'%2C'.$data['summary'].'%0A';
+      } else if($options['includeEstimatesData'] && $data['hasEstimates']){
+        $download .= str_replace(',','', $thisLocation).'%2C'.
+            ($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number' ? $weekno.'%2C' : '').
+            $weekList[$weekno].'%2C'.$taxon.'%2C'.lang::get('Estimate').'%2C'.$data['estimates'].'%0A';
+      }
       if(isset($summaryArray[$taxonID])) {
         if(isset($summaryArray[$taxonID][$weekno])){
           $summaryArray[$taxonID][$weekno]['hasEstimates'] |= $data['hasEstimates'];
           $summaryArray[$taxonID][$weekno]['hasData'] |= $data['hasData'];
-          $summaryArray[$taxonID][$weekno]['summary'] += $data['summary'];
+          $summaryArray[$taxonID][$weekno]['summary'] += (int)$data['summary'];
           $summaryArray[$taxonID][$weekno]['estimates'] += (int)$data['estimates'];
-          if($summaryArray[$taxonID][$weekno]['forcedZero']) {
-            if(!$data['forcedZero'])
-            	$summaryArray[$taxonID][$weekno]['locations'] = $data['locations'];
-          } else if(!$data['forcedZero'])
-            $summaryArray[$taxonID][$weekno]['locations'] = array_merge($summaryArray[$taxonID][$weekno]['locations'], $data['locations']);
-          if($data['hasEstimates'])
-            $summaryArray[$taxonID][$weekno]['estimatesLocations'] = array_merge($summaryArray[$taxonID][$weekno]['estimatesLocations'], $thisLocation);
+          if($data['hasEstimates'] && !$data['hasData']) {
+            $summaryArray[$taxonID][$weekno]['estimatesLocations'] .= ($summaryArray[$taxonID][$weekno]['estimatesLocations']=""?' : ':'').$thisLocation;
+          }
           $summaryArray[$taxonID][$weekno]['forcedZero'] &= $data['forcedZero'];
         } else {
-          $summaryArray[$taxonID][$weekno] = array('summary'=>$data['summary'], 'estimates'=>(int)$data['estimates'], 'forcedZero' => $data['forcedZero'], 'hasEstimates' => $data['hasEstimates'], 'hasData' => $data['hasData'], 'locations' => $data['locations'], 'estimatesLocations' => ($data['hasEstimates'] ? $thisLocation : array()));
+          $summaryArray[$taxonID][$weekno] = array('summary'=>(int)$data['summary'], 'estimates'=>(int)$data['estimates'], 'forcedZero' => $data['forcedZero'], 'hasEstimates' => $data['hasEstimates'], 'hasData' => $data['hasData'], 'estimatesLocations' => ($data['hasEstimates'] && !$data['hasData'] ? $thisLocation : ''));
         }
       } else {
-        $summaryArray[$taxonID] = array($weekno => array('summary'=>$data['summary'], 'estimates'=>(int)$data['estimates'], 'forcedZero' => $data['forcedZero'], 'hasEstimates' => $data['hasEstimates'], 'hasData' => $data['hasData'], 'locations' => $data['locations'], 'estimatesLocations' => ($data['hasEstimates'] ? $thisLocation : array())));
+        $summaryArray[$taxonID] = array($weekno => array('summary'=>(int)$data['summary'], 'estimates'=>(int)$data['estimates'], 'forcedZero' => $data['forcedZero'], 'hasEstimates' => $data['hasEstimates'], 'hasData' => $data['hasData'], 'estimatesLocations' => ($data['hasEstimates'] && !$data['hasData'] ? $thisLocation : '')));
       }
     }
   }
