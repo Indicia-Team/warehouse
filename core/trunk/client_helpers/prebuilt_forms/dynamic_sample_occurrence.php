@@ -1582,7 +1582,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         if (!empty($options['personSiteAttrId'])) {
           $location_list_args['extraParams']['user_id']=$userId;
           $location_list_args['extraParams']['person_site_attr_id']=$options['personSiteAttrId'];
-          $location_list_args['report'] = 'library/locations/my_sites_lookup';
+          if(!isset($options['report'])) $location_list_args['report'] = 'library/locations/my_sites_lookup';
         } else 
           $location_list_args['extraParams']['created_by_id']=$userId;
       }
