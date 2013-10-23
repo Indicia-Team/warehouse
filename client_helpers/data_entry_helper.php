@@ -5219,10 +5219,11 @@ $('#$divId').tabs({
       //We handle taxon cells seperately. They are excluded from validation in tabinputs as they have no name.
       //So we need to include them seperately as they are an exception to the rule that the item should not be included in validation if it has no name.
       "      var current=$('#$divId').tabs('option', 'selected');
-      var taxonInputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+') .scTaxonCell').find('input,select').not(':disabled');
+      var taxonInputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+') .scTaxonCell').find('input,select').not(':disabled'),
+        elem=$('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select,textarea').not(':disabled,[name=],.scTaxonCell,:hidden');
       validationResultTaxon = (taxonInputs.length > 0 ) ? taxonInputs.valid() : true;
-      validationResult = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select,textarea').not(':disabled,[name=],.scTaxonCell,:hidden').valid();
-      isValid = (validationResultTaxon && validationResult)===1 ? true : false;
+      validationResult = elem.length===0 || elem.valid();
+      isValid = (validationResultTaxon && validationResult) ? true : false;
       //restore the clonable row
       clonableRow.css('display', display);
     } else {
