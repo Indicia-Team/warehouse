@@ -1033,6 +1033,10 @@ mapLocationSelectedHooks = [];
                     report[0].settings.extraParams.idlist=ids.join(',');
                     report.reload(true);
                   });
+                  $('table.report-grid tr').removeClass('selected');
+                  $.each(ids, function(idx, id) {
+                    $('table.report-grid tr#row'+id).addClass('selected');
+                  });
                 }
               } else if (div.settings.clickableLayersOutputMode==='reportHighlight'
                   && typeof indiciaData.reports!=="undefined") {
