@@ -26,3 +26,5 @@ echo $grid;
 <form action="<?php echo url::site().'person/create'; ?>" method="post">
 <input type="submit" value="New person" class="ui-corner-all ui-state-default button" />
 </form>
+<?php
+echo $upload_csv_form;
