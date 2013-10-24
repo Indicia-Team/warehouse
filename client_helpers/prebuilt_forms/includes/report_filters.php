@@ -147,36 +147,56 @@ class filter_where extends filter_base {
   
   /**
    * Define the HTML required for this filter's UI panel.
+   * Options available:
+   * * **personSiteAttrId** - a multi-value location attribute used to link users to their recording sites.
+   * * **includeSitesCreatedByUser** - boolean which defines if sites that the user is the creator of are available. Default TRUE.
+   * * **indexedLocationTypeIds** - array of location type IDs for types that are available and which are indexed in the spatial index builder
+   * * **otherLocationTypeIds** - array of location type IDs for types that are available and which are indexed in the 
    */
   public function get_controls($readAuth, $options) {
-    $options = array_merge(array(
-      'location_profile_field' => 'location'
-    ), $options);
     iform_load_helpers(array('map_helper'));
-    $location_list_args=array(
-      'label'=>lang::get('Predefined site'),
-      'fieldname'=>'location_id',
-      'extraParams'=>array('orderby'=>'name', 'view'=>'detail')+ $readAuth,
-      'fetchLocationAttributesIntoSample'=>false
-    );
-    $userId = hostsite_get_user_field('indicia_user_id');
-    if (!empty($userId)) {
-      if (!empty($options['personSiteAttrId'])) {
-        $location_list_args['extraParams']['user_id']=$userId;
-        $location_list_args['extraParams']['person_site_attr_id']=$options['personSiteAttrId'];
-        $location_list_args['report'] = 'library/locations/my_sites_lookup';
-      } else 
-        $location_list_args['extraParams']['created_by_id']=$userId;
-    }
+    $options = array_merge(array(
+      'includeSitesCreatedByUser' => TRUE,
+      'indexedLocationTypeIds' =>array(),
+      'otherLocationTypeIds' =>array()
+    ), $options);
+    data_entry_helper::$javascript .= "indiciaData.includeSitesCreatedByUser=" . ($options['includeSitesCreatedByUser'] ? 'true' : 'false') . ";\n";
+    data_entry_helper::$javascript .= "indiciaData.personSiteAttrId=" . (empty($options['personSiteAttrId']) ? 'false' : $options['personSiteAttrId']) . ";\n";
     $r = '<fieldset class="inline"><legend>'.lang::get('Filter by site or place').'</legend>';
     $r .= '<p class="context-instruct">' . lang::get('Choose from the following place filtering options. Please note that your access permissions ' .
         'are limiting the areas you are able to include.') . '</p>';
     $r .= '<fieldset class="exclusive">';
-    $r .= data_entry_helper::location_autocomplete($location_list_args);
+    // top level of sites selection
+    $sitesLevel1 = array();
+    $this->addProfileLocation($readAuth, 'location', $sitesLevel1);
+    $this->addProfileLocation($readAuth, 'location_expertise', $sitesLevel1);
+    $this->addProfileLocation($readAuth, 'location_collation', $sitesLevel1);
+    if (!empty($options['personSiteAttrId']) || $options['includeSitesCreatedByUser']) 
+      $sitesLevel1['my'] = lang::get('My sites').'...';
+    // The JS needs to know which location types are indexed so it can build the correct filter.
+    data_entry_helper::$javascript .= "indiciaData.indexedLocationTypeIds=".json_encode($options['indexedLocationTypeIds']).";\n";
+    $locTypes = array_merge($options['indexedLocationTypeIds'],$options['otherLocationTypeIds']);
+    $locTypes = data_entry_helper::get_population_data(array(
+      'table'=>'termlists_term',
+      'extraParams'=>$readAuth + array('view' => 'cache', 'query' => json_encode(array('in'=>array('id'=>$locTypes))))
+    ));
+    foreach ($locTypes as $locType)
+      $sitesLevel1[$locType['id']] = $locType['term'].'...';
+    $r .= data_entry_helper::select(array(
+      'fieldname'=>'site-type',
+      'label' => lang::get('Choose an existing site or location'),
+      'lookupValues' => $sitesLevel1,
+      'blankText' => '<'.lang::get('Please select').'>',
+      'suffixTemplate'=>'nosuffix'
+    ));
+    $r .= data_entry_helper::select(array(
+      'fieldname' => 'imp-location',
+      'lookupValues' => array()
+    ));
     $r .= '</fieldset>';
     $r .= '<fieldset class="exclusive">';
     $r .= data_entry_helper::text_input(array(
-      'label' => lang::get('Or, site name contains'),
+      'label' => lang::get('Or, search for site names containing'),
       'fieldname' => 'location_name'
     ));
     $r .= '</fieldset>';
@@ -193,25 +213,12 @@ class filter_where extends filter_base {
       $systems[$system] = lang::get("sref:$system");
     }
     $r .= data_entry_helper::sref_and_system(array(
-      'label' => lang::get('Or, map reference is'),
+      'label' => lang::get('Or, find records in map reference'),
       'fieldname' => 'sref',
       'systems' => $systems
     ));
-    $r .= '</fieldset>';
-    $locality = hostsite_get_user_field($options['location_profile_field']);
-    if ($locality) {
-      $loc = data_entry_helper::get_population_data(array(
-        'table' => 'location',
-        'extraParams' => $readAuth + array('id' => $locality)
-      ));
-      data_entry_helper::$javascript .= "indiciaData.myLocality='".$loc[0]['name']."';\n";
-      $r .= '<fieldset class="exclusive">';
-      $r .= '<label for="indexed_location_id">' . lang::get('Or, records in {1}:', $loc[0]['name']) . '</label> ' .
-          '<input id="indexed_location_id" type="checkbox" value="' . $locality . '" name="indexed_location_id"/>';
-      $r .= '</fieldset>';
-    }
-    $r .= '</fieldset>';
-    $r .= '<fieldset><legend>'.lang::get('Or, draw a boundary to find records within').'</legend>';
+    $r .= '</fieldset></fieldset>';
+    $r .= '<fieldset><legend>'.lang::get('Or, select a drawing tool in the map toolbar then draw a boundary to find intersecting records').'</legend>';
     if (empty($options['linkToMapDiv'])) {
       // need our own map on the popup
       // The js wrapper around the map div does not help here, since it breaks fancybox and fancybox is js only anyway.
@@ -236,8 +243,23 @@ class filter_where extends filter_base {
       $r .= '<div id="filter-map-container"></div>';
       data_entry_helper::$javascript .= "indiciaData.linkToMapDiv='".$options['linkToMapDiv']."';\n";
     }
-    $r .= '</fieldset>';    
+    $r .= '</fieldset>';
     return $r;
+  }
+  
+  /**
+   * Utility method to add one of the user profile location fields to an array of options.
+   */
+  private function addProfileLocation($readAuth, $profileField, &$outputArr) {
+    $locality = hostsite_get_user_field($profileField);
+    if ($locality) {
+      $loc = data_entry_helper::get_population_data(array(
+        'table' => 'location',
+        'extraParams' => $readAuth + array('id' => $locality)
+      ));
+      $loc=$loc[0];
+      $outputArr["loc:$loc[id]"]=$loc['name'];
+    }
   }
 }
 
@@ -421,7 +443,7 @@ class filter_source extends filter_base {
  *   filters table. Set to "default" to select their profile verification settings when sharing=verification.
  *   filter_id - can also be passed as URL parameter. Force the initial selection of a particular filter record in the filters table. 
  *   filterTypes - allows control of the list of filter panels available, e.g. to turn one off. Associative array keyed by category
- *   so that the filter panels can be grouped (use a blank key if not required). The array values are strings with a comma separated list
+ *   so that the filter panels can be grouped (use a blank key if not required). The array values are an array of or strings with a comma separated list
  *   of the filter types to included in the category - options are what, where, when, who, quality, source.
  *   filter-#name# - set the initial value of a report filter parameter #name#. 
  *   allowLoad - set to false to disable the load bar at the top of the panel.
@@ -528,6 +550,8 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
   if (!empty($options['filterTypes'])) {
     $filterModules = array();
     foreach ($options['filterTypes'] as $category => $list) {
+      // $list can be an array or comma separated list
+      $list=implode(',', $list);
       $paneNames = 'filter_'.str_replace(',', ',filter_', $list);
       $paneList = explode(',', $paneNames);
       $filterModules[$category]=array_intersect_key($filters, array_fill_keys($paneList,1));
@@ -555,7 +579,7 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
     $r .= '<img src="'.data_entry_helper::$images_path.'trash-22px.png" width="22" height="22" alt="Bin this filter" title="Bin this filter" class="button disabled" id="filter-delete"/>';
   }  
   $r .= '</div></div>'; // toolbar + clearfix
-  report_helper::$javascript .= "indiciaData.lang={};\n";
+  report_helper::$javascript .= "indiciaData.lang={pleaseSelect:\"".lang::get('Please select')."\"};\n";
   // create the hidden panels required to populate the popups for setting each type of filter up.
   $hiddenStuff = '';
   foreach ($filterModules as $category => $list) {
