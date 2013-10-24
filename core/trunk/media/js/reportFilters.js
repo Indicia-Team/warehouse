@@ -265,12 +265,15 @@ jQuery(document).ready(function($) {
     },
     where:{
       getDescription:function() {
-        if (indiciaData.filter.def.location_id) {
+        if (indiciaData.filter.def.remembered_location_name) {
+          return 'Records in ' + indiciaData.filter.def.remembered_location_name;
+        } else if (indiciaData.filter.def['imp-location:name']) { // legacy
           return 'Records in ' + indiciaData.filter.def['imp-location:name'];
+        } else if (indiciaData.filter.def.indexed_location_id) { 
+          // legacy location ID for the user's locality. In this case we need to hijack the site type drop down shortcuts to get the locality name
+          return $('#site-type option[value=loc\\:' + indiciaData.filter.def.indexed_location_id + ']').text();
         } else if (indiciaData.filter.def.location_name) {
           return 'Records in places containing "' + indiciaData.filter.def.location_name + '"';
-        } else if (indiciaData.filter.def.indexed_location_id) {
-          return 'Records in ' + indiciaData.myLocality;
         } else if (indiciaData.filter.def.sref) {
           return 'Records in square ' + indiciaData.filter.def.sref;
         } else if (indiciaData.filter.def.searchArea) {
@@ -299,6 +302,31 @@ jQuery(document).ready(function($) {
       },
       applyFormToDefinition:function() {
         var geoms=[], geom;
+        delete indiciaData.filter.def.location_id;
+        delete indiciaData.filter.def.indexed_location_id;
+        delete indiciaData.filter.def.remembered_location_name;
+        delete indiciaData.filter.def.searchArea;
+        delete indiciaData.filter.def['imp-location:name'];
+        // if we've got a location name to search for, no need to do anything else as the where filters are exclusive.
+        if (indiciaData.filter.def.location_name) {
+          return;
+        }
+        if ($('#site-type').val()!=='') {
+          if ($('#site-type').val().match(/^loc:[0-9]+$/)) {
+            indiciaData.filter.def.indexed_location_id=$('#site-type').val().replace(/^loc:/, '');
+            indiciaData.filter.def.remembered_location_name = $('#site-type :selected').text();
+            return;
+          } else if ($('#imp-location').val()) {
+            if ($.inArray(parseInt($('#site-type').val()), indiciaData.indexedLocationTypeIds)!==-1) {
+              indiciaData.filter.def.indexed_location_id=$('#imp-location').val();
+            } else {
+              indiciaData.filter.def.location_id=$('#imp-location').val();
+            }
+            indiciaData.filter.def.remembered_location_name = $('#imp-location :selected').text();
+            return;
+          }
+        }
+        
         $.each(indiciaData.mapdiv.map.editLayer.features, function(i, feature) {
           // ignore features with a special purpose, e.g. the selected record when verifying
           if (typeof feature.tag==="undefined") {
@@ -309,9 +337,7 @@ jQuery(document).ready(function($) {
             }
           }
         });
-        if (geoms.length===0 || indiciaData.filter.def.location || indiciaData.filter.def.location_id) {
-          indiciaData.filter.def.searchArea = '';
-        } else {
+        if (geoms.length>0) {
           if (geoms[0].CLASS_NAME === 'OpenLayers.Geometry.Polygon') {
             geom = new OpenLayers.Geometry.MultiPolygon(geoms);
           } else if (geoms[0].CLASS_NAME === 'OpenLayers.Geometry.LineString') {
@@ -332,7 +358,14 @@ jQuery(document).ready(function($) {
         indiciaData.disableMapDataLoading=true;
         indiciaData.mapOrigCentre=indiciaData.mapdiv.map.getCenter();
         indiciaData.mapOrigZoom=indiciaData.mapdiv.map.getZoom();
-        $('#location_id').attr('checked', indiciaData.filter.def.location_id ? true : false);
+        if (indiciaData.filter.def.indexed_location_id && 
+            $("#site-type option[value='loc:"+indiciaData.filter.def.indexed_location_id+"']").length > 0) {
+          $('#site-type').val('loc:'+indiciaData.filter.def.indexed_location_id);
+        } else if (indiciaData.filter.def.indexed_location_id || indiciaData.filter.def.location_id) {
+          var locationToLoad=indiciaData.filter.def.indexed_location_id ? indiciaData.filter.def.indexed_location_id : indiciaData.filter.def.location_id;
+          $('#site-type').val(indiciaData.filter.def['site-type']);
+          changeSiteType(locationToLoad);
+        }
         // max size the map
         $('#filter-map-container').css('width', $(window).width()-160);
         $('#filter-map-container').css('height', $(window).height()-280);
@@ -348,8 +381,7 @@ jQuery(document).ready(function($) {
         // select the first draw... tool if allowed to draw on the map by permissions, else select navigate
         $.each(indiciaData.mapdiv.map.controls, function(idx, ctrl) {        
           if (context && (((context.sref || context.searchArea) && ctrl.CLASS_NAME.indexOf('Control.Navigate')>-1) ||
-              ((!context.sref && !context.searchArea) && ctrl.CLASS_NAME.indexOf('Control.Draw')>-1)))
-          {
+              ((!context.sref && !context.searchArea) && ctrl.CLASS_NAME.indexOf('Control.Draw')>-1))) {
             ctrl.activate();
             return false;
           }
@@ -376,7 +408,15 @@ jQuery(document).ready(function($) {
           if (indiciaData.mapdiv.map.projection.getCode() !== indiciaData.mapdiv.indiciaProjection.getCode()) {
             feature.geometry.transform(indiciaData.mapdiv.indiciaProjection, indiciaData.mapdiv.map.projection);
           }
-          indiciaData.mapdiv.map.editLayer.addFeatures([feature]);
+          if (indiciaData.mapdiv) {
+            indiciaData.mapdiv.map.editLayer.addFeatures([feature]);
+          } else {
+            mapInitialisationHooks.push(function() {indiciaData.mapdiv.map.editLayer.addFeatures([feature]);});            
+          }
+        } else if (indiciaData.filter.def.location_id) {
+          indiciaData.mapdiv.locationSelectedInInput(indiciaData.mapdiv, indiciaData.filter.def.location_id);
+        } else if (indiciaData.filter.def.indexed_location_id) {
+          indiciaData.mapdiv.locationSelectedInInput(indiciaData.mapdiv, indiciaData.filter.def.indexed_location_id);
         }
       }
     },
@@ -428,7 +468,7 @@ jQuery(document).ready(function($) {
       getDescription:function() {
         var r=[];
         if (indiciaData.filter.def.quality!=='all') {
-          r.push($('#quality-filter option[value='+indiciaData.filter.def.quality+']').html());
+          r.push($('#quality-filter option[value='+indiciaData.filter.def.quality.replace('!','\\!')+']').html());
         }
         if (indiciaData.filter.def.autochecks==='F') {
           r.push(indiciaData.lang.AutochecksFailed);
@@ -607,19 +647,48 @@ jQuery(document).ready(function($) {
   });
   $('#taxon_group_list\\:add').click(function() {$('#taxa_taxon_list_list\\:sublist').children().remove();});
   
-  // Checking the checkbox linked to my locality loads the locality boundary onto the map.
-  $('#location_id').change(function() {
-    if ($('#location_id').attr('checked')) {
-      // selected to load the preferred locality. So load the boundary...
-      $.getJSON(indiciaData.read.url + 'index.php/services/data/location/' + $('#location_id').val() +
-              '?mode=json&view=detail&auth_token='+indiciaData.read.auth_token+'&nonce='+indiciaData.read.nonce+'&callback=?', function(data) {
-        var parser = new OpenLayers.Format.WKT(), feature = parser.read(data[0].boundary_geom);
-        if (indiciaData.mapdiv.map.projection.getCode() !== indiciaData.mapdiv.indiciaProjection.getCode()) {
-          feature.geometry.transform(indiciaData.mapdiv.indiciaProjection, indiciaData.mapdiv.map.projection);
+  function loadSites(filter, idToSelect) {
+    $.ajax({
+      dataType: "json",
+      url: indiciaData.read.url + 'index.php/services/data/location',
+      data: 'mode=json&view=list&auth_token='+indiciaData.read.auth_token+'&nonce='+indiciaData.read.nonce+'&'+filter+'&callback=?',
+      success: function(data) {
+        $.each(data, function(idx, loc) {
+          $('#imp-location').append('<option value="'+loc.id+'">' + loc.name + '</option>');
+        });
+        if (typeof idToSelect !== "undefined") {
+          $('#imp-location').val(idToSelect);
         }
-        indiciaData.mapdiv.map.editLayer.addFeatures([feature]);
-      });
+      }
+    });
+  }
+  
+  function changeSiteType(idToSelect) {
+    $('#imp-location').children().remove();
+    $('#imp-location').append('<option value="">'+indiciaData.lang.pleaseSelect+'</option>');
+    if ($('#site-type').val()==='my') {
+      // my sites
+      $('#imp-location').show();
+      if (indiciaData.includeSitesCreatedByUser) {
+        loadSites('view=detail&created_by_id='+indiciaData.user_id, idToSelect);
+      }
+    } else if ($('#site-type').val().match(/^[0-9]+$/)) {
+      // a location_type_id selected
+      $('#imp-location').show();      
+      loadSites('location_type_id='+$('#site-type').val(), idToSelect);
+    } else {
+      // a shortcut site from the site-types list
+      $('#imp-location').hide();
+      if ($('#site-type').val().match(/^loc:[0-9]+$/)) {
+        // add a dummy location entry and pick it, so we can fire change to redraw the map
+        $('#imp-location').children().append('<option selected="selected" value="'+$('#site-type').val().replace(/^loc:/, '')+'">x</option>');
+        indiciaData.mapdiv.locationSelectedInInput(indiciaData.mapdiv, $('#site-type').val().replace(/^loc:/, ''));
+      }
     }
+  }
+  
+  $('#site-type').change(function(e) {
+    changeSiteType();
   });
   
   function updateSurveySelection() {
@@ -959,24 +1028,26 @@ jQuery(document).ready(function($) {
     $(e.currentTarget).find('.fb-apply').data('clicked', true);
     var arrays={}, arrayName;
     // persist each control value into the stored settings
-    $.each($(e.currentTarget).find(':input'), function(idx, ctrl) {
-      if ($(ctrl).attr('type')!=='checkbox' || $(ctrl).attr('checked')) {
-        // array control?
-        if ($(ctrl).attr('name').match(/\[\]$/)) {
-          // store array control data to handle later
-          arrayName=$(ctrl).attr('name').substring(0, $(ctrl).attr('name').length-2);
-          if (typeof arrays[arrayName]==="undefined") {
-            arrays[arrayName] = [];
+    $.each($(e.currentTarget).find(':input[name]'), function(idx, ctrl) {
+      if (!$(ctrl).hasClass('olButton')) { // skip open layers switcher
+        if ($(ctrl).attr('type')!=='checkbox' || $(ctrl).attr('checked')) {
+          // array control?
+          if ($(ctrl).attr('name').match(/\[\]$/)) {
+            // store array control data to handle later
+            arrayName=$(ctrl).attr('name').substring(0, $(ctrl).attr('name').length-2);
+            if (typeof arrays[arrayName]==="undefined") {
+              arrays[arrayName] = [];
+            }
+            arrays[arrayName].push($(ctrl).val());
+          } else {
+            // normal control
+            indiciaData.filter.def[$(ctrl).attr('name')]=$(ctrl).val();
           }
-          arrays[arrayName].push($(ctrl).val());
-        } else {
-          // normal control
-          indiciaData.filter.def[$(ctrl).attr('name')]=$(ctrl).val();
         }
-      }
-      else {
-        // an unchecked checkbox so clear it's value
-        indiciaData.filter.def[$(ctrl).attr('name')]='';
+        else {
+          // an unchecked checkbox so clear it's value
+          indiciaData.filter.def[$(ctrl).attr('name')]='';
+        }
       }
     });
     // convert array values to comma lists
@@ -1016,7 +1087,7 @@ jQuery(document).ready(function($) {
           $('#select-filter').val(indiciaData.filter.id);
           if ($('#select-filter').val()==='') {
             // this is a new filter, so add to the select list
-            $('#select-filter').append('<option val="' + indiciaData.filter.id + '" selected="selected">' + indiciaData.filter.title + '</option>');
+            $('#select-filter').append('<option value="' + indiciaData.filter.id + '" selected="selected">' + indiciaData.filter.title + '</option>');
           }
         } else {
           var handled = false;
@@ -1046,6 +1117,7 @@ jQuery(document).ready(function($) {
     );
   };
   
+  $('#imp-location').hide();
   $('#filter-save').click(saveFilter);
   
   filterChange();
