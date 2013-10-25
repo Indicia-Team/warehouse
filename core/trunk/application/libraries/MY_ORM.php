@@ -1435,9 +1435,8 @@ class ORM extends ORM_Core {
     $attrFk = $this->object_name.'_attribute_id';
     $attrValueModel->$attrFk = $attrId;
     $wantToUpdateAttrMetadata = count($exactMatches)!==count($fieldsWithValuesInSubmission);
-    if ($wantToUpdateAttrMetadata)
-      $this->set_metadata($attrValueModel);
-
+    if (!$wantToUpdateAttrMetadata)
+      $attrValueModel->wantToUpdateMetadata=false;
     try {
       $v=$attrValueModel->validate(new Validation($attrValueModel->as_array()));
     } catch (Exception $e) {
