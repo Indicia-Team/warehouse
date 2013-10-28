@@ -2847,7 +2847,7 @@ update_controls();
       $lastLocation=$record['location_id'];
       $lastSample=$record['sample_id'];
       $weekno = $record['weekno'];
-      if($lastTaxonID == null) $count = 0;
+      if($lastTaxonID === null) $count = 0;
       else if(isset($options['countColumn']) && $options['countColumn']!=''){
         $count = (isset($record[$options['countColumn']])?$record[$options['countColumn']]:0);
       } else
@@ -3612,14 +3612,16 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
     }
     // add the location array into the summary data.
     foreach($locationArray as $weekno => $data){
-      if($data['hasData']) {
-        $download .= str_replace(',','', $thisLocation).'%2C'.
+      if($taxonID !== null){ // don't include lines for the sample only entries
+        if($data['hasData']) {
+          $download .= str_replace(',','', $thisLocation).'%2C'.
             ($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number' ? $weekno.'%2C' : '').
             $weekList[$weekno].'%2C'.$taxon.'%2C'.lang::get('Actual').'%2C'.$data['summary'].'%0A';
-      } else if($options['includeEstimatesData'] && $data['hasEstimates']){
-        $download .= str_replace(',','', $thisLocation).'%2C'.
+        } else if($options['includeEstimatesData'] && $data['hasEstimates']){
+          $download .= str_replace(',','', $thisLocation).'%2C'.
             ($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number' ? $weekno.'%2C' : '').
             $weekList[$weekno].'%2C'.$taxon.'%2C'.lang::get('Estimate').'%2C'.$data['estimates'].'%0A';
+        }
       }
       if(isset($summaryArray[$taxonID])) {
         if(isset($summaryArray[$taxonID][$weekno])){

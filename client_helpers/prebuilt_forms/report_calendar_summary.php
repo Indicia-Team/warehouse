@@ -1111,7 +1111,7 @@ class iform_report_calendar_summary {
       // if account comes from cache, then it is an array, if from drupal an object.
       if(!is_array($account))
         $account = get_object_vars($account);
-      if($account !== true && $account['uid']!==$user->uid){
+      if($account !== true && $id!==$user->uid){
         $ctrl .= '<option value='.$id.' class="user-select-option" '.($siteUrlParams[self::$userKey]['value']==$id ? 'selected="selected" ' : '').'>'.$account['name'].'</option>';
       }
     }
@@ -1122,7 +1122,12 @@ class iform_report_calendar_summary {
         break;
       case "branch" : $options['downloadFilePrefix'] .= lang::get('MyBranch').'_';
         break;
-      default : $options['downloadFilePrefix'] .= preg_replace('/[^A-Za-z0-9]/i', '', $userList[$siteUrlParams[self::$userKey]['value']]['name']).'_';
+      default :
+        // if account comes from cache, then it is an array, if from drupal an object.
+        $account = is_array($userList[$siteUrlParams[self::$userKey]['value']]) ? 
+                     $userList[$siteUrlParams[self::$userKey]['value']] :
+                     get_object_vars($userList[$siteUrlParams[self::$userKey]['value']]);
+      	$options['downloadFilePrefix'] .= preg_replace('/[^A-Za-z0-9]/i', '', $account['name']).'_';
         break;
     }
     $ctrl.='</select>';
