@@ -9,7 +9,7 @@
       LEFT JOIN locations_websites lw ON lw.location_id=l.id 
       LEFT JOIN locations lLatestBoundaryChild on lLatestBoundaryChild.id in (select max(id) from locations where parent_id=l.id AND location_type_id=#count_unit_boundary_type_id#) 
       --Get the preferred boundary id value
-      LEFT JOIN location_attribute_values prefAttrVal on prefAttrVal.location_id = l.id and prefAttrVal.location_attribute_id = #preferred_boundary_attribute_id#   
+      LEFT JOIN location_attribute_values prefAttrVal on prefAttrVal.location_id = l.id and prefAttrVal.location_attribute_id = #preferred_boundary_attribute_id# AND prefAttrVal.deleted=false 
       --If a preferred boundary is not set, then we assumed latest boundary is preferred
       LEFT JOIN locations preferredLoc on preferredLoc.id = COALESCE(prefAttrVal.int_value,lLatestBoundaryChild.id)
       LEFT JOIN locations lLatestBoundaryChildNormalUser on lLatestBoundaryChildNormalUser.created_on in 
