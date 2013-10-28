@@ -24,8 +24,7 @@
       parent.id as sample_id,
       l.name as site_name,
       s.id as subsample_id,
-      split_part(l2.name, ' - ', 2) as section_name,
-      parent.entered_sref,
+      l2.code as section_name,
       parent.date_start,
       parent.date_end,
       parent.date_type,
@@ -61,7 +60,6 @@
     <column name='site_name' display='Transect' />
     <column name='subsample_id' visible='false' />
     <column name='section_name' display='Section' />
-    <column name='entered_sref' display='Grid Ref.' />
     <column name='date' display='Date' />
     <column name='taxon_meaning_id' visible='false' />
     <column name='taxon' display='Latin Name' visible="false" />    
