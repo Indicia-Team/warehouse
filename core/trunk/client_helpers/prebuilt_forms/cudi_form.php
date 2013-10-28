@@ -937,7 +937,7 @@ mapInitialisationHooks.push(function(mapdiv) {
       else
         $admin_mode=0;
       iform_load_helpers(array('report_helper')); 
-      //When the "Set Preferred and Save Now button" is clicked, put the drop-down value into the textbox of the preferred count unit location attribute.
+      //When the "Over-write Boundary and Save" is clicked, put the drop-down value into the textbox of the preferred count unit location attribute.
       //Also automatically select the checkbox that indicates we are updating rather creating a boundary. Then hide the checkbox to avoid it being tampered with as save occurs.
       data_entry_helper::$javascript .= "var preferredWhenScreenLoads = $('#locAttr\\\\:".$args['preferred_boundary_attribute_id']."').val(); 
                                          $('#set-preferred').click( function() {
@@ -1028,10 +1028,14 @@ mapInitialisationHooks.push(function(mapdiv) {
                                           }\n";
 
         $r .= "</select>\n";
+        /*
+        //This button is not required on the form anymore, but just comment out the button code in case it is required again.
         if ($admin_mode)
           $r .= '<form type="post">'.
-                  "<input type='submit' id='set-preferred' class='indicia-button'value='Set Preferred and Save Now'>".
+                  "<input type='submit' id='set-preferred' class='indicia-button'value='Over-write Boundary and Save'>".
                 "</form>";
+        
+        */
         $r .= "<br>";
         $r .= '<label for="preferred_boundary">'.lang::get('LANG_Location_Preferred_Boundary').'</label> ';
         $r .= '<label id="preferred_boundary" name="preferred_boundary"></label>';
