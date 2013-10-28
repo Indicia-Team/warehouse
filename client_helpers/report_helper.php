@@ -2896,6 +2896,13 @@ update_controls();
           self::add_resource('jqplot_bar');
           $renderer='$.jqplot.BarRenderer';
           break;
+        case 'pie' :
+          self::add_resource('jqplot_pie');
+          $renderer='$.jqplot.PieRenderer';
+          break;
+        default :
+          $renderer='$.jqplot.LineRenderer';
+          break;
         // default is line
       }
       self::add_resource('jqplot_category_axis_renderer');
@@ -2934,7 +2941,7 @@ update_controls();
     	// don't need to set URI as only 1 option.
     } else {
     	$r .= lang::get('View ');
-    	if($userPicksFormat) {
+    	if($userPicksSource) {
     		$r .= '<select id="outputSource" name="outputSource">'.
     				($options['includeRawData'] ? '<option id="viewRawData" value="raw"/>'.lang::get('raw data').'</option>' : '').
     				($options['includeSummaryData'] ? '<option id="viewSummaryData" value="summary"/>'.lang::get('summary data').'</option>' : '').
@@ -2957,7 +2964,8 @@ update_controls();
         jQuery('#".$options['tableID']."-raw,#".$options['chartID']."-raw,.summary,#".$options['chartID']."-summary').hide();
         break;
    }
-   replot();
+   if(jQuery('#outputFormat').val() != 'table')
+     replot();
 });\n".
 (isset($options['outputSource']) ?
 "$('#outputSource').val('".$options['outputSource']."').change();\n" :
@@ -2976,7 +2984,7 @@ update_controls();
             $r .= lang::get(' as a ').'<select id="outputFormat" name="outputFormat">'.
                   '<option '.($defaultTable?'selected="selected"':'').' value="table"/>'.lang::get('table').'</option>'.
                   '<option '.(!$defaultTable?'selected="selected"':'').' value="chart"/>'.lang::get('chart').'</option>'.
-                  '</select>';
+                  '</select>'; // not providing option for both at moment
             data_entry_helper::$javascript .= "jQuery('[name=outputFormat]').change(function(){
   pageURI = rebuild_page_url(pageURI, \"outputFormat\", jQuery(this).val());
   update_controls();
