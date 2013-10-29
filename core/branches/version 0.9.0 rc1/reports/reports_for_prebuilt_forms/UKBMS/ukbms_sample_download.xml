@@ -22,6 +22,7 @@
     <tabColumn name='date_type' visible='false'/>
     <tabColumn name='date' func="''" display='Visit date'/> // dummy field for the vague date processing, here so appears at logical position and with reasonable description in the report
     <tabColumn name='comment' display='Notes'/>
+    <tabColumn name='entered_sref' display='Grid Ref.' />
     <subTable tablename="locations" where="('#location_id#'='' OR CAST(#this#.id AS character varying) = '#location_id#')
         AND ('#location_list#'='(-1)' OR #this#.id IN #location_list#)" > // allow deleted Sites!
       <tabColumn name='id' visible='false' />
