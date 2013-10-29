@@ -1625,13 +1625,16 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    * Get the location control as a select dropdown.
    */
   protected static function get_control_locationselect($auth, $args, $tabAlias, $options) {
-    $location_list_args=array_merge_recursive(array(
-        'extraParams'=>array_merge(array('orderby'=>'name'), $auth['read'])
-    ), $options);
+    if (isset($options['extraParams'])) {
+      foreach ($options['extraParams'] as $key => &$value)
+        $value = apply_user_replacements($value);
+      $options['extraParams'] = array_merge(array('orderby'=>'name'), $auth['read'], $options['extraParams']);
+    } else 
+      $options['extraParams'] = array_merge(array('orderby'=>'name'), $auth['read']);
     $location_list_args = array_merge(array(
         'label'=>lang::get('LANG_Location_Label'),
         'view'=>'detail'
-    ), $location_list_args);
+    ), $options);
     return data_entry_helper::location_select($location_list_args);
   }
 
