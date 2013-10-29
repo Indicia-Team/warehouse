@@ -287,7 +287,7 @@ class iform_dynamic {
         $r .= '<div class="page-notice ui-state-highlight ui-corner-all">You are submitting a record of '."$singleSpeciesLabel</div>";
       // For wizard include the tab title as a header.
       if ($args['interface']=='wizard') {
-        $r .= '<h1>'.$headerOptions['tabs'][$tabalias].'</h1>';        
+        $r .= '<h1>'.$headerOptions['tabs']['#'.$tabalias].'</h1>';        
       }
       $r .= $tabContent;    
       if (isset($args['verification_panel']) && $args['verification_panel'] && $pageIdx==count($tabHtml)-1)
