@@ -1373,10 +1373,8 @@ jQuery('#".$ctrlid."').change(function(){
             '<label for="cachingParam" title="'.lang::get("When fetching the full data set, selcting this improves performance by not going to the warehouse to get the data. Occassionally, even when selected, the data will be refreshed, which will appear to slow down the response.").'" >'.lang::get("Use cached data").'</label></th>';
       $reportOptions['caching']=self::$siteUrlParams[self::$cacheKey]['value']==='true' ? true : 'store';
       self::set_up_control_change('cachingParam', self::$cacheKey, array(), true);
-      
+
       $checked=self::$siteUrlParams[self::$downloadKey]['value']==='true' ? ' checked="checked"' : '';
-      $retVal .= '<th><input type="checkbox" name="downloadParam" id="downloadParam" class="downloadParam"'.$checked.'/>'.
-            '<label for="downloadParam" title="'.lang::get("When fetching the full data set, unselecting this improves performance by not including the download data in the page. This extra data can lead to a significantly increase in download time.").'" >'.lang::get("Include Downloads").'</label></th>';
       if(self::$siteUrlParams[self::$downloadKey]['value']!=='true'){
         $reportOptions['includeRawGridDownload'] = false;
         $reportOptions['includeRawListDownload'] = false;
@@ -1388,6 +1386,14 @@ jQuery('#".$ctrlid."').change(function(){
         unset($args['Download2Caption']);
         unset($args['download_report_2']);
       }
+      data_entry_helper::$javascript .=
+          "jQuery('.downloads-table-label').remove();\n".
+          "jQuery('#downloads-table thead tr').prepend('<th>".
+            "<label for=\"downloadParam\" title=\"".lang::get("When fetching the full data set, unselecting this improves performance by not including the download data in the page. This extra data can lead to a significantly increase in download time.")."\" >".
+              lang::get("Include Downloads").
+            "</label>".
+            "<input type=\"checkbox\" name=\"downloadParam\" id=\"downloadParam\" class=\"downloadParam\"".$checked."/>".
+            "</th>');\n";
       self::set_up_control_change('downloadParam', self::$downloadKey, array(), true);
     }
     $retVal.= '</tr></thead></table>';
@@ -1410,12 +1416,12 @@ jQuery('#".$ctrlid."').change(function(){
         $downloadOptions['extraParams']['location_list']="(-1)";
       else $downloadOptions['extraParams']['location_list']='('.$downloadOptions['extraParams']['location_list'].')';
       if(isset($args['Download1Caption']) && $args['Download1Caption'] != "" && isset($args['download_report_1']) && $args['download_report_1'] != "")
-        data_entry_helper::$javascript .="\njQuery('#downloads-table thead tr').append('".data_entry_helper::report_download_link($downloadOptions)."');\n";
+        data_entry_helper::$javascript .="\njQuery('#downloads-table thead tr').append('".report_helper::report_download_link($downloadOptions)."');\n";
       if(isset($args['Download2Caption']) && $args['Download2Caption'] != "" && isset($args['download_report_2']) && $args['download_report_2'] != ""){
         $downloadOptions['caption' ]=$args['Download2Caption'];
         $downloadOptions['dataSource']=$args["download_report_2"];
         $downloadOptions['filename']=$reportOptions['downloadFilePrefix'].preg_replace('/[^A-Za-z0-9]/i', '', $args['Download2Caption']);
-        data_entry_helper::$javascript .="\njQuery('#downloads-table thead tr').append('".data_entry_helper::report_download_link($downloadOptions)."');\n";
+        data_entry_helper::$javascript .="\njQuery('#downloads-table thead tr').append('".report_helper::report_download_link($downloadOptions)."');\n";
       }
     }
 

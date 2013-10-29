@@ -3451,10 +3451,10 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
         $downloads .= '<th><a download="'.$options['downloadFilePrefix'].'estimateDataGrid.csv" href="data:application/csv;charset=utf-8,'.str_replace(' ','%20',$estimateDataDownloadGrid).'"><button type="button">Estimate Grid Data</button></a></th>'."\n";
       if(($options['includeSummaryData'] || $options['includeEstimatesData']) && $options['includeListDownload'])
         $downloads .= '<th><a download="'.$options['downloadFilePrefix'].'dataList.csv" href="data:application/csv;charset=utf-8,'.str_replace(' ','%20',$downloadList).'"><button type="button">List Data</button></a></th>'."\n";
-      if($downloads!=""){
-      	$r .= '<br/><table id="downloads-table" class="ui-widget ui-widget-content ui-corner-all downloads-table"><thead class="ui-widget-header"><tr>';
-        $r .= '<th>Downloads</th>'.$downloads."</tr></thead></table>\n";
-      }
+//      $r .= '<br/><table id="downloads-table" class="ui-widget ui-widget-content ui-corner-all downloads-table" '.($downloads == '' ? 'style="display:none"' : '').'><thead class="ui-widget-header"><tr>'.
+      $r .= '<br/><table id="downloads-table" class="ui-widget ui-widget-content ui-corner-all downloads-table" ><thead class="ui-widget-header"><tr>'.
+            ($downloads == '' ? '' : '<th class="downloads-table-label">Downloads</th>'.$downloads).
+            "</tr></thead></table>\n";
       $warnings .= '<span style="display:none;">Output table complete : '.date(DATE_ATOM).'</span>'."\n";
     }
     if(count($summaryArray)==0)
