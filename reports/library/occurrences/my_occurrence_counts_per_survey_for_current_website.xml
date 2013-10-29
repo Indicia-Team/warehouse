@@ -1,0 +1,22 @@
+<report
+    title="My Occurrence Counts Per Survey For Current Website"
+    description="Report designed to display a count of the user's occurrences per survey for the current website."
+>
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id">
+    SELECT #columns#
+    FROM cache_occurrences o
+      JOIN websites w on w.id=o.website_id 
+      JOIN samples s on s.id=o.sample_id
+      JOIN surveys sv on sv.id=s.survey_id
+    #agreements_join#
+    #joins#
+    WHERE #sharing_filter# AND o.record_status not in ('I','T') AND o.created_by_id=#current_user#
+  </query>
+  <columns>
+    <column name='survey' display='Survey' sql='sv.title' datatype='text' in_count="true" />
+    <column name='count' display='Sightings' sql='count(o.id)' datatype='integer' aggregate="true" />
+  </columns>
+  <params>
+    <param name="current_user" display="Current User ID"  datatype="text" />
+  </params>
+</report>
