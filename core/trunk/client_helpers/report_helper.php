@@ -334,7 +334,7 @@ class report_helper extends helper_base {
     self::request_report($response, $options, $currentParamValues, $options['pager'], $extras);
     if ($options['ajax'])
       unset($options['extraParams']['limit']);
-    if (isset($response['error'])) return $response['error'];
+    if (isset($response['error'])) return $response['error']; 
     $r = self::params_form_if_required($response, $options, $currentParamValues);
     // return the params form, if that is all that is being requested, or the parameters are not complete.
     if ((isset($options['paramsOnly']) && $options['paramsOnly']) || !isset($response['records'])) return $r;
@@ -962,7 +962,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * @link http://www.jqplot.com/docs/files/plugins/jqplot-pieRenderer-js.html
   * @link http://www.jqplot.com/docs/files/jqplot-core-js.html#Legend
   */
-  public static function report_chart($options) {
+  public static function report_chart($options) { 
     $options = array_merge(array(
       'mode' => 'report',
       'id' => 'chartdiv',
@@ -998,7 +998,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     $opts[] = 'series:'.json_encode($options['seriesOptions']);
     // make yValues, xValues, xLabels and dataSources into arrays of the same length so we can treat single and multi-series the same
     $yValues = is_array($options['yValues']) ? $options['yValues'] : array($options['yValues']);
-    $dataSources = is_array($options['dataSource']) ? $options['dataSource'] : array($options['dataSource']);
+    $dataSources = is_array($options['dataSource']) ? $options['dataSource'] : array($options['dataSource']);   
     if (isset($options['xValues'])) $xValues = is_array($options['xValues']) ? $options['xValues'] : array($options['xValues']);
     if (isset($options['xLabels'])) $xLabels = is_array($options['xLabels']) ? $options['xLabels'] : array($options['xLabels']);
     // What is this biggest array? This is our series count.
@@ -1368,6 +1368,11 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * <li>proxy<br/>
   * URL of a proxy on the local server to direct GeoServer WMS requests to. This proxy must be able to
   * cache filters in the same way as the iform_proxy Drupal module.</li>
+  * <li>locationParams<br/>
+  * Set to a comma seperated list of report parameters that are associated with locations. For instance, this might
+  * be location_id,region_id. The system then knows to zoom the map when these parameters are supplied.
+  * The bigger locations should always appear to the right in the list so that if multiple parameters are filled in by the user
+  * the system will always zoom to the biggest one. Default location_id.</li>
   * <li>clickable<br/>
   * Set to true to enable clicking on the data points to see the underlying data. Default true.</li>
   * <li>clickableLayersOutputMode<br/>
@@ -1679,15 +1684,38 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       {singleTile: true, isBaseLayer: false, sphericalMercator: true});\n";
       }
       $setLocationJs = '';
-      if (!empty($currentParamValues['location_id'])) {
-        $location=data_entry_helper::get_population_data(array(
-          'table'=>'location',
-          'nocache'=>true,
-          'extraParams'=>$options['readAuth'] + array('id'=>$currentParamValues['location_id'],'view'=>'detail')
-        ));        
-        if (count($location)===1) {
-          $location=$location[0];
-          $setLocationJs = "\n  opts.initialFeatureWkt='".(!empty($location['boundary_geom']) ? $location['boundary_geom'] : $location['centroid_geom'])."';";
+      //When the user uses a page like dynamic report explorer with a map, then there might be more than
+      //one parameter that is a location based parameter. For instance, Site and Region might be seperate parameters,
+      //the user should supply options to the map that specify which parameters are location based, this is used by the 
+      //code below to allow the map to show records for those locations and to zoom the map appropriately.
+      //The bigger location types should always appear to the right in the list so that if multiple parameters are filled in by the user 
+      //the system will always zoom to the biggest one (but still show records for any smaller locations inside the bigger one).
+      //If the user chooses two locations that don't intersect then no records are shown as the records need to satisfy both criteria.
+      
+      //Default is that there is just a location_id parameter if user doesn't give options.
+      if (!empty($currentParamValues['location_id']))
+        $locationParamVals=array($currentParamValues['location_id']);
+      //User has supplied location parameter options.
+      if (!empty($options['locationParams'])) {
+        $locationParamVals=array();
+        $locationParamsArray = explode(',',$options['locationParams']);
+        //Create an array of the user's supplied location parameters.
+        foreach ($locationParamsArray as $locationParam) {
+          if (!empty($currentParamValues[$locationParam]))
+            array_push($locationParamVals,$currentParamValues[$locationParam]);
+        }
+      }
+      if (!empty($locationParamVals)) {
+        foreach ($locationParamVals as $locationParamVal) { 
+          $location=data_entry_helper::get_population_data(array(
+            'table'=>'location',
+            'nocache'=>true,
+            'extraParams'=>$options['readAuth'] + array('id'=>$locationParamVal,'view'=>'detail')
+          ));        
+          if (count($location)===1) {
+            $location=$location[0];
+            $setLocationJs = "\n  opts.initialFeatureWkt='".(!empty($location['boundary_geom']) ? $location['boundary_geom'] : $location['centroid_geom'])."';";
+          }
         }
       }
       report_helper::$javascript.= "
@@ -2175,7 +2203,7 @@ if (typeof mapSettingsHooks!=='undefined') {
       }
     }
     // Are there any parameters embedded in the request data, e.g. after submitting the params form?
-    $providedParams = $_REQUEST;
+    $providedParams = $_REQUEST;    
     if (isset($_COOKIE['providedParams']) && !empty($options['rememberParamsReportGroup'])) {
       $savedParams = json_decode($_COOKIE['providedParams'], true);
       if (!empty($savedParams[$options['rememberParamsReportGroup']]))
@@ -2184,7 +2212,7 @@ if (typeof mapSettingsHooks!=='undefined') {
         $ignoreParamNames = array();
         foreach($options['paramsToExclude'] as $param)
           $ignoreParamNames[$options['reportGroup']."-$param"] = '';
-        $savedParams = array_diff_key($savedParams, $ignoreParamNames);
+        $savedParams = array_diff_key($savedParams, $ignoreParamNames);       
         $providedParams = array_merge(
           $savedParams,
           $providedParams
