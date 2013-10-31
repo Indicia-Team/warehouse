@@ -7,12 +7,24 @@
   FROM cache_occurrences o
     LEFT JOIN samples occSamp on occSamp.id=o.sample_id
     LEFT JOIN samples parentSamp on parentSamp.id = occSamp.parent_id
+    LEFT JOIN person_attribute_values pav ON pav.person_attribute_id=#my_sites_person_attr_id# AND pav.int_value=parentSamp.location_id AND pav.deleted=false
+    LEFT JOIN location_attribute_values lav ON lav.location_id=parentSamp.location_id 
+    LEFT JOIN location_attributes la ON la.id=lav.location_attribute_id 
     JOIN taxa_taxon_lists ttl on ttl.id = o.taxa_taxon_list_id
     JOIN surveys sv on sv.id=parentSamp.survey_id
     JOIN websites w on w.id=o.website_id   
     #agreements_join#
     #joins#
   WHERE #sharing_filter#
+  AND 
+    ((((la.id=#private_location_attr_id# AND lav.int_value=0)
+  OR
+    (pav.person_id=#current_user# and pav.int_value=parentSamp.location_id ))
+  AND 
+    '#hide_all_other_users_private_sites#' = '1')
+  OR
+    ('#hide_all_other_users_private_sites#' = '-1')
+    )
   </query>
   <order_bys>
     <order_by>o.id DESC</order_by>
@@ -57,6 +69,8 @@
     <param name="high_certainty_only" display="Verified and High Certainty Sightings Only" datatype="checkbox" emptyvalue="" default=''>
       <where value="1">(o.record_status = 'V' OR (o.record_status not in ('R', 'T') AND o.certainty='C'))</where>  
     </param>
+    <param name="private_location_attr_id" display="Private Location Attribute ID" description="The location attribute ID used to store whether a site is private" datatype="integer" default=""/>
+    <param name="hide_all_other_users_private_sites" display="Hide all other users private sites" description="Hide all private sites in the sites list that are not 'my sites' for the supplied user." datatype="integer" default="" emptyvalue="-1"/>
   </params>
   <columns>
     <column name='occurrence_id' display='ID' sql='o.id' datatype='integer' template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />
