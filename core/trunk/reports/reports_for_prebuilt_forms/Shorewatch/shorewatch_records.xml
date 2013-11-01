@@ -56,7 +56,7 @@
       <join>JOIN index_locations_samples rfilter ON rfilter.sample_id=o.sample_id and rfilter.location_id=#region_id#</join>
     </param>
     <param name='location_id' display='Site' description='Provide the location to display records for' datatype='lookup' 
-      population_call='direct:location:id:name' emptyvalue="">
+      population_call='report:reports_for_prebuilt_forms/Shorewatch/shorewatch_sites_list:id:name' emptyvalue="">
       <join>JOIN index_locations_samples lfilter ON lfilter.sample_id=o.sample_id and lfilter.location_id=#location_id#</join>
     </param>
     <param name='location_name' display='Other Site' description='Provide an Other Site location to display records for' datatype='text' emptyvalue="">

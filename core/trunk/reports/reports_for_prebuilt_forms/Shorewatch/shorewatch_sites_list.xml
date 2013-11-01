@@ -1,0 +1,25 @@
+<report
+    title="Shorewatch Sites list"
+    description="A list of Shorewatch Sites. Currently used for drop-down site filters which are unable to provide
+location type parameters to a report using population_call. See the shorewatch_records.xml report at the time of writing for 
+an example."
+>
+  <query website_filter_field="lw.website_id">
+    SELECT #columns#
+    FROM locations l
+      JOIN locations_websites lw ON lw.location_id=l.id and lw.deleted=false
+      JOIN termlists_terms tt ON tt.id = l.location_type_id
+      JOIN termlists tl ON tl.id=tt.termlist_id AND tl.title = 'Location types'
+      JOIN terms tm ON tm.id=tt.term_id AND tm.term = 'Shorewatch Site'
+    #joins#
+    WHERE l.deleted=false
+    AND #website_filter#
+  </query>
+  <order_bys>
+    <order_by>l.name ASC</order_by>
+  </order_bys>
+  <columns>
+    <column name='name' display='Name' sql='l.name'/>
+    <column name='id' display='Name' sql='l.id'/>
+  </columns>
+</report>
