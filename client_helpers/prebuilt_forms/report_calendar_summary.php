@@ -908,7 +908,8 @@ class iform_report_calendar_summary {
       if($siteUrlParams[self::$userKey]['value']=="branch" && $options['extraParams']['location_id']=='')
         $options['extraParams']['location_list'] = $locationIDList;
     }
-    $allowSensitive = empty($args['sensitivityLocAttrId']) || 
+    $allowSensitive = $siteUrlParams[self::$userKey]['value']!=="" ||
+        empty($args['sensitivityLocAttrId']) || 
         (function_exists('user_access') && !empty($args['sensitivityAccessPermission']) && user_access($args['sensitivityAccessPermission']));
     $locationListArgs['extraParams']['sensattr'] = $allowSensitive ? '' : $args['sensitivityLocAttrId'];
     $locationListArgs['extraParams']['exclude_sensitive'] = $allowSensitive ? 0 : 1;
