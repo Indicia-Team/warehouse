@@ -97,8 +97,10 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
         $this->response =  $this->nbn_encode($records);
         $this->content_type = 'Content-Type: text/plain';
         break;
-//      case 'gpx':
-//        break;
+      case 'gpx': 
+        $this->response = $this->gpx_encode($records, TRUE);
+        $this->content_type = 'Content-Type: application/gpx+xml';
+        break;
       case 'kml': // Keyhole Markup Language 
         $this->response = $this->kml_encode($records, TRUE);
         $this->content_type = 'Content-Type: application/vnd.google-earth.kml+xml';
@@ -410,7 +412,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     $recordNum = 1;
     foreach ($array["records"] as $element => $value)
     {
-      $data .= self::kml_encode_array($recordNum, $root, $value, $indent, 3);
+      $data .= $this->kml_encode_array($recordNum, $root, $value, $indent, 2);
       $recordNum++;
     }
 
@@ -419,19 +421,13 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
   }
 
   /**
-   * Encodes an array as kml - fixed format XML style.
-   * Uses $this->entity to decide the name of the root element.
-   * Recurses into the array where array values are themselves arrays. Also inserts
-   * xlink paths to any foreign keys, and gets the caption of the foreign entity.
+   * Encodes an array element as kml - fixed format XML style.
    */
   protected function kml_encode_array($recordNum, $root, $array, $indent, $recursion)
   {
-  	// Keep an array to track any elements that must be skipped. For example if an array contains
-  	// {person_id=>1, person=>James Brown} then the xml output for the id is <person id="1">James Brown</person>.
-  	// There is no need to output the person separately so it gets flagged in this array for skipping.
+  	// Keep an array to track any elements that must be skipped - i.e. geometries, names, dates.
   	$to_skip=array();
     $data = ($indent?str_repeat("\t", $recursion):'').'<Placemark>'.($indent ? "\r\n" : '');
-
     // identify name
     $name = $root.'.'.(array_key_exists('id',$array) ? $array['id'] : $recordNum); // default if no name field in record
     if(array_key_exists('name',$array)){
@@ -448,28 +444,27 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
                '<TimeStamp>'.($indent ? "\r\n".str_repeat("\t", 2+$recursion) : '').
                '<when>'. htmlspecialchars($array['date']).'</when>'.($indent ? "\r\n".str_repeat("\t", 1+$recursion) : '').
                '</TimeStamp>'.($indent ? "\r\n" : '');
-      $to_skip[]='date';
+//      $to_skip[]='date';
     }
     // identify geometry
     // The geometry in KML must be long/lat decimal degrees (WGS84, EPSG:4326).
     // We assume that the geometry provided to us is in this format:
     // this currently precludes the use of direct table data download by kml as the views for these do a straight
-    // st_astext, which displays the internal Postgis system used. At some point in the future it may be possible to
-    // do an automatic conversion between coordinate systems, but without explicit data of which system the data is being
-    // delivered in, it is currently impossible.
+    // st_astext, which displays the internal Postgis system used. Without explicit data of which system the data is being
+    // delivered in, it is impossible to automatically convert to EPSG:4326.
     $geoms = array();
     $numGeoms = (array_key_exists('geom',$array) ? 1 : 0);
     foreach ($array as $element => $value)
       if (substr($element, -5)=='_geom') $numGeoms++;
     if(array_key_exists('geom',$array)){
-      if(($extractGeom = self::wkt_to_kml($array['geom'],$indent,($numGeoms>1 ? 2 : 1)+$recursion)) !== false){
+      if(($extractGeom = $this->wkt_to_kml($array['geom'],$indent,($numGeoms>1 ? 2 : 1)+$recursion)) !== false){
         $geoms[] = $extractGeom;
         $to_skip[] = 'geom';
       }
     }
     foreach ($array as $element => $value){
       if (substr($element, -5)=='_geom') {
-        if(($extractGeom = self::wkt_to_kml($value,$indent,($numGeoms>1 ? 2 : 1)+$recursion)) !== false){
+        if(($extractGeom = $this->wkt_to_kml($value,$indent,($numGeoms>1 ? 2 : 1)+$recursion)) !== false){
           $to_skip[] = $element;
           $geoms[] = $extractGeom;
         }
@@ -481,27 +476,32 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
       $data .= ($indent ? str_repeat("\t", 1+$recursion) : '').'<MultiGeometry>'.($indent ? "\r\n" : '').
                implode('',$geoms).
                ($indent ? str_repeat("\t", 1+$recursion) : '').'</MultiGeometry>'.($indent ? "\r\n" : '');
-    } 
+    }
+    // Now deal with extra fields. These are displayed as a table in GoogleEarth
     $data .= ($indent?str_repeat("\t", 1+$recursion):'').'<ExtendedData>'.($indent ? "\r\n" : '');
     foreach ($array as $element => $value)
-  	{
-  		if (!in_array($element, $to_skip))
-  		{
-  			if ($value && !is_array($value))
-  			{
-  				// Check if we can provide links to the related models. $this->entity is not set for reports, where this cannot be done.
-  				$data .= ($indent?str_repeat("\t", 2+$recursion):'').
-  				         '<Data name="'.$element.'">'.($indent ? "\r\n".str_repeat("\t", 3+$recursion) : '').
-  				         '<value>'. htmlspecialchars($value).'</value>'.($indent ? "\r\n".str_repeat("\t", 2+$recursion) : '').
-  				         '</Data>'.($indent ? "\r\n" : '');
-  			}
-  		}
-  	}
-  	$data .= ($indent?str_repeat("\t", 1+$recursion):'').'</ExtendedData>'.($indent ? "\r\n" : '');
-  	$data .= ($indent?str_repeat("\t", $recursion):'').'</Placemark>'.($indent ? "\r\n" : '');
-  	return $data;
+    {
+      if (!in_array($element, $to_skip))
+      {
+        if ($value && !is_array($value))
+        {
+          $data .= ($indent?str_repeat("\t", 2+$recursion):'').
+                   '<Data name="'.$element.'">'.($indent ? "\r\n".str_repeat("\t", 3+$recursion) : '').
+                   '<value>'. htmlspecialchars($value).'</value>'.($indent ? "\r\n".str_repeat("\t", 2+$recursion) : '').
+                   '</Data>'.($indent ? "\r\n" : '');
+        }
+      }
+    }
+    $data .= ($indent?str_repeat("\t", 1+$recursion):'').'</ExtendedData>'.($indent ? "\r\n" : '').
+             ($indent?str_repeat("\t", $recursion):'').'</Placemark>'.($indent ? "\r\n" : '');
+    return $data;
   }
 
+  /*
+   * Converts database format geometry in Well Known Text (WKT) format to KML.
+   * Assummed to be EPSG:4326.
+   * Recursive.
+   */
   protected function wkt_to_kml($geom, $indent, $recursion){
     $geom = trim($geom);
     if(preg_match("/^POINT\((.*)\)$/i", $geom, $matches)){
@@ -523,13 +523,13 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
       return $data;
     }
     if(preg_match("/^LINESTRING\((.*)\)$/i", $geom, $matches)){
-      return self::kml_line($matches[1], $indent, $recursion, "LineString");
+      return $this->kml_line($matches[1], $indent, $recursion, "LineString");
     }
     if(preg_match("/^MULTILINESTRING\((.*)\)$/i", $geom, $matches)){
       preg_match_all("/\(([^\)]*)\)/", trim($matches[1]), $lines);
       $data = ($indent?str_repeat("\t", $recursion):'').'<MultiGeometry>'.($indent ? "\r\n" : '');
       for($ri=0; $ri<count($lines[1]); $ri++){
-        $data .= self::kml_line($lines[1][$ri], $indent, 1+$recursion, "LineString");
+        $data .= $this->kml_line($lines[1][$ri], $indent, 1+$recursion, "LineString");
       }
       $data .= ($indent?str_repeat("\t", $recursion):'').'</MultiGeometry>'.($indent ? "\r\n" : '');
       return $data;
@@ -539,13 +539,13 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
       // outer (first) ring
       $data = ($indent?str_repeat("\t", $recursion):'').'<Polygon>'.
               ($indent ? "\r\n".str_repeat("\t", 1+$recursion) : '').'<outerBoundaryIs>'.($indent ? "\r\n" : '').
-              self::kml_line($rings[1][0], $indent, 2+$recursion, "LinearRing").
+              $this->kml_line($rings[1][0], $indent, 2+$recursion, "LinearRing").
               ($indent ? str_repeat("\t", 1+$recursion) : '').'</outerBoundaryIs>'.($indent ? "\r\n" : '');
       // optional inner rings
       if(count($rings[1])>1){
         for($ri=1; $ri<count($rings[1]); $ri++){
           $data .= ($indent?str_repeat("\t", 1+$recursion):'').'<innerBoundaryIs>'.($indent ? "\r\n" : '').
-                  self::kml_line($rings[1][$ri], $indent, 2+$recursion, "LinearRing").
+                  $this->kml_line($rings[1][$ri], $indent, 2+$recursion, "LinearRing").
                   ($indent ? str_repeat("\t", 1+$recursion) : '').'</innerBoundaryIs>'.($indent ? "\r\n" : '');
         }
       }
@@ -562,13 +562,13 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     	// outer (first) ring
     	$data .= ($indent?str_repeat("\t", 1+$recursion):'').'<Polygon>'.
     			($indent ? "\r\n".str_repeat("\t", 2+$recursion) : '').'<outerBoundaryIs>'.($indent ? "\r\n" : '').
-    			self::kml_line($rings[1][0], $indent, 3+$recursion, "LinearRing").
+    			$this->kml_line($rings[1][0], $indent, 3+$recursion, "LinearRing").
     			($indent ? str_repeat("\t", 2+$recursion) : '').'</outerBoundaryIs>'.($indent ? "\r\n" : '');
     	// optional inner rings
     	if(count($rings[1])>1){
     		for($ri=1; $ri<count($rings[1]); $ri++){
     			$data .= ($indent?str_repeat("\t", 2+$recursion):'').'<innerBoundaryIs>'.($indent ? "\r\n" : '').
-    			self::kml_line($rings[1][$ri], $indent, 3+$recursion, "LinearRing").
+    			$this->kml_line($rings[1][$ri], $indent, 3+$recursion, "LinearRing").
     			($indent ? str_repeat("\t", 2+$recursion) : '').'</innerBoundaryIs>'.($indent ? "\r\n" : '');
     		}
     	}
@@ -600,7 +600,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
       }
       if(count($sub)>0) {
         foreach($sub as $geometry) {
-          if(($extractGeom = self::wkt_to_kml($geometry,$indent,1+$recursion)) !== false){
+          if(($extractGeom = $this->wkt_to_kml($geometry,$indent,1+$recursion)) !== false){
             $geoms[] = $extractGeom;
           } else return false;
         }
@@ -624,6 +624,178 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
              '</coordinates>'.($indent ? "\r\n".str_repeat("\t", $recursion) : '').
              '</'.$type.'>'.($indent ? "\r\n" : '');
     return $data;
+  }
+  
+  /**
+   * Encodes an array as gpx - fixed format XML style.
+   * Uses $this->entity to decide the name of the root element.
+   */
+  protected function gpx_encode($array, $indent=false)
+  {
+    // if we are outputting a specific record, root is singular
+    if ($this->uri->total_arguments())
+    {
+      $root = $this->entity;
+      // We don't need to repeat the element for each record, as there is only 1.
+      $array = $array[0];
+    }
+    else
+    {
+      $root = inflector::plural($this->entity);
+    }
+    $data = '<?xml version="1.0"?>'.($indent ? "\r\n" : '').
+            '<gpx creator="Indicia" version="1.1">'.($indent ? "\r\n\t" : '').
+            '<metadata>'.($indent ? "\r\n\t\t" : '').
+            '<name>'.$root.'</name>'.($indent ? "\r\n\t\t" : '').
+            '<author>Indicia</author>'.($indent ? "\r\n\t\t" : '').
+            '<desc>Created by Indicia</desc>'.($indent ? "\r\n\t\t" : '').
+            '<time>'.date(DATE_ATOM).'</time>'.($indent ? "\r\n\t" : '').
+            '</metadata>'.($indent ? "\r\n" : '');
+    $recordNum = 1;
+    foreach ($array["records"] as $element => $value)
+    {
+      $data .= $this->gpx_encode_array($recordNum, $root, $value, $indent, 1);
+      $recordNum++;
+    }
+  
+    $data .= "</gpx>";
+    return $data;
+  }
+  
+  /**
+   * Encodes an array element as GPX - fixed format XML style.
+   */
+  protected function gpx_encode_array($recordNum, $root, $array, $indent, $recursion)
+  {
+    // Keep an array to track any elements that must be skipped.
+    $to_skip=array('geom');
+    $data = '';
+    // identify name
+    $name = $root.'.'.(array_key_exists('id',$array) ? $array['id'] : $recordNum); // default if no name field in record
+    if(array_key_exists('name',$array)){
+      $name = $array['name'];
+      $to_skip[]='name';
+    } else if(array_key_exists('location_name',$array)){
+      $name = $array['location_name'];
+      $to_skip[]='location_name';
+    }
+    // for gpx date is put into description
+    foreach ($array as $element => $value)
+      if (substr($element, -5)=='_geom')
+        $to_skip[] = $element;
+    $desc = '';
+    $elements = array();
+    foreach ($array as $element => $value){
+      if (!in_array($element, $to_skip))
+        if ($value && !is_array($value))
+          $elements[] = htmlspecialchars($element).' : '.htmlspecialchars($value);
+    }
+    $desc = count($elements)>0 ? '<desc><![CDATA['.implode("\r\n",$elements).']]></desc>' : '';
+    
+    // identify geometry. The geometry in GPX must be long/lat decimal degrees (WGS84, EPSG:4326). See comments in KML.
+    $geoms = array();
+    if(array_key_exists('geom',$array))
+      if(($extractGeom = $this->wkt_to_gpx($name,$desc,$array['geom'],$indent,$recursion)) !== false)
+        $geoms[] = $extractGeom;
+    foreach ($array as $element => $value){
+      if (substr($element, -5)=='_geom')
+        if(($extractGeom = $this->wkt_to_gpx($name,$desc,$value,$indent,$recursion)) !== false)
+          $geoms[] = $extractGeom;
+    }
+    if(count($geoms)>0)
+      $data .= implode('',$geoms);
+  	return $data;
+  }
+  
+  protected function wkt_to_gpx($name, $desc, $geom, $indent, $recursion){
+    $geom = trim($geom);
+    $data = '';
+    if(preg_match("/^POINT\((.*)\)$/i", $geom, $matches)){
+      $latlong = explode(' ', $matches[1]);
+      return $data.($indent ? str_repeat("\t", $recursion) : '').'<wpt lat="'.$latlong[1].'" lon="'.$latlong[0].'"><name>'.htmlspecialchars($name).'</name>'.$desc.'</wpt>'.($indent ? "\r\n" : '');
+    }
+    if(preg_match("/^MULTIPOINT\((.*)\)$/i", $geom, $matches)){
+      $coords = explode(',',$matches[1]); // separate into pairs
+      foreach($coords as $coord){
+        $latlong = explode(' ', $coord);
+        $data .= ($indent ? str_repeat("\t", $recursion) : '').'<wpt lat="'.$latlong[1].'" lon="'.$latlong[0].'"><name>'.htmlspecialchars($name).'</name>'.$desc.'</wpt>'.($indent ? "\r\n" : '');
+      }
+      return $data;
+    }
+    if(preg_match("/^LINESTRING\((.*)\)$/i", $geom, $matches)){
+      return $this->gpx_route($name, $desc, $matches[1], $indent, $recursion, false);
+    }
+  	if(preg_match("/^MULTILINESTRING\((.*)\)$/i", $geom, $matches)){
+      preg_match_all("/\(([^\)]*)\)/", trim($matches[1]), $lines);
+  		for($ri=0; $ri<count($lines[1]); $ri++){
+  			$data .= $this->gpx_route($name, $desc, $lines[1][$ri], $indent, $recursion, false);
+  		}
+  		return $data;
+  	}
+  	if(preg_match("/^POLYGON\((.*)\)$/i", $geom, $matches)){
+      // Polygons are represented as a route of the outside perimeter
+      preg_match_all("/\((.*)\)/", trim($matches[1]), $rings);
+      // outer (first) ring
+      $data .= $this->gpx_route($name, $desc, $rings[1][0], $indent, $recursion, true);
+      return $data;
+    }
+    if(preg_match("/^MULTIPOLYGON\((.*)\)$/i", $geom, $matches)){
+     // Polygons are represented as a route of the outside perimeter
+      // each polygon starts and ends with double brackets.
+      preg_match_all("/\((\((?:[^\)]|\),)*\))\)/", trim($matches[1]), $polygons, true);
+      foreach($polygons[1] as $polygon){
+        // each ring surrounded by brackets.
+        preg_match_all("/\((.*)\)/", trim($polygon), $rings);
+        // outer (first) ring
+        $data .= $this->gpx_route($name, $desc, $rings[1][0], $indent, $recursion, true);
+      }
+      return $data;
+    }
+    if(preg_match("/^GEOMETRYCOLLECTION\((.*)\)$/i", $geom, $matches)){
+      $geoms = array();
+  		$sub = array();
+  		if(preg_match_all("/((?<!MULTI)POINT\([^\)]*\))/", trim($matches[1]), $points)) {
+  			$sub = $points[1];
+  		}
+  		if(preg_match_all("/(MULTIPOINT\([^\)]*\))/", trim($matches[1]), $multipoints)) {
+  			$sub = array_merge($sub,$multipoints[1]);
+  		}
+  		if(preg_match_all("/((?<!MULTI)LINESTRING\([^\)]*\))/", trim($matches[1]), $lines)) {
+  			$sub = array_merge($sub,$lines[1]);
+  		}
+  		if(preg_match_all("/(MULTILINESTRING\((?:[^\)]|\),)*\)\))/", trim($matches[1]), $multilines)) {
+  			$sub = array_merge($sub,$multilines[1]);
+  		}
+  		if(preg_match_all("/((?<!MULTI)POLYGON\(\((?:[^\)]|\),)*\)\))/", trim($matches[1]), $polygons)) {
+  			$sub = array_merge($sub,$polygons[1]);
+  		}
+  		if(preg_match_all("/(MULTIPOLYGON\(\(\((?:[^\)]|\),|\)\),)*\)\)\))/", trim($matches[1]), $multipolygons)) {
+  			$sub = array_merge($sub,$multipolygons[1]);
+  		}
+  		if(count($sub)>0) {
+  			foreach($sub as $geometry) {
+  				if(($extractGeom = $this->wkt_to_gpx($name,$desc,$geometry,$indent,1+$recursion)) !== false){
+  					$geoms[] = $extractGeom;
+  				};
+  			}
+  		}
+  		if(count($geoms)>0) return $data.implode('',$geoms);
+  		return '';
+  	}
+  	return false;
+  }
+  
+  protected function gpx_route($name, $desc, $ring, $indent, $recursion, $closed){
+    $coords = explode(',',$ring);
+    $numCoords = count($coords);
+    $data = ($indent ? str_repeat("\t", $recursion) : '').'<rte>'.($indent ? "\r\n" : '');
+    $data .= ($indent ? str_repeat("\t", 1+$recursion) : '').'<name>'.htmlspecialchars($name).'</name>'.$desc.($indent ? "\r\n" : '');
+    foreach($coords as $i => $coord){
+      $latlong = explode(' ', $coord);
+      $data .=  ($indent ? str_repeat("\t", 1+$recursion) : '').'<rtept lat="'.$latlong[1].'" lon="'.$latlong[0].'"><name>'.($closed && $i == $numCoords-1 ? "" : htmlspecialchars($name)." (".(1+$i).")").'</name></rtept>'.($indent ? "\r\n" : '');
+  	}
+    $data .= ($indent ? str_repeat("\t", $recursion) : '').'</rte>'.($indent ? "\r\n" : '');
+  	return $data;
   }
 }
 
