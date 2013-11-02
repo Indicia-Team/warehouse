@@ -1456,7 +1456,7 @@ class ORM extends ORM_Core {
       // we didn't update the parent's metadata. But a custom attribute value has changed, so it makes sense to update it now.
       $this->wantToUpdateMetadata = true;
       $this->set_metadata();
-      $this->save();
+      $this->validate(new Validation($this->as_array()), true);
     }
     $this->nestedChildModelIds[] = $attrValueModel->get_submitted_ids();
 
