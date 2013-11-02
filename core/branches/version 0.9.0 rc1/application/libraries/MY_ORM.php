@@ -1435,9 +1435,8 @@ class ORM extends ORM_Core {
     $attrFk = $this->object_name.'_attribute_id';
     $attrValueModel->$attrFk = $attrId;
     $wantToUpdateAttrMetadata = count($exactMatches)!==count($fieldsWithValuesInSubmission);
-    if ($wantToUpdateAttrMetadata)
-      $this->set_metadata($attrValueModel);
-
+    if (!$wantToUpdateAttrMetadata)
+      $attrValueModel->wantToUpdateMetadata=false;
     try {
       $v=$attrValueModel->validate(new Validation($attrValueModel->as_array()));
     } catch (Exception $e) {
@@ -1457,7 +1456,7 @@ class ORM extends ORM_Core {
       // we didn't update the parent's metadata. But a custom attribute value has changed, so it makes sense to update it now.
       $this->wantToUpdateMetadata = true;
       $this->set_metadata();
-      $this->save();
+      $this->validate(new Validation($this->as_array()), true);
     }
     $this->nestedChildModelIds[] = $attrValueModel->get_submitted_ids();
 

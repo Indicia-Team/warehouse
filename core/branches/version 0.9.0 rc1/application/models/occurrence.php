@@ -75,6 +75,13 @@ class Occurrence_Model extends ORM
   public function validate(Validation $array, $save = false) {
     if ($save) 
       $this->logDeterminations($array);
+    if (empty($this->submission['fields']['record_status']) && $this->wantToUpdateMetadata) {
+      // If we update an occurrence but don't set the verification state, revert it to 
+      // completed/awaiting verification.
+      $array->verified_by_id=null;
+      $array->verified_on=null;
+      $array->record_status='C';
+    }
     $array->pre_filter('trim');
     $array->add_rules('sample_id', 'required');
     $array->add_rules('website_id', 'required');
@@ -374,12 +381,6 @@ class Occurrence_Model extends ORM
         $this->submission['fields']['verified_by_id']['value']='';
         $this->submission['fields']['verified_on']['value']='';
       }
-    } else {
-      // If we update an occurrence but don't set the verification state, revert it to 
-      // completed/awaiting verification.
-      $this->submission['fields']['verified_by_id']['value']='';
-      $this->submission['fields']['verified_on']['value']='';
-      $this->submission['fields']['record_status']['value']='C';
     }
     parent::preSubmit();
   }
