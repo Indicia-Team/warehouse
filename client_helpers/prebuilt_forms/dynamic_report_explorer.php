@@ -369,6 +369,112 @@ class iform_dynamic_report_explorer extends iform_dynamic {
     return report_helper::report_grid($reportOptions);
   }
   
+  /*
+   * Report chart control.
+   * Currently take its parameters from $options in the Form Structure.
+   */
+  protected static function get_control_reportchart($auth, $args, $tabalias, $options) {
+    if (!isset($options['width'])||!isset($options['height'])||!isset($options['chartType'])||!isset($options['yValues'])
+       ||!isset($options['output'])||!isset($options['dataSource'])||!isset($options['xLabels'])) {
+      $r = '<h4>Please fill in the following options for the chart parameters control: width, height, chartType, yValues
+            output, dataSource, xLabels</h4>';
+      return $r;
+    }
+    iform_load_helpers(array('report_helper', 'map_helper'));
+    $args['report_name']='';
+    $options = array_merge(
+      iform_report_get_report_options($args, $auth),
+      $options, 
+      array(
+        'id' => 'chart-'.self::$reportCount,
+        'reportGroup'=>'chart',
+        'width'=> $options['width'],
+        'height'=> $options['height'],
+        'chartType' => $options['chartType'],
+        'yValues'=>explode(',', $options['yValues']),
+        'output'=>$options['output'],
+        'readAuth'=>$auth['read'],
+        'dataSource'=>$options['dataSource']
+      )
+    );
+    $xLabels = trim($options['xLabels']);
+    if (empty($xLabels))
+      $options['xValues']=explode(',', $options['xValues']);
+    else
+      $options['xLabels']=explode(',', $options['xLabels']);
+    
+    // advanced options
+    if (!empty($options['rendererOptions'])) {
+      $rendererOptions = trim($options['rendererOptions']);
+      $options['rendererOptions'] = json_decode($rendererOptions, true);
+    }
+    if (!empty($options['legendOptions'])) {
+      $legendOptions = trim($options['legendOptions']);
+      $options['legendOptions'] = json_decode($legendOptions, true);
+    }
+    if (!empty($options['seriesOptions'])) {
+      $seriesOptions = trim($options['seriesOptions']);
+      $options['seriesOptions'] = json_decode($seriesOptions, true);
+    }
+    if (!empty($options['axesOptions'])) {
+      $axesOptions = trim($options['axesOptions']);
+      $options['axesOptions'] = json_decode($axesOptions, true);
+    }
+
+    //User has elected for parameters form only
+    if ($options['output']==='form')
+      $options['paramsOnly']=true;
+    else {
+      if (isset($options['paramsOnly']))
+        unset($options['paramsOnly']);
+    } 
+    //User has elected for parameters form only or 
+    //both the chart and parameters form together
+    if ($options['output']==='form'||$options['output']==='default')
+      $options['completeParamsForm']=true;
+    else {
+      if (isset($options['completeParamsForm']))
+        unset($options['completeParamsForm']);
+    }  
+    //User has elected for the chart only
+    if ($options['output']==='output') {
+      $options['autoParamsForm']=false;
+    }
+    $r = '<br/>'.report_helper::report_chart($options);
+    return $r;
+  }
+  
+  /*
+   * Report chart params control.
+   * Currently take its parameters from $options in the Form Structure.
+   */
+  protected static function get_control_reportchartparams($auth, $args, $tabalias, $options) { 
+    if (!isset($options['yValues'])||!isset($options['dataSource'])||!isset($options['chartType'])) {
+      $r = '<h4>Please fill in the following options for the chart parameters control: yValues, dataSource, chartType</h4>';
+      return $r;
+    }
+    iform_load_helpers(array('report_helper'));
+    $sharing=empty($args['sharing']) ? 'reporting' : $args['sharing'];
+    $args['report_name']='';
+    $options = array_merge(
+      iform_report_get_report_options($args, $auth),
+      $options,
+      array(
+        'reportGroup'=>'chart',
+        //as we aren't returning the report set paramsOnly
+        'paramsOnly'=>true,
+        'sharing'=>$sharing,
+        'paramsFormButtonCaption'=>lang::get('Filter'),
+        'yValues'=>explode(',', $options['yValues']),
+        'readAuth'=>$auth['read'],
+        'dataSource'=>$options['dataSource'],
+      )
+      
+    );
+    $r = '<br/>'.report_helper::report_chart($options);
+    return $r;
+  }
+  
   protected static function get_control_standardparams($auth, $args, $tabalias, $options) {
     self::$applyUserPrefs=false;
     $options = array_merge(array(
