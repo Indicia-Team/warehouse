@@ -864,7 +864,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     return $r;
   }
 
- /**
+/**
   * <p>Outputs a div that contains a chart.</p>
   * <p>The chart is rendered by the jqplot plugin.</p>
   * <p>The chart loads its data from a report, table or view indicated by the dataSource parameter, and the
@@ -963,21 +963,24 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * @link http://www.jqplot.com/docs/files/jqplot-core-js.html#Legend
   */
   public static function report_chart($options) { 
-    $options = array_merge(array(
-      'mode' => 'report',
-      'id' => 'chartdiv',
-      'class' => 'ui-widget ui-widget-content ui-corner-all',
-      'headerClass' => 'ui-widget-header ui-corner-all',
-      'height' => 400,
-      'width' => 400,
-      'chartType' => 'line', // bar, pie
-      'rendererOptions' => array(),
-      'legendOptions' => array(),
-      'seriesOptions' => array(),
-      'axesOptions' => array()
-    ), $options);
-    $options = self::get_report_grid_options($options);
+    if (empty($options['rendererOptions']))
+      $options['rendererOptions'] = array();
+    if (empty($options['legendOptions']))
+      $options['legendOptions'] = array();
+    if (empty($options['seriesOptions']))
+      $options['seriesOptions'] = array();
+    if (empty($options['axesOptions']))
+      $options['axesOptions'] = array();
+    $standardReportOptions = self::get_report_grid_options($options);   
+    $options = array_merge($standardReportOptions,$options);
     $currentParamValues = self::get_report_grid_current_param_values($options);
+    //If we want the report_chart to only return the parameters control, then don't provide
+    //the report with parameters so that it will return parameter requests for all the 
+    //parameters which can then be displayed on the screen.
+    //Use != 1, as am not sure what style all the existing code would provide the $options['paramsOnly']
+    //as being set to true.
+    if (empty($options['paramsOnly']) || $options['paramsOnly']!=1)
+      $options['extraParams'] = array_merge($options['extraParams'],$currentParamValues);
     // @todo Check they have supplied a valid set of data & label field names
     self::add_resource('jqplot');
     $opts = array();
@@ -998,7 +1001,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     $opts[] = 'series:'.json_encode($options['seriesOptions']);
     // make yValues, xValues, xLabels and dataSources into arrays of the same length so we can treat single and multi-series the same
     $yValues = is_array($options['yValues']) ? $options['yValues'] : array($options['yValues']);
-    $dataSources = is_array($options['dataSource']) ? $options['dataSource'] : array($options['dataSource']);   
+    $dataSources = is_array($options['dataSource']) ? $options['dataSource'] : array($options['dataSource']);
     if (isset($options['xValues'])) $xValues = is_array($options['xValues']) ? $options['xValues'] : array($options['xValues']);
     if (isset($options['xLabels'])) $xLabels = is_array($options['xLabels']) ? $options['xLabels'] : array($options['xLabels']);
     // What is this biggest array? This is our series count.
@@ -1035,8 +1038,13 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         // data returned must be an error message so may as well display it
         return $data['error'];
       $r = self::params_form_if_required($data, $options, $currentParamValues);
-      // return the params form, if that is all that is being requested, or the parameters are not complete.
-      if (!isset($options['paramsOnly']) || !isset($data[0])) return $r;
+      //If we don't have any data for the chart, or we only want to display the params form,
+      //then return $r before we even reach the chart display code.
+      //Use '==' as the comparison once again as am not sure what style the exiting code will provide
+      //$options['paramsOnly'] as being true.
+      if ((!empty($options['paramsOnly']) && ($options['paramsOnly'])==1) || !isset($data[0])) {
+        return $r;
+      }
       if (isset($data['parameterRequest']))
         $r .= self::build_params_form(array_merge($options, array('form'=>$data['parameterRequest'], 'defaults'=>$params)), $hasVisibleContent);
 
