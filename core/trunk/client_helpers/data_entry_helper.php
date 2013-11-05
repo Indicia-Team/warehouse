@@ -286,8 +286,8 @@ class data_entry_helper extends helper_base {
     $r = "<table class=\"complex-attr-grid\" id=\"complex-attr-grid-$attrTypeTag-$attrId\">";
     $r .= '<thead><tr>';
     $lookupData = array();
+    $thRow2 = '';
     foreach ($options['columns'] as $name => &$def) {
-      $r .= '<th>'.lang::get($def['label']).'</th>';
       // whilst we are iterating the columns, may as well do some setup.
       // apply i18n to unit now, as it will be used in JS later
       if ($def['unit'])
@@ -300,10 +300,15 @@ class data_entry_helper extends helper_base {
         $minified = array();
         foreach ($termlistData as $term) {
           $minified[] = array($term['id'], $term['term']);
+          $thRow2 .= "<th>$term[term]</th>";
         }
         $lookupData['tl'.$def['termlist_id']] = $minified;
         self::$javascript .= "indiciaData.tl$def[termlist_id]=".json_encode($minified).";\n";
       }
+      // checkbox groups output a second row of cells for each checkbox label
+      $rowspan = isset($def['control']) && $def['control']==='checkbox_group' ? 1 : 2;
+      $colspan = isset($def['control']) && $def['control']==='checkbox_group' ? count($termlistData) : 1;
+      $r .= "<th rowspan=\"$rowspan\" colspan=\"$colspan\">".lang::get($def['label']).'</th>';
     }
     self::$javascript .= "indiciaData.langPleaseSelect='".lang::get('Please select')."'\n";
     self::$javascript .= "indiciaData.langCantRemoveEnoughRows='".lang::get('Please clear the values in some more rows before trying to reduce the number of rows further.')."'\n";
@@ -312,7 +317,7 @@ class data_entry_helper extends helper_base {
     $jsData = array('cols'=>$options['columns'],'rowCount'=>$options['defaultRows'],
         'rowCountControl'=>$options['rowCountControl']);
     self::$javascript .= "indiciaData['complexAttrGrid-$attrTypeTag-$attrId']=".json_encode($jsData).";\n"; 
-    $r .= '<th></th></th></thead>';
+    $r .= "</tr><tr>$thRow2</tr></thead>";
     $r .= '<tbody>';
     $rowCount = $options['defaultRows'] > count($options['default']) ? $options['defaultRows'] : count($options['default']);
     for ($i = 0; $i<=$rowCount-1; $i++) {
@@ -327,7 +332,16 @@ class data_entry_helper extends helper_base {
         $default = isset(self::$entity_to_load[$fieldname]) ? self::$entity_to_load[$fieldname] :
             (isset($defaults[$name]) ? $defaults[$name] : '');
         $r .= "<td>";
-        if ($def['datatype']==='lookup') {
+        if ($def['datatype']==='lookup' && isset($def['control']) && $def['control']) {
+          $checkboxes=array();
+          // array field
+          $fieldname .= '[]';
+          foreach ($lookupData['tl'.$def['termlist_id']] as $term) {
+            $checked = is_array($default) && in_array($term[0], $default) ? ' checked="checked"' : '';
+            $checkboxes[] = "<input title=\"$term[1]\" type=\"checkbox\" name=\"$fieldname\" value=\"$term[0]:$term[1]\"$checked>";
+          }
+          $r .= implode('</td><td>', $checkboxes);
+        } elseif ($def['datatype']==='lookup') {
           $r .= "<select name=\"$fieldname\"><option value=''>&lt;".lang::get('Please select')."&gt;</option>";
           foreach ($lookupData['tl'.$def['termlist_id']] as $term) {
             $selected = $default=="$term[0]" ? ' selected="selected"' : '';
