@@ -1400,8 +1400,20 @@ jQuery('#".$ctrlid."').change(function(){
     $retVal.= '</tr></thead></table>';
     $reportOptions['highlightEstimates']=true;
     $retVal .= report_helper::report_calendar_summary($reportOptions);
+    // upto this point the report options holds the cms user id as user_id: the report_helper converts this to the indicia
+    // user_id if relevant to this installation. We now need to do the same for the report links.
+    if (isset($reportOptions['extraParams']['user_id'])) {
+      $reportOptions['extraParams']['cms_user_id'] = $reportOptions['extraParams']['user_id'];
+      if (function_exists('module_exists') && module_exists('easy_login')) {
+        $account = user_load($reportOptions['extraParams']['user_id']);
+        if (function_exists('profile_load_profile'))
+          profile_load_profile($account); /* will not be invoked for Drupal7 where the fields are already in the account object */
+        if(isset($account->profile_indicia_user_id))
+          $reportOptions['extraParams']['user_id'] = $account->profile_indicia_user_id;
+      }
+    }
     if((isset($args['managerPermission']) && $args['managerPermission']!="" && user_access($args['managerPermission'])) ||
-        $reportOptions['location_list'] != '' || $reportOptions['user_id'] != '' || $reportOptions['location_id'] != '') {
+        $reportOptions['extraParams']['location_list'] != '' || $reportOptions['extraParams']['user_id'] != '' || $reportOptions['extraParams']['location_id'] != '') {
       global $indicia_templates;
       $indicia_templates['report_download_link'] = '<th><a href="{link}"><button type="button">{caption}</button></a></th>';
       // format is assumed to be CSV
