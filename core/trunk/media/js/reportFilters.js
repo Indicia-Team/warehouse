@@ -302,8 +302,8 @@ jQuery(document).ready(function($) {
       },
       applyFormToDefinition:function() {
         var geoms=[], geom;
-        delete indiciaData.filter.def.location_id;
-        delete indiciaData.filter.def.indexed_location_id;
+        indiciaData.filter.def.location_id='';
+        indiciaData.filter.def.indexed_location_id='';
         delete indiciaData.filter.def.remembered_location_name;
         delete indiciaData.filter.def.searchArea;
         delete indiciaData.filter.def['imp-location:name'];
@@ -363,7 +363,12 @@ jQuery(document).ready(function($) {
           $('#site-type').val('loc:'+indiciaData.filter.def.indexed_location_id);
         } else if (indiciaData.filter.def.indexed_location_id || indiciaData.filter.def.location_id) {
           var locationToLoad=indiciaData.filter.def.indexed_location_id ? indiciaData.filter.def.indexed_location_id : indiciaData.filter.def.location_id;
-          $('#site-type').val(indiciaData.filter.def['site-type']);
+          if (indiciaData.filter.def['site-type']) {
+            $('#site-type').val(indiciaData.filter.def['site-type']);
+          } else {
+            // legacy
+            $('#site-type').val('my');
+          }
           changeSiteType(locationToLoad);
         }
         // max size the map
@@ -651,7 +656,7 @@ jQuery(document).ready(function($) {
     $.ajax({
       dataType: "json",
       url: indiciaData.read.url + 'index.php/services/data/location',
-      data: 'mode=json&view=list&auth_token='+indiciaData.read.auth_token+'&nonce='+indiciaData.read.nonce+'&'+filter+'&callback=?',
+      data: 'mode=json&view=list&orderby=name&auth_token='+indiciaData.read.auth_token+'&nonce='+indiciaData.read.nonce+'&'+filter+'&callback=?',
       success: function(data) {
         $.each(data, function(idx, loc) {
           $('#imp-location').append('<option value="'+loc.id+'">' + loc.name + '</option>');
