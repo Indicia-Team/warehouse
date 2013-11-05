@@ -769,14 +769,14 @@ var saveComment, saveVerifyComment;
 
   //Function to draw any existing trusts from the database
   function drawExistingTrusts() {
-    var getTrustsReport = indiciaData.indiciaSvc +'/index.php/services/report/requestReport?report=library/user_trusts/get_user_trust_for_record.xml&mode=json&callback=?', 
+    var getTrustsReport = indiciaData.read.url +'/index.php/services/report/requestReport?report=library/user_trusts/get_user_trust_for_record.xml&mode=json&callback=?', 
         getTrustsReportParameters = {
           'user_id':currRec.extra.created_by_id,
           'survey_id':currRec.extra.survey_id,
           'taxon_group_id':currRec.extra.taxon_group_id,
           'location_ids':currRec.extra.locality_ids,
-          'auth_token': indiciaData.readAuth,
-          'nonce': indiciaData.nonce,
+          'auth_token': indiciaData.read.auth_token,
+          'nonce': indiciaData.read.nonce,
           'reportSource':'local'
         }, i, idNum;
     //variable holds our HTML
