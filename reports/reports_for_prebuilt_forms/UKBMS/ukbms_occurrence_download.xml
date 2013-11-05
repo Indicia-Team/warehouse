@@ -11,6 +11,9 @@
   JOIN occurrences o ON o.sample_id=s.id AND o.deleted=false
   JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
       AND (CAST(cttl.taxon_list_id AS character varying)='#taxon_list_id#' OR '#taxon_list_id#' = '')
+  LEFT JOIN (sample_attributes sa 
+    JOIN sample_attribute_values sav ON sav.sample_attribute_id = sa.id AND sav.deleted = false)
+      ON sa.caption = 'Recorder Name' AND sa.deleted = false AND sav.sample_id = parent.id
   #joins#
   WHERE parent.deleted = false
   AND #website_filter#
@@ -24,10 +27,13 @@
       parent.id as sample_id,
       l.name as site_name,
       s.id as subsample_id,
+      l2.centroid_sref as sref,
       l2.code as section_name,
+      '' as date, --- allows proper positioning of date column in report
       parent.date_start,
       parent.date_end,
       parent.date_type,
+      sav.text_value as recorder,
       cttl.taxon_meaning_id,
       cttl.preferred_taxon as taxon,
       coalesce(cttl.default_common_name, cttl.preferred_taxon) as common
@@ -55,14 +61,18 @@
     </param>
   </params>
   <columns>
-    <column name='sample_id' display='Sample ID' />
-    <column name='occurrence_id' display='Occurrence ID'  />
-    <column name='site_name' display='Transect' />
+    <column name='location_id' visible='false' />
+    <column name='sublocation_id' visible='false' />
+    <column name='sample_id' visible='false' />
     <column name='subsample_id' visible='false' />
-    <column name='section_name' display='Section' />
+    <column name='occurrence_id' visible='false' />
+    <column name='site_name' display='Site Name' />
+    <column name='section_name' display='Section No.' comment='used for section level data only'/>
+    <column name='sref' display='Grid Ref' />
     <column name='date' display='Date' />
+    <column name='recorder' display='Recorder' />
     <column name='taxon_meaning_id' visible='false' />
-    <column name='taxon' display='Latin Name' visible="false" />    
-    <column name='common' display='Common Name' /> 
+    <column name='taxon' visible='false' comment='Latin Name' />    
+    <column name='common' display='Species' /> 
   </columns>
 </report>
