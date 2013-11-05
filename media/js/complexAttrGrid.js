@@ -13,9 +13,15 @@ $(document).ready(function($) {
     
     gridDef.rowCount++; 
     $.each(gridDef.cols, function(name, def) {
-      fieldname = attrTypeTag+"+:"+attrId+"::"+gridDef.rowCount+":"+name;
+      fieldname = attrTypeTag+"+:"+attrId+"::"+(gridDef.rowCount-1)+":"+name;
       row += '<td>';
-      if (def.datatype==='lookup') {
+      if (def.datatype==='lookup' && typeof def.control!=="undefined" && def.control==='checkbox_group') {
+        var checkboxes=[];
+        $.each(indiciaData['tl'+def.termlist_id], function(idx, term) {
+          checkboxes.push('<input title="'+term+'" type="checkbox" name="'+fieldname+'[]" value="'+term[0]+':' + term[1] + '">');
+        });
+        row += checkboxes.join('</td><td>');
+      } else if (def.datatype==='lookup') {
         row += '<select name="'+fieldname+'"><option value="">&lt;'+indiciaData.langPleaseSelect+'&gt;</option>';
         $.each(indiciaData['tl'+def.termlist_id], function(idx, term) {
           row += '<option value="'+term[0]+':' + term[1] + '">'+term[1]+'</option>';
@@ -43,7 +49,7 @@ $(document).ready(function($) {
     if ($('#complex-attr-grid-'+attrTypeTag+'-'+attrId+' tbody tr').length>rowCount) {
       $.each($('#complex-attr-grid-'+attrTypeTag+'-'+attrId+' tbody tr'), function(idx, row) {
         // remove only empty rows
-        if ($(row).find(":input:visible[value!='']").length===0) {
+        if ($(row).find(":input:visible[value!='']").not(':checkbox').length+$(row).find(":checkbox:checked").length===0) {
           $(row).remove();
         }
       });
