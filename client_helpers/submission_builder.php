@@ -209,14 +209,29 @@ class submission_builder extends helper_config {
         $sa['fields'][$attrKey]=array('value'=>array());
         $exists = count(explode(':', $attrKey))===3;
         foreach (array_values($data) as $row) {
-          // find any term submissions in form id:term, and split into 2 json fields.
+          // find any term submissions in form id:term, and split into 2 json fields. Also process checkbox groups into suitable array form.
+          $terms=array();
           foreach ($row as $key=>&$val) {
-            if (preg_match('/^[0-9]+\:.+$/', $val)) {
-              $split=explode(':', $val, 2);
-              $val = $split[0];
-              $row[$key.'_term']=$split[1];
+            if (is_array($val)) {
+              // array from a checkbox_group
+              $subvals=array();
+              $subterms=array();
+              foreach ($val as $subval) {
+                $split=explode(':', $subval, 2);
+                $subvals[] =  $split[0];
+                $subterms[] =  $split[1];
+              }
+              $val=$subvals;
+              $terms[$key.'_term']=$subterms;
+            } else {
+              if (preg_match('/^[0-9]+\:.+$/', $val)) {
+                $split=explode(':', $val, 2);
+                $val = $split[0];
+                $terms[$key.'_term']=$split[1];
+              }
             }
           }
+          $row += $terms;
           if (implode('', array_values($row))<>'') {
             if ($exists)
               // existing value, so no need to send an array
