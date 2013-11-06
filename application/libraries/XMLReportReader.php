@@ -293,7 +293,7 @@ class XMLReportReader_Core implements ReportReader
         $sharedWebsiteIdList = self::getSharedWebsiteList($websiteIds, $sharing);
         // add a join to users so we can check their privacy preferences. This does not apply if record input
         // on this website.
-        $agreementsJoin = "JOIN users privacyusers ON privacyusers.id=o.created_by_id";
+        $agreementsJoin = "JOIN users privacyusers ON privacyusers.id=".$this->createdByField;
         $query = str_replace(array('#agreements_join#','#sharing_filter#','#sharing_website_ids#'), 
             array($agreementsJoin, 
             "({$this->websiteFilterField} in ($idList) OR privacyusers.allow_share_for_$sharing=true OR privacyusers.allow_share_for_$sharing IS NULL)\n".
