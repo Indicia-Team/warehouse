@@ -2583,7 +2583,7 @@ jQuery('#".$options['MainFieldID']."').change(function(){mainFieldChange(true)})
     								'orderby'=>'name',
     								'location_type_id'=>$args['loctoolsLocTypeID'],
     								'deleted'=>'f',
-    								'columns'=implode(',',array('id', $locOptions['valueField'], $locOptions['captionField'])))));
+    								'columns'=>implode(',',array('id', $locOptions['valueField'], $locOptions['captionField'])))));
       $locResponse = data_entry_helper::get_population_data($locOptions); // Only need certain columns: 'id', $locOptions['valueField'], $locOptions['captionField'].
       if (isset($locResponse['error'])) return "PARENT LOOKUP ERROR:  ".$locResponse['error'];
       $opts = "";
@@ -2969,7 +2969,7 @@ hook_setSref_".$idx." = function(geom){ // map projection
                   						'orderby'=>'name',
                   						'location_type_id'=>$parentLocTypeID,
                   						'deleted'=>'f',
-    								'columns'=implode(',',array('id', $locOptions['valueField'], $locOptions['captionField'])))));
+    								'columns'=>implode(',',array('id', $locOptions['valueField'], $locOptions['captionField'])))));
                   $locResponse = data_entry_helper::get_population_data($locOptions); // Only need certain columns: 'id', $locOptions['valueField'], $locOptions['captionField']
                   if (isset($locResponse['error'])) return "PARENT LOOKUP ERROR:  ".$locResponse['error'];
                   $opts = str_replace(array('{value}', '{caption}', '{selected}'),
