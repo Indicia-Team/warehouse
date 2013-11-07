@@ -730,14 +730,19 @@ class Data_Controller extends Data_Service_Base_Controller {
     // Select all the table columns from the view
     if (!$count) {
       $fields = array_keys(postgreSQL::list_fields($this->viewname, $this->db));
-      foreach($fields as &$field) { 
-        // geom binary data is no good to anyone. So convert to WKT.
-        if (preg_match('/^(.+_)?geom$/', $field))
-          $field = 'st_astext('.$this->viewname.".$field) as $field";
-        else
-          $field = $this->viewname.'.'.$field;
+      $usedFields = array();
+      $request=array_merge($_GET, $_POST);
+      $columns = isset($request['columns']) ? explode(',',$request['columns']) : false;
+      foreach($fields as &$field) {
+        if(!$columns || in_array($field, $columns)) {
+          // geom binary data is no good to anyone. So convert to WKT.
+          if (preg_match('/^(.+_)?geom$/', $field))
+            $usedFields[] = 'st_astext('.$this->viewname.".$field) as $field";
+          else
+            $usedFields[] = $this->viewname.'.'.$field;
+        }
       }
-      $select = implode(', ', $fields);
+      $select = implode(', ', $usedFields);
       $this->db->select($select);
     }
     // If not in the warehouse, then the entity must explicitly allow full access, or contain a website ID to filter on.
@@ -913,6 +918,7 @@ class Data_Controller extends Data_Service_Base_Controller {
         case 'auth_token':
         case 'callback':
         case 'timestamp':
+        case 'columns':
         case '_':
           break;
       default:

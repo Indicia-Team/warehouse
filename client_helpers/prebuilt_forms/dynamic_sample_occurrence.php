@@ -522,7 +522,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         array(
           'name'=>'includeLocTools',
           'caption'=>'Include Location Tools',
-          'description'=>'Include a tab for the allocation of locations when displaying the initial grid.',
+          'description'=>'Include a tab for the allocation of locations when displaying the initial grid. This is done using the iform_loctools module.',
           'type'=>'boolean',
           'required' => false,
           'default' => false,
@@ -534,6 +534,15 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           'description'=>'When performing allocation of locations, filter available locations by this location_type_id.',
           'type'=>'int',
           'required' => false,
+          'group' => 'Locations'
+        ),
+        array(
+          'name'=>'loctoolsPageSize',
+          'caption'=>'Location Tools Page Size',
+          'description'=>'When performing allocation of locations, this is the size of each page of locations.',
+          'type'=>'int',
+          'required' => true,
+          'default' => 20,
           'group' => 'Locations'
         ),
         array(
@@ -593,10 +602,19 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       if(!array_key_exists('website_id', $_POST)) {
         // non Indicia POST, in this case must be the location allocations. add check to ensure we don't corrupt the data by accident
         if(function_exists('iform_loctools_checkaccess') && iform_loctools_checkaccess($node,'admin') && array_key_exists('mnhnld1', $_POST)){
-          iform_loctools_deletelocations($node);
+          $locs = array();
           foreach($_POST as $key => $value){
             $parts = explode(':', $key);
-            iform_loctools_insertlocation($node, $parts[2], $parts[1]);
+            if($parts[0]=='location' && !in_array($parts[1], $locs)) $locs[] = $parts[1];
+          }
+          if(count($locs)>0){
+            foreach($locs as $loc)
+              iform_loctools_deletelocation($node, $lid);
+            foreach($_POST as $key => $value){
+              $parts = explode(':', $key);
+              if($parts[0]=='location' && $value == 1)
+                iform_loctools_insertlocation($node, $parts[2], $parts[1]);
+            }
           }
         }
       } else if(!is_null(data_entry_helper::$entity_to_load)){
@@ -657,7 +675,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
 
     // Only actually need to show tabs if there is more than one
     if(count($tabs) > 1){
-      $r .= "<div id=\"controls\">".(data_entry_helper::enable_tabs(array('divId'=>'controls','active'=>'#sampleList')))."<div id=\"temp\"></div>";
+      $active = isset($_GET['page']) ? '#setLocations' : '#sampleList';
+      $r .= "<div id=\"controls\">".(data_entry_helper::enable_tabs(array('divId'=>'controls','active'=>$active)))."<div id=\"temp\"></div>";
       $r .= data_entry_helper::tab_header(array('tabs'=>$tabs));
     }
 
@@ -669,31 +688,62 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       $r .= '
 <div id="setLocations">
   <form method="post">
-    <input type="hidden" id="mnhnld1" name="mnhnld1" value="mnhnld1" /><table border="1"><tr><td></td>';
+    <input type="hidden" id="mnhnld1" name="mnhnld1" value="mnhnld1" /><table border="1"></thead><tr><th></th>';
       $url = data_entry_helper::$base_url.'/index.php/services/data/location?mode=json&view=detail' .
               '&auth_token=' . $auth['read']['auth_token'] .
               '&nonce=' . $auth['read']["nonce"] .
+              '&wantCount=1' .
               "&parent_id=NULL&orderby=name" .
               (isset($args['loctoolsLocTypeID'])&&$args['loctoolsLocTypeID']<>''?'&location_type_id='.$args['loctoolsLocTypeID']:'');
+      if(!isset($options['loctoolsPageSize'])) $options['loctoolsPageSize'] = 20;
+      $page = empty($_GET['page']) ? 1 : $_GET['page'];
+      $url .= '&limit='.($options['loctoolsPageSize']);
+      $url .= '&offset=' . ($page-1) * $options['loctoolsPageSize'];
       $session = curl_init($url);
       curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
       $entities = json_decode(curl_exec($session), true);
       $userlist = iform_loctools_listusers($node);
       foreach($userlist as $uid => $a_user){
-        $r .= '<td>'.$a_user->name.'</td>';
+        $r .= '<th>'.$a_user->name.'</th>';
       }
-      $r .= "</tr>";
-      if(!empty($entities)){
-        foreach($entities as $entity){
+      $r .= "</tr></thead><tbody>";
+      if(!empty($entities) && !empty($entities['records'])){
+        foreach($entities['records'] as $entity){
           if(!$entity["parent_id"]){ // only assign parent locations.
             $r .= "<tr><td>".$entity["name"]."</td>";
             $defaultuserids = iform_loctools_getusers($node, $entity["id"]);
             foreach($userlist as $uid => $a_user){
-              $r .= '<td><input type="checkbox" name="location:'.$entity["id"].':'.$uid.(in_array($uid, $defaultuserids) ? '" checked="checked"' : '"').'></td>';
+              $r .= '<td><input type="hidden" name="location:'.$entity["id"].':'.$uid.'" value="0"><input type="checkbox" name="location:'.$entity["id"].':'.$uid.(in_array($uid, $defaultuserids) ? '" checked="checked"' : '"').' value="1"></td>';
             }
             $r .= "</tr>";
           }
         }
+      }
+      $r .= "<tbody>";
+      // build pager.
+      $numEachSide = 5;
+      $pages = ceil($entities['count'] / $options['loctoolsPageSize']);
+      if($pages>1){
+        $path = iform_mnhnl_getReloadPath();
+        $path .= (strpos($path,'?')===false ? '?' : '&').'page=';
+        $r .= "\n<tfoot><tr><td colspan=".(count($userlist)+1)."><div class=\"pager ui-helper-clearfix\">";
+        if($page == 1)
+          $r .= '<span class="ui-state-disabled pager-button">1</span>';
+        else
+          $r .= '<a class="pager-button" href="'.$path.'1" rel="nofollow">1</a>';
+        if($page-$numEachSide > 2) $r .= '...';
+        for($i = max(2,$page-$numEachSide); $i<=min($pages-1,$page+$numEachSide); $i++) {
+          if($page == $i)
+            $r .= '<span class="ui-state-disabled pager-button">'.$i.'</span>';
+          else
+            $r .= '<a class="pager-button" href="'.$path.$i.'" rel="nofollow">'.$i.'</a>';
+        }
+        if($page+$numEachSide < $pages-1) $r .= '...';
+        if($page == $pages)
+          $r .= '<span class="ui-state-disabled pager-button">'.$pages.'</span>';
+        else
+          $r .= '<a class="pager-button" href="'.$path.$pages.'" rel="nofollow">'.$pages.'</a>';
+        $r .= "</div></td></tr></tfoot>";
       }
       $r .= "</table>
     <input type=\"submit\" class=\"default-button\" value=\"".lang::get('LANG_Save_Location_Allocations')."\" />

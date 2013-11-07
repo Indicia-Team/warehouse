@@ -593,7 +593,7 @@ hook_species_checklist_pre_delete_row=function(e) {
     ), $options);
     if ($args['extra_list_id']) $species_ctrl_opts['lookupListId']=$args['extra_list_id'];
     if (isset($args['col_widths']) && $args['col_widths']) $species_ctrl_opts['colWidths']=explode(',', $args['col_widths']);
-    call_user_func(array(get_called_class(), 'build_grid_taxon_label_function'), $args);
+    call_user_func(array(get_called_class(), 'build_grid_taxon_label_function'), $args, array());
     // Start by outputting a hidden value that tells us we are using a grid when the data is posted,
     // then output the grid control
     return self::mnhnl_bats2_species_checklist($args, $species_ctrl_opts);
@@ -660,7 +660,7 @@ hook_species_checklist_pre_delete_row=function(e) {
       self::species_checklist_prepare_attributes($options, $attributes, $occAttrControls, $occAttrs);
       $retVal = "<p>".lang::get('LANG_SpeciesInstructions')."</p>\n";
       if (isset($options['lookupListId'])) {
-         self::$cloneableTable = self::get_species_checklist_clonable_row($args, $options, $occAttrControls, $attributes);
+         self::$cloneableTable = self::get_species_checklist_clonable_row($options, $occAttrControls, $attributes);
       }
       $retVal .= '<table class="ui-widget ui-widget-content mnhnl-species-grid '.$options['class'].'" id="'.$options['id'].'">';
       $retVal .= self::get_species_checklist_header($options, $attributes).'<tbody>';
@@ -926,10 +926,19 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
     // copy the options array so we can modify it
     $extraTaxonOptions = array_merge(array(), $options);
     // We don't want to filter the taxa to be added, because if they are in the sample, then they must be included whatever.
+    $ids = array();
     unset($extraTaxonOptions['extraParams']['taxon_list_id']);
     unset($extraTaxonOptions['extraParams']['preferred']);
     unset($extraTaxonOptions['extraParams']['language_iso']);
-     // append the taxa to the list to load into the grid
+    foreach(data_entry_helper::$entity_to_load as $key => $value) {
+    	$parts = explode(':', $key,4);
+    	// Is this taxon attribute data?
+    	if (count($parts) == 4 && $parts[0] == 'sc'&& $parts[1]!='' && $parts[2]!='-ttlId-' && $parts[3]!='')
+    		$ids[] = $value;
+    }
+    if(count($ids)==0) return $ids;
+    $extraTaxonOptions['extraParams']['id'] = $ids;
+    // append the taxa to the list to load into the grid
     $fullTaxalist = data_entry_helper::get_population_data($extraTaxonOptions);
     $occList = array();
     foreach(data_entry_helper::$entity_to_load as $key => $value) {
