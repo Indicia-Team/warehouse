@@ -411,7 +411,7 @@ class iform_dynamic_shorewatch extends iform_dynamic_sample_occurrence {
     //The user needs to specify which page to go to when the user clicks on the notes icon on the species grid
     //The indiciaData.notesIcon is used by the addrowtogrid.js code so that the code for notes on the species grid is not run by old code.
     data_entry_helper::$javascript .= "
-    indiciaData.rootFolder = ".data_entry_helper::getRootFolder().";    
+    indiciaData.rootFolder = '".data_entry_helper::getRootFolder()."';    
     indiciaData.notesURL = '".$args['notesURL']."';
     indiciaData.notesIcon = true;
     ";
