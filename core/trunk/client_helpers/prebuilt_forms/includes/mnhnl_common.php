@@ -2582,8 +2582,9 @@ jQuery('#".$options['MainFieldID']."').change(function(){mainFieldChange(true)})
     								'view'=>'detail',
     								'orderby'=>'name',
     								'location_type_id'=>$args['loctoolsLocTypeID'],
-    								'deleted'=>'f')));
-      $locResponse = data_entry_helper::get_population_data($locOptions);
+    								'deleted'=>'f',
+    								'columns'=implode(',',array('id', $locOptions['valueField'], $locOptions['captionField'])))));
+      $locResponse = data_entry_helper::get_population_data($locOptions); // Only need certain columns: 'id', $locOptions['valueField'], $locOptions['captionField'].
       if (isset($locResponse['error'])) return "PARENT LOOKUP ERROR:  ".$locResponse['error'];
       $opts = "";
       if (!isset(data_entry_helper::$entity_to_load[$options['ParentFieldName']]))
@@ -2687,7 +2688,7 @@ jQuery(\"#".$options['ParentFieldID']."\").change(function(){
     								'location_type_id'=>$loctypeParam,
     								'deleted'=>'f')));
       if(isset(data_entry_helper::$entity_to_load["sample:id"])){ // if preloaded, then drop down is dependant on value in parent field: if not then get user to enter parent first
-        $response = data_entry_helper::get_population_data($locOptions);
+        $response = data_entry_helper::get_population_data($locOptions); // OK as parent_id filled in: not likely to be large number.
         if (isset($response['error'])) return "CHILD LOOKUP ERROR:  ".$response['error'];
         $opts .= str_replace(array('{value}', '{caption}', '{selected}'),
                          array('', htmlentities(lang::get('LANG_CommonEmptyLocationID')), ''),
@@ -2786,7 +2787,8 @@ jQuery(\"#".$options['ChooseParentFieldID']."\").change(function(){
               'view'=>'detail',
               'orderby'=>'name',
               'website_id'=>$args['website_id'],
-              'location_type_id'=>$loctypeParam),
+              'location_type_id'=>$loctypeParam,
+              'columns'=>array('id', 'name', 'code', 'location_type_id')),
             $auth['read']),
           'table'=>'location',
           'template' => 'select',
@@ -2794,7 +2796,7 @@ jQuery(\"#".$options['ChooseParentFieldID']."\").change(function(){
           'filterField'=>'parent_id',
           'size'=>3);
       // Idea here is to get a list of all locations in order to build drop downs.
-      $responseRecords = data_entry_helper::get_population_data($location_list_args);
+      $responseRecords = data_entry_helper::get_population_data($location_list_args); // want id, name, code, location_type_id
       if (isset($responseRecords['error'])) return $responseRecords['error'];
       iform_mnhnl_set_editable($auth, $args, $node, $responseRecords, 'conditional', $loctypeParam);
       $usedCodes = array();
@@ -2858,9 +2860,9 @@ jQuery(\"#".$options['ChooseParentFieldID']."\").change(function(){
       $includeCommune=true;
       $location_list_args=array(
           'nocache'=>true,
-          'extraParams'=>array_merge(array('orderby'=>'id', 'view'=>'detail', 'website_id'=>$args['website_id'], 'location_type_id'=>$primary), $auth['read']),
+          'extraParams'=>array_merge(array('orderby'=>'id', 'view'=>'detail', 'website_id'=>$args['website_id'], 'location_type_id'=>$primary, 'columns'=>'id,name,parent_id'), $auth['read']),
           'table'=>'location');
-      $locList = data_entry_helper::get_population_data($location_list_args);
+      $locList = data_entry_helper::get_population_data($location_list_args); // want id, name, parent_id
       if (isset($locList['error'])) return $locList['error'];
       $location_attr_list_args=array(
           'nocache'=>true,
@@ -2966,8 +2968,9 @@ hook_setSref_".$idx." = function(geom){ // map projection
                   						'view'=>'detail',
                   						'orderby'=>'name',
                   						'location_type_id'=>$parentLocTypeID,
-                  						'deleted'=>'f')));
-                  $locResponse = data_entry_helper::get_population_data($locOptions);
+                  						'deleted'=>'f',
+    								'columns'=implode(',',array('id', $locOptions['valueField'], $locOptions['captionField'])))));
+                  $locResponse = data_entry_helper::get_population_data($locOptions); // Only need certain columns: 'id', $locOptions['valueField'], $locOptions['captionField']
                   if (isset($locResponse['error'])) return "PARENT LOOKUP ERROR:  ".$locResponse['error'];
                   $opts = str_replace(array('{value}', '{caption}', '{selected}'),
                   		array('', lang::get('LANG_FirstChooseParentFilter'), ''),
@@ -3960,11 +3963,12 @@ function iform_mnhnl_set_editable($auth, $args, $node, $locList, $force, $loctyp
           'extraParams'=>array_merge(array(
               'view'=>'detail',
               'website_id'=>$args['website_id'],
-              'location_type_id'=>$loctypeParam),
+              'location_type_id'=>$loctypeParam,
+              'columns'=>'id,location_type_id'),
             $auth['read']),
           'table'=>'location');
     // Idea here is to get a list of all locations in order to build drop downs.
-    $locList = data_entry_helper::get_population_data($location_list_args);
+    $locList = data_entry_helper::get_population_data($location_list_args); // Want id, location_type_id
     if (isset($locList['error'])) return $locList['error'];
   }
   $primary = iform_mnhnl_getTermID($auth, 'indicia:location_types',$args['LocationTypeTerm']);
@@ -4103,11 +4107,10 @@ function iform_mnhnl_getAttrID($auth, $args, $table, $caption){
   return false;
 }
 
-function iform_mnhnl_getReloadPath(){
+function iform_mnhnl_getReloadPath($exclusions = array('sample_id', 'occurrence_id', 'new', 'page')){
   $reload = data_entry_helper::get_reload_link_parts();
-  unset($reload['params']['sample_id']);
-  unset($reload['params']['occurrence_id']);
-  unset($reload['params']['new']);
+  foreach($exclusions as $exclude)
+    unset($reload['params'][$exclude]);
   $reloadPath = $reload['path'];
   if(count($reload['params'])) $reloadPath .= '?'.http_build_query($reload['params']);
   return $reloadPath;

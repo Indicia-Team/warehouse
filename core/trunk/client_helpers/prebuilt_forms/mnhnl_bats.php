@@ -781,7 +781,7 @@ hook_species_checklist_pre_delete_row=function(e) {
     ), $options);
     if ($args['extra_list_id']) $species_ctrl_opts['lookupListId']=$args['extra_list_id'];
     if (isset($args['col_widths']) && $args['col_widths']) $species_ctrl_opts['colWidths']=explode(',', $args['col_widths']);
-    call_user_func(array(get_called_class(), 'build_grid_taxon_label_function'), $args);
+    call_user_func(array(get_called_class(), 'build_grid_taxon_label_function'), $args, array());
     // Start by outputting a hidden value that tells us we are using a grid when the data is posted,
     // then output the grid control
     return '<input type="hidden" value="true" name="gridmode" />'.
@@ -1032,17 +1032,25 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
     // copy the options array so we can modify it
     $extraTaxonOptions = array_merge(array(), $options);
     // We don't want to filter the taxa to be added, because if they are in the sample, then they must be included whatever.
+    $ids = array();
     unset($extraTaxonOptions['extraParams']['taxon_list_id']);
     unset($extraTaxonOptions['extraParams']['preferred']);
     unset($extraTaxonOptions['extraParams']['language_iso']);
-     // append the taxa to the list to load into the grid
+    foreach(data_entry_helper::$entity_to_load as $key => $value) {
+      $parts = explode(':', $key,4);
+      // following recent changes, the ttlid is stored in the present field.
+      // Is this taxon attribute data?
+      if (count($parts) == 4 && $parts[0] == 'sc' && $parts[2]!='' && $parts[3]=='present')
+        $ids[] = $value;
+    }
+    if(count($ids)==0) return $ids;
+    $extraTaxonOptions['extraParams']['id'] = $ids;
+    // append the taxa to the list to load into the grid
     $fullTaxalist = data_entry_helper::get_population_data($extraTaxonOptions);
     $taxaLoaded = array();
     $occList = array();
     foreach(data_entry_helper::$entity_to_load as $key => $value) {
       $parts = explode(':', $key,4);
-      // following recent changes, the ttlid is stored in the present field.
-      // Is this taxon attribute data?
       if (count($parts) == 4 && $parts[0] == 'sc' && $parts[3]=='present') {
         if($parts[2]=='')
           $occList['error'] = 'ERROR PROCESSING entity_to_load: found name '.$key.' with no sequence/id number in part 2';

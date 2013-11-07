@@ -4833,6 +4833,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     }
     $r = json_decode($response['output'], true);
     if (!is_array($r)) {
+      $response['request'] = $request;
       throw new Exception('Invalid response received from Indicia Warehouse. '.print_r($response, true));
     }
     // Only cache valid responses
