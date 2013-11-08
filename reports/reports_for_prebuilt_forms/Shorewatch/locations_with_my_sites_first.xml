@@ -6,10 +6,10 @@
           FROM locations l
             JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
             LEFT JOIN (person_attribute_values pav 
-              JOIN person_attributes pa ON pa.id=pav.person_attribute_id AND pa.id=#my_sites_person_attr_id# AND pav.person_id = #user_id#
+              JOIN person_attributes pa ON pa.id=pav.person_attribute_id AND pa.id=#my_sites_person_attr_id# AND pav.person_id = #user_id# AND pa.deleted=false
               JOIN people p ON p.id = pav.person_id
               JOIN users u ON u.person_id = p.id AND u.id = #user_id#
-            ) ON pav.int_value=l.id
+            ) ON pav.int_value=l.id AND pav.deleted=false
           WHERE l.deleted=false
             AND #website_filter#
             AND (u.id = #user_id# OR u.id IS NULL)
