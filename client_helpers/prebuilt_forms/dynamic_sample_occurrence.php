@@ -1395,12 +1395,15 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     $species_ctrl_opts=array_merge(array(
         'fieldname'=>'occurrence:taxa_taxon_list_id',
         'label'=>lang::get('occurrence:taxa_taxon_list_id'),
-        'extraParams'=>$extraParams,
         'columns'=>2, // applies to radio buttons
         'parentField'=>'parent_id', // applies to tree browsers
         'blankText'=>lang::get('Please select'), // applies to selects
         'cacheLookup'=>$args['cache_lookup']
     ), $options);
+    if (isset($species_ctrl_opts['extraParams']))
+      $species_ctrl_opts['extraParams']=array_merge($extraParams, $species_ctrl_opts['extraParams']);
+    else
+      $species_ctrl_opts['extraParams']=$extraParams;
     if (!empty($args['taxon_filter'])) {
       $species_ctrl_opts['taxonFilterField']=$args['taxon_filter_field']; // applies to autocompletes
       $species_ctrl_opts['taxonFilter']=helper_base::explode_lines($args['taxon_filter']); // applies to autocompletes
@@ -1416,7 +1419,6 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       // For other controls we need to apply the species name filter to the params used for population
       if (!empty($species_ctrl_opts['taxonFilter']) || $options['speciesNameFilterMode'])
         $species_ctrl_opts['extraParams'] = array_merge($species_ctrl_opts['extraParams'], data_entry_helper::get_species_names_filter($species_ctrl_opts));
-    
       // for controls which don't know how to do the lookup, we need to tell them
       $species_ctrl_opts = array_merge(array(
         'table' => $tblTaxon,
