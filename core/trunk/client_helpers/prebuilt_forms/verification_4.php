@@ -992,8 +992,9 @@ WHERE vuser_id.value=".$_GET['user_id']);
        lang::get("{1} years ago"),
        lang::get("{1} decades ago"));
    $lengths = array("60","60","24","7","4.35","12","10");
-   for($j = 0; $difference >= $lengths[$j]; $j++)
-   $difference /= $lengths[$j];
+   for($j = 0; (($difference >= $lengths[$j]) && ($j < 7)) ; $j++) {
+     $difference /= $lengths[$j];
+   }
    $difference = round($difference);
    if($difference == 1)
      $text = str_replace('{1}', $difference, $periods[$j]);
