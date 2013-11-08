@@ -237,13 +237,12 @@ class iform_dynamic_weekly_counts extends iform_dynamic_sample_occurrence {
       }
     }
     $attrOptions = array(
-        'id' => null,
-         'valuetable'=>'occurrence_attribute_value',
-         'attrtable'=>'occurrence_attribute',
-         'key'=>'occurrence_id',
-         'fieldprefix'=>'sc#wk#:#ttlId#:#occId#:occAttr',
-         'extraParams'=>$auth['read'],
-         'survey_id'=>$args['survey_id']
+        'valuetable'=>'occurrence_attribute_value',
+        'attrtable'=>'occurrence_attribute',
+        'key'=>'occurrence_id',
+        'fieldprefix'=>'sc#wk#:#ttlId#:#occId#:occAttr',
+        'extraParams'=>$auth['read'],
+        'survey_id'=>$args['survey_id']
     );
     $attributes = data_entry_helper::getAttributes($attrOptions);
     if (count($attributes)!==1)
