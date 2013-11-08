@@ -300,7 +300,8 @@ class data_entry_helper extends helper_base {
         $minified = array();
         foreach ($termlistData as $term) {
           $minified[] = array($term['id'], $term['term']);
-          $thRow2 .= "<th>$term[term]</th>";
+          if (isset($def['control']) && $def['control']==='checkbox_group')
+            $thRow2 .= "<th>$term[term]</th>";
         }
         $lookupData['tl'.$def['termlist_id']] = $minified;
         self::$javascript .= "indiciaData.tl$def[termlist_id]=".json_encode($minified).";\n";
@@ -317,9 +318,10 @@ class data_entry_helper extends helper_base {
     $jsData = array('cols'=>$options['columns'],'rowCount'=>$options['defaultRows'],
         'rowCountControl'=>$options['rowCountControl']);
     self::$javascript .= "indiciaData['complexAttrGrid-$attrTypeTag-$attrId']=".json_encode($jsData).";\n"; 
-    $r .= "</tr><tr>$thRow2</tr></thead>";
+    $r .= "<th rowspan=\"2\"></th></tr><tr>$thRow2</tr></thead>";
     $r .= '<tbody>';
     $rowCount = $options['defaultRows'] > count($options['default']) ? $options['defaultRows'] : count($options['default']);
+    $extraCols=0;
     for ($i = 0; $i<=$rowCount-1; $i++) {
       $r .= '<tr>';
       $defaults=isset($options['default'][$i]) ? json_decode($options['default'][$i]['default'], true) : array();
@@ -341,6 +343,7 @@ class data_entry_helper extends helper_base {
             $checkboxes[] = "<input title=\"$term[1]\" type=\"checkbox\" name=\"$fieldname\" value=\"$term[0]:$term[1]\"$checked>";
           }
           $r .= implode('</td><td>', $checkboxes);
+          $extraCols .= count($checkboxes)-1;
         } elseif ($def['datatype']==='lookup') {
           $r .= "<select name=\"$fieldname\"><option value=''>&lt;".lang::get('Please select')."&gt;</option>";
           foreach ($lookupData['tl'.$def['termlist_id']] as $term) {
@@ -364,7 +367,7 @@ class data_entry_helper extends helper_base {
     $r .= '</tbody>';
     if (empty($options['rowCountControl'])) {
       $r .= '<tfoot>';
-      $r .= '<tr><td colspan="'.(count($options['columns'])+1).'"><button class="add-btn" type="button">Add another</button></td></tr>';
+      $r .= '<tr><td colspan="'.(count($options['columns'])+1+$extraCols).'"><button class="add-btn" type="button">Add another</button></td></tr>';
       $r .= '</tfoot>';
     } else {
       $escaped = str_replace(':', '\\\\:', $options['rowCountControl']);
@@ -375,9 +378,6 @@ $('#$escaped').change(function(e) {
 });\n";
     }
     $r .= '</table>';
-    
-    
-    
     return $r;  
   }
 
