@@ -314,14 +314,15 @@ class report_helper extends helper_base {
   * the report will load when the tab is first viewed.
   * Default false.
   * </li>
+  * <li><b>autoloadAjax</b>
+  * Set to true to prevent autoload of the grid in Ajax mode. You would then need to call the grid's ajaxload() method 
+  * when ready to load. This might be useful e.g. if a parameter is obtained from some other user input beforehand.
+  * Default false.
+  * </li>
   * <li><b>pager</b>
   * Include a pager? Default true. Removing the pager can have a big improvement on performance where there are lots of records to count.
   * </li>
   * </ul>
-  * @todo Allow additional params to filter by table column or report parameters
-  * @todo Display a filter form for direct mode
-  * @todo For report mode, provide an AJAX/PHP button that can load the report from parameters
-  * in a form on the page.
   */
   public static function report_grid($options) {
     global $indicia_templates;
@@ -670,7 +671,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       self::$javascript.= "  opts.clickableLayersOutputMode='reportHighlight';\n";
       self::$javascript .= "});\n";
     }
-    if ($options['ajax']) 
+    if ($options['ajax'] && $options['autoloadAjax']) 
       self::$onload_javascript .= "indiciaData.reports.$group.$uniqueName.ajaxload();\n";
     return $r;
   }
@@ -2170,6 +2171,7 @@ if (typeof mapSettingsHooks!=='undefined') {
       'sendOutputToMap' => false,
       'zoomMapToOutput' => true,
       'ajax' => false,
+      'autoloadAjax' => true,
       'linkFilterToMap' => true,
       'pager' => true
     ), $options);
