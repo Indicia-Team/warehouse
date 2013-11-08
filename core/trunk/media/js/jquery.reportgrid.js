@@ -161,10 +161,9 @@ var simple_tooltip;
             if (div.settings.pathParam !== '' && link.indexOf('?'+div.settings.pathParam+'=') === -1) {
               //if there is a path param but it is not in the link already then add it to the rootFolder
               row.rootFolder += '?'+div.settings.pathParam+'=';
-            }  
-            //Need to convert the link into a real url before we test whether it needs current server url added to the front.
-            convertedLink = mergeParamsIntoTemplate(div, row, link);
-            if (convertedLink.substr(0, 4).toLowerCase()!=='http') {
+            }
+            if (link.substr(0, 12).toLowerCase()!=='{rootfolder}' && link.substr(0, 12).toLowerCase()!=='{currenturl}'
+                && link.substr(0, 4).toLowerCase()!=='http') {
               link='{rootFolder}'+link;
             }
             link = mergeParamsIntoTemplate(div, row, link);
