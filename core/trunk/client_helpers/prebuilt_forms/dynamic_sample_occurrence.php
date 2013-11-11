@@ -1675,14 +1675,21 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
 
   /**
    * Get the location control as a select dropdown.
+   * Default control ordering is by name.
+   * reportProvidesOrderBy option should be set to true if the control is populated by a report that
+   * provides its own Order By statement, if the reportProvidesOrderBy option is not set in this situation, then the report
+   * will have two Order By statements and will fail. 
    */
   protected static function get_control_locationselect($auth, $args, $tabAlias, $options) {
     if (isset($options['extraParams'])) {
       foreach ($options['extraParams'] as $key => &$value)
         $value = apply_user_replacements($value);
-      $options['extraParams'] = array_merge(array('orderby'=>'name'), $auth['read'], $options['extraParams']);
+      $options['extraParams'] = array_merge($auth['read'], $options['extraParams']);
     } else 
-      $options['extraParams'] = array_merge(array('orderby'=>'name'), $auth['read']);
+      $options['extraParams'] = array_merge($auth['read']);
+    if (empty($options['reportProvidesOrderBy'])||$options['reportProvidesOrderBy']==0) {
+      $options['extraParams']['orderby'] = 'name';
+    }
     $location_list_args = array_merge(array(
         'label'=>lang::get('LANG_Location_Label'),
         'view'=>'detail'
