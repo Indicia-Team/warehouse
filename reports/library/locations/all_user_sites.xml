@@ -11,6 +11,7 @@
       LEFT JOIN users u ON u.person_id=p.id
     #joins#
     WHERE pav.deleted=false
+    AND pav.person_attribute_id=#person_site_attr_id#
     AND #website_filter#        
    </query>
   <order_bys>
