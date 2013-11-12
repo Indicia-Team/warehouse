@@ -93,6 +93,10 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
         $this->response =  $this->csv_encode($records);
         $this->content_type = 'Content-Type: text/comma-separated-values';
         break;
+      case 'tsv':
+        $this->response =  $this->tsv_encode($records);
+        $this->content_type = 'Content-Type: text/tab-separated-values';
+        break;
       case 'nbn':
         $this->response =  $this->nbn_encode($records);
         $this->content_type = 'Content-Type: text/plain';
@@ -165,6 +169,14 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
   protected function csv_encode($array)
   {
     return $this->do_encode($array,'csv');
+  }
+  
+  /**
+  * Encode the results of a query array as a tsv (tab separated value) string
+  */
+  protected function tsv_encode($array)
+  {
+    return $this->do_encode($array,'tsv');
   }
   
   /**
@@ -253,7 +265,24 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     return $output;
   }
   
-    /**
+  /**
+   * Return a line of TSV (tab separated values) from an array.
+   * IANA compliant: no tabs allowed in the fields, so we replace any.
+   */
+  function get_tsv($data,$delimiter="\t",$replace=' ')
+  {
+    $newline="\r\n";
+    $output = '';
+    foreach ($data as $cell)
+    {
+      // replace all delimiter values with a dummy
+      $output .=  ($output == '' ? '' : $delimiter) . str_replace($delimiter,$replace,$cell);
+    }
+    $output.=$newline;
+    return $output;
+  }
+  
+  /**
   * Return a line of NBN exchange format data from an array. 
   */
   function get_nbn($data)

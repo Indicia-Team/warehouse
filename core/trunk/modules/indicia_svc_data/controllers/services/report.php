@@ -79,11 +79,13 @@ class Report_Controller extends Data_Service_Base_Controller {
       $this->handle_request();
       $mode = $this->get_output_mode();
       switch($mode) {
-        case 'csv' :
-          $extension='csv';
-          break;
+        case 'json' :
+      	case 'csv' :
+        case 'tsv' :
         case 'xml' :
-          $extension='xml';
+        case 'gpx' :
+        case 'kml' :
+          $extension=$mode;
           break;
         default : $extension='txt';
       }
