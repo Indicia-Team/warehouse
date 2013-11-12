@@ -303,6 +303,7 @@ class iform_report_calendar_summary {
           'caption'=>'Report 1 Download Caption',
           'description'=>'Caption for the first download report.',
           'type'=>'string',
+          'required' => false,
           'default' => 'report-1',
           'group' => 'Downloads'
         ),
@@ -315,10 +316,28 @@ class iform_report_calendar_summary {
           'group'=>'Downloads'
         ),
         array(
+          'name'=>'download_report_1_format',
+          'caption'=>'Report Format',
+          'description'=>'Format of file produced.<br/>Note that some options have restrictions on the formats of fields (e.g. geometries in GPX and KML formats) in the report. Please see the Wiki for more details.',
+          'type'=>'select',
+          'options' => array(
+              'json' => 'JSON',
+              'xml' => 'XML',
+              'csv' => 'CSV',
+              'tsv' => 'TSV',
+              'nbn' => 'NBN',
+              'gpx' => 'GPX',
+              'kml' => 'KML'
+          ),
+          'default' => 'csv',
+          'group' => 'Downloads'
+        ),
+        array(
           'name'=>'Download2Caption',
           'caption'=>'Report 2 Download Caption',
           'description'=>'Caption for the second download report.',
           'type'=>'string',
+          'required' => false,
           'default' => 'report-2',
           'group' => 'Downloads'
         ),
@@ -329,6 +348,91 @@ class iform_report_calendar_summary {
           'type'=>'report_helper::report_picker',
           'required' => false,
           'group'=>'Downloads'
+        ),
+        array(
+          'name'=>'download_report_2_format',
+          'caption'=>'Report Format',
+          'description'=>'Format of file produced.<br/>Note that some options have restrictions on the formats of fields (e.g. geometries in GPX and KML formats) in the report. Please see the Wiki for more details.',
+          'type'=>'select',
+          'options' => array(
+              'json' => 'JSON',
+              'xml' => 'XML',
+              'csv' => 'CSV',
+              'tsv' => 'TSV',
+              'nbn' => 'NBN',
+              'gpx' => 'GPX',
+              'kml' => 'KML'
+          ),
+          'default' => 'csv',
+          'group' => 'Downloads'
+        ),
+        array(
+          'name'=>'Download3Caption',
+          'caption'=>'Report 3 Download Caption',
+          'description'=>'Caption for the third download report.',
+          'type'=>'string',
+          'required' => false,
+          'default' => 'report-3',
+          'group' => 'Downloads'
+        ),
+        array(
+          'name'=>'download_report_3',
+          'caption'=>'Download Report 3',
+          'description'=>'Select the report to provide the third download report.',
+          'type'=>'report_helper::report_picker',
+          'required' => false,
+          'group'=>'Downloads'
+        ),
+        array(
+          'name'=>'download_report_3_format',
+          'caption'=>'Report Format',
+          'description'=>'Format of file produced.<br/>Note that some options have restrictions on the formats of fields (e.g. geometries in GPX and KML formats) in the report. Please see the Wiki for more details.',
+          'type'=>'select',
+          'options' => array(
+              'json' => 'JSON',
+              'xml' => 'XML',
+              'csv' => 'CSV',
+              'tsv' => 'TSV',
+              'nbn' => 'NBN',
+              'gpx' => 'GPX',
+              'kml' => 'KML'
+          ),
+          'default' => 'csv',
+          'group' => 'Downloads'
+        ),
+        array(
+          'name'=>'Download4Caption',
+          'caption'=>'Report 4 Download Caption',
+          'description'=>'Caption for the fourth download report.',
+          'type'=>'string',
+          'required' => false,
+          'default' => 'report-4',
+          'group' => 'Downloads'
+        ),
+        array(
+          'name'=>'download_report_4',
+          'caption'=>'Download Report 4',
+          'description'=>'Select the report to provide the fourth download report.',
+          'type'=>'report_helper::report_picker',
+          'required' => false,
+          'group'=>'Downloads'
+        ),
+        array(
+          'name'=>'download_report_4_format',
+          'caption'=>'Report Format',
+          'description'=>'Format of file produced.<br/>Note that some options have restrictions on the formats of fields (e.g. geometries in GPX and KML formats) in the report. Please see the Wiki for more details.',
+          'type'=>'select',
+          'options' => array(
+              'json' => 'JSON',
+              'xml' => 'XML',
+              'csv' => 'CSV',
+              'tsv' => 'TSV',
+              'nbn' => 'NBN',
+              'gpx' => 'GPX',
+              'kml' => 'KML'
+          ),
+          'default' => 'csv',
+          'group' => 'Downloads'
         ),
 
         array(
@@ -1376,16 +1480,16 @@ jQuery('#".$ctrlid."').change(function(){
       self::set_up_control_change('cachingParam', self::$cacheKey, array(), true);
 
       $checked=self::$siteUrlParams[self::$downloadKey]['value']==='true' ? ' checked="checked"' : '';
-      if(self::$siteUrlParams[self::$downloadKey]['value']!=='true'){
+      if(self::$siteUrlParams[self::$downloadKey]['value']!=='true' && isset($reportOptions['includeListDownload']) && $reportOptions['includeListDownload'] ==true){
         $reportOptions['includeRawGridDownload'] = false;
         $reportOptions['includeRawListDownload'] = false;
         $reportOptions['includeSummaryGridDownload'] = false;
         $reportOptions['includeEstimatesGridDownload'] = false;
         $reportOptions['includeListDownload'] = false;
-        unset($args['Download1Caption']);
-        unset($args['download_report_1']);
-        unset($args['Download2Caption']);
-        unset($args['download_report_2']);
+        for($i=1; $i<=4; $i++) {
+          unset($args['Download'.$i.'Caption']);
+          unset($args['download_report_'.$i]);
+        }
       }
       data_entry_helper::$javascript .=
           "jQuery('.downloads-table-label').remove();\n".
@@ -1417,24 +1521,21 @@ jQuery('#".$ctrlid."').change(function(){
       global $indicia_templates;
       $indicia_templates['report_download_link'] = '<th><a href="{link}"><button type="button">{caption}</button></a></th>';
       // format is assumed to be CSV
-      $downloadOptions = array('caption' => isset($args['Download1Caption']) ? $args['Download1Caption'] : '',
-        'readAuth'=>$auth,
-        'dataSource'=> isset($args['download_report_1']) ? $args["download_report_1"] : '',
+      $downloadOptions = array('readAuth'=>$auth,
         'extraParams'=>array_merge($reportOptions['extraParams'], array('date_from' => $reportOptions['date_start'], 'date_to' => $reportOptions['date_end'])),
-        'itemsPerPage' => false,
-        'filename' => $reportOptions['downloadFilePrefix'].preg_replace('/[^A-Za-z0-9]/i', '', isset($args['Download1Caption']) ? $args['Download1Caption'] : '')
-      );
+        'itemsPerPage' => false);
       // there are problems dealing with location_list as an array if empty, so connvert
       if($downloadOptions['extraParams']['location_list']=="")
         $downloadOptions['extraParams']['location_list']="(-1)";
       else $downloadOptions['extraParams']['location_list']='('.$downloadOptions['extraParams']['location_list'].')';
-      if(isset($args['Download1Caption']) && $args['Download1Caption'] != "" && isset($args['download_report_1']) && $args['download_report_1'] != "")
-        data_entry_helper::$javascript .="\njQuery('#downloads-table thead tr').append('".report_helper::report_download_link($downloadOptions)."');\n";
-      if(isset($args['Download2Caption']) && $args['Download2Caption'] != "" && isset($args['download_report_2']) && $args['download_report_2'] != ""){
-        $downloadOptions['caption' ]=$args['Download2Caption'];
-        $downloadOptions['dataSource']=$args["download_report_2"];
-        $downloadOptions['filename']=$reportOptions['downloadFilePrefix'].preg_replace('/[^A-Za-z0-9]/i', '', $args['Download2Caption']);
-        data_entry_helper::$javascript .="\njQuery('#downloads-table thead tr').append('".report_helper::report_download_link($downloadOptions)."');\n";
+      for($i=1; $i<=4; $i++){
+        if(isset($args['Download'.$i.'Caption']) && $args['Download'.$i.'Caption'] != "" && isset($args['download_report_'.$i]) && $args['download_report_'.$i] != ""){
+          $downloadOptions['caption' ]=$args['Download'.$i.'Caption'];
+          $downloadOptions['dataSource']=$args['download_report_'.$i];
+          $downloadOptions['filename']=$reportOptions['downloadFilePrefix'].preg_replace('/[^A-Za-z0-9]/i', '', $args['Download'.$i.'Caption']);
+          if(isset($args['download_report_'.$i.'_format'])) $downloadOptions['format']=$args['download_report_'.$i.'_format'];
+          data_entry_helper::$javascript .="\nif(jQuery('#downloads-table th').length==0)\n  jQuery('#downloads-table thead tr').append('<th class=\"downloads-table-label\">".lang::get("Downloads")."</th>');\njQuery('#downloads-table thead tr').append('".report_helper::report_download_link($downloadOptions)."');\n";
+        }
       }
     }
 
