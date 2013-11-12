@@ -1490,8 +1490,7 @@ jQuery('#".$ctrlid."').change(function(){
           unset($args['Download'.$i.'Caption']);
           unset($args['download_report_'.$i]);
         }
-      }
-      data_entry_helper::$javascript .=
+        data_entry_helper::$javascript .=
           "jQuery('.downloads-table-label').remove();\n".
           "jQuery('#downloads-table thead tr').prepend('<th>".
             "<label for=\"downloadParam\" title=\"".lang::get("When fetching the full data set, unselecting this improves performance by not including the download data in the page. This extra data can lead to a significantly increase in download time.")."\" >".
@@ -1499,7 +1498,8 @@ jQuery('#".$ctrlid."').change(function(){
             "</label>".
             "<input type=\"checkbox\" name=\"downloadParam\" id=\"downloadParam\" class=\"downloadParam\"".$checked."/>".
             "</th>');\n";
-      self::set_up_control_change('downloadParam', self::$downloadKey, array(), true);
+        self::set_up_control_change('downloadParam', self::$downloadKey, array(), true);
+      }
     }
     $retVal.= '</tr></thead></table>';
     $reportOptions['highlightEstimates']=true;
