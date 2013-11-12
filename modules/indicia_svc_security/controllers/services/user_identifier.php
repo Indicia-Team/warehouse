@@ -92,7 +92,7 @@ class User_Identifier_Controller extends Service_Base_Controller {
       // We don't need a website_id in the request as the authentication data contains it, but
       // we do need to know the cms_user_id so that we can ensure any previously recorded data for
       // this user is attributed correctly to the warehouse user.
-      if (!isset($request['cms_user_id']))
+      if (!isset($request['cms_user_id']) || !$request['cms_user_id'])
         throw new exception('Call to get_user_id requires a cms_user_id in the GET or POST data.');
       // authenticate requesting website for this service. This can create a user, so need write
       // permission.
@@ -192,9 +192,10 @@ class User_Identifier_Controller extends Service_Base_Controller {
         'userId'=>$userId,
         'attrs'=>$attrsToReturn
       ));
-      // Update the created_by_id for all records that were created by this cms_user_id. This 
+      // If allocating a new user ID, then update the created_by_id for all records that were created by this cms_user_id. This 
       // takes ownership of the records.
-      postgreSQL::setOccurrenceCreatorByCmsUser($this->website_id, $userId, $request['cms_user_id'], $this->db);
+      if (empty($request['warehouse_user_id']))
+        postgreSQL::setOccurrenceCreatorByCmsUser($this->website_id, $userId, $request['cms_user_id'], $this->db);
     }
     catch (Exception $e) {
       $this->handle_error($e);
