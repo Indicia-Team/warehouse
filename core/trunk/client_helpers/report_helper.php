@@ -2830,6 +2830,24 @@ update_controls();
     $locationSamples = array();
     $dateList = array();
     $weekList = array();
+    $smpAttrs = isset($options['extraParams']['smpattrs']) ? explode(',',$options['extraParams']['smpattrs']) : false;
+    $smpAttrList = array();
+    if($smpAttrs && count($smpAttrs)==0) $smpAttrs = false;
+    if($smpAttrs) {
+      $smpAttributes=data_entry_helper::get_population_data(array(
+            'table'=>'sample_attribute',
+            'extraParams'=>$options['readAuth'] + array('view'=>'list', 'id'=>$smpAttrs)
+          ));
+      foreach($smpAttributes as $smpAttr) {
+        $smpAttrList[$smpAttr['id']]=$smpAttr;
+        if($smpAttr['data_type']=='L')
+          $smpAttrList[$smpAttr['id']]['termList'] = data_entry_helper::get_population_data(array(
+            'table'=>'termlists_term',
+            'extraParams'=>$options['readAuth'] + array('view'=>'detail', 'termlist_id'=>$smpAttrList[$smpAttr['id']]['termlist_id'])
+          ));
+      }
+    }
+
     // we are assuming that there can be more than one occurrence of a given taxon per sample.
     if(count($options['location_list']) == 0) $options['location_list'] = 'none';
     foreach($records as $recid => $record){
@@ -2848,14 +2866,22 @@ update_controls();
         if(!in_array($record['location_name'],$weekList[$weekno])) $weekList[$weekno][] = $record['location_name'];
       } else $weekList[$weekno] = array($record['location_name']);
       if(!isset($rawArray[$this_index])){
-        $rawArray[$this_index] = array('weekno'=>$weekno, 'counts'=>array(), 'date'=>$record['date'], 'total'=>0, 'samples'=>array());
+        $rawArray[$this_index] = array('weekno'=>$weekno, 'counts'=>array(), 'date'=>$record['date'], 'total'=>0, 'samples'=>array(), 'smpAttrs'=>array(), 'smpAttrsTerm'=>array());
       }
       // we assume that the report is configured to return the user_id which matches the method used to generate my_user_id
       if (($options['my_user_id']==$record['user_id'] ||
            $options['location_list'] == 'all' ||
            ($options['location_list'] != 'none' && in_array($record['location_id'], $options['location_list'])))
-          && !isset($rawArray[$this_index]['samples'][$record['sample_id']]))
-        $rawArray[$this_index]['samples'][$record['sample_id']]=array('id'=>$record['sample_id'], 'location_name'=>$record['location_name']);
+          && !isset($rawArray[$this_index]['samples'][$record['sample_id']])){
+        $rawArray[$this_index]['samples'][$record['sample_id']]=array('id'=>$record['sample_id'], 'location_name'=>$record['location_name'], 'smpAttrs'=>array());
+        if($smpAttrs){
+          foreach($smpAttrs as $smpAttr){
+            $rawArray[$this_index]['samples'][$record['sample_id']]['smpAttrs'][$smpAttr] = $record['attr_sample_'.$smpAttr];
+            if(isset($record['attr_sample_term_'.$smpAttr]))
+              $rawArray[$this_index]['samples'][$record['sample_id']]['smpAttrsTerm'][$smpAttr] = $record['attr_sample_term_'.$smpAttr];
+          }
+        }
+      }
       $records[$recid]['weekno']=$weekno;
       $records[$recid]['date_index']=$this_index;
       if(isset($locationSamples[$record['location_id']])){
@@ -2866,6 +2892,47 @@ update_controls();
       } else $locationSamples[$record['location_id']] = array($weekno => array($record['sample_id']));
     }
     $warnings .= '<span style="display:none;">Records date pre-processing complete : '.date(DATE_ATOM).'</span>'."\n";
+    if($smpAttrs) {
+      foreach($rawArray as $dateIndex => $rawData) {
+        foreach($smpAttrs as $smpAttr){
+          if($smpAttrList[$smpAttr]['data_type']=='L'){
+            if(count($rawArray[$dateIndex]['samples'])==1) {
+              foreach($rawArray[$dateIndex]['samples'] as $sample)
+                $rawArray[$dateIndex]['smpAttrs'][$smpAttr] = $sample['smpAttrsTerm'][$smpAttr]; // only 1.
+            } else {
+              $total=0;
+              $count=0;
+              foreach($rawArray[$dateIndex]['samples'] as $sample) {
+                $term = trim($sample['smpAttrsTerm'][$smpAttr], "% \t\n\r\0\x0B");
+                if(is_int($term)){
+                  $total += intval($term);
+                  $count++;
+                } else if(is_float($term)){
+                  $total += floatval($term);
+                  $count++;
+                }
+              }
+              $rawArray[$dateIndex]['smpAttrs'][$smpAttr] = $count ? $total/$count : "";
+            }
+          } else {
+            if(count($rawArray[$dateIndex]['samples'])==1) {
+              foreach($rawArray[$dateIndex]['samples'] as $sample)
+                $rawArray[$dateIndex]['smpAttrs'][$smpAttr] = $sample['smpAttrs'][$smpAttr]; // only 1.
+            } else {
+              $total=0;
+              $count=0;
+              foreach($rawArray[$dateIndex]['samples'] as $sample)
+                if($sample['smpAttrs'][$smpAttr] != null){
+                  $count++;
+                  $total += $sample['smpAttrs'][$smpAttr];
+                }
+              $rawArray[$dateIndex]['smpAttrs'][$smpAttr] = $count ? $total/$count : "";
+            }
+          }
+        }
+      }
+    }
+    $warnings .= '<span style="display:none;">Sample Attribute processing complete : '.date(DATE_ATOM).'</span>'."\n";
     $count = count($records);
     self::report_calendar_summary_initLoc1($minWeekNo, $maxWeekNo, $weekList);
     if($count>0) $locationArray = self::report_calendar_summary_initLoc2($minWeekNo, $maxWeekNo, $locationSamples[$records[0]['location_id']]);
@@ -3310,6 +3377,24 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
         }
         $r.= "</thead>\n<tbody>\n";
         $altRow=false;
+        if($smpAttrs) {
+          foreach($smpAttrs as $i => $smpAttr){
+            $r .= "<tr class=\"sample-datarow ".($altRow?$options['altRowClass']:'')." ".($i==(count($smpAttrs)-1)?'last-sample-datarow':'')."\">";
+            $r .= '<td>'.$smpAttrList[$smpAttr]['caption'].'</td>';
+            $rawDataDownloadGrid .= $smpAttrList[$smpAttr]['caption'];
+            foreach($rawArray as $dateIndex => $rawData) {
+              $r.= '<td>'.$rawData['smpAttrs'][$smpAttr].'</td>';
+              $rawDataDownloadGrid .= '%2C'.$rawData['smpAttrs'][$smpAttr];
+            }
+            if($options['includeTableTotalColumn']){
+              $r.= '<td class="total-column"></td>';
+              $rawDataDownloadGrid .= '%2C';
+            }
+            $r .= "</tr>";
+            $rawDataDownloadGrid .= '%0A';
+            $altRow=!$altRow;
+          }
+        }
         foreach($summaryArray as $seriesID => $summaryRow){ // use the same row headings as the summary table.
           if (!empty($seriesLabels[$seriesID])) {
             $total=0;  // row total
