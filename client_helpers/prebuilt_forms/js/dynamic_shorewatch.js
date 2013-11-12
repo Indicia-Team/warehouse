@@ -13,7 +13,11 @@ jQuery(document).ready(function($) {
   setup_time_validation();
   hide_wdcs_newsletter();
   details_field_behaviour();
-  cetaceans_control_next_step();
+  //If the page is locked then we don't run the logic on the Save/Next Step button
+  //as this logic enables the button when we don't want it enabled.
+  if (!indiciaData.dontRunCetaceanSaveButtonLogic) {
+    cetaceans_control_next_step();
+  }
   $('[id$=\"comment-0\"]').text('Notes');
   adhoc_reticule_fields_validator();
   adhoc_sightings_grid_species_validator();

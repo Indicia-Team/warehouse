@@ -436,7 +436,11 @@ class iform_dynamic_shorewatch extends iform_dynamic_sample_occurrence {
     if (!empty($_GET['sample_id'])&&empty($sightingsData)) {
       $r = '<div><i>This page is locked as it does not having any sightings.</i></div>'.$r;
       data_entry_helper::$javascript .= "$('[id*=_lock]').remove();\n";
-      data_entry_helper::$javascript .= "$('#disableDiv').find('input, textarea, text, button, select').attr('disabled','disabled');\n";  
+      data_entry_helper::$javascript .= "$('#disableDiv').find('input, textarea, text, button, select').attr('disabled','disabled');\n"; 
+      data_entry_helper::$javascript .= "$('.species-grid, .page-notice, .indicia-button').hide();\n"; 
+      //If the page is locked then we don't run the logic on the Save/Next Step button
+      //as this logic enables the button when we don't want it enabled.
+      data_entry_helper::$javascript .= "indiciaData.dontRunCetaceanSaveButtonLogic=true;"; 
     }
     if (!empty($sightingsData)) {
       //If any verified sightings are found then put page into read-only mode.
@@ -445,7 +449,12 @@ class iform_dynamic_shorewatch extends iform_dynamic_sample_occurrence {
           if ($sightingData['verification_status']==='D' || $sightingData['verification_status']==='V' || $sightingData['verification_status']==='R') {
             $r = '<div><i>This page is locked as it has at least 1 verified sighting.</i></div>'.$r;
             data_entry_helper::$javascript .= "$('[id*=_lock]').remove();\n $('.remove-row').remove();\n";
+            data_entry_helper::$javascript .= "$('.scImageLink,.scClonableRow').hide();\n";
+            data_entry_helper::$javascript .= "$('.edit-taxon-name,.remove-row').hide();\n";
             data_entry_helper::$javascript .= "$('#disableDiv').find('input, textarea, text, button, select').attr('disabled','disabled');\n";  
+            //If the page is locked then we don't run the logic on the Save/Next Step button
+            //as this logic enables the button when we don't want it enabled.
+            data_entry_helper::$javascript .= "indiciaData.dontRunCetaceanSaveButtonLogic=true;"; 
             $verifiedDataDetected=true;
           }
         }
