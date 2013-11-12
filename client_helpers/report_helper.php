@@ -2866,7 +2866,7 @@ update_controls();
         if(!in_array($record['location_name'],$weekList[$weekno])) $weekList[$weekno][] = $record['location_name'];
       } else $weekList[$weekno] = array($record['location_name']);
       if(!isset($rawArray[$this_index])){
-        $rawArray[$this_index] = array('weekno'=>$weekno, 'counts'=>array(), 'date'=>$record['date'], 'total'=>0, 'samples'=>array(), 'smpAttrs'=>array(), 'smpAttrsTerm'=>array());
+        $rawArray[$this_index] = array('weekno'=>$weekno, 'counts'=>array(), 'date'=>$record['date'], 'total'=>0, 'samples'=>array(), 'smpAttrs'=>array());
       }
       // we assume that the report is configured to return the user_id which matches the method used to generate my_user_id
       if (($options['my_user_id']==$record['user_id'] ||
@@ -2895,40 +2895,27 @@ update_controls();
     if($smpAttrs) {
       foreach($rawArray as $dateIndex => $rawData) {
         foreach($smpAttrs as $smpAttr){
+          $total=0;
+          $count=0;
           if($smpAttrList[$smpAttr]['data_type']=='L'){
-            if(count($rawArray[$dateIndex]['samples'])==1) {
-              foreach($rawArray[$dateIndex]['samples'] as $sample)
-                $rawArray[$dateIndex]['smpAttrs'][$smpAttr] = $sample['smpAttrsTerm'][$smpAttr]; // only 1.
-            } else {
-              $total=0;
-              $count=0;
-              foreach($rawArray[$dateIndex]['samples'] as $sample) {
-                $term = trim($sample['smpAttrsTerm'][$smpAttr], "% \t\n\r\0\x0B");
-                if(is_int($term)){
-                  $total += intval($term);
-                  $count++;
-                } else if(is_float($term)){
-                  $total += floatval($term);
-                  $count++;
-                }
+            foreach($rawArray[$dateIndex]['samples'] as $sample) {
+              $term = trim($sample['smpAttrsTerm'][$smpAttr], "% \t\n\r\0\x0B");
+              if(is_numeric($term)){
+                $total += intval($term);
+                $count++;
               }
-              $rawArray[$dateIndex]['smpAttrs'][$smpAttr] = $count ? $total/$count : "";
             }
           } else {
-            if(count($rawArray[$dateIndex]['samples'])==1) {
-              foreach($rawArray[$dateIndex]['samples'] as $sample)
-                $rawArray[$dateIndex]['smpAttrs'][$smpAttr] = $sample['smpAttrs'][$smpAttr]; // only 1.
-            } else {
-              $total=0;
-              $count=0;
-              foreach($rawArray[$dateIndex]['samples'] as $sample)
-                if($sample['smpAttrs'][$smpAttr] != null){
-                  $count++;
-                  $total += $sample['smpAttrs'][$smpAttr];
-                }
-              $rawArray[$dateIndex]['smpAttrs'][$smpAttr] = $count ? $total/$count : "";
+            foreach($rawArray[$dateIndex]['samples'] as $sample) {
+              if($sample['smpAttrs'][$smpAttr] != null){
+                $total += $sample['smpAttrs'][$smpAttr];
+                $count++;
+              }
             }
           }
+          $rawArray[$dateIndex]['smpAttrs'][$smpAttr] = $count ? $total/$count : "";
+          if($options['smpAttrRound']=='nearest' && $rawArray[$dateIndex]['smpAttrs'][$smpAttr]!="")
+            $rawArray[$dateIndex]['smpAttrs'][$smpAttr] = (int)round($rawArray[$dateIndex]['smpAttrs'][$smpAttr]);
         }
       }
     }
@@ -3380,8 +3367,8 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
         if($smpAttrs) {
           foreach($smpAttrs as $i => $smpAttr){
             $r .= "<tr class=\"sample-datarow ".($altRow?$options['altRowClass']:'')." ".($i==(count($smpAttrs)-1)?'last-sample-datarow':'')."\">";
-            $r .= '<td>'.$smpAttrList[$smpAttr]['caption'].'</td>';
-            $rawDataDownloadGrid .= $smpAttrList[$smpAttr]['caption'];
+            $r .= '<td>Mean '.$smpAttrList[$smpAttr]['caption'].'</td>';
+            $rawDataDownloadGrid .= 'Mean '.$smpAttrList[$smpAttr]['caption'];
             foreach($rawArray as $dateIndex => $rawData) {
               $r.= '<td>'.$rawData['smpAttrs'][$smpAttr].'</td>';
               $rawDataDownloadGrid .= '%2C'.$rawData['smpAttrs'][$smpAttr];
@@ -3814,6 +3801,7 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
       'tableHeaders' => 'date',
       'rawDataCombining' => 'add',
       'dataRound' => 'nearest',
+      'smpAttrRound' => 'nearest',
       'zeroPointAnchor' => ',',
       'interpolation' => 'linear',
       'firstValue' => 'none',
