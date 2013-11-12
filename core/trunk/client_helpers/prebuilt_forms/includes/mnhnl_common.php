@@ -654,7 +654,7 @@ WMSoptions = {SERVICE: 'WMS', VERSION: '1.1.0', STYLES: '', SRS: '".$WMSoptions[
   CQL_FILTER: \"location_type_id=".$args['loctoolsLocTypeID']." AND website_id=".$args['website_id'].($squares != 'all' ? " AND location_id IN (".implode(',', $squares).")" : '')."\"
     };
 ParentWMSLayer = new OpenLayers.Layer.WMS('Parent Grid',
-  '".iform_proxy_url($WMSoptions[0])."',
+  '".(function_exists(iform_proxy_url) ? iform_proxy_url($WMSoptions[0]) : $WMSoptions[0])."',
   WMSoptions, {
     minScale: ".$WMSoptions[3].",
     maxScale: ".$WMSoptions[4].",
@@ -2583,7 +2583,7 @@ jQuery('#".$options['MainFieldID']."').change(function(){mainFieldChange(true)})
     								'orderby'=>'name',
     								'location_type_id'=>$args['loctoolsLocTypeID'],
     								'deleted'=>'f',
-    								'columns'=>implode(',',array('id', $locOptions['valueField'], $locOptions['captionField'])))));
+    								'columns'=>'id,name')));
       $locResponse = data_entry_helper::get_population_data($locOptions); // Only need certain columns: 'id', $locOptions['valueField'], $locOptions['captionField'].
       if (isset($locResponse['error'])) return "PARENT LOOKUP ERROR:  ".$locResponse['error'];
       $opts = "";
@@ -2788,7 +2788,7 @@ jQuery(\"#".$options['ChooseParentFieldID']."\").change(function(){
               'orderby'=>'name',
               'website_id'=>$args['website_id'],
               'location_type_id'=>$loctypeParam,
-              'columns'=>array('id', 'name', 'code', 'location_type_id')),
+              'columns'=>'id,name,code,location_type_id'),
             $auth['read']),
           'table'=>'location',
           'template' => 'select',
@@ -2969,7 +2969,7 @@ hook_setSref_".$idx." = function(geom){ // map projection
                   						'orderby'=>'name',
                   						'location_type_id'=>$parentLocTypeID,
                   						'deleted'=>'f',
-    								'columns'=>implode(',',array('id', $locOptions['valueField'], $locOptions['captionField'])))));
+    								'columns'=>'id,name')));
                   $locResponse = data_entry_helper::get_population_data($locOptions); // Only need certain columns: 'id', $locOptions['valueField'], $locOptions['captionField']
                   if (isset($locResponse['error'])) return "PARENT LOOKUP ERROR:  ".$locResponse['error'];
                   $opts = str_replace(array('{value}', '{caption}', '{selected}'),
