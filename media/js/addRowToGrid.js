@@ -161,14 +161,24 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
       $(event.target).unbind('result', handleSelectedTaxon);
       $(event.target).unbind('return', returnPressedInAutocomplete);
       taxonCell=event.target.parentNode; 
-      //Create and edit icons for taxon cells. Only add the edit icon if the user has this functionality available on edit tab.
+      //Create edit icons for taxon cells. Only add the edit icon if the user has this functionality available on the edit tab.
+      //Also create Notes and Delete icons when required
+      var linkPageIconSource = indiciaData.imagesPath + "nuvola/find-22px.png";
       if (indiciaData['editTaxaNames-'+gridId]==true) {
         deleteAndEditHtml = "<td class='row-buttons'>\n\
-            <img class='action-button remove-row' src=" + indiciaData.imagesPath + "nuvola/cancel-16px.png>\n\
-            <img class='action-button edit-taxon-name' src=" + indiciaData.imagesPath + "nuvola/package_editors-16px.png></td>";
-      } else {
+            <img class='action-button remove-row' src=" + indiciaData.imagesPath + "nuvola/cancel-16px.png>\n" 
+        deleteAndEditHtml += "<img class='action-button edit-taxon-name' src=" + indiciaData.imagesPath + "nuvola/package_editors-16px.png>\n";
+        if (indiciaData['includeSpeciesGridLinkPage-'+gridId]==true) {
+          deleteAndEditHtml += '<img class="species-grid-link-page-icon" title="'+indiciaData.speciesGridPageLinkTooltip+'" alt="Notes icon" src=' + linkPageIconSource + '>';
+        }
+        deleteAndEditHtml += "</td>";
+      } else {   
         deleteAndEditHtml = "<td class='row-buttons'>\n\
-            <img class='action-button action-button remove-row' src=" + indiciaData.imagesPath + "nuvola/cancel-16px.png></td>";
+            <img class='action-button action-button remove-row' src=" + indiciaData.imagesPath + "nuvola/cancel-16px.png>\n";
+        if (indiciaData['includeSpeciesGridLinkPage-'+gridId]==true) {
+          deleteAndEditHtml += '<img class="species-grid-link-page-icon" title="'+indiciaData.speciesGridPageLinkTooltip+'" alt="Notes icon" src=' + linkPageIconSource + '>';
+        }
+        deleteAndEditHtml += "</td>";
       }
       //Put the edit and delete icons just before the taxon name
       $(taxonCell).before(deleteAndEditHtml);
@@ -234,9 +244,14 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
         $('#'+selectorId).remove();
         // replace with the previous plain text species name
         $(taxonCell).html(taxonNameBeforeUserEdit); 
-        var deleteAndEditHtml = "<td style='width: 5%'>\n\
+        var deleteAndEditHtml = "<td class='row-buttons'>\n\
             <img class='action-button remove-row' src=" + indiciaData.imagesPath + "nuvola/cancel-16px.png>\n\
-            <img class='edit-taxon-name' src=" + indiciaData.imagesPath + "nuvola/package_editors-16px.png></td>";
+            <img class='edit-taxon-name' src=" + indiciaData.imagesPath + "nuvola/package_editors-16px.png>\n";
+        if (indiciaData['includeSpeciesGridLinkPage-'+gridId]==true) {
+          var linkPageIconSource = indiciaData.imagesPath + "nuvola/find-22px.png";
+          deleteAndEditHtml += '<img class="species-grid-link-page-icon" title="'+indiciaData.speciesGridPageLinkTooltip+'" alt="Notes icon" src=' + linkPageIconSource + '>\n';
+        }       
+        deleteAndEditHtml += "</td\n";
         $(taxonCell).attr('colSpan',1);
         //Put the edit and delete icons just before the taxon name
         $(taxonCell).before(deleteAndEditHtml);
@@ -285,6 +300,10 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
       $(field).val(typeof indiciaData.control_speciesmap_existing_feature==="undefined" || indiciaData.control_speciesmap_existing_feature===null ?
           indiciaData['gridSampleCounter-'+gridId] :
           indiciaData.control_speciesmap_existing_feature.attributes.subSampleIndex);
+      //Allows a sample to be generated for each occurrence in the grid if required.
+      var rowNumber=$(field).attr('name').replace('sc:'+gridId+'-','');
+      rowNumber = rowNumber.substring(0,1);
+      $(field).val(rowNumber);
     });
     // add the row to the bottom of the grid
     newRow.appendTo('table#' + gridId +' > tbody').removeAttr('id');
@@ -409,6 +428,21 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
     if (typeof hook_species_checklist_delete_row !== "undefined") {
       hook_species_checklist_delete_row();
     }
+  });
+  //Open the specified page when the user clicks on the page link icon on a species grid row, use a dirty URL as this will work whether clean urls is on or not
+  $('.species-grid-link-page-icon').live('click', function(e) {
+    var row = $($(e.target).parents('tr:first'));
+    var taxa_taxon_list_id_to_use;
+    //We cannot get the taxa_taxon_list_id by simply just getting the presence cell value, as sometimes there is more than one
+    //presence cell. This is because there is an extra presence cell that is used to supply a 0 in the $_GET to the submission
+    //as a checkbox input type doesn't appear in the $_GET with a 0 value.
+    //So we need to actually use the presence cell with a non-zero value.
+    row.find('.scPresence').each( function() {
+      if ($(this).val()!=0) {
+        taxa_taxon_list_id_to_use=$(this).val();
+      }
+    });
+    window.open(indiciaData.rootFolder + '?q=' + indiciaData.speciesGridPageLinkUrl + '&' + indiciaData.speciesGridPageLinkParameter + '=' +  taxa_taxon_list_id_to_use)
   });
 
   /**
