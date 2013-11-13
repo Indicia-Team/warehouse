@@ -1,0 +1,37 @@
+<report
+    title="Efforts and sightings per month for location."
+    description="Report designed to display all sightings and efforts for a location on a month to month basis.
+                 Note that private/favourite site support is not included as it is intended that code supporting private/favourite
+                 sites prevents the user from ever seeing the page with this chart on. If you wish to extend the use of this report
+                 then private/favourite site support must be considered."
+>
+  <query website_filter_field="co.website_id">
+  SELECT #columns#
+  FROM cache_occurrences co
+    LEFT JOIN samples sSighting ON sSighting.id=co.sample_id AND sSighting.sample_method_id = 2510 AND sSighting.deleted=false
+        LEFT JOIN samples sEffort ON sEffort.id=sSighting.parent_id AND sEffort.sample_method_id = 2509 AND sEffort.deleted=false
+    JOIN taxa_taxon_lists ttl on ttl.id=co.taxa_taxon_list_id AND ttl.deleted=false
+    WHERE 1=1
+    #filters#
+    AND #website_filter#
+  GROUP BY month
+  </query>
+  <params>
+    <param name="survey_id" display="Survey" description="Select the survey, or leave for all surveys" datatype="lookup"
+        population_call="direct:survey:id:title">
+      <where>co.survey_id=#survey_id#</where>
+    </param>
+    <param name="taxon_id" display="Species" description="Species name to filter by." datatype="lookup"
+        population_call='direct:taxa_taxon_list:taxon_id:taxon'>
+      <where>ttl.taxon_id=#taxon_id#</where>
+    </param>
+    <param name="location_id" display="Location ID" description="Location ID to report on." datatype="integer" >
+      <where>co.location_id=#location_id#</where>
+    </param>
+  </params>
+  <columns>
+    <column name='month' display='Month' sql="to_char(co.date_start, 'MONTH')" datatype='integer'/>
+    <column name='efforts' display='Efforts' sql='count(DISTINCT(sEffort.id))' datatype='integer'/>
+    <column name='sightings' display='Sightings' sql='count(DISTINCT(sSighting.id))' datatype='integer'/>
+  </columns>
+</report>
