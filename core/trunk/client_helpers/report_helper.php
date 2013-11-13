@@ -406,7 +406,7 @@ class report_helper extends helper_base {
       }
       $r .= "</tr>";
       if ($wantFilterRow)
-        $r .= "<tr class=\"filter-row\">$filterRow</tr>\n";
+        $r .= "<tr class=\"filter-row\" title=\"".lang::get('Use this row to filter the grid')."\">$filterRow</tr>\n";
       $r .= "</thead>\n";
     }
     $currentUrl = self::get_reload_link_parts();
