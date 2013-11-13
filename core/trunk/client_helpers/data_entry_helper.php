@@ -2779,6 +2779,10 @@ $('#$escaped').change(function(e) {
     self::$js_read_tokens = $options['readAuth'];
     self::$javascript .= "indiciaData['rowInclusionCheck-".$options['id']."'] = '".$options['rowInclusionCheck']."';\n";
     self::$javascript .= "indiciaData['copyDataFromPreviousRow-".$options['id']."'] = '".$options['copyDataFromPreviousRow']."';\n";
+    self::$javascript .= "indiciaData['includeSpeciesGridLinkPage-".$options['id']."'] = '".$options['includeSpeciesGridLinkPage']."';\n";
+    self::$javascript .= "indiciaData.speciesGridPageLinkUrl = '".$options['speciesGridPageLinkUrl']."';\n";
+    self::$javascript .= "indiciaData.speciesGridPageLinkParameter = '".$options['speciesGridPageLinkParameter']."';\n";
+    self::$javascript .= "indiciaData.speciesGridPageLinkTooltip = '".$options['speciesGridPageLinkTooltip']."';\n";
     self::$javascript .= "indiciaData['editTaxaNames-".$options['id']."'] = '".$options['editTaxaNames']."';\n";
     self::$javascript .= "indiciaData['subSpeciesColumn-".$options['id']."'] = '".$options['subSpeciesColumn']."';\n";
     if ($options['copyDataFromPreviousRow']) {
@@ -2909,15 +2913,24 @@ $('#$escaped').change(function(e) {
         // Now create the table cell to contain this.
         $colspan = isset($options['lookupListId']) && $options['rowInclusionCheck']!='alwaysRemovable' ? ' colspan="2"' : '';
         $row = '';
-        // Add a delete button if the user can remove rows, add an edit button if the user has the edit option set.
+        // Add a delete button if the user can remove rows, add an edit button if the user has the edit option set, add a page link if user has that option set.
         if ($options['rowInclusionCheck']=='alwaysRemovable') {
           $imgPath = empty(self::$images_path) ? self::relative_client_helper_path()."../media/images/" : self::$images_path;
+          $speciesGridLinkPageIconSource = $imgPath."nuvola/find-22px.png";
           if ($options['editTaxaNames']) {
             $row .= '<td class="row-buttons">
                      <img class="action-button remove-row" src='.$imgPath.'nuvola/cancel-16px.png>
-                     <img class="action-button edit-taxon-name" src='.$imgPath.'nuvola/package_editors-16px.png></td>';
+                     <img class="action-button edit-taxon-name" src='.$imgPath.'nuvola/package_editors-16px.png>';
+            if ($options['includeSpeciesGridLinkPage']) {
+              $row .= '<img class="species-grid-link-page-icon" title="'.$options['speciesGridPageLinkTooltip'].'" alt="Notes icon" src='.$speciesGridLinkPageIconSource.'>';
+            }          
+            $row .= '</td>';
           } else {
-            $row .= '<td class="row-buttons"><img class="action-button remove-row" src='.$imgPath.'nuvola/cancel-16px.png></td>';
+            $row .= '<td class="row-buttons"><img class="action-button remove-row" src='.$imgPath.'nuvola/cancel-16px.png>';
+            if ($options['includeSpeciesGridLinkPage']) {
+              $row .= '<img class="species-grid-link-page-icon" title="'.$options['speciesGridPageLinkTooltip'].'" alt="Notes icon" src='.$speciesGridLinkPageIconSource.'>';
+            }
+            $row .= '</td>';
           }
         }
         $row .= str_replace(array('{content}','{colspan}','{tableId}','{idx}'), 
@@ -5237,8 +5250,8 @@ $('#$divId').tabs({
       var taxonInputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+') .scTaxonCell').find('input,select').not(':disabled'),
         elem=$('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select,textarea').not(':disabled,[name=],.scTaxonCell,:hidden');
       validationResultTaxon = (taxonInputs.length > 0 ) ? taxonInputs.valid() : true;
-      validationResult = elem.length===0 || elem.valid();
-      isValid = (validationResultTaxon && validationResult) ? true : false;
+      validationResult = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select,textarea').not(':disabled,[name=],.scTaxonCell,.inactive').valid();
+      isValid = (validationResultTaxon && validationResult)===1 ? true : false;
       //restore the clonable row
       clonableRow.css('display', display);
     } else {
@@ -5292,7 +5305,7 @@ if (errors$uniq.length>0) {
     if (isset(self::$validated_form_id)) {
       //We handle taxon cells seperately. They are excluded from validation in tabinputs as they have no name.
       //So we need to include them seperately as they are an exception to the rule that the item should not be included in validation if it has no name.
-      self::$javascript .= "  var tabinputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select,textarea').not(':disabled,[name=],.scTaxonCell');\n";
+      self::$javascript .= "  var tabinputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select,textarea').not(':disabled,[name=],.scTaxonCell,.inactive');\n";
       self::$javascript .= "  var tabtaxoninputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+') .scTaxonCell').find('input,select').not(':disabled');\n";
       self::$javascript .= "  if ((tabinputs.length>0 && !tabinputs.valid()) ||
                                   (tabtaxoninputs.length>0 && !tabtaxoninputs.valid())) {\n";

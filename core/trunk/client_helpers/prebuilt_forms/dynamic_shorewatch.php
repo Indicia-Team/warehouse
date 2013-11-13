@@ -304,17 +304,6 @@ class iform_dynamic_shorewatch extends iform_dynamic_sample_occurrence {
           'required' => false,
           'group' => 'Shorewatch Page Configuration'
         ),
-        array(
-          'name'=>'notesURL',
-          'caption'=>'Notes URL',
-          'description'=>'The URL path of the Species Details page used for viewing notes.
-                          The URL path should not include server details or a preceeding slash 
-                          e.g. node/216',
-          'type'=>'textfield',
-          'default' => false,
-          'required' => false,
-          'group' => 'Shorewatch Page Configuration'
-        ),
       )
     );
     return $retVal;
@@ -412,8 +401,6 @@ class iform_dynamic_shorewatch extends iform_dynamic_sample_occurrence {
     //The indiciaData.notesIcon is used by the addrowtogrid.js code so that the code for notes on the species grid is not run by old code.
     data_entry_helper::$javascript .= "
     indiciaData.rootFolder = '".data_entry_helper::getRootFolder()."';    
-    indiciaData.notesURL = '".$args['notesURL']."';
-    indiciaData.notesIcon = true;
     ";
     
     $r = '';
