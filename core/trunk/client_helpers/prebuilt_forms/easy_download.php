@@ -94,6 +94,45 @@ class iform_easy_download {
         'default'=>'yes'
       ),
       array(
+        'name'=>'tsv_format',
+        'caption'=>'TSV format download?',
+        'description'=>'Is TSV format available as a download option?',
+        'type'=>'select',
+        'options'=>array(
+          'no'=>'No',
+          'yes'=>'Yes',
+          'expert'=>'Yes, but only for experts'
+        ),
+        'required'=>true,
+        'default'=>'no'
+      ),
+      array(
+        'name'=>'kml_format',
+        'caption'=>'KML format download?',
+        'description'=>'Is KML format available as a download option?',
+        'type'=>'select',
+        'options'=>array(
+          'no'=>'No',
+          'yes'=>'Yes',
+          'expert'=>'Yes, but only for experts'
+        ),
+        'required'=>true,
+        'default'=>'no'
+      ),
+      array(
+        'name'=>'gpx_format',
+        'caption'=>'GPX format download?',
+        'description'=>'Is GPX format available as a download option?',
+        'type'=>'select',
+        'options'=>array(
+          'no'=>'No',
+          'yes'=>'Yes',
+          'expert'=>'Yes, but only for experts'
+        ),
+        'required'=>true,
+        'default'=>'no'
+      ),
+      array(
         'name'=>'nbn_format',
         'caption'=>'NBN format download?',
         'description'=>'Is NBN format available as a download option?',
@@ -131,6 +170,56 @@ class iform_easy_download {
         'name'=>'report_params_csv',
         'caption'=>'CSV Additional parameters',
         'description'=>'Additional parameters to provide to the report when doing a CSV download. One per line, param=value format.',
+        'type'=>'textarea',
+        'required'=>false,
+        'default'=>"smpattrs=\noccattrs=\nsearchArea=\nidlist=\nquality=!R\n"
+      ),
+      array(
+        'name'=>'report_tsv',
+        'caption'=>'TSV download format report',
+        'description'=>'Choose the report used for TSV downloads. Report should be compatible with the explore reports.',
+        'type'=>'report_helper::report_picker',
+        'required'=>true,
+        'default'=>'library/occurrences/occurrences_download_2'
+      ),
+      array(
+        'name'=>'report_params_tsv',
+        'caption'=>'TSV Additional parameters',
+        'description'=>'Additional parameters to provide to the report when doing a TSV download. One per line, param=value format.',
+        'type'=>'textarea',
+        'required'=>false,
+        'default'=>"smpattrs=\noccattrs=\nsearchArea=\nidlist=\nquality=!R\n"
+      ),
+      array(
+        'name'=>'report_kml',
+        'caption'=>'KML download format report',
+        'description'=>'Choose the report used for KML downloads. Report should be compatible with the explore reports and return a WKT for the geometry of the record '.
+            'transformed to EPSG:4326.',
+        'type'=>'report_helper::report_picker',
+        'required'=>true,
+        'default'=>'library/occurrences/occurrences_download_2_gis'
+      ),
+      array(
+        'name'=>'report_params_kml',
+        'caption'=>'KML Additional parameters',
+        'description'=>'Additional parameters to provide to the report when doing a KML download. One per line, param=value format.',
+        'type'=>'textarea',
+        'required'=>false,
+        'default'=>"smpattrs=\noccattrs=\nsearchArea=\nidlist=\nquality=!R\n"
+      ),
+      array(
+        'name'=>'report_gpx',
+        'caption'=>'GPX download format report',
+        'description'=>'Choose the report used for GPX downloads. Report should be compatible with the explore reports and return a WKT for the geometry of the record '.
+            'transformed to EPSG:4326.',
+        'type'=>'report_helper::report_picker',
+        'required'=>true,
+        'default'=>'library/occurrences/occurrences_download_2_gis'
+      ),
+      array(
+        'name'=>'report_params_gpx',
+        'caption'=>'GPX Additional parameters',
+        'description'=>'Additional parameters to provide to the report when doing a GPX download. One per line, param=value format.',
         'type'=>'textarea',
         'required'=>false,
         'default'=>"smpattrs=\noccattrs=\nsearchArea=\nidlist=\nquality=!R\n"
@@ -181,6 +270,12 @@ class iform_easy_download {
     $formats = array();
     if ($args['csv_format']==='yes' || ($args['csv_format']==='expert' && $expert))
       $formats[]='csv';
+    if ($args['tsv_format']==='yes' || ($args['tsv_format']==='expert' && $expert))
+      $formats[]='tsv';
+    if ($args['kml_format']==='yes' || ($args['kml_format']==='expert' && $expert))
+      $formats[]='kml';
+    if ($args['gpx_format']==='yes' || ($args['gpx_format']==='expert' && $expert))
+      $formats[]='gpx';
     if ($args['nbn_format']==='yes' || ($args['nbn_format']==='expert' && $expert))
       $formats[]='nbn';
     if (count($filters)===0)
@@ -270,9 +365,15 @@ class iform_easy_download {
     $r .= '<fieldset><legend>'.lang::get('Downloads').'</legend>';
     $r .= '<label>Download options:</label>';
     if (in_array('csv', $formats))
-      $r .= '<input class="inline-control" type="submit" name="format" value="'.lang::get('Download Spreadsheet').'"/>';
+      $r .= '<input class="inline-control" type="submit" name="format" value="'.lang::get('Spreadsheet (CSV)').'"/>';
+    if (in_array('tsv', $formats))
+      $r .= '<input class="inline-control" type="submit" name="format" value="'.lang::get('Tab Separated File (TSV)').'"/>';
+    if (in_array('kml', $formats))
+      $r .= '<input class="inline-control" type="submit" name="format" value="'.lang::get('Google Earth File').'"/>';
+    if (in_array('gpx', $formats))
+      $r .= '<input class="inline-control" type="submit" name="format" value="'.lang::get('GPS Track File').'"/>';
     if (in_array('nbn', $formats)) {
-      $r .= '<input class="inline-control" type="submit" name="format" value="'.lang::get('Download NBN Format').'"/>';
+      $r .= '<input class="inline-control" type="submit" name="format" value="'.lang::get('NBN Format').'"/>';
       $r .= '<p class="helpText">'.lang::get('Note that the NBN format download will only include verified data and excludes records where the date or spatial reference is not compatible with the NBN Gateway.').'</p>';
     }
     $r .= '</fieldset></form>';
@@ -299,9 +400,15 @@ class iform_easy_download {
    * Handles a request for download. Works out which type of request it is and calls the appropriate function.
    */
   private static function do_download($args) {
-    if ($_POST['format']===lang::get('Download Spreadsheet'))
+    if ($_POST['format']===lang::get('Spreadsheet (CSV)'))
       self::do_data_services_download($args, 'csv');
-    elseif ($_POST['format']===lang::get('Download NBN Format'))
+    elseif ($_POST['format']===lang::get('Tab Separated File (TSV)'))
+      self::do_data_services_download($args, 'tsv');
+    elseif ($_POST['format']===lang::get('Google Earth File'))
+      self::do_data_services_download($args, 'kml');
+    elseif ($_POST['format']===lang::get('GPS Track File'))
+      self::do_data_services_download($args, 'gpx');
+    elseif ($_POST['format']===lang::get('NBN Format'))
       self::do_data_services_download($args, 'nbn');
   }
   
