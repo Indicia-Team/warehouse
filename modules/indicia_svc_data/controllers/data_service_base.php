@@ -437,11 +437,53 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     $data = '<?xml version="1.0"?>'.($indent ? "\r\n" : '').
             '<kml xmlns="http://www.opengis.net/kml/2.2">'.($indent ? "\r\n\t" : '').
             '<Document xmlns:atom="http://purl.org/atom/ns#">'.($indent ? "\r\n\t\t" : '').
-            '<name>'.$root.'</name>'.($indent ? "\r\n" : '');
+            '<name>'.$root.'</name>'.($indent ? "\r\n\t\t" : '').
+            '<Style id="s_ylw-pushpin_h1">'.($indent ? "\r\n\t\t\t" : '').
+            '<IconStyle>'.($indent ? "\r\n\t\t\t\t" : '').
+            '<scale>1.3</scale>'.($indent ? "\r\n\t\t\t\t" : '').
+            '<Icon>'.($indent ? "\r\n\t\t\t\t\t\t" : '').
+            '<href>http://maps.google.com/mapfiles/kml/pushpin/ylw-pushpin.png</href>'.($indent ? "\r\n\t\t\t\t" : '').
+            '</Icon>'.($indent ? "\r\n\t\t\t\t" : '').
+            '<hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/>'.($indent ? "\r\n\t\t\t" : '').
+            '</IconStyle>'.($indent ? "\r\n\t\t\t" : '').
+            '<LineStyle>'.($indent ? "\r\n\t\t\t\t" : '').
+            '<color>ffff7700</color>'.($indent ? "\r\n\t\t\t\t" : '').
+            '<width>4</width>'.($indent ? "\r\n\t\t\t" : '').
+            '</LineStyle>'.($indent ? "\r\n\t\t\t" : '').
+            '<PolyStyle>'.($indent ? "\r\n\t\t\t\t" : '').
+            '<color>19ff7755</color>'.($indent ? "\r\n\t\t\t" : '').
+            '</PolyStyle>'.($indent ? "\r\n\t\t" : '').
+            '</Style>'.($indent ? "\r\n\t\t" : '').
+            '<Style id="s_ylw-pushpin">'.($indent ? "\r\n\t\t\t" : '').
+            '<IconStyle>'.($indent ? "\r\n\t\t\t\t" : '').
+            '<scale>1.1</scale>'.($indent ? "\r\n\t\t\t\t" : '').
+            '<Icon>'.($indent ? "\r\n\t\t\t\t\t\t" : '').
+            '<href>http://maps.google.com/mapfiles/kml/pushpin/ylw-pushpin.png</href>'.($indent ? "\r\n\t\t\t\t" : '').
+            '</Icon>'.($indent ? "\r\n\t\t\t\t" : '').
+            '<hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/>'.($indent ? "\r\n\t\t\t" : '').
+            '</IconStyle>'.($indent ? "\r\n\t\t\t" : '').
+            '<LineStyle>'.($indent ? "\r\n\t\t\t\t" : '').
+            '<color>ffff0000</color>'.($indent ? "\r\n\t\t\t\t" : '').
+            '<width>3</width>'.($indent ? "\r\n\t\t\t" : '').
+            '</LineStyle>'.($indent ? "\r\n\t\t\t" : '').
+            '<PolyStyle>'.($indent ? "\r\n\t\t\t\t" : '').
+            '<color>19ff0055</color>'.($indent ? "\r\n\t\t\t" : '').
+            '</PolyStyle>'.($indent ? "\r\n\t\t" : '').
+            '</Style>'.($indent ? "\r\n\t\t" : '').
+            '<StyleMap id="m_ylw-pushpin">'.($indent ? "\r\n\t\t\t" : '').
+		        '<Pair>'.($indent ? "\r\n\t\t\t\t" : '').
+			      '<key>normal</key>'.($indent ? "\r\n\t\t\t\t" : '').
+			      '<styleUrl>#s_ylw-pushpin</styleUrl>'.($indent ? "\r\n\t\t\t" : '').
+		        '</Pair>'.($indent ? "\r\n\t\t\t" : '').
+		        '<Pair>'.($indent ? "\r\n\t\t\t\t" : '').
+			      '<key>highlight</key>'.($indent ? "\r\n\t\t\t\t" : '').
+			      '<styleUrl>#s_ylw-pushpin_hl</styleUrl>'.($indent ? "\r\n\t\t\t" : '').
+		        '</Pair>'.($indent ? "\r\n\t\t" : '').
+	          '</StyleMap>'.($indent ? "\r\n" : '');
     $recordNum = 1;
-    foreach ($array["records"] as $element => $value)
+    foreach ($array["records"] as $record)
     {
-      $data .= $this->kml_encode_array($recordNum, $root, $value, $indent, 2);
+      $data .= $this->kml_encode_array($recordNum, $root, $record, $indent, 2);
       $recordNum++;
     }
 
@@ -472,7 +514,8 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
       $data .= ($indent?str_repeat("\t", 1+$recursion):'').
                '<TimeStamp>'.($indent ? "\r\n".str_repeat("\t", 2+$recursion) : '').
                '<when>'. htmlspecialchars($array['date']).'</when>'.($indent ? "\r\n".str_repeat("\t", 1+$recursion) : '').
-               '</TimeStamp>'.($indent ? "\r\n" : '');
+               '</TimeStamp>'.($indent ? "\r\n".str_repeat("\t", 1+$recursion) : '').
+               '<styleUrl>#m_ylw-pushpin</styleUrl>'.($indent ? "\r\n" : '');
 //      $to_skip[]='date';
     }
     // identify geometry
@@ -499,6 +542,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
         }
       }
     }
+    $geoms = array_unique($geoms);
     if($numGeoms==1 && count($geoms)==1) {
       $data .= $geoms[0];
     }  else if(count($geoms)>0) {
@@ -508,12 +552,16 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     }
     // Now deal with extra fields. These are displayed as a table in GoogleEarth
     $data .= ($indent?str_repeat("\t", 1+$recursion):'').'<ExtendedData>'.($indent ? "\r\n" : '');
+    $root = url::base().'upload/';
     foreach ($array as $element => $value)
     {
       if (!in_array($element, $to_skip))
       {
         if ($value && !is_array($value))
         {
+          // convert images to html
+          if ($element==='images') 
+            $value='<img width="300" src="'.$root.str_replace(',', '"/><img width="300" src="'.$root, $value).'"/>';
           $data .= ($indent?str_repeat("\t", 2+$recursion):'').
                    '<Data name="'.$element.'">'.($indent ? "\r\n".str_repeat("\t", 3+$recursion) : '').
                    '<value>'. htmlspecialchars($value).'</value>'.($indent ? "\r\n".str_repeat("\t", 2+$recursion) : '').
@@ -521,8 +569,8 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
         }
       }
     }
-    $data .= ($indent?str_repeat("\t", 1+$recursion):'').'</ExtendedData>'.($indent ? "\r\n" : '').
-             ($indent?str_repeat("\t", $recursion):'').'</Placemark>'.($indent ? "\r\n" : '');
+    $data .= ($indent?str_repeat("\t", 1+$recursion):'').'</ExtendedData>'.($indent ? "\r\n" : '');
+    $data .= ($indent?str_repeat("\t", $recursion):'').'</Placemark>'.($indent ? "\r\n" : '');
     return $data;
   }
 
