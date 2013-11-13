@@ -741,14 +741,25 @@ span.ind-cancel-icon {
 }
 
 .filter-row {
-  background: #ffffff;
+  background: #e7e7e7;
 }
 
 .filter-row th {
   padding: 0;
 }
 
+.report-grid .filter-row th:first-child {
+  background: url(../images/filter.png) no-repeat left;
+}
+.report-grid .filter-row th{
+  padding: 0 1px;
+}
+.report-grid .filter-row th:first-child{
+  padding-left: 16px;
+}
+
 .filter-row input {
+  border: none;
   margin: 0;
   width: 100%;
   /* Ensure padding of input does not mess up 100% width */
