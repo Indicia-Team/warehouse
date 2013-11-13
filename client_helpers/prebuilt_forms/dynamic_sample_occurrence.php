@@ -216,6 +216,45 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           'group' => 'User Interface',
         ),
         array(
+          'name' => 'include_species_grid_link_page',
+          'caption' => 'Include icon to link to another page from a species grid row?',
+          'description' => 'Include an icon which links to a page from each row on the species grid e.g. to display details about a taxon. Use the "Species grid page link URL" option to provide a URL.',
+          'type'=>'checkbox',
+          'default'=>false,
+          'required'=>false,
+          'group' => 'User Interface',
+        ),
+        array(
+          'name'=>'species_grid_page_link_url',
+          'caption'=>'Species grid page link URL',
+          'description'=>'URL path of the page being linked to by the "Include icon to link to another page from a species grid row" option.
+                          The URL path should not include server details or a preceeding slash 
+                          e.g. node/216. Note that the current version of the software will only supply a taxa_taxon_list_id value to this page as the parameter.',
+          'type'=>'textfield',
+          'default' => false,
+          'required' => false,
+          'group' => 'User Interface'
+        ),
+        array(
+          'name'=>'species_grid_page_link_parameter',
+          'caption'=>'Species grid page link parameter',
+          'description'=>'Parameter name used by the page being linked to by the "Species grid page link URL" option. Note in the current version of the software the value
+                          of the parameter will always be a taxa_taxon_list_id.',
+          'type'=>'textfield',
+          'default' => false,
+          'required' => false,
+          'group' => 'User Interface'
+        ),
+        array(
+          'name'=>'species_grid_page_link_tooltip',
+          'caption'=>'Species grid page link tooltip',
+          'description'=>'Mouse pointer tooltip for the "Include icon to link to another page from a species grid row" option.',
+          'type'=>'textfield',
+          'default' => false,
+          'required' => false,
+          'group' => 'User Interface'
+        ),
+        array(
           'name' => 'grid_report',
           'caption' => 'Grid Report',
           'description' => 'Name of the report to use to populate the grid for selecting existing data from. The report must return a sample_id '.
@@ -1322,7 +1361,11 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         'subSpeciesColumn' => $args['sub_species_column'],
         'copyDataFromPreviousRow' => !empty($args['copy_species_row_data_to_new_rows']) && $args['copy_species_row_data_to_new_rows'],
         'previousRowColumnsToInclude' => empty($args['previous_row_columns_to_include']) ? '' : $args['previous_row_columns_to_include'],
-        'editTaxaNames' => !empty($args['edit_taxa_names']) && $args['edit_taxa_names']
+        'editTaxaNames' => !empty($args['edit_taxa_names']) && $args['edit_taxa_names'],
+        'includeSpeciesGridLinkPage' => !empty($args['include_species_grid_link_page']) && $args['include_species_grid_link_page'],
+        'speciesGridPageLinkUrl' => $args['species_grid_page_link_url'],
+        'speciesGridPageLinkParameter' => $args['species_grid_page_link_parameter'],
+        'speciesGridPageLinkTooltip' => $args['species_grid_page_link_tooltip'],
     ), $options);
     if ($groups=hostsite_get_user_field('taxon_groups')) {
       $species_ctrl_opts['usersPreferredGroups'] = unserialize($groups);
