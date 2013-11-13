@@ -387,7 +387,7 @@ class iform_dynamic_report_explorer extends iform_dynamic {
       $options, 
       array(
         'id' => 'chart-'.self::$reportCount,
-        'reportGroup'=>'chart',
+        'reportGroup'=>'dynamic',
         'width'=> $options['width'],
         'height'=> $options['height'],
         'chartType' => $options['chartType'],
@@ -460,7 +460,7 @@ class iform_dynamic_report_explorer extends iform_dynamic {
       iform_report_get_report_options($args, $auth),
       $options,
       array(
-        'reportGroup'=>'chart',
+        'reportGroup'=>'dynamic',
         //as we aren't returning the report set paramsOnly
         'paramsOnly'=>true,
         'sharing'=>$sharing,
