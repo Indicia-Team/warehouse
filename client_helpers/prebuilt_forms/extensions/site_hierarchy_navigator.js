@@ -1,5 +1,4 @@
 
-
 jQuery(document).ready(function($) {
   //When the user returns to the homepage from a link, we get the locationid and location type id of the location we
   //are zooming to from php (these are calculated from the location id supplied in the URL)
@@ -501,7 +500,7 @@ function selectlist(featuresForSelectList) {
   $('#map-selectlist-button-div').hide();
   $('#map-selectlist-div').show();
   var selectListOptions;
-  selectListOptions += '<option value="">Please select a location</option>';
+  selectListOptions = '<option value="">Please select a location</option>';
   $.each(featuresForSelectList, function (idx, featureForSelectList) {
     //Don't include annotations in the drop-down as we'll end up with multiple options
     //for the same count unit.
