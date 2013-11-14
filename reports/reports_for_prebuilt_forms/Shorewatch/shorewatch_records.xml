@@ -5,11 +5,13 @@
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id">
   SELECT #columns#
   FROM cache_occurrences o
+    LEFT JOIN locations l on l.id=o.location_id
     LEFT JOIN samples occSamp on occSamp.id=o.sample_id
     LEFT JOIN samples parentSamp on parentSamp.id = occSamp.parent_id
-    LEFT JOIN person_attribute_values pav ON pav.person_attribute_id=#my_sites_person_attr_id# AND pav.int_value=parentSamp.location_id AND pav.deleted=false
-    LEFT JOIN location_attribute_values lav ON lav.location_id=parentSamp.location_id 
-    LEFT JOIN location_attributes la ON la.id=lav.location_attribute_id 
+    LEFT JOIN users u ON (u.id=#current_user# or #current_user#='-1')
+    LEFT JOIN person_attribute_values pav ON pav.person_id=u.person_id AND pav.person_attribute_id=#my_sites_person_attr_id# AND pav.int_value=parentSamp.location_id AND pav.deleted=false
+    LEFT JOIN location_attribute_values lav ON lav.location_id=parentSamp.location_id AND lav.location_attribute_id=#private_location_attr_id#
+    LEFT JOIN location_attributes la ON la.id=lav.location_attribute_id
     JOIN taxa_taxon_lists ttl on ttl.id = o.taxa_taxon_list_id
     JOIN surveys sv on sv.id=parentSamp.survey_id
     JOIN websites w on w.id=o.website_id   
@@ -17,14 +19,16 @@
     #joins#
   WHERE #sharing_filter#
   AND 
-    ((((la.id=#private_location_attr_id# AND lav.int_value=0)
-  OR
-    (pav.person_id=#current_user# and pav.int_value=parentSamp.location_id ))
-  AND 
-    '#hide_all_other_users_private_sites#' = '1')
-  OR
-    ('#hide_all_other_users_private_sites#' = '-1')
-    )
+  (l.created_by_id=#current_user# 
+   OR
+  ((((la.id=#private_location_attr_id# AND lav.int_value=0)
+       OR
+      (pav.int_value=l.id))
+       AND #hide_all_other_users_private_sites# = '1')
+       OR
+      ('#hide_all_other_users_private_sites#' = '-1')
+  )
+  )    
   </query>
   <order_bys>
     <order_by>o.id DESC</order_by>
@@ -64,7 +68,7 @@
     </param>
     <param name='my_sites_person_attr_id' display='My Sites Person Attribute Id' description='Id of the my sites person attribute' datatype='integer' default=''/>
     <param name="my_own_locality" display="My sites only?" datatype="checkbox" emptyvalue="">
-      <join value="1">JOIN person_attribute_values pavMySites ON pavMySites.person_attribute_id=#my_sites_person_attr_id# AND pavMySites.int_value=o.location_id AND pavMySites.person_id=#current_user# AND pavMySites.deleted=false</join>  
+      <where value="1">l.created_by_id=#current_user# OR pav.id IS NOT NULL</where>  
     </param>
     <param name="high_certainty_only" display="Verified and High Certainty Sightings Only" datatype="checkbox" emptyvalue="" default=''>
       <where value="1">(o.record_status = 'V' OR (o.record_status not in ('R', 'T') AND o.certainty='C'))</where>  
