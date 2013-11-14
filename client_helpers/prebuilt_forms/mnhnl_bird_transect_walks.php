@@ -714,7 +714,6 @@ $('#controls').bind('tabsshow', function(event, ui) {
     }
 
     $defAttrOptions['validation'] = array('required');
-    $defAttrOptions['suffixTemplate']='requiredsuffix';
     if($locations == 'all'){
       $locOptions = array_merge(array('label'=>lang::get('LANG_Transect')), $defAttrOptions);
       $locOptions['extraParams'] = array_merge(array('parent_id'=>'NULL', 'view'=>'detail', 'orderby'=>'name'), $locOptions['extraParams']);
@@ -754,7 +753,7 @@ $('#controls').bind('tabsshow', function(event, ui) {
     if($surveyReadOnly) {
       $r .= data_entry_helper::text_input(array_merge($defAttrOptions, array('label' => lang::get('LANG_Date'), 'fieldname' => 'sample:date', 'disabled'=>$disabledText )));
     } else {
-      $r .= data_entry_helper::date_picker(array('label' => lang::get('LANG_Date'), 'fieldname' => 'sample:date', 'class' => 'vague-date-picker', 'suffixTemplate'=>'requiredsuffix'));
+      $r .= data_entry_helper::date_picker(array('label' => lang::get('LANG_Date'), 'fieldname' => 'sample:date', 'class' => 'vague-date-picker'));
     }
     $r .= ($sample_wind_id ?          data_entry_helper::outputAttribute($attributes[$sample_wind_id], $languageFilteredAttrOptions) :                                                                                                "<span style=\"display: none;\">Sample attribute '".self::ATTR_WIND."' not assigned to this survey</span>").
           ($sample_precipitation_id ? data_entry_helper::outputAttribute($attributes[$sample_precipitation_id], $languageFilteredAttrOptions) :                                                                                       "<span style=\"display: none;\">Sample attribute '".self::ATTR_RAIN."' not assigned to this survey</span>").
@@ -1104,7 +1103,6 @@ jQuery('#ro-occ-occ-warn').hide();
           'valueField'=>'id',
           'columns'=>2,
           'extraParams'=>$extraParams,
-          'suffixTemplate'=>'requiredsuffix',
           'disabled'=>$disabledText,
           'defaultCaption' => data_entry_helper::$entity_to_load['occurrence:taxon']
   );
@@ -1123,9 +1121,9 @@ jQuery('#ro-occ-occ-warn').hide();
     <input type=\"hidden\" id=\"occurrence:downloaded_flag\" name=\"occurrence:downloaded_flag\" value=\"N\" />
     ".data_entry_helper::autocomplete($species_ctrl_args)."
     ".($occurrence_confidence_id ? data_entry_helper::outputAttribute($attributes[$occurrence_confidence_id], array_merge($languageFilteredAttrOptions, array('noBlankText'=>''))) :  "<span style=\"display: none;\">Occurrence attribute '".self::ATTR_CONFIDENCE."' not assigned to this survey</span>")."
-    ".data_entry_helper::sref_and_system(array('label'=>lang::get('LANG_Spatial_ref'), 'systems'=>array('2169'=>'Luref (Gauss Luxembourg)'), 'suffixTemplate'=>'requiredsuffix'))."
+    ".data_entry_helper::sref_and_system(array('label'=>lang::get('LANG_Spatial_ref'), 'systems'=>array('2169'=>'Luref (Gauss Luxembourg)')))."
     <p>".lang::get('LANG_Click_on_map')."</p>
-    ".data_entry_helper::outputAttribute($attributes[$occurrence_count_id], array_merge($defAttrOptions, array('default'=>1, 'suffixTemplate'=>'requiredsuffix')))."
+    ".data_entry_helper::outputAttribute($attributes[$occurrence_count_id], array_merge($defAttrOptions, array('default'=>1)))."
     ".($occurrence_approximation_id ? data_entry_helper::outputAttribute($attributes[$occurrence_approximation_id], $defAttrOptions) :  "<span style=\"display: none;\">Occurrence attribute '".self::ATTR_APPROXIMATION."' not assigned to this survey</span>")."
     ".data_entry_helper::outputAttribute($attributes[$occurrence_territorial_id], array_merge($defAttrOptions, array('default'=>1, 'id' => 'occ-territorial')))."
     ".data_entry_helper::outputAttribute($attributes[$occurrence_atlas_code_id], $languageFilteredAttrOptions)."
