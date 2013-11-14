@@ -6,7 +6,7 @@
         FROM locations l
           LEFT JOIN cache_termlists_terms lt ON lt.id=l.location_type_id
           LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
-          LEFT JOIN users u ON (u.id=#the_user_id# or #the_user_id#='-1')
+          LEFT JOIN users u ON (u.id=#the_user_id#)
           LEFT JOIN person_attribute_values pav ON pav.person_id=u.person_id AND pav.person_attribute_id=#person_site_attr_id# AND pav.int_value=l.id AND pav.deleted=false          
           LEFT JOIN location_attribute_values lav ON lav.location_id=l.id AND lav.location_attribute_id=#private_location_attr_id#
           LEFT JOIN location_attributes la ON la.id=lav.location_attribute_id 
