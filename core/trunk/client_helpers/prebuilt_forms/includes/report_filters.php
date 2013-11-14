@@ -57,7 +57,7 @@ class filter_what extends filter_base {
       data_entry_helper::$javascript .= "indiciaData.myGroups = [];\n";
       foreach($myGroupsData as $group) {
         $myGroupNames[] = $group['title'];
-        data_entry_helper::$javascript .= "indiciaData.myGroups.push([{$group[id]},'{$group[title]}']);\n";
+        data_entry_helper::$javascript .= "indiciaData.myGroups.push([$group[id],'$group[title]']);\n";
       }
       $r .= '<button type="button" id="my_groups">'.lang::get('Include my groups').'</button>';
       $r .= '<ul class="inline"><li>' . implode('</li><li>', $myGroupNames) . '</li></ul>';      
@@ -507,12 +507,12 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
   foreach($filterData as $filter) {
     if ($filter['defines_permissions']==='t') {
       $selected = (!empty($options['context_id']) && $options['context_id']==$filter['id']) ? 'selected="selected" ' : '';
-      $contexts .= "<option value=\"{$filter[id]}\" $selected>{$filter[title]}</option>";
+      $contexts .= "<option value=\"$filter[id]\" $selected>$filter[title]</option>";
       $contextDefs[$filter['id']] = json_decode($filter['definition']);
     }
     else {
       $selected = (!empty($options['filter_id']) && $options['filter_id']==$filter['id']) ? 'selected="selected" ' : '';
-      $existing .= "<option value=\"{$filter[id]}\" $selected>{$filter[title]}</option>";
+      $existing .= "<option value=\"$filter[id]\" $selected>$filter[title]</option>";
     }
   }
   $r = '<div id="standard-params" class="ui-widget">';
