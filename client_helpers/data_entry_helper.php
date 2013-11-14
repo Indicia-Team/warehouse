@@ -4819,8 +4819,13 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       $cacheOpts = array();
     if (isset($options['report']))
       $cacheOpts['report'] = $options['report'];
-    else
+    else {
       $cacheOpts['table'] = $options['table'];
+      if (isset($options['columns'])) {
+        $cacheOpts['columns']=$options['columns'];
+        $request .= '&columns='.$options['columns'];
+      }
+    }
     $cacheOpts['indicia_website_id'] = self::$website_id;
     if (isset($options['sharing'])) {
       $cacheOpts['sharing']=$options['sharing'];

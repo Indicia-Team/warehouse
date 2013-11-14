@@ -20,7 +20,15 @@
  * template and controls the appearance of the species name both in the autocomplete for adding new rows, plus for 
   the newly added rows.
  */
-function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth, formatter, duplicateMsg, max) {
+var hook_species_checklist_new_row, bindSpeciesAutocomplete;
+
+(function ($) {
+
+"use strict";
+  
+hook_species_checklist_new_row = [];
+
+bindSpeciesAutocomplete = function(selectorID, url, gridId, lookupListId, readAuth, formatter, duplicateMsg, max) {
   // inner function to handle a selection of a taxon from the autocomplete
   var handleSelectedTaxon = function(event, data) {
     var myClass='scMeaning-'+data.taxon_meaning_id;
@@ -48,16 +56,16 @@ function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth
     }); 
     newRows[0].find('.scPresenceCell input').attr('name', 'sc:' + indiciaData['speciesGridCounter'] + '::present').attr('checked','checked').val(data.id);
     // Allow forms to hook into the event of a new row being added
-    if (typeof hook_check_no_obs !== "undefined") {
-  	  hook_check_no_obs();
-    }
+    $.each(hook_species_checklist_new_row, function(idx, fn) {
+      fn(data); 
+    });
     indiciaData['speciesGridCounter']++;
     $(event.target).val('');
     formatter(data,taxonCell);
   };
 
     // Attach auto-complete code to the input
-  ctrl = $('#' + selectorID).autocomplete(url+'/taxa_taxon_list', {
+  var ctrl = $('#' + selectorID).autocomplete(url+'/taxa_taxon_list', {
       extraParams : {
         view : 'detail',
         orderby : 'taxon',
@@ -87,6 +95,7 @@ function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth
   ctrl.bind('result', handleSelectedTaxon);
   setTimeout(function() { $('#' + ctrl.attr('id')).focus(); });
 }
+
 $('.remove-row').live('click', function(e) {
   e.preventDefault();
   // Allow forms to hook into the event of a row being deleted, most likely use would be to have a confirmation dialog
@@ -115,7 +124,9 @@ $('.remove-row').live('click', function(e) {
       considerRow= considerRow.next();
     }
   }
-  if (typeof hook_check_no_obs !== "undefined") {
-	  hook_check_no_obs();
+  if (typeof hook_species_checklist_delete_row !== "undefined") {
+	  hook_species_checklist_delete_row();
   }
 });
+
+}) (jQuery);
