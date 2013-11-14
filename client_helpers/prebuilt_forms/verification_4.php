@@ -307,7 +307,7 @@ idlist=';
    * @return string HTML to insert onto the page
    */
   private static function other_tab_html() {
-    $r .= '<div id="experience-tab"><p>'.lang::get('Recorder\'s other records of this species and species group. Click to explore:').'</p><div id="experience-div"></div></div>';
+    $r = '<div id="experience-tab"><p>'.lang::get('Recorder\'s other records of this species and species group. Click to explore:').'</p><div id="experience-div"></div></div>';
     $r .= '<div id="phenology-tab"><p>'.lang::get('The following phenology chart shows the relative abundance of records through the '.
         'year for this species, <em>from the verified online recording data only.</em>').'</p><div id="chart-div"></div></div>';
     $r .= '<div id="images-tab"></div>';
@@ -480,7 +480,6 @@ idlist=';
           '<input type="checkbox" class="check-row no-select" style="display: none" value="{occurrence_id}" /></div>'
     );
     $params = self::report_filter_panel($args, $readAuth);
-    $params .= $hiddenStuff;
     $opts['zoomMapToOutput']=false;
     $grid = report_helper::report_grid($opts);
     $r = str_replace(array('{grid}','{paramsForm}'), array($grid, $params),
