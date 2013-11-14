@@ -419,7 +419,7 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
     drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/jquery.datagrid.js', 'module');
     if (method_exists(get_called_class(), 'getHeaderHTML')) $r .= call_user_func(array(get_called_class(), 'getHeaderHTML'), $args);
     // Work out list of locations this user can see.
-    $locations = iform_loctools_listlocations($node);
+    // $locations = iform_loctools_listlocations($node);
     ///////////////////////////////////////////////////////////////////
     // default mode 0 : display a page with tabs for survey selector,
     // locations allocator and reports (last two require permissions)
@@ -473,7 +473,7 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
   <div id="setLocations" class="mnhnl-btw-datapanel">
     <form method="post">
       <input type="hidden" id="mnhnlbtw" name="mnhnlbtw" value="mnhnlbtw" />';
-        $url = $svcUrl.'/data/location?mode=json&view=detail&auth_token='.$readAuth['auth_token']."&nonce=".$readAuth["nonce"]."&parent_id=NULL&orderby=name";
+        $url = $svcUrl.'/data/location?mode=json&view=detail&auth_token='.$readAuth['auth_token']."&nonce=".$readAuth["nonce"]."&parent_id=NULL&orderby=name&columns=id,name,parent_id";
         $session = curl_init($url);
         curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
         $entities = json_decode(curl_exec($session), true);
@@ -499,7 +499,7 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
       if(iform_loctools_checkaccess($node,'superuser')){
         $r .= '
   <div id="downloads" class="mnhnl-btw-datapanel">
-    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_transect_direction_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
+    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_btw_transect_direction_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
       <p>'.lang::get('LANG_Direction_Report').'</p>
       <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "direction_attr_id":'.$sample_walk_direction_id.', "closed_attr_id":'.$sample_closure_id.'}\' />
       <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Direction_Report_Button').'">
@@ -509,22 +509,22 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
       <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].'}\' />
       <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Verified_Data_Report_Button').'">
     </form>
-    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_download_report_2.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
+    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_btw_download_report_2.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
       <p>'.lang::get('LANG_Initial_Download').'</p>
       <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "closed_attr_id":'.$sample_closure_id.', "download": "INITIAL", "quality": "!R", "occattrs": "'.$occurrence_confidence_id.','.$occurrence_count_id.','.$occurrence_approximation_id.','.$occurrence_territorial_id.','.$occurrence_atlas_code_id.','.$occurrence_overflying_id.'", "smpattrs" : "'.$sample_walk_direction_id.','.$sample_reliability_id.','.$sample_visit_number_id.','.$sample_wind_id.','.$sample_precipitation_id.','.$sample_temperature_id.','.$sample_cloud_id.','.$sample_start_time_id.','.$sample_end_time_id.','.$sample_closure_id.','.$uid_attr_id.','.$email_attr_id.','.$username_attr_id.'"}\' />
       <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Initial_Download_Button').'">
     </form>
-    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_download_report_2.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
+    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_btw_download_report_2.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
       <p>'.lang::get('LANG_Confirm_Download').'</p>
       <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "closed_attr_id":'.$sample_closure_id.', "download": "CONFIRM", "quality": "V", "occattrs": "'.$occurrence_confidence_id.','.$occurrence_count_id.','.$occurrence_approximation_id.','.$occurrence_territorial_id.','.$occurrence_atlas_code_id.','.$occurrence_overflying_id.'", "smpattrs" : "'.$sample_walk_direction_id.','.$sample_reliability_id.','.$sample_visit_number_id.','.$sample_wind_id.','.$sample_precipitation_id.','.$sample_temperature_id.','.$sample_cloud_id.','.$sample_start_time_id.','.$sample_end_time_id.','.$sample_closure_id.','.$uid_attr_id.','.$email_attr_id.','.$username_attr_id.'"}\' />
       <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Confirm_Download_Button').'">
     </form>
-    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_download_report_2.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
+    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_btw_download_report_2.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
       <p>'.lang::get('LANG_Final_Download').'</p>
       <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "closed_attr_id":'.$sample_closure_id.', "download": "FINAL", "quality": "V", "occattrs": "'.$occurrence_confidence_id.','.$occurrence_count_id.','.$occurrence_approximation_id.','.$occurrence_territorial_id.','.$occurrence_atlas_code_id.','.$occurrence_overflying_id.'", "smpattrs" : "'.$sample_walk_direction_id.','.$sample_reliability_id.','.$sample_visit_number_id.','.$sample_wind_id.','.$sample_precipitation_id.','.$sample_temperature_id.','.$sample_cloud_id.','.$sample_start_time_id.','.$sample_end_time_id.','.$sample_closure_id.','.$uid_attr_id.','.$email_attr_id.','.$username_attr_id.'"}\' />
       <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Final_Download_Button').'">
     </form>
-    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_download_report_2.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
+    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_btw_download_report_2.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
       <p>'.lang::get('LANG_Complete_Final_Download').'</p>
       <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "closed_attr_id":'.$sample_closure_id.', "download": "OFF", "quality": "NA", "occattrs": "'.$occurrence_confidence_id.','.$occurrence_count_id.','.$occurrence_approximation_id.','.$occurrence_territorial_id.','.$occurrence_atlas_code_id.','.$occurrence_overflying_id.'", "smpattrs" : "'.$sample_walk_direction_id.','.$sample_reliability_id.','.$sample_visit_number_id.','.$sample_wind_id.','.$sample_precipitation_id.','.$sample_temperature_id.','.$sample_cloud_id.','.$sample_start_time_id.','.$sample_end_time_id.','.$sample_closure_id.','.$uid_attr_id.','.$email_attr_id.','.$username_attr_id.'"}\' />
       <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Complete_Final_Download_Button').'">
@@ -1057,7 +1057,7 @@ loadAttributes = function(attributeTable, attributeKey, key, keyValue, prefix){
     // Set up Occurrence List tab: don't include when creating a new sample as it will have no occurrences
     // Grid populated at a later point
   $r .= "<div id=\"occurrenceList\" class=\"mnhnl-btw-datapanel\"><div id=\"occ_grid\"></div>
-  <form method=\"post\" action=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=mnhnl_btw_occurrences_report.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv\">
+  <form method=\"post\" action=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_btw_occurrences_report.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv\">
     <input type=\"hidden\" id=\"params\" name=\"params\" value='{\"survey_id\":".$args['survey_id'].", \"sample_id\":".data_entry_helper::$entity_to_load['sample:id']."}' />
     <input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Download_Occurrences')."\">
   </form></div>";
