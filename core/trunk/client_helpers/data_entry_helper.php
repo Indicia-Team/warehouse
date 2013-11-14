@@ -1627,6 +1627,7 @@ $('#$escaped').change(function(e) {
         'id'=>'imp-location',
         'searchUpdatesSref'=>false
         ), $options);
+    $options['columns']=$options['valueField'].','.$options['captionField'];
     if ($options['searchUpdatesSref'])
       self::$javascript .= "indiciaData.searchUpdatesSref=true;\n";
     return self::select($options);
