@@ -733,6 +733,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
               '&nonce=' . $auth['read']["nonce"] .
               '&wantCount=1' .
               "&parent_id=NULL&orderby=name" .
+              "&columns=id,name" .
               (isset($args['loctoolsLocTypeID'])&&$args['loctoolsLocTypeID']<>''?'&location_type_id='.$args['loctoolsLocTypeID']:'');
       if(!isset($options['loctoolsPageSize'])) $options['loctoolsPageSize'] = 20;
       $page = empty($_GET['page']) ? 1 : $_GET['page'];

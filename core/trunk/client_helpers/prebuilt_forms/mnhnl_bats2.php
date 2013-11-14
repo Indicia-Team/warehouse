@@ -931,10 +931,11 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
     unset($extraTaxonOptions['extraParams']['preferred']);
     unset($extraTaxonOptions['extraParams']['language_iso']);
     foreach(data_entry_helper::$entity_to_load as $key => $value) {
-    	$parts = explode(':', $key,4);
-    	// Is this taxon attribute data?
-    	if (count($parts) == 4 && $parts[0] == 'sc'&& $parts[1]!='' && $parts[2]!='-ttlId-' && $parts[3]!='')
-    		$ids[] = $value;
+      // 'sc:<method>:<taxa_taxon_list_id>:<occID>:occAttr:<attrID>[:<attrValID]'
+      $parts = explode(':', $key,4);
+      // Is this taxon attribute data?
+      if (count($parts) == 4 && $parts[0] == 'sc'&& $parts[1]!='' && $parts[2]!='-ttlId-' && $parts[3]!='' && !in_array($parts[2], $ids))
+        $ids[] = $parts[2];
     }
     if(count($ids)==0) return $ids;
     $extraTaxonOptions['extraParams']['id'] = $ids;
@@ -942,6 +943,7 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
     $fullTaxalist = data_entry_helper::get_population_data($extraTaxonOptions);
     $occList = array();
     foreach(data_entry_helper::$entity_to_load as $key => $value) {
+      // 'sc:<method>:<taxa_taxon_list_id>:<occID>:occAttr:<attrID>[:<attrValID]'
       $parts = explode(':', $key,5);
       // Is this taxon attribute data?
       if (count($parts) > 2 && $parts[0] == 'sc' && $parts[1]!='' && $parts[2]!='-ttlId-') {

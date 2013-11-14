@@ -2577,14 +2577,14 @@ jQuery('#".$options['MainFieldID']."').change(function(){mainFieldChange(true)})
     					'captionField'=>'name',
     					'template' => 'select',
     					'itemTemplate' => 'select_item',
+    					'columns'=>'id,name', // Only need certain columns, not geoms which would mean lots of network traffic
     					'extraParams'=>array_merge($auth['read'],
     						array('parent_id'=>'NULL',
     								'view'=>'detail',
     								'orderby'=>'name',
     								'location_type_id'=>$args['loctoolsLocTypeID'],
-    								'deleted'=>'f',
-    								'columns'=>'id,name')));
-      $locResponse = data_entry_helper::get_population_data($locOptions); // Only need certain columns: 'id', $locOptions['valueField'], $locOptions['captionField'].
+    								'deleted'=>'f')));
+      $locResponse = data_entry_helper::get_population_data($locOptions); 
       if (isset($locResponse['error'])) return "PARENT LOOKUP ERROR:  ".$locResponse['error'];
       $opts = "";
       if (!isset(data_entry_helper::$entity_to_load[$options['ParentFieldName']]))
@@ -2783,12 +2783,12 @@ jQuery(\"#".$options['ChooseParentFieldID']."\").change(function(){
           'NameBlankText'=>lang::get('LANG_Location_Name_Blank_Text'),
           'fieldname'=>'location:id',
           'id'=>$options['MainFieldID'],
+          'columns'=>'id,name,code,location_type_id', // Only need certain columns, not geoms which would mean lots of network traffic
           'extraParams'=>array_merge(array(
               'view'=>'detail',
               'orderby'=>'name',
               'website_id'=>$args['website_id'],
-              'location_type_id'=>$loctypeParam,
-              'columns'=>'id,name,code,location_type_id'),
+              'location_type_id'=>$loctypeParam),
             $auth['read']),
           'table'=>'location',
           'template' => 'select',
@@ -2796,7 +2796,7 @@ jQuery(\"#".$options['ChooseParentFieldID']."\").change(function(){
           'filterField'=>'parent_id',
           'size'=>3);
       // Idea here is to get a list of all locations in order to build drop downs.
-      $responseRecords = data_entry_helper::get_population_data($location_list_args); // want id, name, code, location_type_id
+      $responseRecords = data_entry_helper::get_population_data($location_list_args);
       if (isset($responseRecords['error'])) return $responseRecords['error'];
       iform_mnhnl_set_editable($auth, $args, $node, $responseRecords, 'conditional', $loctypeParam);
       $usedCodes = array();
@@ -2860,9 +2860,10 @@ jQuery(\"#".$options['ChooseParentFieldID']."\").change(function(){
       $includeCommune=true;
       $location_list_args=array(
           'nocache'=>true,
-          'extraParams'=>array_merge(array('orderby'=>'id', 'view'=>'detail', 'website_id'=>$args['website_id'], 'location_type_id'=>$primary, 'columns'=>'id,name,parent_id'), $auth['read']),
+          'extraParams'=>array_merge(array('orderby'=>'id', 'view'=>'detail', 'website_id'=>$args['website_id'], 'location_type_id'=>$primary), $auth['read']),
+          'columns'=>'id,name,parent_id', // Only need certain columns, not geoms which would mean lots of network traffic
           'table'=>'location');
-      $locList = data_entry_helper::get_population_data($location_list_args); // want id, name, parent_id
+      $locList = data_entry_helper::get_population_data($location_list_args); 
       if (isset($locList['error'])) return $locList['error'];
       $location_attr_list_args=array(
           'nocache'=>true,
@@ -2963,14 +2964,14 @@ hook_setSref_".$idx." = function(geom){ // map projection
                   		'template' => 'select',
                   		'itemTemplate' => 'select_item',
                   		'validation'=>array('required'),
+                  		'columns'=>'id,name', // Only need certain columns, not geoms which would mean lots of network traffic
                   		'extraParams'=>array_merge($auth['read'],
                   				array('parent_id'=>'NULL',
                   						'view'=>'detail',
                   						'orderby'=>'name',
                   						'location_type_id'=>$parentLocTypeID,
-                  						'deleted'=>'f',
-    								'columns'=>'id,name')));
-                  $locResponse = data_entry_helper::get_population_data($locOptions); // Only need certain columns: 'id', $locOptions['valueField'], $locOptions['captionField']
+                  						'deleted'=>'f')));
+                  $locResponse = data_entry_helper::get_population_data($locOptions);
                   if (isset($locResponse['error'])) return "PARENT LOOKUP ERROR:  ".$locResponse['error'];
                   $opts = str_replace(array('{value}', '{caption}', '{selected}'),
                   		array('', lang::get('LANG_FirstChooseParentFilter'), ''),
@@ -3963,9 +3964,9 @@ function iform_mnhnl_set_editable($auth, $args, $node, $locList, $force, $loctyp
           'extraParams'=>array_merge(array(
               'view'=>'detail',
               'website_id'=>$args['website_id'],
-              'location_type_id'=>$loctypeParam,
-              'columns'=>'id,location_type_id'),
+              'location_type_id'=>$loctypeParam),
             $auth['read']),
+          'columns'=>'id,location_type_id', // Only need certain columns, not geoms which would mean lots of network traffic
           'table'=>'location');
     // Idea here is to get a list of all locations in order to build drop downs.
     $locList = data_entry_helper::get_population_data($location_list_args); // Want id, location_type_id
