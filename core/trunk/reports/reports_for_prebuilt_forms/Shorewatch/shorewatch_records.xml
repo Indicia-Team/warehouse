@@ -8,7 +8,7 @@
     LEFT JOIN locations l on l.id=o.location_id
     LEFT JOIN samples occSamp on occSamp.id=o.sample_id
     LEFT JOIN samples parentSamp on parentSamp.id = occSamp.parent_id
-    LEFT JOIN users u ON (u.id=#current_user# or #current_user#='-1')
+    LEFT JOIN users u ON (u.id=#current_user#)
     LEFT JOIN person_attribute_values pav ON pav.person_id=u.person_id AND pav.person_attribute_id=#my_sites_person_attr_id# AND pav.int_value=parentSamp.location_id AND pav.deleted=false
     LEFT JOIN location_attribute_values lav ON lav.location_id=parentSamp.location_id AND lav.location_attribute_id=#private_location_attr_id#
     LEFT JOIN location_attributes la ON la.id=lav.location_attribute_id
@@ -42,7 +42,7 @@
       population_call='direct:taxa_taxon_list:taxon_id:taxon' emptyvalue="">
       <where>ttl.taxon_id=#taxon_id#</where>
     </param>
-    <param name="current_user" display="Current User ID" description="Current user's warehouse ID. Allows a column to be output indicating that the user owns the record." datatype="text" emptyvalue=""/>
+    <param name="current_user" display="Current User ID" description="Current user's warehouse ID. Allows a column to be output indicating that the user owns the record." datatype="text" emptyvalue="-1"/>
     <param name="volunteer_id" display="Volunteer Name" description="Name of volunteer to filter by." datatype="lookup" population_call='report:library/users/get_people_details_for_website_or_user:id:fullname_surname_first' emptyvalue="">
       <where>o.created_by_id=#volunteer_id#</where>
     </param>
