@@ -8,8 +8,8 @@
   <query website_filter_field="co.website_id">
   SELECT #columns#
   FROM cache_occurrences co
-    LEFT JOIN samples sSighting ON sSighting.id=co.sample_id AND sSighting.sample_method_id = 2510 AND sSighting.deleted=false
-        LEFT JOIN samples sEffort ON sEffort.id=sSighting.parent_id AND sEffort.sample_method_id = 2509 AND sEffort.deleted=false
+    LEFT JOIN samples sSighting ON sSighting.id=co.sample_id AND sSighting.sample_method_id = #sighting_sample_method_id# AND sSighting.deleted=false
+        LEFT JOIN samples sEffort ON sEffort.id=sSighting.parent_id AND sEffort.sample_method_id = #effort_sample_method_id# AND sEffort.deleted=false
     JOIN taxa_taxon_lists ttl on ttl.id=co.taxa_taxon_list_id AND ttl.deleted=false
     WHERE 1=1
     #filters#
@@ -28,6 +28,8 @@
     <param name="location_id" display="Location ID" description="Location ID to report on." datatype="integer" >
       <where>co.location_id=#location_id#</where>
     </param>
+    <param name="effort_sample_method_id" display="Effort Sample Method Id" description="Id of the Effort Sample Method." datatype="integer"/>
+    <param name="sighting_sample_method_id" display="Sighting Sample Method Id" description="Id of the Sighting Sample Method." datatype="integer"/>
   </params>
   <columns>
     <column name='month' display='Month' sql="to_char(co.date_start, 'MONTH')" datatype='integer'/>
