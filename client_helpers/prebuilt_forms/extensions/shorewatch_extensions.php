@@ -19,11 +19,11 @@
  * @license	http://www.gnu.org/licenses/gpl.html GPL 3.0
  * @link 	http://code.google.com/p/indicia/
  */
- 
+
 /**
  * Extension class that supplies new controls to support the WDCS Shorewatch project.
  */
-class extension_shorewatch_extensions { 
+class extension_shorewatch_extensions {
   /*
    * On the mapping page the records table is only shown for volunteers if My Own Locality is selected.
    * As guests don't have that option, then this extension makes sures the records table is always hidden for guests.
@@ -39,7 +39,7 @@ class extension_shorewatch_extensions {
     }
     ";
   }
-  
+
   /*
    * Button control that links to a Efforts and Sightings chart page.
    * The user must provide the following options:
@@ -49,18 +49,18 @@ class extension_shorewatch_extensions {
    */
   public static function efforts_and_sightings_chart_link($auth, $args, $tabalias, $options, $path) {
     if (!empty($_GET[$options['currentPageUrlParam']])) {
-      $urlQuery=array($options['chartPageUrlParam']=>$_GET[$options['currentPageUrlParam']]);   
+      $urlQuery=array($options['chartPageUrlParam']=>$_GET[$options['currentPageUrlParam']]);
       $linkUrl=url($options['link'],array('query'=>$urlQuery));
     } else {
       $linkUrl=url($options['link']);
     }
-    $buttonHtml = 
-    "<FORM><INPUT TYPE='button' VALUE='View Efforts and Sightings Chart'
+    $buttonHtml =
+            "<FORM><INPUT TYPE='button' VALUE='View Efforts and Sightings Chart'
       ONCLICK='window.location.href=\"".$linkUrl."\"'>
     </FORM>";
     return $buttonHtml;
   }
-  
+
   /*
    * Control allows a user to click on the map to open the Site Information page.
    * User must provided the page name link) and parameter(linkPageParam) options.
@@ -70,30 +70,30 @@ class extension_shorewatch_extensions {
     data_entry_helper::$javascript .= "indiciaData.linkToPage='".url($options['link']).(variable_get('clean_url', 0) ? '?' : '&').$options['linkPageParam'].'='."';";
     drupal_add_js(iform_client_helpers_path().'prebuilt_forms/extensions/shorewatch_extensions.js');
   }
-  
+
   /*
    * Control gets the description of the site for display on the Site Information page.
    */
   public static function site_description($auth, $args, $tabalias, $options, $path) {
     if (!empty($_GET[$options['urlParameter']])) {
       $locationCommentData = data_entry_helper::get_population_data(array(
-        'table' => 'location',
+                  'table' => 'location',
         'extraParams' => $auth['read'] + array('id' => $_GET[$options['urlParameter']], 'view'=>'detail'),
-      ));
+              ));
       $r = '<div><h3>Description</h3>'.$locationCommentData[0]['comment'].'</div>';
       return $r;
     }
   }
-  
+
   /*
    * Control takes administrators to the Create Site page
    */
   public static function create_site($auth, $args, $tabalias, $options, $path) {
     $button = '<div>';
     $button .= '  <FORM>';
-    $button .= "    <INPUT TYPE=\"button\" VALUE=\"".$options['button-label']."\"
-                        ONCLICK=\"window.location.href='".$options['create-site-page-page']."'\">";
-    $button .= '  </FORM>'; 
+      $button .= "    <INPUT TYPE=\"button\" VALUE=\"".$options['button-label']."\"
+                        ONCLICK=\"window.location.href='".url($options['create-site-page-page'])."'\">";
+    $button .= '  </FORM>';
     $button .= '</div>';
     return $button;
   }
