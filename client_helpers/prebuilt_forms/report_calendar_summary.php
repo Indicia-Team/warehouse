@@ -87,7 +87,8 @@ class iform_report_calendar_summary {
           'type'=>'report_helper::report_picker',
           'default'=>'library/samples/samples_list_for_cms_user.xml',
           'group'=>'Report Settings'
-        ), array(
+        ),
+        array(
           'name' => 'param_presets',
           'caption' => 'Preset Parameter Values',
           'description' => 'To provide preset values for any report parameter and avoid the user having to enter them, enter each parameter into this '.
@@ -105,6 +106,15 @@ class iform_report_calendar_summary {
               'if an empty value is provided, so the taxon_list_id parameter can be listed here to provide a checkbox to remove this filter. Provide each '.
               'parameter on one line, followed by an equals then the caption of the check box, e.g. taxon_list_id=Check this box to include all species.',
           'type' => 'textarea',
+          'required' => false,
+          'group'=>'Report Settings'
+        ),
+        array(
+          'name' => 'avgFields',
+          'caption' => 'Average Fields',
+          'description' => 'Comma separated list of the fields in the report which are averaged out at a sample level. Use smpattr:<x> to run this '.
+               'processing against a sample attribute. If these are look up attributes, an attempt will be made to convert the look up to a number.',
+          'type' => 'string',
           'required' => false,
           'group'=>'Report Settings'
         ),
@@ -1382,7 +1392,7 @@ jQuery('#".$ctrlid."').change(function(){
             'includeRawData', 'includeSummaryData', 'includeEstimatesData', 'summaryDataCombining', 'dataRound',
             'zeroPointAnchor', 'interpolation', 'firstValue', 'lastValue', 'linkURL',
             'includeRawGridDownload', 'includeRawListDownload', 'includeSummaryGridDownload',
-            'includeEstimatesGridDownload', 'includeListDownload'
+            'includeEstimatesGridDownload', 'includeListDownload', 'avgFields'
       ));
     if (isset($_GET['outputSource']))
       $reportOptions['outputSource']=$_GET['outputSource'];

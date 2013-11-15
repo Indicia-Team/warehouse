@@ -2830,24 +2830,33 @@ update_controls();
     $locationSamples = array();
     $dateList = array();
     $weekList = array();
-    $smpAttrs = isset($options['extraParams']['smpattrs']) ? explode(',',$options['extraParams']['smpattrs']) : false;
+    $avgFieldList = isset($options['avgFields']) ? explode(',',$options['avgFields']) : false;
     $smpAttrList = array();
-    if($smpAttrs && count($smpAttrs)==0) $smpAttrs = false;
-    if($smpAttrs) {
-      $smpAttributes=data_entry_helper::get_population_data(array(
-            'table'=>'sample_attribute',
-            'extraParams'=>$options['readAuth'] + array('view'=>'list', 'id'=>$smpAttrs)
+    if(!$avgFieldList || count($avgFieldList)==0) $avgFields = false;
+    else {
+      $avgFields = array();
+      foreach($avgFieldList as $avgField) {
+        $avgFields[$avgField] = array('caption'=>$avgField, 'attr'=>false);
+        $parts = explode(':',$avgField);
+        if(count($parts)==2 && $parts[0]='smpattr') {
+          $smpAttribute=data_entry_helper::get_population_data(array(
+              'table'=>'sample_attribute',
+              'extraParams'=>$options['readAuth'] + array('view'=>'list', 'id'=>$parts[1])
           ));
-      foreach($smpAttributes as $smpAttr) {
-        $smpAttrList[$smpAttr['id']]=$smpAttr;
-        if($smpAttr['data_type']=='L')
-          $smpAttrList[$smpAttr['id']]['termList'] = data_entry_helper::get_population_data(array(
-            'table'=>'termlists_term',
-            'extraParams'=>$options['readAuth'] + array('view'=>'detail', 'termlist_id'=>$smpAttrList[$smpAttr['id']]['termlist_id'])
-          ));
+          if(count($smpAttribute)==1){
+            $avgFields[$avgField]['id'] = $parts[1];
+            $avgFields[$avgField]['attr'] = $smpAttribute[0];
+            $avgFields[$avgField]['caption'] = $smpAttribute[0]['caption'];
+            if($smpAttribute[0]['data_type']=='L')
+              $avgFields[$avgField]['attr']['termList'] = data_entry_helper::get_population_data(array(
+                'table'=>'termlists_term',
+                'extraParams'=>$options['readAuth'] + array('view'=>'detail', 'termlist_id'=>$avgFields[$avgField]['attr']['termlist_id'])
+            ));
+          }
+        }
       }
     }
-
+    
     // we are assuming that there can be more than one occurrence of a given taxon per sample.
     if(count($options['location_list']) == 0) $options['location_list'] = 'none';
     foreach($records as $recid => $record){
@@ -2866,19 +2875,23 @@ update_controls();
         if(!in_array($record['location_name'],$weekList[$weekno])) $weekList[$weekno][] = $record['location_name'];
       } else $weekList[$weekno] = array($record['location_name']);
       if(!isset($rawArray[$this_index])){
-        $rawArray[$this_index] = array('weekno'=>$weekno, 'counts'=>array(), 'date'=>$record['date'], 'total'=>0, 'samples'=>array(), 'smpAttrs'=>array());
+        $rawArray[$this_index] = array('weekno'=>$weekno, 'counts'=>array(), 'date'=>$record['date'], 'total'=>0, 'samples'=>array(), 'avgFields'=>array());
       }
       // we assume that the report is configured to return the user_id which matches the method used to generate my_user_id
       if (($options['my_user_id']==$record['user_id'] ||
            $options['location_list'] == 'all' ||
            ($options['location_list'] != 'none' && in_array($record['location_id'], $options['location_list'])))
           && !isset($rawArray[$this_index]['samples'][$record['sample_id']])){
-        $rawArray[$this_index]['samples'][$record['sample_id']]=array('id'=>$record['sample_id'], 'location_name'=>$record['location_name'], 'smpAttrs'=>array());
-        if($smpAttrs){
-          foreach($smpAttrs as $smpAttr){
-            $rawArray[$this_index]['samples'][$record['sample_id']]['smpAttrs'][$smpAttr] = $record['attr_sample_'.$smpAttr];
-            if(isset($record['attr_sample_term_'.$smpAttr]))
-              $rawArray[$this_index]['samples'][$record['sample_id']]['smpAttrsTerm'][$smpAttr] = $record['attr_sample_term_'.$smpAttr];
+        $rawArray[$this_index]['samples'][$record['sample_id']]=array('id'=>$record['sample_id'], 'location_name'=>$record['location_name'], 'avgFields'=>array());
+        if($avgFields){
+          foreach($avgFields as $field => $avgField) {
+            if(!$avgField['attr'])
+              $rawArray[$this_index]['samples'][$record['sample_id']]['avgFields'][$field] = $record[$field];
+            else if($avgField['attr']['data_type']=='L') {
+              $term = trim($record['attr_sample_term_'.$avgField['id']], "% \t\n\r\0\x0B");
+              $rawArray[$this_index]['samples'][$record['sample_id']]['avgFields'][$field] = is_numeric($term) ? $term : null;
+            } else
+              $rawArray[$this_index]['samples'][$record['sample_id']]['avgFields'][$field] = $record['attr_sample_'.$avgField['id']];
           }
         }
       }
@@ -2892,30 +2905,20 @@ update_controls();
       } else $locationSamples[$record['location_id']] = array($weekno => array($record['sample_id']));
     }
     $warnings .= '<span style="display:none;">Records date pre-processing complete : '.date(DATE_ATOM).'</span>'."\n";
-    if($smpAttrs) {
+    if($avgFields) {
       foreach($rawArray as $dateIndex => $rawData) {
-        foreach($smpAttrs as $smpAttr){
+        foreach($avgFields as $field=>$avgField){
           $total=0;
           $count=0;
-          if($smpAttrList[$smpAttr]['data_type']=='L'){
-            foreach($rawArray[$dateIndex]['samples'] as $sample) {
-              $term = trim($sample['smpAttrsTerm'][$smpAttr], "% \t\n\r\0\x0B");
-              if(is_numeric($term)){
-                $total += intval($term);
-                $count++;
-              }
-            }
-          } else {
-            foreach($rawArray[$dateIndex]['samples'] as $sample) {
-              if($sample['smpAttrs'][$smpAttr] != null){
-                $total += $sample['smpAttrs'][$smpAttr];
-                $count++;
-              }
+          foreach($rawArray[$dateIndex]['samples'] as $sample) {
+            if($sample['avgFields'][$field] != null){
+              $total += $sample['avgFields'][$field];
+              $count++;
             }
           }
-          $rawArray[$dateIndex]['smpAttrs'][$smpAttr] = $count ? $total/$count : "";
-          if($options['smpAttrRound']=='nearest' && $rawArray[$dateIndex]['smpAttrs'][$smpAttr]!="")
-            $rawArray[$dateIndex]['smpAttrs'][$smpAttr] = (int)round($rawArray[$dateIndex]['smpAttrs'][$smpAttr]);
+          $rawArray[$dateIndex]['avgFields'][$field] = $count ? $total/$count : "";
+          if($options['avgFieldRound']=='nearest' && $rawArray[$dateIndex]['avgFields'][$field]!="")
+            $rawArray[$dateIndex]['avgFields'][$field] = (int)round($rawArray[$dateIndex]['avgFields'][$field]);
         }
       }
     }
@@ -3364,14 +3367,15 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
         }
         $r.= "</thead>\n<tbody>\n";
         $altRow=false;
-        if($smpAttrs) {
-          foreach($smpAttrs as $i => $smpAttr){
-            $r .= "<tr class=\"sample-datarow ".($altRow?$options['altRowClass']:'')." ".($i==(count($smpAttrs)-1)?'last-sample-datarow':'')."\">";
-            $r .= '<td>Mean '.$smpAttrList[$smpAttr]['caption'].'</td>';
-            $rawDataDownloadGrid .= 'Mean '.$smpAttrList[$smpAttr]['caption'];
+        if($avgFields) {
+          foreach($avgFieldList as $i => $field){
+            $r .= "<tr class=\"sample-datarow ".($altRow?$options['altRowClass']:'')." ".($i==(count($avgFields)-1)?'last-sample-datarow':'')."\">";
+            $caption = t('Mean '.$avgFields[$field]['caption']);
+            $r .= '<td>'.$caption.'</td>';
+            $rawDataDownloadGrid .= $caption;
             foreach($rawArray as $dateIndex => $rawData) {
-              $r.= '<td>'.$rawData['smpAttrs'][$smpAttr].'</td>';
-              $rawDataDownloadGrid .= '%2C'.$rawData['smpAttrs'][$smpAttr];
+              $r.= '<td>'.$rawData['avgFields'][$field].'</td>';
+              $rawDataDownloadGrid .= '%2C'.$rawData['avgFields'][$field];
             }
             if($options['includeTableTotalColumn']){
               $r.= '<td class="total-column"></td>';
@@ -3801,7 +3805,8 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
       'tableHeaders' => 'date',
       'rawDataCombining' => 'add',
       'dataRound' => 'nearest',
-      'smpAttrRound' => 'nearest',
+      'avgFieldRound' => 'nearest',
+      'avgFields' => '',
       'zeroPointAnchor' => ',',
       'interpolation' => 'linear',
       'firstValue' => 'none',
