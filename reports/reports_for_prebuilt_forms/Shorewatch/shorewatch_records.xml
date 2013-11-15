@@ -20,14 +20,17 @@
   WHERE #sharing_filter#
   AND 
   (l.created_by_id=#current_user# 
-   OR
-  ((((la.id=#private_location_attr_id# AND lav.int_value=0)
+     OR
+    ((((la.id=#private_location_attr_id# AND lav.int_value=0)
+          OR
+        (pav.int_value=l.id)
+          OR
+        (lav.id is null)
+      )
+     AND #hide_all_other_users_private_sites# = '1')
        OR
-      (pav.int_value=l.id))
-       AND #hide_all_other_users_private_sites# = '1')
-       OR
-      ('#hide_all_other_users_private_sites#' = '-1')
-  )
+     ('#hide_all_other_users_private_sites#' = '-1')
+    )
   )    
   </query>
   <order_bys>
