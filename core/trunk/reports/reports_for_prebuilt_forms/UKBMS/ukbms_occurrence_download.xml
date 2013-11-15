@@ -22,6 +22,7 @@
   </query>
   <field_sql>
       parent.id as sample_id,
+      o.id as occurrence_id,
       l.code as site_code,
       '' as date, --- allows proper positioning of date column in report
       l2.code as section_name,
@@ -55,6 +56,7 @@
   </params>
   <columns>
     <column name='sample_id' display='Sample ID' />
+    <column name='occurrence_id' display='Occurrence ID' />
     <column name='site_code' display='Site Code' />
     <column name='date' display='Date' />
     <column name='section_name' display='Section No.' />

@@ -24,7 +24,11 @@
       s.date_start as date,
       cttl.taxon_meaning_id,
       coalesce(cttl.default_common_name, cttl.preferred_taxon) as common,
-      s.created_by_id as user_id
+      s.created_by_id as user_id,
+      (select avg(sav.int_value) from sample_attribute_values sav
+        JOIN sample_attributes sa ON sav.sample_attribute_id = sa.id AND sa.deleted = false AND sa.caption = '% sun'
+        JOIN samples s2 ON sav.sample_id = s2.id AND s2.parent_id = s.id AND s2.deleted = false
+        WHERE sav.deleted = false) as sun
   </field_sql>
   <order_bys>
     <order_by>cttl.taxonomic_sort_order, cttl.taxon_meaning_id, s.location_id</order_by>
@@ -61,5 +65,6 @@
     <column name='location_name' display='Transect' />
     <column name='date' display='Date' />
     <column name='user_id' display='User'/>
+    <column name='sun' display='Mean % Sun'/>
   </columns>
 </report>
