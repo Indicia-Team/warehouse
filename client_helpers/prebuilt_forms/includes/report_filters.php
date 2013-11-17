@@ -227,7 +227,7 @@ class filter_where extends filter_base {
       $indicia_templates['jsWrap'] = '{content}';
       $r .= map_helper::map_panel(array(
         'divId'=>'filter-pane-map',
-        'presetLayers' => array('google_hybrid'),
+        'presetLayers' => array('osm'),
         'editLayer' => true,      
         'initial_lat'=>variable_get('indicia_map_centroid_lat', 55),
         'initial_long'=>variable_get('indicia_map_centroid_long', -1),
@@ -456,9 +456,12 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
   iform_load_helpers(array('report_helper'));
   $options = array_merge(array(
     'sharing' => 'reporting',
+    'admin' => false,
+    'adminCanSetSharingTo' => array('R'=>'reporting', 'V'=>'verification'),
     'allowLoad' => true,
     'allowSave' => true,
-    'taxon_list_id' => variable_get('iform_master_checklist_id', 0)
+    'taxon_list_id' => variable_get('iform_master_checklist_id', 0),
+    'redirect_on_success' => ''
   ), $options);
   if (!preg_match('/^(reporting|peer_review|verification|data_flow|moderation)$/', $options['sharing']))
     return 'The @sharing option must be one of reporting, peer_review, verification, data_flow or moderation (currently '.$options['sharing'].').';
@@ -504,6 +507,7 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
   }
   if (!empty($_GET['context_id'])) $options['context_id']=$_GET['context_id'];
   if (!empty($_GET['filter_id'])) $options['filter_id']=$_GET['filter_id'];
+  if (!empty($_GET['filters_user_id'])) $options['filters_user_id']=$_GET['filters_user_id'];
   foreach($filterData as $filter) {
     if ($filter['defines_permissions']==='t') {
       $selected = (!empty($options['context_id']) && $options['context_id']==$filter['id']) ? 'selected="selected" ' : '';
@@ -535,8 +539,13 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
     $r .= '</div>';
     $r .= '<div id="filter-details" style="display: none">';
     $r .= '<img src="'.data_entry_helper::$images_path.'nuvola/close-22px.png" width="22" height="22" alt="Close filter builder" title="Close filter builder" class="button" id="filter-done"/>'."\n";
-  } else 
+  } else {
     $r .= '<div id="filter-details">';
+    if (!empty($options['filter_id']))
+      $r .= "<input type=\"hidden\" id=\"select-filter\" value=\"$options[filter_id]\"/>";
+    elseif (!empty($options['filters_user_id']))
+      $r .= "<input type=\"hidden\" id=\"select-filters-user\" value=\"$options[filters_user_id]\"/>";
+  }
   $r .= '<div id="filter-panes">';
   $filters = array(
     'filter_what'=>new filter_what(),
@@ -574,8 +583,32 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
   $r .= '</div>'; // filter panes
   $r .= '<div class="toolbar">';
   if ($options['allowSave']) {
-    $r .= '<label for="filter-name">Filter name:</label><input id="filter-name"/>' . 
-        '<img src="'.data_entry_helper::$images_path.'nuvola/save-22px.png" width="22" height="22" alt="Save filter" title="Save filter" class="button" id="filter-save"/>';
+    $r .= '<label for="filter:title">'.lang::get('Filter name').':</label><input id="filter:title"/>';
+    if ($options['admin']) {
+      if (empty($options['adminCanSetSharingTo']))
+        throw new exception('Report standard params panel in admin mode so adminCanSetSharingTo option must be populated.');
+      $r .= data_entry_helper::select(array(
+        'label'=>lang::get('for'),
+        'fieldname'=>'filter:sharing',
+        'lookupValues'=>$options['adminCanSetSharingTo'],
+        'labelClass'=>'auto',
+        'suffixTemplate'=>'nosuffix'
+      ));
+      $r .= data_entry_helper::autocomplete(array(
+        'label'=>'by who?',
+        'fieldname'=>'filters_user:user_id',
+        'table'=>'user',
+        'valueField' => 'id',
+        'captionField' => 'person_name',
+        'extraParams' => $readAuth + array('view'=>'detail'),
+        'labelClass'=>'auto'
+      ));
+      $r .= data_entry_helper::textarea(array(
+        'label' => 'Description',
+        'fieldname' => 'filter:description'
+      ));
+    }
+    $r .= '<img src="'.data_entry_helper::$images_path.'nuvola/save-22px.png" width="22" height="22" alt="Save filter" title="Save filter" class="button" id="filter-save"/>';
     $r .= '<img src="'.data_entry_helper::$images_path.'trash-22px.png" width="22" height="22" alt="Bin this filter" title="Bin this filter" class="button disabled" id="filter-delete"/>';
   }  
   $r .= '</div></div>'; // toolbar + clearfix
@@ -609,6 +642,7 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
   report_helper::$javascript .= "indiciaData.filterSharing='".strtoupper(substr($options['sharing'], 0, 1))."';\n";
   report_helper::$javascript .= "indiciaData.user_id='".hostsite_get_user_field('indicia_user_id')."';\n";
   report_helper::$javascript .= "indiciaData.website_id=".$website_id.";\n";
+  report_helper::$javascript .= "indiciaData.redirectOnSuccess='$options[redirect_on_success]';\n";
   // load up the filter, BEFORE any AJAX load of the grid code. First fetch any URL param overrides.
   $overrideJs = '';
   foreach(array_merge($options, $_GET) as $key=>$value) {
@@ -620,9 +654,13 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
     $overrideJs .= "indiciaData.filter.orig=$.extend({}, indiciaData.filter.def);\n";
     $overrideJs .= "applyFilterToReports(false);\n";
   }
-  report_helper::$onload_javascript = "if ($('#select-filter').val()) {".
-      "loadFilter($('#select-filter').val(), false);" .
-      "};\n" . $overrideJs . report_helper::$onload_javascript;
+  if (!empty($options['filters_user_id']))
+    report_helper::$onload_javascript .= "loadFilterUser($options[filters_user_id]);\n";
+  else 
+    report_helper::$onload_javascript .= "if ($('#select-filter').val()) {".
+        "loadFilter($('#select-filter').val(), false);" .
+        "};\n" . $overrideJs . report_helper::$onload_javascript;
+    
   return $r;
 }
 
@@ -633,7 +671,7 @@ function report_filters_load_existing($readAuth, $sharing) {
   $filters = report_helper::get_report_data(array(
     'dataSource' => 'library/filters/filters_list',
     'readAuth' => $readAuth,
-    'extraParams' => array('filter_sharing_mode' => $sharing, 'user_id' => hostsite_get_user_field('indicia_user_id'))
+    'extraParams' => array('filter_sharing_mode' => $sharing, 'defines_permissions'=>'f', 'filter_user_id' => hostsite_get_user_field('indicia_user_id'))
   ));
   return $filters;
 }

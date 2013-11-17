@@ -481,6 +481,8 @@ class iform_dynamic_report_explorer extends iform_dynamic {
       'allowSave' => true,
       'sharing' => empty($args['sharing']) ? 'reporting' : $args['sharing']
     ), $options);
+    if ($args['redirect_on_success'])
+      $options['redirect_on_success']=url($args['redirect_on_success']);
     foreach ($options as $key=>&$value) {
       $value = apply_user_replacements($value);
     }

@@ -18,11 +18,12 @@
  * @link    http://code.google.com/p/indicia/
  */
  
-var loadFilter, applyFilterToReports;
+var loadFilter, loadFilterUser, applyFilterToReports;
 
 jQuery(document).ready(function($) {
   "use strict";
   indiciaData.filter = {"def":{},"id":null,"title":null};
+  var saving=false;
   
   function disableIfPresent(context, fields, ctrlIds) {
     var disable=false;
@@ -453,7 +454,7 @@ jQuery(document).ready(function($) {
     occurrence_id:{
       getDescription:function() {
         if (indiciaData.filter.def.occurrence_id) {
-          return $('#occurrence_id_op option[value='+indiciaData.filter.def.occurrence_id_op+']').html()
+          return $('#occurrence_id_op option[value='+indiciaData.filter.def.occurrence_id_op.replace(/[<=>]/g, "\\$&")+']').html()
               + ' ' + indiciaData.filter.def.occurrence_id;
         } else {
           return '';
@@ -844,7 +845,7 @@ jQuery(document).ready(function($) {
       indiciaData.filter.def = $.extend(indiciaData.filter.def, indiciaData.filter.orig);
     }
     indiciaData.filter.id = null;
-    $('#filter-name').val('');
+    $('#filter\\:title').val('');
     $('#select-filter').val('');
     $.each(indiciaData.reports, function(i, group) {
       $.each(group, function(j, grid) {
@@ -900,8 +901,9 @@ jQuery(document).ready(function($) {
         success: function(data) {
           indiciaData.filter.def = JSON.parse(data[0].definition);
           indiciaData.filter.id = data[0].id;
+          delete indiciaData.filter.filters_user_id;
           indiciaData.filter.title = data[0].title;
-          $('#filter-name').val(data[0].title);
+          $('#filter\\:title').val(data[0].title);
           applyFilterToReports(applyNow);
           $('#filter-reset').removeClass('disabled');
           $('#filter-delete').removeClass('disabled');
@@ -910,6 +912,40 @@ jQuery(document).ready(function($) {
           $('#standard-params .header span.changed').hide();
           // can't delete a filter you didn't create.
           if (data[0].created_by_id===indiciaData.user_id) {
+            $('#filter-delete').show();
+          } else {
+            $('#filter-delete').hide();
+          }
+        },
+        async: applyNow // if not applying the filter, then we are expecting immediate load so that something else can apply the filter in a moment
+      });
+    }
+  };
+  
+  loadFilterUser = function(id, applyNow) {
+    if ($('#standard-params .header span.changed:visible').length===0 || confirm(indiciaData.lang.ConfirmFilterChangedLoad)) {
+      $.ajax({
+        dataType: "json",
+        url: indiciaData.read.url + 'index.php/services/data/filters_user/' + id,
+        data: 'mode=json&view=list&auth_token='+indiciaData.read.auth_token+'&nonce='+indiciaData.read.nonce+'&callback=?',
+        success: function(data) {
+          indiciaData.filter.def = JSON.parse(data[0].filter_definition);
+          indiciaData.filter.id = data[0].filter_id;
+          indiciaData.filter.filters_user_id = id;
+          indiciaData.filter.title = data[0].filter_title;
+          $('#filter\\:title').val(data[0].filter_title);
+          $('#filter\\:description').val(data[0].filter_description);
+          $('#filter\\:sharing').val(data[0].filter_sharing);
+          $('#filters_user\\:user_id\\:person_name').val(data[0].person_name);
+          $('#filters_user\\:user_id').val(data[0].user_id);
+          applyFilterToReports(applyNow);
+          $('#filter-reset').removeClass('disabled');
+          $('#filter-delete').removeClass('disabled');
+          $('#standard-params .header h2').html('Active filter: '+data[0].filter_title);
+          updateFilterDescriptions();
+          $('#standard-params .header span.changed').hide();
+          // can't delete a filter you didn't create.
+          if (data[0].filter_created_by_id===indiciaData.user_id) {
             $('#filter-delete').show();
           } else {
             $('#filter-delete').hide();
@@ -1070,29 +1106,57 @@ jQuery(document).ready(function($) {
   });
   
   var saveFilter = function() {
-    if ($.trim($('#filter-name').val())==='') {
-      alert('Please provide a name for your filter');
-      return;
-    }    
-    var url, filter = {"website_id":indiciaData.website_id, "user_id":indiciaData.user_id, "title":$('#filter-name').val(),
-          "definition":JSON.stringify(indiciaData.filter.def), "sharing":indiciaData.filterSharing};
-    if (indiciaData.filter.id && $('#filter-name').val()===indiciaData.filter.title) {
-      filter.id = indiciaData.filter.id;
+    if (saving) {
+      exit;
     }
-    // If a new filter, then also need to create a filters_users record.
-    url = typeof filter.id==="undefined" ? indiciaData.filterAndUserPostUrl : indiciaData.filterPostUrl;
+    if ($.trim($('#filter\\:title').val())==='') {
+      alert('Please provide a name for your filter.');
+      $('#filter\\:title').focus();
+      return;
+    }
+    if ($('#filters_user\\:user_id').length && $('#filters_user\\:user_id').val()==='') {
+      alert('Please fill in who this filter is for.');
+      $('#filters_user\\:user_id\\:person_name').focus();
+      return;
+    }
+    saving=true;
+    // TODO: Validate user control
+    
+    var adminMode = $('#filters_user\\:user_id').length===1,
+        user_id=adminMode ? $('#filters_user\\:user_id').val() : indiciaData.user_id,
+        sharing=adminMode ? $('#filter\\:sharing').val() : indiciaData.filterSharing,
+        url, 
+        filter = {"website_id":indiciaData.website_id, "user_id":indiciaData.user_id,
+          "filters_user:user_id":user_id, "filter:title":$('#filter\\:title').val(),
+          "filter:description":$('#filter\\:description').val(),
+          "filter:definition":JSON.stringify(indiciaData.filter.def), "filter:sharing":sharing,
+          "filter:defines_permissions":adminMode?'t':'f'};
+    // if existing filter and the title has not changed, or in admin mode, overwrite
+    if (indiciaData.filter.id && ($('#filter\\:title').val()===indiciaData.filter.title || adminMode)) {
+      filter['filter:id'] = indiciaData.filter.id;
+    }
+    // if existing filters_users then hook to same record
+    if (typeof indiciaData.filter.filters_user_id!=="undefined") {
+      filter['filters_user:id']=indiciaData.filter.filters_user_id;
+    }
+    // If a new filter or admin mode, then also need to create a filters_users record.
+    url = (typeof filter.id==="undefined") || adminMode ? indiciaData.filterAndUserPostUrl : indiciaData.filterPostUrl;
     $.post(url, filter,
       function (data) {
         if (typeof data.error === 'undefined') {
           alert(indiciaData.lang.FilterSaved);
           indiciaData.filter.id = data.outer_id;
-          indiciaData.filter.title = $('#filter-name').val();
-          $('#standard-params .header h2').html('Active filter: '+$('#filter-name').val());
+          indiciaData.filter.title = $('#filter\\:title').val();
+          indiciaData.filter.filters_user_id=data.struct.children[0].id;
+          $('#standard-params .header h2').html('Active filter: '+$('#filter\\:title').val());
           $('#standard-params .header span.changed').hide();
           $('#select-filter').val(indiciaData.filter.id);
           if ($('#select-filter').val()==='') {
             // this is a new filter, so add to the select list
             $('#select-filter').append('<option value="' + indiciaData.filter.id + '" selected="selected">' + indiciaData.filter.title + '</option>');
+          }
+          if (indiciaData.redirectOnSuccess!=='') {
+            window.location=indiciaData.redirectOnSuccess;
           }
         } else {
           var handled = false;
@@ -1102,10 +1166,10 @@ jQuery(document).ready(function($) {
                 if (confirm(indiciaData.lang.FilterExistsOverwrite)) {
                   // need to load the existing filter to get it's ID, then resave
                   $.getJSON(indiciaData.read.url + 'index.php/services/data/filter?created_by_id='+indiciaData.user_id+'&title='+
-                      encodeURIComponent($('#filter-name').val())+'&sharing='+indiciaData.filterSharing+
+                      encodeURIComponent($('#filter\\:title').val())+'&sharing='+indiciaData.filterSharing+
                       '&mode=json&view=list&auth_token='+indiciaData.read.auth_token+'&nonce='+indiciaData.read.nonce+'&callback=?', function(data) {
                     indiciaData.filter.id = data[0].id;
-                    indiciaData.filter.title = $('#filter-name').val();
+                    indiciaData.filter.title = $('#filter\\:title').val();
                     saveFilter();
                   });
                 }
@@ -1117,6 +1181,7 @@ jQuery(document).ready(function($) {
             alert(data.error);
           }
         }
+        saving=false;
       },
       'json'
     );

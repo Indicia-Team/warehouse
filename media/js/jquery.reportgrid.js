@@ -663,6 +663,9 @@ var simple_tooltip;
      * The request is handled in chunks of 1000 records.
      */
     function mapRecords(div, zooming) {
+      if (typeof indiciaData.mapdiv==="undefined" || typeof indiciaData.reportlayer==="undefined") {
+        return false;
+      }
       var layerInfo = {bounds: null}, map=indiciaData.mapdiv.map, currentBounds=null;
       // we need to reload the map layer using the mapping report, so temporarily switch the report      
       var origReport=div.settings.dataSource, request;
