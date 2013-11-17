@@ -39,7 +39,7 @@ class Filter_Model extends ORM {
     $array->add_rules('title', 'required');
     $array->add_rules('definition', 'required');
     $array->add_rules('sharing', 'required', 'chars[R,V,D]');
-    $this->unvalidatedFields = array('description', 'public, defines_permissions');
+    $this->unvalidatedFields = array('description', 'public', 'defines_permissions');
     return parent::validate($array, $save);
   }
 
