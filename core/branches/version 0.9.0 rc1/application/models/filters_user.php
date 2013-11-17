@@ -42,7 +42,8 @@ class Filters_user_Model extends ORM
   public function validate(Validation $array, $save = FALSE) {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
-    $this->unvalidatedFields = array('filter_id','user_id');
+    $array->add_rules('filter_id', 'required');
+    $array->add_rules('user_id', 'required');
     return parent::validate($array, $save);
   }
 
