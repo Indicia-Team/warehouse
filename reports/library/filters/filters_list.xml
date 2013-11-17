@@ -5,7 +5,9 @@
   <query>
   SELECT #columns#
   FROM filters f
-  JOIN filters_users fu on fu.filter_id=f.id and fu.user_id=#user_id# and fu.deleted=false
+  JOIN filters_users fu on fu.filter_id=f.id and fu.deleted=false
+  JOIN users u on u.id=fu.user_id and u.deleted=false
+  JOIN people p on p.id=u.person_id and p.deleted=false
   #joins#
   WHERE f.deleted=false
   #order_by#
@@ -17,19 +19,29 @@
     <param name="created_by_id" display="Creator's User ID" description="Warehouse user ID of the filter creator" datatype="text" default="" >
       <where>f.created_by_id=#created_by_id#</where>
     </param>
-    <param name="user_id" display="Filter user's ID" description="Warehouse user ID of the user who filters are used by." datatype="text" />    
+    <param name="filter_user_id" display="Filter user's ID" description="Warehouse user ID of the user who filters are used by." datatype="text" default="" >
+      <where>fu.user_id=#filter_user_id#</where>
+    </param>
     <param name="filter_sharing_mode" display="Filter record sharing mode" description="Select the record sharing mode to list filters for." datatype="lookup"
         lookup_values='R:Reporting,P:Peer review,V:Verification,D:Data flow,M:Moderation'>
       <where>f.sharing='#filter_sharing_mode#'</where>
+    </param>
+    <param name="defines_permissions" display="Filter type" datatype="lookup" 
+           lookup_values="f:User filters,t:Filters which define permissions">
+      <where>f.defines_permissions='#defines_permissions#'</where>
     </param>
   </params>
   <columns>
     <column name="id" visible="false" sql="f.id" />
     <column name="title" display='Title' datatype="text" sql="f.title" />
     <column name="description" display='Description' datatype="text" sql="f.description" />
+    <column name="sharing" datatype="text" display="For task"
+        sql="case f.sharing when 'R' then 'Reporting' when 'P' then 'Peer review' when 'V' then 'Verification'
+        when 'D' then 'Data flow' when 'M' then 'Moderation' end"/>
     <column name="definition" visible="false" sql="f.definition" /> 
     <column name="filter_user_id" visible="false" sql="fu.id" />
     <column name="defines_permissions" visible="false" sql="f.defines_permissions" />
+    <column name="person_name" display="Person" sql="p.surname || coalesce(', ' || p.first_name, '')" datatype="text"/>
   </columns>
 </report>
 
