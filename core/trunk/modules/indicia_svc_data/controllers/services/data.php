@@ -60,6 +60,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   protected $allow_updates = array(
       'determination',
       'filter',
+      'filters_user',
       'location',
       'notification',
       'occurrence',
@@ -87,6 +88,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   // So if we wish total access to a given dataset, the entity must appear in the following list.
   protected $allow_full_access = array(
       'filter',
+      'filters_user',
       'taxa_taxon_list',
       'taxon_relation',
       'taxon_group',
@@ -133,6 +135,15 @@ class Data_Controller extends Data_Service_Base_Controller {
   public function filter()
   {
     $this->handle_call('filter');
+  }
+  
+  /**
+  * Provides the /services/data/filters_user service.
+  * Retrieves details of a single filters_user join record.
+  */
+  public function filters_user()
+  {
+    $this->handle_call('filters_user');
   }
   
   /**
