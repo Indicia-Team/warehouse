@@ -710,7 +710,7 @@ final class Kohana {
     if (ob_get_level() >= self::$buffer_level)
     {
       // Set the close function
-      $close = ($flush === TRUE) ? 'ob_end_flush' : 'ob_end_clean';
+      $close = ($flush === TRUE) ? 'ob_end_flush' : 'Kohana::_ob_end_clean';
 
       while (ob_get_level() > self::$buffer_level)
       {
@@ -719,7 +719,7 @@ final class Kohana {
       }
 
       // Store the Kohana output buffer
-      ob_end_clean();
+ 	    Kohana::_ob_end_clean();
     }
   }
 
@@ -1621,7 +1621,7 @@ final class Kohana {
 
   /**
    * Saves the internal caches: configuration, include paths, etc.
-   *
+   * 
    * @return  boolean
    */
   public static function internal_cache_save()
@@ -1648,6 +1648,33 @@ final class Kohana {
     }
 
     return $written;
+  }
+  
+   /**
+   * Ends the current output buffer with callback in mind
+   * PHP doesn't pass the output to the callback defined in ob_start() since 5.4.
+   * See https://gist.github.com/kemo/2881489.
+   *
+   * @param  callback $callback
+   * @return boolean
+   */
+  protected static function _ob_end_clean($callback = NULL)
+  {
+    // Pre-5.4 ob_end_clean() will pass the buffer to the callback anyways
+    if (version_compare(PHP_VERSION, '5.4', '<'))
+     return ob_end_clean();
+
+    $output = ob_get_contents();
+
+    if ($callback === NULL)
+    {
+      $handlers = ob_list_handlers();
+      $callback = isset($handlers[ob_get_level() - 1]) ? $handlers[ob_get_level() - 1] : NULL;
+    }
+
+    return is_callable($callback) 
+        ? ob_end_clean() AND call_user_func($callback, $output) 
+        : ob_end_clean();
   }
 
 } // End Kohana
