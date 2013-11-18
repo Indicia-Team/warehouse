@@ -856,7 +856,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     // enforce that people only access their own data, unless explicitly have permissions
     $editor = !empty($args['edit_permission']) && function_exists('user_access') && user_access($args['edit_permission']);
     if (!$editor && function_exists('hostsite_get_user_field') &&
-        data_entry_helper::$entity_to_load['sample:created_by_id'] !== 1 &&
+        data_entry_helper::$entity_to_load['sample:created_by_id'] != 1 && // created_by_id can come out as string...
         data_entry_helper::$entity_to_load['sample:created_by_id'] !== hostsite_get_user_field('indicia_user_id'))
       throw new exception(lang::get('Attempt to access a record you did not create'));
   }
