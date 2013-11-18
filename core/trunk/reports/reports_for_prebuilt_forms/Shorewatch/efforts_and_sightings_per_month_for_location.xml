@@ -22,7 +22,7 @@
       <where>co.survey_id=#survey_id#</where>
     </param>
     <param name="taxon_id" display="Species" description="Species name to filter by." datatype="lookup"
-        population_call='direct:taxa_taxon_list:taxon_id:taxon'>
+        population_call='report:library/taxa/get_species_names_for_website:id:name_common_preferred'>
       <where>ttl.taxon_id=#taxon_id#</where>
     </param>
     <param name="location_id" display="Location ID" description="Location ID to report on." datatype="integer" >
