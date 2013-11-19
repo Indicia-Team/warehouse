@@ -671,7 +671,7 @@ function report_filters_load_existing($readAuth, $sharing) {
   $filters = report_helper::get_report_data(array(
     'dataSource' => 'library/filters/filters_list',
     'readAuth' => $readAuth,
-    'extraParams' => array('filter_sharing_mode' => $sharing, 'defines_permissions'=>'f', 'filter_user_id' => hostsite_get_user_field('indicia_user_id'))
+    'extraParams' => array('filter_sharing_mode' => $sharing, 'defines_permissions'=>'', 'filter_user_id' => hostsite_get_user_field('indicia_user_id'))
   ));
   return $filters;
 }
