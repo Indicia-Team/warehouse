@@ -189,6 +189,7 @@ class extension_my_sites {
     //Get a list of all the locations that match the given location types (in this case my sites are returned first, although this isn't a requirement)
     $r .= data_entry_helper::location_select(array(
       'id' => 'location-select',
+      'nocache' => true,
       'report' => 'reports_for_prebuilt_forms/Shorewatch/locations_with_my_sites_first',
       'extraParams' => $auth['read'] + array('location_type_ids'=>$options['locationTypes'], 'user_id'=>hostsite_get_user_field('indicia_user_id'),
           'my_sites_person_attr_id'=>$options['mySitesPsnAttrId']),
