@@ -194,7 +194,7 @@ class iform_report_calendar_grid {
    * @param <type> $readAuth
    * @return string
    */
-  private function  get_report_calendar_options($args, $readAuth) {
+  private static function  get_report_calendar_options($args, $readAuth) {
     self::$siteUrlParams = array(
         self::$locationKey => array(
             'name' => self::$locationKey,
@@ -213,7 +213,7 @@ class iform_report_calendar_grid {
     return $reportOptions;
   }
 
-  private function location_control($args, $readAuth, $node)
+  private static function location_control($args, $readAuth, $node)
   {
     global $user;
     // loctools is not appropriate here as it is based on a node, for which this is a very simple one, invoking other nodes for the sample creation
