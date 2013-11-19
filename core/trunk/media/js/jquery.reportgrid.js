@@ -691,9 +691,9 @@ var simple_tooltip;
           layerInfo.zoomLayerIdx = 3;
         }
         layerInfo.report=div.settings.dataSource;
-        // if zoomed in, use the map bounding box to limit the loaded features. Having an indexed site filter changes the threshold as it is less necessary.
-        if (map.zoom>8 && div.settings.mapDataSourceLoRes && 
-            (map.zoom>12 || typeof div.settings.extraParams.indexed_location_id==="undefined" || div.settings.extraParams.indexed_location_id==='')) {
+        // if zoomed in below a 10k map, use the map bounding box to limit the loaded features. Having an indexed site filter changes the threshold as it is less necessary.
+        if (map.zoom<=600 && div.settings.mapDataSourceLoRes && 
+            (map.zoom<=30 || typeof div.settings.extraParams.indexed_location_id==="undefined" || div.settings.extraParams.indexed_location_id==='')) {
           // get the current map bounds. If zoomed in close, get a larger bounds so that the map can be panned a bit without reload.          
           layerInfo.bounds = map.calculateBounds(map.getCenter(), Math.max(39, map.getResolution()));
           // plus the current bounds to test if a reload is necessary
