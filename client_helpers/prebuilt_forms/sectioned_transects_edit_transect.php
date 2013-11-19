@@ -202,7 +202,7 @@ class iform_sectioned_transects_edit_transect {
    * parameters unless the Edit and Save button is clicked. So, apply some defaults to keep those old forms
    * working.
    */
-  protected function getArgDefaults($args) {
+  protected static function getArgDefaults($args) {
       
     if (!isset($args['route_map_height'])) $args['route_map_height'] = 600;
     if (!isset($args['route_map_buffer'])) $args['route_map_buffer'] = 0.1;
@@ -213,7 +213,7 @@ class iform_sectioned_transects_edit_transect {
     return $args;
   }
 
-  private function extract_attr(&$attributes, $caption, $unset=true) {
+  private static function extract_attr(&$attributes, $caption, $unset=true) {
   	$found=false;
   	foreach($attributes as $idx => $attr) {
   		if (strcasecmp($attr['caption'], $caption)===0) { // should this be untranslated?

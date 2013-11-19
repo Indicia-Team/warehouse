@@ -2843,7 +2843,7 @@ update_controls();
               'table'=>'sample_attribute',
               'extraParams'=>$options['readAuth'] + array('view'=>'list', 'id'=>$parts[1])
           ));
-          if(count($smpAttribute)==1){
+          if(count($smpAttribute)>=1){ // may be assigned to more than one survey on this website. This is not relevant to info we want.
             $avgFields[$avgField]['id'] = $parts[1];
             $avgFields[$avgField]['attr'] = $smpAttribute[0];
             $avgFields[$avgField]['caption'] = $smpAttribute[0]['caption'];

@@ -899,7 +899,7 @@ class iform_report_calendar_summary {
    * parameters unless the Edit and Save button is clicked. So, apply some defaults to keep those old forms
    * working.
    */
-  protected function getArgDefaults($args) {
+  protected static function getArgDefaults($args) {
       
     if (!isset($args['includeRawData']) && !isset($args['includeSummaryData']) && !isset($args['includeEstimatesData']))
         $args['includeRawData'] = true;
@@ -920,7 +920,7 @@ class iform_report_calendar_summary {
    * @param <type> $readAuth
    * @return string
    */
-  private function get_report_calendar_options($args, $readAuth) {
+  private static function get_report_calendar_options($args, $readAuth) {
     $presets = get_options_array_with_user_data($args['param_presets']);
     $reportOptions = array(
       'id' => 'report-summary',
@@ -941,7 +941,7 @@ class iform_report_calendar_summary {
   // report helper is always the CMS one.
   // Locations are always assigned by a CMS user ID attribute, not by who created them.
   
-  private function location_control($args, $readAuth, $node, &$options)
+  private static function location_control($args, $readAuth, $node, &$options)
   {
   	// note that when in user specific mode it returns the list currently assigned to the user: it does not give 
   	// locations which the user previously recorded data against, but is no longer allocated to.
@@ -1097,7 +1097,7 @@ class iform_report_calendar_summary {
   	}
   }
   
-  private function user_control($args, $readAuth, $node, &$options)
+  private static function user_control($args, $readAuth, $node, &$options)
   {
     // we don't use the userID option as the user_id can be blank, and will force the parameter request if left as a blank
     global $user;
@@ -1253,7 +1253,7 @@ class iform_report_calendar_summary {
   /**
    * Get the parameters required for the current filter.
    */
-  private function get_site_url_params() {
+  private static function get_site_url_params() {
     global $user;
     if (!self::$siteUrlParams) {
       self::$siteUrlParams = array(
@@ -1293,7 +1293,7 @@ class iform_report_calendar_summary {
     return self::$siteUrlParams;
   }
 
-  private function extract_attr(&$attributes, $caption, $unset=true) {
+  private static function extract_attr(&$attributes, $caption, $unset=true) {
   	$found=false;
   	foreach($attributes as $idx => $attr) {
   		if (strcasecmp($attr['caption'], $caption)===0) { // should this be untranslated?
@@ -1310,7 +1310,7 @@ class iform_report_calendar_summary {
   	return $found;
   }
 
-  private function set_up_control_change($ctrlid, $urlparam, $skipParams, $checkBox=false) {
+  private static function set_up_control_change($ctrlid, $urlparam, $skipParams, $checkBox=false) {
     // Need to use a global for pageURI as the internal controls may have changed, and we want
     // their values to be carried over.
     $prop = ($checkBox) ? 'attr("checked")' : 'val()';
@@ -1323,14 +1323,14 @@ jQuery('#".$ctrlid."').change(function(){
 ";
   }
 
-  private function copy_args($args, &$options, $list){
+  private static function copy_args($args, &$options, $list){
     foreach($list as $arg){
       if(isset($args[$arg]) && $args[$arg]!="")
         $options[$arg]=$args[$arg];
     }
   }
 
-  private function date_control($args, $readAuth, $node, &$options)
+  private static function date_control($args, $readAuth, $node, &$options)
   {
     // Future enhancements: extend this control to allow user selection by month, a fixed currentmonth, 
     // and completely free user selectable start and end dates
