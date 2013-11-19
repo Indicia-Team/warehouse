@@ -662,13 +662,15 @@ function loadSpeciesList() {
       var selector = '#'+data.transaction_id.replace(/:/g, '\\:');
       jQuery(selector).removeClass('saving');
       if (checkErrors(data)) {
-        if (jQuery(selector +'\\:id').length===0) {
-          // this is a new occurrence, so keep a note of the id in a hidden input
-          jQuery(selector).after('<input type="hidden" id="'+data.transaction_id +':id" value="'+data.outer_id+'"/>');
-        }
-        if (jQuery(selector +'\\:attrValId').length===0) {
-          // this is a new attribute, so keep a note of the id in a hidden input
-          jQuery(selector).after('<input type="hidden" id="'+data.transaction_id +':attrValId" value="'+data.struct.children[0].id+'"/>');
+        if(jQuery(selector).val() != '') { // if the selector is blank, we are deleting the entry, so we do not want to add the id and attrValId fields (they will have just been removed!)
+          if (jQuery(selector +'\\:id').length===0) {
+            // this is a new occurrence, so keep a note of the id in a hidden input
+            jQuery(selector).after('<input type="hidden" id="'+data.transaction_id +':id" value="'+data.outer_id+'"/>');
+          }
+          if (jQuery(selector +'\\:attrValId').length===0) {
+            // this is a new attribute, so keep a note of the id in a hidden input
+            jQuery(selector).after('<input type="hidden" id="'+data.transaction_id +':attrValId" value="'+data.struct.children[0].id+'"/>');
+          }
         }
         jQuery(selector).removeClass('edited');
       }
