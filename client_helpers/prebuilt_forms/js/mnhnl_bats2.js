@@ -58,7 +58,7 @@ bindSpeciesAutocomplete = function(selectorID, url, gridId, lookupListId, readAu
   };
 
     // Attach auto-complete code to the input
-  ctrl = $('#' + selectorID).autocomplete(url+'/taxa_taxon_list', {
+  var ctrl = $('#' + selectorID).autocomplete(url+'/taxa_taxon_list', {
       extraParams : {
         view : 'detail',
         orderby : 'taxon',
