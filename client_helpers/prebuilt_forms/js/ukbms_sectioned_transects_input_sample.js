@@ -102,11 +102,7 @@ function addGridRow(species, speciesTableSelector, end, tabIDX){
     // row += '<input class="count-input" id="value:'+species.id+':'+section.code+'" type="text" value="'+val+'" /></td>';
     // actual control has to be first in cell for cursor keys to work.
     var myCtrl = indiciaData.occurrence_attribute_ctrl[tabIDX].clone();
-    myCtrl.attr('id', 'value:'+species.id+':'+section.code).attr('name', '');
-    if(isNumber) myCtrl.addClass('count-input');
-    else myCtrl.addClass('non-count-input');
     myCtrl.appendTo(cell);
-    jQuery('<input type="hidden" id="value:'+species.id+':'+section.code+':attrId" value="'+indiciaData.occurrence_attribute[tabIDX]+'"/>').appendTo(cell);
     if (typeof indiciaData.existingOccurrences[key]!=="undefined") {
       indiciaData.existingOccurrences[key]['processed']=true;
       val = indiciaData.existingOccurrences[key]['value_'+indiciaData.occurrence_attribute[tabIDX]] === null ? '' : indiciaData.existingOccurrences[key]['value_'+indiciaData.occurrence_attribute[tabIDX]];
@@ -114,12 +110,20 @@ function addGridRow(species, speciesTableSelector, end, tabIDX){
         rowTotal += parseInt(val);
         section.total[speciesTableSelector] += parseInt(val);
       }
+      // need to use existing species ttlid (which may or may not be preferred)
+      myCtrl.attr('id', 'value:'+indiciaData.existingOccurrences[key]['ttl_id']+':'+section.code).attr('name', '');
+      jQuery('<input type="hidden" id="value:'+indiciaData.existingOccurrences[key]['ttl_id']+':'+section.code+':attrId" value="'+indiciaData.occurrence_attribute[tabIDX]+'"/>').appendTo(cell);
       // store the ids of the occurrence and attribute we loaded, so future changes to the cell can overwrite the existing records
       jQuery('<input type="hidden" id="value:'+indiciaData.existingOccurrences[key]['ttl_id']+':'+section.code+':id" value="'+indiciaData.existingOccurrences[key]['o_id']+'"/>').appendTo(cell);
       jQuery('<input type="hidden" id="value:'+indiciaData.existingOccurrences[key]['ttl_id']+':'+section.code+':attrValId" value="'+indiciaData.existingOccurrences[key]['a_id_'+indiciaData.occurrence_attribute[tabIDX]]+'"/>').appendTo(cell);
     } else {
+      // this is always the preferred when generated from full list, may be either if from autocomplete.
+      myCtrl.attr('id', 'value:'+species.id+':'+section.code).attr('name', '');
+      jQuery('<input type="hidden" id="value:'+species.id+':'+section.code+':attrId" value="'+indiciaData.occurrence_attribute[tabIDX]+'"/>').appendTo(cell);
       val='';
     }
+    if(isNumber) myCtrl.addClass('count-input');
+    else myCtrl.addClass('non-count-input');
     myCtrl.val(val);
   });
   if(isNumber) jQuery('<td class="row-total first">'+rowTotal+'</td>').appendTo(row);
