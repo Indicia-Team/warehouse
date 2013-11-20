@@ -502,10 +502,11 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           'caption'=>'Taxon filter items',
           'description'=>'Taxa can be filtered by entering values into this box. '. 
               'Enter one value per line. E.g. enter a list of taxon group titles if you are filtering by taxon group. '.
-              'If you provide a single taxon preferred name, taxon meaning ID or external key in this box, then the form is set up for recording just this single '.
-              'species. Therefore there will be no species picker control or input grid, and the form will always operate in the single record, non-grid mode. '.
-              'You may like to include information about what is being recorded in the body text for the page or by using the '.
-              '\'Include a message stating which species you are recording in single species mode?\' checkbox to automatically add a message to the screen.'.
+              'If you provide a single taxon preferred name, taxon meaning ID or external key in this box and you set the <strong>Allow a single '.
+              'ad-hoc record or a list of records</strong> setting to "Only allow entry of one occurrence at a time" then the form is set up for '.
+              'recording just this single species. Therefore there will be no species picker control or input grid, and the form will always operate '.
+              'in the single record, non-grid mode. You may like to include information about what is being recorded in the body text for the page or by using '.
+              'the <strong>Include a message stating which species you are recording in single species mode?</strong> checkbox to automatically add a message to the screen. '.
               'You may also want to configure the User Interface section of the form\'s Form Structure to move the [species] and [species] controls '.
               'to a different tab and remove the =species= tab, especially if there are no other occurrence attributes on the form.'.
               'The \'Use URL taxon parameter\' option can be used to override the filters specified here.',
@@ -1065,7 +1066,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     // store in the argument so that it can be used elsewhere
     $args['taxon_filter'] = implode("\n", $filterLines);
     //Single species mode only ever applies if we have supplied only one filter species and we aren't in taxon group mode
-    if ($args['taxon_filter_field']!=='taxon_group' && count($filterLines)===1) {
+    if ($args['taxon_filter_field']!=='taxon_group' && count($filterLines)===1 && ($args['multiple_occurrence_mode']!=='multi')) {
       $response = self::get_single_species_data($auth, $args, $filterLines);
       //Optional message to display the single species on the page
       if ($args['single_species_message'])
@@ -1283,7 +1284,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     // store in the argument so that it can be used elsewhere
     $args['taxon_filter'] = implode("\n", $filterLines);
     //Single species mode only ever applies if we have supplied only one filter species and we aren't in taxon group mode
-    if ($args['taxon_filter_field']!=='taxon_group' && count($filterLines)===1) {
+    if ($args['taxon_filter_field']!=='taxon_group' && count($filterLines)===1 && ($args['multiple_occurrence_mode']!=='multi')) {
       $response = self::get_single_species_data($auth, $args, $filterLines);
       //Optional message to display the single species on the page
       if ($args['single_species_message']) 
