@@ -1685,6 +1685,9 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       $location_list_args['extraParams']['view']='detail';
       $location_list_args['allowCreate']=true;
     }
+    if (empty($location_list_args['numValues']))
+      // set a relatively high number until we sort out the "more" handling like species autocomplete.
+      $location_list_args['numValues'] = 200;
     return data_entry_helper::location_autocomplete($location_list_args);
   }
   
