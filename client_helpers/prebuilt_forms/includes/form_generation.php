@@ -38,6 +38,8 @@ function get_attribute_html(&$attributes, $args, $ctrlOptions, $outerFilter=null
   $lastInnerBlock='';
   $r = '';
   foreach ($attributes as &$attribute) {
+    if (in_array($attribute['attributeId'],data_entry_helper::$extra_linked_attributes))
+      $attribute['handled']=1;
     // Apply filter to only output 1 block at a time. Also hide controls that have already been handled.
     if (($outerFilter===null || strcasecmp($outerFilter,$attribute['outer_structure_block'])==0) && !isset($attribute['handled'])) {
       if (empty($outerFilter) && $lastOuterBlock!=$attribute['outer_structure_block']) {
