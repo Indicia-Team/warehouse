@@ -1779,6 +1779,12 @@ mapSettingsHooks.push(function(opts) { $setLocationJs
    * If 'store' then although the response is not fetched from a cache, the response will be stored in the cache for possible
    * later use.
    * </li>
+   * <li><b>cachePerUser</b>
+   * Default true. Because a report automatically receives the user_id of a user as a parameter, if the user is linked to the warehouse,
+   * report caching will be granular to the user level. That is, if a user loads a report and another user loads the same report, the 
+   * cache is not used because they have different user IDs. Set this to false to make the cache entry global so that all users will receive
+   * the same copy of the report. Generally you should only use this on reports that are non-user specific.
+   * </li>
    * </ul>
 
    * @param string $extra Any additional parameters to append to the request URL, for example orderby, limit or offset.
@@ -1844,6 +1850,8 @@ mapSettingsHooks.push(function(opts) { $setLocationJs
         parse_str($query, $cacheOpts);
         unset($cacheOpts['auth_token']);
         unset($cacheOpts['nonce']);
+        if (isset($options['cachePerUser']) && !$options['cachePerUser']) 
+          unset($cacheOpts['user_id']);
         $cacheTimeOut = self::_getCacheTimeOut($options);
         $cacheFolder = self::relative_client_helper_path() . (isset(parent::$cache_folder) ? parent::$cache_folder : 'cache/');
         $cacheFile = self::_getCacheFileName($cacheFolder, $cacheOpts, $cacheTimeOut);        
