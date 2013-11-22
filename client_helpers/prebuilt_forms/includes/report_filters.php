@@ -560,7 +560,8 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
     $filterModules = array();
     foreach ($options['filterTypes'] as $category => $list) {
       // $list can be an array or comma separated list
-      $list=implode(',', $list);
+      if (is_array($list))
+        $list=implode(',', $list);
       $paneNames = 'filter_'.str_replace(',', ',filter_', $list);
       $paneList = explode(',', $paneNames);
       $filterModules[$category]=array_intersect_key($filters, array_fill_keys($paneList,1));
@@ -570,7 +571,7 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
   foreach ($filterModules as $category => $list) {
     if ($category) {
       $class=defined('DRUPAL_CORE_COMPATIBILITY') && DRUPAL_CORE_COMPATIBILITY==='7.x' ? '' : 'collapsible collapsed';
-      $r .= "<fieldset class=\"$class\"><legend>" . $category . '</legend>';
+      $r .= "<fieldset class=\"$class\"><legend>" . $category . '</legend><div>';
     }
     foreach ($list as $moduleName=>$module) {
       $r .= "<div class=\"pane\" id=\"pane-$moduleName\"><a class=\"fb-filter-link\" href=\"#controls-$moduleName\"><span class=\"pane-title\">" . $module->get_title() . '</span>';
@@ -578,7 +579,7 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
       $r .= "</div>";
     }
     if ($category)
-      $r .= '</fieldset>';
+      $r .= '</div></fieldset>';
   }
   $r .= '</div>'; // filter panes
   $r .= '<div class="toolbar">';
