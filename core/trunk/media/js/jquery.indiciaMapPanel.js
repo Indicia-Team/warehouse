@@ -1219,9 +1219,9 @@ mapLocationSelectedHooks = [];
      * input for the sample geom, plus sets the visible spatial ref control to the centroid in the currently selected system.
      */
     function recordPolygon(evt) {
-      evt.feature.attributes.type=this.map.div.settings.drawObjectType;
-      // replace old features?
-      var oldFeatures=[], map=this.map, separateBoundary=$('#imp-boundary-geom').length>0;
+      // track old features to replace
+      var oldFeatures=[], map=this.map, div=map.div, separateBoundary=$('#' + map.div.settings.boundaryGeomId).length>0;
+      evt.feature.attributes.type=div.settings.drawObjectType;
       //When drawing new features onto the map, we only ask the user
       //if they want to replace the previous feature when they have the same type.
       //This allows us to have multiple layers of different types that don't interfere with each other.
@@ -1231,24 +1231,28 @@ mapLocationSelectedHooks = [];
         }
       });   
       if (oldFeatures.length>0) {
-        if (confirm(this.map.div.settings.msgReplaceBoundary)) {
+        if (confirm(div.settings.msgReplaceBoundary)) {
           evt.feature.layer.removeFeatures(oldFeatures, {});
         } else {
           evt.feature.layer.removeFeatures([evt.feature], {});
           return;
         }
       }
-      if (this.map.div.settings.drawObjectType==="boundary"||this.map.div.settings.drawObjectType==="annotation") {
+      if (div.settings.drawObjectType==="boundary"||div.settings.drawObjectType==="annotation") {
+        geom = evt.feature.geometry.clone();
+        if (map.projection.getCode() != div.indiciaProjection.getCode()) {
+          geom.transform(map.projection, div.indiciaProjection);
+        }
         if (separateBoundary) {
-          $('#imp-boundary-geom').val(evt.feature.geometry.toString());
+          $('#' + div.settings.boundaryGeomId).val(geom.toString());
           evt.feature.style = new style('boundary');
           map.editLayer.redraw();
         } else {
-          $('#imp-geom').val(evt.feature.geometry.toString());
+          $('#imp-geom').val(geom.toString());
           // as we are not separating the boundary geom, the geom's sref goes in the centroid
-          pointToSref(map.div, evt.feature.geometry.getCentroid(), _getSystem(), function(data) {
+          pointToSref(div, geom.getCentroid(), _getSystem(), function(data) {
             if (typeof data.sref !== "undefined") {
-              $('#'+map.div.settings.srefId).val(data.sref);
+              $('#'+div.settings.srefId).val(data.sref);
             }
           });
         }
@@ -1907,8 +1911,8 @@ mapLocationSelectedHooks = [];
       }
       if (div.settings.editLayer && div.settings.allowPolygonRecording) {   
         div.map.editLayer.events.on({'featuremodified': function(evt) {
-          if ($('#imp-boundary-geom').length>0) {
-            $('#imp-boundary-geom').val(evt.feature.geometry.toString());
+          if ($('#' + div.settings.boundaryGeomId).length>0) {
+            $('#' + div.settings.boundaryGeomId).val(evt.feature.geometry.toString());
           }
         }});
       }
