@@ -99,12 +99,7 @@ class data_entry_helper extends helper_base {
    * another attribute that has already been draw and handled.
    */
   public static $extra_linked_attributes=array();
-  /*
-   * Used by the checkbox_group "Other" option to hold the number of the checkbox that is associated with the Other textbox. Checkboxes
-   * are numbered 0, 1, 2.....we need to know which one is associated with the textbox.
-   */
-  private static $checkbox_other_index=0;
-
+  
 /**********************************/
 /* Start of main controls section */
 /**********************************/
@@ -685,7 +680,7 @@ $('#$escaped').change(function(e) {
   * <li><b>otherItemId</b><br/>
   * Optional. The termlists_terms id of the checkbox_group item that will be considered as "Other".
   * When this checkbox is selected then another textbox is displayed allowing specific details relating to the
-  * Other item to be entered. The otherItemId and otherValueAttrId options must be specified to use this feature.</li>
+  * Other item to be entered. The otherValueAttrId and otherTextboxLabel options must be specified to use this feature.</li>
   * <li><b>otherValueAttrId</b><br/>
   * Optional. The sample attribute id where the "Other" text will be stored. See otherItemId option description.</li>
   * <li><b>otherTextboxLabel</b><br/>
@@ -728,64 +723,7 @@ $('#$escaped').change(function(e) {
     $options = self::check_options($options);
     if (substr($options['fieldname'],-2) !='[]')
       $options['fieldname'] .= '[]';
-    $r=self::check_or_radio_group($options, 'checkbox');
-    //Code elsewhere can automatically draw attributes to the page if the user has specified the * option in the form structure.
-    //However the sample attribute that holds the "other" value is already linked to the checkbox group. Save the id of the Other value
-    //sample attribute so that the automatic attribute display code knows not to draw it, otheriwise it would appear twice.
-    if (!empty($options['otherValueAttrId']))
-      array_push(self::$extra_linked_attributes,$options['otherValueAttrId']);
-    //If the checkbox group has the @otherItemId, @otherValueAttrId options filled in, then we know the user wants to use
-    //the "Other" option functionality to allow them to select "Other" and then fill in a textbox containing a value.
-    if (!empty($options['otherItemId'])&&!empty($options['otherValueAttrId'])) {
-      //Get the id of the checkbox group sample attribute.
-      $mainAttributeId = substr($options['id'], 8);
-      //When in edit mode then we need to collect the Other value the user previously filled in.
-      if ($_GET['sample_id']) {
-        $readyAuth['auth_token']=$options['extraParams']['auth_token'];
-        $readyAuth['nonce']=$options['extraParams']['nonce'];
-        //Get the existing value for the Other textbox
-        $otherAttributeData = data_entry_helper::get_population_data(array(
-          'table' => 'sample_attribute_value',
-          'extraParams' => $readyAuth + array('sample_id' => $_GET['sample_id'], 'sample_attribute_id'=>$options['otherValueAttrId']),
-          'nocache' => true,
-        ));
-      }
-      //Finally draw the Other textbox to the screen, then use jQuery to hide/show the box at the appropriate time.
-      $otherBoxOptions['id'] = 'smpAttr:'.$options['otherValueAttrId'];
-      $otherBoxOptions['fieldname'] = 'smpAttr:'.$options['otherValueAttrId'];
-      //When the field is populated with existing data, the name includes the sample_attribute_value id, this is used on submission.
-      //Don't include it if it isn't pre-populated.
-      if ($otherAttributeData[0]['id']) 
-        $otherBoxOptions['fieldname'] .= ':'.$otherAttributeData[0]['id'];
-      //User can provide their own label for the textbox if they wish, otherwise default to "Other".
-      if ($options['otherTextboxLabel'])
-        $otherBoxOptions['label'] = $options['otherTextboxLabel'];
-      else 
-        $otherBoxOptions['label'] = 'Other';
-      //Fill in the textbox with existing value if in edit mode.
-      $otherBoxOptions['default']=$otherAttributeData[0]['value'];
-      $r .= data_entry_helper::text_input($otherBoxOptions);
-      //Set the visibility of the "Other" textbox based on the checkbox when the page loads, but also when the checkbox changes.
-      self::$javascript .= '
-        show_hide_other();
-        $("#smpAttr\\\\:'.$mainAttributeId.'\\\\:'.self::$checkbox_other_index.'").click(function() {
-          show_hide_other();
-        });
-      ';
-      //Function that will show and hide the "Other" textbox depending on the value of the checkbox.
-      self::$javascript .= '
-      function show_hide_other() {
-        if ($("#smpAttr\\\\:'.$mainAttributeId.'\\\\:'.self::$checkbox_other_index.'").is(":checked")) {
-          $("#smpAttr\\\\:'.$options['otherValueAttrId'].'").show();
-          $("[for=\"smpAttr\\\\:'.$options['otherValueAttrId'].'\"]").show();                              
-        } else {   
-          $("#smpAttr\\\\:'.$options['otherValueAttrId'].'").val("");
-          $("#smpAttr\\\\:'.$options['otherValueAttrId'].'").hide();
-          $("[for=\"smpAttr\\\\:'.$options['otherValueAttrId'].'\"]").hide();
-        }
-      }';
-    }
-    return $r;
+    return self::check_or_radio_group($options, 'checkbox');
   }
 
  /**
@@ -5171,8 +5109,10 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    * Internal method to output either a checkbox group or a radio group.
    * @param array $options Control options array
    * @param string $type Name of the input element's type attribute, e.g. radio or checkbox.
+   * When selected, an additional textarea attribute can be shown to capture the "Other" information.
    */
   private static function check_or_radio_group($options, $type) {
+    $checkboxOtherIdx=false;
     // checkboxes are inherantly multivalue, whilst radio buttons are single value
     global $indicia_templates;
     $options = array_merge(
@@ -5229,7 +5169,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       $items .= self::mergeParamsIntoTemplate($item, $template, true, true);
       $idx++;
       if (!empty($options['otherItemId']) && $value==$options['otherItemId'])
-        self::$checkbox_other_index=$idx-1;
+        $checkboxOtherIdx=$idx-1;
     }
     $options['items']=$items;
     // We don't want to output for="" in the top label, as it is not directly associated to a button
@@ -5241,6 +5181,60 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     $r = self::apply_template($options['template'], $options);
     // reset the old template
     $indicia_templates['label'] = $lblTemplate;
+    // Is there an option for "Other", which requires an additional attribute to display to capture the other information?
+    if (!empty($options['otherItemId'])&&!empty($options['otherValueAttrId'])) {
+      //Code elsewhere can automatically draw attributes to the page if the user has specified the * option in the form structure.
+      //However the sample attribute that holds the "other" value is already linked to the checkbox group. Save the id of the Other value
+      //sample attribute so that the automatic attribute display code knows not to draw it, otheriwise it would appear twice.
+      self::$extra_linked_attributes[] = $options['otherValueAttrId'];
+      //Get the id of the control group's sample attribute.
+      $mainAttributeId = substr($options['id'], 8);
+      //When in edit mode then we need to collect the Other value the user previously filled in.
+      if ($_GET['sample_id']) {
+        $readyAuth['auth_token']=$options['extraParams']['auth_token'];
+        $readyAuth['nonce']=$options['extraParams']['nonce'];
+        //Get the existing value for the Other textbox
+        $otherAttributeData = data_entry_helper::get_population_data(array(
+          'table' => 'sample_attribute_value',
+          'extraParams' => $readyAuth + array('sample_id' => $_GET['sample_id'], 'sample_attribute_id'=>$options['otherValueAttrId']),
+          'nocache' => true,
+        ));
+      }
+      //Finally draw the Other textbox to the screen, then use jQuery to hide/show the box at the appropriate time.
+      $otherBoxOptions['id'] = 'smpAttr:'.$options['otherValueAttrId'];
+      $otherBoxOptions['fieldname'] = 'smpAttr:'.$options['otherValueAttrId'];
+      //When the field is populated with existing data, the name includes the sample_attribute_value id, this is used on submission.
+      //Don't include it if it isn't pre-populated.
+      if ($otherAttributeData[0]['id']) 
+        $otherBoxOptions['fieldname'] .= ':'.$otherAttributeData[0]['id'];
+      //User can provide their own label for the textbox if they wish, otherwise default to "Other".
+      if ($options['otherTextboxLabel'])
+        $otherBoxOptions['label'] = $options['otherTextboxLabel'];
+      else 
+        $otherBoxOptions['label'] = 'Other';
+      //Fill in the textbox with existing value if in edit mode.
+      $otherBoxOptions['default']=$otherAttributeData[0]['value'];
+      $r .= data_entry_helper::text_input($otherBoxOptions);
+      //Set the visibility of the "Other" textbox based on the checkbox when the page loads, but also when the checkbox changes.
+      self::$javascript .= '
+        show_hide_other();
+        $("#smpAttr\\\\:'.$mainAttributeId.'\\\\:'.$checkboxOtherIdx.'").click(function() {
+          show_hide_other();
+        });
+      ';
+      //Function that will show and hide the "Other" textbox depending on the value of the checkbox.
+      self::$javascript .= '
+      function show_hide_other() {
+        if ($("#smpAttr\\\\:'.$mainAttributeId.'\\\\:'.$checkboxOtherIdx.'").is(":checked")) {
+          $("#smpAttr\\\\:'.$options['otherValueAttrId'].'").show();
+          $("[for=\"smpAttr\\\\:'.$options['otherValueAttrId'].'\"]").show();                              
+        } else {   
+          $("#smpAttr\\\\:'.$options['otherValueAttrId'].'").val("");
+          $("#smpAttr\\\\:'.$options['otherValueAttrId'].'").hide();
+          $("[for=\"smpAttr\\\\:'.$options['otherValueAttrId'].'\"]").hide();
+        }
+      }';
+    }
     return $r;
   }
 
