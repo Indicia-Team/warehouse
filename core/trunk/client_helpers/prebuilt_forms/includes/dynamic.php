@@ -477,6 +477,9 @@ class iform_dynamic {
           $options['caching']=empty($options['caching']) ? true : $options['caching'];
           $options['cachetimeout']=empty($options['cachetimeout']) ? HIGH_VOLUME_CONTROL_CACHE_TIMEOUT : $options['cachetimeout'];
         }
+        // allow user settings to override the control - see iform_user_ui_options.module
+        if (isset(data_entry_helper::$data['structureControlOverrides']) && !empty(data_entry_helper::$data['structureControlOverrides'][$component]))
+          $options = array_merge($options, data_entry_helper::$data['structureControlOverrides'][$component]);
         if (count($parts)===1 && method_exists(self::$called_class, $method)) { 
           //outputs a control for which a specific output function has been written.
           $html .= call_user_func(array(self::$called_class, $method), $auth, $args, $tabalias, $options);

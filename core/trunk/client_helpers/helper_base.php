@@ -421,6 +421,11 @@ class helper_base extends helper_config {
    * They will be refreshed occasionally when requested anyway.
    */
   public static $cache_allowed_file_count=50;
+  
+  /**
+   * @var array A place to keep data and settings for Indicia code, to avoid using globals.
+   */
+  public static $data = array();
 
   /**
    * @var Boolean indicates if any form controls have specified the lockable option.
