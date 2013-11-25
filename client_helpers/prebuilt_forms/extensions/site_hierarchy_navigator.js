@@ -23,7 +23,10 @@ jQuery(document).ready(function($) {
     'strokeDashstyle': 'dot'
   }, defaultStyle), annotationStyle = new OpenLayers.Style({
     'strokeDashstyle': 'solid',
-    'label': '${name}'
+    'label': '${name}',
+    'fontSize': '15px',
+    'labelOutlineColor': 'white',
+    'labelOutlineWidth': '10'
   }, defaultStyle);
   var s = new OpenLayers.StyleMap({
     'default': defaultStyle, 
