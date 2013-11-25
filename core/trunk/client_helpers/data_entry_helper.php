@@ -732,10 +732,11 @@ $('#$escaped').change(function(e) {
     //Code elsewhere can automatically draw attributes to the page if the user has specified the * option in the form structure.
     //However the sample attribute that holds the "other" value is already linked to the checkbox group. Save the id of the Other value
     //sample attribute so that the automatic attribute display code knows not to draw it, otheriwise it would appear twice.
-    array_push(self::$extra_linked_attributes,$options['otherValueAttrId']);
+    if (!empty($options['otherValueAttrId']))
+      array_push(self::$extra_linked_attributes,$options['otherValueAttrId']);
     //If the checkbox group has the @otherItemId, @otherValueAttrId options filled in, then we know the user wants to use
     //the "Other" option functionality to allow them to select "Other" and then fill in a textbox containing a value.
-    if ($options['otherItemId']&&$options['otherValueAttrId']) {
+    if (!empty($options['otherItemId'])&&!empty($options['otherValueAttrId'])) {
       //Get the id of the checkbox group sample attribute.
       $mainAttributeId = substr($options['id'], 8);
       //When in edit mode then we need to collect the Other value the user previously filled in.
@@ -5227,7 +5228,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       $item['fieldname']=$fieldName;
       $items .= self::mergeParamsIntoTemplate($item, $template, true, true);
       $idx++;
-      if ($value==$options['otherItemId'])
+      if (!empty($options['otherItemId']) && $value==$options['otherItemId'])
         self::$checkbox_other_index=$idx-1;
     }
     $options['items']=$items;
