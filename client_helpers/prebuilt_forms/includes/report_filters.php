@@ -512,8 +512,10 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
     }
   }
   if (count($options['presets'])) {
-    data_entry_helper::$javascript .= "indiciaData.userPrefsTaxonGroups='".implode(',', array_keys(unserialize(hostsite_get_user_field('taxon_groups', ''))))."';\n";
-    data_entry_helper::$javascript .= "indiciaData.userPrefsLocation=".hostsite_get_user_field('location', 0).";\n";
+    if ($groups=hostsite_get_user_field('taxon_groups'))
+      data_entry_helper::$javascript .= "indiciaData.userPrefsTaxonGroups='".implode(',', array_keys(unserialize($groups)))."';\n";
+    if ($location=hostsite_get_user_field('location'))
+      data_entry_helper::$javascript .= "indiciaData.userPrefsLocation=".$location.";\n";
   }
   $contextDefs = array();
   if ($options['sharing']==='verification') {
