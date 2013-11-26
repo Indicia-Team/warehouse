@@ -72,7 +72,7 @@ class extension_shorewatch_extensions {
   }
 
   /*
-   * Control gets the description of the site for display on the Site Information page.
+   * Control gets the name and description of the site for display on the Site Information page.
    */
   public static function site_description($auth, $args, $tabalias, $options, $path) {
     if (!empty($_GET[$options['urlParameter']])) {
@@ -80,7 +80,7 @@ class extension_shorewatch_extensions {
                   'table' => 'location',
         'extraParams' => $auth['read'] + array('id' => $_GET[$options['urlParameter']], 'view'=>'detail'),
               ));
-      $r = '<div><h3>Description</h3>'.$locationCommentData[0]['comment'].'</div>';
+      $r = '<div><h2>'.$locationCommentData[0]['name'].'</h2><p>'.$locationCommentData[0]['comment'].'</p></div>';
       return $r;
     }
   }
