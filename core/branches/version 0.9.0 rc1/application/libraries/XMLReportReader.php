@@ -731,218 +731,242 @@ class XMLReportReader_Core implements ReportReader
    * If a report declares that it uses the standard set of parameters, then load them.
    */
   public function loadStandardParams($providedParams, $sharing) {
-    $params = array(
-      'idlist' => array('datatype'=>'idlist', 'default'=>'', 'display'=>'List of IDs', 'emptyvalue'=>'', 'fieldname'=>'o.id', 'alias'=>'occurrence_id',
-          'description'=>'Comma separated list of occurrence IDs to filter to'
-      ),
-      'searchArea' => array('datatype'=>'geometry', 'default'=>'', 'display'=>'Boundary',
-          'description'=>'Boundary to search within',
-          'wheres' => array(
-            array('value'=>'', 'operator'=>'', 'sql'=>"st_intersects(o.public_geom, st_geomfromtext('#searchArea#',900913))")
-          )
-      ),
-      'occurrence_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>'ID',
-          'description'=>'Record ID',
-          'wheres' => array(
-            array('value'=>'', 'operator'=>'', 'sql'=>"o.id #occurrence_id_op# #occurrence_id#")
-          )
-      ),
-      'occurrence_id_op' => array('datatype'=>'lookup', 'default'=>'', 'display'=>'ID operation',
-          'description'=>'Record ID lookup operation', 'lookup_values'=>'=:is,>=:is at least,<=:is at most'
-      ),
-      'location_name' => array('datatype'=>'text', 'default'=>'', 'display'=>'Location name', 
-          'description'=>'Name of location to filter to (contains search)',
-          'wheres' => array(
-            array('value'=>'', 'operator'=>'', 'sql'=>"o.location_name ilike '%#location_name#%'")
-          )
-      ),      
-      'location_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>'Location ID', 
-          'description'=>'ID of location to filter to',
-          'joins' => array(
-            array('value'=>'', 'operator'=>'', 'sql'=>"JOIN locations #alias:lfilt# on #alias:lfilt#.id=#location_id# and #alias:lfilt#.deleted=false " .
-                "and st_intersects(coalesce(#alias:lfilt#.boundary_geom, #alias:lfilt#.centroid_geom), #sample_geom_field#)")
-          )
-      ),
-      'indexed_location_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>'Location ID (indexed)', 
-          'description'=>'ID of location to filter to, for a location that is indexed using the spatial index builder',
-          'joins' => array(
-            array('value'=>'', 'operator'=>'', 'sql'=>"JOIN index_locations_samples #alias:ils# on #alias:ils#.sample_id=o.sample_id and #alias:ils#.location_id=#indexed_location_id#")
-          )
-      ),
-      'date_from' => array('datatype'=>'date', 'default'=>'', 'display'=>'Date from',
-          'description'=>'Date of first record to include in the output',
-          'wheres' => array(
-            array('value'=>'', 'operator'=>'', 'sql'=>"('#date_from#'='Click here' OR o.date_end >= CAST(COALESCE('#date_from#','1500-01-01') as date))")
-          )
-      ),
-      'date_to' => array('datatype'=>'date', 'default'=>'', 'display'=>'Date to', 
-          'description'=>'Date of last record to include in the output',
-          'wheres' => array(
-            array('value'=>'', 'operator'=>'', 'sql'=>"('#date_to#'='Click here' OR o.date_start <= CAST(COALESCE('#date_to#','1500-01-01') as date))")
-          )
-      ),
-      'date_age' => array('datatype'=>'text', 'default'=>'', 'display'=>'Date from time ago',
-          'description'=>'E.g. enter "1 week" or "3 days" to define the how old records can be before they are dropped from the report.',
-          'wheres' => array(
-            array('value'=>'', 'operator'=>'', 'sql'=>"o.date_start>now()-'#date_age#'::interval")
-          )
-      ),
-      'quality' => array('datatype'=>'lookup', 'default'=>'', 'display'=>'Quality', 
-          'description'=>'Minimum quality of records to include', 
-          'lookup_values'=>'=V:Verified records only,C:Recorder was certain,L:Recorder thought the record was at least likely,P:Pending verification,' .
-              'T:Pending verification for trusted recorders,!R:Everything except rejected,all:Everything including rejected,D:Queried records only,'.
-              'R:Rejected records only,DR:Queried or rejected records',
-          'wheres' => array(
-            array('value'=>'V', 'operator'=>'equal', 'sql'=>"o.record_status='V'"),
-            array('value'=>'C', 'operator'=>'equal', 'sql'=>"o.record_status<>'R' and o.certainty='C'"),
-            array('value'=>'L', 'operator'=>'equal', 'sql'=>"o.record_status<>'R' and o.certainty in ('C','L')"),
-            array('value'=>'P', 'operator'=>'equal', 'sql'=>"o.record_status in ('C','S')"),
-            array('value'=>'T', 'operator'=>'equal', 'sql'=>"o.record_status in ('C','S')"),
-            array('value'=>'!R', 'operator'=>'equal', 'sql'=>"o.record_status<>'R'"),
-            array('value'=>'D', 'operator'=>'equal', 'sql'=>"o.record_status='D'"),
-            array('value'=>'R', 'operator'=>'equal', 'sql'=>"o.record_status='R'"),
-            array('value'=>'DR', 'operator'=>'equal', 'sql'=>"o.record_status in ('R','D')"),
-            // The all filter does not need any SQL
-          ),
-          'joins' => array(
-            array('value'=>'T', 'operator'=>'equal', 'sql'=>
-"LEFT JOIN index_locations_samples #alias:ils# on #alias:ils#.sample_id=o.sample_id
-JOIN user_trusts #alias:ut# on (#alias:ut#.survey_id=o.survey_id
-    OR #alias:ut#.taxon_group_id=o.taxon_group_id
-    OR (#alias:ut#.location_id=#alias:ils#.location_id or #alias:ut#.location_id is null)
-  )
-  AND #alias:ut#.deleted=false
-  AND ((o.survey_id = #alias:ut#.survey_id) or (#alias:ut#.survey_id is null and (#alias:ut#.taxon_group_id is not null or #alias:ut#.location_id is not null)))
-  AND ((o.taxon_group_id = #alias:ut#.taxon_group_id) or (#alias:ut#.taxon_group_id is null and (#alias:ut#.survey_id is not null or #alias:ut#.location_id is not null)))
-  AND ((#alias:ils#.location_id = #alias:ut#.location_id) OR (#alias:ut#.location_id IS NULL and (#alias:ut#.survey_id is not null or #alias:ut#.taxon_group_id is not null)))
-  AND o.created_by_id = #alias:ut#.user_id")
-          )
-      ),
-      'autochecks' => array('datatype'=>'lookup', 'default'=>'', 'display'=>'Automated checks', 
-          'description'=>'Filter to only include records that have passed or failed automated checks', 
-          'lookup_values'=>'N:Not filtered,F:Include only records that fail checks,P:Include only records which pass checks',
-          'wheres' => array(
-            array('value'=>'F', 'operator'=>'equal', 'sql'=>"o.data_cleaner_info is not null and o.data_cleaner_info<>'pass'"),
-            array('value'=>'P', 'operator'=>'equal', 'sql'=>"o.data_cleaner_info = 'pass'")
-          )
-      ),
-      'has_photos' => array('datatype'=>'boolean', 'default'=>'', 'display'=>'Photo records only',
-          'description'=>'Only include records which have photos?',
-          'wheres' => array(
-            array('value'=>'', 'operator'=>'', 'sql'=>"o.images is not null")
-          )
-      ),
-      'user_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>"Current user's warehouse ID"),
-      'my_records' => array('datatype'=>'boolean', 'default'=>'', 'display'=>"Only include my records",
-          'wheres' => array(
-            array('value'=>'1', 'operator'=>'equal', 'sql'=>"o.created_by_id=#user_id#")
-          )
-      ),
-      'group_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>"ID of a group to filter to the members of",
-          'description'=>'Specify the ID of a recording group. This filters the report to the members of the group.',
-          'joins' => array(
-            array('value'=>'', 'operator'=>'', 'sql'=>"join groups_users #alias:gu# on #alias:gu#.user_id=o.created_by_id and #alias:gu#.group_id=#group_id#")
-          )
-      ),
-      'website_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Website IDs", 
-          'description'=>'Comma separated list of IDs',
-          'wheres' => array(
-             array('value'=>'', 'operator'=>'', 'sql'=>"o.website_id #website_list_op# (#website_list#)")
-          )
-      ),
-      'website_list_op' => array('datatype'=>'lookup', 'default'=>'in', 'display'=>'Website IDs mode', 
-          'description'=>'Include or exclude the list of websites', 'lookup_values'=>'in:Include,not in:Exclude'
-      ),
-      'survey_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Survey IDs", 
-          'description'=>'Comma separated list of IDs',
-          'wheres' => array(
-             array('value'=>'', 'operator'=>'', 'sql'=>"o.survey_id #survey_list_op# (#survey_list#)")
-          )
-      ),
-      'survey_list_op' => array('datatype'=>'lookup', 'default'=>'in', 'display'=>'Survey IDs mode', 
-          'description'=>'Include or exclude the list of surveys', 'lookup_values'=>'in:Include,not in:Exclude'
-      ),
-      'input_form_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Input forms", 
-          'description'=>'Comma separated list of input form paths',
-          'wheres' => array(
-             array('value'=>'', 'operator'=>'', 'sql'=>"o.input_form #input_form_list_op# (#input_form_list#)")
-          )
-      ),
-      'input_form_list_op' => array('datatype'=>'lookup', 'default'=>'in', 'display'=>'Input forms mode', 
-          'description'=>'Include or exclude the list of input forms', 'lookup_values'=>'in:Include,not in:Exclude'
-      ),
-      'taxon_group_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Taxon Group IDs", 
-          'description'=>'Comma separated list of IDs',
-          'wheres' => array(
-             array('value'=>'', 'operator'=>'', 'sql'=>"o.taxon_group_id in (#taxon_group_list#)")
-          )
-      ),
-      'taxa_taxon_list_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Taxa taxon list IDs", 
-          'description'=>'Comma separated list of preferred IDs',
-          'wheres' => array(
-            array('value'=>'', 'operator'=>'', 'sql'=>"o.preferred_taxa_taxon_list_id in (#taxa_taxon_list_list#)")
-          ),
-          'preprocess' => // faster than embedding this query in the report            
-"with recursive q as ( 
-  select id 
-  from cache_taxa_taxon_lists t 
-  where id in (#taxa_taxon_list_list#) 
-  union all 
-  select tc.id 
-  from q 
-  join cache_taxa_taxon_lists tc on tc.parent_id = q.id 
-) select array_to_string(array_agg(distinct id::varchar), ',') from q"
-      ),
-      'taxon_meaning_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Taxon meaning IDs", 
-          'description'=>'Comma separated list of taxon meaning IDs',
-          'wheres' => array(
-            array('value'=>'', 'operator'=>'', 'sql'=>"o.taxon_meaning_id in (#taxon_meaning_list#)")
-          ),
-          'preprocess' => // faster than embedding this query in the report            
-"with recursive q as ( 
-  select id, taxon_meaning_id 
-  from cache_taxa_taxon_lists t 
-  where taxon_meaning_id in (#taxon_meaning_list#) 
-  union all 
-  select tc.id, tc.taxon_meaning_id 
-  from q 
-  join cache_taxa_taxon_lists tc on tc.parent_id = q.id 
-) select array_to_string(array_agg(distinct taxon_meaning_id::varchar), ',') from q"
-      )
-    );
-    // load up the params for any which have a value provided
-    foreach ($params as $param => $cfg) {
-      if (isset($providedParams[$param])) {
-        if (isset($cfg['joins'])) {
-          foreach ($cfg['joins'] as &$join)
-            $join['sql'] = preg_replace('/#alias:([a-z]+)#/', '$1', $join['sql']);
-        }
-        $this->params[$param] = $cfg;
+    if ($this->hasStandardParams) {
+      // always include the operation params, as their default might be needed even when no parameter is provided. E.g.
+      // the default website_list_op param comes into effect if just a website_list is provided.
+      $opParams = array(
+        'occurrence_id' => array('datatype'=>'lookup', 'default'=>'', 'display'=>'ID operation',
+            'description'=>'Record ID lookup operation', 'lookup_values'=>'=:is,>=:is at least,<=:is at most'
+        ),
+        'website_list' => array('datatype'=>'lookup', 'default'=>'in', 'display'=>'Website IDs mode', 
+            'description'=>'Include or exclude the list of websites', 'lookup_values'=>'in:Include,not in:Exclude'
+        ),
+        'survey_list' => array('datatype'=>'lookup', 'default'=>'in', 'display'=>'Survey IDs mode', 
+            'description'=>'Include or exclude the list of surveys', 'lookup_values'=>'in:Include,not in:Exclude'
+        ),
+        'input_form_list' => array('datatype'=>'lookup', 'default'=>'in', 'display'=>'Input forms mode', 
+            'description'=>'Include or exclude the list of input forms', 'lookup_values'=>'in:Include,not in:Exclude'
+        )
+      );
+      foreach ($opParams as $param => $cfg) {
+        if (!empty($providedParams[$param]))
+          $this->params["{$param}_op"] = $cfg;
+        if (!empty($providedParams["{$param}_context"]))
+          $this->params["{$param}_op_context"] = $cfg;
       }
-    }
-    // now load any context parameters - i.e. filters defined by the user's permissions that must always apply.
-    // Use a new loop so that prior changes to $cfg are lost.
-    foreach ($params as $param => $cfg) {
-      if (isset($providedParams[$param.'_context'])) {
-        if (isset($cfg['joins'])) {
-          foreach ($cfg['joins'] as &$join) {
-            // construct a unique alias for any joined tables
-            $join['sql'] = preg_replace('/#alias:([a-z]+)#/', '{1}_context', $join['sql']);
-            // and ensure references to the param value point to the context version
-            $join['sql'] = str_replace("#$param#", "#{$param}_context#", $join['sql']);
+      $params = array(
+        'idlist' => array('datatype'=>'idlist', 'default'=>'', 'display'=>'List of IDs', 'emptyvalue'=>'', 'fieldname'=>'o.id', 'alias'=>'occurrence_id',
+            'description'=>'Comma separated list of occurrence IDs to filter to'
+        ),
+        'searchArea' => array('datatype'=>'geometry', 'default'=>'', 'display'=>'Boundary',
+            'description'=>'Boundary to search within',
+            'wheres' => array(
+              array('value'=>'', 'operator'=>'', 'sql'=>"st_intersects(o.public_geom, st_geomfromtext('#searchArea#',900913))")
+            )
+        ),
+        'occurrence_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>'ID',
+            'description'=>'Record ID',
+            'wheres' => array(
+              array('value'=>'', 'operator'=>'', 'sql'=>"o.id #occurrence_id_op# #occurrence_id#")
+            )
+        ),
+        'location_name' => array('datatype'=>'text', 'default'=>'', 'display'=>'Location name', 
+            'description'=>'Name of location to filter to (contains search)',
+            'wheres' => array(
+              array('value'=>'', 'operator'=>'', 'sql'=>"o.location_name ilike '%#location_name#%'")
+            )
+        ),      
+        'location_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>'Location ID', 
+            'description'=>'ID of location to filter to',
+            'joins' => array(
+              array('value'=>'', 'operator'=>'', 'sql'=>"JOIN locations #alias:lfilt# on #alias:lfilt#.id=#location_id# and #alias:lfilt#.deleted=false " .
+                  "and st_intersects(coalesce(#alias:lfilt#.boundary_geom, #alias:lfilt#.centroid_geom), #sample_geom_field#)")
+            )
+        ),
+        'indexed_location_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>'Location ID (indexed)', 
+            'description'=>'ID of location to filter to, for a location that is indexed using the spatial index builder',
+            'joins' => array(
+              array('value'=>'', 'operator'=>'', 'sql'=>"JOIN index_locations_samples #alias:ils# on #alias:ils#.sample_id=o.sample_id and #alias:ils#.location_id=#indexed_location_id#")
+            )
+        ),
+        'date_from' => array('datatype'=>'date', 'default'=>'', 'display'=>'Date from',
+            'description'=>'Date of first record to include in the output',
+            'wheres' => array(
+              array('value'=>'', 'operator'=>'', 'sql'=>"('#date_from#'='Click here' OR o.date_end >= CAST(COALESCE('#date_from#','1500-01-01') as date))")
+            )
+        ),
+        'date_to' => array('datatype'=>'date', 'default'=>'', 'display'=>'Date to', 
+            'description'=>'Date of last record to include in the output',
+            'wheres' => array(
+              array('value'=>'', 'operator'=>'', 'sql'=>"('#date_to#'='Click here' OR o.date_start <= CAST(COALESCE('#date_to#','1500-01-01') as date))")
+            )
+        ),
+        'date_age' => array('datatype'=>'text', 'default'=>'', 'display'=>'Date from time ago',
+            'description'=>'E.g. enter "1 week" or "3 days" to define the how old records can be before they are dropped from the report.',
+            'wheres' => array(
+              array('value'=>'', 'operator'=>'', 'sql'=>"o.date_start>now()-'#date_age#'::interval")
+            )
+        ),
+        'quality' => array('datatype'=>'lookup', 'default'=>'', 'display'=>'Quality', 
+            'description'=>'Minimum quality of records to include', 
+            'lookup_values'=>'=V:Verified records only,C:Recorder was certain,L:Recorder thought the record was at least likely,P:Pending verification,' .
+                'T:Pending verification for trusted recorders,!R:Everything except rejected,all:Everything including rejected,D:Queried records only,'.
+                'R:Rejected records only,DR:Queried or rejected records',
+            'wheres' => array(
+              array('value'=>'V', 'operator'=>'equal', 'sql'=>"o.record_status='V'"),
+              array('value'=>'C', 'operator'=>'equal', 'sql'=>"o.record_status<>'R' and o.certainty='C'"),
+              array('value'=>'L', 'operator'=>'equal', 'sql'=>"o.record_status<>'R' and o.certainty in ('C','L')"),
+              array('value'=>'P', 'operator'=>'equal', 'sql'=>"o.record_status in ('C','S')"),
+              array('value'=>'T', 'operator'=>'equal', 'sql'=>"o.record_status in ('C','S')"),
+              array('value'=>'!R', 'operator'=>'equal', 'sql'=>"o.record_status<>'R'"),
+              array('value'=>'D', 'operator'=>'equal', 'sql'=>"o.record_status='D'"),
+              array('value'=>'R', 'operator'=>'equal', 'sql'=>"o.record_status='R'"),
+              array('value'=>'DR', 'operator'=>'equal', 'sql'=>"o.record_status in ('R','D')"),
+              // The all filter does not need any SQL
+            ),
+            'joins' => array(
+              array('value'=>'T', 'operator'=>'equal', 'sql'=>
+  "LEFT JOIN index_locations_samples #alias:ils# on #alias:ils#.sample_id=o.sample_id
+  JOIN user_trusts #alias:ut# on (#alias:ut#.survey_id=o.survey_id
+      OR #alias:ut#.taxon_group_id=o.taxon_group_id
+      OR (#alias:ut#.location_id=#alias:ils#.location_id or #alias:ut#.location_id is null)
+    )
+    AND #alias:ut#.deleted=false
+    AND ((o.survey_id = #alias:ut#.survey_id) or (#alias:ut#.survey_id is null and (#alias:ut#.taxon_group_id is not null or #alias:ut#.location_id is not null)))
+    AND ((o.taxon_group_id = #alias:ut#.taxon_group_id) or (#alias:ut#.taxon_group_id is null and (#alias:ut#.survey_id is not null or #alias:ut#.location_id is not null)))
+    AND ((#alias:ils#.location_id = #alias:ut#.location_id) OR (#alias:ut#.location_id IS NULL and (#alias:ut#.survey_id is not null or #alias:ut#.taxon_group_id is not null)))
+    AND o.created_by_id = #alias:ut#.user_id")
+            )
+        ),
+        'autochecks' => array('datatype'=>'lookup', 'default'=>'', 'display'=>'Automated checks', 
+            'description'=>'Filter to only include records that have passed or failed automated checks', 
+            'lookup_values'=>'N:Not filtered,F:Include only records that fail checks,P:Include only records which pass checks',
+            'wheres' => array(
+              array('value'=>'F', 'operator'=>'equal', 'sql'=>"o.data_cleaner_info is not null and o.data_cleaner_info<>'pass'"),
+              array('value'=>'P', 'operator'=>'equal', 'sql'=>"o.data_cleaner_info = 'pass'")
+            )
+        ),
+        'has_photos' => array('datatype'=>'boolean', 'default'=>'', 'display'=>'Photo records only',
+            'description'=>'Only include records which have photos?',
+            'wheres' => array(
+              array('value'=>'', 'operator'=>'', 'sql'=>"o.images is not null")
+            )
+        ),
+        'user_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>"Current user's warehouse ID"),
+        'my_records' => array('datatype'=>'boolean', 'default'=>'', 'display'=>"Only include my records",
+            'wheres' => array(
+              array('value'=>'1', 'operator'=>'equal', 'sql'=>"o.created_by_id=#user_id#")
+            )
+        ),
+        'group_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>"ID of a group to filter to the members of",
+            'description'=>'Specify the ID of a recording group. This filters the report to the members of the group.',
+            'joins' => array(
+              array('value'=>'', 'operator'=>'', 'sql'=>"join groups_users #alias:gu# on #alias:gu#.user_id=o.created_by_id and #alias:gu#.group_id=#group_id#")
+            )
+        ),
+        'website_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Website IDs", 
+            'description'=>'Comma separated list of IDs',
+            'wheres' => array(
+               array('value'=>'', 'operator'=>'', 'sql'=>"o.website_id #website_list_op# (#website_list#)")
+            )
+        ),
+        'survey_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Survey IDs", 
+            'description'=>'Comma separated list of IDs',
+            'wheres' => array(
+               array('value'=>'', 'operator'=>'', 'sql'=>"o.survey_id #survey_list_op# (#survey_list#)")
+            )
+        ),
+        'input_form_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Input forms", 
+            'description'=>'Comma separated list of input form paths',
+            'wheres' => array(
+               array('value'=>'', 'operator'=>'', 'sql'=>"o.input_form #input_form_list_op# (#input_form_list#)")
+            )
+        ),
+        'taxon_group_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Taxon Group IDs", 
+            'description'=>'Comma separated list of IDs',
+            'wheres' => array(
+               array('value'=>'', 'operator'=>'', 'sql'=>"o.taxon_group_id in (#taxon_group_list#)")
+            )
+        ),
+        'taxa_taxon_list_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Taxa taxon list IDs", 
+            'description'=>'Comma separated list of preferred IDs',
+            'wheres' => array(
+              array('value'=>'', 'operator'=>'', 'sql'=>"o.preferred_taxa_taxon_list_id in (#taxa_taxon_list_list#)")
+            ),
+            'preprocess' => // faster than embedding this query in the report            
+  "with recursive q as ( 
+    select id 
+    from cache_taxa_taxon_lists t 
+    where id in (#taxa_taxon_list_list#) 
+    union all 
+    select tc.id 
+    from q 
+    join cache_taxa_taxon_lists tc on tc.parent_id = q.id 
+  ) select array_to_string(array_agg(distinct id::varchar), ',') from q"
+        ),
+        'taxon_meaning_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Taxon meaning IDs", 
+            'description'=>'Comma separated list of taxon meaning IDs',
+            'wheres' => array(
+              array('value'=>'', 'operator'=>'', 'sql'=>"o.taxon_meaning_id in (#taxon_meaning_list#)")
+            ),
+            'preprocess' => // faster than embedding this query in the report            
+  "with recursive q as ( 
+    select id, taxon_meaning_id 
+    from cache_taxa_taxon_lists t 
+    where taxon_meaning_id in (#taxon_meaning_list#) 
+    union all 
+    select tc.id, tc.taxon_meaning_id 
+    from q 
+    join cache_taxa_taxon_lists tc on tc.parent_id = q.id 
+  ) select array_to_string(array_agg(distinct taxon_meaning_id::varchar), ',') from q"
+        )
+      );
+      // load up the params for any which have a value provided
+      foreach ($params as $param => $cfg) {
+        if (isset($providedParams[$param])) {
+          if (isset($cfg['joins'])) {
+            foreach ($cfg['joins'] as &$join)
+              $join['sql'] = preg_replace('/#alias:([a-z]+)#/', '$1', $join['sql']);
           }
+          $this->params[$param] = $cfg;
         }
-        if (isset($cfg['wheres'])) {
-          foreach ($cfg['wheres'] as &$where) {
-            // ensure references to the param value point to the context version
-            $where['sql'] = str_replace("#$param#", "#{$param}_context#", $where['sql']);
-          }
-        }
-        // and any references in the preprocessing query point to the context version of the param value
-        if (isset($cfg['preprocess'])) 
-          $cfg['preprocess'] = str_replace("#$param#", "#{$param}_context#", $cfg['preprocess']);
-        $this->params[$param.'_context'] = $cfg;
       }
+      // now load any context parameters - i.e. filters defined by the user's permissions that must always apply.
+      // Use a new loop so that prior changes to $cfg are lost.
+      foreach ($params as $param => $cfg) {
+        if (isset($providedParams[$param.'_context'])) {
+          if (isset($cfg['joins'])) {
+            foreach ($cfg['joins'] as &$join) {
+              // construct a unique alias for any joined tables
+              $join['sql'] = preg_replace('/#alias:([a-z]+)#/', '${1}_context', $join['sql']);
+              // and ensure references to the param value point to the context version
+              $join['sql'] = str_replace("#{$param}_op#", "#{$param}_op_context#", $join['sql']);
+              $join['sql'] = str_replace("#$param#", "#{$param}_context#", $join['sql']);
+            }
+          }
+          if (isset($cfg['wheres'])) {
+            foreach ($cfg['wheres'] as &$where) {
+              // ensure references to the param value point to the context version
+              $where['sql'] = str_replace("#{$param}_op#", "#{$param}_op_context#", $where['sql']);
+              $where['sql'] = str_replace("#$param#", "#{$param}_context#", $where['sql']);
+            }
+          }
+          // and any references in the preprocessing query point to the context version of the param value
+          if (isset($cfg['preprocess'])) 
+            $cfg['preprocess'] = str_replace("#$param#", "#{$param}_context#", $cfg['preprocess']);
+          $this->params[$param.'_context'] = $cfg;
+        }
+      }
+      $this->defaultParamValues = array_merge(array(
+          'occurrence_id_op'=>'=',
+          'website_list_op'=>'in',
+          'survey_list_op'=>'in',
+          'input_form_list_op'=>'in',
+          'occurrence_id_op_context'=>'=',
+          'website_list_op_context'=>'in',
+          'survey_list_op_context'=>'in',
+          'input_form_list_op_context'=>'in'
+      ), $this->defaultParamValues);
     }
   }
 
