@@ -194,6 +194,7 @@ class ReportEngine {
     {
       case 'xml':
         $this->reportReader = new XMLReportReader($this->report, $this->websiteIds, $this->sharingMode);
+        $this->reportReader->loadStandardParams($this->providedParams, $this->sharingMode);
         break;
       default:
         return array('error' => 'Unknown report format specified: '. $this->reportFormat);
@@ -797,7 +798,7 @@ class ReportEngine {
       $query = str_replace(array('#sample_sref_field#', '#sample_geom_field#'), array('o.public_entered_sref', 'o.public_geom'), $query);
     }
     // remove the marker left in the query to show where to insert joins
-    $query = str_replace(array('#joins#','#fields#','#group_bys#','#filters#'), array('','','',''), $query);
+    $query = str_replace(array('#joins#','#fields#','#group_bys#','#filters#','#idlist#'), array('','','',''), $query);
     // allow the URL to provide a sort order override
     if (!$counting) {
       // prioritise any URL provided sort order, but still keep any other sort ordering in the report.
