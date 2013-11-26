@@ -697,7 +697,7 @@ jQuery(document).ready(function($) {
   
   applyFilterToReports = function(applyNow) {
     applyContextLimits();
-    var filterDef = $.extend(indiciaData.filter.def, {});
+    var filterDef = $.extend({}, indiciaData.filter.def);
     delete filterDef.taxon_group_names;
     delete filterDef.taxa_taxon_list_names;
     delete filterDef.taxon_group_names_context;
