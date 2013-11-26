@@ -5607,7 +5607,7 @@ if (errors$uniq.length>0) {
   * array('0','None','Absent').
   */
   public static function wrap_species_checklist($arr, $include_if_any_data=false,
-        $zero_attrs = array(), $zero_values=array('0','None','Absent')){
+        $zero_attrs = true, $zero_values=array('0','None','Absent')){
     if (array_key_exists('website_id', $arr)){
       $website_id = $arr['website_id'];
     } else {
@@ -5727,7 +5727,7 @@ if (errors$uniq.length>0) {
    * array('0','None','Absent').
    */
   public static function wrap_species_checklist_with_subsamples($arr, $include_if_any_data=false,
-          $zero_attrs = array(), $zero_values=array('0','None','Absent')){
+          $zero_attrs = true, $zero_values=array('0','None','Absent')){
     if (array_key_exists('website_id', $arr)){
       $website_id = $arr['website_id'];
     } else {
@@ -5983,7 +5983,7 @@ if (errors$uniq.length>0) {
    * @return array Sample submission array
    */
   public static function build_sample_occurrences_list_submission($values, $include_if_any_data=false,
-      $zero_attrs = array(), $zero_values=array('0','None','Absent')) {
+      $zero_attrs = true, $zero_values=array('0','None','Absent')) {
     // We're mainly submitting to the sample model
     $sampleMod = submission_builder::wrap_with_images($values, 'sample');
     $occurrences = data_entry_helper::wrap_species_checklist($values, $include_if_any_data,
@@ -6020,7 +6020,7 @@ if (errors$uniq.length>0) {
    * @return array Sample submission array
    */
   public static function build_sample_subsamples_occurrences_submission($values, $include_if_any_data=false,
-       $zero_attrs = array(), $zero_values=array('0','None','Absent'))
+       $zero_attrs = true, $zero_values=array('0','None','Absent'))
   {
     // We're mainly submitting to the sample model
     $sampleMod = submission_builder::wrap_with_images($values, 'sample');
