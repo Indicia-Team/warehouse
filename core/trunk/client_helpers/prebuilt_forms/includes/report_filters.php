@@ -63,8 +63,8 @@ class filter_what extends filter_base {
       $r .= '<ul class="inline"><li>' . implode('</li><li>', $myGroupNames) . '</li></ul>';      
       $r .= '<h3>' . lang::get('Build a list of groups') . '</h3>';
     }
-    $r .= '<p>' . lang::get('Search for and build a list of species groups to include.') . 
-        ' <span class="context-instruct">' . lang::get('Please note that your access permissions are limiting the groups available to choose from.') . '</span></p>';
+    $r .= '<p>' . lang::get('Search for and build a list of species groups to include.') . '</p>' .
+        ' <div class="context-instruct messages warning">' . lang::get('Please note that your access permissions are limiting the groups available to choose from.') . '</div>';
     $r .= data_entry_helper::sub_list(array(      
       'fieldname' => 'taxon_group_list',
       'table' => 'taxon_group',
@@ -75,8 +75,8 @@ class filter_what extends filter_base {
     ));
     $r .= "</div>\n";
     $r .= '<div id="species-tab">' . "\n";
-    $r .= '<p>' . lang::get('Search for and build a list of species to include.') . 
-        ' <span class="context-instruct">' . lang::get('Please note that your access permissions are limiting the species available to choose from.') . '</span></p>';
+    $r .= '<p>' . lang::get('Search for and build a list of species to include.') . '</p>' .
+        ' <div class="context-instruct messages warning">' . lang::get('Please note that your access permissions will limit the records returned to the species you are allowed to see.') . '</div>';
     if (empty($options['taxon_list_id'])) {
       $r .= '<p>Please specify a @taxon_list_id option in the page configuration.</p>';
     }
@@ -163,8 +163,8 @@ class filter_where extends filter_base {
     data_entry_helper::$javascript .= "indiciaData.includeSitesCreatedByUser=" . ($options['includeSitesCreatedByUser'] ? 'true' : 'false') . ";\n";
     data_entry_helper::$javascript .= "indiciaData.personSiteAttrId=" . (empty($options['personSiteAttrId']) ? 'false' : $options['personSiteAttrId']) . ";\n";
     $r = '<fieldset class="inline"><legend>'.lang::get('Filter by site or place').'</legend>';
-    $r .= '<p class="context-instruct">' . lang::get('Choose from the following place filtering options. Please note that your access permissions ' .
-        'are limiting the areas you are able to include.') . '</p>';
+    $r .= '<p>' . lang::get('Choose from the following place filtering options.') . '</p>' .
+        '<div class="context-instruct messages warning">' . lang::get('Please note that your access permissions are limiting the areas you are able to include.') . '</div>';
     $r .= '<fieldset class="exclusive">';
     // top level of sites selection
     $sitesLevel1 = array();
@@ -276,7 +276,7 @@ class filter_who extends filter_base {
    * Define the HTML required for this filter's UI panel.
    */
   public function get_controls($readAuth, $options) {
-    $r = '<p class="context-instruct">' . lang::get('Please note, you cannnot change this setting because of your access permissions in this context.') . '</p>';
+    $r = '<div class="context-instruct messages warning">' . lang::get('Please note, you cannnot change this setting because of your access permissions in this context.') . '</div>';
     $r .= data_entry_helper::checkbox(array(
       'label' => lang::get('Only include my records'),
       'fieldname' => 'my_records'
@@ -325,7 +325,7 @@ class filter_quality extends filter_base {
    * Define the HTML required for this filter's UI panel.
    */
   public function get_controls($readAuth) {
-    $r = '<p class="context-instruct">' . lang::get('Please note, your options for quality filtering are restricted by your access permissions in this context.') . '</p>';
+    $r = '<div class="context-instruct messages warning">' . lang::get('Please note, your options for quality filtering are restricted by your access permissions in this context.') . '</div>';
     $r .= data_entry_helper::select(array(
       'label'=>lang::get('Records to include'),
       'fieldname'=>'quality',
@@ -339,7 +339,8 @@ class filter_quality extends filter_base {
         '!R' => lang::get('Exclude rejected'),
         'all' => lang::get('All records'),
         'D' => lang::get('Queried records only'),
-        'R' => lang::get('Rejected records only')
+        'R' => lang::get('Rejected records only'),
+        'DR' => lang::get('Queried or rejected records')
       )
     ));
     $r .= data_entry_helper::select(array(
@@ -379,7 +380,8 @@ class filter_source extends filter_base {
       'caching' => true,
       'extraParams' => array('sharing' => $options['sharing'])
     ));
-    $r = '<p class="context-instruct">' . lang::get('Please note, or options for source filtering are limited by your access permissions in this context.') . '</p><div>';
+    $r = '<div class="context-instruct messages warning">' . lang::get('Please note, or options for source filtering are limited by your access permissions in this context.') . '</div>';
+    $r .= '<div>';
     if (count($sources)>1) {
       $r .= '<div id="filter-websites" class="filter-popup-columns"><h3>'.lang::get('Websites').'</h3><p>'.
           '<select id="filter-websites-mode" name="website_list_op"><option value="in">'.lang::get('Include').'</option><option value="not in">'.lang::get('Exclude').'</option></select> '.
@@ -448,6 +450,9 @@ class filter_source extends filter_base {
  *   filter-#name# - set the initial value of a report filter parameter #name#. 
  *   allowLoad - set to false to disable the load bar at the top of the panel.
  *   allowSave - set to false to disable the save bar at the foot of the panel.
+ *   presets - provide an array of preset filters to provide in the filters drop down. Choose from my-records, my-groups (uses
+ *     your list of taxon groups in the user account), my-locality (uses your recording locality from the user account),
+ *     my-groups-locality (uses taxon groups and recording locatlity from the user account).
  * @param integer $website_id The current website's warehouse ID.
  * @param string $hiddenStuff Output parameter which will contain the hidden popup HTML that will be shown
  * using fancybox during filter editing. Should be appended AFTER any form element on the page as nested forms are not allowed.
@@ -461,7 +466,8 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
     'allowLoad' => true,
     'allowSave' => true,
     'taxon_list_id' => variable_get('iform_master_checklist_id', 0),
-    'redirect_on_success' => ''
+    'redirect_on_success' => '',
+    'presets' => array('my-records', 'my-queried-rejected-records', 'my-groups', 'my-locality', 'my-groups-locality')
   ), $options);
   if (!preg_match('/^(reporting|peer_review|verification|data_flow|moderation)$/', $options['sharing']))
     return 'The @sharing option must be one of reporting, peer_review, verification, data_flow or moderation (currently '.$options['sharing'].').';
@@ -473,6 +479,42 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
   $filterData = report_filters_load_existing($readAuth, strtoupper(substr($options['sharing'], 0, 1)));
   $existing = '';
   $contexts = '';
+  // add some preset filters in
+  foreach ($options['presets'] as $preset) {
+    $title=false;
+    switch ($preset) {
+      case 'my-records':
+        if (hostsite_get_user_field('id'))
+          $title = lang::get('My records'); 
+        break;
+      case 'my-queried-rejected-records':
+        if (hostsite_get_user_field('id'))
+          $title = lang::get('My rejected or queried records'); 
+        break;
+      case 'my-groups':
+        if (hostsite_get_user_field('taxon_groups'))
+          $title = lang::get('Records in species groups I like to record'); 
+        break;
+      case 'my-locality':
+        if (hostsite_get_user_field('location'))
+          $title = lang::get('Records in the locality I generally record in'); 
+        break;
+      case 'my-groups-locality':
+        if (hostsite_get_user_field('taxon_groups') && hostsite_get_user_field('location'))
+          $title = lang::get('Records of my species groups in my locality'); 
+        break;
+      default:
+        throw new exception("Unsupported preset $preset for the filter panel");
+    }
+    if ($title) {
+      $presetFilter = array('id' => $preset, 'title' => $title, 'defines_permissions' => 'f');
+      $filterData[] = $presetFilter;
+    }
+  }
+  if (count($options['presets'])) {
+    data_entry_helper::$javascript .= "indiciaData.userPrefsTaxonGroups='".implode(',', array_keys(unserialize(hostsite_get_user_field('taxon_groups', ''))))."';\n";
+    data_entry_helper::$javascript .= "indiciaData.userPrefsLocation=".hostsite_get_user_field('location', 0).";\n";
+  }
   $contextDefs = array();
   if ($options['sharing']==='verification') {
     // apply legacy verification settings from their profile
@@ -521,7 +563,7 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
   }
   $r = '<div id="standard-params" class="ui-widget">';
   if ($options['allowLoad']) {
-    $r .= '<div class="header ui-toolbar ui-widget-header ui-helper-clearfix"><div><span>'. lang::get('New report') . '</span></div><span class="changed" style="display:none" title="This filter has been changed">*</span>';
+    $r .= '<div class="header ui-toolbar ui-widget-header ui-helper-clearfix"><div><span id="active-filter-label">'. lang::get('New report') . '</span></div><span class="changed" style="display:none" title="This filter has been changed">*</span>';
     $r .= '<div>';
     if ($contexts) {
       data_entry_helper::$javascript .= "indiciaData.filterContextDefs = " . json_encode($contextDefs) . ";\n";
@@ -535,7 +577,7 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
     $r .= '<label for="select-filter">'.lang::get('Filter:').'</label><select id="select-filter"><option value="" selected="selected">' . lang::get('Select filter') . "...</option>$existing</select>";
     $r .= '<button type="button" id="filter-apply">' . lang::get('Apply') . '</button>';
     $r .= '<button type="button" id="filter-reset" class="disabled">' . lang::get('Reset') . '</button>';
-    $r .= '<button type="button" id="filter-build">' . lang::get('Build filter') . '</button></div>';
+    $r .= '<button type="button" id="filter-build">' . lang::get('Create a filter') . '</button></div>';
     $r .= '</div>';
     $r .= '<div id="filter-details" style="display: none">';
     $r .= '<img src="'.data_entry_helper::$images_path.'nuvola/close-22px.png" width="22" height="22" alt="Close filter builder" title="Close filter builder" class="button" id="filter-done"/>'."\n";
@@ -584,7 +626,7 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
   $r .= '</div>'; // filter panes
   $r .= '<div class="toolbar">';
   if ($options['allowSave']) {
-    $r .= '<label for="filter:title">'.lang::get('Filter name').':</label><input id="filter:title"/>';
+    $r .= '<label for="filter:title">'.lang::get('Save filter as').':</label><input id="filter:title"/>';
     if ($options['admin']) {
       if (empty($options['adminCanSetSharingTo']))
         throw new exception('Report standard params panel in admin mode so adminCanSetSharingTo option must be populated.');
@@ -628,6 +670,8 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
   }   
   $r .= '</div>';
   report_helper::$js_read_tokens = $readAuth;
+  report_helper::$javascript .= "indiciaData.lang.CreateAFilter='".lang::get('Create a filter')."';\n";
+  report_helper::$javascript .= "indiciaData.lang.ModifyFilter='".lang::get('Modify filter')."';\n";
   report_helper::$javascript .= "indiciaData.lang.FilterReport='".lang::get('New report')."';\n";
   report_helper::$javascript .= "indiciaData.lang.FilterSaved='".lang::get('The filter has been saved')."';\n";
   report_helper::$javascript .= "indiciaData.lang.FilterDeleted='".lang::get('The filter has been deleted')."';\n";
