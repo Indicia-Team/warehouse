@@ -702,7 +702,7 @@ var simple_tooltip;
             layerInfo.bounds.transform(map.projection, indiciaData.mapdiv.indiciaProjection);
             currentBounds.transform(map.projection, indiciaData.mapdiv.indiciaProjection);
           }
-          request += '&bounds='+layerInfo.bounds.toGeometry().toString();        
+          request += '&bounds='+encodeURIComponent(layerInfo.bounds.toGeometry().toString());
         }
       }      
       finally {
