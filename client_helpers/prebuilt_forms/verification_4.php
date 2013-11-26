@@ -459,6 +459,7 @@ idlist=';
       if (strpos($args['param_presets'].$args['param_defaults'], 'expertise_surveys')===false)
         $args['param_presets'].="\nexpertise_surveys={profile_surveys_expertise}";
     }
+    $args['sharing']='verification';
     $opts = array_merge(
         iform_report_get_report_options($args, $readAuth),
         array(
