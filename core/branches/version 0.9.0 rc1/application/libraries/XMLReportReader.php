@@ -63,6 +63,11 @@ class XMLReportReader_Core implements ReportReader
    * the other fields.
    */
   private $hasAggregates = false;
+  
+  /** 
+   * @var boolean Track if this report supports the standard set of parameters.
+   */
+  private $hasStandardParams = false;
 
   /**
    * Returns a simple array containing the title and description of a report. Static so you don't have to load the full report object to get this
@@ -136,7 +141,7 @@ class XMLReportReader_Core implements ReportReader
                   $this->locations_id_field = 'l.id';
                 // load the standard set of parameters for consistent filtering of reports?
                 if ($reader->getAttribute('standard_params')!==null)
-                  $this->loadStandardParams($sharing);
+                  $this->hasStandardParams=true;
                 $reader->read();
                 $this->query = $reader->value;
                 break;
@@ -293,7 +298,7 @@ class XMLReportReader_Core implements ReportReader
         $sharedWebsiteIdList = self::getSharedWebsiteList($websiteIds, $sharing);
         // add a join to users so we can check their privacy preferences. This does not apply if record input
         // on this website.
-        $agreementsJoin = "JOIN users privacyusers ON privacyusers.id=o.created_by_id";
+        $agreementsJoin = "JOIN users privacyusers ON privacyusers.id=".$this->createdByField;
         $query = str_replace(array('#agreements_join#','#sharing_filter#','#sharing_website_ids#'), 
             array($agreementsJoin, 
             "({$this->websiteFilterField} in ($idList) OR privacyusers.allow_share_for_$sharing=true OR privacyusers.allow_share_for_$sharing IS NULL)\n".
@@ -725,8 +730,8 @@ class XMLReportReader_Core implements ReportReader
   /**
    * If a report declares that it uses the standard set of parameters, then load them.
    */
-  private function loadStandardParams($sharing) {
-    $this->params = array_merge(array(
+  public function loadStandardParams($providedParams, $sharing) {
+    $params = array(
       'idlist' => array('datatype'=>'idlist', 'default'=>'', 'display'=>'List of IDs', 'emptyvalue'=>'', 'fieldname'=>'o.id', 'alias'=>'occurrence_id',
           'description'=>'Comma separated list of occurrence IDs to filter to'
       ),
@@ -754,14 +759,14 @@ class XMLReportReader_Core implements ReportReader
       'location_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>'Location ID', 
           'description'=>'ID of location to filter to',
           'joins' => array(
-            array('value'=>'', 'operator'=>'', 'sql'=>"JOIN locations lfilt on lfilt.id=#location_id# and lfilt.deleted=false " .
-                "and st_intersects(coalesce(lfilt.boundary_geom, lfilt.centroid_geom), #sample_geom_field#)")
+            array('value'=>'', 'operator'=>'', 'sql'=>"JOIN locations #alias:lfilt# on #alias:lfilt#.id=#location_id# and #alias:lfilt#.deleted=false " .
+                "and st_intersects(coalesce(#alias:lfilt#.boundary_geom, #alias:lfilt#.centroid_geom), #sample_geom_field#)")
           )
       ),
       'indexed_location_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>'Location ID (indexed)', 
           'description'=>'ID of location to filter to, for a location that is indexed using the spatial index builder',
           'joins' => array(
-            array('value'=>'', 'operator'=>'', 'sql'=>"JOIN index_locations_samples ils on ils.sample_id=o.sample_id and ils.location_id=#indexed_location_id#")
+            array('value'=>'', 'operator'=>'', 'sql'=>"JOIN index_locations_samples #alias:ils# on #alias:ils#.sample_id=o.sample_id and #alias:ils#.location_id=#indexed_location_id#")
           )
       ),
       'date_from' => array('datatype'=>'date', 'default'=>'', 'display'=>'Date from',
@@ -785,7 +790,8 @@ class XMLReportReader_Core implements ReportReader
       'quality' => array('datatype'=>'lookup', 'default'=>'', 'display'=>'Quality', 
           'description'=>'Minimum quality of records to include', 
           'lookup_values'=>'=V:Verified records only,C:Recorder was certain,L:Recorder thought the record was at least likely,P:Pending verification,' .
-              'T:Pending verification for trusted recorders,!R:Everything except rejected,all:Everything including rejected,D:Queried records only,R:Rejected records only',
+              'T:Pending verification for trusted recorders,!R:Everything except rejected,all:Everything including rejected,D:Queried records only,'.
+              'R:Rejected records only,DR:Queried or rejected records',
           'wheres' => array(
             array('value'=>'V', 'operator'=>'equal', 'sql'=>"o.record_status='V'"),
             array('value'=>'C', 'operator'=>'equal', 'sql'=>"o.record_status<>'R' and o.certainty='C'"),
@@ -795,20 +801,21 @@ class XMLReportReader_Core implements ReportReader
             array('value'=>'!R', 'operator'=>'equal', 'sql'=>"o.record_status<>'R'"),
             array('value'=>'D', 'operator'=>'equal', 'sql'=>"o.record_status='D'"),
             array('value'=>'R', 'operator'=>'equal', 'sql'=>"o.record_status='R'"),
+            array('value'=>'DR', 'operator'=>'equal', 'sql'=>"o.record_status in ('R','D')"),
             // The all filter does not need any SQL
           ),
           'joins' => array(
             array('value'=>'T', 'operator'=>'equal', 'sql'=>
-"LEFT JOIN index_locations_samples ils on ils.sample_id=o.sample_id
-JOIN user_trusts ut on (ut.survey_id=o.survey_id
-    OR ut.taxon_group_id=o.taxon_group_id
-    OR (ut.location_id=ils.location_id or ut.location_id is null)
+"LEFT JOIN index_locations_samples #alias:ils# on #alias:ils#.sample_id=o.sample_id
+JOIN user_trusts #alias:ut# on (#alias:ut#.survey_id=o.survey_id
+    OR #alias:ut#.taxon_group_id=o.taxon_group_id
+    OR (#alias:ut#.location_id=#alias:ils#.location_id or #alias:ut#.location_id is null)
   )
-  AND ut.deleted=false
-  AND ((o.survey_id = ut.survey_id) or (ut.survey_id is null and (ut.taxon_group_id is not null or ut.location_id is not null)))
-  AND ((o.taxon_group_id = ut.taxon_group_id) or (ut.taxon_group_id is null and (ut.survey_id is not null or ut.location_id is not null)))
-  AND ((ils.location_id = ut.location_id) OR (ut.location_id IS NULL and (ut.survey_id is not null or ut.taxon_group_id is not null)))
-  AND o.created_by_id = ut.user_id")
+  AND #alias:ut#.deleted=false
+  AND ((o.survey_id = #alias:ut#.survey_id) or (#alias:ut#.survey_id is null and (#alias:ut#.taxon_group_id is not null or #alias:ut#.location_id is not null)))
+  AND ((o.taxon_group_id = #alias:ut#.taxon_group_id) or (#alias:ut#.taxon_group_id is null and (#alias:ut#.survey_id is not null or #alias:ut#.location_id is not null)))
+  AND ((#alias:ils#.location_id = #alias:ut#.location_id) OR (#alias:ut#.location_id IS NULL and (#alias:ut#.survey_id is not null or #alias:ut#.taxon_group_id is not null)))
+  AND o.created_by_id = #alias:ut#.user_id")
           )
       ),
       'autochecks' => array('datatype'=>'lookup', 'default'=>'', 'display'=>'Automated checks', 
@@ -834,7 +841,7 @@ JOIN user_trusts ut on (ut.survey_id=o.survey_id
       'group_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>"ID of a group to filter to the members of",
           'description'=>'Specify the ID of a recording group. This filters the report to the members of the group.',
           'joins' => array(
-            array('value'=>'', 'operator'=>'', 'sql'=>"join groups_users gu on gu.user_id=o.created_by_id and gu.group_id=#group_id#")
+            array('value'=>'', 'operator'=>'', 'sql'=>"join groups_users #alias:gu# on #alias:gu#.user_id=o.created_by_id and #alias:gu#.group_id=#group_id#")
           )
       ),
       'website_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Website IDs", 
@@ -902,34 +909,41 @@ JOIN user_trusts ut on (ut.survey_id=o.survey_id
   join cache_taxa_taxon_lists tc on tc.parent_id = q.id 
 ) select array_to_string(array_agg(distinct taxon_meaning_id::varchar), ',') from q"
       )
-    ), $this->params);
-    $this->defaultParamValues = array_merge(array(
-        'idlist'=>'',
-        'searchArea'=>'',
-        'occurrence_id'=>'',
-        'occurrence_id_op'=>'=',
-        'location_name'=>'',
-        'location_id'=>'',
-        'indexed_location_id'=>'',
-        'date_from'=>'',
-        'date_to'=>'',
-        'date_age'=>'',
-        'quality'=>'',
-        'autochecks'=>'',
-        'has_photos'=>'',
-        'user_id'=>'',
-        'group_id'=>'',
-        'my_records'=>'',
-        'website_list'=>'',
-        'website_list_op'=>'in',
-        'survey_list'=>'',
-        'survey_list_op'=>'in',
-        'input_form_list'=>'',
-        'input_form_list_op'=>'in',
-        'taxon_group_list'=>'',
-        'taxa_taxon_list_list'=>'',
-        'taxon_meaning_list'=>''
-    ), $this->defaultParamValues);
+    );
+    // load up the params for any which have a value provided
+    foreach ($params as $param => $cfg) {
+      if (isset($providedParams[$param])) {
+        if (isset($cfg['joins'])) {
+          foreach ($cfg['joins'] as &$join)
+            $join['sql'] = preg_replace('/#alias:([a-z]+)#/', '$1', $join['sql']);
+        }
+        $this->params[$param] = $cfg;
+      }
+    }
+    // now load any context parameters - i.e. filters defined by the user's permissions that must always apply.
+    // Use a new loop so that prior changes to $cfg are lost.
+    foreach ($params as $param => $cfg) {
+      if (isset($providedParams[$param.'_context'])) {
+        if (isset($cfg['joins'])) {
+          foreach ($cfg['joins'] as &$join) {
+            // construct a unique alias for any joined tables
+            $join['sql'] = preg_replace('/#alias:([a-z]+)#/', '{1}_context', $join['sql']);
+            // and ensure references to the param value point to the context version
+            $join['sql'] = str_replace("#$param#", "#{$param}_context#", $join['sql']);
+          }
+        }
+        if (isset($cfg['wheres'])) {
+          foreach ($cfg['wheres'] as &$where) {
+            // ensure references to the param value point to the context version
+            $where['sql'] = str_replace("#$param#", "#{$param}_context#", $where['sql']);
+          }
+        }
+        // and any references in the preprocessing query point to the context version of the param value
+        if (isset($cfg['preprocess'])) 
+          $cfg['preprocess'] = str_replace("#$param#", "#{$param}_context#", $cfg['preprocess']);
+        $this->params[$param.'_context'] = $cfg;
+      }
+    }
   }
 
   /**
