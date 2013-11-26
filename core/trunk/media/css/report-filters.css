@@ -195,6 +195,7 @@ fieldset.inline fieldset, div.filter-popup-columns {
   vertical-align: top;
   border: none;
   padding: 4px 12px;
+  margin: 0;
 }
 
 fieldset.inline fieldset label {
