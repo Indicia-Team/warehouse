@@ -2364,6 +2364,7 @@ $('#$escaped').change(function(e) {
         'fieldname'=>'sample:entered_sref',
         'hiddenFields'=>true,
         'id'=>'imp-sref',
+        'geomid'=>'imp-geom',
         'geomFieldname'=>$tokens[0].':geom',
         'default'=>self::check_default_value($options['fieldname']),
         'splitLatLong'=>false
