@@ -763,8 +763,9 @@ class iform_ukbms_sectioned_transects_input_sample {
         $sitesLookup[$site['location_id']]=$site['name'];
         $sitesJs[$site['location_id']] = $site;
       }
-      // bolt in branch locations. Don't assume that branch list is superset of normal sites list
-      if(isset($args['branch_assignment_permission']) && user_access($args['branch_assignment_permission'])) {
+      // bolt in branch locations. Don't assume that branch list is superset of normal sites list.
+      // Only need to do if not a manager - they have already fetched the full list anyway.
+      if(isset($args['branch_assignment_permission']) && user_access($args['branch_assignment_permission']) && $siteParams['locattrs']!='') {
         $siteParams['locattrs']='Branch CMS User ID';
         $siteParams['attr_location_branch_cms_user_id']=$user->uid;
         unset($siteParams['attr_location_cms_user_id']);
@@ -777,6 +778,7 @@ class iform_ukbms_sectioned_transects_input_sample {
           $sitesLookup[$site['location_id']]=$site['name'];
           $sitesJs[$site['location_id']] = $site;
         }
+        natcasesort($sitesLookup); // merge into original list in alphabetic order.
       }
       data_entry_helper::$javascript .= "indiciaData.sites = ".json_encode($sitesJs).";\n";
       $options = array(
@@ -1105,7 +1107,7 @@ class iform_ukbms_sectioned_transects_input_sample {
 
     $extraParams = array_merge($auth['read'],
                    array('taxon_list_id' => $args['taxon_list_id'],
-                         'preferred' => 't',
+                         'preferred' => 't', // important
                          'allow_data_entry' => 't',
                          'view' => 'cache',
                          'orderby' => 'taxonomic_sort_order'));
