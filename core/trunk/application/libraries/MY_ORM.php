@@ -67,6 +67,12 @@ class ORM extends ORM_Core {
   public $search_field='title';
 
   protected $errors = array();
+  
+  /**
+   * @var boolean Flag that gets set if a unique key violation has occurred on attempting a save.
+   */
+  public $uniqueKeyViolation = false;
+  
   protected $identifiers = array('website_id'=>null,'survey_id'=>null);
 
   /**
@@ -327,6 +333,7 @@ class ORM extends ORM_Core {
       if (strpos($e->getMessage(), '_unique')!==false) {
         // duplicate key violation
         $this->errors = array('You cannot add the record as it would create a duplicate.');
+        $this->uniqueKeyViolation=true;
         return FALSE;
       } else 
         throw ($e);
@@ -599,6 +606,19 @@ class ORM extends ORM_Core {
         postgreSQL::insertMapSquaresForSamples($samples, 1000, $this->db);
         postgreSQL::insertMapSquaresForSamples($samples, 2000, $this->db);
         postgreSQL::insertMapSquaresForSamples($samples, 10000, $this->db);
+      } else {
+        // might be directly inserting an occurrence. No need to do this if inserting a sample, as the above code does the 
+        // occurrences in bulk.
+        $occurrences=array();
+        if (!empty(self::$changedRecords['insert']['occurrence']))
+          $occurrences = self::$changedRecords['insert']['occurrence'];
+        if (!empty(self::$changedRecords['update']['occurrence']))
+          $occurrences += self::$changedRecords['update']['occurrence'];
+        if (!empty($occurrences)) {
+          postgreSQL::insertMapSquaresForOccurrences($occurrences, 1000, $this->db);
+          postgreSQL::insertMapSquaresForOccurrences($occurrences, 2000, $this->db);
+          postgreSQL::insertMapSquaresForOccurrences($occurrences, 10000, $this->db);
+        }
       }
     }
   }
