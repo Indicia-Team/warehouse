@@ -105,6 +105,21 @@ class postgreSQL {
    * Function to be called on postSubmit of a sample, to make sure that any changed occurrences are linked to their map square entries properly.
    */
   public static function insertMapSquaresForSamples($ids, $size, $db=null) {
+    self::insertMapSquares($ids, 's', $size, $db);
+  }
+  
+  /** 
+   * Function to be called on postSubmit of an occurrence or occurrences if submitted directly (i.e. not as part of a sample), 
+   * to make sure that any changed occurrences are linked to their map square entries properly.
+   */
+  public static function insertMapSquaresForOccurrences($ids, $size, $db=null) {
+    self::insertMapSquares($ids, 'o', $size, $db);
+  }
+  
+  /** 
+   * Code for the insertMapSquaresFor... methods, which takes the table alias as a parameter in order to be generic.
+   */ 
+  private static function insertMapSquares($ids, $alias, $size, $db=null) {
     if (count($ids)>0) {
       static $srid;
       if (!isset($srid)) {
@@ -122,7 +137,7 @@ class postgreSQL {
         FROM samples s
         JOIN occurrences o ON o.sample_id=s.id
         LEFT JOIN locations l on l.id=s.location_id AND l.deleted=false
-        WHERE s.id IN ($idlist)")->result_array(TRUE);
+        WHERE $alias.id IN ($idlist)")->result_array(TRUE);
       $km=$size/1000;
       foreach ($smpInfo as $s) {
         $existing = $db->query("SELECT id FROM map_squares WHERE x={$s->x} AND y={$s->y} AND size={$s->size}")->result_array(FALSE);
