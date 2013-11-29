@@ -551,9 +551,9 @@ class iform_dynamic_shorewatch extends iform_dynamic_sample_occurrence {
       $occurrenceAndSubSampleRecord['model']['fields']['sample_method_id']['value'] = $args['reticule_sighting'];
       //We need to copy the location information to the sub-sample else it won't get
       //picked up in the cache occurrences table.
-      if (!empty($submission['fields']['location_id']['value']));
+      if (!empty($submission['fields']['location_id']['value']))
         $occurrenceAndSubSampleRecord['model']['fields']['location_id']['value'] = $submission['fields']['location_id']['value'];
-      if (!empty($submission['fields']['location_name']['value']));
+      if (!empty($submission['fields']['location_name']['value']))
         $occurrenceAndSubSampleRecord['model']['fields']['location_name']['value'] = $submission['fields']['location_name']['value'];
       //The following only applies to the Cetaceans Seen? which doesn't appear in adhoc mode.
       //Show the second tab when Cetaeans Seen is set
