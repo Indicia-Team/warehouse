@@ -898,7 +898,7 @@ mapLocationSelectedHooks = [];
           displayClass: align + 'olControlSelectFeature',
           title: div.settings.reportGroup===null ? '' : div.settings.hintQueryDataPointsTool,
           lastclick: {},
-          allowBox: clickableVectorLayers.length>0,
+          allowBox: clickableVectorLayers.length>0 && div.settings.allowBox===true,
           activate: function() {
             var handlerOptions = {
               'single': true,
@@ -906,7 +906,7 @@ mapLocationSelectedHooks = [];
               'stopSingle': false,
               'stopDouble': true
             };
-            if (clickableVectorLayers.length>0) {
+            if (clickableVectorLayers.length>0 && this.allowBox) {
               this.handlers = {box: new OpenLayers.Handler.Box(
                   this, {done: this.onGetInfo},
                   {boxDivClassName: "olHandlerBoxSelectFeature"}
@@ -2084,6 +2084,7 @@ jQuery.fn.indiciaMapPanel.defaults = {
     clickableLayersOutputFn: format_selected_features,
     clickableLayersOutputDiv: '',
     clickableLayersOutputColumns: [],
+    allowBox: true, // can disable drag boxes for querying info, so navigation works
     featureIdField: '',
     clickPixelTolerance: 5,
     reportGroup: null, // name of the collection of report outputs that this map is linked to when doing dashboard reporting
