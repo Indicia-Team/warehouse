@@ -144,8 +144,8 @@ $config['taxa_taxon_lists']['get_changed_items_query']="
       ) as sub
       group by id";
       
-$config['taxon_searchterms']['delete_query']['taxa']="
-  delete from cache_taxa_taxon_lists where id in (select id from needs_update_taxon_searchterms where deleted=true)";
+$config['taxa_taxon_lists']['delete_query']['taxa']="
+  delete from cache_taxa_taxon_lists where id in (select id from needs_update_taxa_taxon_lists where deleted=true)";
 
 $config['taxa_taxon_lists']['update'] = "update cache_taxa_taxon_lists cttl
     set preferred=ttl.preferred,
