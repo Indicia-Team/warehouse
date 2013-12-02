@@ -6,6 +6,5 @@ ALTER TABLE occurrences
   ADD CONSTRAINT occurrences_release_status_check CHECK (release_status = ANY (ARRAY['R'::bpchar, 'P'::bpchar, 'U'::bpchar]));
   
 UPDATE occurrences co
-SET release_status=o.release_status
-FROM occurrences o
-WHERE o.id=co.id
+SET release_status='R'
+
