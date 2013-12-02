@@ -178,9 +178,18 @@ echo html::error_message($model->getError('occurrence:external_key'));
 <label for='occurrence:record_status'>Record Status:</label>
 <?php
 print form::dropdown('occurrence:record_status', array('I' => 'In Progress', 'C' => 'Completed', 'S' => 'Sent for verification', 'V' => 'Verified', 
-    'R' => 'Rejected', 'T' => 'Test'), 
+    'R' => 'Rejected', 'D' => 'Queried', 'T' => 'Test'), 
     html::initial_value($values, 'occurrence:record_status'));
 echo html::error_message($model->getError('occurrence:record_status'));
+?>
+</li>
+<li>
+<label for='occurrence:release_status'>Release Status:</label>
+<?php
+print form::dropdown('occurrence:release_status', array('R' => 'Released', 'P' => 'Recorder has requested a precheck before release', 
+    'U'=>'Record is part of a project that has not yet released its records'), 
+    html::initial_value($values, 'occurrence:release_status'));
+echo html::error_message($model->getError('occurrence:release_status'));
 ?>
 </li>
 <?php if (html::initial_value($values, 'occurrence:record_status') == 'V'): ?>

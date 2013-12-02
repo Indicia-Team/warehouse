@@ -95,6 +95,7 @@ class Occurrence_Model extends ORM
       'determiner_id',
       'deleted',
       'record_status',
+      'release_status',
       'downloaded_flag',
       'verified_by_id',
       'verified_on',
