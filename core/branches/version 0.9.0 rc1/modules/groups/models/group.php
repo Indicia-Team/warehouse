@@ -35,6 +35,11 @@ class Group_Model extends ORM {
   protected $has_and_belongs_to_many = array('users');
   
   protected $has_many = array('group_invitations');
+  
+  /** 
+   * @var boolean Flag indicating if the group's private records status is changing, indicating we need to update the release status of records.
+   */
+  protected $wantToUpdateReleaseStatus=false;
 
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
@@ -43,7 +48,26 @@ class Group_Model extends ORM {
     $array->add_rules('website_id', 'required');
     $this->unvalidatedFields = array('code', 'description', 'from_date','to_date','private_records',
         'filter_id', 'joining_method', 'deleted');
+    // has the private records flag changed?
+    $this->wantToUpdateReleaseStatus = isset($this->submission['fields']['private_records']) && $this->submission['fields']['private_records']!==$this->private_records;
     return parent::validate($array, $save);
+  }
+  
+  /**
+   * If changing the private records setting, then must update the group's records release_status.
+   */
+  public function postSubmit($isInsert) {
+    if (!$isInsert && $this->wantToUpdateReleaseStatus) {
+      $status = $this->private_records==='1' ? 'U' : 'R';
+      $sql="update #table# o
+set release_status='$status'
+from sample_attribute_values sav 
+join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.deleted=false and sa.system_function='group_id'
+where sav.deleted=false and sav.sample_id=o.sample_id and sav.int_value=$this->id";
+      $this->db->query(str_replace('#table#', 'occurrences', $sql));
+      $this->db->query(str_replace('#table#', 'cache_occurrences', $sql));
+    }
+    return true;
   }
 
 }
