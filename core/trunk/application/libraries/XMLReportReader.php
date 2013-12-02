@@ -838,6 +838,16 @@ class XMLReportReader_Core implements ReportReader
     AND o.created_by_id = #alias:ut#.user_id")
             )
         ),
+        'release_status' => array('datatype'=>'lookup', 'default'=>'R', 'display'=>'Release status',
+            'description'=>'Release status of the record',
+            'lookup_values'=>'R:Released,U:Unreleased because part of a project that has not yet released the records,P:Recorder has requested a precheck before release,A:All',
+            'wheres' => array(
+              array('value'=>'R', 'operator'=>'equal', 'sql'=>"o.release_status='R'"),
+              array('value'=>'U', 'operator'=>'equal', 'sql'=>"o.release_status='U'"),
+              array('value'=>'P', 'operator'=>'equal', 'sql'=>"o.release_status='P'"),
+              // The all filter does not need any SQL
+            ),
+        ),
         'autochecks' => array('datatype'=>'lookup', 'default'=>'', 'display'=>'Automated checks', 
             'description'=>'Filter to only include records that have passed or failed automated checks', 
             'lookup_values'=>'N:Not filtered,F:Include only records that fail checks,P:Include only records which pass checks',
@@ -921,6 +931,18 @@ class XMLReportReader_Core implements ReportReader
   ) select array_to_string(array_agg(distinct taxon_meaning_id::varchar), ',') from q"
         )
       );
+      $this->defaultParamValues = array_merge(array(
+          'occurrence_id_op'=>'=',
+          'website_list_op'=>'in',
+          'survey_list_op'=>'in',
+          'input_form_list_op'=>'in',
+          'occurrence_id_op_context'=>'=',
+          'website_list_op_context'=>'in',
+          'survey_list_op_context'=>'in',
+          'input_form_list_op_context'=>'in',
+          'release_status'=>'R'
+      ), $this->defaultParamValues);
+      $providedParams = array_merge($this->defaultParamValues, $providedParams);
       // load up the params for any which have a value provided
       foreach ($params as $param => $cfg) {
         if (isset($providedParams[$param])) {
@@ -957,16 +979,6 @@ class XMLReportReader_Core implements ReportReader
           $this->params[$param.'_context'] = $cfg;
         }
       }
-      $this->defaultParamValues = array_merge(array(
-          'occurrence_id_op'=>'=',
-          'website_list_op'=>'in',
-          'survey_list_op'=>'in',
-          'input_form_list_op'=>'in',
-          'occurrence_id_op_context'=>'=',
-          'website_list_op_context'=>'in',
-          'survey_list_op_context'=>'in',
-          'input_form_list_op_context'=>'in'
-      ), $this->defaultParamValues);
     }
   }
 

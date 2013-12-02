@@ -569,6 +569,7 @@ $config['occurrences']['get_changed_items_query'] = "
 
 $config['occurrences']['update'] = "update cache_occurrences co
     set record_status=o.record_status, 
+      release_status=o.release_status, 
       downloaded_flag=o.downloaded_flag, 
       zero_abundance=o.zero_abundance,
       website_id=su.website_id, 
@@ -660,7 +661,7 @@ $config['occurrences']['update'] = "update cache_occurrences co
     where co.id=o.id";
 
 $config['occurrences']['insert']="insert into cache_occurrences (
-      id, record_status, downloaded_flag, zero_abundance,
+      id, record_status, release_status, downloaded_flag, zero_abundance,
       website_id, survey_id, sample_id, survey_title,
       date_start, date_end, date_type,
       public_entered_sref, entered_sref_system, public_geom,
@@ -670,7 +671,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       created_by_id, cache_created_on, cache_updated_on, certainty, location_name, recorders, 
       verifier, images, training, location_id, input_form
     )
-  select distinct on (o.id) o.id, o.record_status, o.downloaded_flag, o.zero_abundance,
+  select distinct on (o.id) o.id, o.record_status, o.release_status, o.downloaded_flag, o.zero_abundance,
     su.website_id as website_id, su.id as survey_id, s.id as sample_id, su.title as survey_title,
     s.date_start, s.date_end, s.date_type,
     case when o.confidential=true or o.sensitivity_precision is not null then null else 
