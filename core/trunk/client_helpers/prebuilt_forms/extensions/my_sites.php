@@ -125,7 +125,9 @@ class extension_my_sites {
       });
       $('#add-searched-site-button').click(function() {addSite($('#location-search').val());});
       $('#location-select, #location-search, #locality_id').change(function() {
-        indiciaData.mapdiv.locationSelectedInInput(indiciaData.mapdiv, this.value);
+        if (typeof indiciaData.mapdiv!=='undefined') {
+          indiciaData.mapdiv.locationSelectedInInput(indiciaData.mapdiv, this.value);
+        }
       });
       
       linked_site_delete = function(pav_id) {
@@ -270,7 +272,9 @@ class extension_my_sites {
     //Zoom map as user selects locations
     data_entry_helper::$javascript .= "
     $('#location-select, #location-search, #locality_id').change(function() {
-      indiciaData.mapdiv.locationSelectedInInput(indiciaData.mapdiv, this.value);
+      if (typeof indiciaData.mapdiv!=='undefined') {
+        indiciaData.mapdiv.locationSelectedInInput(indiciaData.mapdiv, this.value);
+      }
     });
     ";
     //Function for when user elects to remove sites
