@@ -154,7 +154,7 @@ class iform_report_grid {
         ), array(
           'name' => 'footer',
           'caption' => 'Footer',
-          'description' => 'Additional HTML to include in the report footer area.',
+          'description' => 'Additional HTML to include in the report footer area. If using this to create internal links, the replacement {rootFolder} can be used to give the path to the root of the site.',
           'type' => 'textarea',
           'required' => false,
           'group' => 'Report Settings'

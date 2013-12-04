@@ -213,7 +213,7 @@ class iform_dynamic_location extends iform_dynamic {
     //other than being a visual cue to zoom to.
     data_entry_helper::$javascript .= "
 mapInitialisationHooks.push(function(mapdiv) {
-  var feature, geom=OpenLayers.Geometry.fromWKT('{$loc[boundary_geom]}');
+  var feature, geom=OpenLayers.Geometry.fromWKT({$loc[boundary_geom]});
 
   if (indiciaData.mapdiv.map.projection.getCode() != indiciaData.mapdiv.indiciaProjection.getCode()) {
       geom.transform(indiciaData.mapdiv.indiciaProjection, indiciaData.mapdiv.map.projection);

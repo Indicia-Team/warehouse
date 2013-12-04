@@ -1494,7 +1494,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       if (empty($options['geoserverLayer'])) {
         // we are doing vector reporting via indicia services
         // first we need to build a style object which respects columns in the report output that define style settings for each vector.
-        // default features are color red by default
+        // default features are blue and red if selected
         $defsettings = array(
           'fillColor'=> '#0000ff',
           'strokeColor'=> '#0000ff',
