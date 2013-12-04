@@ -1536,7 +1536,7 @@ $('#$escaped').change(function(e) {
         self::$javascript .= "indiciaData.searchUpdatesSref=true;\n";
     }
     // If using Easy Login, then this enables auto-population of the site related fields.
-    if (function_exists('hostsite_get_user_field') && $createdById=hostsite_get_user_field('indicia_user_id') && $options['fetchLocationAttributesIntoSample']) {
+    if (function_exists('hostsite_get_user_field') && ($createdById=hostsite_get_user_field('indicia_user_id')) && $options['fetchLocationAttributesIntoSample']) {
       $nonce=$options['extraParams']['nonce'];
       $authToken=$options['extraParams']['auth_token'];
       $resportingServerURL = (!empty(data_entry_helper::$warehouse_proxy))?data_entry_helper::$warehouse_proxy:data_entry_helper::$base_url.'index.php/services/report/requestReport?report=library/sample_attribute_values/get_latest_values_for_site_and_user.xml&callback=?';
@@ -6551,17 +6551,33 @@ if (errors$uniq.length>0) {
         case 'Integer':
         case 'I':
           if (!empty($item['system_function']) && $item['system_function']==='group_id') {
-            // convert to a lookup control to lookup a group
-            $attrOptions = array_merge(array(
+            $attrLookupOptions = array_merge(array(
               'report'=>'library/groups/groups_list',
-              'captionField'=>'title',
-              'valueField'=>'id'
+              'nocache'=>true
             ), $attrOptions);
-            $attrOptions['extraParams']=array_merge(array(
+            $attrLookupOptions['extraParams']=array_merge(array(
               'currentUser'=> hostsite_get_user_field('indicia_user_id'),
               'userFilterMode'=>'member'
-            ), $attrOptions['extraParams']);
+            ), $attrLookupOptions['extraParams']);
+            $groupsList = self::get_population_data($attrLookupOptions);
+            $groupsArr = array();
+            $privateGroups = array();
+            foreach ($groupsList as $group) {
+              $groupsArr[$group['id']] = $group['title'];
+              if ($group['private_records']==='t')
+                $privateGroups[] = $group['id'];
+            }
+            self::$javascript .= "indiciaData.privateGroups=".json_encode($privateGroups).";
+$('#".str_replace(':', '\\\\:', $attrOptions['id'])."').change(function(evt) {
+  if ($.inArray($(evt.currentTarget).val(), indiciaData.privateGroups)) {
+    //$('#occurrence\\:release_status').val('
+  }
+});
+";
+            
+            $attrOptions['lookupValues'] = $groupsArr;
             $output=self::select($attrOptions);
+            $output.="<input id=\"occurrence:release_status\" type=\"hidden\" value=\"R\">\n";
           } else
             $output = self::text_input($attrOptions);
           break;
