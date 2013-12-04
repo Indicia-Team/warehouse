@@ -464,10 +464,10 @@ class iform_easy_download {
       array(
         'currentUser'=>hostsite_get_user_field('indicia_user_id'),
         'ownData'=>$ownData,
-        'location_id'=>hostsite_get_user_field('location_expertise'),
-        'ownLocality'=>!empty($location_expertise) && !$ownData ? 1 : 0,
+        'location_id'=>$location_expertise,
+        'ownLocality'=>!empty($location_expertise) && $filterToApply==='expert' ? 1 : 0,
         'taxon_groups'=>!empty($taxon_groups_expertise) ? implode(',', $taxon_groups_expertise) : '',
-        'ownGroups'=>!empty($taxon_groups_expertise) && $taxon_groups_expertise && !$ownData ? 1 : 0,
+        'ownGroups'=>!empty($taxon_groups_expertise) && $taxon_groups_expertise && $filterToApply==='expert' ? 1 : 0,
         'surveys'=>$surveys,
         'ownSurveys'=>empty($surveys) ? 0 : 1
       ), get_options_array_with_user_data($args["report_params_$format"])
