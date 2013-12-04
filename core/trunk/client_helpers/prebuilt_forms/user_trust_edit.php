@@ -80,7 +80,8 @@ class iform_user_trust_edit {
       'table'=>'user',
       'valueField'=>'id',
       'captionField'=>'person_name',
-      'extraParams'=>$auth['read'] + array('view'=>'detail')
+      'extraParams'=>$auth['read'] + array('view'=>'detail'),
+      'class'=>'control-width-4'
     ));
     $col1 = '<p>Define the combination of survey, taxon group and/or location that this recorder is trusted for below.</p>';
     $col1 .= '<fieldset><legend>'.lang::get('Trust settings').'</legend>';
@@ -91,7 +92,8 @@ class iform_user_trust_edit {
       'valueField'=>'id',
       'captionField'=>'title',
       'blankText'=>'<'.lang::get('any').'>',
-      'extraParams'=>$auth['read']
+      'extraParams'=>$auth['read'] + array('sharing' => 'verification'),
+      'class'=>'control-width-4'
     ));
     $col1 .= data_entry_helper::autocomplete(array(
       'label'=>lang::get('Trust records in this taxon group'),
@@ -100,7 +102,8 @@ class iform_user_trust_edit {
       'valueField'=>'id',
       'captionField'=>'title',
       'blankText'=>'<'.lang::get('any').'>',
-      'extraParams'=>$auth['read']
+      'extraParams'=>$auth['read'],
+      'class'=>'control-width-4'
     ));
     $col1 .= data_entry_helper::autocomplete(array(
       'label'=>lang::get('Trust records in this location'),
@@ -109,7 +112,8 @@ class iform_user_trust_edit {
       'valueField'=>'id',
       'captionField'=>'name',
       'blankText'=>'<'.lang::get('any').'>',
-      'extraParams'=>$auth['read'] + array('location_type_id'=>variable_get('indicia_profile_location_type_id', ''))
+      'extraParams'=>$auth['read'] + array('location_type_id'=>variable_get('indicia_profile_location_type_id', '')),
+      'class'=>'control-width-4'
     ));
     $col2 = '<p>'.lang::get('Review this recorder\'s experience in the tabs below').'</p>';
     $col2 .= '<div id="summary-tabs">';
@@ -160,6 +164,15 @@ class iform_user_trust_edit {
         (empty(data_entry_helper::$entity_to_load['user_trust_id:id']) ? 
         lang::get('Grant trust') : lang::get('Update trust settings'))
         ."\" />\n";    
+    if (!empty($_GET['user_trust_id'])) {
+      $r .= '<input type="submit" class="indicia-button" id="delete-button" name="delete-button" value="'.lang::get('Revoke this trust')."\" />\n";
+      data_entry_helper::$javascript .= "$('#delete-button').click(function(e) {
+        if (!confirm(\"Are you sure you want to revoke this trust?\")) {
+          e.preventDefault();
+          return false;
+        }
+      });\n";
+    }
     $r .= '</form>';
     data_entry_helper::enable_validation('entry_form');
     return $r;
