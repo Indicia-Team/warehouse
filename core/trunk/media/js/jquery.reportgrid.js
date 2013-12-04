@@ -445,9 +445,11 @@ var simple_tooltip;
     function getFullRequestPathWithoutPaging(div, sort, idlist) {
       var request = getRequest(div), params=getUrlParamsForAllRecords(div);
       $.each(params, function(key, val) {
-        if (idlist || key!=='idlist') {
-          request += '&' + key + '=' + encodeURIComponent(val);
+        if (!idlist && key==='idlist') {
+          // skip the idlist param value as we want the whole map
+          val='';
         }
+        request += '&' + key + '=' + encodeURIComponent(val);
       });
       if (sort && div.settings.orderby !== null) {
         request += '&orderby=' + div.settings.orderby + '&sortdir=' + div.settings.sortdir;
