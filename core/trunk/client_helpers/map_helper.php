@@ -115,6 +115,10 @@ class map_helper extends helper_base {
   * ID of the HTML div to output information retrieved from a click operation into, if clickableLayersOutputMode
   * is set to div.
   * </li>
+  * <li><b>allowBox</b><br/>
+  * Default true. Set to false to disable drag boxes for selecting items on clickable layers. The advantage of this is that
+  * the drag boxes don't hinder attempts to drag the map to navigate.
+  * </li>
   * <li><b>customClickFn</b>
   * Set to the name of a global custom JavaScript function which will handle the event of clicking on the map if 
   * you want custom functionality. Provide this when clickableLayersOutputMode=customFunction. The function will 
