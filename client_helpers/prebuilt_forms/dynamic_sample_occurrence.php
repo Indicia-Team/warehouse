@@ -1668,6 +1668,11 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    * a multi-value person attribute used to link people to the sites they record at.
    */
   protected static function get_control_locationautocomplete($auth, $args, $tabAlias, $options) {
+    if (isset($options['extraParams'])) {
+      foreach ($options['extraParams'] as $key => &$value)
+        $value = apply_user_replacements($value);
+    }
+
     $location_list_args=array_merge_recursive(array(
       'extraParams'=>array_merge(array('orderby'=>'name'), $auth['read'])
     ), $options);
