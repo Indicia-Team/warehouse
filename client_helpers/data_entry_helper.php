@@ -812,7 +812,7 @@ $('#$escaped').change(function(e) {
       // Filter out future dates
       if (!array_key_exists('allowFuture', $options) || $options['allowFuture']==false) {
         self::$javascript .= ",
-   maxDate: '0'";
+    maxDate: '0'";
       }
       // If the validation plugin is running, we need to trigger it when the datepicker closes.
       if (self::$validated_form_id) {
@@ -6350,15 +6350,19 @@ if (errors$uniq.length>0) {
   */
   public static function getAttributes($options, $indexedArray = true, $sharing=false) {
     $attrs = array();
-    $query = array();
+    // there is a possiblility that the $options['extraParams'] already features a query entry.
+    if(isset($options['extraParams']['query']))
+      $query = json_decode($options['extraParams']['query'], true);
+    else
+      $query = array('in'=>array());
     self::add_resource('json');
     if (isset($options['website_ids'])) {
-      $query['in']=array('website_id'=>$options['website_ids']);
+      $query['in']['website_id']=$options['website_ids'];
     } elseif ($options['attrtable']!=='person_attribute') {
       $surveys = array(NULL);
       if (isset($options['survey_id']))
         $surveys[] = $options['survey_id'];
-      $query['in']=array('restrict_to_survey_id'=>$surveys);
+      $query['in']['restrict_to_survey_id']=$surveys;
     }
     if ($options['attrtable']=='sample_attribute') {
       // for sample attributes, we want all which have null in the restrict_to_sample_method_id,
@@ -6377,13 +6381,13 @@ if (errors$uniq.length>0) {
       $query['in']['restrict_to_location_type_id'] = $methods;
     }
     if (count($query))
-      $query = urlencode(json_encode($query));
-    $attrOptions = array(
+      $queryEnc = urlencode(json_encode($query));
+      $attrOptions = array(
           'table'=>$options['attrtable'],
            'extraParams'=> $options['extraParams']+ array(
              'deleted' => 'f',
              'website_deleted' => 'f',
-             'query'=>$query,
+             'query'=>$queryEnc,
              'orderby'=>'weight'
            )
     );
@@ -6393,6 +6397,9 @@ if (errors$uniq.length>0) {
     if (array_key_exists('error', $response))
       return $response;
     if(isset($options['id'])){
+      // if an ID is set in the options extra params, then it refers to the attribute table, not the value table.
+      unset($options['extraParams']['id']);
+      unset($options['extraParams']['query']);
       $options['extraParams'][$options['key']] = $options['id'];
       $existingValuesOptions = array(
         'table'=>$options['valuetable'],
