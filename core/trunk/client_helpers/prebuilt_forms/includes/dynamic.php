@@ -560,6 +560,11 @@ class iform_dynamic {
       // a splitter in the structure so put the stuff so far in a 50% width left float div, and the stuff that follows in a 50% width right float div.
       global $indicia_templates;
       $html = str_replace(array('{col-1}', '{col-2}'), $cols, $indicia_templates['two-col-50']);
+      if(count($cols)>2){
+        unset($cols[1]);
+        unset($cols[0]);
+        $html .= '<div class="follow_on_block" style="clear:both;">'.implode('',$cols).'</div>';
+      }
     }
     return $html;
   }
