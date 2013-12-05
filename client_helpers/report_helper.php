@@ -2821,10 +2821,10 @@ update_controls();
       $tableNumberHeaderRow.= '<td class="week">'.$i.'</td>';
       $tableDateHeaderRow.= '<td class="week">'.$firstWeek_date->format('M').'<br/>'.$firstWeek_date->format('d').'</td>';
       $downloadNumberHeaderRow.= '%2C'.$i;
-      $downloadDateHeaderRow.= '%2C'.$firstWeek_date->format('Y-M-d');
+      $downloadDateHeaderRow.= '%2C'.$firstWeek_date->format('d/m/Y');
       $chartNumberLabels[] = "".$i;
       $chartDateLabels[] = $firstWeek_date->format('M-d');
-      $fullDates[$i] = $firstWeek_date->format('Y-M-d');
+      $fullDates[$i] = $firstWeek_date->format('d/m/Y');
       $firstWeek_date->modify('+7 days');
     }
     $summaryArray=array(); // this is used for the table output format
@@ -3324,7 +3324,7 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
       if($options['includeRawData']){
         $thClass = $options['thClass'];
         $rawDataDownloadGrid="";
-        $rawDataDownloadList='Location%2C'.(($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number') ? 'Week%20Number%2C' : '').'Week Start Date%2CSpecies%2CCount%0A';
+        $rawDataDownloadList='Location%2C'.(($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number') ? 'Week%20Number%2C' : '').'Date%2CSpecies%2CCount%0A';
         $r .= "\n<table id=\"".$options['tableID']."-raw\" class=\"".$options['tableClass']."\" style=\"".($format['table']['display']?'':'display:none;')."\">";
         $r .= "\n<thead class=\"$thClass\">";
         // raw data headers: %Sun, mean temp, Date, Week Number, Location?
@@ -3350,7 +3350,7 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
         foreach($rawArray as $idx => $rawColumn){
           $this_date = date_create(str_replace('/','-',$rawColumn['date'])); // prevents day/month ordering issues
           $r .= '<td class="week">'.$this_date->format('M').'<br/>'.$this_date->format('d').'</td>';
-          $rawDataDownloadGrid .= '%2C'.$this_date->format('Y-M-d');
+          $rawDataDownloadGrid .= '%2C'.$this_date->format('d/m/Y');
           $rawTotalRow .= '<td>'.$rawColumn['total'].'</td>';
           $rawDataDownloadGridTotalRow .= '%2C'.$rawColumn['total'];
           $rawGrandTotal += $rawColumn['total'];
@@ -3378,7 +3378,7 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
         if($avgFields) {
           foreach($avgFieldList as $i => $field){
             $r .= "<tr class=\"sample-datarow ".($altRow?$options['altRowClass']:'')." ".($i==(count($avgFields)-1)?'last-sample-datarow':'')."\">";
-            $caption = t('Mean '.$avgFields[$field]['caption']);
+            $caption = t('Mean '.ucwords($avgFields[$field]['caption']));
             $r .= '<td>'.$caption.'</td>';
             $rawDataDownloadGrid .= $caption;
             foreach($rawArray as $dateIndex => $rawData) {
@@ -3412,7 +3412,7 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
                 $this_date = date_create(str_replace('/','-',$rawColumn['date'])); // prevents day/month ordering issues
                 $rawDataDownloadList .= implode(': ',array_keys($locations)).
                      ($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number' ? '%2C'.$rawColumn['weekno'] : '').
-                     '%2C'.$this_date->format('Y-M-d').'%2C'.$seriesLabels[$seriesID].'%2C'.$rawColumn['counts'][$seriesID].'%0A';
+                     '%2C'.$this_date->format('d/m/Y').'%2C'.$seriesLabels[$seriesID].'%2C'.$rawColumn['counts'][$seriesID].'%0A';
               } else {
                 $r.= '<td></td>';
                 $rawDataDownloadGrid .= '%2C';
