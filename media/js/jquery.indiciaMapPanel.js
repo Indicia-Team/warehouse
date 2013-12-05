@@ -1246,6 +1246,15 @@ mapLocationSelectedHooks = [];
         if (separateBoundary) {
           $('#' + div.settings.boundaryGeomId).val(geom.toString());
           evt.feature.style = new style('boundary');
+          if(this.map.div.settings.autoFillInCentroid) {
+            var centroid = evt.feature.geometry.getCentroid();
+            $('#imp-geom').val(centroid.toString());
+            pointToSref(this.map.div, centroid, _getSystem(), function(data) {
+              if (typeof data.sref !== "undefined") {
+                $('#'+map.div.settings.srefId).val(data.sref);
+              }
+            });
+          }
           map.editLayer.redraw();
         } else {
           $('#imp-geom').val(geom.toString());
@@ -1913,6 +1922,15 @@ mapLocationSelectedHooks = [];
         div.map.editLayer.events.on({'featuremodified': function(evt) {
           if ($('#' + div.settings.boundaryGeomId).length>0) {
             $('#' + div.settings.boundaryGeomId).val(evt.feature.geometry.toString());
+            if(div.settings.autoFillInCentroid) {
+              var centroid = evt.feature.geometry.getCentroid();
+              $('#imp-geom').val(centroid.toString());
+              pointToSref(div, centroid, _getSystem(), function(data) {
+                if (typeof data.sref !== "undefined") {
+                  $('#'+div.settings.srefId).val(data.sref);
+                }
+              });
+            }
           }
         }});
       }
@@ -2110,6 +2128,7 @@ jQuery.fn.indiciaMapPanel.defaults = {
     clickForSpatialRef: true, // if true, then enables the click to get spatial references control
     clickForPlot: false, // if true, overrides clickForSpatialRef to locate a plot instead of a grid square.
     allowPolygonRecording: false,
+    autoFillInCentroid: false, // if true will automatically complete the centroid and Sref when polygon recording.
     editLayerName: 'Selection layer',
     editLayerInSwitcher: false,
     searchLayer: false, // determines whether we have a separate layer for the display of location searches, eg georeferencing. Defaults to editLayer.
