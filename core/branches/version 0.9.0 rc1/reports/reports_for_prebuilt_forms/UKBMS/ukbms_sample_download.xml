@@ -31,5 +31,6 @@
     <tabColumn name='comment' display='Notes'/>
     <tabColumn name='entered_sref' display='Grid Ref.' />
     <attributes separator='|' />
+    <tabColumn name='mean_sun' display='Mean % Sun' func="(SELECT AVG(savs.int_value) FROM samples ss JOIN sample_attribute_values savs ON savs.sample_id = ss.id AND savs.deleted = FALSE JOIN sample_attributes sas ON savs.sample_attribute_id = sas.id AND sas.deleted = FALSE AND sas.caption = '% sun' WHERE #this#.id = ss.parent_id AND ss.deleted = FALSE)"/>
   </table>
 </report>
