@@ -3,8 +3,8 @@ var saveComment, saveVerifyComment;
 (function ($) {
   "use strict";
   
-  var rowRequest=null, occurrence_id = null, currRec = null, urlSep, validator, speciesLayers = [], trustsCounter, multimode=false;
-  var email = {to:'', subject:'', body:'', type:''};
+  var rowRequest=null, occurrence_id = null, currRec = null, urlSep, validator, speciesLayers = [], 
+      trustsCounter, multimode=false, email = {to:'', subject:'', body:'', type:''};
 
   // IE7 compatability
   if(!Array.indexOf){
@@ -60,6 +60,7 @@ var saveComment, saveVerifyComment;
           // remove any wms layers for species or the gateway data
           $.each(speciesLayers, function(idx, layer) {
             indiciaData.mapdiv.map.removeLayer(layer);
+            layer.destroy();
           });
           speciesLayers = [];
           var layer, thisSpLyrSettings, filter;
@@ -68,7 +69,7 @@ var saveComment, saveVerifyComment;
               thisSpLyrSettings = $.extend({}, layerDef.settings);
               // replace values with the external key if the token is used
               $.each(thisSpLyrSettings, function(prop, value) {
-                if (typeof(value)==='string' && $.trim(value)==='{external_key}') {
+                if (typeof value==='string' && $.trim(value)==='{external_key}') {
                   thisSpLyrSettings[prop]=data.extra.taxon_external_key;
                 }
               });
@@ -186,7 +187,6 @@ var saveComment, saveVerifyComment;
           '<label>To:</label><input type="text" id="email-to" class="email required" value="' + email.to + '"/><br />' +
           '<label>Subject:</label><input type="text" id="email-subject" class="require" value="' + email.subject + '"/><br />' +
           '<label>Body:</label><textarea id="email-body" class="required">' + email.body + '</textarea><br />' +
-          '<input type="hidden" id="set-status" value="' + status + '"/>' +
           '<input type="submit" class="default-button" ' +
               'value="' + indiciaData.popupTranslations.sendEmail + '" />' +
           '</fieldset></form>');
@@ -311,7 +311,7 @@ var saveComment, saveVerifyComment;
     } else {
       postStatusComment(occurrence_id, status, comment);
     }
-  }
+  };
 
   function showTab() {
     if (currRec !== null) {
@@ -437,7 +437,7 @@ var saveComment, saveVerifyComment;
           '<button type="button" class="default-button cancel-button">Cancel</button></p></div>';
       $.fancybox(popupHtml);
       $('.quick-verify-popup .verify-button').click(function() {
-        var params=indiciaData.reports.verification.grid_verification_grid.getUrlParamsForAllRecords(), request,
+        var params=indiciaData.reports.verification.grid_verification_grid.getUrlParamsForAllRecords(),
             radio=$('.quick-verify-popup input[name=quick-option]:checked');
         if (radio.length===1) {
           if ($(radio).val().indexOf('recorder')!==-1) {
@@ -544,30 +544,30 @@ var saveComment, saveVerifyComment;
           $(".trust-button").removeAttr('disabled');
           document.getElementById('trust-button').innerHTML = "Trust";
         } else {
-          var downgradeConfirmRequired = false;
-          var downgradeConfirmed=false;
-          var duplicateDetected = false;
-          var trustNeedsRemoval = [];
-          var getTrustsReport = indiciaData.read.url +'/index.php/services/report/requestReport?report=library/user_trusts/get_user_trust_for_record.xml&mode=json&mode=json&callback=?';
-          var getTrustsReportParameters = {
-            'user_id':currRec.extra.created_by_id,
-            'survey_id':currRec.extra.survey_id,
-            'taxon_group_id':currRec.extra.taxon_group_id,
-            'location_ids':currRec.extra.locality_ids,
-            'auth_token': indiciaData.read.auth_token,
-            'nonce': indiciaData.read.nonce,
-            'reportSource':'local'
-          };
+          var downgradeConfirmRequired = false,
+              downgradeConfirmed=false,
+              duplicateDetected = false,
+              trustNeedsRemoval = [],
+              getTrustsReport = indiciaData.read.url +'/index.php/services/report/requestReport?report=library/user_trusts/get_user_trust_for_record.xml&mode=json&mode=json&callback=?',
+              getTrustsReportParameters = {
+                'user_id':currRec.extra.created_by_id,
+                'survey_id':currRec.extra.survey_id,
+                'taxon_group_id':currRec.extra.taxon_group_id,
+                'location_ids':currRec.extra.locality_ids,
+                'auth_token': indiciaData.read.auth_token,
+                'nonce': indiciaData.read.nonce,
+                'reportSource':'local'
+              };
           //Collect the existing trust data associated with the record so we can compare the new trust data with it
           $.getJSON (
             getTrustsReport,
             getTrustsReportParameters,
             function (data) {
-              var downgradeDetect = 0;
-              var upgradeDetect = 0;
-              var trustNeedsRemovalIndex = 0;
-              var trustNeedsDowngradeIndex = 0;
-              var trustNeedsDowngrade = [];
+              var downgradeDetect = 0,
+                  upgradeDetect = 0,
+                  trustNeedsRemovalIndex = 0,
+                  trustNeedsDowngradeIndex = 0,
+                  trustNeedsDowngrade = [];
               //Cycle through the existing trust data we need for the record
               for (i=0; i<data.length; i++) {
                 //If the new selections match an existing record then we flag it as a duplicate not be be added
@@ -579,16 +579,16 @@ var saveComment, saveVerifyComment;
                 }
                 //If any of the 3 trust items the user has entered are smaller than the existing trust item we are looking at,
                 //then we flag it as the existing row needs to be at least partially downgraded
-                if (theData['user_trust:survey_id'] && !data[i].survey_id ||
-                    theData['user_trust:taxon_group_id'] && !data[i].taxon_group_id ||
-                    theData['user_trust:location_id'] && !data[i].location_id) {
+                if ((theData['user_trust:survey_id'] && !data[i].survey_id) ||
+                    (theData['user_trust:taxon_group_id'] && !data[i].taxon_group_id) ||
+                    (theData['user_trust:location_id'] && !data[i].location_id)) {
                   downgradeDetect++;
                 }
                 //If any of the 3 trust items the user has entered are bigger than the existing trust item we are looking at,
                 //then we flag it as the existing row needs to be at least partially upgraded
-                if (!theData['user_trust:survey_id'] && data[i].survey_id ||
-                    !theData['user_trust:taxon_group_id'] && data[i].taxon_group_id ||
-                    !theData['user_trust:location_id'] && data[i].location_id) {
+                if ((!theData['user_trust:survey_id'] && data[i].survey_id) ||
+                    (!theData['user_trust:taxon_group_id'] && data[i].taxon_group_id) ||
+                    (!theData['user_trust:location_id'] && data[i].location_id)) {
                   upgradeDetect++;
                 }
                 //If we have detected that there are more items to be downgraded than upgraded for an existing trust then we flag it.
