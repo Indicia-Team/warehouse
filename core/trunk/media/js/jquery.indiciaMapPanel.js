@@ -1922,8 +1922,9 @@ mapLocationSelectedHooks = [];
           c.events.register('featureadded', c, recordPolygon);
         }
       }, drawStyle=new style('boundary');
-      
+      var ctrlObj;
       $.each(div.settings.standardControls, function(i, ctrl) {
+        ctrlObj=null;
         // Add a layer switcher if there are multiple layers
         if (ctrl=='layerSwitcher') {
           div.map.addControl(new OpenLayers.Control.LayerSwitcher());
@@ -1938,44 +1939,52 @@ mapLocationSelectedHooks = [];
           if (div.settings.reportGroup!==null) {
             hint += ' ' + div.settings.hintDrawForReportingHint;
           }
-          ctrl = new OpenLayers.Control.DrawFeature(div.map.editLayer,
+          ctrlObj = new OpenLayers.Control.DrawFeature(div.map.editLayer,
               OpenLayers.Handler.Polygon,
               {'displayClass': align + 'olControlDrawFeaturePolygon', 'title':hint, handlerOptions:{style:drawStyle}});
-          pushDrawCtrl(ctrl);
+          pushDrawCtrl(ctrlObj);
         } else if (ctrl=='drawLine' && div.settings.editLayer) {
           hint = div.settings.hintDrawLineHint;
           if (div.settings.reportGroup!==null) {
             hint += ' ' + div.settings.hintDrawForReportingHint;
           }
-          ctrl = new OpenLayers.Control.DrawFeature(div.map.editLayer,
+          ctrlObj = new OpenLayers.Control.DrawFeature(div.map.editLayer,
               OpenLayers.Handler.Path,
               {'displayClass': align + 'olControlDrawFeaturePath', 'title':hint, handlerOptions:{style:drawStyle}});
-          pushDrawCtrl(ctrl);
+          pushDrawCtrl(ctrlObj);
         } else if (ctrl=='drawPoint' && div.settings.editLayer) {
           hint = div.settings.hintDrawPointHint;
           if (div.settings.reportGroup!==null) {
             hint += ' ' + div.settings.hintDrawForReportingHint;
           }
-          ctrl = new OpenLayers.Control.DrawFeature(div.map.editLayer,
+          ctrlObj = new OpenLayers.Control.DrawFeature(div.map.editLayer,
               OpenLayers.Handler.Point,
               {'displayClass': align + 'olControlDrawFeaturePoint', 'title':hint, handlerOptions:{style:drawStyle}});
-          pushDrawCtrl(ctrl);
+          pushDrawCtrl(ctrlObj);
         } else if (ctrl=='selectFeature' && div.settings.editLayer) {
-          toolbarControls.push(new OpenLayers.Control.SelectFeature(div.map.editLayer));
+          ctrlObj = new OpenLayers.Control.SelectFeature(div.map.editLayer);
+          toolbarControls.push(ctrlObj);
         } else if (ctrl=='hoverFeatureHighlight' && div.settings.editLayer) {
-          var highlighter = new OpenLayers.Control.SelectFeature(div.map.editLayer, {hover: true, highlightOnly: true});
-          div.map.addControl(highlighter);
-          highlighter.activate();
+          ctrlObj = new OpenLayers.Control.SelectFeature(div.map.editLayer, {hover: true, highlightOnly: true});
+          div.map.addControl(ctrlObj);
         } else if (ctrl=='clearEditLayer' && div.settings.editLayer) {
           toolbarControls.push(new OpenLayers.Control.ClearLayer([div.map.editLayer],
               {'displayClass': align + ' olControlClearLayer', 'title':div.settings.hintClearSelection, 'clearReport':true}));
         } else if (ctrl=='modifyFeature' && div.settings.editLayer) {
-          toolbarControls.push(new OpenLayers.Control.ModifyFeature(div.map.editLayer,
-              {'displayClass': align + 'olControlModifyFeature', 'title':div.settings.hintModifyFeature}));
+          ctrlObj = new OpenLayers.Control.ModifyFeature(div.map.editLayer,
+              {'displayClass': align + 'olControlModifyFeature', 'title':div.settings.hintModifyFeature});
+          toolbarControls.push(ctrlObj);
         } else if (ctrl=='graticule') {
-          var graticule = new OpenLayers.Control.IndiciaGraticule({projection: div.settings.graticuleProjection, bounds: div.settings.graticuleBounds});
-          div.map.addControl(graticule);
-          graticule.activate();
+          ctrlObj = new OpenLayers.Control.IndiciaGraticule({projection: div.settings.graticuleProjection, bounds: div.settings.graticuleBounds});
+          div.map.addControl(ctrlObj);
+          if ($.inArray(ctrl, div.settings.activatedStandardControls)===-1) {
+            // if this control is not active, also need to reflect this in the layer.
+            ctrlObj.gratLayer.setVisibility(false);
+          }
+        }
+        // activate the control if available and in the config settings. A null control cannot be activated.
+        if (ctrlObj!==null && $.inArray(ctrl, div.settings.activatedStandardControls)>-1) {
+          ctrlObj.activate();
         }
       });
       if (div.settings.editLayer && (div.settings.clickForSpatialRef || div.settings.clickForPlot)) {
@@ -2092,6 +2101,7 @@ jQuery.fn.indiciaMapPanel.defaults = {
     locationLayerFilter: '', // a cql filter that can be used to limit locations shown on the location layer
     controls: [],
     standardControls: ['layerSwitcher','panZoom'],
+    activatedStandardControls: ["hoverFeatureHighlight","graticule"],
     toolbarDiv: 'map', // map, top, bottom, or div ID
     toolbarPrefix: '', // content to prepend to the toolbarDiv content if not on the map
     toolbarSuffix: '', // content to append to the toolbarDiv content if not on the map

@@ -126,7 +126,7 @@ OpenLayers.Control.IndiciaGraticule = OpenLayers.Class(OpenLayers.Control, {
      */
     initialize: function(options) {
         options = options || {};
-        options.layerName = options.layerName || OpenLayers.i18n("graticule");
+        options.layerName = options.layerName || OpenLayers.i18n("Map grid");
         OpenLayers.Control.prototype.initialize.apply(this, [options]);
         
         this.labelSymbolizer.stroke = false;
