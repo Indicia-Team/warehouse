@@ -2896,6 +2896,8 @@ $('#$escaped').change(function(e) {
           // remove subspecific rank information from the displayed subspecies names by passing a regex
           self::$javascript .= "indiciaData.subspeciesRanksToStrip='".lang::get('(form[a\.]?|var\.?|ssp\.)')."';\n";
       }
+      // track if there is a row we are editing in this grid
+      $hasEditedRecord = false;
       foreach ($taxonRows as $txIdx => $rowIds) {
         $ttlId = $rowIds['ttlId'];
         $loadedTxIdx = isset($rowIds['loadedTxIdx']) ? $rowIds['loadedTxIdx'] : -1;
@@ -2949,8 +2951,12 @@ $('#$escaped').change(function(e) {
             $row .= '</td>';
           }
         }
-        $row .= str_replace(array('{content}','{colspan}','{tableId}','{idx}'), 
-            array($firstCell,$colspan,$options['id'],$colIdx), $indicia_templates['taxon_label_cell']);
+        // if editing a specific occurrence, mark it up
+        $editedRecord = isset($_GET['occurrence_id']) && $_GET['occurrence_id']==$existing_record_id;
+        $editClass = $editedRecord ? ' edited-record ui-state-highlight' : '';
+        $hasEditedRecord = $hasEditedRecord || $editedRecord;
+        $row .= str_replace(array('{content}','{colspan}','{editClass}','{tableId}','{idx}'), 
+            array($firstCell,$colspan,$editClass,$options['id'],$colIdx), $indicia_templates['taxon_label_cell']);
         $row .= self::species_checklist_get_subsp_cell($taxon, $txIdx, $existing_record_id, $options);
         $hidden = ($options['rowInclusionCheck']=='checkbox' ? '' : ' style="display:none"');
         // AlwaysFixed mode means all rows in the default checklist are included as occurrences. Same for
@@ -3156,6 +3162,19 @@ $('#$escaped').change(function(e) {
         $r .= '<div id="'.$options['id'].'-blocks">'.
             self::get_subsample_per_row_hidden_inputs().
             '</div>';
+      }
+      if ($hasEditedRecord) {
+        self::$javascript .= "$('#$options[id] tbody tr').hide();\n";
+        self::$javascript .= "$('#$options[id] tbody tr td.edited-record').parent().show();\n";
+        self::$javascript .= "$('#$options[id] tbody tr td.edited-record').parent().next('tr.supplementary-row').show();\n";
+        $r .= '<p>'.lang::get('You are editing a single record that is part of a larger sample, so any changes to the sample\'s information such as edits to the date or map reference '.
+            'will affect the whole sample.')." <a id=\"species-grid-view-all-$options[id]\">".lang::get('View all the records in this sample.').'</span></p>';
+        self::$javascript .= "$('#species-grid-view-all-$options[id]').click(function(e) {
+  $('#$options[id] tbody tr').not('.scClonableRow').show(); 
+  $(e.currentTarget).hide();
+});\n";
+        self::$onload_javascript .= "var tabscontrols = $('#controls').tabs();
+tabscontrols.tabs('select',$('#$options[id]').parents('.ui-tabs-panel')[0].id);\n";
       }
       return $r;
     } else {
