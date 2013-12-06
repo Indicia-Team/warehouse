@@ -33,6 +33,11 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
 (function ($) {
   "use strict";
   
+  $(document).ready(function() {
+    // prevent validation of the clonable row
+    $('.scClonableRow :input').addClass('inactive');
+  });
+  
   hook_species_checklist_new_row = [];
   
   var resetSpeciesText;
