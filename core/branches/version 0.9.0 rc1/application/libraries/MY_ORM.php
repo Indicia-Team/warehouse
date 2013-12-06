@@ -929,7 +929,13 @@ class ORM extends ORM_Core {
         $m->identifiers = array_merge($this->identifiers);
         $result = $m->inner_submit();
         $this->nestedChildModelIds[] = $m->get_submitted_ids();
-
+        if ($m->wantToUpdateMetadata && !$this->wantToUpdateMetadata && preg_match('/_image$/', $m->object_name)) {
+          // we didn't update the parent's metadata. But a child image has been changed, so we want to update the parent record metadata.          
+          // i.e. adding an image to a record causes the record to be edited and therefore to get its status reset. 
+          $this->wantToUpdateMetadata = true;
+          $this->set_metadata();
+          $this->validate(new Validation($this->as_array()), true);
+        }
         if (!$result) {
           $fieldPrefix = (array_key_exists('field_prefix',$a['model'])) ? $a['model']['field_prefix'].':' : '';
           // Remember this model so that its errors can be reported
