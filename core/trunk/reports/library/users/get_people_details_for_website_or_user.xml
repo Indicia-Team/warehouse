@@ -21,5 +21,6 @@
     <column name="surname" display="Surname" sql="p.surname" datatype="text"/>
     <column name="fullname_surname_first" display="Full name" sql="p.surname || ', ' || p.first_name" datatype="text"/>
     <column name="fullname_firstname_first" display="Full name" sql="p.first_name || ' ' || p.surname" datatype="text"/>
+    <column name="fullname_surname_first_email" display="Full name with email" sql="p.surname || ', ' || p.first_name || ' (' || p.email_address || ')'" datatype="text"/>
   </columns>
 </report>
