@@ -6,6 +6,7 @@
       JOIN people p on u.person_id=p.id
       JOIN users_websites uw on u.id=uw.user_id  
     WHERE u.deleted = false
+    AND #website_filter#
   </query>
   <params>
     <param name='user_id' display='User ID' datatype='integer' emptyvalue='' default=''>
