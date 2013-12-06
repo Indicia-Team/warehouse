@@ -26,7 +26,7 @@ function setupButtons(tabs, index) {
     var tabs = wizList.parent();
     // first, validate
     var current=wizList.parent().children('.ui-tabs').tabs('option', 'selected');
-    var tabinputs = $('#entry_form div > .ui-tabs-panel:eq('+current+')').find('input,select').not(':disabled');
+    var tabinputs = $('#entry_form div > .ui-tabs-panel:eq('+current+')').find('input,select').not(':disabled,[name=],.scTaxonCell,.inactive');
     if (typeof tabinputs.valid !== "undefined" && tabinputs.length>0 && !tabinputs.valid()) {
       return;
     }
