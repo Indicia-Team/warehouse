@@ -3918,7 +3918,6 @@ $('#".$options['id']." .species-filter').click(function(evt) {
       // Build array of attribute controls
       $class = self::species_checklist_occ_attr_class($options, $idx, $attrDef['untranslatedCaption']);
       $class .= (isset($attrDef['class']) ? ' ' . $attrDef['class'] : '');
-      $class .= ' inactive';
       if (isset($attrOpts['class'])) {
         $class .=  ' ' . $attrOpts['class'];
         unset($attrOpts['class']);
@@ -3979,7 +3978,7 @@ $('#".$options['id']." .species-filter').click(function(evt) {
     // Because the clonable row always goes in the first col, this can be always left to 0.
     $r = '<table style="display: none"><tbody><tr class="scClonableRow" id="'.$options['id'].'-scClonableRow">';
     $colspan = isset($options['lookupListId']) || $options['rowInclusionCheck']=='alwaysRemovable' ? ' colspan="2"' : '';
-    $r .= str_replace(array('{colspan}','{tableId}','{idx}'), array($colspan, $options['id'],0), $indicia_templates['taxon_label_cell']);
+    $r .= str_replace(array('{colspan}','{tableId}','{idx}','{editClass}'), array($colspan, $options['id'],0), $indicia_templates['taxon_label_cell'], '');
     $fieldname = "sc:$options[id]--idx-:";
     if ($options['subSpeciesColumn']) {
       $r .= '<td class="ui-widget-content scSubSpeciesCell"><select class="scSubSpecies" style="display: none" ' .
