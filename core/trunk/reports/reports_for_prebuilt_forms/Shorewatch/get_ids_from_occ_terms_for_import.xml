@@ -1,0 +1,20 @@
+<report
+    title="Get Ids from occurrence terms for import."
+    description="From a supplied term, get the termlist_term id. Example use is to get the termlist_term id for the supplied reticule term
+which need to be given to the sub-sample grid reference processor."
+>
+  <query>
+    SELECT #columns#
+    FROM termlists_terms tt
+      JOIN terms t on t.id = tt.term_id AND t.term='#term#' AND t.deleted=false
+      JOIN occurrence_attributes oa on oa.termlist_id=tt.termlist_id AND oa.id=#occurrence_attr_id# AND oa.deleted=false
+    WHERE tt.deleted=false
+  </query>
+  <params>
+    <param name="occurrence_attr_id" display="Occurrence Attribute Id" datatype="integer"/>
+    <param name="term" display="Term Id" datatype="text"/>
+  </params>
+  <columns>
+    <column name='id' display='Id' sql="tt.id" datatype='integer'/>
+  </columns>
+</report>
