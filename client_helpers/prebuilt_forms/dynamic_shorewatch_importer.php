@@ -1113,7 +1113,7 @@ class iform_dynamic_shorewatch_importer extends iform_dynamic {
         $response = data_entry_helper::forward_post_to('save', $submission,$writeAuth);
         drupal_set_message('Import complete');
       } else {
-        drupal_set_message('There was a problem with the import data. I have stopped the import, but some data may have already been processed and may be in an inconsistant state in the database.');
+        drupal_set_message('There was a problem with the import data. I have stopped the import, but some data may have already been processed.');
       }
     }
   }
@@ -1182,7 +1182,7 @@ class iform_dynamic_shorewatch_importer extends iform_dynamic {
               $newSampleRequired = true; 
             $values['sample:location_id'] = $locationRecord[0]['id'];
           } else {
-            drupal_set_message('<B>Warning: The location '.$data[$postCounter].' is not currently present in the database. I have not imported this row or any rows after it.</B>');
+            drupal_set_message('<B>Warning: The location '.$data[$postCounter].' is not currently present in the database. I have not imported this parent sample or any samples after it.</B>');
             return array($occurrenceNumber,true);
           }
         }
@@ -1257,7 +1257,7 @@ class iform_dynamic_shorewatch_importer extends iform_dynamic {
           if (!empty($locationRecord[0]['id']))
             $values['sample:location_id'] = $locationRecord[0]['id'];
           else {
-            drupal_set_message('<B>Warning: The location '.$data[$postCounter].' is not currently present in the database. I have not imported this row or any rows after it.</B>');
+            drupal_set_message('<B>Warning: The location '.$data[$postCounter].' is not currently present in the database. I have not imported this parent sample or any samples after it.</B>');
             return true; 
           }
         }
@@ -1324,7 +1324,7 @@ class iform_dynamic_shorewatch_importer extends iform_dynamic {
       if (!empty($taxaTaxonListRecord[0]['id']))
         $values['sc:species-grid-111-'.$occurrenceNumber.'::present']=$taxaTaxonListRecord[0]['id'];
       else {
-        drupal_set_message('<B>Warning: The taxon '.$species.' is not currently present in the database. I have not imported this row or any rows after it.</B>');
+        drupal_set_message('<B>Warning: The taxon '.$species.' is not currently present in the database. I have not imported this parent sample or any samples after it.</B>');
         return true;
       }
       //Set the sub-sample index
