@@ -785,7 +785,7 @@ class iform_report_calendar_summary {
           'description' => 'A boolean location attribute, set to true if a site is sensitive.',
           'type' => 'locAttr',
           'required' => false,
-          'group' => 'Data Handling'
+          'group' => 'Controls'
         ),
         array(
           'name' => 'sensitivityAccessPermission',
@@ -793,7 +793,7 @@ class iform_report_calendar_summary {
           'description' => 'A permission, which if granted allows viewing of sensitive sites.',
           'type' => 'string',
           'required' => false,
-          'group' => 'Data Handling'
+          'group' => 'Controls'
         ),
         array(
           'name' => 'includeRawData',
@@ -959,93 +959,147 @@ class iform_report_calendar_summary {
       unset($options['linkURL']);
     // for branch users we can also provide links to all walks on locations allocated to us as branch coordinator.
     // normal users only get those we create, managers (admin) get links to all.
-    if(!isset($args['includeUserFilter']) || !$args['includeUserFilter'] ||
-        ((!isset($options['extraParams']['user_id']) || $options['extraParams']['user_id']=="") &&
-            $siteUrlParams[self::$userKey]['value']!="branch") ||
-        !isset($args['userSpecificLocationLookUp']) || !$args['userSpecificLocationLookUp']){
-      // Get list of all locations
-      $locationListArgs=array(// 'nocache'=>true,
-          'extraParams'=>array_merge(array('website_id'=>$args['website_id'], 'location_type_id' => ''),
-                       $readAuth),
-          'dataSource' => 'library/locations/locations_list_exclude_sensitive');
-      $description="All sites";
+    
+    // Set up common data.
+    $locationListArgs=array(// 'nocache'=>true,
+    		'extraParams'=>array_merge(array('website_id'=>$args['website_id'], 'location_type_id' => '', 'sensattr' => '', 'exclude_sensitive' => 0),
+    				$readAuth),
+            'readAuth' => $readAuth,
+            'caching' => true,
+            'dataSource' => 'library/locations/locations_list_exclude_sensitive');
+    $allowSensitive = empty($args['sensitivityLocAttrId']) ||
+        (function_exists('user_access') && !empty($args['sensitivityAccessPermission']) && user_access($args['sensitivityAccessPermission']));
+//    $locationListArgs['extraParams']['sensattr'] = $allowSensitive ? '' : $args['sensitivityLocAttrId'];
+//    $locationListArgs['extraParams']['exclude_sensitive'] = $allowSensitive ? 0 : 1;
+    if(isset($args['locationTypeFilter']) && $args['locationTypeFilter']!="")
+      $locationListArgs['extraParams']['location_type_id'] = $args['locationTypeFilter'];
+    if(!empty($args['sensitivityLocAttrId']))
+      $locationListArgs['extraParams']['locattrs'] = $args['sensitivityLocAttrId']; // if we have a sensitive attribute, may want to change the template to highlight them.
+    $presets = get_options_array_with_user_data($args['param_presets']);
+    if(!isset($presets['survey_id']) || $presets['survey_id']=='')
+    	return(lang::get('Location control: survey_id missing from presets.'));
+    $attrArgs = array(
+    		'valuetable'=>'location_attribute_value',
+    		'attrtable'=>'location_attribute',
+    		'key'=>'location_id',
+    		'fieldprefix'=>'locAttr',
+    		'extraParams'=>$readAuth,
+    		'survey_id'=>$presets['survey_id']);
+    if(isset($args['locationTypeFilter']) && $args['locationTypeFilter']!="")
+    	$attrArgs['location_type_id'] = $args['locationTypeFilter'];
+    $locationAttributes = data_entry_helper::getAttributes($attrArgs, false);
+    $locationList = array();
+    
+    // If we are looking a user, then we display all that users sites. If I am that user, or if I am a person with sensitive access, then I can see all the sites, even sensitive.
+    if(isset($args['includeUserFilter']) && $args['includeUserFilter'] &&
+        isset($args['userSpecificLocationLookUp']) && $args['userSpecificLocationLookUp'] &&
+        isset($options['extraParams']['user_id']) && $options['extraParams']['user_id']!="" &&
+        $siteUrlParams[self::$userKey]['value']!="branch") {
+      if(!$allowSensitive && $options['extraParams']['user_id']!=$user->uid) { // ensure can see sensitive sites for my sites only.
+        $locationListArgs['extraParams']['sensattr'] = $args['sensitivityLocAttrId'];
+        $locationListArgs['extraParams']['exclude_sensitive'] = 1;
+      }
+      $cmsAttr=extract_cms_user_attr($locationAttributes,false);
+      if(!$cmsAttr) return lang::get('Location control: CMS User ID Attribute missing from locations.');
+      $attrListArgs=array(// 'nocache'=>true,
+      		'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
+      				'location_attribute_id'=>$cmsAttr['attributeId'], 'raw_value'=>$options['extraParams']['user_id']),
+      				$readAuth),
+      		'table'=>'location_attribute_value');
+      $description="All ".($user->uid == $options['extraParams']['user_id'] ? 'my' : 'user')." sites";
+      $attrList = data_entry_helper::get_population_data($attrListArgs);
+      if (isset($attrList['error'])) return $attrList['error'];
+      if(count($attrList)===0) {
+      	$options['downloadFilePrefix'] .= 'NS_';
+      	return(lang::get('[No sites allocated.]'));
+      }
+      $locationIDList=array();
+      foreach($attrList as $attr)
+      	$locationIDList[] = $attr['location_id'];
+      $locationListArgs['extraParams']['idlist'] = implode(',', $locationIDList);
+      $locationList = report_helper::get_report_data($locationListArgs);
+      if (isset($locationList['error']))
+      	return $locationList['error'];
+    } else
+    // If we are looking at a branch, we can see all the sites allocated to me even sensitive.
+    if(isset($args['includeUserFilter']) && $args['includeUserFilter'] &&
+        isset($args['userSpecificLocationLookUp']) && $args['userSpecificLocationLookUp'] &&
+        $siteUrlParams[self::$userKey]['value']=="branch") {
+      $description="All branch sites";
+      if(count(self::$branchLocationList)===0) {
+        $options['downloadFilePrefix'] .= 'NS_';
+        return(lang::get('[No sites allocated.]'));
+      }
+      $locationListArgs['extraParams']['idlist'] = implode(',', self::$branchLocationList);
+      $locationList = report_helper::get_report_data($locationListArgs);
+      if (isset($locationList['error'])) return $locationList['error'];
     } else {
-      // Get list of locations attached to this user via the cms user id attribute: have to have included the user control to get user id, and set the userSpecificLocationLookUp flag
-      if($siteUrlParams[self::$userKey]['value']=="branch"){
-        // this can only be done for a branch coordinator, so the self::branchLocationList has already been filled in.
-        $description="All branch sites";
-        if(count(self::$branchLocationList)===0) {
-          $options['downloadFilePrefix'] .= 'NS_';
-          return(lang::get('[No sites allocated.]'));
-        }
-        $locationIDList=self::$branchLocationList;
-      } else {
-        // first need to scan param_presets for survey_id..
-        $presets = get_options_array_with_user_data($args['param_presets']);
-        if(!isset($presets['survey_id']) || $presets['survey_id']=='')
-          return(lang::get('Location control: survey_id missing from presets.'));
-        $attrArgs = array(
-          'valuetable'=>'location_attribute_value',
-          'attrtable'=>'location_attribute',
-          'key'=>'location_id',
-          'fieldprefix'=>'locAttr',
-          'extraParams'=>$readAuth,
-          'survey_id'=>$presets['survey_id']);
-        if(isset($args['locationTypeFilter']) && $args['locationTypeFilter']!="")
-          $attrArgs['location_type_id'] = $args['locationTypeFilter'];
-        $locationAttributes = data_entry_helper::getAttributes($attrArgs, false);
-      	$cmsAttr=extract_cms_user_attr($locationAttributes,false);
-        if(!$cmsAttr)
-          return '';
-        $attrListArgs=array(// 'nocache'=>true,
-            'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
-                             'location_attribute_id'=>$cmsAttr['attributeId'], 'raw_value'=>$options['extraParams']['user_id']),
-                       $readAuth),
-            'table'=>'location_attribute_value');
-        $description="All ".($user->uid == $options['extraParams']['user_id'] ? 'my' : 'user')." sites";
-        $attrList = data_entry_helper::get_population_data($attrListArgs);
-        if (isset($attrList['error']))
-          return $attrList['error'];
-        if(count($attrList)===0) {
-          $options['downloadFilePrefix'] .= 'NS_';
-          return(lang::get('[No sites allocated.]'));
-        }
+    // If we are looking at all sites, we can see all non sensitive sites, plus sensitive sites if they are allocated to me as a site or as a branch, or if I have access to sensitive.
+      $description="All sites";
+      $locationListArgs['extraParams']['idlist'] = '';
+      // get my sites, including sensitive sites.
+      $cmsAttr=extract_cms_user_attr($locationAttributes,false);
+      if(!$cmsAttr) return lang::get('Location control: CMS User ID Attribute missing from locations.');
+      $attrListArgs=array(// 'nocache'=>true,
+      		'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
+      				'location_attribute_id'=>$cmsAttr['attributeId'], 'raw_value'=>$user->uid),
+      				$readAuth),
+      		'table'=>'location_attribute_value');
+      $attrList = data_entry_helper::get_population_data($attrListArgs);
+      if (isset($attrList['error'])) return $attrList['error'];
+      if(count($attrList)>0) {
         $locationIDList=array();
         foreach($attrList as $attr)
           $locationIDList[] = $attr['location_id'];
+        $locationListArgs['extraParams']['idlist'] = implode(',', $locationIDList);
       }
-      $locationIDList = implode(',', $locationIDList);
-      $locationListArgs=array(// 'nocache'=>true,
-          'extraParams'=>array_merge(array('website_id'=>$args['website_id'],  'location_type_id' => '', 'idlist'=>$locationIDList),
-                       $readAuth),
-          'dataSource'=>'library/locations/locations_list_exclude_sensitive');
-      if($siteUrlParams[self::$userKey]['value']=="branch" && $options['extraParams']['location_id']=='')
-        $options['extraParams']['location_list'] = $locationIDList;
+      // Next add Branch Sites.
+      if(count(self::$branchLocationList)>0)
+        $locationListArgs['extraParams']['idlist'] .= ($locationListArgs['extraParams']['idlist'] == '' ? '' : ',').implode(',', self::$branchLocationList);
+      $userLocationList = array();
+      if($locationListArgs['extraParams']['idlist'] != '') {
+        $userLocationList = report_helper::get_report_data($locationListArgs);
+        if (isset($userLocationList['error'])) return $userLocationList['error'];
+      }
+      // Next get all other sites
+      if(!$allowSensitive) {
+        $locationListArgs['extraParams']['sensattr'] = $args['sensitivityLocAttrId'];
+        $locationListArgs['extraParams']['exclude_sensitive'] = 1;
+      }
+      $locationListArgs['extraParams']['idlist']="";
+      $allLocationList = report_helper::get_report_data($locationListArgs);
+      if (isset($allLocationList['error']))
+        return $allLocationList['error'];
+      foreach($userLocationList as $loc){
+        $locationList[$loc['id']] = $loc;
+      }
+      foreach($allLocationList as $loc){
+        if(!isset($locationList[$loc['id']]))
+          $locationList[$loc['id']] = $loc;
+      }
     }
-    $allowSensitive = $siteUrlParams[self::$userKey]['value']!=="" ||
-        empty($args['sensitivityLocAttrId']) || 
-        (function_exists('user_access') && !empty($args['sensitivityAccessPermission']) && user_access($args['sensitivityAccessPermission']));
-    $locationListArgs['extraParams']['sensattr'] = $allowSensitive ? '' : $args['sensitivityLocAttrId'];
-    $locationListArgs['extraParams']['exclude_sensitive'] = $allowSensitive ? 0 : 1;
-    if(isset($args['locationTypeFilter']) && $args['locationTypeFilter']!="")
-      $locationListArgs['extraParams']['location_type_id'] = $args['locationTypeFilter'];
-    $locationListArgs['readAuth'] = $readAuth;
-    $locationListArgs['caching']=true;
-    $locationList = report_helper::get_report_data($locationListArgs);
-    if (isset($locationList['error']))
-      return $locationList['error'];
+    // we want to sort by name, but also keep details of sensitivity.
+    $sort = array();
+    $locs = array();
+    foreach($locationList as $location){
+      $sort[$location['id']]=$location['name'];
+      $locs[$location['id']]=$location;
+    }
+    natcasesort($sort);
     $ctrlid='calendar-location-select-'.$node->nid;
     $ctrl='<label for="'.$ctrlid.'" class="location-select-label">'.lang::get('Filter by site').
           ': </label><select id="'.$ctrlid.'" class="location-select">'.
           '<option value="" class="location-select-option" '.($siteUrlParams[self::$locationKey]['value']=='' ? 'selected="selected" ' : '').'>'.$description.'</option>';
     if($siteUrlParams[self::$locationKey]['value']=='')
       $options['downloadFilePrefix'] .= preg_replace('/[^A-Za-z0-9]/i', '', $description).'_';
-    foreach($locationList as $location){
-      $ctrl .= '<option value='.$location['id'].' class="location-select-option" '.($siteUrlParams[self::$locationKey]['value']==$location['id'] ? 'selected="selected" ' : '').'>'.
-               $location['name'].(isset($args['includeSrefInLocationFilter']) && $args['includeSrefInLocationFilter'] ? ' ('.$location['centroid_sref'].')' : '').
+    foreach($sort as $id=>$name){
+      $ctrl .= '<option value='.$id.' class="location-select-option '.
+               (!empty($args['sensitivityLocAttrId']) && $locs[$id]['attr_location_'.$args['sensitivityLocAttrId']] != null ? 'sensitive' : '').
+               '" '.($siteUrlParams[self::$locationKey]['value']==$id ? 'selected="selected" ' : '').'>'.
+               $name.(isset($args['includeSrefInLocationFilter']) && $args['includeSrefInLocationFilter'] ? ' ('.$locs[$id]['centroid_sref'].')' : '').
                '</option>';
-      if($siteUrlParams[self::$locationKey]['value']==$location['id'])
-        $options['downloadFilePrefix'] .= preg_replace('/[^A-Za-z0-9]/i', '', $location['name']).'_';
+      if($siteUrlParams[self::$locationKey]['value']==$id)
+        $options['downloadFilePrefix'] .= preg_replace('/[^A-Za-z0-9]/i', '', $name).'_';
     }
     $ctrl.='</select>';
     self::set_up_control_change($ctrlid, self::$locationKey, array());
@@ -1105,6 +1159,7 @@ class iform_report_calendar_summary {
       return '';
     // if the user is changed then we must reset the location
     $siteUrlParams = self::get_site_url_params();
+    var_dump($siteUrlParams);
     $options['extraParams']['user_id'] = $siteUrlParams[self::$userKey]['value'] == "branch" ? '' : $siteUrlParams[self::$userKey]['value'];
     $userList=array();
     if (function_exists('module_exists') && module_exists('easy_login') && function_exists('hostsite_get_user_field')) {
@@ -1216,20 +1271,30 @@ class iform_report_calendar_summary {
        self::_cacheResponse($user->uid, $userList);
       }
     }
-    $ctrlid='calendar-user-select-'.$node->nid;
-    $ctrl='<label for="'.$ctrlid.'" class="user-select-label">'.lang::get('Filter by recorder').
+    $ctrlid = 'calendar-user-select-'.$node->nid;
+    $ctrl = '<label for="'.$ctrlid.'" class="user-select-label">'.lang::get('Filter by recorder').
           ': </label><select id="'.$ctrlid.'" class="user-select">'.
           '<option value='.($user->uid).' class="user-select-option" '.($siteUrlParams[self::$userKey]['value']==$user->uid  ? 'selected="selected" ' : '').'>'.lang::get('My data').'</option>'.
           (isset($args['branchManagerPermission']) && $args['branchManagerPermission']!="" && user_access($args['branchManagerPermission']) ? '<option value="branch" class="user-select-option" '.($siteUrlParams[self::$userKey]['value']=="branch"  ? 'selected="selected" ' : '').'>'.lang::get('Branch data').'</option>' : '').
           '<option value="all" class="user-select-option" '.($siteUrlParams[self::$userKey]['value']=='' ? 'selected="selected" ' : '').'>'.lang::get('All recorders').'</option>';
+    $found = $siteUrlParams[self::$userKey]['value']==$user->uid ||
+          (isset($args['branchManagerPermission']) && $args['branchManagerPermission']!="" && user_access($args['branchManagerPermission']) && $siteUrlParams[self::$userKey]['value']=="branch") ||
+          $siteUrlParams[self::$userKey]['value']=='';
+    $userListArr = array();
     foreach($userList as $id => $account) {
       // if account comes from cache, then it is an array, if from drupal an object.
       if(!is_array($account))
         $account = get_object_vars($account);
-      if($account !== true && $id!==$user->uid){
-        $ctrl .= '<option value='.$id.' class="user-select-option" '.($siteUrlParams[self::$userKey]['value']==$id ? 'selected="selected" ' : '').'>'.$account['name'].'</option>';
+      if($account !== true && $id!=$user->uid){
+        $userListArr[$id] = $account['name'];
       }
     }
+    natcasesort($userListArr);
+    foreach($userListArr as $id => $name) {
+      $ctrl .= '<option value='.$id.' class="user-select-option" '.($siteUrlParams[self::$userKey]['value']==$id ? 'selected="selected" ' : '').'>'.$name.'</option>';
+      $found = $found || $siteUrlParams[self::$userKey]['value']==$id;
+    }
+    // masquerading may produce some odd results when flipping between accounts.
     switch($siteUrlParams[self::$userKey]['value']){
       case '' : $options['downloadFilePrefix'] .= lang::get('AllRecorders').'_';
         break;
@@ -1245,6 +1310,8 @@ class iform_report_calendar_summary {
       	$options['downloadFilePrefix'] .= preg_replace('/[^A-Za-z0-9]/i', '', $account['name']).'_';
         break;
     }
+    // Haven't found the selected user on the list: this means select defaults to top option which is the user themselves.
+    if(!$found) $siteUrlParams[self::$userKey]['value']=$user->uid;
     $ctrl.='</select>';
     self::set_up_control_change($ctrlid, self::$userKey, array('locationID'));
     return $ctrl;
