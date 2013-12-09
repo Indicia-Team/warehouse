@@ -36,6 +36,9 @@ tr.last-sample-datarow td
 .controls-table label {
   width: auto;
 }
+.controls-table .sensitive {
+  font-style: italic;
+}
 #downloads-table label {
   width: auto;
   margin-left: 5px;
