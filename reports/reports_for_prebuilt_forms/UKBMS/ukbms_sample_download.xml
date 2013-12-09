@@ -21,8 +21,8 @@
         AND ('#location_list#'='(-1)' OR #this#.id IN #location_list#)" > // allow deleted Sites!
       <tabColumn name='id' visible='false' />
       <tabColumn name='name' display='Site name'/>
-      <tabColumn name='code' display='Code' />
-      <tabColumn name='centroid_sref' display='Grid Ref.'/>
+      <tabColumn name='code' display='Site Code' />
+      <tabColumn name='centroid_sref' display='Site Grid Ref.'/>
     </subTable>
     <tabColumn name='date_start' visible='false'/>
     <tabColumn name='date_end' visible='false'/>
