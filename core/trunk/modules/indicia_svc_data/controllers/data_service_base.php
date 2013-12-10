@@ -276,7 +276,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     foreach ($data as $cell)
     {
       // replace all delimiter values with a dummy
-      $output .=  ($output == '' ? '' : $delimiter) . str_replace($delimiter,$replace,$cell);
+      $output .=  ($output == '' ? '' : $delimiter) . preg_replace('/\s+/', $replace, $cell);
     }
     $output.=$newline;
     return $output;
