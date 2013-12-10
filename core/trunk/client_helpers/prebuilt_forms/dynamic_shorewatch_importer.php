@@ -305,11 +305,26 @@ class iform_dynamic_shorewatch_importer extends iform_dynamic {
           'group'=>'Survey Ids'
         ),
         array(
+          'name'=>'efforts_and_online_recording_page_path',
+          'caption'=>'Efforts And Online Recording Page Path',
+          'description'=>'Path to the Efforts And Online Recording page.',
+          'type'=>'string',
+          'group'=>'Recording Page Paths'
+        ),  
+        array(
+          'name'=>'ahoc_online_recording_page_path',
+          'caption'=>'Adhoc Online Recording Page Path',
+          'description'=>'Path to the Adhoc Online Recording page.',
+          'type'=>'string',
+          'group'=>'Recording Page Paths'
+        ),  
+        array(
           'name'=>'keep_going_after_error',
           'caption'=>'Continue import after issues detected?',
           'description'=>'The import is processed on a line-by-line basis. Does the import stop or try importing the rest of the data if problems with the data are detected? '.
               'Note that data may have already been entered into the database before the issue occurred. '.
-              'Leaving this option on may result in inconsistent data being entered into the database depending on when the problem occurred during processing.',
+              'Leaving this option on may result in inconsistent data being entered into the database depending on when the problem occurred during processing. '.
+              'Note also that errors that occur on the Warehouse rather than in the importer\'s submission builder during processing are unaffected by this option.',
           'type'=>'boolean',
           'default'=>false,
           'group'=>'Import Mode'
@@ -1145,9 +1160,9 @@ class iform_dynamic_shorewatch_importer extends iform_dynamic {
     //Even though we are importing the data, we still need to insert an input_form so the system will know which page to open when
     //the user clicks on a record.
     if ($args['efforts_survey_id']==$values['survey_id']) {
-      $values['sample:input_form'] = 'online-recording';
+      $values['sample:input_form'] = $args['efforts_and_online_recording_page_path'];
     } else {
-      $values['sample:input_form'] = 'adhoc-online-recording';
+      $values['sample:input_form'] = $args['ahoc_online_recording_page_path'];
     }     
     return $values;
   }
@@ -1282,9 +1297,9 @@ class iform_dynamic_shorewatch_importer extends iform_dynamic {
       }  
       //We need to save the input form even though the data hasn't come from a form, so the system knows which edit page to open which editing the record.
       if ($args['efforts_survey_id']==$values['survey_id']) {
-        $values['sample:input_form'] = 'online-recording';
+        $values['sample:input_form'] = $args['efforts_and_online_recording_page_path'];
       } else {
-        $values['sample:input_form'] = 'adhoc-online-recording';
+        $values['sample:input_form'] = $args['ahoc_online_recording_page_path'];
       }     
       $postCounter++;
     }
