@@ -6126,13 +6126,20 @@ if (errors$uniq.length>0) {
         }
       }
       elseif (array_key_exists('warning',$response)) {
-        $r .= 'A warning occurred when the data was submitted.';
-        $r .= '<p class="error">'.$response['error']."</p>\n";
+        if (function_exists('hostsite_show_message')) {
+          hostsite_show_message(lang::get('A warning occurred when the data was submitted.').' '.$response['error'], 'error');
+        } else { 
+          $r .= 'A warning occurred when the data was submitted.';
+          $r .= '<p class="error">'.$response['error']."</p>\n";
+        }
       }
       elseif (array_key_exists('success',$response)) {
         if (empty($successMessage)) 
           $successMessage = lang::get('Thank you for submitting your data.');
-        $r .= "<div class=\"ui-widget ui-corner-all ui-state-highlight page-notice\">" . $successMessage . "</div>\n";
+        if (function_exists('hostsite_show_message'))
+          hostsite_show_message($successMessage);
+        else
+          $r .= "<div class=\"ui-widget ui-corner-all ui-state-highlight page-notice\">" . $successMessage . "</div>\n";
       }
     }
     else
