@@ -28,7 +28,37 @@
       l.name as site_name,
       l.code as site_code,
       s.id as subsample_id,
-      l2.centroid_sref as sref,
+      CASE l2.centroid_sref_system -- what OSGB 2letter, 6 digits
+        WHEN '4326' THEN 
+          CASE l.centroid_sref_system -- what OSGB 2letter, 6 digits
+            WHEN 'OSGB' THEN 
+              CASE (CAST(st_x(st_transform(l2.centroid_geom,27700)) AS INTEGER)/500000)*10 + (CAST(st_y(st_transform(l2.centroid_geom,27700)) AS INTEGER)/500000)
+                WHEN 0 THEN 'S' WHEN 1 THEN 'N' WHEN 10 THEN 'T' WHEN 11 THEN 'O' ELSE 'H'
+              END ||
+              CASE (mod(CAST(st_x(st_transform(l2.centroid_geom,27700)) AS INTEGER),500000)/100000)*10 + mod(CAST(st_y(st_transform(l2.centroid_geom,27700)) AS INTEGER),500000)/100000
+                WHEN  0 THEN 'V' WHEN  1 THEN 'Q' WHEN  2 THEN 'L' WHEN  3 THEN 'F' WHEN  4 THEN 'A'
+                WHEN 10 THEN 'W' WHEN 11 THEN 'R' WHEN 12 THEN 'M' WHEN 13 THEN 'G' WHEN 14 THEN 'B'
+                WHEN 20 THEN 'X' WHEN 21 THEN 'S' WHEN 22 THEN 'N' WHEN 23 THEN 'H' WHEN 24 THEN 'C'
+                WHEN 30 THEN 'Y' WHEN 31 THEN 'T' WHEN 32 THEN 'O' WHEN 33 THEN 'J' WHEN 34 THEN 'D'
+                WHEN 40 THEN 'Z' WHEN 41 THEN 'U' WHEN 42 THEN 'P' WHEN 43 THEN 'K' WHEN 44 THEN 'E' ELSE '-'
+              END ||
+              lpad(''||mod(CAST(st_x(st_transform(l2.centroid_geom,27700)) AS INTEGER), 100000)/100,3,'0') ||
+              lpad(''||mod(CAST(st_y(st_transform(l2.centroid_geom,27700)) AS INTEGER), 100000)/100,3,'0')
+            WHEN 'OSIE' THEN 
+              st_astext(st_transform(l2.centroid_geom,29903)) ||
+              CASE (mod(CAST(st_x(st_transform(l2.centroid_geom,29903)) AS INTEGER),500000)/100000)*10 + mod(CAST(st_y(st_transform(l2.centroid_geom,29903)) AS INTEGER),500000)/100000
+                WHEN  0 THEN 'V' WHEN  1 THEN 'Q' WHEN  2 THEN 'L' WHEN  3 THEN 'F' WHEN  4 THEN 'A'
+                WHEN 10 THEN 'W' WHEN 11 THEN 'R' WHEN 12 THEN 'M' WHEN 13 THEN 'G' WHEN 14 THEN 'B'
+                WHEN 20 THEN 'X' WHEN 21 THEN 'S' WHEN 22 THEN 'N' WHEN 23 THEN 'H' WHEN 24 THEN 'C'
+                WHEN 30 THEN 'Y' WHEN 31 THEN 'T' WHEN 32 THEN 'O' WHEN 33 THEN 'J' WHEN 34 THEN 'D'
+                WHEN 40 THEN 'Z' WHEN 41 THEN 'U' WHEN 42 THEN 'P' WHEN 43 THEN 'K' WHEN 44 THEN 'E' ELSE '-'
+              END ||
+              lpad(''||mod(CAST(st_x(st_transform(l2.centroid_geom,29903)) AS INTEGER), 100000)/100,3,'0') ||
+              lpad(''||mod(CAST(st_y(st_transform(l2.centroid_geom,29903)) AS INTEGER), 100000)/100,3,'0')
+            ELSE l2.centroid_sref
+          END
+        ELSE l2.centroid_sref
+      END as sref,
       l2.code as section_name,
       '' as date, --- allows proper positioning of date column in report
       parent.date_start,
@@ -70,7 +100,7 @@
     <column name='site_name' display='Site Name' />
     <column name='site_code' display='Site Code' />
     <column name='section_name' display='Section No.' comment='used for section level data only'/>
-    <column name='sref' display='Grid Ref' />
+    <column name='sref' display='Section Grid Ref' />
     <column name='date' display='Date' />
     <column name='recorder' display='Recorder' />
     <column name='taxon_meaning_id' visible='false' />
