@@ -969,8 +969,6 @@ class iform_report_calendar_summary {
             'dataSource' => 'library/locations/locations_list_exclude_sensitive');
     $allowSensitive = empty($args['sensitivityLocAttrId']) ||
         (function_exists('user_access') && !empty($args['sensitivityAccessPermission']) && user_access($args['sensitivityAccessPermission']));
-//    $locationListArgs['extraParams']['sensattr'] = $allowSensitive ? '' : $args['sensitivityLocAttrId'];
-//    $locationListArgs['extraParams']['exclude_sensitive'] = $allowSensitive ? 0 : 1;
     if(isset($args['locationTypeFilter']) && $args['locationTypeFilter']!="")
       $locationListArgs['extraParams']['location_type_id'] = $args['locationTypeFilter'];
     if(!empty($args['sensitivityLocAttrId']))
@@ -1094,7 +1092,7 @@ class iform_report_calendar_summary {
       $options['downloadFilePrefix'] .= preg_replace('/[^A-Za-z0-9]/i', '', $description).'_';
     foreach($sort as $id=>$name){
       $ctrl .= '<option value='.$id.' class="location-select-option '.
-               (!empty($args['sensitivityLocAttrId']) && $locs[$id]['attr_location_'.$args['sensitivityLocAttrId']] != null ? 'sensitive' : '').
+               (!empty($args['sensitivityLocAttrId']) && $locs[$id]['attr_location_'.$args['sensitivityLocAttrId']] === "1" ? 'sensitive' : '').
                '" '.($siteUrlParams[self::$locationKey]['value']==$id ? 'selected="selected" ' : '').'>'.
                $name.(isset($args['includeSrefInLocationFilter']) && $args['includeSrefInLocationFilter'] ? ' ('.$locs[$id]['centroid_sref'].')' : '').
                '</option>';
