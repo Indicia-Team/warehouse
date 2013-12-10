@@ -490,6 +490,8 @@ class iform_dynamic {
           if (method_exists('extension_' . $parts[0], $parts[1])) { 
             //outputs a control for which a specific extension function has been written.
             $path = call_user_func(array(self::$called_class, 'getReloadPath')); 
+            //pass the classname of the form through to the extension control method to allow access to calling class functions and variables
+            $args["calling_class"]='iform_' . self::$node->iform;
             $html .= call_user_func(array('extension_' . $parts[0], $parts[1]), $auth, $args, $tabalias, $options, $path);
             $hasControls = true;
           } 
