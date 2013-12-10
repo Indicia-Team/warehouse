@@ -1185,7 +1185,7 @@ class iform_dynamic_shorewatch_importer extends iform_dynamic {
     $newSampleRequired = false;
     foreach ($_POST as $fieldName=>$fieldInPostFormat) {
       //Check if any of the sample attributes have changed and also data held in the sample row in the database (as opposed to data held in the sample_attributes table)
-      if ($fieldName == 'Spatial_ref'||$fieldName == 'Date'||$fieldName == 'Notes'||substr($fieldInPostFormat, 0, 8 ) === "smpAttr:") {
+      if ($fieldInPostFormat == 'sample:entered_sref'||$fieldInPostFormat == 'sample:date'||$fieldInPostFormat == 'sample:comment'||$fieldInPostFormat == 'sample:location_name'||substr($fieldInPostFormat, 0, 8 ) === "smpAttr:") {
         if (!empty($values[$fieldInPostFormat]) && $values[$fieldInPostFormat]!=$data[$postCounter])      
           $newSampleRequired = true;
       }
@@ -1260,15 +1260,18 @@ class iform_dynamic_shorewatch_importer extends iform_dynamic {
       if (substr($fieldInPostFormat, 0, 8 ) === "smpAttr:")
         $values[$fieldInPostFormat]=$data[$postCounter];
       //If a column is present in the import, then set it in the $values array
-      switch($fieldName) {
-        case 'Spatial_ref':
+      switch($fieldInPostFormat) {
+        case 'sample:entered_sref':
           $values['sample:entered_sref'] = $data[$postCounter];
           break;
-        case 'Date':
+        case 'sample:date':
           $values['sample:date'] = $data[$postCounter];
           break;
-        case 'Notes':
+        case 'sample:comment':
           $values['sample:comment'] = $data[$postCounter];
+          break;
+        case 'sample:location_name':
+          $values['sample:location_name'] = $data[$postCounter];
           break;
       }
       //Site is different as we save the location_id to the database, so get the Id for the name from the database.
