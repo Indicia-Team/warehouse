@@ -305,6 +305,16 @@ class iform_dynamic_shorewatch_importer extends iform_dynamic {
           'group'=>'Survey Ids'
         ),
         array(
+          'name'=>'keep_going_after_error',
+          'caption'=>'Continue import after issues detected?',
+          'description'=>'The import is processed on a line-by-line basis. Does the import stop or try importing the rest of the data if problems with the data are detected? '.
+              'Note that data may have already been entered into the database before the issue occurred. '.
+              'Leaving this option on may result in inconsistent data being entered into the database depending on when the problem occurred during processing.',
+          'type'=>'boolean',
+          'default'=>false,
+          'group'=>'Import Mode'
+        ),
+        array(
           'name'=>'presetSettings',
           'caption'=>'Preset Settings',
           'description'=>'Provide a list of predetermined settings which the user does not need to specify, one on each line in the form name=value. '.
@@ -1087,7 +1097,7 @@ class iform_dynamic_shorewatch_importer extends iform_dynamic {
         //When data relating to the main sample in the import file is different to the previous row, we know to create a new sample.
         //This function tests for this and submits the sample to the database if a new sample is required, otherwise the code continues building the sub-sample/occurrence sub-models for the existing submission.
         //If a new sample is required, the number of occurrences created for the parent sample is reset back to 0.
-        if ($importErrorDetected===false) {
+        if ($importErrorDetected===false||$args['keep_going_after_error']) {
           $returnArray = self::submit_data_if_new_parent_sample_required($values, $data,$args,$writeAuth,$occurrenceNumber,$submission);
           $occurrenceNumber=$returnArray[0];
           $importErrorDetected=$returnArray[1];
@@ -1102,13 +1112,13 @@ class iform_dynamic_shorewatch_importer extends iform_dynamic {
               $species = $data[$columnNum];
           }
           $columnNum++; 
-        }
-        if ($importErrorDetected===false) {
+        }       
+        if ($importErrorDetected===false||$args['keep_going_after_error']) {
           $importErrorDetected = self::create_values_array_to_submit_sample($values, $data, $occurrenceNumber,$species,$args,$importErrorDetected);
           $importErrorDetected = self::create_values_array_to_submit_occurrence($values, $data, $occurrenceNumber,$species,$args,$importErrorDetected);
         }      
       }
-      if ($importErrorDetected===false) {
+      if ($importErrorDetected===false||$args['keep_going_after_error']) {
         $submission=self::get_submission($values, $args, true);
         $response = data_entry_helper::forward_post_to('save', $submission,$writeAuth);
         drupal_set_message('Import complete');
@@ -1182,7 +1192,11 @@ class iform_dynamic_shorewatch_importer extends iform_dynamic {
               $newSampleRequired = true; 
             $values['sample:location_id'] = $locationRecord[0]['id'];
           } else {
-            drupal_set_message('<B>Warning: The location '.$data[$postCounter].' is not currently present in the database. I have not imported this parent sample or any samples after it.</B>');
+            drupal_set_message('<B>Warning: The location '.$data[$postCounter].' is not currently present in the database. .</B>');
+            if ($args['keep_going_after_error'])
+              drupal_set_message('<i>I will attempt to continue with the import but errors may occur or there might be inconsistent data entered into the database.</i>');
+            else
+              drupal_set_message('<i>The import has been stopped.</i>');
             return array($occurrenceNumber,true);
           }
         }
@@ -1257,7 +1271,11 @@ class iform_dynamic_shorewatch_importer extends iform_dynamic {
           if (!empty($locationRecord[0]['id']))
             $values['sample:location_id'] = $locationRecord[0]['id'];
           else {
-            drupal_set_message('<B>Warning: The location '.$data[$postCounter].' is not currently present in the database. I have not imported this parent sample or any samples after it.</B>');
+            drupal_set_message('<B>Warning: The location '.$data[$postCounter].' is not currently present in the database.</B>');
+            if ($args['keep_going_after_error'])
+              drupal_set_message('<i>I will attempt to continue with the import but errors may occur or there might be inconsistent data entered into the database.</i>');
+            else
+              drupal_set_message('<i>The import has been stopped.</i>');
             return true; 
           }
         }
@@ -1324,7 +1342,11 @@ class iform_dynamic_shorewatch_importer extends iform_dynamic {
       if (!empty($taxaTaxonListRecord[0]['id']))
         $values['sc:species-grid-111-'.$occurrenceNumber.'::present']=$taxaTaxonListRecord[0]['id'];
       else {
-        drupal_set_message('<B>Warning: The taxon '.$species.' is not currently present in the database. I have not imported this parent sample or any samples after it.</B>');
+        drupal_set_message('<B>Warning: The taxon '.$species.' is not currently present in the database.</B>');
+        if ($args['keep_going_after_error'])
+          drupal_set_message('<i>I will attempt to continue with the import but errors may occur or there might be inconsistent data entered into the database.</i>');
+        else
+          drupal_set_message('<i>The import has been stopped.</i>');
         return true;
       }
       //Set the sub-sample index
