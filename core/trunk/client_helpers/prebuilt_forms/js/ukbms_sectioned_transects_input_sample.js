@@ -303,9 +303,11 @@ function input_blur (evt) {
       if (jQuery(selector +'\\:id').length>0) {
         jQuery('#occid').val(jQuery(selector +'\\:id').val());
         jQuery('#occid').attr('disabled', false);
+        jQuery('#occSensitive').attr('disabled', true); // existing ID - leave sensitivity as is
       } else {
         // if no existing occurrence, we must not post the occurrence:id field.
         jQuery('#occid').attr('disabled', true);
+        jQuery('#occSensitive').attr('disabled', false); // new data - use location sensitivity
       }
       if (jQuery(selector +'\\:attrValId').length===0) {
         // by setting the attribute field name to occAttr:n where n is the occurrence attribute id, we will get a new one
