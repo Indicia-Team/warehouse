@@ -350,10 +350,9 @@ class iform_dynamic_shorewatch_importer extends iform_dynamic {
    * Return the Indicia form code
    * @param array $args Input parameters.
    * @param array $node Drupal node object
-   * @param array $response Response from Indicia services after posting a verification.
    * @return HTML string
    */
-  public static function get_form($args, $node, $response) {
+  public static function get_form($args, $node) {
     iform_load_helpers(array('import_helper','report_helper'));
     $args['model']='occurrence';
     $auth = import_helper::get_read_write_auth($args['website_id'], $args['password']);
