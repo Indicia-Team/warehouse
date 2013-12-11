@@ -651,6 +651,22 @@ class iform_ukbms_sectioned_transects_input_sample {
           'required' => false,
           'default' => false,
           'group' => 'Transects Editor Settings'
+        ),
+        array(
+          'name'=>'sensitiveAttrID',
+          'caption' => 'Location attribute used to filter out sensitive sites',
+          'description' => 'A boolean location attribute, set to true if a site is sensitive.',
+          'type' => 'locAttr',
+          'required' => false,
+          'group' => 'Sensitivity Handling'
+        ),
+        array(
+          'name' => 'sensitivityPrecision',
+          'caption' => 'Sensitivity Precision',
+          'description' => 'Precision to be applied to new occurrences recorded at sensitive sites. Existing occurrences are not changed. A number representing the square size in metres - e.g. enter 1000 for 1km square.',
+          'type' => 'int',
+          'required' => false,
+          'group' => 'Sensitivity Handling'
         )
       )
     );
@@ -1320,6 +1336,22 @@ jQuery(jQuery('#".$options["tabDiv"]."').parent()).bind('tabsshow', speciesMapTa
     $r .= '<input name="occurrence:zero_abundance" id="occzero" />';
     $r .= '<input name="occurrence:taxa_taxon_list_id" id="ttlid" />';
     $r .= '<input name="occurrence:sample_id" id="occ_sampleid"/>';
+    if(isset($args["sensitiveAttrID"]) && $args["sensitiveAttrID"] != "" && isset($args["sensitivityPrecision"]) && $args["sensitivityPrecision"] != "") {
+      $locationTypes = helper_base::get_termlist_terms($auth, 'indicia:location_types', array(empty($args['transect_type_term']) ? 'Transect' : $args['transect_type_term']));
+      $site_attributes = data_entry_helper::getAttributes(array(
+            'valuetable'=>'location_attribute_value'
+            ,'attrtable'=>'location_attribute'
+            ,'key'=>'location_id'
+            ,'fieldprefix'=>'locAttr'
+            ,'extraParams'=>$auth['read'] + array('id'=>$args["sensitiveAttrID"])
+            ,'location_type_id'=>$locationTypes[0]['id']
+            ,'survey_id'=>$args['survey_id']
+            ,'id' => $parentLocId // location ID
+      ));
+      $r .= '<input name="occurrence:sensitivity_precision" id="occSensitive" value="'.
+            (count($site_attributes)>0 && $site_attributes[$args["sensitiveAttrID"]]['default']=="1" ? $args["sensitivityPrecision"] : '')
+            .'"/>';
+    }
     $r .= '<input name="occAttr:' . $args['occurrence_attribute_id'] . '" id="occattr"/>';
     $r .= '<input name="transaction_id" id="transaction_id"/>';
     $r .= '<input name="user_id" value="'.hostsite_get_user_field('user_id', 1).'"/>';
