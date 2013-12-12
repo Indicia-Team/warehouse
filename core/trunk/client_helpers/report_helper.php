@@ -3195,9 +3195,8 @@ jQuery('[name=outputFormat]').change();\n";
       data_entry_helper::$javascript .= "var seriesData = {ids: [".implode(',', $seriesIDs)."], raw: [".implode(',', $rawSeriesData)."], summary: [".implode(',', $summarySeriesData)."], estimates: [".implode(',', $estimatesSeriesData)."]};\n";
       // Finally, dump out the Javascript with our constructed parameters.
       // width stuff is a bit weird, but jqplot requires a fixed width, so this just stretches it to fill the space.
-      data_entry_helper::$javascript .= "\nvar axesOpts = {".$axesOpts."};\naxesOpts.resetAxes=['yaxis'];\nvar plots = [];
+      data_entry_helper::$javascript .= "\nvar plots = [];
 function replot(){
-  if(typeof axesOpts == 'undefined') return;
   // there are problems with the coloring of series when added to a plot: easiest just to completely redraw.
   var max=0;
   var type = jQuery('#outputSource').val();
@@ -3211,15 +3210,14 @@ function replot(){
   jQuery('[name=".$options['chartID']."-series]').each(function(idx, elem){
       opts.series[idx].show = (jQuery(elem).filter('[checked]').length > 0);
   });
+  for(var i=0; i<seriesData[type].length; i++)
+    if(opts.series[i].show)
+      for(var j=0; j<seriesData[type][i].length; j++)
+          max=(max>seriesData[type][i][j]?max:seriesData[type][i][j]);
+  opts.axes.yaxis.max=max+1;
+  opts.axes.yaxis.tickInterval = Math.floor(max/15); // number of ticks - too many takes too long to display
+  if(!opts.axes.yaxis.tickInterval) opts.axes.yaxis.tickInterval=1;
   plots[type] = $.jqplot('".$options['chartID']."-'+type,  seriesData[type], opts);
-  for(var i=0; i<plots[type].series.length; i++)
-    if(plots[type].series[i].show)
-      for(var j=0; j<plots[type].series[i].data.length; j++)
-          max=(max>plots[type].series[i].data[j][1]?max:plots[type].series[i].data[j][1]);
-  axesOpts.axes.yaxis.max=max+1;
-  axesOpts.axes.yaxis.tickInterval = Math.floor(max/15); // number of ticks - too many takes too long to display
-  if(!axesOpts.axes.yaxis.tickInterval) axesOpts.axes.yaxis.tickInterval=1;
-  plots[type].replot(axesOpts);
 };\n";
       // div are full width.
       $r .= '<div id="'.$options['chartContainerID'].'" class="'.$options['chartClass'].'" style="'.(isset($options['width']) && $options['width'] != '' ? 'width:'.$options['width'].'px;':'').($format['chart']['display']?'':'display:none;').'">';
