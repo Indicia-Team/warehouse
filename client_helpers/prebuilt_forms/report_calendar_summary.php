@@ -1031,6 +1031,7 @@ class iform_report_calendar_summary {
       $locationListArgs['extraParams']['idlist'] = implode(',', self::$branchLocationList);
       $locationList = report_helper::get_report_data($locationListArgs);
       if (isset($locationList['error'])) return $locationList['error'];
+      $options['extraParams']['location_list'] = implode(',', self::$branchLocationList);
     } else {
     // If we are looking at all sites, we can see all non sensitive sites, plus sensitive sites if they are allocated to me as a site or as a branch, or if I have access to sensitive.
       $description="All sites";
@@ -1591,8 +1592,9 @@ jQuery('#".$ctrlid."').change(function(){
           $reportOptions['extraParams']['user_id'] = $account->profile_indicia_user_id;
       }
     }
-    if((isset($args['managerPermission']) && $args['managerPermission']!="" && user_access($args['managerPermission'])) ||
-        $reportOptions['extraParams']['location_list'] != '' || $reportOptions['extraParams']['user_id'] != '' || $reportOptions['extraParams']['location_id'] != '') {
+    if((isset($args['managerPermission']) && $args['managerPermission']!="" && user_access($args['managerPermission'])) || // if you are super manager then you can see all the downloads.
+        $reportOptions['extraParams']['location_list'] != '' || // only filled in for a branch user in branch mode
+        $reportOptions['extraParams']['user_id'] != '') { // if user specified - either me in normal or branch mode, or a manager
       global $indicia_templates;
       $indicia_templates['report_download_link'] = '<th><a href="{link}"><button type="button">{caption}</button></a></th>';
       // format is assumed to be CSV
@@ -1603,6 +1605,7 @@ jQuery('#".$ctrlid."').change(function(){
       if($downloadOptions['extraParams']['location_list']=="")
         $downloadOptions['extraParams']['location_list']="(-1)";
       else $downloadOptions['extraParams']['location_list']='('.$downloadOptions['extraParams']['location_list'].')';
+
       for($i=1; $i<=4; $i++){
         if(isset($args['Download'.$i.'Caption']) && $args['Download'.$i.'Caption'] != "" && isset($args['download_report_'.$i]) && $args['download_report_'.$i] != ""){
           $downloadOptions['caption' ]=$args['Download'.$i.'Caption'];
