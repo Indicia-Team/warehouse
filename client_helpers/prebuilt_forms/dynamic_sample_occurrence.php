@@ -928,6 +928,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     }
     
     // Now load the occurrences and their attributes.
+    // @todo: Convert to occurrences media capabilities.
     $loadImages = $args['occurrence_images'];
     $subSamples = array();
     data_entry_helper::preload_species_checklist_occurrences(data_entry_helper::$entity_to_load['sample:id'], 
@@ -1606,7 +1607,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   protected static function get_control_samplephoto($auth, $args, $tabAlias, $options) {
     return data_entry_helper::file_box(array_merge(array(
       'table'=>'sample_image',
-      'caption'=>lang::get('Overall Photo')
+      'caption'=>lang::get('Overall Photo'),
+      'readAuth'=>$auth['read']
     ), $options));
   }
 
@@ -1633,7 +1635,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           'label'=>lang::get('Record Comment')
         ));
       if ($args['occurrence_images']){
-        $r .= self::occurrence_photo_input($options, $tabAlias, $args);
+        $r .= self::occurrence_photo_input($auth['read'], $options, $tabAlias, $args);
       }
       return $r;
     } else
@@ -1818,7 +1820,7 @@ else
    */
   protected static function get_control_photos($auth, $args, $tabAlias, $options) {
     if ($args['multiple_occurrence_mode']==='single') {
-      return self::occurrence_photo_input($options, $tabAlias, $args);
+      return self::occurrence_photo_input($auth['read'], $options, $tabAlias, $args);
     }
     else 
       return "[photos] control cannot be included in form when in grid entry mode, since photos are automatically included in the grid.";
@@ -2073,10 +2075,11 @@ else
   /**
    * Provides a control for inputting photos against the record, when in single record mode.
    *
-   * @param $options Options array for the control.
-   * @param $tabAlias ID of the tab's div if this is being loaded onto a div.
+   * @param array $readAuth Read authorisation tokens
+   * @param array $options Options array for the control.
+   * @param string $tabAlias ID of the tab's div if this is being loaded onto a div.
    */
-  protected static function occurrence_photo_input($options, $tabAlias, $args) {
+  protected static function occurrence_photo_input($readAuth, $options, $tabAlias, $args) {
     $defaults = array(
       'table'=>'occurrence_image',
       'label'=>lang::get('Upload your photos'),
@@ -2084,7 +2087,7 @@ else
       'resizeWidth' => 1600,
       'resizeHeight' => 1600,
     );
-    $opts = array();
+    $opts = array('readAuth'=>$readAuth);
     if ($args['interface']!=='one_page')
       $opts['tabDiv']=$tabAlias;
     foreach ($options as $key => $value) {

@@ -183,7 +183,7 @@ a {
   padding: 0.5em;
 }
 
-.photo {
+.photo, .link {
   display:-moz-inline-stack;
   display:inline-block;
   zoom:1;
@@ -191,6 +191,12 @@ a {
   margin: 1em;
   padding: 0.5em;
   vertical-align: top;
+}
+
+.link {
+  min-width: 46%;
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
 }
 
 .photo > .ui-widget-header {
@@ -876,4 +882,45 @@ div.note-fail, p.note-fail {
   background: url(../images/desc.gif) no-repeat center center #eee;
   width: 16px;
   margin-left: -1px;
+}
+
+#add-link-form input.text {
+  width: 640px;
+}
+
+/* social media icons for links in reports */
+.social-icon {
+  width: 32px;
+  height: 32px;
+  padding: 8px;
+  background: url(../images/somicro/with_border/sharethis-variation.png) no-repeat center center;
+  display:-moz-inline-stack;
+  display:inline-block;
+  zoom:1;
+  *display:inline;
+}
+
+.social-icon.soundcloud {
+  background-image: url(../images/somicro/with_border/soundcloud-variation.png);
+}
+.social-icon.flickr {
+  background-image: url(../images/somicro/with_border/flickr-variation.png);
+}
+.social-icon.instagram {
+  background-image: url(../images/somicro/with_border/instagram-variation.png);
+}
+.social-icon.twitpic {
+  background-image: url(../images/somicro/with_border/twitpic-variation.png);
+}
+.social-icon.facebook {
+  background-image: url(../images/somicro/with_border/facebook-variation.png);
+}
+.social-icon.twitter {
+  background-image: url(../images/somicro/with_border/twitter-variation.png);
+}
+.social-icon.youtube {
+  background-image: url(../images/somicro/with_border/youtube-variation.png);
+}
+.social-icon.vimeo {
+  background-image: url(../images/somicro/with_border/vimeo-variation.png);
 }

@@ -360,8 +360,9 @@ mapInitialisationHooks.push(function(mapdiv) {
    */
   protected static function get_control_locationphoto($auth, $args, $tabalias, $options) {
     return data_entry_helper::file_box(array_merge(array(
-      'table'=>'location_image',
-      'caption'=>lang::get('File upload')
+      'table'=>'location_medium',
+      'caption'=>lang::get('File upload'),
+      'readAuth' => $auth['read']
     ), $options)); 
   }
   
@@ -382,10 +383,10 @@ mapInitialisationHooks.push(function(mapdiv) {
     // Either an uploadable file, or a link to a Flickr external detail means include the submodel
     // (Copied from data_entry_helper::build_sample_occurrence_submission. If file_box control is used
     // then build_submission calls wrap_with_images instead)
-    if ((array_key_exists('location:image', $values) && $values['location:image'])
-        || array_key_exists('location_image:external_details', $values) && $values['location_image:external_details']) {
+    if ((array_key_exists('location:medium', $values) && $values['location:medium'])
+        || array_key_exists('location_medium:external_details', $values) && $values['location_medium:external_details']) {
       $structure['submodel'] = array(
-          'model' => 'location_image',
+          'model' => 'location_medium',
           'fk' => 'location_id'
       );
     }

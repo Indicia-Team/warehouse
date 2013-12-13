@@ -211,7 +211,7 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
       }
       $(row).find('.id-diff').hover(indiciaFns.hoverIdDiffIcon);
       $(row).find('.species-checklist-select-species').hide();
-      $(row).find('.add-image-link').show();
+      $(row).find('.add-media-link').show();
       // auto-check the row
       checkbox=$(row).find('.scPresenceCell input.scPresence');
       checkbox.attr('checked', 'checked');
@@ -455,9 +455,9 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
    * it has been linked to a taxon. Adds a row to the grid specifically to contain a file uploader for images
    * linked to that occurrence.
    */
-  $('.add-image-link').live('click', function(evt) {
+  $('.add-media-link').live('click', function(evt) {
     evt.preventDefault();
-    var table = evt.target.id.replace('add-images','sc') + ':occurrence_image';
+    var table = evt.target.id.replace('add-media','sc') + ':occurrence_medium';
     var ctrlId='container-'+table+'-'+Math.floor((Math.random())*0x10000);
     var colspan = $($(evt.target).parent().parent()).children().length;
     var imageRow = '<tr class="image-row"><td colspan="' + colspan + '">';
@@ -465,39 +465,40 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
     imageRow += '</td></tr>';
     imageRow = $(imageRow);
     $($(evt.target).parent().parent()).after(imageRow);
-    var opts={
-      caption : 'Files',
-      autoupload : '1',
-      flickr : '',
-      uploadSelectBtnCaption : 'Add more file(s)',
-      startUploadBtnCaption : 'Start upload',
-      msgUploadError : 'An error occurred uploading the file.',
-      msgFileTooBig : 'The image file cannot be uploaded because it is larger than the maximum file size allowed.',
-      runtimes : 'html5,silverlight,flash,gears,browserplus,html4',
-      imagewidth : '250',
-      uploadScript : indiciaData.uploadSettings.uploadScript,
-      destinationFolder : indiciaData.uploadSettings.destinationFolder,
-      swfAndXapFolder : indiciaData.uploadSettings.swfAndXapFolder,
-      jsPath : indiciaData.uploadSettings.jsPath,
-      table : table,
-      maxUploadSize : '4000000', // 4mb
-      container: ctrlId,
-      autopick: true
-    };
-    if (typeof indiciaData.uploadSettings.resizeWidth!=="undefined") { opts.resizeWidth=indiciaData.uploadSettings.resizeWidth; }
-    if (typeof indiciaData.uploadSettings.resizeHeight!=="undefined") { opts.resizeHeight=indiciaData.uploadSettings.resizeHeight; }
-    if (typeof indiciaData.uploadSettings.resizeQuality!=="undefined") { opts.resizeQuality=indiciaData.uploadSettings.resizeQuality; }
-    if (typeof buttonTemplate!=="undefined") { opts.buttonTemplate=buttonTemplate; }
-    if (typeof file_boxTemplate!=="undefined") { opts.file_boxTemplate=file_boxTemplate; }
-    if (typeof file_box_initial_file_infoTemplate!=="undefined") { opts.file_box_initial_file_infoTemplate=file_box_initial_file_infoTemplate; }
-    if (typeof file_box_uploaded_imageTemplate!=="undefined") { opts.file_box_uploaded_imageTemplate=file_box_uploaded_imageTemplate; }
+        var opts={
+          caption : 'Files',
+          autoupload : '1',
+          flickr : '',
+          uploadSelectBtnCaption : 'Add file(s)',
+          startUploadBtnCaption : 'Start upload',
+          msgUploadError : 'An error occurred uploading the file.',
+          msgFileTooBig : 'The image file cannot be uploaded because it is larger than the maximum file size allowed.',
+          runtimes : 'html5,silverlight,flash,gears,browserplus,html4',
+          imagewidth : '250',
+          uploadScript : indiciaData.uploadSettings.uploadScript,
+          destinationFolder : indiciaData.uploadSettings.destinationFolder,
+          swfAndXapFolder : indiciaData.uploadSettings.swfAndXapFolder,
+          jsPath : indiciaData.uploadSettings.jsPath,
+          table : table,
+          maxUploadSize : '4000000', // 4mb
+          container: ctrlId,
+          autopick: true,
+          mediaTypes: indiciaData.uploadSettings.mediaTypes
+        };
+        if (typeof indiciaData.uploadSettings.resizeWidth!=="undefined") { opts.resizeWidth=indiciaData.uploadSettings.resizeWidth; }
+        if (typeof indiciaData.uploadSettings.resizeHeight!=="undefined") { opts.resizeHeight=indiciaData.uploadSettings.resizeHeight; }
+        if (typeof indiciaData.uploadSettings.resizeQuality!=="undefined") { opts.resizeQuality=indiciaData.uploadSettings.resizeQuality; }
+        if (typeof buttonTemplate!=="undefined") { opts.buttonTemplate=buttonTemplate; }
+        if (typeof file_boxTemplate!=="undefined") { opts.file_boxTemplate=file_boxTemplate; }
+        if (typeof file_box_initial_file_infoTemplate!=="undefined") { opts.file_box_initial_file_infoTemplate=file_box_initial_file_infoTemplate; }
+        if (typeof file_box_uploaded_imageTemplate!=="undefined") { opts.file_box_uploaded_imageTemplate=file_box_uploaded_imageTemplate; }
     imageRow.find('div').uploader(opts);
     $(evt.target).hide();
   });
-
+  
   $('.hide-image-link').live('click', function(evt) {
     evt.preventDefault();
-    var ctrlId=(evt.target.id.replace(/^hide\-images/, 'container-sc') + ':occurrence_image').replace(/:/g, '\\:');
+    var ctrlId=(evt.target.id.replace(/^hide\-images/, 'container-sc') + ':occurrence_medium').replace(/:/g, '\\:');
     if ($(evt.target).hasClass('images-hidden')) {
       $('#'+ctrlId).show();
       $(evt.target).removeClass('images-hidden');

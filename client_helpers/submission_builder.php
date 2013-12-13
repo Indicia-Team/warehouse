@@ -353,14 +353,15 @@ class submission_builder extends helper_config {
     // Get the parent model into JSON
     $modelWrapped = self::wrap($values, $modelName, $fieldPrefix);
     
-    // Build sub-models for the image files. Don't post to the warehouse until after validation success. This 
+    // Build sub-models for the media files. Don't post to the warehouse until after validation success. This 
     // also moves any simple uploaded files to the interim image upload folder.
-    $images = data_entry_helper::extract_image_data($values, $modelName.'_image', true, true);
-    foreach ($images as $image) {
-      $imageWrap = self::wrap($image, $modelName.'_image');      
+    $media = data_entry_helper::extract_media_data($values, $modelName.'_medium', true, true);
+    
+    foreach ($media as $item) {
+      $wrapped = self::wrap($item, $modelName.'_medium');      
       $modelWrapped['subModels'][] = array(
           'fkId' => $modelName.'_id',
-          'model' => $imageWrap
+          'model' => $wrapped
       );
     }
     return $modelWrapped;

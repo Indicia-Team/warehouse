@@ -844,8 +844,8 @@ $('#$escaped').change(function(e) {
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>table</b><br/>
-  * Name of the image table to upload images into, e.g. occurrence_image, location_image, sample_image or taxon_image.
-  * Defaults to occurrence_image.
+  * Name of the image table to upload images into, e.g. occurrence_medium, location_medium, sample_medium or taxon_medium.
+  * Defaults to occurrence_medium.
   * </li>
   * <li><b>loadExistingRecordKey</b><br/>
   * Optional prefix for the information in the data_entry_helper::$entity_to_load to use for loading any existing images. 
@@ -984,9 +984,10 @@ $('#$escaped').change(function(e) {
       'swfAndXapFolder' => $relpath . 'plupload/',
       'jsPath' => self::$js_path,
       'buttonTemplate' => $indicia_templates['button'],
-      'table' => 'occurrence_image',
+      'table' => 'occurrence_medium',
       'maxUploadSize' => self::convert_to_bytes(isset(parent::$maxUploadSize) ? parent::$maxUploadSize : '4M'),
-      'codeGenerated' => 'all'
+      'codeGenerated' => 'all',
+      'mediaTypes' => array('Image:Local')
     );    
     if (isset(self::$final_image_folder_thumbs))
       $defaults['finalImageFolderThumbs'] = $relpath . self::$final_image_folder_thumbs;
@@ -1018,7 +1019,7 @@ $('#$escaped').change(function(e) {
       $idx = 0;
       foreach($options as $option=>$value) {
         if (is_array($value)) {
-          $value = "{ " . implode(" : true, ",$value) . " : true }";
+          $value = json_encode($value);
         }
         else
           // not an array, so wrap as string
@@ -1030,7 +1031,7 @@ $('#$escaped').change(function(e) {
       }
       // add in any reloaded items, when editing or after validation failure
       if (self::$entity_to_load) {
-        $images = self::extract_image_data(self::$entity_to_load, 
+        $images = self::extract_media_data(self::$entity_to_load, 
             isset($options['loadExistingRecordKey']) ? $options['loadExistingRecordKey'] : $options['table']);
         $javascript .= ",\n  existingFiles : ".json_encode($images);
       }
@@ -1057,28 +1058,14 @@ $('#$escaped').change(function(e) {
     }
     // Output a placeholder div for the jQuery plugin. Also output a normal file input for the noscripts
     // version.
-    return '<div class="file-box" id="'.$containerId.'"></div><noscript>'.self::image_upload(array(
+    $r = '<div class="file-box" id="'.$containerId.'"></div><noscript>'.self::image_upload(array(
       'label' => $options['caption'],
       // Convert table into a psuedo field name for the images
       'id' => $options['id'],
       'fieldname' => str_replace('_', ':', $options['table'])
     )).'</noscript>';
-  }
-
-  /**
-   * Calculates the folder that submitted images end up in according to the helper_config.
-   */
-  public static function get_uploaded_image_folder() {
-    if (!isset(self::$final_image_folder) || self::$final_image_folder=='warehouse') {
-      if (!empty(self::$warehouse_proxy)) {
-        $warehouseUrl = self::$warehouse_proxy;
-      } else {
-        $warehouseUrl = self::$base_url;
-      }
-      return $warehouseUrl.(isset(self::$indicia_upload_path) ? self::$indicia_upload_path : 'upload/');
-    } else {
-      return self::getRootFolder() . self::client_helper_path() . self::$final_image_folder;
-    }
+    $r .= self::add_link_popup($options);
+    return $r;
   }
 
  /**
@@ -2619,9 +2606,12 @@ $('#$escaped').change(function(e) {
   * Optional. If set to true, then an occurrence comment input field is included on each row.</li>
   * <li><b>occurrenceSensitivity</b><br/>
   * Optional. If set to true, then an occurrence sensitivity selector is included on each row.</li>
-  * <li><b>occurrenceImages</b><br/>
-  * Optional. If set to true, then images can be uploaded for each occurrence row. Currently not supported for
-  * multi-column grids.</li>
+  * <li><b>mediaTypes</b><br/>
+  * Optional. Array of media types that can be uploaded. Choose from 
+  * TODO
+  * 
+  * 'photo','flickr','youtube',
+  * 'soundcloud'. Currently not supported for multi-column grids.</li>
   * <li><b>resizeWidth</b><br/>
   * If set, then the image files will be resized before upload using this as the maximum pixels width.
   * </li>
@@ -2762,9 +2752,9 @@ $('#$escaped').change(function(e) {
     if ($options['subSamplePerRow'])
       // we'll track 1 sample per grid row.
       $smpIdx=0;
-    if ($options['columns'] > 1 && $options['occurrenceImages'])
+    if ($options['columns'] > 1 && count($options['mediaTypes'])>1)
       throw new Exception('The species_checklist control does not support having more than one occurrence per row (columns option > 0) '.
-          'at the same time has having the occurrenceImages option enabled.');
+          'at the same time has having the mediaTypes option in use.');
     self::add_resource('json');
     self::add_resource('autocomplete');
     $filterArray = self::get_species_names_filter($options);
@@ -2805,7 +2795,7 @@ $('#$escaped').change(function(e) {
       self::$javascript .= "indiciaData['previousRowColumnsToInclude-".$options['id']."'] = '".$options['previousRowColumnsToInclude']."';\n";
       self::$javascript .= "indiciaData.langAddAnother='" . lang::get('Add another') . "';\n";
     }
-    if ($options['occurrenceImages']) {
+    if (count($options['mediaTypes'])) {
       self::add_resource('plupload');
       // store some globals that we need later when creating uploaders
       $relpath = self::getRootFolder() . self::client_helper_path();
@@ -2840,7 +2830,7 @@ $('#$escaped').change(function(e) {
     // Load any existing sample's occurrence data into $entity_to_load
     if (isset(self::$entity_to_load['sample:id']) && $options['useLoadedExistingRecords']===false)
       self::preload_species_checklist_occurrences(self::$entity_to_load['sample:id'], $options['readAuth'], 
-          $options['occurrenceImages'], $options['reloadExtraParams'], $subSampleRows, $options['speciesControlToUseSubSamples'],
+          $options['mediaTypes'], $options['reloadExtraParams'], $subSampleRows, $options['speciesControlToUseSubSamples'],
           (isset($options['subSampleSampleMethodID']) ? $options['subSampleSampleMethodID'] : ''));
     // load the full list of species for the grid, including the main checklist plus any additional species in the reloaded occurrences.
     $taxalist = self::get_species_checklist_taxa_list($options, $taxonRows);
@@ -2898,18 +2888,27 @@ $('#$escaped').change(function(e) {
       }
       // track if there is a row we are editing in this grid
       $hasEditedRecord = false;
+      if ($options['mediaTypes']) {
+        $onlyImages = true;
+        foreach($options['mediaTypes'] as $mediaType) {
+          if (substr($mediaType, 0, 6)!=='Image:') 
+            $onlyImages=false;
+        }
+        $mediaBtnLabel = lang::get($onlyImages ? 'add images' : 'add media');
+        $mediaBtnClass = 'sc' . $onlyImages ? 'Image' : 'Media' . 'Link';
+      }
       foreach ($taxonRows as $txIdx => $rowIds) {
         $ttlId = $rowIds['ttlId'];
         $loadedTxIdx = isset($rowIds['loadedTxIdx']) ? $rowIds['loadedTxIdx'] : -1;
         $existing_record_id = isset($rowIds['occId']) ? $rowIds['occId'] : false;
         // Multi-column input does not work when image upload allowed
-        $colIdx = $options['occurrenceImages'] ? 0 : (int)floor($rowIdx / (count($taxonRows)/$options['columns']));
+        $colIdx = count($options['mediaTypes']) ? 0 : (int)floor($rowIdx / (count($taxonRows)/$options['columns']));
         // Find the taxon in our preloaded list data that we want to output for this row
         $taxonIdx = 0;
         while ($taxonIdx < count($taxalist) && $taxalist[$taxonIdx]['id'] != $ttlId) {
           $taxonIdx += 1;
         }
-        if ($taxonIdx >= count($taxalist))
+        if ($taxonIdx >= count($taxalist)) 
           continue; // next taxon, as this one was not found in the list
         $taxon = $taxalist[$taxonIdx];
         // If we are using the sub-species column then when the taxon has a parent (=species) this goes in the
@@ -3073,20 +3072,12 @@ $('#$escaped').change(function(e) {
           ));
           $row .= "</td>\n";
         }
-        if ($options['occurrenceImages']) {
-          $existingImages = is_array(self::$entity_to_load) ? preg_grep("/^sc:$loadedTxIdx:$existing_record_id:occurrence_image:id:[a-z0-9]*$/", array_keys(self::$entity_to_load)) : array();
-          if (count($existingImages)===0) {
-            $row .= "\n<td class=\"ui-widget-content scImageLinkCell\">";
-            $fieldname = "add-images:$options[id]-$txIdx:$existing_record_id";
-            $row .= "<a href=\"\" class=\"add-image-link scImageLink\" id=\"$fieldname\">" . str_replace(' ','&nbsp;',lang::get('add images')) . "</a>";
-            $row .= "</td>";
-          }
-          else {
-            $row .= "\n<td class=\"ui-widget-content scImageLinkCell\">";
-            $fieldname = "hide-images:$options[id]-$txIdx:$existing_record_id";
-            $row .= "<a href=\"\" class=\"hide-image-link scImageLink\" id=\"$fieldname\">" . str_replace(' ','&nbsp;',lang::get('hide images')) . "</a>";
-            $row .= "</td>";
-          }
+        if ($options['mediaTypes']) {
+          $row .= "\n<td class=\"ui-widget-content scAddMediaCell\">";
+          $fieldname = "add-media:$options[id]-$txIdx:$existing_record_id";
+          $row .= "<a href=\"\" class=\"add-media-link button $mediaBtnClass\" id=\"$fieldname\">" .
+              "$mediaBtnLabel</a>";
+          $row .= "</td>";
         }
         // Are we in the first column of a multicolumn grid, or doing single column grid? If so start new row. 
         if ($colIdx === 0) {
@@ -3095,14 +3086,17 @@ $('#$escaped').change(function(e) {
           $rows[$rowIdx % (ceil(count($taxonRows)/$options['columns']))] .= $row;
         }
         $rowIdx++;
-        if ($options['occurrenceImages']) {
+        if ($options['mediaTypes']) {
+          $existingImages = is_array(self::$entity_to_load) ? preg_grep("/^sc:$loadedTxIdx:$existing_record_id:occurrence_medium:id:[a-z0-9]*$/", array_keys(self::$entity_to_load)) : array();
           // If there are existing images for this row, display the image control
           if (count($existingImages) > 0) {
-            $totalCols = ($options['lookupListId'] ? 2 : 1) + 1 /*checkboxCol*/ + ($options['occurrenceImages'] ? 1 : 0) + count($occAttrControls);
+            $totalCols = ($options['lookupListId'] ? 2 : 1) + 1 /*checkboxCol*/ + (count($options['mediaTypes']) ? 1 : 0) + count($occAttrControls);
             $rows[$rowIdx]='<td colspan="'.$totalCols.'">'.data_entry_helper::file_box(array(
-              'table'=>"sc:$options[id]-$txIdx:$existing_record_id:occurrence_image",
-              'loadExistingRecordKey'=>"sc:$loadedTxIdx:$existing_record_id:occurrence_image",
-              'label'=>lang::get('Upload your photos')
+              'table'=>"sc:$options[id]-$txIdx:$existing_record_id:occurrence_medium",
+              'loadExistingRecordKey'=>"sc:$loadedTxIdx:$existing_record_id:occurrence_medium",
+              'label'=>lang::get('Upload your photos'),
+              'mediaTypes' => $options['mediaTypes'],
+              'readAuth' => $options['readAuth']
             )).'</td>';
             $imageRowIdxs[]=$rowIdx;
             $rowIdx++;
@@ -3176,9 +3170,69 @@ $('#$escaped').change(function(e) {
         self::$onload_javascript .= "var tabscontrols = $('#controls').tabs();
 tabscontrols.tabs('select',$('#$options[id]').parents('.ui-tabs-panel')[0].id);\n";
       }
+      if ($options['mediaTypes']) {
+        $r .= self::add_link_popup($options);
+        // make the media types setting available to the grid row add js which has to create file uploader controls
+        self::$javascript .= "indiciaData.uploadSettings.mediaTypes=".json_encode($options['mediaTypes']).";\n";
+      }
       return $r;
     } else {
       return $taxalist['error'];
+    }
+  }
+  
+  /**
+   * Adds HTML to the output for a popup dialog to accept input of external media link URLs
+   * to attach to records in the species grid.
+   * 
+   * @staticvar boolean $doneAddLinkPopup
+   * @param type $options
+   * @return string
+   */
+  private static function add_link_popup($options) {
+    if ($options['mediaTypes']) {
+      $onlyImages = true;
+      $onlyLocal = true;
+      $linkMediaTypes=array();
+      foreach ($options['mediaTypes'] as $mediaType) {
+        $tokens = explode(':', $mediaType);
+        if ($tokens[0]!=='Image')
+          $onlyImages=false;
+        if ($tokens[1]!=='Local') {
+          $onlyLocal=false;
+          $linkMediaTypes[]=$tokens[1];
+        }
+      }
+    }
+    // Output just one add link popup dialog, no matter how many grids there are
+    static $doneAddLinkPopup=false;
+    $typeTermData = self::get_population_data(array(
+      'table'=>'termlists_term',
+      'extraParams'=>$options['readAuth']+array('view'=>'cache', 'termlist_title'=>'Media types', 'columns'=>'id,term')
+    ));
+    $typeTermIdLookup = array();
+    foreach ($typeTermData as $record) {
+      $typeTermIdLookup[$record['term']]=$record['id'];
+    }
+    self::$javascript .= "indiciaData.mediaTypeTermIdLookup=".json_encode($typeTermIdLookup).";\n";
+    if ($options['mediaTypes'] && !$onlyLocal && !$doneAddLinkPopup) {
+      $doneAddLinkPopup=true;
+      $readableTypes = array_pop($linkMediaTypes);
+      if (count($linkMediaTypes)>0)
+        $readableTypes = implode(', ', $linkMediaTypes) . ' ' . lang::get('or') . ' ' . $readableTypes;
+      return '<div style="display: none"><div id="add-link-form" title="Add a link to a remote file">
+<p class="validateTips">Paste in the web address of a resource on '.$readableTypes.'.</p>
+<form>
+<fieldset>
+<label for="name">URL</label>
+<input type="text" name="link_url" id="link_url" class="text ui-widget-content ui-corner-all">
+<p style="display: none" class="error"></p>
+</fieldset>
+</form>
+</div></div>';
+    }
+    else {
+      return '';
     }
   }
   
@@ -3555,11 +3609,11 @@ $('#".$options['id']." .species-filter').click(function(evt) {
    * of occurrences loaded is returned.
    * @param int $sampleId ID of the sample to load
    * @param array $readAuth Read authorisation array
-   * @param boolean $loadImages If set to true, then image information is loaded as well.
+   * @param boolean $loadMedia Array of media type terms to load.
    * @param boolean $extraParams Extra params to pass to the web service call for filtering.
    * @return array Array with key of occurrence_id and value of $taxonInstance.
    */
-  public static function preload_species_checklist_occurrences($sampleId, $readAuth, $loadImages, $extraParams, &$subSamples, $useSubSamples, $subSampleMethodID='') {
+  public static function preload_species_checklist_occurrences($sampleId, $readAuth, $loadMedia, $extraParams, &$subSamples, $useSubSamples, $subSampleMethodID='') {
     $occurrenceIds = array();
     $taxonCounter = array();
     // don't load from the db if there are validation errors, since the $_POST will already contain all the
@@ -3589,11 +3643,11 @@ $('#".$options['id']." .species-filter').click(function(evt) {
       		data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:geom'] = $subsample['wkt'];
       		data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:wkt'] = $subsample['wkt'];
       		data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:entered_sref'] = $subsample['entered_sref'];
-      	    data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:entered_sref_system'] = $subsample['entered_sref_system'];
-      	    data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:date_start'] = $subsample['date_start'];
-      	    data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:date_end'] = $subsample['date_end'];
-            data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:date_type'] = $subsample['date_type'];
-            data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:sample_method_id'] = $subsample['sample_method_id'];
+          data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:entered_sref_system'] = $subsample['entered_sref_system'];
+          data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:date_start'] = $subsample['date_start'];
+          data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:date_end'] = $subsample['date_end'];
+          data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:date_type'] = $subsample['date_type'];
+          data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:sample_method_id'] = $subsample['sample_method_id'];
       	}
       	unset($extraParams['parent_id']);
       	unset($extraParams['sample_method_id']);
@@ -3638,19 +3692,24 @@ $('#".$options['id']." .species-filter').click(function(evt) {
             self::$entity_to_load['sc:'.$occurrenceIds[$attrValue['occurrence_id']].':'.$attrValue['occurrence_id'].':occAttr:'.$attrValue['occurrence_attribute_id'].(isset($attrValue['id'])?':'.$attrValue['id']:'')]
                 = $attrValue['raw_value'];
           }
-          if ($loadImages) {
-            $images = self::get_population_data(array(
-              'table' => 'occurrence_image',
+          if (count($loadMedia)>0) {
+            // @todo: Filter to the appropriate list of media types
+            $media = self::get_population_data(array(
+              'table' => 'occurrence_medium',
               'extraParams' => $readAuth + array('occurrence_id' => array_keys($occurrenceIds)),
               'nocache' => true
             ));
-            foreach($images as $image) {
-              self::$entity_to_load['sc:'.$occurrenceIds[$image['occurrence_id']].':'.$image['occurrence_id'].':occurrence_image:id:'.$image['id']]
-                  = $image['id'];
-              self::$entity_to_load['sc:'.$occurrenceIds[$image['occurrence_id']].':'.$image['occurrence_id'].':occurrence_image:path:'.$image['id']]
-                  = $image['path'];
-              self::$entity_to_load['sc:'.$occurrenceIds[$image['occurrence_id']].':'.$image['occurrence_id'].':occurrence_image:caption:'.$image['id']]
-                  = $image['caption'];
+            foreach($media as $medium) {
+              self::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:id:'.$medium['id']]
+                  = $medium['id'];
+              self::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:path:'.$medium['id']]
+                  = $medium['path'];
+              self::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:caption:'.$medium['id']]
+                  = $medium['caption'];
+              self::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:media_type_id:'.$medium['id']]
+                  = $medium['media_type_id'];
+              self::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:media_type:'.$medium['id']]
+                  = $medium['media_type'];
             }
           }
         }
@@ -3696,8 +3755,8 @@ $('#".$options['id']." .species-filter').click(function(evt) {
         if ($options['occurrenceSensitivity']) {
           $r .= self::get_species_checklist_col_header($options['id']."-sensitivity-$i", lang::get('Sensitivity'), $visibleColIdx, $options['colWidths']) ;
         }
-        if ($options['occurrenceImages']) {
-          $r .= self::get_species_checklist_col_header($options['id']."-images-$i", lang::get('Images'), $visibleColIdx, $options['colWidths']) ;
+        if (count($options['mediaTypes'])) {
+          $r .= self::get_species_checklist_col_header($options['id']."-images-$i", lang::get('Add media'), $visibleColIdx, $options['colWidths']) ;
         }
       }
       $r .= '</tr></thead>';
@@ -3804,7 +3863,7 @@ $('#".$options['id']." .species-filter').click(function(evt) {
         }
       }
       // load and append the additional taxa to our list of taxa to use in the grid
-      if (!empty($options['lookupListId']))
+      if (!empty($options['lookupListId'])) 
         $taxalist = array_merge($taxalist, self::get_population_data($extraTaxonOptions));
     }
     return $taxalist;
@@ -3839,7 +3898,6 @@ $('#".$options['id']." .species-filter').click(function(evt) {
         'PHPtaxonLabel' => false,
         'occurrenceComment' => false,
         'occurrenceSensitivity' => null,
-        'occurrenceImages' => false,
         'id' => 'species-grid-'.rand(0,1000),
         'colWidths' => array(),
         'taxonFilterField' => 'none',
@@ -3853,7 +3911,10 @@ $('#".$options['id']." .species-filter').click(function(evt) {
         'copyDataFromPreviousRow' => false,
         'previousRowColumnsToInclude' => '',
         'editTaxaNames' => false,
-        'sticky' => true
+        'sticky' => true,
+        // legacy - occurrenceImages means just local image support
+        'mediaTypes' => !empty($options['occurrenceImages']) && $options['occurrenceImages'] ?
+            array('Image:Local') : array()
     ), $options);
     // subSamplesPerRow can't be set without speciesControlToUseSubSamples
     $options['subSamplePerRow'] = $options['subSamplePerRow'] && $options['speciesControlToUseSubSamples'];
@@ -4016,10 +4077,19 @@ $('#".$options['id']." .species-filter').click(function(evt) {
               'blankText' => lang::get('Not sensitive'))).
           '</td>';
     }
-    if ($options['occurrenceImages']) {
-      // Add a link, but make it display none for now as we can't link images till we know what species we are linking to.
-      $r .= '<td class="ui-widget-content scImageLinkCell"><a href="" class="add-image-link scImageLink" style="display: none" id="add-images:'.$options['id'].'--idx-:">'.
-          lang::get('add images').'</a><span class="species-checklist-select-species">'.lang::get('select a species first').'</span></td>';
+    if ($options['mediaTypes']) {
+      $onlyLocal = true;
+      $onlyImages = true;
+      foreach ($options['mediaTypes'] as $mediaType) {
+        if (!preg_match('/:Local$/', $mediaType))
+          $onlyLocal=false;
+        if (!preg_match('/^Image:/', $mediaType))
+          $onlyImages=false;
+      }
+      $label = $onlyImages ? 'add images' : 'add media';
+      $class = 'sc' . $onlyImages ? 'Image' : 'Media' . 'Link';
+      $r .= '<td class="ui-widget-content scAddMediaCell"><a href="" class="add-media-link button '.$class.'" style="display: none" id="add-media:'.$options['id'].'--idx-:">'.
+          lang::get($label).'</a><span class="species-checklist-select-species">'.lang::get('select a species first').'</span></td>';
     }
     $r .= "</tr></tbody></table>\n";
     return $r;
@@ -4757,19 +4827,20 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       if (!empty(self::$entity_to_load['occurrence:taxon']) && empty(self::$entity_to_load['occurrence:taxa_taxon_list:taxon']))
         self::$entity_to_load['occurrence:taxa_taxon_list_id:taxon'] = self::$entity_to_load['occurrence:taxon'];
     }
-    
     if ($loadImages) {
       $images = self::get_population_data(array(
-        'table' => $entity . '_image',
-        'extraParams' => $readAuth + array($entity . '_id' => $id),
+        'table' => $entity . '_medium',
+        'extraParams' => $readAuth + array($entity . '_id' => $id, 'test'=>'test'),
         'nocache' => true,
         'sharing' => $sharing
       ));
       if (isset($images['error'])) throw new Exception($images['error']);
       foreach($images as $image) {
-        self::$entity_to_load[$entity . '_image:id:' . $image['id']]  = $image['id'];
-        self::$entity_to_load[$entity . '_image:path:' . $image['id']] = $image['path'];
-        self::$entity_to_load[$entity . '_image:caption:' . $image['id']] = $image['caption'];
+        self::$entity_to_load[$entity . '_medium:id:' . $image['id']]  = $image['id'];
+        self::$entity_to_load[$entity . '_medium:path:' . $image['id']] = $image['path'];
+        self::$entity_to_load[$entity . '_medium:caption:' . $image['id']] = $image['caption'];
+        self::$entity_to_load[$entity . '_medium:media_type:' . $image['id']] = $image['media_type'];
+        self::$entity_to_load[$entity . '_medium:media_type_id:' . $image['id']] = $image['media_type_id'];
       }
     }
   }
@@ -5543,7 +5614,7 @@ if (errors$uniq.length>0) {
         }
       }
 
-      $images = self::extract_image_data($_POST);
+      $media = self::extract_media_data($_POST);
       $request = parent::$base_url."index.php/services/data/$entity";
       $postargs = 'submission='.urlencode(json_encode($submission));
       // passthrough the authentication tokens as POST data. Use parameter writeTokens, or current $_POST if not supplied.
@@ -5563,7 +5634,7 @@ if (errors$uniq.length>0) {
       if (function_exists('hostsite_get_user_field')) 
         $postargs .= '&user_id='.hostsite_get_user_field('indicia_user_id');
       // if there are images, we will send them after the main post, so we need to persist the write nonce
-      if (count($images)>0)
+      if (count($media)>0)
         $postargs .= '&persist_auth=true';
       $response = self::http_post($request, $postargs);
       // The response should be in JSON if it worked
@@ -5579,17 +5650,16 @@ if (errors$uniq.length>0) {
           $final_image_folder = dirname($_SERVER['SCRIPT_FILENAME']) . '/' . self::relative_client_helper_path().
               parent::$final_image_folder;
         }
-
         // submission succeeded. So we also need to move the images to the final location
-        foreach ($images as $image) {
-          // no need to resend an existing image.
-          if (!isset($image['id']) || empty($image['id'])) {
+        foreach ($media as $item) {
+          // no need to resend an existing image, or a media link, just local files.
+          if ($item['media_type']==='Image:Local' && (!isset($item['id']) || empty($item['id']))) {
             if (!isset(self::$final_image_folder) || self::$final_image_folder=='warehouse') {
               // Final location is the Warehouse
               // @todo Set PERSIST_AUTH false if last file
-              $success = self::send_file_to_warehouse($image['path'], true, $writeTokens);
+              $success = self::send_file_to_warehouse($item['path'], true, $writeTokens);
             } else {
-              $success = rename($interim_image_folder.$image['path'], $final_image_folder.$image['path']);
+              $success = rename($interim_image_folder.$item['path'], $final_image_folder.$item['path']);
             }
             if ($success!==true) {
               return array('error' => lang::get('submit ok but file transfer failed').
@@ -5651,7 +5721,7 @@ if (errors$uniq.length>0) {
     // or
     // sc:<grid_id>-<rowIndex>:[<occurrence_id>]:occurrence:comment
     // or
-    // sc:<grid_id>-<rowIndex>:[<occurrence_id>]:occurrence_image:fieldname:uniqueImageId
+    // sc:<grid_id>-<rowIndex>:[<occurrence_id>]:occurrence_medium:fieldname:uniqueImageId
     $records = array();
     // $records will be an array containing an entry for every row in every grid on the page
     $allRowInclusionCheck = array();
@@ -5677,7 +5747,7 @@ if (errors$uniq.length>0) {
         $tableId = substr($key, 18);
         $allRowInclusionCheck[$tableId] = $value;       
       }
-   }
+    }
     foreach ($records as $id => $record) {
       // determine the id of the grid this record is from
       // $id = <grid_id>-<rowIndex> but <grid_id> could contain a hyphen
@@ -5714,7 +5784,7 @@ if (errors$uniq.length>0) {
           }
         }
         $occ = data_entry_helper::wrap($record, 'occurrence');
-        self::attachOccurrenceImagesToModel($occ, $record);
+        self::attachOccurrenceMediaToModel($occ, $record);
         $subModels[] = array(
           'fkId' => 'sample_id',
           'model' => $occ
@@ -5768,7 +5838,7 @@ if (errors$uniq.length>0) {
     // sc:<rowIndex>:[<occurrence_id>]:present (checkbox with val set to ttl_id
     // sc:<rowIndex>:[<occurrence_id>]:occAttr:<occurrence_attribute_id>[:<occurrence_attribute_value_id>]
     // sc:<rowIndex>:[<occurrence_id>]:occurrence:comment
-    // sc:<rowIndex>:[<occurrence_id>]:occurrence_image:fieldname:uniqueImageId
+    // sc:<rowIndex>:[<occurrence_id>]:occurrence_medium:fieldname:uniqueImageId
     $occurrenceRecords = array();
     $sampleRecords = array();
     $subModels = array();
@@ -5809,7 +5879,7 @@ if (errors$uniq.length>0) {
           $record['record_status'] = $record_status;
         }
         $occ = data_entry_helper::wrap($record, 'occurrence');
-        self::attachOccurrenceImagesToModel($occ, $record);
+        self::attachOccurrenceMediaToModel($occ, $record);
         $sampleRecords[$sampleIDX]['occurrences'][] = array('fkId' => 'sample_id','model' => $occ);
       }
     }
@@ -5905,20 +5975,21 @@ if (errors$uniq.length>0) {
    * @param array $occ Occurrence submission structure.
    * @param array $record Record information from the form post, which may contain images.
    */
-  private static function attachOccurrenceImagesToModel(&$occ, $record) {
-    $images = array();
+  private static function attachOccurrenceMediaToModel(&$occ, $record) {
+    $media = array();
     foreach ($record as $key=>$value) {
-      if (substr($key, 0, 17)=='occurrence_image:') {
+      // look for occurrence media model, or occurrence image for legacy reasons
+      if (substr($key, 0, 18)==='occurrence_medium:' || substr($key, 0, 17)=='occurrence_medium:') {
         $tokens = explode(':', $key);
         // build an array of the data keyed by the unique image id (token 2)
-        $images[$tokens[2]][$tokens[1]] = array('value' => $value);
+        $media[$tokens[2]][$tokens[1]] = array('value' => $value);
       }
     }
-    foreach($images as $image => $data) {
+    foreach($media as $item => $data) {
       $occ['subModels'][] = array(
           'fkId' => 'occurrence_id',
           'model' => array(
-            'id' => 'occurrence_image',
+            'id' => 'occurrence_medium',
             'fields' => $data
         )
       );
@@ -5973,9 +6044,9 @@ if (errors$uniq.length>0) {
     );
     // Either an uploadable file, or a link to a Flickr external detail means include the submodel
     if ((array_key_exists('occurrence:image', $values) && $values['occurrence:image'])
-        || array_key_exists('occurrence_image:external_details', $values) && $values['occurrence_image:external_details']) {
+        || array_key_exists('occurrence_medium:external_details', $values) && $values['occurrence_medium:external_details']) {
       $structure['submodel']['submodel'] = array(
-          'model' => 'occurrence_image',
+          'model' => 'occurrence_medium',
           'fk' => 'occurrence_id'
       );
     }
@@ -6716,7 +6787,7 @@ $('#".str_replace(':', '\\\\:', $attrOptions['id'])."').change(function(evt) {
    * Retrieves an array of just the image data from a $_POST or set of control values.
    *
    * @param array $values Pass the $_POST data or other array of form values in this parameter.
-   * @param string $modelName The singular name of the image table, e.g. location_image or occurrence_image etc. If
+   * @param string $modelName The singular name of the media table, e.g. location_medium or occurrence_medium etc. If
    * null, then any image model will be used.
    * @param boolean $simpleFileInputs If true, then allows a file input with name=occurrence:image (or similar)
    * to be used to point to an image file. The file is uploaded to the interim image folder to ensure that it
@@ -6724,8 +6795,10 @@ $('#".str_replace(':', '\\\\:', $attrOptions['id'])."').change(function(evt) {
    * @param boolean $moveSimpleFiles If true, then any file uploaded by normal means to the server (via multipart form submission
    * for a field named occurrence:image[:n] or similar) will be moved to the interim image upload folder.
    */
-  public static function extract_image_data($values, $modelName=null, $simpleFileInputs=false, $moveSimpleFiles=false) {
+  public static function extract_media_data($values, $modelName=null, $simpleFileInputs=false, $moveSimpleFiles=false) {
     $r = array();
+    // legacy reasons, the model name might refer to _image model, rather than _medium. 
+    $modelName = preg_replace('/^([a-z_]*)_image$/', '${1}_medium', $modelName);
     foreach ($values as $key => $value) {
       if (!empty($value)) {
         // If the field is a path, and the model name matches or we are not filtering on model name
@@ -6748,7 +6821,9 @@ $('#".str_replace(':', '\\\\:', $attrOptions['id'])."').change(function(evt) {
             'id' => array_key_exists($prefix.':id'.$uniqueId, $values) ?
                 $values[$prefix.':id'.$uniqueId] : '',
             'path' => $value,
-            'caption' => isset($values[$prefix.':caption'.$uniqueId]) ? utf8_encode($values[$prefix.':caption'.$uniqueId]) : ''
+            'caption' => isset($values[$prefix.':caption'.$uniqueId]) ? utf8_encode($values[$prefix.':caption'.$uniqueId]) : '',
+            'media_type_id' => isset($values[$prefix.':media_type_id'.$uniqueId]) ? utf8_encode($values[$prefix.':media_type_id'.$uniqueId]) : '',
+            'media_type' => isset($values[$prefix.':media_type'.$uniqueId]) ? utf8_encode($values[$prefix.':media_type'.$uniqueId]) : ''
           );
           // if deleted = 't', add it to array so image is marked deleted
           if (isset($values[$prefix.':deleted'.$uniqueId]) && $values[$prefix.':deleted'.$uniqueId]==='t') {
@@ -6758,7 +6833,7 @@ $('#".str_replace(':', '\\\\:', $attrOptions['id'])."').change(function(evt) {
       }
     }
 
-    // Now look for image file inputs, called something like occurrence:image[:n]
+    // Now look for image file inputs, called something like occurrence:medium[:n]
     if ($simpleFileInputs) {
       foreach($_FILES as $key => $file) {
         if (substr($key, 0, strlen($modelName))==str_replace('_', ':', $modelName)) {
@@ -6792,7 +6867,7 @@ $('#".str_replace(':', '\\\\:', $attrOptions['id'])."').change(function(evt) {
                 );
                 // record the new file name, also note it in the $_POST data so it can be tracked after a validation failure
                 $_FILES[$key]['name'] = $destination;
-                $pathField = str_replace(':image','_image:path', $key);
+                $pathField = str_replace(':medium','_medium:path', $key);
                 $_POST[$pathField] = $destination;
               }
             } else {

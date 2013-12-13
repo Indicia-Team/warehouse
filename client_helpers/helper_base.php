@@ -758,7 +758,7 @@ $('.ui-state-default').live('mouseout', function() {
       }
       return $warehouseUrl.(isset(self::$indicia_upload_path) ? self::$indicia_upload_path : 'upload/');
     } else {
-      return dirname(__FILE__).'/'.self::$final_image_folder;
+      return self::getRootFolder() . self::client_helper_path() . self::$final_image_folder;
     }
   }
   
