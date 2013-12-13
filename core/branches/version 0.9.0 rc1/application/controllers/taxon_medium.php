@@ -22,21 +22,23 @@
  */
 
 /**
- * Controller providing CRUD access to the images for a taxon
+ * Controller providing CRUD access to the media files for a taxon
  *
  * @package	Core
  * @subpackage Controllers
  */
-class Taxon_image_Controller extends Gridview_Base_Controller
+class Taxon_medium_Controller extends Gridview_Base_Controller
 {
 	public function __construct()
   {
-    parent::__construct('taxon_image');
+    parent::__construct('taxon_medium');
     $this->columns = array(
+      'id'=>'ID',
       'caption'=>'',
-      'path'=>'Image'    
+      'path'=>'Media',
+      'media_type'=>'Type'
     );
-    $this->pagetitle = "Images";
+    $this->pagetitle = "Media files";
   }
 
  /**
@@ -51,9 +53,8 @@ class Taxon_image_Controller extends Gridview_Base_Controller
     parent::index();
     // pass the taxa_taxon_list id into the view, so the create button can use it to autoset
     // the taxon of the new image.
-    if ($this->uri->total_arguments()>0) {
-      $this->view->taxon_meaning_id=$this->uri->argument(1);
-    }
+    if ($this->uri->total_arguments()>0) 
+      $this->view->taxa_taxon_list_id=$ttl->id;
   }
   
   /**
@@ -66,8 +67,8 @@ class Taxon_image_Controller extends Gridview_Base_Controller
       // gets linked by meaning, so fetch the meaning_id.
       $ttl = ORM::Factory('taxa_taxon_list', $this->uri->argument(1)); 
       $r['taxa_taxon_list:id'] = $this->uri->argument(1);
-      $r['taxon_image:taxon_meaning_id'] = $ttl->taxon_meaning_id;
-      $r['taxon_image:caption'] = kohana::lang('misc.new_image');
+      $r['taxon_medium:taxon_meaning_id'] = $ttl->taxon_meaning_id;
+      $r['taxon_medium:caption'] = kohana::lang('misc.new_image');
     }
     return $r;
   }
@@ -88,15 +89,46 @@ class Taxon_image_Controller extends Gridview_Base_Controller
   }
   
   /**
+   * Get the list of terms ready for the media types list. 
+   */
+  protected function prepareOtherViewData($values)
+  {    
+    return array(
+      'media_type_terms' => $this->get_termlist_terms('indicia:media_types')    
+    );   
+  }
+  
+  /**
    * Override the default return page behaviour so that after saving an image you
    * are returned to the taxa_taxon_list entry which has the image.
    */
   protected function get_return_page() {
     if (array_key_exists('taxa_taxon_list:id', $_POST)) {
-      return "taxa_taxon_list/edit/".$_POST['taxa_taxon_list:id']."?tab=images";
+      return "taxa_taxon_list/edit/".$_POST['taxa_taxon_list:id']."?tab=Media_Files";
     } else {
       return $this->model->object_name;
     }
+  }
+  
+  /**
+   * Define non-standard behaviuor for the breadcrumbs, since this is accessed via a taxon
+   */
+  protected function defineEditBreadcrumbs() {
+    $this->page_breadcrumbs[] = html::anchor('taxon_list', 'Species Lists');
+    if ($this->model->id) {
+      // editing an existing item, so our argument is the termlists_term_id
+      $meaningId = $this->model->taxon_meaning_id;
+      $ttl = ORM::Factory('taxa_taxon_list', array('taxon_meaning_id'=>$meaningId, 'preferred'=>'t'));
+    } else {
+      // creating a new one so our argument is the taxa_taxon_list id
+      $ttlId = $this->uri->argument(1);
+      $ttl = ORM::Factory('taxa_taxon_list', $ttlId);
+      
+    }
+    $this->page_breadcrumbs[] = html::anchor('taxon_list/edit/'.$ttl->taxon_list_id, $ttl->taxon_list->title);
+    $this->page_breadcrumbs[] = html::anchor('taxon_list/edit/'.$ttl->taxon_list_id.'?tab=Taxa', 'Taxa');
+    $this->page_breadcrumbs[] = html::anchor('taxa_taxon_list/edit/'.$ttl->id, $ttl->taxon->taxon);
+    $this->page_breadcrumbs[] = $this->model->caption();
   }
 
 }

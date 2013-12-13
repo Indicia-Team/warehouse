@@ -15,18 +15,33 @@
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
  * @package	Core
- * @subpackage GridModels
+ * @subpackage Models
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
  */
 
 /**
- * Declares a model simply to expose the gv_sample_images view to ORM.
+ * Model class for the Occurrence_Media table.
  *
  * @package	Core
- * @subpackage GridModels
+ * @subpackage Models
+ * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
-class Gv_sample_image_Model extends ORM {
+class Occurrence_medium_Model extends ORM {
+  public $search_field = 'caption';
+
+  protected $belongs_to = array('created_by' => 'user', 'updated_by' => 'user',
+    'occurrence');
+
+  public function validate(Validation $array, $save = false) {
+
+    $array->pre_filter('trim');
+    $array->add_rules('occurrence_id', 'required');
+    $array->add_rules('path', 'required');
+
+    $this->unvalidatedFields = array('caption', 'external_details', 'media_type_id');
+    return parent::validate($array, $save);
+  }
 
 }

@@ -105,7 +105,6 @@ class XMLReportReader_Core implements ReportReader
       $this->name = $a[count($a)-1];
       $reader = new XMLReader();
       $reader->open($report);
-      $fieldsql = '';
       while($reader->read())
       {
         switch($reader->nodeType)

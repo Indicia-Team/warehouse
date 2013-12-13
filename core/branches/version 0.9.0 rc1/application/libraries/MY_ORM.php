@@ -910,8 +910,10 @@ class ORM extends ORM_Core {
       foreach ($this->submission['subModels'] as $a) {
         Kohana::log("debug", "Submitting submodel ".$a['model']['id'].".");
         // Establish the right model
-        $m = ORM::factory($a['model']['id']);
-
+        $modelName = $a['model']['id'];
+        // alias old images tables to new media tables
+        $modelName=preg_replace('/^([a-z_]+)_image$/', '${1}_medium', $modelName);
+        $m = ORM::factory($modelName);
         // Set the correct parent key in the subModel
         $fkId = $a['fkId'];
         $a['model']['fields'][$fkId]['value'] = $this->id;
@@ -936,6 +938,7 @@ class ORM extends ORM_Core {
           $this->set_metadata();
           $this->validate(new Validation($this->as_array()), true);
         }
+
         if (!$result) {
           $fieldPrefix = (array_key_exists('field_prefix',$a['model'])) ? $a['model']['field_prefix'].':' : '';
           // Remember this model so that its errors can be reported

@@ -1231,7 +1231,7 @@ class data_entry_helper extends helper_base {
   */
   public static function image_upload($options) {
     $options = self::check_options($options);
-    $pathField = $pathField = str_replace(':image','_image:path', $options['fieldname']);
+    $pathField = $pathField = str_replace(array(':image',':medium'),'_medium:path', $options['fieldname']);
     $alreadyUploadedFile = self::check_default_value($pathField);
     $options = array_merge(array(
       'pathFieldName' => $pathField,
