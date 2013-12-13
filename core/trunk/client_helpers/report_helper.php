@@ -532,8 +532,14 @@ jQuery('#updateform-".$updateformID."').ajaxForm({
             $imgs = explode(',',$value);
             $value='';
             $imgclass=count($imgs)>1 ? 'multi' : 'single';
-            foreach($imgs as $img)
-              $value .= "<a href=\"$imagePath$img\" class=\"fancybox $imgclass\"><img src=\"$imagePath"."thumb-$img\" /></a>";
+            foreach($imgs as $img) {
+              if (preg_match('/^http(s)?:\/\/(www\.)?(?P<site>[a-z]+)/', $img, $matches)) {
+                // http, means an external file
+                $value .= "<a href=\"$img\" class=\"social-icon $matches[site]\"></a>";
+              } else {
+                $value .= "<a href=\"$imagePath$img\" class=\"fancybox $imgclass\"><img src=\"$imagePath"."thumb-$img\" /></a>";
+              }
+            }
           }
           $r .= "<td$class>$value</td>\n";
         }

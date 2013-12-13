@@ -389,10 +389,16 @@ var simple_tooltip;
                   // clear null value cells
                   value = (value===null || typeof value==="undefined") ? '' : value;
                   if ((col.img === true || col.img==='true') && value!=='') {
-                    var imgs = value.split(','), imgclass=imgs.length>1 ? 'multi' : 'single';
+                    var imgs = value.split(','), imgclass=imgs.length>1 ? 'multi' : 'single', match;
                     value='';
                     $.each(imgs, function(idx, img) {
-                      value += '<a href="'+div.settings.imageFolder+img+'" class="fancybox ' + imgclass + '"><img src="'+div.settings.imageFolder+'thumb-'+img+'" /></a>';
+                      match = img.match(/^http(s)?:\/\/(www\.)?([a-z]+)/);
+                      if (match!==null) {
+                        value += '<a href="'+img+'" class="social-icon '+match[3]+'"></a>';
+                      } else {
+                        value += '<a href="'+div.settings.imageFolder+img+'" class="fancybox ' + imgclass + '"><img src="'+div.settings.imageFolder+'thumb-'+img+'" /></a>';
+                      }
+                      
                     });
                   }
                   rowOutput += '<td>' + value + '</td>';
@@ -860,6 +866,28 @@ var simple_tooltip;
 
     });
   }
+  
+  $('.social-icon').live('click', function(e) {
+    e.preventDefault;
+    var href=$(e.currentTarget).attr('href');
+    if (href) {
+      $.ajax({
+        url: "http://noembed.com/embed?format=json&callback=?&url="+encodeURIComponent(href),
+        dataType: 'json',
+        success: function(data) {
+          if (data.error) {
+            alert(data.error);
+          } else {
+            $.fancybox({
+              "title":data.title,
+              "content":data.html
+            });
+          }
+        }
+      });
+    }
+    return false;
+  });
 }(jQuery));
 
 /**
