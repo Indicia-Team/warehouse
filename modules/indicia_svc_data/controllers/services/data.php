@@ -682,9 +682,12 @@ class Data_Controller extends Data_Service_Base_Controller {
       $this->response=json_encode(array('success'=>$id));
       $this->delete_nonce();
     }
-    else if (isset($model) && is_array($model->getAllErrors()))
-      Throw new ValidationError('Error occurred on model submission', 2003, $model->getAllErrors());
-    else
+    else if (isset($model) && is_array($model->getAllErrors())) {
+      if ($model->uniqueKeyViolation)
+        Throw new ValidationError('Duplicate key violation', 2004, $model->getAllErrors());
+      else
+        Throw new ValidationError('Error occurred on model submission', 2003, $model->getAllErrors());
+    } else
       Throw new Exception('Unknown error on submission of the model');
 
   }
