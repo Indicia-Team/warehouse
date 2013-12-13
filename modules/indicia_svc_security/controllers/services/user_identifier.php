@@ -87,7 +87,7 @@ class User_Identifier_Controller extends Service_Base_Controller {
       $identifiers = json_decode($request['identifiers']);
       if (!is_array($identifiers))
         throw new Exception('Error: identifiers parameter not of correct format');
-      if (!isset($request['surname']))
+      if (empty($request['surname']))
         throw new exception('Call to get_user_id requires a surname in the GET or POST data.');
       // We don't need a website_id in the request as the authentication data contains it, but
       // we do need to know the cms_user_id so that we can ensure any previously recorded data for
