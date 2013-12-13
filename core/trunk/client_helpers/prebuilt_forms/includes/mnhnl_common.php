@@ -3984,20 +3984,31 @@ function iform_mnhnl_set_editable($auth, $args, $node, $locList, $force, $loctyp
       data_entry_helper::$javascript .= "\"".$location['id']."\" : false,\n";
     }
   }
-  $sample_list_args=array(
-        'nocache'=>true, // new samples can be added for existing locations.
-        'extraParams'=>array_merge(array(
+  $maxPerQuery = 100;
+  $locCount = count($locCheckList);
+  $locIdx = 0;
+  $smpList = array();
+  if($locCount > 0)
+    while($locIdx < $locCount) {
+      $locIDs = array();
+      for($i = 0; $i < $maxPerQuery && $locIdx < $locCount; $i++, $locIdx++){
+        $locIDs[] = $locCheckList[$smpIdx];
+      }
+      $sample_list_args=array(
+          'nocache'=>true, // new samples can be added for existing locations.
+          'extraParams'=>array_merge(array(
               'orderby'=>'id',
               'view'=>'detail',
               'website_id'=>$args['website_id'],
-              'location_id'=>$locCheckList),
-            $auth['read']),
-        'table'=>'sample');
-  $smpList = data_entry_helper::get_population_data($sample_list_args);
-  if (isset($smpList['error'])) return $smpList['error'];
+              'location_id'=>$locIDs),
+              $auth['read']),
+          'table'=>'sample');
+      $smpListX = data_entry_helper::get_population_data($sample_list_args);
+      if (isset($smpListX['error'])) return $smpListX['error'];
+      $smpList = $smpList + $smpListX;
+    }
   $smpCount = count($smpList);
   $smpIdx = 0;
-  $maxPerQuery = 100;
   if($smpCount > 0)
    while($smpIdx < $smpCount) {
     $smpIDs = array();
