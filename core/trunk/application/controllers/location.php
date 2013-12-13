@@ -293,7 +293,7 @@ class Location_Controller extends Gridview_Base_Controller {
 
       for ($i = 1; $i <= $record_numbers; $i++) {
         $row = dbase_get_record_with_names($dbasedb, $i);
-        $location_name = $_POST['prepend'].trim($row[$_POST['name']]);
+        $location_name = $_POST['prepend'].trim(utf8_encode($row[$_POST['name']]));
         $this->loadFromFile($handle);
 
         if(kohana::config('sref_notations.internal_srid') != $_POST['srid']) {
