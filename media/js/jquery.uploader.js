@@ -86,7 +86,7 @@ var checkSubmitInProgress = function () {
   };
   indiciaData.mediaTypes = {
     "Audio:SoundCloud" : {
-      "regex":/^http:\/\/soundcloud.com\//
+      "regex":/^http(s)?:\/\/soundcloud.com\//
     },
     "Image:Flickr" : {
       "regex":/^http:\/\/   /
