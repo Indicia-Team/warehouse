@@ -3997,7 +3997,7 @@ function iform_mnhnl_set_editable($auth, $args, $node, $locList, $force, $loctyp
   if (isset($smpList['error'])) return $smpList['error'];
   $smpCount = count($smpList);
   $smpIdx = 0;
-  $maxPerQuery = 250;
+  $maxPerQuery = 100;
   if($smpCount > 0)
    while($smpIdx < $smpCount) {
     $smpIDs = array();

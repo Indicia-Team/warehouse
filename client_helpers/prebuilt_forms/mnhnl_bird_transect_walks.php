@@ -419,7 +419,7 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
     drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/jquery.datagrid.js', 'module');
     if (method_exists(get_called_class(), 'getHeaderHTML')) $r .= call_user_func(array(get_called_class(), 'getHeaderHTML'), $args);
     // Work out list of locations this user can see.
-    // $locations = iform_loctools_listlocations($node);
+    $locations = iform_loctools_listlocations($node);
     ///////////////////////////////////////////////////////////////////
     // default mode 0 : display a page with tabs for survey selector,
     // locations allocator and reports (last two require permissions)
@@ -451,7 +451,7 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
 
     // Create the Survey list datagrid for this user.
       drupal_add_js("jQuery(document).ready(function(){
-  $('div#smp_grid').indiciaDataGrid('rpt:mnhnl_btw_list_samples', {
+  $('div#smp_grid').indiciaDataGrid('rpt:reports_for_prebuilt_forms/MNHNL/mnhnl_btw_list_samples', {
     indiciaSvc: '".$svcUrl."',
     dataColumns: ['location_name', 'date', 'num_visit', 'num_occurrences', 'num_taxa'],
     reportColumnTitles: {location_name : '".lang::get('LANG_Transect')."', date : '".lang::get('LANG_Date')."', num_visit : '".lang::get('LANG_Visit_No')."', num_occurrences : '".lang::get('LANG_Num_Occurrences')."', num_taxa : '".lang::get('LANG_Num_Species')."'},
@@ -1143,7 +1143,7 @@ retriggerGrid = function(){
   occListLayer.destroyFeatures();
   activateAddList = 1;
   thisOccID = -1;
-  $('div#occ_grid').indiciaDataGrid('rpt:mnhnl_btw_list_occurrences', {
+  $('div#occ_grid').indiciaDataGrid('rpt:reports_for_prebuilt_forms/MNHNL/mnhnl_btw_list_occurrences', {
     indiciaSvc: '".$svcUrl."',
     dataColumns: ['taxon', 'territorial', 'count'],
     reportColumnTitles: {taxon : '".lang::get('LANG_Species')."', territorial : '".lang::get('LANG_Territorial')."', count : '".lang::get('LANG_Count')."'},
@@ -1441,7 +1441,7 @@ highlight = function(id){
 ";
   if($mode != 1){
     data_entry_helper::$onload_javascript .= "
-$('div#occ_grid').indiciaDataGrid('rpt:mnhnl_btw_list_occurrences', {
+$('div#occ_grid').indiciaDataGrid('rpt:reports_for_prebuilt_forms/MNHNL/mnhnl_btw_list_occurrences', {
     indiciaSvc: '".$svcUrl."',
     dataColumns: ['taxon', 'territorial', 'count'],
     reportColumnTitles: {taxon : '".lang::get('LANG_Species')."', territorial : '".lang::get('LANG_Territorial')."', count : '".lang::get('LANG_Count')."'},

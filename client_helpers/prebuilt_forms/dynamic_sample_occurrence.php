@@ -649,7 +649,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           }
           if(count($locs)>0){
             foreach($locs as $loc)
-              iform_loctools_deletelocation($node, $lid);
+              iform_loctools_deletelocation($node, $loc);
             foreach($_POST as $key => $value){
               $parts = explode(':', $key);
               if($parts[0]=='location' && $value == 1)
