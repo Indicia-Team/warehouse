@@ -142,6 +142,7 @@ class XMLReportReader_Core implements ReportReader
                 if ($reader->getAttribute('standard_params')!==null)
                   $this->hasStandardParams=true;
                 $reader->read();
+                $this->query = $reader->value;
                 break;
               case 'field_sql':
                 $reader->read();
