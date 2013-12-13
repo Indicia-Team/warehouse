@@ -1,22 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <report
-    title="Occurrence images list"
-    description="A general purpose list of record images."
+  title="Occurrence images list"
+  description="A general purpose list of record images."
 >
   <query website_filter_field="o.website_id">
-  SELECT #field_sql#
-  FROM occurrences o
-  JOIN occurrence_images oi ON oi.occurrence_id=o.id AND oi.deleted=false
-  JOIN samples s ON s.id=o.sample_id AND s.deleted = FALSE
-  JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id  
-  LEFT JOIN locations l ON l.id=s.location_id
-  #joins#
-  WHERE o.deleted = FALSE
-  AND #website_filter#
-  AND (CAST(s.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
-  AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
-      AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
-  AND (CAST(cttl.taxon_group_id AS character varying)='#taxon_group_id#' OR '#taxon_group_id#'='')
-  #order_by#
+    SELECT #field_sql#
+    FROM occurrences o
+    JOIN occurrence_images oi ON oi.occurrence_id=o.id AND oi.deleted=false
+    JOIN samples s ON s.id=o.sample_id AND s.deleted = FALSE
+    JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id  
+    LEFT JOIN locations l ON l.id=s.location_id
+    #joins#
+    WHERE o.deleted = FALSE
+    AND #website_filter#
+    AND (CAST(s.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
+    AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+    AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+    AND (CAST(cttl.taxon_group_id AS character varying)='#taxon_group_id#' OR '#taxon_group_id#'='')
+    #order_by#
   </query>
   <field_sql>
     o.id as occurrence_id,
@@ -40,11 +41,11 @@
   </order_bys>
   <params>
     <param name='survey_id' display='Survey' description='Select the survey, or leave for all surveys' datatype='lookup'
-        population_call='direct:survey:id:title' />
+           population_call='direct:survey:id:title' />
     <param name='date_from' display='Date From' datatype='date' />
     <param name='date_to' display='Date To' datatype='date' />
     <param name='taxon_group_id' display='Taxon Group' description='Select the taxon group to return data for, or leave for all groups' datatype='lookup'
-        query='SELECT id, title as caption FROM taxon_groups' population_call='direct:taxon_group:id:title' />
+           query='SELECT id, title as caption FROM taxon_groups' population_call='direct:taxon_group:id:title' />
     <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
     <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
   </params>

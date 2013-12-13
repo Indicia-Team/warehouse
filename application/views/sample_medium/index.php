@@ -23,6 +23,6 @@
 
 echo $grid;
 ?>
-<form action="<?php echo url::site().'taxon_image/create/'.$taxon_meaning_id; ?>" method="post">
-<input type="submit" value="New taxon image" class="ui-corner-all ui-state-default button" />
+<form action="<?php echo url::site().'sample_medium/create/'.$sample_id; ?>" method="post">
+<input type="submit" value="New sample image" class="ui-corner-all ui-state-default button" />
 </form>

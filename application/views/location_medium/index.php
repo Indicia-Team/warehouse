@@ -1,4 +1,4 @@
-<?php defined('SYSPATH') or die('No direct script access.');
+<?php
 
 /**
  * Indicia, the OPAL Online Recording Toolkit.
@@ -15,18 +15,14 @@
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
  * @package	Core
- * @subpackage GridModels
+ * @subpackage Views
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
  */
-
-/**
- * Declares a model simply to expose the gv_taxon_images view to ORM.
- *
- * @package	Core
- * @subpackage GridModels
- */
-class Gv_taxon_image_Model extends ORM {
-
-}
+ 
+echo $grid;
+?>
+<form action="<?php echo url::site().'location_medium/create/'.$location_id; ?>" method="post">
+<input type="submit" value="New location image" class="ui-corner-all ui-state-default button" />
+</form>

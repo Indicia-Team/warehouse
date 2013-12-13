@@ -264,8 +264,8 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
    */
   protected function getTabs($name) {
     return array(array(
-      'controller' => 'taxon_image',
-      'title' => 'Images',
+      'controller' => 'taxon_medium',
+      'title' => 'Media Files',
       'actions'=>array('edit')
     ), array(
       'controller' => 'taxon_code',

@@ -101,8 +101,8 @@ class Sample_Controller extends Gridview_Base_Controller
 //        'title' => 'Comments',
 //        'actions'=>array('edit')
       ), array(
-        'controller' => 'sample_image',
-        'title' => 'Images',
+        'controller' => 'sample_medium',
+        'title' => 'Media Files',
         'views'=>'sample',
         'actions'=>array('edit')
       )

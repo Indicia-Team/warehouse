@@ -562,8 +562,8 @@ $config['occurrences']['get_changed_items_query'] = "
     union
     select o.id, false
     from occurrences o
-    join occurrence_images oi on oi.occurrence_id=o.id
-    where oi.updated_on>'#date#' 
+    join occurrence_media om on om.occurrence_id=o.id
+    where om.updated_on>'#date#' 
     ) as sub
     group by id ";
 
@@ -655,7 +655,7 @@ $config['occurrences']['update'] = "update cache_occurrences co
     left join people pv on pv.id=uv.person_id and pv.deleted=false
     left join (select occurrence_id, 
     array_to_string(array_agg(path), ',') as list
-    from occurrence_images
+    from occurrence_media
     where deleted=false
     group by occurrence_id) as images on images.occurrence_id=o.id
     where co.id=o.id";
@@ -727,7 +727,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
   left join people pv on pv.id=uv.person_id and pv.deleted=false
   left join (select occurrence_id, 
     array_to_string(array_agg(path), ',') as list
-    from occurrence_images
+    from occurrence_media
     where deleted=false
     group by occurrence_id) as images on images.occurrence_id=o.id
   #join_needs_update#

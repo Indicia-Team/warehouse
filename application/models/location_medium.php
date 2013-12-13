@@ -22,26 +22,25 @@
  */
 
 /**
- * Model class for the Taxon_Images table.
+ * Model class for the Location_Media table.
  *
  * @package	Core
  * @subpackage Models
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
-class Taxon_Image_Model extends ORM {
+class Location_Medium_Model extends ORM {
   public $search_field = 'caption';
-
-  protected $belongs_to = array(
-    'created_by' => 'user', 
-    'updated_by' => 'user',
-    'taxon_meaning');
+  
+  protected $belongs_to = array('created_by' => 'user', 'updated_by' => 'user',
+    'occurrence');
 
   public function validate(Validation $array, $save = false) {
+
     $array->pre_filter('trim');
-    $array->add_rules('taxon_meaning_id', 'required');
+    $array->add_rules('location_id', 'required');
     $array->add_rules('path', 'required');
 
-    $this->unvalidatedFields = array('caption', 'external_details');
+    $this->unvalidatedFields = array('caption', 'external_details', 'media_type_id');
     return parent::validate($array, $save);
   }
 

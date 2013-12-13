@@ -22,11 +22,11 @@
  */
 
 /**
- * Declares a model simply to expose the gv_occurrence_images view to ORM.
+ * Declares a model simply to expose the gv_sample_media view to ORM.
  *
  * @package	Core
  * @subpackage GridModels
  */
-class Gv_occurrence_image_Model extends ORM {
+class Gv_sample_medium_Model extends ORM {
 
 }
