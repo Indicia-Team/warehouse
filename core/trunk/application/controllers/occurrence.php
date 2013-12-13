@@ -112,8 +112,8 @@ class Occurrence_controller extends Gridview_Base_Controller {
         'title' => 'Comments',
         'actions'=>array('edit')
       ), array(
-        'controller' => 'occurrence_image',
-        'title' => 'Images',
+        'controller' => 'occurrence_medium',
+        'title' => 'Media Files',
         'actions'=>array('edit')
       )
     );

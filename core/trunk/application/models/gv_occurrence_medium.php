@@ -15,33 +15,18 @@
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
  * @package	Core
- * @subpackage Models
+ * @subpackage GridModels
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
  */
 
 /**
- * Model class for the Location_Images table.
+ * Declares a model simply to expose the gv_occurrence_media view to ORM.
  *
  * @package	Core
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
+ * @subpackage GridModels
  */
-class Location_Image_Model extends ORM {
-  public $search_field = 'caption';
-  
-  protected $belongs_to = array('created_by' => 'user', 'updated_by' => 'user',
-    'occurrence');
-
-  public function validate(Validation $array, $save = false) {
-
-    $array->pre_filter('trim');
-    $array->add_rules('location_id', 'required');
-    $array->add_rules('path', 'required');
-
-    $this->unvalidatedFields = array('caption', 'external_details');
-    return parent::validate($array, $save);
-  }
+class Gv_occurrence_medium_Model extends ORM {
 
 }

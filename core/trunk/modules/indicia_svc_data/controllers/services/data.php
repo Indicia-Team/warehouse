@@ -62,17 +62,18 @@ class Data_Controller extends Data_Service_Base_Controller {
       'filter',
       'filters_user',
       'location',
+      'location_medium',
       'notification',
       'occurrence',
       'occurrence_attribute_value',
       'occurrence_comment',
-      'occurrence_image',
+      'occurrence_medium',
       'person_attribute_value',
       'person',
       'sample',
       'sample_attribute_value',
       'sample_comment',
-      'sample_image',
+      'sample_medium',
       'survey',
       'taxa_taxon_list',
       'taxon_relation',
@@ -92,7 +93,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       'taxa_taxon_list',
       'taxon_relation',
       'taxon_group',
-      'taxon_image',
+      'taxon_medium',
       'notification',
       'user_trust',
       'cache_taxon_searchterm',
@@ -190,23 +191,43 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('location_attribute_value');
   }
-
+  
   /**
   * Provides the /service/data/location_image service.
-  * Retrieves details of location images.
+  * Retrieves details of location media.
+  * @deprecated 
   */
   public function location_image()
   {
-    $this->handle_call('location_image');
+    $this->handle_call('location_medium');
+  }
+
+  /**
+  * Provides the /service/data/location_medium service.
+  * Retrieves details of location media.
+  */
+  public function location_medium()
+  {
+    $this->handle_call('location_medium');
   }
 
   /**
   * Provides the /service/data/sample_image service.
-  * Retrieves details of sample images.
+  * Retrieves details of sample media.
+  * @deprecated 
   */
   public function sample_image()
   {
-    $this->handle_call('sample_image');
+    $this->handle_call('sample_medium');
+  }
+  
+  /**
+  * Provides the /service/data/sample_medium service.
+  * Retrieves details of sample media.
+  */
+  public function sample_medium()
+  {
+    $this->handle_call('sample_medium');
   }
   
   /**
@@ -244,14 +265,24 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
   $this->handle_call('occurrence_attribute_value');
   }
-
-  /**
-  * Provides the /service/data/occurrence_image service.
-  * Retrieves details of occurrence images.
+  
+ /**
+  * Provides the /service/data/occurrence_images service.
+  * Retrieves details of occurrence media. This is an alias for occurrence_medium,
+  * for backwards compatibility.
   */
   public function occurrence_image()
   {
-  $this->handle_call('occurrence_image');
+  $this->handle_call('occurrence_medium');
+  }
+
+  /**
+  * Provides the /service/data/occurrence_medium service.
+  * Retrieves details of occurrence media.
+  */
+  public function occurrence_medium()
+  {
+  $this->handle_call('occurrence_medium');
   }
 
   /**
@@ -346,14 +377,24 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('taxon_group');
   }
-
+  
   /**
   * Provides the /service/data/taxon_image service.
-  * Retrieves details of taxon images.
+  * Retrieves details of taxon media.
+  * @deprecated 
   */
   public function taxon_image()
   {
-    $this->handle_call('taxon_image');
+    $this->handle_call('taxon_medium');
+  }
+
+  /**
+  * Provides the /service/data/taxon_medium service.
+  * Retrieves details of taxon media.
+  */
+  public function taxon_medium()
+  {
+    $this->handle_call('taxon_medium');
   }
 
 
@@ -667,7 +708,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   /**
    * Handle uploaded files in the $_FILES array by moving them to the upload folder. Images
    * get resized and duplicated as specified in the indicia config file.
-   * If the $_POST array contains name_is_guid=true, then the image file will not be renamed as the name
+   * If the $_POST array contains name_is_guid=true, then the media file will not be renamed as the name
    * should already be globally unique. Otherwise the current time is prefixed to the name to make it unique.
    */
   public function handle_media()

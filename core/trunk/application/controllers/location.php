@@ -541,8 +541,8 @@ class Location_Controller extends Gridview_Base_Controller {
   protected function getTabs($name) {
     return array(
       array(
-        'controller' => 'location_image',
-        'title' => 'Images',
+        'controller' => 'location_medium',
+        'title' => 'Media Files',
         'actions'=>array('edit')
       )
     );

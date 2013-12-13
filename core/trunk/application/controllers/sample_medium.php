@@ -22,21 +22,23 @@
  */
 
 /**
- * Controller providing CRUD access to the images for an sample
+ * Controller providing CRUD access to the media for an sample
  *
  * @package	Core
  * @subpackage Controllers
  */
-class sample_image_Controller extends Gridview_Base_Controller
+class Sample_medium_Controller extends Gridview_Base_Controller
 {
 	public function __construct()
   {
-    parent::__construct('sample_image');
+    parent::__construct('sample_medium');
     $this->columns = array(
+      'id'=>'ID',
       'caption'=>'',
-      'path'=>'Image'    
+      'path'=>'Media',
+      'media_type'=>'Type'
     );
-    $this->pagetitle = "Images";
+    $this->pagetitle = "Media files";
   }
 
  /**
@@ -64,8 +66,8 @@ class sample_image_Controller extends Gridview_Base_Controller
       // sample id is passed as first argument in URL when creating. But the image
       // gets linked by meaning, so fetch the meaning_id.
       $r['sample:id'] = $this->uri->argument(1);
-      $r['sample_image:sample_id'] = $this->uri->argument(1);
-      $r['sample_image:caption'] = kohana::lang('misc.new_image');
+      $r['sample_medium:sample_id'] = $this->uri->argument(1);
+      $r['sample_medium:caption'] = kohana::lang('misc.new_image');
     }
     return $r;
   }
@@ -75,11 +77,21 @@ class sample_image_Controller extends Gridview_Base_Controller
    * are returned to the occurence entry which has the image.
    */
   protected function get_return_page() {
-    if (array_key_exists('sample_image:sample_id', $_POST)) {
-      return "sample/edit/".$_POST['sample_image:sample_id']."?tab=images";
+    if (array_key_exists('sample_medium:sample_id', $_POST)) {
+      return "sample/edit/".$_POST['sample_medium:sample_id']."?tab=Media_Files";
     } else {
       return $this->model->object_name;
     }
+  }
+  
+  /**
+   * Get the list of terms ready for the media types list. 
+   */
+  protected function prepareOtherViewData($values)
+  {    
+    return array(
+      'media_type_terms' => $this->get_termlist_terms('indicia:media_types')    
+    );   
   }
 
   /**

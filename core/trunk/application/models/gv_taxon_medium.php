@@ -1,4 +1,4 @@
-<?php
+<?php defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Indicia, the OPAL Online Recording Toolkit.
@@ -15,15 +15,18 @@
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
  * @package	Core
- * @subpackage Views
+ * @subpackage GridModels
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
  */
 
-echo $grid;
-?>
-<form action="<?php echo url::site().'occurrence_image/create/'.$occurrence_id; ?>">
-<input type="submit" value="New occurrence image" class="ui-corner-all ui-state-default button" />
-</form>
-<br />
+/**
+ * Declares a model simply to expose the gv_taxon_media view to ORM.
+ *
+ * @package	Core
+ * @subpackage GridModels
+ */
+class Gv_taxon_medium_Model extends ORM {
+
+}

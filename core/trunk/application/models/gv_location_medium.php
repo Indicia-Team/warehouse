@@ -22,11 +22,11 @@
  */
 
 /**
- * Declares a model simply to expose the gv_location_images view to ORM.
+ * Declares a model simply to expose the gv_location_media view to ORM.
  *
  * @package	Core
  * @subpackage GridModels
  */
-class Gv_location_image_Model extends ORM {
+class Gv_location_medium_Model extends ORM {
 
 }
