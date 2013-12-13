@@ -869,7 +869,7 @@ var simple_tooltip;
   
   $('.social-icon').live('click', function(e) {
     e.preventDefault;
-    var href=$(e.currentTarget).attr('href');
+    var href=$(e.target).attr('href');
     if (href) {
       $.ajax({
         url: "http://noembed.com/embed?format=json&callback=?&url="+encodeURIComponent(href),
