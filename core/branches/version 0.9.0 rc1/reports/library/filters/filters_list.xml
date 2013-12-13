@@ -39,7 +39,7 @@
         sql="case f.sharing when 'R' then 'Reporting' when 'P' then 'Peer review' when 'V' then 'Verification'
         when 'D' then 'Data flow' when 'M' then 'Moderation' end"/>
     <column name="definition" visible="false" sql="f.definition" /> 
-    <column name="filter_user_id" visible="false" sql="fu.id" />
+    <column name="filters_user_id" visible="false" sql="fu.id" />
     <column name="defines_permissions" visible="false" sql="f.defines_permissions" />
     <column name="person_name" display="Person" sql="p.surname || coalesce(', ' || p.first_name, '')" datatype="text"/>
   </columns>
