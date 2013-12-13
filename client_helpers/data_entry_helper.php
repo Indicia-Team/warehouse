@@ -6636,6 +6636,9 @@ if (errors$uniq.length>0) {
     }
     if(isset($item['default']) && $item['default']!="")
       $attrOptions['default']= $item['default'];
+      //the following two lines are a temporary fix to allow a control_type to be specified via the form's user interface form structure      
+    if(isset($attrOptions['control_type']) && $attrOptions['control_type']!="")
+      $item['control_type']= $attrOptions['control_type'];
     switch ($item['data_type']) {
         case 'Text':
         case 'T':
