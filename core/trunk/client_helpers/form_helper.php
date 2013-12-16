@@ -83,12 +83,12 @@ class form_helper extends helper_base {
         $availableForms[$form] = $def['title'];
     } else {
       $defaultCategory = '';
-      $availableForms = array('' => '&lt;Please select a category first&gt;');
+      $availableForms = array('' => '<Please select a category first>');
     }
     closedir($dir);
     // makes an assoc array from the categories.
     $categories = array_merge(
-      array('' => '&lt;Please select&gt;'),
+      array('' => '<Please select>'),
       array_combine(array_keys($forms), array_keys($forms))
     );
     // translate categories
