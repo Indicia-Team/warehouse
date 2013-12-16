@@ -23,6 +23,6 @@
 
 defined('SYSPATH') or die('No direct script access.');
 
-$config['servers'] = 'http://data.nbn.org.uk/recordcleaner/rules/servers.txt';
+$config['servers'] = 'https://data.nbn.org.uk/recordcleaner/rules/servers.txt';
 
 ?>
