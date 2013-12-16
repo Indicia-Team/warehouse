@@ -174,7 +174,7 @@ class Person_Model extends ORM {
    * @param boolean @hasSurveyRestriction Not used
    */
   protected function getAttributes($required = false, $typeFilter = null, $hasSurveyRestriction = true) {
-    $this->db->select('person_attributes.id', 'person_attributes.caption');
+    $this->db->select('person_attributes.id', 'person_attributes.caption', 'person_attributes.data_type');
     $this->db->from('person_attributes');
     
     if ($required && $this->id!==0) {
