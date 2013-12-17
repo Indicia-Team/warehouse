@@ -44,8 +44,6 @@ echo form_helper::prebuilt_form_params_form(array(
   'readAuth' => $readAuth,
   'expandFirst' => true
 ));
-echo "(function ($) {\n";
-echo data_entry_helper::get_scripts(data_entry_helper::$javascript, data_entry_helper::$late_javascript, data_entry_helper::$onload_javascript);
-echo "\n})(jQuery);\n";
+echo form_helper::dump_javascript(true);
 
 ?>
