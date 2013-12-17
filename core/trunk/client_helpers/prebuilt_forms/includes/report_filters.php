@@ -628,15 +628,15 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
   $r .= '</div>'; // filter panes
   $r .= '<div class="toolbar">';
   if ($options['allowSave']) {
-    $r .= '<label for="filter:title">'.lang::get('Save filter as').':</label><input id="filter:title"/>';
+    $r .= '<label for="filter:title">'.lang::get('Save filter as').':</label> <input id="filter:title" class="control-width-5"/>';
     if ($options['admin']) {
+      $r .= '<br/>';
       if (empty($options['adminCanSetSharingTo']))
         throw new exception('Report standard params panel in admin mode so adminCanSetSharingTo option must be populated.');
       $r .= data_entry_helper::select(array(
         'label'=>lang::get('for'),
         'fieldname'=>'filter:sharing',
         'lookupValues'=>$options['adminCanSetSharingTo'],
-        'labelClass'=>'auto',
         'suffixTemplate'=>'nosuffix'
       ));
       $r .= data_entry_helper::autocomplete(array(
@@ -645,8 +645,10 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
         'table'=>'user',
         'valueField' => 'id',
         'captionField' => 'person_name',
+        'formatFunction'=>"function(item) { return item.person_name + ' (' + item.email_address + ')'; }",
         'extraParams' => $readAuth + array('view'=>'detail'),
-        'labelClass'=>'auto'
+        'labelClass'=>'auto',
+        'class'=>'control-width-5'
       ));
       $r .= data_entry_helper::textarea(array(
         'label' => 'Description',
