@@ -1326,18 +1326,18 @@ $('.ui-state-default').live('mouseout', function() {
   /**
   * Helper function to collect javascript code in a single location. Should be called at the end of each HTML
   * page which uses the data entry helper so output all JavaScript required by previous calls.
-  *
+  * @param boolean $closure Set to true to close the JS with a function to ensure $ will refer to jQuery.
   * @return string JavaScript to insert into the page for all the controls added to the page so far.
   *
   * @link http://code.google.com/p/indicia/wiki/TutorialBuildingBasicPage#Build_a_data_entry_page
   */
-  public static function dump_javascript() {
+  public static function dump_javascript($closure=false) {
     // Add the default stylesheet to the end of the list, so it has highest CSS priority
     if (self::$default_styles) self::add_resource('defaultStylesheet');
     // Jquery validation js has to be added at this late stage, because only then do we know all the messages required.
     self::setup_jquery_validation_js();
     $dump = self::internal_dump_resources(self::$required_resources);
-    $dump .= self::get_scripts(self::$javascript, self::$late_javascript, self::$onload_javascript, true);
+    $dump .= self::get_scripts(self::$javascript, self::$late_javascript, self::$onload_javascript, true, $closure);
     // ensure scripted JS does not output again if recalled.
     self::$javascript = "";
     self::$late_javascript = "";
@@ -1392,10 +1392,12 @@ $('.ui-state-default').live('mouseout', function() {
    * @param string $late_javascript JavaScript to run at the end of $(document).ready.
    * @param string $onload_javascript JavaScript to run in the window.onLoad handler which comes later in the page load process.
    * @param bool $includeWrapper If true then includes script tags around the script.
+   * @param bool $closure Set to true to close the JS with a function to ensure $ will refer to jQuery.
    */
-  public static function get_scripts($javascript, $late_javascript, $onload_javascript, $includeWrapper=false) {
+  public static function get_scripts($javascript, $late_javascript, $onload_javascript, $includeWrapper=false, $closure=false) {
     if (!empty($javascript) || !empty($late_javascript) || !empty($onload_javascript)) {
       $script = $includeWrapper ? "<script type='text/javascript'>/* <![CDATA[ */\n" : "";
+      $script .= $closure ? "(function ($) {\n" : "";
       $script .= "
 indiciaData.imagesPath='" . self::$images_path . "';
 indiciaData.warehouseUrl='" . self::$base_url . "';
@@ -1429,6 +1431,7 @@ indiciaData.windowLoaded=false;
               "};\n";
           }              
       }
+      $script .= $closure ? "})(jQuery);\n" : "";
       $script .= $includeWrapper ? "/* ]]> */</script>\n" : "";
     } else {
       $script='';
