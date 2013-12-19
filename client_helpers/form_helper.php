@@ -429,6 +429,9 @@ $('#load-params').click(function() {
       'type'=>'textarea',
       'required'=>false
     );
+    // allow the user ui options module to add it's own param. This could probably be refactored as a proper Drupal hook...
+    if (function_exists('iform_user_ui_options_additional_params'))
+      $params = array_merge($params, iform_user_ui_options_additional_params());
     return $params;
   }
 
