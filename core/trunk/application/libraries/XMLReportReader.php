@@ -806,6 +806,24 @@ class XMLReportReader_Core implements ReportReader
               array('value'=>'', 'operator'=>'', 'sql'=>"o.date_start>now()-'#date_age#'::interval")
             )
         ),
+        'input_date_from' => array('datatype'=>'date', 'default'=>'', 'display'=>'Input date from',
+            'description'=>'Input date of first record to include in the output',
+            'wheres' => array(
+              array('value'=>'', 'operator'=>'', 'sql'=>"('#input_date_from#'='Click here' OR o.cache_created_on >= CAST('#input_date_from#' as date))")
+            )
+        ),
+        'input_date_to' => array('datatype'=>'date', 'default'=>'', 'display'=>'Input date to', 
+            'description'=>'Input date of last record to include in the output',
+            'wheres' => array(
+              array('value'=>'', 'operator'=>'', 'sql'=>"('#input_date_to#'='Click here' OR o.cache_created_on < CAST('#input_date_to#' as date)+'1 day'::interval)")
+            )
+        ),
+        'input_date_age' => array('datatype'=>'text', 'default'=>'', 'display'=>'Input date from time ago',
+            'description'=>'E.g. enter "1 week" or "3 days" to define the how long ago records can be input before they are dropped from the report.',
+            'wheres' => array(
+              array('value'=>'', 'operator'=>'', 'sql'=>"o.cache_created_on>now()-'#input_date_age#'::interval")
+            )
+        ),
         'quality' => array('datatype'=>'lookup', 'default'=>'', 'display'=>'Quality', 
             'description'=>'Minimum quality of records to include', 
             'lookup_values'=>'=V:Verified records only,C:Recorder was certain,L:Recorder thought the record was at least likely,P:Pending verification,' .
