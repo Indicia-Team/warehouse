@@ -1090,16 +1090,19 @@ class ReportEngine {
    * Add any joins defined by a used parameter to the query.
    */
   private function addParamJoins($query, $paramName, $paramDef, $value) {
+    $joins = array();
     foreach($paramDef['joins'] as $joinDef) {
       if ((!empty($joinDef['operator']) && (($joinDef['operator']==='equal' && $joinDef['value']===$value) ||
           ($joinDef['operator']==='notequal' && $joinDef['value']!==$value)))
           // operator not provided, so default is to join if param not empty (null string passed for empty integers)
           || (empty($joinDef['operator']) && !empty($value) && $value!=="null")) {
         // Join SQL can contain the parameter value as well.
-        $join = str_replace("#$paramName#", $value, $joinDef['sql']);
-        $query = str_replace('#joins#', $join."\n #joins#", $query);
+        $joins[] = str_replace("#$paramName#", $value, $joinDef['sql']);
       }
     }
+    // put the param joins after the #joins# token, as we might insert other joins first that are required by the param joins, 
+    // e.g. the sample table when doing geometry autoswitching.
+    $query = str_replace('#joins#', "#joins#\n".implode("\n", $joins), $query);
     return $query;
   }
   
