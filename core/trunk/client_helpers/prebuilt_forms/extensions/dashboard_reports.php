@@ -38,12 +38,12 @@ class extension_dashboard_reports {
         'width'=> 900,
         'height'=> 500,
         'chartType' => 'bar',
-        'yValues'=>array('queried','verified','rejected'),
+        'yValues'=>array('verified','queried','rejected'),
         'xLabels'=>'week',
         'stackSeries'=>true,
         'rendererOptions' => array('barMargin'=>5),
         'legendOptions' => array('show'=>true),
-        'seriesOptions' => array(array('label'=>'Queried','color'=>'#FF9900'),array('label'=>'Verified','color'=>'#00CC00'),array('label'=>'Rejected','color'=>'#CC0000')),
+        'seriesOptions' => array(array('label'=>'Verified','color'=>'#00CC00'),array('label'=>'Queried','color'=>'#FF9900'),array('label'=>'Rejected','color'=>'#CC0000')),
         'axesOptions' => array('yaxis'=>array('min' => 0,'tickOptions'=>array('formatString'=>'%d')),'xaxis'=>array('label'=>'Weeks ago'))
       ),
       $options
