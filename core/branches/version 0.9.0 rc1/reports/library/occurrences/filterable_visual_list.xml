@@ -1,0 +1,50 @@
+<report
+    title="Visualise records using standard filters"
+    description="Report designed for visualising a flow of records, e.g. on a home page. 
+    Compatible with standard parameters and includes basic species details plus media and map data."
+>
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
+  SELECT #columns#
+  FROM cache_occurrences o
+  JOIN occurrences occ on occ.id=o.id AND occ.sensitivity_precision is null
+  JOIN websites w on w.id=o.website_id and w.deleted=false
+  JOIN map_squares msq on msq.id=o.map_sq_#precision#_id
+  #agreements_join#
+  #joins#
+  WHERE #sharing_filter# 
+  #idlist#
+  </query>
+  <order_bys>
+    <order_by>o.id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
+    <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
+    <param name='precision' display='Map square size' description='Map square sizes to load' default='2km'
+      lookup_values='1km:1km,2km:2km,10km:10km' />
+  </params>
+  <columns>
+    <column name='occurrence_id' display='ID' sql='o.id' template="&lt;div class='status-{record_status} certainty-{certainty} record-id'&gt;{occurrence_id}&lt;/div&gt;" datatype="integer" />
+    <column name='taxon' display='Species' datatype="text" sql="o.preferred_taxon" />
+    <column name='common' display='Common name' datatype="text" sql="o.default_common_name" />
+    <column name='taxon_group' display='Taxon Group' sql='o.taxon_group' datatype="text" />
+    <column name='location_name' display='Site name' sql='o.location_name' datatype="text" />
+    <column name='entered_sref' display='Grid Ref' sql="regexp_replace(#sample_sref_field#, ',[^ ]', ', ', 'g')" datatype="text" />
+    <column name='date_start' sql='o.date_start' visible='false' />
+    <column name='date_end' sql='o.date_end' visible='false' />
+    <column name='date_type' sql='o.date_type' visible='false' />
+    <column name='date' display='Date' datatype="date" />
+    <column name='recorder' display='Recorder' sql="CASE WHEN w.id IN (#website_ids#) THEN '' ELSE w.title || '-&gt; ' END || CASE WHEN LENGTH(o.recorders)>30 THEN 'Recorder' ELSE o.recorders END" datatype="text" />
+    <column name='zero_abundance' display='Zero Abundance' sql='o.zero_abundance' visible="false" />
+    <column name='record_status' display='State' sql='o.record_status' visible="false" />
+    <column name='certainty' display='Certainty' sql='o.certainty' visible="false" />
+    <column name='images' display='Images' sql='o.images' img='true' />
+    <column name='pass' visible='false' sql="CASE WHEN o.data_cleaner_info='pass' THEN '&lt;div class=&quot;pass-icon&quot; title=&quot;This record passes all automated verification checks.&quot;/&gt;&lt;/div&gt;' WHEN not w.verification_checks_enabled THEN '&lt;div title=&quot;This record is not included in the automated verification check system.&quot;/&gt;-&lt;/div&gt;' END" />
+    <column name='fails' display='Check' template="{pass}{fails}"
+        sql="case when o.data_cleaner_info is not null and o.data_cleaner_info&lt;&gt;'pass' then 
+            replace(replace(replace(replace(o.data_cleaner_info, '[', '&lt;div class=&quot;fail-icon '), ']', '&quot; '), '{', 'title=&quot;'), '}', '&quot;&gt;&lt;/div&gt;') 
+        end"
+    />
+    <column name="geom" visible="false" mappable="true" sql="st_astext(msq.geom)" in_count="true" />
+  </columns>
+</report>
