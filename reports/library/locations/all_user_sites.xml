@@ -9,16 +9,21 @@
       LEFT JOIN people p on p.id = pav.person_id AND p.deleted=false
       LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
       LEFT JOIN users u ON u.person_id=p.id
-    #joins#
-    WHERE pav.deleted=false
-    AND pav.person_attribute_id=#person_site_attr_id#
-    AND #website_filter#        
+      #joins#
+    WHERE 1=1
+      #filters#
+      AND pav.deleted=false
+      AND pav.person_attribute_id=#person_site_attr_id#
+      AND #website_filter#        
    </query>
   <order_bys>
     <order_by>pav.id DESC</order_by>
   </order_bys>
   <params>
     <param name="person_site_attr_id" display="Person Sites Attribute ID" description="The person attribute ID used to store My Sites" datatype="integer" />
+    <param name="location_id" display="Location Id" description="A location id user if we only want to return results for a single location." datatype="integer" default=''>
+      <where>l.id=#location_id#</where>
+    </param>
   </params>
   <columns>
     <column name="id" sql="pav.id" unique="true" in_count="integer" type="hidden" visible="false"/>
