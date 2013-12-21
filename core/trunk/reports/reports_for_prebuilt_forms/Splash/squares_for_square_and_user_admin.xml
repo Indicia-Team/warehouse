@@ -1,0 +1,31 @@
+<report
+    title="Get squares list for square and user administration."
+    description="Get a list of squares for display on the square and user maintenance page."
+>
+  <query website_filter_field="lw.website_id">
+    SELECT #columns#
+    FROM locations l
+      LEFT JOIN locations_websites lw on lw.location_id=l.id AND lw.deleted=false
+      --Get the vice country for the square as it is included in the name label, this is stored in a custom attribute as it is faster than insecting on the fly.
+      LEFT JOIN location_attribute_values lav on lav.location_id=l.id AND lav.location_attribute_id = #vice_county_location_attribute_id# AND lav.deleted=false
+    WHERE 1=1
+      AND #website_filter#
+      AND (l.location_type_id=#core_square_type_id# OR l.location_type_id=#additional_square_type_id#)
+      #filters#
+    GROUP BY l.id,lav.text_value
+  </query>
+  <params>
+    <param name="square_type_id_chosen_by_user" display="Type of square" description="Square Type as chosen by the user from the drop-down." datatype="lookup"
+        population_call='report:reports_for_prebuilt_forms/Splash/core_and_additional_squares_for_population_call:id:location_type_name' default=''>
+      <where>l.location_type_id=#square_type_id_chosen_by_user#</where>
+    </param>
+    <param name="core_square_type_id" description="Core square location type id. We need to inclde this because if the user elects to show all squares we don't actually return all locations types" datatype="integer"/>
+    <param name="additional_square_type_id" description="Additional square location type id. We need to inclde this because if the user elects to show all squares we don't actually return all locations types" datatype="integer"/>
+    <param name="no_vice_county_found_message" display="Some words to use in the square's name if a vice county cannot be found." datatype="text"/>
+    <param name="vice_county_location_attribute_id" display="The location attribute id that hold's the Vice County name." datatype="integer"/>
+  </params>
+  <columns>
+    <column name='id' display='Location ID' sql="l.id" datatype='integer' visible="false"/>
+    <column name='name' display='Location Name' sql="'&lt;b&gt;' || l.centroid_sref || ' - ' || coalesce(lav.text_value,'#no_vice_county_found_message#') || '&lt;/b&gt;'" datatype='text'/>
+  </columns>
+</report>
