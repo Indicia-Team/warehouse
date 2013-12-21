@@ -174,7 +174,9 @@ class extension_my_sites {
   }
   
   /*
-   * Control allows administrators to maintain the "my sites" list for other users
+   * Control allows administrators to maintain the "my sites" list for other users. @locationParamFromURL can be supplied as an option
+   * to hide the locations drop-down and automatically get the location id from the $_GET url parameter, this option should be set as the
+   * name of the parameter when it is in use.
    */
   public static function add_sites_to_any_user($auth, $args, $tabalias, $options, $path) {
     //Need to call this so we can use indiciaData.read
@@ -187,17 +189,24 @@ class extension_my_sites {
     $locationTypes = explode(',', str_replace(' ', '', $options['locationTypes']));
     if (empty($options['mySitesPsnAttrId']) || !preg_match('/^[0-9]+$/', $options['mySitesPsnAttrId']))
       return 'The sites form is not correctly configured. Please provide the person attribute ID used to store My Sites.';
-    $r .= '<label>'.lang::get('Location :').'</label> ';
-    //Get a list of all the locations that match the given location types (in this case my sites are returned first, although this isn't a requirement)
-    $r .= data_entry_helper::location_select(array(
-      'id' => 'location-select',
-      'nocache' => true,
-      'report' => 'reports_for_prebuilt_forms/Shorewatch/locations_with_my_sites_first',
-      'extraParams' => $auth['read'] + array('location_type_ids'=>$options['locationTypes'], 'user_id'=>hostsite_get_user_field('indicia_user_id'),
-          'my_sites_person_attr_id'=>$options['mySitesPsnAttrId']),
+    if (!empty($options['locationParamFromURL'])&&!empty($_GET[$options['locationParamFromURL']]))
+      $locationIdFromURL=$_GET[$options['locationParamFromURL']];
+    else
+      $locationIdFromURL=0;
+    //If we don't want to automatically get the location id from the URL, then display a drop-down of locations the user can select from   
+    if (empty($locationIdFromURL)) {
+      $r .= '<label>'.lang::get('Location :').'</label> ';
+      //Get a list of all the locations that match the given location types (in this case my sites are returned first, although this isn't a requirement)
+      $r .= data_entry_helper::location_select(array(
+        'id' => 'location-select',
+        'nocache' => true,
+        'report' => 'reports_for_prebuilt_forms/Shorewatch/locations_with_my_sites_first',
+        'extraParams' => $auth['read'] + array('location_type_ids'=>$options['locationTypes'], 'user_id'=>hostsite_get_user_field('indicia_user_id'),
+            'my_sites_person_attr_id'=>$options['mySitesPsnAttrId']),
 
-      'blankText'=>'<' . lang::get('please select') . '>',
-    ));
+        'blankText'=>'<' . lang::get('please select') . '>',
+      ));
+    }
     //Get the user select control
     $r .= self:: user_select_for_add_sites_to_any_user_control($auth['read'],$args);
     
@@ -267,7 +276,14 @@ class extension_my_sites {
     //Call duplicate check when administrator elects to save a user/site combination
     data_entry_helper::$javascript .= "
     $('#add-user-site-button').click(function() {
-      duplicateCheck($('#location-select').val(),$('#dynamic-the_user_id').val());
+      //We can get the location id from the url or from the locations drop-down depending on the option the administrator has set.
+      var locationId;
+      if (".$locationIdFromURL.") {
+        locationId = ".$locationIdFromURL.";
+      } else {
+        locationId = $('#location-select').val()       
+      }
+      duplicateCheck(locationId,$('#dynamic-the_user_id').val());
     });";
     //Zoom map as user selects locations
     data_entry_helper::$javascript .= "
