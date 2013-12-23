@@ -717,6 +717,7 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
  * Gets the report data for the list of existing filters this user can access.
  */
 function report_filters_load_existing($readAuth, $sharing) {
+  iform_load_helpers(array('report_helper'));
   $filters = report_helper::get_report_data(array(
     'dataSource' => 'library/filters/filters_list',
     'readAuth' => $readAuth,
