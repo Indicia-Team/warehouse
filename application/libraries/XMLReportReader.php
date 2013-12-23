@@ -138,6 +138,9 @@ class XMLReportReader_Core implements ReportReader
                 if (!$this->locations_id_field = $reader->getAttribute('locations_id_field'))
                   // default table alias for the locations table, so we can join to the id
                   $this->locations_id_field = 'l.id';
+                if (!$this->people_id_field = $reader->getAttribute('people_id_field'))
+                  // default table alias for the people table, so we can join to the id
+                  $this->people_id_field = 'p.id';
                 // load the standard set of parameters for consistent filtering of reports?
                 if ($reader->getAttribute('standard_params')!==null)
                   $this->hasStandardParams=true;
