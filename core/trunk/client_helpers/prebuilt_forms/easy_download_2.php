@@ -57,7 +57,7 @@ class iform_easy_download_2 {
             'Leave blank to disallow download of my records.',
         'type'=>'text_input',
         'required'=>false,
-        'default'=>'authenticated user'
+        'default'=>'access iform'
       ),
       array(
         'name'=>'all_records_user_filter_permission',
@@ -75,7 +75,7 @@ class iform_easy_download_2 {
             'Leave blank to disallow this download type.',
         'type'=>'text_input',
         'required'=>false,
-        'default'=>'authenticated user'
+        'default'=>'access iform'
       ),
       array(
         'name'=>'peer_review_type_permission',
@@ -84,7 +84,7 @@ class iform_easy_download_2 {
             'Leave blank to disallow this download type.',
         'type'=>'text_input',
         'required'=>false,
-        'default'=>'authenticated user'
+        'default'=>'access iform'
       ),
       array(
         'name'=>'verification_type_permission',
@@ -111,7 +111,7 @@ class iform_easy_download_2 {
             'Leave blank to disallow this download type.',
         'type'=>'text_input',
         'required'=>false,
-        'default'=>'authenticated user'
+        'default'=>'access iform'
       ),
       array(
         'name'=>'csv_format_permission',
@@ -120,7 +120,7 @@ class iform_easy_download_2 {
             'Leave blank to disallow this download format.',
         'type'=>'text_input',
         'required'=>false,
-        'default'=>'authenticated user'
+        'default'=>'access iform'
       ),
       array(
         'name'=>'tsv_format_permission',
@@ -129,7 +129,7 @@ class iform_easy_download_2 {
             'Leave blank to disallow this download format.',
         'type'=>'text_input',
         'required'=>false,
-        'default'=>'authenticated user'
+        'default'=>'access iform'
       ),
       array(
         'name'=>'kml_format_permission',
@@ -138,7 +138,7 @@ class iform_easy_download_2 {
             'Leave blank to disallow this download format.',
         'type'=>'text_input',
         'required'=>false,
-        'default'=>'authenticated user'
+        'default'=>'access iform'
       ),
       array(
         'name'=>'gpx_format_permission',
@@ -147,7 +147,7 @@ class iform_easy_download_2 {
             'Leave blank to disallow this download format.',
         'type'=>'text_input',
         'required'=>false,
-        'default'=>'authenticated user'
+        'default'=>'access iform'
       ),
       array(
         'name'=>'nbn_format_permission',
@@ -156,7 +156,7 @@ class iform_easy_download_2 {
             'Leave blank to disallow this download format.',
         'type'=>'text_input',
         'required'=>false,
-        'default'=>'authenticated user'
+        'default'=>'access iform'
       ),
       array(
         'name'=>'survey_id',
@@ -296,10 +296,10 @@ class iform_easy_download_2 {
     $reloadPath = $reload['path'];
     if(count($reload['params'])) $reloadPath .= '?'.helper_base::array_to_query_string($reload['params']);
     $r = '<form method="POST" action="'.$reloadPath.'">';
-    $r .= '<fieldset><legend>'.lang::get('Records to download').'</legend>';
+    $r .= '<fieldset id="download-type-fieldset"><legend>'.lang::get('Records to download').'</legend>';
     if (count($types)===1) 
-      $r .= '<input type="hidden" name="download-type" value="'.implode('', array_keys($types)).'"/>';
-    else 
+      $r .= '<input type="hidden" name="download-type" id="download-type" value="'.implode('', array_keys($types)).'"/>';
+    else {
       $r .= data_entry_helper::select(array(
         'fieldname'=>'download-type',
         'label'=>lang::get('Download type'),
@@ -307,6 +307,7 @@ class iform_easy_download_2 {
         'class'=>'control-width-5',
         'helpText'=>'Select the type of download you require, i.e. the purpose for the data. This defines which records are available to download.'
       ));
+    }
     $r .= data_entry_helper::select(array(
       'fieldname'=>'download-subfilter',
       'label'=>lang::get('Filter to apply'),
@@ -314,7 +315,8 @@ class iform_easy_download_2 {
       'class'=>'control-width-5',
       'helpText'=>lang::get('Optionally select from the available filters.')
     ));
-    $r .= '</fieldset><fieldset><legend>'.lang::get('Limit the records').'</legend>';
+    $r .= "</fieldset>\n";
+    $r .= '<fieldset><legend>'.lang::get('Limit the records').'</legend>';
     if (count($userFilterOptions)===1) 
       $r .= '<input type="hidden" name="user-filter" value="'.implode('', array_keys($userFilterOptions)).'"/>';
     else 
@@ -349,14 +351,14 @@ class iform_easy_download_2 {
       'helpText' => 'Leave blank for no end date filter',
       'class' => 'control-width-4'
     ));
-    $r .= '</fieldset><fieldset><legend>'.lang::get('Format').'</legend>';
-    $r .= '<label>Download options:</label>';
+    $r .= '</fieldset><fieldset><legend>'.lang::get('Select a format to download').'</legend>';
     foreach($formats as $format=>$label) {
       $r .= "<input class=\"inline-control\" type=\"submit\" name=\"format\" value=\"$label\"/>\n";
     }
     $r .= '</fieldset></form>';
     data_entry_helper::$javascript .= 'indiciaData.ajaxUrl="'.url('iform/ajax/easy_download_2')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.nid = "'.$node->nid."\";\n";
+    data_entry_helper::$javascript.="setAvailableDownloadFilters();\n";
     return $r;
   } 
   
@@ -367,9 +369,9 @@ class iform_easy_download_2 {
    */
   private static function get_user_filter_options($args) {
     $r = array();
-    if ($args['my_records_user_filter_permission'] && user_access('my_records_user_filter_permission')) 
+    if ($args['my_records_user_filter_permission'] && user_access($args['my_records_user_filter_permission'])) 
       $r['my']=lang::get('Me');
-    if ($args['all_records_user_filter_permission'] && user_access('all_records_user_filter_permission')) 
+    if ($args['all_records_user_filter_permission'] && user_access($args['all_records_user_filter_permission'])) 
       $r['all']=lang::get('All users');
     return $r;
   }
@@ -405,8 +407,15 @@ class iform_easy_download_2 {
             data_entry_helper::$javascript.="indiciaData.optionalFilters.$sharingTypeCode.filter_$filter[id]='$filter[title]';\n";
           }
         }
-        // If no permissions defined for this sharing type for this user, then allow an all-access download
-        if (!$gotPermissionsFilterForThisType) 
+        if ($sharingTypeCode==='V') {
+          // load their profile settings for verification
+          $location_id = hostsite_get_user_field('location_expertise');
+          $taxon_group_ids = hostsite_get_user_field('taxon_groups_expertise');
+          $survey_ids = hostsite_get_user_field('surveys_expertise');
+          if ($location_id || $taxon_group_ids || $survey_ids)
+            $r['V profile'] = lang::get('Verification - my verification records');
+        } elseif (!$gotPermissionsFilterForThisType) 
+          // If no permissions defined for this sharing type for this user, then allow an all-access download
           $r[$sharingTypeCode]=$sharingType;    
       }
     }
@@ -463,7 +472,7 @@ class iform_easy_download_2 {
     $format=self::get_report_format($args);
     iform_load_helpers(array('report_helper'));
     $conn = iform_get_connection_details($node);
-    $params = self::build_params($args, data_entry_helper::$js_read_tokens, $format);
+    $params = self::build_params($args, $format);
     global $indicia_templates;
     // let's just get the URL, not the whole anchor element
     $indicia_templates['report_download_link'] = '{link}';
@@ -475,10 +484,30 @@ class iform_easy_download_2 {
       'dataSource'=>$args["report_$format"],
       'extraParams'=>$params,
       'format'=>$format,
-      'sharing'=>$sharing,
+      'sharing'=>self::expand_sharing_mode($sharing),
       'itemsPerPage'=>$limit
     ));
     header("Location: $url");
+  }
+  
+  /**
+   * Expand a single character sharing mode code (e.g. R) to the full term (e.g. reporting).
+   * @param string $sharing Sharing mode code to expand.
+   * @return string Expanded term.
+   */
+  private static function expand_sharing_mode($sharing) {
+    switch ($sharing) {
+      case 'R':
+        return 'reporting';
+      case 'P':
+        return 'peer_review';
+      case 'V':
+        return 'verification';
+      case 'D':
+        return 'data_flow';
+      case 'M':
+        return 'moderation';
+    }
   }
   
   /**
@@ -508,13 +537,26 @@ class iform_easy_download_2 {
    * @throws exception Thrown if requested download type not allowed for this user.
    */
   private static function build_params($args, $format) {
+    require_once('includes/user.php');
     $availableTypes = self::get_download_types($args, data_entry_helper::$js_read_tokens);
     if (!array_key_exists($_POST['download-type'], $availableTypes))
       throw new exception('Selected download type not authorised');
     $sharing = substr($_POST['download-type'], 0, 1);
     $params=array();
     // Have we got any filters to apply?
-    if (strlen($_POST['download-type'])>1 || !empty($_POST['download-subfilter'])) {
+    if ($_POST['download-type']==='V profile') {
+      // the user's profile defined verification settings
+      $location_id = hostsite_get_user_field('location_expertise');
+      if ($location_id)
+        $params['location_list_context']=$location_id;
+      $taxon_groups_ids = hostsite_get_user_field('taxon_groups_expertise');
+      if ($taxon_groups_ids)
+        $params['taxon_group_list_context']=implode(',', unserialize($taxon_groups_ids));
+      $survey_ids = hostsite_get_user_field('surveys_expertise');
+      if ($survey_ids)
+        $params['survey_list_context']=implode(',', unserialize($survey_ids));
+    } elseif (strlen($_POST['download-type'])>1 || !empty($_POST['download-subfilter'])) {
+      // use the saved filters system to filter the records
       $filterData = report_filters_load_existing(data_entry_helper::$js_read_tokens, $sharing);
       if (preg_match('/^[RPVDM]+ filter (\d+)$/', $_POST['download-type'], $matches)) 
         // download type includes a context filter
@@ -527,11 +569,12 @@ class iform_easy_download_2 {
     if (!empty($_POST['user-filter']) && $_POST['user-filter']==='my')
       $params['my_records']=1;
     if (!empty($_POST['survey_id']))
-      $params['survey_id']=$_POST['survey_id'];
+      $params['survey_list']=$_POST['survey_id'];
     if (!empty($_POST['date_from']) && $_POST['date_from']!==lang::get('Click here'))
       $params['date_from']=$_POST['date_from'];
     if (!empty($_POST['date_to']) && $_POST['date_to']!==lang::get('Click here'))
       $params['date_to']=$_POST['date_to'];
+    $params = array_merge($params, get_options_array_with_user_data($args["report_params_$format"]));
     return $params;
   }
   
@@ -548,9 +591,12 @@ class iform_easy_download_2 {
       if ($filterDef['id']===$filterId) {
         $filter = json_decode($filterDef['definition'], true);
         foreach ($filter as $field=>$value) {
-          // to enforce this as the overall context, defining the maximum limit of the query results, append _context to the field names.
-          // This prevents the filter negating the survey or date filter defined on the page.
-          $params["$field$paramSuffix"]=$value;
+          // Values shouldn't be arrays. Those which are are stray data from the filter save form.
+          if (!is_array($value)) {
+            // to enforce this as the overall context, defining the maximum limit of the query results, append _context to the field names.
+            // This prevents the filter negating the survey or date filter defined on the page.
+            $params["$field$paramSuffix"]=$value;
+          }
         }
         break;
       }

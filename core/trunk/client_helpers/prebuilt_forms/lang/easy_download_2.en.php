@@ -27,9 +27,9 @@ global $custom_terms;
  * @package	Client
  */
 $custom_terms = array(
-  'format_csv'=>'Comma separated values (CSV)',
-  'format_tsv'=>'Tab separated values (TSV)',
-  'format_kml'=>'Google Earth format (KML)',
-  'format_gpx'=>'GPS track format (GPX)',
-  'format_nbn'=>'NBN download format'
+  'format_csv'=>'Comma separated (CSV)',
+  'format_tsv'=>'Tab separated (TSV)',
+  'format_kml'=>'Google Earth (KML)',
+  'format_gpx'=>'GPS track (GPX)',
+  'format_nbn'=>'NBN Exchange'
 );
