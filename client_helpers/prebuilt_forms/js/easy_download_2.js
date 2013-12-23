@@ -19,10 +19,12 @@
  * @link    http://code.google.com/p/indicia/
  */
  
+var setAvailableDownloadFilters;
+ 
 jQuery(document).ready(function ($) {
   // Function called on selection of a download sharing type (and context filter) to 
   // set the available subfilters and surveys into the form controls.
-  function setAvailableFilters() {
+  setAvailableDownloadFilters=function() {
     // first char of type drop down value is always the sharing type code (e.g. R for reporting)
     var sharingType=$('#download-type').val().substr(0,1);
     // remove the filters available from the select so we can repopulate with the appropriate ones
@@ -34,8 +36,13 @@ jQuery(document).ready(function ($) {
     // if just the Select a filter option available, can hide the control
     if ($('#download-subfilter option').length===1) {
       $('#wrap-download-subfilter').hide();
+      if ($('select#download-type').length===0) {
+        // if no download type options at all, hide the whole fieldset
+        $('#download-type-fieldset').hide();
+      }
     } else {
       $('#wrap-download-subfilter').show();
+      $('#download-type-fieldset').show();
     }
     // load the survey options into the select
     if ($('select#survey_id').length) {
@@ -57,6 +64,5 @@ jQuery(document).ready(function ($) {
     }
   }
   
-  $('#download-type').change(setAvailableFilters);
-  setAvailableFilters();
+  $('#download-type').change(setAvailableDownloadFilters);
 });
