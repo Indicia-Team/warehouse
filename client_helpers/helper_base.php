@@ -242,7 +242,7 @@ if ($("#{escapedId} option").length===0) {
         '<input type="hidden" id="{geomid}" name="geomFieldname" value="{defaultGeom}" />'.
         '<input type="hidden" id="{id}" name="{fieldname}" value="{default}" />',
   'attribute_cell' => "\n<td class=\"scOccAttrCell ui-widget-content {class}\" headers=\"{headers}\">{content}</td>",
-  'taxon_label_cell' => "\n<td class=\"scTaxonCell{editClass}\" headers=\"{tableId}-species-{idx}\" {colspan}>{content}</td>",
+  'taxon_label_cell' => "\n<td class=\"scTaxonCell\" headers=\"{tableId}-species-{idx}\" {colspan}>{content}</td>",
   'helpText' => "\n<p class=\"{helpTextClass}\">{helpText}</p>",
   'file_box' => '',                   // the JQuery plugin default will apply, this is just a placeholder for template overrides.
   'file_box_initial_file_info' => '', // the JQuery plugin default will apply, this is just a placeholder for template overrides.
