@@ -30,23 +30,23 @@
  */
 class Taxa_taxon_list_Model extends Base_Name_Model {
   public $search_field='taxon';
-  
+
   protected $lookup_against='lookup_taxa_taxon_list';
-  
+
   protected $belongs_to = array(
-    'taxon', 
-    'taxon_list',  
+    'taxon',
+    'taxon_list',
     'taxon_meaning',
     'created_by' => 'user',
     'updated_by' => 'user'
   );
-  
+
   // Declare that this model has child attributes, and the name of the node in the submission which contains them
   protected $has_attributes=true;
   protected $attrs_submission_name='taxAttributes';
   protected $attrs_field_prefix='taxAttr';
 
-  protected $ORM_Tree_children = 'taxa_taxon_lists';  
+  protected $ORM_Tree_children = 'taxa_taxon_lists';
   protected $list_id_field = 'taxon_list_id';
 
   public function validate(Validation $array, $save = FALSE) {
@@ -68,7 +68,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
     );
     return parent::validate($array, $save);
   }
-  
+
   /**
    * If we want to delete the record, we need to check that no dependents exist.
    */
@@ -82,7 +82,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
   }
 
   /**
-   * Return a displayable caption for the item.   
+   * Return a displayable caption for the item.
    */
   public function caption()
   {
@@ -90,7 +90,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
       return ($this->taxon_id != null ? $this->taxon->taxon : '');
     } else {
       return 'Taxon in List';
-    }    
+    }
   }
 
   public function preSubmit() {
@@ -98,7 +98,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
 
     return parent::preSubmit();
   }
-  
+
   /**
   * Overrides the postSubmit function to add in synonomies and common names as well as search codes. This only applies
   * when adding a preferred name, not a synonym or common name.
@@ -106,12 +106,12 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
   protected function postSubmit($isInsert)
   {
     $result = true;
-    if ($this->submission['fields']['preferred']['value']=='t' && array_key_exists('metaFields', $this->submission)) {      
+    if ($this->submission['fields']['preferred']['value']=='t' && array_key_exists('metaFields', $this->submission)) {
       if (array_key_exists('commonNames', $this->submission['metaFields'])) {
         $arrCommonNames=$this->parseRelatedNames(
             $this->submission['metaFields']['commonNames']['value'],
             'set_common_name_sub_array'
-        ); 
+        );
       } else $arrCommonNames=array();
       Kohana::log("debug", "Number of common names is: ".count($arrCommonNames));
       if (array_key_exists('synonyms', $this->submission['metaFields'])) {
@@ -163,7 +163,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
         $sm->clear();
         $lang = $syn['lang'];
         $auth = $syn['auth'];
-        
+
         // Wrap a new submission
         Kohana::log("info", "Wrapping submission for synonym ".$taxon);
 
@@ -173,7 +173,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
         $lang_id = $lang_id ? $lang_id : ORM::factory('language')->where(array('iso' => 'eng'))->find()->id;
         // copy the original post array to pick up the common things, first the taxa_taxon_list data
         $this->copy_shared_fields_from_submission('taxa_taxon_list', $this->submission['fields'], $syn, array(
-            'description', 'parent', 'taxonomic_sort_order', 'allow_data_entry', 'taxon_list_id'        
+            'description', 'parent', 'taxonomic_sort_order', 'allow_data_entry', 'taxon_list_id'
         ));
 
         // Next do the data in the taxon supermodel - we have to search for it rather than rely on it being in a particular position in the list
@@ -207,13 +207,13 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
           $result=false;
           foreach($sm->errors as $key=>$value) {
             $this->errors[$sm->object_name.':'.$key]=$value;
-          }          
+          }
         } else {
           // If synonym is not latin (a common name), and we have no common name for this object, use it.
           if ($this->common_taxon_id==null && $syn['taxon:language_id']!=2) {
-            $this->common_taxon_id=$sm->taxon->id;             
+            $this->common_taxon_id=$sm->taxon->id;
           }
-        }        
+        }
       }
       if ($result && array_key_exists('codes', $this->submission['metaFields']))
         $result = $this->saveCodeMetafields($this->submission['metaFields']['codes']);
@@ -226,10 +226,10 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
     }
     return $result;
   }
-  
+
   /**
    * If there is a parent external key in the metafields data, then we use this to lookup the preferred taxon
-   * from this list which has the same external key and will set that as the parent. Used during import to build 
+   * from this list which has the same external key and will set that as the parent. Used during import to build
    * hierarchies.
    */
   private function postSubmitLinkUsingParentExternalKey() {
@@ -240,11 +240,11 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
           ->join('taxa as t', 't.id', 'ttl.taxon_id')
           ->where('t.external_key', $parentExtKey)
           ->where('ttl.taxon_list_id', $this->taxon_list_id)
-          ->where('ttl.preferred', 't');            
+          ->where('ttl.preferred', 't');
       $result=$query->get()->result_array(false);
       // only set the parent id if there is a unique hit within the list's preferred taxa
       if (count($result)===1) {
-        if ($this->parent_id!==$result[0]['id']) 
+        if ($this->parent_id!==$result[0]['id'])
           $this->parent_id=$result[0]['id'];
       } else {
         $this->errors['parent_external_key']="Could not find a unique parent using external key $parentExtKey";
@@ -255,7 +255,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
     }
     return true;
   }
-  
+
   /**
    * Handle any taxon codes submitted in a CSV file as metadata.
    */
@@ -292,16 +292,16 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
       if (!$tc->submit()) {
         foreach($tc->errors as $key=>$value) {
           $this->errors[$tc->object_name.':'.$key]=$value;
-        }          
+        }
         return false;
       }
     }
     return true;
   }
-  
+
   /**
-   * When posting synonyms or common names, some field values can be re-used from the preferred term such as the 
-   * descriptions and taxon group. This is a utility method for copying submission data matching a list of fields into the 
+   * When posting synonyms or common names, some field values can be re-used from the preferred term such as the
+   * descriptions and taxon group. This is a utility method for copying submission data matching a list of fields into the
    * save array for the synonym/common name.
    * @param string $modelName The name of the model data is being copied for, used as a prefix when building the save array
    * @param array $source The array of fields and values for the part of the submission being copied (i.e. 1 model's values).
@@ -346,9 +346,9 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
 
   /**
    * Return the submission structure, which includes defining taxon and taxon_meaning
-   * as the parent (super) models, and the synonyms and commonNames as metaFields which 
+   * as the parent (super) models, and the synonyms and commonNames as metaFields which
    * are specially handled.
-   * 
+   *
    * @return array Submission structure for a taxa_taxon_list entry.
    */
   public function get_submission_structure()
@@ -359,39 +359,39 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
           'taxon_meaning'=>array('fk' => 'taxon_meaning_id'),
           'taxon'=>array('fk' => 'taxon_id')
         ),
-        'metaFields'=>array('synonyms', 'commonNames', 'codes', 'parent_external_key')      
+        'metaFields'=>array('synonyms', 'commonNames', 'codes', 'parent_external_key')
     );
   }
-  
-  /** 
-   * Set default values for a new entry.   
+
+  /**
+   * Set default values for a new entry.
    */
   public function getDefaults() {
     return array(
       'preferred'=>'t',
       'taxa_taxon_list:allow_data_entry' => 't'
-    );  
+    );
   }
-  
+
   /**
    * Define a form that is used to capture a set of predetermined values that apply to every record during an import.
    */
   public function fixed_values_form() {
     return array(
-      'taxa_taxon_list:taxon_list_id' => array( 
-        'display'=>'Species List', 
-        'description'=>'Select the list to import into.', 
+      'taxa_taxon_list:taxon_list_id' => array(
+        'display'=>'Species List',
+        'description'=>'Select the list to import into.',
         'datatype'=>'lookup',
-        'population_call'=>'direct:taxon_list:id:title' 
+        'population_call'=>'direct:taxon_list:id:title'
       ),
-      'taxon:language_id' => array( 
-        'display'=>'Language', 
-        'description'=>'Select the language to import preferred taxa for.', 
+      'taxon:language_id' => array(
+        'display'=>'Language',
+        'description'=>'Select the language to import preferred taxa for.',
         'datatype'=>'lookup',
-        'population_call'=>'direct:language:id:language' 
+        'population_call'=>'direct:language:id:language'
       ),
-      'taxon:taxon_group_id' => array( 
-        'display'=>'Taxon Group', 
+      'taxon:taxon_group_id' => array(
+        'display'=>'Taxon Group',
         'description'=>'Select the taxon group to import taxa for.',
         'datatype'=>'lookup',
         'population_call'=>'direct:taxon_group:id:title'
