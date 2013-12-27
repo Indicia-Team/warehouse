@@ -352,7 +352,7 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
     makeSpareRow(gridId, readAuth, lookupListId, url, null, false);
     //Deal with user clicking on edit taxon icon
     $('.edit-taxon-name').live('click', function(e) {
-      if ($('.ac_results:visible').length>0) {
+      if ($('.ac_results:visible').length>0 || !$(e.target).is(':visible')) {
         // don't go into edit mode if they are picking a species name already
         return;
       }
