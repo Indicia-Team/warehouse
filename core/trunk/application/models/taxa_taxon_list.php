@@ -215,14 +215,45 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
           }
         }        
       }
-      // post the common name id change if required.
-      if (isset($this->changed['common_taxon_id'])) {
-        $this->save();        
-      }
       if ($result && array_key_exists('codes', $this->submission['metaFields']))
         $result = $this->saveCodeMetafields($this->submission['metaFields']['codes']);
+      if ($result && array_key_exists('parent_external_key', $this->submission['metaFields']))
+        $result = self::postSubmitLinkUsingParentExternalKey();
+      // post the common name or parent id change if required.
+      if (isset($this->changed['common_taxon_id']) || isset($this->changed['parent_id'])) {
+        $this->save();
+      }
     }
     return $result;
+  }
+  
+  /**
+   * If there is a parent external key in the metafields data, then we use this to lookup the preferred taxon
+   * from this list which has the same external key and will set that as the parent. Used during import to build 
+   * hierarchies.
+   */
+  private function postSubmitLinkUsingParentExternalKey() {
+    $parentExtKey = $this->submission['metaFields']['parent_external_key']['value'];
+    if (!empty($parentExtKey)) {
+      $query=$this->db->select('ttl.id')
+          ->from('taxa_taxon_lists as ttl')
+          ->join('taxa as t', 't.id', 'ttl.taxon_id')
+          ->where('t.external_key', $parentExtKey)
+          ->where('ttl.taxon_list_id', $this->taxon_list_id)
+          ->where('ttl.preferred', 't');            
+      $result=$query->get()->result_array(false);
+      // only set the parent id if there is a unique hit within the list's preferred taxa
+      if (count($result)===1) {
+        if ($this->parent_id!==$result[0]['id']) 
+          $this->parent_id=$result[0]['id'];
+      } else {
+        $this->errors['parent_external_key']="Could not find a unique parent using external key $parentExtKey";
+        return false;
+      }
+    } else {
+      $this->parent_id=null;
+    }
+    return true;
   }
   
   /**
@@ -328,7 +359,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
           'taxon_meaning'=>array('fk' => 'taxon_meaning_id'),
           'taxon'=>array('fk' => 'taxon_id')
         ),
-        'metaFields'=>array('synonyms', 'commonNames', 'codes')      
+        'metaFields'=>array('synonyms', 'commonNames', 'codes', 'parent_external_key')      
     );
   }
   
