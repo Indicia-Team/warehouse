@@ -1273,6 +1273,7 @@ class ORM extends ORM_Core {
         return self::createAttributesFromMetafields();
       } else {
         // loop to find the custom attributes embedded in the table fields
+        $multiValueData=array();
         foreach ($this->submission['fields'] as $field => $content) {
           if (preg_match('/^'.$this->attrs_field_prefix.'\:/', $field)) {
             $value = $content['value'];
@@ -1280,8 +1281,42 @@ class ORM extends ORM_Core {
             $arr = explode(':', $field);
             $attrId = $arr[1];
             $valueId = count($arr)>2 ? $arr[2] : null;
-            if (!$this->createAttributeRecord($attrId, $valueId, $value)) 
+            $attrDef = self::loadAttrDef($this->object_name, $attrId);
+            // If this attribute is a multivalue array, then any existing attributes which are not in the submission for the same attr ID should be removed.
+            // We need to keep an array of the multi-value attribute IDs, with a sub-array for the existing values that were included in the submission,
+            // so that we can mark-delete the ones that are not in the submission.
+            if ($attrDef->multi_value=='t' && count($arr)) {
+              if (!isset($multiValueData["attr:$attrId"]))
+                $multiValueData["attr:$attrId"]=array();
+              $multiValueData["attr:$attrId"][]=$value;
+            }
+            if (!$this->createAttributeRecord($attrId, $valueId, $value, $attrDef)) 
               return false;
+          }
+        }
+        // delete any old values from a mult-value attribute
+        if (!empty($multiValueData)) {
+          switch ($attrDef->data_type) {
+            case 'I': 
+            case 'L':
+              $vf = 'int_value';
+              break;
+            case 'F':
+              $vf = 'float_value';
+              break;
+            case 'D':
+            case 'V':
+              $vf = 'date_start_value';
+              break;
+            default:
+              $vf = 'text_value';
+          }
+          // If we did any multivalue updates for existing records, then any attributes whose values were not included in the submission must be removed.
+          foreach ($multiValueData as $attr => $valsToKeep) {
+            $this->db->from($this->object_name.'_attribute_values')->set(array('deleted'=>'t', 'updated_on'=>date("Ymd H:i:s")))
+                ->where(array($this->object_name.'_attribute_id'=>$attrId, $this->object_name.'_id'=>$this->id, 'deleted'=>'f'))
+                ->notin('int_value', $valsToKeep)
+                ->update();
           }
         }
       }
@@ -1302,14 +1337,15 @@ class ORM extends ORM_Core {
         $attrId = $attr['fields'][$this->object_name.'_attribute_id'];
         // If this is an existing attribute value, get the record id to overwrite
         $valueId = (array_key_exists('id', $attr['fields'])) ? $attr['fields']['id'] : null;
-        if (!$this->createAttributeRecord($attrId, $valueId, $value)) 
+        $attrDef = self::loadAttrDef($this->object_name, $attrId);
+        if (!$this->createAttributeRecord($attrId, $valueId, $value, $attrDef)) 
           return false;
       }
     }
     return true;
   }
   
-  protected function createAttributeRecord($attrId, $valueId, $value) {
+  protected function createAttributeRecord($attrId, $valueId, $value, $attrDef) {
     // There are particular circumstances when $value is actually an array: when a attribute is multi value,
     // AND has yet to be created, AND is passed in as multiple ***Attr:<n>[] POST variables. This should only happen when
     // the attribute has yet to be created, as after this point the $valueID is filled in and that specific attribute POST variable
@@ -1320,11 +1356,11 @@ class ORM extends ORM_Core {
       if (is_null($valueId)) {
         $retVal = true;
         foreach($value as $singlevalue) { // recurse over array.
-          $retVal = $this->createAttributeRecord($attrId, $valueId, $singlevalue) && $retVal;
+          $retVal = $this->createAttributeRecord($attrId, $valueId, $singlevalue, $attrDef) && $retVal;
         }
         return $retVal;	
       } else {
-        $this->errors['general']='INTERNAL ERROR: multiple values passed in for '.$this->object_name.' '.$valueId;
+        $this->errors['general']='INTERNAL ERROR: multiple values passed in for '.$this->object_name.' '.$valueId.' '.print_r($value, true);
         return false;
       }
     }
@@ -1336,24 +1372,16 @@ class ORM extends ORM_Core {
       $attrId = substr($attrId, 3);
       $value=trim($value);
     }
-    
-    $attr = $this->db
-        ->select('caption','data_type','multi_value','termlist_id')
-        ->from($this->object_name.'_attributes')
-        ->where(array('id'=>$attrId))
-        ->get()->result_array();
-    if (count($attr)===0) 
-      throw new Exception("Invalid {".$this->object_name."} attribute ID $attrId");
-    $attr = $attr[0];
     // Create a attribute value, loading the existing value id if it exists, or search for the existing record
     // if not multivalue but no id supplied and not a new record
-    if ($this->existing && (!is_null($valueId)) && (!$attr->multi_value=='f'))
+    // @todo: Optimise attribute saving by using query builder rather than ORM
+    if ($this->existing && (!is_null($valueId)) && (!$attrDef->multi_value=='f'))
       $attrValueModel = ORM::factory($this->object_name.'_attribute_value')
           ->where(array($this->object_name.'_attribute_id'=>$attrId, $this->object_name.'_id'=>$this->id))->find();
     if (!isset($attrValueModel) || !$attrValueModel->loaded)
       $attrValueModel = ORM::factory($this->object_name.'_attribute_value', $valueId);
     $oldValues = array_merge($attrValueModel->as_array());
-    $dataType = $attr->data_type;
+    $dataType = $attrDef->data_type;
     $vf = null;
     
     $fieldPrefix = (array_key_exists('field_prefix',$this->submission)) ? $this->submission['field_prefix'].':' : '';
@@ -1385,7 +1413,7 @@ class ORM extends ORM_Core {
             kohana::log('debug', "  date_end_value=".$attrValueModel->date_end_value);
             kohana::log('debug', "  date_type_value=".$attrValueModel->date_type_value);
           } else {
-            $this->errors[$fieldId] = "Invalid value $value for attribute ".$attr->caption;
+            $this->errors[$fieldId] = "Invalid value $value for attribute ".$attrDef->caption;
             kohana::log('debug', "Could not accept value $value into date fields for attribute $fieldId.");
             return false;
           }
@@ -1419,12 +1447,12 @@ class ORM extends ORM_Core {
             'fkSearchField' => 'term',
             'fkSearchValue' => $value,
             'fkSearchFilterField' => 'termlist_id',
-            'fkSearchFilterValue' => $attr->termlist_id,
+            'fkSearchFilterValue' => $attrDef->termlist_id,
           ));
           if ($r) {
             $value = $r;
           } else {
-            $this->errors[$fieldId] = "Invalid value $value for attribute ".$attr->caption;
+            $this->errors[$fieldId] = "Invalid value $value for attribute ".$attrDef->caption;
             kohana::log('debug', "Could not accept value $value into field $vf  for attribute $fieldId.");
             return false;
           }
@@ -1448,7 +1476,7 @@ class ORM extends ORM_Core {
         if ( $dataType === 'F' && abs($attrValueModel->$vf - $value) < 0.00001 * $attrValueModel->$vf ) {
           kohana::log('alert', "Lost precision accepting value $value into field $vf for attribute $fieldId. Value=".$attrValueModel->$vf);
         } else {
-          $this->errors[$fieldId] = "Invalid value $value for attribute ".$attr->caption;
+          $this->errors[$fieldId] = "Invalid value $value for attribute ".$attrDef->caption;
           kohana::log('debug', "Could not accept value $value into field $vf for attribute $fieldId.");
           return false;
         }
@@ -1490,6 +1518,29 @@ class ORM extends ORM_Core {
     $this->nestedChildModelIds[] = $attrValueModel->get_submitted_ids();
 
     return true;
+  }
+  
+  /**
+   * Load the definition of an attribute from the database (cached)
+   * @param string $attrTable Attribute type name, e.g. sample or occurrence
+   * @param integer $attrId The ID of the attribute
+   */
+  protected function loadAttrDef($attrType, $attrId) {
+    $cacheId = 'attrInfo_'.$attrType.'_'.$attrId;
+    $this->cache = Cache::instance();
+    $attr = $this->cache->get($cacheId);
+    if ($attr===null) {
+      $attr = $this->db
+          ->select('caption','data_type','multi_value','termlist_id','validation_rules')
+          ->from($attrType.'_attributes')
+          ->where(array('id'=>$attrId))
+          ->get()->result_array();
+      if (count($attr)===0) 
+        throw new Exception("Invalid $type attribute ID $attrId");
+      $this->cache->set($cacheId, $attr[0]);
+      return $attr[0];
+    } else
+      return $attr;
   }
 
   /**
