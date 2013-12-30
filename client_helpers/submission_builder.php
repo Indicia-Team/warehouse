@@ -179,8 +179,20 @@ class submission_builder extends helper_config {
           // Add a new field to the save array
           $sa['fields'][$key] = array('value' => $value);
         } elseif ($attrEntity && (strpos($key, "$attrEntity:")===0)) {
-          // custom attribute data can also go straight into the submission for the "master" table
-          $sa['fields'][$key] = array('value' => $value);
+          // custom attribute data can also go straight into the submission for the "master" table. Array data might need 
+          // special handling to link it to existing database records.
+          if (is_array($value) && count($value)>0) {
+            // The value is an array
+            foreach ($value as $idx=>$arrayItem) {
+              // does the entry contain the fieldname (required for existing values in controls which post arrays, like multiselect selects)?
+              if (preg_match("/\d+:$attrEntity:\d+:\d+/", $arrayItem)) {
+                $tokens=explode(':', $arrayItem, 2);
+                $sa['fields'][$tokens[1]] = array('value' => $tokens[0]);
+              } else
+                $sa['fields']["$key::$idx"]=array('value' => $arrayItem);
+            }
+          } else
+            $sa['fields'][$key] = array('value' => $value);
         } elseif ($attrEntity && (strpos($key, "$attrEntity+:")===0)) {
           // a complex custom attribute data value which will need to be json encoded.
           $tokens=explode(':', $key);

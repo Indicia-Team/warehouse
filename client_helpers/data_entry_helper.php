@@ -1730,9 +1730,16 @@ $('#$escaped').change(function(e) {
       ),
       $options
     );
-    if(isset($options['multiselect']) && $options['multiselect']!=false && $options['multiselect']!=='false')
+    $r = '';
+    if(isset($options['multiselect']) && $options['multiselect']!=false && $options['multiselect']!=='false') {
       $options['multiple']='multiple';
-    return self::select_or_listbox($options);
+      if (substr($options['fieldname'],-2) !=='[]') {
+        $options['fieldname'] .= '[]';
+      }
+      // ensure a blank value is posted if nothing is selected in the list, otherwise the list can't be cleared in the db.
+      $r = '<input type="hidden" name="'.$options['fieldname'].'" value=""/>';
+    }
+    return $r . self::select_or_listbox($options);
   }
 
   /**
@@ -3000,9 +3007,23 @@ $('#$escaped').change(function(e) {
           if (!empty(data_entry_helper::$entity_to_load)) {
             // Search for the control in the data to load. It has a suffix containing the attr_value_id which we don't know, hence preg.
             $search = preg_grep("/^sc:$loadedTxIdx:$existing_record_id:occAttr:$attrId:".'[0-9]*$/', array_keys(self::$entity_to_load));
-            if (count($search)>0) {
+            // Does the control post an array of values? If so, we need to ensure that the existing values are handled properly.
+            $isArrayControl = preg_match('/name="{?[a-z\-_]*}?\[\]"/', $control);
+            if ($isArrayControl) {
+              foreach ($search as $subfieldname) {
+                // to link each value to existing records, we need to store the value ID in the value data.
+                $valueId = preg_match('/(\d+)$/', $subfieldname, $matches);
+                $control = str_replace('value="'.self::$entity_to_load[$subfieldname].'"',
+                    'value="'.self::$entity_to_load[$subfieldname].':'.$matches[1].'" selected="selected"', $control);
+              } 
+              $ctrlId = str_replace('-idx-', "$options[id]-$txIdx", $attributes[$attrId]['fieldname']);
+              // remove [] from the end of the fieldname if present, as it is already in the row template
+              $ctrlId = preg_replace('/\[\]$/', '', $ctrlId);
+              $loadedCtrlFieldName='-';
+            } elseif (count($search)>0) {
+              // Got an existing value.
+              // Warning - if there are multi-values in play here then it will just load one, because this is NOT an array control.
               // use our preg search result as the field name to load from the existing data array.
-              // Warning - if there are multi-values in play here then it will just load one.
               $loadedCtrlFieldName = array_pop($search);
               // Convert loaded field name to our output row index
               $ctrlId = str_replace("sc:$loadedTxIdx:", "sc:$options[id]-$txIdx:", $loadedCtrlFieldName);
@@ -3012,21 +3033,23 @@ $('#$escaped').change(function(e) {
                 $valId = $matches['valId'];
               else 
                 $valId = null;
-            } else {
+            }
+            else {
               // go for the default, which has no suffix.
               $loadedCtrlFieldName = str_replace('-idx-:', $loadedTxIdx.':'.$existing_record_id, $attributes[$attrId]['fieldname']);
               $ctrlId = str_replace('-idx-:', "$options[id]-$txIdx:$existing_record_id", $attributes[$attrId]['fieldname']);
-            }
-            if (isset(self::$entity_to_load[$loadedCtrlFieldName]))
+            } 
+            if (isset(self::$entity_to_load[$loadedCtrlFieldName])) 
               $existing_value = self::$entity_to_load[$loadedCtrlFieldName];
           } else {
             // no existing record, so use a default control ID which excludes the existing record ID.
             $ctrlId = str_replace('-idx-', "$options[id]-$txIdx", $attributes[$attrId]['fieldname']);
             $loadedCtrlFieldName='-';
           }
-          if (!$existing_record_id && $existing_value==='' && array_key_exists('default', $attributes[$attrId]))
+          if (!$existing_record_id && $existing_value==='' && array_key_exists('default', $attributes[$attrId])) {
             // this case happens when reloading an existing record
             $existing_value = $attributes[$attrId]['default'];
+          }
           // inject the field name into the control HTML
           $oc = str_replace('{fieldname}', $ctrlId, $control);
           if ($existing_value<>"") {
@@ -5075,25 +5098,16 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       if (array_key_exists('parentControlId', $options))
         // still want linked lists, even though we will have some items initially populated
         self::init_linked_lists($options);
-      $lookupItems = self::get_list_items_from_options($options);
-      $opts = "";
+      $lookupItems = self::get_list_items_from_options($options, 'selected');
+      $options['items'] = "";
       if (array_key_exists('blankText', $options)) {
-        $opts .= str_replace(
+        $options['items'] = str_replace(
             array('{value}', '{caption}', '{selected}'),
             array('', htmlentities($options['blankText'])),
             $indicia_templates[$options['itemTemplate']]
-        );
+        )."\n";
       }
-      foreach ($lookupItems as $value => $template){
-        if(isset($options['default'])){
-          if(is_array($options['default'])){
-            $item['selected'] = in_array($value, $options['default']) ? 'selected' : '';
-          } else
-            $item['selected'] = ($options['default'] == $value) ? 'selected' : '';
-        } else $item['selected'] = '';
-        $opts .= self::mergeParamsIntoTemplate($item, $template, true);
-      }
-      $options['items'] = $opts;
+      $options['items'] .= implode("\n", $lookupItems);
     }
     if (isset($response['error']))
       return $response['error'];
@@ -5106,9 +5120,11 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * table, captionfield and valuefield to build the list of values as an array, or if lookupValues
   * is in the options array use that instead of making a database call.
   * @param array $options Options array for the control.
-  * @return array Associative array of the lookup values and captions.
+  * @param string $selectedItemAttribute Name of the attribute that should be set in each list element if the item is selected/checked. For 
+  * option elements, pass "selected", for checkbox inputs, pass "checked".
+  * @return array Associative array of the lookup values and templated list items.
   */
-  private static function get_list_items_from_options($options) {
+  private static function get_list_items_from_options($options, $selectedItemAttribute) {
     $r = array();
     global $indicia_templates;
     if (isset($options['lookupValues'])) {
@@ -5121,7 +5137,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         );
       }
     } else {
-      // lookup values need to be obtained from the database
+      // lookup values need to be obtained from the database. ParentControlId indicates a linked list parent control whose value
+      // would filter this list.
       if (isset($options['parentControlId']) && !empty(data_entry_helper::$entity_to_load[$options['parentControlId']])) {
         $options['extraParams'][$options['filterField']] = data_entry_helper::$entity_to_load[$options['parentControlId']];
       }
@@ -5132,7 +5149,6 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         $options['extraParams']['preferred']='t';
         $response = self::get_population_data($options);
       }
-      $lookupValues = array();
       if (!array_key_exists('error', $response)) {
         foreach ($response as $record) {
           if (array_key_exists($options['valueField'], $record)) {
@@ -5143,9 +5159,14 @@ $('div#$escaped_divId').indiciaTreeBrowser({
             if(isset($options['listCaptionSpecialChars'])) {
               $caption=htmlspecialchars($caption);
             }
+            $value=$record[$options['valueField']];
+            $selected=self::get_list_item_selected_attribute($value, $selectedItemAttribute, $options, $itemFieldname);            
+            // If an array field and we are loading an existing value, then the value needs to store the db ID otherwise we loose the link
+            if ($itemFieldname)
+              $value .= ":$itemFieldname";
             $item = str_replace(
-                array('{value}', '{caption}'),
-                array($record[$options['valueField']], $caption),
+                array('{value}', '{caption}', '{'.$selectedItemAttribute.'}'),
+                array($value, $caption, $selected),
                 $indicia_templates[$options['itemTemplate']]
             );
             $r[$record[$options['valueField']]] = $item;
@@ -5154,6 +5175,45 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       }
     }
     return $r;
+  }
+  
+  /**
+   * Returns the selected="selected" or checked="checked" attribute required to set a default item in a list.
+   * @param string $value The current item's value.
+   * @param string $selectedItemAttribute Name of the attribute that should be set in each list element if the item is selected/checked. For 
+   * option elements, pass "selected", for checkbox inputs, pass "checked".
+   * @param mixed $itemFieldname Will return the fieldname that must be associated with this particular value if using an array input 
+   * such as a listbox (multiselect select).
+   * @param array $options Control options array which contains the "default" entry.
+   */
+  private static function get_list_item_selected_attribute($value, $selectedItemAttribute, $options, &$itemFieldname) {
+    $itemFieldname=false;
+    if (!empty($options['default'])) {
+      $default = $options['default'];
+      // default value can be passed as an array or a single value
+      if (is_array($default)) {
+        $selected = false;
+        foreach ($default as $defVal) {
+          // default value array entries can be themselves an array, so that they store the fieldname as well as the value. 
+          // Or they can be just a plain value.
+          if (is_array($defVal)){
+            if ($defVal['default'] == $value) {
+              $selected = true;
+              // for an array field
+              if (substr($options['fieldname'], -2)==='[]') {
+                $itemFieldname = $defVal['fieldname'];
+              }
+            }
+          } 
+          elseif ($value == $defVal) 
+            $selected = true;
+        }
+      } else
+        $selected = ($default == $value);
+      return $selected ? " $selectedItemAttribute=\"$selectedItemAttribute\"" : '';
+    }
+    else 
+      return '';
   }
 
  /**
@@ -5224,31 +5284,15 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     } else {
       $itemClass='';
     }
-    $lookupItems = self::get_list_items_from_options($options);
+    $lookupItems = self::get_list_items_from_options($options, 'checked');
     $items = "";
     $idx = 0;
     foreach ($lookupItems as $value => $template) {
       $fieldName = $options['fieldname'];
-      if (isset($options['default'])) {
-        if (is_array($options['default'])) {
-          $checked = false;
-          foreach ($options['default'] as $defVal) {
-            if(is_array($defVal)){
-              if($defVal['default'] == $value) {
-                $checked = true;
-                $fieldName = $defVal['fieldname'];
-              }
-            } else if($value == $defVal) $checked = true;
-          }
-        } else
-          $checked = ($options['default'] == $value);
-      } else
-        $checked=false;
       $item = array_merge(
         $options,
         array(
           'disabled' => isset($options['disabled']) ? $options['disabled'] : '',
-          'checked' => $checked ? ' checked="checked" ' : '', // cant use === as need to compare an int with a string representation
           'type' => $type,
           'value' => $value,
           'class' => $itemClass . (($idx == 0) ? ' first-item' : ''),
@@ -5733,10 +5777,21 @@ if (errors$uniq.length>0) {
       if (substr($key, 0, 3) == 'sc:'){ 
         // Don't explode the last element for occurrence attributes
         $a = explode(':', $key, 4);
-        $records[$a[1]][$a[3]] = $value;
-        // store any id so update existing record
-        if($a[2]) {
-          $records[$a[1]]['id'] = $a[2];
+        if (is_array($value) && count($value)>0) {
+          // The value is an array, so might contain existing database ID info in the value to link to existing records
+          foreach ($value as $idx=>$arrayItem) {
+            // does the entry contain the value record ID (required for existing values in controls which post arrays, like multiselect selects)?
+            if (preg_match("/^\d+:\d+$/", $arrayItem)) {
+              $tokens=explode(':', $arrayItem);
+              $records[$a[1]][$a[3].":$tokens[1]:$idx"] = $tokens[0];
+            } else
+              $records[$a[1]][$a[3]."::$idx"] = $arrayItem;
+          }
+        } else {
+          $records[$a[1]][$a[3]] = $value;
+          // store any id so update existing record
+          if($a[2]) 
+            $records[$a[1]]['id'] = $a[2];
         }
       }
       else if (substr($key, 0, 19) == 'hasDataIgnoreAttrs-') {
@@ -6737,6 +6792,8 @@ $('#".str_replace(':', '\\\\:', $attrOptions['id'])."').change(function(evt) {
               $ctrl = 'select';
             }
           }
+          if ($item['multi_value']==='t') 
+            $attrOptions['multiselect']=true;
           if(array_key_exists('lookUpKey', $options)){
             $lookUpKey = $options['lookUpKey'];
           } else {
