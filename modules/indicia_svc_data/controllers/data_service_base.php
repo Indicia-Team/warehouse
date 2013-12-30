@@ -131,7 +131,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
    * parameter request. 
    */
   protected function get_response_structure($data) {
-    $wantRecords = !isset($_REQUEST['wantRecords']) || $_REQUEST['wantRecords']==='0';
+    $wantRecords = !isset($_REQUEST['wantRecords']) || $_REQUEST['wantRecords']!=='0';
     $wantColumns = isset($_REQUEST['wantColumns']) && $_REQUEST['wantColumns']==='1';
     $wantCount = isset($_REQUEST['wantCount']) && $_REQUEST['wantCount']==='1';
     $wantParameters = (isset($_REQUEST['wantParameters']) && $_REQUEST['wantParameters']==='1')
