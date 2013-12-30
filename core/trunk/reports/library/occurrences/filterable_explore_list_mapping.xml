@@ -20,8 +20,8 @@
     <column name='occurrence_id' sql='o.id' on_demand="true" datatype="integer" />
     <column name='source' sql="w.title || ' | ' || o.survey_title" on_demand="true" datatype="text" />
     <column name='sample_id' sql='o.sample_id' on_demand="true" datatype="integer" />
-    <column name='taxon' on_demand="true" datatype="text" 
-      sql="CASE WHEN o.preferred_taxon=o.default_common_name then o.preferred_taxon ELSE o.preferred_taxon || COALESCE(' | ' || o.default_common_name, '') END" />
+    <column name='taxon' sql="o.preferred_taxon" on_demand="true" datatype="text" />
+    <column name='common' sql="o.default_common_name" on_demand="true" datatype="text" />
     <column name='taxon_group' sql='o.taxon_group' on_demand="true" datatype="text" />
     <column name='taxon_group_id' sql='o.taxon_group_id' on_demand="true" datatype="integer" />
     <column name='taxa_taxon_list_id' sql='o.taxa_taxon_list_id' on_demand="true" datatype="integer" />    
