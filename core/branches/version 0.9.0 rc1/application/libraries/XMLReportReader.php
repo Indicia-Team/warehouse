@@ -138,6 +138,9 @@ class XMLReportReader_Core implements ReportReader
                 if (!$this->locations_id_field = $reader->getAttribute('locations_id_field'))
                   // default table alias for the locations table, so we can join to the id
                   $this->locations_id_field = 'l.id';
+                if (!$this->people_id_field = $reader->getAttribute('people_id_field'))
+                  // default table alias for the people table, so we can join to the id
+                  $this->people_id_field = 'p.id';
                 // load the standard set of parameters for consistent filtering of reports?
                 if ($reader->getAttribute('standard_params')!==null)
                   $this->hasStandardParams=true;
@@ -729,8 +732,13 @@ class XMLReportReader_Core implements ReportReader
   /**
    * If a report declares that it uses the standard set of parameters, then load them.
    */
-  public function loadStandardParams($providedParams, $sharing) {
+  public function loadStandardParams(&$providedParams, $sharing) {
     if ($this->hasStandardParams) {
+      // For backwards compatibility, convert a few param names...
+      if (isset($providedParams['location_id']) && !isset($providedParams['location_list']))
+        $providedParams['location_list']=$providedParams['location_id'];
+      if (isset($providedParams['indexed_location_id']) && !isset($providedParams['indexed_location_list']))
+        $providedParams['indexed_location_list']=$providedParams['indexed_location_id'];
       // always include the operation params, as their default might be needed even when no parameter is provided. E.g.
       // the default website_list_op param comes into effect if just a website_list is provided.
       $opParams = array(
@@ -745,7 +753,13 @@ class XMLReportReader_Core implements ReportReader
         ),
         'input_form_list' => array('datatype'=>'lookup', 'default'=>'in', 'display'=>'Input forms mode', 
             'description'=>'Include or exclude the list of input forms', 'lookup_values'=>'in:Include,not in:Exclude'
-        )
+        ),
+        'location_list' => array('datatype'=>'lookup', 'default'=>'in', 'display'=>'Location IDs mode', 
+            'description'=>'Include or exclude the list of locations', 'lookup_values'=>'in:Include,not in:Exclude'
+        ),
+        'indexed_location_list' => array('datatype'=>'lookup', 'default'=>'in', 'display'=>'Indexed location IDs mode', 
+            'description'=>'Include or exclude the list of indexed locations', 'lookup_values'=>'in:Include,not in:Exclude'
+        ),
       );
       foreach ($opParams as $param => $cfg) {
         if (!empty($providedParams[$param]))
@@ -775,17 +789,17 @@ class XMLReportReader_Core implements ReportReader
               array('value'=>'', 'operator'=>'', 'sql'=>"o.location_name ilike '%#location_name#%'")
             )
         ),      
-        'location_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>'Location ID', 
-            'description'=>'ID of location to filter to',
+        'location_list' => array('datatype'=>'integer', 'default'=>'', 'display'=>'Location IDs', 
+            'description'=>'Comma separated list of location IDs',
             'joins' => array(
-              array('value'=>'', 'operator'=>'', 'sql'=>"JOIN locations #alias:lfilt# on #alias:lfilt#.id=#location_id# and #alias:lfilt#.deleted=false " .
+              array('value'=>'', 'operator'=>'', 'sql'=>"JOIN locations #alias:lfilt# on #alias:lfilt#.id #location_list_op# (#location_list#) and #alias:lfilt#.deleted=false " .
                   "and st_intersects(coalesce(#alias:lfilt#.boundary_geom, #alias:lfilt#.centroid_geom), #sample_geom_field#)")
             )
         ),
-        'indexed_location_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>'Location ID (indexed)', 
-            'description'=>'ID of location to filter to, for a location that is indexed using the spatial index builder',
+        'indexed_location_list' => array('datatype'=>'integer', 'default'=>'', 'display'=>'Location IDs (indexed)', 
+            'description'=>'Comma separated list of location IDs, for locations that are indexed using the spatial index builder',
             'joins' => array(
-              array('value'=>'', 'operator'=>'', 'sql'=>"JOIN index_locations_samples #alias:ils# on #alias:ils#.sample_id=o.sample_id and #alias:ils#.location_id=#indexed_location_id#")
+              array('value'=>'', 'operator'=>'', 'sql'=>"JOIN index_locations_samples #alias:ils# on #alias:ils#.sample_id=o.sample_id and #alias:ils#.location_id #indexed_location_list_op# (#indexed_location_list#)")
             )
         ),
         'date_from' => array('datatype'=>'date', 'default'=>'', 'display'=>'Date from',
@@ -953,10 +967,14 @@ class XMLReportReader_Core implements ReportReader
           'website_list_op'=>'in',
           'survey_list_op'=>'in',
           'input_form_list_op'=>'in',
+          'location_list_op'=>'in',
+          'indexed_location_list_op'=>'in',
           'occurrence_id_op_context'=>'=',
           'website_list_op_context'=>'in',
           'survey_list_op_context'=>'in',
           'input_form_list_op_context'=>'in',
+          'location_list_op_context'=>'in',
+          'indexed_location_list_op_context'=>'in',
           'release_status'=>'R'
       ), $this->defaultParamValues);
       $providedParams = array_merge($this->defaultParamValues, $providedParams);
