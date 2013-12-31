@@ -762,14 +762,11 @@ class XMLReportReader_Core implements ReportReader
         ),
       );
       foreach ($opParams as $param => $cfg) {
-        if (!empty($providedParams[$param])) {
+        if (!empty($providedParams[$param]))
           $this->params["{$param}_op"] = $cfg;
-          kohana::log('debug', "Got param op for $param");
-        }
         if (!empty($providedParams["{$param}_context"]))
           $this->params["{$param}_op_context"] = $cfg;
       }
-      kohana::log('debug', print_r($providedParams, true));
       $params = array(
         'idlist' => array('datatype'=>'idlist', 'default'=>'', 'display'=>'List of IDs', 'emptyvalue'=>'', 'fieldname'=>'o.id', 'alias'=>'occurrence_id',
             'description'=>'Comma separated list of occurrence IDs to filter to'
