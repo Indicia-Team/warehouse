@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<report title="Group verification breakdown" description="Counts records by week for the last year.">
+<report title="Records by week" description="Counts records by week for the last year.">
   <query website_filter_field="o.website_id">
     select #columns#
     from generate_series(0,52) as weeks(no)
@@ -34,7 +34,7 @@
   </params>
   <columns>
     <column name="week" display="Weeks ago" sql="weeks.no" in_count="true" orderby="weekdate" />
-    <column name="weekdate" visible="false" sql=" date_trunc('week', CURRENT_DATE - (weeks.no*7))" />
+    <column name="weekdate" visible="false" sql="date_trunc('week', CURRENT_DATE - (weeks.no*7))" />
     <column name="processed" display="Processed records" sql="count(case when record_status in ('V','R','D') then o.id else null end)" aggregate="true" />
     <column name="total" display="Total" sql="count(distinct o.id)" aggregate="true" />
   </columns>
