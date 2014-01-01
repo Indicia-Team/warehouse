@@ -5130,9 +5130,10 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     if (isset($options['lookupValues'])) {
       // lookup values are provided, so run these through the item template
       foreach ($options['lookupValues'] as $key=>$value) {
+        $selected=self::get_list_item_selected_attribute($key, $selectedItemAttribute, $options, $itemFieldname);
         $r[$key] = str_replace(
-            array('{value}', '{caption}'),
-            array(htmlspecialchars($key), htmlspecialchars($value)),
+            array('{value}', '{caption}', '{'.$selectedItemAttribute.'}'),
+            array(htmlspecialchars($key), htmlspecialchars($value), $selected),
             $indicia_templates[$options['itemTemplate']]
         );
       }
@@ -5160,7 +5161,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
               $caption=htmlspecialchars($caption);
             }
             $value=$record[$options['valueField']];
-            $selected=self::get_list_item_selected_attribute($value, $selectedItemAttribute, $options, $itemFieldname);            
+            $selected=self::get_list_item_selected_attribute($value, $selectedItemAttribute, $options, $itemFieldname);
             // If an array field and we are loading an existing value, then the value needs to store the db ID otherwise we loose the link
             if ($itemFieldname)
               $value .= ":$itemFieldname";
