@@ -224,11 +224,11 @@ div.filter-popup-columns * {
   margin: 0 6px;
 }
 
-ul.inline {
+#what-tabs ul.inline {
   margin-left: 1em;
 }
 
-ul.inline li {
+#what-tabs ul.inline li {
   display:-moz-inline-stack;
   display:inline-block;
   zoom:1;
