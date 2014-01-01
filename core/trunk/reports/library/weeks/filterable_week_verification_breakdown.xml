@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Fitlerable Week verification breakdown" description="Breaks down records by week and verification status for the last year with standard params support.">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
+    select #columns#
+    from generate_series(0,52) as weeks(no)
+    left join (occurrences occ 
+      join cache_occurrences o on o.id=occ.id
+    ) on date_trunc('week', occ.verified_on)=date_trunc('week', CURRENT_DATE - (weeks.no*7))
+      and occ.verified_on is not null
+    #agreements_join#
+    #joins#
+    where #sharing_filter#
+    #idlist#
+  </query>
+  <order_bys>
+    <order_by>date_trunc('week', CURRENT_DATE - (weeks.no*7))</order_by>
+  </order_bys>
+  <columns>
+    <column name="week" display="Weeks ago" sql="weeks.no" in_count="true" orderby="weekdate" />
+    <column name="queried" display="Queried" sql="count(case o.record_status when 'D' then o.id when 'S' then o.id else null end)" aggregate="true" />
+    <column name="verified" display="Verified" sql="count(case o.record_status when 'V' then o.id else null end)" aggregate="true" />
+    <column name="rejected" display="Rejected" sql="count(case o.record_status when 'R' then o.id else null end)" aggregate="true" />
+    <column name="total" display="Total" sql="count(distinct o.id)" aggregate="true" />
+    <column name="date_from" display="Date from" sql="to_char(date_trunc('week', CURRENT_DATE - (weeks.no*7)), 'YYYY-MM-DD')" />
+    <column name="date_to" display="Date to" sql="to_char(date_trunc('week', CURRENT_DATE - (weeks.no*7)) + '6 days'::interval, 'YYYY-MM-DD')" />
+  </columns>
+</report>
