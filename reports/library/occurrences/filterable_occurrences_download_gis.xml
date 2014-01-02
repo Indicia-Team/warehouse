@@ -80,7 +80,7 @@
     <column name='record_status' display='State' 
         sql="CASE o.record_status WHEN 'V' THEN 'Verified' WHEN 'D' THEN 'Queried' WHEN 'R' THEN 'Rejected' WHEN 'I' THEN 'Input still in progress' WHEN 'C' THEN 'Record Submitted' WHEN 'S' THEN 'Awaiting check' ELSE o.record_status END" />
     <column name='belongs_to_user' display='Belongs to User' sql="CASE CAST(o.created_by_id AS character varying) WHEN '#currentUser#' THEN true ELSE false END" visible="false" />
-    <column name='certainty' sql="CASE o.certainty WHEN 'C' THEN 'Certain' WHEN 'L' THEN 'Likely' WHEN 'U' THEN 'Uncertain' END" />
+    <column name='certainty' display="Recorder certainty" sql="CASE o.certainty WHEN 'C' THEN 'Certain' WHEN 'L' THEN 'Likely' WHEN 'U' THEN 'Uncertain' END" />
     <!-- the following can only be filled in for sure if we have an exact match with the recorder, since we only know the record created by ID.-->
     <column name='recorder_person_id' sql="case when o.recorders = p.surname || ', ' || p.first_name or o.recorders = p.first_name || ' ' || p.surname then cast(p.id as varchar(20)) else 'unknown' end" />
     <column name='determiner_person_id' sql="case when o.recorders = det_last_val.text_value || ', ' || det_first_val.text_value 
