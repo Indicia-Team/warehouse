@@ -115,19 +115,19 @@ jQuery(document).ready(function($) {
         indiciaData.filter.def.taxon_group_names={};
         indiciaData.filter.def.taxa_taxon_list_names={};
         // if nothing selected, clean up the def
-        if ($('input[name=taxon_group_list[]]').length===0) {
+        if ($('input[name=taxon_group_list\\[\\]]').length===0) {
           indiciaData.filter.def.taxon_group_list='';
         } else {
           // store the list of names in the def, though not used for the report they save web service hits later
-          $.each($('input[name=taxon_group_list[]]'), function(idx, ctrl) {
+          $.each($('input[name=taxon_group_list\\[\\]]'), function(idx, ctrl) {
             indiciaData.filter.def.taxon_group_names[$(ctrl).val()] = $.trim($(ctrl).parent().text());
           });
         }
-        if ($('input[name=taxa_taxon_list_list[]]').length===0) {
+        if ($('input[name=taxa_taxon_list_list\\[\\]]').length===0) {
           indiciaData.filter.def.taxa_taxon_list_list='';
         } else {
           // store the list of names in the def, though not used for the report they save web service hits later
-          $.each($('input[name=taxa_taxon_list_list[]]'), function(idx, ctrl) {
+          $.each($('input[name=taxa_taxon_list_list\\[\\]]'), function(idx, ctrl) {
             indiciaData.filter.def.taxa_taxon_list_names[$(ctrl).val()] = $.trim($(ctrl).parent().text());
           });
         }
