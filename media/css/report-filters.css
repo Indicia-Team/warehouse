@@ -162,11 +162,11 @@
   padding: 0;
 }
 
-.toolbar {
+#filter-details .toolbar {
   background: #f7f7f7;
 }
 
-.toolbar * {
+#filter-details .toolbar * {
   vertical-align: middle;
 }
 
