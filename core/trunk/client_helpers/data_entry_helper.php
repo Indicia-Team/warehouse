@@ -504,6 +504,7 @@ $('#$escaped').change(function(e) {
     
     // prepare embedded search control for add bar panel
     $list_options = $options;
+    unset($list_options['helpText']);
     $list_options['id'] = $list_options['id'].':search';
     $list_options['fieldname'] = $list_options['id'];
     $list_options['suffixTemplate']='nosuffix';
