@@ -115,8 +115,8 @@ class iform_easy_download_2 {
       ),
       array(
         'name'=>'csv_format_permission',
-        'caption'=>'Download format permission - csv',
-        'description'=>'Provide the name of the permission required to allow download of csv format. '.
+        'caption'=>'Download format permission - CSV',
+        'description'=>'Provide the name of the permission required to allow download of CSV format. '.
             'Leave blank to disallow this download format.',
         'type'=>'text_input',
         'required'=>false,
@@ -124,8 +124,8 @@ class iform_easy_download_2 {
       ),
       array(
         'name'=>'tsv_format_permission',
-        'caption'=>'Download format permission - csv',
-        'description'=>'Provide the name of the permission required to allow download of csv format. '.
+        'caption'=>'Download format permission - TSV',
+        'description'=>'Provide the name of the permission required to allow download of TSV format. '.
             'Leave blank to disallow this download format.',
         'type'=>'text_input',
         'required'=>false,
@@ -133,8 +133,8 @@ class iform_easy_download_2 {
       ),
       array(
         'name'=>'kml_format_permission',
-        'caption'=>'Download format permission - csv',
-        'description'=>'Provide the name of the permission required to allow download of csv format. '.
+        'caption'=>'Download format permission - KML',
+        'description'=>'Provide the name of the permission required to allow download of KML format. '.
             'Leave blank to disallow this download format.',
         'type'=>'text_input',
         'required'=>false,
@@ -142,8 +142,8 @@ class iform_easy_download_2 {
       ),
       array(
         'name'=>'gpx_format_permission',
-        'caption'=>'Download format permission - csv',
-        'description'=>'Provide the name of the permission required to allow download of csv format. '.
+        'caption'=>'Download format permission - GPX',
+        'description'=>'Provide the name of the permission required to allow download of GPX format. '.
             'Leave blank to disallow this download format.',
         'type'=>'text_input',
         'required'=>false,
@@ -151,8 +151,8 @@ class iform_easy_download_2 {
       ),
       array(
         'name'=>'nbn_format_permission',
-        'caption'=>'Download format permission - csv',
-        'description'=>'Provide the name of the permission required to allow download of csv format. '.
+        'caption'=>'Download format permission - NBN',
+        'description'=>'Provide the name of the permission required to allow download of NBN format. '.
             'Leave blank to disallow this download format.',
         'type'=>'text_input',
         'required'=>false,
@@ -313,7 +313,7 @@ class iform_easy_download_2 {
       'label'=>lang::get('Filter to apply'),
       'lookupValues'=>array(),
       'class'=>'control-width-5',
-      'helpText'=>lang::get('Optionally select from the available filters.')
+      'helpText'=>lang::get('Optionally select from the available filters. Filters you create on the Explore pages will be available here.')
     ));
     $r .= "</fieldset>\n";
     $r .= '<fieldset><legend>'.lang::get('Limit the records').'</legend>';
