@@ -12,8 +12,10 @@
       AND #website_filter#
       AND (l.location_type_id=#core_square_type_id# OR l.location_type_id=#additional_square_type_id#)
       #filters#
-    GROUP BY l.id,lav.text_value
   </query>
+  <order_bys>
+    <order_by>l.id desc</order_by>
+  </order_bys>
   <params>
     <param name="square_type_id_chosen_by_user" display="Type of square" description="Square Type as chosen by the user from the drop-down." datatype="lookup"
         population_call='report:reports_for_prebuilt_forms/Splash/core_and_additional_squares_for_population_call:id:location_type_name' default=''>
@@ -25,7 +27,7 @@
     <param name="vice_county_location_attribute_id" display="The location attribute id that hold's the Vice County name." datatype="integer"/>
   </params>
   <columns>
-    <column name='id' display='Location ID' sql="l.id" datatype='integer' visible="false"/>
-    <column name='name' display='Location Name' sql="'&lt;b&gt;' || l.centroid_sref || ' - ' || coalesce(lav.text_value,'#no_vice_county_found_message#') || '&lt;/b&gt;'" datatype='text'/>
+    <column name='id' display='Location ID' sql="l.id" datatype='integer' visible="false" aggregate="true" in_count="true"/>
+    <column name='name' display='Location Name' sql="'&lt;b&gt;' || l.centroid_sref || ' - ' || coalesce(lav.text_value,'#no_vice_county_found_message#') || '&lt;/b&gt;'" datatype='text' aggregate="true"/>
   </columns>
 </report>
