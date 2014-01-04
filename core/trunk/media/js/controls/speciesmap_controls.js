@@ -133,13 +133,13 @@ control_speciesmap_addcontrols = function(options, translatedStrings) {
             if (extent !== null) {
               centre = indiciaData.SubSampleLayer.getDataExtent().getCenterLonLat();
               wkt = formatter.extractGeometry(new OpenLayers.Geometry.Point(centre.lon, centre.lat));
-              $.getJSON(indiciaData.control_speciesmap_opts.base_url + '/index.php/services/spatial/wkt_to_sref?wkt=' + wkt + '&system=' + $('[name=sample\:entered_sref_system]').val() + '&wktsystem=' + div.map.projection.proj.srsProjNumber + '&precision=8&callback=?',
+              $.getJSON(indiciaData.control_speciesmap_opts.base_url + '/index.php/services/spatial/wkt_to_sref?wkt=' + wkt + '&system=' + $('[name=sample\\:entered_sref_system]').val() + '&wktsystem=' + div.map.projection.proj.srsProjNumber + '&precision=8&callback=?',
                   function (data) {
                       if (typeof data.error !== 'undefined') {
                           alert(data.error);
                       } else {
-                          $('[name=sample\:entered_sref]').val(data.sref);
-                          $('[name=sample\:geom]').val(data.wkt);
+                          $('[name=sample\\:entered_sref]').val(data.sref);
+                          $('[name=sample\\:geom]').val(data.wkt);
                       }
                   });
             }
