@@ -1751,6 +1751,7 @@ indiciaData.windowLoaded=false;
   protected static function get_help_text($options, $pos) {
     $options = array_merge(array('helpTextClass'=>'helpText'), $options);
     if (array_key_exists('helpText', $options) && !empty($options['helpText']) && self::$helpTextPos == $pos) {
+      $options['helpText'] = lang::get($options['helpText']);
       return str_replace('{helpText}', $options['helpText'], self::apply_static_template('helpText', $options));
     } else
       return '';

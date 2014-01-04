@@ -1884,8 +1884,6 @@ else
         'fieldname' => 'occurrence:zero_abundance',
         'helpText' => 'Tick this box if this is a record that the species was not found.'
       ), $options);
-      $options['helpText'] = lang::get($options['helpText']);
-      $options['helpText'] = lang::get($options['helpText']);
       return data_entry_helper::checkbox($options);
     }
     else 
