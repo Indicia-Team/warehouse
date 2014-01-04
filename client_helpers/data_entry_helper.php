@@ -3092,7 +3092,7 @@ $('#$escaped').change(function(e) {
                   ? self::$entity_to_load["sc:$loadedTxIdx:$existing_record_id:occurrence:sensitivity_precision"] : false,
               'lookupValues' => array('100'=>lang::get('Blur to 100m'), '1000'=>lang::get('Blur to 1km'), '2000'=>lang::get('Blur to 2km'), 
                   '10000'=>lang::get('Blur to 10km'), '100000'=>lang::get('Blur to 100km')),
-              'blankText' => lang::get('Not sensitive')
+              'blankText' => 'Not sensitive'
           ));
           $row .= "</td>\n";
         }
@@ -4098,7 +4098,7 @@ $('#".$options['id']." .species-filter').click(function(evt) {
           self::select(array('fieldname'=>"$fieldname:occurrence:sensitivity_precision", 'class'=>'scSensitivity',
               'lookupValues' => array('100'=>lang::get('Blur to 100m'), '1000'=>lang::get('Blur to 1km'), '2000'=>lang::get('Blur to 2km'), 
                   '10000'=>lang::get('Blur to 10km'), '100000'=>lang::get('Blur to 100km')),
-              'blankText' => lang::get('Not sensitive'))).
+              'blankText' => 'Not sensitive')).
           '</td>';
     }
     if ($options['mediaTypes']) {
@@ -4265,7 +4265,7 @@ $('#".$options['id']." .species-filter').click(function(evt) {
       'label'=>lang::get('Blur record to'),
       'lookupValues' => array('100'=>lang::get('Blur to 100m'), '1000'=>lang::get('Blur to 1km'), '2000'=>lang::get('Blur to 2km'), 
                   '10000'=>lang::get('Blur to 10km'), '100000'=>lang::get('Blur to 100km')),
-      'blankText' => lang::get('none'),
+      'blankText' => 'none',
       'helpText' => 'This is the precision that the record will be shown at for public viewing'
     ));
     // output any extra controls which should get disabled when the record is not sensitive.
@@ -5102,6 +5102,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       $lookupItems = self::get_list_items_from_options($options, 'selected');
       $options['items'] = "";
       if (array_key_exists('blankText', $options)) {
+        $options['blankText'] = lang::get($options['blankText']);
         $options['items'] = str_replace(
             array('{value}', '{caption}', '{selected}'),
             array('', htmlentities($options['blankText'])),
