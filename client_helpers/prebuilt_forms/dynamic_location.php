@@ -122,15 +122,6 @@ class iform_dynamic_location extends iform_dynamic {
           'group'=>'User Interface'
         ),
         array(
-          'name'=>'location_images',
-          'caption'=>'Location Images',
-          'description'=>'Should locations allow images to be uploaded?',
-          'type'=>'boolean',
-          'required' => false,
-          'default'=>false,
-          'group'=>'User Interface'
-        ),
-        array(
           'name'=>'defaults',
           'caption'=>'Default Values',
           'description'=>'Supply default values for each field as required. On each line, enter fieldname=value. For custom attributes, '.
@@ -483,8 +474,6 @@ mapInitialisationHooks.push(function(mapdiv) {
               "[location comment]\r\n".
               "[*]\r\n".
               "=*=";
-    if (!isset($args['location_images']))
-      $args['location_images'] == false; 
     if (!isset($args['grid_report']))
       $args['grid_report'] = 'reports_for_prebuilt_forms/simple_location_list';
     return $args;
