@@ -16,7 +16,7 @@ clearSection = function() {
   $('#section-form').find('.ui-state-error').removeClass('ui-state-error');
   var nameparts;
   // loop through form controls to make sure they do not have the value id (as these will be new values)
-  $.each($('#section-form').find(':input'), function(idx, ctrl) {
+  $.each($('#section-form').find(':input[name]'), function(idx, ctrl) {
     nameparts = $(ctrl).attr('name').split(':');
     if (nameparts[0]==='locAttr') {
       if (nameparts.length===3) {
