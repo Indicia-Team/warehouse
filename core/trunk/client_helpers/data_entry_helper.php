@@ -1274,7 +1274,7 @@ $('#$escaped').change(function(e) {
     if (isset($options['default']))
       $hiddenOptions['default'] = $options['default'];
     $r .= self::hidden_text($hiddenOptions);
-    $options['blankText']=htmlspecialchars($options['blankText']);
+    $options['blankText']=htmlspecialchars(lang::get($options['blankText']));
     // Now output JavaScript that creates and populates child selects as each option is selected. There is also code for 
     // reloading existing values.    
     self::$javascript .= "
