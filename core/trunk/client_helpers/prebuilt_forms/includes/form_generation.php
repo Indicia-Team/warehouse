@@ -201,25 +201,49 @@ function get_user_profile_hidden_inputs(&$attributes, $args, $exists, $readAuth)
     return '';
   $hiddens = '';
   global $user;
-  $logged_in = $user->uid>0;
+  $logged_in = $user->uid > 0;
   // If logged in, output some hidden data about the user
   if (isset($args['copyFromProfile']) && $args['copyFromProfile']==true) {
-    profile_load_all_profile($user);
+    $version6 = (substr(VERSION, 0, 1) == '6');
+    if($version6) {
+      // In version 6 the profile module holds user setttings.
+      profile_load_all_profile($user);
+    }
+    else {
+      // In version 7, the field module holds user settings.
+      $user = user_load($user->uid);
+    }
   }  
   foreach($attributes as &$attribute) {
-    $attrPropName = 'profile_'.strtolower(str_replace(' ','_',$attribute['caption']));
-    if (isset($args['copyFromProfile']) && $args['copyFromProfile']==true && isset($user->$attrPropName)) {
+    // Constuct the name of the user property (which varies between versions) to match against the attribute caption.
+    $attrPropName = $version6 ? 'profile_' : 'field_';
+    $attrPropName .= strtolower(str_replace(' ', '_', $attribute['caption']));
+    
+    if (isset($args['copyFromProfile']) && $args['copyFromProfile'] == true && isset($user->$attrPropName)) {
+      // Obtain the property value which is stored differently between versions.
+      if($version6) {
+        $attrPropValue = $user->$attrPropName;
+      }
+      else {
+        $attrPropValues = field_get_items('user', $user, $attrPropName);
+        $attrPropValue = isset($attrPropValues[0]['safe value']) ? $attrPropValues[0]['safe value'] : $attrPropValues[0]['value'];
+      }
+      
       // lookups need to be translated to the termlist_term_id, unless they are already IDs
-      if ($attribute['data_type']==='L' && !preg_match('/^[\d]+$/', $user->$attrPropName)) {
+      if ($attribute['data_type'] === 'L' && !preg_match('/^[\d]+$/', $attrPropValue)) {
         $terms = data_entry_helper::get_population_data(array(
           'table' => 'termlists_term',
-          'extraParams' => $readAuth + array('termlist_id'=>$attribute['termlist_id'], 'term'=>$user->$attrPropName)
+          'extraParams' => $readAuth + array('termlist_id' => $attribute['termlist_id'], 'term' => $attrPropValue)
         ));
-        $value = (count($terms)>0) ? $terms[0]['id'] : '';
-      } else
-        $value = $user->$attrPropName;
-      if (isset($args['nameShow']) && $args['nameShow'] == true) 
+        $value = (count($terms) > 0) ? $terms[0]['id'] : '';
+      } 
+      else {
+        $value = $attrPropValue;
+      }
+      
+      if (isset($args['nameShow']) && $args['nameShow'] == true) {
         $attribute['default'] = $value;
+      }
       else {
         // profile attributes are not displayed as the user is logged in
         $attribute['handled']=true;
@@ -268,7 +292,7 @@ function get_user_profile_hidden_inputs(&$attributes, $args, $exists, $readAuth)
  */
 function profile_load_all_profile(&$user) {
   // don't do anything unless in Drupal, with the profile module enabled, and the user logged in.
-  if ($user->uid>0 && function_exists('profile_load_profile')) {
+  if ($user->uid > 0 && function_exists('profile_load_profile')) {
     $result = db_query('SELECT f.name, f.type, v.value FROM {profile_fields} f LEFT JOIN {profile_values} v ON f.fid = v.fid AND uid = %d', $user->uid);
     while ($field = db_fetch_object($result)) {
       if (empty($user->{$field->name})) {
@@ -280,4 +304,3 @@ function profile_load_all_profile(&$user) {
     }
   }
 }
-
