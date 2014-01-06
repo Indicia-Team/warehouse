@@ -172,7 +172,9 @@ $.Autocompleter = function(input, options) {
           $input.trigger('return');
         }
       case KEY.TAB:
-        selectCurrent(event.keyCode);
+        if (options.continueOnBlur || event.keyCode===KEY.RETURN) {
+          selectCurrent(event.keyCode);
+        }
         break;
         
       case KEY.ESC:
