@@ -51,19 +51,9 @@ class iform_easy_download_2 {
   public static function get_parameters() {   
     return array(
       array(
-        'name'=>'my_records_user_filter_permission',
-        'caption'=>'Download user filter permission - my records',
-        'description'=>'Provide the name of the permission required to allow download of my records. '.
-            'Leave blank to disallow download of my records.',
-        'type'=>'text_input',
-        'required'=>false,
-        'default'=>'access iform'
-      ),
-      array(
-        'name'=>'all_records_user_filter_permission',
-        'caption'=>'Download user filter permission - all records',
-        'description'=>'Provide the name of the permission required to allow download of all records. '.
-            'Leave blank to disallow download of all records.',
+        'name'=>'download_all_users_reporting',
+        'caption'=>'Download all users for reporting permission',
+        'description'=>'Provide the name of the permission required to allow download of all records for reporting (as opposed to just my records).',
         'type'=>'text_input',
         'required'=>false,
         'default'=>'indicia data admin'
@@ -283,11 +273,8 @@ class iform_easy_download_2 {
     $indicia_templates['controlWrap']="<div id=\"wrap-{id}\">{control}</div>\n";
     $conn = iform_get_connection_details($node);
     data_entry_helper::$js_read_tokens = data_entry_helper::get_read_auth($conn['website_id'], $conn['password']);
-    $userFilterOptions = self::get_user_filter_options($args);
     $types = self::get_download_types($args);
     $formats = self::get_download_formats($args);
-    if (count($userFilterOptions)===0)
-      return 'This download page is configured so that no download user filter options are available.';
     if (count($types)===0)
       return 'This download page is configured so that no download type options are available.';
     if (count($formats)===0)
@@ -297,8 +284,10 @@ class iform_easy_download_2 {
     if(count($reload['params'])) $reloadPath .= '?'.helper_base::array_to_query_string($reload['params']);
     $r = '<form method="POST" action="'.$reloadPath.'">';
     $r .= '<fieldset id="download-type-fieldset"><legend>'.lang::get('Records to download').'</legend>';
-    if (count($types)===1) 
+    if (count($types)===1) {
       $r .= '<input type="hidden" name="download-type" id="download-type" value="'.implode('', array_keys($types)).'"/>';
+      hostsite_set_page_title(lang::get('Download {1}', strtolower($types[0])));
+    }
     else {
       $r .= data_entry_helper::select(array(
         'fieldname'=>'download-type',
@@ -317,16 +306,6 @@ class iform_easy_download_2 {
     ));
     $r .= "</fieldset>\n";
     $r .= '<fieldset><legend>'.lang::get('Limit the records').'</legend>';
-    if (count($userFilterOptions)===1) 
-      $r .= '<input type="hidden" name="user-filter" value="'.implode('', array_keys($userFilterOptions)).'"/>';
-    else 
-      $r .= data_entry_helper::select(array(
-        'fieldname'=>'user-filter',
-        'label'=>lang::get('Users to include'),
-        'lookupValues'=>$userFilterOptions,
-        'class'=>'control-width-5',
-        'helpText'=>'Select the users whose records you want to include.'
-      ));
     if (empty($args['survey_id'])) {
       // put up an empty surveys drop down. AJAX will populate it.
       $r .= data_entry_helper::select(array(
@@ -362,20 +341,6 @@ class iform_easy_download_2 {
     return $r;
   } 
   
-  /**
-   * Works out the list of user filters that are available, e.g. my records, all records.
-   * @param type $args
-   * @return array Associative array of user filters
-   */
-  private static function get_user_filter_options($args) {
-    $r = array();
-    if ($args['my_records_user_filter_permission'] && user_access($args['my_records_user_filter_permission'])) 
-      $r['my']=lang::get('Me');
-    if ($args['all_records_user_filter_permission'] && user_access($args['all_records_user_filter_permission'])) 
-      $r['all']=lang::get('All users');
-    return $r;
-  }
-  
   /** 
    * Works out the list of download type options available to the user. This is the list
    * of sharing modes they have permission for, combined with any filters defined for the user
@@ -407,7 +372,12 @@ class iform_easy_download_2 {
             data_entry_helper::$javascript.="indiciaData.optionalFilters.$sharingTypeCode.filter_$filter[id]='$filter[title]';\n";
           }
         }
-        if ($sharingTypeCode==='V') {
+        if ($sharingTypeCode==='R') {
+          $r['R my']=lang::get('My records for reporting');
+          if (user_access($args['download_all_users_reporting']))
+            $r['R']=lang::get('All records for reporting');
+        }
+        elseif ($sharingTypeCode==='V') {
           // load their profile settings for verification
           $location_id = hostsite_get_user_field('location_expertise');
           $taxon_group_ids = hostsite_get_user_field('taxon_groups_expertise');
@@ -416,7 +386,7 @@ class iform_easy_download_2 {
             $r['V profile'] = lang::get('Verification - my verification records');
         } elseif (!$gotPermissionsFilterForThisType) 
           // If no permissions defined for this sharing type for this user, then allow an all-access download
-          $r[$sharingTypeCode]=$sharingType;    
+          $r[$sharingTypeCode]=$sharingType;
       }
     }
     return $r;
@@ -555,19 +525,24 @@ class iform_easy_download_2 {
       $survey_ids = hostsite_get_user_field('surveys_expertise');
       if ($survey_ids)
         $params['survey_list_context']=implode(',', unserialize($survey_ids));
-    } elseif (strlen($_POST['download-type'])>1 || !empty($_POST['download-subfilter'])) {
+      $_POST['download-type']='V';
+    } 
+    elseif (preg_match('/^[RPVDM] my$/', $_POST['download-type'])) {
+      // autogenerated context for my records
+      $params['my_records_context']=1;
+      $_POST['download-type'] = substr($_POST['download-type'], 0, 1);
+    }
+    if (strlen($_POST['download-type'])>1 || !empty($_POST['download-subfilter'])) {
       // use the saved filters system to filter the records
       $filterData = report_filters_load_existing(data_entry_helper::$js_read_tokens, $sharing);
-      if (preg_match('/^[RPVDM]+ filter (\d+)$/', $_POST['download-type'], $matches)) 
-        // download type includes a context filter
+      if (preg_match('/^[RPVDM] filter (\d+)$/', $_POST['download-type'], $matches)) 
+        // download type includes a context filter from the database
         self::apply_filter_to_params($filterData, $matches[1], '_context', $params);
       if (!empty($_POST['download-subfilter'])) {
         // a download subfilter has been selected
         self::apply_filter_to_params($filterData, $_POST['download-subfilter'], '', $params);
       }
     }
-    if (!empty($_POST['user-filter']) && $_POST['user-filter']==='my')
-      $params['my_records']=1;
     if (!empty($_POST['survey_id']))
       $params['survey_list']=$_POST['survey_id'];
     if (!empty($_POST['date_from']) && $_POST['date_from']!==lang::get('Click here'))
@@ -601,5 +576,35 @@ class iform_easy_download_2 {
         break;
       }
     }
+  }
+  
+  /** 
+   * Declare the list of permissions we've got set up.
+   */
+  public static function get_perms($nid, $params) {
+    $perms = array();
+    if (!empty($params['download_all_users_reporting']))
+      $perms[$params['download_all_users_reporting']]='';
+    if (!empty($params['reporting_type_permission']))
+      $perms[$params['reporting_type_permission']]='';
+    if (!empty($params['peer_review_type_permission']))
+      $perms[$params['peer_review_type_permission']]='';
+    if (!empty($params['verification_type_permission']))
+      $perms[$params['verification_type_permission']]='';
+    if (!empty($params['data_flow_type_permission']))
+      $perms[$params['data_flow_type_permission']]='';
+    if (!empty($params['moderation_type_permission']))
+      $perms[$params['moderation_type_permission']]='';
+    if (!empty($params['csv_format_permission']))
+      $perms[$params['csv_format_permission']]='';
+    if (!empty($params['tsv_format_permission']))
+      $perms[$params['tsv_format_permission']]='';
+    if (!empty($params['kml_format_permission']))
+      $perms[$params['kml_format_permission']]='';
+    if (!empty($params['gpx_format_permission']))
+      $perms[$params['gpx_format_permission']]='';  
+    if (!empty($params['nbn_format_permission']))
+      $perms[$params['nbn_format_permission']]='';
+    return array_keys($perms);
   }
 }
