@@ -531,14 +531,21 @@ class iform_dynamic {
           // this outputs any custom attributes that remain for this tab. The custom attributes can be configured in the 
           // settings text using something like @smpAttr:4|label=My label. The next bit of code parses these out into an 
           // array used when building the html.
+          // Alternatively, a setting like @option=value is applied to all the attributes.
           $attrSpecificOptions = array();
           foreach ($options as $option => $value) {
             // split the id of the option into the control name and option name.
             $optionId = explode('|', $option);
-            if (!isset($attrSpecificOptions[$optionId[0]])) $attrSpecificOptions[$optionId[0]]=array();
-            $attrSpecificOptions[$optionId[0]][$optionId[1]] = apply_user_replacements($value);
+            if(count($optionId) > 1) {
+              // Found an option like @smpAttr:4|label=My label
+              if (!isset($attrSpecificOptions[$optionId[0]])) $attrSpecificOptions[$optionId[0]]=array();
+              $attrSpecificOptions[$optionId[0]][$optionId[1]] = apply_user_replacements($value);
+            }
+            else {
+              // Found an option like @option=value
+              $defAttrOptions = array_merge($defAttrOptions, array($option => $value));
+            }
           }
-          $defAttrOptions = array_merge($defAttrOptions, $options);
           $attrHtml = get_attribute_html($attributes, $args, $defAttrOptions, $tab, $attrSpecificOptions);
           if (!empty($attrHtml))
             $hasControls = true;
