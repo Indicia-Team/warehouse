@@ -12,7 +12,7 @@
   GROUP BY square.centroid_sref,lav.text_value
   </query>
   <params>
-    <param name="plot_id" display="Todo" datatype="integer"/>
+    <param name="plot_id" display="Id of the plot to get the parent square name for" datatype="integer"/>
     <param name="no_vice_county_found_message" display="Some words to use in the square's name if a vice county cannot be found." datatype="text"/>
     <param name="vice_county_location_attribute_id" display="The location attribute id that hold's the Vice County name." datatype="integer"/>
   </params>
