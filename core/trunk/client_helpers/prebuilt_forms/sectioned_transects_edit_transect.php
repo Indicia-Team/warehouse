@@ -193,6 +193,30 @@ class iform_sectioned_transects_edit_transect {
             'default'=>true,
             'required'=>false,
             'group' => 'Transects Editor Settings'
+          ),
+          array(
+            'name'=>'autocalc_section_length_attr_id',
+            'caption'=>'Location attribute to autocalc section length',
+            'description'=>'Location attribute that stores the section length, if you want it to be autocalculated from the geometry.',
+            'type'=>'select',
+            'table'=>'location_attribute',
+            'valueField'=>'id',
+            'captionField'=>'caption',
+            'group'=>'Transects Editor Settings',
+            'required'=>false
+          ),
+          array(
+            'name'=>'default_section_grid_ref',
+            'caption'=>'Default grid ref for a section?',
+            'description'=>'Default the grid ref for a section to what?',
+            'type'=>'select',
+            'lookupValues'=>array(
+              'parent'=>'Same as parent transect',
+              'sectionCentroid100'=>'100m grid square covering the centroid of the section',
+              'sectionStart100'=>'100m grid square covering the start of the section'
+            ),
+            'default'=>'parent',
+            'group'=>'Transects Editor Settings'
           )
         )
     );
@@ -306,6 +330,8 @@ class iform_sectioned_transects_edit_transect {
     $settings['sections']=array();
     $settings['numSectionsAttr'] = "";
     $settings['maxSectionCount'] = $args['maxSectionCount'];
+    $settings['autocalcSectionLengthAttrId'] = empty($args['autocalc_section_length_attr_id']) ? 0 : $args['autocalc_section_length_attr_id'];
+    $settings['defaultSectionGridRef'] = empty($args['default_section_grid_ref']) ? 'parent' : $args['default_section_grid_ref'];
     if ($settings['locationId']) {
       data_entry_helper::load_existing_record($auth['read'], 'location', $settings['locationId']);
       $settings['walks'] = data_entry_helper::get_population_data(array(
@@ -427,6 +453,8 @@ class iform_sectioned_transects_edit_transect {
     data_entry_helper::$javascript .= "indiciaData.sectionChangeConfirm = \"".lang::get('Do you wish to save the currently unsaved changes you have made to the Section Details?')."\";\n";
     data_entry_helper::$javascript .= "indiciaData.numSectionsAttrName = \"".$settings['numSectionsAttr']."\";\n";
     data_entry_helper::$javascript .= "indiciaData.maxSectionCount = \"".$settings['maxSectionCount']."\";\n";
+    data_entry_helper::$javascript .= "indiciaData.autocalcSectionLengthAttrId = ".$settings['autocalcSectionLengthAttrId'].";\n";
+    data_entry_helper::$javascript .= "indiciaData.defaultSectionGridRef = '".$settings['defaultSectionGridRef']."';\n";
     if ($settings['locationId'])
       data_entry_helper::$javascript .= "selectSection('S1', true);\n";
     return $r;
