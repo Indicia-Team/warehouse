@@ -537,9 +537,9 @@ $(document).ready(function() {
           // make sure the feature is selected: this ensures that it can be modified straight away
           // note that selecting or unselecting the feature triggers the afterfeaturemodified event
           if(selectedFeature != evt.feature) {
-        	  indiciaData.selectFeature.select(evt.feature);
-              selectedFeature = evt.feature;
-              div.map.editLayer.redraw();
+            indiciaData.selectFeature.select(evt.feature);
+            selectedFeature = evt.feature;
+            div.map.editLayer.redraw();
           }
           // post the new or edited section to the db
           var data = {
@@ -554,13 +554,30 @@ $(document).ready(function() {
             data['location:id']=indiciaData.sections[current].id;
           } else {
             data['locations_website:website_id']=indiciaData.website_id;
+          }
+          if (indiciaData.defaultSectionGridRef==='parent') {
             // initially set the section Sref etc to match the parent. Geom will be auto generated on the server
-            indiciaData.sections[current] = {sref : $('#imp-sref').val(),
-            		system : $('#imp-sref-system').val()};
+            indiciaData.sections[current] = {sref : $('#imp-sref').val(),	system : $('#imp-sref-system').val()};
+          } else if (indiciaData.defaultSectionGridRef.match(/^section(Centroid|Start)100$/)) {
+            if (typeof indiciaData.srefHandlers!=="undefined" &&
+                typeof indiciaData.srefHandlers[$('#imp-sref-system').val().toLowerCase()]!=="undefined") {
+              var handler = indiciaData.srefHandlers[$('#imp-sref-system').val().toLowerCase()], pt, sref;
+              if (indiciaData.defaultSectionGridRef==='sectionCentroid100') {
+                pt = selectedFeature.geometry.getCentroid(true); // must use weighted to accurately calculate
+              } else {
+                pt = selectedFeature.geometry.components[0];
+              }
+              sref=handler.pointToGridNotation(pt.transform(indiciaData.mapdiv.map.projection, 'EPSG:'+handler.srid), 6);
+              indiciaData.sections[current] = {sref : sref,	system : $('#imp-sref-system').val()};
+            }
           }
           indiciaData.sections[current].geom = evt.feature.geometry.toString();
           data['location:centroid_sref']=indiciaData.sections[current].sref;
           data['location:centroid_sref_system']=indiciaData.sections[current].system;
+          // autocalc section length
+          if (indiciaData.autocalcSectionLengthAttrId) {
+            data['locAttr:'+indiciaData.autocalcSectionLengthAttrId] = Math.round(selectedFeature.geometry.clone().transform(indiciaData.mapdiv.map.projection, 'EPSG:27700').getLength());
+          }
           $.post(
             indiciaData.ajaxFormPostUrl,
             data,
