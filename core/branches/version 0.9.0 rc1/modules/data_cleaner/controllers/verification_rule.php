@@ -247,10 +247,45 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
    * Finds a record cleaner server index page and returns the list of files it refers to.
    */
   private function fetch_server_file_list($server) {
+    // as redirections cause a recursion, let's set a limit
+    static $curl_loops = 0;
+    static $curl_max_loops = 20;
+    if ($curl_loops++ >= $curl_max_loops)
+    {
+      $curl_loops = 0;
+      throw new exception('error', "cUrl request to $server resulted in too many redirections");
+    }
+
     $session = curl_init($server);
+    curl_setopt($session, CURLOPT_HEADER, true);
     curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
     $files = array();
-    foreach(helper_base::explode_lines(curl_exec($session)) as $line) {
+    $response=curl_exec($session);
+    if (curl_errno($session)) {
+      kohana::log('error', 'cUrl error : '.curl_errno($session));
+      kohana::log('error', 'cUrl message : '.curl_error($session));
+      throw new exception('error', "cUrl request to $server failed");
+    }
+    $http_code = curl_getinfo($session, CURLINFO_HTTP_CODE);
+    // did we get a redirect response?
+    if ($http_code == 301 || $http_code == 302) {
+      // find the redirect location in the response
+      preg_match('/Location:(.*?)\n/', $response, $matches);
+      $url = @parse_url(trim(array_pop($matches)));
+      if (!$url) 
+        throw new exception('error', "Redirect from $server failed");
+      $last_url = parse_url(curl_getinfo($session, CURLINFO_EFFECTIVE_URL));
+      if (!$url['scheme'])
+      $url['scheme'] = $last_url['scheme'];
+      if (!$url['host'])
+        $url['host'] = $last_url['host'];
+      if (!$url['path'])
+        $url['path'] = $last_url['path'];
+      $newUrl = $url['scheme'] . '://' . $url['host'] . $url['path'] . (isset($url['query'])?'?'.$url['query']:'');
+      return self::fetch_server_file_list($newUrl);
+    }
+    list($header, $data) = explode("\r\n\r\n", $response, 2);
+    foreach(helper_base::explode_lines($data) as $line) {
       $tokens = explode('#', $line);
       $files[] = array(
         'file' => $tokens[0],
@@ -358,11 +393,13 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
       $dirPath .= '/';
     }
     $files = glob($dirPath . '*', GLOB_MARK);
-    foreach ($files as $file) {
-      if (is_dir($file)) {
-        $this->deleteDir($file);
-      } else {
-        unlink($file);
+    if (!empty($files)) {
+      foreach ($files as $file) {
+        if (is_dir($file)) {
+          $this->deleteDir($file);
+        } else {
+          unlink($file);
+        }
       }
     }
     rmdir($dirPath);
