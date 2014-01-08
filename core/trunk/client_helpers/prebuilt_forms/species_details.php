@@ -152,10 +152,11 @@ class iform_species_details extends iform_dynamic {
       array(
         'name'=>'explore_param_name',
         'caption'=>'Explore Parameter Name',
-        'description'=>'Name of the parameter added to the Explore URL to pass through the taxa_taxon_list_id of the species being explored.',
+        'description'=>'Name of the parameter added to the Explore URL to pass through the taxon_meaning_id of the species being explored. '.
+            'The default provided (filter-taxon_meaning_list) is correct if your report uses the standard parameters configuration.',
         'type' => 'string',
         'required'=>false,
-        'default' => '',
+        'default' => 'filter-taxon_meaning_list',
         'group' => 'User Interface'
       ),
       array(
@@ -604,7 +605,7 @@ class iform_species_details extends iform_dynamic {
       $url = str_replace('{rootFolder}', $rootFolder, $url);
       $url.= (strpos($url, '?')===false) ? '?' : '&';
       $url .= $args['explore_param_name'] . '=' . self::$taxon_meaning_id;
-      $r='<a class="button" href="'.$url.'">' . lang::get('Explore records of {1}', self::get_best_name()) . '</a>' ;
+      $r='<a class="button" href="'.$url.'">' . lang::get('Explore records of {1}', self::get_best_name()) . '</a>';
     }
     else 
       throw new exception('The page has been setup to use an explore records button, but an "Explore URL" or "Explore Parameter Name" has not been specified.');

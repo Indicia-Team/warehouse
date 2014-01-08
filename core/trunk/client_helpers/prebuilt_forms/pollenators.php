@@ -454,7 +454,7 @@ class iform_pollenators {
     return 'Pollenators Data Entry';
   }
 
-  public static function get_perms($nid) {
+  public static function get_perms($nid, $args) {
     return array('IForm n'.$nid.' access');
   }
   
