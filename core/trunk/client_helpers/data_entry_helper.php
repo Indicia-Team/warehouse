@@ -174,6 +174,10 @@ class data_entry_helper extends helper_base {
   * <li><b>warnIfNoMatch</b>
   * Should the autocomplete control warn the user if they leave the control whilst searching
   * and then nothing is matched? Default true.</li>
+  * <li><b>continueOnBlur</b>
+  * Should the autocomplete control continue trying to load values when the user blurs out of the control? If true
+  * then tabbing out of the control will select the first match. Set to false if you intend to allow the user to enter free text which 
+  * is not matched to a term in the database. Default true.</li>  
   * <li><b>selectMode</b>
   * Should the autocomplete simulate a select drop down control by adding a drop down arrow after the input box which, when clicked,
   * populates the drop down list with all search results to a maximum of numValues. This is similar to typing * into the box. Default false.</li>
@@ -214,6 +218,7 @@ class data_entry_helper extends helper_base {
       'formatFunction' => 'function(item) { return item.{captionField}; }',
       'simplify' => (isset($options['simplify']) && $options['simplify']) ? 'true' : 'false',
       'warnIfNoMatch' => true,
+      'continueOnBlur' => true,
       'selectMode' => false
     ), $options);
     if (isset($options['report'])) {
@@ -221,6 +226,7 @@ class data_entry_helper extends helper_base {
       $options['extraParams']['reportSource'] = 'local';
     }
     $options['warnIfNoMatch'] = $options['warnIfNoMatch'] ? 'true' : 'false';
+    $options['continueOnBlur'] = $options['continueOnBlur'] ? 'true' : 'false';
     $options['selectMode'] = $options['selectMode'] ? 'true' : 'false';
     self::add_resource('autocomplete');
     // Escape the id for jQuery selectors
@@ -1507,6 +1513,8 @@ $('#$escaped').change(function(e) {
     ), $options);
     // Disable warnings for no matches if the user is allowed to input a vague unmatched location name.
     $options['warnIfNoMatch']=!$options['useLocationName'];
+    // this makes it easier to enter unmatched text, if allowed to do so
+    $options['continueOnBlur']=!$options['useLocationName'];
     $r = self::autocomplete($options);
     // put a hidden input in the form to indicate that the location value should be 
     // copied to the location_name field if not linked to a location id.
@@ -3186,7 +3194,7 @@ $('#$escaped').change(function(e) {
         self::$javascript .= "$('#$options[id] tbody tr td.edited-record').parent().show();\n";
         self::$javascript .= "$('#$options[id] tbody tr td.edited-record').parent().next('tr.supplementary-row').show();\n";
         $r .= '<p>'.lang::get('You are editing a single record that is part of a larger sample, so any changes to the sample\'s information such as edits to the date or map reference '.
-            'will affect the whole sample.')." <a id=\"species-grid-view-all-$options[id]\">".lang::get('View all the records in this sample or add more records.').'</span></p>';
+            'will affect the whole sample.')." <a id=\"species-grid-view-all-$options[id]\">".lang::get('View all the records in this sample or add more records.').'</a></p>';
         self::$javascript .= "$('#species-grid-view-all-$options[id]').click(function(e) {
   $('#$options[id] tbody tr').show(); 
   $(e.currentTarget).hide();
