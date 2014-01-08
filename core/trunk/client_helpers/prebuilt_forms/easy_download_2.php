@@ -30,6 +30,11 @@ require_once ('includes/report_filters.php');
  * A quick and easy way to download data you have access to. 
  */
 class iform_easy_download_2 {
+
+  /**
+   * @var array List of sets of filters loaded from the db, one per sharing type code.
+   */
+  private static $filterSets=array();
   
   /** 
    * Return the form metadata. 
@@ -147,6 +152,30 @@ class iform_easy_download_2 {
         'type'=>'text_input',
         'required'=>false,
         'default'=>'access iform'
+      ),
+      array(
+          'name' => 'custom_formats',
+          'caption' => 'Custom formats',
+          'description' => 'Define a list of custom download formats.',
+          'type' => 'jsonwidget',
+          'schema' => '{
+  "type":"seq",
+  "title":"Formats List",
+  "sequence":
+  [
+    {
+      "type":"map",
+      "title":"Format",
+      "mapping": {
+        "title": {"type":"str","desc":"The report format title (untranslated)."},
+        "permission": {"type":"str","desc":"The CMS permission that the user must have in order for this report format to be available."},
+        "report": {"type":"str","desc":"The path to the report which will be downloaded, e.g. \'library/occurrences/filterable_occurrences_list\'. Should be standard params enabled.."},
+        "format": {"type":"str","desc":"The download format specifier, one of csv, tsv, xml, gpx, kml, nbn."},
+        "params": {"type":"txt","desc":"Any key=value parameter pairs to pass to the report, one per line."}
+      }
+    }
+  ]
+}'
       ),
       array(
         'name'=>'survey_id',
@@ -330,11 +359,27 @@ class iform_easy_download_2 {
       'helpText' => 'Leave blank for no end date filter',
       'class' => 'control-width-4'
     ));
-    $r .= '</fieldset><fieldset><legend>'.lang::get('Select a format to download').'</legend>';
-    foreach($formats as $format=>$label) {
-      $r .= "<input class=\"inline-control\" type=\"submit\" name=\"format\" value=\"$label\"/>\n";
+    $r .= '</fieldset>';
+    if (!empty($args['custom_formats'])) {
+      $customFormats = json_decode($args['custom_formats'], true);
+      foreach ($customFormats as $idx=>$format) {
+        if (empty($format['permission']) || user_access($format['permission'])) 
+          $formats["custom-$idx"] = lang::get(isset($format['title']) ? $format['title'] : 'Untitled format');
+      }
     }
-    $r .= '</fieldset></form>';
+    if (count($formats)>1) {
+      $r .= '<fieldset><legend>'.lang::get('Select a format to download').'</legend>';
+      $keys = array_keys($formats);
+      $r .= data_entry_helper::radio_group(array(
+        'fieldname' => 'format',
+        'lookupValues' => $formats,
+        'default' => $keys[0]
+      ));
+      $r .= '</fieldset>';
+    } else 
+      // only allowed 1 format, so no need for a selection control
+      $r .= '<input type="hidden" name="format" value="'.array_pop(array_keys($formats)).'"/>';
+    $r .= '<input type="submit" value="'.lang::get('Download').'"/></form>';
     data_entry_helper::$javascript .= 'indiciaData.ajaxUrl="'.url('iform/ajax/easy_download_2')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.nid = "'.$node->nid."\";\n";
     data_entry_helper::$javascript.="setAvailableDownloadFilters();\n";
@@ -362,7 +407,7 @@ class iform_easy_download_2 {
         // a place to store optional filters of this type in the js data
         data_entry_helper::$javascript.="indiciaData.optionalFilters.$sharingTypeCode={};\n";
         // load their filters
-        $filters = report_filters_load_existing(data_entry_helper::$js_read_tokens, $sharingTypeCode);
+        $filters = self::load_filter_set($sharingTypeCode);
         foreach ($filters as $filter) {
           // the filter either defines their permissions, or is a user defined filter which they can optionally apply
           if ($filter['defines_permissions']==='t') {
@@ -439,10 +484,26 @@ class iform_easy_download_2 {
    * @param type $node
    */
   private static function do_data_services_download($args, $node) {
-    $format=self::get_report_format($args);
     iform_load_helpers(array('report_helper'));
+    $format=$_POST['format'];
+    $isCustom = preg_match('/^custom-(\d+)$/', $_POST['format'], $matches);
+    if ($isCustom) {
+      $customFormats = json_decode($args['custom_formats'], true);
+      $customFormat = $customFormats[$matches[1]];
+      $report = $customFormat['report'];
+      // strip unnecessary .xml from end of report name if provided
+      $report = preg_replace('/\.xml$/', '', $report);
+      $format = $customFormat['format'];
+      $additionalParamText = $customFormat['params'];
+    }
+    else {
+      $report = $args["report_$format"];
+      $additionalParamText = $args["report_params_$format"];
+    }
+    $params = self::build_params($args);
+    $params = array_merge($params, get_options_array_with_user_data($additionalParamText));
     $conn = iform_get_connection_details($node);
-    $params = self::build_params($args, $format);
+    
     global $indicia_templates;
     // let's just get the URL, not the whole anchor element
     $indicia_templates['report_download_link'] = '{link}';
@@ -451,7 +512,7 @@ class iform_easy_download_2 {
     
     $url = report_helper::report_download_link(array(
       'readAuth'=>data_entry_helper::$js_read_tokens,
-      'dataSource'=>$args["report_$format"],
+      'dataSource'=>$report,
       'extraParams'=>$params,
       'format'=>$format,
       'sharing'=>self::expand_sharing_mode($sharing),
@@ -481,32 +542,13 @@ class iform_easy_download_2 {
   }
   
   /**
-   * Uses the format value in the $_POST data to work out the machine-readable format
-   * code, e.g. csv or nbn.
-   * @return string Format specifier.
-   */
-  private static function get_report_format($args) {
-    $formats = self::get_download_formats($args);
-    $r = false;
-    foreach ($formats as $code => $label) {
-      if ($_POST['format']===$label) {
-        $r = $code;
-        break;
-      }
-    }
-    if (!$r)
-      throw new exception("Unrecognised download format $_POST[format]");
-    return $r;
-  }
-  
-  /**
-   * Builds the parameters array to apply which filters the download report.
+   * Builds the parameters array to apply which filters the download report according to the report type, subfilter,
+   * date range and survey selected.
    * @param array Form parameters.
-   * @param string $format Download format (e.g. csv, tsv, nbn).
    * @return array Parameters array to apply to the report.
    * @throws exception Thrown if requested download type not allowed for this user.
    */
-  private static function build_params($args, $format) {
+  private static function build_params($args) {
     require_once('includes/user.php');
     $availableTypes = self::get_download_types($args, data_entry_helper::$js_read_tokens);
     if (!array_key_exists($_POST['download-type'], $availableTypes))
@@ -534,7 +576,7 @@ class iform_easy_download_2 {
     }
     if (strlen($_POST['download-type'])>1 || !empty($_POST['download-subfilter'])) {
       // use the saved filters system to filter the records
-      $filterData = report_filters_load_existing(data_entry_helper::$js_read_tokens, $sharing);
+      $filterData = self::load_filter_set($sharing);
       if (preg_match('/^[RPVDM] filter (\d+)$/', $_POST['download-type'], $matches)) 
         // download type includes a context filter from the database
         self::apply_filter_to_params($filterData, $matches[1], '_context', $params);
@@ -549,7 +591,6 @@ class iform_easy_download_2 {
       $params['date_from']=$_POST['date_from'];
     if (!empty($_POST['date_to']) && $_POST['date_to']!==lang::get('Click here'))
       $params['date_to']=$_POST['date_to'];
-    $params = array_merge($params, get_options_array_with_user_data($args["report_params_$format"]));
     return $params;
   }
   
@@ -579,32 +620,54 @@ class iform_easy_download_2 {
   }
   
   /** 
-   * Declare the list of permissions we've got set up.
+   * Declare the list of permissions we've got set up to pass to the CMS' permissions code.
+   * @param int $nid Node ID, not used
+   * @param array $args Form parameters array, used to extract the defined permissions.
+   * @return array List of distinct permissions.
    */
-  public static function get_perms($nid, $params) {
+  public static function get_perms($nid, $args) {
     $perms = array();
-    if (!empty($params['download_all_users_reporting']))
-      $perms[$params['download_all_users_reporting']]='';
-    if (!empty($params['reporting_type_permission']))
-      $perms[$params['reporting_type_permission']]='';
-    if (!empty($params['peer_review_type_permission']))
-      $perms[$params['peer_review_type_permission']]='';
-    if (!empty($params['verification_type_permission']))
-      $perms[$params['verification_type_permission']]='';
-    if (!empty($params['data_flow_type_permission']))
-      $perms[$params['data_flow_type_permission']]='';
-    if (!empty($params['moderation_type_permission']))
-      $perms[$params['moderation_type_permission']]='';
-    if (!empty($params['csv_format_permission']))
-      $perms[$params['csv_format_permission']]='';
-    if (!empty($params['tsv_format_permission']))
-      $perms[$params['tsv_format_permission']]='';
-    if (!empty($params['kml_format_permission']))
-      $perms[$params['kml_format_permission']]='';
-    if (!empty($params['gpx_format_permission']))
-      $perms[$params['gpx_format_permission']]='';  
-    if (!empty($params['nbn_format_permission']))
-      $perms[$params['nbn_format_permission']]='';
+    if (!empty($args['download_all_users_reporting']))
+      $perms[$args['download_all_users_reporting']]='';
+    if (!empty($args['reporting_type_permission']))
+      $perms[$args['reporting_type_permission']]='';
+    if (!empty($args['peer_review_type_permission']))
+      $perms[$args['peer_review_type_permission']]='';
+    if (!empty($args['verification_type_permission']))
+      $perms[$args['verification_type_permission']]='';
+    if (!empty($args['data_flow_type_permission']))
+      $perms[$args['data_flow_type_permission']]='';
+    if (!empty($args['moderation_type_permission']))
+      $perms[$args['moderation_type_permission']]='';
+    if (!empty($args['csv_format_permission']))
+      $perms[$args['csv_format_permission']]='';
+    if (!empty($args['tsv_format_permission']))
+      $perms[$args['tsv_format_permission']]='';
+    if (!empty($args['kml_format_permission']))
+      $perms[$args['kml_format_permission']]='';
+    if (!empty($args['gpx_format_permission']))
+      $perms[$args['gpx_format_permission']]='';  
+    if (!empty($args['nbn_format_permission']))
+      $perms[$args['nbn_format_permission']]='';
+    if (!empty($args['custom_formats'])) {
+      $customFormats = json_decode($args['custom_formats'], true);
+      foreach ($customFormats as $idx=>$format) {
+        if (!empty($format['permission'])) 
+          $perms[$format['permission']]='';
+      }
+    }
     return array_keys($perms);
   }
+  
+  /**
+   * Loads the set of report filters available for a given sharing type code. Avoids multiple loads.
+   * @param string $sharingTypeCode A sharing mode, i.e. R(eporting), M(oderation), V(erification), P(eer review) or D(ata flow).
+   * @return array Filters loaded from the database, available for this user & mode combination.
+   */
+  private static function load_filter_set($sharingTypeCode) {
+    if (!isset(self::$filterSets[$sharingTypeCode]))
+      self::$filterSets[$sharingTypeCode]=report_filters_load_existing(data_entry_helper::$js_read_tokens, $sharingTypeCode);
+    return self::$filterSets[$sharingTypeCode];
+  }
+  
 }
