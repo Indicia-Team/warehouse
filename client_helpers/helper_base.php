@@ -128,6 +128,7 @@ $indicia_templates = array(
         simplify: {simplify},
         selectMode: {selectMode},
         warnIfNoMatch: {warnIfNoMatch},
+        continueOnBlur: {continueOnBlur},
         parse: function(data)
         {
           // Clear the current selected key as the user has changed the search text
