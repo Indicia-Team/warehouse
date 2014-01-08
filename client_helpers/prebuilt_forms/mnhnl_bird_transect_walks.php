@@ -139,7 +139,7 @@ class iform_mnhnl_bird_transect_walks {
     ));
   }
 
-  public static function get_perms($nid) {
+  public static function get_perms($nid, $args) {
     return array('IForm n'.$nid.' admin', 'IForm n'.$nid.' user');
   }
 

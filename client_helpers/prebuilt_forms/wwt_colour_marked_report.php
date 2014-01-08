@@ -720,7 +720,7 @@ class iform_wwt_colour_marked_report {
     return $retVal;
   }
   
-  public static function get_perms($nid) {
+  public static function get_perms($nid, $args) {
     return array(
       'IForm n'.$nid.' enter data by proxy',
     );
