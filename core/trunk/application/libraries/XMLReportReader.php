@@ -1022,10 +1022,10 @@ class XMLReportReader_Core implements ReportReader
    * @param string $from The new parameter name which will be use instead.
    */
   private function convertDeprecatedParam(&$providedParams, $from, $to) {
-    if (isset($providedParams[$to]) && !isset($providedParams[$from]))
-      $providedParams[$from]=$providedParams[$to];
-    if (isset($providedParams[$to.'_context']) && !isset($providedParams[$from.'_context']))
-      $providedParams[$from.'_context']=$providedParams[$to.'_context'];
+    if (isset($providedParams[$from]) && !isset($providedParams[$to]))
+      $providedParams[$to]=$providedParams[$from];
+    if (isset($providedParams[$from.'_context']) && !isset($providedParams[$to.'_context']))
+      $providedParams[$to.'_context']=$providedParams[$from.'_context'];
   }
 
   /**
