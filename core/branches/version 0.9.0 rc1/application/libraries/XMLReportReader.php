@@ -735,10 +735,8 @@ class XMLReportReader_Core implements ReportReader
   public function loadStandardParams(&$providedParams, $sharing) {
     if ($this->hasStandardParams) {
       // For backwards compatibility, convert a few param names...
-      if (isset($providedParams['location_id']) && !isset($providedParams['location_list']))
-        $providedParams['location_list']=$providedParams['location_id'];
-      if (isset($providedParams['indexed_location_id']) && !isset($providedParams['indexed_location_list']))
-        $providedParams['indexed_location_list']=$providedParams['indexed_location_id'];
+      $this->convertDeprecatedParam($providedParams, 'location_id','location_list');
+      $this->convertDeprecatedParam($providedParams, 'indexed_location_id','indexed_location_list');
       // always include the operation params, as their default might be needed even when no parameter is provided. E.g.
       // the default website_list_op param comes into effect if just a website_list is provided.
       $opParams = array(
@@ -1015,6 +1013,19 @@ class XMLReportReader_Core implements ReportReader
         }
       }
     }
+  }
+  
+  /**
+   * To retain backwards compatibility with previous versions of standard params, we convert some param names.
+   * @param array $providedParams The array of provided parameters which will be modified.
+   * @param string $from The deprecated parameter name which will be swapped from.
+   * @param string $from The new parameter name which will be use instead.
+   */
+  private function convertDeprecatedParam(&$providedParams, $from, $to) {
+    if (isset($providedParams[$to]) && !isset($providedParams[$from]))
+      $providedParams[$from]=$providedParams[$to];
+    if (isset($providedParams[$to.'_context']) && !isset($providedParams[$from.'_context']))
+      $providedParams[$from.'_context']=$providedParams[$to.'_context'];
   }
 
   /**
