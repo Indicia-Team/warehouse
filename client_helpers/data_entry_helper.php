@@ -95,10 +95,10 @@ class data_entry_helper extends helper_base {
   private static $remembered_fields=null;
   /**
    *
-   * @var array List of attrbute ids that should be ignored when automatically drawing attributes to the page because they are linked to
-   * another attribute that has already been draw and handled.
+   * @var array List of attribute ids that should be ignored when automatically drawing attributes to the page because they 
+   * are already output, e.g. if they are output by a radio group which shows a textbox when "other" is selected..
    */
-  public static $extra_linked_attributes=array();
+  public static $handled_attributes=array();
   
 /**********************************/
 /* Start of main controls section */
@@ -689,7 +689,7 @@ $('#$escaped').change(function(e) {
   * When this checkbox is selected then another textbox is displayed allowing specific details relating to the
   * Other item to be entered. The otherValueAttrId and otherTextboxLabel options must be specified to use this feature.</li>
   * <li><b>otherValueAttrId</b><br/>
-  * Optional. The sample attribute id where the "Other" text will be stored. See otherItemId option description.</li>
+  * Optional. The attribute id where the "Other" text will be stored, e.g. smpAttr:10. See otherItemId option description.</li>
   * <li><b>otherTextboxLabel</b><br/>
   * Optional. The label for the "Other" textbox. See otherItemId, otherValueAttrId option descriptions.</li>
   * <li><b>extraParams</b><br/>
@@ -5330,24 +5330,29 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     if (!empty($options['otherItemId'])&&!empty($options['otherValueAttrId'])) {
       //Code elsewhere can automatically draw attributes to the page if the user has specified the * option in the form structure.
       //However the sample attribute that holds the "other" value is already linked to the checkbox group. Save the id of the Other value
-      //sample attribute so that the automatic attribute display code knows not to draw it, otheriwise it would appear twice.
-      self::$extra_linked_attributes[] = $options['otherValueAttrId'];
-      //Get the id of the control group's sample attribute.
-      $mainAttributeId = substr($options['id'], 8);
+      //sample attribute so that the automatic attribute display code knows not to draw it, otherwise it would appear twice.
+      self::$handled_attributes[] = $options['otherValueAttrId'];
+      // find out the attr table we are concerned with
+      switch (substr($options['otherValueAttrId'], 0, 3)) {
+        case 'smp': $otherAttrTable='sample'; break;
+        case 'occ': $otherAttrTable='occurrence'; break;
+        case 'location': $otherAttrTable='location'; break;
+        default: throw new exception($options['otherValueAttrId'] . ' not supported for otherValueAttrId option.');
+      }
       //When in edit mode then we need to collect the Other value the user previously filled in.
-      if ($_GET['sample_id']) {
-        $readyAuth['auth_token']=$options['extraParams']['auth_token'];
-        $readyAuth['nonce']=$options['extraParams']['nonce'];
+      if (!empty(self::$entity_to_load["{$otherAttrTable}:id"])) {
+        $readAuth['auth_token']=$options['extraParams']['auth_token'];
+        $readAuth['nonce']=$options['extraParams']['nonce'];
         //Get the existing value for the Other textbox
         $otherAttributeData = data_entry_helper::get_population_data(array(
-          'table' => 'sample_attribute_value',
-          'extraParams' => $readyAuth + array('sample_id' => $_GET['sample_id'], 'sample_attribute_id'=>$options['otherValueAttrId']),
+          'table' => "{$otherAttrTable}_attribute_value",
+          'extraParams' => $readAuth + array("{$otherAttrTable}_id" => self::$entity_to_load["{$otherAttrTable}:id"], "{$otherAttrTable}_attribute_id"=>$options['otherValueAttrId']),
           'nocache' => true,
         ));
       }
       //Finally draw the Other textbox to the screen, then use jQuery to hide/show the box at the appropriate time.
-      $otherBoxOptions['id'] = 'smpAttr:'.$options['otherValueAttrId'];
-      $otherBoxOptions['fieldname'] = 'smpAttr:'.$options['otherValueAttrId'];
+      $otherBoxOptions['id'] = $options['otherValueAttrId'];
+      $otherBoxOptions['fieldname'] = $options['otherValueAttrId'];
       //When the field is populated with existing data, the name includes the sample_attribute_value id, this is used on submission.
       //Don't include it if it isn't pre-populated.
       if ($otherAttributeData[0]['id']) 
@@ -5359,24 +5364,27 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         $otherBoxOptions['label'] = 'Other';
       //Fill in the textbox with existing value if in edit mode.
       $otherBoxOptions['default']=$otherAttributeData[0]['value'];
-      $r .= data_entry_helper::text_input($otherBoxOptions);
+      $r .= data_entry_helper::textarea($otherBoxOptions);
+      // jQuery safe versions of the attribute IDs
+      $mainAttributeIdSafe = str_replace(':', '\\\\:', $options['id']);
+      $otherAttributeIdSafe = str_replace(':', '\\\\:', $options['otherValueAttrId']);
       //Set the visibility of the "Other" textbox based on the checkbox when the page loads, but also when the checkbox changes.
       self::$javascript .= '
         show_hide_other();
-        $("#smpAttr\\\\:'.$mainAttributeId.'\\\\:'.$checkboxOtherIdx.'").click(function() {
+        $("input[name='.$mainAttributeIdSafe.']").change(function() {
           show_hide_other();
         });
       ';
       //Function that will show and hide the "Other" textbox depending on the value of the checkbox.
       self::$javascript .= '
       function show_hide_other() {
-        if ($("#smpAttr\\\\:'.$mainAttributeId.'\\\\:'.$checkboxOtherIdx.'").is(":checked")) {
-          $("#smpAttr\\\\:'.$options['otherValueAttrId'].'").show();
-          $("[for=\"smpAttr\\\\:'.$options['otherValueAttrId'].'\"]").show();                              
+        if ($("#'.$mainAttributeIdSafe.'\\\\:'.$checkboxOtherIdx.'").is(":checked")) {
+          $("#'.$otherAttributeIdSafe.'").show();
+          $("[for=\"'.$otherAttributeIdSafe.'\"]").show();                              
         } else {   
-          $("#smpAttr\\\\:'.$options['otherValueAttrId'].'").val("");
-          $("#smpAttr\\\\:'.$options['otherValueAttrId'].'").hide();
-          $("[for=\"smpAttr\\\\:'.$options['otherValueAttrId'].'\"]").hide();
+          $("#'.$otherAttributeIdSafe.'").val("");
+          $("#'.$otherAttributeIdSafe.'").hide();
+          $("[for=\"'.$otherAttributeIdSafe.'\"]").hide();
         }
       }';
     }

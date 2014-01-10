@@ -24,6 +24,10 @@
  * List of methods that can be used for a prebuilt form control generation.
  * @package Client
  * @subpackage PrebuiltForms.
+ */
+ 
+/**
+ * Retrieve the html for a block of attributes.
  * @param array $attributes Array of attributes as returned from a call to data_entry_helper::getAttributes.
  * @param array $args Form argument array.
  * @param array $ctrlOptions Array of default options to apply to every attribute control.
@@ -38,7 +42,7 @@ function get_attribute_html(&$attributes, $args, $ctrlOptions, $outerFilter=null
   $lastInnerBlock='';
   $r = '';
   foreach ($attributes as &$attribute) {
-    if (in_array($attribute['attributeId'],data_entry_helper::$extra_linked_attributes))
+    if (in_array($attribute['id'],data_entry_helper::$handled_attributes))
       $attribute['handled']=1;
     // Apply filter to only output 1 block at a time. Also hide controls that have already been handled.
     if (($outerFilter===null || strcasecmp($outerFilter,$attribute['outer_structure_block'])==0) && !isset($attribute['handled'])) {

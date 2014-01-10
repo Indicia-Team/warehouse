@@ -1865,6 +1865,7 @@ else
    */
   protected static function get_control_sensitivity($auth, $args, $tabAlias, $options) {
     if ($args['multiple_occurrence_mode']==='single') {
+      self::load_custom_occattrs($auth['read'], $args['survey_id']);
       $ctrlOptions = array('extraParams'=>$auth['read']);
       $attrSpecificOptions = array();
       self::parseForAttrSpecificOptions($options, $ctrlOptions, $attrSpecificOptions);
