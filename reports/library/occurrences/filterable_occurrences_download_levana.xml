@@ -1,0 +1,79 @@
+<report
+    title="Occurrences Download using standard filters, LEVANA compatible"
+    description="Report suitable for downloading data, compatible with the standard report filter parameters. LEVANA compatible output columns for butterfly records."
+>
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
+  SELECT #columns#
+  FROM cache_occurrences o
+  JOIN occurrences occ on occ.id=o.id and occ.deleted=false -- to get sensitivity_precision
+  JOIN samples s on s.id=o.sample_id AND s.deleted=false
+  LEFT JOIN (occurrence_attribute_values count_val
+    JOIN occurrence_attributes count_attr on count_attr.id=count_val.occurrence_attribute_id and count_attr.deleted=false and count_attr.system_function='sex_stage_count'
+  ) ON count_val.occurrence_id=o.id AND count_val.deleted=false
+  LEFT JOIN cache_termlists_terms count_val_term on count_val_term.id=count_val.int_value and count_attr.data_type='L'
+  JOIN websites w on w.id=o.website_id 
+  JOIN users u ON u.id=o.created_by_id
+  JOIN people p ON p.id=u.person_id
+  #agreements_join#
+  #joins#
+  WHERE #sharing_filter#
+  #idlist#
+  </query>
+  <order_bys>
+    <order_by>o.id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
+    <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
+    <param name='sref_system' display='Grid reference system' description='Output either GB or Irish grid system' datatype='lookup' 
+        lookup_values='osgb:British,osie:Irish'/>
+  </params>
+  <columns>
+    <column name='recorder' display='Recorder name' sql="o.recorders" datatype="text" />
+    <column name='location_name' display='Site name' sql="case when occ.sensitivity_precision is null then o.location_name else 'Sensitive. Lat long is approximate.' end" datatype='text' />
+    <column name='entered_sref' display='Grid Ref' 
+    sql="CASE 
+    WHEN lower(o.entered_sref_system)='#sref_system#' THEN o.public_entered_sref
+    ELSE
+      CASE '#sref_system#'
+        WHEN 'osgb' THEN
+          CASE 
+            WHEN NOT (st_x(st_transform(st_centroid(o.public_geom),27700)) BETWEEN 0 AND 700000) OR NOT (st_y(st_transform(st_centroid(o.public_geom),27700)) BETWEEN 0 AND 1400000) THEN 'Out of range'
+            ELSE
+              CASE (CAST(st_x(st_transform(st_centroid(o.public_geom),27700)) AS INTEGER)/500000)*10 + (CAST(st_y(st_transform(st_centroid(o.public_geom),27700)) AS INTEGER)/500000)
+                WHEN 0 THEN 'S' WHEN 1 THEN 'N' WHEN 10 THEN 'T' WHEN 11 THEN 'O' ELSE 'H'
+              END ||
+              CASE (mod(CAST(st_x(st_transform(st_centroid(o.public_geom),27700)) AS INTEGER),500000)/100000)*10 + mod(CAST(st_y(st_transform(st_centroid(o.public_geom),27700)) AS INTEGER),500000)/100000
+                WHEN  0 THEN 'V' WHEN  1 THEN 'Q' WHEN  2 THEN 'L' WHEN  3 THEN 'F' WHEN  4 THEN 'A'
+                WHEN 10 THEN 'W' WHEN 11 THEN 'R' WHEN 12 THEN 'M' WHEN 13 THEN 'G' WHEN 14 THEN 'B'
+                WHEN 20 THEN 'X' WHEN 21 THEN 'S' WHEN 22 THEN 'N' WHEN 23 THEN 'H' WHEN 24 THEN 'C'
+                WHEN 30 THEN 'Y' WHEN 31 THEN 'T' WHEN 32 THEN 'O' WHEN 33 THEN 'J' WHEN 34 THEN 'D'
+                WHEN 40 THEN 'Z' WHEN 41 THEN 'U' WHEN 42 THEN 'P' WHEN 43 THEN 'K' WHEN 44 THEN 'E' ELSE '-'
+              END ||
+              lpad(''||mod(CAST(st_x(st_transform(st_centroid(o.public_geom),27700)) AS INTEGER), 100000)/100,3,'0') ||
+              lpad(''||mod(CAST(st_y(st_transform(st_centroid(o.public_geom),27700)) AS INTEGER), 100000)/100,3,'0')
+          END
+        WHEN 'osie' THEN
+          CASE
+            WHEN NOT (st_x(st_transform(st_centroid(o.public_geom),29903)) BETWEEN 0 AND 500000) OR NOT (st_y(st_transform(st_centroid(o.public_geom),29903)) BETWEEN 0 AND 500000) THEN 'Out of range'
+            ELSE
+              CASE (mod(CAST(st_x(st_transform(st_centroid(o.public_geom),29903)) AS INTEGER),500000)/100000)*10 + mod(CAST(st_y(st_transform(st_centroid(o.public_geom),29903)) AS INTEGER),500000)/100000
+                WHEN  0 THEN 'V' WHEN  1 THEN 'Q' WHEN  2 THEN 'L' WHEN  3 THEN 'F' WHEN  4 THEN 'A'
+                WHEN 10 THEN 'W' WHEN 11 THEN 'R' WHEN 12 THEN 'M' WHEN 13 THEN 'G' WHEN 14 THEN 'B'
+                WHEN 20 THEN 'X' WHEN 21 THEN 'S' WHEN 22 THEN 'N' WHEN 23 THEN 'H' WHEN 24 THEN 'C'
+                WHEN 30 THEN 'Y' WHEN 31 THEN 'T' WHEN 32 THEN 'O' WHEN 33 THEN 'J' WHEN 34 THEN 'D'
+                WHEN 40 THEN 'Z' WHEN 41 THEN 'U' WHEN 42 THEN 'P' WHEN 43 THEN 'K' WHEN 44 THEN 'E' ELSE '-'
+              END ||
+              lpad(''||mod(CAST(st_x(st_transform(st_centroid(o.public_geom),29903)) AS INTEGER), 100000)/100,3,'0') ||
+              lpad(''||mod(CAST(st_y(st_transform(st_centroid(o.public_geom),29903)) AS INTEGER), 100000)/100,3,'0')
+          END
+      END              
+  END" datatype='text' />
+    <column name='date_start' sql='o.date_start' visible='false' />
+    <column name='date_end' sql='o.date_end' visible='false' />
+    <column name='date_type' sql='o.date_type' visible='false' />
+    <column name='date' display='Date' datatype='date' />
+    <column name='taxon' display='Species name' sql="o.preferred_taxon" datatype='text' />
+    <column name='number_seen' display='Number seen' sql='coalesce(count_val.text_value, count_val_term.term, count_val.int_value::varchar)' datatype='text' />
+  </columns>
+</report>
