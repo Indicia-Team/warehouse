@@ -273,10 +273,10 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
   {
     $newline="\r\n";
     $output = '';
-    foreach ($data as $cell)
+    foreach ($data as $idx => $cell)
     {
       // replace all delimiter values with a dummy
-      $output .=  ($output == '' ? '' : $delimiter) . preg_replace('/\s+/', $replace, $cell);
+      $output .=  ($idx === 0 ? '' : $delimiter) . preg_replace('/\s+/', $replace, $cell);
     }
     $output.=$newline;
     return $output;
