@@ -1526,6 +1526,9 @@ class ORM extends ORM_Core {
    * @param integer $attrId The ID of the attribute
    */
   protected function loadAttrDef($attrType, $attrId) {
+    if (substr($attrId, 0, 3) == 'fk_') 
+      // an attribute value lookup
+      $attrId = substr($attrId, 3);
     $cacheId = 'attrInfo_'.$attrType.'_'.$attrId;
     $this->cache = Cache::instance();
     $attr = $this->cache->get($cacheId);
