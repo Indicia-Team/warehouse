@@ -3,7 +3,7 @@
 <report title="My Sites Lookup" description="A list of sites I've created, or added to my list of sites (a custom person attribute). No site summary information returned.">
       <query website_filter_field="lw.website_id">
       SELECT #columns#
-      FROM locations l      
+      FROM locations l
       LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
       LEFT JOIN (person_attribute_values pav 
         JOIN users u ON u.person_id=pav.person_id AND u.id=#user_id#  
@@ -18,12 +18,14 @@
       </order_bys>
       <params>
         <param name="user_id" display="User ID" description="The warehouse user's ID" datatype="integer" />
+        <param name="q" display="Query" description="Characters to search for" datatype="text" default="">
+          <where>l.name ilike '#q#%'</where>
+        </param>
         <param name="person_site_attr_id" display="Person Sites Attribute ID" description="The person attribute ID used to store My Sites" datatype="integer" />
       </params>
       <columns>
         <column name="id" visible="false" sql="l.id" unique="true" in_count="true" />
         <column name="name" display="Site Name" sql="l.name" datatype="text" />
-        <column name="geom" visible="false" mappable="true" sql="st_astext(coalesce(l.boundary_geom, l.centroid_geom))" />
         <column name="created_by_user" visible="false" sql="CASE l.created_by_id WHEN #user_id# THEN true ELSE false END" />
         <column name="linked_to_user" visible="false" sql="CASE WHEN pav.id IS NOT NULL THEN true ELSE false END" />
         <column name="pav_id" visible="false" sql="pav.id" />
