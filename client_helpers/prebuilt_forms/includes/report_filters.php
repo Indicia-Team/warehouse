@@ -704,9 +704,9 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
     $overrideJs .= "applyFilterToReports(false);\n";
   }
   if (!empty($options['filters_user_id']))
-    report_helper::$onload_javascript .= "loadFilterUser($options[filters_user_id]);\n";
+    report_helper::$onload_javascript = "loadFilterUser($options[filters_user_id]);\n" . $overrideJs . report_helper::$onload_javascript;
   else 
-    report_helper::$onload_javascript .= "if ($('#select-filter').val()) {".
+    report_helper::$onload_javascript = "if ($('#select-filter').val()) {".
         "loadFilter($('#select-filter').val(), false);" .
         "};\n" . $overrideJs . report_helper::$onload_javascript;
     
