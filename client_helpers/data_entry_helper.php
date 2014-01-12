@@ -434,6 +434,10 @@ $('#$escaped').change(function(e) {
   * The control then acts like a multi-value autocomplete and submits a list of ID values for the chosen items. 
   * If true, the control allows new values to be added and inserts them into the source table.
   * Defaults to true.</li>
+  * <li><b>selectMode</b>
+  * Should the autocomplete simulate a select drop down control by adding a drop down arrow after the input box which, when clicked,
+  * populates the drop down list with all search results to a maximum of numValues. This is similar to typing * into the box. Default false.
+  * </li>
   * </ul>
   * The output of this control can be configured using the following templates: 
   * <ul>
@@ -450,12 +454,6 @@ $('#$escaped').change(function(e) {
   * <li><b>sub_list_javascript</b></br>
   * Defines the JavaScript added to the page to implement the click handling for the various 
   * butons. 
-  * </li>
-  * <li><b>numValues</b><br/>
-  * Optional. Number of returned values in the select drop down list. Defaults to 20.</li>
-  * <li><b>selectMode</b>
-  * Should the autocomplete simulate a select drop down control by adding a drop down arrow after the input box which, when clicked,
-  * populates the drop down list with all search results to a maximum of numValues. This is similar to typing * into the box. Default false.
   * </li>
   * </ul>
   *
@@ -2623,11 +2621,10 @@ $('#$escaped').change(function(e) {
   * <li><b>occurrenceSensitivity</b><br/>
   * Optional. If set to true, then an occurrence sensitivity selector is included on each row.</li>
   * <li><b>mediaTypes</b><br/>
-  * Optional. Array of media types that can be uploaded. Choose from 
-  * TODO
-  * 
-  * 'photo','flickr','youtube',
-  * 'soundcloud'. Currently not supported for multi-column grids.</li>
+  * Optional. Array of media types that can be uploaded. Choose from Audio:SoundCloud, Image:Flickr,
+  * Image:Instagram, Image:Local, Image:Twitpic, Social:Facebook, Social:Twitter, Video:Youtube,
+  * Video:Vimeo.
+  * Currently not supported for multi-column grids.</li>
   * <li><b>resizeWidth</b><br/>
   * If set, then the image files will be resized before upload using this as the maximum pixels width.
   * </li>
