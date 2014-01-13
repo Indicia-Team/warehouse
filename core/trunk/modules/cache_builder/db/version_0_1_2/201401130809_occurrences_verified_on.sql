@@ -5,4 +5,5 @@ COMMENT ON COLUMN cache_occurrences.verified_on IS 'Date this record had it''s v
 UPDATE cache_occurrences co
 SET verified_on=o.verified_on
 FROM occurrences o
-WHERE o.id=co.id;
+WHERE o.id=co.id
+AND o.verified_on is not null;
