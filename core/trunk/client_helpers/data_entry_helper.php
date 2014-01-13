@@ -3611,12 +3611,12 @@ $('#".$options['id']." .species-filter').click(function(evt) {
     $('#filter-mode-selected').attr('checked','checked');
   });
   
-  $('#filter-popup-apply').click(function() {       
-    if ($('#filter-mode-default').attr('checked')===true) {
+  $('#filter-popup-apply').click(function() {
+    if ($('#filter-mode-default:checked').length>0) {
       applyFilterMode('default');
-    } else if ($('#filter-mode-selected').attr('checked')===true) {
+    } else if ($('#filter-mode-selected:checked').length>0) {
       applyFilterMode('selected', $('#filter-group').val()); 
-    } 
+    }
     ";
     if (!empty($options['usersPreferredGroups']))
       self::$javascript .= " else if ($('#filter-mode-user').attr('checked')==true) {
@@ -6873,7 +6873,8 @@ $('#".str_replace(':', '\\\\:', $attrOptions['id'])."').change(function(evt) {
   public static function extract_media_data($values, $modelName=null, $simpleFileInputs=false, $moveSimpleFiles=false) {
     $r = array();
     // legacy reasons, the model name might refer to _image model, rather than _medium. 
-    $modelName = preg_replace('/^([a-z_]*)_image$/', '${1}_medium', $modelName);
+    $modelName = preg_replace('/^([a-z_]*)_image/', '${1}_medium', $modelName);
+    $legacyModelName = preg_replace('/^([a-z_]*)_medium/', '${1}_image', $modelName);
     foreach ($values as $key => $value) {
       if (!empty($value)) {
         // If the field is a path, and the model name matches or we are not filtering on model name
@@ -6889,7 +6890,8 @@ $('#".str_replace(':', '\\\\:', $attrOptions['id'])."').change(function(evt) {
             $pathPos = strlen($key)-5;
           }
         }
-        if ($pathPos !==false && ($modelName === null || $modelName == substr($key, 0, strlen($modelName)))) {
+        if ($pathPos !==false && ($modelName === null || $modelName == substr($key, 0, strlen($modelName)) || 
+            $legacyModelName == substr($key, 0, strlen($legacyModelName)))) {
           $prefix = substr($key, 0, $pathPos);
           $r[] = array(
             // Id is set only when saving over an existing record.
