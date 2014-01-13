@@ -624,6 +624,7 @@ $config['occurrences']['update'] = "update cache_occurrences co
       location_name=case when o.confidential=true or o.sensitivity_precision is not null then null else coalesce(l.name, s.location_name) end,
       recorders = s.recorder_names,
       verifier = pv.surname || ', ' || pv.first_name,
+      verified_on = o.verified_on,
       images=images.list,
       training=o.training,
       location_id=s.location_id,
@@ -669,7 +670,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       taxon, authority, preferred_taxon, preferred_authority, default_common_name, 
       search_name, taxa_taxon_list_external_key, taxon_meaning_id, taxon_group_id, taxon_group,
       created_by_id, cache_created_on, cache_updated_on, certainty, location_name, recorders, 
-      verifier, images, training, location_id, input_form
+      verifier, verified_on, images, training, location_id, input_form
     )
   select distinct on (o.id) o.id, o.record_status, o.release_status, o.downloaded_flag, o.zero_abundance,
     su.website_id as website_id, su.id as survey_id, s.id as sample_id, su.title as survey_title,
@@ -708,6 +709,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
     case when o.confidential=true or o.sensitivity_precision is not null then null else coalesce(l.name, s.location_name) end,
     s.recorder_names,
     pv.surname || ', ' || pv.first_name,
+    o.verified_on,
     images.list,
     o.training,
     s.location_id,
