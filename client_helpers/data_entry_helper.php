@@ -1370,7 +1370,7 @@ $('#$escaped').change(function(e) {
   */
   public static function image_upload($options) {
     $options = self::check_options($options);
-    $pathField = $pathField = str_replace(array(':image',':medium'),'_medium:path', $options['fieldname']);
+    $pathField = str_replace(array(':image',':medium'),'_medium:path', $options['fieldname']);
     $alreadyUploadedFile = self::check_default_value($pathField);
     $options = array_merge(array(
       'pathFieldName' => $pathField,
@@ -6945,7 +6945,7 @@ $('#".str_replace(':', '\\\\:', $attrOptions['id'])."').change(function(evt) {
                 );
                 // record the new file name, also note it in the $_POST data so it can be tracked after a validation failure
                 $_FILES[$key]['name'] = $destination;
-                $pathField = str_replace(':medium','_medium:path', $key);
+                $pathField = str_replace(array(':medium',':image'),array('_medium:path','_image:path'), $key);
                 $_POST[$pathField] = $destination;
               }
             } else {
