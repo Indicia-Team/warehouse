@@ -380,45 +380,6 @@ class submission_builder extends helper_config {
   }  
  
   /**
-   * Interprets the $_FILES information and returns an array of files uploaded
-   * @param String $media_id Base name of the file entry in the $_FILES array e.g. occurrence:image.
-   * Multiple upload fields can exist on a form if they have a suffix 0f :0, :1 ... :n
-   * @access private
-   * @return Array of file details of the uploaded files.
-   */
-  private static function get_uploaded_files($media_id) {
-
-    $files = array();
-
-    if (array_key_exists($media_id, $_FILES)) {
-      //there is a single upload field
-      if($_FILES[$media_id]['name'] != '') {
-        //that field has a file
-        $files[] = $_FILES[$media_id];
-      }
-    }
-    elseif (array_key_exists($media_id .':0', $_FILES)) {
-      //there are multiple upload fields
-      $i = 0;
-      $key = $media_id .':'. $i;
-      do {
-        //loop through those fields
-        if($_FILES[$key]['name'] != '') {
-          //the field has a file
-          $files[] = $_FILES[$key];
-        }
-        $i++;
-        $key = $media_id .':'. $i;
-      } while (array_key_exists($key, $_FILES));
-    }
-    else {
-      //there are no upload fields so an empty array is returned
-    }
-
-    return $files;
-  }
-
-  /**
    * Returns a 3 character prefix representing an entity name that can have
    * custom attributes attached.
    * @param string $entity Entity name (location, sample, occurrence, taxa_taxon_list or person).
