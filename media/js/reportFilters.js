@@ -1104,7 +1104,7 @@ jQuery(document).ready(function($) {
       filter['filters_user:id']=indiciaData.filter.filters_user_id;
     }
     // If a new filter or admin mode, then also need to create a filters_users record.
-    url = (typeof indiciaData.filter.id==="undefined") || adminMode ? indiciaData.filterAndUserPostUrl : indiciaData.filterPostUrl;
+    url = (typeof indiciaData.filter.id==="undefined" || indiciaData.filter.id===null || adminMode) ? indiciaData.filterAndUserPostUrl : indiciaData.filterPostUrl;
     $.post(url, filter,
       function (data) {
         if (typeof data.error === 'undefined') {

@@ -121,7 +121,7 @@ class filter_when extends filter_base {
             'edited'=>lang::get('Last changed date'), 'verified'=>'Verification status change date')
     ));
     $r .= '</fieldset>';
-    $r .= '<fieldset class="exclusive"><legend>'.lang::get('Specify a date range for the records to include').'.</legend>';
+    $r .= '<fieldset class="exclusive"><legend>'.lang::get('Specify a date range for the records to include').'</legend>';
     $r .= data_entry_helper::date_picker(array(
       'label'=>lang::get('Records from'),
       'fieldname'=>'date_from',
@@ -131,7 +131,7 @@ class filter_when extends filter_base {
       'fieldname'=>'date_to',
     ));
     $r .= '</fieldset>';
-    $r .= '<fieldset class="exclusive" id="age"><legend>'.lang::get('Or, specify a maximum age for the records to include').'.</legend>';
+    $r .= '<fieldset class="exclusive" id="age"><legend>'.lang::get('Or, specify a maximum age for the records to include').'</legend>';
     $r .= data_entry_helper::text_input(array(
       'label'=>lang::get('Max. record age'),
       'helpText'=>'How old records can be before they are dropped from the report? Enter a number followed by the unit (days, weeks, months or years), e.g. "2 days" or "1 year".',
