@@ -167,14 +167,14 @@ class extension_notifications_centre {
       }
       //Submit the stucture for processing
       $response = data_entry_helper::forward_post_to('save', $submission, $auth['write_tokens']);
+      if (is_array($response) && array_key_exists('success', $response)) {
+        if ($count===1)
+          drupal_set_message(lang::get("1 notification has been removed."));
+        else
+          drupal_set_message(lang::get("{1} notifications have been removed.", $count));
+      } else 
+        drupal_set_message(print_r($response,true));
     }
-    if (is_array($response) && array_key_exists('success', $response)) {
-      if ($count===1)
-        drupal_set_message(lang::get("1 notification has been removed."));
-      else
-        drupal_set_message(lang::get("{1} notifications have been removed.", $count));
-    } else 
-      drupal_set_message(print_r($response,true));
   }
   
   /*
