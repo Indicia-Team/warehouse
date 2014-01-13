@@ -6913,7 +6913,8 @@ $('#".str_replace(':', '\\\\:', $attrOptions['id'])."').change(function(evt) {
     // Now look for image file inputs, called something like occurrence:medium[:n]
     if ($simpleFileInputs) {
       foreach($_FILES as $key => $file) {
-        if (substr($key, 0, strlen($modelName))==str_replace('_', ':', $modelName)) {
+        if (substr($key, 0, strlen($modelName))==str_replace('_', ':', $modelName)
+            || substr($key, 0, strlen($legacyModelName))==str_replace('_', ':', $legacyModelName)) {
           if ($file['error']=='1') {
             // file too big error dur to php.ini setting
             if (self::$validation_errors==null) self::$validation_errors = array();
