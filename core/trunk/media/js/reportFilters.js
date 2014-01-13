@@ -173,39 +173,77 @@ jQuery(document).ready(function($) {
     },
     when:{
       getDescription:function() {
-        var r=[];
-        if (indiciaData.filter.def.date_from && indiciaData.filter.def.date_to) {
-          r.push('Records between ' + indiciaData.filter.def.date_from + ' and ' + indiciaData.filter.def.date_to);
-        } else if (indiciaData.filter.def.date_from) {
-          r.push('Records on or after ' + indiciaData.filter.def.date_from);
-        } else if (indiciaData.filter.def.date_to) {
-          r.push('Records on or before ' + indiciaData.filter.def.date_to);
+        var r=[], dateType='recorded', dateFromField='date_from', dateToField='date_to', dateAgeField='date_age';
+        if (typeof indiciaData.filter.def.date_type!=="undefined") {
+          dateType = indiciaData.filter.def.date_type;
+          if (dateType!=='recorded') {
+            dateFromField = dateType + '_date_from';
+            dateToField = dateType + '_date_to';
+            dateAgeField = dateType + '_date_age';
+          }
         }
-        if (indiciaData.filter.def.date_age) {
-          r.push('Last ' + indiciaData.filter.def.date_age);
+        if (indiciaData.filter.def[dateFromField] && indiciaData.filter.def[dateToField]) {
+          r.push('Records '+dateType + ' between ' + indiciaData.filter.def[dateFromField] + ' and ' + indiciaData.filter.def[dateToField]);
+        } else if (indiciaData.filter.def[dateFromField]) {
+          r.push('Records '+dateType + ' on or after ' + indiciaData.filter.def[dateFromField]);
+        } else if (indiciaData.filter.def[dateToField]) {
+          r.push('Records '+dateType + ' on or before ' + indiciaData.filter[dateToField]);
+        }
+        if (indiciaData.filter.def[dateAgeField]) {
+          r.push('Records '+dateType + ' in last ' + indiciaData.filter.def[dateAgeField]);
         }
         return r.join('<br/>');
       },
       loadForm:function(context) {
-        // limit the date range that can be selected to the context's date range
-        var format=$("#date_from").datepicker( "option", "dateFormat");
-        if (context && context.date_from) {
-          $("#date_from").datepicker("option", "minDate", context.date_from);
-          $("#date_to").datepicker("option", "minDate", context.date_from);
-        } else {
-          $("#date_from").datepicker("option", "minDate", null);
-          $("#date_to").datepicker("option", "minDate", null);
+        var dateTypePrefix='';
+        if (typeof indiciaData.filter.def.date_type!=="undefined" && indiciaData.filter.def.date_type!=="recorded") {
+          dateTypePrefix = indiciaData.filter.def.date_type + '_';
         }
-        if (context && context.date_to) {
-          $("#date_from").datepicker("option", "maxDate", jQuery.datepicker.parseDate(format, context.date_to));
-          $("#date_to").datepicker("option", "maxDate", jQuery.datepicker.parseDate(format, context.date_to));
-        } else {
-          $("#date_from").datepicker("option", "maxDate", 0);
-          $("#date_to").datepicker("option", "maxDate", 0);
+        if (context && (context.date_from || context.date_to || context.date_age || 
+            context.input_date_from || context.input_date_to || context.input_date_age ||
+            context.edited_date_from || context.edited_date_to || context.edited_date_age ||
+            context.verified_date_from || context.verified_date_to || context.verified_date_age)) {
+          $('#controls-filter_when .context-instruct').show();
         }
-        if (context && context.date_age) {
-          $('#age-help span').html(context.date_age);
-          $('#age .context-instruct').show();
+        if (dateTypePrefix) {
+          // We need to load the default values for each control, as if prefixed then they won't autoload
+          if (typeof indiciaData.filter.def[dateTypePrefix + 'date_from']!=="undefined") {
+            $('#date_from').val(indiciaData.filter.def[dateTypePrefix + 'date_from']);
+          }
+          if (typeof indiciaData.filter.def[dateTypePrefix + 'date_age']!=="undefined") {
+            $('#date_to').val(indiciaData.filter.def[dateTypePrefix + 'date_to']);
+          }
+          if (typeof indiciaData.filter.def[dateTypePrefix + 'date_age']!=="undefined") {
+            $('#date_age').val(indiciaData.filter.def[dateTypePrefix + 'date_age']);
+          }
+        }
+      },
+      applyFormToDefinition:function() {
+        var dateTypePrefix='';
+        if (typeof indiciaData.filter.def.date_type!=="undefined" && indiciaData.filter.def.date_type!=="recorded") {
+          dateTypePrefix = indiciaData.filter.def.date_type + '_';
+        }
+        // make sure we clean up, especially if switching date filter type
+        delete indiciaData.filter.def.input_date_from;
+        delete indiciaData.filter.def.input_date_to;
+        delete indiciaData.filter.def.input_date_age;
+        delete indiciaData.filter.def.edited_date_from;
+        delete indiciaData.filter.def.edited_date_to;
+        delete indiciaData.filter.def.edited_date_age;
+        delete indiciaData.filter.def.verified_date_from;
+        delete indiciaData.filter.def.verified_date_to;
+        delete indiciaData.filter.def.verified_date_age;
+        // if the date filter type needs a prefix on the parameter field names, then copy the values from the
+        // date controls into the proper parameter field names
+        if (dateTypePrefix) {
+          indiciaData.filter.def[dateTypePrefix + 'date_from'] = indiciaData.filter.def.date_from;
+          indiciaData.filter.def[dateTypePrefix + 'date_to'] = indiciaData.filter.def.date_to;
+          indiciaData.filter.def[dateTypePrefix + 'date_age'] = indiciaData.filter.def.date_age;
+          // the date control values must NOT apply to the field record date in this case - we are doing a different
+          // type filter.
+          delete indiciaData.filter.def.date_from;
+          delete indiciaData.filter.def.date_to;
+          delete indiciaData.filter.def.date_age;
         }
       }
     },
@@ -711,7 +749,7 @@ jQuery(document).ready(function($) {
             grid[0].settings.origParams = $.extend({}, grid[0].settings.extraParams);
           }
           // merge in the filter
-          $.extend(grid[0].settings.extraParams, filterDef);
+          grid[0].settings.extraParams = $.extend({}, grid[0].settings.origParams, filterDef);
           if (applyNow) {
             // reload the report grid
             grid.ajaxload();
@@ -1066,7 +1104,7 @@ jQuery(document).ready(function($) {
       filter['filters_user:id']=indiciaData.filter.filters_user_id;
     }
     // If a new filter or admin mode, then also need to create a filters_users record.
-    url = (typeof filter.id==="undefined") || adminMode ? indiciaData.filterAndUserPostUrl : indiciaData.filterPostUrl;
+    url = (typeof indiciaData.filter.id==="undefined") || adminMode ? indiciaData.filterAndUserPostUrl : indiciaData.filterPostUrl;
     $.post(url, filter,
       function (data) {
         if (typeof data.error === 'undefined') {

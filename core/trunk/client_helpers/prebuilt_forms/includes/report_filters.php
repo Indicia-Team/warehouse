@@ -111,7 +111,17 @@ class filter_when extends filter_base {
    * Define the HTML required for this filter's UI panel.
    */
   public function get_controls($readAuth) {
-    $r = '<fieldset class="exclusive"><legend>'.lang::get('Specify a date range for the records to include').'.</legend>';
+    // additional helptext in case it is needed when a context is applied
+    $r = '<p class="helpText context-instruct">Please note that your access permissions are limiting the record dates available.</p>';
+    $r .= '<fieldset><legend>'.lang::get('Which date field to filter on').'</legend>';
+    $r .= data_entry_helper::select(array(
+      'label'=>lang::get('Date field'),
+      'fieldname'=>'date_type',
+      'lookupValues'=>array('recorded'=>lang::get('Field record date'),'input'=>lang::get('Input date'),
+            'edited'=>lang::get('Last changed date'), 'verified'=>'Verification status change date')
+    ));
+    $r .= '</fieldset>';
+    $r .= '<fieldset class="exclusive"><legend>'.lang::get('Specify a date range for the records to include').'.</legend>';
     $r .= data_entry_helper::date_picker(array(
       'label'=>lang::get('Records from'),
       'fieldname'=>'date_from',
@@ -128,9 +138,6 @@ class filter_when extends filter_base {
       'fieldname'=>'date_age',
       'validation' => array('regex[/^[0-9]+\s*(day|week|month|year)(s)?$/]')
     ));
-    // additional helptext in case it is needed when a context is applied
-    $r .= '<p class="helpText context-instruct" id="age-help">'.lang::get('Note that you are limited to records from the last <span></span> '.
-        'and older records will always be excluded no matter what you set here.').'</p>';
     $r .= '</fieldset>';
     return $r;
   }  
@@ -665,7 +672,7 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
   foreach ($filterModules as $category => $list) {
     foreach ($list as $moduleName=>$module) {
       $hiddenStuff .= "<div style=\"display: none\"><form id=\"controls-$moduleName\" action=\"#\" class=\"filter-controls\"><fieldset>" . $module->get_controls($readAuth, $options) . 
-        '<button class="fb-close">Cancel</button>' .
+        '<button class="fb-close" type="button">Cancel</button>' .
         '<button class="fb-apply" type="submit">Apply</button></fieldset></form></div>';
       $shortName=str_replace('filter_', '', $moduleName);
       report_helper::$javascript .= "indiciaData.lang.NoDescription$shortName='".lang::get('Click to Filter '.ucfirst($shortName))."';\n";
