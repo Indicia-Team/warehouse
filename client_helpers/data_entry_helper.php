@@ -5679,10 +5679,9 @@ if (errors$uniq.length>0) {
       $postargs = 'submission='.urlencode(json_encode($submission));
       // passthrough the authentication tokens as POST data. Use parameter writeTokens, or current $_POST if not supplied.
       if ($writeTokens) {
-        $postargs .= '&auth_token='.$writeTokens['auth_token'];
-        $postargs .= '&nonce='.$writeTokens['nonce'];
-        if (isset($writeTokens['persist_auth']) && $writeTokens['persist_auth'])
-          $postargs .= '&persist_auth=true';
+        foreach($writeTokens as $token => $value){
+          $postargs .= '&'.$token.'='.($value === true ? 'true' : ($value === false ? 'false' : $value));
+        } // this will do auth_token, nonce, and persist_auth
       } else {
         if (array_key_exists('auth_token', $_POST))
           $postargs .= '&auth_token='.$_POST['auth_token'];
