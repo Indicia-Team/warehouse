@@ -5712,7 +5712,7 @@ if (errors$uniq.length>0) {
         // submission succeeded. So we also need to move the images to the final location
         foreach ($media as $item) {
           // no need to resend an existing image, or a media link, just local files.
-          if ($item['media_type']==='Image:Local' && (!isset($item['id']) || empty($item['id']))) {
+          if ((empty($item['media_type']) || $item['media_type']==='Image:Local') && (!isset($item['id']) || empty($item['id']))) {
             if (!isset(self::$final_image_folder) || self::$final_image_folder=='warehouse') {
               // Final location is the Warehouse
               // @todo Set PERSIST_AUTH false if last file
