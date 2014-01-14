@@ -907,9 +907,9 @@ class XMLReportReader_Core implements ReportReader
             'description'=>'Release status of the record',
             'lookup_values'=>'R:Released,U:Unreleased because part of a project that has not yet released the records,P:Recorder has requested a precheck before release,A:All',
             'wheres' => array(
-              array('value'=>'R', 'operator'=>'equal', 'sql'=>"o.release_status='R'"),
-              array('value'=>'U', 'operator'=>'equal', 'sql'=>"o.release_status='U'"),
-              array('value'=>'P', 'operator'=>'equal', 'sql'=>"o.release_status='P'"),
+              array('value'=>'R', 'operator'=>'equal', 'sql'=>"(o.release_status='R' or o.release_status is null)"),
+              array('value'=>'U', 'operator'=>'equal', 'sql'=>"(o.release_status='U' or o.release_status is null)"),
+              array('value'=>'P', 'operator'=>'equal', 'sql'=>"(o.release_status='P' or o.release_status is null)"),
               // The all filter does not need any SQL
             ),
         ),
