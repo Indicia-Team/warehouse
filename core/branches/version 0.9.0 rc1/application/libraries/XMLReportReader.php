@@ -836,6 +836,42 @@ class XMLReportReader_Core implements ReportReader
               array('value'=>'', 'operator'=>'', 'sql'=>"o.cache_created_on>now()-'#input_date_age#'::interval")
             )
         ),
+        'edited_date_from' => array('datatype'=>'date', 'default'=>'', 'display'=>'Last update date from',
+            'description'=>'Last update date of first record to include in the output',
+            'wheres' => array(
+              array('value'=>'', 'operator'=>'', 'sql'=>"('#edited_date_from#'='Click here' OR o.cache_updated_on >= CAST('#edited_date_from#' as date))")
+            )
+        ),
+        'edited_date_to' => array('datatype'=>'date', 'default'=>'', 'display'=>'Last update date to', 
+            'description'=>'Last update date of last record to include in the output',
+            'wheres' => array(
+              array('value'=>'', 'operator'=>'', 'sql'=>"('#edited_date_to#'='Click here' OR o.cache_updated_on < CAST('#edited_date_to#' as date)+'1 day'::interval)")
+            )
+        ),
+        'edited_date_age' => array('datatype'=>'text', 'default'=>'', 'display'=>'Last update date from time ago',
+            'description'=>'E.g. enter "1 week" or "3 days" to define the how long ago records can be last updated before they are dropped from the report.',
+            'wheres' => array(
+              array('value'=>'', 'operator'=>'', 'sql'=>"o.cache_updated_on>now()-'#edited_date_age#'::interval")
+            )
+        ),
+        'verified_date_from' => array('datatype'=>'date', 'default'=>'', 'display'=>'Verification status change date from',
+            'description'=>'Verification status change date of first record to include in the output',
+            'wheres' => array(
+              array('value'=>'', 'operator'=>'', 'sql'=>"('#verified_date_from#'='Click here' OR o.verified_on >= CAST('#verified_date_from#' as date))")
+            )
+        ),
+        'verified_date_to' => array('datatype'=>'date', 'default'=>'', 'display'=>'Verification status change date to', 
+            'description'=>'Verification status change date of last record to include in the output',
+            'wheres' => array(
+              array('value'=>'', 'operator'=>'', 'sql'=>"('#verified_date_to#'='Click here' OR o.verified_on < CAST('#verified_date_to#' as date)+'1 day'::interval)")
+            )
+        ),
+        'verified_date_age' => array('datatype'=>'text', 'default'=>'', 'display'=>'Verification status change date from time ago',
+            'description'=>'E.g. enter "1 week" or "3 days" to define the how long ago records can have last had their status changed before they are dropped from the report.',
+            'wheres' => array(
+              array('value'=>'', 'operator'=>'', 'sql'=>"o.verified_on>now()-'#verified_date_age#'::interval")
+            )
+        ),
         'quality' => array('datatype'=>'lookup', 'default'=>'', 'display'=>'Quality', 
             'description'=>'Minimum quality of records to include', 
             'lookup_values'=>'=V:Verified records only,C:Recorder was certain,L:Recorder thought the record was at least likely,P:Pending verification,' .
@@ -871,9 +907,9 @@ class XMLReportReader_Core implements ReportReader
             'description'=>'Release status of the record',
             'lookup_values'=>'R:Released,U:Unreleased because part of a project that has not yet released the records,P:Recorder has requested a precheck before release,A:All',
             'wheres' => array(
-              array('value'=>'R', 'operator'=>'equal', 'sql'=>"o.release_status='R'"),
-              array('value'=>'U', 'operator'=>'equal', 'sql'=>"o.release_status='U'"),
-              array('value'=>'P', 'operator'=>'equal', 'sql'=>"o.release_status='P'"),
+              array('value'=>'R', 'operator'=>'equal', 'sql'=>"(o.release_status='R' or o.release_status is null)"),
+              array('value'=>'U', 'operator'=>'equal', 'sql'=>"(o.release_status='U' or o.release_status is null)"),
+              array('value'=>'P', 'operator'=>'equal', 'sql'=>"(o.release_status='P' or o.release_status is null)"),
               // The all filter does not need any SQL
             ),
         ),
