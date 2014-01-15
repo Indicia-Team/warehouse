@@ -6807,7 +6807,7 @@ $('#".str_replace(':', '\\\\:', $attrOptions['id'])."').change(function(evt) {
               $ctrl = 'select';
             }
           }
-          if ($item['multi_value']==='t') 
+          if (isset($item['multi_value']) && $item['multi_value']==='t') 
             $attrOptions['multiselect']=true;
           if(array_key_exists('lookUpKey', $options)){
             $lookUpKey = $options['lookUpKey'];
