@@ -83,12 +83,15 @@ jQuery(document).ready(function($) {
           $('<span class=\"deh-required\">*</span>').insertAfter('#smpAttr\\:'+indiciaData.sea_state_attr_id)
           $('#smpAttr\\:'+indiciaData.visibility_attr_id).rules('add', {required:true});
           $('<span class=\"deh-required\">*</span>').insertAfter('#smpAttr\\:'+indiciaData.visibility_attr_id)
-          $('#smpAttr\\:'+indiciaData.cetaceans_seen_attr_id).rules('add', {required:true});
-          $('<span class=\"deh-required\">*</span>').insertAfter('#smpAttr\\:'+indiciaData.cetaceans_seen_attr_id)
-          $('#smpAttr\\:'+indiciaData.non_cetacean_marine_animals_seen_attr_id).rules('add', {required:true});
-          $('<span class=\"deh-required\">*</span>').insertAfter('#smpAttr\\:'+indiciaData.non_cetacean_marine_animals_seen_attr_id)
-          $('#smpAttr\\:'+indiciaData.feeding_birds_seen_attr_id).rules('add', {required:true});
-          $('<span class=\"deh-required\">*</span>').insertAfter('#smpAttr\\:'+indiciaData.feeding_birds_seen_attr_id)
+          //Note: Use the selector type "name starts with" because selecting by id doesn't work if a radio button pair is used because an extra 0 and 1
+          //would appear at the end of the ids to keep the ids for the Yes and No radio buttons unqiue. This would break the selector if we had used an exact selector like $('#smpAttr\\:' + indiciaData.cetaceans_seen_attr_id).
+          $('[name^=\"smpAttr\\:' + indiciaData.cetaceans_seen_attr_id + '\"]').rules('add', {required:true});
+          //Need to add the red star mandatory field icon after the second option (which is "No"), the second option is at index 1
+          $('<span class=\"deh-required\">*</span>').insertAfter('[for=\"smpAttr\\:' + indiciaData.cetaceans_seen_attr_id + '\\:1' + '\"]')
+          $('[name^=\"smpAttr\\:' + indiciaData.non_cetacean_marine_animals_seen_attr_id + '\"]').rules('add', {required:true});
+          $('<span class=\"deh-required\">*</span>').insertAfter('[for=\"smpAttr\\:' + indiciaData.non_cetacean_marine_animals_seen_attr_id + '\\:1' + '\"]')
+          $('[name^=\"smpAttr\\:' + indiciaData.feeding_birds_seen_attr_id + '\"]').rules('add', {required:true});
+          $('<span class=\"deh-required\">*</span>').insertAfter('[for=\"smpAttr\\:' + indiciaData.feeding_birds_seen_attr_id + '\\:1' + '\"]')
           $('#smpAttr\\:'+indiciaData.number_of_people_spoken_to_during_watch_attr_id).rules('add', {required:true});
           $('<span class=\"deh-required\">*</span>').insertAfter('#smpAttr\\:'+indiciaData.number_of_people_spoken_to_during_watch_attr_id)
         }
@@ -140,7 +143,7 @@ jQuery(document).ready(function($) {
         $('#obSelect\\:' + indiciaData.observer_name_attr_id + '\\:fullname_surname_first').remove();
         $('#obSelect\\:' + indiciaData.observer_name_attr_id + '_lock').remove();
         $('[for=\"obSelect\\:' + indiciaData.observer_name_attr_id + '\\:fullname_surname_first\"]').remove();
-        
+        $('#observer-fieldset').hide();
         $('#smpAttr\\:' + indiciaData.observer_name_attr_id).hide();
         if (!$('#smpAttr\\:' + indiciaData.observer_name_attr_id).val() && !indiciaData.sample_id) {
           $('#smpAttr\\:' + indiciaData.observer_name_attr_id).val(indiciaData.person_name);
@@ -186,14 +189,15 @@ jQuery(document).ready(function($) {
       }, indiciaData.emailPhoneMessage
     );
     
-    //Only the normal (not adhoc) recording form, the "New Step" button is only displayed if the Cetaceans Seen checkbox is selected.
+    //Only on the normal (not adhoc) recording form, the "New Step" button is only displayed if the Cetaceans Seen option is yes.
     cetaceans_control_next_step = function cetaceans_control_next_step() {
       //By default we show the save button
       $('[id=\"tab-next\"]').hide();
       $('.right.buttons').append('<input id=\"save-button\" class=\"indicia-button inline-control tab-submit\" type=\"submit\" value=\"Save\">');
-      //Show Next Step button instead of save if Cetaceans Seen is yes. Do this on page load but also on change of the checkbox.
-      $('#smpAttr\\:' + indiciaData.cetaceans_seen_attr_id).change(function() {
-        if ($('#smpAttr\\:' + indiciaData.cetaceans_seen_attr_id + ' option:selected').text()==='Yes') {
+      //Show Next Step button instead of save if Cetaceans Seen is yes. Do this on page load but also on change     
+      $('[name^=\"smpAttr\\:' + indiciaData.cetaceans_seen_attr_id + '\"]').change(function() {
+        //Need "\\:0" at the end of the selector as it is a pair of radio button options and we want the first one which is "Yes"
+        if ($('#smpAttr\\:' + indiciaData.cetaceans_seen_attr_id + '\\:0').is(':checked')) {
           $('[id=\"tab-next\"]').show();
           $('[id=\"save-button\"]').hide();
         } else {     
@@ -201,7 +205,8 @@ jQuery(document).ready(function($) {
           $('[id=\"save-button\"]').show();
         }
       });
-      if ($('#smpAttr\\:' + indiciaData.cetaceans_seen_attr_id + ' option:selected').text()==='Yes') {
+      //Need "\\:0" at the end of the selector as it is a pair of radio button options and we want the first one which is "Yes"
+      if ($('#smpAttr\\:' + indiciaData.cetaceans_seen_attr_id + '\\:0').is(':checked')) {
         $('[id=\"tab-next\"]').show();
         $('[id=\"save-button\"]').hide();
       } else {     
