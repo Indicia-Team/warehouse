@@ -206,9 +206,9 @@ function get_user_profile_hidden_inputs(&$attributes, $args, $exists, $readAuth)
   $hiddens = '';
   global $user;
   $logged_in = $user->uid > 0;
+  $version6 = (substr(VERSION, 0, 1) == '6');
   // If logged in, output some hidden data about the user
-  if (isset($args['copyFromProfile']) && $args['copyFromProfile']==true) {
-    $version6 = (substr(VERSION, 0, 1) == '6');
+  if (isset($args['copyFromProfile']) && $args['copyFromProfile']==true) {  
     if($version6) {
       // In version 6 the profile module holds user setttings.
       profile_load_all_profile($user);
