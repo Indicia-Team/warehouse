@@ -105,6 +105,7 @@ jQuery(document).ready(function($) {
       $('#smpAttr\\:'+ indiciaData.wdcs_newsletter_attr_id).attr('style', style='display: none;');
       //hide the field label 
       $('[for=\"smpAttr\\:' + indiciaData.wdcs_newsletter_attr_id + '\"]').attr('style', style='display: none;');
+      $('#smpAttr\\:'+ indiciaData.wdcs_newsletter_attr_id).nextAll('.helpText:first').remove();
     }
   }
 
