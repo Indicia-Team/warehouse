@@ -119,8 +119,8 @@
         or recorders = 'me' 
         or recorders = 'myself' then cast(p.id as varchar(20)) else 'unknown' end" />
     <column name='determiner_person_id' sql="case 
-        when coalesce(det_first_val.text_value || ' ' || det_last_val.value, det_full_val.text_value) = p.first_name || ' ' || p.surname 
-        or coalesce(det_last_val.text_value || ', ' || det_first_val.value, det_full_val.text_value) = p.surname || ', ' || p.first_name 
+        when coalesce(det_first_val.text_value || ' ' || det_last_val.text_value, det_full_val.text_value) = p.first_name || ' ' || p.surname 
+        or coalesce(det_last_val.text_value || ', ' || det_first_val.text_value, det_full_val.text_value) = p.surname || ', ' || p.first_name 
         or det_full_val.text_value = 'myself'
         or det_full_val.text_value = 'me' then cast(p.id as varchar(20)) else 'unknown' end" />
   </columns>
