@@ -30,11 +30,11 @@
     <order_by>co.id DESC</order_by>
   </order_bys>
   <params>
-    <param name="date_from" display="Date From" datatype="date" description="Filter by record observation date">
-      <where>('#date_from#'='Click here' OR co.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))</where>
+    <param name="date_from" display="Date From" datatype="date" description="Filter by record added or updated date">
+      <where>('#date_from#'='Click here' OR o.updated_on &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))</where>
     </param>
-    <param name="date_to" display="Date To" datatype="date" description="Filter by record observation date">
-      <where>('#date_to#'='Click here' OR co.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))</where>
+    <param name="date_to" display="Date To" datatype="date" description="Filter by record added or updated date">
+      <where>('#date_to#'='Click here' OR o.updated_on &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))</where>
     </param>
     <param name='quality' display='Data quality' description='Quality level required of data to be included in the map.' datatype='lookup' 
             lookup_values='V:Data must be verified,C:Data must be verified or certain,L:Data must be at least likely,!D:Include anything not dubious or rejected,!R:Include anything not rejected'>
@@ -57,7 +57,7 @@
     <param name='location_id' display='Location' description='Provide the location to display records for' datatype='lookup' emptyvalue="0"
         population_call='direct:location:id:name' />
     <param name="ownLocality" display="My locality only?" datatype="checkbox">
-      <join value="1">JOIN locations lfilter ON st_intersects(lfilter.boundary_geom, co.public_geom) AND lfilter.id=#location_id#</join>  
+      <join value="1">JOIN index_locations_samples lfilter ON lfilter.sample_id=o.sample_id and lfilter.location_id=#location_id#</join> 
     </param>
     <param name="taxon_groups" display="Taxon Groups" description="List of taxon group IDs to view data for" datatype="text" emptyvalue="0"/>
     <param name="ownGroups" display="My species groups only?" datatype="checkbox">      
