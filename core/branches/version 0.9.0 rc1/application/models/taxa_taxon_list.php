@@ -93,12 +93,6 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
     }
   }
 
-  public function preSubmit() {
-    $this->submission['fields']['allow_data_entry'] = array('value' => (isset($this->submission['fields']['allow_data_entry']) ? 't' : 'f'));
-
-    return parent::preSubmit();
-  }
-
   /**
   * Overrides the postSubmit function to add in synonomies and common names as well as search codes. This only applies
   * when adding a preferred name, not a synonym or common name.
