@@ -114,9 +114,14 @@
     <column name='belongs_to_user' display='Belongs to User' sql="CASE CAST(co.created_by_id AS character varying) WHEN '#currentUser#' THEN true ELSE false END" visible="false" />
     <column name='certainty' sql="CASE co.certainty WHEN 'C' THEN 'Certain' WHEN 'L' THEN 'Likely' WHEN 'U' THEN 'Uncertain' END" />
     <!-- the following can only be filled in for sure if we have an exact match with the recorder, since we only know the record created by ID.-->
-    <column name='recorder_person_id' sql="case when co.recorders = p.surname || ', ' || p.first_name or co.recorders = p.first_name || ' ' || p.surname then cast(p.id as varchar(20)) else 'unknown' end" />
-    <column name='determiner_person_id' sql="case when co.recorders = det_last_val.text_value || ', ' || det_first_val.text_value 
-        or co.recorders = det_first_val.text_value || ' ' || det_last_val.text_value 
-        or co.recorders = det_full_val.text_value then cast(p.id as varchar(20)) else 'unknown' end" />
+    <column name='recorder_person_id' sql="case when co.recorders = p.surname || ', ' || p.first_name 
+        or co.recorders = p.first_name || ' ' || p.surname 
+        or recorders = 'me' 
+        or recorders = 'myself' then cast(p.id as varchar(20)) else 'unknown' end" />
+    <column name='determiner_person_id' sql="case 
+        when coalesce(det_first_val.text_value || ' ' || det_last_val.value, det_full_val.text_value) = p.first_name || ' ' || p.surname 
+        or coalesce(det_last_val.text_value || ', ' || det_first_val.value, det_full_val.text_value) = p.surname || ', ' || p.first_name 
+        or det_full_val.text_value = 'myself'
+        or det_full_val.text_value = 'me' then cast(p.id as varchar(20)) else 'unknown' end" />
   </columns>
 </report>
