@@ -1287,8 +1287,8 @@ class ORM extends ORM_Core {
             // so that we can mark-delete the ones that are not in the submission.
             if ($attrDef->multi_value=='t' && count($arr)) {
               if (!isset($multiValueData["attr:$attrId"]))
-                $multiValueData["attr:$attrId"]=array();
-              $multiValueData["attr:$attrId"][]=$value;
+                $multiValueData["attr:$attrId"]=array('attrId'=>$attrId, 'attrDef'=>$attrDef, 'values'=>array());
+              $multiValueData["attr:$attrId"]['values'][]=$value;
             }
             if (!$this->createAttributeRecord($attrId, $valueId, $value, $attrDef)) 
               return false;
@@ -1296,26 +1296,27 @@ class ORM extends ORM_Core {
         }
         // delete any old values from a mult-value attribute
         if (!empty($multiValueData)) {
-          switch ($attrDef->data_type) {
-            case 'I': 
-            case 'L':
-              $vf = 'int_value';
-              break;
-            case 'F':
-              $vf = 'float_value';
-              break;
-            case 'D':
-            case 'V':
-              $vf = 'date_start_value';
-              break;
-            default:
-              $vf = 'text_value';
-          }
           // If we did any multivalue updates for existing records, then any attributes whose values were not included in the submission must be removed.
-          foreach ($multiValueData as $attr => $valsToKeep) {
-            $this->db->from($this->object_name.'_attribute_values')->set(array('deleted'=>'t', 'updated_on'=>date("Ymd H:i:s")))
-                ->where(array($this->object_name.'_attribute_id'=>$attrId, $this->object_name.'_id'=>$this->id, 'deleted'=>'f'))
-                ->notin('int_value', $valsToKeep)
+          // We may have more than one multivalue field in the record, each of a differnet type
+          foreach ($multiValueData as $attr => $spec) {
+            switch ($spec['attrDef']->data_type) {
+              case 'I': 
+              case 'L':
+                $vf = 'int_value';
+                break;
+              case 'F':
+                $vf = 'float_value';
+                break;
+              case 'D':
+              case 'V':
+                $vf = 'date_start_value';
+                break;
+              default:
+                $vf = 'text_value';
+            }
+          	$this->db->from($this->object_name.'_attribute_values')->set(array('deleted'=>'t', 'updated_on'=>date("Ymd H:i:s")))
+                ->where(array($this->object_name.'_attribute_id'=>$spec['attrId'], $this->object_name.'_id'=>$this->id, 'deleted'=>'f'))
+                ->notin($vf, $spec['values'])
                 ->update();
           }
         }
