@@ -2082,14 +2082,14 @@ else
    * @param string $tabAlias ID of the tab's div if this is being loaded onto a div.
    */
   protected static function occurrence_photo_input($readAuth, $options, $tabAlias, $args) {
-    $defaults = array(
+    $opts = array(
       'table'=>'occurrence_image',
       'label'=>lang::get('Upload your photos'),
       'caption'=>lang::get('Photos'),
       'resizeWidth' => 1600,
       'resizeHeight' => 1600,
+      'readAuth' => $readAuth
     );
-    $opts = array('readAuth'=>$readAuth);
     if ($args['interface']!=='one_page')
       $opts['tabDiv']=$tabAlias;
     foreach ($options as $key => $value) {
