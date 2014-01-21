@@ -324,8 +324,10 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           'fieldname'=>'extra_list_id',
           'label'=>'Extra Species List',
           'helpText'=>'The second species list that species can be selected from. This list is available for additional '.
-              'taxa being added to the grid when doing grid based data entry. It is not used when the form is configured '.
-              'to allow a single occurrence to be input at a time.',
+              'taxa being added to the grid when doing grid based data entry. When using the single record input mode, if you '.
+              'provide a list here as well as in the Species List option above, then both will be available for selection from. '.
+              'You might like to use this when you need to augment the species available from a main species list with a few '.
+              'additional specialist taxa for example.',
           'type'=>'select',
           'table'=>'taxon_list',
           'valueField'=>'id',
@@ -1404,12 +1406,12 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    */
   protected static function get_control_species_single($auth, $args, $extraParams, $options) {
     $r = '';
-    if ($args['extra_list_id']=='')
+    if ($args['extra_list_id']==='' && $args['list_id']!=='')
       $extraParams['taxon_list_id'] = $args['list_id'];
-    // @todo At the moment the controls do not support 2 lists. So use just the extra list. Should
-    // update to support 2 lists. This is an edge case anyway.
-    else
-      $extraParams['taxon_list_id'] = empty($args['extra_list_id']) ? $args['list_id'] : $args['extra_list_id'];
+    elseif ($args['extra_list_id']!=='' && $args['list_id']==='')
+      $extraParams['taxon_list_id'] = $args['extra_list_id'];
+    elseif ($args['extra_list_id']!=='' && $args['list_id']!=='')
+      $extraParams['query'] = json_encode(array('in'=>array('taxon_list_id'=>array($args['list_id'],$args['extra_list_id']))));
     if (isset($options['taxonGroupSelect']) && $options['taxonGroupSelect']) {
       $label = isset($options['taxonGroupSelectLabel']) ? $options['taxonGroupSelectLabel'] : 'Species Group';
       $helpText = isset($options['taxonGroupSelectHelpText']) ? $options['taxonGroupSelectHelpText'] : 'Choose which species group you want to pick a species from.';
