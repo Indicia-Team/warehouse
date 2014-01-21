@@ -21,4 +21,4 @@ CREATE OR REPLACE VIEW detail_locations AS
    JOIN indicia.users u ON u.id = l.updated_by_id
    LEFT JOIN indicia.locations_websites lw ON l.id = lw.location_id AND lw.deleted = FALSE
    LEFT JOIN indicia.locations p ON p.id = l.parent_id
-  WHERE l.deleted = false ;
+  WHERE l.deleted = false AND (l.public=TRUE OR lw.website_id IS NOT NULL);
