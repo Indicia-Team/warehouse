@@ -789,6 +789,10 @@ var simple_tooltip;
             url += '&' + field + '=' + $(input).val();
           }
         });
+        $.each(div.settings.extraParams, function(field, val) {
+          // strip any prior values out before replacing with the latest filter settings
+          url = url.replace(new RegExp(field + '=(^&)*&?'), '') + '&' + field + '=' + val;
+        });
         window.location=url;
       });
       
