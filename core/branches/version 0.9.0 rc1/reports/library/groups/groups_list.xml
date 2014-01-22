@@ -35,7 +35,8 @@
         datatype="text" default="">
       <join>JOIN group_relations grfrom ON grfrom.to_group_id=g.id AND grfrom.from_group_id=#from_group_id# AND grfrom.deleted=false</join>      
     </param>
-    <param name="pending_path" display="Handle pending requests page path" description="Path to the page which will let admins handle pending requests, e.g. /groups/pending?group_id=" datatype="text" />
+    <param name="pending_path" display="Handle pending requests page path" description="Path to the page which will let admins handle pending requests, e.g. /groups/pending?group_id=" 
+        datatype="text" default="" />
   </params>
   <columns>
     <column name="id" visible="false" sql="g.id" datatype="integer" in_count="true" />
@@ -51,6 +52,6 @@
     <column name="private_records" display="Records released" sql="not g.private_records" datatype="boolean" />
     <column name="role" display="My role" sql="case when gu.administrator=true then 'Administrator' when gu.id is not null and gu.pending=false then 'Member' when gu.id is not null and gu.pending=true then 'Awaiting approval' else 'Non-member' end" datatype="boolean" />
     <column name="joining_method" display="Can anyone join?" sql="case g.joining_method when 'P' then 'Yes' when 'R' then 'By request only' when 'I' then 'By invite only' end" datatype="text" />
-    <column name="members" display="Members" sql="count(DISTINCT guc.user_id)::varchar || case when count(DISTINCT gucp.user_id)>0 and gu.administrator=true then ' (&lt;a href=&quot;#pending_path#' || g.id || '&quot;&gt;' || count(DISTINCT gucp.user_id)::varchar || ' pending&lt;/a&gt;)' else '' end" datatype="text" aggregate="true" />
+    <column name="members" display="Members" sql="count(DISTINCT guc.user_id)::varchar || case when count(DISTINCT gucp.user_id)>0 and gu.administrator=true and '#pending_path#'&lt;&gt;'' then ' (&lt;a href=&quot;#pending_path#' || g.id || '&quot;&gt;' || count(DISTINCT gucp.user_id)::varchar || ' pending&lt;/a&gt;)' else '' end" datatype="text" aggregate="true" />
   </columns>
 </report>
