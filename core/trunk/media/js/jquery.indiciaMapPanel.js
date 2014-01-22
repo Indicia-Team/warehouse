@@ -1226,7 +1226,8 @@ mapLocationSelectedHooks = [];
       //if they want to replace the previous feature when they have the same type.
       //This allows us to have multiple layers of different types that don't interfere with each other.
       $.each(evt.feature.layer.features, function(idx, feature) {
-        if (feature!==evt.feature && feature.attributes.type===evt.feature.attributes.type) {
+        // replace features of the same type, or allow a boundary to be replaced by a queryPolygon
+        if (feature!==evt.feature && (feature.attributes.type===evt.feature.attributes.type || feature.attributes.type==='boundary')) {
           oldFeatures.push(feature);
         }
       });   
