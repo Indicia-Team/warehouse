@@ -3,7 +3,8 @@
   <query website_filter_field="g.website_id">
     SELECT #columns#
     FROM groups g
-    LEFT JOIN groups_users guc ON guc.group_id=g.id AND guc.deleted=false
+    LEFT JOIN groups_users guc ON guc.group_id=g.id AND guc.deleted=false and guc.pending=false
+    LEFT JOIN groups_users gucp ON gucp.group_id=g.id AND gucp.deleted=false and gucp.pending=true
     LEFT JOIN groups_users gu ON gu.group_id=g.id AND gu.deleted=false AND gu.user_id=#currentUser#
     #joins#
     WHERE g.deleted = false
@@ -34,19 +35,22 @@
         datatype="text" default="">
       <join>JOIN group_relations grfrom ON grfrom.to_group_id=g.id AND grfrom.from_group_id=#from_group_id# AND grfrom.deleted=false</join>      
     </param>
+    <param name="pending_path" display="Handle pending requests page path" description="Path to the page which will let admins handle pending requests, e.g. /groups/pending?group_id=" datatype="text" />
   </params>
   <columns>
     <column name="id" visible="false" sql="g.id" datatype="integer" in_count="true" />
     <column name="title" display="Name" sql="g.title" datatype="text" />
     <column name="description" display="Description" sql="g.description" datatype="text" />
-    <column name="administrator" display="Admin" sql="gu.id is not null  AND gu.pending=false AND gu.administrator=true" datatype="boolean" visible="false" />
+    <column name="administrator" display="Admin" sql="gu.id is not null AND gu.pending=false AND gu.administrator=true" datatype="boolean" visible="false" />
+    <!-- following is required to meet group by requirements -->
+    <column name="administrator_raw" display="Admin" sql="gu.administrator" datatype="boolean" visible="false" />
     <column name="pending" display="Pending" sql="gu.id is not null AND gu.pending=true" datatype="boolean" visible="false" />
     <column name="member" display="Member" sql="gu.id is not null AND gu.pending=false" datatype="boolean" visible="false" />
     <column name="nonmember" display="Non-member" sql="gu.id is null or gu.pending=false" datatype="boolean" visible="false" />
     <column name="canrequestorjoin" display="Can request membership or join" sql="gu.id is null and g.joining_method in ('R','P')" datatype="boolean" visible="false" />
     <column name="private_records" display="Records released" sql="not g.private_records" datatype="boolean" />
-    <column name="role" display="Role" sql="case when gu.administrator=true then 'Administrator' when gu.id is not null and gu.pending=false then 'Member' when gu.id is not null and gu.pending=true then 'Awaiting approval' end" datatype="boolean" />
-    <column name="joining_method" display="Joining method" sql="case g.joining_method when 'P' then 'Public' when 'R' then 'By request' when 'I' then 'Invite only' end" datatype="text" />
-    <column name="members" display="Members" sql="count(DISTINCT guc.user_id)" datatype="integer" aggregate="true" />
+    <column name="role" display="My role" sql="case when gu.administrator=true then 'Administrator' when gu.id is not null and gu.pending=false then 'Member' when gu.id is not null and gu.pending=true then 'Awaiting approval' else 'Non-member' end" datatype="boolean" />
+    <column name="joining_method" display="Can anyone join?" sql="case g.joining_method when 'P' then 'Yes' when 'R' then 'By request only' when 'I' then 'By invite only' end" datatype="text" />
+    <column name="members" display="Members" sql="count(DISTINCT guc.user_id)::varchar || case when count(DISTINCT gucp.user_id)>0 and gu.administrator=true then ' (&lt;a href=&quot;#pending_path#' || g.id || '&quot;&gt;' || count(DISTINCT gucp.user_id)::varchar || ' pending&lt;/a&gt;)' else '' end" datatype="text" aggregate="true" />
   </columns>
 </report>
