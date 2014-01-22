@@ -790,8 +790,10 @@ var simple_tooltip;
           }
         });
         $.each(div.settings.extraParams, function(field, val) {
-          // strip any prior values out before replacing with the latest filter settings
-          url = url.replace(new RegExp(field + '=(^&)*&?'), '') + '&' + field + '=' + val;
+          if (field.match(/^[a-zA-Z_]+$/)) { // filter out rubbish in the extraParams
+            // strip any prior values out before replacing with the latest filter settings
+            url = url.replace(new RegExp(field + '=[^&]*&?'), '') + '&' + field + '=' + encodeURIComponent(val);
+          }
         });
         window.location=url;
       });
