@@ -171,7 +171,7 @@ class iform_group_edit {
       'include_members'=>false, 
       'filter_types' => '{"":"what,where,when","Advanced":"source,quality"}'
     ), $args);
-    $args['filter_types']=json_decode($args['filter_types']);
+    $args['filter_types']=json_decode($args['filter_types'], true);
     $reloadPath = self::getReloadPath();   
     data_entry_helper::$website_id=$args['website_id'];
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
@@ -321,6 +321,7 @@ $('#entry_form').submit(function() {
         'captionField'=>'person_name',
         'valueField'=>'id',
         'extraParams'=>$auth['read']+array('view'=>'detail'),
+        'helpText'=>lang::get('Search for users to assign admin role to by typing a few characters of their surname'),
         'addToTable'=>false
       ));
     }
@@ -332,6 +333,7 @@ $('#entry_form').submit(function() {
         'captionField'=>'person_name',
         'valueField'=>'id',
         'extraParams'=>$auth['read']+array('view'=>'detail'),
+        'helpText'=>lang::get('Search for users to give membership to by typing a few characters of their surname'),
         'addToTable'=>false
       ));
     }
@@ -509,7 +511,7 @@ $('#entry_form').submit(function() {
     }
   }
   
-  public static function get_perms($nid) {
+  public static function get_perms($nid, $args) {
     return array('IForm groups admin');
   }
 
