@@ -118,13 +118,12 @@ class iform_group_receive_invite_response {
     $reloadPath = self::getReloadPath();
     $r = '<p>'.lang::get('You are logged in to {1} as {2} and have been invited to join the recording group {3}.', 
         variable_get('site_name', ''), $user->name, $invite['group_title']) . '</p>';
-    $r .= '<form id="entry_form" action="'.$reloadUrl.'" method="POST">';
+    $r .= '<form id="entry_form" action="'.$reloadPath.'" method="POST">';
     $r .= '<input type="hidden" name="token" value="'.$_GET['token'].'"/>';
     $r .= '<input type="submit" id="btn-accept" name="accept" value="'.lang::get('Accept invitation').'"/>';
     $r .= '<input type="submit" id="btn-reject" name="reject" value="'.lang::get('Reject invitation').'"/>';
     $r .= '<input type="submit" id="btn-maybe" name="maybe" value="'.lang::get('Maybe later').'"/>';
-    if (function_exists('drupal_set_title'))
-      drupal_set_title(lang::get('Invitation to join {1}', $invite['group_title']));
+    hostsite_set_page_title(lang::get('Invitation to join {1}', $invite['group_title']));
     return $r;
   }
   
@@ -156,8 +155,7 @@ class iform_group_receive_invite_response {
     $r = '<p>'.lang::get('If you would like to join the {1} group called {2} then please log in or register an account for {3} then '.
             'follow the link in your invitation email again once registered.', 
         variable_get('site_name', ''), $invite['group_title'], variable_get('site_name', '')) . '</p>';
-    if (function_exists('drupal_set_title'))
-      drupal_set_title(lang::get('Invitation to join {1}', $invite['group_title']));
+    hostsite_set_page_title(lang::get('Invitation to join {1}', $invite['group_title']));
     return $r;
   
   }
@@ -179,11 +177,16 @@ class iform_group_receive_invite_response {
     $auth['write_tokens']['persist_auth']=true;
     $s = submission_builder::build_submission($values, array('model' => 'groups_user'));
     $r = data_entry_helper::forward_post_to('groups_user', $s, $auth['write_tokens']);
-    if (!isset($r['success'])) {
+    // either a success, or already a member (2004=unique key violation)
+    if (!isset($r['success']) && (!isset($r['code']) || $r['code']!==2004)) {
       if (function_exists('watchdog'))
         watchdog('iform', 'An internal error occurred whilst trying to accept an invite: '.print_r($r, true));
-      return self::fail_message('An internal error occurred whilst trying to accept the invite');
+      return self::fail_message('An internal error occurred whilst trying to accept the invite', $args);
+    } elseif (isset($r['code']) && $r['code']===2004) {
+      hostsite_show_message(lang::get('You are already a member of the group!'));
+      hostsite_goto_page($args['groups_page_path']);
     } else {
+      // delete the invitation
       $values = array(
         'id'=>$invite['id'],
         'deleted'=>'t'
@@ -194,13 +197,12 @@ class iform_group_receive_invite_response {
         'table' => 'group',
         'extraParams' => $auth['read'] + array('id'=>$invite['group_id'])
       ));
-      drupal_set_message(lang::get('Welcome to {1}', $group[0]['title']));
       if (!isset($r['success'])) {
         if (function_exists('watchdog'))
           watchdog('iform', 'An internal error occurred whilst trying to delete an accepted invite: '.print_r($r, true));
         // probably no point telling the user, as the invite accept worked OK
       }
-      drupal_goto($args['group_home_path'], array('group_id'=>$invite['group_id']));
+      hostsite_goto_page($args['group_home_path'], array('group_id'=>$invite['group_id']));
     }
   }
   
@@ -216,8 +218,8 @@ class iform_group_receive_invite_response {
     );
     $s = submission_builder::build_submission($values, array('model' => 'group_invitation'));
     $r = data_entry_helper::forward_post_to('group_invitation', $s, $auth['write_tokens']);
-    drupal_set_message(lang::get("OK, thanks anyway. We've removed your invitation to join this group."));
-    drupal_goto($args['groups_page_path']);
+    hostsite_show_message(lang::get("OK, thanks anyway. We've removed your invitation to join this group."));
+    hostsite_goto_page($args['groups_page_path']);
   }
   
   /**
@@ -227,7 +229,7 @@ class iform_group_receive_invite_response {
    * @param array $auth Authorisation tokens
    */
   private static function maybe($args, $invite, $auth) {
-    drupal_set_message(lang::get('Just follow the link in your invitation email if and when you are ready to join.'));
-    drupal_goto($args['groups_page_path']); 
+    hostsite_show_message(lang::get('Just follow the link in your invitation email if and when you are ready to join.'));
+    hostsite_goto_page($args['groups_page_path']); 
   }
 }

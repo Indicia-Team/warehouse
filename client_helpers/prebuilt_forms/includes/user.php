@@ -89,7 +89,7 @@ function get_options_array_with_user_data($listData) {
     $params = helper_base::explode_lines($listData);
     foreach ($params as $param) {
       if (!empty($param)) {
-        $tokens = explode('=', $param);
+        $tokens = explode('=', $param, 2);
         if (count($tokens)==2) {
           $tokens[1] = apply_user_replacements($tokens[1]);
         } else {
