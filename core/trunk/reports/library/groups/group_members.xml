@@ -3,7 +3,7 @@
       <query website_filter_field="g.website_id">
       SELECT #columns#
       FROM groups g
-      JOIN groups_users gu ON gu.groups_id = g.id AND gu.deleted = false
+      JOIN groups_users gu ON gu.group_id = g.id AND gu.deleted = false
       JOIN users u ON u.id = gu.user_id AND u.deleted = false
       JOIN people p ON p.id = u.person_id and p.deleted = false
       #joins#
@@ -11,14 +11,16 @@
       </query>
   <params>
     <param name="group_id" display="Group" description="Select the group to administer" datatype="lookup"
-        population_call="report:my_groups:id:title">
-    </param>
+        population_call="report:my_groups:id:title"/>
   </params>
   <order_bys>
     <order_by>gu.administrator, p.surname, p.first_name</order_by>
   </order_bys>
   <columns>
-        <column name="name" display="Name" sql="p.surname || ', ' || p.first_name" datatype="text" />
-        <column name="admin" display="Admin" sql="gu.username" datatype="integer" />
+    <column name="id" display="User ID" visible="false" sql="u.id" datatype="integer" /> 
+    <column name="groups_user_id" display="Groups user ID" visible="false" sql="gu.id" datatype="integer" /> 
+    <column name="name" display="Name" sql="p.surname || ', ' || p.first_name" datatype="text" />
+    <column name="role" display="Role" sql="case when gu.administrator=true then 'Administrator' when gu.id is not null and gu.pending=false then 'Member' when gu.id is not null and gu.pending=true then 'Awaiting approval' else 'Non-member' end" datatype="text" />
+   <column name="pending" visible="false" sql="gu.pending" datatype="boolean" /> 
   </columns>
 </report>
