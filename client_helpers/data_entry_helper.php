@@ -4636,7 +4636,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       'class'       => 'right',
       'page'        => 'middle',
       'suffixTemplate' => 'nullsuffix',
-      'includeVerifyButton' => false
+      'includeVerifyButton' => false,
+      'includeSubmitButton' => true
     ), $options);
     $options['class'] .= ' buttons';
     // Output the buttons
@@ -4658,7 +4659,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         $options['id']='tab-next';
         $options['caption']=lang::get($options['captionNext']).' &gt;';
         $r .= str_replace('{content}', self::apply_template('button', $options), $indicia_templates['jsWrap']);
-      } else {
+      } else if ($options['includeSubmitButton']) {
         $options['class']=$buttonClass." tab-submit";
         $options['id']='tab-submit';
         $options['caption']=lang::get($options['captionSave']);
