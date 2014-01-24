@@ -412,7 +412,7 @@ class iform_species_details extends iform_dynamic {
       )
     ));
 
-    $r = '<div class="record-details-fields">';
+    $r = '<div class="record-details-fields ui-helper-clearfix">';
     //draw the species names and custom attributes
     if (isset($details_report))
       $r .= $details_report;
