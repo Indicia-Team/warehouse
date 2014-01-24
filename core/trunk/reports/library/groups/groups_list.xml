@@ -8,6 +8,7 @@
     LEFT JOIN groups_users gu ON gu.group_id=g.id AND gu.deleted=false AND gu.user_id=#currentUser#
     #joins#
     WHERE g.deleted = false
+    AND #website_filter#
   </query>
   <order_bys>
     <order_by>g.title</order_by>

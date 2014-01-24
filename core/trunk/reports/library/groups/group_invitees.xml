@@ -6,6 +6,7 @@
       JOIN group_invitations i ON i.groups_id = g.id AND i.deleted = false
       #joins#
       WHERE g.id = #group_id#
+      AND #website_filter#
       </query>
   <params>
     <param name="group_id" display="Group" description="Select the group to administer" datatype="lookup"
