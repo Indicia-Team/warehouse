@@ -250,7 +250,7 @@ Record ID',
     
     self::load_record($auth);
     
-    $details_report = '<div class="record-details-fields">';
+    $details_report = '<div class="record-details-fields ui-helper-clearfix">';
     foreach($availableFields as $field=>$caption) {
       if ($test===in_array(strtolower($caption), $fieldsLower) && !empty(self::$record[$field]))
         $details_report .= str_replace(array('{caption}','{value}'), array($caption, self::$record[$field]), $attrsTemplate);      
@@ -261,7 +261,7 @@ Record ID',
       //draw any custom attributes added by the user, but only for a non-sensitive record
       $attrs_report = report_helper::freeform_report(array(
         'readAuth' => $auth['read'],
-        'class'=>'record-details-fields',
+        'class'=>'record-details-fields ui-helper-clearfix',
         'dataSource'=>'reports_for_prebuilt_forms/record_details_2/record_data_attributes_with_hiddens',
         'bands'=>array(array('content'=>$attrsTemplate)),
         'extraParams'=>array(
