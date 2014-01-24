@@ -1172,6 +1172,7 @@ class iform_report_calendar_summary {
     } else {
       // user is manager, so need to load the list of users they can choose to report against 
       if(!($userList = self::_fetchDBCache($user->uid))) {
+       $userList=array();
        if(!isset($args['userLookUp']) || !$args['userLookUp']) {
         // look up all users, not just those that have entered data.
         $results = db_query('SELECT uid, name FROM {users}');
@@ -1197,7 +1198,7 @@ class iform_report_calendar_summary {
         if (function_exists('module_exists') && module_exists('easy_login')) {
           $sampleArgs=array(// 'nocache'=>true,
             'extraParams'=>array_merge(array('view'=>'detail', 'website_id'=>$args['website_id'], 'survey_id'=>$presets['survey_id']), $readAuth),
-            'table'=>'sample');
+            'table'=>'sample','columns'=>'created_by_id');
           $sampleList = data_entry_helper::get_population_data($sampleArgs);
           if (isset($sampleList['error'])) return $sampleList['error'];
           $uList = array();

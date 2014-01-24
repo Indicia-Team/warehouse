@@ -468,6 +468,9 @@ class iform_dynamic {
               // if not json then need to use option value as it is
               if ($options[$option[0]]=='') $options[$option[0]]=$option[1];
             }
+            // urlParam is special as it loads the control's default value from $_GET
+            if ($option[0]==='urlParam' && isset($_GET[$option[1]]))
+              $options['default'] = $_GET[$option[1]];
           }
         }
         $parts = explode('.', str_replace(array('[', ']'), '', $component));

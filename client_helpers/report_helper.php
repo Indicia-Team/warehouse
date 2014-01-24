@@ -1668,7 +1668,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
                 $colsToInclude[$wktCol]='';
                 $record = array_intersect_key($record, $colsToInclude); 
               }
-              $addFeaturesJs.= "div.addPt(features, ".json_encode($record).", '$wktCol', $opts" . (isset($options['rowId']) ? '' : ", '" . $record[$options['rowId']] . "'") . ");\n";
+              $addFeaturesJs.= "div.addPt(features, ".json_encode($record).", '$wktCol', $opts" . (empty($options['rowId']) ? '' : ", '" . $record[$options['rowId']] . "'") . ");\n";
             }
           }
           self::$javascript .= 'indiciaData.geoms=['.implode(',',$geoms)."];\n";
@@ -2844,7 +2844,7 @@ update_controls();
     $locationSamples = array();
     $dateList = array();
     $weekList = array();
-    $avgFieldList = isset($options['avgFields']) ? explode(',',$options['avgFields']) : false;
+    $avgFieldList = !empty($options['avgFields']) ? explode(',',$options['avgFields']) : false;
     $smpAttrList = array();
     if(!$avgFieldList || count($avgFieldList)==0) $avgFields = false;
     else {
@@ -3494,7 +3494,7 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
               $summaryValue = $summaryRow[$i]['forcedZero'] ? 0 : ($summaryRow[$i]['hasData'] ? $summaryRow[$i]['summary'] : '');
               $class = '';
               $estimatesClass = '';
-              if(summaryValue!=='' && $options['includeSummaryData'])
+              if($summaryValue!=='' && $options['includeSummaryData'])
               	$class = ($options['includeEstimatesData'] && $summaryRow[$i]['hasEstimates'] && $summaryRow[$i]['estimates']!==$summaryValue ? 'summary' : '').($summaryRow[$i]['forcedZero'] && $options['highlightEstimates'] ? ' forcedZero' : '');
               if($options['includeEstimatesData'])
                 $estimatesClass = ($options['includeSummaryData'] ? 'estimates' : '').($options['highlightEstimates'] ? ' highlight-estimates' : '');
@@ -3657,7 +3657,7 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
         break;
       case 'location':
         for($i= $minWeekNo; $i <= $maxWeekNo; $i++) {
-      	  $count=count($numSamples[$i]);
+      	  $count=isset($numSamples[$i]) ? count($numSamples[$i]) : 0;
           if($count) $locationArray[$i]['summary'] = ($locationArray[$i]['total'].'.0')/$count;
           else $locationArray[$i]['summary'] = 0;
           if($locationArray[$i]['summary']>0 && $locationArray[$i]['summary']<1) $locationArray[$i]['summary']=1;
