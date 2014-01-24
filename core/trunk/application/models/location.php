@@ -59,7 +59,8 @@ class Location_Model extends ORM_Tree {
       'boundary_geom',
       'location_type_id',
       'comment',
-      'public'
+      'public',
+      'external_key'
     );
     return parent::validate($array, $save);
   }
