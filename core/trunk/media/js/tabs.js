@@ -12,11 +12,11 @@
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  */
  
-var wizardProgressIndicator, initTabAddressing, scrollTopIntoView;
+var wizardProgressIndicator, initTabAddressing, scrollTopIntoView, setupButtons;
  
 (function ($) {
 
-function setupButtons(tabs, index) {
+setupButtons = function (tabs, index) {
   var wizList = $("#" + tabs.attr('id') + "-wiz-prog");
   var wizLis = $("li", wizList);
   var prevLi = $(".wiz-selected", wizList);
