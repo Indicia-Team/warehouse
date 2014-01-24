@@ -277,7 +277,7 @@ class data_entry_helper extends helper_base {
    *   * termlist_id - If datatype=lookup, then provide the termlist_id of the list to load terms for as options in the control.
    *   * unit - An optional unit label to display after the control (e.g. 'cm', 'kg').
    *   * regex - A regular expression which validates the controls input value.
-   * * **default** - An array of default values, as obtained by a call to loadAttributes.
+   * * **default** - An array of default values, as obtained by a call to getAttributes.
    * * **rowCountControl** - Pass the ID of an input control that will contain an integer value to define the number of rows in the
    *   grid. If not set, then a button is shown allowing additional rows to be added.
    */
@@ -3671,6 +3671,7 @@ $('#".$options['id']." .species-filter').click(function(evt) {
       		data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:id'] = $subsample['id'];
       		data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:geom'] = $subsample['wkt'];
       		data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:wkt'] = $subsample['wkt'];
+          data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:location_id'] = $subsample['location_id'];
       		data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:entered_sref'] = $subsample['entered_sref'];
           data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:entered_sref_system'] = $subsample['entered_sref_system'];
           data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:date_start'] = $subsample['date_start'];
@@ -3868,10 +3869,10 @@ $('#".$options['id']." .species-filter').click(function(evt) {
         }
         if ($present) {
           $ttlId = $value;
-            if ($options['speciesControlToUseSubSamples']) {
-              $smpIdx = self::$entity_to_load['sc:'.$parts[1].':'.$parts[2].':occurrence:sampleIDX'];
-            } 
-              else $smpIdx = null;
+          if ($options['speciesControlToUseSubSamples'])
+            $smpIdx = self::$entity_to_load['sc:'.$parts[1].':'.$parts[2].':occurrence:sampleIDX'];
+          else
+            $smpIdx = null;
           // Find an existing row for this species that is not already linked to an occurrence
           $done=false;
           foreach($taxonRows as &$row) {

@@ -233,10 +233,6 @@ class map_helper extends helper_base {
   * When there is JavaScript to run before the map is initialised, put the JavaScript into this option. This allows the map to run the 
   * setup JavaScript just in time, immediately before the map is created. This avoids problems where the setup JavaScript causes the OpenLayers library 
   * to be initialised too earlier if the map is on a div.</li>
-  * <li><b>setupJs</b><br/>
-  * When there is JavaScript to run before the map is initialised, put the JavaScript into this option. This allows the map to run the 
-  * setup JavaScript just in time, immediately before the map is created. This avoids problems where the setup JavaScript causes the OpenLayers library 
-  * to be initialised too earlier if the map is on a div.</li>
   * <li><b>graticuleProjection</b><br/>
   * EPSG code (including EPSG:) for the projection used for the graticule (grid overlay).</li>
   * <li><b>graticuleBounds</b><br/>
