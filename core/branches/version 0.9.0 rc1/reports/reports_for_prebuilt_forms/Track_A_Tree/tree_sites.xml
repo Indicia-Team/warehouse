@@ -1,0 +1,33 @@
+<report
+    title="Track a tree: Locations list plus a sublocation count"
+    description="A list of Sites, plus a count of the Trees (child locations) associated with it. Allocation of users is at a site level."
+>
+  <query website_filter_field="lw.website_id">
+  SELECT #columns#
+  FROM locations l
+  JOIN locations_websites lw on lw.location_id=l.id AND lw.deleted=false
+  JOIN termlists_terms ttl1 ON ttl1.id=l.location_type_id
+  JOIN termlists_terms ttl2 ON ttl2.meaning_id=ttl1.meaning_id
+  JOIN terms t ON t.id=ttl2.term_id
+  #joins#
+  WHERE l.deleted=false
+  AND l.parent_id IS NULL
+  AND #website_filter#
+  AND (CAST(l.location_type_id AS character varying)='#location_type_id#' OR '#location_type_id#'='' OR t.term='#location_type_id#')
+  #order_by#
+  </query>
+  <order_bys>
+    <order_by>l.name ASC</order_by>
+  </order_bys>
+  <params>
+    <param name='location_type_id' display='Location Type' description='Select the location type, or leave blank to not filter by location type.' datatype='lookup'
+            population_call='report:library/terms/terms_list:id:term:termlist_external_key=indicia:location_types,termlist_id=' />
+    <param name='locattrs' display='Location attribute list' description='Comma separated list of location attribute IDs to include' datatype='locattrs' />
+  </params>
+  <columns>
+    <column name='location_id' display='ID' sql="l.id" datatype="int" />
+    <column name='name' display='Site Name' sql="l.name" datatype="text" />
+    <column name="geom" visible="false" mappable="true" sql="st_astext(coalesce(l.boundary_geom, l.centroid_geom))" />
+    <column name='count' display='Count' sql="(SELECT count(*) FROM locations sl WHERE sl.parent_id = l.id AND sl.deleted=FALSE)" datatype="int" />
+  </columns>
+</report>
