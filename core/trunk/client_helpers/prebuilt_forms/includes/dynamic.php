@@ -573,7 +573,8 @@ class iform_dynamic {
         unset($cols[1]);
         unset($cols[0]);
         $html .= '<div class="follow_on_block" style="clear:both;">'.implode('',$cols).'</div>';
-      }
+      } else
+        $html .= '<div class="follow_on_block" style="clear:both;"></div>'; // needed so any tab div is stretched around them
     }
     return $html;
   }
