@@ -8,6 +8,7 @@
       JOIN people p ON p.id = u.person_id and p.deleted = false
       #joins#
       WHERE g.id = #group_id#
+      AND #website_filter#
       </query>
   <params>
     <param name="group_id" display="Group" description="Select the group to administer" datatype="lookup"
