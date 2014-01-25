@@ -87,7 +87,7 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
         array(
           'name'=>'occurrence_record_grid_id',
           'caption'=>'Occurrence Record Grid Occurrence Attribute',
-          'description'=>'The occurrence attribute which holds the id of the grid that an occurrence is associated with e.g. trees or epiphytes',
+          'description'=>'The occurrence attribute which holds the id of the grid that occurrences will be loaded onto in edit mode.',
           'type'=>'select',
           'table'=>'occurrence_attribute',
           'valueField'=>'id',
@@ -97,6 +97,19 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
       )
     );
     return $retVal;
+  }
+  
+  /*
+   * Override the get_form so that when we are in edit mode, the grid that displays existing occurrences has empty cells disabled.
+   * This means to create new occurrences the user must fill in the clonable row or fill in the grid of prepopulated Epiphytes. Due to existing code, use of these disabled cells would not
+   * work correctly in this sitution. Disabling them also makes the user interface much clearer.
+   * This setup allows the occurrences to be saved correctly with minimal alteration to existing code that we already know works correctly.
+   */
+  public static function get_form($args, $node) {
+    if (!empty($_GET['sample_id'])) {
+      data_entry_helper::$javascript .= "$('#Epiphytes-free').find('input[value=]').attr('disabled','disabled');\n";
+    }
+    return parent::get_form($args, $node);
   }
   
   /**
@@ -136,8 +149,6 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
         $occurrenceAndSubSampleRecord['model']['fields']['location_id']['value'] = $submission['fields']['location_id']['value'];
       if (!empty($submission['fields']['location_name']['value']))
         $occurrenceAndSubSampleRecord['model']['fields']['location_name']['value'] = $submission['fields']['location_name']['value'];
-
-
     }
     return($submission);
   }
@@ -168,17 +179,23 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
   /*
    * Create the submission structure required for Splash.
    * The format is as follows,
-   * Two grids: Trees and Epiphytes
+   * Three grids: Trees and 2 Epiphytes grids
    * For each tree, a sub-sample is created as it needs its own grid reference. 
    * Each tree also has a tree occurrence.
    * Each tree can also have any number of Epiphyte occurrences.
    * The Tree and Epiphyte occurrences are held as submodels of the tree sub-sample.
    * 
-   * On screen, the Epiphyte occurrences are held on a separate grid to the trees.
+   * On screen, the Epiphyte occurrences are held in 2 separate grids.
+   * One has a prepopulated list of several commonly used taxa_taxon_ids, the other list allows free text
+   * to be entered by the user to select any species from the species list.
    * There is an Epiphyte per row. 
    * Each column is a count of Epiphytes for trees 1 to 10 held as occurrence attributes.
    * If a particular Epiphyte has a count associated with it for a given tree, then we know to create an occurrence for 
    * that Epiphyte.
+   * When in edit mode, all occurrences (including ones from the prepopulated grid are loaded onto the second Epiphytes 
+   * grid. There is one row per occurrence. Cells for trees which do not have a count value are disabled as filling these 
+   * in would result in existing code breaking the page, however it is also convenient as it makes the user interface much clearer.
+   * A clonable row is still present allowing the user to still fill in free text occurrences.
    * 
    */
   public static function create_splash_subsample_occurrence_structure($arr, $include_if_any_data=false,
@@ -205,7 +222,7 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
           if($a[2]) $treeOccurrenceRecords[$a[1]]['id'] = $a[2];  
         }   
       }
-      if (substr($key, 0, 3)=='sc:' && substr($key, 14, 3)!='idx' && substr($key, 2, 3)!=':n:' && substr($key, 3, 9)=='Epiphytes'){
+      if (substr($key, 0, 3)=='sc:' && substr($key, 14, 3)!='idx' && substr($key, 2, 3)!=':n:' && (substr($key, 3, 19)=='Epiphytes-populated' || substr($key, 3, 14)=='Epiphytes-free')){
         $a = explode(':', $key, 4);
         $b = explode(':', $a[3], 2);
         if($b[0] != "sample" && $b[0] != "smpAttr"){
@@ -214,14 +231,13 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
         }   
       }
     }
-
     //To start with, cycle through the sub-sample models i.e cycle through each tree record
     foreach ($subModels as $treeIdx=>&$subSampleModel) {
       //Up to this point we have used existing code to create the sub-sample model.
       //However there is a problem with this approach as the system doesn't understand how to create the Epiphyte occurrences correctly
       //So we need to delete these Epiphyte occurrence sub-models before creating our own.
-      //Searh through the occurrence records, then search through each value, and if we find one where the grid occurrence attribute is
-      //set to 'Epiphytes' then remove the occurrence.
+      //Search through the occurrence records, then search through each value, and if we find one where the grid occurrence attribute is
+      //is "trees" then keep the occurrence, otherwise remove it.
       $removeEpiphyteOccurrence=false;
       foreach ($subSampleModel['model']['subModels'] as $occurrencesForTreeIdx => $occurrencesForTree) { 
         //Cycle through the values that make up the Epiphyte record.
@@ -229,13 +245,13 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
           //If in edit mode, the key format can 'occAttr:<attribute id>:<attribute value id>', but when we do our tests we want to ignore the
           //attribute value id
           $itemKeyParts=explode(':',$itemKey);
-          if ($itemKeyParts[0]=='occAttr' && $itemKeyParts[1]==$args['occurrence_record_grid_id'] && $itemValueArray['value']=='Epiphytes') {
-            $removeEpiphyteOccurrence=true;
+          if ($itemKeyParts[0]=='occAttr' && $itemKeyParts[1]==$args['occurrence_record_grid_id'] && $itemValueArray['value']=='trees') {
+            $keepOccurrence=true;
           }
         }
-        if ($removeEpiphyteOccurrence===true)
+        if ($keepOccurrence!==true)
           unset($subSampleModel['model']['subModels'][$occurrencesForTreeIdx]);
-        $removeEpiphyteOccurrence=false;
+        $keepOccurrence=false;
       }
       //If we unset any Epiphyte occurrences, there will be gaps in the arrays numbering, so reset the array numbering
       $subSampleModel['model']['subModels'] = array_values($subSampleModel['model']['subModels']);      
@@ -295,11 +311,13 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
 
               $epiphyteOccModel['model']['fields']['record_status']['value']='C';
               $epiphyteOccModel['model']['fields']['website_id']=$website_id;
-              //Create the attribute that tells the system which grid the occurrence is associated with, used for reloading page
+              //Create the attribute that tells the system which grid the occurrence is associated with, used for reloading page.
+              //In this case we want to display the Epiphyte occurrences onto the free text grid (even if they were created on the pre-populated grid.
+              //Trees are loaded onto the same grid they were created on
               if ($itemKeyParts[0]=='occAttr' && $itemKeyParts[1]==$args['occurrence_record_grid_id']&&!empty($itemKeyParts[2]))
-                $epiphyteOccModel['model']['fields']['occAttr:'.$args['occurrence_record_grid_id'].':'.$itemKeyParts[2]]['value']='Epiphytes';
+                $epiphyteOccModel['model']['fields']['occAttr:'.$args['occurrence_record_grid_id'].':'.$itemKeyParts[2]]['value']='Epiphytes-free';
               else
-                $epiphyteOccModel['model']['fields']['occAttr:'.$args['occurrence_record_grid_id']]['value']='Epiphytes';
+                $epiphyteOccModel['model']['fields']['occAttr:'.$args['occurrence_record_grid_id']]['value']='Epiphytes-free';
               //Add the Epiphyte to the sub-models of the tree sub-sample
               if (!empty($epiphyteOccModel)) {
                 $subSampleModel['model']['subModels'][]=$epiphyteOccModel;
