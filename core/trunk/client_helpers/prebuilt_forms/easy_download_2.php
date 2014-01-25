@@ -315,7 +315,7 @@ class iform_easy_download_2 {
     $r .= '<fieldset id="download-type-fieldset"><legend>'.lang::get('Records to download').'</legend>';
     if (count($types)===1) {
       $r .= '<input type="hidden" name="download-type" id="download-type" value="'.implode('', array_keys($types)).'"/>';
-      hostsite_set_page_title(lang::get('Download {1}', strtolower($types[0])));
+      hostsite_set_page_title(lang::get('Download {1}', strtolower(implode('', $types))));
     }
     else {
       $r .= data_entry_helper::select(array(
