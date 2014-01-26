@@ -1833,8 +1833,25 @@ else
 
   /**
    * Get the recorder names control
+   * @param array $auth Read authorisation tokens
+   * @param array $args Form configuration
+   * @param array $tabAlias
+   * @param array $options additional options for the control with the following possibilities
+   * <li><b>defaultToCurrentUser</b><br/>
+   * Set to true if the currently logged in user's name should be the default</li>
+   * @return string HTML for the control.
    */
   protected static function get_control_recordernames($auth, $args, $tabAlias, $options) {
+    iform_load_helpers(array('data_entry_helper'));
+    //We don't need to touch the control in edit mode. Make the current user's name the default in add mode if the user has selected that option.
+    if (empty($_GET['sample_id']) && !empty($options['defaultToCurrentUser'])&& $options['defaultToCurrentUser']==true) {
+      $defaultUserData = data_entry_helper::get_report_data(array(
+        'dataSource'=>'library/users/get_people_details_for_website_or_user',
+        'readAuth'=>$auth['read'],
+        'extraParams'=>array('user_id' => hostsite_get_user_field('indicia_user_id'), 'website_id' => $args['website_id'])
+      ));
+      data_entry_helper::$javascript .= "$('#sample\\\\:recorder_names').val('".$defaultUserData[0]['fullname_firstname_first']."');";
+    }
     return data_entry_helper::textarea(array_merge(array(
       'fieldname'=>'sample:recorder_names',
       'label'=>lang::get('Recorder names')
