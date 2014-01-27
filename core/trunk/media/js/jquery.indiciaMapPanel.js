@@ -127,6 +127,7 @@ mapLocationSelectedHooks = [];
                 // The location search box must fill in the sample sref box
                 $('#'+div.settings.srefId).val(data[0].centroid_sref);
                 $('#'+div.settings.srefSystemId).val(data[0].centroid_sref_system);
+                $('#'+div.settings.geomId).val(data[0].centroid_geom);
                 // If the sref is in two parts, then we might need to split it across 2 input fields for lat and long
                 if (data[0].centroid_sref.indexOf(' ')!==-1) {
                   var parts=$.trim(data[0].centroid_sref).split(' ');
@@ -386,7 +387,7 @@ mapLocationSelectedHooks = [];
         e.preventDefault();
       });
       if ($('#imp-location').length) {
-        var locChange = function() {locationSelectedInInput(div, this.value);};
+        var locChange = function() {locationSelectedInInput(div, $('#imp-location').val());};
         $('#imp-location').change(locChange);
         // trigger change event, incase imp-location was already populated when the map loaded
         locChange();
