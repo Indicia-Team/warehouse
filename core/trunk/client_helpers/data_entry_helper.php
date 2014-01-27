@@ -5354,7 +5354,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       $otherBoxOptions['fieldname'] = $options['otherValueAttrId'];
       //When the field is populated with existing data, the name includes the sample_attribute_value id, this is used on submission.
       //Don't include it if it isn't pre-populated.
-      if ($otherAttributeData[0]['id']) 
+      if (isset($otherAttributeData[0]['id'])) 
         $otherBoxOptions['fieldname'] .= ':'.$otherAttributeData[0]['id'];
       //User can provide their own label for the textbox if they wish, otherwise default to "Other".
       if ($options['otherTextboxLabel'])
@@ -5362,15 +5362,17 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       else 
         $otherBoxOptions['label'] = 'Other';
       //Fill in the textbox with existing value if in edit mode.
-      $otherBoxOptions['default']=$otherAttributeData[0]['value'];
+      if (isset($otherAttributeData[0]['value']))
+        $otherBoxOptions['default']=$otherAttributeData[0]['value'];
       $r .= data_entry_helper::textarea($otherBoxOptions);
       // jQuery safe versions of the attribute IDs
       $mainAttributeIdSafe = str_replace(':', '\\\\:', $options['id']);
+      $mainAttributeNameSafe = str_replace(':', '\\\\:', $options['fieldname']);
       $otherAttributeIdSafe = str_replace(':', '\\\\:', $options['otherValueAttrId']);
       //Set the visibility of the "Other" textbox based on the checkbox when the page loads, but also when the checkbox changes.
       self::$javascript .= '
         show_hide_other();
-        $("input[name='.$mainAttributeIdSafe.']").change(function() {
+        $("input[name='.$mainAttributeNameSafe.']").change(function() {
           show_hide_other();
         });
       ';
@@ -6500,8 +6502,12 @@ if (errors$uniq.length>0) {
   public static function getAttributes($options, $indexedArray = true, $sharing=false) {
     $attrs = array();
     // there is a possiblility that the $options['extraParams'] already features a query entry.
-    if(isset($options['extraParams']['query']))
+    if(isset($options['extraParams']['query'])) {
       $query = json_decode($options['extraParams']['query'], true);
+      unset($options['extraParams']['query']);
+      if (!isset($query['in']))
+        $query['in']=array();
+    }
     else
       $query = array('in'=>array());
     self::add_resource('json');
@@ -6529,16 +6535,15 @@ if (errors$uniq.length>0) {
         $methods[] = $options['location_type_id'];
       $query['in']['restrict_to_location_type_id'] = $methods;
     }
-    if (count($query))
-      $queryEnc = urlencode(json_encode($query));
-      $attrOptions = array(
-          'table'=>$options['attrtable'],
-           'extraParams'=> $options['extraParams']+ array(
-             'deleted' => 'f',
-             'website_deleted' => 'f',
-             'query'=>$queryEnc,
-             'orderby'=>'weight'
-           )
+    
+    $attrOptions = array(
+        'table'=>$options['attrtable'],
+        'extraParams'=> array_merge(array(
+           'deleted' => 'f',
+           'website_deleted' => 'f',
+           'orderby'=>'weight',
+           'query'=>json_encode($query),
+        ), $options['extraParams'])
     );
     if ($sharing)
       $attrOptions['sharing'] = $sharing;
