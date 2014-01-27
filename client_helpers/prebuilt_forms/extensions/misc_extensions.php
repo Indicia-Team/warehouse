@@ -59,5 +59,53 @@ class extension_misc_extensions {
     }   
     return $button;
   }
+  
+  /**
+   * Adds JavaScript to the page allowing detection of whether the user has a certain permission.
+   * Adds a setting indiciaData.permissions[permission name] = true or false.
+   * Provide a setting called permissionName to identify the permission to check.
+   */
+  public static function js_has_permission($auth, $args, $tabalias, $options, $path) {
+    static $done_js_has_permission=false;
+    if (empty($options['permissionName']))
+      return 'Please provide a setting @permissionName for the js_has_permission control.';
+    if (!function_exists('user_access'))
+      return 'Can\'t use the js_has_permission extension outside Drupal.';
+    $val = user_access($options['permissionName']) ? 'true' : 'false';
+    if (!$done_js_has_permission) {
+      data_entry_helper::$javascript .= "if (typeof indiciaData.permissions==='undefined') {
+  indiciaData.permissions={};
+}\n";
+      $done_js_has_permission=true;
+    }
+    data_entry_helper::$javascript .= "indiciaData.permissions['$options[permissionName]']=$val;\n" ;
+  }
+  
+  /**
+   * Adds JavaScript to the page to provide the value of a field in their user profile, allowing
+   * JavaScript on the page to adjust behaviour depending on the value.
+   * Provide an option called fieldName to specify the field to obtain the value for.
+   */
+  public static function js_user_field($auth, $args, $tabalias, $options, $path) {
+    static $done_js_user_field=false;
+    if (empty($options['fieldName']))
+      return 'Please provide a setting @fieldName for the js_user_field control.';
+    if (!function_exists('hostsite_get_user_field'))
+      return 'Can\'t use the js_user_field extension without a hostsite_get_user_field function.';
+    $val = hostsite_get_user_field($options['fieldName']);
+    if ($val===true) 
+      $val='true';
+    elseif ($val===false) 
+      $val='false';
+    elseif (is_string($val)) 
+      $val="'$val'";
+    if (!$done_js_user_field) {
+      data_entry_helper::$javascript .= "if (typeof indiciaData.userFields==='undefined') {
+  indiciaData.userFields={};
+}\n";
+      $done_js_user_field=true;
+    }
+    data_entry_helper::$javascript .= "indiciaData.userFields['$options[fieldName]']=$val;\n" ;
+  }
 }
 ?>
