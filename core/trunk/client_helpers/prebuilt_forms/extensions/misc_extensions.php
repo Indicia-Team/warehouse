@@ -27,34 +27,34 @@ class extension_misc_extensions {
   /**
    * General button link control can be placed on pages to link to another page.
    * $options Options array with the following possibilities:<ul>
-   * <li><b>button-label</b><br/>
+   * <li><b>buttonLabel</b><br/>
    * The label that appears on the button. Mandatory</li>
-   * <li><b>button-link-path</b><br/>
+   * <li><b>buttonLinkPath</b><br/>
    * The page the button is linking to. Mandatory</li>
-   * <li><b>param-name-to-pass</b><br/>
-   * The name of a static parameter to pass to the receiving page. Optional but requires param-value-to-pass when in use</li>
-   * <li><b>param-value-to-pass</b><br/>
-   * The value of the static parameter to pass to the receiving page. e.g. passing a static location_type_id. Optional but requires param-name-to-pass when in use</li>
+   * <li><b>paramNameToPass</b><br/>
+   * The name of a static parameter to pass to the receiving page. Optional but requires paramValueToPass when in use</li>
+   * <li><b>paramValueToPass</b><br/>
+   * The value of the static parameter to pass to the receiving page. e.g. passing a static location_type_id. Optional but requires paramNameToPass when in use</li>
    * </ul>
    */
   public static function button_link($auth, $args, $tabalias, $options, $path) {
     //Only display a button if the administrator has specified both a label and a link path for the button.
-    if (!empty($options['button-label'])&&!empty($options['button-link-path'])) {
-      if (!empty($options['param-name-to-pass']) && !empty($options['param-value-to-pass']))
-        $paramToPass=array($options['param-name-to-pass']=>$options['param-value-to-pass']);
+    if (!empty($options['buttonLabel'])&&!empty($options['buttonLinkPath'])) {
+      if (!empty($options['paramNameToPass']) && !empty($options['paramValueToPass']))
+        $paramToPass=array($options['paramNameToPass']=>$options['paramValueToPass']);
       $button = '<div>';
       $button .= '  <FORM>';
-      $button .= "    <INPUT TYPE=\"button\" VALUE=\"".$options['button-label']."\"";
+      $button .= "    <INPUT TYPE=\"button\" VALUE=\"".$options['buttonLabel']."\"";
       //Button can still be used without a parameter to pass
       if (!empty($paramToPass)) {
-        $button .= "ONCLICK=\"window.location.href='".url($options['button-link-path'], array('query'=>$paramToPass))."'\">";
+        $button .= "ONCLICK=\"window.location.href='".url($options['buttonLinkPath'], array('query'=>$paramToPass))."'\">";
       } else { 
-        $button .= "ONCLICK=\"window.location.href='".url($options['button-link-path'])."'\">";
+        $button .= "ONCLICK=\"window.location.href='".url($options['buttonLinkPath'])."'\">";
       }
       $button .= '  </FORM>';
       $button .= '</div></br>';
     } else {
-      drupal_set_message('A link button has been specified without a link path or button label, please fill in the @button-link-path and @button-label options');
+      drupal_set_message('A link button has been specified without a link path or button label, please fill in the @buttonLinkPath and @buttonLabel options');
       $button = '';
     }   
     return $button;
