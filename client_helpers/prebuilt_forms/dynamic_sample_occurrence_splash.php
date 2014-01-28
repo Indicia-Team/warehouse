@@ -52,9 +52,9 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
    */
   public static function get_dynamic_sample_occurrence_splash_definition() {
     return array(
-      'title'=>'Splash sample with occurrences form',
+      'title'=>'Splash sample with occurrences form for Epiphyte surveys',
       'category' => 'Forms for specific surveying methods',
-      'description'=>'Form for submitting Splash sample/occurrence records'
+      'description'=>'Form for submitting Splash sample/occurrence records for Epiphyte surveys'
     );
   }
 
