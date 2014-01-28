@@ -1,0 +1,15 @@
+<report
+    title="Core and additional squares for population call."
+    description="Report used to populate the drop-down search filter for any report pages where the user needs to search for core and additional squares."
+>
+  <query>
+    SELECT #columns#
+      FROM terms t
+      JOIN termlists_terms tt on tt.term_id = t.id and tt.deleted=false
+    WHERE t.term='Ash monitoring core square' or t.term='Ash monitoring additional square' and t.deleted=false
+  </query>
+  <columns>
+    <column name='id' display='Location Type ID' sql="tt.id" datatype='integer' visible="false"/>
+    <column name='location_type_name' display='Location Type Name' sql="t.term" datatype='text'/>
+  </columns>
+</report>
