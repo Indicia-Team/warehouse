@@ -24,6 +24,99 @@
  * Extension class that supplies new controls to support the Splash project.
  */
 class extension_splash_extensions {
+  
+  /**
+   * Get a location select control pair, first the user must select a square then a plot associated with a square.
+   * Only squares that are associated with the user and also have plots are displayed
+   * reportProvidesOrderBy option should be set to true if the control is populated by a report that
+   * provides its own Order By statement, if the reportProvidesOrderBy option is not set in this situation, then the report
+   * will have two Order By statements and will fail. 
+   */
+  public static function splash_location_select($auth, $args, $tabAlias, $options) {
+    if (empty($options['coreSquareLocationTypeId'])) {
+      drupal_set_message('Please fill in the @coreSquareLocationTypeId option for the splash_location_select control');
+      return '';
+    }
+    if (empty($options['additionalSquareLocationTypeId'])) {
+      drupal_set_message('Please fill in the @additionalSquareLocationTypeId option for the splash_location_select control');
+      return '';
+    }
+    if (empty($options['viceCountyLocationAttributeId'])) {
+      drupal_set_message('Please fill in the @viceCountyLocationAttributeId option for the splash_location_select control');
+      return '';
+    }
+    if (empty($options['noViceCountyFoundMessage'])) {
+      drupal_set_message('Please fill in the @noViceCountyFoundMessage option for the splash_location_select control');
+      return '';
+    }
+    $coreSquareLocationTypeId=$options['coreSquareLocationTypeId'];
+    $additionalSquareLocationTypeId=$options['additionalSquareLocationTypeId'];
+    $currentUserId=hostsite_get_user_field('indicia_user_id');
+    $viceCountyLocationAttributeId=$options['viceCountyLocationAttributeId'];
+    $noViceCountyFoundMessage=$options['noViceCountyFoundMessage'];
+    $reportOptions = array(
+      'dataSource'=>'reports_for_prebuilt_forms/Splash/get_my_squares_that_have_plots',
+      'readAuth'=>$auth['read'],
+      'mode'=>'report',
+      'extraParams' => array('core_square_location_type_id'=>$coreSquareLocationTypeId,
+                             'additional_square_location_type_id'=>$additionalSquareLocationTypeId,
+                             'current_user_id'=>$currentUserId,
+                             'vice_county_location_attribute_id'=>$viceCountyLocationAttributeId,
+                             'no_vice_county_found_message'=>$noViceCountyFoundMessage)
+    );
+    
+    $rawData = data_entry_helper::get_report_data($reportOptions);
+    if (empty($rawData)) {
+      //If the user doesn't have any plots, then hide the map and disable the Spatial Ref field so they can't continue
+      drupal_set_message('Note: You have not been allocated any squares to input data for, or the squares you have been allocated do not have plots.');
+      drupal_set_message('You cannot enter data without having a plot to select.');
+      data_entry_helper::$javascript .= "$('#map').hide();";
+      data_entry_helper::$javascript .= "$('#imp-sref').attr('disabled','disabled');";
+      return '<b>You have not been allocated any Squares that contain plots</b></br>';
+    } else {
+      //Convert the raw data in the report into array format suitable for the Select drop-down to user (an array of ID=>Name pairs)
+      foreach($rawData as $rawRow) {
+          $squaresData[$rawRow['id']]=$rawRow['name'];        
+      }
+
+      $r = data_entry_helper::select(array(
+        'id' => 'squares-select-list',
+        'fieldname'=> 'squares-select-list',
+        'label' => lang::get('Select a Square'),
+        'helpText' => lang::get('Select a square to input data for before selecting a plot.'),
+        'lookupValues' => $squaresData, 
+        'default' => ''
+      ));
+      //This code is same as standard lookup control
+      if (isset($options['extraParams'])) {
+        foreach ($options['extraParams'] as $key => &$value)
+          $value = apply_user_replacements($value);
+        $options['extraParams'] = array_merge($auth['read'], $options['extraParams']);
+      } else 
+        $options['extraParams'] = array_merge($auth['read']);
+      if (empty($options['reportProvidesOrderBy'])||$options['reportProvidesOrderBy']==0) {
+        $options['extraParams']['orderby'] = 'name';
+      }
+      //Setup the Plot drop-down which uses the Suqare selection the user makes.
+      $options['parentControlId']= 'squares-select-list';
+      $options['filterField']= 'square_id';
+      $options['reportProvidesOrderBy']=true;
+      $options['searchUpdatesSref']=true;
+      $options['label']='Plot';
+      $options['report']='reports_for_prebuilt_forms/Splash/get_plots_for_square_id';
+      $options['blankText']='<please select>';
+
+      //Finally create the drop-down
+      $location_list_args = array_merge(array(
+          'label'=>lang::get('LANG_Location_Label'),
+          'view'=>'detail'
+      ), $options);
+      $r .= data_entry_helper::location_select($location_list_args);
+      return $r;
+    }
+  }
+  
+
   /*
    * When creating a plot, we need the plot location record to hold its parent square in location.parent_id.
    * To do this, the calling page provides the square id in the $_GET which we then place in a hidden field on the page to be 
@@ -97,8 +190,8 @@ class extension_splash_extensions {
         'dataSource'=>'reports_for_prebuilt_forms/Splash/get_square_name_for_plot_id',
         'readAuth'=>$auth['read'],
         'extraParams' => array('website_id'=>$args['website_id'], 
-            'vice_county_location_attribute_id'=>$options['vice_county_location_attribute_id'], 
-            'no_vice_county_found_message'=>$options['no_vice_county_found_message'],
+            'viceCountyLocationAttributeId'=>$options['viceCountyLocationAttributeId'], 
+            'noViceCountyFoundMessage'=>$options['noViceCountyFoundMessage'],
             'plot_id'=>$_GET['location_id']),
         'valueField'=>'id',
         'captionField'=>'name'
@@ -111,8 +204,8 @@ class extension_splash_extensions {
         'dataSource'=>'reports_for_prebuilt_forms/Splash/get_square_name_for_square_id',
         'readAuth'=>$auth['read'],
         'extraParams' => array('website_id'=>$args['website_id'], 
-            'vice_county_location_attribute_id'=>$options['vice_county_location_attribute_id'], 
-            'no_vice_county_found_message'=>$options['no_vice_county_found_message'],
+            'viceCountyLocationAttributeId'=>$options['viceCountyLocationAttributeId'], 
+            'noViceCountyFoundMessage'=>$options['noViceCountyFoundMessage'],
             'square_id'=>$_GET['dynamic-location_id']),
         'valueField'=>'id',
         'captionField'=>'name'
