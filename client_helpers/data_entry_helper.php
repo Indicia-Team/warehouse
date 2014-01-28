@@ -6036,7 +6036,12 @@ if (errors$uniq.length>0) {
         return false;
       }
     }
-    $recordData=implode('',$record);
+    //We need to implode the individual field if the field itself is an array (multi-value attributes will be an array).
+    foreach ($record as &$recordField) {
+      if (is_array($recordField))
+        $recordField = implode('',$recordField);
+    }
+    $recordData=implode('',$record);  
     $record = ($include_if_any_data && $recordData!='' && !preg_match("/^[0]*$/", $recordData)) ||       // inclusion of record is detected from having a non-zero value in any cell
         (!$include_if_any_data && $gotTtlId); // inclusion of record detected from the presence checkbox
     // return null if no record to create
