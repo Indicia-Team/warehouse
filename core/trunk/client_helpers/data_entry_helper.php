@@ -5345,7 +5345,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         //Get the existing value for the Other textbox
         $otherAttributeData = data_entry_helper::get_population_data(array(
           'table' => "{$otherAttrTable}_attribute_value",
-          'extraParams' => $readAuth + array("{$otherAttrTable}_id" => self::$entity_to_load["{$otherAttrTable}:id"], "{$otherAttrTable}_attribute_id"=>$options['otherValueAttrId']),
+          'extraParams' => $readAuth + array("{$otherAttrTable}_id" => self::$entity_to_load["{$otherAttrTable}:id"], "{$otherAttrTable}_attribute_id"=>str_replace('smpAttr:', '', $options['otherValueAttrId'])),
           'nocache' => true,
         ));
       }
