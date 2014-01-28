@@ -24,13 +24,30 @@
  * Extension class that supplies new controls to support the Splash project.
  */
 class extension_splash_extensions {
-  
+    
   /**
    * Get a location select control pair, first the user must select a square then a plot associated with a square.
    * Only squares that are associated with the user and also have plots are displayed
-   * reportProvidesOrderBy option should be set to true if the control is populated by a report that
-   * provides its own Order By statement, if the reportProvidesOrderBy option is not set in this situation, then the report
-   * will have two Order By statements and will fail. 
+   * When a plot is selected, then a mini report about the plot is displayed.
+   * 
+   * $options Options array with the following possibilities:<ul>
+   * <li><b>coreSquareLocationTypeId</b><br/>
+   * The location type id of a core square</li>
+   * <li><b>additionalSquareLocationTypeId</b><br/>
+   * The location type id of an additional square</li>
+   * <li><b>viceCountyLocationAttributeId</b><br/>
+   * The attribute ID that holds the vice counties associated with a square</li>
+   * <li><b>noViceCountyFoundMessage</b><br/>
+   * A square's vice country makes up part of its name, however if it doesn't have a vice county then display this replacement text instead</li>
+   * <li><b>orientationAttributeId</b><br/>
+   * The location attribute id that holds a plot's Orientation</li>
+   * <li><b>aspectAttributeId</b><br/>
+   * The location attribute id that holds a plot's Aspect</li>
+   * <li><b>slopeAttributeId</b><br/>
+   * The location attribute id that holds a plot's Slope</li>
+   * <li><b>ashAttributeId</b><br/>
+   * The location attribute id that holds a plot's % Ash Coverage</li>
+   * </ul>
    */
   public static function splash_location_select($auth, $args, $tabAlias, $options) {
     if (empty($options['coreSquareLocationTypeId'])) {
@@ -104,18 +121,111 @@ class extension_splash_extensions {
       $options['searchUpdatesSref']=true;
       $options['label']='Plot';
       $options['report']='reports_for_prebuilt_forms/Splash/get_plots_for_square_id';
-      $options['blankText']='<please select>';
-
-      //Finally create the drop-down
+    
+      //Create the drop-down for the plot
       $location_list_args = array_merge(array(
           'label'=>lang::get('LANG_Location_Label'),
           'view'=>'detail'
       ), $options);
       $r .= data_entry_helper::location_select($location_list_args);
+      //Create the mini report
+      $r .= self::plot_report_panel($auth,$options);
       return $r;
     }
   }
   
+  /*
+   * Display a mini report when the user selects a plot
+   */
+  private static function plot_report_panel($auth,$options) {
+    iform_load_helpers(array('report_helper'));
+    $reportOptions = array(
+      'linkOnly'=>'true',
+      'dataSource'=>'reports_for_prebuilt_forms/Splash/get_plot_details',
+      'readAuth'=>$auth['read']
+    );  
+    data_entry_helper::$javascript .= "indiciaData.plotReportRequest='".
+       report_helper::get_report_data($reportOptions)."';\n";
+    //The html to place the data into using jQuery
+    $htmlTemplate = "
+    </br><div id='plot_report_panel'>
+      </br>
+      <h5>Plot Details</h5>
+      <div id='field ui-helper-clearfix'>
+        <span><b>Plot Type: </b></span><span id='plot-type-value'></span></br>
+        <span><b>Plot Description: </b></span><span id='plot-description-value'></span></br>
+        <span><b>Vice County: </b></span><span id='vice-county-value'></span></br>
+        <span><b>Orientation: </b></span><span id='orientation-value'></span></br>
+        <span><b>Aspect: </b></span><span id='aspect-value'></span></br>
+        <span><b>Slope: </b></span><span id='slope-value'></span></br>
+        <span><b>% Ash cover: </b></span><span id='ash-cover-value'></span></br>
+      </div>
+    </div></br>";
+    //When the plot is changed then get the data about a plot from a report and then 
+    //place it into the mini report html template using jQuery.
+    data_entry_helper::$javascript .= "$('#imp-location').change(function() {
+      if ($(this).val()==='<Please select>') {
+        $('#plot-type-value').text('');
+        $('#plot-description-value').text('');
+        $('#vice-county-value').text('');
+        $('#orientation-value').text('');
+        $('#aspect-value').text('');
+        $('#slope-value').text('');
+        $('#ash-value').text('');
+      } else {
+        reportRequest = indiciaData.plotReportRequest 
+        + '&orientation_attribute_id=' + ".$options['orientationAttributeId']."
+        + '&aspect_attribute_id=' + ".$options['aspectAttributeId']."
+        + '&slope_attribute_id='+ ".$options['slopeAttributeId']."
+        + '&ash_attribute_id=' + ".$options['ashAttributeId']."
+        + '&plot_id='+$(this).val();
+        $.getJSON(reportRequest,
+          null,
+          function(response, textStatus, jqXHR) {
+            $.each(response, function (idx, obj) {         
+              if (obj.type) {
+                $('#plot-type-value').text(obj.type);
+              } else {
+                $('#plot-type-value').text('');
+              }
+              if (obj.description) {
+                $('#plot-description-value').text(obj.description);
+              } else {
+                $('#plot-description-value').text('');
+              }
+              if (obj.county) {
+                $('#vice-county-value').text(obj.county);
+              } else {
+                $('#vice-county-value').text('');
+              }
+              if (obj.orientation) {
+                $('#orientation-value').text(obj.orientation);
+              } else {
+                $('#orientation-value').text('');
+              }
+              if (obj.aspect) {
+                $('#aspect-value').text(obj.aspect);
+              } else {
+                $('#aspect-value').text('');
+              }
+              if (obj.slope) {
+                $('#slope-value').text(obj.slope);
+              } else {
+                $('#slope-value').text('');
+              }
+              if (obj.ash) {
+                $('#ash-value').text(obj.ash);
+              } else {
+                $('#ash-value').text('');
+              }
+            });
+          }
+        );
+      }
+    });";
+    
+    return $htmlTemplate;
+  }
 
   /*
    * When creating a plot, we need the plot location record to hold its parent square in location.parent_id.
