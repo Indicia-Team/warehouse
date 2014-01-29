@@ -150,7 +150,6 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
       if (!empty($submission['fields']['location_name']['value']))
         $occurrenceAndSubSampleRecord['model']['fields']['location_name']['value'] = $submission['fields']['location_name']['value'];
     }
-    drupal_set_message(print_r($submission,true));
     return($submission);
   }
   

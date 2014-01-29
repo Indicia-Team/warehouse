@@ -3067,6 +3067,8 @@ $('#$escaped').change(function(e) {
               if($existing_value=="1")
                 $oc = str_replace('type="checkbox"', 'type="checkbox" checked="checked"', $oc);
             } else {
+              if (is_array($existing_value))
+                $existing_value = implode('',$existing_value);
               $oc = str_replace('value=""', 'value="'.$existing_value.'"', $oc);
             }
           }
