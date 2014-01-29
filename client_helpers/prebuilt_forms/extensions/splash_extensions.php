@@ -229,7 +229,7 @@ class extension_splash_extensions {
         $('#slope-value').text('');
         $('#ash-value').text('');
       } else {
-        reportRequest = indiciaData.plotReportRequest 
+        var reportRequest = indiciaData.plotReportRequest 
         + '&orientation_attribute_id=' + ".$options['orientationAttributeId']."
         + '&aspect_attribute_id=' + ".$options['aspectAttributeId']."
         + '&slope_attribute_id='+ ".$options['slopeAttributeId']."
