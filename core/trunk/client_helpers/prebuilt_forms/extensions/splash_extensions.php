@@ -30,6 +30,8 @@ class extension_splash_extensions {
    * - That a plot is filled in.
    * - The details of at least one tree have been entered
    * - The user hasn't entered a count for any trees that don't exist
+   * - The user has filled in grid references for all trees (this doesn't use the built in mandatory field functionality of Indicia
+   * as the system would flag the Epiphytes as not containing a grid references when they actually shouldn't
    */
   public static function splash_validate($auth, $args, $tabAlias, $options) {
     if (empty($options['treeOccurrenceAttrIds'])) {
@@ -44,6 +46,8 @@ class extension_splash_extensions {
     //- Cycle through all the cells on the row for trees that haven't been entered on the trees grid
     //- Flag error if value found in cell
     data_entry_helper::$javascript .= "
+    $('<span class=\"deh-required\">*</span>').insertAfter('.scGridRef\\\\/Accuracy');
+
     function runValidateOnEpiphyteGrid(gridId,rowCount,treesCount,treeOccurrenceAttrIds) {
       var rowIdx;
       var treeIdxToCheck;
@@ -68,6 +72,10 @@ class extension_splash_extensions {
       }
       if (treesCount===0) {
         alert('Please enter the details of at least 1 tree.');
+        return false;
+      }
+      if ($('.scGridRef\\\\/Accuracy[value=]').length>=3) {
+        alert('Please fill in the grid reference field for all trees.');
         return false;
       }
       var epiphytePopulatedValidateResult;
