@@ -229,12 +229,12 @@ class extension_splash_extensions {
         $('#slope-value').text('');
         $('#ash-value').text('');
       } else {
-        var reportRequest = indiciaData.plotReportRequest 
+        var reportRequest = indiciaData.plotReportRequest
         + '&orientation_attribute_id=' + ".$options['orientationAttributeId']."
         + '&aspect_attribute_id=' + ".$options['aspectAttributeId']."
         + '&slope_attribute_id='+ ".$options['slopeAttributeId']."
         + '&ash_attribute_id=' + ".$options['ashAttributeId']."
-        + '&plot_id='+$(this).val();
+        + '&plot_id='+$(this).val() + '&callback=?';
         $.getJSON(reportRequest,
           null,
           function(response, textStatus, jqXHR) {
