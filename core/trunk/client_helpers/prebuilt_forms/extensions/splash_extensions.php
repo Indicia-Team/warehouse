@@ -32,6 +32,12 @@ class extension_splash_extensions {
    * - The user hasn't entered a count for any trees that don't exist
    */
   public static function splash_validate($auth, $args, $tabAlias, $options) {
+    if (empty($options['treeOccurrenceAttrIds'])) {
+      drupal_set_message('Please fill in the @treeOccurrenceAttrIds option for the splash_validate control.
+                          This should be a comma seperated list of attribute ids that hold the Epiphyte counts for trees.');
+      return '';
+    }
+    $treeOccurrenceAttrIds=explode(',',$options['treeOccurrenceAttrIds']);
     //The validator that makes sure the user hasn't entered a count for a tree that doesn't exist works as follows.
     //- Call the validator function for each epiphyte grid in turn
     //- Cycle through the grid rows
@@ -53,7 +59,7 @@ class extension_splash_extensions {
     }
     $('#entry_form').submit(function() {
       var treesCount = $('#trees tr').length-3;
-      var treeOccurrenceAttrIds = [21,22,23,24,25,26,27,28,29,30];
+      var treeOccurrenceAttrIds = ".json_encode($treeOccurrenceAttrIds).";
       var epiphytesPopulatedCount = $('#Epiphytes-populated tr').length-1;
       var epiphytesFreeCount = $('#Epiphytes-free tr').length-3;
       if ($('#imp-location').val()==='<Please select>') {
