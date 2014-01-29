@@ -574,12 +574,9 @@ $(document).ready(function() {
           indiciaData.sections[current].geom = evt.feature.geometry.toString();
           data['location:centroid_sref']=indiciaData.sections[current].sref;
           data['location:centroid_sref_system']=indiciaData.sections[current].system;
-          $('#section-location-sref').val(indiciaData.sections[current].sref);
-          $('#section-location-sref-system').val(indiciaData.sections[current].system);
           // autocalc section length
           if (indiciaData.autocalcSectionLengthAttrId) {
-            data['locAttr:'+indiciaData.autocalcSectionLengthAttrId] = Math.round(selectedFeature.geometry.clone().transform(indiciaData.mapdiv.map.projection, 'EPSG:27700').getLength());
-            $('#locAttr\\:'+indiciaData.autocalcSectionLengthAttrId).val(data['locAttr:'+indiciaData.autocalcSectionLengthAttrId]);
+            data[$('#locAttr\\:'+indiciaData.autocalcSectionLengthAttrId).attr('name')] = Math.round(selectedFeature.geometry.clone().transform(indiciaData.mapdiv.map.projection, 'EPSG:27700').getLength());
           }
           $.post(
             indiciaData.ajaxFormPostUrl,
@@ -594,6 +591,7 @@ $(document).ready(function() {
                 $('#section-location-id').val(id);
                 $('#section-select-route-'+current).removeClass('missing');
                 $('#section-select-'+current).removeClass('missing');
+                loadSectionDetails(current);
               }
             },
             'json'
