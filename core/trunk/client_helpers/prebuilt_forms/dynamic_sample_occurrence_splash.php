@@ -150,6 +150,7 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
       if (!empty($submission['fields']['location_name']['value']))
         $occurrenceAndSubSampleRecord['model']['fields']['location_name']['value'] = $submission['fields']['location_name']['value'];
     }
+    drupal_set_message(print_r($submission,true));
     return($submission);
   }
   
@@ -271,6 +272,7 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
             if ($explodedKey[0].':'.$explodedKey[1]==='occAttr:'.$args['tree_grid_ref_occ_attr_id']) {
               if ($occurrenceRecordItem)
                 $subSampleModel['model']['fields']['entered_sref']['value']=$occurrenceRecordItem;
+                $subSampleModel['model']['fields']['entered_sref_system']['value']='OSGB';
             }
           }
         }
