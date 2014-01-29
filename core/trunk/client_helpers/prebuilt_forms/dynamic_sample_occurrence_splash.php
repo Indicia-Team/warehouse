@@ -239,6 +239,7 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
       //Search through the occurrence records, then search through each value, and if we find one where the grid occurrence attribute is
       //is "trees" then keep the occurrence, otherwise remove it.
       $removeEpiphyteOccurrence=false;
+      $keepOccurrence=false;
       foreach ($subSampleModel['model']['subModels'] as $occurrencesForTreeIdx => $occurrencesForTree) { 
         //Cycle through the values that make up the Epiphyte record.
         foreach ($occurrencesForTree['model']['fields'] as $itemKey=>$itemValueArray) {  
@@ -254,7 +255,7 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
         $keepOccurrence=false;
       }
       //If we unset any Epiphyte occurrences, there will be gaps in the arrays numbering, so reset the array numbering
-      $subSampleModel['model']['subModels'] = array_values($subSampleModel['model']['subModels']);      
+      $subSampleModel['model']['subModels'] = array_values($subSampleModel['model']['subModels']);    
       //When we have removed the Epiphyte records we don't want, then if there isn't even a tree occurrence for the sub-sample,
       //then we can remove the sub-sample completely
       if (empty($subSampleModel['model']['subModels'])) {
