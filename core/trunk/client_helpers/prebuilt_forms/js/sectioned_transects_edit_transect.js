@@ -565,7 +565,7 @@ $(document).ready(function() {
               if (indiciaData.defaultSectionGridRef==='sectionCentroid100') {
                 pt = selectedFeature.geometry.getCentroid(true); // must use weighted to accurately calculate
               } else {
-                pt = selectedFeature.geometry.components[0];
+                pt = jQuery.extend({}, selectedFeature.geometry.components[0]);
               }
               sref=handler.pointToGridNotation(pt.transform(indiciaData.mapdiv.map.projection, 'EPSG:'+handler.srid), 6);
               indiciaData.sections[current] = {sref : sref,	system : $('#imp-sref-system').val()};
