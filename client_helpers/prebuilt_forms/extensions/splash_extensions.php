@@ -25,6 +25,56 @@
  */
 class extension_splash_extensions {
     
+  /*
+   * Validator for Splash Epiphyte survey input forms, validates the following:
+   * - That a plot is filled in.
+   * - The details of at least one tree have been entered
+   * - The user hasn't entered a count for any trees that don't exist
+   */
+  public static function splash_validate($auth, $args, $tabAlias, $options) {
+    //The validator that makes sure the user hasn't entered a count for a tree that doesn't exist works as follows.
+    //- Call the validator function for each epiphyte grid in turn
+    //- Cycle through the grid rows
+    //- Cycle through all the cells on the row for trees that haven't been entered on the trees grid
+    //- Flag error if value found in cell
+    data_entry_helper::$javascript .= "
+    function runValidateOnEpiphyteGrid(gridId,rowCount,treesCount,treeOccurrenceAttrIds) {
+      var rowIdx;
+      var treeIdxToCheck;
+      for (rowIdx=0; rowIdx<rowCount; rowIdx++) {
+        for (treeIdxToCheck=treesCount; treeIdxToCheck<treeOccurrenceAttrIds.length;treeIdxToCheck++) {
+          if ($('#sc\\\\:'+gridId+'-'+rowIdx+'\\\\:\\\\:occAttr\\\\:'+treeOccurrenceAttrIds[treeIdxToCheck]).val()) {
+            alert('You have entered a count for Epiphytes on a tree that doesn\'t exist in the trees grid.');
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+    $('#entry_form').submit(function() {
+      var treesCount = $('#trees tr').length-3;
+      var treeOccurrenceAttrIds = [21,22,23,24,25,26,27,28,29,30];
+      var epiphytesPopulatedCount = $('#Epiphytes-populated tr').length-1;
+      var epiphytesFreeCount = $('#Epiphytes-free tr').length-3;
+      if ($('#imp-location').val()==='<Please select>') {
+        alert('Please select a plot before submitting.');
+        return false;
+      }
+      if (treesCount===0) {
+        alert('Please enter the details of at least 1 tree.');
+        return false;
+      }
+      var epiphytePopulatedValidateResult;
+      var epiphyteFreeValidateResult;
+      epiphytePopulatedValidateResult = runValidateOnEpiphyteGrid('Epiphytes-populated',epiphytesPopulatedCount,treesCount,treeOccurrenceAttrIds);
+      epiphyteFreeValidateResult = runValidateOnEpiphyteGrid('Epiphytes-free',epiphytesFreeCount,treesCount,treeOccurrenceAttrIds);
+      if (epiphytePopulatedValidateResult===false||epiphyteFreeValidateResult===false) {
+        return false;
+      }
+    });
+    ";
+  }
+  
   /**
    * Get a location select control pair, first the user must select a square then a plot associated with a square.
    * Only squares that are associated with the user and also have plots are displayed
