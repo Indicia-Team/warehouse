@@ -252,7 +252,7 @@ class iform_dynamic_transect_sections_sample_occurrence extends iform_dynamic_sa
       $sampleRecord['entered_sref_system']=$subsite['centroid_sref_system'];
       $sampleRecord['geom']=$subsite['boundary_geom'];
       $sampleRecord['location_id']=$subsite['id'];
-      if ($subSampleIds[$sampleRecord['location_id']])
+      if (!empty($subSampleIds[$sampleRecord['location_id']]))
         $sampleRecord['id'] = $subSampleIds[$sampleRecord['location_id']];
       if (!empty($arr['sample:entered_sref_system']))
         $sampleRecord['entered_sref_system'] = $arr['sample:entered_sref_system'];
@@ -277,7 +277,7 @@ class iform_dynamic_transect_sections_sample_occurrence extends iform_dynamic_sa
     return $subModels;
   }
   
-  function recordZeroAbundance($record, $section_id_attribute) {
+  private static function recordZeroAbundance($record, $section_id_attribute) {
     $zeros=false;
     $nonZeros=false;
     foreach ($record as $attr => $value) {
