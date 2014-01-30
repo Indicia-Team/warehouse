@@ -81,7 +81,10 @@ class extension_splash_extensions {
       var epiphytePopulatedValidateResult;
       var epiphyteFreeValidateResult;
       epiphytePopulatedValidateResult = runValidateOnEpiphyteGrid('Epiphytes-populated',epiphytesPopulatedCount,treesCount,treeOccurrenceAttrIds);
-      epiphyteFreeValidateResult = runValidateOnEpiphyteGrid('Epiphytes-free',epiphytesFreeCount,treesCount,treeOccurrenceAttrIds);
+      //Only do test for Epiphyte grid if first grid passes, otherwise user could get two validation messages.
+      if (epiphytePopulatedValidateResult === true) {
+        epiphyteFreeValidateResult = runValidateOnEpiphyteGrid('Epiphytes-free',epiphytesFreeCount,treesCount,treeOccurrenceAttrIds);
+      }
       if (epiphytePopulatedValidateResult===false||epiphyteFreeValidateResult===false) {
         return false;
       }
