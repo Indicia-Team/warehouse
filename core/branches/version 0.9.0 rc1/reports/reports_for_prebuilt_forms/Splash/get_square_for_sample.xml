@@ -1,0 +1,20 @@
+<report
+    title="Get square for sample"
+    description="Get the id of a square for a given sample id, used to automatically select the square in the location select
+on the input forms in edit mode."
+>
+  <query>
+    SELECT #columns#
+    FROM samples s
+      JOIN locations plot on plot.id = s.location_id AND plot.deleted=false
+      JOIN locations square on square.id=plot.parent_id AND square.deleted=false
+    WHERE (s.id = #sample_id#)
+    AND plot.deleted=false
+  </query>
+  <params>
+    <param name="sample_id" display="Todo" datatype="integer"/>
+  </params>
+  <columns>
+    <column name='id' display='Square ID' sql="square.id" datatype='integer' visible="false"/>
+  </columns>
+</report>
