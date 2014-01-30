@@ -357,38 +357,42 @@ class extension_splash_extensions {
   }
   
   /*
-   * When the plot details or square/user administration pages are in edit/view mode then we need to display the name of the square.
+   * When the plot details or square/user administration pages are displayed then we need to display the name of the square.
    * As the square display name is made from the name of the square plus its vice counties, then we need to collect this information from a report.
    */
   public static function get_square_name($auth, $args, $tabalias, $options, $path) {
-    //The plot details page use's location_id as its parametre, so check for this as we can't display the label
-    //if the plot details page is in add mode.
+    //The plot details page use's location_id as its parameter in edit mode
     if (!empty($_GET['location_id'])) {
       $reportOptions = array(
         'dataSource'=>'reports_for_prebuilt_forms/Splash/get_square_name_for_plot_id',
         'readAuth'=>$auth['read'],
         'extraParams' => array('website_id'=>$args['website_id'], 
-            'viceCountyLocationAttributeId'=>$options['viceCountyLocationAttributeId'], 
-            'noViceCountyFoundMessage'=>$options['noViceCountyFoundMessage'],
+            'vice_county_location_attribute_id'=>$options['viceCountyLocationAttributeId'], 
+            'no_vice_county_found_message'=>$options['noViceCountyFoundMessage'],
             'plot_id'=>$_GET['location_id']),
         'valueField'=>'id',
         'captionField'=>'name'
       );
     }
-    //The square/user admin page use's dynamic-location_id as its parametre. Only perform code for this 
+    //The square/user admin page use's dynamic-location_id as its parameter. Only perform code for this 
     //page if this is present.
-    if (!empty($_GET['dynamic-location_id'])) {
+    //In add mode, the Plot Details page is given its parent square in the parent_square_id parameter, so use this to get the parent square name.
+    if (!empty($_GET['dynamic-location_id'])||!empty($_GET['parent_square_id'])) {
       $reportOptions = array(
         'dataSource'=>'reports_for_prebuilt_forms/Splash/get_square_name_for_square_id',
         'readAuth'=>$auth['read'],
         'extraParams' => array('website_id'=>$args['website_id'], 
-            'viceCountyLocationAttributeId'=>$options['viceCountyLocationAttributeId'], 
-            'noViceCountyFoundMessage'=>$options['noViceCountyFoundMessage'],
-            'square_id'=>$_GET['dynamic-location_id']),
+            'vice_county_location_attribute_id'=>$options['viceCountyLocationAttributeId'], 
+            'no_vice_county_found_message'=>$options['noViceCountyFoundMessage']),
         'valueField'=>'id',
         'captionField'=>'name'
       );
+      if (!empty($_GET['dynamic-location_id'])) 
+        $reportOptions['extraParams']['square_id']= $_GET['dynamic-location_id'];
+      if (!empty($_GET['parent_square_id'])) 
+        $reportOptions['extraParams']['square_id']= $_GET['parent_square_id'];
     }
+    
     if (!empty($reportOptions)) {
       $squareNameData = data_entry_helper::get_report_data($reportOptions);
       if (!empty($squareNameData[0]['name']))
