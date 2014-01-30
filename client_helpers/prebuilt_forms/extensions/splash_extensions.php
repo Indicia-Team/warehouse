@@ -162,14 +162,24 @@ class extension_splash_extensions {
       foreach($rawData as $rawRow) {
           $squaresData[$rawRow['id']]=$rawRow['name'];        
       }
-
+      //Need a report to collect the square to default the Location Select to in edit mode, as this is not stored against the sample directly.
+      if (!empty($_GET['sample_id'])) {
+        $squareData = data_entry_helper::get_report_data(array(
+          'dataSource'=>'reports_for_prebuilt_forms/Splash/get_square_for_sample',
+          'readAuth'=>$auth['read'],
+          'extraParams'=>array('sample_id'=>$_GET['sample_id'])
+        ));
+        $defaultSquareSelection=$squareData[0]['id'];
+      } else {
+        $defaultSquareSelection='';
+      }
       $r = data_entry_helper::select(array(
         'id' => 'squares-select-list',
         'fieldname'=> 'squares-select-list',
         'label' => lang::get('Select a Square'),
         'helpText' => lang::get('Select a square to input data for before selecting a plot.'),
         'lookupValues' => $squaresData, 
-        'default' => ''
+        'default' => $defaultSquareSelection
       ));
       //This code is same as standard lookup control
       if (isset($options['extraParams'])) {
