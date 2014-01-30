@@ -241,7 +241,7 @@ class extension_splash_extensions {
         $('#ash-value').text('');
       } else {
         var reportRequest = indiciaData.plotReportRequest
-        + '&vice_county_name_attribute_id=' + ".$options['viceCountyNameAttributeId']."
+        + '&vice_county_name_attribute_id=' + ".$options['viceCountyLocationAttributeId']."
         + '&orientation_attribute_id=' + ".$options['orientationAttributeId']."
         + '&aspect_attribute_id=' + ".$options['aspectAttributeId']."
         + '&slope_attribute_id='+ ".$options['slopeAttributeId']."
