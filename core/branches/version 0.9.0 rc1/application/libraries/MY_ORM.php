@@ -653,7 +653,7 @@ class ORM extends ORM_Core {
         // Make sure we got a record to save against before attempting to post children. Post attributes first
         // before child records because the parent (e.g. Sample) attribute values sometimes affect the cached data 
         // (e.g. the recorders stored in cache_occurrences)
-        $return = $this->createAttributes() ? $return : null;
+        $return = $this->createAttributes($isInsert) ? $return : null;
         $return = $this->createChildRecords() ? $return : null;
         $return = $this->createJoinRecords() ? $return : null;
         
@@ -1265,8 +1265,10 @@ class ORM extends ORM_Core {
 
  /**
   * Create the records for any attributes attached to the current submission.
+  * @param bool $isInsert TRUE for when the parent of the attributes is a fresh insert, FALSE for an update.
+  * @return bool TRUE if success.
   */
-  protected function createAttributes() {
+  protected function createAttributes($isInsert) {
     if ($this->has_attributes) {
       // Deprecated submission format attributes are stored in a metafield.
       if (isset($this->submission['metaFields'][$this->attrs_submission_name])) {
@@ -1288,16 +1290,19 @@ class ORM extends ORM_Core {
             if ($attrDef->multi_value=='t' && count($arr)) {
               if (!isset($multiValueData["attr:$attrId"]))
                 $multiValueData["attr:$attrId"]=array('attrId'=>$attrId, 'attrDef'=>$attrDef, 'values'=>array());
-              $multiValueData["attr:$attrId"]['values'][]=$value;
+              if (is_array($value))
+                $multiValueData["attr:$attrId"]['values']=array_merge($multiValueData["attr:$attrId"]['values'], $value);
+              else
+                $multiValueData["attr:$attrId"]['values'][]=$value;
             }
             if (!$this->createAttributeRecord($attrId, $valueId, $value, $attrDef)) 
               return false;
           }
         }
-        // delete any old values from a mult-value attribute
-        if (!empty($multiValueData)) {
+        // delete any old values from a mult-value attribute. No need to worry for inserting new records.
+        if (!$isInsert && !empty($multiValueData)) {
           // If we did any multivalue updates for existing records, then any attributes whose values were not included in the submission must be removed.
-          // We may have more than one multivalue field in the record, each of a differnet type
+          // We may have more than one multivalue field in the record, each of a different type
           foreach ($multiValueData as $attr => $spec) {
             switch ($spec['attrDef']->data_type) {
               case 'I': 
