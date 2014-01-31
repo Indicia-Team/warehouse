@@ -62,15 +62,16 @@ class extension_splash_extensions {
       return true;
     }
     $('#entry_form').submit(function() {
-      var treesCount = $('#trees tr').length-3;
+      var treesCount = $('#trees').find('.scTaxonCell:not([disabled])').length;
       var treeOccurrenceAttrIds = ".json_encode($treeOccurrenceAttrIds).";
       var epiphytesPopulatedCount = $('#Epiphytes-populated tr').length-1;
       var epiphytesFreeCount = $('#Epiphytes-free tr').length-3;
       if ($('#imp-location').val()==='<Please select>') {
         alert('Please select a plot before submitting.');
         return false;
-      }
-      if (treesCount===0) {
+      }  
+      //If there is only 1 enabled row then there is either just an empty row, or an empty row and some deleted ones.
+      if (treesCount < 2) {
         alert('Please enter the details of at least 1 tree.');
         return false;
       }
