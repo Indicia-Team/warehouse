@@ -86,8 +86,10 @@ class iform_dynamic_report_explorer extends iform_dynamic {
               "The following types of component can be specified. <br/>".
                   "<strong>[control name]</strong> indicates a predefined control is to be added to the form with the following predefined controls available: <br/>".
                   "&nbsp;&nbsp;<strong>[params]</strong> - a parameters input form for the reports/map<br/>".
-                  "&nbsp;&nbsp;<strong>[map]</strong> - displays information relating to the occurrence and its sample<br/>".
-                  "&nbsp;&nbsp;<strong>[reportgrid]</strong> - lists any comments associated with the occurrence. Also includes the ability to add a comment<br/>".
+                  "&nbsp;&nbsp;<strong>[standard params]</strong> - a standard params filter bar. Use with reports that support standard params.<br/>".
+                  "&nbsp;&nbsp;<strong>[map]</strong> - outputs report content as a map.<br/>".
+                  "&nbsp;&nbsp;<strong>[reportgrid]</strong> - outputs report content in tabular form.<br/>".
+                  "&nbsp;&nbsp;<strong>[reportchart]</strong> - outputs report content in chart form.<br/>".
               "<strong>=tab/page name=</strong> is used to specify the name of a tab or wizard page (alpha-numeric characters only). ".
               "If the page interface type is set to one page, then each tab/page name is displayed as a seperate section on the page. ".
               "Note that in one page mode, the tab/page names are not displayed on the screen.<br/>".
@@ -374,74 +376,36 @@ class iform_dynamic_report_explorer extends iform_dynamic {
    * Currently take its parameters from $options in the Form Structure.
    */
   protected static function get_control_reportchart($auth, $args, $tabalias, $options) {
-    if (!isset($options['width'])||!isset($options['height'])||!isset($options['chartType'])||!isset($options['yValues'])
-       ||!isset($options['output'])||!isset($options['dataSource'])||!isset($options['xLabels'])) {
-      $r = '<h4>Please fill in the following options for the chart parameters control: width, height, chartType, yValues
-            output, dataSource, xLabels</h4>';
-      return $r;
+    if (!isset($options['chartType'])||!isset($options['yValues'])||!isset($options['dataSource'])
+        ||(!isset($options['xLabels']) && !isset($options['xValues']))) {
+      return '<p>Please fill in the following options for the chart parameters control: chartType, dataSource,
+            yValues and either xLabels or xValues.</p>';
     }
-    iform_load_helpers(array('report_helper', 'map_helper'));
+    if (isset($options['xLabels']) && isset($options['xValues'])) {
+      return '<p>Please provide either a value for xLabels or xValues.</p>';
+    }
+    iform_load_helpers(array('report_helper'));
     $args['report_name']='';
     $options = array_merge(
-      iform_report_get_report_options($args, $auth),
-      $options, 
+      iform_report_get_report_options($args, $auth['read']),
       array(
         'id' => 'chart-'.self::$reportCount,
         'reportGroup'=>'dynamic',
-        'width'=> $options['width'],
-        'height'=> $options['height'],
-        'chartType' => $options['chartType'],
-        'yValues'=>explode(',', $options['yValues']),
-        'output'=>$options['output'],
-        'readAuth'=>$auth['read'],
-        'dataSource'=>$options['dataSource']
-      )
+        'width'=> '100%',
+        'height'=> 500,
+        'autoParamsForm'=>false
+      ),
+      $options
     );
-    $xLabels = trim($options['xLabels']);
-    if (empty($xLabels))
+    // values and labels should be provided as a json array, but just in case it is a comma separated list
+    if (!is_array($options['yValues']))
+      $options['yValues']=explode(',', trim($options['yValues']));
+    if (!empty($options['xValues']) && !is_array($options['xValues']))
       $options['xValues']=explode(',', $options['xValues']);
-    else
+    if (!empty($options['xLabels']) && !is_array($options['xLabels']))
       $options['xLabels']=explode(',', $options['xLabels']);
     
-    // advanced options
-    if (!empty($options['rendererOptions'])) {
-      $rendererOptions = trim($options['rendererOptions']);
-      $options['rendererOptions'] = json_decode($rendererOptions, true);
-    }
-    if (!empty($options['legendOptions'])) {
-      $legendOptions = trim($options['legendOptions']);
-      $options['legendOptions'] = json_decode($legendOptions, true);
-    }
-    if (!empty($options['seriesOptions'])) {
-      $seriesOptions = trim($options['seriesOptions']);
-      $options['seriesOptions'] = json_decode($seriesOptions, true);
-    }
-    if (!empty($options['axesOptions'])) {
-      $axesOptions = trim($options['axesOptions']);
-      $options['axesOptions'] = json_decode($axesOptions, true);
-    }
-
-    //User has elected for parameters form only
-    if ($options['output']==='form')
-      $options['paramsOnly']=true;
-    else {
-      if (isset($options['paramsOnly']))
-        unset($options['paramsOnly']);
-    } 
-    //User has elected for parameters form only or 
-    //both the chart and parameters form together
-    if ($options['output']==='form'||$options['output']==='default')
-      $options['completeParamsForm']=true;
-    else {
-      if (isset($options['completeParamsForm']))
-        unset($options['completeParamsForm']);
-    }  
-    //User has elected for the chart only
-    if ($options['output']==='output') {
-      $options['autoParamsForm']=false;
-    }
-    $r = '<br/>'.report_helper::report_chart($options);
-    return $r;
+    return report_helper::report_chart($options);
   }
   
   /*
