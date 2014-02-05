@@ -2776,7 +2776,6 @@ $('#$escaped').change(function(e) {
     self::add_resource('json');
     self::add_resource('autocomplete');
     $filterArray = self::get_species_names_filter($options);
-    drupal_set_message(print_r($filterArray, true));
     $filterNameTypes = array('all','currentLanguage', 'preferred', 'excludeSynonyms');
     //make a copy of the options so that we can maipulate it
     $overrideOptions = $options;
