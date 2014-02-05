@@ -426,10 +426,16 @@ var saveComment, saveVerifyComment;
           'so please ensure you have set the grid\'s filter correctly before proceeding. You should only proceed if you are certain that data you are verifying '+
           'can be trusted without further investigation.</p>'+
           '<label><input type="radio" name="quick-option" value="species" /> Verify grid\'s records of <span class="quick-taxon">'+currRec.extra.taxon+'</span></label><br/>';
-      if (currRec.extra.recorder!=='' && currRec.extra.recorder!==null && currRec.extra.created_by_id!=='1') {
+      // at this point, we need to know who the created_by_id recorder name is. And if it matches extra.recorder, otherwise this record may have been input by proxy
+      if (currRec.extra.recorder!=='' && currRec.extra.input_by_surname!==null && currRec.extra.created_by_id!=='1'
+          && (currRec.extra.recorder===currRec.extra.input_by_first_name + ' ' + currRec.extra.input_by_surname
+          || currRec.extra.recorder===currRec.extra.input_by_surname + ', ' + currRec.extra.input_by_first_name)) {
         popupHtml += '<label><input type="radio" name="quick-option" value="recorder"/> Verify grid\'s records by <span class="quick-user">'+currRec.extra.recorder+'</span></label><br/>'+
             '<label><input type="radio" name="quick-option" value="species-recorder" /> Verify grid\'s records of <span class="quick-taxon">'+currRec.extra.taxon+
             '</span> by <span class="quick-user">'+currRec.extra.recorder+'</span></label><br/>';
+      } 
+      else if (currRec.extra.recorder!=='' && currRec.extra.recorder!==null && currRec.extra.input_by_surname!==null && currRec.extra.created_by_id!=='1') {
+        popupHtml += '<p class="helpText">Because the recorder, ' + currRec.extra.recorder + ', is not linked to a logged in user, quick verification tools cannot filter to records by this recorder.</p>';
       }
       popupHtml += '<label><input type="checkbox" name="ignore-checks" /> Include failures?</label><p class="helpText">The records will only be verified if they do not fail '+
           'any automated verification checks. If you <em>really</em> trust the records are correct then you can verify them even if they fail some checks by ticking this box.</p>';
