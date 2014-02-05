@@ -136,7 +136,7 @@ ul.gallery li {
   }
 }
 
-input[type="button"].tools-btn, button.tools-btn {
+input[type="button"].tools-btn, button.tools-btn, #standard-params input[type="button"].tools-btn, #standard-params button.tools-btn {
   padding: 0.3em;
 }
 
@@ -188,5 +188,11 @@ tr {
   }
   &.total {
     font-weight: bold;
+  }
+}
+
+.grid-verify-popup {
+  button {
+    margin-right: 1em;
   }
 }
