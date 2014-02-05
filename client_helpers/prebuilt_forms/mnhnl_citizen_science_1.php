@@ -425,7 +425,7 @@ class iform_mnhnl_citizen_science_1 {
         'table' => 'occurrence_image',
         'tabDiv' => 'other',
         // reduce the number of runtimes, because flash and silverlight don't seem reliable on this form.
-        'runtimes' => array('html5','gears','browserplus','html4')
+        'runtimes' => array('html5','html4')
     ));
 
 
