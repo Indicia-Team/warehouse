@@ -2776,6 +2776,7 @@ $('#$escaped').change(function(e) {
     self::add_resource('json');
     self::add_resource('autocomplete');
     $filterArray = self::get_species_names_filter($options);
+    drupal_set_message(print_r($filterArray, true));
     $filterNameTypes = array('all','currentLanguage', 'preferred', 'excludeSynonyms');
     //make a copy of the options so that we can maipulate it
     $overrideOptions = $options;
@@ -3833,6 +3834,8 @@ $('#".$options['id']." .species-filter').click(function(evt) {
     }
     // load the species names that should be initially included in the grid
     if (isset($options['listId']) && !empty($options['listId'])) {
+      // Apply the species list to the filter
+      $options['extraParams']['taxon_list_id']=$options['listId'];
       // list in taxonomic sort order if order not already specified
       if( !isset($options['extraParams']['orderby']) )
         $options['extraParams']['orderby'] = 'taxonomic_sort_order';
@@ -3958,9 +3961,6 @@ $('#".$options['id']." .species-filter').click(function(evt) {
     $options['subSamplePerRow'] = $options['subSamplePerRow'] && $options['speciesControlToUseSubSamples'];
     // subspecies columns require cached lookups to be enabled.
     $options['cacheLookup'] = $options['cacheLookup'] || $options['subSpeciesColumn'];
-    if (array_key_exists('listId', $options) && !empty($options['listId'])) {
-      $options['extraParams']['taxon_list_id']=$options['listId'];
-    }
     if (array_key_exists('readAuth', $options)) {
       $options['extraParams'] += $options['readAuth'];
     } else {
