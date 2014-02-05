@@ -473,11 +473,10 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
           startUploadBtnCaption : 'Start upload',
           msgUploadError : 'An error occurred uploading the file.',
           msgFileTooBig : 'The image file cannot be uploaded because it is larger than the maximum file size allowed.',
-          runtimes : 'html5,silverlight,flash,gears,browserplus,html4',
+          runtimes : 'html5,flash,silverlight,html4',
           imagewidth : '250',
           uploadScript : indiciaData.uploadSettings.uploadScript,
           destinationFolder : indiciaData.uploadSettings.destinationFolder,
-          swfAndXapFolder : indiciaData.uploadSettings.swfAndXapFolder,
           jsPath : indiciaData.uploadSettings.jsPath,
           table : table,
           maxUploadSize : '4000000', // 4mb

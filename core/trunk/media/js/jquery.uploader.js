@@ -165,7 +165,7 @@ var checkSubmitInProgress = function () {
     if (/Firefox[\/\s](\d+\.\d+)/.test(navigator.userAgent)){ //test for Firefox/x.x or Firefox x.x (ignoring remaining digits);
       var ffversion=new Number(RegExp.$1); // capture x.x portion and store as a number
       if (ffversion>=3.5) {
-        // Browser is not FF3.5+, so Html5 is a good runtime as HTML5 resize only works on FF3.5+. 
+        // Browser is FF3.5+, so Html5 is a good runtime as HTML5 resize only works on FF3.5+. 
         html5OK = true;
       }
     } 
@@ -228,8 +228,8 @@ var checkSubmitInProgress = function () {
         browse_button : this.settings.browse_button,
         url : this.settings.uploadScript,
         resize : resize,
-        flash_swf_url : this.settings.swfAndXapFolder + 'plupload.flash.swf',
-        silverlight_xap_url : this.settings.swfAndXapFolder + 'plupload.silverlight.xap',
+        flash_swf_url : this.settings.jsPath + 'plupload/js/Moxie.swf',
+        silverlight_xap_url : this.settings.jsPath + 'plupload/js/Moxie.xap',
         filters : [
           {title : "Image files", extensions : "jpg,gif,png,jpeg"}
         ],
@@ -471,7 +471,6 @@ jQuery.fn.uploader.defaults = {
   msgNoembedResponseError : 'An error occurred trying to link to that resource. Are you sure the URL is correct and that you are connected to the internet?',
   uploadScript : 'upload.php',
   destinationFolder : '',
-  swfAndXapFolder : '',
-  runtimes : 'gears,silverlight,browserplus,html5,flash,html4',
+  runtimes : 'html5,flash,silverlight,html4',
   mediaTypes : ["Image:Local"]
 };
