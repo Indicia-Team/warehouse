@@ -626,6 +626,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    * it available to a hook function which exists outside the form.
    */
   protected static function get_form_html($args, $auth, $attributes) { 
+    // We always want an autocomplete formatter function for species lookups..
+    call_user_func(array(self::$called_class, 'build_grid_autocomplete_function'), $args);
     global $remembered;
     $remembered = isset($args['remembered']) ? $args['remembered'] : '';
     return parent::get_form_html($args, $auth, $attributes);
@@ -1086,7 +1088,6 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       return '<input type="hidden" name="occurrence:taxa_taxon_list_id" value="'.$response[0]['id']."\"/>\n";
     }
     $extraParams = $auth['read'];
-    call_user_func(array(self::$called_class, 'build_grid_autocomplete_function'), $args);
     // the imp-sref & imp-geom are within the dialog so it is updated.
     $speciesCtrl = self::get_control_species_checklist($auth, $args, $extraParams, $options); // this preloads the subsample data.
     $systems = explode(',', str_replace(' ', '', $args['spatial_systems']));
@@ -1303,7 +1304,6 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         return '<input type="hidden" name="occurrence:taxa_taxon_list_id" value="'.$response[0]['id']."\"/>\n";
     }
     $extraParams = $auth['read'];
-    call_user_func(array(self::$called_class, 'build_grid_autocomplete_function'), $args);
     if ($gridmode)
       return self::get_control_species_checklist($auth, $args, $extraParams, $options);
     else
