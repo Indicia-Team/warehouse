@@ -921,10 +921,6 @@ $('#$escaped').change(function(e) {
   * <li><b>destinationFolder</b><br/>
   * Override the destination folder for uploaded files. You should not normally need to change this.
   * </li>
-  * <li><b>swfAndXapFolder</b><br/>
-  * Override the folder which the Plupload Flash (swf) and Silverlight (xap) files are loaded from. You should not
-  * normally need to change this.
-  * </li>
   * <li><b>codeGenerated</b>
   * If set to all (default), then this returns the HTML required and also inserts JavaScript in the document onload event. However, if you
   * need to delay the loading of the control until a certain event, e.g. when a radio button is checked, then this can be set
@@ -980,13 +976,12 @@ $('#$escaped').change(function(e) {
       'startUploadBtnCaption' => lang::get('Start upload'),
       'msgUploadError' => lang::get('upload error'),
       'msgFileTooBig' => lang::get('file too big for warehouse'),
-      'runtimes' => array('html5','silverlight','flash','gears','browserplus','html4'),
+      'runtimes' => array('html5','flash','silverlight','html4'),
       'autoupload' => true,
       'imageWidth' => 200,
       'uploadScript' => $relpath . 'upload.php',
       'destinationFolder' => $relpath . $interim_image_folder,
       'finalImageFolder' => self::get_uploaded_image_folder(),
-      'swfAndXapFolder' => $relpath . 'plupload/',
       'jsPath' => self::$js_path,
       'buttonTemplate' => $indicia_templates['button'],
       'table' => 'occurrence_medium',
@@ -2816,7 +2811,6 @@ $('#$escaped').change(function(e) {
       self::$javascript .= "indiciaData.uploadSettings = {\n";
       self::$javascript .= "  uploadScript: '" . $relpath . "upload.php',\n";
       self::$javascript .= "  destinationFolder: '" . $relpath . $interim_image_folder."',\n";
-      self::$javascript .= "  swfAndXapFolder: '" . $relpath . "plupload/',\n";
       self::$javascript .= "  jsPath: '".self::$js_path."'";
       if (isset($options['resizeWidth'])) {
         self::$javascript .= ",\n  resizeWidth: ".$options['resizeWidth'];
