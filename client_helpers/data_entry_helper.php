@@ -844,9 +844,9 @@ $('#$escaped').change(function(e) {
 /**
   * Outputs a file upload control suitable for linking images to records.
   * The control allows selection of multiple files, and depending on the browser functionality it gives progress feedback.
-  * The control uses Google Gears, Flash, Silverlight, Browserplus or HTML5 to enhance the functionality
-  * where available. The output of the control can be configured by changing the content of the templates called
-  * file_box, file_box_initial_file_info, file_box_uploaded_image and button.
+  * The control uses Silverlight, Flash or HTML5 to enhance the functionality where available. The output of the control 
+  * can be configured by changing the content of the templates called file_box, file_box_initial_file_info, 
+  * file_box_uploaded_image and button.
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>table</b><br/>
@@ -916,8 +916,8 @@ $('#$escaped').change(function(e) {
   * </li>
   * <li><b>runtimes</b><br/>
   * Array of runtimes that the file upload component will use in order of priority. Defaults to
-  * array('html5','silverlight','flash','gears','browserplus','html4'), though flash is removed for
-  * Internet Explorer 6. You should not normally need to change this.
+  * array('html5','flash','silverlight','html4'), though flash is removed for Internet Explorer 6. You 
+  * should not normally need to change this.
   * </li>
   * <li><b>destinationFolder</b><br/>
   * Override the destination folder for uploaded files. You should not normally need to change this.
@@ -3225,6 +3225,8 @@ tabscontrols.tabs('select',$('#$options[id]').parents('.ui-tabs-panel')[0].id);\
    * @return string
    */
   private static function add_link_popup($options) {
+    if (!isset($options['readAuth']))
+      return '';
     if ($options['mediaTypes']) {
       $onlyImages = true;
       $onlyLocal = true;
