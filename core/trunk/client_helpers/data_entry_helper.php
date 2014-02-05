@@ -219,7 +219,8 @@ class data_entry_helper extends helper_base {
       'simplify' => (isset($options['simplify']) && $options['simplify']) ? 'true' : 'false',
       'warnIfNoMatch' => true,
       'continueOnBlur' => true,
-      'selectMode' => false
+      'selectMode' => false,
+      'default' => ''
     ), $options);
     if (isset($options['report'])) {
       $options['extraParams']['report'] = $options['report'].'.xml';
@@ -2506,6 +2507,15 @@ $('#$escaped').change(function(e) {
     if (isset($duplicateCheckFields))
       $options['duplicateCheckFields']=$duplicateCheckFields;
     $options['extraParams'] += self::get_species_names_filter($options);
+    if (!empty($options['default']) && empty($options['defaultCaption'])) {
+      // We've been given an attribute value but no caption for the species name in the data to load for an existing record. So look it up.
+      $r = self::get_population_data(array(
+        'table'=>'cache_taxa_taxon_list',
+        'extraParams'=>array('nonce'=>$options['extraParams']['nonce'],'auth_token'=>$options['extraParams']['auth_token'])+
+            array('id'=>$options['default'],'columns'=>"taxon")
+      ));
+      $options['defaultCaption']=$r[0]['taxon'];
+    }
     return self::autocomplete($options);
   }
 
@@ -6702,9 +6712,24 @@ if (errors$uniq.length>0) {
   */
   public static function outputAttribute($item, $options=array()) {
     if (!empty($item['multi_value']) && $item['multi_value']==='t' && !empty($options['controlCount']) ) {
+      // don't need an array field - we will make a unique set of control names instead
+      $item['fieldname'] = preg_replace('/\[\]$/', '', $item['fieldname']);
       $r = "<label class=\"auto\">$item[caption]<br/>";
+      $origFieldName = empty($item['fieldname']) ? '' : $item['fieldname'];
+      $origDefault = empty($item['default']) ? array() : $item['default'];
       for ($i=1; $i<=$options['controlCount']; $i++) {
         $item['caption']=$i;
+        // Might need to match to existing attribute values in entity to load here
+        if (!empty($origDefault) && isset($origDefault[$i-1]) && is_array($origDefault[$i-1])) {
+          $item['fieldname']=$origDefault[$i-1]['fieldname'].':';
+          $item['id']=$origDefault[$i-1]['fieldname'].':';
+          $item['default']=$origDefault[$i-1]['default'];
+        } elseif (preg_match('/^[a-z]+Attr:[\d]+$/', $origFieldName)) {
+          // make unique fieldname
+          $item['fieldname']="$origFieldName::$i";
+          $item['id']="$origFieldName::$i";
+          unset($item['default']);
+        }
         $r .= self::internalOutputAttribute($item, $options);
       }
       return "$r</label>";
