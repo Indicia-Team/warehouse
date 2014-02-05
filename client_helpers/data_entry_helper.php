@@ -6707,6 +6707,18 @@ if (errors$uniq.length>0) {
   * @todo full handling of the control_type. Only works for text data at the moment.
   */
   public static function outputAttribute($item, $options=array()) {
+    if (!empty($item['multi_value']) && $item['multi_value']==='t' && !empty($options['controlCount']) ) {
+      $r = "<label class=\"auto\">$item[caption]<br/>";
+      for ($i=1; $i<=$options['controlCount']; $i++) {
+        $item['caption']=$i;
+        $r .= self::internalOutputAttribute($item, $options);
+      }
+      return "$r</label>";
+    }
+    return self::internalOutputAttribute($item, $options);
+  }
+  
+  private static function internalOutputAttribute($item, $options) {
     $options = array_merge(array(
       'extraParams' => array()
     ), $options);
@@ -6727,6 +6739,7 @@ if (errors$uniq.length>0) {
       //the following two lines are a temporary fix to allow a control_type to be specified via the form's user interface form structure      
     if(isset($attrOptions['control_type']) && $attrOptions['control_type']!="")
       $item['control_type']= $attrOptions['control_type'];
+    unset($ctrl);
     switch ($item['data_type']) {
         case 'Text':
         case 'T':
@@ -6740,10 +6753,18 @@ if (errors$uniq.length>0) {
           }
           $output = self::$ctrl($attrOptions);
           break;
-        case 'Float':
-        case 'F':
         case 'Integer':
         case 'I':
+          // We can use integer fields to store the results of custom lookups, e.g. against species or locations...
+          if (isset($item['control_type']) &&
+              ($item['control_type']=='species_autocomplete' || $item['control_type']=='location_autocomplete')) {
+            $ctrl = $item['control_type'];
+          }
+          // flow through
+        case 'Float':
+        case 'F':
+          if (!isset($ctrl))
+            $ctrl='text_input';
           if (!empty($item['system_function']) && $item['system_function']==='group_id') {
             $attrLookupOptions = array_merge(array(
               'report'=>'library/groups/groups_list',
@@ -6773,7 +6794,7 @@ $('#".str_replace(':', '\\\\:', $attrOptions['id'])."').change(function(evt) {
             $output=self::select($attrOptions);
             $output.="<input id=\"occurrence:release_status\" type=\"hidden\" value=\"R\">\n";
           } else
-            $output = self::text_input($attrOptions);
+            $output = self::$ctrl($attrOptions);
           break;
         case 'Boolean':
         case 'B':
