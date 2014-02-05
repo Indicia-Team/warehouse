@@ -348,7 +348,7 @@ ul.gallery li {
 }
 
 /* line 139, sass/verification_4.scss */
-input[type="button"].tools-btn, button.tools-btn {
+input[type="button"].tools-btn, button.tools-btn, #standard-params input[type="button"].tools-btn, #standard-params button.tools-btn {
   padding: 0.3em;
 }
 
@@ -408,4 +408,8 @@ tr.rejected {
 /* line 189, sass/verification_4.scss */
 tr.total {
   font-weight: bold;
+}
+/* line 195, sass/verification_4.scss */
+.grid-verify-popup button {
+  margin-right: 1em;
 }

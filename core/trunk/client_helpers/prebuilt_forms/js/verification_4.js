@@ -55,7 +55,7 @@ var saveComment, saveVerifyComment;
               '&nonce=' + indiciaData.read.nonce + '&auth_token=' + indiciaData.read.auth_token);
           // reload current tabs
           $('#record-details-tabs').tabs('load', $('#record-details-tabs').tabs('option', 'selected'));
-          $('#record-details-toolbar *').attr('disabled', '');
+          $('#record-details-toolbar *').removeAttr('disabled');
           showTab();
           // remove any wms layers for species or the gateway data
           $.each(speciesLayers, function(idx, layer) {
@@ -384,39 +384,50 @@ var saveComment, saveVerifyComment;
     });
     showTab();
   });
+  
+  function verifyRecordSet(trusted) {
+    var request, params=indiciaData.reports.verification.grid_verification_grid.getUrlParamsForAllRecords();
+    //If doing trusted only, this through as a report parameter.
+    if (trusted) {
+      params.quality_context="T";
+    }
+    request = indiciaData.ajaxUrl + '/bulk_verify/'+indiciaData.nid;
+    $.post(request,
+      'report='+encodeURI(indiciaData.reports.verification.grid_verification_grid[0].settings.dataSource)+'&params='+encodeURI(JSON.stringify(params))+
+      '&user_id='+indiciaData.userId+'&ignore='+$('.grid-verify-popup input[name=ignore-checks-trusted]').attr('checked'),
+      function(response) {
+        indiciaData.reports.verification.grid_verification_grid.reload(true);
+        alert(response + ' records verified');
+      }
+    );
+    $.fancybox.close();
+  }
 
   $(document).ready(function () {
     //Use jQuery to add a button to the top of the verification page. Use this button to access the popup
     //which allows you to verify all trusted records.
     var verifyAllTrustedButton = '<input type="button" value="..." class="default-button verify-grid-trusted tools-btn" id="verify-grid-trusted"/>', 
-        trustedHtml, request;
+        trustedHtml;
     $('#filter-build').after(verifyAllTrustedButton);
     $('#verify-grid-trusted').click(function() {
-      trustedHtml = '<div class="trusted-verify-popup" style="width: 550px"><h2>Verify records by trusted recorders</h2>'+
-                    '<p>This facility allows you to verify all records where the recorder is trusted based on the record\'s '+
-                    'survey, taxon group and location. Before using this facility, set up the recorders you wish to trust '+
-                    'using the ... button next to each record.</p>';
-      trustedHtml += '<label><input type="checkbox" name="ignore-checks-trusted" /> Include failures?</label><p>The records will only be verified if they have been through automated checks ' +
-                     'without any rule violations. If you <em>really</em> trust the records are correct then you can verify them even if they fail some checks by ticking this box.</p>'+
-                     '<button type="button" class="default-button" id="verify-trusted-button">Verify trusted records</button></div>';
+      trustedHtml = '<div class="grid-verify-popup" style="width: 550px"><h2>Verify sets of records</h2>'+
+                    '<p>This facility allows you to verify entire sets of records in one step. Before using this '+
+                    'facility, you should filter the grid so that only the records you want to verify are listed. '+
+                    'You can then choose to either verify the entire set of records from all pages of the grid '+
+                    'or you can verify only those records where the recorder is trusted based on the record\'s '+
+                    'survey, taxon group and location. Before using the latter method of verification, set up the recorders '+
+                    'you wish to trust using the ... button next to each record.</p>';
+      trustedHtml += '<p>The records will only be verified if they have been through automated checks without any rule violations. If you <em>really</em>' +
+                     ' trust the records are correct then you can verify them even if they fail some checks by ticking the following box.</p>'+
+                     '<label class="auto"><input type="checkbox" name="ignore-checks-trusted" /> Include records which fail automated checks?</label>';
+      trustedHtml += '<p class="warning">Remember that the following buttons will verify records from every page in the grid up to a maximum of '+
+              indiciaData.reports.verification.grid_verification_grid[0].settings.recordCount + ' records, not just the current page.</p>';
+      trustedHtml += '<button type="button" class="default-button" id="verify-trusted-button">Verify trusted records</button>';
+      trustedHtml += '<button type="button" class="default-button" id="verify-all-button">Verify all records</button></div>';
+      
       $.fancybox(trustedHtml);
-
-      $('#verify-trusted-button').click(function() {
-        var params=indiciaData.reports.verification.grid_verification_grid.getUrlParamsForAllRecords();
-        //We pass "trusted" as a parameter to the existing verification_list_3 report which has been adjusted
-        //to handle verification of all trusted records.
-        params.quality="T";
-        request = indiciaData.ajaxUrl + '/bulk_verify/'+indiciaData.nid;
-        $.post(request,
-          'report='+encodeURI(indiciaData.reports.verification.grid_verification_grid[0].settings.dataSource)+'&params='+encodeURI(JSON.stringify(params))+
-          '&user_id='+indiciaData.userId+'&ignore='+$('.trusted-verify-popup input[name=ignore-checks-trusted]').attr('checked'),
-          function(response) {
-            indiciaData.reports.verification.grid_verification_grid.reload();
-            alert(response + ' records verified');
-          }
-        );
-        $.fancybox.close();
-      });
+      $('#verify-trusted-button').click(function() {verifyRecordSet(true);});
+      $('#verify-all-button').click(function() {verifyRecordSet(false);});
     });
 
     function quickVerifyPopup() {
