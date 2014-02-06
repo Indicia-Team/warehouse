@@ -45,7 +45,7 @@ $indicia_templates = array(
   'requirednosuffix' => '<span class="deh-required">*</span>'."\n",
   'button' => '<button id="{id}" type="button"{class}>{caption}</button>',
   'submitButton' => '<input id="{id}" type="submit"{class} value="{caption}" />',
-  'anchorButton' => '<a class=\"ui-corner-all ui-widget-content ui-state-default indicia-button {class}\" href=\"{href}\" id=\"{id}\">{caption}</a>',
+  'anchorButton' => '<a class="ui-corner-all ui-widget-content ui-state-default indicia-button {class}" href="{href}" id="{id}">{caption}</a>',
   'lock_icon' => '<span id="{id}_lock" class="unset-lock">&nbsp;</span>',
   'lock_javascript' => "indicia.locks.initControls (
       \"".lang::get('locked tool-tip')."\", 
@@ -607,7 +607,7 @@ class helper_base extends helper_config {
         'timeentry' => array('javascript'=>array(self::$js_path."jquery.timeentry.pack.js")),
         'verification' => array('javascript'=>array(self::$js_path."verification.js")),
         'control_speciesmap_controls' => array('deps' =>array('jquery', 'openlayers', 'addrowtogrid', 'validation'), 'javascript' => array(self::$js_path."controls/speciesmap_controls.js")),
-        'complexAttrGrid' => array('javascript'=>array(self::$js_path."complexAttrGrid.js"))
+        'complexAttrGrid' => array('javascript'=>array(self::$js_path."complexAttrGrid.js")),
       );
     }
     return self::$resource_list;
