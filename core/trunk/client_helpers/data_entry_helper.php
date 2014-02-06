@@ -2406,7 +2406,7 @@ $('#$escaped').change(function(e) {
   *   blankText="Select..." 
   * The output of this control can be configured using the following templates: 
   * <ul>
-  * <li><b>hidden_input</b></br>
+  * <li><b>hidden_text</b></br>
   * Template used for the hidden text HTML element.
   * </li>
   * </ul>
@@ -4808,7 +4808,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    * If the control is set to be remembered, then adds it to the list of remembered fields.
    * @param array $options Control's options array.
    */
-  private static function check_options($options) {
+  protected static function check_options($options) {
     // force some defaults to be present in the options
     $options = array_merge(array(
         'class'=>'',
@@ -6900,7 +6900,7 @@ $('#".str_replace(':', '\\\\:', $attrOptions['id'])."').change(function(evt) {
                 $attrOptions['defaultCaption'] = $response[0]['term'];
             }
           }
-          $output .= call_user_func(array('data_entry_helper', $ctrl), array_merge($attrOptions, array(
+          $output .= call_user_func(array(get_called_class(), $ctrl), array_merge($attrOptions, array(
                   'table'=>'termlists_term',
                   'captionField'=>'term',
                   'valueField'=>$lookUpKey,

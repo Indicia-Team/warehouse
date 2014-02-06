@@ -37,7 +37,8 @@
  * @param array $idPrefix Optional prefix to give to IDs (e.g. for fieldsets) to allow you to ensure they remain unique.
  */
 
-function get_attribute_html(&$attributes, $args, $ctrlOptions, $outerFilter=null, $attrSpecificOptions=null, $idPrefix='') {
+function get_attribute_html(&$attributes, $args, $ctrlOptions, $outerFilter=null, 
+    $attrSpecificOptions=null, $idPrefix='', $helperClass = 'data_entry_helper') {
   $lastOuterBlock='';
   $lastInnerBlock='';
   $r = '';
@@ -82,7 +83,7 @@ function get_attribute_html(&$attributes, $args, $ctrlOptions, $outerFilter=null
       if (isset($attrSpecificOptions[$optionFieldName])) {
         $options = array_merge($options, $attrSpecificOptions[$optionFieldName]);
       }
-      $r .= data_entry_helper::outputAttribute($attribute, $options);
+      $r .= call_user_func($helperClass . '::outputAttribute', $attribute, $options);
       $attribute['handled']=true;
     }
   }
