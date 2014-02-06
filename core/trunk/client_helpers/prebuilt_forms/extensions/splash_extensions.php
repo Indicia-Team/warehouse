@@ -449,10 +449,19 @@ class extension_splash_extensions {
     //So these options need splitting into an array for use
     foreach ($squareSizesOptionsSplit as $squareSizeOption) {
       $squareSizeSingleOptionSplit = explode('|',$squareSizeOption);
-      $squareSizesArray[$squareSizeSingleOptionSplit[0]]=$squareSizeSingleOptionSplit[1];
+      //The user can supply the options for the plot in two formats, either a square like this,
+      //<location_type_id>|<plot side length>,<location_type_id>|<plot side length>...
+      //Or a rectangle like this
+      //<location_type_id>|<plot width>|<plot length>,<location_type_id>|<plot width>|<plot length>...
+      //In code, both formats are treated the same way, if we find the is length missing then we know
+      //all sides will be the same length (a square)
+      if (empty($squareSizeSingleOptionSplit[2]))
+        $squareSizesArray[$squareSizeSingleOptionSplit[0]]=array($squareSizeSingleOptionSplit[1],$squareSizeSingleOptionSplit[1]);
+     else
+        $squareSizesArray[$squareSizeSingleOptionSplit[0]]=array($squareSizeSingleOptionSplit[1],$squareSizeSingleOptionSplit[2]);
     }
     $squareSizesJavascriptArray=json_encode($squareSizesArray);
-    iform_load_helpers(array('map_helper'));
+    iform_load_helpers(array('map_helper'));    
     //When the user clicks on the map we need to draw the map square. Initialise the map and then add a trigger to it to allow the user
     //to click on the map and then we automatically draw the plot square.
     map_helper::$javascript .= "
@@ -532,19 +541,94 @@ class extension_splash_extensions {
         }
       });
     });";
-    //If the user changes the plot type, remove the plot from the page as its size might now be incorrect
-    map_helper::$javascript .= "$('#location\\\\:location_type_id').change(function() {  
-      plotSquareLayer.removeAllFeatures();
-      $('#imp-boundary-geom').val('');
-    });";
+    if (empty($options['pssMode'])) {
+      //If you change the location type then clear the features already on the map
+      map_helper::$javascript .= "
+      $('#location\\\\:location_type_id').change(function() {
+        plotSquareLayer.removeAllFeatures();
+        $('#imp-boundary-geom').val('');
+      });";
+    } else {
+      //In PSS mode, the user supplies the ids of the attributes that will hold a Plot Square/Rectangle's
+      //width and length in a comma seperated list e.g. @pssMode=24,25
+      //We need to split these options
+      $pssMode = "'".$options["pssMode"]."'";
+      $widthLength = explode(',',$options["pssMode"]);  
+      //When Plot Details page opens, never show the controls where the user can change the plot width and length
+      //as they won't have selected a plot type yet.
+      map_helper::$javascript .= "
+      var squareSizesJavascriptArray=$squareSizesJavascriptArray;  
+      $('[for=\"locAttr\\\\:$widthLength[0]\"]').hide();
+      $('#locAttr\\\\:$widthLength[0]').hide();
+      $('[for=\"locAttr\\\\:$widthLength[1]\"]').hide();
+      $('#locAttr\\\\:$widthLength[1]').hide();";
+      //When the user changes the plot type, clear the features off the map.
+      map_helper::$javascript .= "
+      $('#location\\\\:location_type_id').change(function() {
+        plotSquareLayer.removeAllFeatures();
+        $('#imp-boundary-geom').val('');";
+      //If the user selects an option that is a non location type from the location type drop-down (e.g "Please select")
+      //then always hide the plot width and height selection textboxes if they are displayed and also remove the line draw tool
+      //from the map.
+      map_helper::$javascript .= " 
+        if (!$('#location\\\\:location_type_id option:selected').val()) {         
+          $('.olControlDrawFeaturePathItemActive').hide();
+          $('.olControlDrawFeaturePathItemInactive').hide();
+          $('[for=\"locAttr\\\\:$widthLength[0]\"]').hide();
+          $('#locAttr\\\\:$widthLength[0]').hide();
+          $('[for=\"locAttr\\\\:$widthLength[1]\"]').hide();
+          $('#locAttr\\\\:$widthLength[1]').hide();";
+      //If the user select a vertical or linear plot, we just use the standard draw line tool, so display the icon for this
+      //on the map and then hide the width/length options for drawing a rectangular plot
+      map_helper::$javascript .= "        
+        } else if ($('#location\\\\:location_type_id option:selected').text()==='Vertical'|| $('#location\\\\:location_type_id option:selected').text()==='Linear') {
+          $('.olControlDrawFeaturePathItemActive').show();
+          $('.olControlDrawFeaturePathItemInactive').show();
+          $('[for=\"locAttr\\\\:$widthLength[0]\"]').hide();
+          $('#locAttr\\\\:$widthLength[0]').hide();
+          $('[for=\"locAttr\\\\:$widthLength[1]\"]').hide();
+          $('#locAttr\\\\:$widthLength[1]').hide();";
+      //If the use elects to use a rectangular plot, then hide the line drawing tool from the map. 
+      //Display the width and length controls for the rectangular plot.
+      //If the width/length boxes are not already filled in, then automatically fill them in from the default
+      //options supplied by the user.
+      map_helper::$javascript .= "
+        } else {
+          $('.olControlDrawFeaturePathItemInactive').hide();
+          $('[for=\"locAttr\\\\:$widthLength[0]\"]').show();
+          $('#locAttr\\\\:$widthLength[0]').show();
+          $('[for=\"locAttr\\\\:$widthLength[1]\"]').show();
+          $('#locAttr\\\\:$widthLength[1]').show();
+          if (!$('#locAttr\\\\:$widthLength[0]').val()) {
+            $('#locAttr\\\\:$widthLength[0]').val(squareSizesJavascriptArray[$('#location\\\\:location_type_id').val()][0]);
+          }
+          if (!$('#locAttr\\\\:$widthLength[1]').val()) {
+            $('#locAttr\\\\:$widthLength[1]').val(squareSizesJavascriptArray[$('#location\\\\:location_type_id').val()][1]);
+          }
+        }
+      });\n";
+    }
     //Do not allow submission if there is no plot set
-    data_entry_helper::$javascript .= "$('#entry_form').submit(function() { if (!$('#imp-boundary-geom').val()) {alert('Please click on the map to specify a square.'); return false; }});\n";
+    data_entry_helper::$javascript .= "$('#entry_form').submit(function() { if (!$('#imp-boundary-geom').val()) {alert('Please use the map control to create a plot before continuing.'); return false; }});\n";
   
     //This is the code that creates the plot square. It is called by the trigger when the user clicks on the map.
     //Firstly get the initial south-west point in the various grid reference formats (4326=lat long, 27700 = British National Grid)
     map_helper::$javascript .= "
     function square_calculator(eventXY) {
       var squareSizesJavascriptArray=$squareSizesJavascriptArray;
+      var squareWidth;
+      var squareLength;";
+      if (!empty($options['pssMode'])) {
+        //In PSS mode, the user can change the length of the square's sizes to make it a rectangle
+        map_helper::$javascript .= "
+        squareWidth=$('#locAttr\\\\:$widthLength[0]').val();
+        squareLength=$('#locAttr\\\\:$widthLength[1]').val();";
+      } else {
+        map_helper::$javascript .= "
+        squareWidth=squareSizesJavascriptArray[$('#location\\\\:location_type_id').val()][0];
+        squareLength=squareSizesJavascriptArray[$('#location\\\\:location_type_id').val()][1];";
+      }
+    map_helper::$javascript .= "
       var xy3857 = indiciaData.mapdiv.map.getLonLatFromPixel(eventXY),
       pt3857 = new OpenLayers.Geometry.Point(xy3857.lon, xy3857.lat),
       InitialClickPoint4326 = pt3857.clone().transform(indiciaData.mapdiv.map.projection, new OpenLayers.Projection('epsg:4326')),
@@ -573,9 +657,9 @@ class extension_splash_extensions {
       
     //As we now know the length in metres between the south point and our arbitrary north point (the hypotenuse), 
     //we can now use the percent value to work out the Y distance in Lat Long 4326 format for the corner of the square above the original click point.
-    //This is because we know the distance in 4326 degrees, but now we also know the percentage the square length (at the time of writing 10m or 20m) is along the line.
+    //This is because we know the distance in 4326 degrees, but now we also know the percentage the square length is along the line.
     map_helper::$javascript .= "
-      var hypmetrePercent = squareSizesJavascriptArray[$('#location\\\\:location_type_id').val()]/hyp;
+      var hypmetrePercent = squareLength/hyp;
       var actualSquareNorthWestPoint4326= InitialClickPoint4326.clone();
       actualSquareNorthWestPoint4326.y = InitialClickPoint4326.y+((northTestPointLatLon.y-InitialClickPoint4326.y)*hypmetrePercent);";
     
@@ -594,7 +678,7 @@ class extension_splash_extensions {
       //The hypotenuse is the distance north along the latitude line to our east test point but in British National Grid 27700 metres.
       var hyp = adj/Math.cos(gridAngle);
    
-      var hypmetrePercent = squareSizesJavascriptArray[$('#location\\\\:location_type_id').val()]/hyp;
+      var hypmetrePercent = squareWidth/hyp;
     
       var actualSquareSouthEastPoint4326= InitialClickPoint4326.clone();
       actualSquareSouthEastPoint4326.x = InitialClickPoint4326.x+((eastTestPointLatLon.x-InitialClickPoint4326.x)*hypmetrePercent);";
