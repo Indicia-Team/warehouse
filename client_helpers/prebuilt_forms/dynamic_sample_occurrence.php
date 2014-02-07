@@ -485,9 +485,9 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           'options' => array(
             'preferred_name' => 'Preferred name of the taxa',
             'taxon_meaning_id' => 'Taxon Meaning ID',
+            'taxa_taxon_list_id' => 'Taxa Taxon List ID',
             'taxon_group' => 'Taxon group title',
             'external_key' => 'Taxon external key'
-              
           ),
           'required'=>false,
           'group'=>'Species'
@@ -634,7 +634,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   }
 
   /**
-   * Determine whether to show a gird of existing records or a form for either adding a new record, editing an existing one,
+   * Determine whether to show a grid of existing records or a form for either adding a new record, editing an existing one,
    * or creating a new record from an existing one.
    * @param array $args iform parameters.
    * @param object $node node being shown.
@@ -811,12 +811,12 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     return $r;
   }
 
-/**
- * Preparing to display an existing sample with occurrences.
- * When displaying a grid of occurrences, just load the sample and data_entry_helper::species_checklist 
- * will load the occurrences.
- * When displaying just one occurrence we must load the sample and the occurrence
- */
+  /**
+   * Preparing to display an existing sample with occurrences.
+   * When displaying a grid of occurrences, just load the sample and data_entry_helper::species_checklist 
+   * will load the occurrences.
+   * When displaying just one occurrence we must load the sample and the occurrence
+   */
   protected static function getEntity($args, $auth) {
     data_entry_helper::$entity_to_load = array();
 
@@ -880,7 +880,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   /**
    * Load the attributes for the sample defined by a supplied Id.
    */
-  private static function getAttributesForSample($args, $auth, $id) {
+  protected static function getAttributesForSample($args, $auth, $id) {
     $attrOpts = array(   
     'valuetable'=>'sample_attribute_value'
     ,'attrtable'=>'sample_attribute'
@@ -1038,9 +1038,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       iform_map_get_map_options($args, $auth['read']),
       $options
     );
-    if (!empty(data_entry_helper::$entity_to_load['sample:wkt'])) {
+    if (!empty(data_entry_helper::$entity_to_load['sample:wkt'])) 
       $options['initialFeatureWkt'] = data_entry_helper::$entity_to_load['sample:wkt'];
-    }
     if ($args['interface']!=='one_page')
       $options['tabDiv'] = $tabAlias;
     $olOptions = iform_map_get_ol_options($args);
