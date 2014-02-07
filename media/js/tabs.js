@@ -17,7 +17,6 @@ var wizardProgressIndicator, initTabAddressing, scrollTopIntoView, setupButtons;
 (function ($) {
 
 setupButtons = function (tabs, index) {
-  $('.ac_results').hide();
   var wizList = $("#" + tabs.attr('id') + "-wiz-prog");
   var wizLis = $("li", wizList);
   var prevLi = $(".wiz-selected", wizList);
