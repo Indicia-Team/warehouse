@@ -2572,8 +2572,8 @@ $('#$escaped').change(function(e) {
   * just been added to the list.
   * <li><b>taxonFilterField</b><br/>
   * If the list of species to be made available for recording is to be limited (either by species or taxon group), allows selection of 
-  * the field to filter against. Options are none (default), preferred_name, taxon_meaning_id, taxon_group. If filtering for a large list
-  * of taxa then taxon_meaning_id is more efficient.
+  * the field to filter against. Options are none (default), preferred_name, taxon_meaning_id, taxa_taxon_list_id, taxon_group. If filtering for a large list
+  * of taxa then taxon_meaning_id or taxa_taxon_list_id is more efficient.
   * </li>
   * <li><b>taxonFilter</b><br/>
   * If taxonFilterField is not set to none, then pass an array of values to filter against, i.e. an array of
@@ -3827,7 +3827,9 @@ $('#".$options['id']." .species-filter').click(function(evt) {
    */
   private static function get_species_checklist_taxa_list($options, &$taxonRows) {
     // Get the list of species that are always added to the grid, by first building a filter
-    if (preg_match('/^(preferred_name|preferred_taxon|taxon_meaning_id|taxon_group|external_key)$/', $options['taxonFilterField']))  {
+    if (preg_match('/^(preferred_name|preferred_taxon|taxon_meaning_id|taxa_taxon_list_id|taxon_group|external_key)$/', $options['taxonFilterField']))  {
+      if ($options['table']==='cache_taxa_taxon_list' && $options['taxonFilterField']==='taxa_taxon_list_id') 
+        $options['taxonFilterField']='id';
       $qry = array('in'=>array($options['taxonFilterField'], $options['taxonFilter']));
       $options['extraParams']['query']=json_encode($qry);
     }
