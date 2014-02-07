@@ -5451,8 +5451,6 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         form.submit();
       });";
         self::$javascript .= "\n$('.tab-next').click(function() {\n";
-        //As user changes tabs, any expanded auto-complete selectMode drop-downs should be auto-collapsed
-        self::$javascript .= "\n$('.ac_results').hide();";
         self::$javascript .= "  var current=$('#$divId').tabs('option', 'selected');\n";
         self::validate_inputs_on_current_tab('Before going to the next step, some of the values in the input boxes on this step need checking. '.
             'They have been highlighted on the form for you.');
@@ -5462,9 +5460,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   $(a).click();
   scrollTopIntoView('$topSelector');
 });";
-//As user progresses through wizard, any expanded auto-complete selectMode drop-downs (ac_results) should be auto-collapsed
         self::$javascript .= "\n$('.tab-prev').click(function() {
-  $('.ac_results').hide();
   var current=$('#$divId').tabs('option', 'selected');
   var a = $('ul.ui-tabs-nav a')[current-1];
   $(a).click();
@@ -5476,7 +5472,6 @@ $('div#$escaped_divId').indiciaTreeBrowser({
           self::$javascript .= "\n
 $('#$divId').tabs({
   select: function(event, ui) {
-    $('.ac_results').hide();
     var isValid;
     var prev = $(this).tabs('option', 'selected'); 
     var panel = $('.ui-tabs-panel', this).eq(prev);
