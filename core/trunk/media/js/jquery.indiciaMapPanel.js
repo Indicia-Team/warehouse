@@ -346,7 +346,7 @@ mapLocationSelectedHooks = [];
         } else {
           $('#'+opts.srefId).prop('readonly', true);
         }        
-      } else {
+      } else if (opts.clickForSpatialRef) {
         // If the spatial ref input control exists, bind it to the map, so entering a ref updates the map
         $('#'+opts.srefId).change(function() {
           _handleEnteredSref($(this).val(), div);
