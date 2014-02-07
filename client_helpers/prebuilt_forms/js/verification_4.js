@@ -455,7 +455,7 @@ var saveComment, saveVerifyComment;
       $.fancybox(popupHtml);
       $('.quick-verify-popup .verify-button').click(function() {
         var params=indiciaData.reports.verification.grid_verification_grid.getUrlParamsForAllRecords(),
-            radio=$('.quick-verify-popup input[name=quick-option]:checked');
+            radio=$('.quick-verify-popup input[name=quick-option]:checked'), request;
         if (radio.length===1) {
           if ($(radio).val().indexOf('recorder')!==-1) {
             params.created_by_id=currRec.extra.created_by_id;
