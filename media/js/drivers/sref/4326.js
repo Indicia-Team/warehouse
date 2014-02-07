@@ -15,6 +15,8 @@
 
 /**
  * A driver to provide WGS84 specific functions.
+ * Specify indiciaData.latLongNotationPrecision to change the number of decimal places
+ * shown from the default of 3.
  */
 
 // Check IndiciaData setup, in case we are the first JS file to load
@@ -40,7 +42,9 @@ indiciaData.srefHandlers['4326'] = {
    * Format an x, y into a lat long 
    */
   pointToGridNotation: function(point, digits) {
+    precision = (typeof indiciaData.latLongNotationPrecision==="undefined") ?
+      3 : indiciaData.latLongNotationPrecision;
     var SN = point.y > 0 ? 'N' : 'S', EW = point.x > 0 ? 'E' : 'W';
-    return Math.abs(point.y).toFixed(3) + SN + ', ' + Math.abs(point.x).toFixed(3) + EW;
+    return Math.abs(point.y).toFixed(precision) + SN + ', ' + Math.abs(point.x).toFixed(precision) + EW;
   }
 };
