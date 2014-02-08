@@ -231,15 +231,6 @@ class iform_dynamic {
           data_entry_helper::$onload_javascript . '|!|' . json_encode(data_entry_helper::$required_resources);
       data_entry_helper::cache_set(array('node'=>$node->nid), $c, HIGH_VOLUME_CACHE_TIMEOUT);
     }
-    //Whenever a user leaves the focus of an autocomplete results field then hide the drop-down of results
-    //We need a slight delay otherwise the textbox loses focus and the select list is hidden before the user's click on the list is registered.
-    data_entry_helper::$javascript .= '
-    function hideList(){
-      $(".ac_results").hide();
-    }
-    $(".ac_input").blur(function() {
-      window.setTimeout(hideList, 200);
-    });';
     return $r;
   }
   
