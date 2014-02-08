@@ -105,6 +105,18 @@ $.Autocompleter = function(input, options) {
     if (btn.parents('.scTaxonCell').length) {
       btn.css('margin-left', '-'+(btn.outerWidth()+1)+'px');
     }
+    //The following code makes sure the select list is always hidden as soon as the input field loses focus.
+    function hideList() {
+        hideResultsNow(false);
+    }
+    $input.blur(function() {
+      //Make sure the select list is already displayed before we hide it onBlur, if we don't do this, if the user is focussed
+      //in the input box and clicks the arrow to expand the list, then it is hidden straight away as soon as it opens.
+      if (select.visible()) {
+        //Delay the hide list slightly otherwise the select list is hidden before a click on it is processed
+        window.setTimeout(hideList, 200);
+      }
+    });
     btn.click(function() {
       if (select.visible()) {
         hideResultsNow(false);
