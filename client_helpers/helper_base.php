@@ -602,7 +602,7 @@ class helper_base extends helper_config {
         'tabs' => array('deps' => array('jquery_ui'), 'javascript' => array(self::$js_path.'tabs.js')),
         'wizardprogress' => array('deps' => array('tabs'), 'stylesheets' => array(self::$css_path."wizard_progress.css")),
         'spatialReports' => array('javascript'=>array(self::$js_path.'spatialReports.js')),
-        'jsonwidget' => array('javascript'=>array(self::$js_path."jsonwidget/json.js", self::$js_path."jsonwidget/jsonedit.js",
+        'jsonwidget' => array('deps' => array('jquery'), 'javascript'=>array(self::$js_path."jsonwidget/json.js", self::$js_path."jsonwidget/jsonedit.js",
             self::$js_path."jquery.jsonwidget.js"), 'stylesheets'=>array(self::$css_path."jsonwidget.css")),
         'timeentry' => array('javascript'=>array(self::$js_path."jquery.timeentry.pack.js")),
         'verification' => array('javascript'=>array(self::$js_path."verification.js")),
