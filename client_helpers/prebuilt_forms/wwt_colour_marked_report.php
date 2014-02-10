@@ -2402,6 +2402,7 @@ class iform_wwt_colour_marked_report {
     $opts['resizeWidth'] = isset($options['resizeWidth']) ? $options['resizeWidth'] : 1600;
     $opts['resizeHeight'] = isset($options['resizeHeight']) ? $options['resizeHeight'] : 1600;
     $opts['caption'] = lang::get('Photos');
+    $opts['readAuth'] = $auth['read'];
     $opts['imageWidth'] = '168';
     // $opts['id'] = 'idn:0';
     if ($options['inNewIndividual']) {
