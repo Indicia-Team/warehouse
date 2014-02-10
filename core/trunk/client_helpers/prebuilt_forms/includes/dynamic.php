@@ -56,7 +56,8 @@ class iform_dynamic {
   const MODE_GRID = 0; // default mode when no grid set to false - display grid of existing data
   const MODE_NEW = 1; // default mode when no_grid set to true - display an empty form for adding a new sample
   const MODE_EXISTING = 2; // display existing sample for editing
-  const MODE_CLONE = 3; // display form for adding a new sample containing values of an existing sample.
+  const MODE_EXISTING_RO = 3; // display existing sample for reading only
+  const MODE_CLONE = 4; // display form for adding a new sample containing values of an existing sample.
 
 
   public static function get_parameters() {    
@@ -194,12 +195,6 @@ class iform_dynamic {
     if (method_exists(self::$called_class, 'getArgDefaults')) 
       $args = call_user_func(array(self::$called_class, 'getArgDefaults'), $args);
     
-    // 
-    if (method_exists(self::$called_class, 'enforcePermissions')) {
-      if(call_user_func(array(self::$called_class, 'enforcePermissions')) && !user_access('IForm n'.$node->nid.' admin') && !user_access('IForm n'.$node->nid.' user')){
-        return lang::get('LANG_no_permissions');
-      }
-    }
     // Get authorisation tokens to update and read from the Warehouse. We allow child classes to generate this first if subclassed.
     if (self::$auth)
       $auth = self::$auth;
@@ -216,7 +211,7 @@ class iform_dynamic {
       // Output a grid of existing records
       $r = call_user_func(array(self::$called_class, 'getGrid'), $args, $node, $auth);
     } else {
-      if (($mode === self::MODE_EXISTING || $mode === self::MODE_CLONE) && is_null(data_entry_helper::$entity_to_load)) { 
+      if (($mode === self::MODE_EXISTING || $mode === self::MODE_EXISTING_RO || $mode === self::MODE_CLONE) && is_null(data_entry_helper::$entity_to_load)) { 
         // only load if not in error situation. 
         call_user_func_array(array(self::$called_class, 'getEntity'), array(&$args, $auth));
       }
@@ -298,7 +293,8 @@ class iform_dynamic {
           'divId'=>'controls',
           'page'=>$pageIdx===0 ? 'first' : (($pageIdx==count($tabHtml)-1) ? 'last' : 'middle'),
           'includeVerifyButton'=>isset($args['verification_panel']) && $args['verification_panel'] 
-              && ($pageIdx==count($tabHtml)-1)
+              && ($pageIdx==count($tabHtml)-1),
+          'includeSubmitButton'=>(self::$mode !== self::MODE_EXISTING_RO)
         ));        
       } elseif ($pageIdx==count($tabHtml)-1) {
         // We need the verify button as well if this option is enabled
