@@ -28,15 +28,11 @@ global $custom_terms;
  */
 $custom_terms = array(
 	// 'Edit' is left unchanged
-	'LANG_no_permissions' => 'You must be either a registered User or a registered Admin of this form in order to access this form.',
 	'LANG_Main_Samples_Tab' => 'Surveys',
-	'LANG_Download' => 'Reports',
 	'LANG_SampleListGrid_Preamble' => 'Previously encoded survey list for ',
 	'LANG_All_Users' => 'all users',
 	'LANG_Allocate_Locations' => 'Allocate squares',
-	'LANG_Save_Location_Allocations' => 'Save',
-	'LANG_Data_Download' => 'This Report provides details of the data entered in the surveys.',
-	'LANG_Download_Button' => 'Download',
+	'LANG_Data_Download' => 'These reports provide details of the data entered in the survey.',
 	'LANG_TargetSpecies'=> 'Target species',
 	'Target Species'=>'Target species',
 	'LANG_SHP_Download_Legend'=> 'SHP File Downloads',

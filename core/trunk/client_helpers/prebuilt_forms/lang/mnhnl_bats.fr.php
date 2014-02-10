@@ -30,9 +30,7 @@ global $custom_terms;
 // TBD translations for report grid headings.
 $custom_terms = array(
 // Tab Titles
-	'LANG_no_permissions' => "Vous devez être un utilisateur enregistré ou d'un administrateur agréé de ce formulaire pour voir ce contenu.",
 	'LANG_Main_Samples_Tab' => 'Echantillons',
-	'LANG_Download' => 'Reports',
 	'LANG_Locations' => 'Sites',
 	'LANG_Tab_species' => 'Espèces',
 	'LANG_Trailer_Text' => "Coordination du programme de monitoring de la biodiversité au Luxembourg: <a href='http://www.crpgl.lu' target='_blank'>Centre de Recherche Public - Gabriel Lippmann</a> (Département Environnement et Agro-biotechnologies) & <a href='http://www.environnement.public.lu' target='_blank'>Ministère du Développement durable et des Infrastructures</a> (Département de l'environnement)",
@@ -53,10 +51,7 @@ $custom_terms = array(
 	'Actions' => 'Actions',
 	'Delete'=>'Supprimer',
 // Reports
-	'LANG_Sites_Download' => 'Run a report to provide information on all the sites used for these surveys, plus their attributes. (CSV Format)',
-	'LANG_Conditions_Download' => 'Run a report to provide information on all these surveys, including the conditions and the associated sites. This returns one row per survey, and excludes any species data. (CSV Format)',
-	'LANG_Species_Download' => 'Run a report to provide information on species entered for these surveys. It includes the data for the surveys, conditions and the associated sites. This returns one row per occurrence. (CSV Format)',
-	'LANG_Download_Button' => 'Download report',
+	'LANG_Data_Download' => 'These reports provide details of the data entered in the survey.',
 // Locations
 	'Existing locations' => 'Sites existants',
 	'LANG_Location_Label' => 'Location',

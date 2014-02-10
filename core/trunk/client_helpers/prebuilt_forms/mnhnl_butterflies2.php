@@ -140,32 +140,26 @@ class iform_mnhnl_butterflies2 extends iform_mnhnl_dynamic_1 {
     return array('mnhnl_butterflies.css');
   }
 
-  protected static function enforcePermissions(){
-  	return true;
-  }
-  
   protected static function getExtraGridModeTabs($retTabs, $readAuth, $args, $attributes) {
   	// TBD add check for loctools 
     global $indicia_templates;
-  	$isAdmin = user_access('IForm n'.parent::$node->nid.' admin');
+  	$isAdmin = user_access($args['edit_permission']);
   	if(!$isAdmin) return('');
-  	if(!$retTabs) return array('#downloads' => lang::get('LANG_Download'), '#locations' => lang::get('LANG_Locations'));
+  	if(!$retTabs) return array('#downloads' => lang::get('Reports'), '#locations' => lang::get('LANG_Locations'));
     $LocationTypeID = iform_mnhnl_getTermID(parent::$auth, 'indicia:location_types',$args['LocationTypeTerm']);
     $retVal = '<div id="downloads" >
+    <p>'.lang::get('LANG_Data_Download').'</p>
     <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_butterflies2_sites_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=downloadsites">
-      <p>'.lang::get('LANG_Sites_Report_Download').'</p>
       <input type="hidden" name="params" value=\'{"location_type_id":'.$LocationTypeID.'}\' />
-      <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
+      <label>'.lang::get('Sites report').':</label><input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('Download').'">
     </form>
     <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_butterflies2_conditions_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=downloadconditions">
-      <p>'.lang::get('LANG_Conditions_Report_Download').'</p>
       <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].'}\' />
-      <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
+      <label>'.lang::get('Conditions report').':</label><input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('Download').'">
     </form>
 	<form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_butterflies2_species_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=downloadoccurrences">
-      <p>'.lang::get('LANG_Occurrence_Report_Download').'</p>
       <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].'}\' />
-      <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
+      <label>'.lang::get('Species report').':</label><input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('Download').'">
     </form>
   </div>'.iform_mnhnl_locModTool(parent::$auth, $args, parent::$node);
     return $retVal;
@@ -1132,6 +1126,7 @@ hook_new_site_added = function(feature) {
     foreach($values as $key => $value){
       $parts = explode(':', $key, 4);
       //     $cloneprefix='CG:--rownum--:--sampleid--:smpAttr:--attr_id--[:--attr_value_id--]
+      //     $cloneprefix='CG:--rownum--:--sampleid--:smpAttr:--attr_id--\[\] for a multivalue checkbox group, with an array value
       if($parts[0]=='CG' && count($parts)>1 && $parts[1] != '--rownum--' && $parts[1] != ''){
         $field = explode(':',$parts[3]);
         if($field[0]=='location'){
@@ -1141,7 +1136,18 @@ hook_new_site_added = function(feature) {
         }else {
           if($parts[2] != "--sampleid--" && $parts[2] != "")
             $subsamples[$parts[1]]['id']=array('value' => $parts[2]);
-          $subsamples[$parts[1]][$parts[3]]=array('value' => $value);
+          if(is_array($value)){
+            for($i=count($value)-1; $i>=0; $i--){ // reverse order so we can unset array members.
+              $tokens=explode(':', $value[$i], 5); // need to discard the CG prefix
+              if(count($tokens)>1) {
+                unset($value[$i]);
+                $subsamples[$parts[1]][$tokens[4]] = array('value' => $tokens[0]);
+              }
+            }
+            if(count($value)>0) // sweep up any new ones.
+              $subsamples[$parts[1]][$parts[3]]=array('value' => $value);
+          } else
+            $subsamples[$parts[1]][$parts[3]]=array('value' => $value);
           $subsamples[$parts[1]]['website_id']=array('value' => $values['website_id']);
           $subsamples[$parts[1]]['survey_id']=array('value' => $values['survey_id']);
         }

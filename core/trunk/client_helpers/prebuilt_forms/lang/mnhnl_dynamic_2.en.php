@@ -27,16 +27,11 @@ global $custom_terms;
  * @package	Client
  */
 $custom_terms = array(
-	'LANG_no_permissions' => 'You must be either a registered User or a registered Admin of this form in order to access this form.',
 	'LANG_Main_Samples_Tab' => 'Surveys',
-	'LANG_Download' => 'Reports',
 	'LANG_SampleListGrid_Preamble' => 'Previously encoded survey list for ',
 	'LANG_All_Users' => 'all users',
 	'LANG_Allocate_Locations' => 'Allocate squares',
-	'LANG_Save_Location_Allocations' => 'Save',
-	'LANG_Data_Download' => 'This Report provides details of the data entered in the surveys.',
-	'LANG_Data_Download_TS' => 'This Report provides details of the data entered in the surveys which are tagged for a particular target species.',
-	'LANG_Download_Button' => 'Download',
+	'LANG_Data_Download' => 'These reports provide details of the data entered in the survey.',
 	'LANG_TargetSpecies'=> 'Target species',
 	'Target Species'=>'Target species',
 	'LANG_SHP_Download_Legend'=> 'SHP File Downloads',
@@ -167,7 +162,6 @@ $custom_terms = array(
 	'validation_targ-presence'=>'At least one target species must be selected.',
 	'validation_end_time'=>'The end time must be after the start time',
 	'validation_integer' => 'Please enter an integer',
-	'validation_nequals2' => 'Select a maximum of 2 entries',
 	'next step'=>'Next step',
 	'prev step'=>'Previous step'
 	

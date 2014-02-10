@@ -3827,7 +3827,7 @@ $('#".$options['id']." .species-filter').click(function(evt) {
    */
   private static function get_species_checklist_taxa_list($options, &$taxonRows) {
     // Get the list of species that are always added to the grid, by first building a filter
-    if (preg_match('/^(preferred_name|preferred_taxon|taxon_meaning_id|taxa_taxon_list_id|taxon_group|external_key)$/', $options['taxonFilterField']))  {
+    if (preg_match('/^(preferred_name|preferred_taxon|taxon_meaning_id|taxa_taxon_list_id|taxon_group|external_key|id)$/', $options['taxonFilterField']))  {
       if ($options['table']==='cache_taxa_taxon_list' && $options['taxonFilterField']==='taxa_taxon_list_id') 
         $options['taxonFilterField']='id';
       $qry = array('in'=>array($options['taxonFilterField'], $options['taxonFilter']));
@@ -5121,11 +5121,10 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         $options['blankText'] = lang::get($options['blankText']);
         $options['items'] = str_replace(
             array('{value}', '{caption}', '{selected}'),
-            array('', htmlentities($options['blankText'])),
-            $indicia_templates[$options['itemTemplate']]
-        )."\n";
+            array('', htmlentities($options['blankText'])), $indicia_templates[$options['itemTemplate']]
+        ).(isset($options['optionSeparator']) ? $options['optionSeparator'] : "\n");;
       }
-      $options['items'] .= implode("\n", $lookupItems);
+      $options['items'] .= implode((isset($options['optionSeparator']) ? $options['optionSeparator'] : "\n"), $lookupItems);
     }
     if (isset($response['error']))
       return $response['error'];

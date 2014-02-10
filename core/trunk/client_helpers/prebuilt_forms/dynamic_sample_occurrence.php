@@ -487,7 +487,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
             'taxon_meaning_id' => 'Taxon Meaning ID',
             'taxa_taxon_list_id' => 'Taxa Taxon List ID',
             'taxon_group' => 'Taxon group title',
-            'external_key' => 'Taxon external key'
+            'external_key' => 'Taxon external key',
+            'id' => 'Taxon ID'
           ),
           'required'=>false,
           'group'=>'Species'
@@ -616,6 +617,14 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           'required'=>false,
           'default'=>'indicia data admin'
         ),
+        array(
+          'name'=>'ro_permission',
+          'caption'=>'Permission required for viewing other people\'s data',
+          'description'=>'Set to the name of a permission which is required in order to be able to view other people\'s data (not edit).',
+          'type'=>'text_input',
+          'required'=>false,
+          'default'=>'indicia data view'
+        )
       )
     );
     return $retVal;
@@ -697,14 +706,17 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    */
   protected static function getGrid($args, $node, $auth) {
     $r = '';
-    $attributes = data_entry_helper::getAttributes(array(
+    $attributeOpts = array(
       'valuetable' => 'sample_attribute_value'
       ,'attrtable' => 'sample_attribute'
       ,'key' => 'sample_id'
       ,'fieldprefix' => 'smpAttr'
       ,'extraParams' => $auth['read']
       ,'survey_id' => $args['survey_id']
-    ), false);
+    );
+    if(isset($args['sample_method_id']))
+      $attributeOpts['sample_method_id'] = $args['sample_method_id'];
+    $attributes = data_entry_helper::getAttributes($attributeOpts, false);
 
     $tabs = array('#sampleList'=>lang::get('LANG_Main_Samples_Tab'));
 
@@ -732,71 +744,83 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
 
     // Add content to the Allocate Locations tab if this option was selected
     if($args['includeLocTools'] && function_exists('iform_loctools_checkaccess') && iform_loctools_checkaccess($node,'admin')){
-      $r .= '
-<div id="setLocations">
-  <form method="post">
-    <input type="hidden" id="mnhnld1" name="mnhnld1" value="mnhnld1" /><table border="1"></thead><tr><th></th>';
+      $r .= '<div id="setLocations">';
       $url = data_entry_helper::$base_url.'/index.php/services/data/location?mode=json&view=detail' .
               '&auth_token=' . $auth['read']['auth_token'] .
               '&nonce=' . $auth['read']["nonce"] .
-              '&wantCount=1' .
               "&parent_id=NULL&orderby=name" .
               "&columns=id,name" .
               (isset($args['loctoolsLocTypeID'])&&$args['loctoolsLocTypeID']<>''?'&location_type_id='.$args['loctoolsLocTypeID']:'');
       if(!isset($options['loctoolsPageSize'])) $options['loctoolsPageSize'] = 20;
-      $page = empty($_GET['page']) ? 1 : $_GET['page'];
-      $url .= '&limit='.($options['loctoolsPageSize']);
-      $url .= '&offset=' . ($page-1) * $options['loctoolsPageSize'];
+      $page = empty($_REQUEST['page']) ? 1 : $_REQUEST['page']; // starts at 1.
       $session = curl_init($url);
       curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
       $entities = json_decode(curl_exec($session), true);
+      $pages = ceil(count($entities) / $options['loctoolsPageSize']); // starts at 1
+      $count = ($page<$pages) ? $options['loctoolsPageSize'] : (count($entities)-1)%$options['loctoolsPageSize']+1; // number displayed on this page
+      // build a jumper control:
+      if($pages>1){
+        $reload = data_entry_helper::get_reload_link_parts();
+        $r .= '<form method="GET" action="'.$reload['path'].'">';
+        if(count($reload['params']))
+          foreach($reload['params'] as $param=>$value)
+            if($param != "page")
+              $r .= '<input type="hidden" name="'.$param.'" value="'.$value.'">';
+        $r .= '<label style="width:auto;" for="pageField">'.lang::get('Jump to page for location').':</label><select id="pageField" name="page"><option value="1">'.lang::get('Pick').'</option>';
+        foreach($entities as $idx=>$entity){
+          $r .= '<option value="'.(ceil(($idx+1)/$options['loctoolsPageSize'])).'">'.$entity["name"].'</option>';
+        }
+        $r .= "<input type=\"submit\" class=\"default-button\" value=\"".lang::get('Go')."\" /></form>\n";
+        $r .= '<p>'.lang::get('You must save any changes made to data on this page before viewing any other page, otherwise those changes will be lost.')."</p>\n";
+      }
+      
+      $r .= '<form method="post"><input type="hidden" id="mnhnld1" name="mnhnld1" value="mnhnld1" /><input type="hidden" name="page" value="'.$page.'" />
+  <div class="location-allocation-wrapper-outer" ><div class="location-allocation-wrapper-inner"><table border="1"></thead><tr><th class="freeze-first-col">'.lang::get('Location').'</th>';
+      // Main table body
       $userlist = iform_loctools_listusers($node);
       foreach($userlist as $uid => $a_user){
-        $r .= '<th>'.$a_user->name.'</th>';
+      	$r .= '<th>'.$a_user->name.'</th>';
       }
       $r .= "</tr></thead><tbody>";
-      if(!empty($entities) && !empty($entities['records'])){
-        foreach($entities['records'] as $entity){
-          if(!$entity["parent_id"]){ // only assign parent locations.
-            $r .= "<tr><td>".$entity["name"]."</td>";
-            $defaultuserids = iform_loctools_getusers($node, $entity["id"]);
-            foreach($userlist as $uid => $a_user){
-              $r .= '<td><input type="hidden" name="location:'.$entity["id"].':'.$uid.'" value="0"><input type="checkbox" name="location:'.$entity["id"].':'.$uid.(in_array($uid, $defaultuserids) ? '" checked="checked"' : '"').' value="1"></td>';
-            }
-            $r .= "</tr>";
+      if(!empty($entities)){
+        for($i = 0; $i<$count; $i++){
+          $entity=$entities[$i+($page-1)*$options['loctoolsPageSize']];
+          // only assign parent locations.
+          $r .= '<tr><td class="freeze-first-col">'.$entity["name"].'</td>';
+          $defaultuserids = iform_loctools_getusers($node, $entity["id"]);
+          foreach($userlist as $uid => $a_user){
+            $r .= '<td><input type="hidden" name="location:'.$entity["id"].':'.$uid.'" value="0"><input type="checkbox" name="location:'.$entity["id"].':'.$uid.(in_array($uid, $defaultuserids) ? '" checked="checked"' : '"').' value="1"></td>';
           }
+          $r .= "</tr>";
         }
       }
-      $r .= "<tbody>";
-      // build pager.
+      $r .= "<tbody></table></div></div>\n";
+      
+      // build pager outside scrollable table.
       $numEachSide = 5;
-      $pages = ceil($entities['count'] / $options['loctoolsPageSize']);
       if($pages>1){
-        $path = iform_mnhnl_getReloadPath();
-        $path .= (strpos($path,'?')===false ? '?' : '&').'page=';
-        $r .= "\n<tfoot><tr><td colspan=".(count($userlist)+1)."><div class=\"pager ui-helper-clearfix\">";
-        if($page == 1)
-          $r .= '<span class="ui-state-disabled pager-button">1</span>';
-        else
-          $r .= '<a class="pager-button" href="'.$path.'1" rel="nofollow">1</a>';
-        if($page-$numEachSide > 2) $r .= '...';
-        for($i = max(2,$page-$numEachSide); $i<=min($pages-1,$page+$numEachSide); $i++) {
-          if($page == $i)
-            $r .= '<span class="ui-state-disabled pager-button">'.$i.'</span>';
-          else
-            $r .= '<a class="pager-button" href="'.$path.$i.'" rel="nofollow">'.$i.'</a>';
-        }
-        if($page+$numEachSide < $pages-1) $r .= '...';
-        if($page == $pages)
-          $r .= '<span class="ui-state-disabled pager-button">'.$pages.'</span>';
-        else
-          $r .= '<a class="pager-button" href="'.$path.$pages.'" rel="nofollow">'.$pages.'</a>';
-        $r .= "</div></td></tr></tfoot>";
+      	$path = iform_mnhnl_getReloadPath();
+      	$path .= (strpos($path,'?')===false ? '?' : '&').'page=';
+      	$r .= "<div class=\"pager ui-helper-clearfix\">";
+      	if($page == 1)
+      		$r .= '<span class="ui-state-disabled pager-button">1</span>';
+      	else
+      		$r .= '<a class="pager-button" href="'.$path.'1" rel="nofollow">1</a>';
+      	if($page-$numEachSide > 2) $r .= '...';
+      	for($i = max(2,$page-$numEachSide); $i<=min($pages-1,$page+$numEachSide); $i++) {
+      		if($page == $i)
+      			$r .= ' <span class="ui-state-disabled pager-button">'.$i.'</span> ';
+      		else
+      			$r .= '<a class="pager-button" href="'.$path.$i.'" rel="nofollow">'.$i.'</a>';
+      	}
+      	if($page+$numEachSide < $pages-1) $r .= '...';
+      	if($page == $pages)
+      		$r .= '<span class="ui-state-disabled pager-button">'.$pages.'</span>';
+      	else
+      		$r .= '<a class="pager-button" href="'.$path.$pages.'" rel="nofollow">'.$pages.'</a>';
+      	$r .= "</div>";
       }
-      $r .= "</table>
-    <input type=\"submit\" class=\"default-button\" value=\"".lang::get('LANG_Save_Location_Allocations')."\" />
-  </form>
-</div>";
+      $r .= '</table><input type="submit" class="default-button" value="'.lang::get('Save Location Allocations').'" /></form></div>';
     }
 
     // Add content to extra tabs that derived classes may have added
@@ -848,12 +872,12 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     
     // For a single occurrence we must load the occurrence record.
     if (self::$loadedOccurrenceId && !self::getGridMode($args)) {
-      data_entry_helper::load_existing_record($auth['read'], 'occurrence', self::$loadedOccurrenceId, 'detail', false, true);
+      data_entry_helper::load_existing_record($auth['read'], 'occurrence', self::$loadedOccurrenceId, 'detail', false, false); // TODO change images to true to submit
     }
     
     // Load the sample record
     if (self::$loadedSampleId) {
-      data_entry_helper::load_existing_record($auth['read'], 'sample', self::$loadedSampleId, 'detail', false, true);
+      data_entry_helper::load_existing_record($auth['read'], 'sample', self::$loadedSampleId, 'detail', false, false);// TODO change images to true to submit
       if (!empty(data_entry_helper::$entity_to_load['sample:parent_id'])) 
         data_entry_helper::load_existing_record($auth['read'], 'sample', data_entry_helper::$entity_to_load['sample:parent_id']);
     }
@@ -862,11 +886,18 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     $args['survey_id']=data_entry_helper::$entity_to_load['sample:survey_id'];
     $args['sample_method_id']=data_entry_helper::$entity_to_load['sample:sample_method_id'];
     // enforce that people only access their own data, unless explicitly have permissions
+    self::$mode = self::MODE_EXISTING_RO;
     $editor = !empty($args['edit_permission']) && function_exists('user_access') && user_access($args['edit_permission']);
-    if (!$editor && function_exists('hostsite_get_user_field') &&
+    if($editor) return;
+    $readOnly = !empty($args['ro_permission']) && function_exists('user_access') && user_access($args['ro_permission']);
+    if (function_exists('hostsite_get_user_field') &&
         data_entry_helper::$entity_to_load['sample:created_by_id'] != 1 && // created_by_id can come out as string...
-        data_entry_helper::$entity_to_load['sample:created_by_id'] !== hostsite_get_user_field('indicia_user_id'))
-      throw new exception(lang::get('Attempt to access a record you did not create'));
+        data_entry_helper::$entity_to_load['sample:created_by_id'] !== hostsite_get_user_field('indicia_user_id')) {
+      if($readOnly)
+        self::$mode = self::MODE_EXISTING_RO;
+      else
+        throw new exception(lang::get('Attempt to access a record you did not create'));
+    }
   }
 
   /**
@@ -1038,7 +1069,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       iform_map_get_map_options($args, $auth['read']),
       $options
     );
-    if (!empty(data_entry_helper::$entity_to_load['sample:wkt'])) 
+    if (!empty(data_entry_helper::$entity_to_load['sample:wkt']))
       $options['initialFeatureWkt'] = data_entry_helper::$entity_to_load['sample:wkt'];
     if ($args['interface']!=='one_page')
       $options['tabDiv'] = $tabAlias;
@@ -1972,9 +2003,9 @@ else
     // User must be logged in before we can access their records.
     if ($user->uid===0) {
       // Return a login link that takes you back to this form when done.
-      return lang::get('Before using this facility, please <a href="'.url('user/login', array('query'=>'destination=node/'.($node->nid))).'">login</a> to the website.');
+      return lang::get('Before using this facility, please <a href="'.url('user/login', array('query'=>array('destination'=>'node/'.($node->nid)))).'">login</a> to the website.');
     }
-    $filter = array();
+    $filter = array('survey_id' => $args['survey_id'], 'iUserID' => 1); // Change before commit
     // Get the CMS User ID attribute so we can filter the grid to this user
     foreach($attributes as $attrId => $attr) {
       if (strcasecmp($attr['caption'],'CMS User ID')==0) {
@@ -2144,6 +2175,7 @@ else
    */
   protected static function getSubmitButtons($args) {
     $r = '';
+    if(self::$mode === self::MODE_EXISTING_RO) return $r; // don't allow users to submit if in read only mode.
     if (!empty(self::$loadedSampleId) && $args['multiple_occurrence_mode']==='single') {
       $r .= '<input type="submit" class="indicia-button" id="delete-button" name="delete-button" value="'.lang::get('Delete')."\" />\n";
       data_entry_helper::$javascript .= "$('#delete-button').click(function(e) {

@@ -28,14 +28,9 @@ global $custom_terms;
  */
 $custom_terms = array(
 	// 'Edit' is left unchanged
-	'LANG_no_permissions' => 'You must be either a registered User or a registered Admin of this form in order to access this form.',
 	'LANG_Main_Samples_Tab' => 'Surveys',
-	'LANG_Download' => 'Reports',
 	'LANG_Locations' => 'Locations',
-	'LANG_Sites_Download' => 'Run a report to provide information on all the sites used for these surveys, plus their attributes. (CSV Format)',
-	'LANG_Conditions_Download' => 'Run a report to provide information on all these surveys, including the conditions and the associated sites. This returns one row per survey, and excludes any species data. (CSV Format)',
-	'LANG_Species_Download' => 'Run a report to provide information on species entered for these surveys. It includes the data for the surveys, conditions and the associated sites. This returns one row per occurrence. (CSV Format)',
-	'LANG_Download_Button' => 'Download report',
+	'LANG_Data_Download' => 'These reports provide details of the data entered in the survey.',
 	'LANG_Edit' => 'Edit',
 	'LANG_Add_Sample' => 'Add new sample',
 	'LANG_Add_Sample_Single' => 'Add single occurrence',

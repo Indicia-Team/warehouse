@@ -27,18 +27,13 @@ global $custom_terms;
  * @package	Client
  */
 $custom_terms = array(
-	'LANG_no_permissions' => 'You must be either a registered User or a registered Admin of this form in order to access this form.',
 	'LANG_Edit' => 'Edit',
 	'LANG_SampleListGrid_Preamble' => 'Previously encoded survey list for ',
 	'LANG_All_Users' => 'all users',
 	'LANG_Add_Sample' => 'Add new sample',
 	'LANG_Add_Sample_Single' => 'Add single occurrence',
 	'LANG_Add_Sample_Grid' => 'Add list of occurrences',
-	'LANG_Download' => 'Reports',
-	'LANG_Grid_Based_Data_Download' => 'The Grid Report provides details of the data entered in the Grids.',
-	'LANG_Grid_Download_Button' => 'Download Grid report',
-	'LANG_Section_Based_Data_Download' => 'The Section Report provides details of the data entered in the Section based tab.',
-	'LANG_Section_Download_Button' => 'Download Section report',
+	'LANG_Data_Download' => 'These reports provide details of the data entered in the survey.',
 	'LANG_Trailer_Text' => "Coordination of the biodiversity monitoring programme in Luxembourg: <a href='http://www.crpgl.lu' target='_blank'>Centre de Recherche Public - Gabriel Lippmann</a> (Département Environnement et Agro-biotechnologies) & <a href='http://www.environnement.public.lu' target='_blank'>Ministère du Développement durable et des Infrastructures</a> (Département de l'environnement)",
 
 	'LANG_Tab_aboutyou' => 'About You',      
@@ -79,7 +74,6 @@ $custom_terms = array(
 	'LANG_Cancel'=>'Cancel',
 	'LANG_Main_Samples_Tab' => 'Surveys',
 	'LANG_Allocate_Locations' => 'Allocate Locations',
-	'LANG_Save_Location_Allocations' => 'Save Location Allocations',
 	'LANG_Transect' => 'Transect',
 	'Transect' => 'Transect',
 	'MNHNL Month' => 'Month',
