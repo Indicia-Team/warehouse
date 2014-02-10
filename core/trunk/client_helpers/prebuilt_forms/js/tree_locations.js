@@ -16,23 +16,19 @@ clearTree = function() {
   $('#locations-website-website-id').removeAttr('disabled');
   $('#imp-sref-tree,#imp-geom-tree').val(''); // leave the system unchanged.
   // remove exiting errors:
-  $('#tree-form').find('.inline-error').remove();
-  $('#tree-form').find('.ui-state-error').removeClass('ui-state-error');
-  clearTreeAttributes();
+  $('#tree-form').find('label.error').remove();
+  $('#tree-form').find('.error').removeClass('error');
+  clearTreeAttributes(true);
   // TODO reset display features.
   $('form#tree-form [name=sample\\:id],[name=occurrence\\:id]').val('').attr('disabled',true);
   $('form#tree-form [name=sample\\:location_name],[name=occurrence\\:taxa_taxon_list_id]').val('');
-  var d = new Date();
-  var y = d.getFullYear(); 
-  var m = d.getMonth()+1;
-  var d = d.getDate(); 
-  $('form#tree-form [name=sample\\:date]').val((d<10?'0'+d:d)+'/'+(m<10?'0'+m:m)+'/'+y);
+  $('form#tree-form [name=sample\\:date]').val('');
   // sample_method_id is constant
   // remove photos
   $('form#tree-form .filelist').empty();
 };
 
-clearTreeAttributes = function() {
+clearTreeAttributes = function(setDefaults) {
   var nameparts;
   var attrList = $('#tree-form [name^=locAttr\\:]');
   // loop through form attribute controls clear them.
@@ -51,16 +47,25 @@ clearTreeAttributes = function() {
   // rename checkboxes to add square brackets
   attrList.filter(':checkbox').each(function(idx,elem){
     var name = jQuery(elem).attr('name').split(':');
+    var value = jQuery(elem).val().split(':');
     var similar = jQuery('[name=locAttr\\:'+name[1]+'],[name=locAttr\\:'+name[1]+'\\[\\]]').filter(':checkbox'); // [] may have been added on previous iteration of loop
     if(similar.length > 1) // only do this for checkbox groups.
       jQuery(this).attr('name', name[0]+':'+name[1]+'[]');
+    if(value.length > 1)
+        jQuery(this).val(value[0]);
   });
+  if(setDefaults)
+    $('#tree-form #locAttr\\:'+indiciaData.assignedRecorderID).val(indiciaData.assignedUsers);
+  check_attrs();
 }
 
 loadTreeAttributes = function(tree){
   $.getJSON(indiciaData.indiciaSvc + "index.php/services/data/location_attribute_value?location_id=" + tree +
         "&mode=json&view=list&callback=?&auth_token=" + indiciaData.readAuth.auth_token + "&nonce=" + indiciaData.readAuth.nonce, 
       function(data) {
+          // because of async issues and validation, clear values now
+          clearTreeAttributes(false);
+          $('#tree-form #locAttr\\:'+indiciaData.assignedRecorderID).val('');
           var attrname, checkboxes; // clearTreeAttributes has reset all values and names to defaults.
           $.each(data, function(idx, attr) {
             if (attr.id===null) return;
@@ -68,14 +73,15 @@ loadTreeAttributes = function(tree){
             // Ignore Heirarchy select at moment.
             // special handling for checking radios: note ids are not same as names.
             if ($('input:radio#locAttr\\:'+attr.location_attribute_id+'\\:0').length>0) {
-              $('#tree-form [id^=locAttr\\:'+attr.location_attribute_id+'\\:').attr('name',attrname);
-              $('#tree-form [id^=locAttr\\:'+attr.location_attribute_id+'\\:').filter('[value='+attr.raw_value+']').attr('checked', true);
+              $('#tree-form [id^=locAttr\\:'+attr.location_attribute_id+'\\:]').attr('name',attrname);
+              $('#tree-form [id^=locAttr\\:'+attr.location_attribute_id+'\\:]').filter('[value='+attr.raw_value+']').attr('checked', true);
             } else if ((checkboxes = $('#tree-form input:checkbox[name=locAttr\\:'+attr.location_attribute_id+'],input:checkbox[name=locAttr\\:'+attr.location_attribute_id+'\\[\\]]').filter('[value='+attr.raw_value+']')).length>0) {
               checkboxes.attr('name',attrname).attr('checked', true).before('<input class="multiselect" type="hidden" name="'+attrname+'" value="" />');
             } else {              
               $('#tree-form #locAttr\\:'+attr.location_attribute_id).val(attr.raw_value).attr('name',attrname);
             }
           });
+          check_attrs();
         }
     );
 }
@@ -95,6 +101,7 @@ loadTreeDetails = function(location_id) {
               $('form#tree-form [name=location\\:centroid_sref]').val(data[0].centroid_sref);
               $('form#tree-form [name=location\\:centroid_sref_system]').val(data[0].centroid_sref_system);
               $('form#tree-form [name=location\\:comment]').val(data[0].comment);
+              $('form#tree-form [name=sample\\:location_name]').val(data[0].name);
             }
         );
     $.getJSON(indiciaData.indiciaSvc + "index.php/services/data/sample?location_id=" + location_id + "&sample_method_id=" + indiciaData.treeSampleMethodID +
@@ -103,9 +110,8 @@ loadTreeDetails = function(location_id) {
               //TODO add error return check
               if(data.length>0){
                 $('form#tree-form [name=sample\\:id]').val(data[0].id).removeAttr('disabled');
-                $('form#tree-form [name=sample\\:date]').val(data[0].date);
-                // TODO populate this field
-                $('form#tree-form [name=sample\\:location_name]').val(data[0].location_name);
+                // assume date is in in YYYY/MM/DD[+Time] format: convert to DD/MM/YYYY format.
+                $('form#tree-form [name=sample\\:date]').val(data[0].date_start.slice(8,10)+'/'+data[0].date_start.slice(5,7)+'/'+data[0].date_start.slice(0,4));
                 // sample_method_id is constant
                 $.getJSON(indiciaData.indiciaSvc + "index.php/services/data/occurrence?sample_id=" + data[0].id +
                         "&mode=json&view=detail&callback=?&auth_token=" + indiciaData.readAuth.auth_token + "&nonce=" + indiciaData.readAuth.nonce, 
@@ -330,31 +336,39 @@ $(document).ready(function() {
   var doingSelection=false; 
   
   $('#tree-form').ajaxForm({
-    // must be synchronous, otherwise currentCell could change.
     async: false,
     dataType:  'json',
+    beforeSubmit:   function(data, obj, options){
+      $('#tree-form').find('label.error').remove();
+      $('#tree-form').find('.error').removeClass('error');
+      var valid = true;
+      if (!jQuery('#tree-form input').valid()) { valid = false; }
+      if (!jQuery('#tree-form select').valid()) { valid = false; }
+      if(!valid)
+        alert('An validation error has occurred with the data you have entered: this has been highlighted. Please correct this then attempt to resubmit.');
+      return valid;
+    },
     complete: function() {
       // 
     },
     success: function(data) {
-      // remove exiting errors:
-      $('#tree-form').find('.inline-error').remove();
-      $('#tree-form').find('.ui-state-error').removeClass('ui-state-error');
       if(typeof data.errors !== "undefined"){
         for(field in data.errors){
-          var elem = $('#tree-form').find('[name='+field+']');
+          var fieldname = field.replace(/:/g,'\\:');
+          var elem = $('#tree-form').find('[name='+fieldname+']');
           var label = $("<label/>")
 					.attr({"for":  elem[0].id, generated: true})
-					.addClass('inline-error')
+					.addClass('error')
 					.html(data.errors[field]);
 	      var elementBefore = $(elem).next().hasClass('deh-required') ? $(elem).next() : elem;
           label.insertAfter(elementBefore);
-          elem.addClass('ui-state-error');
+          elem.addClass('error');
         }
       } else {
         // this comes back as a sample with a parent location, and child occurrence.
         var location_id = data.struct.parents[0].id;
-        var sample_id = data.id;
+        var first_date = $('#tree-form [name=sample\\:date]').val();
+        var sample_id = data.outer_id;
         var occurrence_id = data.struct.children[0].id;
         var isnew = $('#tree-form [name=location\\:id]').attr('disabled');
         $('#tree-form [name=location\\:id]').removeAttr('disabled').val(location_id);
@@ -362,7 +376,7 @@ $(document).ready(function() {
         $('#tree-form [name=sample\\:id]').removeAttr('disabled').val(sample_id);
         $('#tree-form [name=occurrence\\:id]').removeAttr('disabled').val(occurrence_id);
         if(typeof indiciaData.trees[location_id] == 'undefined') {
-          indiciaData.trees[location_id] = {'id':location_id, 'name':'TBD'};
+          indiciaData.trees[location_id] = {'id':location_id, 'name':$('#tree-form [name=location\\:name]').val()};
         }
 //        indiciaData.trees[location_id].sref = $('#imp-sref-tree').val();
 //        indiciaData.trees[location_id].system = $('#imp-sref-system-tree').val();
@@ -372,14 +386,13 @@ $(document).ready(function() {
         selectedFeature.layer.redraw();
         treeDetailsChanged = false;
         // need to reset the attribute fields: could have saved a new attribute or cleared an old one.
-        clearTreeAttributes();
         loadTreeAttributes(location_id);
         $('.filelist .deleted-value[value=t]').closest('.photo').remove();
         // create a dialog
         var buttons =  { 
             "Yes: Create Visit Now": function() {
                   dialog.dialog('close');
-                  $('#visit_link').attr('href', indiciaData.visitURL+location_id);
+                  $('#visit_link').attr('href', indiciaData.visitURL+location_id+(isnew?'&date='+first_date:''));
                   $('#visit_link').each(function(idex,elem){elem.click();});
                 },
             "No Thanks":  function() {

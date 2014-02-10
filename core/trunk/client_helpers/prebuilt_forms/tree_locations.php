@@ -224,6 +224,8 @@ class iform_tree_locations {
                          'use to specify the filter by.',
           'type'=>'select',
           'options' => array(
+                         'id' => 'Taxon ID',
+                         'taxon' => 'Common name of the taxa',
                          'preferred_name' => 'Preferred name of the taxa',
                          'taxon_meaning_id' => 'Taxon Meaning ID',
                          'taxon_group' => 'Taxon group title',
@@ -332,12 +334,56 @@ class iform_tree_locations {
         'multiValue' => true
     ));
     if ($args['allow_user_assignment']) {
-      if (false==$settings['cmsUserAttr'] = extract_cms_user_attr($settings['attributes']))
-        return 'This form is designed to be used with the CMS User ID attribute setup for locations in the survey, or the "Allow users to be assigned to locations" option unticked.';
+      if (false==($settings['cmsUserAttr'] = extract_cms_user_attr($settings['attributes'])))
+        return 'This form is designed to be used with the "CMS User ID" attribute setup for Site locations in the survey, or the "Allow users to be assigned to locations" option unticked.';
       // keep a copy of the cms user ID attribute so we can use it later.
       self::$cmsUserAttrId = $settings['cmsUserAttr']['attributeId'];
+      $found=false;
+      foreach($settings['tree_attributes'] as $idx => $attr) {
+        if (strcasecmp($attr['caption'], 'Assigned Recorder')===0) {
+          data_entry_helper::$javascript .= "indiciaData.assignedRecorderID = ".$attr['attributeId'].";\n";
+          $found=true;
+          break;
+        }
+      }      
+      if (!$found)
+        return 'This form is designed to be used with the "Assigned Recorder" attribute setup for Tree locations in the survey, or the "Allow users to be assigned to locations" option unticked.';
     }
-    data_entry_helper::$javascript .= "indiciaData.trees = {};\n";
+    // TBD data drive
+    $definitions = array(array("attr"=>"111", "term"=>"WD", "target"=>"112", "title"=>"You must pick the dominant species from this drop down list when the WD (Dominant Species) checkbox is set."),
+                         array("attr"=>"111", "term"=>"WP", "target"=>"113", "title"=>"You must enter a date in this field when the WP (Planted Date) checkbox is set."));
+    $common = "var check_attrs = function(){\n";
+    data_entry_helper::$javascript .= "var checkbox_changed_base = function(changedSelector, targetSelector){
+  $(changedSelector).closest('span').find('label.error').remove();
+  $(changedSelector).closest('span').find('.error').removeClass('error');
+  if($(changedSelector).attr('checked'))
+    $(targetSelector).addClass('required').closest('span').show();
+  else {
+    $(targetSelector).removeClass('required').val('').closest('span').hide();
+  }
+};
+var check_attr_def = [];
+check_attrs = function(){
+  for(var i=0; i<check_attr_def.length; i++){
+    checkbox_changed_base(check_attr_def[i][0], check_attr_def[i][1]);
+  }
+}\n";
+    foreach($definitions as $defn){
+      data_entry_helper::$javascript .= "$('[id^=locAttr\\\\:".$defn["attr"]."\\\\:]:checkbox').each(function(idx,elem){
+  if($('label[for='+$(elem).attr('id').replace(/:/g,'\\\\:')+']').html() == '".$defn["term"]."'){
+    var tgt = $('#locAttr\\\\:".$defn["target"]."');
+    tgt.prev('label').remove();
+    tgt.next('br').remove();
+    var span = $('<span/>');
+    $(elem).closest('span').append(span);
+    span.append(tgt).append('<span class=\"deh-required\">*</span>');
+    tgt.attr('title','".$defn["title"]."');
+    $(elem).change(function(e){checkbox_changed_base(e.target, '#locAttr\\\\:".$defn["target"]."');});
+    check_attr_def.push([elem, '#locAttr\\\\:".$defn["target"]."']);
+  }
+});\n";
+    }
+    data_entry_helper::$javascript .= "check_attrs();\nindiciaData.trees = {};\n";
     $settings['trees']=array();
     if ($settings['locationId']) {
       data_entry_helper::load_existing_record($auth['read'], 'location', $settings['locationId']);
@@ -404,13 +450,13 @@ class iform_tree_locations {
     data_entry_helper::$javascript .= "indiciaData.indiciaSvc = '".data_entry_helper::$base_url."';\n";
     data_entry_helper::$javascript .= "indiciaData.readAuth = {nonce: '".$auth['read']['nonce']."', auth_token: '".$auth['read']['auth_token']."'};\n";    
     data_entry_helper::$javascript .= "indiciaData.currentTree = '';\n";
-    data_entry_helper::$javascript .= "indiciaData.treeTypeId = '".$settings['TreeLocationTypes'][0]['id']."';\n";
+    data_entry_helper::$javascript .= "indiciaData.treeTypeId = '".$settings['TreeLocationType'][0]['id']."';\n";
     data_entry_helper::$javascript .= "indiciaData.treeDeleteConfirm = \"".lang::get('Are you sure you wish to delete tree')."\";\n";
     data_entry_helper::$javascript .= "indiciaData.treeInsertConfirm = \"".lang::get('Are you sure you wish to create a new tree (make sure you have saved any data)')."\";\n";
     data_entry_helper::$javascript .= "indiciaData.treeChangeConfirm = \"".lang::get('Do you wish to save the currently unsaved changes you have made to the Tree Details?')."\";\n";
     data_entry_helper::$javascript .= "indiciaData.treeSampleMethodID = \"".$settings['treeSampleMethod']['id']."\";\n";
-    data_entry_helper::$javascript .= "indiciaData.newVisitDialog = \"".lang::get('You have just created a new tree. You can now create the first visit data, or you can leave it until later. Do you wish to create the visit data now? (This will open in a new window.)')."\";\n";
-    data_entry_helper::$javascript .= "indiciaData.existingVisitDialog = \"".lang::get('You have just modified an existing tree. Do you wish to create a visit now? (This will open in a new window.)')."\";\n";
+    data_entry_helper::$javascript .= "indiciaData.newVisitDialog = \"".lang::get('You have just created a new tree. You can now create the first phenology observation data, or you can leave it until later. Do you wish to create the phenology observation data now? (This will open in a new window.)')."\";\n";
+    data_entry_helper::$javascript .= "indiciaData.existingVisitDialog = \"".lang::get('You have just modified an existing tree. Do you wish to create phenology observation data now? (This will open in a new window.)')."\";\n";
     data_entry_helper::$javascript .= "indiciaData.visitURL = \"".($args['visit_path'] . (strpos($args['visit_path'], '?') === false ? '?' : '&') . "new=1&location_id=")."\";\n";
     $r .= '<a id="visit_link" style="display:none;" href="" target="_blank" />';
     if ($settings['locationId'])
@@ -485,9 +531,9 @@ class iform_tree_locations {
       ));
     }
     $help = lang::get('The following controls are in the top right of the map:<br/>'.
-          '1) Modify Site Control. After selecting this control you can change the shape of a previously drawn site. To do this, after selecting this tool, click on the site on the map: this will add grab points (circles) to the boundary, one at each vertex and one at the midpoint of each side. You can then click and drag these points to change the shape of the site. Placing the mouse over a vertex and pressing the "Delete" button on your keyboard will remove that vertex.<br/>'.
+          '1) Navigation Control. After selecting this control you can tool navigate around the map by dragging.<br/>'.
           '2) Draw Site Control. After selecting this control you can draw a new shape for the site by clicking on the map to draw the shape, and then double clicking on the last vertex to finish. This will replace any previously drawn site outline. Should you wish to change the site outline afterwards, you can use the Modify Site Tool above.<br/>'.
-          '3) Navigation Control. After selecting this control you can tool navigate around the map by dragging.');
+          '3) Modify Site Control. After selecting this control you can change the shape of a previously drawn site. To do this, after selecting this tool, click on the site on the map: this will add grab points (circles) to the boundary, one at each vertex and one at the midpoint of each side. You can then click and drag these points to change the shape of the site. Placing the mouse over a vertex and pressing the "Delete" button on your keyboard will remove that vertex.');
     if ($args['allow_user_assignment']) {
       if ($settings['canAllocUser'])
         $help .= '<br/><br/>'.lang::get('You, as a scheme administrator, have the option of changing who the site is assigned to, using control under the map. If you so wish, the site may be assigned to more than one person at a time.');
@@ -536,6 +582,7 @@ jQuery(jQuery('#site-details').parent()).bind('tabsshow', mapTabHandler);\n";
       } else if (!$settings['locationId']) {
         // for a new record, we need to link the current user to the location if they are not admin.
         global $user;
+        self::get_user_assignment_control($auth['read'], $settings['cmsUserAttr'], $args); // this will populate the recorder list.
         $r .= '<input type="hidden" name="locAttr:'.self::$cmsUserAttrId.'" value="'.$user->uid.'">';
       }
     }
@@ -597,8 +644,6 @@ $('#delete-site').click(deleteSite);
     		'class' => 'control-width-4',
     		'helpText' => lang::get('Enter any reference ID used for this tree in other systems, e.g. Treezilla')
     ));
-    $help = lang::get('Use the Point control to position the tree on the map by clicking on the point then click on the map to position (or reposition) it.');
-    $r .= '<p class="ui-state-highlight page-notice ui-corner-all">'.$help.'</p>';
     $systems = array();
     $list = explode(',', str_replace(' ', '', $args['spatial_systems']));
     foreach($list as $system) {
@@ -610,6 +655,7 @@ $('#delete-site').click(deleteSite);
     		'geomid' => 'imp-geom-tree',
     		'geomFieldname' => 'location:centroid_geom',
     		'label' => 'Grid Ref.',
+            'labelClass'=>'auto',
     		'class' => 'required',
     		'helpText' => lang::get('You can also click on the map to set the central grid reference.')
     );
@@ -642,10 +688,19 @@ $('#delete-site').click(deleteSite);
     $r .= '<input type="hidden" name="sample:survey_id" value="'.$args['survey_id'].'" />';
     $r .= '<input type="hidden" name="sample:id" value="" id="tree-location-id" />';
     // this sample will reference the location id.
-    // date is effectively site registration date: filled in by JS
-    $r .= '<input id="sample:date" type="hidden" value="" name="sample:date">';
-    $r .= '<input id="sample:sample_method_id" type="hidden" value="'.$settings['treeSampleMethod']['id'].'" name="sample:sample_method_id">';
-    $r .= '<input id="sample:location_name" type="hidden" value="" name="sample:location_name">';
+    if (isset(data_entry_helper::$entity_to_load['sample:date']) && preg_match('/^(\d{4})/', data_entry_helper::$entity_to_load['sample:date'])) {
+      // Date has 4 digit year first (ISO style) - convert date to expected output format
+      // @todo The date format should be a global configurable option. It should also be applied to reloading of custom date attributes.
+      $d = new DateTime(data_entry_helper::$entity_to_load['sample:date']);
+      data_entry_helper::$entity_to_load['sample:date'] = $d->format('d/m/Y');
+    }
+    $r .= data_entry_helper::date_picker(array(
+    		'label'=>lang::get('Date Tree Selected'),
+    		'fieldname'=>'sample:date',
+    		'class' => 'control-width-2 required'
+    ));
+    $r .= '<input type="hidden" id="sample:sample_method_id" value="'.$settings['treeSampleMethod']['id'].'" name="sample:sample_method_id">';
+    $r .= '<input type="hidden" id="sample:location_name" value="" name="sample:location_name">';
     $r .= '<input type="hidden" name="occurrence:id" value="" id="occurrence:id" />';
     $r .= '<input type="hidden" name="occurrence:record_status" value="C" id="occurrence:record_status" />';
     $extraParams = $auth['read'];
@@ -708,11 +763,6 @@ $('#delete-site').click(deleteSite);
     $options = helper_base::explode_lines_key_value_pairs($args['attrOptions']);
     self::parseForAttrSpecificOptions($options, $ctrlOptions, $attrSpecificOptions);
     $r .= get_attribute_html($settings['tree_attributes'], $args, $ctrlOptions, '', $attrSpecificOptions);
-    $r .= data_entry_helper::textarea(array(
-    		'id'=>'location-comment',
-    		'fieldname'=>'location:comment',
-    		'label'=>lang::get("Additional information")))."<br />";
-    $r .= '<input type="submit" value="'.lang::get('Save').'" class="form-button right" id="submit-tree" />';
     $r .= '</fieldset>';
     $r .= "</div>" .
     		'<div class="right" style="width: '.(isset($args['percent_width']) ? $args['percent_width'] : 50).'%">';
@@ -743,7 +793,8 @@ $('#delete-site').click(deleteSite);
     $options['srefId']='imp-sref-tree';
     $options['geomId']='imp-geom-tree';
     $options['srefSystemId']='imp-sref-system-tree';
-    
+    $help = lang::get('Use the Point control to position the tree on the map by clicking on the point then click on the map to position (or reposition) it.');
+    $r .= '<p class="ui-state-highlight page-notice ui-corner-all">'.$help.'</p>';
     $r .= map_helper::map_panel($options, $olOptions);
     $r .= data_entry_helper::file_box(/* array_merge( */array(
     		'table'=>'location_medium',
@@ -751,7 +802,13 @@ $('#delete-site').click(deleteSite);
     		'readAuth'=>$auth['read']
     )/*, $options)*/);
     $r .= "</div>"; // right
-    $r .= '</form></div>';
+    $r .= '<div class="follow_on_block" style="clear:both;">';
+    $r .= data_entry_helper::textarea(array(
+    		'id'=>'location-comment',
+    		'fieldname'=>'location:comment',
+    		'label'=>lang::get("Additional information")))."<br />";
+    $r .= '<input type="submit" value="'.lang::get('Save').'" class="form-button right" id="submit-tree" />';
+    $r .= '</div></form></div>';
     return $r;
   }
 
@@ -790,20 +847,37 @@ $('#delete-site').click(deleteSite);
    * If the user has permissions, then display a control so that they can specify the list of users associated with this site.
    */
   private static function get_user_assignment_control($readAuth, $cmsUserAttr, $args) {
-    if(self::$cmsUserList == null) {
+    $r = "";
+  	if(self::$cmsUserList == null) {
       $query = db_query("select uid, name from {users} where name <> '' order by name");
       $users = array();
       // there have been DB API changes for Drupal7: db_query now returns the result array.
       if(version_compare(VERSION, '7', '<')) {
-        while ($user = db_fetch_object($query)) 
+        while ($user = db_fetch_object($query))
           $users[$user->uid] = $user->name;
       } else {
-        foreach ($query as $user) 
-          $users[$user->uid] = $user->name;
+        foreach ($query as $user) {
+          $built_name = $user->name;
+          $account = user_load($user->uid);
+          $fieldname = 'field_first_name';
+          $fieldinfo = field_get_items('user', $account, $fieldname);
+          if ($fieldinfo) {
+            $built_name = check_plain($fieldinfo[0]['value']);
+            $fieldname = 'field_last_name';
+            $fieldinfo = field_get_items('user', $account, $fieldname);
+            if ($fieldinfo && $built_name!="") {
+              $built_last_name = check_plain($fieldinfo[0]['value']);
+              if($built_last_name != "") $built_name .= " ".$built_last_name;
+            }
+            else $built_name = $user->name;
+          }
+          $users[$user->uid] = $built_name;
+        }
       }
       self::$cmsUserList = $users;
-  	} else $users= self::$cmsUserList;
-    $r = '<fieldset id="alloc-recorders"><legend>'.lang::get('Allocate recorders to the site').'</legend>';
+    } else $users= self::$cmsUserList;
+    $selected = "";
+    $r .= '<fieldset id="alloc-recorders"><legend>'.lang::get('Allocate recorders to the site').'</legend>';
     $r .= data_entry_helper::select(array(
       'label' => lang::get('Select user'),
       'fieldname' => 'cmsUserId',
@@ -815,11 +889,13 @@ $('#delete-site').click(deleteSite);
     // cmsUserAttr needs to be multivalue
     if (isset($cmsUserAttr['default']) && !empty($cmsUserAttr['default'])) {
       foreach($cmsUserAttr['default'] as $value) {
+      	$selected .= ($selected == "" ? "" : $selected.", ").$users[$value['default']];
         $rows .= '<tr><td id="user-'.$value['default'].'"><input type="hidden" name="'.$value['fieldname'].'" '.
             'value="'.$value['default'].'"/>'.$users[$value['default']].
             '</td><td><div class="ui-state-default ui-corner-all"><span class="remove-user ui-icon ui-icon-circle-close"></span></div></td></tr>';
         }
     }
+    data_entry_helper::$javascript .= "indiciaData.assignedUsers = '" . $selected . "';\n";
     if (empty($rows))
       $rows = '<tr><td colspan="2"></td></tr>';
     $r .= "$rows</table>\n";

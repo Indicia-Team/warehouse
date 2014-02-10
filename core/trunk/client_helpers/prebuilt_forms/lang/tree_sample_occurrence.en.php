@@ -28,7 +28,7 @@ include_once 'dynamic.en.php';
  */
 $custom_terms = array_merge($custom_terms, array(
     'LANG_Site_Location_Label' => 'Site',
-    'LANG_Add_Sample' => 'Add New Sample',
+    'LANG_Add_Sample' => 'Add New Visit',
     'Tree Observation' => 'How much of the tree did you observe on this visit'
   )
 );

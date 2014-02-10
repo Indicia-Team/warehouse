@@ -115,6 +115,13 @@ class iform_tree_sample_occurrence extends iform_dynamic_sample_occurrence {
   			data_entry_helper::$entity_to_load['sample:created_by_id'] !== hostsite_get_user_field('indicia_user_id'))
   		throw new exception(lang::get('Attempt to access a record you did not create.'));
   }
+
+  protected static function get_control_treedate($auth, $args, $tabAlias, $options) {
+    if(!isset(data_entry_helper::$entity_to_load['sample:date']) &&
+        isset($_GET['date']))
+      data_entry_helper::$entity_to_load['sample:date'] = $_GET['date'];
+    return self::get_control_date($auth, $args, $tabAlias, $options);
+  }
   
   /**
    * Get the location control as a select dropdown.
@@ -193,6 +200,38 @@ indiciaData.searchUpdatesSref=false;\n
     } else if(isset($_GET['location_id'])) {
       $location_id = $_GET['location_id'];
     } else $location_id = false;
+    
+    $attrArgs = array(
+    		'valuetable'=>'location_attribute_value',
+    		'attrtable'=>'location_attribute',
+    		'key'=>'location_id',
+    		'extraParams'=>$auth['read'],
+    		'survey_id'=>$args['survey_id'],
+    		'fieldprefix'=>'locAttr'
+    );
+    if($location_id) $attrArgs['id'] = $location_id;
+    $attrArgs['extraParams'] += array('query'=>json_encode(array('in'=>array('caption'=>array('Assigned Recorder')))));
+    $locAttrs = data_entry_helper::getAttributes($attrArgs, false);
+    
+    $attrArgs = array(
+    		'valuetable'=>'sample_attribute_value',
+    		'attrtable'=>'sample_attribute',
+    		'key'=>'sample_id',
+    		'extraParams'=>$auth['read'],
+    		'survey_id'=>$args['survey_id'],
+    		'fieldprefix'=>'smpAttr'
+    );
+    $attrArgs['extraParams'] += array('query'=>json_encode(array('in'=>array('caption'=>array('Recorder Name')))));
+    $smpAttrs = data_entry_helper::getAttributes($attrArgs, false);
+    
+    if(!count($locAttrs))
+      throw new exception(lang::get('This form must be used with an "Assigned Recorder" tree location attribute.'));
+    if(!count($smpAttrs))
+    	throw new exception(lang::get('This form must be used with an "Recorder Name" tree location attribute.'));
+    
+    data_entry_helper::$javascript .= "indiciaData.assignedRecorderAttrID='".$locAttrs[0]['attributeId']."';\n";
+    data_entry_helper::$javascript .= "indiciaData.recorderNameID='".$smpAttrs[0]['id']."';\n";
+    
     if($location_id){
       $r .= '<div class="page-notice ui-state-highlight ui-corner-all">This visit is already registered against a tree. All fields followed by a red asterisk (<span class="deh-required">*</span>) must be filled in. You can not modify any field that is greyed out.</div>';
       $locationRecord = data_entry_helper::get_population_data(array(
@@ -202,6 +241,9 @@ indiciaData.searchUpdatesSref=false;\n
       ));
       if(count($locationRecord)!=1)
         throw new exception(lang::get('Could not identify tree location : ID ').$location_id);
+      
+      if(count($locAttrs) && count($smpAttrs))
+        data_entry_helper::$entity_to_load[$smpAttrs[0]['fieldname']] = $locAttrs[0]['default'];
 
       $parentLocationRecord = data_entry_helper::get_population_data(array(
             'table' => 'location',
@@ -223,11 +265,12 @@ indiciaData.searchUpdatesSref=false;\n
 
       $registrationOccurrenceRecord = data_entry_helper::get_population_data(array(
             'table' => 'occurrence',
-             'extraParams' => $auth['read'] + array('sample_id' => $registrationSampleRecord[0]['id'], "view"=>"detail"),
+            'extraParams' => $auth['read'] + array('sample_id' => $registrationSampleRecord[0]['id'], "view"=>"detail"),
             'nocache' => true
       ));
-      if(count($registrationOccurrenceRecord)!=1)
+      if(count($registrationOccurrenceRecord)!=1){
         throw new exception(lang::get('Could not identify registration occurrence for tree location ID ').$locationRecord[0]['id']);
+      }
 
       if(self::$loadedSampleId)
         self::$treeOccurrenceRecord = data_entry_helper::get_population_data(array(
@@ -314,14 +357,14 @@ mapInitialisationHooks.push(function (div) {
 });";
       if(self::$loadedSampleId)
         data_entry_helper::$javascript .= "
-$('[name=sample\\:date]').change(function(){ // sample exists so just check that no sample already taken on that date.
+$('[name=sample\\\\:date]').change(function(){ // sample exists so just check that no sample already taken on that date.
   $.getJSON(ParentLocationLayer.map.div.settings.indiciaSvc + 'index.php/services/data/sample?location_id='+".$locationRecord[0]['id']." +
       '&sample_method_id=".$args['sample_method_id']."&mode=json&view=detail' + ParentLocationLayer.map.div.settings.readAuth + '&callback=?', function(data) {
     if (typeof data.error!=='undefined') {
       alert(data.error);
       return;
     }
-    var date = $('[name=sample\\:date]').val();
+    var date = $('[name=sample\\\\:date]').val();
     date = date.split('/');
     for(var i = 0; i < data.length; i++){
       if(data[i][\"id\"] != ".self::$loadedSampleId." && data[i][\"date_start\"] == date[2]+'-'+date[1]+'-'+date[0]){
@@ -331,14 +374,14 @@ $('[name=sample\\:date]').change(function(){ // sample exists so just check that
   });\n});\n";
       else
         data_entry_helper::$javascript .= "
-$('[name=sample\\:date]').change(function(){
+$('[name=sample\\\\:date]').change(function(){
   $.getJSON(ParentLocationLayer.map.div.settings.indiciaSvc + 'index.php/services/data/sample?location_id='+".$locationRecord[0]['id']." +
   		'&sample_method_id=".$args['sample_method_id']."&mode=json&view=detail&orderby=date_start' + ParentLocationLayer.map.div.settings.readAuth + '&callback=?', function(data) {
     if (typeof data.error!=='undefined') {
       alert(data.error);
       return;
     }
-    var date = $('[name=sample\\:date]').val();
+    var date = $('[name=sample\\\\:date]').val();
     date = date.split('/');
     for(var i = 0; i < data.length; i++){
       if(data[i][\"date_start\"] == date[2]+'-'+date[1]+'-'+date[0]) {
@@ -362,7 +405,7 @@ $('[name=sample\\:date]').change(function(){
           var cells = $('.scOccAttrCell');
           cells.find('select').removeClass('required').val('').attr('disabled',true);
           cells.find('.deh-required').remove();
-          $('[name^=sc\\:tree\\:\\:occAttr\\:]').val('');
+          $('[name^=sc\\\\:tree\\\\:\\\\:occAttr\\\\:]').val('');
           $.getJSON(ParentLocationLayer.map.div.settings.indiciaSvc + 'index.php/services/data/occurrence?sample_id='+data[i]['id'] +
               '&mode=json&view=detail' + ParentLocationLayer.map.div.settings.readAuth + '&callback=?', function(odata) {
             if (typeof odata.error!=='undefined') {
@@ -391,8 +434,8 @@ $('[name=sample\\:date]').change(function(){
                   if(adata[k].id != null){
                     for(var j = 0; j < odata.length; j++) {
                       if(odata[j].id == adata[k].occurrence_id){
-                        $('.scPresence[value='+odata[j].taxa_taxon_list_id+']').closest('tr').find('[name$=\\:occAttr\\:'+adata[k]['occurrence_attribute_id']+']').val(adata[k]['raw_value']);
-                        $('[name=sc\\:tree\\:\\:occAttr\\:'+adata[k]['occurrence_attribute_id']+']').val(adata[k]['raw_value']);
+                        $('.scPresence[value='+odata[j].taxa_taxon_list_id+']').closest('tr').find('[name$=\\\\:occAttr\\\\:'+adata[k]['occurrence_attribute_id']+']').val(adata[k]['raw_value']);
+                        $('[name=sc\\\\:tree\\\\:\\\\:occAttr\\\\:'+adata[k]['occurrence_attribute_id']+']').val(adata[k]['raw_value']);
                         break;
               }}}}});
           }});
@@ -414,21 +457,25 @@ $('[name=sample\\:date]').change(function(){
     if (empty($options['reportProvidesOrderBy'])||$options['reportProvidesOrderBy']==0) {
       $options['extraParams']['orderby'] = 'name';
     }
-    $r .= data_entry_helper::location_select(array_merge(array(
+    $location_list_args = array_merge(array(
         'label'=>lang::get('Site'),
         'view'=>'detail',
         'fieldname'=>'location:parent_id',
         'id'=>'imp-site-location',
         'blankText'=>lang::get('Please select a site.'),
         'validation' => 'required'
-      ), $options));
+      ), $options);
+    $r .= data_entry_helper::location_select($location_list_args);
+
     $location_list_args = array_merge(array(
         'label'=>lang::get('Tree'),
         'view'=>'detail',
         'blankText'=>lang::get('Please select a tree.'),
         'validation' => 'required'
-    ), $options, array('location_type_id' => $options['tree_location_type_id']));
+    ), $options);
+    $location_list_args['location_type_id'] = $options['tree_location_type_id'];
     $r .= data_entry_helper::location_select($location_list_args);
+
     $r .= data_entry_helper::text_input(array(
         'label' => lang::get('Tree Species'),
         'fieldname' => 'dummy:tree_species',
@@ -494,7 +541,7 @@ $('#imp-site-location').change(function() {
               $('#imp-location option[value!=]:selected').remove();
               $('#imp-location,#imp-sref').val('');
               TreeListLayer.map.editLayer.destroyFeatures();
-              $('[name=dummy\\:tree_species]').val('');
+              $('[name=dummy\\\\:tree_species]').val('');
             }
             TreeListLayer.addFeatures(features);
             _zoomToExtent(bounds, ParentLocationLayer);
@@ -509,6 +556,15 @@ mapLocationSelectedHooks.push(function(div, data){
   if(data[0].parent_id != ''){
     $('#imp-location option[value=]').attr('disabled',true);
   }
+  $('#'+indiciaData.recorderNameID.replace(/:/g,'\\\\:')).val('');
+  $.getJSON(ParentLocationLayer.map.div.settings.indiciaSvc + 'index.php/services/data/location_attribute_value?location_id='+data[0]['id'] +
+      '&mode=json&view=list' + ParentLocationLayer.map.div.settings.readAuth + '&callback=?', function(data) {
+    if(data instanceof Array && data.length>0){
+      for (var i=0;i<data.length;i++){
+        if (data[i]['location_attribute_id'] == indiciaData.assignedRecorderAttrID)
+          $('#'+indiciaData.recorderNameID.replace(/:/g,'\\\\:')).val(data[i].raw_value);
+      }
+  }});
   // get registration sample and occurrence and fill in species.
   $.getJSON(ParentLocationLayer.map.div.settings.indiciaSvc + 'index.php/services/data/sample?location_id='+data[0]['id'] +
       '&sample_method_id=".$args['reg_sample_method_id']."&mode=json&view=detail' + ParentLocationLayer.map.div.settings.readAuth + '&callback=?', function(data) {
@@ -524,19 +580,19 @@ mapLocationSelectedHooks.push(function(div, data){
           return;
         }
         if(data.length){
-          $('[name=dummy\\:tree_species]').val(data[0].taxon);
-          $('[name=sc\\:tree\\:\\:present]').val(data[0].taxa_taxon_list_id);
+          $('[name=dummy\\\\:tree_species]').val(data[0].taxon);
+          $('[name=sc\\\\:tree\\\\:\\\\:present]').val(data[0].taxa_taxon_list_id);
       }});
   }});
 });
-$('[name=sample\\:date]').change(function(){
+$('[name=sample\\\\:date]').change(function(){
   $.getJSON(ParentLocationLayer.map.div.settings.indiciaSvc + 'index.php/services/data/sample?location_id='+$('#imp-location').val() +
   		'&sample_method_id=".$args['sample_method_id']."&mode=json&view=detail&orderby=date_start' + ParentLocationLayer.map.div.settings.readAuth + '&callback=?', function(data) {
     if (typeof data.error!=='undefined') {
       alert(data.error);
       return;
     }
-    var date = $('[name=sample\\:date]').val();
+    var date = $('[name=sample\\\\:date]').val();
     date = date.split('/');
     for(var i = 0; i < data.length; i++){
       if(data[i][\"date_start\"] == date[2]+'-'+date[1]+'-'+date[0]) {
@@ -560,7 +616,7 @@ $('[name=sample\\:date]').change(function(){
           var cells = $('.scOccAttrCell');
           cells.find('select').removeClass('required').val('').attr('disabled',true);
           cells.find('.deh-required').remove();
-          $('[name^=sc\\:tree\\:\\:occAttr\\:]').val('');
+          $('[name^=sc\\\\:tree\\\\:\\\\:occAttr\\\\:]').val('');
           $.getJSON(ParentLocationLayer.map.div.settings.indiciaSvc + 'index.php/services/data/occurrence?sample_id='+data[i]['id'] +
               '&mode=json&view=detail' + ParentLocationLayer.map.div.settings.readAuth + '&callback=?', function(odata) {
             if (typeof odata.error!=='undefined') {
@@ -589,8 +645,8 @@ $('[name=sample\\:date]').change(function(){
                   if(adata[k].id != null){
                     for(var j = 0; j < odata.length; j++) {
                       if(odata[j].id == adata[k].occurrence_id){
-                        $('.scPresence[value='+odata[j].taxa_taxon_list_id+']').closest('tr').find('[name$=\\:occAttr\\:'+adata[k]['occurrence_attribute_id']+']').val(adata[k]['raw_value']);
-                        $('[name=sc\\:tree\\:\\:occAttr\\:'+adata[k]['occurrence_attribute_id']+']').val(adata[k]['raw_value']);
+                        $('.scPresence[value='+odata[j].taxa_taxon_list_id+']').closest('tr').find('[name$=\\\\:occAttr\\\\:'+adata[k]['occurrence_attribute_id']+']').val(adata[k]['raw_value']);
+                        $('[name=sc\\\\:tree\\\\:\\\\:occAttr\\\\:'+adata[k]['occurrence_attribute_id']+']').val(adata[k]['raw_value']);
                         break;
               }}}}});
           }});
@@ -622,10 +678,9 @@ $('[name=sample\\:date]').change(function(){
     }
     $occAttrs = data_entry_helper::getAttributes($attrArgs, false);
     $ctrlOptions = array('extraParams'=>$auth['read']);
-  	$attrSpecificOptions = array();
-  	self::parseForAttrSpecificOptions($options, $ctrlOptions, $attrSpecificOptions);
-  	$r .= get_attribute_html($occAttrs, $args, $ctrlOptions, '', $attrSpecificOptions);
-    return $r;
+    $attrSpecificOptions = array();
+    self::parseForAttrSpecificOptions($options, $ctrlOptions, $attrSpecificOptions);
+    return get_attribute_html($occAttrs, $args, $ctrlOptions, '', $attrSpecificOptions);
   }
 
   protected static function get_control_sampleattributes($auth, $args, $tabAlias, $options) {
@@ -641,18 +696,19 @@ $('[name=sample\\:date]').change(function(){
       // if we have a single occurrence Id to load, use it to get attribute values
       $attrArgs['id'] = self::$loadedSampleId;
     }
+    if(isset($args['sample_method_id']) && !empty($args['sample_method_id']))
+      $attrArgs['sample_method_id'] = $args['sample_method_id'];
     if (!empty($options['attributeIds'])) {
-      $attrArgs['extraParams'] += array('query'=>json_encode(array('in'=>array('id'=>$options['attributeIds']))));
+      $attrArgs['extraParams']['query']=json_encode(array('in'=>array('id'=>$options['attributeIds'])));
     }
     $smpAttrs = data_entry_helper::getAttributes($attrArgs, false);
     $ctrlOptions = array('extraParams'=>$auth['read']);
-  	$attrSpecificOptions = array();
-  	self::parseForAttrSpecificOptions($options, $ctrlOptions, $attrSpecificOptions);
-  	foreach($attrSpecificOptions as $attr => $opts)
+    $attrSpecificOptions = array();
+    self::parseForAttrSpecificOptions($options, $ctrlOptions, $attrSpecificOptions);
+    foreach($attrSpecificOptions as $attr => $opts)
       if(isset($attrSpecificOptions[$attr]['default']))
-  		$attrSpecificOptions[$attr]['default'] = apply_user_replacements($attrSpecificOptions[$attr]['default']);
-  	$r .= get_attribute_html($smpAttrs, $args, $ctrlOptions, '', $attrSpecificOptions);
-    return $r;
+        $attrSpecificOptions[$attr]['default'] = apply_user_replacements($attrSpecificOptions[$attr]['default']);
+    return get_attribute_html($smpAttrs, $args, $ctrlOptions, '', $attrSpecificOptions);
   }
 
   /**
@@ -661,6 +717,16 @@ $('[name=sample\\:date]').change(function(){
   protected static function getSubmitButtons($args) {
     $r = '<input type="submit" class="indicia-button" id="save-button" value="'.lang::get('Submit')."\" />";
     $r .= '<a href="'.self::getRefererPath().'"><input type="button" class="indicia-button" name="cancel" value="'.lang::get('Cancel').'" /></a>';
+/*    if (!empty(self::$loadedSampleId)) {
+      $r .= '<input type="submit" class="indicia-button" id="delete-button" name="delete-button" value="'.lang::get('Delete')."\" />\n";
+      data_entry_helper::$javascript .= "$('#delete-button').click(function(e) {
+  if (!confirm(\"Are you sure you want to delete this record?\")) {
+    e.preventDefault();
+    return false;
+  }
+});\n";
+    } */
+    
     return $r;
   }
 
