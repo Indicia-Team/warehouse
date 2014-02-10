@@ -1,0 +1,23 @@
+<report
+    title="Get the details for a square"
+    description="Return the name and type of a particular square id."
+>
+  <query>
+    SELECT #columns#
+      FROM locations square
+      LEFT JOIN location_attribute_values lav on lav.location_id=square.id AND lav.location_attribute_id = #vice_county_location_attribute_id# AND lav.deleted=false
+    WHERE square.id=#square_id# AND square.deleted=false
+    GROUP BY square.centroid_sref,lav.text_value, square.centroid_sref, square.location_type_id
+  </query>
+  <params>
+    <param name="square_id" display="Id of the square get details for" datatype="integer"/>
+    <param name="no_vice_county_found_message" display="Some words to use in the square's name if a vice county cannot be found." datatype="text" default=''/>
+    <param name="vice_county_location_attribute_id" display="The location attribute id that hold's the Vice County name." datatype="integer" default='0'/>
+    <param name="core_square_location_type_id" display="Core Square location type id" datatype="integer" default='0'/>
+  </params>
+  <columns>
+    <column name='id' display='square.id' datatype='integer'/>
+    <column name='name' display='Square Name' sql="square.centroid_sref || ' - ' || coalesce(lav.text_value,'#no_vice_county_found_message#')" datatype='text'/>
+    <column name='type' display='Square Type' sql="case when square.location_type_id=#core_square_location_type_id# then 'Core' else 'Additional' end" datatype='text' />
+  </columns>
+</report>
