@@ -176,6 +176,7 @@ class extension_splash_extensions {
       }
       $r = data_entry_helper::select(array(
         'id' => 'squares-select-list',
+        'blankText'=>'<Please select>',
         'fieldname'=> 'squares-select-list',
         'label' => lang::get('Select a Square'),
         'helpText' => lang::get('Select a square to input data for before selecting a plot.'),
@@ -220,6 +221,15 @@ class extension_splash_extensions {
     iform_load_helpers(array('report_helper'));
     $reportOptions = array(
       'linkOnly'=>'true',
+      'dataSource'=>'reports_for_prebuilt_forms/Splash/get_square_details_for_square_id',
+      'readAuth'=>$auth['read']
+    );  
+    //Report that will return the type of the square selected by the user
+    data_entry_helper::$javascript .= "indiciaData.squareReportRequest='".
+       report_helper::get_report_data($reportOptions)."';\n";
+    
+    $reportOptions = array(
+      'linkOnly'=>'true',
       'dataSource'=>'reports_for_prebuilt_forms/Splash/get_plot_details',
       'readAuth'=>$auth['read']
     );  
@@ -229,8 +239,9 @@ class extension_splash_extensions {
     $htmlTemplate = "
     </br><div id='plot_report_panel'>
       </br>
-      <h5>Plot Details</h5>
+      <h5>Details</h5>
       <div id='field ui-helper-clearfix'>
+        <span><b>Square Type: </b></span><span id='square-type-value'></span></br>
         <span><b>Plot Type: </b></span><span id='plot-type-value'></span></br>
         <span><b>Plot Description: </b></span><span id='plot-description-value'></span></br>
         <span><b>Vice County: </b></span><span id='vice-county-value'></span></br>
@@ -240,9 +251,27 @@ class extension_splash_extensions {
         <span><b>% Ash cover: </b></span><span id='ash-cover-value'></span></br>
       </div>
     </div></br>";
-    //When the plot is changed then get the data about a plot from a report and then 
-    //place it into the mini report html template using jQuery.
-    data_entry_helper::$javascript .= "$('#imp-location').change(function() {
+    //When the suqare or plot is changed then get the data about the square/plot is collected from reports and then 
+    //placed into the mini report html template using jQuery.
+    data_entry_helper::$javascript .= "
+    $('#squares-select-list').change(function() {
+      var squareReportRequest = indiciaData.squareReportRequest
+      + '&square_id=' + $('#squares-select-list').val()
+      + '&core_square_location_type_id=' + ".$options['coreSquareLocationTypeId']."
+      + '&callback=?';
+      $.getJSON(squareReportRequest,
+        null,
+        function(response, textStatus, jqXHR) {
+          if (response[0].type) {
+            $('#square-type-value').text(response[0].type);
+          } else {
+            $('#square-type-value').text('');
+          }
+        }
+      );
+    });
+
+    $('#imp-location').change(function() {
       if ($(this).val()==='<Please select>') {
         $('#plot-type-value').text('');
         $('#plot-description-value').text('');
@@ -391,7 +420,7 @@ class extension_splash_extensions {
     //In add mode, the Plot Details page is given its parent square in the parent_square_id parameter, so use this to get the parent square name.
     if (!empty($_GET['dynamic-location_id'])||!empty($_GET['parent_square_id'])) {
       $reportOptions = array(
-        'dataSource'=>'reports_for_prebuilt_forms/Splash/get_square_name_for_square_id',
+        'dataSource'=>'reports_for_prebuilt_forms/Splash/get_square_details_for_square_id',
         'readAuth'=>$auth['read'],
         'extraParams' => array('website_id'=>$args['website_id'], 
             'vice_county_location_attribute_id'=>$options['viceCountyLocationAttributeId'], 
