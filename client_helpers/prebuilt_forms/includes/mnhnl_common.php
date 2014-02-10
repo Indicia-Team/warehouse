@@ -366,10 +366,11 @@ function iform_mnhnl_locModTool($auth, $args, $node) {
       $request.="type_id=".$primary;
     }
     $request .= "&typename=".$args['shpFileFeaturePrefix'].':';
+    $filedetails = "&format_options=filename:".$args['reportFilenamePrefix'];
     $retValList = "";
-    if($args['usePoints']!='none' || (isset($args['shpDownloadPoints']) && $args['shpDownloadPoints']))       $retValList .= "<a href=\"".$request."point_locations\">".lang::get('Points')."</a>";
-    if($args['useLines']!='none' || (isset($args['shpDownloadLines']) && $args['shpDownloadLines']))          $retValList .= ($retValList == "" ? "" : " : ")."<a href=\"".$request."line_locations\">".lang::get('Lines')."</a>";
-    if($args['usePolygons']!='none' || (isset($args['shpDownloadPolygons']) && $args['shpDownloadPolygons'])) $retValList .= ($retValList == "" ? "" : " : ")."<a href=\"".$request."polygon_locations\">".lang::get('Polygons')."</a>";
+    if($args['usePoints']!='none' || (isset($args['shpDownloadPoints']) && $args['shpDownloadPoints']))       $retValList .= "<a href=\"".$request."point_locations".$filedetails."_Points.zip\">".lang::get('Points')."</a>";
+    if($args['useLines']!='none' || (isset($args['shpDownloadLines']) && $args['shpDownloadLines']))          $retValList .= ($retValList == "" ? "" : " : ")."<a href=\"".$request."line_locations".$filedetails."_Lines.zip\">".lang::get('Lines')."</a>";
+    if($args['usePolygons']!='none' || (isset($args['shpDownloadPolygons']) && $args['shpDownloadPolygons'])) $retValList .= ($retValList == "" ? "" : " : ")."<a href=\"".$request."polygon_locations".$filedetails."_Polygons.zip\">".lang::get('Polygons')."</a>";
     $retVal .= "<fieldset><legend>".lang::get('LANG_SHP_Download_Legend')."</legend>
       <p>".lang::get('LANG_Shapefile_Download')." ".$retValList."</p></fieldset>";
   }
@@ -392,12 +393,12 @@ function iform_mnhnl_locModTool($auth, $args, $node) {
   	<form method='post' action='".data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/luxbio_outside_squares_1.xml&reportSource=local&auth_token='.$auth['read']['auth_token'].'&nonce='.$auth['read']['nonce'].'&mode=csv&filename='.$args['reportFilenamePrefix']."CentreOutsideSquaresReport'>
       <label style='width:auto;'>".lang::get('LANG_Outside_Square_Download_1').":</label>
       <input type='hidden' name='params' value='{\"website_id\":".$args['website_id'].", \"survey_id\":".$args['survey_id'].", \"primary_loc_type_id\":".$submittedLocationTypeID.", \"secondary_loc_type_id\":".$confirmedLocationTypeID."}' />
-      <input type='submit' class='ui-state-default ui-corner-all' value='".lang::get('LANG_Download_Button')."'>
+      <input type='submit' class='ui-state-default ui-corner-all' value='".lang::get('Download')."'>
     </form>
   	<form method='post' action='".data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/luxbio_outside_squares_2.xml&reportSource=local&auth_token='.$auth['read']['auth_token'].'&nonce='.$auth['read']['nonce'].'&mode=csv&filename='.$args['reportFilenamePrefix']."BoundaryCutsSquaresReport'>
       <label style='width:auto;'>".lang::get('LANG_Outside_Square_Download_2').":</label>
       <input type='hidden' name='params' value='{\"website_id\":".$args['website_id'].", \"survey_id\":".$args['survey_id'].", \"primary_loc_type_id\":".$submittedLocationTypeID.", \"secondary_loc_type_id\":".$confirmedLocationTypeID."}' />
-      <input type='submit' class='ui-state-default ui-corner-all' value='".lang::get('LANG_Download_Button')."'>
+      <input type='submit' class='ui-state-default ui-corner-all' value='".lang::get('Download')."'>
     </form>
     </fieldset>";
   	
@@ -469,8 +470,9 @@ function iform_mnhnl_locModTool($auth, $args, $node) {
   }
   $retVal .= data_entry_helper::map_panel($mapOptions, $olOptions);
   $retVal .= iform_mnhnl_PointGrid($auth, $args, array('srefs'=>'2169,LUREF (m),X,Y,;4326,Lat/Long Deg,Lat,Long,D;4326,Lat/Long Deg:Min,Lat,Long,DM;4326,Lat/Long Deg:Min:Sec,Lat,Long,DMS'));
-  $retVal .= '<input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Submit').'">
-  </form></div>';
+  $retVal .= '    <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Submit').'">
+    <a href="'.iform_mnhnl_getReloadPath().'"><input class="ui-state-default ui-corner-all" type="button" name="cancel" value="'.lang::get('LANG_Cancel').'" /></a>
+    </form></div>';
   data_entry_helper::$javascript .= "
 mapInitialisationHooks.push(function(mapdiv) {
 // try to identify if this map is the secondary small one
@@ -486,7 +488,7 @@ function iform_mnhnl_recordernamesControl($node, $auth, $args, $tabalias, $optio
     $results = db_query('SELECT uid, name FROM {users}');
     while($result = db_fetch_object($results)){
     	$account = user_load($result->uid);
-    	if($account->uid != 1 && user_access('IForm n'.$node->nid.' user', $account)){
+    	if($account->uid != 1 && user_access($args['permission_name'], $account)){
 			$userlist[$result->name] = $result->name;
 		}
     }
@@ -496,9 +498,17 @@ function iform_mnhnl_recordernamesControl($node, $auth, $args, $tabalias, $optio
       else
         $values = data_entry_helper::$entity_to_load['sample:recorder_names'];
     }
-    foreach($values as $value){
+    foreach($values as $value){ // ensure all existing entries are in list.
       $userlist[$value] = $value;
     }
+    if(isset($options['disabled']) && $options['disabled'])
+      return data_entry_helper::text_input(array_merge(array(
+          'id'=>'sample:recorder_names',
+          'fieldname'=>'sample:recorder_names[]',
+          'label'=>lang::get('Recorder names'),
+          'default'=>implode(', ', $values)
+        ), $options));
+    
     $r = data_entry_helper::listbox(array_merge(array(
       'id'=>'sample:recorder_names',
       'fieldname'=>'sample:recorder_names[]',
@@ -523,7 +533,8 @@ function iform_mnhnl_lux5kgridControl($auth, $args, $node, $options) {
        'NameLabel' => lang::get('LANG_CommonLocationNameLabel'),
        'FilterNameLabel' => lang::get('LANG_CommonFilterNameLabel'),
        'CodeLabel' => lang::get('LANG_CommonLocationCodeLabel'),
-       'AdminMode'=>false
+       'AdminMode'=>false,
+       'disabled'=>false
     ), $options);
 
     switch($args['locationMode']){
@@ -647,6 +658,8 @@ var SiteNum = 0;\n";
       $WMSoptions = explode(',', $args['locationLayerWMS']);
       if($args['includeLocTools'] && function_exists('iform_loctools_listlocations')){
         $squares = iform_loctools_listlocations($node);
+        if(is_array($squares) && count($squares)==0)
+          $squares = array("-1"); // put in dummy value (all ids are > 0) to allow CQL filter to work on a blank list.
       } else $squares = 'all';
       // can't use the column name id in the cql_filter as this has a special (fid) meaning.
       data_entry_helper::$javascript .= "
@@ -737,7 +750,9 @@ clearLocation = function(hookArg, clearName){ // clears all the data in the fiel
   fullAttrList.filter('.multiselect').remove();
   fullAttrList.filter(':checkbox').removeAttr('checked').each(function(idx,elem){
     var name = jQuery(elem).attr('name').split(':');
+    var value = jQuery(elem).val().split(':');
     jQuery('[name^=locAttr\\:'+name[1]+'\\:]').filter(':hidden').remove();
+    jQuery(elem).val(value[0]);
   });
   // rename
   fullAttrList.each(function(){
@@ -904,7 +919,7 @@ loadLocation = function(feature){ // loads all the data into the location fields
   jQuery('#imp-geom').val(feature.attributes.data.centroid_geom); // this is as stored in the database i.e. 3857/900913 projection, not necessarily the map projection
   jQuery('#imp-boundary-geom').val(feature.attributes.data.boundary_geom); // this is as stored in the database i.e. 3857/900913 projection, not necessarily the map projection
   setSref(feature.geometry, feature.attributes.data.centroid_sref);
-  // reset attributes is done by clearLocation above.
+  // reset attributes is done by clearLocation above. this clears the values of checkboxes.
   jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/location_attribute_value' +
             '?mode=json&view=list&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&location_id='+feature.attributes.data.id+'&callback=?', function(data) {
     if(data instanceof Array && data.length>0){
@@ -2543,8 +2558,11 @@ jQuery('#".$options['MainFieldID']."').change(function(){mainFieldChange(true)})
     }
     if($args['locationMode']=='multi' && isset(data_entry_helper::$entity_to_load["sample:updated_by_id"])){ // only set if data loaded from db, not error condition
       iform_mnhnl_set_editable($auth, $args, $node, array(), $options['AdminMode'], $loctypeParam);
+      // TBD sort 2169 hardcode
+      // this required when adding sites when editting existing samples
+      $retVal .= "<input type=\"hidden\" id=\"imp-sref-system\" name=\"location:centroid_sref_system\" value=\"2169\" >";
       // multiple site: parent sample points to parent location in location_id, not parent_id. Each site has own subsample.
-      // can not change the (parent) location of the main sample, as this will reset all the attached samples and sites, so redering entered data useless. Just delete.
+      // can not change the (parent) location of the main sample, as this will reset all the attached samples and sites, so rendering entered data useless. Just delete.
       return $retVal."\n<input type=\"hidden\" name =\"sample:location_id\" value=\"".data_entry_helper::$entity_to_load["sample:location_id"]."\" >
   <p>".$options['ParentLabel'].' : '.data_entry_helper::$entity_to_load["location:name"].'</p>
 '.($args['includeNumSites'] ? "<label for=\"dummy-num-sites\" class=\"auto-width\">".lang::get('LANG_NumSites').":</label> <input id=\"dummy-num-sites\" name=\"dummy:num-sites\" class=\"checkNumSites narrow\" readonly=\"readonly\"><br />\n" : '').
@@ -2606,7 +2624,7 @@ jQuery('#".$options['MainFieldID']."').change(function(){mainFieldChange(true)})
       $locOptions['items'] = $opts;
       $retVal .= '<p>'.$options['Instructions1'].'</p>'.
         data_entry_helper::apply_template($locOptions['template'], $locOptions).
-        ($args['includeNumSites'] ? '<label for="dummy-num-sites" class=\"auto-width\">'.lang::get('LANG_NumSites').':</label> <input id="dummy-num-sites" name="dummy:num-sites" class="checkNumSites narrow" readonly="readonly"><br />
+        ($args['includeNumSites'] ? '<label for="dummy-num-sites" class="auto-width">'.lang::get('LANG_NumSites').':</label> <input id="dummy-num-sites" name="dummy:num-sites" class="checkNumSites narrow" readonly="readonly"><br />
 ' : '').'<p>'.$options['Instructions2'].'</p>'.
       ($options['AdminMode'] && (!isset($args['adminsCanCreate']) || !$args['adminsCanCreate']) ? '<p>'.lang::get('LANG_LocModTool_CantCreate').'</p>' : '' );
     }
@@ -3951,7 +3969,7 @@ function iform_mnhnl_set_editable($auth, $args, $node, $locList, $force, $loctyp
     data_entry_helper::$javascript .= "\ncanEditExistingSites = ".($force ? "true" : "false").";\n";
     return;
   }
-  $isAdmin = user_access('IForm n'.$node->nid.' admin');
+  $isAdmin = user_access('edit_permission');
   if($isAdmin) {
   	data_entry_helper::$javascript .= "\ncanEditExistingSites = true;\n";
     return;
@@ -4052,27 +4070,30 @@ setupButtons($('#controls'), 0);";
   return '';
 }
   
-function iform_mnhnl_getAttr($auth, $args, $table, $caption){
-  switch($table){
-  	case 'occurrence':
-  		$prefix = 'occAttr';
-  		break;
-  	case 'sample':
-  		$prefix = 'smpAttr';
-  		break;
-  	case 'location':
-  		$prefix = 'locAttr';
-  		break;
-  	default: return false;
-  }
-  $myAttributes = data_entry_helper::getAttributes(array(
+function iform_mnhnl_getAttr($auth, $args, $table, $caption, $qualifier=false){
+  $attrOpts = array(
         'valuetable'=>$table.'_attribute_value'
        ,'attrtable'=>$table.'_attribute'
        ,'key'=>$table.'_id'
-       ,'fieldprefix'=>$prefix
        ,'extraParams'=>$auth['read']
        ,'survey_id'=>$args['survey_id']
-      ), false);
+      );
+
+  switch($table){
+  	case 'occurrence':
+  		$attrOpts['fieldprefix'] = 'occAttr';
+  		break;
+  	case 'sample':
+  		$attrOpts['fieldprefix'] = 'smpAttr';
+  		if($qualifier)
+  		  $attrOpts['sample_method_id'] = $qualifier;
+  		break;
+  	case 'location':
+  		$attrOpts['fieldprefix'] = 'locAttr';
+  		break;
+  	default: return false;
+  }
+  $myAttributes = data_entry_helper::getAttributes($attrOpts, false);
   foreach($myAttributes as $attr)
     if (strcasecmp($attr['untranslatedCaption'],$caption)==0)
       return $attr;
@@ -4093,6 +4114,7 @@ jQuery('[name=locAttr:".$creatorAttr."],[name^=locAttr:".$creatorAttr.":]').remo
        'extraParams'=>$auth['read'],
        'survey_id'=>$args['survey_id']
       );
+//    if($options['read_only']===true) $attrArgs['read_only']='read_only';
     $tabName = (isset($options['tabNameFilter']) && isset($options['tabNameFilter'])!='' ? $options['tabNameFilter'] : '');
     if (array_key_exists('location:id', data_entry_helper::$entity_to_load) && data_entry_helper::$entity_to_load['location:id']!="") {
       // if we have location Id to load, use it to get attribute values
@@ -4102,19 +4124,19 @@ jQuery('[name=locAttr:".$creatorAttr."],[name^=locAttr:".$creatorAttr.":]').remo
     $defAttrOptions = array_merge(
         array('extraParams' => array_merge($auth['read'], array('view'=>'detail')),
               'language' => iform_lang_iso_639_2($args['language'])),$options);
-   $r = '';
-   foreach ($locationAttributes as $attribute) {
-   	if (($tabName=='' && $attribute['inner_structure_block']!="Filter") ||
+    $r = '';
+    foreach ($locationAttributes as $attribute) {
+      if (($tabName=='' && $attribute['inner_structure_block']!="Filter") ||
           strcasecmp($tabName,$attribute['inner_structure_block'])==0) {
-      $opt = $defAttrOptions + get_attr_validation($attribute, $args);
-      $r .= data_entry_helper::outputAttribute($attribute, $opt);
+        $opt = $defAttrOptions + get_attr_validation($attribute, $args);
+        $r .= data_entry_helper::outputAttribute($attribute, $opt);
+      }
     }
-   }
-   return $r;
+    return $r;
 }
 
-function iform_mnhnl_getAttrID($auth, $args, $table, $caption){
-  $attr = iform_mnhnl_getAttr($auth, $args, $table, $caption);
+function iform_mnhnl_getAttrID($auth, $args, $table, $caption, $qualifier=false){
+  $attr = iform_mnhnl_getAttr($auth, $args, $table, $caption, $qualifier);
   if($attr) return $attr['attributeId'];
   return false;
 }

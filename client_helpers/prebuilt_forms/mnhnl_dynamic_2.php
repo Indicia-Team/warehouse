@@ -112,6 +112,17 @@ class iform_mnhnl_dynamic_2 extends iform_mnhnl_dynamic_1 {
           'required' => false
       	),
         array(
+          'name' => 'target_species_subsample_method_id',
+          'caption' => 'Target Species Sample Method',
+          'type' => 'select',
+          'table'=>'termlists_term',
+          'captionField'=>'term',
+          'valueField'=>'id',
+          'extraParams' => array('termlist_external_key'=>'indicia:sample_methods'),
+          'required' => false,
+          'helpText' => 'The sample method that will be used when creating subsamples in the target species grid.'
+        ),
+        array(
           'name' => 'language',
           'caption' => 'Language Override',
           'description' => 'Two digit language override.',
@@ -120,7 +131,18 @@ class iform_mnhnl_dynamic_2 extends iform_mnhnl_dynamic_1 {
           'default' => 'en',
           'group' => 'User Interface'
         ),
-        
+        array(
+          'name' => 'subsample_method_id',
+          'caption' => 'Subsample Method',
+          'type' => 'select',
+          'table'=>'termlists_term',
+          'captionField'=>'term',
+          'valueField'=>'id',
+          'extraParams' => array('termlist_external_key'=>'indicia:sample_methods'),
+          'required' => false,
+          'helpText' => 'The sample method that will be used for created subsamples in the species grid.'
+        ),
+      		
         array(
           'name' => 'reportFilenamePrefix',
           'caption' => 'Report Filename Prefix',
@@ -188,24 +210,17 @@ class iform_mnhnl_dynamic_2 extends iform_mnhnl_dynamic_1 {
   }
 
   /*
-   * Then the functions that bolt into any Dynamic 1 functionality
-   */
-  protected static function enforcePermissions(){
-  	return true;
-  }
-  
-  /*
    * Next the functions which relate to the main front page.
    */
   protected static function getExtraGridModeTabs($retTabs, $readAuth, $args, $attributes) {
-    if(!user_access('IForm n'.parent::$node->nid.' admin')) return('');
-    if(!$retTabs) return array('#downloads' => lang::get('LANG_Download'), '#locations' => lang::get('LANG_Locations'));
+    if(!user_access($args['edit_permission'])) return('');
+    if(!$retTabs) return array('#downloads' => lang::get('Reports'), '#locations' => lang::get('LANG_Locations'));
     if($args['LocationTypeTerm']=='' && isset($args['loctoolsLocTypeID'])) $args['LocationTypeTerm']=$args['loctoolsLocTypeID'];
     $primary = iform_mnhnl_getTermID(array('read'=>$readAuth), 'indicia:location_types',$args['LocationTypeTerm']);
     $r= '<div id="downloads" >';
     $r .= '<p>'.lang::get('LANG_Data_Download').'</p>';
     if(isset($args['targetSpeciesAttr']) && $args['targetSpeciesAttr']!="") {
-      $targetSpeciesAttr=iform_mnhnl_getAttr(parent::$auth, $args, 'sample', $args['targetSpeciesAttr']);
+      $targetSpeciesAttr=iform_mnhnl_getAttr(parent::$auth, $args, 'sample', $args['targetSpeciesAttr'], $args['target_species_subsample_method_id']);
       if(!$targetSpeciesAttr) return lang::get('This form must be used with a survey that has the '.$args['targetSpeciesAttr'].' sample attribute associated with it.');
       data_entry_helper::$javascript .= "
 jQuery('#downloads').find('[name=params]').val('{\"survey_id\":".$args['survey_id'].", \"location_type_id\":".$primary.", \"target_species_attr\":".$targetSpeciesAttr['attributeId'].", \"target_species_termlist\":".$targetSpeciesAttr['termlist_id'].(isset($args['targetSpeciesAttrList']) && $args['targetSpeciesAttrList']!='' ? ", \"target_species_attr_list\":\"".$args['targetSpeciesAttrList']."\"":"")."}');
@@ -214,15 +229,15 @@ jQuery('#downloads').find('[name=params]').val('{\"survey_id\":".$args['survey_i
     return $r.($args['sites_download_report']!=''?'
   <form id="sitesReportRequestForm" method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report='.$args['sites_download_report'].'.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename='.$args['reportFilenamePrefix'].'Sites">
     <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "location_type_id":'.$primary.'}\' />
-    <label>'.lang::get('Sites report').':</label><input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
+    <label>'.lang::get('Sites report').':</label><input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('Download').'">
   </form>':'').($args['conditions_download_report']!=''?'
   <form id="conditionsReportRequestForm" method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report='.$args['conditions_download_report'].'.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename='.$args['reportFilenamePrefix'].'Conditions">
     <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "location_type_id":'.$primary.'}\' />
-    <label>'.lang::get('Conditions report').':</label><input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
+    <label>'.lang::get('Conditions report').':</label><input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('Download').'">
   </form>':'').'
   <form id="speciesReportRequestForm" method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report='.$args['species_download_report'].'.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename='.$args['reportFilenamePrefix'].'Species">
     <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "location_type_id":'.$primary.'}\' />
-    <label>'.lang::get('Species report').':</label><input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
+    <label>'.lang::get('Species report').':</label><input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('Download').'">
   </form>
 </div>'.iform_mnhnl_locModTool(parent::$auth, $args, parent::$node);
   }
@@ -232,15 +247,15 @@ jQuery('#downloads').find('[name=params]').val('{\"survey_id\":".$args['survey_i
   protected static function getSampleListGrid($args, $node, $auth, $attributes) {
   	global $user;
     // get the CMS User ID attribute so we can filter the grid to this user
-    $userIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'CMS User ID');
-    if (!$userIdAttr) return lang::get('This form must be used with a survey that has the CMS User ID sample attribute associated with it, so records can be tagged against their creator.');
+    $userIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'CMS User ID', isset($args['sample_method_id']) && $args['sample_method_id']!="" ? $args['sample_method_id'] : false);
+    if (!$userIdAttr) return lang::get('getSampleListGrid function: This form must be used with a survey that has the CMS User ID sample attribute associated with it, so records can be tagged against their creator.');
     $extraParams = array('survey_id'=>$args['survey_id'], 
         'userID_attr_id'=>$userIdAttr,
-        'userID'=>(user_access('IForm n'.parent::$node->nid.' admin') ? -1 :  $user->uid)); // use -1 if admin - non logged in will not get this far.
-    $userNameAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'CMS Username');
+        'userID'=>(user_access($args['edit_permission']) ? -1 :  $user->uid)); // use -1 if admin - non logged in will not get this far.
+    $userNameAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'CMS Username', isset($args['sample_method_id']) && $args['sample_method_id']!="" ? $args['sample_method_id'] : false);
     if ($userNameAttr) $extraParams['userName_attr_id']=$userNameAttr;
     if(isset($args['targetSpeciesAttr']) && $args['targetSpeciesAttr']!="") {
-      $targetSpeciesIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', $args['targetSpeciesAttr']);
+      $targetSpeciesIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', $args['targetSpeciesAttr'], $args['target_species_subsample_method_id']);
       $extraParams['target_species_attr_id']=$targetSpeciesIdAttr;
     }
     if(isset($args['filterAttrs']) && $args['filterAttrs']!=''){
@@ -304,7 +319,7 @@ deleteSurvey = function(sampleID){
   
   protected static function getSampleListGridPreamble() {
     global $user;
-    $r = '<p>'.lang::get('LANG_SampleListGrid_Preamble').(user_access('IForm n'.parent::$node->nid.' admin') ? lang::get('LANG_All_Users') : $user->name).'</p>';
+    $r = '<p>'.lang::get('LANG_SampleListGrid_Preamble').(user_access($args['edit_permission']) ? lang::get('LANG_All_Users') : $user->name).'</p>';
     return $r;
   }
   protected static function getReportActions() {
@@ -399,12 +414,14 @@ $.validator.messages.digits = $.validator.format(\"".lang::get('validation_digit
 $.validator.messages.integer = $.validator.format(\"".lang::get('validation_integer')."\");";
     // possible clash with link_species_popups, so latter disabled.
     iform_mnhnl_addCancelButton($args['interface']);
-    $attributes = data_entry_helper::getAttributes(array(
-       'valuetable'=>'sample_attribute_value'
-      ,'attrtable'=>'sample_attribute'
-      ,'key'=>'sample_id'
-      ,'extraParams'=>$auth['read']
-      ,'survey_id'=>$args['survey_id']));
+    $attrOpts = array(
+    		'valuetable'=>'sample_attribute_value'
+    		,'attrtable'=>'sample_attribute'
+    		,'key'=>'sample_id'
+    		,'extraParams'=>$auth['read']
+    		,'survey_id'=>$args['survey_id']);
+    if(isset($args['sample_method_id']) && $args['sample_method_id']!="") $attrOpts['sample_method_id'] = $args['sample_method_id'];
+    $attributes = data_entry_helper::getAttributes($attrOpts);
     foreach($attributes as $attribute){
       data_entry_helper::$javascript .= "$('#smpAttr\\\\:".$attribute['attributeId']."').addClass('smpAttr-".str_replace(' ', '', ucWords($attribute['untranslatedCaption']))."');\n";
     }
@@ -450,7 +467,7 @@ jQuery('.mnhnl-species-grid').find('[name$=occAttr\\:".$attrOrder[$i]."],[name*=
 jQuery('.mnhnl-species-grid').find('[name$=occAttr\\:".$attrOrder[count($attrOrder)-1]."],[name*=occAttr\\:".$attrOrder[count($attrOrder)-1]."\\:]').change(function(){
   set_up_last_relationship(this, ".$attrOrder[count($attrOrder)-1].", ".$attrOrder[count($attrOrder)-2].", true);
 });\n";
-      // for duplicate checks had to trigger on all duplicate based fields.
+      // for duplicate checks had to trigger on all duplicate based fields. Don't include the precision field, which is on the sample field.
       $selector = (isset($options['includeSubSample']) ? '.imp-srefX,.imp-srefY' : '');
       foreach($duplicateAttrList as $attr){
         if(!in_array($attr, $attrOrder))
@@ -501,13 +518,15 @@ $.validator.addMethod('no_observation', function(arg1, arg2){
 ";
           } else if($rule[$i]=='end_time'){
             // we are assuming this is on the main supersample.
-            $sampleAttrs = data_entry_helper::getAttributes(array(
-               'attrtable'=>'sample_attribute'
-              ,'valuetable'=>'sample_attribute_value'
-              ,'key'=>'sample_id'
-              ,'fieldprefix'=>'smpAttr'
-              ,'extraParams'=>$auth['read']
-              ,'survey_id'=>$args['survey_id']), true);
+          	$attrOpts = array(
+          			'valuetable'=>'sample_attribute_value'
+          			,'attrtable'=>'sample_attribute'
+          			,'key'=>'sample_id'
+                    ,'fieldprefix'=>'smpAttr'
+          			,'extraParams'=>$auth['read']
+          			,'survey_id'=>$args['survey_id']);
+          	if(isset($args['sample_method_id']) && $args['sample_method_id']!="") $attrOpts['sample_method_id'] = $args['sample_method_id'];
+          	$sampleAttrs = data_entry_helper::getAttributes($attrOpts, true);
             // fetch start time.
             $found = false;
             foreach ($sampleAttrs as $id => $attr)
@@ -526,16 +545,39 @@ $.validator.addMethod('end_time', function(value, element){
   \"".lang::get('validation_end_time')."\");
 ";
           } else if($rule[$i]=='N=2'){
-            // we are assuming this is on the main supersample.
+            // We change the way this is handled: no longer a validation rule as this is only applied when the next  step is pressed
+            // we want immediate, restrict number checkable. Still are assuming this is on the main supersample.
             // allow a maximum of 2 entries in a multiple value checkbox set.
-            data_entry_helper::$late_javascript .= "
-jQuery('[name=".str_replace(':','\\:',$rule[0])."\\[\\]],[name^=".str_replace(':','\\:',$rule[0])."\\:]').rules('add', {nequals2: true});
-$.validator.addMethod('nequals2', function(value, element){
-  var checkedControls = jQuery('[name=".str_replace(':','\\:',$rule[0])."\\[\\]],[name^=".str_replace(':','\\:',$rule[0])."\\:]').filter(':checked'); 
-  return checkedControls.length <= 2;  
-},
-  \"".lang::get('validation_nequals2')."\");
-";
+            $func = "check_N2_".str_replace(':','_',$rule[0]);
+            $selector = str_replace(':','\\:',$rule[0]);
+            data_entry_helper::$late_javascript .= $func." = function(){
+  var controls = jQuery('[name=".$selector."\\[\\]],[name=".$selector."],[name^=".$selector."\\:]').filter('[type=checkbox]'); 
+  var checkedControls = controls.filter(':checked'); 
+  if(checkedControls.length >= 2)
+    controls.not(':checked').attr('disabled',true);
+  else
+    controls.removeAttr('disabled');
+};
+jQuery('[name=".$selector."\\[\\]],[name=".$selector."],[name^=".$selector."\\:]').click(".$func.");\n".$func."();\n";
+          }  else if($rule[$i]=='N=3'){
+            // we want immediate, restrict number checkable..
+            // allow a maximum of 3 entries in a multiple value checkbox set. name will be the same.
+            $func = "check_N3_".str_replace(':','_',$rule[0]);
+            $selector = str_replace(':','\\:',$rule[0]);
+            data_entry_helper::$late_javascript .= $func."_sub = function(elem){
+  var controls = jQuery('[name='+elem.name+']'); 
+  var checkedControls = controls.filter(':checked');
+  if(checkedControls.length >= 3)
+    controls.not(':checked').attr('disabled',true);
+  else
+    controls.removeAttr('disabled');
+};\n".$func." = function(){
+  ".$func."_sub(this);
+};
+jQuery('[name$=".$selector."\\[\\]]').live('click', ".$func.");
+jQuery('[name$=".$selector."\\[\\]]').each(function(){
+  ".$func."_sub(this);
+});\n";
           } else if(substr($rule[0], 3, 4)!= 'Attr'){ // have to add for non attribute case.
             data_entry_helper::$late_javascript .= "
 jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:',$rule[0])."\\:]').addClass('".$rule[$i]."');";
@@ -553,8 +595,10 @@ indiciaData.speciesListInTextMax = '".$ctrlArgs[2]."';\n";
   }
 
   protected static function get_control_targetspeciesgrid($auth, $args, $tabalias, $options) {
-    $targetSpeciesAttr=iform_mnhnl_getAttr($auth, $args, 'sample', $args['targetSpeciesAttr']);
+    $targetSpeciesAttr=iform_mnhnl_getAttr($auth, $args, 'sample', $args['targetSpeciesAttr'], $args['target_species_subsample_method_id']);
     if (!$targetSpeciesAttr) return lang::get('The Target Species Grid control must be used with a survey that has the '.$args['targetSpeciesAttr'].' attribute associated with it.');
+    if (!isset($args['target_species_subsample_method_id']) || $args['target_species_subsample_method_id']=="")
+      return lang::get('The Target Species Grid control must be configured with a target_species_subsample_method_id.');
     // the target species grid is based on a grouping of samples determined by the
     // 1) the termlist id of the list of target species: argument targetSpeciesTermList
     // 2) a default set of attributes to be loaded: visit, Unsuitablity
@@ -568,16 +612,19 @@ indiciaData.speciesListInTextMax = '".$ctrlArgs[2]."';\n";
        ,'fieldprefix'=>'{MyPrefix}:smpAttr'
        ,'extraParams'=>$auth['read']
        ,'survey_id'=>$args['survey_id']
+       ,'sample_method_id'=>$args['target_species_subsample_method_id']
     ), true);
-    $retval = '<br /><input type="hidden" name="includeTargetSpeciesGrid" value="true" ><table class="target-species-grid"><tr><th colspan=2>'.lang::get('Target Species').'</th>';
+    $retval = '<br /><input type="hidden" name="includeTargetSpeciesGrid" value="true" ><input type="hidden" name="target_species_subsample_method_id" value="'.$args['target_species_subsample_method_id'].'" ><table class="target-species-grid"><tr><th colspan=2>'.lang::get('Target Species').'</th>';
     $attrList = explode(',', $args['targetSpeciesAttrList']);
     $attrIDs = array();
     foreach($attrList as $attr){
-      $cell = "";
+      $cell = false;
       // $retval .= '<th></th>'; // blank headings: will put captions in table itself.
       if(is_numeric($attr)) {
-        $cell = $smpAttributes[intval($attr)]['caption'];
-        $attrIDs[] = intval($attr);
+      	if(isset($smpAttributes[intval($attr)])){
+          $cell = $smpAttributes[intval($attr)]['caption'];
+          $attrIDs[] = intval($attr);
+      	}
       } else {
         foreach($smpAttributes as $id=>$sattr){
           if($attr == $sattr['untranslatedCaption']){
@@ -585,11 +632,12 @@ indiciaData.speciesListInTextMax = '".$ctrlArgs[2]."';\n";
             $attrIDs[] = $id;
           }
         }
-        if($cell=="")
+        if($cell===false)
           $retval = lang::get('The configuration of the Target Species Grid includes a '.$attr.' samples attribute, which is not associated with this survey.').'<br/>'.$retval;
       }
       if(!isset($options['useCaptionsInHeader'])) $cell="";
-      $retval .= '<th class="targ-grid-cell">'.$cell.'</th>';
+      if($cell!==false)
+        $retval .= '<th class="targ-grid-cell">'.$cell.'</th>';
     }
     $retval .= '</tr>';
     if(isset($options['useCaptionsInHeader']))
@@ -601,7 +649,9 @@ indiciaData.speciesListInTextMax = '".$ctrlArgs[2]."';\n";
       $smpOptions = array(
         'table'=>'sample',
         'nocache'=>true,
-        'extraParams'=> $auth['read']+ array('view'=>'detail', 'parent_id' => data_entry_helper::$entity_to_load['sample:id']));
+        'extraParams'=> $auth['read']+ array('view'=>'detail',
+            'parent_id' => data_entry_helper::$entity_to_load['sample:id'],
+            'sample_method_id'=>$args['target_species_subsample_method_id']));
       $subSamples = data_entry_helper::get_population_data($smpOptions);
       foreach($subSamples as $sample) {
         $subSamplesAttrs[$sample['id']] = data_entry_helper::getAttributes(array(
@@ -611,7 +661,8 @@ indiciaData.speciesListInTextMax = '".$ctrlArgs[2]."';\n";
             ,'key'=>'sample_id'
             ,'fieldprefix'=>'{MyPrefix}:smpAttr'
             ,'extraParams'=>$auth['read']
-            ,'survey_id'=>$args['survey_id']), true);
+            ,'survey_id'=>$args['survey_id']
+            ,'sample_method_id'=>$args['target_species_subsample_method_id']), true);
       }
     }
     // targ:sampleID:termlist_meaning_id:presence|smpAttr:attrdetails.
@@ -623,7 +674,7 @@ indiciaData.speciesListInTextMax = '".$ctrlArgs[2]."';\n";
       $attrOpts = array('lookUpKey'=>'meaning_id',
                         'extraParams' => $auth['read'],
                         'language' => iform_lang_iso_639_2($args['language']),
-                        'disabled'=>'disabled');
+                        'disabled'=>' disabled="disabled"');
       foreach($subSamples as $subSample){
         foreach($subSamplesAttrs[$subSample['id']] as $id=>$attr) {
           if(isset($options['useCaptionsInHeader']))
@@ -639,12 +690,14 @@ indiciaData.speciesListInTextMax = '".$ctrlArgs[2]."';\n";
       $fieldprefix='targ:'.($smpID ? $smpID : '-').':'.$target['meaning_id'];
       $retval .= str_replace('{MyPrefix}',$fieldprefix,'<tr><td>'.$target['term'].'</td><td><input type="hidden" name="'.$fieldname.'" value=0><input type="checkbox" class="targ-presence" name="'.$fieldname.'" value=1 '.$present.'></td>');
       foreach($attrIDs as $attrID){
-        $attrOpts['class']='targ-smpAttr-'.str_replace(' ', '', ucWords($smpAttributes[$attrID]['untranslatedCaption']));
-        if($smpID && $smpAttributes[$attrID]["data_type"]!="B") $attrOpts['validation'] = array('required');
-        else unset($attrOpts['validation']);
-        $retval .= str_replace('{MyPrefix}',$fieldprefix, 
+        if(isset($smpAttributes[$attrID])){
+          $attrOpts['class']='targ-smpAttr-'.str_replace(' ', '', ucWords($smpAttributes[$attrID]['untranslatedCaption']));
+          if($smpID && $smpAttributes[$attrID]["data_type"]!="B") $attrOpts['validation'] = array('required');
+          else unset($attrOpts['validation']);
+          $retval .= str_replace('{MyPrefix}',$fieldprefix, 
               '<td class="targ-grid-cell"><nobr>'.data_entry_helper::outputAttribute(($smpID ? $subSamplesAttrs[$smpID][$attrID] : $smpAttributes[$attrID]),
                 $attrOpts).'</nobr></td>');
+        }
       }
       $retval .= '</tr>';
       $first=false;
@@ -704,16 +757,16 @@ var other = jQuery('[name=".$prefix."\\:".$attr2."],[name^=".$prefix."\\:".$attr
 other.next().remove(); // remove break
 other.prev().remove(); // remove legend
 other.removeClass('wide').remove(); // remove Other field, then bolt in after the other radio button.
-jQuery('[name=".str_replace(':','\\:',$attr['id'])."],[name^=".str_replace(':','\\:',$attr['id'])."\\:],[name=".str_replace(':','\\:',$attr['id'])."\\[\\]]').filter('[value=".$other[0]['meaning_id']."]').parent().css('width','auto').append(other);
+jQuery('[name=".str_replace(':','\\:',$attr['id'])."],[name^=".str_replace(':','\\:',$attr['id'])."\\:],[name=".str_replace(':','\\:',$attr['id'])."\\[\\]]').filter('[value=".$other[0]['meaning_id']."],[value^=".$other[0]['meaning_id']."\\:]').parent().css('width','auto').append(other);
 jQuery('[name=".str_replace(':','\\:',$attr['id'])."],[name^=".str_replace(':','\\:',$attr['id'])."\\:],[name=".str_replace(':','\\:',$attr['id'])."\\[\\]]').change(function(){
-  jQuery('[name=".str_replace(':','\\:',$attr['id'])."],[name^=".str_replace(':','\\:',$attr['id'])."\\:],[name=".str_replace(':','\\:',$attr['id'])."\\[\\]]').filter('[value=".$other[0]['meaning_id']."]').each(function(){
+  jQuery('[name=".str_replace(':','\\:',$attr['id'])."],[name^=".str_replace(':','\\:',$attr['id'])."\\:],[name=".str_replace(':','\\:',$attr['id'])."\\[\\]]').filter('[value=".$other[0]['meaning_id']."],[value^=".$other[0]['meaning_id']."\\:]').each(function(){
     if(this.checked)
       jQuery('[name=".$prefix."\\:".$attr2."],[name^=".$prefix."\\:".$attr2."\\:]').addClass('required').removeAttr('readonly');
     else
       jQuery('[name=".$prefix."\\:".$attr2."],[name^=".$prefix."\\:".$attr2."\\:]').removeClass('required').val('').attr('readonly',true);
   });
 });
-jQuery('[name=".str_replace(':','\\:',$attr['id'])."],[name^=".str_replace(':','\\:',$attr['id'])."\\:],[name=".str_replace(':','\\:',$attr['id'])."\\[\\]]').filter('[value=".$other[0]['meaning_id']."]').change();
+jQuery('[name=".str_replace(':','\\:',$attr['id'])."],[name^=".str_replace(':','\\:',$attr['id'])."\\:],[name=".str_replace(':','\\:',$attr['id'])."\\[\\]]').filter('[value=".$other[0]['meaning_id']."],[value^=".$other[0]['meaning_id']."\\:]').change();
 ";
     }
     return '';
@@ -787,6 +840,7 @@ hook_species_checklist_pre_delete_row=function(e) {
           'readAuth'=>$extraParams,
           'survey_id'=>$args['survey_id'],
           'includeSubSample'=>isset($options['includeSubSample']),
+          'subsample_method_id'=>$args['subsample_method_id'],
           'separateCells'=>isset($options['separateCells']),
           'useCaptionsInHeader'=>isset($options['useCaptionsInHeader']) && $options['useCaptionsInHeader']=='true',
           'useCaptionsInPreRow'=>isset($options['useCaptionsInPreRow']) && $options['useCaptionsInPreRow']=='true',
@@ -886,27 +940,39 @@ hook_species_checklist_pre_delete_row=function(e) {
         }
       }
       $i++;
-      if($attrsPerRow>$maxCellsPerRow) $maxCellsPerRow=$attrsPerRow;
+      $maxCellsPerRow = max($maxCellsPerRow,$attrsPerRow);
     } while ($foundRows);
     if($numRows) $foundRows=true;
     else {
       $numRows=1;
       $maxCellsPerRow=count($attributes);
     }
-    if($options['includeSubSample'] && $maxCellsPerRow<($options['displaySampleDate']?3:2))$maxCellsPerRow=($options['displaySampleDate']?3:2);
     $options['extraParams']['view'] = 'detail';
     $options['numRows'] = 1 + /* taxon name row */
                           ($options['includeSubSample']?1:0) + /* row holding subsample location and date */
                           $numRows * ($options['useCaptionsInPreRow'] ? 2 : 1) +
                           ($options['includeOccurrenceComment']?1:0);
     $recordList = self::get_species_checklist_record_list($options);
+    $grid = "";
+    $precision = false;
+    if($options['includeSubSample']) {
+      $grid.="<input type='hidden' name='includeSubSample' id='includeSubSample' value='true' >";
+      $smpattributes = data_entry_helper::getAttributes(array(
+           'valuetable'=>'sample_attribute_value'
+           ,'attrtable'=>'sample_attribute'
+           ,'key'=>'sample_id'
+           ,'fieldprefix'=>"smpAttr"
+           ,'extraParams'=>$options['readAuth']+array("untranslatedCaption"=>"Precision")
+           ,'survey_id'=>(array_key_exists('survey_id', $options) ? $options['survey_id'] : null)
+           ,'sample_method_id'=>$options['subsample_method_id']), false);
+      $precision = count($smpattributes)>0 ? $smpattributes[0] : false;
+      $maxCellsPerRow = max($maxCellsPerRow, 2+($options['displaySampleDate']?1:0)+($precision?1:0));
+    }
     // If we managed to read the species list data we can proceed
     if (! array_key_exists('error', $recordList)) {
-      $grid = "";
       // Get the attribute and control information required to build the custom occurrence attribute columns
-      if($options['includeSubSample']) $grid.="<input type='hidden' name='includeSubSample' id='includeSubSample' value='true' >";
       self::species_checklist_prepare_attributes($options, $attributes, $occAttrControls, $occAttrCaptions, $occAttrs);
-      $grid .= self::get_species_checklist_clonable_row($options, $occAttrControls, $occAttrCaptions, $attributes);
+      $grid .= self::get_species_checklist_clonable_row($options, $occAttrControls, $occAttrCaptions, $attributes, $precision);
       $grid .= '<table class="ui-widget ui-widget-content mnhnl-species-grid '.$options['class'].'" id="'.$options['id'].'">';
       $grid .= self::get_species_checklist_header($options, $occAttrs);
       $rows = array();
@@ -946,11 +1012,33 @@ hook_species_checklist_pre_delete_row=function(e) {
             $parts[0]=explode(',',$parts[0]);
             $parts[0]=$parts[0][0];
           } else $parts = array('', '');
+          // for existing samples, don't need to specify sample_method, as it won't change.
           $row .= "<label class='auto-width' for='$prefix:imp-srefX'>".lang::get('LANG_Species_X_Label').":</label> <input type='text' id='$prefix:imp-srefX' class='imp-srefX required integer' name='dummy:srefX' value='$parts[0]' /><span class='deh-required'>*</span></td>
 <td class='ui-widget-content'><label class='auto-width' for='$prefix:imp-srefY'>".lang::get('LANG_Species_Y_Label').":</label> <input type='text' id='$prefix:imp-srefY' class='imp-srefY required integer' name='dummy:srefY' value='$parts[1]'/><span class='deh-required'>*</span>
 </td>";
-          if($maxCellsPerRow>($options['displaySampleDate']?3:2))
-            $row .= "<td class='ui-widget-content' colspan=".($maxCellsPerRow-($options['displaySampleDate']?3:2))."></td>";
+          if ($precision) {
+            //  'sc::'.$smp.':'.$occurrence['taxa_taxon_list_id'].':'.$occurrence['id'].':'.$sampleAttr['fieldname']] = $sampleAttr['default'];
+            // sc:<rowIdx>:<smp_id>:<ttlid>:<occ_id>:[field]";
+            $ctrlId = $ctrlName = $prefix.":smpAttr:".$precision['attributeId'];
+            self::_getCtrlNames($ctrlName, $oldCtrlName, true);
+            $existing_value = (isset(data_entry_helper::$entity_to_load[$oldCtrlName]) ? data_entry_helper::$entity_to_load[$oldCtrlName] :
+                                  (array_key_exists('default', $precision) ? $precision['default'] : ''));
+            $ctrlOptions = array(
+              'class'=>'scPrecision ' . (isset($precision['class']) ? ' '.$precision['class'] : ''),
+              'extraParams' => $options['readAuth'],
+              'suffixTemplate' => 'nosuffix',
+              'language' => $options['language']
+            );
+            if(isset($options['lookUpKey'])) $ctrlOptions['lookUpKey']=$options['lookUpKey'];
+            // if($options['useCaptionsInHeader'] || $options['useCaptionsInPreRow']) unset($attrDef['caption']);
+            $precision['fieldname'] = $ctrlName;
+            $precision['id'] = $ctrlId;
+            $precision['default'] = $existing_value;
+            //$headerPreRow .= '<td class="ui-widget-content" ><label class="auto-width">'.$occAttrCaptions[$attrId].':</label></td>';
+            $row .= '<td class="ui-widget-content scSmpAttrCell">'.data_entry_helper::outputAttribute($precision, $ctrlOptions).'</td>';
+          }
+          if($maxCellsPerRow > (2+($options['displaySampleDate']?1:0)+($precision?1:0)))
+            $row .= "<td class='ui-widget-content' colspan=".($maxCellsPerRow-(2+($options['displaySampleDate']?1:0)+($precision?1:0)))."></td>";
           $rows[]=$row."</tr>";
         }
         for($i=1; $i<=$numRows; $i++){
@@ -1259,16 +1347,30 @@ $('#entry_form').before(cloneableDiv);\n";
   public static function preload_species_checklist_occurrences($sampleId, $readAuth, $options) {
     $occurrenceIds = array();
     $sampleIds = array();
+    $sampleAttrs = array();
     // don't load from the db if there are validation errors, since the $_POST will already contain all the
     // data we need.
     if (is_null(data_entry_helper::$validation_errors)) {
       $extraParams = $readAuth + array('view'=>'detail','sample_id'=>$sampleId,'deleted'=>'f');
       if($options['includeSubSample']){
+        if(!isset($options['subsample_method_id']) || $options['subsample_method_id']=="")
+          throw new exception('subsample_method_id must be set for this form configuration.');
         $samples = data_entry_helper::get_population_data(array(
           'table' => 'sample',
-          'extraParams' => $readAuth + array('view'=>'detail','parent_id'=>$sampleId,'deleted'=>'f'),
+          'extraParams' => $readAuth + array('view'=>'detail','parent_id'=>$sampleId,'deleted'=>'f','sample_method_id'=>$options['subsample_method_id']),
           'nocache' => true));
-        foreach($samples as $sample) $sampleIds[$sample['id']] = $sample;
+        foreach($samples as $sample) {
+          $sampleIds[$sample['id']] = $sample;
+          $sampleAttrs[$sample['id']] = data_entry_helper::getAttributes(array(
+               'attrtable'=>'sample_attribute'
+              ,'valuetable'=>'sample_attribute_value'
+              ,'key'=>'sample_id'
+              ,'fieldprefix'=>'smpAttr'
+              ,'extraParams'=>$readAuth
+              ,'survey_id'=>$options['survey_id']
+              ,'sample_method_id'=>$options['subsample_method_id']
+              ,'id'=>$sample['id']), true);
+        }
         $extraParams['sample_id'] = array_keys($sampleIds);
       }
       $occurrences = data_entry_helper::get_population_data(array('table' => 'occurrence', 'extraParams' => $extraParams, 'nocache' => true));
@@ -1278,6 +1380,9 @@ $('#entry_form').before(cloneableDiv);\n";
           data_entry_helper::$entity_to_load['sc::'.$smp.':'.$occurrence['taxa_taxon_list_id'].':'.$occurrence['id'].':sample:date'] = $sampleIds[$smp]['date_start'];
           data_entry_helper::$entity_to_load['sc::'.$smp.':'.$occurrence['taxa_taxon_list_id'].':'.$occurrence['id'].':sample:entered_sref'] = $sampleIds[$smp]['entered_sref'];
           data_entry_helper::$entity_to_load['sc::'.$smp.':'.$occurrence['taxa_taxon_list_id'].':'.$occurrence['id'].':sample:geom'] = $sampleIds[$smp]['wkt'];
+          foreach($sampleAttrs[$occurrence['sample_id']] as $sampleAttr){
+            data_entry_helper::$entity_to_load['sc::'.$smp.':'.$occurrence['taxa_taxon_list_id'].':'.$occurrence['id'].':'.$sampleAttr['fieldname']] = $sampleAttr['default'];
+          }
         } else $smp="";
         data_entry_helper::$entity_to_load['occurrence:record_status']=$occurrence['record_status'];
         data_entry_helper::$entity_to_load['occurrence:taxa_taxon_list_id']=$occurrence['taxa_taxon_list_id'];
@@ -1327,7 +1432,7 @@ mapInitialisationHooks.push(function(mapdiv) {
    * a hidden table is used to store a clonable row which provides the template for new rows
    * to be added to the grid.
    */
-  private static function get_species_checklist_clonable_row($options, $occAttrControls, $occAttrCaptions, $attributes) {
+  private static function get_species_checklist_clonable_row($options, $occAttrControls, $occAttrCaptions, $attributes, $precision) {
     global $indicia_templates;
     // assume always removeable and presence is hidden.
     // DEBUG/DEV MODE
@@ -1356,8 +1461,8 @@ mapInitialisationHooks.push(function(mapdiv) {
       $numRows=1;
       $maxCellsPerRow=count($attributes);
     }
-    if($options['includeSubSample'] && $maxCellsPerRow<($options['displaySampleDate']?3:2))
-      $maxCellsPerRow=($options['displaySampleDate']?3:2);
+    if($options['includeSubSample'])
+      $maxCellsPerRow = max($maxCellsPerRow, 2+($options['displaySampleDate']?1:0)+($precision?1:0));
     $idex=1;
     $prefix = "sc:--GroupID--:--SampleID--:--TTLID--:--OccurrenceID--";
     $r .= '<tbody><tr class="scClonableRow first" id="'.$options['id'].'-scClonableRow'.$idex.'"><td class="ui-state-default remove-row" rowspan="'.$options['numRows'].'">X</td>';
@@ -1365,6 +1470,8 @@ mapInitialisationHooks.push(function(mapdiv) {
     $r .= str_replace('{colspan}', $colspan, $indicia_templates['taxon_label_cell']).
         '<td class="scPresenceCell" style="display:none"><input type="hidden" class="scPresence" name="" value="false" /></td></tr>';
     if($options['includeSubSample']){
+      if(!isset($options['subsample_method_id']) || $options['subsample_method_id']=="")
+        throw new exception('subsample_method_id must be set for this form configuration.');
       $idex++;
       $r .= '<tr class="scClonableRow scDataRow" id="'.$options['id'].'-scClonableRow'.$idex.'">';
       if ($options['displaySampleDate']) {
@@ -1372,10 +1479,26 @@ mapInitialisationHooks.push(function(mapdiv) {
       }
       $r .= "<td class='ui-widget-content'><input type=\"$hiddenCTRL\" id=\"sg---GroupID---imp-sref\" name=\"$prefix:sample:entered_sref\" value=\"\" />
 <input type=\"$hiddenCTRL\" id=\"sg---GroupID---imp-geom\" name=\"$prefix:sample:geom\" value=\"\" />
+<input type=\"$hiddenCTRL\" name=\"$prefix:sample:sample_method_id\" value=\"".$options['subsample_method_id']."\" />
 <label class=\"auto-width\" for=\"sg---GroupID---imp-srefX\">".lang::get('LANG_Species_X_Label').":</label> <input type=\"text\" id=\"sg---GroupID---imp-srefX\" class=\"imp-srefX integer required\" name=\"dummy:srefX\" value=\"\" /><span class='deh-required'>*</span></td>
 <td class='ui-widget-content'><label class=\"auto-width\" for=\"sg---GroupID---imp-srefY\">".lang::get('LANG_Species_Y_Label').":</label> <input type=\"text\" id=\"sg---GroupID---imp-srefY\" class=\"imp-srefY integer required\" name=\"dummy:srefY\" value=\"\"/><span class='deh-required'>*</span></td>";
-      if($maxCellsPerRow>($options['displaySampleDate']?3:2))
-        $r .= "<td class='ui-widget-content' colspan=".($maxCellsPerRow-($options['displaySampleDate']?3:2))."></td>";
+      if ($precision) {
+      	$ctrlId = $prefix.":smpAttr:".$precision['attributeId'];
+      	$ctrlOptions = array(
+      			'class'=>'scPrecision ' . (isset($precision['class']) ? ' '.$precision['class'] : ''),
+      			'extraParams' => $options['readAuth'],
+      			'suffixTemplate' => 'nosuffix',
+      			'language' => $options['language']
+      	);
+      	if(isset($options['lookUpKey'])) $ctrlOptions['lookUpKey']=$options['lookUpKey'];
+      	// if($options['useCaptionsInHeader'] || $options['useCaptionsInPreRow']) unset($attrDef['caption']);
+      	$precision['fieldname'] = $ctrlId;
+      	$precision['id'] = $ctrlId;
+      	//$headerPreRow .= '<td class="ui-widget-content" ><label class="auto-width">'.$occAttrCaptions[$attrId].':</label></td>';
+      	$row .= "<td class='ui-widget-content'>".data_entry_helper::outputAttribute($precision, $ctrlOptions)."' /></td>";
+      }
+      if($maxCellsPerRow>2+($options['displaySampleDate']?1:0)+($precision?1:0))
+        $r .= "<td class='ui-widget-content' colspan=".($maxCellsPerRow-(2+($options['displaySampleDate']?1:0)+($precision?1:0)))."></td>";
       $r .="</tr>";
     }
     $idx = 0;
@@ -1543,6 +1666,7 @@ mapInitialisationHooks.push(function(mapdiv) {
           $smp['model']['fields']['survey_id'] = array('value' => $values['survey_id']);
           $smp['model']['fields']['website_id'] = array('value' => $values['website_id']);
           $smp['model']['fields']['date'] = array('value' => $values['sample:date']);
+          $smp['model']['fields']['sample_method_id'] = array('value' => $values['target_species_subsample_method_id']);
           $smp['model']['fields']['smpAttr:'.$parts[4]] = array('value' => $parts[2]);
           $smp['copyFields'] = array('location_id'=>'location_id'); // from parent->to child
           if($value != '1') $smp['model']['fields']['deleted'] = array('value' => 't');
@@ -1589,10 +1713,20 @@ mapInitialisationHooks.push(function(mapdiv) {
         $b = explode(':', $a[5]);
         if($a[1]){ // key on the Group ID
           $occurrences[$a[1]]['taxa_taxon_list_id'] = $a[3];
-          if($b[0]=='sample' || $b[0]=='smpAttr')
+          if($b[0]=='sample' || $b[0]=='smpAttr') {
             $samples[$a[1]][$a[5]] = $value;
-          else
-            $occurrences[$a[1]][$a[5]] = $value;
+          } else {
+            // for a multiple entry checkbox group, need to remove the sc:--GroupID--:--SampleID--:--TTLID--:--OccurrenceID-- to give value:occAttr:value[:value]
+            $newvalue = $value;
+            if(is_array($value)) {
+              $newvalue = array();
+              foreach($value as $X){
+                $tokens = explode(':', $X, 7);
+                $newvalue[] = (count($tokens)==7 ? $tokens[0].':'.$tokens[6] : $X);
+              }
+            }
+            $occurrences[$a[1]][$a[5]] = $newvalue;
+          }
           // store any id so update existing record prefix
           if(is_numeric($a[2]) && $a[2]>0) $samples[$a[1]]['id'] = $a[2];
           if(is_numeric($a[4]) && $a[4]>0) $occurrences[$a[1]]['id'] = $a[4];

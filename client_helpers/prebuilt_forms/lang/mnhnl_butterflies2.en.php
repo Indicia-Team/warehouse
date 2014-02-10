@@ -28,14 +28,12 @@ global $custom_terms;
  */
 $custom_terms = array(
 	'LANG_MustSelectParentFirst' => 'You must choose a square first, before creating a new location within it.',
-	'LANG_no_permissions' => 'You must be either a registered User or a registered Admin of this form in order to access this form.',
 	'LANG_Edit' => 'Edit',
 	'LANG_SampleListGrid_Preamble' => 'Previously encoded survey list for ',
 	'LANG_All_Users' => 'all users',
 	'LANG_Add_Sample' => 'Add new sample',
 	'LANG_Add_Sample_Single' => 'Add single occurrence',
 	'LANG_Add_Sample_Grid' => 'Add list of occurrences',
-	'LANG_Download' => 'Reports',
 	'LANG_Trailer_Text' => "Coordination of the biodiversity monitoring programme in Luxembourg: <a href='http://www.crpgl.lu' target='_blank'>Centre de Recherche Public - Gabriel Lippmann</a> (Département Environnement et Agro-biotechnologies) & <a href='http://www.environnement.public.lu' target='_blank'>Ministère du Développement durable et des Infrastructures</a> (Département de l'environnement)",
 
 	'LANG_Locations' => 'Sites',
@@ -65,6 +63,8 @@ $custom_terms = array(
 	'LANG_LocationModTool_CommentLabel'=>'Comment',
 	'LANG_LocModTool_ParentLabel'=>'New site square',
 
+	'LANG_Data_Download' => 'These reports provide details of the data entered in the survey.',
+	
 	'LANG_TooFewPoints' => 'There are too few points in this polygon - there must be at least 3.',
 	'LANG_TooFewLinePoints' => 'There are too few points in this line - there must be at least 2.',
 	'LANG_CentreOutsideParent'=>'Warning: the centre of your new site is outside the square.',
@@ -96,10 +96,6 @@ $custom_terms = array(
 //	Passage
 	'speciesgrid:taxa_taxon_list_id'=>'Add species',
 	'LANG_ConfirmSurveyDelete'=>'You are about to flag a survey as deleted. Do you wish to continue and delete survey ',
-	'LANG_Sites_Report_Download' => 'This Report provides details of the <strong>sites</strong>. It does not include any vists specific information, e.g. conditions or species data.',
-	'LANG_Conditions_Report_Download' => 'This Report provides details of the <strong>conditions</strong> recorded on each site for each survey, including if no observations where made. It does not include any species data.',
-	'LANG_Download_Button' => 'Download',
-	'LANG_Occurrence_Report_Download' => 'This Report provides details of the <strong>species</strong> and <strong>conditions</strong> recorded on each site for each survey.',
 	'LANG_NumSites'=>'Number of sites in this square',
 	"LANG_EmptyLocationID"=>'Choose an existing site',
 	'Recorder names' => 'Observer(s)',
@@ -138,7 +134,6 @@ $custom_terms = array(
 
 	'LANG_Main_Samples_Tab' => 'Surveys',
 	'LANG_Allocate_Locations' => 'Allocate squares',
-	'LANG_Save_Location_Allocations' => 'Save Location Allocations',
 	'speciesgrid:rowexists' => 'A row for this species already exists.',
 	'next step'=>'Next step',
 	'prev step'=>'Previous step',
