@@ -376,9 +376,11 @@ class iform_easy_download_2 {
         'default' => $keys[0]
       ));
       $r .= '</fieldset>';
-    } else 
+    } else {
       // only allowed 1 format, so no need for a selection control
-      $r .= '<input type="hidden" name="format" value="'.array_pop(array_keys($formats)).'"/>';
+      $keys = array_keys($formats);
+      $r .= '<input type="hidden" name="format" value="'.array_pop($keys).'"/>';
+    }
     $r .= '<input type="submit" value="'.lang::get('Download').'"/></form>';
     data_entry_helper::$javascript .= 'indiciaData.ajaxUrl="'.url('iform/ajax/easy_download_2')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.nid = "'.$node->nid."\";\n";
