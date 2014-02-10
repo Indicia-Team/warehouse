@@ -410,7 +410,7 @@ class iform_ukbms_timed_observations {
     foreach(explode(',', str_replace(' ', '', $args['spatial_systems'])) as $system)
       $systems[$system] = lang::get("sref:$system");
     $r .= data_entry_helper::sref_and_system(array('label' => lang::get('Grid Ref'), 'systems' => $systems));
-    $r .= data_entry_helper::file_box(array('table'=>'sample_image', 'caption'=>lang::get('Upload photo(s) of timed search area')));
+    $r .= data_entry_helper::file_box(array('table'=>'sample_image', 'readAuth' => $auth['read'], 'caption'=>lang::get('Upload photo(s) of timed search area')));
     $sampleMethods = helper_base::get_termlist_terms($auth, 'indicia:sample_methods', array('Field Observation'));
     $attributes = data_entry_helper::getAttributes(array(
       'id' => $sampleId,

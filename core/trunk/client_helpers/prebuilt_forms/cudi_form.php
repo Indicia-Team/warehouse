@@ -1128,6 +1128,7 @@ mapInitialisationHooks.push(function(mapdiv) {
   protected static function get_control_locationphoto($auth, $args, $tabalias, $options) {
     return data_entry_helper::file_box(array_merge(array(
       'table'=>'location_image',
+      'readAuth' => $auth['read'],
       'caption'=>lang::get('File upload')
     ), $options));
   }

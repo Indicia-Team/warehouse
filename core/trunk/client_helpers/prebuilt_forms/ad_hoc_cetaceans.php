@@ -365,6 +365,7 @@ class iform_ad_hoc_cetaceans {
     ));
     $r .= data_entry_helper::file_box(array(
         'caption' => 'Upload your photos',
+        'readAuth' => $readAuth,
         'resizeWidth' => 1024,
         'resizeHeight' => 768,
         'table' => 'occurrence_image',

@@ -798,6 +798,7 @@ $('#delete-site').click(deleteSite);
     $r .= map_helper::map_panel($options, $olOptions);
     $r .= data_entry_helper::file_box(/* array_merge( */array(
     		'table'=>'location_medium',
+        'readAuth' => $auth['read'],
     		'caption'=>lang::get('Photos of Tree'),
     		'readAuth'=>$auth['read']
     )/*, $options)*/);

@@ -1611,6 +1611,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   protected static function get_control_samplephoto($auth, $args, $tabAlias, $options) {
     return data_entry_helper::file_box(array_merge(array(
       'table'=>'sample_image',
+      'readAuth' => $auth['read'],
       'caption'=>lang::get('Overall Photo'),
       'readAuth'=>$auth['read']
     ), $options));
@@ -2102,6 +2103,7 @@ else
   protected static function occurrence_photo_input($readAuth, $options, $tabAlias, $args) {
     $opts = array(
       'table'=>'occurrence_image',
+      'readAuth' => $readAuth,
       'label'=>lang::get('Upload your photos'),
       'caption'=>lang::get('Photos'),
       'resizeWidth' => 1600,
