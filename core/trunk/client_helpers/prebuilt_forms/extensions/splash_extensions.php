@@ -29,7 +29,7 @@ class extension_splash_extensions {
    * Validator for Splash Epiphyte survey input forms, validates the following:
    * - That a plot is filled in.
    * - The details of at least one tree have been entered
-   * - The user hasn't entered a count for any trees that don't exist
+   * - The user hasn't entered an Epiphyte presence for any trees that don't exist
    * - The user has filled in grid references for all trees (this doesn't use the built in mandatory field functionality of Indicia
    * as the system would flag the Epiphytes as not containing a grid references when they actually shouldn't
    */
@@ -40,21 +40,21 @@ class extension_splash_extensions {
       return '';
     }
     $treeOccurrenceAttrIds=explode(',',$options['treeOccurrenceAttrIds']);
-    //The validator that makes sure the user hasn't entered a count for a tree that doesn't exist works as follows.
+    //The validator that makes sure the user hasn't entered a Epiphyte presence for a tree that doesn't exist works as follows.
     //- Call the validator function for each epiphyte grid in turn
     //- Cycle through the grid rows
     //- Cycle through all the cells on the row for trees that haven't been entered on the trees grid
-    //- Flag error if value found in cell
+    //- Flag error if selected item found in cell
     data_entry_helper::$javascript .= "
     $('<span class=\"deh-required\">*</span>').insertAfter('.scGridRef\\\\/Accuracy');
 
     function runValidateOnEpiphyteGrid(gridId,rowCount,treesCount,treeOccurrenceAttrIds) {
       var rowIdx;
       var treeIdxToCheck;
-      for (rowIdx=0; rowIdx<rowCount; rowIdx++) {
+      for (rowIdx=0; rowIdx<rowCount; rowIdx++) {      
         for (treeIdxToCheck=treesCount; treeIdxToCheck<treeOccurrenceAttrIds.length;treeIdxToCheck++) {
-          if ($('#sc\\\\:'+gridId+'-'+rowIdx+'\\\\:\\\\:occAttr\\\\:'+treeOccurrenceAttrIds[treeIdxToCheck]).val()) {
-            alert('You have entered a count for Epiphytes on a tree that doesn\'t exist in the trees grid.');
+          if ($('#sc\\\\:'+gridId+'-'+rowIdx+'\\\\:\\\\:occAttr\\\\:'+treeOccurrenceAttrIds[treeIdxToCheck]).is(':checked')) {
+            alert('You have entered an Epiphyte presence for a tree that doesn\'t exist in the trees grid.');
             return false;
           }
         }
@@ -62,7 +62,8 @@ class extension_splash_extensions {
       return true;
     }
     $('#entry_form').submit(function() {
-      var treesCount = $('#trees').find('.scTaxonCell:not([disabled])').length;
+      //Take 1 off because there is an empty row on the grid.
+      var treesCount = $('#trees').find('.scTaxonCell:not([disabled])').length - 1;
       var treeOccurrenceAttrIds = ".json_encode($treeOccurrenceAttrIds).";
       var epiphytesPopulatedCount = $('#Epiphytes-populated tr').length-1;
       var epiphytesFreeCount = $('#Epiphytes-free tr').length-3;
@@ -70,8 +71,7 @@ class extension_splash_extensions {
         alert('Please select a plot before submitting.');
         return false;
       }  
-      //If there is only 1 enabled row then there is either just an empty row, or an empty row and some deleted ones.
-      if (treesCount < 2) {
+      if (treesCount < 1) {
         alert('Please enter the details of at least 1 tree.');
         return false;
       }
