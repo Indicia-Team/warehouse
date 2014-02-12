@@ -1640,10 +1640,14 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    * Get the sample photo control
    */
   protected static function get_control_samplephoto($auth, $args, $tabAlias, $options) {
+    if (!empty($options['label']))
+      $label = $options['label'];
+    else 
+      $label = 'Overall Photo';
     return data_entry_helper::file_box(array_merge(array(
       'table'=>'sample_image',
       'readAuth' => $auth['read'],
-      'caption'=>lang::get('Overall Photo'),
+      'caption'=>lang::get($label),
       'readAuth'=>$auth['read']
     ), $options));
   }
