@@ -872,12 +872,12 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     
     // For a single occurrence we must load the occurrence record.
     if (self::$loadedOccurrenceId && !self::getGridMode($args)) {
-      data_entry_helper::load_existing_record($auth['read'], 'occurrence', self::$loadedOccurrenceId, 'detail', false, false); // TODO change images to true to submit
+      data_entry_helper::load_existing_record($auth['read'], 'occurrence', self::$loadedOccurrenceId, 'detail', false, true);
     }
     
     // Load the sample record
     if (self::$loadedSampleId) {
-      data_entry_helper::load_existing_record($auth['read'], 'sample', self::$loadedSampleId, 'detail', false, false);// TODO change images to true to submit
+      data_entry_helper::load_existing_record($auth['read'], 'sample', self::$loadedSampleId, 'detail', false, true);
       if (!empty(data_entry_helper::$entity_to_load['sample:parent_id'])) 
         data_entry_helper::load_existing_record($auth['read'], 'sample', data_entry_helper::$entity_to_load['sample:parent_id']);
     }
@@ -2005,7 +2005,7 @@ else
       // Return a login link that takes you back to this form when done.
       return lang::get('Before using this facility, please <a href="'.url('user/login', array('query'=>array('destination'=>'node/'.($node->nid)))).'">login</a> to the website.');
     }
-    $filter = array('survey_id' => $args['survey_id'], 'iUserID' => 1); // Change before commit
+    $filter = array();
     // Get the CMS User ID attribute so we can filter the grid to this user
     foreach($attributes as $attrId => $attr) {
       if (strcasecmp($attr['caption'],'CMS User ID')==0) {
