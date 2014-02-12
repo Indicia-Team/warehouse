@@ -107,7 +107,10 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
    */
   public static function get_form($args, $node) {
     if (!empty($_GET['sample_id'])) {
-      data_entry_helper::$javascript .= "$('#Epiphytes-free').find('input[value=]').attr('disabled','disabled');\n";
+      //Disable the existing records grid so the user can only delete items from here
+      data_entry_helper::$javascript .= "$('#Epiphytes-free').find('input[type=checkbox]').attr('disabled','disabled');\n";
+      //Just before the post is processed, we re-enable the grid, so the values are exposed in the submission else they won't be processed
+      data_entry_helper::$javascript .= "$('#entry_form').submit(function() { $('#Epiphytes-free').find('input[type=checkbox]').removeAttr('disabled');});\n";
     }
     return parent::get_form($args, $node);
   }
@@ -277,28 +280,26 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
         }
         //Cycle through the parts that make up the Epiphyte rows on the grid.
         foreach ($epiphyteRecords as $epiphyteRecord) {    
-          foreach ($epiphyteRecord as $itemKey=>$epiphyteRecordItemValue) {    
+          $present = self::wrap_species_checklist_record_present($epiphyteRecord, $include_if_any_data,
+            $zero_attrs, $zero_values, array());
+          //If there is an existing records, and the user unchecks the presence checkbox, then delete the occurrence.
+          if (array_key_exists('id', $epiphyteRecord)) {
+            if ($present==0) {
+              $epiphyteOccModel['model']['fields']['deleted']['value'] = 't';
+            } else
+              $epiphyteOccModel['model']['fields']['zero_abundance']['value']=$present ? 'f' : 't';
+          }
+          foreach ($epiphyteRecord as $itemKey=>$epiphyteRecordItemValue) { 
             //These fields are part of the basic submission structure
             $epiphyteOccModel['fkId']='sample_id';
             $epiphyteOccModel['model']['id']='occurrence';
             $itemKeyParts=explode(':',$itemKey);
-            //If the item is not empty and it is the occurrence attribute that holds that particular tree's Epiphyte count then we
-            //know need an Epiphyte occurrence.
+            //If there is an id we are dealing with an existing epiphyte occurrence record
+            if (!empty($epiphyteRecord['id'])) {
+              $epiphyteOccModel['model']['fields']['id']['value']=$epiphyteRecord['id'];
+            }
+            //Create an occurrence if an Epiphyte is ticked as being present
             if ($itemKeyParts[0]=='occAttr' && $itemKeyParts[1]==$treeEpiCountOccAttr[$treeIdx] && !empty($epiphyteRecordItemValue)) {
-              $present = self::wrap_species_checklist_record_present($epiphyteRecord, $include_if_any_data,
-                  $zero_attrs, $zero_values, array());
-              //If there is an existing records, and the user unchecks the presence checkbox, then delete the occurrence.
-              if (array_key_exists('id', $epiphyteRecord) || $present!==null) {
-                if ($present===null||empty($epiphyteRecordItemValue)||$epiphyteRecordItemValue==0) {
-                  $epiphyteOccModel['model']['fields']['deleted']['value'] = 't';
-                } else
-                  $epiphyteOccModel['model']['fields']['zero_abundance']['value']=$present ? 'f' : 't';
-              }
-              //If there is an id we are dealing with an existing epiphyte occurrence record
-              if (!empty($epiphyteRecord['id'])) {
-                $epiphyteOccModel['model']['fields']['id']['value']=$epiphyteRecord['id'];
-              }
-
               //The different elements of the occurrence record are of the form occAttr:<occurrence attribute number> or if it already exists in the database
               //it is occAttr:<occurrence attribute id>:<occurrence attribute value id>. If we explode this key by ":" character, then if the 
               //3rd item (index 2) of the resulting explosion is populated then we know we are dealing with editing of existing data rather than new data.
@@ -320,13 +321,19 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
                 $epiphyteOccModel['model']['fields']['occAttr:'.$args['occurrence_record_grid_id'].':'.$itemKeyParts[2]]['value']='Epiphytes-free';
               else
                 $epiphyteOccModel['model']['fields']['occAttr:'.$args['occurrence_record_grid_id']]['value']='Epiphytes-free';
-              //Add the Epiphyte to the sub-models of the tree sub-sample
-              if (!empty($epiphyteOccModel)) {
+              //Add the Epiphyte to the sub-models of the tree sub-sample 
+              if (!empty($epiphyteOccModel['model']['fields'])) {         
                 $subSampleModel['model']['subModels'][]=$epiphyteOccModel;
                 $epiphyteOccModel=array();
-              }          
+              }     
             }
           }
+          //If there are no Epiphytes present in the checkboxes on the row, it might be because the user is deleting the record,
+          //so it still needs to be submitted for deletion
+          if (!empty($epiphyteOccModel['model']['fields'])) {         
+            $subSampleModel['model']['subModels'][]=$epiphyteOccModel;
+            $epiphyteOccModel=array();
+          }  
         }   
       }
     }
