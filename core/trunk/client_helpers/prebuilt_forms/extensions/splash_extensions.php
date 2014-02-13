@@ -31,7 +31,7 @@ class extension_splash_extensions {
    * - The details of at least one tree have been entered
    * - The user hasn't entered an Epiphyte presence for any trees that don't exist
    * - The user has filled in grid references for all trees (this doesn't use the built in mandatory field functionality of Indicia
-   * as the system would flag the Epiphytes as not containing a grid references when they actually shouldn't
+   * as the system would flag the Epiphytes as not containing a grid references when they actually shouldn't)
    */
   public static function splash_validate($auth, $args, $tabAlias, $options) {
     if (empty($options['treeOccurrenceAttrIds'])) {
@@ -41,32 +41,31 @@ class extension_splash_extensions {
     }
     $treeOccurrenceAttrIds=explode(',',$options['treeOccurrenceAttrIds']);
     //The validator that makes sure the user hasn't entered a Epiphyte presence for a tree that doesn't exist works as follows.
-    //- Call the validator function for each epiphyte grid in turn
-    //- Cycle through the grid rows
-    //- Cycle through all the cells on the row for trees that haven't been entered on the trees grid
-    //- Flag error if selected item found in cell
+    //- Cycle through each the occurrence attribute that holds the presence boolean for trees that haven't been entered on the trees grid (taking into account trees can be deleted)
+    //- Use jQuery to cycle through each instance of the attribute on the page (effectively check all rows on both grids)
+    //- Make a count of all attributes that are found as present (checked), taking into account rows can be deleted. As we are only checking the cells for trees not on the trees grid
+    //if the error count is above 0 then we know there are problems on the page
     data_entry_helper::$javascript .= "
     $('<span class=\"deh-required\">*</span>').insertAfter('.scGridRef\\\\/Accuracy');
-
-    function runValidateOnEpiphyteGrid(gridId,rowCount,treesCount,treeOccurrenceAttrIds) {
-      var rowIdx;
-      var treeIdxToCheck;
-      for (rowIdx=0; rowIdx<rowCount; rowIdx++) {      
-        for (treeIdxToCheck=treesCount; treeIdxToCheck<treeOccurrenceAttrIds.length;treeIdxToCheck++) {
-          if ($('#sc\\\\:'+gridId+'-'+rowIdx+'\\\\:\\\\:occAttr\\\\:'+treeOccurrenceAttrIds[treeIdxToCheck]).is(':checked')) {
-            alert('You have entered an Epiphyte presence for a tree that doesn\'t exist in the trees grid.');
-            return false;
+    function runValidateOnEpiphyteGrid(treesCount,treeOccurrenceAttrIds) {
+      var treeIdxToCheck; 
+      var issueCount=0;
+      for (treeIdxToCheck=treesCount; treeIdxToCheck<treeOccurrenceAttrIds.length;treeIdxToCheck++) {
+        var result = $('[id*=occAttr\\\\:'+treeOccurrenceAttrIds[treeIdxToCheck]+']').each(function(){
+          //Need to check if parent is not disabled as we want to check if the row has been deleted by the user, only
+          //count issue if the row not deleted. Don't check cell itself as it is re-enabled just before submission to
+          //allow value to be submitted.
+          if ($(this).is(':checked') && $(this).parent().attr('disabled')!=='disabled') {
+            issueCount++;
           }
-        }
-      }
-      return true;
+        });
+      }  
+      return issueCount;
     }
     $('#entry_form').submit(function() {
       //Take 1 off because there is an empty row on the grid.
       var treesCount = $('#trees').find('.scTaxonCell:not([disabled])').length - 1;
       var treeOccurrenceAttrIds = ".json_encode($treeOccurrenceAttrIds).";
-      var epiphytesPopulatedCount = $('#Epiphytes-populated tr').length-1;
-      var epiphytesFreeCount = $('#Epiphytes-free tr').length-3;
       if ($('#imp-location').val()==='<Please select>') {
         alert('Please select a plot before submitting.');
         return false;
@@ -79,14 +78,11 @@ class extension_splash_extensions {
         alert('Please fill in the grid reference field for all trees.');
         return false;
       }
-      var epiphytePopulatedValidateResult;
-      var epiphyteFreeValidateResult;
-      epiphytePopulatedValidateResult = runValidateOnEpiphyteGrid('Epiphytes-populated',epiphytesPopulatedCount,treesCount,treeOccurrenceAttrIds);
-      //Only do test for Epiphyte grid if first grid passes, otherwise user could get two validation messages.
-      if (epiphytePopulatedValidateResult === true) {
-        epiphyteFreeValidateResult = runValidateOnEpiphyteGrid('Epiphytes-free',epiphytesFreeCount,treesCount,treeOccurrenceAttrIds);
-      }
-      if (epiphytePopulatedValidateResult===false||epiphyteFreeValidateResult===false) {
+      var epiphyteValidateResult;
+      epiphyteValidateResult = runValidateOnEpiphyteGrid(treesCount,treeOccurrenceAttrIds);
+      if (epiphyteValidateResult>0) {
+        alert('You have entered an Epiphyte presence for a tree that doesn\'t exist in the trees grid. ' +
+        'Number of problems found = ' + epiphyteValidateResult);
         return false;
       }
     });
