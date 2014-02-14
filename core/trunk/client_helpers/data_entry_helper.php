@@ -252,11 +252,7 @@ class data_entry_helper extends helper_base {
       $options['duplicateCheck']='true';
       $options['storeDuplicates']='';
     }
-    $replaceTags=array();
-    foreach(array_keys($options) as $option) {
-      array_push($replaceTags, '{'.$option.'}');
-    }
-    self::$javascript .= str_replace($replaceTags, $options, $indicia_templates['autocomplete_javascript']);
+    self::$javascript .= self::apply_replacements_to_template($indicia_templates['autocomplete_javascript'], $options);
     $r = self::apply_template($options['template'], $options);
     return $r;
   }
@@ -537,16 +533,8 @@ $('#$escaped').change(function(e) {
     $options['subListItem'] = str_replace(array('{caption}', '{value}', '{fieldname}'),  
       array('\'+caption+\'', '\'+value+\'', $options['fieldname']), 
       $indicia_templates['sub_list_item']);
-    $replaceTags=array('{idx}');
-    $replaceValues=array($idx);
-    foreach ($options as $option=>$value) {
-      if (!is_array($value) && !is_object($value)) {
-        array_push($replaceTags, '{'.$option.'}');
-        array_push($replaceValues, $value);
-      }
-    }
-    self::$javascript .= str_replace($replaceTags, $replaceValues, $indicia_templates['sub_list_javascript']);
-    
+    $options['idx']=$idx;
+    self::$javascript .= self::apply_replacements_to_template($indicia_templates['sub_list_javascript'], $options);
     // load any default values for list items into display and hidden lists
     $items = "";
     $r = '';
