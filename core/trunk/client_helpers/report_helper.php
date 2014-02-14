@@ -2227,18 +2227,22 @@ if (typeof mapSettingsHooks!=='undefined') {
       }
     }
     // Are there any parameters embedded in the request data, e.g. after submitting the params form?
-    $providedParams = $_REQUEST;    
+    $providedParams = $_REQUEST;
+    // Is there a saved cookie containing previously used report parameters?
     if (isset($_COOKIE['providedParams']) && !empty($options['rememberParamsReportGroup'])) {
-      $savedParams = json_decode($_COOKIE['providedParams'], true);
-      if (!empty($savedParams[$options['rememberParamsReportGroup']]))
-        $savedParams = $savedParams[$options['rememberParamsReportGroup']];
+      $cookieData = json_decode($_COOKIE['providedParams'], true);
+      // guard against a corrupt cookie
+      if (!is_array($cookieData)) 
+        $cookieData=array();
+      if (!empty($cookieData[$options['rememberParamsReportGroup']]))
+        $cookieParams = $cookieData[$options['rememberParamsReportGroup']];
         // We shouldn't use the cookie values to overwrite any parameters that are hidden in the form as this is confusing.
         $ignoreParamNames = array();
         foreach($options['paramsToExclude'] as $param)
           $ignoreParamNames[$options['reportGroup']."-$param"] = '';
-        $savedParams = array_diff_key($savedParams, $ignoreParamNames);       
+        $cookieParams = array_diff_key($cookieParams, $ignoreParamNames);       
         $providedParams = array_merge(
-          $savedParams,
+          $cookieParams,
           $providedParams
         );
     }
@@ -2246,16 +2250,10 @@ if (typeof mapSettingsHooks!=='undefined') {
       // need to store the current set of saved params. These need to be merged into an array to go in
       // the single stored cookie with the array key being the rememberParamsReportGroup and the value being
       // an associative array of params.
-      if (!isset($savedParams))
-        $savedParams=array($options['rememberParamsReportGroup']=>array());
-      elseif (!isset($savedParams[$options['rememberParamsReportGroup']]))
-        $savedParams[$options['rememberParamsReportGroup']]=array();
-      // merge the params with any others stored under the same rememberParamsReportGroup name
-      $savedParams[$options['rememberParamsReportGroup']] = array_merge(
-        $savedParams[$options['rememberParamsReportGroup']],
-        $providedParams
-      );
-      setcookie('providedParams', json_encode($savedParams));
+      if (!isset($cookieData))
+        $cookieData = array();
+      $cookieData[$options['rememberParamsReportGroup']]=$providedParams;
+      setcookie('providedParams', json_encode($cookieData));
     }
     // Get the report group prefix required for each relevant parameter
     $paramKey = (isset($options['reportGroup']) ? $options['reportGroup'] : '').'-';
