@@ -886,7 +886,6 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     $args['survey_id']=data_entry_helper::$entity_to_load['sample:survey_id'];
     $args['sample_method_id']=data_entry_helper::$entity_to_load['sample:sample_method_id'];
     // enforce that people only access their own data, unless explicitly have permissions
-    self::$mode = self::MODE_EXISTING_RO;
     $editor = !empty($args['edit_permission']) && function_exists('user_access') && user_access($args['edit_permission']);
     if($editor) return;
     $readOnly = !empty($args['ro_permission']) && function_exists('user_access') && user_access($args['ro_permission']);
