@@ -86,28 +86,28 @@ var checkSubmitInProgress = function () {
   };
   indiciaData.mediaTypes = {
     "Audio:SoundCloud" : {
-      "regex":/^http(s)?:\/\/soundcloud.com\//
+      "regex":/^http(s)?:\/\/(www.)?soundcloud.com\//
     },
     "Image:Flickr" : {
-      "regex":/^http:\/\/   /
+      "regex":/^http(s)?:\/\/((www.)?flickr.com|flic.kr)\//
     },
     "Image:Instagram" : {
-      "regex":/^http:\/\/   /
+      "regex":/^http:\/\/(instagram.com|instagr.am)\//
     },
     "Image:Twitpic" : {
-      "regex":/^http:\/\/   /
+      "regex":/^http:\/\/twitpic.com\//
     },
     "Social:Facebook" : {
-      "regex":/^http:\/\/   /
+      "regex":/^http:\/\/(www.)?facebook.com\//
     },
     "Social:Twitter" : {
-      "regex":/^http:\/\/   /
+      "regex":/^http:\/\/twitter.com\//
     },
     "Video:Youtube" : {
-      "regex":/^http:\/\/www.youtube.com\//
+      "regex":/^http:\/\/(www.youtube.com|youtu.be)\//
     },
     "Video:Vimeo" : {
-      "regex":/^http:\/\/   /
+      "regex":/^http:\/\/vimeo.com\//
     }
   };
   
