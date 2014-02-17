@@ -2984,8 +2984,23 @@ $('#$escaped').change(function(e) {
             "<input type=\"checkbox\" class=\"scPresence\" name=\"$fieldname\" id=\"$fieldname\" value=\"$taxon[id]\" $checked />";
         // If we have a grid ID attribute, output a hidden
         if (!empty($options['gridIdAttributeId'])) {
-          $fieldname = "sc:$options[id]-$txIdx:$existing_record_id:occAttr:$options[gridIdAttributeId]";
-          $row .= "<input type=\"hidden\" name=\"$fieldname\" id=\"$fieldname\" value=\"$options[id]\"/>";
+          $gridAttributeId = $options['gridIdAttributeId'];
+          if (empty($existing_record_id)) {
+            //If in add mode we don't need to include the occurrence attribute id
+            $fieldname  = "sc:$options[id]-$txIdx::occAttr:$gridAttributeId";
+            $row .= "<input type=\"hidden\" name=\"$fieldname\" id=\"$fieldname\" value=\"$options[id]\"/>";
+          } else {
+            $search = preg_grep("/^sc:[0-9]*:$existing_record_id:occAttr:$gridAttributeId:".'[0-9]*$/', array_keys(self::$entity_to_load));
+            if (!empty($search)) {
+              $match = array_pop($search);
+              $parts = explode(':',$match);
+              //The id of the existing occurrence attribute value is at the end of the data
+              $idxOfOccValId = count($parts) - 1;
+              //$txIdx is row number in the grid. We cannot simply take the data from entity_to_load as it doesn't contain the row number.
+              $fieldname = "sc:$options[id]-$txIdx:$existing_record_id:occAttr:$gridAttributeId:$parts[$idxOfOccValId]";
+              $row .= "<input type=\"hidden\" name=\"$fieldname\" id=\"$fieldname\" value=\"$options[id]\"/>";
+            }
+          }
         }
         $row .= "</td>";
         if ($options['speciesControlToUseSubSamples']) {
