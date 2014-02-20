@@ -456,6 +456,11 @@ class helper_base extends helper_config {
    * remaining ones at the end.
    */
   protected static $displayed_errors=array();
+  
+  /**
+   * Track if we have already output the indiciaFunctions. 
+   */
+  protected static $indiciaFnsDone = false;
 
   /**
    * Method to link up the external css or js files associated with a set of code.
@@ -1376,7 +1381,10 @@ $('.ui-state-default').live('mouseout', function() {
               } else
                 $libraries .= "<script type=\"text/javascript\" src=\"$j\"></script>\n";
             }
-            $libraries .= '<script type="text/javascript" src="'.self::$js_path."indicia.functions.js\"></script>\n";
+            if (!self::$indiciaFnsDone) {
+              $libraries .= '<script type="text/javascript" src="'.self::$js_path."indicia.functions.js\"></script>\n";
+              self::$indiciaFnsDone = true;
+            }
           }
           // Record the resource as being dumped, so we don't do it again.
           array_push(self::$dumped_resources, $resource);

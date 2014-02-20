@@ -16,12 +16,13 @@
 /**
  * File containing general purpose JavaScript functions for Indicia.
  */
-
-indiciaData = {
-  onloadFns: [],
-  idDiffRuleMessages: {}
+if (typeof window.indiciaData==="undefined") {
+  window.indiciaData = {
+    onloadFns: [],
+    idDiffRuleMessages: {}
+  };
+  window.indiciaFns = {};
 }
-indiciaFns = {};
 
 (function ($) {
   "use strict";
@@ -46,11 +47,11 @@ indiciaFns = {};
             $.each(data, function(idx, msg) {
               indiciaData.idDiffRuleMessages['rule'+$(e.currentTarget).attr('data-rule')]
                   ['diff'+msg.key] = msg.value;
-            })
+            });
             $(e.currentTarget).attr('title', indiciaData.idDiffRuleMessages['rule'+$(e.currentTarget).attr('data-rule')]
                 ['diff'+$(e.currentTarget).attr('data-diff')]);
           },
-          error: function(jqXHR, textStatus, errorThrown ) {
+          error: function() {
             // put a default in place.
             $(e.currentTarget).attr('title', 'Caution, identification difficulty level ' + $(e.currentTarget).attr('data-rule') + ' out of 5');
           }
@@ -60,6 +61,6 @@ indiciaFns = {};
                   ['diff'+$(e.currentTarget).attr('data-diff')]);
       }
     }
-  }
+  };
 
 }) (jQuery);

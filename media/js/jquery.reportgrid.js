@@ -27,7 +27,7 @@ var simple_tooltip;
  */
 
 (function ($) {
-  
+  "use strict";
   /**
    *Function to enable tooltips for the filter inputs
    */
@@ -39,7 +39,7 @@ var simple_tooltip;
         my_tooltip.css({width:"450px"});
       }
 
-      if ($(this).attr("title") != "" && $(this).attr("title") != "undefined") {
+      if ($(this).attr("title") !== "" && $(this).attr("title") !== "undefined") {
 
         $(this).removeAttr("title").mouseover(function(){
           my_tooltip.css({opacity:0.8, display:"none"}).fadeIn(400);
@@ -68,7 +68,7 @@ var simple_tooltip;
       }
 
     });
-  }
+  };
 
   $.fn.reportgrid = function (options) {
     // Extend our default options with those provided, basing this on an empty object
@@ -98,7 +98,7 @@ var simple_tooltip;
       // Extract any parameters from the attached form as long as they are report parameters
       $('form#'+div.settings.reportGroup+'-params input, form#'+div.settings.reportGroup+'-params select').each(function(idx, input) {
         if (input.type!=='submit' && $(input).attr('name').indexOf(div.settings.reportGroup+'-')===0
-		          && (input.type!=="checkbox" || $(input).attr('checked'))) {
+            && (input.type!=="checkbox" || $(input).attr('checked'))) {
           paramName = $(input).attr('name').replace(div.settings.reportGroup+'-', '');
           request[paramName] = $(input).attr('value');
         }
@@ -113,10 +113,10 @@ var simple_tooltip;
       }
       $.extend(request, getQueryParam(div));
       return request;
-    };
+    }
 
     function mergeParamsIntoTemplate (div, params, template) {
-      var regex, regexEsc, regexEscDbl, r;
+      var regex, regexEsc, regexEscDbl, regexHtmlEsc, regexHtmlEscDbl, r;
       $.each(params, function(param) {
         regex = new RegExp('\\{'+param+'\\}','g');
         regexEsc = new RegExp('\\{'+param+'-escape-quote\\}','g');
@@ -298,8 +298,9 @@ var simple_tooltip;
 
     function loadGridFrom (div, request, clearExistingRows) {
       // overlay on the body, unless no records yet loaded as body is empty
-      var elem = div.settings.recordCount ? $(div).find('tbody') :  $(div).find('table');
-      var offset = div.settings.recordCount ? [0,0,-1,0] : [0,1,-2,-2];
+      var elem = div.settings.recordCount ? $(div).find('tbody') :  $(div).find('table'),
+          offset = div.settings.recordCount ? [0,0,-1,0] : [0,1,-2,-2],
+          rowTitle;
       // skip the loading overlay in <IE9 as it is buggy
       if ($.support.cssFloat) {
         $(div).find(".loading-overlay").css({
@@ -315,7 +316,7 @@ var simple_tooltip;
         url: request,
         data: null,
         success: function(response) {
-          var tbody = $(div).find('tbody'), row, rows, rowclass, rowclasses, hasMore=false,
+          var tbody = $(div).find('tbody'), rows, rowclass, rowclasses, hasMore=false,
               value, rowInProgress=false, rowOutput, rowId, features=[],
               feature, geom, map, valueData;
           // if we get a count back, then update the stored count
@@ -359,12 +360,12 @@ var simple_tooltip;
               $.each(div.settings.columns, function(idx, col) {
                 if (typeof col.json!=="undefined" && col.json && typeof row[col.fieldname]!=="undefined") {
                   valueData = JSON.parse(row[col.fieldname]);
-                  $.extend(row, valueData)
+                  $.extend(row, valueData);
                 }
               });
               $.each(div.settings.columns, function(idx, col) {
                 if (div.settings.sendOutputToMap && typeof indiciaData.reportlayer!=="undefined" &&
-                    typeof col.mappable!=="undefined" && (col.mappable==="true" || col.mappable==true)) {
+                    typeof col.mappable!=="undefined" && (col.mappable==="true" || col.mappable===true)) {
                   geom=OpenLayers.Geometry.fromWKT(row[col.fieldname]);
                   if (map.projection.getCode() != map.div.indiciaProjection.getCode()) {
                     geom.transform(map.div.indiciaProjection, map.projection);
@@ -438,7 +439,7 @@ var simple_tooltip;
           }
           
         },
-        error: function(e) {
+        error: function() {
           if ($.support.cssFloat) {$(div).find(".loading-overlay").hide();}
           alert('The report did not load correctly.');
         }
@@ -557,6 +558,7 @@ var simple_tooltip;
     }
 
     this.getUrlParamsForAllRecords = function() {
+      var r;
       // loop, though we only return 1.
       $.each($(this), function(idx, div) {
         r=getUrlParamsForAllRecords(div, false);
@@ -600,13 +602,12 @@ var simple_tooltip;
       } else {
         this.reload(true);
       }
-    }
+    };
     
     var BATCH_SIZE=2000, currentMapRequest;
         
-    function hasIntersection(a, b)
-    {
-      var ai = bi= 0;
+    function hasIntersection(a, b) {
+      var ai=0, bi=0;
 
       while( ai < a.length && bi < b.length ){
          if      (a[ai] < b[bi] ){ ai++; }
@@ -628,11 +629,11 @@ var simple_tooltip;
           height  : $(indiciaData.mapdiv).outerHeight()
       });
       $('#map-loading').show();
-      var matchString, feature, featuresToSelect=[];
+      var matchString, feature;
       // first call- get the record count
       $.getJSON(request + '&offset=' + offset + (typeof recordCount==="undefined" ? '&wantCount=1' : ''),
         null,
-        function(response, textStatus, jqXHR) {
+        function(response) {
           if (typeof recordCount==="undefined") {
             recordCount = response.count;
             response = response.records;
@@ -737,7 +738,7 @@ var simple_tooltip;
         }
         mapRecords(div, zooming);
       });
-    }
+    };
     
     /**
      * Public method to be called after deleting rows from the grid - to keep paginator updated
@@ -871,10 +872,10 @@ var simple_tooltip;
       }
 
     });
-  }
+  };
   
   $('.social-icon').live('click', function(e) {
-    e.preventDefault;
+    e.preventDefault();
     var href=$(e.target).attr('href');
     if (href) {
       $.ajax({
