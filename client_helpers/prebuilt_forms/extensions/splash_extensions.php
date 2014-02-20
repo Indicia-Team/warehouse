@@ -217,7 +217,7 @@ class extension_splash_extensions {
       $options['searchUpdatesSref']=true;
       $options['label']='Plot';
       $options['report']='reports_for_prebuilt_forms/Splash/get_plots_for_square_id';
-    
+      
       //Create the drop-down for the plot
       $location_list_args = array_merge(array(
           'label'=>lang::get('LANG_Location_Label'),
@@ -268,10 +268,16 @@ class extension_splash_extensions {
         <span><b>% Ash cover: </b></span><span id='ash-cover-value'></span></br>
       </div>
     </div></br>";
-    //When the suqare or plot is changed then get the data about the square/plot is collected from reports and then 
-    //placed into the mini report html template using jQuery.
+    //When the square or plot is changed or the page is loaded then get the data about the square/plot from reports and then 
+    //place it into the mini report html template using jQuery.
     data_entry_helper::$javascript .= "
+    $('#squares-select-list').ready(function() {
+      loadMiniSquareReport();
+    });
     $('#squares-select-list').change(function() {
+      loadMiniSquareReport();
+    });
+    function loadMiniSquareReport() {
       var squareReportRequest = indiciaData.squareReportRequest
       + '&square_id=' + $('#squares-select-list').val()
       + '&core_square_location_type_id=' + ".$options['coreSquareLocationTypeId']."
@@ -286,10 +292,15 @@ class extension_splash_extensions {
           }
         }
       );
+    }
+    $('#imp-location').ready(function() {
+      loadMiniPlotReport();
     });
-
     $('#imp-location').change(function() {
-      if ($(this).val()==='<Please select>') {
+      loadMiniPlotReport();
+    });
+    function loadMiniPlotReport() {
+      if ($('#imp-location').val()==='<Please select>') {
         $('#plot-type-value').text('');
         $('#plot-description-value').text('');
         $('#vice-county-value').text('');
@@ -304,7 +315,7 @@ class extension_splash_extensions {
         + '&aspect_attribute_id=' + ".$options['aspectAttributeId']."
         + '&slope_attribute_id='+ ".$options['slopeAttributeId']."
         + '&ash_attribute_id=' + ".$options['ashAttributeId']."
-        + '&plot_id='+$(this).val() + '&callback=?';
+        + '&plot_id='+ $('#imp-location').val() + '&callback=?';
         $.getJSON(reportRequest,
           null,
           function(response, textStatus, jqXHR) {
@@ -348,7 +359,7 @@ class extension_splash_extensions {
           }
         );
       }
-    });";
+    }";
     
     return $htmlTemplate;
   }
