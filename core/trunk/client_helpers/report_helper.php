@@ -1183,14 +1183,9 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       }
     }
     $r .= "</select>\n";
-    $r .= '<input type="submit" value="Filter" class="run-filter" class="ui-corner-all ui-state-default"/>'.
+    $r .= '<input type="submit" value="Filter" class="run-filter ui-corner-all ui-state-default"/>'.
         '<button class="clear-filter" style="display: none">Clear</button>';
     $r .= "</form>\n";
-    self::$javascript .= '$("#filter-'.$options['id'].'").click(function(e) {
-  e.preventDefault();
-  refreshGrid("'.$options['id'].'")
-});
-';
     return $r;
   }
 

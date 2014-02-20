@@ -29,17 +29,19 @@ add_parent_taxon = function() {
   $.post('<?php echo url::site('taxa_taxon_list/add_parent_taxon'); ?>', {
       taxon_list_id: <?php echo $taxon_list_id; ?>,
       taxa_taxon_list_id: $('#add-from-parent').val()
-    }, function(data, textStatus) {
-      if (isNaN(parseInt(data)))
+    }, function(data) {
+      if (isNaN(parseInt(data))) {
         // if text returned, it is a message to display
         alert(data);
-      else 
+      } else { 
         // if OK, it returns the new record ID. Add it to the grid, using the global var created
         // when the grid was created.
-        grid_taxa_taxon_list.addRecords('id', data);
+        console.log(indiciaData);
+        indiciaData.reports.taxa_taxon_list.grid_taxa_taxon_list.addRecords('id', data);
+      }
     }
   );
-}
+};
 /*]]>*/
 </script>
 <?php
