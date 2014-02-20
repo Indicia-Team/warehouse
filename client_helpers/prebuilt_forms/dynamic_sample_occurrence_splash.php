@@ -291,7 +291,7 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
         //Cycle through the parts that make up the Epiphyte rows on the grid.
         foreach ($epiphyteRecords as $epiphyteRecord) {   
           $present = self::wrap_species_checklist_record_present($epiphyteRecord, $include_if_any_data,
-            $zero_attrs, $zero_values, array());
+            true, $zero_values, array($args['occurrence_record_grid_id']));       
           //If there is an existing records, and the user unchecks the presence checkbox, then delete the occurrence.
           if (array_key_exists('id', $epiphyteRecord)) {
             if ($present==0) {
@@ -368,6 +368,7 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
     // as we are working on a copy of the record, discard the ID and taxa_taxon_list_id so it is easy to check if there is any other data for the row.
     unset($record['id']);
     unset($record['present']); // stores ttl id
+    unset($record['occurrence:sampleIDX']);
     // also discard any attributes we included in $hasDataIgnoreAttrs
     foreach ($hasDataIgnoreAttrs as $attrID) {
       unset($record['occAttr:' . $attrID]);
@@ -384,8 +385,7 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
       $nonZeroCount=0;
       foreach ($record as $field=>$value) {
         // Is this a field used to trap zero abundance data, with a zero value
-        //if (preg_match("/occAttr:$ids(:\d+)?$/", $field)) {
-        if (preg_match("/occAttr:$ids$/", $field)) {
+        if (preg_match("/occAttr:$ids(:\d+)?$/", $field)) { 
           if (in_array($value, $zero_values))
             $zeroCount++;
           else
