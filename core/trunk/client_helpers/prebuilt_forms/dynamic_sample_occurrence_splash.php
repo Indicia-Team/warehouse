@@ -109,6 +109,9 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
     if (!empty($_GET['sample_id'])) {
       //Disable the existing records grid so the user can only delete items from here
       data_entry_helper::$javascript .= "$('#Epiphytes-free').find('input[type=checkbox]').attr('disabled','disabled');\n";
+      //Need to stop user clicking on checkboxes as they are deliberately re-enabled on submit because disabled checkboxes don't submit to post. On validation error they enable
+      //but user is left on the page, so stop them clicking on checkboxes by other means. This is a bit of a workaround.
+      data_entry_helper::$javascript .= "$('#Epiphytes-free').find('input[type=checkbox]').click(false);\n";
       //Just before the post is processed, we re-enable the grid, so the values are exposed in the submission else they won't be processed
       data_entry_helper::$javascript .= "$('#entry_form').submit(function() { $('#Epiphytes-free').find('input[type=checkbox]').removeAttr('disabled');});\n";
     }
