@@ -24,7 +24,7 @@
  * Extension class that supplies new controls to support the Splash project.
  */
 class extension_splash_extensions {
-    
+  
   /* 
    * If no options are supplied then the only validation applied is a check to make sure the plot is filled in.
    * 
@@ -55,8 +55,9 @@ class extension_splash_extensions {
     //if the error count is above 0 then we know there are problems on the page
     data_entry_helper::$javascript .= "
     $('<span class=\"deh-required\">*</span>').insertAfter('.scGridRef\\\\/Accuracy');
-    $('#entry_form').submit(function() {      
-      if ($('#imp-location').val()==='<Please select>') {
+    $('#entry_form').submit(function() {     
+      if ($('#imp-location').val()==='<Please select>'||$('#squares-select-list').val()==='<Please select>'||
+          $('#imp-location').val()===''||$('#squares-select-list').val()==='') {
         alert('Please select a plot before submitting.');
         return false;
       }";
