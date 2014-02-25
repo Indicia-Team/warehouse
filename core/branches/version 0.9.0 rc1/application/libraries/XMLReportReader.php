@@ -664,6 +664,8 @@ class XMLReportReader_Core implements ReportReader
     $query = ($reader===null) ? '' : $reader->getAttribute('query');
     $lookup_values = ($reader===null) ? '' : $reader->getAttribute('lookup_values');
     $population_call = ($reader===null) ? '' : $reader->getAttribute('population_call');
+    $linked_to = ($reader===null) ? '' : $reader->getAttribute('linked_to');
+    $linked_filter_field = ($reader===null) ? '' : $reader->getAttribute('linked_filter_field');
     if (array_key_exists($name, $this->params))
     {
       if ($display != '') $this->params[$name]['display'] = $display;
@@ -677,6 +679,8 @@ class XMLReportReader_Core implements ReportReader
       if ($query != '') $this->params[$name]['query'] = $query;
       if ($lookup_values != '') $this->params[$name]['lookup_values'] = $lookup_values;
       if ($population_call != '') $this->params[$name]['population_call'] = $population_call;
+      if ($linked_to != '') $this->params[$name]['linked_to'] = $linked_to;
+      if ($linked_filter_field != '') $this->params[$name]['linked_filter_field'] = $linked_filter_field;
     }
     else
     {
@@ -691,7 +695,9 @@ class XMLReportReader_Core implements ReportReader
         'description'=>$description,
         'query' => $query,
         'lookup_values' => $lookup_values,
-        'population_call' => $population_call
+        'population_call' => $population_call,
+        'linked_to' => $linked_to,
+        'linked_filter_field' => $linked_filter_field
       );
     }
     // if we have a default value, keep a list
