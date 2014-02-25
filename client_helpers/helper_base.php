@@ -210,7 +210,7 @@ $indicia_templates = array(
   $("#{escapedId}").addClass("ui-state-disabled").html("<option>Loading...</option>");
   if (!isNaN($(this).val())) { // skip loading for placeholder text
     $.getJSON("{request}&{query}", function(data){
-      var $control = $("#{escapedId}");
+      var $control = $("#{escapedId}"), selected;
       $control.html("");
       if (data.length>0) {
         $control.removeClass("ui-state-disabled");
@@ -218,7 +218,8 @@ $indicia_templates = array(
           $control.append("<option>&lt;Please select&gt;</option>");
         }
         $.each(data, function(i) {
-          $control.append("<option value=" + this.{valueField} + ">" + this.{captionField} + "</option>");
+          selected = typeof indiciaData["default{escapedId}"]!=="undefined" && indiciaData["default{escapedId}"]==this.{valueField} ? \'" selected="selected\' : "";
+          $control.append("<option value=\"" + this.{valueField} + selected + "\">" + this.{captionField} + "</option>");
         });
       } else {
         $control.html("<option>{instruct}</option>");

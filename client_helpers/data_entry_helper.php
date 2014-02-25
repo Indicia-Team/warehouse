@@ -5269,6 +5269,9 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     if (array_key_exists('extraParams', $options)) {
       $request .= '&'.self::array_to_query_string($options['extraParams']);
     }
+    // store default in JavaScript so we can load the correct value after AJAX population.
+    if (!empty($options['default']))
+      self::$javascript .= "indiciaData['default$escapedId']=$options[default];\n";
     self::$javascript .= str_replace(
         array('{fn}','{escapedId}','{request}','{query}','{valueField}','{captionField}','{filterField}','{parentControlId}', '{instruct}'),
         array($fn, $escapedId, $request,$query,$options['valueField'],$options['captionField'],$options['filterField'],$parentControlId, $instruct),
