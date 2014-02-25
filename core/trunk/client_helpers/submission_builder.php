@@ -188,6 +188,11 @@ class submission_builder extends helper_config {
               if (preg_match("/\d+:$attrEntity:\d+:\d+/", $arrayItem)) {
                 $tokens=explode(':', $arrayItem, 2);
                 $sa['fields'][$tokens[1]] = array('value' => $tokens[0]);
+              //Additional handling for multi-value controls such as easyselect lists in species grids where the selected items are displayed under
+              //the main control. These items have both the value itself and the attribute_value id in the value field
+              } elseif (preg_match("/^\d+:\d+$/", $arrayItem)) {
+                $tokens=explode(':', $arrayItem);
+                $sa['fields']["$key:$tokens[1]:$idx"] = array('value' => $tokens[0]);
               } else
                 $sa['fields']["$key::$idx"]=array('value' => $arrayItem);
             }
