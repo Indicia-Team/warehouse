@@ -30,6 +30,9 @@ require_once('dynamic_sample_occurrence.php');
  */
 class iform_dynamic_weekly_counts extends iform_dynamic_sample_occurrence {
   
+  private static $existingSamples=array();
+  private static $sampleIdsByDate=array();
+  
   /** 
    * Return the form metadata. 
    * @return array The definition of the form.
@@ -155,11 +158,23 @@ class iform_dynamic_weekly_counts extends iform_dynamic_sample_occurrence {
     }
     $r .= '</thead>';
     $r .= '<tbody>';
-    $r .= self::speciesRows($args, $auth, $tableData, $sampleIdsByDate);
+    if (!empty($_GET['sample_id'])) {
+      // load existing subsample data
+      self::$existingSamples=data_entry_helper::get_population_data(array(
+        'table'=>'sample',
+        'extraParams'=>$auth['read'] + array('parent_id'=>$_GET['sample_id'], 'view'=>'detail'),
+        'nocache'=>true
+      ));
+      // We want a list of sample IDs, keyed by date for lookup later.      
+      foreach (self::$existingSamples as $sample) 
+        self::$sampleIdsByDate[strtotime($sample['date_start'])]=$sample['id'];
+    }
+    $r .= self::sampleAttrRows($args, $auth);
+    $r .= self::speciesRows($args, $auth, $tableData);
     $r .= '</tbody></table>';
-    if (!empty($sampleIdsByDate)) 
+    if (!empty(self::$sampleIdsByDate)) 
       // store existing sample IDs in form so we can post edits against them
-      $r .= '<input type="hidden" name="samples-dates" value="'.htmlspecialchars(json_encode($sampleIdsByDate)).'"/>';
+      $r .= '<input type="hidden" name="samples-dates" value="'.htmlspecialchars(json_encode(self::$sampleIdsByDate)).'"/>';
     // JavaScript will populate this for us to post the count data.
     $r .= '<input id="table-data" name="table-data" type="hidden" value="'.htmlspecialchars(json_encode($tableData)).'"/>';
     return $r;
@@ -204,27 +219,72 @@ class iform_dynamic_weekly_counts extends iform_dynamic_sample_occurrence {
     return $proposedStart;
   }
   
+  private static function sampleAttrRows($args, $auth) {
+    $sampleAttrs = self::getAttributes($args, $auth);
+    $controls=array();
+    $controlsExisting=array();
+    $captions=array();
+    data_entry_helper::species_checklist_prepare_attributes($args, $sampleAttrs, $controls, $controlsExisting, $captions);
+    if (!empty($_GET['sample_id'])) {
+      // loading existing, so let's retrieve all the subsample data
+      $ids = array();
+      foreach (self::$existingSamples as $sample) {
+        $ids[] = $sample['id'];
+      }
+      $sampleData=data_entry_helper::get_population_data(array(
+        'table'=>'sample_attribute_value',
+        'extraParams'=>$auth['read'] + array('sample_id'=>$ids, 'view'=>'list'),
+        'nocache'=>true
+      ));
+    }
+    $r = '';
+    foreach ($controls as $idx => $control) {
+      $r .= "<tr><td><strong>{$captions[$idx]}</strong></td>";
+      $weekstart=self::getStartDate($args);
+      for ($i=0; $i<$args['weeks']; $i++) {
+        if ($weekstart>time())
+          $r .= "<td class=\"col-$i\"><span class=\"disabled\"></span></td>";
+        else {
+          $valId = '';
+          $val = null;
+          if (!empty(self::$sampleIdsByDate[$weekstart])) {
+            $sampleId=self::$sampleIdsByDate[$weekstart];
+            foreach ($sampleData as $value) {
+              if ($value['sample_id']===$sampleId && $value['sample_attribute_id']===$sampleAttrs[$idx]['attributeId']) {
+                $valId = ":$value[id]";
+                $val = $value['raw_value'];
+              }
+            }
+          }
+          $fieldname = str_replace('smpAttr', "smpAttr$i", $sampleAttrs[$idx]['fieldname']) . $valId;
+          $thisCtrl = str_replace('{fieldname}', $fieldname, $control);
+          if ($val!==null) {
+            // Inject value into existing attribute control.  Approach taken depends on the data type
+            if ($sampleAttrs[$idx]['data_type']==='B' && $val==='1')
+              // Currently only supporting checkboxes here
+              $thisCtrl = str_replace('type="checkbox"', 'type="checkbox" checked="checked"', $thisCtrl);
+            
+          }
+          $r .= "<td class=\"col-$i\">$thisCtrl</td>";
+        }
+        $weekstart=strtotime('+7 days', $weekstart);
+      }
+      $r .= "</tr>\n";
+      
+    }
+    return $r;
+  }
+  
   /** 
    * Returns the rows for the species grid.
    * @param array $args Form configuration arguments
    * @param array $auth Authorisation tokens
-   * @param array $tableData For any existing data loaded into the grid, returns an array of values keyed by fieldname.
-   * @param array $tableData For any existing samples loaded, returns an array of sample IDs keyed by start timestamp.
+   * @param array $tableData For any existing data loaded into the grid, returns an array of values keyed by fieldname. 
    * @return string HTML for the list of tr elements to insert.
    */
-  private static function speciesRows($args, $auth, &$tableData, &$sampleIdsByDate) {
-    $sampleIdsByDate=array();
+  private static function speciesRows($args, $auth, &$tableData) {
     $tableData=array();
-    if (!empty($_GET['sample_id'])) {
-      $existingSamples=data_entry_helper::get_population_data(array(
-        'table'=>'sample',
-        'extraParams'=>$auth['read'] + array('parent_id'=>$_GET['sample_id'], 'view'=>'detail'),
-        'nocache'=>true
-      ));
-      // want a list of sample IDs, keyed by date for lookup later.      
-      foreach ($existingSamples as $sample) {
-        $sampleIdsByDate[strtotime($sample['date_start'])]=$sample['id'];
-      }
+    if (!empty($_GET['sample_id'])) {      
       $existingValues=data_entry_helper::get_population_data(array(
         'report'=>'library/occurrence_attribute_values/occurrence_attribute_values_list',
         'extraParams'=>$auth['read'] + array('parent_sample_id'=>$_GET['sample_id']),
@@ -262,8 +322,8 @@ class iform_dynamic_weekly_counts extends iform_dynamic_sample_occurrence {
         $valId='';
         $occId='';
         $val='';
-        if (isset($sampleIdsByDate[$weekstart])) {
-          $sampleId=$sampleIdsByDate[$weekstart];
+        if (isset(self::$sampleIdsByDate[$weekstart])) {
+          $sampleId=self::$sampleIdsByDate[$weekstart];
           if (!empty($valuesBySampleTtl["$sampleId|{$species[id]}"])) {
             $tokens=explode('|', $valuesBySampleTtl["$sampleId|{$species[id]}"]);
             $valId=$tokens[0];
@@ -331,6 +391,15 @@ class iform_dynamic_weekly_counts extends iform_dynamic_sample_occurrence {
       }
     }
     $parentSample['subModels']=array();
+    // retrieve any sample data for each week
+    $weekSampleData = array();
+    foreach ($values as $key => $value) {
+      if (preg_match('/^smpAttr(\d+):(.+)/', $key, $matches)) {
+        if (!isset($weekSampleData["week$matches[1]"]))
+          $weekSampleData["week$matches[1]"]=array();
+        $weekSampleData["week$matches[1]"]["smpAttr:$matches[2]"] = $value;
+      }
+    }
     foreach ($weekData as $week => $data) {
       $weekno=substr($week, 4);
       $weekstart = strtotime('+' . ($weekno) . ' weeks', $fromDate);
@@ -344,6 +413,8 @@ class iform_dynamic_weekly_counts extends iform_dynamic_sample_occurrence {
       $data['entered_sref']=$values['sample:entered_sref'];
       $data['entered_sref_system']=$values['sample:entered_sref_system'];
       $data['geom']=$values['sample:geom'];
+      if (isset($weekSampleData["week$weekno"]))
+        $data = array_merge($data, $weekSampleData["week$weekno"]);
       $subSampleAndOccs = data_entry_helper::build_sample_occurrences_list_submission($data);
       $parentSample['subModels'][] = array('fkId'=>'parent_id', 'model'=>$subSampleAndOccs);
     }
