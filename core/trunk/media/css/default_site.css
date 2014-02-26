@@ -183,7 +183,7 @@ a {
   padding: 0.5em;
 }
 
-.photo, .link {
+.mediafile, .link {
   display:-moz-inline-stack;
   display:inline-block;
   zoom:1;
@@ -199,24 +199,24 @@ a {
   -moz-box-sizing: border-box;
 }
 
-.photo > .ui-widget-header {
+.mediafile > .ui-widget-header {
   padding: 0.2em;
   margin-bottom: 0.2em;
 }
 
-.photo img {
+.mediafile img, .mediafile audio {
   display: block;
 }
 
-.photo p {
+.mediafile p {
   text-align: center;
 }
 
-.photo label {
+.mediafile label {
   margin-bottom: 0px;
 }
 
-.photo input {
+.mediafile input {
   margin-top: 0px;
 }
 
@@ -734,7 +734,7 @@ span.ind-delete-icon, span.ind-add-icon, span.ind-cancel-icon {
 }
 
 span.ind-delete-icon {
-  background-image: url(../images/delete.png);
+  background-image: url(../images/nuvola/cancel-16px.png);
 }
 
 span.ind-add-icon {

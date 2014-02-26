@@ -43,7 +43,7 @@ $indicia_templates = array(
   'nullsuffix' => "",
   'requiredsuffix' => '<span class="deh-required">*</span><br/>'."\n",
   'requirednosuffix' => '<span class="deh-required">*</span>'."\n",
-  'button' => '<button id="{id}" type="button"{class}>{caption}</button>',
+  'button' => '<button id="{id}" type="button" title="{title}"{class}>{caption}</button>',
   'submitButton' => '<input id="{id}" type="submit"{class} value="{caption}" />',
   'anchorButton' => '<a class="ui-corner-all ui-widget-content ui-state-default indicia-button {class}" href="{href}" id="{id}">{caption}</a>',
   'lock_icon' => '<span id="{id}_lock" class="unset-lock">&nbsp;</span>',
@@ -72,7 +72,7 @@ $indicia_templates = array(
             ctrl.parents('.fieldset-wrapper').show();
           });
         }",
-  'image_upload' => '<input type="file" id="{id}" name="{fieldname}" accept="png|jpg|gif|jpeg" {title}/>'."\n".
+  'image_upload' => '<input type="file" id="{id}" name="{fieldname}" accept="png|jpg|gif|jpeg|mp3|wav" {title}/>'."\n".
       '<input type="hidden" id="{pathFieldName}" name="{pathFieldName}" value="{pathFieldValue}"/>'."\n",
   'text_input' => '<input type="text" id="{id}" name="{fieldname}"{class} {disabled} {readonly} value="{default}" {title} {maxlength} />'."\n",
   'hidden_text' => '<input type="hidden" id="{id}" name="{fieldname}" {disabled} value="{default}" />',
@@ -497,7 +497,6 @@ class helper_base extends helper_config {
    * <li>virtualearth</li>
    * <li>google_search</li>
    * <li>fancybox</li>
-   * <li>flickr</li>
    * <li>treeBrowser</li>
    * <li>defaultStylesheet</li>
    * <li>validation</li>
@@ -515,6 +514,7 @@ class helper_base extends helper_config {
    * <li>timeentry</li>
    * <li>verification</li>
    * <li>complexAttrGrid</li>
+   * <li>audioplayer</li>
    * </ul>
    */
   public static function add_resource($resource)
@@ -590,7 +590,6 @@ class helper_base extends helper_config {
         'googlemaps' => array('javascript' => array("http://maps.google.com/maps/api/js?sensor=false")),
         'virtualearth' => array('javascript' => array('http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1')),
         'fancybox' => array('deps' => array('jquery'), 'stylesheets' => array(self::$js_path.'fancybox/jquery.fancybox.css'), 'javascript' => array(self::$js_path.'fancybox/jquery.fancybox.pack.js')),
-        'flickr' => array('deps' => array('fancybox'), 'javascript' => array(self::$js_path."jquery.flickr.js")),
         'treeBrowser' => array('deps' => array('jquery','jquery_ui'), 'javascript' => array(self::$js_path."jquery.treebrowser.js")),
         'defaultStylesheet' => array('deps' => array(''), 'stylesheets' => array(self::$css_path."default_site.css"), 'javascript' => array()),
         'validation' => array('deps' => array('jquery'), 'javascript' => array(self::$js_path.'jquery.metadata.js', self::$js_path.'jquery.validate.js', self::$js_path.'additional-methods.js')),
@@ -603,7 +602,7 @@ class helper_base extends helper_config {
         'jqplot_pie' => array('javascript' => array(self::$js_path.'jqplot/plugins/jqplot.pieRenderer.min.js')),
         'jqplot_category_axis_renderer' => array('javascript' => array(self::$js_path.'jqplot/plugins/jqplot.categoryAxisRenderer.min.js')),
         'jqplot_trendline' => array('javascript'=>array(self::$js_path.'jqplot/plugins/jqplot.trendline.min.js')),
-        'reportgrid' => array('deps' => array('jquery_ui'), 'javascript' => array(self::$js_path.'jquery.reportgrid.js', self::$js_path.'json2.js')),
+        'reportgrid' => array('deps' => array('jquery_ui','audioplayer'), 'javascript' => array(self::$js_path.'jquery.reportgrid.js', self::$js_path.'json2.js')),
         'reportfilters' => array('deps' => array('reportgrid'), 'stylesheets' => array(self::$css_path."report-filters.css"), 'javascript' => array(self::$js_path.'reportFilters.js')),
         'tabs' => array('deps' => array('jquery_ui'), 'javascript' => array(self::$js_path.'tabs.js')),
         'wizardprogress' => array('deps' => array('tabs'), 'stylesheets' => array(self::$css_path."wizard_progress.css")),
@@ -614,6 +613,7 @@ class helper_base extends helper_config {
         'verification' => array('javascript'=>array(self::$js_path."verification.js")),
         'control_speciesmap_controls' => array('deps' =>array('jquery', 'openlayers', 'addrowtogrid', 'validation'), 'javascript' => array(self::$js_path."controls/speciesmap_controls.js")),
         'complexAttrGrid' => array('javascript'=>array(self::$js_path."complexAttrGrid.js")),
+        'audioplayer' => array('javascript'=>array(self::$js_path.'audioplayer.min.js'), 'stylesheets' => array(self::$css_path."audioplayer.css"))
       );
     }
     return self::$resource_list;
