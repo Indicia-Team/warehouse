@@ -468,9 +468,6 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
         var opts={
           caption : 'Files',
           autoupload : '1',
-          flickr : '',
-          uploadSelectBtnCaption : 'Add file(s)',
-          startUploadBtnCaption : 'Start upload',
           msgUploadError : 'An error occurred uploading the file.',
           msgFileTooBig : 'The image file cannot be uploaded because it is larger than the maximum file size allowed.',
           runtimes : 'html5,flash,silverlight,html4',

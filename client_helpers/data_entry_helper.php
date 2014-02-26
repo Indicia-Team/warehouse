@@ -854,9 +854,6 @@ $('#$escaped').change(function(e) {
   * <li><b>uploadSelectBtnCaption</b><br/>
   * Set this to override the caption for the button for selecting files to upload.
   * </li>
-  * <li><b>flickrSelectBtnCaption</b><br/>
-  * Set this to override the caption for the button for selecting files from Flickr.
-  * </li>
   * <li><b>uploadStartBtnCaption</b><br/>
   * Set this to override the caption for the start upload button, which is only visible if autoUpload is false.
   * </li>
@@ -876,10 +873,7 @@ $('#$escaped').change(function(e) {
   * Defines the quality of the resize operation (from 1 to 100). Has no effect unless either resizeWidth or resizeHeight are non-zero.
   * </li>
   * <li><b>upload</b><br/>
-  * Boolean, defaults to true. Set to false when implementing a Flickr image control without file upload capability.
-  * </li>
-  * <li><b>flickr</b><br/>
-  * Not implemented.
+  * Boolean, defaults to true. 
   * </li>
   * <li><b>maxFileCount</b><br/>
   * Maximum number of files to allow upload for. Defaults to 4. Set to false to allow unlimited files.
@@ -929,13 +923,13 @@ $('#$escaped').change(function(e) {
   * </li>
   * <li><b>file_box_initial_file_info</b></br>
   * HTML which provides the outer container for each displayed image, including the header and
-  * remove file button. Has an element with class set to photo-wrapper into which images 
+  * remove file button. Has an element with class set to media-wrapper into which images 
   * themselves will be inserted.
   * </li>
   * <li><b>file_box_uploaded_image</b></br>
   * Template for the HTML for each uploaded image, including the image, caption input
   * and hidden inputs to define the link to the database. Will be inserted into the
-  * file_box_initial_file_info template's photo-wrapper element.
+  * file_box_initial_file_info template's media-wrapper element.
   * </li>
   * <li><b>button</b></br>
   * Template for the buttons used.
@@ -943,7 +937,6 @@ $('#$escaped').change(function(e) {
   * </ul>
   *
   * @todo select file button pointer overriden by the flash shim
-  * @todo flickr
   * @todo if using a normal file input, after validation, the input needs to show that the file upload has worked.
   * @todo Cleanup uploaded files that never got submitted because of validation failure elsewhere.
   */
@@ -959,10 +952,6 @@ $('#$escaped').change(function(e) {
       'upload' => true,
       'maxFileCount' => 4,
       'autoupload' => false,
-      'flickr' => false,
-      'uploadSelectBtnCaption' => lang::get('Upload photo(s)'),
-      'flickrSelectBtnCaption' => lang::get('Choose photo from Flickr'),
-      'startUploadBtnCaption' => lang::get('Start upload'),
       'msgUploadError' => lang::get('upload error'),
       'msgFileTooBig' => lang::get('file too big for warehouse'),
       'runtimes' => array('html5','flash','silverlight','html4'),
@@ -976,7 +965,8 @@ $('#$escaped').change(function(e) {
       'table' => 'occurrence_medium',
       'maxUploadSize' => self::convert_to_bytes(isset(parent::$maxUploadSize) ? parent::$maxUploadSize : '4M'),
       'codeGenerated' => 'all',
-      'mediaTypes' => array('Image:Local')
+      'mediaTypes' => array('Image:Local'),
+      'imgPath' => empty(self::$images_path) ? self::relative_client_helper_path()."../media/images/" : self::$images_path
     );    
     if (isset(self::$final_image_folder_thumbs))
       $defaults['finalImageFolderThumbs'] = $relpath . self::$final_image_folder_thumbs;
@@ -1117,7 +1107,7 @@ $('#$escaped').change(function(e) {
       'id' => 'imp-georef-search',
       'driver' => 'geoplanet',
       'searchButton' => self::apply_replacements_to_template($indicia_templates['button'], 
-          array('href'=>'#', 'id'=>'imp-georef-search-btn', 'class' => 'class="indicia-button"', 'caption'=>lang::get('Search'))),
+          array('href'=>'#', 'id'=>'imp-georef-search-btn', 'class' => 'class="indicia-button"', 'caption'=>lang::get('Search'), 'title'=>'')),
       'public' => false,
       'autoCollapseResults' => false
     ), $options);
@@ -1161,7 +1151,7 @@ $('#$escaped').change(function(e) {
     } else {
       // want a close button on the results list
       $options['closeButton'] = self::apply_replacements_to_template($indicia_templates['button'], 
-          array('href'=>'#', 'id'=>'imp-georef-close-btn', 'class' => '', 'caption'=>lang::get('Close the search results')));
+          array('href'=>'#', 'id'=>'imp-georef-close-btn', 'class' => '', 'caption'=>lang::get('Close the search results'), 'title'=>''));
     }
     return self::apply_template('georeference_lookup', $options);
   }
@@ -2614,7 +2604,7 @@ $('#$escaped').change(function(e) {
   * <li><b>occurrenceSensitivity</b><br/>
   * Optional. If set to true, then an occurrence sensitivity selector is included on each row.</li>
   * <li><b>mediaTypes</b><br/>
-  * Optional. Array of media types that can be uploaded. Choose from Audio:SoundCloud, Image:Flickr,
+  * Optional. Array of media types that can be uploaded. Choose from Audio:Local, Audio:SoundCloud, Image:Flickr,
   * Image:Instagram, Image:Local, Image:Twitpic, Social:Facebook, Social:Twitter, Video:Youtube,
   * Video:Vimeo.
   * Currently not supported for multi-column grids.</li>
@@ -2667,12 +2657,12 @@ $('#$escaped').change(function(e) {
   * <li><b>file_box_initial_file_info</b></br>
   * When image upload for records is enabled, this template provides the HTML for the outer container 
   * for each displayed image, including the header and remove file button. Has an element with 
-  * class set to photo-wrapper into which images themselves will be inserted.
+  * class set to media-wrapper into which images themselves will be inserted.
   * </li>
   * <li><b>file_box_uploaded_image</b></br>
   * Template for the HTML for each uploaded image, including the image, caption input
   * and hidden inputs to define the link to the database. Will be inserted into the
-  * file_box_initial_file_info template's photo-wrapper element.
+  * file_box_initial_file_info template's media-wrapper element.
   * </li>
   * <li><b>taxon_label_cell</b></br>
   * Generates the label shown for the taxon name for each added row.
@@ -2763,6 +2753,7 @@ $('#$escaped').change(function(e) {
           'at the same time has having the mediaTypes option in use.');
     self::add_resource('json');
     self::add_resource('autocomplete');
+    self::add_resource('audioplayer');
     $filterArray = self::get_species_names_filter($options);
     $filterNameTypes = array('all','currentLanguage', 'preferred', 'excludeSynonyms');
     //make a copy of the options so that we can maipulate it
@@ -3132,7 +3123,6 @@ $('#$escaped').change(function(e) {
             $rows[$rowIdx]='<td colspan="'.$totalCols.'">'.data_entry_helper::file_box(array(
               'table'=>"sc:$options[id]-$txIdx:$existing_record_id:occurrence_medium",
               'loadExistingRecordKey'=>"sc:$loadedTxIdx:$existing_record_id:occurrence_medium",
-              'label'=>lang::get('Upload your photos'),
               'mediaTypes' => $options['mediaTypes'],
               'readAuth' => $options['readAuth']
             )).'</td>';
@@ -3261,7 +3251,7 @@ tabscontrols.tabs('select',$('#$options[id]').parents('.ui-tabs-panel')[0].id);\
       if (count($linkMediaTypes)>0)
         $readableTypes = implode(', ', $linkMediaTypes) . ' ' . lang::get('or') . ' ' . $readableTypes;
       return '<div style="display: none"><div id="add-link-form" title="Add a link to a remote file">
-<p class="validateTips">Paste in the web address of a resource on '.$readableTypes.'.</p>
+<p class="validateTips">'.lang::get('Paste in the web address of a resource on {1}', $readableTypes).'.</p>
 <form>
 <fieldset>
 <label for="name">URL</label>
@@ -4578,7 +4568,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     ), $options);
     $button=$options['panelOnly'] ? '' :
           self::apply_replacements_to_template($indicia_templates['button'], 
-          array('href'=>'#', 'id'=>'verify-btn', 'class' => 'class="indicia-button"', 'caption'=>lang::get('Precheck my records')));
+          array('href'=>'#', 'id'=>'verify-btn', 'class' => 'class="indicia-button"', 'caption'=>lang::get('Precheck my records'), 'title'=>''));
     $replacements = array(
       'button'=>$button
     );
@@ -4659,7 +4649,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     if (array_key_exists('divId', $options)) {
       if ($options['includeVerifyButton']) {
         $r .= self::apply_replacements_to_template($indicia_templates['button'], 
-          array('href'=>'#', 'id'=>'verify-btn', 'class' => 'class="indicia-button"', 'caption'=>lang::get('Precheck my records')));
+          array('href'=>'#', 'id'=>'verify-btn', 'class' => 'class="indicia-button"', 'caption'=>lang::get('Precheck my records'), 'title'=>''));
       }
       if ($options['page']!='first') {
         $options['class']=$buttonClass." tab-prev";
@@ -5729,7 +5719,7 @@ if (errors$uniq.length>0) {
         // submission succeeded. So we also need to move the images to the final location
         foreach ($media as $item) {
           // no need to resend an existing image, or a media link, just local files.
-          if ((empty($item['media_type']) || $item['media_type']==='Image:Local') && (!isset($item['id']) || empty($item['id']))) {
+          if ((empty($item['media_type']) || preg_match('/:Local$/', $item['media_type'])) && (!isset($item['id']) || empty($item['id']))) {
             if (!isset(self::$final_image_folder) || self::$final_image_folder=='warehouse') {
               // Final location is the Warehouse
               // @todo Set PERSIST_AUTH false if last file
@@ -6134,7 +6124,7 @@ if (errors$uniq.length>0) {
           'occurrence' => array('fk' => 'sample_id')
         )
     );
-    // Either an uploadable file, or a link to a Flickr external detail means include the submodel
+    // Either an uploadable file, or a link to an external detail means include the submodel
     if ((array_key_exists('occurrence:image', $values) && $values['occurrence:image'])
         || array_key_exists('occurrence_medium:external_details', $values) && $values['occurrence_medium:external_details']) {
       $structure['submodel']['submodel'] = array(
@@ -6423,8 +6413,6 @@ if (errors$uniq.length>0) {
       }
       self::check_config('$geoplanet_api_key', isset(self::$geoplanet_api_key), empty(self::$geoplanet_api_key), $missing_configs, $blank_configs);
       self::check_config('$bing_api_key', isset(self::$bing_api_key), empty(self::$bing_api_key), $missing_configs, $blank_configs);
-      self::check_config('$flickr_api_key', isset(self::$flickr_api_key), empty(self::$flickr_api_key), $missing_configs, $blank_configs);
-      self::check_config('$flickr_api_secret', isset(self::$flickr_api_secret), empty(self::$flickr_api_secret), $missing_configs, $blank_configs);
       // Warn the user of the missing ones - the important bit.
       if (count($missing_configs)>0) {
         $r .= '<li class="ui-widget ui-state-error">Error: The following configuration entries are missing from helper_config.php : '.

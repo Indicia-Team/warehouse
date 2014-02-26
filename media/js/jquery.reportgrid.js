@@ -396,6 +396,8 @@ var simple_tooltip;
                       match = img.match(/^http(s)?:\/\/(www\.)?([a-z]+)/);
                       if (match!==null) {
                         value += '<a href="'+img+'" class="social-icon '+match[3]+'"></a>';
+                      } else if ($.inArray(img.split('.').pop(), ['mp3','wav'])>-1) {
+                        value += '<audio controls src="'+div.settings.imageFolder+img+'" type="audio/mpeg"/>';
                       } else {
                         value += '<a href="'+div.settings.imageFolder+img+'" class="fancybox ' + imgclass + '"><img src="'+div.settings.imageFolder+'thumb-'+img+'" /></a>';
                       }
@@ -417,6 +419,7 @@ var simple_tooltip;
             tbody.append(rowOutput);
           }
           tbody.find('a.fancybox').fancybox();
+          tbody.find('audio' ).audioPlayer();
           if (features.length>0) {
             indiciaData.reportlayer.addFeatures(features);
             map.zoomToExtent(indiciaData.reportlayer.getDataExtent());
