@@ -419,7 +419,6 @@ var simple_tooltip;
             tbody.append(rowOutput);
           }
           tbody.find('a.fancybox').fancybox();
-          tbody.find('audio' ).audioPlayer();
           if (features.length>0) {
             indiciaData.reportlayer.addFeatures(features);
             map.zoomToExtent(indiciaData.reportlayer.getDataExtent());
