@@ -313,7 +313,6 @@ var checkSubmitInProgress = function () {
                 .replace(/\{idField\}/g, div.settings.table + ':id:' + uniqueId) 
                 .replace(/\{idValue\}/g, file.id) // If ID is set, the picture is uploaded to the server
           );
-          $('#' + uniqueId + ' audio').audioPlayer();
         } else {
           existing = div.settings.file_box_initial_link_infoTemplate
               .replace(/\{id\}/g, uniqueId)
@@ -406,7 +405,6 @@ var checkSubmitInProgress = function () {
                 .replace(/\{idField\}/g, div.settings.table + ':id:' + uniqueId) 
                 .replace(/\{idValue\}/g, '') // Set ID to blank, as this is a new record.
           );
-          $('#' + file.id + ' audio').audioPlayer();
           // Copy the path into the hidden path input. Watch colon escaping for jQuery selectors.
           $('#' + div.settings.table.replace(/:/g,'\\:') + '\\:path\\:' + uniqueId).val(file.name);
         }
