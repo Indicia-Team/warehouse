@@ -196,15 +196,10 @@ class filter_where extends filter_base {
       'blankText' => '<'.lang::get('Please select').'>',
       'suffixTemplate'=>'nosuffix'
     ));
-    $r .= '<div id="location-sub-list" style="display: inline-block; width: auto;">'.data_entry_helper::sub_list(array(      
+    $r .= data_entry_helper::select(array(
       'fieldname' => 'imp-location',
-      'table' => 'location',
-      'captionField' => 'name',
-      'valueField' => 'id',
-      'extraParams' => $readAuth,
-      'addToTable' => false,
-      'selectMode' => true
-    )).'</div>';
+      'lookupValues' => array()
+    ));
     $r .= '</fieldset>';
     $r .= '<fieldset class="exclusive">';
     $r .= data_entry_helper::text_input(array(
