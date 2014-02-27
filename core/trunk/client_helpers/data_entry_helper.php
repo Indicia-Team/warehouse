@@ -2753,7 +2753,6 @@ $('#$escaped').change(function(e) {
           'at the same time has having the mediaTypes option in use.');
     self::add_resource('json');
     self::add_resource('autocomplete');
-    self::add_resource('audioplayer');
     $filterArray = self::get_species_names_filter($options);
     $filterNameTypes = array('all','currentLanguage', 'preferred', 'excludeSynonyms');
     //make a copy of the options so that we can maipulate it

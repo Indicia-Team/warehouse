@@ -514,7 +514,6 @@ class helper_base extends helper_config {
    * <li>timeentry</li>
    * <li>verification</li>
    * <li>complexAttrGrid</li>
-   * <li>audioplayer</li>
    * </ul>
    */
   public static function add_resource($resource)
@@ -602,7 +601,7 @@ class helper_base extends helper_config {
         'jqplot_pie' => array('javascript' => array(self::$js_path.'jqplot/plugins/jqplot.pieRenderer.min.js')),
         'jqplot_category_axis_renderer' => array('javascript' => array(self::$js_path.'jqplot/plugins/jqplot.categoryAxisRenderer.min.js')),
         'jqplot_trendline' => array('javascript'=>array(self::$js_path.'jqplot/plugins/jqplot.trendline.min.js')),
-        'reportgrid' => array('deps' => array('jquery_ui','audioplayer'), 'javascript' => array(self::$js_path.'jquery.reportgrid.js', self::$js_path.'json2.js')),
+        'reportgrid' => array('deps' => array('jquery_ui'), 'javascript' => array(self::$js_path.'jquery.reportgrid.js', self::$js_path.'json2.js')),
         'reportfilters' => array('deps' => array('reportgrid'), 'stylesheets' => array(self::$css_path."report-filters.css"), 'javascript' => array(self::$js_path.'reportFilters.js')),
         'tabs' => array('deps' => array('jquery_ui'), 'javascript' => array(self::$js_path.'tabs.js')),
         'wizardprogress' => array('deps' => array('tabs'), 'stylesheets' => array(self::$css_path."wizard_progress.css")),
@@ -612,8 +611,7 @@ class helper_base extends helper_config {
         'timeentry' => array('javascript'=>array(self::$js_path."jquery.timeentry.pack.js")),
         'verification' => array('javascript'=>array(self::$js_path."verification.js")),
         'control_speciesmap_controls' => array('deps' =>array('jquery', 'openlayers', 'addrowtogrid', 'validation'), 'javascript' => array(self::$js_path."controls/speciesmap_controls.js")),
-        'complexAttrGrid' => array('javascript'=>array(self::$js_path."complexAttrGrid.js")),
-        'audioplayer' => array('javascript'=>array(self::$js_path.'audioplayer.min.js'), 'stylesheets' => array(self::$css_path."audioplayer.css"))
+        'complexAttrGrid' => array('javascript'=>array(self::$js_path."complexAttrGrid.js"))
       );
     }
     return self::$resource_list;
