@@ -17,7 +17,7 @@
     <order_by>l.id desc</order_by>
   </order_bys>
   <params>
-    <param name="square_type_id_chosen_by_user" display="Type of square" description="Square Type as chosen by the user from the drop-down." datatype="lookup"
+    <param name="square_type_id_chosen_by_user" display="Type of square" description="Square type to filter by." datatype="lookup"
         population_call='report:reports_for_prebuilt_forms/Splash/core_and_additional_squares_for_population_call:id:location_type_name'>
       <where>l.location_type_id=#square_type_id_chosen_by_user#</where>
     </param>
