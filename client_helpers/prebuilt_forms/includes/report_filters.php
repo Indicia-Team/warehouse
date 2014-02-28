@@ -466,6 +466,9 @@ class filter_source extends filter_base {
  */
 function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
   iform_load_helpers(array('report_helper'));
+  if (!empty($_POST['filter:sharing'])) {
+    $options['sharing']=$_POST['filter:sharing'];
+  }
   $options = array_merge(array(
     'sharing' => 'reporting',
     'admin' => false,
@@ -476,6 +479,8 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
     'redirect_on_success' => '',
     'presets' => array('my-records', 'my-queried-rejected-records', 'my-groups', 'my-locality', 'my-groups-locality')
   ), $options);
+  $options['sharing'] = report_filters_sharing_code_to_full_term($options['sharing']);
+  $options['sharingCode'] = report_filters_full_term_to_sharing_code($options['sharing']);
   if (!preg_match('/^(reporting|peer_review|verification|data_flow|moderation)$/', $options['sharing']))
     return 'The @sharing option must be one of reporting, peer_review, verification, data_flow or moderation (currently '.$options['sharing'].').';
   report_helper::add_resource('reportfilters');
@@ -483,7 +488,7 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
   report_helper::add_resource('fancybox');
   if (defined('DRUPAL_CORE_COMPATIBILITY') && DRUPAL_CORE_COMPATIBILITY!=='7.x')
     hostsite_add_library('collapse');
-  $filterData = report_filters_load_existing($readAuth, strtoupper(substr($options['sharing'], 0, 1)));
+  $filterData = report_filters_load_existing($readAuth, $options['sharingCode']);
   $existing = '';
   $contexts = '';
   // add some preset filters in
@@ -571,6 +576,28 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
     }
   }
   $r = '<div id="standard-params" class="ui-widget">';
+  if ($options['allowSave'] && $options['admin']) {
+    if (empty($_GET['filters_user_id'])) {
+      // new filter to create, so sharing type can be edited
+      $reload = data_entry_helper::get_reload_link_parts();
+      $reloadPath = $reload['path'];
+      if(count($reload['params'])) $reloadPath .= '?'.data_entry_helper::array_to_query_string($reload['params']);
+      $r .= "<form action=\"$reloadPath\" method=\"post\" />";
+      $r .= data_entry_helper::select(array(
+          'label'=>lang::get('Select filter type'),
+          'fieldname'=>'filter:sharing',
+          'lookupValues'=>$options['adminCanSetSharingTo'],
+          'suffixTemplate'=>'nosuffix',
+          'afterControl'=>'<input type="submit" value="Go"/>',
+          'default'=>$options['sharingCode']
+      ));
+      $r .= '</form>';
+    } else {
+      // existing filter to edit, type is therefore fixed. JS will fill these values in.
+      $r .= '<p>'.lang::get('This filter is for <span id="sharing-type-label"></span>.').'</p>';
+      $r .= data_entry_helper::hidden_text(array('fieldname'=>'filter:sharing'));
+    }
+  }
   if ($options['allowLoad']) {
     $r .= '<div class="header ui-toolbar ui-widget-header ui-helper-clearfix"><div><span id="active-filter-label">'. lang::get('New report') . '</span></div><span class="changed" style="display:none" title="This filter has been changed">*</span>';
     $r .= '<div>';
@@ -640,21 +667,14 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
       $r .= '<br/>';
       if (empty($options['adminCanSetSharingTo']))
         throw new exception('Report standard params panel in admin mode so adminCanSetSharingTo option must be populated.');
-      $r .= data_entry_helper::select(array(
-        'label'=>lang::get('for'),
-        'fieldname'=>'filter:sharing',
-        'lookupValues'=>$options['adminCanSetSharingTo'],
-        'suffixTemplate'=>'nosuffix'
-      ));
       $r .= data_entry_helper::autocomplete(array(
-        'label'=>'by who?',
+        'label'=>'For who?',
         'fieldname'=>'filters_user:user_id',
         'table'=>'user',
         'valueField' => 'id',
         'captionField' => 'person_name',
         'formatFunction'=>"function(item) { return item.person_name + ' (' + item.email_address + ')'; }",
         'extraParams' => $readAuth + array('view'=>'detail'),
-        'labelClass'=>'auto',
         'class'=>'control-width-5'
       ));
       $r .= data_entry_helper::textarea(array(
@@ -731,4 +751,31 @@ function report_filters_load_existing($readAuth, $sharing) {
     'extraParams' => array('filter_sharing_mode' => $sharing, 'defines_permissions'=>'', 'filter_user_id' => hostsite_get_user_field('indicia_user_id'))
   ));
   return $filters;
+}
+
+/**
+ * Convert a sharing mode single letter code into the full term for that sharing mode.
+ * @param string $code Sharing code, e.g. 'M'.
+ * @return string Full term, e.g. 'moderation'. Returns the input parameter as-is, if not a sharing code.
+ */
+function report_filters_sharing_code_to_full_term($code) {
+  if (preg_match('/^[RVPDM]$/', $code)) {
+    switch ($code) {
+      case 'R' : return 'reporting';
+      case 'V' : return 'verification';
+      case 'P' : return 'peer_review';
+      case 'D' : return 'data_flow';
+      case 'M' : return 'moderation';
+    }
+  }
+  return $code;
+}
+
+/**
+ * Convert a sharing mode full term into the single letter code that sharing mode.
+ * @param string $term Full term, e.g. 'moderation'.
+ * @return string Sharing code, e.g. 'M'.
+ */
+function report_filters_full_term_to_sharing_code($term) {
+  return strtoupper(substr($term, 0, 1));
 }
