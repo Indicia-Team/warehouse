@@ -882,6 +882,17 @@ jQuery(document).ready(function($) {
     }
   };
   
+  function codeToSharingTerm(code) {
+    switch (code) {
+      case 'R': return 'reporting';
+      case 'V': return 'verification';
+      case 'P': return 'peer review';
+      case 'D': return 'data flow';
+      case 'M': return 'moderation';
+    }
+    return code;
+  }
+  
   loadFilterUser = function(id, applyNow) {
     if ($('#standard-params .header span.changed:visible').length===0 || confirm(indiciaData.lang.ConfirmFilterChangedLoad)) {
       $.ajax({
@@ -896,6 +907,7 @@ jQuery(document).ready(function($) {
           $('#filter\\:title').val(data[0].filter_title);
           $('#filter\\:description').val(data[0].filter_description);
           $('#filter\\:sharing').val(data[0].filter_sharing);
+          $('#sharing-type-label').html(codeToSharingTerm(data[0].filter_sharing));
           $('#filters_user\\:user_id\\:person_name').val(data[0].person_name);
           $('#filters_user\\:user_id').val(data[0].user_id);
           applyFilterToReports(applyNow);
