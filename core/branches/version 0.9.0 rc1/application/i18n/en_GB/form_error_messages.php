@@ -57,6 +57,10 @@ $lang = array (
     'sref_system' => 'The spatial reference system is not a valid EPSG or notation code.',
     'default' => 'Invalid input.',
   ),
+  'centroid_sref_system' => Array (
+    'required' => 'The centorid spatial reference system must be supplied.',
+    'default' => 'Invalid input.',
+  ),
   'external_key' => Array (
     'length' => 'The external key field can be up to 50 characters long.',
   ),

@@ -35,7 +35,7 @@ class Location_Model extends ORM_Tree {
   protected $ORM_Tree_children = "locations";
   protected $has_and_belongs_to_many = array('websites');
   protected $has_many = array('samples', 'location_attribute_values', 'location_images');
-  protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'location_type_id'=>'termlists_term');
+  protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'location_type'=>'termlists_term');
 
   // Declare that this model has child attributes, and the name of the node in the submission which contains them
   protected $has_attributes=true;
