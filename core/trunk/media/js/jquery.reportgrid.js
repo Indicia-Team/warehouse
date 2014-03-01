@@ -671,9 +671,9 @@ var simple_tooltip;
 
     /** 
      * Public function which loads the current report request output onto a map. 
-     * The request is handled in chunks of 1000 records.
+     * The request is handled in chunks of 1000 records. Optionally supply an id to map just 1 record.
      */
-    function mapRecords(div, zooming) {
+    function mapRecords(div, zooming, id) {
       if (typeof indiciaData.mapdiv==="undefined" || typeof indiciaData.reportlayer==="undefined") {
         return false;
       }
@@ -702,18 +702,22 @@ var simple_tooltip;
           layerInfo.zoomLayerIdx = 3;
         }
         layerInfo.report=div.settings.dataSource;
-        // if zoomed in below a 10k map, use the map bounding box to limit the loaded features. Having an indexed site filter changes the threshold as it is less necessary.
-        if (map.zoom<=600 && div.settings.mapDataSourceLoRes && 
-            (map.zoom<=30 || typeof div.settings.extraParams.indexed_location_id==="undefined" || div.settings.extraParams.indexed_location_id==='')) {
-          // get the current map bounds. If zoomed in close, get a larger bounds so that the map can be panned a bit without reload.          
-          layerInfo.bounds = map.calculateBounds(map.getCenter(), Math.max(39, map.getResolution()));
-          // plus the current bounds to test if a reload is necessary
-          currentBounds = map.calculateBounds();
-          if (map.projection.getCode() != indiciaData.mapdiv.indiciaProjection.getCode()) {
-            layerInfo.bounds.transform(map.projection, indiciaData.mapdiv.indiciaProjection);
-            currentBounds.transform(map.projection, indiciaData.mapdiv.indiciaProjection);
+        if (typeof id!=="undefined") {
+          request += '&' + div.settings.rowId + '=' + id;
+        } else {
+          // if zoomed in below a 10k map, use the map bounding box to limit the loaded features. Having an indexed site filter changes the threshold as it is less necessary.
+          if (map.zoom<=600 && div.settings.mapDataSourceLoRes && 
+              (map.zoom<=30 || typeof div.settings.extraParams.indexed_location_id==="undefined" || div.settings.extraParams.indexed_location_id==='')) {
+            // get the current map bounds. If zoomed in close, get a larger bounds so that the map can be panned a bit without reload.          
+            layerInfo.bounds = map.calculateBounds(map.getCenter(), Math.max(39, map.getResolution()));
+            // plus the current bounds to test if a reload is necessary
+            currentBounds = map.calculateBounds();
+            if (map.projection.getCode() != indiciaData.mapdiv.indiciaProjection.getCode()) {
+              layerInfo.bounds.transform(map.projection, indiciaData.mapdiv.indiciaProjection);
+              currentBounds.transform(map.projection, indiciaData.mapdiv.indiciaProjection);
+            }
+            request += '&bounds='+encodeURIComponent(layerInfo.bounds.toGeometry().toString());
           }
-          request += '&bounds='+encodeURIComponent(layerInfo.bounds.toGeometry().toString());
         }
       }      
       finally {
@@ -725,7 +729,10 @@ var simple_tooltip;
         indiciaData.mapdiv.removeAllFeatures(indiciaData.reportlayer, 'linked', true);
         currentMapRequest = request;
         _internalMapRecords(div, request, 0);
-        indiciaData.loadedReportLayerInfo=layerInfo;
+        if (typeof id==="undefined") {
+          // remmeber the layer we just loaded, so we can only reload if really required. If loading a single record, this doesn't count.
+          indiciaData.loadedReportLayerInfo=layerInfo;
+        }
       }
     }
     
@@ -856,6 +863,14 @@ var simple_tooltip;
             var tr=$(e.target).parents('tr')[0], featureId=tr.id.substr(3), 
                 featureArr, map=indiciaData.reportlayer.map, extent, zoom;
             featureArr=map.div.getFeaturesByVal(indiciaData.reportlayer, featureId, div.settings.rowId);
+            if (featureArr.length===0) {
+              // feature not available on the map, probably because we are loading just the viewport and 
+              // and the point is not visible. So try to load it.
+              $.ajaxSetup({async: false});
+              mapRecords(div, false, featureId);
+              $.ajaxSetup({async: true});
+              featureArr=map.div.getFeaturesByVal(indiciaData.reportlayer, featureId, div.settings.rowId);
+            }
             if (featureArr.length!==0) {
               extent = featureArr[0].geometry.getBounds().clone();
               for(var i=1;i<featureArr.length;i++) {
@@ -863,6 +878,7 @@ var simple_tooltip;
               }
               zoom = indiciaData.reportlayer.map.getZoomForExtent(extent)-2;
               indiciaData.reportlayer.map.setCenter(extent.getCenterLonLat(), zoom);
+              indiciaData.mapdiv.map.events.triggerEvent('moveend');
             }
           }
         });
