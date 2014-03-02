@@ -623,7 +623,7 @@ var simple_tooltip;
       return false;
     }
     
-    function _internalMapRecords(div, request, offset, async, recordCount) {
+    function _internalMapRecords(div, request, offset, callback, recordCount) {
       $(indiciaData.mapdiv).parent().find(".loading-overlay").css({
           top     : $(indiciaData.mapdiv).position().top,
           left    : $(indiciaData.mapdiv).position().left,
@@ -636,7 +636,6 @@ var simple_tooltip;
       $.ajax({
         dataType: "json",
         url: request + '&offset=' + offset + (typeof recordCount==="undefined" ? '&wantCount=1' : ''),
-        async: async,
         success: function(response) {
           if (typeof recordCount==="undefined") {
             recordCount = response.count;
@@ -667,6 +666,9 @@ var simple_tooltip;
               $('#map-loading').hide();
             }
           }
+          if (callback!==null) {
+            callback();
+          }
         }
       });
     }
@@ -675,7 +677,7 @@ var simple_tooltip;
      * Public function which loads the current report request output onto a map. 
      * The request is handled in chunks of 1000 records. Optionally supply an id to map just 1 record.
      */
-    function mapRecords(div, zooming, id, async) {
+    function mapRecords(div, zooming, id, callback) {
       if (typeof indiciaData.mapdiv==="undefined" || typeof indiciaData.reportlayer==="undefined") {
         return false;
       }
@@ -730,7 +732,7 @@ var simple_tooltip;
           || layerInfo.zoomLayerIdx!==indiciaData.loadedReportLayerInfo.zoomLayerIdx) {
         indiciaData.mapdiv.removeAllFeatures(indiciaData.reportlayer, 'linked', true);
         currentMapRequest = request;
-        _internalMapRecords(div, request, 0, typeof async==="undefined" ? true : async);
+        _internalMapRecords(div, request, 0, typeof callback==="undefined" ? null : callback);
         if (typeof id==="undefined") {
           // remmeber the layer we just loaded, so we can only reload if really required. If loading a single record, this doesn't count.
           indiciaData.loadedReportLayerInfo=layerInfo;
@@ -865,20 +867,27 @@ var simple_tooltip;
             var tr=$(e.target).parents('tr')[0], featureId=tr.id.substr(3), 
                 featureArr, map=indiciaData.reportlayer.map, extent, zoom;
             featureArr=map.div.getFeaturesByVal(indiciaData.reportlayer, featureId, div.settings.rowId);
+            var zoomToFeature=function() {
+              if (featureArr.length!==0) {
+                extent = featureArr[0].geometry.getBounds().clone();
+                for(var i=1;i<featureArr.length;i++) {
+                    extent.extend(featureArr[i].geometry.getBounds());
+                }
+                zoom = indiciaData.reportlayer.map.getZoomForExtent(extent)-2;
+                indiciaData.reportlayer.map.setCenter(extent.getCenterLonLat(), zoom);
+                indiciaData.mapdiv.map.events.triggerEvent('moveend');
+              }
+            }
             if (featureArr.length===0) {
               // feature not available on the map, probably because we are loading just the viewport and 
-              // and the point is not visible. So try to load it asynchronously so it is immediately available.
-              mapRecords(div, false, featureId, false);
-              featureArr=map.div.getFeaturesByVal(indiciaData.reportlayer, featureId, div.settings.rowId);
-            }
-            if (featureArr.length!==0) {
-              extent = featureArr[0].geometry.getBounds().clone();
-              for(var i=1;i<featureArr.length;i++) {
-                  extent.extend(featureArr[i].geometry.getBounds());
-              }
-              zoom = indiciaData.reportlayer.map.getZoomForExtent(extent)-2;
-              indiciaData.reportlayer.map.setCenter(extent.getCenterLonLat(), zoom);
-              indiciaData.mapdiv.map.events.triggerEvent('moveend');
+              // and the point is not visible. So try to load it with a callback to zoom in.
+              mapRecords(div, false, featureId, function() {
+                featureArr=map.div.getFeaturesByVal(indiciaData.reportlayer, featureId, div.settings.rowId);
+                zoomToFeature();
+              });
+            } else {
+              // feature available on the map, so we can pan and zoom to show it.
+              zoomToFeature();
             }
           }
         });
