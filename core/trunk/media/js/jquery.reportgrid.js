@@ -623,7 +623,7 @@ var simple_tooltip;
       return false;
     }
     
-    function _internalMapRecords(div, request, offset, recordCount) {
+    function _internalMapRecords(div, request, offset, async, recordCount) {
       $(indiciaData.mapdiv).parent().find(".loading-overlay").css({
           top     : $(indiciaData.mapdiv).position().top,
           left    : $(indiciaData.mapdiv).position().left,
@@ -633,9 +633,11 @@ var simple_tooltip;
       $('#map-loading').show();
       var matchString, feature;
       // first call- get the record count
-      $.getJSON(request + '&offset=' + offset + (typeof recordCount==="undefined" ? '&wantCount=1' : ''),
-        null,
-        function(response) {
+      $.ajax({
+        dataType: "json",
+        url: request + '&offset=' + offset + (typeof recordCount==="undefined" ? '&wantCount=1' : ''),
+        async: async,
+        success: function(response) {
           if (typeof recordCount==="undefined") {
             recordCount = response.count;
             response = response.records;
@@ -646,7 +648,7 @@ var simple_tooltip;
           if (matchString===currentMapRequest) {
             // start the load of the next batch
             if (offset+BATCH_SIZE<recordCount) {
-              _internalMapRecords(div, request, offset+BATCH_SIZE, recordCount);
+              _internalMapRecords(div, request, offset+BATCH_SIZE, async, recordCount);
             }              
             // whilst that is loading, put the dots on the map
             var features=[];
@@ -666,14 +668,14 @@ var simple_tooltip;
             }
           }
         }
-      );
+      });
     }
 
     /** 
      * Public function which loads the current report request output onto a map. 
      * The request is handled in chunks of 1000 records. Optionally supply an id to map just 1 record.
      */
-    function mapRecords(div, zooming, id) {
+    function mapRecords(div, zooming, id, async) {
       if (typeof indiciaData.mapdiv==="undefined" || typeof indiciaData.reportlayer==="undefined") {
         return false;
       }
@@ -728,7 +730,7 @@ var simple_tooltip;
           || layerInfo.zoomLayerIdx!==indiciaData.loadedReportLayerInfo.zoomLayerIdx) {
         indiciaData.mapdiv.removeAllFeatures(indiciaData.reportlayer, 'linked', true);
         currentMapRequest = request;
-        _internalMapRecords(div, request, 0);
+        _internalMapRecords(div, request, 0, typeof async==="undefined" ? true : async);
         if (typeof id==="undefined") {
           // remmeber the layer we just loaded, so we can only reload if really required. If loading a single record, this doesn't count.
           indiciaData.loadedReportLayerInfo=layerInfo;
@@ -865,10 +867,8 @@ var simple_tooltip;
             featureArr=map.div.getFeaturesByVal(indiciaData.reportlayer, featureId, div.settings.rowId);
             if (featureArr.length===0) {
               // feature not available on the map, probably because we are loading just the viewport and 
-              // and the point is not visible. So try to load it.
-              $.ajaxSetup({async: false});
-              mapRecords(div, false, featureId);
-              $.ajaxSetup({async: true});
+              // and the point is not visible. So try to load it asynchronously so it is immediately available.
+              mapRecords(div, false, featureId, false);
               featureArr=map.div.getFeaturesByVal(indiciaData.reportlayer, featureId, div.settings.rowId);
             }
             if (featureArr.length!==0) {
