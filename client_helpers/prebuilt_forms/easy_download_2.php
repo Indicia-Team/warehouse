@@ -347,6 +347,13 @@ class iform_easy_download_2 {
     } else 
       $r .= '<input type="hidden" name="survey_id" value="'.$args['survey_id'].'"/>';
     // Let the user pick the date range to download.
+    $r .= data_entry_helper::select(array(
+      'label'=>lang::get('Date field'),
+      'fieldname'=>'date_type',
+      'lookupValues'=>array('recorded'=>lang::get('Field record date'),'input'=>lang::get('Input date'),
+            'edited'=>lang::get('Last changed date'), 'verified'=>'Verification status change date'),
+      'helpText'=>'If filtering on date, which date field would you like to filter on?'
+    ));
     $r .= data_entry_helper::date_picker(array(
       'fieldname' => 'date_from',
       'label' => lang::get('Start Date'),
@@ -589,10 +596,11 @@ class iform_easy_download_2 {
     }
     if (!empty($_POST['survey_id']))
       $params['survey_list']=$_POST['survey_id'];
+    $datePrefix = (!empty($_POST['date_type']) && $_POST['date_type']!=='recorded') ? "$_POST[date_type]_" : '';
     if (!empty($_POST['date_from']) && $_POST['date_from']!==lang::get('Click here'))
-      $params['date_from']=$_POST['date_from'];
+      $params[$datePrefix.'date_from']=$_POST['date_from'];
     if (!empty($_POST['date_to']) && $_POST['date_to']!==lang::get('Click here'))
-      $params['date_to']=$_POST['date_to'];
+      $params[$datePrefix.'date_to']=$_POST['date_to'];
     return $params;
   }
   
