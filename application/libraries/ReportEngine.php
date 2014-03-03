@@ -905,7 +905,7 @@ class ReportEngine {
       // a request for all attrs in a selected survey can take precedence over the rest.
       $this->reportDb->in('aw.restrict_to_survey_id', explode(',', $this->providedParams['survey_list']));
       // always exclude email & cms_user_id to keep it private
-      $this->reportDb->not_in('system_function', array('email','cms_user_id'));
+      $this->reportDb->notin('system_function', array('email','cms_user_id'));
     } else {
       if ((count($ids)===0 ? 0 : 1) + (count($captions)===0 ? 0 : 1) + (count($sysfuncs)===0 ? 0 : 1) > 1)
         throw new exception('Cannot mix numeric IDs, captions and system functions in the list of requested custom attributes');
