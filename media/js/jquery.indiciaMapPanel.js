@@ -435,26 +435,36 @@ mapLocationSelectedHooks = [];
 
     function _handleEnteredSref(value, div) {
       if (value!='') {
-        $.getJSON(div.settings.indiciaSvc + "index.php/services/spatial/sref_to_wkt"+
-            "?sref=" + value +
+        $.ajax({
+          dataType: "jsonp",
+          url: div.settings.indiciaSvc + "index.php/services/spatial/sref_to_wkt",
+          data:"sref=" + value +
             "&system=" + _getSystem() +
-            "&mapsystem=" + _projToSystem(div.map.projection, false) +
-            "&callback=?", function(data) {
-              if(typeof data.error != 'undefined')
-                if(data.error == 'Spatial reference is not a recognisable grid square.')
-                  alert(div.settings.msgSrefNotRecognised);
-                else
-                  alert(data.error);
-              else {
-                // data should contain 2 wkts, one in indiciaProjection which is stored in the geom field,
-                // and one in mapProjection which is used to draw the object.
-                if (div.map.editLayer) {
-                  _showWktFeature(div, data.mapwkt, div.map.editLayer, null, false, "clickPoint");
-                }
-                $('#'+opts.geomId).val(data.wkt);
+            "&mapsystem=" + _projToSystem(div.map.projection, false), 
+          success: function(data) {
+            if(typeof data.error != 'undefined')
+              if(data.code === 4001)
+                alert(div.settings.msgSrefNotRecognised);
+              else
+                alert(data.error);
+            else {
+              // data should contain 2 wkts, one in indiciaProjection which is stored in the geom field,
+              // and one in mapProjection which is used to draw the object.
+              if (div.map.editLayer) {
+                _showWktFeature(div, data.mapwkt, div.map.editLayer, null, false, "clickPoint");
               }
+              $('#'+opts.geomId).val(data.wkt);
             }
-        );
+          },
+          error: function(data) {
+            var response = JSON.parse(data.response.replace(/^jsonp\d+\(/, '').replace(/\)$/, ''));
+            if(response.code === 4001) {
+              alert(div.settings.msgSrefNotRecognised);
+            } else {
+              alert(response.error);
+            }
+          }
+        });
       }
     }
 
@@ -2158,8 +2168,8 @@ jQuery.fn.indiciaMapPanel.defaults = {
     msgGeorefSelectPlace: 'Select from the following places that were found matching your search, then click on the map to specify the exact location:',
     msgGeorefNothingFound: 'No locations found with that name. Try a nearby town name.',
     msgGetInfoNothingFound: 'No occurrences were found at the location you clicked.',
-    msgSrefOutsideGrid: 'The position is outside the range of the selected grid reference system.',
-    msgSrefNotRecognised: 'The grid reference is not recognised.',
+    msgSrefOutsideGrid: 'The position is outside the range of the selected map reference system.',
+    msgSrefNotRecognised: 'The map reference is not recognised.',
     msgSrefSystemNotSet: 'The spatial reference system is not set.',
     msgReplaceBoundary: 'Would you like to replace the existing boundary with the new one?',
     maxZoom: 19, //maximum zoom when relocating to gridref, postcode etc.
