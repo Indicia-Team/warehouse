@@ -890,24 +890,34 @@ class ReportEngine {
     $captions = array();
     $sysfuncs = array();
     $attrList = explode(',',$attrList);
+    $allSurveyAttrs=false;
     foreach($attrList as $attr) {
       if (is_numeric($attr))
-        $ids[] = $attr;                  // an attribute ID
+        $ids[] = $attr;                 // an attribute ID
+      elseif ($attr==='#all_survey_attrs' && !empty($this->providedParams['survey_list']))
+        $allSurveyAttrs=true;           // requesting all attributes for a single selected survey
       elseif (substr($attr, 0, 1)==='#') 
         $sysfuncs[] = substr($attr, 1); // a system function
       else
-        $captions[] = $attr;             // an attribute caption
+        $captions[] = $attr;            // an attribute caption
     }
-    if ((count($ids)===0 ? 0 : 1) + (count($captions)===0 ? 0 : 1) + (count($sysfuncs)===0 ? 0 : 1) > 1)
-      throw new exception('Cannot mix numeric IDs, captions and system functions in the list of requested custom attributes');
-    if (count($ids)>0) 
-      $this->reportDb->in('a.id', $ids);
-    elseif (count($captions)>0) 
-      $this->reportDb->in('caption', $captions);
-    elseif (count($sysfuncs)>0) 
-      $this->reportDb->in('system_function', $sysfuncs);
+    if ($allSurveyAttrs) {
+      // a request for all attrs in a selected survey can take precedence over the rest.
+      $this->reportDb->in('aw.restrict_to_survey_id', explode(',', $this->providedParams['survey_list']));
+      // always exclude email & cms_user_id to keep it private
+      $this->reportDb->notin('system_function', array('email','cms_user_id'));
+    } else {
+      if ((count($ids)===0 ? 0 : 1) + (count($captions)===0 ? 0 : 1) + (count($sysfuncs)===0 ? 0 : 1) > 1)
+        throw new exception('Cannot mix numeric IDs, captions and system functions in the list of requested custom attributes');
+      if (count($ids)>0) 
+        $this->reportDb->in('a.id', $ids);
+      elseif (count($captions)>0) 
+        $this->reportDb->in('caption', $captions);
+      elseif (count($sysfuncs)>0) 
+        $this->reportDb->in('system_function', $sysfuncs);
+    }
     $attrs = $this->reportDb->get();
-    if (count($sysfuncs)>0)
+    if (!$allSurveyAttrs && count($sysfuncs)>0)
       $this->processSysfuncAttrs($query, $type, $attrs, $sysfuncs);
     else {
       $usingCaptions=count($captions)>0;
