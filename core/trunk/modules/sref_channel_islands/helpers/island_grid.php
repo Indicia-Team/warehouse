@@ -57,7 +57,7 @@ class island_grid {
     // ignore any spaces in the grid ref
     $sref = str_replace(' ','',$sref);
     if (!self::is_valid($sref))
-      throw new InvalidArgumentException('Spatial reference is not a recognisable grid square.');
+      throw new InvalidArgumentException('Spatial reference is not a recognisable grid square.', 4001);
     if (strlen($sref)==3) {
       // Assume DINTY Tetrad format 2km squares
       // extract the easting and northing
