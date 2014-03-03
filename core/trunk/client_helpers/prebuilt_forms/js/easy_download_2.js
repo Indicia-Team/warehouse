@@ -21,7 +21,7 @@
  
 var setAvailableDownloadFilters;
  
-jQuery(document).ready(function ($) {
+(function ($) {
   // Function called on selection of a download sharing type (and context filter) to 
   // set the available subfilters and surveys into the form controls.
   setAvailableDownloadFilters=function() {
@@ -63,6 +63,8 @@ jQuery(document).ready(function ($) {
       );
     }
   }
-  
-  $('#download-type').change(setAvailableDownloadFilters);
-});
+
+  jQuery(document).ready(function ($) {
+    $('#download-type').change(setAvailableDownloadFilters);
+  });
+}(jQuery));
