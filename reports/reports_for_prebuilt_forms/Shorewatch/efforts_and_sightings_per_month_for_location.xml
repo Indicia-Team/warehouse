@@ -10,20 +10,20 @@
   FROM cache_occurrences co
     LEFT JOIN samples sSighting ON sSighting.id=co.sample_id AND sSighting.sample_method_id = #sighting_sample_method_id# AND sSighting.deleted=false
         LEFT JOIN samples sEffort ON sEffort.id=sSighting.parent_id AND sEffort.sample_method_id = #effort_sample_method_id# AND sEffort.deleted=false
-    JOIN taxa_taxon_lists ttl on ttl.id=co.taxa_taxon_list_id AND ttl.deleted=false
     WHERE 1=1
     #filters#
     AND #website_filter#
-  GROUP BY month
+  GROUP BY month, monthval
+  ORDER BY monthval
   </query>
   <params>
     <param name="survey_id" display="Survey" description="Select the survey, or leave for all surveys" datatype="lookup"
         population_call="direct:survey:id:title">
       <where>co.survey_id=#survey_id#</where>
     </param>
-    <param name="taxon_id" display="Species" description="Species name to filter by." datatype="lookup"
-        population_call='report:library/taxa/get_species_names_for_website:id:name_common_preferred'>
-      <where>ttl.taxon_id=#taxon_id#</where>
+    <param name="taxon_meaning_id" display="Species" description="Species name to filter by." datatype="lookup"
+        population_call='report:library/taxa/get_species_names_for_website:taxon_meaning_id:name_common_preferred'>
+      <where>co.taxon_meaning_id=#taxon_meaning_id#</where>
     </param>
     <param name="location_id" display="Location ID" description="Location ID to report on." datatype="integer" >
       <where>co.location_id=#location_id#</where>
@@ -32,7 +32,8 @@
     <param name="sighting_sample_method_id" display="Sighting Sample Method Id" description="Id of the Sighting Sample Method." datatype="integer"/>
   </params>
   <columns>
-    <column name='month' display='Month' sql="to_char(co.date_start, 'MONTH')" datatype='integer'/>
+    <column name='month' display='Month' sql="to_char(co.date_start, 'MONTH') || ' ' || to_char(co.date_start, 'YYYY')" datatype='integer'/>
+    <column name='monthval' visible="false" sql="to_char(co.date_start, 'YYYY') || to_char(co.date_start, 'MM')" datatype='integer'/>
     <column name='efforts' display='Efforts' sql='count(DISTINCT(sEffort.id))' datatype='integer'/>
     <column name='sightings' display='Sightings' sql='count(DISTINCT(sSighting.id))' datatype='integer'/>
   </columns>
