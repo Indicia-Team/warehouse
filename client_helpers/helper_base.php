@@ -44,7 +44,7 @@ $indicia_templates = array(
   'requiredsuffix' => '<span class="deh-required">*</span><br/>'."\n",
   'requirednosuffix' => '<span class="deh-required">*</span>'."\n",
   'button' => '<button id="{id}" type="button" title="{title}"{class}>{caption}</button>',
-  'submitButton' => '<input id="{id}" type="submit"{class} value="{caption}" />',
+  'submitButton' => '<input id="{id}" type="submit"{class} name="{name}" value="{caption}" />',
   'anchorButton' => '<a class="ui-corner-all ui-widget-content ui-state-default indicia-button {class}" href="{href}" id="{id}">{caption}</a>',
   'lock_icon' => '<span id="{id}_lock" class="unset-lock">&nbsp;</span>',
   'lock_javascript' => "indicia.locks.initControls (

@@ -4596,8 +4596,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * <li><b>button</b></br>
   * HTML template used for buttons other than the form submit button.
   * </li>
-  * <li><b>submit_button</b></br>
-  * HTML template used for the submit button.
+  * <li><b>submitButton</b></br>
+  * HTML template used for the submit and delete buttons.
   * </li>
   *
   * @param array $options Options array with the following possibilities:<ul>
@@ -4616,6 +4616,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * <li><b>page</b><br/>
   * Specify first, middle or last to indicate which page this is for. Use middle (the default) for
   * all pages other than the first or last.</li>
+  * <li><b>includeDeleteButton</b>
+  * Set to true if allowing deletion of the record.</li>
   * <li><b>includeVerifyButton</b>
   * Defaults to false. If set to true, then a Precheck my records button is added to the
   * button set. There must be a verification_panel control added to the page somewhere
@@ -4631,15 +4633,17 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     global $indicia_templates;
     // Default captions
     $options = array_merge(array(
-      'captionNext' => 'next step',
-      'captionPrev' => 'prev step',
-      'captionSave' => 'save',
+      'captionNext' => 'Next step',
+      'captionPrev' => 'Prev step',
+      'captionSave' => 'Save',
+      'captionDelete'=> 'Delete',
       'buttonClass' => 'indicia-button inline-control',
       'class'       => 'right',
       'page'        => 'middle',
       'suffixTemplate' => 'nullsuffix',
       'includeVerifyButton' => false,
-      'includeSubmitButton' => true
+      'includeSubmitButton' => true,
+      'includeDeleteButton' => false
     ), $options);
     $options['class'] .= ' buttons';
     // Output the buttons
@@ -4661,11 +4665,21 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         $options['id']='tab-next';
         $options['caption']=lang::get($options['captionNext']).' &gt;';
         $r .= str_replace('{content}', self::apply_template('button', $options), $indicia_templates['jsWrap']);
-      } else if ($options['includeSubmitButton']) {
-        $options['class']=$buttonClass." tab-submit";
-        $options['id']='tab-submit';
-        $options['caption']=lang::get($options['captionSave']);
-        $r .= str_replace('{content}', self::apply_template(isset(self::$validated_form_id) ? 'button' : 'submitButton', $options), $indicia_templates['jsWrap']);
+      } else {
+        if ($options['includeDeleteButton']) {
+          $options['class']=$buttonClass." tab-delete";
+          $options['id']='tab-delete';
+          $options['caption']=lang::get($options['captionDelete']);
+          $options['name']='delete-button';
+          $r .= self::apply_template('submitButton', $options);
+        }
+        if ($options['includeSubmitButton']) {
+          $options['class']=$buttonClass." tab-submit";
+          $options['id']='tab-submit';
+          $options['caption']=lang::get($options['captionSave']);
+          $options['name']='action-delete';
+          $r .= self::apply_template('submitButton', $options);
+        }
       }
     }
     $r .= '</div><div style="clear:both"></div>';

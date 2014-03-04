@@ -294,8 +294,9 @@ class iform_dynamic {
           'page'=>$pageIdx===0 ? 'first' : (($pageIdx==count($tabHtml)-1) ? 'last' : 'middle'),
           'includeVerifyButton'=>isset($args['verification_panel']) && $args['verification_panel'] 
               && ($pageIdx==count($tabHtml)-1),
-          'includeSubmitButton'=>(self::$mode !== self::MODE_EXISTING_RO)
-        ));        
+          'includeSubmitButton'=>(self::$mode !== self::MODE_EXISTING_RO),
+          'includeDeleteButton'=>(self::$mode === self::MODE_EXISTING)
+        ));
       } elseif ($pageIdx==count($tabHtml)-1) {
         // We need the verify button as well if this option is enabled
         if (isset($args['verification_panel']) && $args['verification_panel'])
