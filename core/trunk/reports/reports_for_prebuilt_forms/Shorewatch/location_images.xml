@@ -1,0 +1,23 @@
+<report
+    title="Simple list of images for a location"
+    description="Bsaic report to return the images for a location."
+>
+  <query website_filter_field="lw.website_id" >
+  SELECT #columns#
+  FROM location_images li
+  LEFT JOIN locations_websites lw on lw.location_id=li.location_id
+  WHERE #website_filter#
+  </query>
+  <params>
+    <param name="linked_location_id" display="Location Id" description="Location to filter to" datatype="integer">
+      <where>li.location_id=#linked_location_id#</where>
+    </param>
+  </params>
+  <order_bys>
+    <order_by>li.caption, li.id desc</order_by>
+  </order_bys>
+  <columns>
+    <column name="path" display="Image path" sql="li.path" img="true" />
+    <column name="caption" display="Caption" sql="li.caption" datatype="text" />
+  </columns>
+</report>
