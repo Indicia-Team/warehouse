@@ -93,7 +93,7 @@ class Indicia_Controller extends Template_Controller {
           'Taxon Groups'=>'taxon_group',
           'Term Lists'=>'termlist',
           'Locations'=>'location',
-          'Surveys'=>'survey',
+          'Survey datasets'=>'survey',
           'People'=>'person'
         );
       if ($this->auth->has_any_website_access('admin') || $this->auth->logged_in('CoreAdmin'))

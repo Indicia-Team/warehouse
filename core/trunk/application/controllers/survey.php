@@ -37,8 +37,27 @@ class Survey_Controller extends Gridview_Base_Controller {
       'description' => '',
       'website'     => ''
     );
-    $this->pagetitle = "Surveys";
+    $this->pagetitle = "Survey datasets";
     $this->set_website_access('admin');
+  }
+  
+  protected function prepareOtherViewData($values)
+  { 
+    $websites = ORM::factory('website');
+    if (!empty($values['survey:parent_id']))
+      // parent list already has a link to a website, so we can't change it 
+      $websites = $websites->in('id', ORM::factory('survey', $values['survey:parent_id'])->website_id);
+    elseif (!empty($values['survey:website_id']))
+      // can't change website for existing survey
+      $websites = $websites->where('id', $values['survey:website_id']);
+    elseif (!$this->auth->logged_in('CoreAdmin'))
+      $websites = $websites->in('id',$this->auth_filter['values']);
+    $arr = array();
+    foreach ($websites->where('deleted','false')->orderby('title','asc')->find_all() as $website)
+      $arr[$website->id] = $website->title;
+    return array(
+      'websites' => $arr
+    );
   }
   
   /**
@@ -77,6 +96,17 @@ class Survey_Controller extends Gridview_Base_Controller {
    */
   protected function page_authorised() {
     return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('editor');
+  }
+  
+  /**
+   * Retrieves additional values from the model that are required by the edit form.
+   * @return array List of additional values required by the form.
+   */
+  protected function getModelValues() {
+  	$r = parent::getModelValues();
+  	if ($this->model->parent_id)
+  		$r['parent:title'] = $this->model->parent->title;
+  	return $r;
   }
 }
 
