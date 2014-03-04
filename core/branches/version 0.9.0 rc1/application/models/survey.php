@@ -28,8 +28,10 @@
  * @subpackage Models
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
-class Survey_Model extends ORM {
+class Survey_Model extends ORM_Tree {
 
+  protected $ORM_Tree_children = "surveys";
+  
   protected $belongs_to = array(
       'owner'=>'person',
       'website',
@@ -40,7 +42,11 @@ class Survey_Model extends ORM {
     $array->pre_filter('trim');
     $array->add_rules('title', 'required');
     $array->add_rules('website_id', 'required');
-    $this->unvalidatedFields = array('description', 'deleted');
+    $this->unvalidatedFields = array(
+      'description',
+      'deleted',
+      'parent_id'
+    );
     return parent::validate($array, $save);
   }
 
