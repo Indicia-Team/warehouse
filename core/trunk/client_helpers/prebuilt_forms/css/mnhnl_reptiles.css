@@ -1,0 +1,120 @@
+.mnhnl-species-grid input, .mnhnl-species-grid select {
+  width: 95%;
+  margin: 0;
+}
+.mnhnl-species-grid td {
+  padding: 1px;
+}
+#iform-header {
+  height: 108px;
+}
+.government-logo {
+  height: 100px;
+}
+.gabriel-lippmann-logo {
+  height: 50px;
+}
+#iform-logo-left {
+	float: left;
+}
+#iform-logo-right {
+	float: right;
+}
+.deh-required {
+  color:red;
+}
+.control-box {
+  display:inline  !important;
+}
+p.inline-error {
+  margin-left: 0;	
+  margin-bottom: 0;
+  margin-top: 4px;
+  margin-right: 20px;	
+  display: inline;  
+}
+.remove-row {
+  color:red !important;
+}
+label.auto-width {
+	width: auto;
+}
+label.prepad {
+  padding-left: 20px;	
+}
+.coords-text {
+  margin-top: 4px;
+  margin-left: 20px;	
+}
+input.scComment  {
+	width: 750px;
+	margin-top: 4px;
+}
+input.scCount  {
+	width: 30px;
+}
+input.scAmphibianBehaviour  {
+	width: auto;
+}
+.targ-grid-cell {
+  padding-left: 20px;	
+}
+div.olControlEditingToolbar div.olControlCancelSketchItemInactive {
+  background-image: url("../images/mnhnl-mod-toolbar.png");
+  background-position: 0px 0px;
+}
+div.olControlEditingToolbar div.olControlUndoSketchPointItemInactive {
+  background-image: url("../images/mnhnl-mod-toolbar.png");
+  background-position: -25px 0px;
+}
+
+div.olControlEditingToolbar div.olControlRemoveNewSiteItemInactive {
+  background-image: url("../images/mnhnl-mod-toolbar.png");
+  background-position: -50px 0px;
+}
+
+div.olControlEditingToolbar div.olControlZoomToSiteItemInactive {
+  background-image: url("../images/mnhnl-mod-toolbar.png");
+  background-position: -75px 0px;
+}
+
+div.olControlEditingToolbar div.olControlZoomToSquareItemInactive {
+  background-image: url("../images/mnhnl-mod-toolbar.png");
+  background-position: -100px 0px;
+}
+
+div.olControlEditingToolbar div.olControlZoomToCountryItemInactive {
+  background-image: url("../images/mnhnl-mod-toolbar.png");
+  background-position: -125px 0px;
+}
+
+div.olControlEditingToolbar div.olControlStartNewSiteItemInactive {
+  background-image: url("../images/mnhnl-mod-toolbar.png");
+  background-position: -150px 0px;
+}
+
+div.olControlEditingToolbar  {
+    width: 500px;
+}
+.ui-widget-header th {
+  padding-right: 8px;
+}
+#imp-srefX,#imp-srefY,.precision {
+	width: 60px;
+}
+#pointgridtable input[type='text'] {
+  width: 100px;
+}
+.target-species-grid label {
+	width: auto;
+}
+#samples-grid td {
+  padding: 2px;
+  border: solid silver 1px;
+}
+#mousePos {
+  background-color: #FFFFFF;
+  float: right;
+  margin-top: 7px;
+  margin-right: 20px;
+}

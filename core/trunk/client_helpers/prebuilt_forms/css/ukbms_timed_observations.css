@@ -1,0 +1,67 @@
+label {
+  width: 140px;
+}
+
+.helpText {
+  margin-left: 144px;
+}
+
+table#observation-input1,table#observation-input2,table#observation-input3,table#observation-input4 {
+  width: auto;
+}
+
+table#observation-input1 td, table#observation-input1 input, table#observation-input2 td, table#observation-input2 input, table#observation-input3 td, table#observation-input3 input, table#observation-input4 td, table#observation-input4 input{
+  margin: 1px;
+  padding: 1px;
+}
+
+table#observation-input1 input,table#observation-input2 input,table#observation-input3 input,table#observation-input4 input {
+  width: 50px;
+  border: solid silver 1px;
+}
+
+table th, table td {
+  text-align: center;
+}
+
+table .alt-row {
+  background-color: #e7e7e7;
+}
+
+table tr.table-selected {
+  border-top: solid blue 1px;
+  border-bottom: solid blue 1px;
+}
+
+table td.table-selected  {
+  border-left: solid blue 1px;
+  border-right: solid blue 1px;
+}
+
+table thead.table-header {
+  display: table-header-group;
+}
+
+table td.first {
+  border-left: dashed grey 2px;
+}
+
+input.edited[type="text"], input.edited[type="password"], select.edited {
+  border: solid green 1px;
+}
+
+input.saving[type="text"], input.saving[type="password"], select.saving {
+  background: url(../../../media/images/ajax-loader.gif) no-repeat right;
+  font-style: italic;
+}
+
+.ui-widget-header {
+  font-weight: normal;
+  padding-left: 3px;
+  padding-right: 3px;
+    
+}
+table.species-grid thead th, table.species-grid tbody td, table.sticky-header thead th {
+  font-size: 80%;
+  font-family: Tahoma, Geneva, sans-serif;
+}
