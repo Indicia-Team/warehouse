@@ -895,13 +895,13 @@ class ReportEngine {
     $allSurveyAttrs=false;
     foreach($attrList as $attr) {
       if (is_numeric($attr))
-        $ids[] = $attr;                  // an attribute ID
+        $ids[] = $attr;                 // an attribute ID
       elseif ($attr==='#all_survey_attrs' && !empty($this->providedParams['survey_list']))
-        $allSurveyAttrs=true;                 // requesting all attributes for a single selected survey
+        $allSurveyAttrs=true;           // requesting all attributes for a single selected survey
       elseif (substr($attr, 0, 1)==='#') 
         $sysfuncs[] = substr($attr, 1); // a system function
       else
-        $captions[] = $attr;             // an attribute caption
+        $captions[] = $attr;            // an attribute caption
     }
     if ($allSurveyAttrs) {
       // a request for all attrs in a selected survey can take precedence over the rest.
