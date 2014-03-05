@@ -4,6 +4,7 @@
       SELECT #columns#
       FROM cache_occurrences o
       JOIN users u on u.id=o.created_by_id and u.id&lt;&gt;1
+      JOIN people p on p.id=u.person_id and p.deleted=false
       #agreements_join#
       #joins#
       WHERE #sharing_filter#
@@ -35,7 +36,7 @@
       </order_bys>
       <columns>
             <column name="id" visible="false" display="User ID" sql="u.id" datatype="integer" in_count="true"/>
-            <column name="username" display="User name" sql="u.username" datatype="text" />
+            <column name="name" display="Name" sql="p.surname || case when p.first_name is null or p.first_name='' or p.first_name=p.surname then '' else ', ' || p.first_name end" datatype="text" />
             <column name="me" visible="false" sql="case cast(u.id as character varying) when '#currentUser#' then 'me' else 'other' end" datatype="text|" />
             <column name="taxa" display="No. of Species" sql="count(DISTINCT o.taxon_meaning_id)" datatype="integer" aggregate="true" />
             <column name="occurrences" display="No. of Records" sql="count(DISTINCT o.id)" datatype="integer" aggregate="true" />
