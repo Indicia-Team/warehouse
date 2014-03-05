@@ -21,10 +21,10 @@ function displayReportMetadata(control, path) {
   path = path.replace('\\','/');
   path = path.split('/');
   var current = indiciaData.reportList;
-  $.each(path, function(idx, item) {
+  jQuery.each(path, function(idx, item) {
     current = current[item];
     if (current.type === 'report') {
-      $('#' + control + ' .report-metadata').html('<strong>' + current.title+'</strong><br/>' +
+      jQuery('#' + control + ' .report-metadata').html('<strong>' + current.title+'</strong><br/>' +
           '<p>' + current.description + '</p>');
     } else {
       current = current['content'];

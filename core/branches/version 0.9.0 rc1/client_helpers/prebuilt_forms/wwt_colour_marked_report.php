@@ -720,7 +720,7 @@ class iform_wwt_colour_marked_report {
     return $retVal;
   }
   
-  public static function get_perms($nid) {
+  public static function get_perms($nid, $args) {
     return array(
       'IForm n'.$nid.' enter data by proxy',
     );
@@ -2402,6 +2402,7 @@ class iform_wwt_colour_marked_report {
     $opts['resizeWidth'] = isset($options['resizeWidth']) ? $options['resizeWidth'] : 1600;
     $opts['resizeHeight'] = isset($options['resizeHeight']) ? $options['resizeHeight'] : 1600;
     $opts['caption'] = lang::get('Photos');
+    $opts['readAuth'] = $auth['read'];
     $opts['imageWidth'] = '168';
     // $opts['id'] = 'idn:0';
     if ($options['inNewIndividual']) {
@@ -3035,34 +3036,3 @@ class iform_wwt_colour_marked_report {
   }
 }
 
-/**
- * For PHP 5.2, declare the get_called_class method which allows us to use subclasses of this form.
- */
-if(!function_exists('get_called_class')) {
-function get_called_class() {
-    $matches=array();
-    $bt = debug_backtrace();
-    $l = 0;
-    do {
-        $l++;
-        if(isset($bt[$l]['class']) AND !empty($bt[$l]['class'])) {
-            return $bt[$l]['class'];
-        }
-        $lines = file($bt[$l]['file']);
-        $callerLine = $lines[$bt[$l]['line']-1];
-        preg_match('/([a-zA-Z0-9\_]+)::'.$bt[$l]['function'].'/',
-                   $callerLine,
-                   $matches);
-        if (!isset($matches[1])) $matches[1]=NULL; //for notices
-        if ($matches[1] == 'self') {
-               $line = $bt[$l]['line']-1;
-               while ($line > 0 && strpos($lines[$line], 'class') === false) {
-                   $line--;                 
-               }
-               preg_match('/class[\s]+(.+?)[\s]+/si', $lines[$line], $matches);
-       }
-    }
-    while ($matches[1] == 'parent'  && $matches[1]);
-    return $matches[1];
-  } 
-} 

@@ -29,6 +29,11 @@ mapInitialisationHooks = [];
 mapGeoreferenceHooks = [];
 
 /**
+ * Add functions to this array for them to be called when a location is picked in an input control.
+ */
+mapLocationSelectedHooks = [];
+
+/**
 * Class: indiciaMapPanel
 * JavaScript & OpenLayers based map implementation class for Indicia data entry forms.
 * This code file supports read only maps. A separate plugin will then run on top of this to provide editing support
@@ -75,6 +80,7 @@ mapGeoreferenceHooks = [];
     /**
      * Remove all features of a specific type or not of a specific type
      * This functionality allows a location to havea centroid and separate boundary.
+     * Note that inverse mode does not interfere with annotations mode as this is a seperate mode added after code was originally created.
      */
     function removeAllFeatures(layer, type, inverse) {
       var toRemove = [];
@@ -82,7 +88,8 @@ mapGeoreferenceHooks = [];
         inverse=false;
       }
       $.each(layer.features, function(idx, feature) {
-        if ((!inverse && feature.attributes.type===type) || (inverse && feature.attributes.type!==type)) {
+        //Annotations is a special seperate mode added after original code was written, so do not interfere with annotations even in inverse mode.
+        if ((!inverse && feature.attributes.type===type) || (inverse && feature.attributes.type!==type && feature.attributes.type!=='annotation')) {
           toRemove.push(feature);
         }
       });
@@ -111,7 +118,7 @@ mapGeoreferenceHooks = [];
               if(_diffProj(div.indiciaProjection, div.map.projection)){
                 // NB geometry may not be a point (especially if a boundary!)
                 var parser = new OpenLayers.Format.WKT();
-                var feature = parser.read(wkt);
+                var feature = parser.read(geomwkt);
                 geomwkt = feature.geometry.transform(div.indiciaProjection, div.map.projection).toString();
               }
               _showWktFeature(div, geomwkt, div.map.editLayer, null, true, 'boundary');
@@ -120,6 +127,7 @@ mapGeoreferenceHooks = [];
                 // The location search box must fill in the sample sref box
                 $('#'+div.settings.srefId).val(data[0].centroid_sref);
                 $('#'+div.settings.srefSystemId).val(data[0].centroid_sref_system);
+                $('#'+div.settings.geomId).val(data[0].centroid_geom);
                 // If the sref is in two parts, then we might need to split it across 2 input fields for lat and long
                 if (data[0].centroid_sref.indexOf(' ')!==-1) {
                   var parts=$.trim(data[0].centroid_sref).split(' ');
@@ -129,6 +137,9 @@ mapGeoreferenceHooks = [];
                   $('#'+div.settings.srefLongId).val(parts.join(''));
                 }
               }
+              $.each(mapLocationSelectedHooks, function(idx, hook) {
+                hook(div, data);
+              });
             }
           }
         );
@@ -229,7 +240,7 @@ mapGeoreferenceHooks = [];
           if (geometry) {
             bounds.extend(geometry.getBounds());
           }
-        });
+        });        
       }
 
       if(invisible !== null){
@@ -324,27 +335,40 @@ mapGeoreferenceHooks = [];
      */
     function _bindControls(div) {
 
-      // If the spatial ref input control exists, bind it to the map, so entering a ref updates the map
-      $('#'+opts.srefId).change(function() {
-        _handleEnteredSref($(this).val(), div);
-      });
-      // If the spatial ref latitude or longitude input control exists, bind it to the map, so entering a ref updates the map
-      $('#'+opts.srefLatId).change(function() {
-        // Only do something if both the lat and long are populated
-        if ($.trim($(this).val())!='' && $.trim($('#'+opts.srefLongId).val())!='') {
-          // copy the complete sref into the sref field
-          $('#'+opts.srefId).val($.trim($(this).val()) + ', ' + $.trim($('#'+opts.srefLongId).val()));
-          _handleEnteredSref($('#'+opts.srefId).val(), div);
-        }
-      });
-      $('#'+opts.srefLongId).change(function() {
-        // Only do something if both the lat and long are populated
-        if ($.trim($('#'+opts.srefLatId).val())!='' && $.trim($(this).val())!='') {
-          // copy the complete sref into the sref field
-          $('#'+opts.srefId).val($.trim($('#'+opts.srefLatId).val()) + ', ' + $.trim($(this).val()));
-          _handleEnteredSref($('#'+opts.srefId).val(), div);
-        }
-      });
+      // If clickForPlot then do not bind to spatial ref input as currently it will 
+      // do the wrong thing.
+      if (opts.clickForPlot) {
+        // Disable the spatial ref input so users do not think they can enter a value
+        var version = $().jquery;
+        var aryVersion = version.split('.');
+        if (aryVersion[0] == 1 && aryVersion[1] < 6 ) {
+          $('#'+opts.srefId).attr('readonly', true);
+        } else {
+          $('#'+opts.srefId).prop('readonly', true);
+        }        
+      } else if (opts.clickForSpatialRef) {
+        // If the spatial ref input control exists, bind it to the map, so entering a ref updates the map
+        $('#'+opts.srefId).change(function() {
+          _handleEnteredSref($(this).val(), div);
+        });
+        // If the spatial ref latitude or longitude input control exists, bind it to the map, so entering a ref updates the map
+        $('#'+opts.srefLatId).change(function() {
+          // Only do something if both the lat and long are populated
+          if ($.trim($(this).val())!='' && $.trim($('#'+opts.srefLongId).val())!='') {
+            // copy the complete sref into the sref field
+            $('#'+opts.srefId).val($.trim($(this).val()) + ', ' + $.trim($('#'+opts.srefLongId).val()));
+            _handleEnteredSref($('#'+opts.srefId).val(), div);
+          }
+        });
+        $('#'+opts.srefLongId).change(function() {
+          // Only do something if both the lat and long are populated
+          if ($.trim($('#'+opts.srefLatId).val())!='' && $.trim($(this).val())!='') {
+            // copy the complete sref into the sref field
+            $('#'+opts.srefId).val($.trim($('#'+opts.srefLatId).val()) + ', ' + $.trim($(this).val()));
+            _handleEnteredSref($('#'+opts.srefId).val(), div);
+          }
+        });
+      }
 
       // If a place search (georeference) control exists, bind it to the map.
       $('#'+div.georefOpts.georefSearchId).keypress(function(e) {
@@ -363,7 +387,7 @@ mapGeoreferenceHooks = [];
         e.preventDefault();
       });
       if ($('#imp-location').length) {
-        var locChange = function() {locationSelectedInInput(div, this.value);};
+        var locChange = function() {locationSelectedInInput(div, $('#imp-location').val());};
         $('#imp-location').change(locChange);
         // trigger change event, incase imp-location was already populated when the map loaded
         locChange();
@@ -411,26 +435,36 @@ mapGeoreferenceHooks = [];
 
     function _handleEnteredSref(value, div) {
       if (value!='') {
-        $.getJSON(div.settings.indiciaSvc + "index.php/services/spatial/sref_to_wkt"+
-            "?sref=" + value +
+        $.ajax({
+          dataType: "jsonp",
+          url: div.settings.indiciaSvc + "index.php/services/spatial/sref_to_wkt",
+          data:"sref=" + value +
             "&system=" + _getSystem() +
-            "&mapsystem=" + _projToSystem(div.map.projection, false) +
-            "&callback=?", function(data) {
-              if(typeof data.error != 'undefined')
-                if(data.error == 'Spatial reference is not a recognisable grid square.')
-                  alert(div.settings.msgSrefNotRecognised);
-                else
-                  alert(data.error);
-              else {
-                // data should contain 2 wkts, one in indiciaProjection which is stored in the geom field,
-                // and one in mapProjection which is used to draw the object.
-                if (div.map.editLayer) {
-                  _showWktFeature(div, data.mapwkt, div.map.editLayer, null, false, "clickPoint");
-                }
-                $('#'+opts.geomId).val(data.wkt);
+            "&mapsystem=" + _projToSystem(div.map.projection, false), 
+          success: function(data) {
+            if(typeof data.error != 'undefined')
+              if(data.code === 4001)
+                alert(div.settings.msgSrefNotRecognised);
+              else
+                alert(data.error);
+            else {
+              // data should contain 2 wkts, one in indiciaProjection which is stored in the geom field,
+              // and one in mapProjection which is used to draw the object.
+              if (div.map.editLayer) {
+                _showWktFeature(div, data.mapwkt, div.map.editLayer, null, false, "clickPoint");
               }
+              $('#'+opts.geomId).val(data.wkt);
             }
-        );
+          },
+          error: function(data) {
+            var response = JSON.parse(data.response.replace(/^jsonp\d+\(/, '').replace(/\)$/, ''));
+            if(response.code === 4001) {
+              alert(div.settings.msgSrefNotRecognised);
+            } else {
+              alert(response.error);
+            }
+          }
+        });
       }
     }
 
@@ -452,8 +486,13 @@ mapGeoreferenceHooks = [];
         $('#' + opts.srefLatId).val(part1);
         $('#' + opts.srefLongId).val(parts.join(''));
       }
-      removeAllFeatures(div.map.editLayer, 'boundary', true);
-      removeAllFeatures(div.map.editLayer, 'ghost');
+      if ($('#annotations-mode-on').length && $('#annotations-mode-on').val()==='yes') { 
+        //When in annotations mode, if the user sets the centroid on the map, we only want the previous centroid point to be removed.
+        removeAllFeatures(div.map.editLayer, 'clickPoint');
+      } else {
+        removeAllFeatures(div.map.editLayer, 'boundary', true);
+        removeAllFeatures(div.map.editLayer, 'ghost');
+      }
       ghost=null;
       $('#' + opts.geomId).val(data.wkt);
       var parser = new OpenLayers.Format.WKT();
@@ -870,7 +909,7 @@ mapGeoreferenceHooks = [];
           displayClass: align + 'olControlSelectFeature',
           title: div.settings.reportGroup===null ? '' : div.settings.hintQueryDataPointsTool,
           lastclick: {},
-          allowBox: false,
+          allowBox: clickableVectorLayers.length>0 && div.settings.allowBox===true,
           activate: function() {
             var handlerOptions = {
               'single': true,
@@ -878,14 +917,13 @@ mapGeoreferenceHooks = [];
               'stopSingle': false,
               'stopDouble': true
             };
-            if (clickableVectorLayers.length>0) {
+            if (clickableVectorLayers.length>0 && this.allowBox) {
               this.handlers = {box: new OpenLayers.Handler.Box(
                   this, {done: this.onGetInfo},
                   {boxDivClassName: "olHandlerBoxSelectFeature"}
                 )
               };
               this.handlers.box.activate();
-              this.allowBox = true;
             } else {
               // allow click or bounding box actions
               this.handlers = {click: new OpenLayers.Handler.Click(this, {
@@ -1005,6 +1043,10 @@ mapGeoreferenceHooks = [];
                     // force the param in, in case there is no params form.
                     report[0].settings.extraParams.idlist=ids.join(',');
                     report.reload(true);
+                  });
+                  $('table.report-grid tr').removeClass('selected');
+                  $.each(ids, function(idx, id) {
+                    $('table.report-grid tr#row'+id).addClass('selected');
                   });
                 }
               } else if (div.settings.clickableLayersOutputMode==='reportHighlight'
@@ -1188,36 +1230,50 @@ mapGeoreferenceHooks = [];
      * input for the sample geom, plus sets the visible spatial ref control to the centroid in the currently selected system.
      */
     function recordPolygon(evt) {
-      evt.feature.attributes.type=this.map.div.settings.drawObjectType;
-      // replace old features?
-      var oldFeatures=[], map=this.map, separateBoundary=$('#imp-boundary-geom').length>0;
+      // track old features to replace
+      var oldFeatures=[], map=this.map, div=map.div, separateBoundary=$('#' + map.div.settings.boundaryGeomId).length>0;
+      evt.feature.attributes.type=div.settings.drawObjectType;
       //When drawing new features onto the map, we only ask the user
       //if they want to replace the previous feature when they have the same type.
       //This allows us to have multiple layers of different types that don't interfere with each other.
       $.each(evt.feature.layer.features, function(idx, feature) {
-        if (feature!==evt.feature && feature.attributes.type===evt.feature.attributes.type) {
+        // replace features of the same type, or allow a boundary to be replaced by a queryPolygon
+        if (feature!==evt.feature && (feature.attributes.type===evt.feature.attributes.type || feature.attributes.type==='boundary')) {
           oldFeatures.push(feature);
         }
       });   
       if (oldFeatures.length>0) {
-        if (confirm(this.map.div.settings.msgReplaceBoundary)) {
+        if (confirm(div.settings.msgReplaceBoundary)) {
           evt.feature.layer.removeFeatures(oldFeatures, {});
         } else {
           evt.feature.layer.removeFeatures([evt.feature], {});
           return;
         }
       }
-      if (this.map.div.settings.drawObjectType==="boundary"||this.map.div.settings.drawObjectType==="annotation") {
+      if (div.settings.drawObjectType==="boundary"||div.settings.drawObjectType==="annotation") {
+        geom = evt.feature.geometry.clone();
+        if (map.projection.getCode() != div.indiciaProjection.getCode()) {
+          geom.transform(map.projection, div.indiciaProjection);
+        }
         if (separateBoundary) {
-          $('#imp-boundary-geom').val(evt.feature.geometry.toString());
+          $('#' + div.settings.boundaryGeomId).val(geom.toString());
           evt.feature.style = new style('boundary');
+          if(this.map.div.settings.autoFillInCentroid) {
+            var centroid = evt.feature.geometry.getCentroid();
+            $('#imp-geom').val(centroid.toString());
+            pointToSref(this.map.div, centroid, _getSystem(), function(data) {
+              if (typeof data.sref !== "undefined") {
+                $('#'+map.div.settings.srefId).val(data.sref);
+              }
+            });
+          }
           map.editLayer.redraw();
         } else {
-          $('#imp-geom').val(evt.feature.geometry.toString());
+          $('#imp-geom').val(geom.toString());
           // as we are not separating the boundary geom, the geom's sref goes in the centroid
-          pointToSref(map.div, evt.feature.geometry.getCentroid(), _getSystem(), function(data) {
+          pointToSref(div, geom.getCentroid(), _getSystem(), function(data) {
             if (typeof data.sref !== "undefined") {
-              $('#'+map.div.settings.srefId).val(data.sref);
+              $('#'+div.settings.srefId).val(data.sref);
             }
           });
         }
@@ -1275,7 +1331,8 @@ mapGeoreferenceHooks = [];
 
       if (div.settings.clickForPlot) {
        // Clicking to locate a plot
-       if (div.settings.plotShape == 'rectangle') {
+       var plotShape = $('#' + div.settings.plotShapeId).val();
+       if (plotShape === 'rectangle') {
          //create a rectangular polygon
           var width = parseFloat($('#' + div.settings.plotWidthId).val());
           var length = parseFloat($('#' + div.settings.plotLengthId).val());
@@ -1287,7 +1344,7 @@ mapGeoreferenceHooks = [];
             new OpenLayers.Geometry.Point(lonlat.lon, lonlat.lat + length)
           ]);
           polygon = new OpenLayers.Geometry.Polygon([linearRing]);
-        } else if (div.settings.plotShape == 'circle') {
+        } else if (plotShape === 'circle') {
           // create a circular polygon
           var radius = parseFloat($('#' + div.settings.plotRadiusId).val());
           polygon = new OpenLayers.Geometry.Polygon.createRegularPolygon(point, radius, 20, 0);
@@ -1649,13 +1706,22 @@ mapGeoreferenceHooks = [];
         // after half a second, reset the map size
         setTimeout("tmp.style.height = (parseInt(tmp.style.height) + 1) + 'px'", 500);
       });
-
+      
       if (this.settings.editLayer) {
-        // Add an editable layer to the map
-        var editLayer = new OpenLayers.Layer.Vector(
-            this.settings.editLayerName,
-            {style: new style('boundary'), 'sphericalMercator': true, displayInLayerSwitcher: this.settings.editLayerInSwitcher}
-        );
+        if (indiciaData.zoomid) {
+          //Change the feature colour to make it a ghost when we are in add mode and zoomed into a location (as the location boundary isn't
+          //used, it is only visual)
+          var editLayer = new OpenLayers.Layer.Vector(
+              this.settings.editLayerName,
+              {style: new style('ghost'), 'sphericalMercator': true, displayInLayerSwitcher: this.settings.editLayerInSwitcher}
+          );
+        } else {
+          // Add an editable layer to the map
+          var editLayer = new OpenLayers.Layer.Vector(
+              this.settings.editLayerName,
+              {style: new style('boundary'), 'sphericalMercator': true, displayInLayerSwitcher: this.settings.editLayerInSwitcher}
+          );
+        }
         div.map.editLayer = editLayer;
         div.map.addLayer(div.map.editLayer);
 
@@ -1693,7 +1759,7 @@ mapGeoreferenceHooks = [];
           div.map.events.register('mousemove', null, function(evt) {
             currentMousePixel = evt.xy;
             showGridRefHints(div);
-            if (div.map.editLayer.clickControl.active) {
+            if (typeof div.map.editLayer.clickControl!=="undefined" && div.map.editLayer.clickControl.active) {
               if (div.map.dragging) {
                 removeAllFeatures(div.map.editLayer, 'ghost');
               } else {
@@ -1866,8 +1932,17 @@ mapGeoreferenceHooks = [];
       }
       if (div.settings.editLayer && div.settings.allowPolygonRecording) {   
         div.map.editLayer.events.on({'featuremodified': function(evt) {
-          if ($('#imp-boundary-geom').length>0) {
-            $('#imp-boundary-geom').val(evt.feature.geometry.toString());
+          if ($('#' + div.settings.boundaryGeomId).length>0) {
+            $('#' + div.settings.boundaryGeomId).val(evt.feature.geometry.toString());
+            if(div.settings.autoFillInCentroid) {
+              var centroid = evt.feature.geometry.getCentroid();
+              $('#imp-geom').val(centroid.toString());
+              pointToSref(div, centroid, _getSystem(), function(data) {
+                if (typeof data.sref !== "undefined") {
+                  $('#'+div.settings.srefId).val(data.sref);
+                }
+              });
+            }
           }
         }});
       }
@@ -1877,8 +1952,9 @@ mapGeoreferenceHooks = [];
           c.events.register('featureadded', c, recordPolygon);
         }
       }, drawStyle=new style('boundary');
-      
+      var ctrlObj;
       $.each(div.settings.standardControls, function(i, ctrl) {
+        ctrlObj=null;
         // Add a layer switcher if there are multiple layers
         if (ctrl=='layerSwitcher') {
           div.map.addControl(new OpenLayers.Control.LayerSwitcher());
@@ -1893,44 +1969,52 @@ mapGeoreferenceHooks = [];
           if (div.settings.reportGroup!==null) {
             hint += ' ' + div.settings.hintDrawForReportingHint;
           }
-          ctrl = new OpenLayers.Control.DrawFeature(div.map.editLayer,
+          ctrlObj = new OpenLayers.Control.DrawFeature(div.map.editLayer,
               OpenLayers.Handler.Polygon,
               {'displayClass': align + 'olControlDrawFeaturePolygon', 'title':hint, handlerOptions:{style:drawStyle}});
-          pushDrawCtrl(ctrl);
+          pushDrawCtrl(ctrlObj);
         } else if (ctrl=='drawLine' && div.settings.editLayer) {
           hint = div.settings.hintDrawLineHint;
           if (div.settings.reportGroup!==null) {
             hint += ' ' + div.settings.hintDrawForReportingHint;
           }
-          ctrl = new OpenLayers.Control.DrawFeature(div.map.editLayer,
+          ctrlObj = new OpenLayers.Control.DrawFeature(div.map.editLayer,
               OpenLayers.Handler.Path,
               {'displayClass': align + 'olControlDrawFeaturePath', 'title':hint, handlerOptions:{style:drawStyle}});
-          pushDrawCtrl(ctrl);
+          pushDrawCtrl(ctrlObj);
         } else if (ctrl=='drawPoint' && div.settings.editLayer) {
           hint = div.settings.hintDrawPointHint;
           if (div.settings.reportGroup!==null) {
             hint += ' ' + div.settings.hintDrawForReportingHint;
           }
-          ctrl = new OpenLayers.Control.DrawFeature(div.map.editLayer,
+          ctrlObj = new OpenLayers.Control.DrawFeature(div.map.editLayer,
               OpenLayers.Handler.Point,
               {'displayClass': align + 'olControlDrawFeaturePoint', 'title':hint, handlerOptions:{style:drawStyle}});
-          pushDrawCtrl(ctrl);
+          pushDrawCtrl(ctrlObj);
         } else if (ctrl=='selectFeature' && div.settings.editLayer) {
-          toolbarControls.push(new OpenLayers.Control.SelectFeature(div.map.editLayer));
+          ctrlObj = new OpenLayers.Control.SelectFeature(div.map.editLayer);
+          toolbarControls.push(ctrlObj);
         } else if (ctrl=='hoverFeatureHighlight' && div.settings.editLayer) {
-          var highlighter = new OpenLayers.Control.SelectFeature(div.map.editLayer, {hover: true, highlightOnly: true});
-          div.map.addControl(highlighter);
-          highlighter.activate();
+          ctrlObj = new OpenLayers.Control.SelectFeature(div.map.editLayer, {hover: true, highlightOnly: true});
+          div.map.addControl(ctrlObj);
         } else if (ctrl=='clearEditLayer' && div.settings.editLayer) {
           toolbarControls.push(new OpenLayers.Control.ClearLayer([div.map.editLayer],
               {'displayClass': align + ' olControlClearLayer', 'title':div.settings.hintClearSelection, 'clearReport':true}));
         } else if (ctrl=='modifyFeature' && div.settings.editLayer) {
-          toolbarControls.push(new OpenLayers.Control.ModifyFeature(div.map.editLayer,
-              {'displayClass': align + 'olControlModifyFeature', 'title':div.settings.hintModifyFeature}));
+          ctrlObj = new OpenLayers.Control.ModifyFeature(div.map.editLayer,
+              {'displayClass': align + 'olControlModifyFeature', 'title':div.settings.hintModifyFeature});
+          toolbarControls.push(ctrlObj);
         } else if (ctrl=='graticule') {
-          var graticule = new OpenLayers.Control.IndiciaGraticule({projection: div.settings.graticuleProjection, bounds: div.settings.graticuleBounds});
-          div.map.addControl(graticule);
-          graticule.activate();
+          ctrlObj = new OpenLayers.Control.IndiciaGraticule({projection: div.settings.graticuleProjection, bounds: div.settings.graticuleBounds});
+          div.map.addControl(ctrlObj);
+          if ($.inArray(ctrl, div.settings.activatedStandardControls)===-1) {
+            // if this control is not active, also need to reflect this in the layer.
+            ctrlObj.gratLayer.setVisibility(false);
+          }
+        }
+        // activate the control if available and in the config settings. A null control cannot be activated.
+        if (ctrlObj!==null && $.inArray(ctrl, div.settings.activatedStandardControls)>-1) {
+          ctrlObj.activate();
         }
       });
       if (div.settings.editLayer && (div.settings.clickForSpatialRef || div.settings.clickForPlot)) {
@@ -2039,6 +2123,7 @@ jQuery.fn.indiciaMapPanel.defaults = {
     clickableLayersOutputFn: format_selected_features,
     clickableLayersOutputDiv: '',
     clickableLayersOutputColumns: [],
+    allowBox: true, // can disable drag boxes for querying info, so navigation works
     featureIdField: '',
     clickPixelTolerance: 5,
     reportGroup: null, // name of the collection of report outputs that this map is linked to when doing dashboard reporting
@@ -2046,6 +2131,7 @@ jQuery.fn.indiciaMapPanel.defaults = {
     locationLayerFilter: '', // a cql filter that can be used to limit locations shown on the location layer
     controls: [],
     standardControls: ['layerSwitcher','panZoom'],
+    activatedStandardControls: ["hoverFeatureHighlight","graticule"],
     toolbarDiv: 'map', // map, top, bottom, or div ID
     toolbarPrefix: '', // content to prepend to the toolbarDiv content if not on the map
     toolbarSuffix: '', // content to append to the toolbarDiv content if not on the map
@@ -2053,8 +2139,8 @@ jQuery.fn.indiciaMapPanel.defaults = {
     editLayer: true,
     clickForSpatialRef: true, // if true, then enables the click to get spatial references control
     clickForPlot: false, // if true, overrides clickForSpatialRef to locate a plot instead of a grid square.
-    plotShape: 'rectangle', // 'rectangle' draws plot with dimensions taken from controls with plotWidthID and plotLengthId, 'circle' from plotRadiusId
     allowPolygonRecording: false,
+    autoFillInCentroid: false, // if true will automatically complete the centroid and Sref when polygon recording.
     editLayerName: 'Selection layer',
     editLayerInSwitcher: false,
     searchLayer: false, // determines whether we have a separate layer for the display of location searches, eg georeferencing. Defaults to editLayer.
@@ -2071,6 +2157,7 @@ jQuery.fn.indiciaMapPanel.defaults = {
     srefLongId: 'imp-sref-long',
     srefSystemId: 'imp-sref-system',
     geomId: 'imp-geom',
+    plotShapeId: 'attr-shape', // html id of plot shape control. Can be 'rectangle' or 'circle'.
     plotWidthId: 'attr-width', // html id of plot width control for plotShape = 'rectangle'
     plotLengthId: 'attr-length', // html id of plot length control for plotShape = 'rectangle'
     plotRadiusId: 'attr-radius', // html id of plot radius control for plotShape = 'circle'
@@ -2081,8 +2168,8 @@ jQuery.fn.indiciaMapPanel.defaults = {
     msgGeorefSelectPlace: 'Select from the following places that were found matching your search, then click on the map to specify the exact location:',
     msgGeorefNothingFound: 'No locations found with that name. Try a nearby town name.',
     msgGetInfoNothingFound: 'No occurrences were found at the location you clicked.',
-    msgSrefOutsideGrid: 'The position is outside the range of the selected grid reference system.',
-    msgSrefNotRecognised: 'The grid reference is not recognised.',
+    msgSrefOutsideGrid: 'The position is outside the range of the selected map reference system.',
+    msgSrefNotRecognised: 'The map reference is not recognised.',
     msgSrefSystemNotSet: 'The spatial reference system is not set.',
     msgReplaceBoundary: 'Would you like to replace the existing boundary with the new one?',
     maxZoom: 19, //maximum zoom when relocating to gridref, postcode etc.

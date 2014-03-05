@@ -175,7 +175,7 @@ class iform_report_calendar_grid {
     $cellclass="newLink";
     foreach($records as $record){
       $location=empty($record["location_name"]) ? $record["entered_sref"] : $record["location_name"];
-      $cellContents .= '<a href="'.$options["existingURL"].'sample_id='.$record["sample_id"].'" title="View existing sample for '.$location.' on '.$options['consider_date'].' (ID='.$records[0]["sample_id"].')" >'.$location.'</a> ';
+      $cellContents .= '<a href="'.$options["existingURL"].'sample_id='.$record["sample_id"].'" title="View existing sample for '.$location.' on '.$options['consider_date'].' (ID='.$record["sample_id"].')" >'.$location.'</a> ';
       // we assume that the location has been filtered in the report.
       $cellclass='existingLink';
     }
@@ -194,7 +194,7 @@ class iform_report_calendar_grid {
    * @param <type> $readAuth
    * @return string
    */
-  private function  get_report_calendar_options($args, $readAuth) {
+  private static function  get_report_calendar_options($args, $readAuth) {
     self::$siteUrlParams = array(
         self::$locationKey => array(
             'name' => self::$locationKey,
@@ -213,7 +213,7 @@ class iform_report_calendar_grid {
     return $reportOptions;
   }
 
-  private function location_control($args, $readAuth, $node)
+  private static function location_control($args, $readAuth, $node)
   {
     global $user;
     // loctools is not appropriate here as it is based on a node, for which this is a very simple one, invoking other nodes for the sample creation

@@ -183,7 +183,7 @@ a {
   padding: 0.5em;
 }
 
-.photo {
+.mediafile, .link {
   display:-moz-inline-stack;
   display:inline-block;
   zoom:1;
@@ -193,24 +193,30 @@ a {
   vertical-align: top;
 }
 
-.photo > .ui-widget-header {
+.link {
+  min-width: 46%;
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+}
+
+.mediafile > .ui-widget-header {
   padding: 0.2em;
   margin-bottom: 0.2em;
 }
 
-.photo img {
+.mediafile img, .mediafile audio {
   display: block;
 }
 
-.photo p {
+.mediafile p {
   text-align: center;
 }
 
-.photo label {
+.mediafile label {
   margin-bottom: 0px;
 }
 
-.photo input {
+.mediafile input {
   margin-top: 0px;
 }
 
@@ -717,7 +723,7 @@ ul.ind-sub-list li span {
   vertical-align: middle;
 }
 
-ul.ind-sub-list .ind-delete-icon, ul.ind-sub-list .ind-add-icon, span.ind-cancel-icon {
+span.ind-delete-icon, span.ind-add-icon, span.ind-cancel-icon {
   background-repeat: no-repeat;
   display: inline-block;
   width: 16px;
@@ -727,11 +733,11 @@ ul.ind-sub-list .ind-delete-icon, ul.ind-sub-list .ind-add-icon, span.ind-cancel
   list-style-type: none;
 }
 
-ul.ind-sub-list .ind-delete-icon {
-  background-image: url(../images/delete.png);
+span.ind-delete-icon {
+  background-image: url(../images/nuvola/cancel-16px.png);
 }
 
-ul.ind-sub-list .ind-add-icon {
+span.ind-add-icon {
   background-image: url(../images/add.png);
 }
 
@@ -741,14 +747,25 @@ span.ind-cancel-icon {
 }
 
 .filter-row {
-  background: #ffffff;
+  background: #e7e7e7;
 }
 
 .filter-row th {
   padding: 0;
 }
 
+.report-grid .filter-row th:first-child {
+  background: url(../images/filter.png) no-repeat left;
+}
+.report-grid .filter-row th{
+  padding: 0 1px;
+}
+.report-grid .filter-row th:first-child{
+  padding-left: 16px;
+}
+
 .filter-row input {
+  border: none;
   margin: 0;
   width: 100%;
   /* Ensure padding of input does not mess up 100% width */
@@ -865,4 +882,45 @@ div.note-fail, p.note-fail {
   background: url(../images/desc.gif) no-repeat center center #eee;
   width: 16px;
   margin-left: -1px;
+}
+
+#add-link-form input.text {
+  width: 640px;
+}
+
+/* social media icons for links in reports */
+.social-icon {
+  width: 32px;
+  height: 32px;
+  padding: 8px;
+  background: url(../images/somicro/with_border/sharethis-variation.png) no-repeat center center;
+  display:-moz-inline-stack;
+  display:inline-block;
+  zoom:1;
+  *display:inline;
+}
+
+.social-icon.soundcloud {
+  background-image: url(../images/somicro/with_border/soundcloud-variation.png);
+}
+.social-icon.flickr {
+  background-image: url(../images/somicro/with_border/flickr-variation.png);
+}
+.social-icon.instagram {
+  background-image: url(../images/somicro/with_border/instagram-variation.png);
+}
+.social-icon.twitpic {
+  background-image: url(../images/somicro/with_border/twitpic-variation.png);
+}
+.social-icon.facebook {
+  background-image: url(../images/somicro/with_border/facebook-variation.png);
+}
+.social-icon.twitter {
+  background-image: url(../images/somicro/with_border/twitter-variation.png);
+}
+.social-icon.youtube {
+  background-image: url(../images/somicro/with_border/youtube-variation.png);
+}
+.social-icon.vimeo {
+  background-image: url(../images/somicro/with_border/vimeo-variation.png);
 }

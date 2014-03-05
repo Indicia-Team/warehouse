@@ -108,15 +108,18 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         array(
           'name'=>'copyFromProfile',
           'caption'=>'Copy field values from user profile',
-          'description'=>'Copy any matching fields from the user\'s profile into the fields with matching names in the sample data. This works for fields '.
-              'defined in the Drupal Profile module which must be enabled to use this feature. Applies whether fields are shown or not.',
+          'description'=>'Copy any matching fields from the user\'s profile into the fields with matching names in the sample data. '
+            . 'This works for fields defined in the Drupal Profile module (version 6) or Fields module (version 7) which must be '
+            . 'enabled to use this feature. Applies whether fields are shown or not.',
           'type'=>'boolean',
           'default' => false,
           'required' => false,
           'group' => 'User Interface',
           // Note that we can't test Drupal module availability whilst loading this form for a new iform, using Ajax. So 
           // in this case we show the control even though it is not usable (the help text explains the module requirement).          
-          'visible' => !function_exists('module_exists') || module_exists('profile')
+          'visible' => !function_exists('module_exists') ||
+                       (module_exists('profile') && substr(VERSION, 0, 1) == '6') ||
+                       (module_exists('field') && substr(VERSION, 0, 1) == '7')
         ),
         array(
           'name'=>'structure',
@@ -149,6 +152,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
                 "&nbsp;&nbsp;<strong>[spatial reference]</strong> - a sample must always have a spatial reference.<br/>".
                 "&nbsp;&nbsp;<strong>[location name]</strong> - a text box to enter a place name.<br/>".
                 "&nbsp;&nbsp;<strong>[location autocomplete]</strong> - an autocomplete control for picking a stored location. A spatial reference is still required.<br/>".
+                "&nbsp;&nbsp;<strong>[location url param]</strong> - a set of hidden inputs that insert the location ID read from a URL parameter called location_id into the form. Uses the ".
+                "location's centroid as the sample map reference.<br/>".
                 "&nbsp;&nbsp;<strong>[location select]</strong> - a select control for picking a stored location. A spatial reference is still required.<br/>".
                 "&nbsp;&nbsp;<strong>[location map]</strong> - combines location select, map and spatial reference controls for recording only at stored locations.<br/>".
                 "&nbsp;&nbsp;<strong>[photos]</strong> - use when in single record entry mode to provide a control for uploading occurrence photos. Alternatively use the ".
@@ -212,6 +217,45 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           'default'=>false,
           'required'=>false,
           'group' => 'User Interface',
+        ),
+        array(
+          'name' => 'include_species_grid_link_page',
+          'caption' => 'Include icon to link to another page from a species grid row?',
+          'description' => 'Include an icon which links to a page from each row on the species grid e.g. to display details about a taxon. Use the "Species grid page link URL" option to provide a URL.',
+          'type'=>'checkbox',
+          'default'=>false,
+          'required'=>false,
+          'group' => 'User Interface',
+        ),
+        array(
+          'name'=>'species_grid_page_link_url',
+          'caption'=>'Species grid page link URL',
+          'description'=>'URL path of the page being linked to by the "Include icon to link to another page from a species grid row" option.
+                          The URL path should not include server details or a preceeding slash 
+                          e.g. node/216. Note that the current version of the software will only supply a taxa_taxon_list_id value to this page as the parameter.',
+          'type'=>'textfield',
+          'default' => false,
+          'required' => false,
+          'group' => 'User Interface'
+        ),
+        array(
+          'name'=>'species_grid_page_link_parameter',
+          'caption'=>'Species grid page link parameter',
+          'description'=>'Parameter name used by the page being linked to by the "Species grid page link URL" option. Note in the current version of the software the value
+                          of the parameter will always be a taxa_taxon_list_id.',
+          'type'=>'textfield',
+          'default' => false,
+          'required' => false,
+          'group' => 'User Interface'
+        ),
+        array(
+          'name'=>'species_grid_page_link_tooltip',
+          'caption'=>'Species grid page link tooltip',
+          'description'=>'Mouse pointer tooltip for the "Include icon to link to another page from a species grid row" option.',
+          'type'=>'textfield',
+          'default' => false,
+          'required' => false,
+          'group' => 'User Interface'
         ),
         array(
           'name' => 'grid_report',
@@ -280,8 +324,10 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           'fieldname'=>'extra_list_id',
           'label'=>'Extra Species List',
           'helpText'=>'The second species list that species can be selected from. This list is available for additional '.
-              'taxa being added to the grid when doing grid based data entry. It is not used when the form is configured '.
-              'to allow a single occurrence to be input at a time.',
+              'taxa being added to the grid when doing grid based data entry. When using the single record input mode, if you '.
+              'provide a list here as well as in the Species List option above, then both will be available for selection from. '.
+              'You might like to use this when you need to augment the species available from a main species list with a few '.
+              'additional specialist taxa for example.',
           'type'=>'select',
           'table'=>'taxon_list',
           'valueField'=>'id',
@@ -439,9 +485,10 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           'options' => array(
             'preferred_name' => 'Preferred name of the taxa',
             'taxon_meaning_id' => 'Taxon Meaning ID',
+            'taxa_taxon_list_id' => 'Taxa Taxon List ID',
             'taxon_group' => 'Taxon group title',
-            'external_key' => 'Taxon external key'
-              
+            'external_key' => 'Taxon external key',
+            'id' => 'Taxon ID'
           ),
           'required'=>false,
           'group'=>'Species'
@@ -461,10 +508,11 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           'caption'=>'Taxon filter items',
           'description'=>'Taxa can be filtered by entering values into this box. '. 
               'Enter one value per line. E.g. enter a list of taxon group titles if you are filtering by taxon group. '.
-              'If you provide a single taxon preferred name, taxon meaning ID or external key in this box, then the form is set up for recording just this single '.
-              'species. Therefore there will be no species picker control or input grid, and the form will always operate in the single record, non-grid mode. '.
-              'You may like to include information about what is being recorded in the body text for the page or by using the '.
-              '\'Include a message stating which species you are recording in single species mode?\' checkbox to automatically add a message to the screen.'.
+              'If you provide a single taxon preferred name, taxon meaning ID or external key in this box and you set the <strong>Allow a single '.
+              'ad-hoc record or a list of records</strong> setting to "Only allow entry of one occurrence at a time" then the form is set up for '.
+              'recording just this single species. Therefore there will be no species picker control or input grid, and the form will always operate '.
+              'in the single record, non-grid mode. You may like to include information about what is being recorded in the body text for the page or by using '.
+              'the <strong>Include a message stating which species you are recording in single species mode?</strong> checkbox to automatically add a message to the screen. '.
               'You may also want to configure the User Interface section of the form\'s Form Structure to move the [species] and [species] controls '.
               'to a different tab and remove the =species= tab, especially if there are no other occurrence attributes on the form.'.
               'The \'Use URL taxon parameter\' option can be used to override the filters specified here.',
@@ -520,7 +568,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         array(
           'name'=>'includeLocTools',
           'caption'=>'Include Location Tools',
-          'description'=>'Include a tab for the allocation of locations when displaying the initial grid.',
+          'description'=>'Include a tab for the allocation of locations when displaying the initial grid. This is done using the iform_loctools module.',
           'type'=>'boolean',
           'required' => false,
           'default' => false,
@@ -532,6 +580,15 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           'description'=>'When performing allocation of locations, filter available locations by this location_type_id.',
           'type'=>'int',
           'required' => false,
+          'group' => 'Locations'
+        ),
+        array(
+          'name'=>'loctoolsPageSize',
+          'caption'=>'Location Tools Page Size',
+          'description'=>'When performing allocation of locations, this is the size of each page of locations.',
+          'type'=>'int',
+          'required' => true,
+          'default' => 20,
           'group' => 'Locations'
         ),
         array(
@@ -560,6 +617,14 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           'required'=>false,
           'default'=>'indicia data admin'
         ),
+        array(
+          'name'=>'ro_permission',
+          'caption'=>'Permission required for viewing other people\'s data',
+          'description'=>'Set to the name of a permission which is required in order to be able to view other people\'s data (not edit).',
+          'type'=>'text_input',
+          'required'=>false,
+          'default'=>'indicia data view'
+        )
       )
     );
     return $retVal;
@@ -570,13 +635,15 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    * it available to a hook function which exists outside the form.
    */
   protected static function get_form_html($args, $auth, $attributes) { 
+    // We always want an autocomplete formatter function for species lookups..
+    call_user_func(array(self::$called_class, 'build_grid_autocomplete_function'), $args);
     global $remembered;
     $remembered = isset($args['remembered']) ? $args['remembered'] : '';
     return parent::get_form_html($args, $auth, $attributes);
   }
 
   /**
-   * Determine whether to show a gird of existing records or a form for either adding a new record, editing an existing one,
+   * Determine whether to show a grid of existing records or a form for either adding a new record, editing an existing one,
    * or creating a new record from an existing one.
    * @param array $args iform parameters.
    * @param object $node node being shown.
@@ -591,10 +658,19 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       if(!array_key_exists('website_id', $_POST)) {
         // non Indicia POST, in this case must be the location allocations. add check to ensure we don't corrupt the data by accident
         if(function_exists('iform_loctools_checkaccess') && iform_loctools_checkaccess($node,'admin') && array_key_exists('mnhnld1', $_POST)){
-          iform_loctools_deletelocations($node);
+          $locs = array();
           foreach($_POST as $key => $value){
             $parts = explode(':', $key);
-            iform_loctools_insertlocation($node, $parts[2], $parts[1]);
+            if($parts[0]=='location' && !in_array($parts[1], $locs)) $locs[] = $parts[1];
+          }
+          if(count($locs)>0){
+            foreach($locs as $loc)
+              iform_loctools_deletelocation($node, $loc);
+            foreach($_POST as $key => $value){
+              $parts = explode(':', $key);
+              if($parts[0]=='location' && $value == 1)
+                iform_loctools_insertlocation($node, $parts[2], $parts[1]);
+            }
           }
         }
       } else if(!is_null(data_entry_helper::$entity_to_load)){
@@ -602,11 +678,11 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         $mode = self::MODE_EXISTING;
       } // else valid save, so go back to gridview: default mode 0
     }
-    if (array_key_exists('sample_id', $_GET) && $_GET['sample_id']!='{sample_id}'){
+    if (!empty($_GET['sample_id']) && $_GET['sample_id']!='{sample_id}'){
       $mode = self::MODE_EXISTING;
       self::$loadedSampleId = $_GET['sample_id'];
     }
-    if (array_key_exists('occurrence_id', $_GET) && $_GET['occurrence_id']!='{occurrence_id}'){
+    if (!empty($_GET['occurrence_id']) && $_GET['occurrence_id']!='{occurrence_id}'){
       $mode = self::MODE_EXISTING;
       self::$loadedOccurrenceId = $_GET['occurrence_id'];
       self::$occurrenceIds = array(self::$loadedOccurrenceId);
@@ -630,14 +706,17 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    */
   protected static function getGrid($args, $node, $auth) {
     $r = '';
-    $attributes = data_entry_helper::getAttributes(array(
+    $attributeOpts = array(
       'valuetable' => 'sample_attribute_value'
       ,'attrtable' => 'sample_attribute'
       ,'key' => 'sample_id'
       ,'fieldprefix' => 'smpAttr'
       ,'extraParams' => $auth['read']
       ,'survey_id' => $args['survey_id']
-    ), false);
+    );
+    if(isset($args['sample_method_id']))
+      $attributeOpts['sample_method_id'] = $args['sample_method_id'];
+    $attributes = data_entry_helper::getAttributes($attributeOpts, false);
 
     $tabs = array('#sampleList'=>lang::get('LANG_Main_Samples_Tab'));
 
@@ -655,7 +734,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
 
     // Only actually need to show tabs if there is more than one
     if(count($tabs) > 1){
-      $r .= "<div id=\"controls\">".(data_entry_helper::enable_tabs(array('divId'=>'controls','active'=>'#sampleList')))."<div id=\"temp\"></div>";
+      $active = isset($_GET['page']) ? '#setLocations' : '#sampleList';
+      $r .= "<div id=\"controls\">".(data_entry_helper::enable_tabs(array('divId'=>'controls','active'=>$active)))."<div id=\"temp\"></div>";
       $r .= data_entry_helper::tab_header(array('tabs'=>$tabs));
     }
 
@@ -664,39 +744,83 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
 
     // Add content to the Allocate Locations tab if this option was selected
     if($args['includeLocTools'] && function_exists('iform_loctools_checkaccess') && iform_loctools_checkaccess($node,'admin')){
-      $r .= '
-<div id="setLocations">
-  <form method="post">
-    <input type="hidden" id="mnhnld1" name="mnhnld1" value="mnhnld1" /><table border="1"><tr><td></td>';
+      $r .= '<div id="setLocations">';
       $url = data_entry_helper::$base_url.'/index.php/services/data/location?mode=json&view=detail' .
               '&auth_token=' . $auth['read']['auth_token'] .
               '&nonce=' . $auth['read']["nonce"] .
               "&parent_id=NULL&orderby=name" .
+              "&columns=id,name" .
               (isset($args['loctoolsLocTypeID'])&&$args['loctoolsLocTypeID']<>''?'&location_type_id='.$args['loctoolsLocTypeID']:'');
+      if(!isset($options['loctoolsPageSize'])) $options['loctoolsPageSize'] = 20;
+      $page = empty($_REQUEST['page']) ? 1 : $_REQUEST['page']; // starts at 1.
       $session = curl_init($url);
       curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
       $entities = json_decode(curl_exec($session), true);
+      $pages = ceil(count($entities) / $options['loctoolsPageSize']); // starts at 1
+      $count = ($page<$pages) ? $options['loctoolsPageSize'] : (count($entities)-1)%$options['loctoolsPageSize']+1; // number displayed on this page
+      // build a jumper control:
+      if($pages>1){
+        $reload = data_entry_helper::get_reload_link_parts();
+        $r .= '<form method="GET" action="'.$reload['path'].'">';
+        if(count($reload['params']))
+          foreach($reload['params'] as $param=>$value)
+            if($param != "page")
+              $r .= '<input type="hidden" name="'.$param.'" value="'.$value.'">';
+        $r .= '<label style="width:auto;" for="pageField">'.lang::get('Jump to page for location').':</label><select id="pageField" name="page"><option value="1">'.lang::get('Pick').'</option>';
+        foreach($entities as $idx=>$entity){
+          $r .= '<option value="'.(ceil(($idx+1)/$options['loctoolsPageSize'])).'">'.$entity["name"].'</option>';
+        }
+        $r .= "<input type=\"submit\" class=\"default-button\" value=\"".lang::get('Go')."\" /></form>\n";
+        $r .= '<p>'.lang::get('You must save any changes made to data on this page before viewing any other page, otherwise those changes will be lost.')."</p>\n";
+      }
+      
+      $r .= '<form method="post"><input type="hidden" id="mnhnld1" name="mnhnld1" value="mnhnld1" /><input type="hidden" name="page" value="'.$page.'" />
+  <div class="location-allocation-wrapper-outer" ><div class="location-allocation-wrapper-inner"><table border="1"></thead><tr><th class="freeze-first-col">'.lang::get('Location').'</th>';
+      // Main table body
       $userlist = iform_loctools_listusers($node);
       foreach($userlist as $uid => $a_user){
-        $r .= '<td>'.$a_user->name.'</td>';
+      	$r .= '<th>'.$a_user->name.'</th>';
       }
-      $r .= "</tr>";
+      $r .= "</tr></thead><tbody>";
       if(!empty($entities)){
-        foreach($entities as $entity){
-          if(!$entity["parent_id"]){ // only assign parent locations.
-            $r .= "<tr><td>".$entity["name"]."</td>";
-            $defaultuserids = iform_loctools_getusers($node, $entity["id"]);
-            foreach($userlist as $uid => $a_user){
-              $r .= '<td><input type="checkbox" name="location:'.$entity["id"].':'.$uid.(in_array($uid, $defaultuserids) ? '" checked="checked"' : '"').'></td>';
-            }
-            $r .= "</tr>";
+        for($i = 0; $i<$count; $i++){
+          $entity=$entities[$i+($page-1)*$options['loctoolsPageSize']];
+          // only assign parent locations.
+          $r .= '<tr><td class="freeze-first-col">'.$entity["name"].'</td>';
+          $defaultuserids = iform_loctools_getusers($node, $entity["id"]);
+          foreach($userlist as $uid => $a_user){
+            $r .= '<td><input type="hidden" name="location:'.$entity["id"].':'.$uid.'" value="0"><input type="checkbox" name="location:'.$entity["id"].':'.$uid.(in_array($uid, $defaultuserids) ? '" checked="checked"' : '"').' value="1"></td>';
           }
+          $r .= "</tr>";
         }
       }
-      $r .= "</table>
-    <input type=\"submit\" class=\"default-button\" value=\"".lang::get('LANG_Save_Location_Allocations')."\" />
-  </form>
-</div>";
+      $r .= "<tbody></table></div></div>\n";
+      
+      // build pager outside scrollable table.
+      $numEachSide = 5;
+      if($pages>1){
+      	$path = iform_mnhnl_getReloadPath();
+      	$path .= (strpos($path,'?')===false ? '?' : '&').'page=';
+      	$r .= "<div class=\"pager ui-helper-clearfix\">";
+      	if($page == 1)
+      		$r .= '<span class="ui-state-disabled pager-button">1</span>';
+      	else
+      		$r .= '<a class="pager-button" href="'.$path.'1" rel="nofollow">1</a>';
+      	if($page-$numEachSide > 2) $r .= '...';
+      	for($i = max(2,$page-$numEachSide); $i<=min($pages-1,$page+$numEachSide); $i++) {
+      		if($page == $i)
+      			$r .= ' <span class="ui-state-disabled pager-button">'.$i.'</span> ';
+      		else
+      			$r .= '<a class="pager-button" href="'.$path.$i.'" rel="nofollow">'.$i.'</a>';
+      	}
+      	if($page+$numEachSide < $pages-1) $r .= '...';
+      	if($page == $pages)
+      		$r .= '<span class="ui-state-disabled pager-button">'.$pages.'</span>';
+      	else
+      		$r .= '<a class="pager-button" href="'.$path.$pages.'" rel="nofollow">'.$pages.'</a>';
+      	$r .= "</div>";
+      }
+      $r .= '</table><input type="submit" class="default-button" value="'.lang::get('Save Location Allocations').'" /></form></div>';
     }
 
     // Add content to extra tabs that derived classes may have added
@@ -711,12 +835,12 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     return $r;
   }
 
-/**
- * Preparing to display an existing sample with occurrences.
- * When displaying a grid of occurrences, just load the sample and data_entry_helper::species_checklist 
- * will load the occurrences.
- * When displaying just one occurrence we must load the sample and the occurrence
- */
+  /**
+   * Preparing to display an existing sample with occurrences.
+   * When displaying a grid of occurrences, just load the sample and data_entry_helper::species_checklist 
+   * will load the occurrences.
+   * When displaying just one occurrence we must load the sample and the occurrence
+   */
   protected static function getEntity($args, $auth) {
     data_entry_helper::$entity_to_load = array();
 
@@ -763,10 +887,16 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     $args['sample_method_id']=data_entry_helper::$entity_to_load['sample:sample_method_id'];
     // enforce that people only access their own data, unless explicitly have permissions
     $editor = !empty($args['edit_permission']) && function_exists('user_access') && user_access($args['edit_permission']);
-    if (!$editor && function_exists('hostsite_get_user_field') &&
-        data_entry_helper::$entity_to_load['sample:created_by_id'] !== 1 &&
-        data_entry_helper::$entity_to_load['sample:created_by_id'] !== hostsite_get_user_field('indicia_user_id'))
-      throw new exception(lang::get('Attempt to access a record you did not create'));
+    if($editor) return;
+    $readOnly = !empty($args['ro_permission']) && function_exists('user_access') && user_access($args['ro_permission']);
+    if (function_exists('hostsite_get_user_field') &&
+        data_entry_helper::$entity_to_load['sample:created_by_id'] != 1 && // created_by_id can come out as string...
+        data_entry_helper::$entity_to_load['sample:created_by_id'] !== hostsite_get_user_field('indicia_user_id')) {
+      if($readOnly)
+        self::$mode = self::MODE_EXISTING_RO;
+      else
+        throw new exception(lang::get('Attempt to access a record you did not create'));
+    }
   }
 
   /**
@@ -780,7 +910,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   /**
    * Load the attributes for the sample defined by a supplied Id.
    */
-  private static function getAttributesForSample($args, $auth, $id) {
+  protected static function getAttributesForSample($args, $auth, $id) {
     $attrOpts = array(   
     'valuetable'=>'sample_attribute_value'
     ,'attrtable'=>'sample_attribute'
@@ -835,6 +965,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     }
     
     // Now load the occurrences and their attributes.
+    // @todo: Convert to occurrences media capabilities.
     $loadImages = $args['occurrence_images'];
     $subSamples = array();
     data_entry_helper::preload_species_checklist_occurrences(data_entry_helper::$entity_to_load['sample:id'], 
@@ -937,9 +1068,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       iform_map_get_map_options($args, $auth['read']),
       $options
     );
-    if (!empty(data_entry_helper::$entity_to_load['sample:wkt'])) {
+    if (!empty(data_entry_helper::$entity_to_load['sample:wkt']))
       $options['initialFeatureWkt'] = data_entry_helper::$entity_to_load['sample:wkt'];
-    }
     if ($args['interface']!=='one_page')
       $options['tabDiv'] = $tabAlias;
     $olOptions = iform_map_get_ol_options($args);
@@ -973,7 +1103,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     // store in the argument so that it can be used elsewhere
     $args['taxon_filter'] = implode("\n", $filterLines);
     //Single species mode only ever applies if we have supplied only one filter species and we aren't in taxon group mode
-    if ($args['taxon_filter_field']!=='taxon_group' && count($filterLines)===1) {
+    if ($args['taxon_filter_field']!=='taxon_group' && count($filterLines)===1 && ($args['multiple_occurrence_mode']!=='multi')) {
       $response = self::get_single_species_data($auth, $args, $filterLines);
       //Optional message to display the single species on the page
       if ($args['single_species_message'])
@@ -987,7 +1117,6 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       return '<input type="hidden" name="occurrence:taxa_taxon_list_id" value="'.$response[0]['id']."\"/>\n";
     }
     $extraParams = $auth['read'];
-    call_user_func(array(self::$called_class, 'build_grid_autocomplete_function'), $args);
     // the imp-sref & imp-geom are within the dialog so it is updated.
     $speciesCtrl = self::get_control_species_checklist($auth, $args, $extraParams, $options); // this preloads the subsample data.
     $systems = explode(',', str_replace(' ', '', $args['spatial_systems']));
@@ -1191,7 +1320,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     // store in the argument so that it can be used elsewhere
     $args['taxon_filter'] = implode("\n", $filterLines);
     //Single species mode only ever applies if we have supplied only one filter species and we aren't in taxon group mode
-    if ($args['taxon_filter_field']!=='taxon_group' && count($filterLines)===1) {
+    if ($args['taxon_filter_field']!=='taxon_group' && count($filterLines)===1 && ($args['multiple_occurrence_mode']!=='multi')) {
       $response = self::get_single_species_data($auth, $args, $filterLines);
       //Optional message to display the single species on the page
       if ($args['single_species_message']) 
@@ -1204,7 +1333,6 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         return '<input type="hidden" name="occurrence:taxa_taxon_list_id" value="'.$response[0]['id']."\"/>\n";
     }
     $extraParams = $auth['read'];
-    call_user_func(array(self::$called_class, 'build_grid_autocomplete_function'), $args);
     if ($gridmode)
       return self::get_control_species_checklist($auth, $args, $extraParams, $options);
     else
@@ -1270,7 +1398,11 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         'subSpeciesColumn' => $args['sub_species_column'],
         'copyDataFromPreviousRow' => !empty($args['copy_species_row_data_to_new_rows']) && $args['copy_species_row_data_to_new_rows'],
         'previousRowColumnsToInclude' => empty($args['previous_row_columns_to_include']) ? '' : $args['previous_row_columns_to_include'],
-        'editTaxaNames' => !empty($args['edit_taxa_names']) && $args['edit_taxa_names']
+        'editTaxaNames' => !empty($args['edit_taxa_names']) && $args['edit_taxa_names'],
+        'includeSpeciesGridLinkPage' => !empty($args['include_species_grid_link_page']) && $args['include_species_grid_link_page'],
+        'speciesGridPageLinkUrl' => $args['species_grid_page_link_url'],
+        'speciesGridPageLinkParameter' => $args['species_grid_page_link_parameter'],
+        'speciesGridPageLinkTooltip' => $args['species_grid_page_link_tooltip'],
     ), $options);
     if ($groups=hostsite_get_user_field('taxon_groups')) {
       $species_ctrl_opts['usersPreferredGroups'] = unserialize($groups);
@@ -1303,12 +1435,12 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    */
   protected static function get_control_species_single($auth, $args, $extraParams, $options) {
     $r = '';
-    if ($args['extra_list_id']=='')
+    if ($args['extra_list_id']==='' && $args['list_id']!=='')
       $extraParams['taxon_list_id'] = $args['list_id'];
-    // @todo At the moment the controls do not support 2 lists. So use just the extra list. Should
-    // update to support 2 lists. This is an edge case anyway.
-    else
-      $extraParams['taxon_list_id'] = empty($args['extra_list_id']) ? $args['list_id'] : $args['extra_list_id'];
+    elseif ($args['extra_list_id']!=='' && $args['list_id']==='')
+      $extraParams['taxon_list_id'] = $args['extra_list_id'];
+    elseif ($args['extra_list_id']!=='' && $args['list_id']!=='')
+      $extraParams['query'] = json_encode(array('in'=>array('taxon_list_id'=>array($args['list_id'],$args['extra_list_id']))));
     if (isset($options['taxonGroupSelect']) && $options['taxonGroupSelect']) {
       $label = isset($options['taxonGroupSelectLabel']) ? $options['taxonGroupSelectLabel'] : 'Species Group';
       $helpText = isset($options['taxonGroupSelectHelpText']) ? $options['taxonGroupSelectHelpText'] : 'Choose which species group you want to pick a species from.';
@@ -1343,12 +1475,15 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     $species_ctrl_opts=array_merge(array(
         'fieldname'=>'occurrence:taxa_taxon_list_id',
         'label'=>lang::get('occurrence:taxa_taxon_list_id'),
-        'extraParams'=>$extraParams,
         'columns'=>2, // applies to radio buttons
         'parentField'=>'parent_id', // applies to tree browsers
         'blankText'=>lang::get('Please select'), // applies to selects
         'cacheLookup'=>$args['cache_lookup']
     ), $options);
+    if (isset($species_ctrl_opts['extraParams']))
+      $species_ctrl_opts['extraParams']=array_merge($extraParams, $species_ctrl_opts['extraParams']);
+    else
+      $species_ctrl_opts['extraParams']=$extraParams;
     if (!empty($args['taxon_filter'])) {
       $species_ctrl_opts['taxonFilterField']=$args['taxon_filter_field']; // applies to autocompletes
       $species_ctrl_opts['taxonFilter']=helper_base::explode_lines($args['taxon_filter']); // applies to autocompletes
@@ -1364,7 +1499,6 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       // For other controls we need to apply the species name filter to the params used for population
       if (!empty($species_ctrl_opts['taxonFilter']) || $options['speciesNameFilterMode'])
         $species_ctrl_opts['extraParams'] = array_merge($species_ctrl_opts['extraParams'], data_entry_helper::get_species_names_filter($species_ctrl_opts));
-    
       // for controls which don't know how to do the lookup, we need to tell them
       $species_ctrl_opts = array_merge(array(
         'table' => $tblTaxon,
@@ -1469,7 +1603,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         '<span class="nobreak vernacular">{common}</span></div>') {
       // always include the searched name
       $php = '$r="";'."\n".
-          'if ("{language}"=="lat") {'."\n".
+          'if ("{language}"=="lat" || "{language_iso}"=="lat") {'."\n".
           '  $r = "<em>{taxon}</em>";'."\n".
           '} else {'."\n".
           '  $r = "{taxon}";'."\n".
@@ -1505,9 +1639,15 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    * Get the sample photo control
    */
   protected static function get_control_samplephoto($auth, $args, $tabAlias, $options) {
+    if (!empty($options['label']))
+      $label = $options['label'];
+    else 
+      $label = 'Overall Photo';
     return data_entry_helper::file_box(array_merge(array(
       'table'=>'sample_image',
-      'caption'=>lang::get('Overall Photo')
+      'readAuth' => $auth['read'],
+      'caption'=>lang::get($label),
+      'readAuth'=>$auth['read']
     ), $options));
   }
 
@@ -1534,7 +1674,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           'label'=>lang::get('Record Comment')
         ));
       if ($args['occurrence_images']){
-        $r .= self::occurrence_photo_input($options, $tabAlias, $args);
+        $r .= self::occurrence_photo_input($auth['read'], $options, $tabAlias, $args);
       }
       return $r;
     } else
@@ -1569,6 +1709,11 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    * a multi-value person attribute used to link people to the sites they record at.
    */
   protected static function get_control_locationautocomplete($auth, $args, $tabAlias, $options) {
+    if (isset($options['extraParams'])) {
+      foreach ($options['extraParams'] as $key => &$value)
+        $value = apply_user_replacements($value);
+    }
+
     $location_list_args=array_merge_recursive(array(
       'extraParams'=>array_merge(array('orderby'=>'name'), $auth['read'])
     ), $options);
@@ -1580,27 +1725,69 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         if (!empty($options['personSiteAttrId'])) {
           $location_list_args['extraParams']['user_id']=$userId;
           $location_list_args['extraParams']['person_site_attr_id']=$options['personSiteAttrId'];
-          $location_list_args['report'] = 'library/locations/my_sites_lookup';
+          if(!isset($options['report'])) $location_list_args['report'] = 'library/locations/my_sites_lookup';
         } else 
           $location_list_args['extraParams']['created_by_id']=$userId;
       }
       $location_list_args['extraParams']['view']='detail';
       $location_list_args['allowCreate']=true;
     }
+    if (empty($location_list_args['numValues']))
+      // set a relatively high number until we sort out the "more" handling like species autocomplete.
+      $location_list_args['numValues'] = 200;
     return data_entry_helper::location_autocomplete($location_list_args);
+  }
+  
+  /**
+   * Implements the [location url param] control, for accepting the site to record against using a location_id URL parameter.
+   *
+   * Outputs hidden inputs into the form to specify the location_id for the sample. Uses the location's centroid and spatial ref system to 
+   * fill in the sample's geometry data. If loading an existing sample, then the location_id in the URL is ignored.
+   */
+  protected static function get_control_locationurlparam($auth, $args, $tabAlias, $options) {
+    $location_id=isset(data_entry_helper::$entity_to_load['sample:location_id']) ? data_entry_helper::$entity_to_load['sample:location_id'] : 
+        (empty($_GET['location_id']) ? '' : $_GET['location_id']);
+    if (empty($location_id))
+      return 'This form requires a URL parameter called location_id to specify which site to record against.';
+    if (!preg_match('/^[0-9]+$/', $location_id))
+      return 'The location_id parameter must be an integer.';
+    if (isset(data_entry_helper::$entity_to_load['sample:location_id'])) {
+      // no need for values as the entity to load will override any defaults.
+      $location=array('id'=>'', 'centroid_sref'=>'', 'centroid_sref_system'=>'');
+    } else {
+      $response = data_entry_helper::get_population_data(array(
+        'table'=>'location',
+        'extraParams'=>$auth['read'] + array('id'=>$_GET['location_id'], 'view'=>'detail')
+      ));
+      $location=$response[0];
+    }
+    $r = data_entry_helper::hidden_text(array('fieldname'=>'sample:location_id', 'default'=>$location['id']));
+    $r .= data_entry_helper::hidden_text(array('fieldname'=>'sample:entered_sref', 'default'=>$location['centroid_sref']));
+    $r .= data_entry_helper::hidden_text(array('fieldname'=>'sample:entered_sref_system', 'default'=>$location['centroid_sref_system']));
+    return $r;
   }
 
   /**
    * Get the location control as a select dropdown.
+   * Default control ordering is by name.
+   * reportProvidesOrderBy option should be set to true if the control is populated by a report that
+   * provides its own Order By statement, if the reportProvidesOrderBy option is not set in this situation, then the report
+   * will have two Order By statements and will fail. 
    */
   protected static function get_control_locationselect($auth, $args, $tabAlias, $options) {
-    $location_list_args=array_merge_recursive(array(
-        'extraParams'=>array_merge(array('orderby'=>'name'), $auth['read'])
-    ), $options);
+    if (isset($options['extraParams'])) {
+      foreach ($options['extraParams'] as $key => &$value)
+        $value = apply_user_replacements($value);
+      $options['extraParams'] = array_merge($auth['read'], $options['extraParams']);
+    } else 
+      $options['extraParams'] = array_merge($auth['read']);
+    if (empty($options['reportProvidesOrderBy'])||$options['reportProvidesOrderBy']==0) {
+      $options['extraParams']['orderby'] = 'name';
+    }
     $location_list_args = array_merge(array(
         'label'=>lang::get('LANG_Location_Label'),
         'view'=>'detail'
-    ), $location_list_args);
+    ), $options);
     return data_entry_helper::location_select($location_list_args);
   }
 
@@ -1614,6 +1801,10 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         'validation' => "required",
         'blankText' => "Select...",
     ), $options);
+    // Choose autocomplete control if specified in $options
+if($options["locationControl"]="autocomplete")
+    $r = self::get_control_locationautocomplete($auth, $args, $tabAlias, $options);
+else
     $r = self::get_control_locationselect($auth, $args, $tabAlias, $options);
 
     //only show helpText once
@@ -1668,7 +1859,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    */
   protected static function get_control_photos($auth, $args, $tabAlias, $options) {
     if ($args['multiple_occurrence_mode']==='single') {
-      return self::occurrence_photo_input($options, $tabAlias, $args);
+      return self::occurrence_photo_input($auth['read'], $options, $tabAlias, $args);
     }
     else 
       return "[photos] control cannot be included in form when in grid entry mode, since photos are automatically included in the grid.";
@@ -1676,8 +1867,25 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
 
   /**
    * Get the recorder names control
+   * @param array $auth Read authorisation tokens
+   * @param array $args Form configuration
+   * @param array $tabAlias
+   * @param array $options additional options for the control with the following possibilities
+   * <li><b>defaultToCurrentUser</b><br/>
+   * Set to true if the currently logged in user's name should be the default</li>
+   * @return string HTML for the control.
    */
   protected static function get_control_recordernames($auth, $args, $tabAlias, $options) {
+    iform_load_helpers(array('data_entry_helper'));
+    //We don't need to touch the control in edit mode. Make the current user's name the default in add mode if the user has selected that option.
+    if (empty($_GET['sample_id']) && !empty($options['defaultToCurrentUser'])&& $options['defaultToCurrentUser']==true) {
+      $defaultUserData = data_entry_helper::get_report_data(array(
+        'dataSource'=>'library/users/get_people_details_for_website_or_user',
+        'readAuth'=>$auth['read'],
+        'extraParams'=>array('user_id' => hostsite_get_user_field('indicia_user_id'), 'website_id' => $args['website_id'])
+      ));
+      data_entry_helper::$javascript .= "$('#sample\\\\:recorder_names').val('".$defaultUserData[0]['fullname_firstname_first']."');";
+    }
     return data_entry_helper::textarea(array_merge(array(
       'fieldname'=>'sample:recorder_names',
       'label'=>lang::get('Recorder names')
@@ -1710,6 +1918,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    */
   protected static function get_control_sensitivity($auth, $args, $tabAlias, $options) {
     if ($args['multiple_occurrence_mode']==='single') {
+      self::load_custom_occattrs($auth['read'], $args['survey_id']);
       $ctrlOptions = array('extraParams'=>$auth['read']);
       $attrSpecificOptions = array();
       self::parseForAttrSpecificOptions($options, $ctrlOptions, $attrSpecificOptions);
@@ -1732,8 +1941,6 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         'fieldname' => 'occurrence:zero_abundance',
         'helpText' => 'Tick this box if this is a record that the species was not found.'
       ), $options);
-      $options['helpText'] = lang::get($options['helpText']);
-      $options['helpText'] = lang::get($options['helpText']);
       return data_entry_helper::checkbox($options);
     }
     else 
@@ -1799,7 +2006,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     // User must be logged in before we can access their records.
     if ($user->uid===0) {
       // Return a login link that takes you back to this form when done.
-      return lang::get('Before using this facility, please <a href="'.url('user/login', array('query'=>'destination=node/'.($node->nid))).'">login</a> to the website.');
+      return lang::get('Before using this facility, please <a href="'.url('user/login', array('query'=>array('destination'=>'node/'.($node->nid)))).'">login</a> to the website.');
     }
     $filter = array();
     // Get the CMS User ID attribute so we can filter the grid to this user
@@ -1923,18 +2130,20 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   /**
    * Provides a control for inputting photos against the record, when in single record mode.
    *
-   * @param $options Options array for the control.
-   * @param $tabAlias ID of the tab's div if this is being loaded onto a div.
+   * @param array $readAuth Read authorisation tokens
+   * @param array $options Options array for the control.
+   * @param string $tabAlias ID of the tab's div if this is being loaded onto a div.
    */
-  protected static function occurrence_photo_input($options, $tabAlias, $args) {
-    $defaults = array(
+  protected static function occurrence_photo_input($readAuth, $options, $tabAlias, $args) {
+    $opts = array(
       'table'=>'occurrence_image',
+      'readAuth' => $readAuth,
       'label'=>lang::get('Upload your photos'),
       'caption'=>lang::get('Photos'),
       'resizeWidth' => 1600,
       'resizeHeight' => 1600,
+      'readAuth' => $readAuth
     );
-    $opts = array();
     if ($args['interface']!=='one_page')
       $opts['tabDiv']=$tabAlias;
     foreach ($options as $key => $value) {
@@ -1969,6 +2178,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    */
   protected static function getSubmitButtons($args) {
     $r = '';
+    if(self::$mode === self::MODE_EXISTING_RO) return $r; // don't allow users to submit if in read only mode.
     if (!empty(self::$loadedSampleId) && $args['multiple_occurrence_mode']==='single') {
       $r .= '<input type="submit" class="indicia-button" id="delete-button" name="delete-button" value="'.lang::get('Delete')."\" />\n";
       data_entry_helper::$javascript .= "$('#delete-button').click(function(e) {

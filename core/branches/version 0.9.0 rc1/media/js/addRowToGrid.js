@@ -33,6 +33,11 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
 (function ($) {
   "use strict";
   
+  $(document).ready(function() {
+    // prevent validation of the clonable row
+    $('.scClonableRow :input').addClass('inactive');
+  });
+  
   hook_species_checklist_new_row = [];
   
   var resetSpeciesText;
@@ -161,14 +166,24 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
       $(event.target).unbind('result', handleSelectedTaxon);
       $(event.target).unbind('return', returnPressedInAutocomplete);
       taxonCell=event.target.parentNode; 
-      //Create and edit icons for taxon cells. Only add the edit icon if the user has this functionality available on edit tab.
+      //Create edit icons for taxon cells. Only add the edit icon if the user has this functionality available on the edit tab.
+      //Also create Notes and Delete icons when required
+      var linkPageIconSource = indiciaData.imagesPath + "nuvola/find-22px.png";
       if (indiciaData['editTaxaNames-'+gridId]==true) {
         deleteAndEditHtml = "<td class='row-buttons'>\n\
-            <img class='action-button remove-row' src=" + indiciaData.imagesPath + "nuvola/cancel-16px.png>\n\
-            <img class='action-button edit-taxon-name' src=" + indiciaData.imagesPath + "nuvola/package_editors-16px.png></td>";
-      } else {
+            <img class='action-button remove-row' src=" + indiciaData.imagesPath + "nuvola/cancel-16px.png>\n" 
+        deleteAndEditHtml += "<img class='action-button edit-taxon-name' src=" + indiciaData.imagesPath + "nuvola/package_editors-16px.png>\n";
+        if (indiciaData['includeSpeciesGridLinkPage-'+gridId]==true) {
+          deleteAndEditHtml += '<img class="species-grid-link-page-icon" title="'+indiciaData.speciesGridPageLinkTooltip+'" alt="Notes icon" src=' + linkPageIconSource + '>';
+        }
+        deleteAndEditHtml += "</td>";
+      } else {   
         deleteAndEditHtml = "<td class='row-buttons'>\n\
-            <img class='action-button action-button remove-row' src=" + indiciaData.imagesPath + "nuvola/cancel-16px.png></td>";
+            <img class='action-button action-button remove-row' src=" + indiciaData.imagesPath + "nuvola/cancel-16px.png>\n";
+        if (indiciaData['includeSpeciesGridLinkPage-'+gridId]==true) {
+          deleteAndEditHtml += '<img class="species-grid-link-page-icon" title="'+indiciaData.speciesGridPageLinkTooltip+'" alt="Notes icon" src=' + linkPageIconSource + '>';
+        }
+        deleteAndEditHtml += "</td>";
       }
       //Put the edit and delete icons just before the taxon name
       $(taxonCell).before(deleteAndEditHtml);
@@ -196,7 +211,7 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
       }
       $(row).find('.id-diff').hover(indiciaFns.hoverIdDiffIcon);
       $(row).find('.species-checklist-select-species').hide();
-      $(row).find('.add-image-link').show();
+      $(row).find('.add-media-link').show();
       // auto-check the row
       checkbox=$(row).find('.scPresenceCell input.scPresence');
       checkbox.attr('checked', 'checked');
@@ -234,9 +249,14 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
         $('#'+selectorId).remove();
         // replace with the previous plain text species name
         $(taxonCell).html(taxonNameBeforeUserEdit); 
-        var deleteAndEditHtml = "<td style='width: 5%'>\n\
+        var deleteAndEditHtml = "<td class='row-buttons'>\n\
             <img class='action-button remove-row' src=" + indiciaData.imagesPath + "nuvola/cancel-16px.png>\n\
-            <img class='edit-taxon-name' src=" + indiciaData.imagesPath + "nuvola/package_editors-16px.png></td>";
+            <img class='edit-taxon-name' src=" + indiciaData.imagesPath + "nuvola/package_editors-16px.png>\n";
+        if (indiciaData['includeSpeciesGridLinkPage-'+gridId]==true) {
+          var linkPageIconSource = indiciaData.imagesPath + "nuvola/find-22px.png";
+          deleteAndEditHtml += '<img class="species-grid-link-page-icon" title="'+indiciaData.speciesGridPageLinkTooltip+'" alt="Notes icon" src=' + linkPageIconSource + '>\n';
+        }       
+        deleteAndEditHtml += "</td\n";
         $(taxonCell).attr('colSpan',1);
         //Put the edit and delete icons just before the taxon name
         $(taxonCell).before(deleteAndEditHtml);
@@ -281,10 +301,16 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
         }
       });
     });
-    $(newRow).find('[name$=\\:sampleIDX]').each(function(idx, field) {
-      $(field).val(typeof indiciaData.control_speciesmap_existing_feature==="undefined" || indiciaData.control_speciesmap_existing_feature===null ?
-          indiciaData['gridSampleCounter-'+gridId] :
-          indiciaData.control_speciesmap_existing_feature.attributes.subSampleIndex);
+    $(newRow).find("[name$='\:sampleIDX']").each(function(idx, field) {
+      if (indiciaData['subSamplePerRow-'+gridId]) {
+        //Allows a sample to be generated for each occurrence in the grid if required.
+        var rowNumber=$(field).attr('name').replace('sc:'+gridId+'-','');
+        rowNumber = rowNumber.substring(0,1);
+        $(field).val(rowNumber);
+      } else {
+        $(field).val(typeof indiciaData.control_speciesmap_existing_feature==="undefined" || indiciaData.control_speciesmap_existing_feature===null ?
+            indiciaData['gridSampleCounter-'+gridId] : indiciaData.control_speciesmap_existing_feature.attributes.subSampleIndex);
+      }
     });
     // add the row to the bottom of the grid
     newRow.appendTo('table#' + gridId +' > tbody').removeAttr('id');
@@ -328,7 +354,7 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
     makeSpareRow(gridId, readAuth, lookupListId, url, null, false);
     //Deal with user clicking on edit taxon icon
     $('.edit-taxon-name').live('click', function(e) {
-      if ($('.ac_results:visible').length>0) {
+      if ($('.ac_results:visible').length>0 || !$(e.target).is(':visible')) {
         // don't go into edit mode if they are picking a species name already
         return;
       }
@@ -343,7 +369,7 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
       $(e.target).parent().remove();
       taxonNameBeforeUserEdit = $(taxonCell).html();
       // first span should contain the name as it was entered
-      taxonTextBeforeUserEdit = $($(taxonCell).children()[0]).text();
+      taxonTextBeforeUserEdit = $(taxonCell).text().split(' - ')[0];
       //add the autocomplete cell
       $(taxonCell).append(speciesAutocomplete);
       //Adjust the size of the taxon cell to take up its full allocation of space
@@ -360,7 +386,7 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
         nonce: readAuth.nonce,
         taxon_list_id: lookupListId
       };
-      var autocompleteSettings = getAutocompleteSettings(extraParams);
+      var autocompleteSettings = getAutocompleteSettings(extraParams, gridId);
       var ctrl = $(taxonCell).children(':input').autocomplete(url+'/'+(cacheLookup ? 'cache_taxon_searchterm' : 'taxa_taxon_list'), autocompleteSettings);
       //put the taxon name into the autocomplete ready for editing
       $('#'+selectorId).val(taxonTextBeforeUserEdit);
@@ -410,15 +436,30 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
       hook_species_checklist_delete_row();
     }
   });
+  //Open the specified page when the user clicks on the page link icon on a species grid row, use a dirty URL as this will work whether clean urls is on or not
+  $('.species-grid-link-page-icon').live('click', function(e) {
+    var row = $($(e.target).parents('tr:first'));
+    var taxa_taxon_list_id_to_use;
+    //We cannot get the taxa_taxon_list_id by simply just getting the presence cell value, as sometimes there is more than one
+    //presence cell. This is because there is an extra presence cell that is used to supply a 0 in the $_GET to the submission
+    //as a checkbox input type doesn't appear in the $_GET with a 0 value.
+    //So we need to actually use the presence cell with a non-zero value.
+    row.find('.scPresence').each( function() {
+      if ($(this).val()!=0) {
+        taxa_taxon_list_id_to_use=$(this).val();
+      }
+    });
+    window.open(indiciaData.rootFolder + '?q=' + indiciaData.speciesGridPageLinkUrl + '&' + indiciaData.speciesGridPageLinkParameter + '=' +  taxa_taxon_list_id_to_use)
+  });
 
   /**
    * Click handler for the add image link that is displayed alongside each occurrence row in the grid once
    * it has been linked to a taxon. Adds a row to the grid specifically to contain a file uploader for images
    * linked to that occurrence.
    */
-  $('.add-image-link').live('click', function(evt) {
+  $('.add-media-link').live('click', function(evt) {
     evt.preventDefault();
-    var table = evt.target.id.replace('add-images','sc') + ':occurrence_image';
+    var table = evt.target.id.replace('add-media','sc') + ':occurrence_medium';
     var ctrlId='container-'+table+'-'+Math.floor((Math.random())*0x10000);
     var colspan = $($(evt.target).parent().parent()).children().length;
     var imageRow = '<tr class="image-row"><td colspan="' + colspan + '">';
@@ -426,39 +467,36 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
     imageRow += '</td></tr>';
     imageRow = $(imageRow);
     $($(evt.target).parent().parent()).after(imageRow);
-    var opts={
-      caption : 'Files',
-      autoupload : '1',
-      flickr : '',
-      uploadSelectBtnCaption : 'Add more file(s)',
-      startUploadBtnCaption : 'Start upload',
-      msgUploadError : 'An error occurred uploading the file.',
-      msgFileTooBig : 'The image file cannot be uploaded because it is larger than the maximum file size allowed.',
-      runtimes : 'html5,silverlight,flash,gears,browserplus,html4',
-      imagewidth : '250',
-      uploadScript : indiciaData.uploadSettings.uploadScript,
-      destinationFolder : indiciaData.uploadSettings.destinationFolder,
-      swfAndXapFolder : indiciaData.uploadSettings.swfAndXapFolder,
-      jsPath : indiciaData.uploadSettings.jsPath,
-      table : table,
-      maxUploadSize : '4000000', // 4mb
-      container: ctrlId,
-      autopick: true
-    };
-    if (typeof indiciaData.uploadSettings.resizeWidth!=="undefined") { opts.resizeWidth=indiciaData.uploadSettings.resizeWidth; }
-    if (typeof indiciaData.uploadSettings.resizeHeight!=="undefined") { opts.resizeHeight=indiciaData.uploadSettings.resizeHeight; }
-    if (typeof indiciaData.uploadSettings.resizeQuality!=="undefined") { opts.resizeQuality=indiciaData.uploadSettings.resizeQuality; }
-    if (typeof buttonTemplate!=="undefined") { opts.buttonTemplate=buttonTemplate; }
-    if (typeof file_boxTemplate!=="undefined") { opts.file_boxTemplate=file_boxTemplate; }
-    if (typeof file_box_initial_file_infoTemplate!=="undefined") { opts.file_box_initial_file_infoTemplate=file_box_initial_file_infoTemplate; }
-    if (typeof file_box_uploaded_imageTemplate!=="undefined") { opts.file_box_uploaded_imageTemplate=file_box_uploaded_imageTemplate; }
+        var opts={
+          caption : 'Files',
+          autoupload : '1',
+          msgUploadError : 'An error occurred uploading the file.',
+          msgFileTooBig : 'The image file cannot be uploaded because it is larger than the maximum file size allowed.',
+          runtimes : 'html5,flash,silverlight,html4',
+          imagewidth : '250',
+          uploadScript : indiciaData.uploadSettings.uploadScript,
+          destinationFolder : indiciaData.uploadSettings.destinationFolder,
+          jsPath : indiciaData.uploadSettings.jsPath,
+          table : table,
+          maxUploadSize : '4000000', // 4mb
+          container: ctrlId,
+          autopick: true,
+          mediaTypes: indiciaData.uploadSettings.mediaTypes
+        };
+        if (typeof indiciaData.uploadSettings.resizeWidth!=="undefined") { opts.resizeWidth=indiciaData.uploadSettings.resizeWidth; }
+        if (typeof indiciaData.uploadSettings.resizeHeight!=="undefined") { opts.resizeHeight=indiciaData.uploadSettings.resizeHeight; }
+        if (typeof indiciaData.uploadSettings.resizeQuality!=="undefined") { opts.resizeQuality=indiciaData.uploadSettings.resizeQuality; }
+        if (typeof buttonTemplate!=="undefined") { opts.buttonTemplate=buttonTemplate; }
+        if (typeof file_boxTemplate!=="undefined") { opts.file_boxTemplate=file_boxTemplate; }
+        if (typeof file_box_initial_file_infoTemplate!=="undefined") { opts.file_box_initial_file_infoTemplate=file_box_initial_file_infoTemplate; }
+        if (typeof file_box_uploaded_imageTemplate!=="undefined") { opts.file_box_uploaded_imageTemplate=file_box_uploaded_imageTemplate; }
     imageRow.find('div').uploader(opts);
     $(evt.target).hide();
   });
-
+  
   $('.hide-image-link').live('click', function(evt) {
     evt.preventDefault();
-    var ctrlId=(evt.target.id.replace(/^hide\-images/, 'container-sc') + ':occurrence_image').replace(/:/g, '\\:');
+    var ctrlId=(evt.target.id.replace(/^hide\-images/, 'container-sc') + ':occurrence_medium').replace(/:/g, '\\:');
     if ($(evt.target).hasClass('images-hidden')) {
       $('#'+ctrlId).show();
       $(evt.target).removeClass('images-hidden');

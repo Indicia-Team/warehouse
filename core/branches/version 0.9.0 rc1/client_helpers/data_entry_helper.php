@@ -93,7 +93,13 @@ class data_entry_helper extends helper_base {
    * are populated by implementing a hook function called indicia_define_remembered_fields which calls set_remembered_fields.
    */
   private static $remembered_fields=null;
-
+  /**
+   *
+   * @var array List of attribute ids that should be ignored when automatically drawing attributes to the page because they 
+   * are already output, e.g. if they are output by a radio group which shows a textbox when "other" is selected..
+   */
+  public static $handled_attributes=array();
+  
 /**********************************/
 /* Start of main controls section */
 /**********************************/
@@ -168,6 +174,10 @@ class data_entry_helper extends helper_base {
   * <li><b>warnIfNoMatch</b>
   * Should the autocomplete control warn the user if they leave the control whilst searching
   * and then nothing is matched? Default true.</li>
+  * <li><b>continueOnBlur</b>
+  * Should the autocomplete control continue trying to load values when the user blurs out of the control? If true
+  * then tabbing out of the control will select the first match. Set to false if you intend to allow the user to enter free text which 
+  * is not matched to a term in the database. Default true.</li>  
   * <li><b>selectMode</b>
   * Should the autocomplete simulate a select drop down control by adding a drop down arrow after the input box which, when clicked,
   * populates the drop down list with all search results to a maximum of numValues. This is similar to typing * into the box. Default false.</li>
@@ -208,13 +218,16 @@ class data_entry_helper extends helper_base {
       'formatFunction' => 'function(item) { return item.{captionField}; }',
       'simplify' => (isset($options['simplify']) && $options['simplify']) ? 'true' : 'false',
       'warnIfNoMatch' => true,
-      'selectMode' => false
+      'continueOnBlur' => true,
+      'selectMode' => false,
+      'default' => ''
     ), $options);
     if (isset($options['report'])) {
       $options['extraParams']['report'] = $options['report'].'.xml';
       $options['extraParams']['reportSource'] = 'local';
     }
     $options['warnIfNoMatch'] = $options['warnIfNoMatch'] ? 'true' : 'false';
+    $options['continueOnBlur'] = $options['continueOnBlur'] ? 'true' : 'false';
     $options['selectMode'] = $options['selectMode'] ? 'true' : 'false';
     self::add_resource('autocomplete');
     // Escape the id for jQuery selectors
@@ -239,13 +252,142 @@ class data_entry_helper extends helper_base {
       $options['duplicateCheck']='true';
       $options['storeDuplicates']='';
     }
-    $replaceTags=array();
-    foreach(array_keys($options) as $option) {
-      array_push($replaceTags, '{'.$option.'}');
-    }
-    self::$javascript .= str_replace($replaceTags, $options, $indicia_templates['autocomplete_javascript']);
+    self::$javascript .= self::apply_replacements_to_template($indicia_templates['autocomplete_javascript'], $options);
     $r = self::apply_template($options['template'], $options);
     return $r;
+  }
+  
+  /**
+   * A control that can be used to output a multi-value text attribute where the text value holds a json record 
+   * structure. The control is a simple grid with each row representing a single attribute value and each column representing
+   * a field in the JSON stored in the value.
+   * 
+   * @param array $options Options array with the following possibilities:
+   * * **fieldname** - The fieldname of the attribute, e.g. smpAttr:10.
+   * **defaultRows** - Number of rows to show in the grid by default. An Add Another button is available to add more. 
+   *   Defaults to 3.
+   * * **columns** - An array defining the columns available in the grid which map to fields in the JSON stored for each value.
+   *   The array key is the column name and the value is a sub-array with a column definition. The column definition can contain
+   *   the following:
+   *   * label - The column label. Will be automatically translated.
+   *   * datatype - The column's data type. Currently only text and lookup is supported.
+   *   * termlist_id - If datatype=lookup, then provide the termlist_id of the list to load terms for as options in the control.
+   *   * unit - An optional unit label to display after the control (e.g. 'cm', 'kg').
+   *   * regex - A regular expression which validates the controls input value.
+   * * **default** - An array of default values, as obtained by a call to getAttributes.
+   * * **rowCountControl** - Pass the ID of an input control that will contain an integer value to define the number of rows in the
+   *   grid. If not set, then a button is shown allowing additional rows to be added.
+   */
+  public static function complex_attr_grid($options) {
+    self::add_resource('complexAttrGrid');
+    $options = array_merge(array(
+      'defaultRows'=>3,
+      'columns'=>array('x'=>array('label'=>'x','datatype'=>'text','unit'=>'cm','regex'=>'/^[0-9]+$/'),
+          'y'=>array('label'=>'y','datatype'=>'lookup','termlist_id'=>'5')),
+      'default'=>array(),
+      'rowCountControl'=>''
+    ), $options);
+    list($attrTypeTag, $attrId) = explode(':', $options['fieldname']);
+    if (preg_match('/\[\]$/', $attrId))
+      $attrId=str_replace('[]', '', $attrId);
+    else
+      return 'The complex attribute grid control must be used with a mult-value attribute.';
+    $r = "<table class=\"complex-attr-grid\" id=\"complex-attr-grid-$attrTypeTag-$attrId\">";
+    $r .= '<thead><tr>';
+    $lookupData = array();
+    $thRow2 = '';
+    foreach ($options['columns'] as $name => &$def) {
+      // whilst we are iterating the columns, may as well do some setup.
+      // apply i18n to unit now, as it will be used in JS later
+      if ($def['unit'])
+        $def['unit'] = lang::get($def['unit']);
+      if ($def['datatype']==='lookup' && !empty($def['termlist_id'])) {
+        $termlistData = self::get_population_data(array(
+          'table'=>'termlists_term',
+          'extraParams'=>$options['extraParams'] + array('termlist_id'=>$def['termlist_id'], 'view'=>'cache')
+        ));
+        $minified = array();
+        foreach ($termlistData as $term) {
+          $minified[] = array($term['id'], $term['term']);
+          if (isset($def['control']) && $def['control']==='checkbox_group')
+            $thRow2 .= "<th>$term[term]</th>";
+        }
+        $lookupData['tl'.$def['termlist_id']] = $minified;
+        self::$javascript .= "indiciaData.tl$def[termlist_id]=".json_encode($minified).";\n";
+      }
+      // checkbox groups output a second row of cells for each checkbox label
+      $rowspan = isset($def['control']) && $def['control']==='checkbox_group' ? 1 : 2;
+      $colspan = isset($def['control']) && $def['control']==='checkbox_group' ? count($termlistData) : 1;
+      $r .= "<th rowspan=\"$rowspan\" colspan=\"$colspan\">".lang::get($def['label']).'</th>';
+    }
+    self::$javascript .= "indiciaData.langPleaseSelect='".lang::get('Please select')."'\n";
+    self::$javascript .= "indiciaData.langCantRemoveEnoughRows='".lang::get('Please clear the values in some more rows before trying to reduce the number of rows further.')."'\n";
+    // need to unset the variable used in &$def, otherwise it doesn't work in the next iterator.
+    unset($def);
+    $jsData = array('cols'=>$options['columns'],'rowCount'=>$options['defaultRows'],
+        'rowCountControl'=>$options['rowCountControl']);
+    self::$javascript .= "indiciaData['complexAttrGrid-$attrTypeTag-$attrId']=".json_encode($jsData).";\n"; 
+    $r .= "<th rowspan=\"2\"></th></tr><tr>$thRow2</tr></thead>";
+    $r .= '<tbody>';
+    $rowCount = $options['defaultRows'] > count($options['default']) ? $options['defaultRows'] : count($options['default']);
+    $extraCols=0;
+    for ($i = 0; $i<=$rowCount-1; $i++) {
+      $r .= '<tr>';
+      $defaults=isset($options['default'][$i]) ? json_decode($options['default'][$i]['default'], true) : array();
+      foreach ($options['columns'] as $name => $def) {
+        if (isset($options['default'][$i]))
+          $fieldnamePrefix = str_replace('Attr:', 'Attr+:', $options['default'][$i]['fieldname']);
+        else
+          $fieldnamePrefix = "$attrTypeTag+:$attrId:";
+        $fieldname="$fieldnamePrefix:$i:$name";
+        $default = isset(self::$entity_to_load[$fieldname]) ? self::$entity_to_load[$fieldname] :
+            (isset($defaults[$name]) ? $defaults[$name] : '');
+        $r .= "<td>";
+        if ($def['datatype']==='lookup' && isset($def['control']) && $def['control']) {
+          $checkboxes=array();
+          // array field
+          $fieldname .= '[]';
+          foreach ($lookupData['tl'.$def['termlist_id']] as $term) {
+            $checked = is_array($default) && in_array($term[0], $default) ? ' checked="checked"' : '';
+            $checkboxes[] = "<input title=\"$term[1]\" type=\"checkbox\" name=\"$fieldname\" value=\"$term[0]:$term[1]\"$checked>";
+          }
+          $r .= implode('</td><td>', $checkboxes);
+          $extraCols .= count($checkboxes)-1;
+        } elseif ($def['datatype']==='lookup') {
+          $r .= "<select name=\"$fieldname\"><option value=''>&lt;".lang::get('Please select')."&gt;</option>";
+          foreach ($lookupData['tl'.$def['termlist_id']] as $term) {
+            $selected = $default=="$term[0]" ? ' selected="selected"' : '';
+            $r .= "<option value=\"$term[0]:$term[1]\"$selected>$term[1]</option>";
+          }
+          $r .= "</select>";
+        } else {
+          $class = empty($def['regex']) ? '' : ' class="{pattern:'.$def['regex'].'}"';          
+          $r .= "<input type=\"text\" name=\"$fieldname\" value=\"$default\"$class/>";
+        }
+        if (!empty($def['unit']))
+          $r .= '<span class="unit">'.lang::get($def['unit']).'</span>';
+        $r .= '</td>';
+      }
+      $r .= "<td><input type=\"hidden\" name=\"$fieldnamePrefix:$i:deleted\" value=\"f\" class=\"delete-flag\"/>";
+      if (empty($options['rowCountControl']))
+        $r .= "<span class=\"ind-delete-icon\"/>";
+      $r .= "</td></tr>";
+    }
+    $r .= '</tbody>';
+    if (empty($options['rowCountControl'])) {
+      $r .= '<tfoot>';
+      $r .= '<tr><td colspan="'.(count($options['columns'])+1+$extraCols).'"><button class="add-btn" type="button">Add another</button></td></tr>';
+      $r .= '</tfoot>';
+    } else {
+      $escaped = str_replace(':', '\\\\:', $options['rowCountControl']);
+      data_entry_helper::$javascript .= 
+"$('#$escaped').val($rowCount);
+$('#$escaped').change(function(e) {
+  changeComplexGridRowCount('$escaped', '$attrTypeTag', '$attrId');
+});\n";
+    }
+    $r .= '</table>';
+    return $r;  
   }
 
  /**
@@ -276,7 +418,7 @@ class data_entry_helper extends helper_base {
   * this is a compound control and the many sub-controls have id values with additiobnal suffixes.</li>
   * <li><b>default</b><br/>
   * Optional. An array of items to load into the control on page startup. Each entry must be an associative array
-  * with keys fieldname, caption and value.</li>
+  * with keys fieldname, caption and default.</li>
   * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
   * <li><b>numValues</b><br/>
@@ -289,6 +431,10 @@ class data_entry_helper extends helper_base {
   * The control then acts like a multi-value autocomplete and submits a list of ID values for the chosen items. 
   * If true, the control allows new values to be added and inserts them into the source table.
   * Defaults to true.</li>
+  * <li><b>selectMode</b>
+  * Should the autocomplete simulate a select drop down control by adding a drop down arrow after the input box which, when clicked,
+  * populates the drop down list with all search results to a maximum of numValues. This is similar to typing * into the box. Default false.
+  * </li>
   * </ul>
   * The output of this control can be configured using the following templates: 
   * <ul>
@@ -305,12 +451,6 @@ class data_entry_helper extends helper_base {
   * <li><b>sub_list_javascript</b></br>
   * Defines the JavaScript added to the page to implement the click handling for the various 
   * butons. 
-  * </li>
-  * <li><b>numValues</b><br/>
-  * Optional. Number of returned values in the select drop down list. Defaults to 20.</li>
-  * <li><b>selectMode</b>
-  * Should the autocomplete simulate a select drop down control by adding a drop down arrow after the input box which, when clicked,
-  * populates the drop down list with all search results to a maximum of numValues. This is similar to typing * into the box. Default false.
   * </li>
   * </ul>
   *
@@ -365,6 +505,7 @@ class data_entry_helper extends helper_base {
     
     // prepare embedded search control for add bar panel
     $list_options = $options;
+    unset($list_options['helpText']);
     $list_options['id'] = $list_options['id'].':search';
     $list_options['fieldname'] = $list_options['id'];
     $list_options['suffixTemplate']='nosuffix';
@@ -392,16 +533,8 @@ class data_entry_helper extends helper_base {
     $options['subListItem'] = str_replace(array('{caption}', '{value}', '{fieldname}'),  
       array('\'+caption+\'', '\'+value+\'', $options['fieldname']), 
       $indicia_templates['sub_list_item']);
-    $replaceTags=array('{idx}');
-    $replaceValues=array($idx);
-    foreach ($options as $option=>$value) {
-      if (!is_array($value) && !is_object($value)) {
-        array_push($replaceTags, '{'.$option.'}');
-        array_push($replaceValues, $value);
-      }
-    }
-    self::$javascript .= str_replace($replaceTags, $replaceValues, $indicia_templates['sub_list_javascript']);
-    
+    $options['idx']=$idx;
+    self::$javascript .= self::apply_replacements_to_template($indicia_templates['sub_list_javascript'], $options);
     // load any default values for list items into display and hidden lists
     $items = "";
     $r = '';
@@ -538,6 +671,14 @@ class data_entry_helper extends helper_base {
   * <li><b>valueField</b><br/>
   * Optional. Field to draw values to return from the control from. Defaults
   * to the value of captionField. </li>
+  * <li><b>otherItemId</b><br/>
+  * Optional. The termlists_terms id of the checkbox_group item that will be considered as "Other".
+  * When this checkbox is selected then another textbox is displayed allowing specific details relating to the
+  * Other item to be entered. The otherValueAttrId and otherTextboxLabel options must be specified to use this feature.</li>
+  * <li><b>otherValueAttrId</b><br/>
+  * Optional. The attribute id where the "Other" text will be stored, e.g. smpAttr:10. See otherItemId option description.</li>
+  * <li><b>otherTextboxLabel</b><br/>
+  * Optional. The label for the "Other" textbox. See otherItemId, otherValueAttrId option descriptions.</li>
   * <li><b>extraParams</b><br/>
   * Optional. Associative array of items to pass via the query string to the service. This
   * should at least contain the read authorisation array.</li>
@@ -572,7 +713,7 @@ class data_entry_helper extends helper_base {
   *
   * @return string HTML to insert into the page for the group of checkboxes.
   */
-  public static function checkbox_group($options) {
+  public static function checkbox_group($options) { 
     $options = self::check_options($options);
     if (substr($options['fieldname'],-2) !='[]')
       $options['fieldname'] .= '[]';
@@ -665,7 +806,7 @@ class data_entry_helper extends helper_base {
       // Filter out future dates
       if (!array_key_exists('allowFuture', $options) || $options['allowFuture']==false) {
         self::$javascript .= ",
-   maxDate: '0'";
+    maxDate: '0'";
       }
       // If the validation plugin is running, we need to trigger it when the datepicker closes.
       if (self::$validated_form_id) {
@@ -691,14 +832,14 @@ class data_entry_helper extends helper_base {
 /**
   * Outputs a file upload control suitable for linking images to records.
   * The control allows selection of multiple files, and depending on the browser functionality it gives progress feedback.
-  * The control uses Google Gears, Flash, Silverlight, Browserplus or HTML5 to enhance the functionality
-  * where available. The output of the control can be configured by changing the content of the templates called
-  * file_box, file_box_initial_file_info, file_box_uploaded_image and button.
+  * The control uses Silverlight, Flash or HTML5 to enhance the functionality where available. The output of the control 
+  * can be configured by changing the content of the templates called file_box, file_box_initial_file_info, 
+  * file_box_uploaded_image and button.
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>table</b><br/>
-  * Name of the image table to upload images into, e.g. occurrence_image, location_image, sample_image or taxon_image.
-  * Defaults to occurrence_image.
+  * Name of the image table to upload images into, e.g. occurrence_medium, location_medium, sample_medium or taxon_medium.
+  * Defaults to occurrence_medium.
   * </li>
   * <li><b>loadExistingRecordKey</b><br/>
   * Optional prefix for the information in the data_entry_helper::$entity_to_load to use for loading any existing images. 
@@ -712,9 +853,6 @@ class data_entry_helper extends helper_base {
   * </li>
   * <li><b>uploadSelectBtnCaption</b><br/>
   * Set this to override the caption for the button for selecting files to upload.
-  * </li>
-  * <li><b>flickrSelectBtnCaption</b><br/>
-  * Set this to override the caption for the button for selecting files from Flickr.
   * </li>
   * <li><b>uploadStartBtnCaption</b><br/>
   * Set this to override the caption for the start upload button, which is only visible if autoUpload is false.
@@ -735,10 +873,7 @@ class data_entry_helper extends helper_base {
   * Defines the quality of the resize operation (from 1 to 100). Has no effect unless either resizeWidth or resizeHeight are non-zero.
   * </li>
   * <li><b>upload</b><br/>
-  * Boolean, defaults to true. Set to false when implementing a Flickr image control without file upload capability.
-  * </li>
-  * <li><b>flickr</b><br/>
-  * Not implemented.
+  * Boolean, defaults to true. 
   * </li>
   * <li><b>maxFileCount</b><br/>
   * Maximum number of files to allow upload for. Defaults to 4. Set to false to allow unlimited files.
@@ -763,15 +898,11 @@ class data_entry_helper extends helper_base {
   * </li>
   * <li><b>runtimes</b><br/>
   * Array of runtimes that the file upload component will use in order of priority. Defaults to
-  * array('html5','silverlight','flash','gears','browserplus','html4'), though flash is removed for
-  * Internet Explorer 6. You should not normally need to change this.
+  * array('html5','flash','silverlight','html4'), though flash is removed for Internet Explorer 6. You 
+  * should not normally need to change this.
   * </li>
   * <li><b>destinationFolder</b><br/>
   * Override the destination folder for uploaded files. You should not normally need to change this.
-  * </li>
-  * <li><b>swfAndXapFolder</b><br/>
-  * Override the folder which the Plupload Flash (swf) and Silverlight (xap) files are loaded from. You should not
-  * normally need to change this.
   * </li>
   * <li><b>codeGenerated</b>
   * If set to all (default), then this returns the HTML required and also inserts JavaScript in the document onload event. However, if you
@@ -792,13 +923,13 @@ class data_entry_helper extends helper_base {
   * </li>
   * <li><b>file_box_initial_file_info</b></br>
   * HTML which provides the outer container for each displayed image, including the header and
-  * remove file button. Has an element with class set to photo-wrapper into which images 
+  * remove file button. Has an element with class set to media-wrapper into which images 
   * themselves will be inserted.
   * </li>
   * <li><b>file_box_uploaded_image</b></br>
   * Template for the HTML for each uploaded image, including the image, caption input
   * and hidden inputs to define the link to the database. Will be inserted into the
-  * file_box_initial_file_info template's photo-wrapper element.
+  * file_box_initial_file_info template's media-wrapper element.
   * </li>
   * <li><b>button</b></br>
   * Template for the buttons used.
@@ -806,7 +937,6 @@ class data_entry_helper extends helper_base {
   * </ul>
   *
   * @todo select file button pointer overriden by the flash shim
-  * @todo flickr
   * @todo if using a normal file input, after validation, the input needs to show that the file upload has worked.
   * @todo Cleanup uploaded files that never got submitted because of validation failure elsewhere.
   */
@@ -822,24 +952,21 @@ class data_entry_helper extends helper_base {
       'upload' => true,
       'maxFileCount' => 4,
       'autoupload' => false,
-      'flickr' => false,
-      'uploadSelectBtnCaption' => lang::get('Upload photo(s)'),
-      'flickrSelectBtnCaption' => lang::get('Choose photo from Flickr'),
-      'startUploadBtnCaption' => lang::get('Start upload'),
       'msgUploadError' => lang::get('upload error'),
       'msgFileTooBig' => lang::get('file too big for warehouse'),
-      'runtimes' => array('html5','silverlight','flash','gears','browserplus','html4'),
+      'runtimes' => array('html5','flash','silverlight','html4'),
       'autoupload' => true,
       'imageWidth' => 200,
       'uploadScript' => $relpath . 'upload.php',
       'destinationFolder' => $relpath . $interim_image_folder,
       'finalImageFolder' => self::get_uploaded_image_folder(),
-      'swfAndXapFolder' => $relpath . 'plupload/',
       'jsPath' => self::$js_path,
       'buttonTemplate' => $indicia_templates['button'],
-      'table' => 'occurrence_image',
+      'table' => 'occurrence_medium',
       'maxUploadSize' => self::convert_to_bytes(isset(parent::$maxUploadSize) ? parent::$maxUploadSize : '4M'),
-      'codeGenerated' => 'all'
+      'codeGenerated' => 'all',
+      'mediaTypes' => array('Image:Local'),
+      'imgPath' => empty(self::$images_path) ? self::relative_client_helper_path()."../media/images/" : self::$images_path
     );    
     if (isset(self::$final_image_folder_thumbs))
       $defaults['finalImageFolderThumbs'] = $relpath . self::$final_image_folder_thumbs;
@@ -871,7 +998,7 @@ class data_entry_helper extends helper_base {
       $idx = 0;
       foreach($options as $option=>$value) {
         if (is_array($value)) {
-          $value = "{ " . implode(" : true, ",$value) . " : true }";
+          $value = json_encode($value);
         }
         else
           // not an array, so wrap as string
@@ -883,7 +1010,7 @@ class data_entry_helper extends helper_base {
       }
       // add in any reloaded items, when editing or after validation failure
       if (self::$entity_to_load) {
-        $images = self::extract_image_data(self::$entity_to_load, 
+        $images = self::extract_media_data(self::$entity_to_load, 
             isset($options['loadExistingRecordKey']) ? $options['loadExistingRecordKey'] : $options['table']);
         $javascript .= ",\n  existingFiles : ".json_encode($images);
       }
@@ -910,28 +1037,14 @@ class data_entry_helper extends helper_base {
     }
     // Output a placeholder div for the jQuery plugin. Also output a normal file input for the noscripts
     // version.
-    return '<div class="file-box" id="'.$containerId.'"></div><noscript>'.self::image_upload(array(
+    $r = '<div class="file-box" id="'.$containerId.'"></div><noscript>'.self::image_upload(array(
       'label' => $options['caption'],
       // Convert table into a psuedo field name for the images
       'id' => $options['id'],
       'fieldname' => str_replace('_', ':', $options['table'])
     )).'</noscript>';
-  }
-
-  /**
-   * Calculates the folder that submitted images end up in according to the helper_config.
-   */
-  public static function get_uploaded_image_folder() {
-    if (!isset(self::$final_image_folder) || self::$final_image_folder=='warehouse') {
-      if (!empty(self::$warehouse_proxy)) {
-        $warehouseUrl = self::$warehouse_proxy;
-      } else {
-        $warehouseUrl = self::$base_url;
-      }
-      return $warehouseUrl.(isset(self::$indicia_upload_path) ? self::$indicia_upload_path : 'upload/');
-    } else {
-      return self::getRootFolder() . self::client_helper_path() . self::$final_image_folder;
-    }
+    $r .= self::add_link_popup($options);
+    return $r;
   }
 
  /**
@@ -994,7 +1107,7 @@ class data_entry_helper extends helper_base {
       'id' => 'imp-georef-search',
       'driver' => 'geoplanet',
       'searchButton' => self::apply_replacements_to_template($indicia_templates['button'], 
-          array('href'=>'#', 'id'=>'imp-georef-search-btn', 'class' => 'class="indicia-button"', 'caption'=>lang::get('Search'))),
+          array('href'=>'#', 'id'=>'imp-georef-search-btn', 'class' => 'class="indicia-button"', 'caption'=>lang::get('Search'), 'title'=>'')),
       'public' => false,
       'autoCollapseResults' => false
     ), $options);
@@ -1038,7 +1151,7 @@ class data_entry_helper extends helper_base {
     } else {
       // want a close button on the results list
       $options['closeButton'] = self::apply_replacements_to_template($indicia_templates['button'], 
-          array('href'=>'#', 'id'=>'imp-georef-close-btn', 'class' => '', 'caption'=>lang::get('Close the search results')));
+          array('href'=>'#', 'id'=>'imp-georef-close-btn', 'class' => '', 'caption'=>lang::get('Close the search results'), 'title'=>''));
     }
     return self::apply_template('georeference_lookup', $options);
   }
@@ -1139,7 +1252,7 @@ class data_entry_helper extends helper_base {
     if (isset($options['default']))
       $hiddenOptions['default'] = $options['default'];
     $r .= self::hidden_text($hiddenOptions);
-    $options['blankText']=htmlspecialchars($options['blankText']);
+    $options['blankText']=htmlspecialchars(lang::get($options['blankText']));
     // Now output JavaScript that creates and populates child selects as each option is selected. There is also code for 
     // reloading existing values.    
     self::$javascript .= "
@@ -1231,7 +1344,7 @@ class data_entry_helper extends helper_base {
   */
   public static function image_upload($options) {
     $options = self::check_options($options);
-    $pathField = $pathField = str_replace(array(':image',':medium'),'_medium:path', $options['fieldname']);
+    $pathField = str_replace(array(':image',':medium'),'_medium:path', $options['fieldname']);
     $alreadyUploadedFile = self::check_default_value($pathField);
     $options = array_merge(array(
       'pathFieldName' => $pathField,
@@ -1372,6 +1485,8 @@ class data_entry_helper extends helper_base {
     ), $options);
     // Disable warnings for no matches if the user is allowed to input a vague unmatched location name.
     $options['warnIfNoMatch']=!$options['useLocationName'];
+    // this makes it easier to enter unmatched text, if allowed to do so
+    $options['continueOnBlur']=!$options['useLocationName'];
     $r = self::autocomplete($options);
     // put a hidden input in the form to indicate that the location value should be 
     // copied to the location_name field if not linked to a location id.
@@ -1389,10 +1504,10 @@ class data_entry_helper extends helper_base {
         self::$javascript .= "indiciaData.searchUpdatesSref=true;\n";
     }
     // If using Easy Login, then this enables auto-population of the site related fields.
-    if (function_exists('hostsite_get_user_field') && $createdById=hostsite_get_user_field('indicia_user_id') && $options['fetchLocationAttributesIntoSample']) {
+    if (function_exists('hostsite_get_user_field') && ($createdById=hostsite_get_user_field('indicia_user_id')) && $options['fetchLocationAttributesIntoSample']) {
       $nonce=$options['extraParams']['nonce'];
       $authToken=$options['extraParams']['auth_token'];
-      $resportingServerURL = data_entry_helper::$base_url.'index.php/services/report/requestReport?report=library/sample_attribute_values/get_latest_values_for_site_and_user.xml&callback=?';
+      $resportingServerURL = (!empty(data_entry_helper::$warehouse_proxy))?data_entry_helper::$warehouse_proxy:data_entry_helper::$base_url.'index.php/services/report/requestReport?report=library/sample_attribute_values/get_latest_values_for_site_and_user.xml&callback=?';
       self::$javascript .= "$('#imp-location').change(function() {
         if ($('#imp-location').attr('value')!=='') {
           var reportingURL = '$resportingServerURL';
@@ -1494,6 +1609,7 @@ class data_entry_helper extends helper_base {
         'id'=>'imp-location',
         'searchUpdatesSref'=>false
         ), $options);
+    $options['columns']=$options['valueField'].','.$options['captionField'];
     if ($options['searchUpdatesSref'])
       self::$javascript .= "indiciaData.searchUpdatesSref=true;\n";
     return self::select($options);
@@ -1595,9 +1711,16 @@ class data_entry_helper extends helper_base {
       ),
       $options
     );
-    if(isset($options['multiselect']) && $options['multiselect']!=false && $options['multiselect']!=='false')
+    $r = '';
+    if(isset($options['multiselect']) && $options['multiselect']!=false && $options['multiselect']!=='false') {
       $options['multiple']='multiple';
-    return self::select_or_listbox($options);
+      if (substr($options['fieldname'],-2) !=='[]') {
+        $options['fieldname'] .= '[]';
+      }
+      // ensure a blank value is posted if nothing is selected in the list, otherwise the list can't be cleared in the db.
+      $r = '<input type="hidden" name="'.$options['fieldname'].'" value=""/>';
+    }
+    return $r . self::select_or_listbox($options);
   }
 
   /**
@@ -2216,6 +2339,7 @@ class data_entry_helper extends helper_base {
         'fieldname'=>'sample:entered_sref',
         'hiddenFields'=>true,
         'id'=>'imp-sref',
+        'geomid'=>'imp-geom',
         'geomFieldname'=>$tokens[0].':geom',
         'default'=>self::check_default_value($options['fieldname']),
         'splitLatLong'=>false
@@ -2260,7 +2384,7 @@ class data_entry_helper extends helper_base {
   *   blankText="Select..." 
   * The output of this control can be configured using the following templates: 
   * <ul>
-  * <li><b>hidden_input</b></br>
+  * <li><b>hidden_text</b></br>
   * Template used for the hidden text HTML element.
   * </li>
   * </ul>
@@ -2361,6 +2485,15 @@ class data_entry_helper extends helper_base {
     if (isset($duplicateCheckFields))
       $options['duplicateCheckFields']=$duplicateCheckFields;
     $options['extraParams'] += self::get_species_names_filter($options);
+    if (!empty($options['default']) && empty($options['defaultCaption'])) {
+      // We've been given an attribute value but no caption for the species name in the data to load for an existing record. So look it up.
+      $r = self::get_population_data(array(
+        'table'=>'cache_taxa_taxon_list',
+        'extraParams'=>array('nonce'=>$options['extraParams']['nonce'],'auth_token'=>$options['extraParams']['auth_token'])+
+            array('id'=>$options['default'],'columns'=>"taxon")
+      ));
+      $options['defaultCaption']=$r[0]['taxon'];
+    }
     return self::autocomplete($options);
   }
 
@@ -2417,8 +2550,8 @@ class data_entry_helper extends helper_base {
   * just been added to the list.
   * <li><b>taxonFilterField</b><br/>
   * If the list of species to be made available for recording is to be limited (either by species or taxon group), allows selection of 
-  * the field to filter against. Options are none (default), preferred_name, taxon_meaning_id, taxon_group. If filtering for a large list
-  * of taxa then taxon_meaning_id is more efficient.
+  * the field to filter against. Options are none (default), preferred_name, taxon_meaning_id, taxa_taxon_list_id, taxon_group. If filtering for a large list
+  * of taxa then taxon_meaning_id or taxa_taxon_list_id is more efficient.
   * </li>
   * <li><b>taxonFilter</b><br/>
   * If taxonFilterField is not set to none, then pass an array of values to filter against, i.e. an array of
@@ -2452,6 +2585,10 @@ class data_entry_helper extends helper_base {
   * lookupListId is set.<br/>
   * hasData - occurrences are created for any row which has a data value specified in at least one of its columns. <br/>
   * This option supercedes the checkboxCol option which is still recognised for backwards compatibility.</li>
+  * <li><b>hasDataIgnoreAttrs</b><br/>
+  * Optional integer array, where each entry corresponds to the id of an attribute that should be ignored when doing
+  * the hasData row inclusion check. If a column has a default value, especially a gridIdAttribute, you may not want
+  * it to trigger creation of an occurrence so include it in this array.</li>
   * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
   * <li><b>cachetimeout</b><br/>
@@ -2466,9 +2603,11 @@ class data_entry_helper extends helper_base {
   * Optional. If set to true, then an occurrence comment input field is included on each row.</li>
   * <li><b>occurrenceSensitivity</b><br/>
   * Optional. If set to true, then an occurrence sensitivity selector is included on each row.</li>
-  * <li><b>occurrenceImages</b><br/>
-  * Optional. If set to true, then images can be uploaded for each occurrence row. Currently not supported for
-  * multi-column grids.</li>
+  * <li><b>mediaTypes</b><br/>
+  * Optional. Array of media types that can be uploaded. Choose from Audio:Local, Audio:SoundCloud, Image:Flickr,
+  * Image:Instagram, Image:Local, Image:Twitpic, Social:Facebook, Social:Twitter, Video:Youtube,
+  * Video:Vimeo.
+  * Currently not supported for multi-column grids.</li>
   * <li><b>resizeWidth</b><br/>
   * If set, then the image files will be resized before upload using this as the maximum pixels width.
   * </li>
@@ -2518,12 +2657,12 @@ class data_entry_helper extends helper_base {
   * <li><b>file_box_initial_file_info</b></br>
   * When image upload for records is enabled, this template provides the HTML for the outer container 
   * for each displayed image, including the header and remove file button. Has an element with 
-  * class set to photo-wrapper into which images themselves will be inserted.
+  * class set to media-wrapper into which images themselves will be inserted.
   * </li>
   * <li><b>file_box_uploaded_image</b></br>
   * Template for the HTML for each uploaded image, including the image, caption input
   * and hidden inputs to define the link to the database. Will be inserted into the
-  * file_box_initial_file_info template's photo-wrapper element.
+  * file_box_initial_file_info template's media-wrapper element.
   * </li>
   * <li><b>taxon_label_cell</b></br>
   * Generates the label shown for the taxon name for each added row.
@@ -2585,6 +2724,11 @@ class data_entry_helper extends helper_base {
   * Should the species autocomplete used for adding new rows simulate a select drop down control by adding a drop down arrow after the input box which, when clicked,
   * populates the drop down list with all search results to a maximum of numValues. This is similar to typing * into the box. Default false.
   * </li>
+  * <li><b>speciesColTitle</b>
+  * Title for the species column which will be looked up in lang files. If not set, uses
+  * species_checklist.species.
+  * </li>
+  * 
   * </ul>
   * @return string HTML for the species checklist input grid.
   */
@@ -2604,9 +2748,9 @@ class data_entry_helper extends helper_base {
     if ($options['subSamplePerRow'])
       // we'll track 1 sample per grid row.
       $smpIdx=0;
-    if ($options['columns'] > 1 && $options['occurrenceImages'])
+    if ($options['columns'] > 1 && count($options['mediaTypes'])>1)
       throw new Exception('The species_checklist control does not support having more than one occurrence per row (columns option > 0) '.
-          'at the same time has having the occurrenceImages option enabled.');
+          'at the same time has having the mediaTypes option in use.');
     self::add_resource('json');
     self::add_resource('autocomplete');
     $filterArray = self::get_species_names_filter($options);
@@ -2637,13 +2781,18 @@ class data_entry_helper extends helper_base {
     self::$js_read_tokens = $options['readAuth'];
     self::$javascript .= "indiciaData['rowInclusionCheck-".$options['id']."'] = '".$options['rowInclusionCheck']."';\n";
     self::$javascript .= "indiciaData['copyDataFromPreviousRow-".$options['id']."'] = '".$options['copyDataFromPreviousRow']."';\n";
+    self::$javascript .= "indiciaData['includeSpeciesGridLinkPage-".$options['id']."'] = '".$options['includeSpeciesGridLinkPage']."';\n";
+    self::$javascript .= "indiciaData.speciesGridPageLinkUrl = '".$options['speciesGridPageLinkUrl']."';\n";
+    self::$javascript .= "indiciaData.speciesGridPageLinkParameter = '".$options['speciesGridPageLinkParameter']."';\n";
+    self::$javascript .= "indiciaData.speciesGridPageLinkTooltip = '".$options['speciesGridPageLinkTooltip']."';\n";
     self::$javascript .= "indiciaData['editTaxaNames-".$options['id']."'] = '".$options['editTaxaNames']."';\n";
     self::$javascript .= "indiciaData['subSpeciesColumn-".$options['id']."'] = '".$options['subSpeciesColumn']."';\n";
+    self::$javascript .= "indiciaData['subSamplePerRow-".$options['id']."'] = ".($options['subSamplePerRow'] ? 'true' : 'false').";\n";
     if ($options['copyDataFromPreviousRow']) {
       self::$javascript .= "indiciaData['previousRowColumnsToInclude-".$options['id']."'] = '".$options['previousRowColumnsToInclude']."';\n";
       self::$javascript .= "indiciaData.langAddAnother='" . lang::get('Add another') . "';\n";
     }
-    if ($options['occurrenceImages']) {
+    if (count($options['mediaTypes'])) {
       self::add_resource('plupload');
       // store some globals that we need later when creating uploaders
       $relpath = self::getRootFolder() . self::client_helper_path();
@@ -2651,7 +2800,6 @@ class data_entry_helper extends helper_base {
       self::$javascript .= "indiciaData.uploadSettings = {\n";
       self::$javascript .= "  uploadScript: '" . $relpath . "upload.php',\n";
       self::$javascript .= "  destinationFolder: '" . $relpath . $interim_image_folder."',\n";
-      self::$javascript .= "  swfAndXapFolder: '" . $relpath . "plupload/',\n";
       self::$javascript .= "  jsPath: '".self::$js_path."'";
       if (isset($options['resizeWidth'])) {
         self::$javascript .= ",\n  resizeWidth: ".$options['resizeWidth'];
@@ -2672,12 +2820,13 @@ class data_entry_helper extends helper_base {
     }
     $occAttrControls = array();
     $occAttrs = array();
+    $occAttrControlsExisting = array();
     $taxonRows = array();
     $subSampleRows = array();
     // Load any existing sample's occurrence data into $entity_to_load
     if (isset(self::$entity_to_load['sample:id']) && $options['useLoadedExistingRecords']===false)
       self::preload_species_checklist_occurrences(self::$entity_to_load['sample:id'], $options['readAuth'], 
-          $options['occurrenceImages'], $options['reloadExtraParams'], $subSampleRows, $options['speciesControlToUseSubSamples'],
+          $options['mediaTypes'], $options['reloadExtraParams'], $subSampleRows, $options['speciesControlToUseSubSamples'],
           (isset($options['subSampleSampleMethodID']) ? $options['subSampleSampleMethodID'] : ''));
     // load the full list of species for the grid, including the main checklist plus any additional species in the reloaded occurrences.
     $taxalist = self::get_species_checklist_taxa_list($options, $taxonRows);
@@ -2699,8 +2848,15 @@ class data_entry_helper extends helper_base {
         $attrOptions['extraParams'] += array('query'=>json_encode(array('in'=>array('id'=>$options['attributeIds']))));
       }
       $attributes = self::getAttributes($attrOptions);
+      // Merge in the attribute options passed into the control which can override the warehouse config
+      if (isset($options['occAttrOptions'])) {
+        foreach ($options['occAttrOptions'] as $attrId => $attr) {
+          if (isset($attributes[$attrId]))
+            $attributes[$attrId] = array_merge($attributes[$attrId], $attr); 
+        }
+      }
       // Get the attribute and control information required to build the custom occurrence attribute columns
-      self::species_checklist_prepare_attributes($options, $attributes, $occAttrControls, $occAttrs);
+      self::species_checklist_prepare_attributes($options, $attributes, $occAttrControls, $occAttrControlsExisting, $occAttrs);
       $grid = '<span style="display: none;">Step 1</span>'."\n";
       if (isset($options['lookupListId'])) {
         $grid .= self::get_species_checklist_clonable_row($options, $occAttrControls, $attributes);
@@ -2726,18 +2882,29 @@ class data_entry_helper extends helper_base {
           // remove subspecific rank information from the displayed subspecies names by passing a regex
           self::$javascript .= "indiciaData.subspeciesRanksToStrip='".lang::get('(form[a\.]?|var\.?|ssp\.)')."';\n";
       }
+      // track if there is a row we are editing in this grid
+      $hasEditedRecord = false;
+      if ($options['mediaTypes']) {
+        $onlyImages = true;
+        foreach($options['mediaTypes'] as $mediaType) {
+          if (substr($mediaType, 0, 6)!=='Image:') 
+            $onlyImages=false;
+        }
+        $mediaBtnLabel = lang::get($onlyImages ? 'add images' : 'add media');
+        $mediaBtnClass = 'sc' . $onlyImages ? 'Image' : 'Media' . 'Link';
+      }
       foreach ($taxonRows as $txIdx => $rowIds) {
         $ttlId = $rowIds['ttlId'];
         $loadedTxIdx = isset($rowIds['loadedTxIdx']) ? $rowIds['loadedTxIdx'] : -1;
         $existing_record_id = isset($rowIds['occId']) ? $rowIds['occId'] : false;
         // Multi-column input does not work when image upload allowed
-        $colIdx = $options['occurrenceImages'] ? 0 : (int)floor($rowIdx / (count($taxonRows)/$options['columns']));
+        $colIdx = count($options['mediaTypes']) ? 0 : (int)floor($rowIdx / (count($taxonRows)/$options['columns']));
         // Find the taxon in our preloaded list data that we want to output for this row
         $taxonIdx = 0;
         while ($taxonIdx < count($taxalist) && $taxalist[$taxonIdx]['id'] != $ttlId) {
           $taxonIdx += 1;
         }
-        if ($taxonIdx >= count($taxalist))
+        if ($taxonIdx >= count($taxalist)) 
           continue; // next taxon, as this one was not found in the list
         $taxon = $taxalist[$taxonIdx];
         // If we are using the sub-species column then when the taxon has a parent (=species) this goes in the
@@ -2759,19 +2926,32 @@ class data_entry_helper extends helper_base {
         // Now create the table cell to contain this.
         $colspan = isset($options['lookupListId']) && $options['rowInclusionCheck']!='alwaysRemovable' ? ' colspan="2"' : '';
         $row = '';
-        // Add a delete button if the user can remove rows, add an edit button if the user has the edit option set.
+        // Add a delete button if the user can remove rows, add an edit button if the user has the edit option set, add a page link if user has that option set.
         if ($options['rowInclusionCheck']=='alwaysRemovable') {
           $imgPath = empty(self::$images_path) ? self::relative_client_helper_path()."../media/images/" : self::$images_path;
+          $speciesGridLinkPageIconSource = $imgPath."nuvola/find-22px.png";
           if ($options['editTaxaNames']) {
             $row .= '<td class="row-buttons">
                      <img class="action-button remove-row" src='.$imgPath.'nuvola/cancel-16px.png>
-                     <img class="action-button edit-taxon-name" src='.$imgPath.'nuvola/package_editors-16px.png></td>';
+                     <img class="action-button edit-taxon-name" src='.$imgPath.'nuvola/package_editors-16px.png>';
+            if ($options['includeSpeciesGridLinkPage']) {
+              $row .= '<img class="species-grid-link-page-icon" title="'.$options['speciesGridPageLinkTooltip'].'" alt="Notes icon" src='.$speciesGridLinkPageIconSource.'>';
+            }          
+            $row .= '</td>';
           } else {
-            $row .= '<td class="row-buttons"><img class="action-button remove-row" src='.$imgPath.'nuvola/cancel-16px.png></td>';
+            $row .= '<td class="row-buttons"><img class="action-button remove-row" src='.$imgPath.'nuvola/cancel-16px.png>';
+            if ($options['includeSpeciesGridLinkPage']) {
+              $row .= '<img class="species-grid-link-page-icon" title="'.$options['speciesGridPageLinkTooltip'].'" alt="Notes icon" src='.$speciesGridLinkPageIconSource.'>';
+            }
+            $row .= '</td>';
           }
         }
-        $row .= str_replace(array('{content}','{colspan}','{tableId}','{idx}'), 
-            array($firstCell,$colspan,$options['id'],$colIdx), $indicia_templates['taxon_label_cell']);
+        // if editing a specific occurrence, mark it up
+        $editedRecord = isset($_GET['occurrence_id']) && $_GET['occurrence_id']==$existing_record_id;
+        $editClass = $editedRecord ? ' edited-record ui-state-highlight' : '';
+        $hasEditedRecord = $hasEditedRecord || $editedRecord;
+        $row .= str_replace(array('{content}','{colspan}','{editClass}','{tableId}','{idx}'), 
+            array($firstCell,$colspan,$editClass,$options['id'],$colIdx), $indicia_templates['taxon_label_cell']);
         $row .= self::species_checklist_get_subsp_cell($taxon, $txIdx, $existing_record_id, $options);
         $hidden = ($options['rowInclusionCheck']=='checkbox' ? '' : ' style="display:none"');
         // AlwaysFixed mode means all rows in the default checklist are included as occurrences. Same for
@@ -2795,8 +2975,23 @@ class data_entry_helper extends helper_base {
             "<input type=\"checkbox\" class=\"scPresence\" name=\"$fieldname\" id=\"$fieldname\" value=\"$taxon[id]\" $checked />";
         // If we have a grid ID attribute, output a hidden
         if (!empty($options['gridIdAttributeId'])) {
-          $fieldname = "sc:$options[id]-$txIdx:$existing_record_id:occAttr:$options[gridIdAttributeId]";
-          $row .= "<input type=\"hidden\" name=\"$fieldname\" id=\"$fieldname\" value=\"$options[id]\"/>";
+          $gridAttributeId = $options['gridIdAttributeId'];
+          if (empty($existing_record_id)) {
+            //If in add mode we don't need to include the occurrence attribute id
+            $fieldname  = "sc:$options[id]-$txIdx::occAttr:$gridAttributeId";
+            $row .= "<input type=\"hidden\" name=\"$fieldname\" id=\"$fieldname\" value=\"$options[id]\"/>";
+          } else {
+            $search = preg_grep("/^sc:[0-9]*:$existing_record_id:occAttr:$gridAttributeId:".'[0-9]*$/', array_keys(self::$entity_to_load));
+            if (!empty($search)) {
+              $match = array_pop($search);
+              $parts = explode(':',$match);
+              //The id of the existing occurrence attribute value is at the end of the data
+              $idxOfOccValId = count($parts) - 1;
+              //$txIdx is row number in the grid. We cannot simply take the data from entity_to_load as it doesn't contain the row number.
+              $fieldname = "sc:$options[id]-$txIdx:$existing_record_id:occAttr:$gridAttributeId:$parts[$idxOfOccValId]";
+              $row .= "<input type=\"hidden\" name=\"$fieldname\" id=\"$fieldname\" value=\"$options[id]\"/>";
+            }
+          }
         }
         $row .= "</td>";
         if ($options['speciesControlToUseSubSamples']) {
@@ -2810,15 +3005,29 @@ class data_entry_helper extends helper_base {
             $smpIdx++;
         }
         $idx = 0;
-        foreach ($occAttrControls as $attrId => $control) {
+        foreach ($occAttrControlsExisting as $attrId => $control) {
           $existing_value='';
           $valId=false;
           if (!empty(data_entry_helper::$entity_to_load)) {
             // Search for the control in the data to load. It has a suffix containing the attr_value_id which we don't know, hence preg.
-            $search = preg_grep("/^sc:$loadedTxIdx:$existing_record_id:occAttr:$attrId".'[:[0-9]*]?$/', array_keys(self::$entity_to_load));
-            if (count($search)>0) {
+            $search = preg_grep("/^sc:$loadedTxIdx:$existing_record_id:occAttr:$attrId:".'[0-9]*$/', array_keys(self::$entity_to_load));
+            // Does the control post an array of values? If so, we need to ensure that the existing values are handled properly.
+            $isArrayControl = preg_match('/name="{?[a-z\-_]*}?\[\]"/', $control);
+            if ($isArrayControl) {
+              foreach ($search as $subfieldname) {
+                // to link each value to existing records, we need to store the value ID in the value data.
+                $valueId = preg_match('/(\d+)$/', $subfieldname, $matches);
+                $control = str_replace('value="'.self::$entity_to_load[$subfieldname].'"',
+                    'value="'.self::$entity_to_load[$subfieldname].':'.$matches[1].'" selected="selected"', $control);
+              } 
+              $ctrlId = str_replace('-idx-', "$options[id]-$txIdx", $attributes[$attrId]['fieldname']);
+              // remove [] from the end of the fieldname if present, as it is already in the row template
+              $ctrlId = preg_replace('/\[\]$/', '', $ctrlId);
+              $loadedCtrlFieldName='-';
+            } elseif (count($search)>0) {
+              // Got an existing value.
+              // Warning - if there are multi-values in play here then it will just load one, because this is NOT an array control.
               // use our preg search result as the field name to load from the existing data array.
-              // Warning - if there are multi-values in play here then it will just load one.
               $loadedCtrlFieldName = array_pop($search);
               // Convert loaded field name to our output row index
               $ctrlId = str_replace("sc:$loadedTxIdx:", "sc:$options[id]-$txIdx:", $loadedCtrlFieldName);
@@ -2828,33 +3037,36 @@ class data_entry_helper extends helper_base {
                 $valId = $matches['valId'];
               else 
                 $valId = null;
-            } else {
+            }
+            else {
               // go for the default, which has no suffix.
               $loadedCtrlFieldName = str_replace('-idx-:', $loadedTxIdx.':'.$existing_record_id, $attributes[$attrId]['fieldname']);
               $ctrlId = str_replace('-idx-:', "$options[id]-$txIdx:$existing_record_id", $attributes[$attrId]['fieldname']);
-            }            
-            if (isset(self::$entity_to_load[$loadedCtrlFieldName]))
+            } 
+            if (isset(self::$entity_to_load[$loadedCtrlFieldName])) 
               $existing_value = self::$entity_to_load[$loadedCtrlFieldName];
           } else {
             // no existing record, so use a default control ID which excludes the existing record ID.
             $ctrlId = str_replace('-idx-', "$options[id]-$txIdx", $attributes[$attrId]['fieldname']);
             $loadedCtrlFieldName='-';
           }
-
-          if ($existing_value==='' && array_key_exists('default', $attributes[$attrId]))
+          if (!$existing_record_id && $existing_value==='' && array_key_exists('default', $attributes[$attrId])) {
             // this case happens when reloading an existing record
             $existing_value = $attributes[$attrId]['default'];
+          }
           // inject the field name into the control HTML
           $oc = str_replace('{fieldname}', $ctrlId, $control);
           if ($existing_value<>"") {
             // For select controls, specify which option is selected from the existing value
-            if (substr($oc, 0, 7)=='<select') {
+            if (substr($oc, 0, 7)==='<select') {
               $oc = str_replace('value="'.$existing_value.'"',
                   'value="'.$existing_value.'" selected="selected"', $oc);
-            } else if(strpos($oc, 'checkbox') !== false) {
+            } else if(strpos($oc, 'type="checkbox"') !== false) {
               if($existing_value=="1")
                 $oc = str_replace('type="checkbox"', 'type="checkbox" checked="checked"', $oc);
             } else {
+              if (is_array($existing_value))
+                $existing_value = implode('',$existing_value);
               $oc = str_replace('value=""', 'value="'.$existing_value.'"', $oc);
             }
           }
@@ -2885,24 +3097,16 @@ class data_entry_helper extends helper_base {
                   ? self::$entity_to_load["sc:$loadedTxIdx:$existing_record_id:occurrence:sensitivity_precision"] : false,
               'lookupValues' => array('100'=>lang::get('Blur to 100m'), '1000'=>lang::get('Blur to 1km'), '2000'=>lang::get('Blur to 2km'), 
                   '10000'=>lang::get('Blur to 10km'), '100000'=>lang::get('Blur to 100km')),
-              'blankText' => lang::get('Not sensitive')
+              'blankText' => 'Not sensitive'
           ));
           $row .= "</td>\n";
         }
-        if ($options['occurrenceImages']) {
-          $existingImages = is_array(self::$entity_to_load) ? preg_grep("/^sc:$loadedTxIdx:$existing_record_id:occurrence_image:id:[a-z0-9]*$/", array_keys(self::$entity_to_load)) : array();
-          if (count($existingImages)===0) {
-            $row .= "\n<td class=\"ui-widget-content scImageLinkCell\">";
-            $fieldname = "add-images:$options[id]-$txIdx:$existing_record_id";
-            $row .= "<a href=\"\" class=\"add-image-link scImageLink\" id=\"$fieldname\">" . str_replace(' ','&nbsp;',lang::get('add images')) . "</a>";
-            $row .= "</td>";
-          }
-          else {
-            $row .= "\n<td class=\"ui-widget-content scImageLinkCell\">";
-            $fieldname = "hide-images:$options[id]-$txIdx:$existing_record_id";
-            $row .= "<a href=\"\" class=\"hide-image-link scImageLink\" id=\"$fieldname\">" . str_replace(' ','&nbsp;',lang::get('hide images')) . "</a>";
-            $row .= "</td>";
-          }
+        if ($options['mediaTypes']) {
+          $row .= "\n<td class=\"ui-widget-content scAddMediaCell\">";
+          $fieldname = "add-media:$options[id]-$txIdx:$existing_record_id";
+          $row .= "<a href=\"\" class=\"add-media-link button $mediaBtnClass\" id=\"$fieldname\">" .
+              "$mediaBtnLabel</a>";
+          $row .= "</td>";
         }
         // Are we in the first column of a multicolumn grid, or doing single column grid? If so start new row. 
         if ($colIdx === 0) {
@@ -2911,14 +3115,16 @@ class data_entry_helper extends helper_base {
           $rows[$rowIdx % (ceil(count($taxonRows)/$options['columns']))] .= $row;
         }
         $rowIdx++;
-        if ($options['occurrenceImages']) {
+        if ($options['mediaTypes']) {
+          $existingImages = is_array(self::$entity_to_load) ? preg_grep("/^sc:$loadedTxIdx:$existing_record_id:occurrence_medium:id:[a-z0-9]*$/", array_keys(self::$entity_to_load)) : array();
           // If there are existing images for this row, display the image control
           if (count($existingImages) > 0) {
-            $totalCols = ($options['lookupListId'] ? 2 : 1) + 1 /*checkboxCol*/ + ($options['occurrenceImages'] ? 1 : 0) + count($occAttrControls);
+            $totalCols = ($options['lookupListId'] ? 2 : 1) + 1 /*checkboxCol*/ + (count($options['mediaTypes']) ? 1 : 0) + count($occAttrControls);
             $rows[$rowIdx]='<td colspan="'.$totalCols.'">'.data_entry_helper::file_box(array(
-              'table'=>"sc:$options[id]-$txIdx:$existing_record_id:occurrence_image",
-              'loadExistingRecordKey'=>"sc:$loadedTxIdx:$existing_record_id:occurrence_image",
-              'label'=>lang::get('Upload your photos')
+              'table'=>"sc:$options[id]-$txIdx:$existing_record_id:occurrence_medium",
+              'loadExistingRecordKey'=>"sc:$loadedTxIdx:$existing_record_id:occurrence_medium",
+              'mediaTypes' => $options['mediaTypes'],
+              'readAuth' => $options['readAuth']
             )).'</td>';
             $imageRowIdxs[]=$rowIdx;
             $rowIdx++;
@@ -2931,10 +3137,15 @@ class data_entry_helper extends helper_base {
       else
         $grid .= "<tr style=\"display: none\"><td></td></tr>\n";
       $grid .= "</tbody>\n</table>\n";
-      // in hasData mode, the wrap_species_checklist method must be notified of the different default way of checking if a row is to be
-      // made into an occurrence.
-      if ($options['rowInclusionCheck']=='hasData')
-        $grid .= '<input name="rowInclusionCheck" value="hasData" type="hidden" />';
+      // in hasData mode, the wrap_species_checklist method must be notified of the different default 
+      // way of checking if a row is to be made into an occurrence. This may differ between grids when
+      // there are multiple grids on a page.
+      if ($options['rowInclusionCheck']=='hasData') {
+        $grid .= '<input name="rowInclusionCheck-' . $options['id'] . '" value="hasData" type="hidden" />';
+        if (!empty($options['hasDataIgnoreAttrs']))
+          $grid .= '<input name="hasDataIgnoreAttrs-' . $options['id'] . '" value="' 
+                . implode(',', $options['hasDataIgnoreAttrs']) . '" type="hidden" />';
+      }
       self::add_resource('addrowtogrid');
       // If the lookupListId parameter is specified then the user is able to add extra rows to the grid,
       // selecting the species from this list. Add the required controls for this.
@@ -2974,9 +3185,84 @@ class data_entry_helper extends helper_base {
             self::get_subsample_per_row_hidden_inputs().
             '</div>';
       }
+      if ($hasEditedRecord) {
+        self::$javascript .= "$('#$options[id] tbody tr').hide();\n";
+        self::$javascript .= "$('#$options[id] tbody tr td.edited-record').parent().show();\n";
+        self::$javascript .= "$('#$options[id] tbody tr td.edited-record').parent().next('tr.supplementary-row').show();\n";
+        $r .= '<p>'.lang::get('You are editing a single record that is part of a larger sample, so any changes to the sample\'s information such as edits to the date or map reference '.
+            'will affect the whole sample.')." <a id=\"species-grid-view-all-$options[id]\">".lang::get('View all the records in this sample or add more records.').'</a></p>';
+        self::$javascript .= "$('#species-grid-view-all-$options[id]').click(function(e) {
+  $('#$options[id] tbody tr').show(); 
+  $(e.currentTarget).hide();
+});\n";
+        self::$onload_javascript .= "var tabscontrols = $('#controls').tabs();
+tabscontrols.tabs('select',$('#$options[id]').parents('.ui-tabs-panel')[0].id);\n";
+      }
+      if ($options['mediaTypes']) {
+        $r .= self::add_link_popup($options);
+        // make the media types setting available to the grid row add js which has to create file uploader controls
+        self::$javascript .= "indiciaData.uploadSettings.mediaTypes=".json_encode($options['mediaTypes']).";\n";
+      }
       return $r;
     } else {
       return $taxalist['error'];
+    }
+  }
+  
+  /**
+   * Adds HTML to the output for a popup dialog to accept input of external media link URLs
+   * to attach to records in the species grid.
+   * 
+   * @staticvar boolean $doneAddLinkPopup
+   * @param type $options
+   * @return string
+   */
+  private static function add_link_popup($options) {
+    if (!isset($options['readAuth']))
+      return '';
+    if ($options['mediaTypes']) {
+      $onlyImages = true;
+      $onlyLocal = true;
+      $linkMediaTypes=array();
+      foreach ($options['mediaTypes'] as $mediaType) {
+        $tokens = explode(':', $mediaType);
+        if ($tokens[0]!=='Image')
+          $onlyImages=false;
+        if ($tokens[1]!=='Local') {
+          $onlyLocal=false;
+          $linkMediaTypes[]=$tokens[1];
+        }
+      }
+    }
+    // Output just one add link popup dialog, no matter how many grids there are
+    static $doneAddLinkPopup=false;
+    $typeTermData = self::get_population_data(array(
+      'table'=>'termlists_term',
+      'extraParams'=>$options['readAuth']+array('view'=>'cache', 'termlist_title'=>'Media types', 'columns'=>'id,term')
+    ));
+    $typeTermIdLookup = array();
+    foreach ($typeTermData as $record) {
+      $typeTermIdLookup[$record['term']]=$record['id'];
+    }
+    self::$javascript .= "indiciaData.mediaTypeTermIdLookup=".json_encode($typeTermIdLookup).";\n";
+    if ($options['mediaTypes'] && !$onlyLocal && !$doneAddLinkPopup) {
+      $doneAddLinkPopup=true;
+      $readableTypes = array_pop($linkMediaTypes);
+      if (count($linkMediaTypes)>0)
+        $readableTypes = implode(', ', $linkMediaTypes) . ' ' . lang::get('or') . ' ' . $readableTypes;
+      return '<div style="display: none"><div id="add-link-form" title="Add a link to a remote file">
+<p class="validateTips">'.lang::get('Paste in the web address of a resource on {1}', $readableTypes).'.</p>
+<form>
+<fieldset>
+<label for="name">URL</label>
+<input type="text" name="link_url" id="link_url" class="text ui-widget-content ui-corner-all">
+<p style="display: none" class="error"></p>
+</fieldset>
+</form>
+</div></div>';
+    }
+    else {
+      return '';
     }
   }
   
@@ -3326,12 +3612,12 @@ $('#".$options['id']." .species-filter').click(function(evt) {
     $('#filter-mode-selected').attr('checked','checked');
   });
   
-  $('#filter-popup-apply').click(function() {       
-    if ($('#filter-mode-default').attr('checked')===true) {
+  $('#filter-popup-apply').click(function() {
+    if ($('#filter-mode-default:checked').length>0) {
       applyFilterMode('default');
-    } else if ($('#filter-mode-selected').attr('checked')===true) {
+    } else if ($('#filter-mode-selected:checked').length>0) {
       applyFilterMode('selected', $('#filter-group').val()); 
-    } 
+    }
     ";
     if (!empty($options['usersPreferredGroups']))
       self::$javascript .= " else if ($('#filter-mode-user').attr('checked')==true) {
@@ -3353,11 +3639,11 @@ $('#".$options['id']." .species-filter').click(function(evt) {
    * of occurrences loaded is returned.
    * @param int $sampleId ID of the sample to load
    * @param array $readAuth Read authorisation array
-   * @param boolean $loadImages If set to true, then image information is loaded as well.
+   * @param boolean $loadMedia Array of media type terms to load.
    * @param boolean $extraParams Extra params to pass to the web service call for filtering.
    * @return array Array with key of occurrence_id and value of $taxonInstance.
    */
-  public static function preload_species_checklist_occurrences($sampleId, $readAuth, $loadImages, $extraParams, &$subSamples, $useSubSamples, $subSampleMethodID='') {
+  public static function preload_species_checklist_occurrences($sampleId, $readAuth, $loadMedia, $extraParams, &$subSamples, $useSubSamples, $subSampleMethodID='') {
     $occurrenceIds = array();
     $taxonCounter = array();
     // don't load from the db if there are validation errors, since the $_POST will already contain all the
@@ -3386,12 +3672,13 @@ $('#".$options['id']." .species-filter').click(function(evt) {
       		data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:id'] = $subsample['id'];
       		data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:geom'] = $subsample['wkt'];
       		data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:wkt'] = $subsample['wkt'];
+          data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:location_id'] = $subsample['location_id'];
       		data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:entered_sref'] = $subsample['entered_sref'];
-      	    data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:entered_sref_system'] = $subsample['entered_sref_system'];
-      	    data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:date_start'] = $subsample['date_start'];
-      	    data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:date_end'] = $subsample['date_end'];
-            data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:date_type'] = $subsample['date_type'];
-            data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:sample_method_id'] = $subsample['sample_method_id'];
+          data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:entered_sref_system'] = $subsample['entered_sref_system'];
+          data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:date_start'] = $subsample['date_start'];
+          data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:date_end'] = $subsample['date_end'];
+          data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:date_type'] = $subsample['date_type'];
+          data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:sample_method_id'] = $subsample['sample_method_id'];
       	}
       	unset($extraParams['parent_id']);
       	unset($extraParams['sample_method_id']);
@@ -3436,19 +3723,24 @@ $('#".$options['id']." .species-filter').click(function(evt) {
             self::$entity_to_load['sc:'.$occurrenceIds[$attrValue['occurrence_id']].':'.$attrValue['occurrence_id'].':occAttr:'.$attrValue['occurrence_attribute_id'].(isset($attrValue['id'])?':'.$attrValue['id']:'')]
                 = $attrValue['raw_value'];
           }
-          if ($loadImages) {
-            $images = self::get_population_data(array(
-              'table' => 'occurrence_image',
+          if (count($loadMedia)>0) {
+            // @todo: Filter to the appropriate list of media types
+            $media = self::get_population_data(array(
+              'table' => 'occurrence_medium',
               'extraParams' => $readAuth + array('occurrence_id' => array_keys($occurrenceIds)),
               'nocache' => true
             ));
-            foreach($images as $image) {
-              self::$entity_to_load['sc:'.$occurrenceIds[$image['occurrence_id']].':'.$image['occurrence_id'].':occurrence_image:id:'.$image['id']]
-                  = $image['id'];
-              self::$entity_to_load['sc:'.$occurrenceIds[$image['occurrence_id']].':'.$image['occurrence_id'].':occurrence_image:path:'.$image['id']]
-                  = $image['path'];
-              self::$entity_to_load['sc:'.$occurrenceIds[$image['occurrence_id']].':'.$image['occurrence_id'].':occurrence_image:caption:'.$image['id']]
-                  = $image['caption'];
+            foreach($media as $medium) {
+              self::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:id:'.$medium['id']]
+                  = $medium['id'];
+              self::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:path:'.$medium['id']]
+                  = $medium['path'];
+              self::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:caption:'.$medium['id']]
+                  = $medium['caption'];
+              self::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:media_type_id:'.$medium['id']]
+                  = $medium['media_type_id'];
+              self::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:media_type:'.$medium['id']]
+                  = $medium['media_type'];
             }
           }
         }
@@ -3470,7 +3762,7 @@ $('#".$options['id']." .species-filter').click(function(evt) {
       $r .= "<thead class=\"ui-widget-header\"><tr>";
       for ($i=0; $i<$options['columns']; $i++) {
         $colspan = isset($options['lookupListId']) || $options['rowInclusionCheck']=='alwaysRemovable' ? ' colspan="2"' : '';
-        $speciesColTitle = lang::get('species_checklist.species');
+        $speciesColTitle = empty($options['speciesColTitle']) ? lang::get('species_checklist.species') : lang::get($options['speciesColTitle']);
         if ($options['userControlsTaxonFilter'] && !empty($options['lookupListId'])) {
           global $indicia_templates;
           $imgPath = empty(self::$images_path) ? self::relative_client_helper_path()."../media/images/" : self::$images_path;
@@ -3494,8 +3786,8 @@ $('#".$options['id']." .species-filter').click(function(evt) {
         if ($options['occurrenceSensitivity']) {
           $r .= self::get_species_checklist_col_header($options['id']."-sensitivity-$i", lang::get('Sensitivity'), $visibleColIdx, $options['colWidths']) ;
         }
-        if ($options['occurrenceImages']) {
-          $r .= self::get_species_checklist_col_header($options['id']."-images-$i", lang::get('Images'), $visibleColIdx, $options['colWidths']) ;
+        if (count($options['mediaTypes'])) {
+          $r .= self::get_species_checklist_col_header($options['id']."-images-$i", lang::get('Add media'), $visibleColIdx, $options['colWidths']) ;
         }
       }
       $r .= '</tr></thead>';
@@ -3528,12 +3820,16 @@ $('#".$options['id']." .species-filter').click(function(evt) {
    */
   private static function get_species_checklist_taxa_list($options, &$taxonRows) {
     // Get the list of species that are always added to the grid, by first building a filter
-    if (preg_match('/^(preferred_name|preferred_taxon|taxon_meaning_id|taxon_group|external_key)$/', $options['taxonFilterField']))  {
+    if (preg_match('/^(preferred_name|preferred_taxon|taxon_meaning_id|taxa_taxon_list_id|taxon_group|external_key|id)$/', $options['taxonFilterField']))  {
+      if ($options['table']==='cache_taxa_taxon_list' && $options['taxonFilterField']==='taxa_taxon_list_id') 
+        $options['taxonFilterField']='id';
       $qry = array('in'=>array($options['taxonFilterField'], $options['taxonFilter']));
       $options['extraParams']['query']=json_encode($qry);
     }
     // load the species names that should be initially included in the grid
     if (isset($options['listId']) && !empty($options['listId'])) {
+      // Apply the species list to the filter
+      $options['extraParams']['taxon_list_id']=$options['listId'];
       // list in taxonomic sort order if order not already specified
       if( !isset($options['extraParams']['orderby']) )
         $options['extraParams']['orderby'] = 'taxonomic_sort_order';
@@ -3567,7 +3863,8 @@ $('#".$options['id']." .species-filter').click(function(evt) {
         $present = count($parts) > 2 && $parts[0] === 'sc' && $parts[1]!='-idx-' && $parts[3]==='present';
         if ($present && !empty($options['gridIdAttributeId'])) {
           // filtering records by grid ID. Skip them if from a different input grid (multiple grids on one form scenario).
-          $matches = preg_grep("/^sc:$parts[1]:$parts[2]:occAttr:$options[gridIdAttributeId]:[0-9]+$/", array_keys(self::$entity_to_load));
+          // The suffix containing attr_value_id will not be present if reloading due to error on submission
+          $matches = preg_grep("/^sc:$parts[1]:$parts[2]:occAttr:$options[gridIdAttributeId](:[0-9]+)?$/", array_keys(self::$entity_to_load));
           if (count($matches)>0) {
             $match = array_pop($matches);
             if (self::$entity_to_load[$match]!==$options['id']) {
@@ -3577,10 +3874,10 @@ $('#".$options['id']." .species-filter').click(function(evt) {
         }
         if ($present) {
           $ttlId = $value;
-            if ($options['speciesControlToUseSubSamples']) {
-              $smpIdx = self::$entity_to_load['sc:'.$parts[1].':'.$parts[2].':occurrence:sampleIDX'];
-            } 
-              else $smpIdx = null;
+          if ($options['speciesControlToUseSubSamples'])
+            $smpIdx = self::$entity_to_load['sc:'.$parts[1].':'.$parts[2].':occurrence:sampleIDX'];
+          else
+            $smpIdx = null;
           // Find an existing row for this species that is not already linked to an occurrence
           $done=false;
           foreach($taxonRows as &$row) {
@@ -3601,7 +3898,7 @@ $('#".$options['id']." .species-filter').click(function(evt) {
         }
       }
       // load and append the additional taxa to our list of taxa to use in the grid
-      if (!empty($options['lookupListId']))
+      if (!empty($options['lookupListId'])) 
         $taxalist = array_merge($taxalist, self::get_population_data($extraTaxonOptions));
     }
     return $taxalist;
@@ -3636,7 +3933,6 @@ $('#".$options['id']." .species-filter').click(function(evt) {
         'PHPtaxonLabel' => false,
         'occurrenceComment' => false,
         'occurrenceSensitivity' => null,
-        'occurrenceImages' => false,
         'id' => 'species-grid-'.rand(0,1000),
         'colWidths' => array(),
         'taxonFilterField' => 'none',
@@ -3650,15 +3946,15 @@ $('#".$options['id']." .species-filter').click(function(evt) {
         'copyDataFromPreviousRow' => false,
         'previousRowColumnsToInclude' => '',
         'editTaxaNames' => false,
-        'sticky' => true
+        'sticky' => true,
+        // legacy - occurrenceImages means just local image support
+        'mediaTypes' => !empty($options['occurrenceImages']) && $options['occurrenceImages'] ?
+            array('Image:Local') : array()
     ), $options);
     // subSamplesPerRow can't be set without speciesControlToUseSubSamples
     $options['subSamplePerRow'] = $options['subSamplePerRow'] && $options['speciesControlToUseSubSamples'];
     // subspecies columns require cached lookups to be enabled.
     $options['cacheLookup'] = $options['cacheLookup'] || $options['subSpeciesColumn'];
-    if (array_key_exists('listId', $options) && !empty($options['listId'])) {
-      $options['extraParams']['taxon_list_id']=$options['listId'];
-    }
     if (array_key_exists('readAuth', $options)) {
       $options['extraParams'] += $options['readAuth'];
     } else {
@@ -3676,10 +3972,12 @@ $('#".$options['id']." .species-filter').click(function(evt) {
    * @param array $options Options array as passed to the species checklist grid control.
    * @param array $attributes Array of custom attributes as loaded from the database.
    * @param array $occAttrControls Empty array which will be populated with the controls required for each 
-   * custom attribute.
-   * @param array $occAttrs Empty array which will be populated with the captions for each custom attribute.
+   * custom attribute. This copy of the control applies for new data and is populated with defaults.
+   * @param array $occAttrControlsExisting Empty array which will be populated with the controls required for each 
+   * custom attribute. This copy of the control applies for existing data and is not populated with defaults. 
+   * @param array $occAttrCaptions Empty array which will be populated with the captions for each custom attribute.
    */
-  public static function species_checklist_prepare_attributes($options, $attributes, &$occAttrControls, &$occAttrs) {
+  public static function species_checklist_prepare_attributes($options, $attributes, &$occAttrControls, &$occAttrControlsExisting, &$occAttrCaptions) {
     $idx=0;
     if (array_key_exists('occAttrs', $options))
       $attrs = $options['occAttrs'];
@@ -3703,17 +4001,16 @@ $('#".$options['id']." .species-filter').click(function(evt) {
       // Build array of attribute captions
       if (isset($attrOpts['label'])) {
         // override caption from warehouse with label from client
-        $occAttrs[$occAttrId] = $attrOpts['label'];
+        $occAttrCaptions[$occAttrId] = $attrOpts['label'];
         // but prevent it being added in grid
         unset($attrOpts['label']);
       } else {
-        $occAttrs[$occAttrId] = $attrDef['caption'];
+        $occAttrCaptions[$occAttrId] = $attrDef['caption'];
       }
       
       // Build array of attribute controls
       $class = self::species_checklist_occ_attr_class($options, $idx, $attrDef['untranslatedCaption']);
       $class .= (isset($attrDef['class']) ? ' ' . $attrDef['class'] : '');
-      $class .= ' inactive';
       if (isset($attrOpts['class'])) {
         $class .=  ' ' . $attrOpts['class'];
         unset($attrOpts['class']);
@@ -3736,6 +4033,10 @@ $('#".$options['id']." .species-filter').click(function(evt) {
         $ctrlOptions = array_merge_recursive($ctrlOptions, $attrOpts);
       }
       $occAttrControls[$occAttrId] = self::outputAttribute($attrDef, $ctrlOptions);
+      // The controls for creating rows for existing occurrences must not use defaults.
+      unset($attrDef['default']);
+      unset($ctrlOptions['default']);
+      $occAttrControlsExisting[$occAttrId] = self::outputAttribute($attrDef, $ctrlOptions);
       $idx++;
     }
   }
@@ -3770,7 +4071,7 @@ $('#".$options['id']." .species-filter').click(function(evt) {
     // Because the clonable row always goes in the first col, this can be always left to 0.
     $r = '<table style="display: none"><tbody><tr class="scClonableRow" id="'.$options['id'].'-scClonableRow">';
     $colspan = isset($options['lookupListId']) || $options['rowInclusionCheck']=='alwaysRemovable' ? ' colspan="2"' : '';
-    $r .= str_replace(array('{colspan}','{tableId}','{idx}'), array($colspan, $options['id'],0), $indicia_templates['taxon_label_cell']);
+    $r .= str_replace(array('{colspan}','{tableId}','{idx}','{editClass}'), array($colspan, $options['id'], 0, ''), $indicia_templates['taxon_label_cell']);
     $fieldname = "sc:$options[id]--idx-:";
     if ($options['subSpeciesColumn']) {
       $r .= '<td class="ui-widget-content scSubSpeciesCell"><select class="scSubSpecies" style="display: none" ' .
@@ -3790,16 +4091,6 @@ $('#".$options['id']." .species-filter').click(function(evt) {
     $idx = 0;
     foreach ($occAttrControls as $attrId=>$oc) {
       $class = self::species_checklist_occ_attr_class($options, $idx, $attributes[$attrId]['caption']);
-      if (isset($attributes[$attrId]['default']) && !empty($attributes[$attrId]['default'])) {
-        $existing_value=$attributes[$attrId]['default'];
-        // For select controls, specify which option is selected from the existing value
-        if (substr($oc, 0, 7)=='<select') {
-          $oc = str_replace('value="'.$existing_value.'"',
-              'value="'.$existing_value.'" selected="selected"', $oc);
-        } else {
-          $oc = str_replace('value=""', 'value="'.$existing_value.'"', $oc);
-        }
-      }
       $r .= str_replace(array('{content}', '{class}', '{headers}'),
           array(str_replace('{fieldname}', "$fieldname:occAttr:$attrId", $oc), $class.'Cell', $options['id']."-attr$attrId-0"),
           $indicia_templates['attribute_cell']
@@ -3815,13 +4106,22 @@ $('#".$options['id']." .species-filter').click(function(evt) {
           self::select(array('fieldname'=>"$fieldname:occurrence:sensitivity_precision", 'class'=>'scSensitivity',
               'lookupValues' => array('100'=>lang::get('Blur to 100m'), '1000'=>lang::get('Blur to 1km'), '2000'=>lang::get('Blur to 2km'), 
                   '10000'=>lang::get('Blur to 10km'), '100000'=>lang::get('Blur to 100km')),
-              'blankText' => lang::get('Not sensitive'))).
+              'blankText' => 'Not sensitive')).
           '</td>';
     }
-    if ($options['occurrenceImages']) {
-      // Add a link, but make it display none for now as we can't link images till we know what species we are linking to.
-      $r .= '<td class="ui-widget-content scImageLinkCell"><a href="" class="add-image-link scImageLink" style="display: none" id="add-images:'.$options['id'].'--idx-:">'.
-          lang::get('add images').'</a><span class="species-checklist-select-species">'.lang::get('select a species first').'</span></td>';
+    if ($options['mediaTypes']) {
+      $onlyLocal = true;
+      $onlyImages = true;
+      foreach ($options['mediaTypes'] as $mediaType) {
+        if (!preg_match('/:Local$/', $mediaType))
+          $onlyLocal=false;
+        if (!preg_match('/^Image:/', $mediaType))
+          $onlyImages=false;
+      }
+      $label = $onlyImages ? 'add images' : 'add media';
+      $class = 'sc' . $onlyImages ? 'Image' : 'Media' . 'Link';
+      $r .= '<td class="ui-widget-content scAddMediaCell"><a href="" class="add-media-link button '.$class.'" style="display: none" id="add-media:'.$options['id'].'--idx-:">'.
+          lang::get($label).'</a><span class="species-checklist-select-species">'.lang::get('select a species first').'</span></td>';
     }
     $r .= "</tr></tbody></table>\n";
     return $r;
@@ -3921,10 +4221,11 @@ $('#".$options['id']." .species-filter').click(function(evt) {
   */
   public static function hidden_text($options) {
     $options = array_merge(array(
-      'default'=>''
+      'default'=>'',
+      'suffixTemplate'=>'nullsuffix',
+      'requirednosuffixTemplate'=>'nullsuffix'
     ), self::check_options($options));
     unset($options['label']);
-    $options['suffixTemplate'] = 'nosuffix';
     return self::apply_template('hidden_text', $options);
   }
   
@@ -3972,7 +4273,7 @@ $('#".$options['id']." .species-filter').click(function(evt) {
       'label'=>lang::get('Blur record to'),
       'lookupValues' => array('100'=>lang::get('Blur to 100m'), '1000'=>lang::get('Blur to 1km'), '2000'=>lang::get('Blur to 2km'), 
                   '10000'=>lang::get('Blur to 10km'), '100000'=>lang::get('Blur to 100km')),
-      'blankText' => lang::get('none'),
+      'blankText' => 'none',
       'helpText' => 'This is the precision that the record will be shown at for public viewing'
     ));
     // output any extra controls which should get disabled when the record is not sensitive.
@@ -4267,7 +4568,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     ), $options);
     $button=$options['panelOnly'] ? '' :
           self::apply_replacements_to_template($indicia_templates['button'], 
-          array('href'=>'#', 'id'=>'verify-btn', 'class' => 'class="indicia-button"', 'caption'=>lang::get('Precheck my records')));
+          array('href'=>'#', 'id'=>'verify-btn', 'class' => 'class="indicia-button"', 'caption'=>lang::get('Precheck my records'), 'title'=>''));
     $replacements = array(
       'button'=>$button
     );
@@ -4296,8 +4597,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * <li><b>button</b></br>
   * HTML template used for buttons other than the form submit button.
   * </li>
-  * <li><b>submit_button</b></br>
-  * HTML template used for the submit button.
+  * <li><b>submitButton</b></br>
+  * HTML template used for the submit and delete buttons.
   * </li>
   *
   * @param array $options Options array with the following possibilities:<ul>
@@ -4316,6 +4617,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * <li><b>page</b><br/>
   * Specify first, middle or last to indicate which page this is for. Use middle (the default) for
   * all pages other than the first or last.</li>
+  * <li><b>includeDeleteButton</b>
+  * Set to true if allowing deletion of the record.</li>
   * <li><b>includeVerifyButton</b>
   * Defaults to false. If set to true, then a Precheck my records button is added to the
   * button set. There must be a verification_panel control added to the page somewhere
@@ -4331,14 +4634,17 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     global $indicia_templates;
     // Default captions
     $options = array_merge(array(
-      'captionNext' => 'next step',
-      'captionPrev' => 'prev step',
-      'captionSave' => 'save',
+      'captionNext' => 'Next step',
+      'captionPrev' => 'Prev step',
+      'captionSave' => 'Save',
+      'captionDelete'=> 'Delete',
       'buttonClass' => 'indicia-button inline-control',
       'class'       => 'right',
       'page'        => 'middle',
       'suffixTemplate' => 'nullsuffix',
-      'includeVerifyButton' => false
+      'includeVerifyButton' => false,
+      'includeSubmitButton' => true,
+      'includeDeleteButton' => false
     ), $options);
     $options['class'] .= ' buttons';
     // Output the buttons
@@ -4347,7 +4653,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     if (array_key_exists('divId', $options)) {
       if ($options['includeVerifyButton']) {
         $r .= self::apply_replacements_to_template($indicia_templates['button'], 
-          array('href'=>'#', 'id'=>'verify-btn', 'class' => 'class="indicia-button"', 'caption'=>lang::get('Precheck my records')));
+          array('href'=>'#', 'id'=>'verify-btn', 'class' => 'class="indicia-button"', 'caption'=>lang::get('Precheck my records'), 'title'=>''));
       }
       if ($options['page']!='first') {
         $options['class']=$buttonClass." tab-prev";
@@ -4361,10 +4667,20 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         $options['caption']=lang::get($options['captionNext']).' &gt;';
         $r .= str_replace('{content}', self::apply_template('button', $options), $indicia_templates['jsWrap']);
       } else {
-        $options['class']=$buttonClass." tab-submit";
-        $options['id']='tab-submit';
-        $options['caption']=lang::get($options['captionSave']);
-        $r .= str_replace('{content}', self::apply_template(isset(self::$validated_form_id) ? 'button' : 'submitButton', $options), $indicia_templates['jsWrap']);
+        if ($options['includeDeleteButton']) {
+          $options['class']=$buttonClass." tab-delete";
+          $options['id']='tab-delete';
+          $options['caption']=lang::get($options['captionDelete']);
+          $options['name']='delete-button';
+          $r .= self::apply_template('submitButton', $options);
+        }
+        if ($options['includeSubmitButton']) {
+          $options['class']=$buttonClass." tab-submit";
+          $options['id']='tab-submit';
+          $options['caption']=lang::get($options['captionSave']);
+          $options['name']='action-delete';
+          $r .= self::apply_template('submitButton', $options);
+        }
       }
     }
     $r .= '</div><div style="clear:both"></div>';
@@ -4501,7 +4817,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    * If the control is set to be remembered, then adds it to the list of remembered fields.
    * @param array $options Control's options array.
    */
-  private static function check_options($options) {
+  protected static function check_options($options) {
     // force some defaults to be present in the options
     $options = array_merge(array(
         'class'=>'',
@@ -4558,19 +4874,20 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       if (!empty(self::$entity_to_load['occurrence:taxon']) && empty(self::$entity_to_load['occurrence:taxa_taxon_list:taxon']))
         self::$entity_to_load['occurrence:taxa_taxon_list_id:taxon'] = self::$entity_to_load['occurrence:taxon'];
     }
-    
     if ($loadImages) {
       $images = self::get_population_data(array(
-        'table' => $entity . '_image',
-        'extraParams' => $readAuth + array($entity . '_id' => $id),
+        'table' => $entity . '_medium',
+        'extraParams' => $readAuth + array($entity . '_id' => $id, 'test'=>'test'),
         'nocache' => true,
         'sharing' => $sharing
       ));
       if (isset($images['error'])) throw new Exception($images['error']);
       foreach($images as $image) {
-        self::$entity_to_load[$entity . '_image:id:' . $image['id']]  = $image['id'];
-        self::$entity_to_load[$entity . '_image:path:' . $image['id']] = $image['path'];
-        self::$entity_to_load[$entity . '_image:caption:' . $image['id']] = $image['caption'];
+        self::$entity_to_load[$entity . '_medium:id:' . $image['id']]  = $image['id'];
+        self::$entity_to_load[$entity . '_medium:path:' . $image['id']] = $image['path'];
+        self::$entity_to_load[$entity . '_medium:caption:' . $image['id']] = $image['caption'];
+        self::$entity_to_load[$entity . '_medium:media_type:' . $image['id']] = $image['media_type'];
+        self::$entity_to_load[$entity . '_medium:media_type_id:' . $image['id']] = $image['media_type_id'];
       }
     }
   }
@@ -4654,8 +4971,13 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       $cacheOpts = array();
     if (isset($options['report']))
       $cacheOpts['report'] = $options['report'];
-    else
+    else {
       $cacheOpts['table'] = $options['table'];
+      if (isset($options['columns'])) {
+        $cacheOpts['columns']=$options['columns'];
+        $request .= '&columns='.$options['columns'];
+      }
+    }
     $cacheOpts['indicia_website_id'] = self::$website_id;
     if (isset($options['sharing'])) {
       $cacheOpts['sharing']=$options['sharing'];
@@ -4681,6 +5003,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     }
     $r = json_decode($response['output'], true);
     if (!is_array($r)) {
+      $response['request'] = $request;
       throw new Exception('Invalid response received from Indicia Warehouse. '.print_r($response, true));
     }
     // Only cache valid responses
@@ -4799,25 +5122,16 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       if (array_key_exists('parentControlId', $options))
         // still want linked lists, even though we will have some items initially populated
         self::init_linked_lists($options);
-      $lookupItems = self::get_list_items_from_options($options);
-      $opts = "";
+      $lookupItems = self::get_list_items_from_options($options, 'selected');
+      $options['items'] = "";
       if (array_key_exists('blankText', $options)) {
-        $opts .= str_replace(
+        $options['blankText'] = lang::get($options['blankText']);
+        $options['items'] = str_replace(
             array('{value}', '{caption}', '{selected}'),
-            array('', htmlentities($options['blankText'])),
-            $indicia_templates[$options['itemTemplate']]
-        );
+            array('', htmlentities($options['blankText'])), $indicia_templates[$options['itemTemplate']]
+        ).(isset($options['optionSeparator']) ? $options['optionSeparator'] : "\n");;
       }
-      foreach ($lookupItems as $value => $template){
-        if(isset($options['default'])){
-          if(is_array($options['default'])){
-            $item['selected'] = in_array($value, $options['default']) ? 'selected' : '';
-          } else
-            $item['selected'] = ($options['default'] == $value) ? 'selected' : '';
-        } else $item['selected'] = '';
-        $opts .= self::mergeParamsIntoTemplate($item, $template, true);
-      }
-      $options['items'] = $opts;
+      $options['items'] .= implode((isset($options['optionSeparator']) ? $options['optionSeparator'] : "\n"), $lookupItems);
     }
     if (isset($response['error']))
       return $response['error'];
@@ -4830,22 +5144,26 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * table, captionfield and valuefield to build the list of values as an array, or if lookupValues
   * is in the options array use that instead of making a database call.
   * @param array $options Options array for the control.
-  * @return array Associative array of the lookup values and captions.
+  * @param string $selectedItemAttribute Name of the attribute that should be set in each list element if the item is selected/checked. For 
+  * option elements, pass "selected", for checkbox inputs, pass "checked".
+  * @return array Associative array of the lookup values and templated list items.
   */
-  private static function get_list_items_from_options($options) {
+  private static function get_list_items_from_options($options, $selectedItemAttribute) {
     $r = array();
     global $indicia_templates;
     if (isset($options['lookupValues'])) {
       // lookup values are provided, so run these through the item template
       foreach ($options['lookupValues'] as $key=>$value) {
+        $selected=self::get_list_item_selected_attribute($key, $selectedItemAttribute, $options, $itemFieldname);
         $r[$key] = str_replace(
-            array('{value}', '{caption}'),
-            array($key, $value),
+            array('{value}', '{caption}', '{'.$selectedItemAttribute.'}'),
+            array(htmlspecialchars($key), htmlspecialchars($value), $selected),
             $indicia_templates[$options['itemTemplate']]
         );
       }
     } else {
-      // lookup values need to be obtained from the database
+      // lookup values need to be obtained from the database. ParentControlId indicates a linked list parent control whose value
+      // would filter this list.
       if (isset($options['parentControlId']) && !empty(data_entry_helper::$entity_to_load[$options['parentControlId']])) {
         $options['extraParams'][$options['filterField']] = data_entry_helper::$entity_to_load[$options['parentControlId']];
       }
@@ -4856,7 +5174,6 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         $options['extraParams']['preferred']='t';
         $response = self::get_population_data($options);
       }
-      $lookupValues = array();
       if (!array_key_exists('error', $response)) {
         foreach ($response as $record) {
           if (array_key_exists($options['valueField'], $record)) {
@@ -4867,9 +5184,14 @@ $('div#$escaped_divId').indiciaTreeBrowser({
             if(isset($options['listCaptionSpecialChars'])) {
               $caption=htmlspecialchars($caption);
             }
+            $value=$record[$options['valueField']];
+            $selected=self::get_list_item_selected_attribute($value, $selectedItemAttribute, $options, $itemFieldname);
+            // If an array field and we are loading an existing value, then the value needs to store the db ID otherwise we loose the link
+            if ($itemFieldname)
+              $value .= ":$itemFieldname";
             $item = str_replace(
-                array('{value}', '{caption}'),
-                array($record[$options['valueField']], $caption),
+                array('{value}', '{caption}', '{'.$selectedItemAttribute.'}'),
+                array($value, $caption, $selected),
                 $indicia_templates[$options['itemTemplate']]
             );
             $r[$record[$options['valueField']]] = $item;
@@ -4878,6 +5200,45 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       }
     }
     return $r;
+  }
+  
+  /**
+   * Returns the selected="selected" or checked="checked" attribute required to set a default item in a list.
+   * @param string $value The current item's value.
+   * @param string $selectedItemAttribute Name of the attribute that should be set in each list element if the item is selected/checked. For 
+   * option elements, pass "selected", for checkbox inputs, pass "checked".
+   * @param mixed $itemFieldname Will return the fieldname that must be associated with this particular value if using an array input 
+   * such as a listbox (multiselect select).
+   * @param array $options Control options array which contains the "default" entry.
+   */
+  private static function get_list_item_selected_attribute($value, $selectedItemAttribute, $options, &$itemFieldname) {
+    $itemFieldname=false;
+    if (!empty($options['default'])) {
+      $default = $options['default'];
+      // default value can be passed as an array or a single value
+      if (is_array($default)) {
+        $selected = false;
+        foreach ($default as $defVal) {
+          // default value array entries can be themselves an array, so that they store the fieldname as well as the value. 
+          // Or they can be just a plain value.
+          if (is_array($defVal)){
+            if ($defVal['default'] == $value) {
+              $selected = true;
+              // for an array field
+              if (substr($options['fieldname'], -2)==='[]') {
+                $itemFieldname = $defVal['fieldname'];
+              }
+            }
+          } 
+          elseif ($value == $defVal) 
+            $selected = true;
+        }
+      } else
+        $selected = ($default == $value);
+      return $selected ? " $selectedItemAttribute=\"$selectedItemAttribute\"" : '';
+    }
+    else 
+      return '';
   }
 
  /**
@@ -4912,6 +5273,9 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     if (array_key_exists('extraParams', $options)) {
       $request .= '&'.self::array_to_query_string($options['extraParams']);
     }
+    // store default in JavaScript so we can load the correct value after AJAX population.
+    if (!empty($options['default']))
+      self::$javascript .= "indiciaData['default$escapedId']=$options[default];\n";
     self::$javascript .= str_replace(
         array('{fn}','{escapedId}','{request}','{query}','{valueField}','{captionField}','{filterField}','{parentControlId}', '{instruct}'),
         array($fn, $escapedId, $request,$query,$options['valueField'],$options['captionField'],$options['filterField'],$parentControlId, $instruct),
@@ -4923,8 +5287,10 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    * Internal method to output either a checkbox group or a radio group.
    * @param array $options Control options array
    * @param string $type Name of the input element's type attribute, e.g. radio or checkbox.
+   * When selected, an additional textarea attribute can be shown to capture the "Other" information.
    */
   private static function check_or_radio_group($options, $type) {
+    $checkboxOtherIdx=false;
     // checkboxes are inherantly multivalue, whilst radio buttons are single value
     global $indicia_templates;
     $options = array_merge(
@@ -4946,31 +5312,15 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     } else {
       $itemClass='';
     }
-    $lookupItems = self::get_list_items_from_options($options);
+    $lookupItems = self::get_list_items_from_options($options, 'checked');
     $items = "";
     $idx = 0;
     foreach ($lookupItems as $value => $template) {
       $fieldName = $options['fieldname'];
-      if (isset($options['default'])) {
-        if (is_array($options['default'])) {
-          $checked = false;
-          foreach ($options['default'] as $defVal) {
-            if(is_array($defVal)){
-              if($defVal['default'] == $value) {
-                $checked = true;
-                $fieldName = $defVal['fieldname'];
-              }
-            } else if($value == $defVal) $checked = true;
-          }
-        } else
-          $checked = ($options['default'] == $value);
-      } else
-        $checked=false;
       $item = array_merge(
         $options,
         array(
           'disabled' => isset($options['disabled']) ? $options['disabled'] : '',
-          'checked' => $checked ? ' checked="checked" ' : '', // cant use === as need to compare an int with a string representation
           'type' => $type,
           'value' => $value,
           'class' => $itemClass . (($idx == 0) ? ' first-item' : ''),
@@ -4980,6 +5330,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       $item['fieldname']=$fieldName;
       $items .= self::mergeParamsIntoTemplate($item, $template, true, true);
       $idx++;
+      if (!empty($options['otherItemId']) && $value==$options['otherItemId'])
+        $checkboxOtherIdx=$idx-1;
     }
     $options['items']=$items;
     // We don't want to output for="" in the top label, as it is not directly associated to a button
@@ -4991,6 +5343,70 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     $r = self::apply_template($options['template'], $options);
     // reset the old template
     $indicia_templates['label'] = $lblTemplate;
+    // Is there an option for "Other", which requires an additional attribute to display to capture the other information?
+    if (!empty($options['otherItemId'])&&!empty($options['otherValueAttrId'])) {
+      //Code elsewhere can automatically draw attributes to the page if the user has specified the * option in the form structure.
+      //However the sample attribute that holds the "other" value is already linked to the checkbox group. Save the id of the Other value
+      //sample attribute so that the automatic attribute display code knows not to draw it, otherwise it would appear twice.
+      self::$handled_attributes[] = $options['otherValueAttrId'];
+      // find out the attr table we are concerned with
+      switch (substr($options['otherValueAttrId'], 0, 3)) {
+        case 'smp': $otherAttrTable='sample'; break;
+        case 'occ': $otherAttrTable='occurrence'; break;
+        case 'location': $otherAttrTable='location'; break;
+        default: throw new exception($options['otherValueAttrId'] . ' not supported for otherValueAttrId option.');
+      }
+      //When in edit mode then we need to collect the Other value the user previously filled in.
+      if (!empty(self::$entity_to_load["{$otherAttrTable}:id"])) {
+        $readAuth['auth_token']=$options['extraParams']['auth_token'];
+        $readAuth['nonce']=$options['extraParams']['nonce'];
+        //Get the existing value for the Other textbox
+        $otherAttributeData = data_entry_helper::get_population_data(array(
+          'table' => "{$otherAttrTable}_attribute_value",
+          'extraParams' => $readAuth + array("{$otherAttrTable}_id" => self::$entity_to_load["{$otherAttrTable}:id"], "{$otherAttrTable}_attribute_id"=>str_replace('smpAttr:', '', $options['otherValueAttrId'])),
+          'nocache' => true,
+        ));
+      }
+      //Finally draw the Other textbox to the screen, then use jQuery to hide/show the box at the appropriate time.
+      $otherBoxOptions['id'] = $options['otherValueAttrId'];
+      $otherBoxOptions['fieldname'] = $options['otherValueAttrId'];
+      //When the field is populated with existing data, the name includes the sample_attribute_value id, this is used on submission.
+      //Don't include it if it isn't pre-populated.
+      if (isset($otherAttributeData[0]['id'])) 
+        $otherBoxOptions['fieldname'] .= ':'.$otherAttributeData[0]['id'];
+      //User can provide their own label for the textbox if they wish, otherwise default to "Other".
+      if ($options['otherTextboxLabel'])
+        $otherBoxOptions['label'] = $options['otherTextboxLabel'];
+      else 
+        $otherBoxOptions['label'] = 'Other';
+      //Fill in the textbox with existing value if in edit mode.
+      if (isset($otherAttributeData[0]['value']))
+        $otherBoxOptions['default']=$otherAttributeData[0]['value'];
+      $r .= data_entry_helper::textarea($otherBoxOptions);
+      // jQuery safe versions of the attribute IDs
+      $mainAttributeIdSafe = str_replace(':', '\\\\:', $options['id']);
+      $mainAttributeNameSafe = str_replace(':', '\\\\:', $options['fieldname']);
+      $otherAttributeIdSafe = str_replace(':', '\\\\:', $options['otherValueAttrId']);
+      //Set the visibility of the "Other" textbox based on the checkbox when the page loads, but also when the checkbox changes.
+      self::$javascript .= '
+        show_hide_other();
+        $("input[name='.$mainAttributeNameSafe.']").change(function() {
+          show_hide_other();
+        });
+      ';
+      //Function that will show and hide the "Other" textbox depending on the value of the checkbox.
+      self::$javascript .= '
+      function show_hide_other() {
+        if ($("#'.$mainAttributeIdSafe.'\\\\:'.$checkboxOtherIdx.'").is(":checked")) {
+          $("#'.$otherAttributeIdSafe.'").show();
+          $("[for=\"'.$otherAttributeIdSafe.'\"]").show();                              
+        } else {   
+          $("#'.$otherAttributeIdSafe.'").val("");
+          $("#'.$otherAttributeIdSafe.'").hide();
+          $("[for=\"'.$otherAttributeIdSafe.'\"]").hide();
+        }
+      }';
+    }
     return $r;
   }
 
@@ -5055,7 +5471,6 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   $(a).click();
   scrollTopIntoView('$topSelector');
 });";
-
         self::$javascript .= "\n$('.tab-prev').click(function() {
   var current=$('#$divId').tabs('option', 'selected');
   var a = $('ul.ui-tabs-nav a')[current-1];
@@ -5081,9 +5496,10 @@ $('#$divId').tabs({
       //We handle taxon cells seperately. They are excluded from validation in tabinputs as they have no name.
       //So we need to include them seperately as they are an exception to the rule that the item should not be included in validation if it has no name.
       "      var current=$('#$divId').tabs('option', 'selected');
-      var taxonInputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+') .scTaxonCell').find('input,select').not(':disabled');
+      var taxonInputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+') .scTaxonCell').find('input,select').not(':disabled'),
+        elem=$('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select,textarea').not(':disabled,[name=],.scTaxonCell,:hidden');
       validationResultTaxon = (taxonInputs.length > 0 ) ? taxonInputs.valid() : true;
-      validationResult = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select,textarea').not(':disabled,[name=],.scTaxonCell').valid();
+      validationResult = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select,textarea').not(':disabled,[name=],.scTaxonCell,.inactive').valid();
       isValid = (validationResultTaxon && validationResult)===1 ? true : false;
       //restore the clonable row
       clonableRow.css('display', display);
@@ -5138,7 +5554,7 @@ if (errors$uniq.length>0) {
     if (isset(self::$validated_form_id)) {
       //We handle taxon cells seperately. They are excluded from validation in tabinputs as they have no name.
       //So we need to include them seperately as they are an exception to the rule that the item should not be included in validation if it has no name.
-      self::$javascript .= "  var tabinputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select,textarea').not(':disabled,[name=],.scTaxonCell');\n";
+      self::$javascript .= "  var tabinputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select,textarea').not(':disabled,[name=],.scTaxonCell,.inactive');\n";
       self::$javascript .= "  var tabtaxoninputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+') .scTaxonCell').find('input,select').not(':disabled');\n";
       self::$javascript .= "  if ((tabinputs.length>0 && !tabinputs.valid()) ||
                                   (tabtaxoninputs.length>0 && !tabtaxoninputs.valid())) {\n";
@@ -5168,6 +5584,8 @@ if (errors$uniq.length>0) {
       } else {
         $address = (substr($link, 0, 1) == '#') ? substr($link, 1) : $link;
       }
+      // safe single quotes to render into JS
+      $caption = str_replace("'","\'",$caption);
       $tabs .= "<li id=\"$tabId\"><a href=\"$link\" rel=\"address:/$address\"><span>$caption</span></a></li>";
     }
     $options['tabs'] = $tabs;
@@ -5277,15 +5695,14 @@ if (errors$uniq.length>0) {
         }
       }
 
-      $images = self::extract_image_data($_POST);
+      $media = self::extract_media_data($_POST);
       $request = parent::$base_url."index.php/services/data/$entity";
       $postargs = 'submission='.urlencode(json_encode($submission));
       // passthrough the authentication tokens as POST data. Use parameter writeTokens, or current $_POST if not supplied.
       if ($writeTokens) {
-        $postargs .= '&auth_token='.$writeTokens['auth_token'];
-        $postargs .= '&nonce='.$writeTokens['nonce'];
-        if (isset($writeTokens['persist_auth']) && $writeTokens['persist_auth'])
-          $postargs .= '&persist_auth=true';
+        foreach($writeTokens as $token => $value){
+          $postargs .= '&'.$token.'='.($value === true ? 'true' : ($value === false ? 'false' : $value));
+        } // this will do auth_token, nonce, and persist_auth
       } else {
         if (array_key_exists('auth_token', $_POST))
           $postargs .= '&auth_token='.$_POST['auth_token'];
@@ -5297,7 +5714,7 @@ if (errors$uniq.length>0) {
       if (function_exists('hostsite_get_user_field')) 
         $postargs .= '&user_id='.hostsite_get_user_field('indicia_user_id');
       // if there are images, we will send them after the main post, so we need to persist the write nonce
-      if (count($images)>0)
+      if (count($media)>0)
         $postargs .= '&persist_auth=true';
       $response = self::http_post($request, $postargs);
       // The response should be in JSON if it worked
@@ -5313,17 +5730,16 @@ if (errors$uniq.length>0) {
           $final_image_folder = dirname($_SERVER['SCRIPT_FILENAME']) . '/' . self::relative_client_helper_path().
               parent::$final_image_folder;
         }
-
         // submission succeeded. So we also need to move the images to the final location
-        foreach ($images as $image) {
-          // no need to resend an existing image.
-          if (!isset($image['id']) || empty($image['id'])) {
+        foreach ($media as $item) {
+          // no need to resend an existing image, or a media link, just local files.
+          if ((empty($item['media_type']) || preg_match('/:Local$/', $item['media_type'])) && (!isset($item['id']) || empty($item['id']))) {
             if (!isset(self::$final_image_folder) || self::$final_image_folder=='warehouse') {
               // Final location is the Warehouse
               // @todo Set PERSIST_AUTH false if last file
-              $success = self::send_file_to_warehouse($image['path'], true, $writeTokens);
+              $success = self::send_file_to_warehouse($item['path'], true, $writeTokens);
             } else {
-              $success = rename($interim_image_folder.$image['path'], $final_image_folder.$image['path']);
+              $success = rename($interim_image_folder.$item['path'], $final_image_folder.$item['path']);
             }
             if ($success!==true) {
               return array('error' => lang::get('submit ok but file transfer failed').
@@ -5343,9 +5759,9 @@ if (errors$uniq.length>0) {
   * data_entry_helper::species_checklist) into a suitable format for submission. This will
   * return an array of submodel entries which can be dropped directly into the subModel
   * section of the submission array. If there is a field occurrence:determiner_id or
-  * occurrence:record_status in the main form data, then these values are applied to each
+  * occurrence:record_status in the main form data, then these values are applied to each new
   * occurrence created from the grid. For example, place a hidden field in the form named
-  * "occurrence:record_status" with a value "C" to set all occurrence records to completed
+  * "occurrence:record_status" with a value "C" to set all new occurrence records to completed
   * as soon as they are entered.
   *
   * @param array $arr Array of data generated by data_entry_helper::species_checklist method.
@@ -5360,7 +5776,7 @@ if (errors$uniq.length>0) {
   * array('0','None','Absent').
   */
   public static function wrap_species_checklist($arr, $include_if_any_data=false,
-        $zero_attrs = array(), $zero_values=array('0','None','Absent')){
+        $zero_attrs = true, $zero_values=array('0','None','Absent')){
     if (array_key_exists('website_id', $arr)){
       $website_id = $arr['website_id'];
     } else {
@@ -5379,29 +5795,65 @@ if (errors$uniq.length>0) {
     // Set the default method of looking for rows to include - either using data, or the checkbox (which could be hidden)
     $include_if_any_data = $include_if_any_data || (isset($arr['rowInclusionCheck']) && $arr['rowInclusionCheck']=='hasData');
     // Species checklist entries take the following format.
-    // sc:<rowIndex>:[<occurrence_id>]:present (checkbox with val set to ttl_id
+    // sc:<grid_id>-<rowIndex>:[<occurrence_id>]:present (checkbox with val set to ttl_id
     // or
-    // sc:<rowIndex>:[<occurrence_id>]:occAttr:<occurrence_attribute_id>[:<occurrence_attribute_value_id>]
+    // sc:<grid_id>-<rowIndex>:[<occurrence_id>]:occAttr:<occurrence_attribute_id>[:<occurrence_attribute_value_id>]
     // or
-    // sc:<rowIndex>:[<occurrence_id>]:occurrence:comment
+    // sc:<grid_id>-<rowIndex>:[<occurrence_id>]:occurrence:comment
     // or
-    // sc:<rowIndex>:[<occurrence_id>]:occurrence_image:fieldname:uniqueImageId
+    // sc:<grid_id>-<rowIndex>:[<occurrence_id>]:occurrence_medium:fieldname:uniqueImageId
     $records = array();
+    // $records will be an array containing an entry for every row in every grid on the page
+    $allRowInclusionCheck = array();
+    // $allRowInclusionCheck will be an array containing an entry for every grid that specified a value of hasData
+    $allHasDataIgnoreAttrs = array();
+    // $allHasDataIgnoreAttrs will be an array containing an entry for every grid that specified a value
     $subModels = array();
-    foreach ($arr as $key=>$value){
-      if (substr($key, 0, 3)=='sc:'){ 
+    foreach ($arr as $key => $value){
+      if (substr($key, 0, 3) == 'sc:'){ 
         // Don't explode the last element for occurrence attributes
         $a = explode(':', $key, 4);
-        $records[$a[1]][$a[3]] = $value;
-        // store any id so update existing record
-        if($a[2]) {
-          $records[$a[1]]['id'] = $a[2];
+        if (is_array($value) && count($value)>0) {
+          // The value is an array, so might contain existing database ID info in the value to link to existing records
+          foreach ($value as $idx=>$arrayItem) {
+            // does the entry contain the value record ID (required for existing values in controls which post arrays, like multiselect selects)?
+            if (preg_match("/^\d+:\d+$/", $arrayItem)) {
+              $tokens=explode(':', $arrayItem);
+              $records[$a[1]][$a[3].":$tokens[1]:$idx"] = $tokens[0];
+            } else
+              $records[$a[1]][$a[3]."::$idx"] = $arrayItem;
+          }
+        } else {
+          $records[$a[1]][$a[3]] = $value;
+          // store any id so update existing record
+          if($a[2]) 
+            $records[$a[1]]['id'] = $a[2];
         }
+      }
+      else if (substr($key, 0, 19) == 'hasDataIgnoreAttrs-') {
+        $tableId = substr($key, 19);
+        $allHasDataIgnoreAttrs[$tableId] = explode(',', $value);       
+      }
+       else if (substr($key, 0, 18) == 'rowInclusionCheck-') {
+        $tableId = substr($key, 18);
+        $allRowInclusionCheck[$tableId] = $value;       
       }
     }
     foreach ($records as $id => $record) {
+      // determine the id of the grid this record is from
+      // $id = <grid_id>-<rowIndex> but <grid_id> could contain a hyphen
+      $a = explode('-', $id);
+      array_pop($a);
+      $tableId = implode('-', $a);
+      // determine any hasDataIgnoreAttrs for this record
+      $hasDataIgnoreAttrs = array_key_exists($tableId, $allHasDataIgnoreAttrs) ? 
+              $allHasDataIgnoreAttrs[$tableId] : array();
+      // use default value of $include_if_any_data or override with a table specific value
+      $include_if_any_data = array_key_exists($tableId, $allRowInclusionCheck) && $allRowInclusionCheck[$tableId] = 'hasData' ? 
+              true : $include_if_any_data;
+      // determine if this record is for presence, absence or nothing
       $present = self::wrap_species_checklist_record_present($record, $include_if_any_data,
-          $zero_attrs, $zero_values);
+          $zero_attrs, $zero_values, $hasDataIgnoreAttrs);
       if (array_key_exists('id', $record) || $present!==null) { // must always handle row if already present in the db
         if ($present===null)
           // checkboxes do not appear if not checked. If uncheck, delete record.
@@ -5410,17 +5862,20 @@ if (errors$uniq.length>0) {
           $record['zero_abundance']=$present ? 'f' : 't';
         $record['taxa_taxon_list_id'] = $record['present'];
         $record['website_id'] = $website_id;
-        if (isset($determiner_id)) {
-          $record['determiner_id'] = $determiner_id;
-        }
-        if (isset($training)) {
-          $record['training'] = $training;
-        }
-        if (isset($record_status)) {
-          $record['record_status'] = $record_status;
+        // don't overwrite settings for existing records.
+        if (empty($record['id'])) {
+          if (isset($determiner_id)) {
+            $record['determiner_id'] = $determiner_id;
+          }
+          if (isset($training)) {
+            $record['training'] = $training;
+          }
+          if (isset($record_status)) {
+            $record['record_status'] = $record_status;
+          }
         }
         $occ = data_entry_helper::wrap($record, 'occurrence');
-        self::attachOccurrenceImagesToModel($occ, $record);
+        self::attachOccurrenceMediaToModel($occ, $record);
         $subModels[] = array(
           'fkId' => 'sample_id',
           'model' => $occ
@@ -5452,7 +5907,7 @@ if (errors$uniq.length>0) {
    * array('0','None','Absent').
    */
   public static function wrap_species_checklist_with_subsamples($arr, $include_if_any_data=false,
-          $zero_attrs = array(), $zero_values=array('0','None','Absent')){
+          $zero_attrs = true, $zero_values=array('0','None','Absent')){
     if (array_key_exists('website_id', $arr)){
       $website_id = $arr['website_id'];
     } else {
@@ -5474,7 +5929,7 @@ if (errors$uniq.length>0) {
     // sc:<rowIndex>:[<occurrence_id>]:present (checkbox with val set to ttl_id
     // sc:<rowIndex>:[<occurrence_id>]:occAttr:<occurrence_attribute_id>[:<occurrence_attribute_value_id>]
     // sc:<rowIndex>:[<occurrence_id>]:occurrence:comment
-    // sc:<rowIndex>:[<occurrence_id>]:occurrence_image:fieldname:uniqueImageId
+    // sc:<rowIndex>:[<occurrence_id>]:occurrence_medium:fieldname:uniqueImageId
     $occurrenceRecords = array();
     $sampleRecords = array();
     $subModels = array();
@@ -5499,7 +5954,7 @@ if (errors$uniq.length>0) {
       $sampleIDX = $record['occurrence:sampleIDX'];
       unset($record['occurrence:sampleIDX']);
       $present = self::wrap_species_checklist_record_present($record, $include_if_any_data,
-          $zero_attrs, $zero_values);
+          $zero_attrs, $zero_values, array());
       if (array_key_exists('id', $record) || $present!==null) { // must always handle row if already present in the db
         if ($present===null)
           // checkboxes do not appear if not checked. If uncheck, delete record.
@@ -5515,7 +5970,7 @@ if (errors$uniq.length>0) {
           $record['record_status'] = $record_status;
         }
         $occ = data_entry_helper::wrap($record, 'occurrence');
-        self::attachOccurrenceImagesToModel($occ, $record);
+        self::attachOccurrenceMediaToModel($occ, $record);
         $sampleRecords[$sampleIDX]['occurrences'][] = array('fkId' => 'sample_id','model' => $occ);
       }
     }
@@ -5530,6 +5985,8 @@ if (errors$uniq.length>0) {
         $sampleRecord['date'] = $arr['sample:date'];
       if (!empty($arr['sample:entered_sref_system']))
         $sampleRecord['entered_sref_system'] = $arr['sample:entered_sref_system'];
+      if (!empty($arr['sample:location_name']) && empty($sampleRecord['location_name']))
+        $sampleRecord['location_name'] = $arr['sample:location_name'];
       if (!empty($arr['sample:input_form']))
         $sampleRecord['input_form'] = $arr['sample:input_form'];
       $subSample = data_entry_helper::wrap($sampleRecord, 'sample');
@@ -5558,15 +6015,20 @@ if (errors$uniq.length>0) {
    * or pass true to check all attributes.
    * @param array $zero_values Array of values to consider as zero, which might include localisations of words
    * such as "absent" and "zero" as well as "0".
+   * @param array $hasDataIgnoreAttrs Array or attribute IDs to ignore when checking if record is present.
    * @access Private
    * @return boolean True if present, false if absent (zero abundance record), null if not defined in the data (no occurrence).
    */
-  private static function wrap_species_checklist_record_present($record, $include_if_any_data, $zero_attrs, $zero_values) {
+  private static function wrap_species_checklist_record_present($record, $include_if_any_data, $zero_attrs, $zero_values, $hasDataIgnoreAttrs) {
     // present should contain the ttl ID, or zero if the present box was unchecked
     $gotTtlId=array_key_exists('present', $record) && $record['present']!='0';
     // as we are working on a copy of the record, discard the ID and taxa_taxon_list_id so it is easy to check if there is any other data for the row.
     unset($record['id']);
     unset($record['present']); // stores ttl id
+    // also discard any attributes we included in $hasDataIgnoreAttrs
+    foreach ($hasDataIgnoreAttrs as $attrID) {
+      unset($record['occAttr:' . $attrID]);
+    }
     // if zero attrs not an empty array, we must proceed to check for zeros
     if ($zero_attrs) {
       // check for zero abundance records. First build a regexp that will match the attr IDs to check. Attrs can be
@@ -5591,7 +6053,12 @@ if (errors$uniq.length>0) {
         return false;
       }
     }
-    $recordData=implode('',$record);
+    //We need to implode the individual field if the field itself is an array (multi-value attributes will be an array).
+    foreach ($record as &$recordField) {
+      if (is_array($recordField))
+        $recordField = implode('',$recordField);
+    }
+    $recordData=implode('',$record);  
     $record = ($include_if_any_data && $recordData!='' && !preg_match("/^[0]*$/", $recordData)) ||       // inclusion of record is detected from having a non-zero value in any cell
         (!$include_if_any_data && $gotTtlId); // inclusion of record detected from the presence checkbox
     // return null if no record to create
@@ -5604,20 +6071,21 @@ if (errors$uniq.length>0) {
    * @param array $occ Occurrence submission structure.
    * @param array $record Record information from the form post, which may contain images.
    */
-  private static function attachOccurrenceImagesToModel(&$occ, $record) {
-    $images = array();
+  private static function attachOccurrenceMediaToModel(&$occ, $record) {
+    $media = array();
     foreach ($record as $key=>$value) {
-      if (substr($key, 0, 17)=='occurrence_image:') {
+      // look for occurrence media model, or occurrence image for legacy reasons
+      if (substr($key, 0, 18)==='occurrence_medium:' || substr($key, 0, 17)=='occurrence_medium:') {
         $tokens = explode(':', $key);
         // build an array of the data keyed by the unique image id (token 2)
-        $images[$tokens[2]][$tokens[1]] = array('value' => $value);
+        $media[$tokens[2]][$tokens[1]] = array('value' => $value);
       }
     }
-    foreach($images as $image => $data) {
+    foreach($media as $item => $data) {
       $occ['subModels'][] = array(
           'fkId' => 'occurrence_id',
           'model' => array(
-            'id' => 'occurrence_image',
+            'id' => 'occurrence_medium',
             'fields' => $data
         )
       );
@@ -5670,11 +6138,11 @@ if (errors$uniq.length>0) {
           'occurrence' => array('fk' => 'sample_id')
         )
     );
-    // Either an uploadable file, or a link to a Flickr external detail means include the submodel
+    // Either an uploadable file, or a link to an external detail means include the submodel
     if ((array_key_exists('occurrence:image', $values) && $values['occurrence:image'])
-        || array_key_exists('occurrence_image:external_details', $values) && $values['occurrence_image:external_details']) {
+        || array_key_exists('occurrence_medium:external_details', $values) && $values['occurrence_medium:external_details']) {
       $structure['submodel']['submodel'] = array(
-          'model' => 'occurrence_image',
+          'model' => 'occurrence_medium',
           'fk' => 'occurrence_id'
       );
     }
@@ -5701,7 +6169,7 @@ if (errors$uniq.length>0) {
    * @return array Sample submission array
    */
   public static function build_sample_occurrences_list_submission($values, $include_if_any_data=false,
-      $zero_attrs = array(), $zero_values=array('0','None','Absent')) {
+      $zero_attrs = true, $zero_values=array('0','None','Absent')) {
     // We're mainly submitting to the sample model
     $sampleMod = submission_builder::wrap_with_images($values, 'sample');
     $occurrences = data_entry_helper::wrap_species_checklist($values, $include_if_any_data,
@@ -5738,7 +6206,7 @@ if (errors$uniq.length>0) {
    * @return array Sample submission array
    */
   public static function build_sample_subsamples_occurrences_submission($values, $include_if_any_data=false,
-       $zero_attrs = array(), $zero_values=array('0','None','Absent'))
+       $zero_attrs = true, $zero_values=array('0','None','Absent'))
   {
     // We're mainly submitting to the sample model
     $sampleMod = submission_builder::wrap_with_images($values, 'sample');
@@ -5825,13 +6293,20 @@ if (errors$uniq.length>0) {
         }
       }
       elseif (array_key_exists('warning',$response)) {
-        $r .= 'A warning occurred when the data was submitted.';
-        $r .= '<p class="error">'.$response['error']."</p>\n";
+        if (function_exists('hostsite_show_message')) {
+          hostsite_show_message(lang::get('A warning occurred when the data was submitted.').' '.$response['error'], 'error');
+        } else { 
+          $r .= 'A warning occurred when the data was submitted.';
+          $r .= '<p class="error">'.$response['error']."</p>\n";
+        }
       }
       elseif (array_key_exists('success',$response)) {
         if (empty($successMessage)) 
           $successMessage = lang::get('Thank you for submitting your data.');
-        $r .= "<div class=\"ui-widget ui-corner-all ui-state-highlight page-notice\">" . $successMessage . "</div>\n";
+        if (function_exists('hostsite_show_message'))
+          hostsite_show_message($successMessage);
+        else
+          $r .= "<div class=\"ui-widget ui-corner-all ui-state-highlight page-notice\">" . $successMessage . "</div>\n";
       }
     }
     else
@@ -5952,8 +6427,6 @@ if (errors$uniq.length>0) {
       }
       self::check_config('$geoplanet_api_key', isset(self::$geoplanet_api_key), empty(self::$geoplanet_api_key), $missing_configs, $blank_configs);
       self::check_config('$bing_api_key', isset(self::$bing_api_key), empty(self::$bing_api_key), $missing_configs, $blank_configs);
-      self::check_config('$flickr_api_key', isset(self::$flickr_api_key), empty(self::$flickr_api_key), $missing_configs, $blank_configs);
-      self::check_config('$flickr_api_secret', isset(self::$flickr_api_secret), empty(self::$flickr_api_secret), $missing_configs, $blank_configs);
       // Warn the user of the missing ones - the important bit.
       if (count($missing_configs)>0) {
         $r .= '<li class="ui-widget ui-state-error">Error: The following configuration entries are missing from helper_config.php : '.
@@ -5969,9 +6442,17 @@ if (errors$uniq.length>0) {
       if (!is_dir($cacheFolder)) {
         $r .= '<li class="ui-state-error">The cache path setting in helper_config.php points to a missing directory. This will result in slow form loading performance.</li>';
       } elseif (!is_writeable($cacheFolder)) {
-        $r .= '<li class="ui-state-error">The cache path setting in helper_config.php points to a read only directory (' . $cacheFolder . '). This will result in slow form loading performance.</li>';
-      } elseif ($fullInfo) {
-          $r .= '<li>Success: Cache directory is present and writeable.</li>';
+        $r .= '<li class="ui-state-error">The cache path setting in helper_config.php points to a read only directory (' . $cacheFolder . '). Please change it to writeable.</li>';
+      } else {
+        // need a proper test, as is_writeable can report true when the cache file can't be created.
+        $handle = @fopen("$cacheFolder/test.txt", 'wb');
+        if ($handle) {
+          fclose($handle);
+          if ($fullInfo) 
+            $r .= '<li>Success: Cache directory is present and writeable.</li>';
+        } else
+          $r .= '<li class="ui-state-error">Warning: The cache path setting in helper_config.php points to a directory that I can\'t write a file into (' . $cacheFolder . '). Please change it to writeable.</li>';
+        
       }
       $interim_image_folder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
       if (!is_writeable(self::relative_client_helper_path() . $interim_image_folder)) 
@@ -6040,15 +6521,23 @@ if (errors$uniq.length>0) {
   */
   public static function getAttributes($options, $indexedArray = true, $sharing=false) {
     $attrs = array();
-    $query = array();
+    // there is a possiblility that the $options['extraParams'] already features a query entry.
+    if(isset($options['extraParams']['query'])) {
+      $query = json_decode($options['extraParams']['query'], true);
+      unset($options['extraParams']['query']);
+      if (!isset($query['in']))
+        $query['in']=array();
+    }
+    else
+      $query = array('in'=>array());
     self::add_resource('json');
     if (isset($options['website_ids'])) {
-      $query['in']=array('website_id'=>$options['website_ids']);
+      $query['in']['website_id']=$options['website_ids'];
     } elseif ($options['attrtable']!=='person_attribute') {
       $surveys = array(NULL);
       if (isset($options['survey_id']))
         $surveys[] = $options['survey_id'];
-      $query['in']=array('restrict_to_survey_id'=>$surveys);
+      $query['in']['restrict_to_survey_id']=$surveys;
     }
     if ($options['attrtable']=='sample_attribute') {
       // for sample attributes, we want all which have null in the restrict_to_sample_method_id,
@@ -6066,16 +6555,15 @@ if (errors$uniq.length>0) {
         $methods[] = $options['location_type_id'];
       $query['in']['restrict_to_location_type_id'] = $methods;
     }
-    if (count($query))
-      $query = urlencode(json_encode($query));
+    
     $attrOptions = array(
-          'table'=>$options['attrtable'],
-           'extraParams'=> $options['extraParams']+ array(
-             'deleted' => 'f',
-             'website_deleted' => 'f',
-             'query'=>$query,
-             'orderby'=>'weight'
-           )
+        'table'=>$options['attrtable'],
+        'extraParams'=> array_merge(array(
+           'deleted' => 'f',
+           'website_deleted' => 'f',
+           'orderby'=>'weight',
+           'query'=>json_encode($query),
+        ), $options['extraParams'])
     );
     if ($sharing)
       $attrOptions['sharing'] = $sharing;
@@ -6083,6 +6571,9 @@ if (errors$uniq.length>0) {
     if (array_key_exists('error', $response))
       return $response;
     if(isset($options['id'])){
+      // if an ID is set in the options extra params, then it refers to the attribute table, not the value table.
+      unset($options['extraParams']['id']);
+      unset($options['extraParams']['query']);
       $options['extraParams'][$options['key']] = $options['id'];
       $existingValuesOptions = array(
         'table'=>$options['valuetable'],
@@ -6152,6 +6643,7 @@ if (errors$uniq.length>0) {
         return $item['default_float_value'];
       case 'I':
       case 'L':
+      case 'B':
         return $item['default_int_value'];
       case 'D':
       case 'V':
@@ -6224,6 +6716,33 @@ if (errors$uniq.length>0) {
   * @todo full handling of the control_type. Only works for text data at the moment.
   */
   public static function outputAttribute($item, $options=array()) {
+    if (!empty($item['multi_value']) && $item['multi_value']==='t' && !empty($options['controlCount']) ) {
+      // don't need an array field - we will make a unique set of control names instead
+      $item['fieldname'] = preg_replace('/\[\]$/', '', $item['fieldname']);
+      $r = "<label class=\"auto\">$item[caption]<br/>";
+      $origFieldName = empty($item['fieldname']) ? '' : $item['fieldname'];
+      $origDefault = empty($item['default']) ? array() : $item['default'];
+      for ($i=1; $i<=$options['controlCount']; $i++) {
+        $item['caption']=$i;
+        // Might need to match to existing attribute values in entity to load here
+        if (!empty($origDefault) && isset($origDefault[$i-1]) && is_array($origDefault[$i-1])) {
+          $item['fieldname']=$origDefault[$i-1]['fieldname'].':';
+          $item['id']=$origDefault[$i-1]['fieldname'].':';
+          $item['default']=$origDefault[$i-1]['default'];
+        } elseif (preg_match('/^[a-z]+Attr:[\d]+$/', $origFieldName)) {
+          // make unique fieldname
+          $item['fieldname']="$origFieldName::$i";
+          $item['id']="$origFieldName::$i";
+          unset($item['default']);
+        }
+        $r .= self::internalOutputAttribute($item, $options);
+      }
+      return "$r</label>";
+    }
+    return self::internalOutputAttribute($item, $options);
+  }
+  
+  private static function internalOutputAttribute($item, $options) {
     $options = array_merge(array(
       'extraParams' => array()
     ), $options);
@@ -6241,37 +6760,65 @@ if (errors$uniq.length>0) {
     }
     if(isset($item['default']) && $item['default']!="")
       $attrOptions['default']= $item['default'];
+      //the following two lines are a temporary fix to allow a control_type to be specified via the form's user interface form structure      
+    if(isset($attrOptions['control_type']) && $attrOptions['control_type']!="")
+      $item['control_type']= $attrOptions['control_type'];
+    unset($ctrl);
     switch ($item['data_type']) {
         case 'Text':
         case 'T':
           if (isset($item['control_type']) &&
               ($item['control_type']=='text_input' || $item['control_type']=='textarea'
               || $item['control_type']=='postcode_textbox' || $item['control_type']=='time_input'
-              || $item['control_type']=='hidden_text' )) {
+              || $item['control_type']=='hidden_text' || $item['control_type']=='complex_attr_grid' )) {
             $ctrl = $item['control_type'];
           } else {
             $ctrl = 'text_input';
           }
           $output = self::$ctrl($attrOptions);
           break;
-        case 'Float':
-        case 'F':
         case 'Integer':
         case 'I':
+          // We can use integer fields to store the results of custom lookups, e.g. against species or locations...
+          if (isset($item['control_type']) &&
+              ($item['control_type']=='species_autocomplete' || $item['control_type']=='location_autocomplete')) {
+            $ctrl = $item['control_type'];
+          }
+          // flow through
+        case 'Float':
+        case 'F':
+          if (!isset($ctrl))
+            $ctrl='text_input';
           if (!empty($item['system_function']) && $item['system_function']==='group_id') {
-            // convert to a lookup control to lookup a group
-            $attrOptions = array_merge(array(
+            $attrLookupOptions = array_merge(array(
               'report'=>'library/groups/groups_list',
-              'captionField'=>'title',
-              'valueField'=>'id'
+              'nocache'=>true
             ), $attrOptions);
-            $attrOptions['extraParams']=array_merge(array(
+            $attrLookupOptions['extraParams']=array_merge(array(
               'currentUser'=> hostsite_get_user_field('indicia_user_id'),
               'userFilterMode'=>'member'
-            ), $attrOptions['extraParams']);
+            ), $attrLookupOptions['extraParams']);
+            $groupsList = self::get_population_data($attrLookupOptions);
+            $groupsArr = array();
+            $privateGroups = array();
+            foreach ($groupsList as $group) {
+              $groupsArr[$group['id']] = $group['title'];
+              if ($group['private_records']==='t')
+                $privateGroups[] = $group['id'];
+            }
+            self::$javascript .= "indiciaData.privateGroups=".json_encode($privateGroups).";
+$('#".str_replace(':', '\\\\:', $attrOptions['id'])."').change(function(evt) {
+  if ($.inArray($(evt.currentTarget).val(), indiciaData.privateGroups)) {
+    //$('#occurrence\\:release_status').val('
+  }
+});
+";
+            
+            $attrOptions['lookupValues'] = $groupsArr;
             $output=self::select($attrOptions);
+            $output.="<input id=\"occurrence:release_status\" type=\"hidden\" value=\"R\">\n";
           } else
-            $output = self::text_input($attrOptions);
+            $output = self::$ctrl($attrOptions);
           break;
         case 'Boolean':
         case 'B':
@@ -6323,6 +6870,8 @@ if (errors$uniq.length>0) {
               $ctrl = 'select';
             }
           }
+          if (isset($item['multi_value']) && $item['multi_value']==='t') 
+            $attrOptions['multiselect']=true;
           if(array_key_exists('lookUpKey', $options)){
             $lookUpKey = $options['lookUpKey'];
           } else {
@@ -6355,12 +6904,12 @@ if (errors$uniq.length>0) {
                 $attrOptions['defaultCaption'] = $response[0]['term'];
             }
           }
-          $output .= call_user_func(array('data_entry_helper', $ctrl), array_merge($attrOptions, array(
+          $output .= call_user_func(array(get_called_class(), $ctrl), array_merge($attrOptions, array(
                   'table'=>'termlists_term',
                   'captionField'=>'term',
                   'valueField'=>$lookUpKey,
                   'extraParams' => array_merge($options['extraParams'] + $dataSvcParams))));
-          break;
+          break;         
         default:
             if ($item)
               $output = '<strong>UNKNOWN DATA TYPE "'.$item['data_type'].'" FOR ID:'.$item['id'].' CAPTION:'.$item['caption'].'</strong><br />';
@@ -6376,7 +6925,7 @@ if (errors$uniq.length>0) {
    * Retrieves an array of just the image data from a $_POST or set of control values.
    *
    * @param array $values Pass the $_POST data or other array of form values in this parameter.
-   * @param string $modelName The singular name of the image table, e.g. location_image or occurrence_image etc. If
+   * @param string $modelName The singular name of the media table, e.g. location_medium or occurrence_medium etc. If
    * null, then any image model will be used.
    * @param boolean $simpleFileInputs If true, then allows a file input with name=occurrence:image (or similar)
    * to be used to point to an image file. The file is uploaded to the interim image folder to ensure that it
@@ -6384,8 +6933,11 @@ if (errors$uniq.length>0) {
    * @param boolean $moveSimpleFiles If true, then any file uploaded by normal means to the server (via multipart form submission
    * for a field named occurrence:image[:n] or similar) will be moved to the interim image upload folder.
    */
-  public static function extract_image_data($values, $modelName=null, $simpleFileInputs=false, $moveSimpleFiles=false) {
+  public static function extract_media_data($values, $modelName=null, $simpleFileInputs=false, $moveSimpleFiles=false) {
     $r = array();
+    // legacy reasons, the model name might refer to _image model, rather than _medium. 
+    $modelName = preg_replace('/^([a-z_]*)_image/', '${1}_medium', $modelName);
+    $legacyModelName = preg_replace('/^([a-z_]*)_medium/', '${1}_image', $modelName);
     foreach ($values as $key => $value) {
       if (!empty($value)) {
         // If the field is a path, and the model name matches or we are not filtering on model name
@@ -6401,14 +6953,17 @@ if (errors$uniq.length>0) {
             $pathPos = strlen($key)-5;
           }
         }
-        if ($pathPos !==false && ($modelName === null || $modelName == substr($key, 0, strlen($modelName)))) {
+        if ($pathPos !==false && ($modelName === null || $modelName == substr($key, 0, strlen($modelName)) || 
+            $legacyModelName == substr($key, 0, strlen($legacyModelName)))) {
           $prefix = substr($key, 0, $pathPos);
           $r[] = array(
             // Id is set only when saving over an existing record.
             'id' => array_key_exists($prefix.':id'.$uniqueId, $values) ?
                 $values[$prefix.':id'.$uniqueId] : '',
             'path' => $value,
-            'caption' => isset($values[$prefix.':caption'.$uniqueId]) ? utf8_encode($values[$prefix.':caption'.$uniqueId]) : ''
+            'caption' => isset($values[$prefix.':caption'.$uniqueId]) ? utf8_encode($values[$prefix.':caption'.$uniqueId]) : '',
+            'media_type_id' => isset($values[$prefix.':media_type_id'.$uniqueId]) ? utf8_encode($values[$prefix.':media_type_id'.$uniqueId]) : '',
+            'media_type' => isset($values[$prefix.':media_type'.$uniqueId]) ? utf8_encode($values[$prefix.':media_type'.$uniqueId]) : ''
           );
           // if deleted = 't', add it to array so image is marked deleted
           if (isset($values[$prefix.':deleted'.$uniqueId]) && $values[$prefix.':deleted'.$uniqueId]==='t') {
@@ -6418,10 +6973,11 @@ if (errors$uniq.length>0) {
       }
     }
 
-    // Now look for image file inputs, called something like occurrence:image[:n]
+    // Now look for image file inputs, called something like occurrence:medium[:n]
     if ($simpleFileInputs) {
       foreach($_FILES as $key => $file) {
-        if (substr($key, 0, strlen($modelName))==str_replace('_', ':', $modelName)) {
+        if (substr($key, 0, strlen($modelName))==str_replace('_', ':', $modelName)
+            || substr($key, 0, strlen($legacyModelName))==str_replace('_', ':', $legacyModelName)) {
           if ($file['error']=='1') {
             // file too big error dur to php.ini setting
             if (self::$validation_errors==null) self::$validation_errors = array();
@@ -6452,7 +7008,7 @@ if (errors$uniq.length>0) {
                 );
                 // record the new file name, also note it in the $_POST data so it can be tracked after a validation failure
                 $_FILES[$key]['name'] = $destination;
-                $pathField = str_replace(':image','_image:path', $key);
+                $pathField = str_replace(array(':medium',':image'),array('_medium:path','_image:path'), $key);
                 $_POST[$pathField] = $destination;
               }
             } else {

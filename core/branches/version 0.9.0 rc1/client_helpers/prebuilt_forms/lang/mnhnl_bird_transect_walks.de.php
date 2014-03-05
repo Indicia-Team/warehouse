@@ -29,7 +29,6 @@ global $custom_terms;
 $custom_terms = array(
 	'LANG_Trailer_Text' => "Koordination des Monitorings häufiger Brutvögel CoBiMo in Luxemburg: <a href='http://www.naturemwelt.lu/' target='_blank'>natur&ëmwelt</a> (Centrale ornithologique Luxembourg), <a href='http://www.crpgl.lu' target='_blank'>Centre de Recherche Public - Gabriel Lippmann</a> (Département Environnement et Agro-biotechnologies) & <a href='http://www.environnement.public.lu' target='_blank'>Ministère du Développement durable et des Infrastructures</a> (Département de l'environnement)",
 	'LANG_not_logged_in' => 'Um den Inhalt zu sehen, müssen Sie sich einloggen.',
-	'LANG_no_permissions' => "Sie müssen entweder eine eingetragene Benutzer oder eine eingetragene Admin dieser Form sein, um dieses Formular zugreifen.",
 	'LANG_Location_Layer' => 'Ebene der Erfassungsquadrate',
 	'LANG_Occurrence_List_Layer'=> 'Ebene der Feststellungen',
 	'LANG_Surveys' => 'Erfassung',
@@ -42,7 +41,6 @@ $custom_terms = array(
 	'LANG_Show' => 'Anzeigen',
 	'LANG_Add_Survey' => 'Neue Erfassung hinzufügen',
 	'LANG_Not_Allocated' => 'Not Allocated',
-	'LANG_Save_Location_Allocations' => 'Save Location Allocations',
 	'LANG_Survey' => 'Erfassung',
 	'LANG_Show_Occurrence' => 'Feststellung anzeigen',
 	'LANG_Edit_Occurrence' => 'Feststellung editieren',

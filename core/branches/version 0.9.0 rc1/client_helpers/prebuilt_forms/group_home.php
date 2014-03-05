@@ -65,6 +65,7 @@ class iform_group_home extends iform_dynamic_report_explorer {
       'extraParams'=>self::$auth['read'] + array('id'=>$_GET['group_id'])
     ));
     $group = $group[0];
+    hostsite_set_page_title($group['title']);
     $filter = data_entry_helper::get_population_data(array(
       'table'=>'filter',
       'extraParams'=>self::$auth['read'] + array('id'=>$group['filter_id'])

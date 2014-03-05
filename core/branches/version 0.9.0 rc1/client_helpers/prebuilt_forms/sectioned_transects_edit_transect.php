@@ -39,6 +39,11 @@ class iform_sectioned_transects_edit_transect {
   private static $cmsUserList = null;
   
   /**
+   * @var int Contains the id of the location attribute used to store the CMS user ID.
+   */
+  protected static $branchCmsUserAttrId;
+  
+  /**
    * @var string The Url to post AJAX form saves to.
    */
   private static $ajaxFormUrl = null;
@@ -188,6 +193,30 @@ class iform_sectioned_transects_edit_transect {
             'default'=>true,
             'required'=>false,
             'group' => 'Transects Editor Settings'
+          ),
+          array(
+            'name'=>'autocalc_section_length_attr_id',
+            'caption'=>'Location attribute to autocalc section length',
+            'description'=>'Location attribute that stores the section length, if you want it to be autocalculated from the geometry.',
+            'type'=>'select',
+            'table'=>'location_attribute',
+            'valueField'=>'id',
+            'captionField'=>'caption',
+            'group'=>'Transects Editor Settings',
+            'required'=>false
+          ),
+          array(
+            'name'=>'default_section_grid_ref',
+            'caption'=>'Default grid ref for a section?',
+            'description'=>'Default the grid ref for a section to what?',
+            'type'=>'select',
+            'lookupValues'=>array(
+              'parent'=>'Same as parent transect',
+              'sectionCentroid100'=>'100m grid square covering the centroid of the section',
+              'sectionStart100'=>'100m grid square covering the start of the section'
+            ),
+            'default'=>'parent',
+            'group'=>'Transects Editor Settings'
           )
         )
     );
@@ -197,7 +226,7 @@ class iform_sectioned_transects_edit_transect {
    * parameters unless the Edit and Save button is clicked. So, apply some defaults to keep those old forms
    * working.
    */
-  protected function getArgDefaults($args) {
+  protected static function getArgDefaults($args) {
       
     if (!isset($args['route_map_height'])) $args['route_map_height'] = 600;
     if (!isset($args['route_map_buffer'])) $args['route_map_buffer'] = 0.1;
@@ -208,7 +237,7 @@ class iform_sectioned_transects_edit_transect {
     return $args;
   }
 
-  private function extract_attr(&$attributes, $caption, $unset=true) {
+  private static function extract_attr(&$attributes, $caption, $unset=true) {
   	$found=false;
   	foreach($attributes as $idx => $attr) {
   		if (strcasecmp($attr['caption'], $caption)===0) { // should this be untranslated?
@@ -288,16 +317,21 @@ class iform_sectioned_transects_edit_transect {
       // keep a copy of the cms user ID attribute so we can use it later.
       self::$cmsUserAttrId = $settings['cmsUserAttr']['attributeId'];
     }
+    
     // need to check if branch allocation is active.
     if ($args['branch_assignment_permission'] != '') {
-    	if (false== ($settings['branchCmsUserAttr'] = self::extract_attr($settings['attributes'], "Branch CMS User ID")))
-    		return '<br />This form is designed to be used with either<br />1) the Branch CMS User ID attribute setup for locations in the survey, or<br />2) the "Permission name for Branch Manager" option left blank.<br />';
+      if (false== ($settings['branchCmsUserAttr'] = self::extract_attr($settings['attributes'], "Branch CMS User ID")))
+        return '<br />This form is designed to be used with either<br />1) the Branch CMS User ID attribute setup for locations in the survey, or<br />2) the "Permission name for Branch Manager" option left blank.<br />';
+      // keep a copy of the branch cms user ID attribute so we can use it later.
+      self::$branchCmsUserAttrId = $settings['branchCmsUserAttr']['attributeId'];
     }
     
     data_entry_helper::$javascript .= "indiciaData.sections = {};\n";
     $settings['sections']=array();
     $settings['numSectionsAttr'] = "";
     $settings['maxSectionCount'] = $args['maxSectionCount'];
+    $settings['autocalcSectionLengthAttrId'] = empty($args['autocalc_section_length_attr_id']) ? 0 : $args['autocalc_section_length_attr_id'];
+    $settings['defaultSectionGridRef'] = empty($args['default_section_grid_ref']) ? 'parent' : $args['default_section_grid_ref'];
     if ($settings['locationId']) {
       data_entry_helper::load_existing_record($auth['read'], 'location', $settings['locationId']);
       $settings['walks'] = data_entry_helper::get_population_data(array(
@@ -315,7 +349,7 @@ class iform_sectioned_transects_edit_transect {
             isset($settings['cmsUserAttr']['default']) &&
             !empty($settings['cmsUserAttr']['default'])) {
           foreach($settings['cmsUserAttr']['default'] as $value) { // multi value
-            if($value == $user->uid) { // comparing string against int so no triple equals
+            if($value['default'] == $user->uid) { // comparing string against int so no triple equals
               $settings['canEditBody'] = true;
               $settings['canEditSections'] = true;
               break;
@@ -326,10 +360,14 @@ class iform_sectioned_transects_edit_transect {
         if($args['branch_assignment_permission'] != '' &&
             user_access($args['branch_assignment_permission']) &&
             isset($settings['branchCmsUserAttr']['default']) &&
-            !empty($settings['branchCmsUserAttr']['default']) &&
-            $settings['branchCmsUserAttr']['default'] == $user->uid) { // comparing string against int so no triple equals
-          $settings['canEditBody'] = true;
-          $settings['canAllocUser'] = true;
+            !empty($settings['branchCmsUserAttr']['default'])) {
+          foreach($settings['branchCmsUserAttr']['default'] as $value) { // now multi value
+            if($value['default'] == $user->uid) { // comparing string against int so no triple equals
+              $settings['canEditBody'] = true;
+              $settings['canAllocUser'] = true;
+              break;
+            }
+          }
         }
       } // for an admin user the defaults apply, which will be can do everything.
       // find the number of sections attribute.
@@ -411,9 +449,12 @@ class iform_sectioned_transects_edit_transect {
     data_entry_helper::$javascript .= "indiciaData.currentSection = '';\n";
     data_entry_helper::$javascript .= "indiciaData.sectionTypeId = '".$settings['locationTypes'][1]['id']."';\n";
     data_entry_helper::$javascript .= "indiciaData.sectionDeleteConfirm = \"".lang::get('Are you sure you wish to delete section')."\";\n";
+    data_entry_helper::$javascript .= "indiciaData.sectionInsertConfirm = \"".lang::get('Are you sure you wish to insert a new section after section')."\";\n";
     data_entry_helper::$javascript .= "indiciaData.sectionChangeConfirm = \"".lang::get('Do you wish to save the currently unsaved changes you have made to the Section Details?')."\";\n";
     data_entry_helper::$javascript .= "indiciaData.numSectionsAttrName = \"".$settings['numSectionsAttr']."\";\n";
     data_entry_helper::$javascript .= "indiciaData.maxSectionCount = \"".$settings['maxSectionCount']."\";\n";
+    data_entry_helper::$javascript .= "indiciaData.autocalcSectionLengthAttrId = ".$settings['autocalcSectionLengthAttrId'].";\n";
+    data_entry_helper::$javascript .= "indiciaData.defaultSectionGridRef = '".$settings['defaultSectionGridRef']."';\n";
     if ($settings['locationId'])
       data_entry_helper::$javascript .= "selectSection('S1', true);\n";
     return $r;
@@ -588,6 +629,8 @@ $('#delete-transect').click(deleteSurvey);
         $options['toolbarSuffix'] = '<input type="button" value="'.lang::get('Remove Section').'" class="remove-section form-button right" title="'.lang::get('Completely remove the highlighted section. The total number of sections will be reduced by one. The form will be reloaded after the section is deleted.').'">';
       else $options['toolbarSuffix'] = '';
       $options['toolbarSuffix'] .= '<input type="button" value="'.lang::get('Erase Route').'" class="erase-route form-button right" title="'.lang::get('If the Draw Line control is active, this will erase each drawn point one at a time. If not active, then this will erase the whole highlighted route. This keeps the Section, allowing you to redraw the route for it.').'">';
+      if($settings['canEditSections'] && count($settings['sections'])<$args['maxSectionCount'] && $settings['numSectionsAttr'] != "") // do not allow insertion of section if it exceeds max number, or if the is no section number attribute
+        $options['toolbarSuffix'] .= '<input type="button" value="'.lang::get('Insert Section').'" class="insert-section form-button right" title="'.lang::get('This inserts an extra section after the currently selected section. All subsequent sections are renumbered, increasing by one. All associated occurrences are kept with the moved sections. This can be used to facilitate the splitting of this section.').'">';
       // also let the user click on a feature to select it. The highlighter just makes it easier to select one.
       // these controls are not present in read-only mode: all you can do is look at the map.
       $options['standardControls'][] = 'selectFeature';
@@ -744,6 +787,8 @@ $('#delete-transect').click(deleteSurvey);
       }
       self::$cmsUserList = $users;
     } else $users= self::$cmsUserList;
+    
+    // next reduce the list to branch users
     if($settings['canAllocBranch']){ // only check the users permissions if can change value - for performance reasons.
       $new_users = array();
       foreach ($users as $uid=>$name){
@@ -751,19 +796,38 @@ $('#delete-transect').click(deleteSurvey);
         if(user_access($args['branch_assignment_permission'], $account))
           $new_users[$uid]=$name;
       }
-      $users = array(''=>lang::get('Please select Branch Manager')) + $new_users;
-    } else
-      $users = array(''=>lang::get('Branch Manager not allocated yet')) + $users;
+      $users = $new_users;
+    }
+
     $r = '<fieldset id="alloc-branch"><legend>'.lang::get('Site Branch Allocation').'</legend>';
-    $r .= data_entry_helper::select(array(
-    		'label' => lang::get('Branch Manager'),
-    		'id' => $branchCmsUserAttr['id'],
-    		'fieldname' => $branchCmsUserAttr['fieldname'],
-    		'default' => $branchCmsUserAttr['default'],
-    		'disabled' => $settings['canAllocBranch'] ? '' : ' disabled="disabled" ',
-    		'lookupValues' => $users
-    ));
+    if($settings['canAllocBranch']) {
+      $r .= data_entry_helper::select(array(
+        'label' => lang::get('Select Branch Manager'),
+        'fieldname' => 'branchCmsUserId',
+        'lookupValues' => $users,
+        'afterControl' => '<button id="add-branch-coord" type="button">'.lang::get('Add').'</button>'
+      ));
+      // tell the javascript which attr to save the user ID into
+      data_entry_helper::$javascript .= "indiciaData.locBranchCmsUsrAttr = " . self::$branchCmsUserAttrId . ";\n";
+    }
+    $r .= '<table id="branch-coord-list" style="width: auto">';
+    $rows = '';
+    // cmsUserAttr needs to be multivalue
+    if (isset($branchCmsUserAttr['default']) && !empty($branchCmsUserAttr['default'])) {
+      foreach($branchCmsUserAttr['default'] as $value) {
+        if($settings['canAllocBranch'])
+          $rows .= '<tr><td id="branch-coord-'.$value['default'].'"><input type="hidden" name="'.$value['fieldname'].'" '.
+            'value="'.$value['default'].'"/>'.$users[$value['default']].
+            '</td><td><div class="ui-state-default ui-corner-all"><span class="remove-user ui-icon ui-icon-circle-close"></span></div></td></tr>';
+        else
+          $rows .= '<tr><td>'.$users[$value['default']].'</td><td></td></tr>';
+      }
+    }
+    if (empty($rows))
+      $rows = '<tr><td colspan="2"></td></tr>';
+    $r .= "$rows</table>\n";
     $r .= '</fieldset>';
+
     return $r;
   }
     

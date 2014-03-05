@@ -247,7 +247,7 @@ institutionAttr.after(dateLabel);
       foreach($addBreakSpecs as $addBreakSpec){
         $addBreakDetail = explode(',', $addBreakSpec);
         $addBreakDetail[0] = str_replace(':', '\\:', $addBreakDetail[0]);
-        data_entry_helper::$javascript .= "jQuery('[name^=".$addBreakDetail[0]."\\:],[name^=".$addBreakDetail[0]."\\[\\]]').filter('[value=".$addBreakDetail[1]."]').parent().before('<br/>');\n";
+        data_entry_helper::$javascript .= "jQuery('[name^=".$addBreakDetail[0]."\\:],[name^=".$addBreakDetail[0]."\\[\\]]').filter('[value=".$addBreakDetail[1]."],[value^=".$addBreakDetail[1]."\\:]').parent().before('<br/>');\n";
       }
     }
       
@@ -260,19 +260,19 @@ institutionAttr.after(dateLabel);
     $disturb2InProgTerm = helper_base::get_termlist_terms($auth, 'bats2:disturbances', array('Renovations in progress'));
     $disturb2RecentTerm = helper_base::get_termlist_terms($auth, 'bats2:disturbances', array('Renovations recently completed'));
     data_entry_helper::$javascript .= "
-jQuery('[name=smpAttr\\:".$disturb2AttrID."\\[\\]],[name^=smpAttr\\:".$disturb2AttrID."\\:]').filter('[value=".$disturb2PlannedTerm[0]['meaning_id']."]').change(function(){
+jQuery('[name=smpAttr\\:".$disturb2AttrID."\\[\\]],[name^=smpAttr\\:".$disturb2AttrID."\\:]').filter('[value=".$disturb2PlannedTerm[0]['meaning_id']."],[value^=".$disturb2PlannedTerm[0]['meaning_id']."\\:]').change(function(){
   if(this.checked)
-    jQuery('[name=smpAttr\\:".$disturb2AttrID."\\[\\]],[name^=smpAttr\\:".$disturb2AttrID."\\:]').filter('[value=".$disturb2InProgTerm[0]['meaning_id']."],[value=".$disturb2RecentTerm[0]['meaning_id']."]').removeAttr('checked');
+    jQuery('[name=smpAttr\\:".$disturb2AttrID."\\[\\]],[name^=smpAttr\\:".$disturb2AttrID."\\:]').filter('[value=".$disturb2InProgTerm[0]['meaning_id']."],[value^=".$disturb2InProgTerm[0]['meaning_id']."\\:],[value=".$disturb2RecentTerm[0]['meaning_id']."],[value^=".$disturb2RecentTerm[0]['meaning_id']."\\:]').removeAttr('checked');
 });
-jQuery('[name=smpAttr\\:".$disturb2AttrID."\\[\\]],[name^=smpAttr\\:".$disturb2AttrID."\\:]').filter('[value=".$disturb2InProgTerm[0]['meaning_id']."]').change(function(){
+jQuery('[name=smpAttr\\:".$disturb2AttrID."\\[\\]],[name^=smpAttr\\:".$disturb2AttrID."\\:]').filter('[value=".$disturb2InProgTerm[0]['meaning_id']."],[value^=".$disturb2InProgTerm[0]['meaning_id']."\\:]').change(function(){
   if(this.checked)
-    jQuery('[name=smpAttr\\:".$disturb2AttrID."\\[\\]],[name^=smpAttr\\:".$disturb2AttrID."\\:]').filter('[value=".$disturb2PlannedTerm[0]['meaning_id']."],[value=".$disturb2RecentTerm[0]['meaning_id']."]').removeAttr('checked');
+    jQuery('[name=smpAttr\\:".$disturb2AttrID."\\[\\]],[name^=smpAttr\\:".$disturb2AttrID."\\:]').filter('[value=".$disturb2PlannedTerm[0]['meaning_id']."],[value^=".$disturb2PlannedTerm[0]['meaning_id']."\\:],[value=".$disturb2RecentTerm[0]['meaning_id']."],[value^=".$disturb2RecentTerm[0]['meaning_id']."\\:]').removeAttr('checked');
 });
-jQuery('[name=smpAttr\\:".$disturb2AttrID."\\[\\]],[name^=smpAttr\\:".$disturb2AttrID."\\:]').filter('[value=".$disturb2RecentTerm[0]['meaning_id']."]').change(function(){
+jQuery('[name=smpAttr\\:".$disturb2AttrID."\\[\\]],[name^=smpAttr\\:".$disturb2AttrID."\\:]').filter('[value=".$disturb2RecentTerm[0]['meaning_id']."],[value^=".$disturb2RecentTerm[0]['meaning_id']."\\:]').change(function(){
   if(this.checked)
-    jQuery('[name=smpAttr\\:".$disturb2AttrID."\\[\\]],[name^=smpAttr\\:".$disturb2AttrID."\\:]').filter('[value=".$disturb2InProgTerm[0]['meaning_id']."],[value=".$disturb2PlannedTerm[0]['meaning_id']."]').removeAttr('checked');
+    jQuery('[name=smpAttr\\:".$disturb2AttrID."\\[\\]],[name^=smpAttr\\:".$disturb2AttrID."\\:]').filter('[value=".$disturb2InProgTerm[0]['meaning_id']."],[value^=".$disturb2InProgTerm[0]['meaning_id']."\\:],[value=".$disturb2PlannedTerm[0]['meaning_id']."],[value^=".$disturb2PlannedTerm[0]['meaning_id']."\\:]').removeAttr('checked');
 });
-var myTerm = jQuery('[name=smpAttr\\:".$disturb2AttrID."\\[\\]],[name^=smpAttr\\:".$disturb2AttrID."\\:]').filter('[value=".$disturb2OtherTerm[0]['meaning_id']."]');
+var myTerm = jQuery('[name=smpAttr\\:".$disturb2AttrID."\\[\\]],[name^=smpAttr\\:".$disturb2AttrID."\\:]').filter('[value=".$disturb2OtherTerm[0]['meaning_id']."],[value^=".$disturb2OtherTerm[0]['meaning_id']."\\:]');
 myTerm.change(function(){
     if(this.checked)
       jQuery('[name=smpAttr\\:".$disturbOtherAttrID."],[name^=smpAttr\\:".$disturbOtherAttrID."\\:]').addClass('required').removeAttr('readonly');
@@ -593,7 +593,7 @@ hook_species_checklist_pre_delete_row=function(e) {
     ), $options);
     if ($args['extra_list_id']) $species_ctrl_opts['lookupListId']=$args['extra_list_id'];
     if (isset($args['col_widths']) && $args['col_widths']) $species_ctrl_opts['colWidths']=explode(',', $args['col_widths']);
-    call_user_func(array(get_called_class(), 'build_grid_taxon_label_function'), $args);
+    call_user_func(array(get_called_class(), 'build_grid_taxon_label_function'), $args, array());
     // Start by outputting a hidden value that tells us we are using a grid when the data is posted,
     // then output the grid control
     return self::mnhnl_bats2_species_checklist($args, $species_ctrl_opts);
@@ -660,7 +660,7 @@ hook_species_checklist_pre_delete_row=function(e) {
       self::species_checklist_prepare_attributes($options, $attributes, $occAttrControls, $occAttrs);
       $retVal = "<p>".lang::get('LANG_SpeciesInstructions')."</p>\n";
       if (isset($options['lookupListId'])) {
-         self::$cloneableTable = self::get_species_checklist_clonable_row($args, $options, $occAttrControls, $attributes);
+         self::$cloneableTable = self::get_species_checklist_clonable_row($options, $occAttrControls, $attributes);
       }
       $retVal .= '<table class="ui-widget ui-widget-content mnhnl-species-grid '.$options['class'].'" id="'.$options['id'].'">';
       $retVal .= self::get_species_checklist_header($options, $attributes).'<tbody>';
@@ -707,6 +707,7 @@ hook_species_checklist_pre_delete_row=function(e) {
           $ctrlId = "sc:".$method['meaning_id'].":$ttlid:".($existing_record_id ? $existing_record_id : "x".$rowIdx).":present";
           $retVal .= '<td>'.$method['term'].':</td><td class="scPresenceCell" style="display:none"><input type="hidden" class="scPresence" name="'.$ctrlId.'" value="1" /></td><td><span>';
           foreach ($attrsPerRow[$id] as $attrId) {
+            // no complex values in checkboxes as the controls are vanilla
           	if ($existing_record_id) {
               $search = preg_grep("/^sc:".$method['meaning_id'].":$ttlid:$existing_record_id:occAttr:$attrId".'[:[0-9]*]?$/', array_keys(data_entry_helper::$entity_to_load));
               $ctrlId = (count($search)===1) ? implode('', $search) : "sc:".$method['meaning_id'].":$ttlid:$existing_record_id:occAttr:$attrId";
@@ -880,7 +881,7 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
         // as we are using meaning_ids, we can't use standard default value method.
         if (isset($attributes[$attrId]['default']) && !empty($attributes[$attrId]['default'])) {
           $existing_value=$attributes[$attrId]['default'];
-          // For select controls, specify which option is selected from the existing value
+          // For select controls, specify which option is selected from the existing value. checkbox controls are vanilla so no complex values
           if (substr($oc, 0, 7)=='<select') {
             $oc = str_replace('value="'.$existing_value.'"', 'value="'.$existing_value.'" selected="selected"', $oc);
           } else if(strpos($oc, 'radio') !== false) {
@@ -926,13 +927,24 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
     // copy the options array so we can modify it
     $extraTaxonOptions = array_merge(array(), $options);
     // We don't want to filter the taxa to be added, because if they are in the sample, then they must be included whatever.
+    $ids = array();
     unset($extraTaxonOptions['extraParams']['taxon_list_id']);
     unset($extraTaxonOptions['extraParams']['preferred']);
     unset($extraTaxonOptions['extraParams']['language_iso']);
-     // append the taxa to the list to load into the grid
+    foreach(data_entry_helper::$entity_to_load as $key => $value) {
+      // 'sc:<method>:<taxa_taxon_list_id>:<occID>:occAttr:<attrID>[:<attrValID>]'
+      $parts = explode(':', $key,4);
+      // Is this taxon attribute data?
+      if (count($parts) == 4 && $parts[0] == 'sc'&& $parts[1]!='' && $parts[2]!='-ttlId-' && $parts[3]!='' && !in_array($parts[2], $ids))
+        $ids[] = $parts[2];
+    }
+    if(count($ids)==0) return $ids;
+    $extraTaxonOptions['extraParams']['id'] = $ids;
+    // append the taxa to the list to load into the grid
     $fullTaxalist = data_entry_helper::get_population_data($extraTaxonOptions);
     $occList = array();
     foreach(data_entry_helper::$entity_to_load as $key => $value) {
+      // 'sc:<method>:<taxa_taxon_list_id>:<occID>:occAttr:<attrID>[:<attrValID>]'
       $parts = explode(':', $key,5);
       // Is this taxon attribute data?
       if (count($parts) > 2 && $parts[0] == 'sc' && $parts[1]!='' && $parts[2]!='-ttlId-') {

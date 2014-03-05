@@ -398,7 +398,7 @@ class iform_pollenator_gallery {
     return 'Pollenators: Gallery';
   }
 
-  public static function get_perms($nid) {
+  public static function get_perms($nid, $args) {
     return array('IForm n'.$nid.' access',
     			'IForm n'.$nid.' delete collection',
     			'IForm n'.$nid.' flower expert',

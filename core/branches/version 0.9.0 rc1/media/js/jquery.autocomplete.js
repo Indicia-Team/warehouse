@@ -90,16 +90,33 @@ $.Autocompleter = function(input, options) {
   if (options.selectMode) {
     $input.after('<span class="autocomplete-select"></span>');
     var btn=$input.next('.autocomplete-select');
-    // set height, and adjust for borders
-    btn.css('height', $input.height()+($input.outerHeight()-$input.innerHeight())-(btn.outerHeight()-btn.innerHeight()));
+    // set height, allowing for fact it might start hidden and therefore we can't measure the input height, and adjust for borders
+    if ($input.is(':visible')) {
+      btn.css('height', $input.height()+($input.outerHeight()-$input.innerHeight())-(btn.outerHeight()-btn.innerHeight()));
+    } else {
+      btn.css('height', 17); // a guess
+    }
     btn.css('padding-top', $input.css('padding-top'));
     btn.css('padding-bottom', $input.css('padding-bottom'));
     btn.css('margin-top', $input.css('margin-top'));
     btn.css('margin-bottom', $input.css('margin-bottom'));
+    btn.css('margin-left', 0);
     btn.css('vertical-align', $input.css('vertical-align'));
     if (btn.parents('.scTaxonCell').length) {
       btn.css('margin-left', '-'+(btn.outerWidth()+1)+'px');
     }
+    //The following code makes sure the select list is always hidden as soon as the input field loses focus.
+    function hideList() {
+        hideResultsNow(false);
+    }
+    $input.blur(function() {
+      //Make sure the select list is already displayed before we hide it onBlur, if we don't do this, if the user is focussed
+      //in the input box and clicks the arrow to expand the list, then it is hidden straight away as soon as it opens.
+      if (select.visible()) {
+        //Delay the hide list slightly otherwise the select list is hidden before a click on it is processed
+        window.setTimeout(hideList, 200);
+      }
+    });
     btn.click(function() {
       if (select.visible()) {
         hideResultsNow(false);
@@ -172,7 +189,9 @@ $.Autocompleter = function(input, options) {
           $input.trigger('return');
         }
       case KEY.TAB:
-        selectCurrent(event.keyCode);
+        if (options.continueOnBlur || event.keyCode===KEY.RETURN) {
+          selectCurrent(event.keyCode);
+        }
         break;
         
       case KEY.ESC:

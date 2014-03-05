@@ -3,8 +3,18 @@ var saveComment, saveVerifyComment;
 (function ($) {
   "use strict";
   
-  var rowRequest=null, occurrence_id = null, currRec = null, urlSep, validator, speciesLayers = [], trustsCounter, multimode=false;
-  var email = {to:'', subject:'', body:'', type:''};
+  var rowRequest=null, occurrence_id = null, currRec = null, urlSep, validator, speciesLayers = [], 
+      trustsCounter, multimode=false, email = {to:'', subject:'', body:'', type:''};
+      
+  mapInitialisationHooks.push(function(div) {
+    // nasty hack to fix a problem where these layers get stuck and won't reload after pan/zoom on IE & Chrome
+    div.map.events.register('moveend', null, function() {
+      $.each(speciesLayers, function(idx, layer) {
+        indiciaData.mapdiv.map.removeLayer(layer);
+        indiciaData.mapdiv.map.addLayer(layer);
+      });
+    });
+  });
 
   // IE7 compatability
   if(!Array.indexOf){
@@ -55,11 +65,12 @@ var saveComment, saveVerifyComment;
               '&nonce=' + indiciaData.read.nonce + '&auth_token=' + indiciaData.read.auth_token);
           // reload current tabs
           $('#record-details-tabs').tabs('load', $('#record-details-tabs').tabs('option', 'selected'));
-          $('#record-details-toolbar *').attr('disabled', '');
+          $('#record-details-toolbar *').removeAttr('disabled');
           showTab();
           // remove any wms layers for species or the gateway data
           $.each(speciesLayers, function(idx, layer) {
             indiciaData.mapdiv.map.removeLayer(layer);
+            layer.destroy();
           });
           speciesLayers = [];
           var layer, thisSpLyrSettings, filter;
@@ -68,7 +79,7 @@ var saveComment, saveVerifyComment;
               thisSpLyrSettings = $.extend({}, layerDef.settings);
               // replace values with the external key if the token is used
               $.each(thisSpLyrSettings, function(prop, value) {
-                if (typeof(value)==='string' && $.trim(value)==='{external_key}') {
+                if (typeof value==='string' && $.trim(value)==='{external_key}') {
                   thisSpLyrSettings[prop]=data.extra.taxon_external_key;
                 }
               });
@@ -186,7 +197,6 @@ var saveComment, saveVerifyComment;
           '<label>To:</label><input type="text" id="email-to" class="email required" value="' + email.to + '"/><br />' +
           '<label>Subject:</label><input type="text" id="email-subject" class="require" value="' + email.subject + '"/><br />' +
           '<label>Body:</label><textarea id="email-body" class="required">' + email.body + '</textarea><br />' +
-          '<input type="hidden" id="set-status" value="' + status + '"/>' +
           '<input type="submit" class="default-button" ' +
               'value="' + indiciaData.popupTranslations.sendEmail + '" />' +
           '</fieldset></form>');
@@ -311,7 +321,7 @@ var saveComment, saveVerifyComment;
     } else {
       postStatusComment(occurrence_id, status, comment);
     }
-  }
+  };
 
   function showTab() {
     if (currRec !== null) {
@@ -384,39 +394,50 @@ var saveComment, saveVerifyComment;
     });
     showTab();
   });
+  
+  function verifyRecordSet(trusted) {
+    var request, params=indiciaData.reports.verification.grid_verification_grid.getUrlParamsForAllRecords();
+    //If doing trusted only, this through as a report parameter.
+    if (trusted) {
+      params.quality_context="T";
+    }
+    request = indiciaData.ajaxUrl + '/bulk_verify/'+indiciaData.nid;
+    $.post(request,
+      'report='+encodeURI(indiciaData.reports.verification.grid_verification_grid[0].settings.dataSource)+'&params='+encodeURI(JSON.stringify(params))+
+      '&user_id='+indiciaData.userId+'&ignore='+$('.grid-verify-popup input[name=ignore-checks-trusted]').attr('checked'),
+      function(response) {
+        indiciaData.reports.verification.grid_verification_grid.reload(true);
+        alert(response + ' records verified');
+      }
+    );
+    $.fancybox.close();
+  }
 
   $(document).ready(function () {
     //Use jQuery to add a button to the top of the verification page. Use this button to access the popup
     //which allows you to verify all trusted records.
     var verifyAllTrustedButton = '<input type="button" value="..." class="default-button verify-grid-trusted tools-btn" id="verify-grid-trusted"/>', 
-        trustedHtml, request;
+        trustedHtml;
     $('#filter-build').after(verifyAllTrustedButton);
     $('#verify-grid-trusted').click(function() {
-      trustedHtml = '<div class="trusted-verify-popup" style="width: 550px"><h2>Verify records by trusted recorders</h2>'+
-                    '<p>This facility allows you to verify all records where the recorder is trusted based on the record\'s '+
-                    'survey, taxon group and location. Before using this facility, set up the recorders you wish to trust '+
-                    'using the ... button next to each record.</p>';
-      trustedHtml += '<label><input type="checkbox" name="ignore-checks-trusted" /> Include failures?</label><p>The records will only be verified if they have been through automated checks ' +
-                     'without any rule violations. If you <em>really</em> trust the records are correct then you can verify them even if they fail some checks by ticking this box.</p>'+
-                     '<button type="button" class="default-button" id="verify-trusted-button">Verify trusted records</button></div>';
+      trustedHtml = '<div class="grid-verify-popup" style="width: 550px"><h2>Verify sets of records</h2>'+
+                    '<p>This facility allows you to verify entire sets of records in one step. Before using this '+
+                    'facility, you should filter the grid so that only the records you want to verify are listed. '+
+                    'You can then choose to either verify the entire set of records from all pages of the grid '+
+                    'or you can verify only those records where the recorder is trusted based on the record\'s '+
+                    'survey, taxon group and location. Before using the latter method of verification, set up the recorders '+
+                    'you wish to trust using the ... button next to each record.</p>';
+      trustedHtml += '<p>The records will only be verified if they have been through automated checks without any rule violations. If you <em>really</em>' +
+                     ' trust the records are correct then you can verify them even if they fail some checks by ticking the following box.</p>'+
+                     '<label class="auto"><input type="checkbox" name="ignore-checks-trusted" /> Include records which fail automated checks?</label>';
+      trustedHtml += '<p class="warning">Remember that the following buttons will verify records from every page in the grid up to a maximum of '+
+              indiciaData.reports.verification.grid_verification_grid[0].settings.recordCount + ' records, not just the current page.</p>';
+      trustedHtml += '<button type="button" class="default-button" id="verify-trusted-button">Verify trusted records</button>';
+      trustedHtml += '<button type="button" class="default-button" id="verify-all-button">Verify all records</button></div>';
+      
       $.fancybox(trustedHtml);
-
-      $('#verify-trusted-button').click(function() {
-        var params=indiciaData.reports.verification.grid_verification_grid.getUrlParamsForAllRecords();
-        //We pass "trusted" as a parameter to the existing verification_list_3 report which has been adjusted
-        //to handle verification of all trusted records.
-        params.quality="T";
-        request = indiciaData.ajaxUrl + '/bulk_verify/'+indiciaData.nid;
-        $.post(request,
-          'report='+encodeURI(indiciaData.reports.verification.grid_verification_grid[0].settings.dataSource)+'&params='+encodeURI(JSON.stringify(params))+
-          '&user_id='+indiciaData.userId+'&ignore='+$('.trusted-verify-popup input[name=ignore-checks-trusted]').attr('checked'),
-          function(response) {
-            indiciaData.reports.verification.grid_verification_grid.reload();
-            alert(response + ' records verified');
-          }
-        );
-        $.fancybox.close();
-      });
+      $('#verify-trusted-button').click(function() {verifyRecordSet(true);});
+      $('#verify-all-button').click(function() {verifyRecordSet(false);});
     });
 
     function quickVerifyPopup() {
@@ -426,10 +447,16 @@ var saveComment, saveVerifyComment;
           'so please ensure you have set the grid\'s filter correctly before proceeding. You should only proceed if you are certain that data you are verifying '+
           'can be trusted without further investigation.</p>'+
           '<label><input type="radio" name="quick-option" value="species" /> Verify grid\'s records of <span class="quick-taxon">'+currRec.extra.taxon+'</span></label><br/>';
-      if (currRec.extra.recorder!=='') {
+      // at this point, we need to know who the created_by_id recorder name is. And if it matches extra.recorder, otherwise this record may have been input by proxy
+      if (currRec.extra.recorder!=='' && currRec.extra.input_by_surname!==null && currRec.extra.created_by_id!=='1'
+          && (currRec.extra.recorder===currRec.extra.input_by_first_name + ' ' + currRec.extra.input_by_surname
+          || currRec.extra.recorder===currRec.extra.input_by_surname + ', ' + currRec.extra.input_by_first_name)) {
         popupHtml += '<label><input type="radio" name="quick-option" value="recorder"/> Verify grid\'s records by <span class="quick-user">'+currRec.extra.recorder+'</span></label><br/>'+
             '<label><input type="radio" name="quick-option" value="species-recorder" /> Verify grid\'s records of <span class="quick-taxon">'+currRec.extra.taxon+
             '</span> by <span class="quick-user">'+currRec.extra.recorder+'</span></label><br/>';
+      } 
+      else if (currRec.extra.recorder!=='' && currRec.extra.recorder!==null && currRec.extra.input_by_surname!==null && currRec.extra.created_by_id!=='1') {
+        popupHtml += '<p class="helpText">Because the recorder, ' + currRec.extra.recorder + ', is not linked to a logged in user, quick verification tools cannot filter to records by this recorder.</p>';
       }
       popupHtml += '<label><input type="checkbox" name="ignore-checks" /> Include failures?</label><p class="helpText">The records will only be verified if they do not fail '+
           'any automated verification checks. If you <em>really</em> trust the records are correct then you can verify them even if they fail some checks by ticking this box.</p>';
@@ -437,14 +464,14 @@ var saveComment, saveVerifyComment;
           '<button type="button" class="default-button cancel-button">Cancel</button></p></div>';
       $.fancybox(popupHtml);
       $('.quick-verify-popup .verify-button').click(function() {
-        var params=indiciaData.reports.verification.grid_verification_grid.getUrlParamsForAllRecords(), request,
-            radio=$('.quick-verify-popup input[name=quick-option]:checked');
+        var params=indiciaData.reports.verification.grid_verification_grid.getUrlParamsForAllRecords(),
+            radio=$('.quick-verify-popup input[name=quick-option]:checked'), request;
         if (radio.length===1) {
           if ($(radio).val().indexOf('recorder')!==-1) {
-            params.user=currRec.extra.recorder;
+            params.created_by_id=currRec.extra.created_by_id;
           }
           if ($(radio).val().indexOf('species')!==-1) {
-            params.taxon=currRec.extra.taxon;
+            params.taxon_meaning_list=currRec.extra.taxon_meaning_id;
           }
           // We now have parameters that can be applied to a report and we know the report, so we can ask the warehouse
           // to verify the occurrences provided by the report that match the filter.
@@ -544,30 +571,30 @@ var saveComment, saveVerifyComment;
           $(".trust-button").removeAttr('disabled');
           document.getElementById('trust-button').innerHTML = "Trust";
         } else {
-          var downgradeConfirmRequired = false;
-          var downgradeConfirmed=false;
-          var duplicateDetected = false;
-          var trustNeedsRemoval = [];
-          var getTrustsReport = indiciaData.read.url +'/index.php/services/report/requestReport?report=library/user_trusts/get_user_trust_for_record.xml&mode=json&mode=json&callback=?';
-          var getTrustsReportParameters = {
-            'user_id':currRec.extra.created_by_id,
-            'survey_id':currRec.extra.survey_id,
-            'taxon_group_id':currRec.extra.taxon_group_id,
-            'location_ids':currRec.extra.locality_ids,
-            'auth_token': indiciaData.read.auth_token,
-            'nonce': indiciaData.read.nonce,
-            'reportSource':'local'
-          };
+          var downgradeConfirmRequired = false,
+              downgradeConfirmed=false,
+              duplicateDetected = false,
+              trustNeedsRemoval = [],
+              getTrustsReport = indiciaData.read.url +'/index.php/services/report/requestReport?report=library/user_trusts/get_user_trust_for_record.xml&mode=json&mode=json&callback=?',
+              getTrustsReportParameters = {
+                'user_id':currRec.extra.created_by_id,
+                'survey_id':currRec.extra.survey_id,
+                'taxon_group_id':currRec.extra.taxon_group_id,
+                'location_ids':currRec.extra.locality_ids,
+                'auth_token': indiciaData.read.auth_token,
+                'nonce': indiciaData.read.nonce,
+                'reportSource':'local'
+              };
           //Collect the existing trust data associated with the record so we can compare the new trust data with it
           $.getJSON (
             getTrustsReport,
             getTrustsReportParameters,
             function (data) {
-              var downgradeDetect = 0;
-              var upgradeDetect = 0;
-              var trustNeedsRemovalIndex = 0;
-              var trustNeedsDowngradeIndex = 0;
-              var trustNeedsDowngrade = [];
+              var downgradeDetect = 0,
+                  upgradeDetect = 0,
+                  trustNeedsRemovalIndex = 0,
+                  trustNeedsDowngradeIndex = 0,
+                  trustNeedsDowngrade = [];
               //Cycle through the existing trust data we need for the record
               for (i=0; i<data.length; i++) {
                 //If the new selections match an existing record then we flag it as a duplicate not be be added
@@ -579,16 +606,16 @@ var saveComment, saveVerifyComment;
                 }
                 //If any of the 3 trust items the user has entered are smaller than the existing trust item we are looking at,
                 //then we flag it as the existing row needs to be at least partially downgraded
-                if (theData['user_trust:survey_id'] && !data[i].survey_id ||
-                    theData['user_trust:taxon_group_id'] && !data[i].taxon_group_id ||
-                    theData['user_trust:location_id'] && !data[i].location_id) {
+                if ((theData['user_trust:survey_id'] && !data[i].survey_id) ||
+                    (theData['user_trust:taxon_group_id'] && !data[i].taxon_group_id) ||
+                    (theData['user_trust:location_id'] && !data[i].location_id)) {
                   downgradeDetect++;
                 }
                 //If any of the 3 trust items the user has entered are bigger than the existing trust item we are looking at,
                 //then we flag it as the existing row needs to be at least partially upgraded
-                if (!theData['user_trust:survey_id'] && data[i].survey_id ||
-                    !theData['user_trust:taxon_group_id'] && data[i].taxon_group_id ||
-                    !theData['user_trust:location_id'] && data[i].location_id) {
+                if ((!theData['user_trust:survey_id'] && data[i].survey_id) ||
+                    (!theData['user_trust:taxon_group_id'] && data[i].taxon_group_id) ||
+                    (!theData['user_trust:location_id'] && data[i].location_id)) {
                   upgradeDetect++;
                 }
                 //If we have detected that there are more items to be downgraded than upgraded for an existing trust then we flag it.
@@ -687,7 +714,7 @@ var saveComment, saveVerifyComment;
         } else {
           $('.trust-tool').show();
         }
-        if ($(row).find('.row-belongs-to-site').html()==='true') {
+        if ($(row).find('.row-belongs-to-site').val()==='t') {
           $(row).find('.verify-tools .edit-record').show();
         } else {
           $(row).find('.verify-tools .edit-record').hide();
@@ -769,14 +796,14 @@ var saveComment, saveVerifyComment;
 
   //Function to draw any existing trusts from the database
   function drawExistingTrusts() {
-    var getTrustsReport = indiciaData.indiciaSvc +'/index.php/services/report/requestReport?report=library/user_trusts/get_user_trust_for_record.xml&mode=json&callback=?', 
+    var getTrustsReport = indiciaData.read.url +'/index.php/services/report/requestReport?report=library/user_trusts/get_user_trust_for_record.xml&mode=json&callback=?', 
         getTrustsReportParameters = {
           'user_id':currRec.extra.created_by_id,
           'survey_id':currRec.extra.survey_id,
           'taxon_group_id':currRec.extra.taxon_group_id,
           'location_ids':currRec.extra.locality_ids,
-          'auth_token': indiciaData.readAuth,
-          'nonce': indiciaData.nonce,
+          'auth_token': indiciaData.read.auth_token,
+          'nonce': indiciaData.read.nonce,
           'reportSource':'local'
         }, i, idNum;
     //variable holds our HTML

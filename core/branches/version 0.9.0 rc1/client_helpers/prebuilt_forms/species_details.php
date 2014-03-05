@@ -152,10 +152,11 @@ class iform_species_details extends iform_dynamic {
       array(
         'name'=>'explore_param_name',
         'caption'=>'Explore Parameter Name',
-        'description'=>'Name of the parameter added to the Explore URL to pass through the taxa_taxon_list_id of the species being explored.',
+        'description'=>'Name of the parameter added to the Explore URL to pass through the taxon_meaning_id of the species being explored. '.
+            'The default provided (filter-taxon_meaning_list) is correct if your report uses the standard parameters configuration.',
         'type' => 'string',
         'required'=>false,
-        'default' => '',
+        'default' => 'filter-taxon_meaning_list',
         'group' => 'User Interface'
       ),
       array(
@@ -411,7 +412,7 @@ class iform_species_details extends iform_dynamic {
       )
     ));
 
-    $r = '<div class="record-details-fields">';
+    $r = '<div class="record-details-fields ui-helper-clearfix">';
     //draw the species names and custom attributes
     if (isset($details_report))
       $r .= $details_report;
@@ -604,13 +605,75 @@ class iform_species_details extends iform_dynamic {
       $url = str_replace('{rootFolder}', $rootFolder, $url);
       $url.= (strpos($url, '?')===false) ? '?' : '&';
       $url .= $args['explore_param_name'] . '=' . self::$taxon_meaning_id;
-      $r='<a class="button" href="'.$url.'">' . lang::get('Explore records of {1}', self::get_best_name()) . '</a>' ;
+      $r='<a class="button" href="'.$url.'">' . lang::get('Explore records of {1}', self::get_best_name()) . '</a>';
     }
     else 
       throw new exception('The page has been setup to use an explore records button, but an "Explore URL" or "Explore Parameter Name" has not been specified.');
     return $r;
   }
  
+  /*
+   * Control gets the description of a taxon and displays it on the screen.
+   */
+  protected static function get_control_speciesnotes($auth, $args) {
+    //We can't return the notes for a specific taxon unless we have an taxa_taxon_list_id, as the meaning could apply
+    //to several taxa. In this case ignore the notes control.
+    if (empty(self::$taxa_taxon_list_id))
+      return '';
+    $reportResult = report_helper::get_report_data(array(
+      'readAuth' => $auth['read'],
+      'dataSource'=>'library/taxa/species_notes_and_images',
+      'useCache' => false,
+      'extraParams'=>array(
+        'taxa_taxon_list_id'=>self::$taxa_taxon_list_id,
+        'taxon_meaning_id'=>self::$taxon_meaning_id,
+      )
+    ));
+    if (!empty($reportResult[0]['the_text']))
+      return '<div class="field ui-helper-clearfix"><span>Description:</span><span>'.$reportResult[0]['the_text'].'</span></div>';
+  }
+  
+  /*
+   * Control returns all the images associated with a particular taxon meaning in the taxon_images table. 
+   * These are the the general images of a species as opposed to the photos control which returns photos of the specific occurrences.
+   */
+  protected static function get_control_speciesphotos($auth, $args, $tabalias, $options) {
+    iform_load_helpers(array('report_helper'));
+    data_entry_helper::add_resource('fancybox');
+    global $user;  
+    //default an items per page if not set by administrator
+    if (empty($options['itemsPerPage']) || $options['itemsPerPage'] == NULL) {
+      $options['itemsPerPage'] = 6;
+    }  
+    //default a column count if not set by administrator
+    if (empty($options['galleryColCount']) || $options['galleryColCount'] == NULL) {
+      $options['galleryColCount'] = 3;
+    }    
+    //Use this report to return the photos
+    $reportName = 'library/taxa/species_notes_and_images';
+    $reportResults = report_helper::report_grid(array(
+      'readAuth' => $auth['read'],
+      'dataSource'=> $reportName,
+      'itemsPerPage' => $options['itemsPerPage'],
+      'columns' => array(
+        array(
+          'fieldname' => 'the_text',
+          'template' => '<div class="gallery-item"><a class="fancybox" href="{imageFolder}{the_text}"><img src="{imageFolder}thumb-{the_text}" title="{caption}" alt="{caption}"/><br/>{caption}</a></div>'
+        )
+      ),
+      'mode' => 'report',
+      'autoParamsForm' => false,
+      'includeAllColumns' => false,
+      'headers' => false,
+      'galleryColCount' => $options['galleryColCount'],
+      'extraParams'=>array(
+        'taxa_taxon_list_id'=>self::$taxa_taxon_list_id,
+        'taxon_meaning_id'=>self::$taxon_meaning_id,
+      )
+    ));    
+    return '<h3>Images</h3>'.$reportResults;
+  }
+  
   /**
    * When a form version is upgraded introducing new parameters, old forms will not get the defaults for the 
    * parameters unless the Edit and Save button is clicked. So, apply some defaults to keep those old forms

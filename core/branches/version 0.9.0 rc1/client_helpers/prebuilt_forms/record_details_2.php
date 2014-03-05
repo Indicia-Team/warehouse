@@ -128,9 +128,13 @@ Record ID',
             "The following types of component can be specified. <br/>".
             "<strong>[control name]</strong> indicates a predefined control is to be added to the form with the following predefined controls available: <br/>".
                 "&nbsp;&nbsp;<strong>[recorddetails]</strong> - displays information relating to the occurrence and its sample<br/>".
+                "&nbsp;&nbsp;<strong>[buttons]</strong> - outputs a row of edit and explore buttons. Use the @buttons option to change the list of buttons to output ".
+                "by setting this to an array, e.g. [edit] will output just the edit button, [explore] outputs just the explore button, [species details] outputs a species details button. ".
+                "The edit button is automatically skipped if the user does not have rights to edit the record.<br/>".
                 "&nbsp;&nbsp;<strong>[comments]</strong> - lists any comments associated with the occurrence. Also includes the ability to add a comment<br/>".
                 "&nbsp;&nbsp;<strong>[photos]</strong> - photos associated with the occurrence<br/>".
                 "&nbsp;&nbsp;<strong>[map]</strong> - a map that links to the spatial reference and location<br/>".
+                "&nbsp;&nbsp;<strong>[previous determinations]</strong> - a list of previous determinations for this record<br/>".
             "<strong>=tab/page name=</strong> is used to specify the name of a tab or wizard page (alpha-numeric characters only). ".
             "If the page interface type is set to one page, then each tab/page name is displayed as a seperate section on the page. ".
             "Note that in one page mode, the tab/page names are not displayed on the screen.<br/>".
@@ -139,14 +143,54 @@ Record ID',
           'default' => 
 '=Record Details and Comments=
 [recorddetails]
+[buttons]
 |
+[previous determinations]
 [comments]
 =Map and Photos=
 [map]
 |
 [photos]',
           'group' => 'User Interface'
-        )
+        ),
+        array(
+          'name' => 'default_input_form',
+          'caption' => 'Default input form path',
+          'description' => 'Default path to use to the edit form for old records which did not have their input form recorded in the database. Specify the '.
+              'path to a general purpose list entry form.',
+          'type' => 'text_input',
+          'group' => 'Path configuration'
+        ),
+        array(
+          'name'=>'explore_url',
+          'caption'=>'Explore URL',
+          'description'=>'When you click on the Explore this species\' records button you are taken to this URL. Use {rootfolder} as a replacement '.
+              'token for the site\'s root URL.',
+          'type' => 'string',
+          'required'=>false,
+          'default' => '',
+          'group' => 'Path configuration'
+        ),
+        array(
+          'name'=>'species_details_url',
+          'caption'=>'Species details URL',
+          'description'=>'When you click on the ... species page button you are taken to this URL with taxon_meaning_id as a parameter. Use {rootfolder} as a replacement '.
+              'token for the site\'s root URL.',
+          'type' => 'string',
+          'required'=>false,
+          'default' => '',
+          'group' => 'Path configuration'
+        ),
+        array(
+          'name'=>'explore_param_name',
+          'caption'=>'Explore Parameter Name',
+          'description'=>'Name of the parameter added to the Explore URL to pass through the taxon_meaning_id of the species being explored. '.
+            'The default provided (filter-taxon_meaning_list) is correct if your report uses the standard parameters configuration.',
+          'type' => 'string',
+          'required'=>false,
+          'default' => '',
+          'group' => 'Path configuration'
+        ),
       )
     );
     return $retVal;
@@ -164,7 +208,7 @@ Record ID',
     if (empty($_GET['occurrence_id'])) {
       return 'This form requires an occurrence_id parameter in the URL.';
     } else {
-      data_entry_helper::$javascript .= 'indiciaData.username = "'.$user->name."\";\n";
+      data_entry_helper::$javascript .= 'indiciaData.username = "'.hostsite_get_user_field('name')."\";\n";
       data_entry_helper::$javascript .= 'indiciaData.user_id = "'.hostsite_get_user_field('indicia_user_id')."\";\n";
       data_entry_helper::$javascript .= 'indiciaData.website_id = '.$args['website_id'].";\n";
       data_entry_helper::$javascript .= 'indiciaData.ajaxFormPostUrl="'.iform_ajaxproxy_url(null, 'occurrence')."&sharing=reporting\";\n";
@@ -191,21 +235,22 @@ Record ID',
     $availableFields = array(
       'occurrence_id'=>'Record ID',
       'taxon'=>'Species',
-      'preferred_taxon'=>'Preferred Species Name',
+      'preferred_taxon'=>'Preferred species name',
       'survey_title'=>'Survey',
       'recorder'=>'Recorder',
-      'record_status'=>'Record Status',
-      'verifier'=>'Verified By',
+      'inputter'=>'Input by',
+      'record_status'=>'Record status',
+      'verifier'=>'Verified by',
       'date'=>'Date',
-      'entered_sref'=>'Grid Ref',
-      'occurrence_comment'=>'Record Comment',
-      'location_name'=>'Site Name',
-      'sample_comment'=>'Sample Comment',
+      'entered_sref'=>'Grid ref',
+      'occurrence_comment'=>'Record comment',
+      'location_name'=>'Site name',
+      'sample_comment'=>'Sample comment',
     );
     
     self::load_record($auth);
     
-    $details_report = '<div class="record-details-fields">';
+    $details_report = '<div class="record-details-fields ui-helper-clearfix">';
     foreach($availableFields as $field=>$caption) {
       if ($test===in_array(strtolower($caption), $fieldsLower) && !empty(self::$record[$field]))
         $details_report .= str_replace(array('{caption}','{value}'), array($caption, self::$record[$field]), $attrsTemplate);      
@@ -216,7 +261,7 @@ Record ID',
       //draw any custom attributes added by the user, but only for a non-sensitive record
       $attrs_report = report_helper::freeform_report(array(
         'readAuth' => $auth['read'],
-        'class'=>'record-details-fields',
+        'class'=>'record-details-fields ui-helper-clearfix',
         'dataSource'=>'reports_for_prebuilt_forms/record_details_2/record_data_attributes_with_hiddens',
         'bands'=>array(array('content'=>$attrsTemplate)),
         'extraParams'=>array(
@@ -371,33 +416,131 @@ Record ID',
     return '<h3>Comments</h3>'.$r;
   }
   
-  /*
+  /**
    * Displays a list of determinations associated with an occurrence record.
    * 
    * @return string The determinations report grid.
    */
   protected static function get_control_previousdeterminations($auth, $args, $tabalias, $options) {
     iform_load_helpers(array('report_helper'));
-
-    if ($options['itemsPerPage'] == NULL) {
-      $options['itemsPerPage'] = 12;
-    }  
-    if (empty($options['report']))
-      return '<h3>Previous Determinations</h3>'.'<h4><i>Please provide a Previous Determinations report to run in the Form Structure box on the edit tab.</i></h4>';
-    else 
-      return '<h3>Previous Determinations</h3>'.report_helper::report_grid(array(
+    $options = array_merge(array(
+      'report'=>'library/determinations/determinations_list'
+    ));
+    return report_helper::freeform_report(array(
         'readAuth' => $auth['read'],
         'dataSource'=>$options['report'],
-        'itemsPerPage' => $options['itemsPerPage'],
         'mode' => 'report',
         'autoParamsForm' => false,
-        'includeAllColumns' => true,
-        'headers' => true,
+        'header' => '<h3>Previous Determinations</h3>',
+        'bands'=>array(array('content'=>'<div class="field ui-helper-clearfix">{taxon_html} by {person_name} on {date}</div>')),
         'extraParams' => array(
           'occurrence_id'=>$_GET['occurrence_id'],
           'sharing'=>'reporting'
         ),
-      ));
+    ));
+  }
+  
+  /**
+   * An edit button control which only displays if the user owns the record.
+   * @param array $auth Read authorisation array
+   * @param array $args Form options
+   * @param string $tabalias The alias of the tab this appears on
+   * @param array $options Options configured for this control. 
+   * @return string HTML for the buttons.
+   */
+  protected static function get_control_buttons($auth, $args, $tabalias, $options) {
+    $options = array_merge(array(
+      'buttons'=>array('edit','explore','species details')
+    ));
+    $r = '';
+    foreach ($options['buttons'] as $button) {
+      if ($button==='edit')
+        $r .= self::buttons_edit($auth, $args, $tabalias, $options);
+      elseif ($button==='explore')
+        $r .= self::buttons_explore($auth, $args, $tabalias, $options);
+      elseif ($button==='species details')
+        $r .= self::buttons_species_details($auth, $args, $tabalias, $options);
+      else
+        throw new exception("Unknown button $button");
+    }
+    return $r;
+  }
+  
+  /**
+   * Retrieve the HTML required for an edit record button.
+   * @param array $auth Read authorisation array
+   * @param array $args Form options
+   * @param string $tabalias The alias of the tab this appears on
+   * @param array $options Options configured for this control. 
+   * @return string HTML for the button.
+   */
+  protected static function buttons_edit($auth, $args, $tabalias, $options) {
+    if (!$args['default_input_form'])
+      throw new exception('Please set the default input form path setting before using the [edit button] control');
+    self::load_record($auth);
+    $record = self::$record;
+    if (($user_id=hostsite_get_user_field('indicia_user_id')) && $user_id==self::$record['created_by_id']
+        && variable_get('indicia_website_id', 0)==self::$record['website_id']) {
+      $pathParam = (function_exists('variable_get') && variable_get('clean_url', 0)=='0') ? 'q' : '';
+      if (empty($record['input_form']))
+        $record['input_form']=$args['default_input_form'];
+      $url = data_entry_helper::getRootFolder() . (empty($pathParam) ? '' : "?$pathParam=") .
+          "$record[input_form]&occurrence_id=$record[occurrence_id]";
+      return '<a class="button" href="'.$url.'">' . lang::get('Edit this record') . '</a>';
+    }
+    else 
+      // no rights to edit, so button omitted.
+      return '';
+  }
+  
+  /**
+   * Retrieve the HTML required for an explore records of the same species button.
+   * @param array $auth Read authorisation array
+   * @param array $args Form options
+   * @param string $tabalias The alias of the tab this appears on
+   * @param array $options Options configured for this control. 
+   * @return string HTML for the button.
+   */
+  protected static function buttons_explore($auth, $args, $tabalias, $options) {
+    if (!empty($args['explore_url']) && !empty($args['explore_param_name'])) {
+      $url = $args['explore_url'];
+      if (strcasecmp(substr($url, 0, 12), '{rootfolder}')!==0 && strcasecmp(substr($url, 0, 4), 'http')!==0)
+          $url='{rootFolder}'.$url;
+      $pathParam = (function_exists('variable_get') && variable_get('clean_url', 0)=='0') ? 'q' : '';
+      $rootFolder = data_entry_helper::getRootFolder() . (empty($pathParam) ? '' : "?$pathParam=");
+      $url = str_replace('{rootFolder}', $rootFolder, $url);
+      $url.= (strpos($url, '?')===false) ? '?' : '&';
+      $url .= $args['explore_param_name'] . '=' . self::$record['taxon_meaning_id'];
+      $taxon = empty(self::$record['preferred_taxon']) ? self::$record['taxon'] : self::$record['preferred_taxon'];
+      $r='<a class="button" href="'.$url.'">' . lang::get('Explore records of {1}', $taxon) . '</a>';
+    }
+    else 
+      throw new exception('The page has been setup to use an explore records button, but an "Explore URL" or "Explore Parameter Name" has not been specified.');
+    return $r;
+  }
+  
+  /**
+   * Retrieve the HTML required for an details of the same species button.
+   * @param array $auth Read authorisation array
+   * @param array $args Form options
+   * @param string $tabalias The alias of the tab this appears on
+   * @param array $options Options configured for this control. 
+   * @return string HTML for the button.
+   */
+  protected static function buttons_species_details($auth, $args, $tabalias, $options) {
+    if (!empty($args['species_details_url'])) {
+      $url = $args['species_details_url'];
+      if (strcasecmp(substr($url, 0, 12), '{rootfolder}')!==0 && strcasecmp(substr($url, 0, 4), 'http')!==0)
+          $url='{rootFolder}'.$url;
+      $pathParam = (function_exists('variable_get') && variable_get('clean_url', 0)=='0') ? 'q' : '';
+      $rootFolder = data_entry_helper::getRootFolder() . (empty($pathParam) ? '' : "?$pathParam=");
+      $url = str_replace('{rootFolder}', $rootFolder, $url);
+      $url.= (strpos($url, '?')===false) ? '?' : '&';
+      $url .= 'taxon_meaning_id=' . self::$record['taxon_meaning_id'];
+      $taxon = empty(self::$record['preferred_taxon']) ? self::$record['taxon'] : self::$record['preferred_taxon'];
+      return '<a class="button" href="'.$url.'">' . lang::get('{1} details page', $taxon) . '</a>';
+    }
+    return '';
   }
   
   /*

@@ -27,12 +27,16 @@ include_once 'dynamic.en.php';
  * @package	Client
  */
 $custom_terms = array_merge($custom_terms, array(
+  'LANG_Annotation_Name' => 'Annotation Name',
   'LANG_Location_Name' => 'Name',
   'LANG_Comment' => 'Reason For Change',
   'LANG_Location_Code' => 'Abbreviation',
   'LANG_Location_Created_By' => 'CUDI Form Completed By',
   'LANG_Location_Created_On' => 'Date Completed On',
+  'LANG_Location_Surveys_Date' => 'Survey\'s Date Of First Use',
   'LANG_Location_Type' => 'Location Type',
+  'LANG_Existing_Annotations' => 'Existing Annotations',
+  'LANG_Annotation_Type' => 'Annotation Type',
   'LANG_Location_Preferred_Boundary' => 'Preferred Boundary',
   'LANG_Add_Location' => 'Add New Location',
   'LANG_No_User_Id' => 'This form is configured to show the user a grid of their existing records which they can add to or edit. ' .

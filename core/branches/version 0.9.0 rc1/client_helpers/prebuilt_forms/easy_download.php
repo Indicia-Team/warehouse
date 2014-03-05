@@ -20,6 +20,8 @@
  * @link  http://code.google.com/p/indicia/
  */
 
+require_once ('includes/report_filters.php');
+ 
 /**
  * 
  * 
@@ -94,6 +96,45 @@ class iform_easy_download {
         'default'=>'yes'
       ),
       array(
+        'name'=>'tsv_format',
+        'caption'=>'TSV format download?',
+        'description'=>'Is TSV format available as a download option?',
+        'type'=>'select',
+        'options'=>array(
+          'no'=>'No',
+          'yes'=>'Yes',
+          'expert'=>'Yes, but only for experts'
+        ),
+        'required'=>true,
+        'default'=>'no'
+      ),
+      array(
+        'name'=>'kml_format',
+        'caption'=>'KML format download?',
+        'description'=>'Is KML format available as a download option?',
+        'type'=>'select',
+        'options'=>array(
+          'no'=>'No',
+          'yes'=>'Yes',
+          'expert'=>'Yes, but only for experts'
+        ),
+        'required'=>true,
+        'default'=>'no'
+      ),
+      array(
+        'name'=>'gpx_format',
+        'caption'=>'GPX format download?',
+        'description'=>'Is GPX format available as a download option?',
+        'type'=>'select',
+        'options'=>array(
+          'no'=>'No',
+          'yes'=>'Yes',
+          'expert'=>'Yes, but only for experts'
+        ),
+        'required'=>true,
+        'default'=>'no'
+      ),
+      array(
         'name'=>'nbn_format',
         'caption'=>'NBN format download?',
         'description'=>'Is NBN format available as a download option?',
@@ -122,7 +163,7 @@ class iform_easy_download {
       array(
         'name'=>'report_csv',
         'caption'=>'CSV download format report',
-        'description'=>'Choose the report used for CSV downloads. Report should be compatible with the explore reports.',
+        'description'=>'Choose the report used for CSV downloads. Report should be compatible with the standard report parameters or explore reports.',
         'type'=>'report_helper::report_picker',
         'required'=>true,
         'default'=>'library/occurrences/occurrences_download_2'
@@ -136,9 +177,59 @@ class iform_easy_download {
         'default'=>"smpattrs=\noccattrs=\nsearchArea=\nidlist=\nquality=!R\n"
       ),
       array(
+        'name'=>'report_tsv',
+        'caption'=>'TSV download format report',
+        'description'=>'Choose the report used for TSV downloads. Report should be compatible with the standard report parameters or explore reports.',
+        'type'=>'report_helper::report_picker',
+        'required'=>true,
+        'default'=>'library/occurrences/occurrences_download_2'
+      ),
+      array(
+        'name'=>'report_params_tsv',
+        'caption'=>'TSV Additional parameters',
+        'description'=>'Additional parameters to provide to the report when doing a TSV download. One per line, param=value format.',
+        'type'=>'textarea',
+        'required'=>false,
+        'default'=>"smpattrs=\noccattrs=\nsearchArea=\nidlist=\nquality=!R\n"
+      ),
+      array(
+        'name'=>'report_kml',
+        'caption'=>'KML download format report',
+        'description'=>'Choose the report used for KML downloads. Report should be compatible with the standard report parameters or explore reports and return a WKT for the geometry of the record '.
+            'transformed to EPSG:4326.',
+        'type'=>'report_helper::report_picker',
+        'required'=>true,
+        'default'=>'library/occurrences/occurrences_download_2_gis'
+      ),
+      array(
+        'name'=>'report_params_kml',
+        'caption'=>'KML Additional parameters',
+        'description'=>'Additional parameters to provide to the report when doing a KML download. One per line, param=value format.',
+        'type'=>'textarea',
+        'required'=>false,
+        'default'=>"smpattrs=\noccattrs=\nsearchArea=\nidlist=\nquality=!R\n"
+      ),
+      array(
+        'name'=>'report_gpx',
+        'caption'=>'GPX download format report',
+        'description'=>'Choose the report used for GPX downloads. Report should be compatible with the standard report parameters or explore reports and return a WKT for the geometry of the record '.
+            'transformed to EPSG:4326.',
+        'type'=>'report_helper::report_picker',
+        'required'=>true,
+        'default'=>'library/occurrences/occurrences_download_2_gis'
+      ),
+      array(
+        'name'=>'report_params_gpx',
+        'caption'=>'GPX Additional parameters',
+        'description'=>'Additional parameters to provide to the report when doing a GPX download. One per line, param=value format.',
+        'type'=>'textarea',
+        'required'=>false,
+        'default'=>"smpattrs=\noccattrs=\nsearchArea=\nidlist=\nquality=!R\n"
+      ),
+      array(
         'name'=>'report_nbn',
         'caption'=>'NBN download format report',
-        'description'=>'Choose the report used for NBN downloads. Report should be compatible with the explore reports.',
+        'description'=>'Choose the report used for NBN downloads. Report should be standard report parameters or compatible with the explore reports.',
         'type'=>'report_helper::report_picker',
         'required'=>true,
         'default'=>'library/occurrences/nbn_exchange'
@@ -175,12 +266,19 @@ class iform_easy_download {
   public static function get_form($args, $node, $response=null) {
     // Do they have expert access?
     $expert = (function_exists('user_access') && user_access($args['permission']));
-    
+    $conn = iform_get_connection_details($node);
+    $readAuth = data_entry_helper::get_read_auth($conn['website_id'], $conn['password']);
     // Find out which types of filters and formats are available to the user
-    $filters = self::get_filters($args);
+    $filters = self::get_filters($args, $readAuth);
     $formats = array();
     if ($args['csv_format']==='yes' || ($args['csv_format']==='expert' && $expert))
       $formats[]='csv';
+    if ($args['tsv_format']==='yes' || ($args['tsv_format']==='expert' && $expert))
+      $formats[]='tsv';
+    if ($args['kml_format']==='yes' || ($args['kml_format']==='expert' && $expert))
+      $formats[]='kml';
+    if ($args['gpx_format']==='yes' || ($args['gpx_format']==='expert' && $expert))
+      $formats[]='gpx';
     if ($args['nbn_format']==='yes' || ($args['nbn_format']==='expert' && $expert))
       $formats[]='nbn';
     if (count($filters)===0)
@@ -190,8 +288,7 @@ class iform_easy_download {
     
     if (!empty($_POST))
       self::do_download($args, $filters);
-    $conn = iform_get_connection_details($node);
-    $readAuth = data_entry_helper::get_read_auth($conn['website_id'], $conn['password']);
+    
     iform_load_helpers(array('data_entry_helper'));
     $reload = data_entry_helper::get_reload_link_parts();  
     $reloadPath = $reload['path'];
@@ -249,7 +346,7 @@ class iform_easy_download {
         'helpText' => 'Choose a survey, or <all> to not filter by survey.',
         'blankText' => '<all>',
         'class' => 'control-width-4',
-        'extraParams' => $readAuth + array('sharing' => 'data_flow', 'orderby'=>'title') + $surveysFilter
+        'extraParams' => $readAuth + array('sharing' => 'verification', 'orderby'=>'title') + $surveysFilter
       ));
       $r .= '</div>';
     }
@@ -270,9 +367,15 @@ class iform_easy_download {
     $r .= '<fieldset><legend>'.lang::get('Downloads').'</legend>';
     $r .= '<label>Download options:</label>';
     if (in_array('csv', $formats))
-      $r .= '<input class="inline-control" type="submit" name="format" value="'.lang::get('Download Spreadsheet').'"/>';
+      $r .= '<input class="inline-control" type="submit" name="format" value="'.lang::get('Spreadsheet (CSV)').'"/>';
+    if (in_array('tsv', $formats))
+      $r .= '<input class="inline-control" type="submit" name="format" value="'.lang::get('Tab Separated File (TSV)').'"/>';
+    if (in_array('kml', $formats))
+      $r .= '<input class="inline-control" type="submit" name="format" value="'.lang::get('Google Earth File').'"/>';
+    if (in_array('gpx', $formats))
+      $r .= '<input class="inline-control" type="submit" name="format" value="'.lang::get('GPS Track File').'"/>';
     if (in_array('nbn', $formats)) {
-      $r .= '<input class="inline-control" type="submit" name="format" value="'.lang::get('Download NBN Format').'"/>';
+      $r .= '<input class="inline-control" type="submit" name="format" value="'.lang::get('NBN Format').'"/>';
       $r .= '<p class="helpText">'.lang::get('Note that the NBN format download will only include verified data and excludes records where the date or spatial reference is not compatible with the NBN Gateway.').'</p>';
     }
     $r .= '</fieldset></form>';
@@ -284,12 +387,30 @@ class iform_easy_download {
    * @param array $args Form arguments
    * @return array Associative array of filter type 
    */
-  private static function get_filters($args) {
+  private static function get_filters($args, $readAuth) {
     $filters = array();
     if ($args['allow_my_data'])
       $filters['mine']=lang::get('Download my records');
-    if ($args['allow_experts_data'])
-      $filters['expert']=lang::get('Download all records I have access to as an expert');
+    if ($args['allow_experts_data']) {
+      if (preg_match('/^library\/occurrences\/filterable_/', $args["report_csv"])) {
+        // Using the new standard params style of report. So, we can support verification permissions via filters.
+        // First, apply legacy verification settings from their profile
+        $location_id = hostsite_get_user_field('location_expertise');
+        $taxon_group_ids = hostsite_get_user_field('taxon_groups_expertise');
+        $survey_ids = hostsite_get_user_field('surveys_expertise');
+        if ($location_id || $taxon_group_ids || $survey_ids)
+          $filters['expert'] = lang::get('Download all records I have access to as an expert');
+        // now get their verification contexts
+        $filterData = report_filters_load_existing($readAuth, 'V');
+        foreach ($filterData as $filter) {
+          // does the filter define a verification permissions set?
+          if ($filter['defines_permissions']==='t') {
+            $filters['expert-id-'.$filter['id']] = lang::get('Download my verification records') . ' - ' . $filter['title'];
+          }
+        }
+      } else
+        $filters['expert']=lang::get('Download all records I have access to as an expert');
+    }
     if ($args['allow_all_data'])
       $filters['all']=lang::get('Download all records');
     return $filters;
@@ -299,9 +420,15 @@ class iform_easy_download {
    * Handles a request for download. Works out which type of request it is and calls the appropriate function.
    */
   private static function do_download($args) {
-    if ($_POST['format']===lang::get('Download Spreadsheet'))
+    if ($_POST['format']===lang::get('Spreadsheet (CSV)'))
       self::do_data_services_download($args, 'csv');
-    elseif ($_POST['format']===lang::get('Download NBN Format'))
+    elseif ($_POST['format']===lang::get('Tab Separated File (TSV)'))
+      self::do_data_services_download($args, 'tsv');
+    elseif ($_POST['format']===lang::get('Google Earth File'))
+      self::do_data_services_download($args, 'kml');
+    elseif ($_POST['format']===lang::get('GPS Track File'))
+      self::do_data_services_download($args, 'gpx');
+    elseif ($_POST['format']===lang::get('NBN Format'))
       self::do_data_services_download($args, 'nbn');
   }
   
@@ -309,70 +436,118 @@ class iform_easy_download {
     iform_load_helpers(array('report_helper'));
     $conn = iform_get_connection_details($node);
     $readAuth = data_entry_helper::get_read_auth($conn['website_id'], $conn['password']);
-    $filter = self::build_filter($args, $readAuth, $format);
+    if (preg_match('/^library\/occurrences\/filterable/', $args["report_$format"])) 
+      $filter = self::build_filter($args, $readAuth, $format, true);  
+    else
+      $filter = self::build_filter($args, $readAuth, $format, false);
     global $indicia_templates;
     // let's just get the URL, not the whole anchor element
     $indicia_templates['report_download_link'] = '{link}';
     $limit = ($args['limit']==0 ? '' : $args['limit']); // unlimited or limited
+    $sharing = preg_match('/^expert/', $_POST['user-filter']) ? 'verification' : 'data_flow';
     $url = report_helper::report_download_link(array(
       'readAuth'=>$readAuth,
       'dataSource'=>$args["report_$format"],
       'extraParams'=>$filter,
       'format'=>$format,
-      'sharing'=>'data_flow',
+      'sharing'=>$sharing,
       'itemsPerPage'=>$limit
     ));
     header("Location: $url");
   }
   
-  private static function build_filter($args, $readAuth, $format) {
+  private static function build_filter($args, $readAuth, $format, $useStandardParams) {
     require_once('includes/user.php');
-    $location_expertise = hostsite_get_user_field('location_expertise');
-    $taxon_groups_expertise = hostsite_get_user_field('taxon_groups_expertise');
-    $taxon_groups_expertise = $taxon_groups_expertise ? unserialize($taxon_groups_expertise) : null;
-    $filters = self::get_filters($args);
     $filterToApply = $_POST['user-filter'];
-    if (!array_key_exists($filterToApply, $filters))
+    $availableFilters = self::get_filters($args, $readAuth);
+    if (!array_key_exists($filterToApply, $availableFilters))
       throw new exception('Selected filter type not authorised');
-    // get the surveys the user could have picked from
     if ($filterToApply==='expert') {
+      require_once('includes/user.php');
+      $location_expertise = hostsite_get_user_field('location_expertise');
+      $taxon_groups_expertise = hostsite_get_user_field('taxon_groups_expertise');
+      $taxon_groups_expertise = $taxon_groups_expertise ? unserialize($taxon_groups_expertise) : null;
       $surveys_expertise = hostsite_get_user_field('surveys_expertise');
       $available_surveys = $surveys_expertise ? unserialize($surveys_expertise) : null;
     } else {
-      // set to blank - in the report filter this will act as not filtered
+      // Default is no filter by survey, locality, taxon group
       $available_surveys = '';
+      $taxon_groups_expertise = '';
+      $surveys_expertise = '';
     }
     // We are downloading either a configured survey, a selected single survey, or the surveys the 
     // user can see. The field name used will depend on which of the survey selects were active - 
     // either we are selecting from a list of surveys the user is an expert for, or a list of
     // all surveys.
-    $surveyFieldName='survey_id_'.($filterToApply==='expert' ? 'expert' : 'all');
+    $surveyFieldName='survey_id_'.(preg_match('/^expert/', $filterToApply) ? 'expert' : 'all');
     if (empty($args['survey_id'])) {
       $surveys = empty($_POST[$surveyFieldName]) ? implode(',', $available_surveys) : $_POST[$surveyFieldName];
     } else 
       // survey to load is preconfigured for the form
       $surveys = $args['survey_id'];
     $ownData=$filterToApply==='mine' ? 1 : 0;
+    // depending on if we are using the old explore report format or the new filterable format, the filter field names differ
+    $userIdField = $useStandardParams ? 'user_id' : 'currentUser';
+    $myRecordsField = $useStandardParams ? 'my_records' : 'ownData';
+    $locationIdField = $useStandardParams ? 'indexed_location_id' : 'location_id';
+    $surveysListField = $useStandardParams ? 'survey_list' : 'surveys';
+    $taxonGroupListField = $useStandardParams ? 'taxon_group_list' : 'taxon_groups';
     $filters = array_merge(
       array(
-        'currentUser'=>hostsite_get_user_field('indicia_user_id'),
-        'ownData'=>$ownData,
-        'location_id'=>hostsite_get_user_field('location_expertise'),
-        'ownLocality'=>!empty($location_expertise) && !$ownData ? 1 : 0,
-        'taxon_groups'=>!empty($taxon_groups_expertise) ? implode(',', $taxon_groups_expertise) : '',
-        'ownGroups'=>!empty($taxon_groups_expertise) && $taxon_groups_expertise && !$ownData ? 1 : 0,
-        'surveys'=>$surveys,
+        $userIdField=>hostsite_get_user_field('indicia_user_id'),
+        $myRecordsField=>$ownData,
+        $locationIdField=>$location_expertise,
+        'ownLocality'=>!empty($location_expertise) && $filterToApply==='expert' ? 1 : 0,
+        $taxonGroupListField=>!empty($taxon_groups_expertise) ? implode(',', $taxon_groups_expertise) : '',
+        'ownGroups'=>!empty($taxon_groups_expertise) && $taxon_groups_expertise && $filterToApply==='expert' ? 1 : 0,
+        $surveysListField=>$surveys,
         'ownSurveys'=>empty($surveys) ? 0 : 1
       ), get_options_array_with_user_data($args["report_params_$format"])
     );
+    // some of these filter fields are not required for standard params
+    if ($useStandardParams) {
+      unset($filters['ownLocality']);
+      unset($filters['ownGroups']);
+      unset($filters['ownSurveys']);
+    }
     if (!empty($_POST['date_from']) && $_POST['date_from']!==lang::get('Click here'))
       $filters['date_from']=$_POST['date_from'];
-    else
+    else if (!$useStandardParams) 
       $filters['date_from']='';
     if (!empty($_POST['date_to']) && $_POST['date_to']!==lang::get('Click here'))
       $filters['date_to']=$_POST['date_to'];
-    else
+    else if (!$useStandardParams) 
       $filters['date_to']='';
+    // now, if they have a verification context filter in force, then apply it
+    $filters = array_merge(
+      self::get_filter_verification_context($filterToApply, $readAuth),
+      $filters
+    );
+    return $filters;
+  }
+  
+  /**
+   * If filtering by a verification context, then load the filter and return the array of 
+   * filter data ready to use as a permissions context.
+   *
+   * @param string $filterToApply Identifier for the filter we are appliying. A filter with ID expert-id-n
+   * means that filter ID n will be loaded and returned.
+   */
+  private static function get_filter_verification_context($filterToApply, $readAuth) {
+    $filters = array();
+    if (preg_match('/^expert-id-(\d+)/', $filterToApply, $matches)) {
+      $filterData = report_filters_load_existing($readAuth, 'V');
+      foreach ($filterData as $filterDef) {
+        if ($filterDef['id']===$matches[1]) {
+          $contextFilter = json_decode($filterDef['definition'], true);
+          foreach ($contextFilter as $field=>$value) {
+            // to enforce this as the overall context, defining the maximum limit of the query results, append _context to the field names
+            $filters["{$field}_context"]=$value;
+          }
+          break;
+        }
+      }      
+    }
     return $filters;
   }
 

@@ -125,7 +125,9 @@ class extension_my_sites {
       });
       $('#add-searched-site-button').click(function() {addSite($('#location-search').val());});
       $('#location-select, #location-search, #locality_id').change(function() {
-        indiciaData.mapdiv.locationSelectedInInput(indiciaData.mapdiv, this.value);
+        if (typeof indiciaData.mapdiv!=='undefined') {
+          indiciaData.mapdiv.locationSelectedInInput(indiciaData.mapdiv, this.value);
+        }
       });
       
       linked_site_delete = function(pav_id) {
@@ -171,7 +173,165 @@ class extension_my_sites {
     return data_entry_helper::location_autocomplete($location_list_args);
   }
   
+  /*
+   * Control allows administrators to maintain the "my sites" list for other users. @locationParamFromURL can be supplied as an option
+   * to hide the locations drop-down and automatically get the location id from the $_GET url parameter, this option should be set as the
+   * name of the parameter when it is in use.
+   */
+  public static function add_sites_to_any_user($auth, $args, $tabalias, $options, $path) {
+    //Need to call this so we can use indiciaData.read
+    data_entry_helper::$js_read_tokens = $auth['read'];
+    if (!function_exists('iform_ajaxproxy_url'))
+      return 'An AJAX Proxy module must be enabled for user sites administration to work.';
+    $r = "<form><fieldset><legend>" . lang::get('Add locations to the sites lists for other users') . "</legend>";
+    if (empty($options['locationTypes']) || !preg_match('/^([0-9]+,( )?)*[0-9]+$/', $options['locationTypes']))
+      return 'The sites form is not correctly configured. Please provide the location type you can add.';
+    $locationTypes = explode(',', str_replace(' ', '', $options['locationTypes']));
+    if (empty($options['mySitesPsnAttrId']) || !preg_match('/^[0-9]+$/', $options['mySitesPsnAttrId']))
+      return 'The sites form is not correctly configured. Please provide the person attribute ID used to store My Sites.';
+    if (!empty($options['locationParamFromURL'])&&!empty($_GET[$options['locationParamFromURL']]))
+      $locationIdFromURL=$_GET[$options['locationParamFromURL']];
+    else
+      $locationIdFromURL=0;
+    //If we don't want to automatically get the location id from the URL, then display a drop-down of locations the user can select from   
+    if (empty($locationIdFromURL)) {
+      $r .= '<label>'.lang::get('Location :').'</label> ';
+      //Get a list of all the locations that match the given location types (in this case my sites are returned first, although this isn't a requirement)
+      $r .= data_entry_helper::location_select(array(
+        'id' => 'location-select',
+        'nocache' => true,
+        'report' => 'reports_for_prebuilt_forms/Shorewatch/locations_with_my_sites_first',
+        'extraParams' => $auth['read'] + array('location_type_ids'=>$options['locationTypes'], 'user_id'=>hostsite_get_user_field('indicia_user_id'),
+            'my_sites_person_attr_id'=>$options['mySitesPsnAttrId']),
+
+        'blankText'=>'<' . lang::get('please select') . '>',
+      ));
+    }
+    //Get the user select control
+    $r .= self:: user_select_for_add_sites_to_any_user_control($auth['read'],$args);
+    
+    $r .= '<input id="add-user-site-button" type="button" value="'. lang::get('Add to this User\'s Sites List') .'"/><br></form><br>';
+    
+    $postUrl = iform_ajaxproxy_url(null, 'person_attribute_value');
+
+    //Firstly check both a uer and location have been selected.
+    //Then get the current user/sites saved in the database and if the new combination doesn't already exist then call a function to add it.
+    data_entry_helper::$javascript .= "
+    function duplicateCheck(locationId, userId) {
+      var userIdToAdd = $('#user-select').val();
+      var locationIdToAdd = locationId;
+      var sitesReport = indiciaData.read.url +'/index.php/services/report/requestReport?report=library/locations/all_user_sites.xml&mode=json&mode=json&callback=?';
+        
+      var sitesReportParameters = {
+        'person_site_attr_id': '".$options['mySitesPsnAttrId']."',
+        'auth_token': indiciaData.read.auth_token,
+        'nonce': indiciaData.read.nonce,
+        'reportSource':'local'
+      };
+        
+      if (!userIdToAdd||!locationIdToAdd) {
+        alert('Please select both a user and a location to add.');
+      } else {
+        $.getJSON (
+          sitesReport,
+          sitesReportParameters,
+          function (data) {
+            var duplicateDetected=false;
+            $.each(data, function(i, dataItem) {
+              if (userIdToAdd==dataItem.pav_user_id&&locationIdToAdd==dataItem.location_id) {
+                  duplicateDetected=true;
+              }
+            });
+            if (duplicateDetected===true) {
+              alert('The site/user combination you are adding already exists in the database.');
+            } else {
+              addUserSiteData(locationId, userIdToAdd);
+            }
+          }
+        );
+      }    
+    }
+    ";
+      
+    //After duplicate check is performed, add the user/site combination to the person_attribute_values database table
+    data_entry_helper::$javascript .= "
+    function addUserSiteData(locationId, userIdToAdd) {
+      if (!isNaN(locationId) && locationId!=='') {
+        $.post('$postUrl', 
+          {\"website_id\":".$args['website_id'].",\"person_attribute_id\":".$options['mySitesPsnAttrId'].
+              ",\"user_id\":userIdToAdd,\"int_value\":locationId},
+          function (data) {
+            if (typeof data.error === 'undefined') {
+              alert('User site configuration saved successfully');
+              location.reload();
+            } else {
+              alert(data.error);
+            }              
+          },
+          'json'
+        );
+      }
+    }
+    ";
+    //Call duplicate check when administrator elects to save a user/site combination
+    data_entry_helper::$javascript .= "
+    $('#add-user-site-button').click(function() {
+      //We can get the location id from the url or from the locations drop-down depending on the option the administrator has set.
+      var locationId;
+      if (".$locationIdFromURL.") {
+        locationId = ".$locationIdFromURL.";
+      } else {
+        locationId = $('#location-select').val()       
+      }
+      duplicateCheck(locationId,$('#dynamic-the_user_id').val());
+    });";
+    //Zoom map as user selects locations
+    data_entry_helper::$javascript .= "
+    $('#location-select, #location-search, #locality_id').change(function() {
+      if (typeof indiciaData.mapdiv!=='undefined') {
+        indiciaData.mapdiv.locationSelectedInInput(indiciaData.mapdiv, this.value);
+      }
+    });
+    ";
+    //Function for when user elects to remove sites
+    data_entry_helper::$javascript .= "
+    user_site_delete = function(pav_id) {
+      var userId=$('#dynamic-the_user_id').val();
+      $.post('$postUrl', 
+        {\"website_id\":".$args['website_id'].",\"id\":pav_id, \"deleted\":\"t\"},
+        function (data) {
+          if (typeof data.error === 'undefined') {
+            location.reload(); 
+          } else {
+            alert(data.error);
+          }
+        },
+        'json'
+      );
+    }
+    ";
+    return $r;
+  }
+  
+  /*
+   * User select drop-down for sites administation control
+   */
+  private static function  user_select_for_add_sites_to_any_user_control($readAuth,$args) {
+    $reportOptions = array(
+      'dataSource'=>'library/users/get_people_details_for_website_or_user',
+      'readAuth'=>$readAuth,
+      'extraParams' => array('website_id'=>$args['website_id']),
+      'valueField'=>'id',
+      'captionField'=>'fullname_surname_first'
+    );
+    $userData = data_entry_helper::get_report_data($reportOptions);
+    $r = '<select id="user-select">\n';
+    $r .= '<option value="">'.'please select'.'</option>\n';
+    foreach ($userData as $userItem) {
+      $r .= '<option value='.$userItem['id'].'>'.$userItem['fullname_surname_first'].'</option>';
+    }
+    $r .= '</select>';
+    return '<label>User : </label>'.$r.'<br>';
+  }
 }
-
-
 ?>

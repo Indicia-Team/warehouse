@@ -196,7 +196,7 @@ class extension_event_reports {
   
   /**
    * Outputs a pie chart for the proportion of each taxon group being recorded.  
-   
+   *
    * @param array $auth Authorisation tokens.
    * @param array $args Form arguments (the settings on the form edit tab).
    * @param string $tabalias The alias of the tab this is being loaded onto.
@@ -238,9 +238,23 @@ class extension_event_reports {
     return self::league_table($auth, $args, $options, 'library/locations/species_counts_league_for_event', $label);
   }
   
+  /**
+   * Outputs a league table of the recorders.  
+   *
+   * @param array $auth Authorisation tokens.
+   * @param array $args Form arguments (the settings on the form edit tab).
+   * @param string $tabalias The alias of the tab this is being loaded onto.
+   * @param array $options The options passed to this control using @option=value settings in the form structure.
+   * Options supported are those which can be passed to the report_helper::get_report_data method. In addition
+   * provide a parameter @groupByRecorderName=true to use the recorder's name as a string in the report grouping,
+   * rather than basing the report on the logged in user.
+   * @param string $path The page reload path, in case it is required for the building of links.
+   * @return string HTML to insert into the page for the league table. JavaScript is added to the variables in helper_base.
+   */
   public static function species_by_recorders_league($auth, $args, $tabalias, $options, $path) { 
     $label = empty($options['label']) ? 'Recorders' : $options['label'];
-    return self::league_table($auth, $args, $options, 'library/users/species_counts_league_for_event', $label);  
+    $groupby = isset($options['groupByRecorderName']) && $options['groupByRecorderName'] ? 'recorder_name' : 'users';
+    return self::league_table($auth, $args, $options, "library/$groupby/species_counts_league_for_event", $label);  
   }
   
   private static function league_table($auth, $args, $options, $report, $label) { 
@@ -257,7 +271,7 @@ class extension_event_reports {
       $reportOptions['extraParams']['training'] = 'true';
     $reportOptions['extraParams']['limit']=$reportOptions['limit'];
     $rows = report_helper::get_report_data($reportOptions);
-    $r = "<table class=\"league\"><thead><th>Pos</th><th>$label</th><th>Species</th></head><tbody>";
+    $r = "<table class=\"league\"><thead><th>Pos</th><th>$label</th><th>Species</th></thead><tbody>";
     if (count($rows)) {
       $pos = 1;
       $lastVal = $rows[0]['value'];

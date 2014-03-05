@@ -21,7 +21,14 @@
   the newly added rows.
  */
 var addRowToGridSequence = 1000; // this should be more than the length of the initial taxon list
-function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth, formatter, duplicateMsg, max) {
+
+var bindSpeciesAutocomplete;
+
+(function ($) {
+
+"use strict";
+  
+bindSpeciesAutocomplete = function(selectorID, url, gridId, lookupListId, readAuth, formatter, duplicateMsg, max) {
   // inner function to handle a selection of a taxon from the autocomplete
   var handleSelectedTaxon = function(event, data) {
     var myClass='scMeaning-'+data.taxon_meaning_id;
@@ -51,7 +58,7 @@ function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth
   };
 
     // Attach auto-complete code to the input
-  ctrl = $('#' + selectorID).autocomplete(url+'/taxa_taxon_list', {
+  var ctrl = $('#' + selectorID).autocomplete(url+'/taxa_taxon_list', {
       extraParams : {
         view : 'detail',
         orderby : 'taxon',
@@ -114,3 +121,5 @@ $('.remove-row').live('click', function(e) {
   }
 
 });
+
+}) (jQuery);

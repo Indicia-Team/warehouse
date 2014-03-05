@@ -162,11 +162,11 @@
   padding: 0;
 }
 
-.toolbar {
+#filter-details .toolbar {
   background: #f7f7f7;
 }
 
-.toolbar * {
+#filter-details .toolbar * {
   vertical-align: middle;
 }
 
@@ -195,6 +195,7 @@ fieldset.inline fieldset, div.filter-popup-columns {
   vertical-align: top;
   border: none;
   padding: 4px 12px;
+  margin: 0;
 }
 
 fieldset.inline fieldset label {
@@ -223,11 +224,11 @@ div.filter-popup-columns * {
   margin: 0 6px;
 }
 
-ul.inline {
+#what-tabs ul.inline {
   margin-left: 1em;
 }
 
-ul.inline li {
+#what-tabs ul.inline li {
   display:-moz-inline-stack;
   display:inline-block;
   zoom:1;

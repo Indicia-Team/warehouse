@@ -32,8 +32,18 @@ require_once('includes/report_filters.php');
  */
 class iform_dynamic_report_explorer extends iform_dynamic {
   
-  // count the reports, to generate unique ids
+  /**
+   * Count the reports, to generate unique ids
+   * @var integer
+   */
   private static $reportCount=0;
+  
+  /**
+   * If using the standard params system then the way of supplying user prefs is different. Default to 
+   * use the old ownData/ownGroups/ownLocality way. 
+   * @var bool
+   */
+  private static $applyUserPrefs=true;
   
   /** 
    * Return the form metadata.
@@ -76,8 +86,10 @@ class iform_dynamic_report_explorer extends iform_dynamic {
               "The following types of component can be specified. <br/>".
                   "<strong>[control name]</strong> indicates a predefined control is to be added to the form with the following predefined controls available: <br/>".
                   "&nbsp;&nbsp;<strong>[params]</strong> - a parameters input form for the reports/map<br/>".
-                  "&nbsp;&nbsp;<strong>[map]</strong> - displays information relating to the occurrence and its sample<br/>".
-                  "&nbsp;&nbsp;<strong>[reportgrid]</strong> - lists any comments associated with the occurrence. Also includes the ability to add a comment<br/>".
+                  "&nbsp;&nbsp;<strong>[standard params]</strong> - a standard params filter bar. Use with reports that support standard params.<br/>".
+                  "&nbsp;&nbsp;<strong>[map]</strong> - outputs report content as a map.<br/>".
+                  "&nbsp;&nbsp;<strong>[reportgrid]</strong> - outputs report content in tabular form.<br/>".
+                  "&nbsp;&nbsp;<strong>[reportchart]</strong> - outputs report content in chart form.<br/>".
               "<strong>=tab/page name=</strong> is used to specify the name of a tab or wizard page (alpha-numeric characters only). ".
               "If the page interface type is set to one page, then each tab/page name is displayed as a seperate section on the page. ".
               "Note that in one page mode, the tab/page names are not displayed on the screen.<br/>".
@@ -252,7 +264,7 @@ class iform_dynamic_report_explorer extends iform_dynamic {
   protected static function getFooter($args) {
     return '';
   }
-  
+    
   protected static function getFirstTabAdditionalContent($args, $auth, &$attributes) {
     return '';
   }
@@ -281,12 +293,21 @@ class iform_dynamic_report_explorer extends iform_dynamic {
       ),
       $options
     );
-    iform_report_apply_explore_user_own_preferences($reportOptions);
+    if (self::$applyUserPrefs)
+      iform_report_apply_explore_user_own_preferences($reportOptions);
     return report_helper::report_grid($reportOptions);
   }
  
   protected static function get_control_map($auth, $args, $tabalias, $options) {
-    iform_load_helpers(array('map_helper'));
+    iform_load_helpers(array('map_helper','report_helper'));
+    // $_GET data for standard params can override displayed location
+    if (isset($_GET['filter-location_id']) || isset($_GET['filter-indexed_location_id'])) {
+      $args['display_user_profile_location']=false;
+      if (!empty($_GET['filter-indexed_location_id']))
+        $args['location_boundary_id']=$_GET['filter-indexed_location_id'];
+      elseif (!empty($_GET['filter-location_id']))
+        $args['location_boundary_id']=$_GET['filter-location_id'];
+    }
     // allow us to call iform_report_get_report_options to get a default report setup, then override report_name
     $args['report_name']='';
     $sharing=empty($args['sharing']) ? 'reporting' : $args['sharing'];
@@ -306,7 +327,8 @@ class iform_dynamic_report_explorer extends iform_dynamic {
       ),
       $options
     );
-    iform_report_apply_explore_user_own_preferences($reportOptions);
+    if (self::$applyUserPrefs)
+      iform_report_apply_explore_user_own_preferences($reportOptions);
     $r = report_helper::report_map($reportOptions);
     $options = array_merge(
       iform_map_get_map_options($args, $auth['read']),
@@ -343,16 +365,95 @@ class iform_dynamic_report_explorer extends iform_dynamic {
       ),
       $options
     );
-    iform_report_apply_explore_user_own_preferences($reportOptions);
+    if (self::$applyUserPrefs)
+      iform_report_apply_explore_user_own_preferences($reportOptions);
     self::$reportCount++;
     return report_helper::report_grid($reportOptions);
   }
   
+  /*
+   * Report chart control.
+   * Currently take its parameters from $options in the Form Structure.
+   */
+  protected static function get_control_reportchart($auth, $args, $tabalias, $options) {
+    if (!isset($options['chartType'])||!isset($options['yValues'])||!isset($options['dataSource'])
+        ||(!isset($options['xLabels']) && !isset($options['xValues']))) {
+      return '<p>Please fill in the following options for the chart parameters control: chartType, dataSource,
+            yValues and either xLabels or xValues.</p>';
+    }
+    if (isset($options['xLabels']) && isset($options['xValues'])) {
+      return '<p>Please provide either a value for xLabels or xValues.</p>';
+    }
+    iform_load_helpers(array('report_helper'));
+    $args['report_name']='';
+    $options = array_merge(
+      iform_report_get_report_options($args, $auth['read']),
+      array(
+        'id' => 'chart-'.self::$reportCount,
+        'reportGroup'=>'dynamic',
+        'width'=> '100%',
+        'height'=> 500,
+        'autoParamsForm'=>false
+      ),
+      $options
+    );
+    // values and labels should be provided as a json array, but just in case it is a comma separated list
+    if (!is_array($options['yValues']))
+      $options['yValues']=explode(',', trim($options['yValues']));
+    if (!empty($options['xValues']) && !is_array($options['xValues']))
+      $options['xValues']=explode(',', $options['xValues']);
+    if (!empty($options['xLabels']) && !is_array($options['xLabels']))
+      $options['xLabels']=explode(',', $options['xLabels']);
+    
+    return report_helper::report_chart($options);
+  }
+  
+  /*
+   * Report chart params control.
+   * Currently take its parameters from $options in the Form Structure.
+   */
+  protected static function get_control_reportchartparams($auth, $args, $tabalias, $options) { 
+    if (!isset($options['yValues'])||!isset($options['dataSource'])||!isset($options['chartType'])) {
+      $r = '<h4>Please fill in the following options for the chart parameters control: yValues, dataSource, chartType</h4>';
+      return $r;
+    }
+    iform_load_helpers(array('report_helper'));
+    $sharing=empty($args['sharing']) ? 'reporting' : $args['sharing'];
+    $args['report_name']='';
+    $options = array_merge(
+      iform_report_get_report_options($args, $auth),
+      $options,
+      array(
+        'reportGroup'=>'dynamic',
+        //as we aren't returning the report set paramsOnly
+        'paramsOnly'=>true,
+        'sharing'=>$sharing,
+        'paramsFormButtonCaption'=>lang::get('Filter'),
+        'yValues'=>explode(',', $options['yValues']),
+        'readAuth'=>$auth['read'],
+        'dataSource'=>$options['dataSource'],
+      )
+      
+    );
+    $r = '<br/>'.report_helper::report_chart($options);
+    return $r;
+  }
+  
   protected static function get_control_standardparams($auth, $args, $tabalias, $options) {
+    self::$applyUserPrefs=false;
     $options = array_merge(array(
       'allowSave' => true,
       'sharing' => empty($args['sharing']) ? 'reporting' : $args['sharing']
     ), $options);
+    if ($args['redirect_on_success'])
+      $options['redirect_on_success']=url($args['redirect_on_success']);
+    // any preset params on the report page should be loaded as initial settings for the filter.
+    if (!empty($args['param_presets'])) {
+      $params = data_entry_helper::explode_lines_key_value_pairs($args['param_presets']);
+      foreach ($params as $key=>$val) {
+        $options["filter-$key"]=$val;
+      }
+    }
     foreach ($options as $key=>&$value) {
       $value = apply_user_replacements($value);
     }

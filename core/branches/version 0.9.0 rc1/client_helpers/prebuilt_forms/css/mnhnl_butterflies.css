@@ -43,3 +43,19 @@ label.narrow {
 	margin-right: 1%;
 	vertical-align: top;
 }
+
+div.location-allocation-wrapper-outer {
+  position: relative;
+}
+
+div.location-allocation-wrapper-inner {
+    margin-left: 6em;
+    overflow-y: auto;
+}
+
+td.freeze-first-col, th.freeze-first-col{
+	position: absolute;
+    left:0;
+    top:auto;
+    border: none;
+}

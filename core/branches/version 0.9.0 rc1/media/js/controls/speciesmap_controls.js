@@ -47,12 +47,12 @@ control_speciesmap_addcontrols = function(options, translatedStrings) {
                 $('#' + indiciaData.control_speciesmap_opts.id + '-blocks > div').hide();
                 $('#' + indiciaData.control_speciesmap_opts.id + ' > tbody > tr').not('.scClonableRow').hide();
                 block.show();
-                rowsToShow = $('[name$=\:sampleIDX]').filter('[value=' + indiciaData.control_speciesmap_existing_feature.attributes.subSampleIndex + ']').closest('tr');
+                rowsToShow = $("[name$='\:sampleIDX']").filter('[value=' + indiciaData.control_speciesmap_existing_feature.attributes.subSampleIndex + ']').closest('tr');
                 rowsToShow.show();
                 rowsToShow.next('.supplementary-row').show();
                 $('#' + indiciaData.control_speciesmap_opts.messageId).empty().append(indiciaData.control_speciesmap_translatedStrings.ModifyMessage2);
                 $('#' + indiciaData.control_speciesmap_opts.finishButtonId).show();
-                $('#' + indiciaData.control_speciesmap_opts.id + ' .scClonableRow').find('[name$=\:sampleIDX]').each(function (idx, field) {
+                $('#' + indiciaData.control_speciesmap_opts.id + ' .scClonableRow').find("[name$='\:sampleIDX']").each(function (idx, field) {
                   $(field).val(indiciaData.control_speciesmap_existing_feature.attributes.subSampleIndex);
                 });
                 break;
@@ -69,14 +69,14 @@ control_speciesmap_addcontrols = function(options, translatedStrings) {
         set_up_summary_rows = function (sampleIDX) {
             var elements = $('.control_speciesmapsummary').find('th:visible').length,
                 block = $('#scm-' + sampleIDX + '-block'),
-                rows = $('[name$=\:sampleIDX]').filter('[value=' + sampleIDX + ']').closest('tr').not('.scClonableRow');
+                rows = $("[name$='\:sampleIDX']").filter('[value=' + sampleIDX + ']').closest('tr').not('.scClonableRow');
             if ($('.control_speciesmapsummary').length === 0) {
                 return;
             }
             $('.scm-summary-' + sampleIDX).remove();
             if (block.length > 0 && rows.length > 0) {
                 $('.control_speciesmapsummary tbody').append('<tr class="scm-summary-' + sampleIDX + '"><td colspan=' + elements + '><span>' +
-                    indiciaData.control_speciesmap_translatedStrings.SRefLabel + ': ' + block.find('[name$=\:sample\:entered_sref]').val() + '</td></tr>');
+                    indiciaData.control_speciesmap_translatedStrings.SRefLabel + ': ' + block.find("[name$='\:sample\:entered_sref']").val() + '</td></tr>');
             }
             rows.each(function (idx, elem) {
                 var cloned = $(elem).clone();
@@ -133,13 +133,13 @@ control_speciesmap_addcontrols = function(options, translatedStrings) {
             if (extent !== null) {
               centre = indiciaData.SubSampleLayer.getDataExtent().getCenterLonLat();
               wkt = formatter.extractGeometry(new OpenLayers.Geometry.Point(centre.lon, centre.lat));
-              $.getJSON(indiciaData.control_speciesmap_opts.base_url + '/index.php/services/spatial/wkt_to_sref?wkt=' + wkt + '&system=' + $('[name=sample\:entered_sref_system]').val() + '&wktsystem=' + div.map.projection.proj.srsProjNumber + '&precision=8&callback=?',
+              $.getJSON(indiciaData.control_speciesmap_opts.base_url + '/index.php/services/spatial/wkt_to_sref?wkt=' + wkt + '&system=' + $("[name='sample\:entered_sref_system']").val() + '&wktsystem=' + div.map.projection.proj.srsProjNumber + '&precision=8&callback=?',
                   function (data) {
                       if (typeof data.error !== 'undefined') {
                           alert(data.error);
                       } else {
-                          $('[name=sample\:entered_sref]').val(data.sref);
-                          $('[name=sample\:geom]').val(data.wkt);
+                          $("[name='sample\:entered_sref']").val(data.sref);
+                          $("[name='sample\:geom']").val(data.wkt);
                       }
                   });
             }
@@ -152,7 +152,7 @@ control_speciesmap_addcontrols = function(options, translatedStrings) {
             // first check validation state on species grid
             feature = (indiciaData.control_speciesmap_mode === 'Add' ? indiciaData.control_speciesmap_new_feature : indiciaData.control_speciesmap_existing_feature);
             if (typeof feature !== "undefined" && feature !== null) {
-                scinputs = $('[name$=\:sampleIDX]').filter('[value=' + feature.attributes.subSampleIndex + ']').closest('tr').filter(':visible').not('.scClonableRow').find('input,select').not(':disabled');
+                scinputs = $("[name$='\:sampleIDX']").filter('[value=' + feature.attributes.subSampleIndex + ']').closest('tr').filter(':visible').not('.scClonableRow').find('input,select').not(':disabled');
                 if (typeof scinputs.valid !== "undefined" && scinputs.length > 0 && !scinputs.valid()) {
                     return; // validation failed: leave everything as was
                 }
@@ -216,7 +216,7 @@ control_speciesmap_addcontrols = function(options, translatedStrings) {
                 $('#' + indiciaData.control_speciesmap_opts.finishButtonId + ',#' + indiciaData.control_speciesmap_opts.cancelButtonId).hide();
                 indiciaData.control_speciesmap_selectFeatureControl.unselectAll();
                 $('#scm-' + indiciaData.control_speciesmap_new_feature.attributes.subSampleIndex + '-block').remove();
-                $('[name$=\:sampleIDX]').filter('[value=' + indiciaData.control_speciesmap_new_feature.attributes.subSampleIndex + ']').closest('tr').not('.scClonableRow').remove();
+                $("[name$='\:sampleIDX']").filter('[value=' + indiciaData.control_speciesmap_new_feature.attributes.subSampleIndex + ']').closest('tr').not('.scClonableRow').remove();
                 set_up_summary_rows(indiciaData.control_speciesmap_new_feature.attributes.subSampleIndex);
                 indiciaData.SubSampleLayer.removeFeatures([indiciaData.control_speciesmap_new_feature]);
                 fillInMainSref();
@@ -238,7 +238,7 @@ control_speciesmap_addcontrols = function(options, translatedStrings) {
             // first check that any filled in species grid rows pass validation.
             var feature = (indiciaData.control_speciesmap_mode === 'Add' ? indiciaData.control_speciesmap_new_feature : indiciaData.control_speciesmap_existing_feature),
                 scinputs, div = $(indiciaData.control_speciesmap_opts.mapDiv)[0];
-            scinputs = $('[name$=\:sampleIDX]').filter('[value=' + feature.attributes.subSampleIndex + ']').closest('tr').not('.scClonableRow').find('input,select').not(':disabled');
+            scinputs = $("[name$='\:sampleIDX']").filter('[value=' + feature.attributes.subSampleIndex + ']').closest('tr').not('.scClonableRow').find('input,select').not(':disabled');
             if (typeof scinputs.valid !== "undefined" && scinputs.length > 0 && !scinputs.valid()) {
                 return; // validation failed: leave everything in sight
             }
@@ -271,7 +271,7 @@ control_speciesmap_addcontrols = function(options, translatedStrings) {
           $('#' + indiciaData.control_speciesmap_opts.id + '-container').show(indiciaData.control_speciesmap_opts.animationDuration).find('.new').removeClass('new');
           $('#' + indiciaData.control_speciesmap_opts.id + '-blocks').find(' > div').hide();
           $('#' + indiciaData.control_speciesmap_opts.id + ' > tbody > tr').not('.scClonableRow').hide();
-          $('#' + indiciaData.control_speciesmap_opts.id + ' .scClonableRow').find('[name$=\:sampleIDX]').each(function (idx, field) {
+          $('#' + indiciaData.control_speciesmap_opts.id + ' .scClonableRow').find("[name$='\:sampleIDX']").each(function (idx, field) {
               $(field).val(indiciaData.control_speciesmap_new_feature.attributes.subSampleIndex);
           });
           subsampleBlock = $('<div class="new added scm-block" id="scm-' + indiciaData['gridSampleCounter-' + indiciaData.control_speciesmap_opts.id] + '-block"></div>')
@@ -330,8 +330,8 @@ control_speciesmap_addcontrols = function(options, translatedStrings) {
           indiciaData.SubSampleLayer.removeFeatures([indiciaData.control_speciesmap_existing_feature]);
           indiciaData.SubSampleLayer.addFeatures([indiciaData.control_speciesmap_new_feature]);
           fillInMainSref();
-          block.find('[name$=\:entered_sref]').val($('#imp-sref').val());
-          block.find('[name$=\:geom]').val($('#imp-geom').val());
+          block.find("[name$='\:entered_sref']").val($('#imp-sref').val());
+          block.find("[name$='\:geom']").val($('#imp-geom').val());
           $('#' + indiciaData.control_speciesmap_opts.messageId).empty().append(indiciaData.control_speciesmap_translatedStrings.MoveMessage1);
           $('#' + indiciaData.control_speciesmap_opts.cancelButtonId).hide();
           indiciaData.control_speciesmap_existing_feature = null;
@@ -346,11 +346,11 @@ control_speciesmap_addcontrols = function(options, translatedStrings) {
                     if (block.hasClass('added')) {
                       block.remove();
                     } else {
-                      block.find('[name$=\:sample\:deleted]').val('t').removeAttr('disabled');
+                      block.find("[name$='\:sample\:deleted']").val('t').removeAttr('disabled');
                       block.hide();
                     }
                     indiciaData.control_speciesmap_selectFeatureControl.unselectAll();
-                    $('[name$=\:sampleIDX]').filter('[value=' + indiciaData.control_speciesmap_existing_feature.attributes.subSampleIndex + ']').closest('tr').not('.scClonableRow').remove();
+                    $("[name$='\:sampleIDX']").filter('[value=' + indiciaData.control_speciesmap_existing_feature.attributes.subSampleIndex + ']').closest('tr').not('.scClonableRow').remove();
                     set_up_summary_rows(indiciaData.control_speciesmap_existing_feature.attributes.subSampleIndex);
                     indiciaData.SubSampleLayer.removeFeatures([indiciaData.control_speciesmap_existing_feature]);
                     fillInMainSref();
@@ -438,11 +438,11 @@ control_speciesmap_addcontrols = function(options, translatedStrings) {
                 var id = $(block).attr('id').split('-'),
                     parser = new OpenLayers.Format.WKT(),
                     feature;
-                feature = parser.read($(block).find('[name$=sample\:geom]').val()); //style is null
+                feature = parser.read($(block).find("[name$='sample\:geom']").val()); //style is null
                 // TODO should convert from Indicia internal projection to map projection
                 feature.attributes.subSampleIndex = id[1];
-                feature.attributes.sRef = $(block).find('[name$=sample\:entered_sref]').val();
-                feature.attributes.count = $('[name$=\:sampleIDX]').filter('[value=' + feature.attributes.subSampleIndex + ']').closest('tr').not('.scClonableRow').length;
+                feature.attributes.sRef = $(block).find("[name$='sample\:entered_sref']").val();
+                feature.attributes.count = $("[name$='\:sampleIDX']").filter('[value=' + feature.attributes.subSampleIndex + ']').closest('tr').not('.scClonableRow').length;
                 indiciaData.SubSampleLayer.addFeatures([feature]);
                 set_up_summary_rows(feature.attributes.subSampleIndex);
             });
@@ -455,7 +455,7 @@ control_speciesmap_addcontrols = function(options, translatedStrings) {
                 var feature = (indiciaData.control_speciesmap_mode === 'Add' ? indiciaData.control_speciesmap_new_feature : indiciaData.control_speciesmap_existing_feature);
                 // need to remove then re-add feature to rebuild label
                 indiciaData.SubSampleLayer.removeFeatures([feature]);
-                feature.attributes.count = $('[name$=\:sampleIDX]').filter('[value=' + feature.attributes.subSampleIndex + ']').closest('tr').not('.scClonableRow').length;
+                feature.attributes.count = $("[name$='\:sampleIDX']").filter('[value=' + feature.attributes.subSampleIndex + ']').closest('tr').not('.scClonableRow').length;
                 feature.style = null;
                 indiciaData.SubSampleLayer.addFeatures([feature]);
             };

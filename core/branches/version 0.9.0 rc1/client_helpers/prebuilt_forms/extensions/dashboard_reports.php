@@ -30,20 +30,22 @@ class extension_dashboard_reports {
    */
   public static function verification_by_week_chart($auth, $args, $tabalias, $options, $path) {
     iform_load_helpers(array('report_helper'));
-    $reportOptions = array_merge(      
+    $args = array_merge(array(
+      'report_name' => 'library/weeks/filterable_week_verification_breakdown'
+    ), $args);
+    $reportOptions = array_merge(
       iform_report_get_report_options($args, $auth['read']),
       array(
-        'dataSource' => 'library/weeks/week_verification_breakdown',
         'id' => 'verification-by-week-chart',
         'width'=> 900,
         'height'=> 500,
         'chartType' => 'bar',
-        'yValues'=>array('queried','verified','rejected'),
+        'yValues'=>array('verified','queried','rejected'),
         'xLabels'=>'week',
         'stackSeries'=>true,
         'rendererOptions' => array('barMargin'=>5),
         'legendOptions' => array('show'=>true),
-        'seriesOptions' => array(array('label'=>'Queried','color'=>'#FF9900'),array('label'=>'Verified','color'=>'#00CC00'),array('label'=>'Rejected','color'=>'#CC0000')),
+        'seriesOptions' => array(array('label'=>'Verified','color'=>'#00CC00'),array('label'=>'Queried','color'=>'#FF9900'),array('label'=>'Rejected','color'=>'#CC0000')),
         'axesOptions' => array('yaxis'=>array('min' => 0,'tickOptions'=>array('formatString'=>'%d')),'xaxis'=>array('label'=>'Weeks ago'))
       ),
       $options
@@ -56,10 +58,12 @@ class extension_dashboard_reports {
    */
   public static function records_by_week_chart($auth, $args, $tabalias, $options, $path) {
     iform_load_helpers(array('report_helper'));
-    $reportOptions = array_merge(      
+    $args = array_merge(array(
+      'report_name' => 'library/weeks/filterable_records_by_week',
+    ), $args);
+    $reportOptions = array_merge(
       iform_report_get_report_options($args, $auth['read']),
       array(
-        'dataSource' => 'library/weeks/records_by_week',
         'id' => 'records-by-week-chart',
         'width'=> 900,
         'height'=> 500,

@@ -194,10 +194,10 @@ class iform_mnhnl_reptiles extends iform_mnhnl_dynamic_1 {
   }
   
   protected static function getExtraGridModeTabs($retTabs, $readAuth, $args, $attributes) {
-    if(!user_access('IForm n'.parent::$node->nid.' admin')) return('');
+    if(!user_access($args['edit_permission'])) return('');
     $targetSpeciesAttr=iform_mnhnl_getAttr(parent::$auth, $args, 'sample', $args['targetSpeciesAttr']);
     if(!$targetSpeciesAttr) return lang::get('This form must be used with a survey that has the '.$args['targetSpeciesAttr'].' attribute associated with it.');
-    if(!$retTabs) return array('#downloads' => lang::get('LANG_Download'), '#locations' => lang::get('LANG_Locations'));
+    if(!$retTabs) return array('#downloads' => lang::get('Reports'), '#locations' => lang::get('LANG_Locations'));
     if($args['LocationTypeTerm']=='' && isset($args['loctoolsLocTypeID'])) $args['LocationTypeTerm']=$args['loctoolsLocTypeID'];
     $primary = iform_mnhnl_getTermID(array('read'=>$readAuth), 'indicia:location_types',$args['LocationTypeTerm']);
     data_entry_helper::$javascript .= "
@@ -207,15 +207,15 @@ jQuery('.downloadreportparams').val('{\"survey_id\":".$args['survey_id'].", \"lo
   <p>'.lang::get('LANG_Data_Download').'</p>'.($args['sites_download_report']!=''?'
   <form id="sitesReportRequestForm" method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report='.$args['sites_download_report'].'.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename='.$args['reportFilenamePrefix'].'Sites">
     <input type="hidden" name="params" class="downloadreportparams" value="" />
-    <label>'.lang::get('Sites report').':</label><input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
+    <label>'.lang::get('Sites report').':</label><input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('Download').'">
   </form>':'').($args['conditions_download_report']!=''?'
   <form id="conditionsReportRequestForm" method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report='.$args['conditions_download_report'].'.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename='.$args['reportFilenamePrefix'].'Conditions">
     <input type="hidden" name="params" class="downloadreportparams" value="" />
-    <label>'.lang::get('Conditions report').':</label><input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
+    <label>'.lang::get('Conditions report').':</label><input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('Download').'">
   </form>':'').'
   <form id="speciesReportRequestForm" method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report='.$args['species_download_report'].'.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename='.$args['reportFilenamePrefix'].'Species">
     <input type="hidden" name="params" class="downloadreportparams" value="" />
-    <label>'.lang::get('Species report').':</label><input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
+    <label>'.lang::get('Species report').':</label><input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('Download').'">
   </form>
 </div>'.iform_mnhnl_locModTool(parent::$auth, $args, parent::$node);
 	

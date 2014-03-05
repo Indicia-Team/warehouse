@@ -44,7 +44,6 @@ echo form_helper::prebuilt_form_params_form(array(
   'readAuth' => $readAuth,
   'expandFirst' => true
 ));
-
-echo form_helper::dump_javascript();
+echo form_helper::dump_javascript(true);
 
 ?>

@@ -1,13 +1,9 @@
 
-//When the user enters another page (such as Editing a Count Unit) then we pass the location ids in the 
-//map breadcrumb so that new page can create a similar breadcrumb for returning to the homepage with
-var breadcrumbIdsToPassArray = [];
-var breadcrumbIdsToPass;
 jQuery(document).ready(function($) {
-  //When the user clicks on the map breadcrumb, we store the id of the location they have clicked on as
-  //well as its location_type_id in variables
-  var clickedFeatureIdFromBreadcrumb = null;
-  var clickedFeatureLocationTypeIdFromBreadcrumb = null;
+  //When the user returns to the homepage from a link, we get the locationid and location type id of the location we
+  //are zooming to from php (these are calculated from the location id supplied in the URL)
+  var preloadBreadcrumbFeatureId = null;
+  var preloadBreadcrumbFeatureLocationTypeId = null;
   //setup default styling for the feature points. The type of icon to show is supplied in the report
   //in a column called 'graphic'.
   //Annotations have their own style as they also have labels
@@ -27,7 +23,10 @@ jQuery(document).ready(function($) {
     'strokeDashstyle': 'dot'
   }, defaultStyle), annotationStyle = new OpenLayers.Style({
     'strokeDashstyle': 'solid',
-    'label': '${name}'
+    'label': '${name}',
+    'fontSize': '15px',
+    'labelOutlineColor': 'white',
+    'labelOutlineWidth': '10'
   }, defaultStyle);
   var s = new OpenLayers.StyleMap({
     'default': defaultStyle, 
@@ -41,20 +40,28 @@ jQuery(document).ready(function($) {
     "use strict";
     //Put into indicia data so we can see the map div elsewhere
     indiciaData.mapdiv = div;
+    //Set the click "?" map control to be the default one
+    $.each(div.map.controls, function(idx, ctrl) {
+      if (ctrl.CLASS_NAME==="OpenLayers.Control") {
+        ctrl.activate();
+      } else if (ctrl.CLASS_NAME==="OpenLayers.Control.Navigation") {
+        ctrl.deactivate();
+      }
+    });
     //if preloadBrumb is populated, it indicates the user is returning to the page from another page
     //and we need to set the map up so it is zoomed into the location the user has requested. This includes
     //setting up the breadcrumb trail correctly.
     if (indiciaData.preloadBreadcrumb) {
-      //The ids required to rebuild the breadcrumb as held as a location id and location type id in the url (supplied by calling page).
-      //We tell the system that this was the last location the user has clicked on the map (although they
-      //actually clicked on the location on another page rather than the map itself).
+      //The ids required to rebuild the breadcrumb are a held as a location id and location type id.
+      //These are calculated from the location id in the URL.
+      //The values are process in the same way as if we had got the id and location type id by clicking on the map itself.
       var idAndLocationType = indiciaData.preloadBreadcrumb.split(',');
-      clickedFeatureIdFromBreadcrumb = idAndLocationType[0];
-      clickedFeatureLocationTypeIdFromBreadcrumb = idAndLocationType[1];
+      preloadBreadcrumbFeatureId = idAndLocationType[0];
+      preloadBreadcrumbFeatureLocationTypeId = idAndLocationType[1];
     }
     //Firstly we need to call the code which works out the map hierarchy to the current location (region, site, count unit)
     //that the user has selected.
-    get_map_hierarchy_for_current_position(clickedFeatureIdFromBreadcrumb,clickedFeatureLocationTypeIdFromBreadcrumb);
+    get_map_hierarchy_for_current_position(preloadBreadcrumbFeatureId,preloadBreadcrumbFeatureLocationTypeId);
   });  
 });
 
@@ -76,21 +83,16 @@ function move_to_new_layer(features) {
  */
 function get_map_hierarchy_for_current_position(clickedFeatureId,clickedFeatureLocationTypeId) {
   //copy array by value. This is a list of the location types for the different layers.
-  var locationLayerTypesWithBoundaryForCountUnit = indiciaData.layerLocationTypes.slice();
-  //In the user supplied indiciaData.layerLocationTypes list, the Count Unit Location Id 
-  //is given, when in fact we need to check the count unit BOUNDARY location type.
-  //So we pop the last item off the list and replace it with the boundary location type.
-  locationLayerTypesWithBoundaryForCountUnit.pop();
-  locationLayerTypesWithBoundaryForCountUnit[locationLayerTypesWithBoundaryForCountUnit.length] = indiciaData.countUnitBoundaryTypeId;
+  var locationLayerTypeIds = indiciaData.layerLocationTypes.slice();
   if (!clickedFeatureId) {
     //If there is no clicked layer, then we are dealing with the first layer.
     add_new_layer_controller(null,[],clickedFeatureLocationTypeId);
   } else {
     var SupportedLocationTypeIdsAsString;
     var i=-1;
-    //Cycle round the list of all Location Types that can be displayed on the map in order.
-    //Then stop when we reach the location type we have currently clicked on to give us the
-    //list up until that point.
+    //Cycle round the list of all Location Types that can be displayed on the homepage map in order.
+    //Then stop when we reach the location type that is the same as the location we have clicked on. This gives us a list of location
+    //types up until that point.
     do {
       i++;
       if (SupportedLocationTypeIdsAsString) {
@@ -98,11 +100,9 @@ function get_map_hierarchy_for_current_position(clickedFeatureId,clickedFeatureL
       } else {
         SupportedLocationTypeIdsAsString=indiciaData.layerLocationTypes[i];
       }
-    //Note: The i < indiciaData.layerLocationTypes.length should not be needed, but is there for double-safety
-    //to stop an infinite loop in unforeseen circumstnces.
-    } while (clickedFeatureLocationTypeId != locationLayerTypesWithBoundaryForCountUnit[i] &&
-             i < indiciaData.layerLocationTypes.length) 
-    //Get the map breadcrumb from a report
+    } while (clickedFeatureLocationTypeId != locationLayerTypeIds[i] &&
+             i < indiciaData.layerLocationTypes.length-1) 
+    //Use a report to get a list of locations that match the different layer location types and also intersect the location we are interested in.
     reportRequest = indiciaData.breadcrumbReportRequest+'&location_id='+clickedFeatureId+'&location_type_ids='+SupportedLocationTypeIdsAsString;
     $.getJSON(reportRequest,
       null,
@@ -147,24 +147,16 @@ function get_clicked_feature(clickedFeatureId,breadcrumbHierarchy,clickedFeature
   var features=[];
   clickedFeature = indiciaData.reportlayer.getFeatureById(clickedFeatureId);
   //clickedFeature might still be empty if the user clicks on the breadcrumb as the feature isn't already on the child layer
-  //so we can't collect it by it, we need to collect it from a report
+  //so we can't collect it by using indiciaData.reportlayer.getFeatureById, we need to collect it from a report
   if (!clickedFeature) {
-    //Get all locations for the location type of the location we are clicking on
-    //TODO->We might be able to make this more efficient
-    reportRequest = indiciaData.layerReportRequest + '&location_type_id='+clickedFeatureLocationTypeId+'&parent_id='+null;
+    reportRequest = indiciaData.layerReportRequest + '&location_type_id='+clickedFeatureLocationTypeId+'&parent_id='+null+
+    '&deactivate_site_attribute_id='+indiciaData.deactivateSiteAttributeId+'&location_id='+clickedFeatureId;
     $.getJSON(reportRequest,
       null,
-      function(reportdata, textStatus, jqXHR) {
-        getMapFeaturesFromReportDataResult = get_map_features_from_report_data(reportdata,[]);
-        features = getMapFeaturesFromReportDataResult[1];
-        //Cycle through all the features returned by the report until we find the one with the matching id,
-        //we can then pass this to the controller function that sets up the child layer
-        $.each(features, function (idx, feature) {
-          if (feature.id==clickedFeatureId) {         
-            clickedFeature = feature;
-            add_new_layer_controller(clickedFeature,breadcrumbHierarchy,clickedFeatureLocationTypeId);
-          }
-        });
+      function(reportdata, textStatus, jqXHR) {     
+        features = get_map_features_from_report_data(reportdata,[]);
+        clickedFeature = features[0];
+        add_new_layer_controller(clickedFeature,breadcrumbHierarchy,clickedFeatureLocationTypeId);
       }
     );
   } else {
@@ -208,46 +200,45 @@ function add_new_layer_controller(clickedFeature,breadcrumbHierarchy,clickedFeat
   //Link to Count unit Information sheet if we detect a Count Unit has been clicked on/selected
   //and it is the final layer. 
   //The final layer is different as it is the parent that is clickable (count unit), and it is the 
-  //child locations types (annotations) that are not clickable.
+  //child annotations layer that is not cliackable.
   if (clickedFeature && clickedFeature.attributes.clickableParent) {
-    location = indiciaData.informationSheetLink+clickedFeature.attributes.parent_id+'&'+breadcrumbIdsToPass;
+    location = indiciaData.informationSheetLink+clickedFeature.attributes.parent_id;
   } else {
     //If the user has specified a layer must also display count units, then add them to the report parameters
     if (inArray(childLocationTypesToReport,indiciaData.showCountUnitsForLayers)) {
-      reportRequest = indiciaData.layerReportRequest + '&location_type_id='+childLocationTypesToReport+','+indiciaData.layerLocationTypes[indiciaData.layerLocationTypes.length-1]+ '&parent_id='+parentId;
+      reportRequest = indiciaData.layerReportRequest + '&location_type_id='+childLocationTypesToReport+','+indiciaData.layerLocationTypes[indiciaData.layerLocationTypes.length-1]+ '&parent_id='+parentId+
+                      '&deactivate_site_attribute_id='+indiciaData.deactivateSiteAttributeId+'&location_id=null';
     } else {
-      reportRequest = indiciaData.layerReportRequest + '&location_type_id='+childLocationTypesToReport+'&parent_id='+parentId;
+      reportRequest = indiciaData.layerReportRequest + '&location_type_id='+childLocationTypesToReport+'&parent_id='+parentId+
+                      '&deactivate_site_attribute_id='+indiciaData.deactivateSiteAttributeId+'&location_id=null';
     }
     //Get the locations to displayed that are within the parent location (or all locations matching the first location type if it is the first layer)
     $.getJSON(reportRequest,
         null,
         function(response, textStatus, jqXHR) {
-          if (response.length>0 || clickedFeature) {
-            var currentLayerLocationNames = [], features=[],feature,getMapFeaturesFromReportDataResult;
-            //Get the child features for the layer, also get the name of their locations type(s)
-            getMapFeaturesFromReportDataResult = get_map_features_from_report_data(response,currentLayerLocationNames);
-            currentLayerLocationNames = getMapFeaturesFromReportDataResult[0];
-            features = getMapFeaturesFromReportDataResult[1];
-            //We need to save make a comma seperate list of the location ids in the map breadcrumb so other
-            //pages can have links back to the homepage map. This is given to other pages in the URL.
-            //The IDs are already stored in breadcrumbIdsToPassArray, so we just need to convert to comma seperated list.
+          if (response.length>0 || clickedFeature) {           
+            var currentLayerLocationNames = [], features=[],feature,getMapFeaturesFromReportDataResult,mainCurrentLayerLocationTypeName;
+            //If the user has specified that a layer must also display count units, then get the Count Unit location type name (we don't want to hard code it so collect from database)
+            if (inArray(childLocationTypesToReport,indiciaData.showCountUnitsForLayers)) {
+              currentLayerLocationNames = get_names_from_location_types(childLocationTypesToReport+','+indiciaData.layerLocationTypes[indiciaData.layerLocationTypes.length-1]);
+            } else {
+              currentLayerLocationNames = get_names_from_location_types(childLocationTypesToReport);
+            }
+            //The main mainCurrentLayerLocationTypeName variable is the name of the location type of the layer we are currently looking at,
+            //this is currently used to make the Add Site button's label change depending on the location type to be added.
+            //Note this is different to the currentLayerLocationNames which might include Count Unit if the user has set the option
+            //to add Count Units to a particular layer.
+            mainCurrentLayerLocationTypeName = currentLayerLocationNames.split(',')[0];
+            //Get the child features for the layer
+            features = get_map_features_from_report_data(response,currentLayerLocationNames);
             if (indiciaData.useBreadCrumb) {
-              breadcrumbIdsToPass = null;
-              $.each(breadcrumbIdsToPassArray, function(idx,breadcrumbIdToPass) {
-                if (!breadcrumbIdsToPass) {
-                  breadcrumbIdsToPass = breadcrumbIdToPass;
-                } else {
-                  breadcrumbIdsToPass = breadcrumbIdsToPass + ',' + breadcrumbIdToPass;
-                }
-              });
-              breadcrumbIdsToPass = 'breadcrumb='+breadcrumbIdsToPass;
               //create the map breadcrumb itself
               breadcrumb(parentId,parentName,currentLayerLocationNames,breadcrumbHierarchy);
             }
             //Add the features to the child (clickable) or parent (non-clickable layers) as appropriate.
             add_features_to_layers(features,clickedFeature,currentLayerLocationNames);
             //Add other controls like Add Site or location drop-down to the page
-            setup_additional_controls(childLocationTypesToReport,parentId, parentName,clickedFeature,features)
+            setup_additional_controls(childLocationTypesToReport,parentId, parentName,clickedFeature,features,mainCurrentLayerLocationTypeName,breadcrumbHierarchy)
             //Finally zoom in to the features
             zoom_to_area(features,clickedFeature)
           }
@@ -257,27 +248,61 @@ function add_new_layer_controller(clickedFeature,breadcrumbHierarchy,clickedFeat
 }
 
 /*
+ * The layer the user is looking at consists of at least one location type.
+ * Get the names of those location types and return it in a comma seperated format
+ */
+function get_names_from_location_types(currentLayerIds) {
+  //Get an array of the loction type ids relevant to the current layer
+  var currentLayerIdsArray = [];
+  if (typeof currentLayerIds == 'string' || currentLayerIds instanceof String) {
+    currentLayerIdsArray = currentLayerIds.split(',');
+  } else {
+    currentLayerIdsArray = currentLayerIds;
+  }
+  //We are building the list of names from scratch so we start with empty list.
+  var currentLayerNames = '';
+  //Cycle through the location ids of the layer we are viewing
+  $.each(currentLayerIdsArray, function (currentLayerListIndex, theCurrentIdToCheck) {
+    //Try and find the same id in the list of layer location type ids sepcified by the user 
+    $.each(indiciaData.layerLocationTypes, function (originalListIndex, originalLayerListId) {
+      //Once we have a match then we know the position of the id in the list of layer location type ids originally specified by the user.
+      //We already have a list of equivalent names in indiciaData.layerLocationTypesNames which is in the same order, so we can collect the name
+      //from indiciaData.layerLocationTypesNames
+      if (theCurrentIdToCheck===originalLayerListId) {
+        if (currentLayerNames) {
+        currentLayerNames = currentLayerNames + ',' + indiciaData.layerLocationTypesNames[originalListIndex];
+        } else {
+          currentLayerNames = indiciaData.layerLocationTypesNames[originalListIndex];
+        }
+      }
+    });  
+  });
+  //If we haven't been able to locate the location type names by using the layer list supplied by the user, it means we are looking at the 
+  //annotation layer
+  if (!currentLayerNames) {
+    currentLayerNames = 'annotation';
+  }
+  return currentLayerNames;
+}
+
+/*
  * Once we have returned the data of what locations we want to display on a map layer, we need to 
  * actually add those features to the map itself.
  */
 function get_map_features_from_report_data(reportdata,currentLayerLocationNames) {
   var features = [];
-  if (reportdata) {
 
+  var mainCurrentLayerLocationTypeName;
+  if (reportdata) {
     $.each(reportdata, function (idx, obj) {
       if (obj) {
-        //Make a distinct list of the location types being displayed on the current layer.
-        //This is used to name layers.
-        if (!inArray(obj.location_type_name,currentLayerLocationNames)) {
-          currentLayerLocationNames.push(obj.location_type_name);
-        }     
         //Use boundary geom by default
         if (obj.boundary_geom) {               
           feature=indiciaData.mapdiv.addPt(features, obj, 'boundary_geom', {}, obj.id);
         } 
-        else {           
+        else {
           //Else fall back on the centroid
-          if (features.length>0) {
+          if (reportdata.length>0) {
             feature=indiciaData.mapdiv.addPt(features, obj, 'centroid_geom', {}, obj.id);
           }
         }
@@ -289,10 +314,7 @@ function get_map_features_from_report_data(reportdata,currentLayerLocationNames)
       }
     });
   }
-  var result = [];
-  result[0] = currentLayerLocationNames;
-  result[1] = features;
-  return result;
+  return features;
 }
 
 /*
@@ -304,10 +326,15 @@ function get_map_features_from_report_data(reportdata,currentLayerLocationNames)
  * swaps which layer which is clickable.
  */
 function add_features_to_layers (features,clickedFeature,currentLayerLocationNames) { 
-  //If the user has clicked on a count unit boundary, we know we are looking at the last layer.
-  if (clickedFeature && clickedFeature.attributes.location_type_id==indiciaData.countUnitBoundaryTypeId) {
+  //If the user has clicked on a count unit boundary or a count unit (in the case it doesn't have a boundary), 
+  //then we know we are going to be looking at the Count Unit itself.
+  if (clickedFeature && 
+      (clickedFeature.attributes.location_type_id==indiciaData.countUnitBoundaryTypeId ||
+      clickedFeature.attributes.location_type_id==indiciaData.layerLocationTypes[indiciaData.layerLocationTypes.length-1])) {
     //The clickableParent clickedFeature attribute is checked for by the code elsewhere in order for it to detect
-    //we are looking at the last layer (it can then call the count unit information sheet when the user clicks again)
+    //we are looking at a count unit and annotations.
+    //This is a special case as the child layer of annotations is not clickable, neither is it specified by the user in the configuration,
+    //so we need a special way of detecting we are actually looking at a count unit and annotations.
     clickedFeature.attributes.clickableParent=1
     //On the last layer the non-clickable (parent) layer consists of all the main features (the annotations).
     if (clickedFeature) {
@@ -352,14 +379,26 @@ function setup_layer(layerType,featuresForLayer,layerToAdd,nameForLayer) {
 /*
  * Add controls not related to the map to the page
  */
-function setup_additional_controls(currentLayerLocationTypesId,parentId, parentName,clickedFeature,features) {
-  //make the select list
-  if (indiciaData.useSelectList) {
+function setup_additional_controls(currentLayerLocationTypesId,parentId, parentName,clickedFeature,features,mainCurrentLayerLocationTypeName,breadcrumbHierarchy) {
+  //This code gets the url id. This is used on the Cudi Information Sheet which also contains the map.
+  if (indiciaData.preloadBreadcrumb) {
+    var idAndLocationType = indiciaData.preloadBreadcrumb.split(',');
+    var preloadBreadcrumbFeatureId = idAndLocationType[0];
+  }
+  //Don't show the control at all in the situation where the item that is being shown on the map in the same as the what is shown on the Cudi Information Sheet.
+  //This avoids a link button being shown to the same Cudi Information Sheet as the user is already on. As the user moves to other Count Units on the map, then the link is shown again.
+  //Note that breadcrumbHierarchy.length==0 is needed as a test as there is no breadcrumb hierarchy at the top level.
+  //The preloadBreadcrumbFeatureId is the url id, breadcrumbHierarchy[breadcrumbHierarchy.length-1]['id'] is the id of the Count Unit being viewed,
+  //(the clickedFeature id can't be used here as that would give us the boundary id, not the parent).
+  if (indiciaData.useSelectList && (breadcrumbHierarchy.length==0 || preloadBreadcrumbFeatureId != breadcrumbHierarchy[breadcrumbHierarchy.length-1]['id'])) {
     if (clickedFeature && clickedFeature.attributes.clickableParent) {
-      selectlist([clickedFeature]);
+      //If at bottom level of the tree, the select list would only have one item, so just use a button instead
+      selectlistbutton([clickedFeature]);
     } else { 
       selectlist(features);
     }
+  } else {
+    $('#map-selectlist-div').hide();
   }
   //Get the link to the View Sites and Count Units report button
   if (indiciaData.useListReportLink) {
@@ -368,10 +407,14 @@ function setup_additional_controls(currentLayerLocationTypesId,parentId, parentN
   //Get the Add Count Unit button
   if (indiciaData.useAddCountUnit) {
     add_count_unit_link(currentLayerLocationTypesId,parentId);
-  }
-  //Get the Add Site button
+  } 
+  //Get the View Count Units Review button
+  if (indiciaData.useCountUnitsReview) {
+    count_units_review_link(currentLayerLocationTypesId);
+  } 
+  //Get the Add Site (location) button
   if (indiciaData.useAddSite) {
-    add_site_link(currentLayerLocationTypesId,parentId);
+    add_site_link(currentLayerLocationTypesId,parentId, mainCurrentLayerLocationTypeName);
   }
   //Get the Edit Site button
   if (indiciaData.useEditSite) {
@@ -383,7 +426,6 @@ function setup_additional_controls(currentLayerLocationTypesId,parentId, parentN
  * Make the map breadcrumb (not to be confused with the homepage links found on some pages.)
  */
 function breadcrumb(parentId,parentName,currentLayerLocationNames,breadcrumbHierarchy) {
-  breadcrumbIdsToPassArray = [];
   var i,breadcrumbPartFront,buildUpBreadCrumb;
   //The first item in the breadcrumb is for the top level, this needs to be treated seperately as it doesn't
   //have a parent location.
@@ -393,10 +435,13 @@ function breadcrumb(parentId,parentName,currentLayerLocationNames,breadcrumbHier
   //We need an item in the breadcrumb for each item in the location hierarchy to the location that is currently selected.
   for (i=1;i<=breadcrumbHierarchy.length;i++) {
     breadcrumbPartFront = '<li id = "breadcrumb-part-'+i+'">';
-    breadcrumbIdsToPassArray.push(breadcrumbHierarchy[i-1].id);
-      buildUpBreadCrumb = buildUpBreadCrumb + breadcrumbPartFront + "<a onclick='get_map_hierarchy_for_current_position("+breadcrumbHierarchy[i-1].id+","+breadcrumbHierarchy[i-1].location_type_id+")'>"+ breadcrumbHierarchy[i-1].name + "</a></li>";
+    buildUpBreadCrumb = buildUpBreadCrumb + breadcrumbPartFront + "<a onclick='get_map_hierarchy_for_current_position("+breadcrumbHierarchy[i-1].id+","+breadcrumbHierarchy[i-1].location_type_id+")'>"+ breadcrumbHierarchy[i-1].name + "</a></li>";
   }
   $('#map-breadcrumb').html(buildUpBreadCrumb);
+  //Call this function to reset the map position as the breadcrumb moves the map which cause the features to become out of alignment
+  //with the map itself. If we didn't call this function, the further the user clicks into the map layers, the more difficulty they will 
+  //have with accurately clicking on features.
+  indiciaData.mapdiv.map.updateSize();
 }
 
 /*
@@ -453,8 +498,12 @@ function zoom_to_area(features,clickedFeature) {
  * from the select list zooms in the same way map clicking does.
  */
 function selectlist(featuresForSelectList) {
+  //At the bottom level a button is used instead of a single-option drop-down, this button is only
+  //ever used when the selectlistbutton function is called
+  $('#map-selectlist-button-div').hide();
+  $('#map-selectlist-div').show();
   var selectListOptions;
-  selectListOptions += '<option value="">Please select a location</option>';
+  selectListOptions = '<option value="">Please select a location</option>';
   $.each(featuresForSelectList, function (idx, featureForSelectList) {
     //Don't include annotations in the drop-down as we'll end up with multiple options
     //for the same count unit.
@@ -464,6 +513,18 @@ function selectlist(featuresForSelectList) {
     }
   });
   $('#map-selectlist').html(selectListOptions)
+}
+
+/*
+ * When we reach the count unit level in the map hierarchy we 
+ * use a button to link to the information sheet instead of a drop-down
+ * as there is only ever one option
+ */
+function selectlistbutton(countUnitFeature) {
+  $('#map-selectlist-button-div').show();
+  $('#map-selectlist-div').hide();
+  buttonHtml = '<input id="map-selectlist-bottom-level-button" type="button" value="'+'Information Sheet for '+countUnitFeature[0].attributes.name+'" featureid="'+countUnitFeature[0].id+'" featurelocationtypeid="'+countUnitFeature[0].attributes.location_type_id+'" onclick="get_map_hierarchy_for_current_position('+countUnitFeature[0].id+','+countUnitFeature[0].attributes.location_type_id+')">';
+  $('#map-selectlist-button-div').html(buttonHtml)
 }
 
 /*
@@ -510,18 +571,38 @@ function add_count_unit_link(currentSiteType,parentLocationId) {
 }
 
 /*
+ * Control button that takes user to the Count Units Review Report page whose path is per the administrator supplied option.
+ * The options format is comma seperated where the format of the elements is "location_type_id|page_path".
+ * If an option is not found for the displayed layer's location type, then the View Count Units Review button is hidden from view.
+ */
+function count_units_review_link(currentSiteType) {
+  //If the current layer location type is in the administrator specified options list, then we know to draw the View Count Units Review button
+  for (i=0; i<indiciaData.locationTypesFoCountUnitsReview.length;i++) {
+    if (indiciaData.locationTypesFoCountUnitsReview[i] === currentSiteType) {
+      button = '<FORM>';
+      button += "<INPUT TYPE=\"button\" VALUE=\"View Count Units Review Report\"\n\
+                    ONCLICK=\"window.location.href='"+indiciaData.countUnitsReviewLinkUrls[i]+"'\">";
+      button += '</FORM>'; 
+      return $('#map-viewcountunitsreview').html(button);
+    }
+  }
+}
+
+/*
  * Control button that takes user to Add Site page whose path and parameter are as per administrator supplied options.
+ * The type location_type of the site we are adding is taken from the location layer we are viewing, so this button is
+ * not just limited to the site location type if users want to use it to add other location types.
  * The parameter is used to automatically zoom the map to the region/site we want to add the new site to.
  * The options format is comma seperated where the format of the elements is "location_type_id|page_path|parameter_name".
  * If an option is not found for the displayed layer's location type, then the Add Site button is hidden from view.
  */
-function add_site_link(currentSiteType,parentLocationId) {
+function add_site_link(currentSiteType,parentLocationId, location_type_of_viewing_layer) {
   if (parentLocationId) {
     //If the current layer location type is in the administrator specified options list, then we know to draw the add site button
     for (i=0; i<indiciaData.locationTypesForAddSites.length;i++) {
       if (indiciaData.locationTypesForAddSites[i] === currentSiteType) {
         button = '<FORM>';
-        button += "<INPUT TYPE=\"button\" VALUE=\"Add Site\"\n\
+        button += "<INPUT TYPE=\"button\" VALUE=\"Add "+location_type_of_viewing_layer+"\"\n\
                       ONCLICK=\"window.location.href='"+indiciaData.addSiteLinkUrls[i]+parentLocationId+'&location_type_id='+currentSiteType+"'\">";
         button += '</FORM>'; 
         return $('#map-addsite').html(button);

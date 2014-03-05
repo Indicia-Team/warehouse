@@ -43,9 +43,9 @@ $indicia_templates = array(
   'nullsuffix' => "",
   'requiredsuffix' => '<span class="deh-required">*</span><br/>'."\n",
   'requirednosuffix' => '<span class="deh-required">*</span>'."\n",
-  'button' => '<button id="{id}" type="button"{class}>{caption}</button>',
-  'submitButton' => '<input id="{id}" type="submit"{class} value="{caption}" />',
-  'anchorButton' => '<a class=\"ui-corner-all ui-widget-content ui-state-default indicia-button {class}\" href=\"{href}\" id=\"{id}\">{caption}</a>',
+  'button' => '<button id="{id}" type="button" title="{title}"{class}>{caption}</button>',
+  'submitButton' => '<input id="{id}" type="submit"{class} name="{name}" value="{caption}" />',
+  'anchorButton' => '<a class="ui-corner-all ui-widget-content ui-state-default indicia-button {class}" href="{href}" id="{id}">{caption}</a>',
   'lock_icon' => '<span id="{id}_lock" class="unset-lock">&nbsp;</span>',
   'lock_javascript' => "indicia.locks.initControls (
       \"".lang::get('locked tool-tip')."\", 
@@ -62,15 +62,17 @@ $indicia_templates = array(
             // select the tab containing the first error control
             var ctrl = jQuery('[name=' + ctrlId.replace(/:/g, '\\\\:').replace(/\[/g, '\\\\[').replace(/\\]/g, '\\\\]') + ']');
             if (!tabselected) {
-              var tp=ctrl.filter('input,select,textarea').parents('.ui-tabs-panel')[0];
-              $(tp).parent().tabs('select',tp.id);
+              var tp=ctrl.filter('input,select,textarea').closest('.ui-tabs-panel');
+              if (tp.length===1) {
+                $(tp).parent().tabs('select',tp.id);
+              }
               tabselected = true;
             }
             ctrl.parents('fieldset').removeClass('collapsed');
             ctrl.parents('.fieldset-wrapper').show();
           });
         }",
-  'image_upload' => '<input type="file" id="{id}" name="{fieldname}" accept="png|jpg|gif|jpeg" {title}/>'."\n".
+  'image_upload' => '<input type="file" id="{id}" name="{fieldname}" accept="png|jpg|gif|jpeg|mp3|wav" {title}/>'."\n".
       '<input type="hidden" id="{pathFieldName}" name="{pathFieldName}" value="{pathFieldValue}"/>'."\n",
   'text_input' => '<input type="text" id="{id}" name="{fieldname}"{class} {disabled} {readonly} value="{default}" {title} {maxlength} />'."\n",
   'hidden_text' => '<input type="hidden" id="{id}" name="{fieldname}" {disabled} value="{default}" />',
@@ -83,7 +85,7 @@ $indicia_templates = array(
   'select_item' => '<option value="{value}" {selected} >{caption}</option>',
   'select_species' => '<option value="{value}" {selected} >{caption} - {common}</option>',
   'listbox' => '<select id="{id}" name="{fieldname}"{class} {disabled} size="{size}" multiple="{multiple}" {title}>{items}</select>',
-  'listbox_item' => '<option value="{value}" {selected} >{caption}</option>',
+  'listbox_item' => '<option value="{value}"{selected} >{caption}</option>',
   'list_in_template' => '<ul{class} {title}>{items}</ul>',
   'check_or_radio_group' => '<span {class}>{items}</span>',
   'check_or_radio_group_item' => '<nobr><span><input type="{type}" name="{fieldname}" id="{itemId}" value="{value}"{class}{checked} {disabled}/><label for="{itemId}">{caption}</label></span></nobr>{sep}',
@@ -126,6 +128,7 @@ $indicia_templates = array(
         simplify: {simplify},
         selectMode: {selectMode},
         warnIfNoMatch: {warnIfNoMatch},
+        continueOnBlur: {continueOnBlur},
         parse: function(data)
         {
           // Clear the current selected key as the user has changed the search text
@@ -207,7 +210,7 @@ $indicia_templates = array(
   $("#{escapedId}").addClass("ui-state-disabled").html("<option>Loading...</option>");
   if (!isNaN($(this).val())) { // skip loading for placeholder text
     $.getJSON("{request}&{query}", function(data){
-      var $control = $("#{escapedId}");
+      var $control = $("#{escapedId}"), selected;
       $control.html("");
       if (data.length>0) {
         $control.removeClass("ui-state-disabled");
@@ -215,7 +218,8 @@ $indicia_templates = array(
           $control.append("<option>&lt;Please select&gt;</option>");
         }
         $.each(data, function(i) {
-          $control.append("<option value=" + this.{valueField} + ">" + this.{captionField} + "</option>");
+          selected = typeof indiciaData["default{escapedId}"]!=="undefined" && indiciaData["default{escapedId}"]==this.{valueField} ? \'" selected="selected\' : "";
+          $control.append("<option value=\"" + this.{valueField} + selected + "\">" + this.{captionField} + "</option>");
         });
       } else {
         $control.html("<option>{instruct}</option>");
@@ -232,15 +236,15 @@ if ($("#{escapedId} option").length===0) {
   'postcode_textbox' => '<input type="text" name="{fieldname}" id="{id}"{class} value="{default}" '.
         'onblur="javascript:decodePostcode(\'{linkedAddressBoxId}\');" />',
   'sref_textbox' => '<input type="text" id="{id}" name="{fieldname}" {class} {disabled} value="{default}" />' .
-        '<input type="hidden" id="imp-geom" name="{geomFieldname}" value="{defaultGeom}" />',
+        '<input type="hidden" id="{geomid}" name="{geomFieldname}" value="{defaultGeom}" />',
   'sref_textbox_latlong' => '<label for="{idLat}">{labelLat}:</label>'.
         '<input type="text" id="{idLat}" name="{fieldnameLat}" {class} {disabled} value="{defaultLat}" /><br />' .
         '<label for="{idLong}">{labelLong}:</label>'.
         '<input type="text" id="{idLong}" name="{fieldnameLong}" {class} {disabled} value="{defaultLong}" />' .
-        '<input type="hidden" id="imp-geom" name="geomFieldname" value="{defaultGeom}" />'.
+        '<input type="hidden" id="{geomid}" name="geomFieldname" value="{defaultGeom}" />'.
         '<input type="hidden" id="{id}" name="{fieldname}" value="{default}" />',
   'attribute_cell' => "\n<td class=\"scOccAttrCell ui-widget-content {class}\" headers=\"{headers}\">{content}</td>",
-  'taxon_label_cell' => "\n<td class=\"scTaxonCell\" headers=\"{tableId}-species-{idx}\" {colspan}>{content}</td>",
+  'taxon_label_cell' => "\n<td class=\"scTaxonCell{editClass}\" headers=\"{tableId}-species-{idx}\" {colspan}>{content}</td>",
   'helpText' => "\n<p class=\"{helpTextClass}\">{helpText}</p>",
   'file_box' => '',                   // the JQuery plugin default will apply, this is just a placeholder for template overrides.
   'file_box_initial_file_info' => '', // the JQuery plugin default will apply, this is just a placeholder for template overrides.
@@ -419,6 +423,11 @@ class helper_base extends helper_config {
    * They will be refreshed occasionally when requested anyway.
    */
   public static $cache_allowed_file_count=50;
+  
+  /**
+   * @var array A place to keep data and settings for Indicia code, to avoid using globals.
+   */
+  public static $data = array();
 
   /**
    * @var Boolean indicates if any form controls have specified the lockable option.
@@ -448,6 +457,11 @@ class helper_base extends helper_config {
    * remaining ones at the end.
    */
   protected static $displayed_errors=array();
+  
+  /**
+   * Track if we have already output the indiciaFunctions. 
+   */
+  protected static $indiciaFnsDone = false;
 
   /**
    * Method to link up the external css or js files associated with a set of code.
@@ -483,7 +497,6 @@ class helper_base extends helper_config {
    * <li>virtualearth</li>
    * <li>google_search</li>
    * <li>fancybox</li>
-   * <li>flickr</li>
    * <li>treeBrowser</li>
    * <li>defaultStylesheet</li>
    * <li>validation</li>
@@ -500,6 +513,7 @@ class helper_base extends helper_config {
    * <li>jsonwidget</li>
    * <li>timeentry</li>
    * <li>verification</li>
+   * <li>complexAttrGrid</li>
    * </ul>
    */
   public static function add_resource($resource)
@@ -549,7 +563,8 @@ class helper_base extends helper_config {
         $indicia_theme_path .= '/';
       self::$resource_list = array (
         'jquery' => array('javascript' => array(self::$js_path."jquery.js",self::$js_path."ie_vml_sizzlepatch_2.js")),
-        'openlayers' => array('javascript' => array(self::$js_path."OpenLayers.js", self::$js_path."proj4js.js", self::$js_path."proj4defs.js")),
+        'openlayers' => array('javascript' => array(self::$js_path.(function_exists('iform_openlayers_get_file') ? iform_openlayers_get_file() : "OpenLayers.js"),
+            self::$js_path."proj4js.js", self::$js_path."proj4defs.js", self::$js_path."lang/en.js")),
         'graticule' => array('deps' =>array('openlayers'), 'javascript' => array(self::$js_path."indiciaGraticule.js")),
         'clearLayer' => array('deps' =>array('openlayers'), 'javascript' => array(self::$js_path."clearLayer.js")),
         'addrowtogrid' => array('deps' => array('validation'), 'javascript' => array(self::$js_path."addRowToGrid.js")),
@@ -574,12 +589,11 @@ class helper_base extends helper_config {
         'googlemaps' => array('javascript' => array("http://maps.google.com/maps/api/js?sensor=false")),
         'virtualearth' => array('javascript' => array('http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1')),
         'fancybox' => array('deps' => array('jquery'), 'stylesheets' => array(self::$js_path.'fancybox/jquery.fancybox.css'), 'javascript' => array(self::$js_path.'fancybox/jquery.fancybox.pack.js')),
-        'flickr' => array('deps' => array('fancybox'), 'javascript' => array(self::$js_path."jquery.flickr.js")),
         'treeBrowser' => array('deps' => array('jquery','jquery_ui'), 'javascript' => array(self::$js_path."jquery.treebrowser.js")),
         'defaultStylesheet' => array('deps' => array(''), 'stylesheets' => array(self::$css_path."default_site.css"), 'javascript' => array()),
         'validation' => array('deps' => array('jquery'), 'javascript' => array(self::$js_path.'jquery.metadata.js', self::$js_path.'jquery.validate.js', self::$js_path.'additional-methods.js')),
         'plupload' => array('deps' => array('jquery_ui','fancybox'), 'javascript' => array(
-            self::$js_path.'jquery.uploader.js', self::$js_path.'/plupload/js/plupload.full.js')),
+            self::$js_path.'jquery.uploader.js', self::$js_path.'plupload/js/plupload.full.min.js')),
         'jqplot' => array('stylesheets' => array(self::$js_path.'jqplot/jquery.jqplot.css'), 'javascript' => array(                
                 self::$js_path.'jqplot/jquery.jqplot.js',
                 '[IE]'.self::$js_path.'jqplot/excanvas.js')),
@@ -592,11 +606,12 @@ class helper_base extends helper_config {
         'tabs' => array('deps' => array('jquery_ui'), 'javascript' => array(self::$js_path.'tabs.js')),
         'wizardprogress' => array('deps' => array('tabs'), 'stylesheets' => array(self::$css_path."wizard_progress.css")),
         'spatialReports' => array('javascript'=>array(self::$js_path.'spatialReports.js')),
-        'jsonwidget' => array('javascript'=>array(self::$js_path."jsonwidget/json.js", self::$js_path."jsonwidget/jsonedit.js",
+        'jsonwidget' => array('deps' => array('jquery'), 'javascript'=>array(self::$js_path."jsonwidget/json.js", self::$js_path."jsonwidget/jsonedit.js",
             self::$js_path."jquery.jsonwidget.js"), 'stylesheets'=>array(self::$css_path."jsonwidget.css")),
         'timeentry' => array('javascript'=>array(self::$js_path."jquery.timeentry.pack.js")),
         'verification' => array('javascript'=>array(self::$js_path."verification.js")),
-        'control_speciesmap_controls' => array('deps' =>array('jquery', 'openlayers', 'addrowtogrid', 'validation'), 'javascript' => array(self::$js_path."controls/speciesmap_controls.js"))
+        'control_speciesmap_controls' => array('deps' =>array('jquery', 'openlayers', 'addrowtogrid', 'validation'), 'javascript' => array(self::$js_path."controls/speciesmap_controls.js")),
+        'complexAttrGrid' => array('javascript'=>array(self::$js_path."complexAttrGrid.js"))
       );
     }
     return self::$resource_list;
@@ -677,6 +692,32 @@ $('.ui-state-default').live('mouseout', function() {
     curl_setopt ($session, CURLOPT_URL, $url);
     if ($postargs!==null) {
       curl_setopt ($session, CURLOPT_POST, true);
+      if (is_array($postargs) && version_compare(phpversion(), '5.5.0') >= 0) {
+        // posting a file using @ prefix is deprecated as of version 5.5.0
+        foreach ($postargs as $key => $value) {
+          // loop through postargs to find files
+          if ($value[0] == '@') {
+            // found a file - could be in form @path/to/file;type=mimetype
+            $fileparts = explode(';', substr($value, 1));
+            $filename = $fileparts[0];
+            if (count($fileparts) == 1) {
+              // only filename specified
+              $postargs[$key] = new CurlFile($filename);
+            } else {
+              //mimetype may be specified too
+              $fileparam = explode('=', $fileparts[1]);
+              if ($fileparam[0] == 'type' && isset($fileparam[1])) {
+                // found a mimetype
+                $mimetype = $fileparam[1];
+                $postargs[$key] = new CurlFile($filename, $mimetype);
+              } else {
+                // the fileparam didn't seem to be a mimetype
+                $postargs[$key] = new CurlFile($filename);
+              }
+            }
+          }
+        }
+      } 
       curl_setopt ($session, CURLOPT_POSTFIELDS, $postargs);
     }
     curl_setopt($session, CURLOPT_HEADER, false);
@@ -722,7 +763,7 @@ $('.ui-state-default').live('mouseout', function() {
       }
       return $warehouseUrl.(isset(self::$indicia_upload_path) ? self::$indicia_upload_path : 'upload/');
     } else {
-      return dirname(__FILE__).'/'.self::$final_image_folder;
+      return self::getRootFolder() . self::client_helper_path() . self::$final_image_folder;
     }
   }
   
@@ -1290,18 +1331,18 @@ $('.ui-state-default').live('mouseout', function() {
   /**
   * Helper function to collect javascript code in a single location. Should be called at the end of each HTML
   * page which uses the data entry helper so output all JavaScript required by previous calls.
-  *
+  * @param boolean $closure Set to true to close the JS with a function to ensure $ will refer to jQuery.
   * @return string JavaScript to insert into the page for all the controls added to the page so far.
   *
   * @link http://code.google.com/p/indicia/wiki/TutorialBuildingBasicPage#Build_a_data_entry_page
   */
-  public static function dump_javascript() {
+  public static function dump_javascript($closure=false) {
     // Add the default stylesheet to the end of the list, so it has highest CSS priority
     if (self::$default_styles) self::add_resource('defaultStylesheet');
     // Jquery validation js has to be added at this late stage, because only then do we know all the messages required.
     self::setup_jquery_validation_js();
     $dump = self::internal_dump_resources(self::$required_resources);
-    $dump .= self::get_scripts(self::$javascript, self::$late_javascript, self::$onload_javascript, true);
+    $dump .= self::get_scripts(self::$javascript, self::$late_javascript, self::$onload_javascript, true, $closure);
     // ensure scripted JS does not output again if recalled.
     self::$javascript = "";
     self::$late_javascript = "";
@@ -1339,7 +1380,10 @@ $('.ui-state-default').live('mouseout', function() {
               } else
                 $libraries .= "<script type=\"text/javascript\" src=\"$j\"></script>\n";
             }
-            $libraries .= '<script type="text/javascript" src="'.self::$js_path."indicia.functions.js\"></script>\n";
+            if (!self::$indiciaFnsDone) {
+              $libraries .= '<script type="text/javascript" src="'.self::$js_path."indicia.functions.js\"></script>\n";
+              self::$indiciaFnsDone = true;
+            }
           }
           // Record the resource as being dumped, so we don't do it again.
           array_push(self::$dumped_resources, $resource);
@@ -1356,10 +1400,12 @@ $('.ui-state-default').live('mouseout', function() {
    * @param string $late_javascript JavaScript to run at the end of $(document).ready.
    * @param string $onload_javascript JavaScript to run in the window.onLoad handler which comes later in the page load process.
    * @param bool $includeWrapper If true then includes script tags around the script.
+   * @param bool $closure Set to true to close the JS with a function to ensure $ will refer to jQuery.
    */
-  public static function get_scripts($javascript, $late_javascript, $onload_javascript, $includeWrapper=false) {
+  public static function get_scripts($javascript, $late_javascript, $onload_javascript, $includeWrapper=false, $closure=false) {
     if (!empty($javascript) || !empty($late_javascript) || !empty($onload_javascript)) {
       $script = $includeWrapper ? "<script type='text/javascript'>/* <![CDATA[ */\n" : "";
+      $script .= $closure ? "(function ($) {\n" : "";
       $script .= "
 indiciaData.imagesPath='" . self::$images_path . "';
 indiciaData.warehouseUrl='" . self::$base_url . "';
@@ -1393,6 +1439,7 @@ indiciaData.windowLoaded=false;
               "};\n";
           }              
       }
+      $script .= $closure ? "})(jQuery);\n" : "";
       $script .= $includeWrapper ? "/* ]]> */</script>\n" : "";
     } else {
       $script='';
@@ -1712,6 +1759,7 @@ indiciaData.windowLoaded=false;
   protected static function get_help_text($options, $pos) {
     $options = array_merge(array('helpTextClass'=>'helpText'), $options);
     if (array_key_exists('helpText', $options) && !empty($options['helpText']) && self::$helpTextPos == $pos) {
+      $options['helpText'] = lang::get($options['helpText']);
       return str_replace('{helpText}', $options['helpText'], self::apply_static_template('helpText', $options));
     } else
       return '';
@@ -1966,7 +2014,37 @@ indiciaData.windowLoaded=false;
       rename($file.getmypid(),$file);
     }
   }
-
 }
 
+/**
+ * For PHP 5.2, declare the get_called_class method which allows us to use subclasses of this form.
+ */
+if(!function_exists('get_called_class')) {
+  function get_called_class() {
+    $matches=array();
+    $bt = debug_backtrace();
+    $l = 0;
+    do {
+        $l++;
+        if(isset($bt[$l]['class']) AND !empty($bt[$l]['class'])) {
+            return $bt[$l]['class'];
+        }
+        $lines = file($bt[$l]['file']);
+        $callerLine = $lines[$bt[$l]['line']-1];
+        preg_match('/([a-zA-Z0-9\_]+)::'.$bt[$l]['function'].'/',
+                   $callerLine,
+                   $matches);
+        if (!isset($matches[1])) $matches[1]=NULL; //for notices
+        if ($matches[1] == 'self') {
+               $line = $bt[$l]['line']-1;
+               while ($line > 0 && strpos($lines[$line], 'class') === false) {
+                   $line--;                 
+               }
+               preg_match('/class[\s]+(.+?)[\s]+/si', $lines[$line], $matches);
+       }
+    }
+    while ($matches[1] == 'parent'  && $matches[1]);
+    return $matches[1];
+  } 
+} 
 ?>

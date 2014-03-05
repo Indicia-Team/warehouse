@@ -363,14 +363,15 @@ class iform_report_chart {
    */
   public static function get_form($args, $node, $response) {
     iform_load_helpers(array('report_helper', 'map_helper'));
-    $auth = report_helper::get_read_auth($args['website_id'], $args['password']);
+    $auth = report_helper::get_read_auth($args['website_id'], $args['password']); 
     $chartOptions = iform_report_get_report_options($args, $auth);
     $chartOptions = array_merge($chartOptions, array(
       'id' => 'chart-div',
       'width'=> $args['width'],
       'height'=> $args['height'],
       'chartType' => $args['chart_type'],
-      'yValues'=>explode(',', $args['y_values']) 
+      'yValues'=>explode(',', $args['y_values']),
+      'output'=>$args['output']
     ));
     $xLabels = trim($args['x_labels']);
     if (empty($xLabels))
@@ -378,20 +379,44 @@ class iform_report_chart {
     else
       $chartOptions['xLabels']=explode(',', $args['x_labels']);
     // advanced options
-    $rendererOptions = trim($args['renderer_options']);
-    if (!empty($rendererOptions))
+    if (!empty($args['renderer_options'])) {
+      $rendererOptions = trim($args['renderer_options']);
       $chartOptions['rendererOptions'] = json_decode($rendererOptions, true);
-    $legendOptions = trim($args['legend_options']);
-    if (!empty($legendOptions))
+    }
+    if (!empty($args['legend_options'])) {
+      $legendOptions = trim($args['legend_options']);
       $chartOptions['legendOptions'] = json_decode($legendOptions, true);
-    $seriesOptions = trim($args['series_options']);
-    if (!empty($seriesOptions))
+    }
+    if (!empty($args['axes_options'])) {
+      $seriesOptions = trim($args['series_options']);
       $chartOptions['seriesOptions'] = json_decode($seriesOptions, true);
-    $axesOptions = trim($args['axes_options']);
-    if (!empty($axesOptions))
+    }
+    if (!empty($args['series_options'])) {
+      $axesOptions = trim($args['axes_options']);
       $chartOptions['axesOptions'] = json_decode($axesOptions, true);
-    // now the chart itself
-    $r .= '<br/>'.report_helper::report_chart($chartOptions);
+    }
+    
+    //User has elected for parameters form only
+    if ($args['output']==='form')
+      $chartOptions['paramsOnly']=true;
+    else {
+      if (isset($chartOptions['paramsOnly']))
+        unset($chartOptions['paramsOnly']);
+    } 
+    //User has elected for parameters form only or 
+    //both the chart and parameters form together
+    if ($args['output']==='form'||$args['output']==='default')
+      $chartOptions['completeParamsForm']=true;
+    else {
+      if (isset($chartOptions['completeParamsForm']))
+        unset($chartOptions['completeParamsForm']);
+    }  
+    //User has elected for the chart only
+    if ($args['output']==='output') {
+      $chartOptions['autoParamsForm']=false;
+    }
+    
+    $r = '<br/>'.report_helper::report_chart($chartOptions);
     return $r;
   }
 

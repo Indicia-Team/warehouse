@@ -102,11 +102,7 @@ function addGridRow(species, speciesTableSelector, end, tabIDX){
     // row += '<input class="count-input" id="value:'+species.id+':'+section.code+'" type="text" value="'+val+'" /></td>';
     // actual control has to be first in cell for cursor keys to work.
     var myCtrl = indiciaData.occurrence_attribute_ctrl[tabIDX].clone();
-    myCtrl.attr('id', 'value:'+species.id+':'+section.code).attr('name', '');
-    if(isNumber) myCtrl.addClass('count-input');
-    else myCtrl.addClass('non-count-input');
     myCtrl.appendTo(cell);
-    jQuery('<input type="hidden" id="value:'+species.id+':'+section.code+':attrId" value="'+indiciaData.occurrence_attribute[tabIDX]+'"/>').appendTo(cell);
     if (typeof indiciaData.existingOccurrences[key]!=="undefined") {
       indiciaData.existingOccurrences[key]['processed']=true;
       val = indiciaData.existingOccurrences[key]['value_'+indiciaData.occurrence_attribute[tabIDX]] === null ? '' : indiciaData.existingOccurrences[key]['value_'+indiciaData.occurrence_attribute[tabIDX]];
@@ -114,12 +110,20 @@ function addGridRow(species, speciesTableSelector, end, tabIDX){
         rowTotal += parseInt(val);
         section.total[speciesTableSelector] += parseInt(val);
       }
+      // need to use existing species ttlid (which may or may not be preferred)
+      myCtrl.attr('id', 'value:'+indiciaData.existingOccurrences[key]['ttl_id']+':'+section.code).attr('name', '');
+      jQuery('<input type="hidden" id="value:'+indiciaData.existingOccurrences[key]['ttl_id']+':'+section.code+':attrId" value="'+indiciaData.occurrence_attribute[tabIDX]+'"/>').appendTo(cell);
       // store the ids of the occurrence and attribute we loaded, so future changes to the cell can overwrite the existing records
       jQuery('<input type="hidden" id="value:'+indiciaData.existingOccurrences[key]['ttl_id']+':'+section.code+':id" value="'+indiciaData.existingOccurrences[key]['o_id']+'"/>').appendTo(cell);
       jQuery('<input type="hidden" id="value:'+indiciaData.existingOccurrences[key]['ttl_id']+':'+section.code+':attrValId" value="'+indiciaData.existingOccurrences[key]['a_id_'+indiciaData.occurrence_attribute[tabIDX]]+'"/>').appendTo(cell);
     } else {
+      // this is always the preferred when generated from full list, may be either if from autocomplete.
+      myCtrl.attr('id', 'value:'+species.id+':'+section.code).attr('name', '');
+      jQuery('<input type="hidden" id="value:'+species.id+':'+section.code+':attrId" value="'+indiciaData.occurrence_attribute[tabIDX]+'"/>').appendTo(cell);
       val='';
     }
+    if(isNumber) myCtrl.addClass('count-input');
+    else myCtrl.addClass('non-count-input');
     myCtrl.val(val);
   });
   if(isNumber) jQuery('<td class="row-total first">'+rowTotal+'</td>').appendTo(row);
@@ -299,9 +303,11 @@ function input_blur (evt) {
       if (jQuery(selector +'\\:id').length>0) {
         jQuery('#occid').val(jQuery(selector +'\\:id').val());
         jQuery('#occid').attr('disabled', false);
+        jQuery('#occSensitive').attr('disabled', true); // existing ID - leave sensitivity as is
       } else {
         // if no existing occurrence, we must not post the occurrence:id field.
         jQuery('#occid').attr('disabled', true);
+        jQuery('#occSensitive').attr('disabled', false); // new data - use location sensitivity
       }
       if (jQuery(selector +'\\:attrValId').length===0) {
         // by setting the attribute field name to occAttr:n where n is the occurrence attribute id, we will get a new one
@@ -530,8 +536,9 @@ function loadSpeciesList() {
       case 'mine':
         // get all species on samples that I have recorded.
         if(indiciaData.easyLogin === true){
+          // here we just get the occurrences I have created.
           jQuery.ajax({
-               'url': indiciaData.indiciaSvc+'index.php/services/data/sample',
+               'url': indiciaData.indiciaSvc+'index.php/services/data/occurrence',
                'data': {
                  'created_by_id': indiciaData.UserID,
                  'auth_token': indiciaData.readAuth.auth_token,
@@ -540,41 +547,26 @@ function loadSpeciesList() {
                  'view': 'detail'
                },
                'dataType': 'jsonp',
-               'success': function(ssdata) {
-                   // finally get all occurrences
-                   var subSampleList = [];
-                   for(var i=0; i<ssdata.length; i++) subSampleList.push(ssdata[i].id);
-                   jQuery.ajax({
-                       'url': indiciaData.indiciaSvc+'index.php/services/data/occurrence',
-                       'data': {
-                         'query': JSON.stringify({'in': {'sample_id': subSampleList}}),
-                         'auth_token': indiciaData.readAuth.auth_token,
-                         'nonce': indiciaData.readAuth.nonce,
-                         'mode': 'json',
-                         'view': 'detail'
-                       },
-                       'dataType': 'jsonp',
-                       'success': function(odata) {
-                           for(var j=0; j<odata.length; j++){
-                             var last = false, me;
-                             // we assume that existing data in grid is in taxanomic order
-                             if(jQuery('#row-'+odata[j]['taxon_meaning_id']).length==0){ // not on list already
-                               for(var i=0; i<indiciaData.speciesList1List.length; i++){
-                                 if(odata[j].taxon_meaning_id == indiciaData.speciesList1List[i].taxon_meaning_id) {
-                                   addGridRow(indiciaData.speciesList1List[i], 'table#transect-input1', false, 1);
-                                   if(last)
-                                     jQuery('#row-'+indiciaData.speciesList1List[i]['taxon_meaning_id']).insertAfter(last);
-                                   break;
-                                 } else {
-                                   me = jQuery('#row-'+indiciaData.speciesList1List[i]['taxon_meaning_id']);
-                                   if(me.length>0) last = me;
-                                 }
-                               }
-                             }
-                           }
-                           redo_alt_row('table#transect-input1');
-                       }});
-                   }});
+               'success': function(odata) {
+                   for(var j=0; j<odata.length; j++){
+                     var last = false, me;
+                     // we assume that existing data in grid is in taxanomic order
+                     if(jQuery('#row-'+odata[j]['taxon_meaning_id']).length==0){ // not on list already
+                       for(var i=0; i<indiciaData.speciesList1List.length; i++){
+                         if(odata[j].taxon_meaning_id == indiciaData.speciesList1List[i].taxon_meaning_id) {
+                           addGridRow(indiciaData.speciesList1List[i], 'table#transect-input1', false, 1);
+                           if(last)
+                             jQuery('#row-'+indiciaData.speciesList1List[i]['taxon_meaning_id']).insertAfter(last);
+                           break;
+                         } else {
+                           me = jQuery('#row-'+indiciaData.speciesList1List[i]['taxon_meaning_id']);
+                           if(me.length>0) last = me;
+                         }
+                       }
+                     }
+                   }
+                   redo_alt_row('table#transect-input1');
+               }});
         } else {
           jQuery.ajax({
             'url': indiciaData.indiciaSvc+'index.php/services/data/sample_attribute_value',
@@ -672,13 +664,15 @@ function loadSpeciesList() {
       var selector = '#'+data.transaction_id.replace(/:/g, '\\:');
       jQuery(selector).removeClass('saving');
       if (checkErrors(data)) {
-        if (jQuery(selector +'\\:id').length===0) {
-          // this is a new occurrence, so keep a note of the id in a hidden input
-          jQuery(selector).after('<input type="hidden" id="'+data.transaction_id +':id" value="'+data.outer_id+'"/>');
-        }
-        if (jQuery(selector +'\\:attrValId').length===0) {
-          // this is a new attribute, so keep a note of the id in a hidden input
-          jQuery(selector).after('<input type="hidden" id="'+data.transaction_id +':attrValId" value="'+data.struct.children[0].id+'"/>');
+        if(jQuery(selector).val() != '') { // if the selector is blank, we are deleting the entry, so we do not want to add the id and attrValId fields (they will have just been removed!)
+          if (jQuery(selector +'\\:id').length===0) {
+            // this is a new occurrence, so keep a note of the id in a hidden input
+            jQuery(selector).after('<input type="hidden" id="'+data.transaction_id +':id" value="'+data.outer_id+'"/>');
+          }
+          if (jQuery(selector +'\\:attrValId').length===0) {
+            // this is a new attribute, so keep a note of the id in a hidden input
+            jQuery(selector).after('<input type="hidden" id="'+data.transaction_id +':attrValId" value="'+data.struct.children[0].id+'"/>');
+          }
         }
         jQuery(selector).removeClass('edited');
       }

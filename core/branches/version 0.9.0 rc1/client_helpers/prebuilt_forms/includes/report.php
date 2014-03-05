@@ -180,7 +180,7 @@ function iform_report_get_report_options($args, $readAuth) {
   require_once('user.php');
   $presets = get_options_array_with_user_data($args['param_presets']);
   $defaults = get_options_array_with_user_data($args['param_defaults']);
-  $ignores = isset($args['param_ignores']) ? report_helper::explode_lines($args['param_ignores']) : array();
+  $ignores = isset($args['param_ignores']) ? helper_base::explode_lines($args['param_ignores']) : array();
   // default columns behaviour is to just include anything returned by the report
   $columns = array();
   // this can be overridden

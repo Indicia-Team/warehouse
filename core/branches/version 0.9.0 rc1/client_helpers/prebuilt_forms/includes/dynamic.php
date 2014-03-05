@@ -56,7 +56,8 @@ class iform_dynamic {
   const MODE_GRID = 0; // default mode when no grid set to false - display grid of existing data
   const MODE_NEW = 1; // default mode when no_grid set to true - display an empty form for adding a new sample
   const MODE_EXISTING = 2; // display existing sample for editing
-  const MODE_CLONE = 3; // display form for adding a new sample containing values of an existing sample.
+  const MODE_EXISTING_RO = 3; // display existing sample for reading only
+  const MODE_CLONE = 4; // display form for adding a new sample containing values of an existing sample.
 
 
   public static function get_parameters() {    
@@ -194,12 +195,6 @@ class iform_dynamic {
     if (method_exists(self::$called_class, 'getArgDefaults')) 
       $args = call_user_func(array(self::$called_class, 'getArgDefaults'), $args);
     
-    // 
-    if (method_exists(self::$called_class, 'enforcePermissions')) {
-      if(call_user_func(array(self::$called_class, 'enforcePermissions')) && !user_access('IForm n'.$node->nid.' admin') && !user_access('IForm n'.$node->nid.' user')){
-        return lang::get('LANG_no_permissions');
-      }
-    }
     // Get authorisation tokens to update and read from the Warehouse. We allow child classes to generate this first if subclassed.
     if (self::$auth)
       $auth = self::$auth;
@@ -216,7 +211,7 @@ class iform_dynamic {
       // Output a grid of existing records
       $r = call_user_func(array(self::$called_class, 'getGrid'), $args, $node, $auth);
     } else {
-      if (($mode === self::MODE_EXISTING || $mode === self::MODE_CLONE) && is_null(data_entry_helper::$entity_to_load)) { 
+      if (($mode === self::MODE_EXISTING || $mode === self::MODE_EXISTING_RO || $mode === self::MODE_CLONE) && is_null(data_entry_helper::$entity_to_load)) { 
         // only load if not in error situation. 
         call_user_func_array(array(self::$called_class, 'getEntity'), array(&$args, $auth));
       }
@@ -287,7 +282,7 @@ class iform_dynamic {
         $r .= '<div class="page-notice ui-state-highlight ui-corner-all">You are submitting a record of '."$singleSpeciesLabel</div>";
       // For wizard include the tab title as a header.
       if ($args['interface']=='wizard') {
-        $r .= '<h1>'.$headerOptions['tabs'][$tabalias].'</h1>';        
+        $r .= '<h1>'.$headerOptions['tabs']['#'.$tabalias].'</h1>';        
       }
       $r .= $tabContent;    
       if (isset($args['verification_panel']) && $args['verification_panel'] && $pageIdx==count($tabHtml)-1)
@@ -298,8 +293,10 @@ class iform_dynamic {
           'divId'=>'controls',
           'page'=>$pageIdx===0 ? 'first' : (($pageIdx==count($tabHtml)-1) ? 'last' : 'middle'),
           'includeVerifyButton'=>isset($args['verification_panel']) && $args['verification_panel'] 
-              && ($pageIdx==count($tabHtml)-1)
-        ));        
+              && ($pageIdx==count($tabHtml)-1),
+          'includeSubmitButton'=>(self::$mode !== self::MODE_EXISTING_RO),
+          'includeDeleteButton'=>(self::$mode === self::MODE_EXISTING)
+        ));
       } elseif ($pageIdx==count($tabHtml)-1) {
         // We need the verify button as well if this option is enabled
         if (isset($args['verification_panel']) && $args['verification_panel'])
@@ -468,6 +465,9 @@ class iform_dynamic {
               // if not json then need to use option value as it is
               if ($options[$option[0]]=='') $options[$option[0]]=$option[1];
             }
+            // urlParam is special as it loads the control's default value from $_GET
+            if ($option[0]==='urlParam' && isset($_GET[$option[1]]))
+              $options['default'] = $_GET[$option[1]];
           }
         }
         $parts = explode('.', str_replace(array('[', ']'), '', $component));
@@ -477,6 +477,9 @@ class iform_dynamic {
           $options['caching']=empty($options['caching']) ? true : $options['caching'];
           $options['cachetimeout']=empty($options['cachetimeout']) ? HIGH_VOLUME_CONTROL_CACHE_TIMEOUT : $options['cachetimeout'];
         }
+        // allow user settings to override the control - see iform_user_ui_options.module
+        if (isset(data_entry_helper::$data['structureControlOverrides']) && !empty(data_entry_helper::$data['structureControlOverrides'][$component]))
+          $options = array_merge($options, data_entry_helper::$data['structureControlOverrides'][$component]);
         if (count($parts)===1 && method_exists(self::$called_class, $method)) { 
           //outputs a control for which a specific output function has been written.
           $html .= call_user_func(array(self::$called_class, $method), $auth, $args, $tabalias, $options);
@@ -487,6 +490,8 @@ class iform_dynamic {
           if (method_exists('extension_' . $parts[0], $parts[1])) { 
             //outputs a control for which a specific extension function has been written.
             $path = call_user_func(array(self::$called_class, 'getReloadPath')); 
+            //pass the classname of the form through to the extension control method to allow access to calling class functions and variables
+            $args["calling_class"]='iform_' . self::$node->iform;
             $html .= call_user_func(array('extension_' . $parts[0], $parts[1]), $auth, $args, $tabalias, $options, $path);
             $hasControls = true;
           } 
@@ -526,14 +531,21 @@ class iform_dynamic {
           // this outputs any custom attributes that remain for this tab. The custom attributes can be configured in the 
           // settings text using something like @smpAttr:4|label=My label. The next bit of code parses these out into an 
           // array used when building the html.
+          // Alternatively, a setting like @option=value is applied to all the attributes.
           $attrSpecificOptions = array();
           foreach ($options as $option => $value) {
             // split the id of the option into the control name and option name.
             $optionId = explode('|', $option);
-            if (!isset($attrSpecificOptions[$optionId[0]])) $attrSpecificOptions[$optionId[0]]=array();
-            $attrSpecificOptions[$optionId[0]][$optionId[1]] = apply_user_replacements($value);
+            if(count($optionId) > 1) {
+              // Found an option like @smpAttr:4|label=My label
+              if (!isset($attrSpecificOptions[$optionId[0]])) $attrSpecificOptions[$optionId[0]]=array();
+              $attrSpecificOptions[$optionId[0]][$optionId[1]] = apply_user_replacements($value);
+            }
+            else {
+              // Found an option like @option=value
+              $defAttrOptions = array_merge($defAttrOptions, array($option => $value));
+            }
           }
-          $defAttrOptions = array_merge($defAttrOptions, $options);
           $attrHtml = get_attribute_html($attributes, $args, $defAttrOptions, $tab, $attrSpecificOptions);
           if (!empty($attrHtml))
             $hasControls = true;
@@ -557,6 +569,12 @@ class iform_dynamic {
       // a splitter in the structure so put the stuff so far in a 50% width left float div, and the stuff that follows in a 50% width right float div.
       global $indicia_templates;
       $html = str_replace(array('{col-1}', '{col-2}'), $cols, $indicia_templates['two-col-50']);
+      if(count($cols)>2){
+        unset($cols[1]);
+        unset($cols[0]);
+        $html .= '<div class="follow_on_block" style="clear:both;">'.implode('',$cols).'</div>';
+      } else
+        $html .= '<div class="follow_on_block" style="clear:both;"></div>'; // needed so any tab div is stretched around them
     }
     return $html;
   }
@@ -571,7 +589,7 @@ class iform_dynamic {
     // A default 'tab' for content that must appear above the set of tabs.
     $currentTab='-';
     foreach ($structureArr as $component) {
-      if (preg_match('/^=[A-Za-z0-9, \-\*\?]+=$/', trim($component), $matches)===1) {
+      if (preg_match('/^=[A-Za-z0-9, \'\-\*\?]+=$/', trim($component), $matches)===1) {
         $currentTab = substr($matches[0], 1, -1);
         $structureTabs[$currentTab] = array();
       } else {

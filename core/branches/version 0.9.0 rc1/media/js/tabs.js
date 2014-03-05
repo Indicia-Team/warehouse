@@ -1,4 +1,22 @@
-function setupButtons(tabs, index) {
+/* Indicia, the OPAL Online Recording Toolkit.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
+ */
+ 
+var wizardProgressIndicator, initTabAddressing, scrollTopIntoView, setupButtons;
+ 
+(function ($) {
+
+setupButtons = function (tabs, index) {
   var wizList = $("#" + tabs.attr('id') + "-wiz-prog");
   var wizLis = $("li", wizList);
   var prevLi = $(".wiz-selected", wizList);
@@ -26,7 +44,7 @@ function setupButtons(tabs, index) {
     var tabs = wizList.parent();
     // first, validate
     var current=wizList.parent().children('.ui-tabs').tabs('option', 'selected');
-    var tabinputs = $('#entry_form div > .ui-tabs-panel:eq('+current+')').find('input,select').not(':disabled');
+    var tabinputs = $('#entry_form div > .ui-tabs-panel:eq('+current+')').find('input,select').not(':disabled,[name=],.scTaxonCell,.inactive');
     if (typeof tabinputs.valid !== "undefined" && tabinputs.length>0 && !tabinputs.valid()) {
       return;
     }
@@ -69,8 +87,7 @@ function setupButtons(tabs, index) {
   }
 }
 
-
-function wizardProgressIndicator(options) {
+wizardProgressIndicator=function(options) {
   var defaults = {
     divId: 'controls',
     listClass: 'wiz-prog ui-corner-all ui-widget-content ui-helper-clearfix',
@@ -128,13 +145,13 @@ function wizardProgressIndicator(options) {
     setupButtons($(this), ui.index);
   });
   setupButtons($("#" + o.divId), 0);
-}
+};
 
 /**
  * Function that prepares the tabset for being addressable.
  * @link http://www.asual.com/jquery/address/
  */
-function initTabAddressing(divId) {
+initTabAddressing=function(divId) {
 
   $.address.externalChange(function(event){
     // Changes tab
@@ -144,14 +161,16 @@ function initTabAddressing(divId) {
     else
       scrollTopIntoView('#'.divId);
   });
-}
+};
 
 /**
  * Function to ensure the top part of the wizard (inluding progress bar if present) is visible
  * when navigating between pages.
  */
-function scrollTopIntoView(topDiv) {
+scrollTopIntoView=function(topDiv) {
   if ($(topDiv).offset().top-$(window).scrollTop()<0) {
     $(topDiv)[0].scrollIntoView(true);
   }
-}
+};
+
+}(jQuery));

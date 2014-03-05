@@ -16,7 +16,7 @@ clearSection = function() {
   $('#section-form').find('.ui-state-error').removeClass('ui-state-error');
   var nameparts;
   // loop through form controls to make sure they do not have the value id (as these will be new values)
-  $.each($('#section-form').find(':input'), function(idx, ctrl) {
+  $.each($('#section-form').find(':input[name]'), function(idx, ctrl) {
     nameparts = $(ctrl).attr('name').split(':');
     if (nameparts[0]==='locAttr') {
       if (nameparts.length===3) {
@@ -234,9 +234,8 @@ deleteSection = function(section) {
   // subsamples are attached to the location and parent, but the location_name is not filled in, so don't need to change that
   // Update the code and the name for the locations.
   // Note that the subsections may not have been saved, so may not exist.
-  var i;
-  var numSections = $('[name='+indiciaData.numSectionsAttrName.replace(/:/g,'\\:')+']').val();
-  for(i = parseInt(section.substr(1))+1; i <= numSections; i++){
+  var numSections = parseInt($('[name='+indiciaData.numSectionsAttrName.replace(/:/g,'\\:')+']').val(),10);
+  for(var i = parseInt(section.substr(1))+1; i <= numSections; i++){
     if(typeof indiciaData.sections['S'+i] !== "undefined"){
       data = {'location:id':indiciaData.sections['S'+i].id,
                   'location:code':'S'+(i-1),
@@ -253,6 +252,42 @@ deleteSection = function(section) {
   data[indiciaData.numSectionsAttrName] = ''+(numSections-1);
   // reload the form when all ajax done.
   $('.remove-section').ajaxStop(function(event){    
+    window.location = window.location.href.split('#')[0]; // want to GET even if last was a POST. Plus don't want to go to the tab bookmark after #
+  });
+  $.post(indiciaData.ajaxFormPostUrl,
+          data,
+          function(data) { if (typeof(data.error)!=="undefined") { alert(data.error); }},
+          'json');
+};
+
+//insert a section
+insertSection = function(section) {
+  var data;
+  // section comes in like "S1"
+  // TODO Add progress bar
+  $('.insert-section').addClass('waiting-button');
+  // loop through all the subsections with a greater section number
+  // subsamples are attached to the location and parent, but the location_name is not filled in, so don't need to change that
+  // Update the code and the name for the locations.
+  // Note that the subsections may not have been saved, so may not exist.
+  var numSections = parseInt($('[name='+indiciaData.numSectionsAttrName.replace(/:/g,'\\:')+']').val(),10);
+  for(var i = parseInt(section.substr(1))+1; i <= numSections; i++){
+    if(typeof indiciaData.sections['S'+i] !== "undefined"){
+      data = {'location:id':indiciaData.sections['S'+i].id,
+                  'location:code':'S'+(i+1),
+                  'location:name':$('#location\\:name').val() + ' - ' + 'S'+(i+1),
+                  'website_id':indiciaData.website_id};
+      $.post(indiciaData.ajaxFormPostUrl,
+            data,
+            function(data) { if (typeof(data.error)!=="undefined") { alert(data.error); }},
+            'json');
+    }
+  }
+  // update the attribute value for number of sections.
+  data = {'location:id':$('#location\\:id').val(), 'website_id':indiciaData.website_id};
+  data[indiciaData.numSectionsAttrName] = ''+(numSections+1);
+  // reload the form when all ajax done.
+  $('.insert-section').ajaxStop(function(event){    
     window.location = window.location.href.split('#')[0]; // want to GET even if last was a POST. Plus don't want to go to the tab bookmark after #
   });
   $.post(indiciaData.ajaxFormPostUrl,
@@ -315,6 +350,10 @@ $(document).ready(function() {
       $('.remove-section').click(function(evt) {
         var current = $('#section-select-route li.selected').html();
         if(confirm(indiciaData.sectionDeleteConfirm + ' ' + current + '?')) deleteSection(current);
+      });
+      $('.insert-section').click(function(evt) {
+        var current = $('#section-select-route li.selected').html();
+        if(confirm(indiciaData.sectionInsertConfirm + ' ' + current + '?')) insertSection(current);
       });
       $('.erase-route').click(function(evt) {
         var current = $('#section-select-route li.selected').html(),
@@ -498,9 +537,9 @@ $(document).ready(function() {
           // make sure the feature is selected: this ensures that it can be modified straight away
           // note that selecting or unselecting the feature triggers the afterfeaturemodified event
           if(selectedFeature != evt.feature) {
-        	  indiciaData.selectFeature.select(evt.feature);
-              selectedFeature = evt.feature;
-              div.map.editLayer.redraw();
+            indiciaData.selectFeature.select(evt.feature);
+            selectedFeature = evt.feature;
+            div.map.editLayer.redraw();
           }
           // post the new or edited section to the db
           var data = {
@@ -515,13 +554,30 @@ $(document).ready(function() {
             data['location:id']=indiciaData.sections[current].id;
           } else {
             data['locations_website:website_id']=indiciaData.website_id;
+          }
+          if (indiciaData.defaultSectionGridRef==='parent') {
             // initially set the section Sref etc to match the parent. Geom will be auto generated on the server
-            indiciaData.sections[current] = {sref : $('#imp-sref').val(),
-            		system : $('#imp-sref-system').val()};
+            indiciaData.sections[current] = {sref : $('#imp-sref').val(),	system : $('#imp-sref-system').val()};
+          } else if (indiciaData.defaultSectionGridRef.match(/^section(Centroid|Start)100$/)) {
+            if (typeof indiciaData.srefHandlers!=="undefined" &&
+                typeof indiciaData.srefHandlers[$('#imp-sref-system').val().toLowerCase()]!=="undefined") {
+              var handler = indiciaData.srefHandlers[$('#imp-sref-system').val().toLowerCase()], pt, sref;
+              if (indiciaData.defaultSectionGridRef==='sectionCentroid100') {
+                pt = selectedFeature.geometry.getCentroid(true); // must use weighted to accurately calculate
+              } else {
+                pt = jQuery.extend({}, selectedFeature.geometry.components[0]);
+              }
+              sref=handler.pointToGridNotation(pt.transform(indiciaData.mapdiv.map.projection, 'EPSG:'+handler.srid), 6);
+              indiciaData.sections[current] = {sref : sref,	system : $('#imp-sref-system').val()};
+            }
           }
           indiciaData.sections[current].geom = evt.feature.geometry.toString();
           data['location:centroid_sref']=indiciaData.sections[current].sref;
           data['location:centroid_sref_system']=indiciaData.sections[current].system;
+          // autocalc section length
+          if (indiciaData.autocalcSectionLengthAttrId) {
+            data[$('#locAttr\\:'+indiciaData.autocalcSectionLengthAttrId).attr('name')] = Math.round(selectedFeature.geometry.clone().transform(indiciaData.mapdiv.map.projection, 'EPSG:27700').getLength());
+          }
           $.post(
             indiciaData.ajaxFormPostUrl,
             data,
@@ -535,6 +591,7 @@ $(document).ready(function() {
                 $('#section-location-id').val(id);
                 $('#section-select-route-'+current).removeClass('missing');
                 $('#section-select-'+current).removeClass('missing');
+                loadSectionDetails(current);
               }
             },
             'json'
@@ -558,6 +615,15 @@ $(document).ready(function() {
     $(evt.target).closest('tr').addClass('ui-state-disabled');
     // clear the underlying value
     $(evt.target).closest('tr').find('input').val('');
+  });
+
+  $('#add-branch-coord').click(function(evt) {
+    var coordinator=($('#branchCmsUserId')[0]).options[$('#branchCmsUserId')[0].selectedIndex];
+    if ($('#branch-coord-'+coordinator.value).length===0) {
+      $('#branch-coord-list').append('<tr><td id="branch-coord-'+coordinator.value+'">' +
+          '<input type="hidden" name="locAttr:'+indiciaData.locBranchCmsUsrAttr+'::'+coordinator.value+'" value="'+coordinator.value+'"/>'+coordinator.text+'</td>'+
+          '<td><div class="ui-state-default ui-corner-all"><span class="remove-user ui-icon ui-icon-circle-close"></span></div></td></tr>');
+    }
   });
 
 });

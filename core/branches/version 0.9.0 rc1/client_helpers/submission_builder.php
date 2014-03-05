@@ -164,6 +164,8 @@ class submission_builder extends helper_config {
       $sa['field_prefix']=$field_prefix;
     }
     $attrEntity = self::get_attr_entity_prefix($entity, false).'Attr';
+    // complex json multivalue attributes need special handling
+    $complexAttrs=array();
     // Iterate through the array
     foreach ($array as $key => $value)
     {
@@ -177,10 +179,89 @@ class submission_builder extends helper_config {
           // Add a new field to the save array
           $sa['fields'][$key] = array('value' => $value);
         } elseif ($attrEntity && (strpos($key, "$attrEntity:")===0)) {
-          // custom attribute data can also go straight into the submission for the "master" table
-          $sa['fields'][$key] = array('value' => $value);
+          // custom attribute data can also go straight into the submission for the "master" table. Array data might need 
+          // special handling to link it to existing database records.
+          if (is_array($value) && count($value)>0) {
+            // The value is an array
+            foreach ($value as $idx=>$arrayItem) {
+              // does the entry contain the fieldname (required for existing values in controls which post arrays, like multiselect selects)?
+              if (preg_match("/\d+:$attrEntity:\d+:\d+/", $arrayItem)) {
+                $tokens=explode(':', $arrayItem, 2);
+                $sa['fields'][$tokens[1]] = array('value' => $tokens[0]);
+              //Additional handling for multi-value controls such as easyselect lists in species grids where the selected items are displayed under
+              //the main control. These items have both the value itself and the attribute_value id in the value field
+              } elseif (preg_match("/^\d+:\d+$/", $arrayItem)) {
+                $tokens=explode(':', $arrayItem);
+                $sa['fields']["$key:$tokens[1]:$idx"] = array('value' => $tokens[0]);
+              } else
+                $sa['fields']["$key::$idx"]=array('value' => $arrayItem);
+            }
+          } else
+            $sa['fields'][$key] = array('value' => $value);
+        } elseif ($attrEntity && (strpos($key, "$attrEntity+:")===0)) {
+          // a complex custom attribute data value which will need to be json encoded.
+          $tokens=explode(':', $key);
+          if ($tokens[4]==='deleted') {
+            if ($value==='t') {
+              $complexAttrs[$key]='deleted';
+            } 
+          } else {
+            $attrKey = str_replace('+', '', $tokens[0]) . ':' . $tokens[1];
+            if (!empty($tokens[2]))
+              // existing value record
+              $attrKey .= ':'.$tokens[2];
+            $exists = isset($complexAttrs[$attrKey]) ? $complexAttrs[$attrKey] : array();
+            if ($exists!=='deleted') {
+              $exists[$tokens[3]][$tokens[4]] = $value;
+              $complexAttrs[$attrKey]=$exists;
+            }
+          }
         }
       } 
+    }
+    foreach($complexAttrs as $attrKey=>$data) {
+      if ($data==='deleted')
+        $sa['fields'][$attrKey]=array('value'=>'');
+      else {
+        $sa['fields'][$attrKey]=array('value'=>array());
+        $exists = count(explode(':', $attrKey))===3;
+        foreach (array_values($data) as $row) {
+          // find any term submissions in form id:term, and split into 2 json fields. Also process checkbox groups into suitable array form.
+          $terms=array();
+          foreach ($row as $key=>&$val) {
+            if (is_array($val)) {
+              // array from a checkbox_group
+              $subvals=array();
+              $subterms=array();
+              foreach ($val as $subval) {
+                $split=explode(':', $subval, 2);
+                $subvals[] =  $split[0];
+                $subterms[] =  $split[1];
+              }
+              $val=$subvals;
+              $terms[$key.'_term']=$subterms;
+            } else {
+              if (preg_match('/^[0-9]+\:.+$/', $val)) {
+                $split=explode(':', $val, 2);
+                $val = $split[0];
+                $terms[$key.'_term']=$split[1];
+              }
+            }
+          }
+          $row += $terms;
+          if (implode('', array_values($row))<>'') {
+            if ($exists)
+              // existing value, so no need to send an array
+              $sa['fields'][$attrKey]['value'] = json_encode($row);
+            else
+              // could be multiple new values, so send an array
+              $sa['fields'][$attrKey]['value'][] = json_encode($row);
+          } elseif ($exists) {
+            // submitting an empty set for existing row, so deleted
+            $sa['fields'][$attrKey]=array('value'=>'');
+          }
+        }
+      }
     }
     if ($entity==='occurrence' && function_exists('hostsite_get_user_field') && hostsite_get_user_field('training')) 
       $sa['fields']['training'] = array('value' => 'on');
@@ -289,58 +370,20 @@ class submission_builder extends helper_config {
     // Get the parent model into JSON
     $modelWrapped = self::wrap($values, $modelName, $fieldPrefix);
     
-    // Build sub-models for the image files. Don't post to the warehouse until after validation success. This 
+    // Build sub-models for the media files. Don't post to the warehouse until after validation success. This 
     // also moves any simple uploaded files to the interim image upload folder.
-    $images = data_entry_helper::extract_image_data($values, $modelName.'_image', true, true);
-    foreach ($images as $image) {
-      $imageWrap = self::wrap($image, $modelName.'_image');      
+    $media = data_entry_helper::extract_media_data($values, $modelName.'_medium', true, true);
+    
+    foreach ($media as $item) {
+      $wrapped = self::wrap($item, $modelName.'_medium');      
       $modelWrapped['subModels'][] = array(
           'fkId' => $modelName.'_id',
-          'model' => $imageWrap
+          'model' => $wrapped
       );
     }
     return $modelWrapped;
   }  
  
-  /**
-   * Interprets the $_FILES information and returns an array of files uploaded
-   * @param String $media_id Base name of the file entry in the $_FILES array e.g. occurrence:image.
-   * Multiple upload fields can exist on a form if they have a suffix 0f :0, :1 ... :n
-   * @access private
-   * @return Array of file details of the uploaded files.
-   */
-  private static function get_uploaded_files($media_id) {
-
-    $files = array();
-
-    if (array_key_exists($media_id, $_FILES)) {
-      //there is a single upload field
-      if($_FILES[$media_id]['name'] != '') {
-        //that field has a file
-        $files[] = $_FILES[$media_id];
-      }
-    }
-    elseif (array_key_exists($media_id .':0', $_FILES)) {
-      //there are multiple upload fields
-      $i = 0;
-      $key = $media_id .':'. $i;
-      do {
-        //loop through those fields
-        if($_FILES[$key]['name'] != '') {
-          //the field has a file
-          $files[] = $_FILES[$key];
-        }
-        $i++;
-        $key = $media_id .':'. $i;
-      } while (array_key_exists($key, $_FILES));
-    }
-    else {
-      //there are no upload fields so an empty array is returned
-    }
-
-    return $files;
-  }
-
   /**
    * Returns a 3 character prefix representing an entity name that can have
    * custom attributes attached.

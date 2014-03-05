@@ -600,6 +600,22 @@ class iform_ukbms_sectioned_transects_input_sample {
           'siteSpecific'=>true
         ),
         array(
+            'name'=>'managerPermission',
+            'caption'=>'Drupal Permission for Manager mode',
+            'description'=>'Enter the Drupal permission name to be used to determine if this user is a manager. Entering this will allow the identified users access to the full locations list when entering a walk.',
+            'type'=>'string',
+            'required' => false,
+            'group' => 'Transects Editor Settings'
+        ),
+        array(
+            'name' => 'branch_assignment_permission',
+            'label' => 'Drupal Permission name for Branch Manager',
+            'type' => 'string',
+            'description' => 'Enter the Drupal permission name to be used to determine if this user is a Branch Manager. Entering this will allow the identified users access to locations identified as theirs using the Branch CMS User ID integer attribute on the locations.',
+            'required'=>false,
+            'group' => 'Transects Editor Settings'
+        ),
+        array(
           'name' => 'user_locations_filter',
           'caption' => 'User locations filter',
           'description' => 'Should the locations available be filtered to those which the user is linked to, by a multivalue CMS User ID attribute ' .
@@ -635,6 +651,22 @@ class iform_ukbms_sectioned_transects_input_sample {
           'required' => false,
           'default' => false,
           'group' => 'Transects Editor Settings'
+        ),
+        array(
+          'name'=>'sensitiveAttrID',
+          'caption' => 'Location attribute used to filter out sensitive sites',
+          'description' => 'A boolean location attribute, set to true if a site is sensitive.',
+          'type' => 'locAttr',
+          'required' => false,
+          'group' => 'Sensitivity Handling'
+        ),
+        array(
+          'name' => 'sensitivityPrecision',
+          'caption' => 'Sensitivity Precision',
+          'description' => 'Precision to be applied to new occurrences recorded at sensitive sites. Existing occurrences are not changed. A number representing the square size in metres - e.g. enter 1000 for 1km square.',
+          'type' => 'int',
+          'required' => false,
+          'group' => 'Sensitivity Handling'
         )
       )
     );
@@ -653,8 +685,10 @@ class iform_ukbms_sectioned_transects_input_sample {
   public static function get_form($args, $node, $response=null) {
     if (isset($response['error']))
       data_entry_helper::dump_errors($response);
-    if (isset($_REQUEST['page']) && $_REQUEST['page']==='mainSample' && !isset(data_entry_helper::$validation_errors)) {
-      // we have just saved the sample page, so move on to the occurrences list
+    if ((isset($_REQUEST['page']) && $_REQUEST['page']==='mainSample' && !isset(data_entry_helper::$validation_errors) && !isset($response['error'])) ||
+        (isset($_REQUEST['page']) && $_REQUEST['page']==='notes')) {
+      // we have just saved the sample page, so move on to the occurrences list,
+      // or we have had an error in the notes page
       return self::get_occurrences_form($args, $node, $response);
     } else {
       return self::get_sample_form($args, $node, $response);
@@ -728,9 +762,10 @@ class iform_ukbms_sectioned_transects_input_sample {
       );
       $locationTypes = helper_base::get_termlist_terms($auth, 'indicia:location_types', $typeTerms);
       $siteParams = $auth['read'] + array('website_id' => $args['website_id'], 'location_type_id'=>$locationTypes[0]['id']);
-      if (!isset($args['user_locations_filter']) || $args['user_locations_filter'])
+      if ((!isset($args['user_locations_filter']) || $args['user_locations_filter']) &&
+          (!isset($args['managerPermission']) || !user_access($args['managerPermission']))) {
         $siteParams += array('locattrs'=>'CMS User ID', 'attr_location_cms_user_id'=>$user->uid);
-      else
+      } else
         $siteParams += array('locattrs'=>'');
       $availableSites = data_entry_helper::get_population_data(array(
         'report'=>'library/locations/locations_list',
@@ -743,6 +778,23 @@ class iform_ukbms_sectioned_transects_input_sample {
       foreach ($availableSites as $site) {
         $sitesLookup[$site['location_id']]=$site['name'];
         $sitesJs[$site['location_id']] = $site;
+      }
+      // bolt in branch locations. Don't assume that branch list is superset of normal sites list.
+      // Only need to do if not a manager - they have already fetched the full list anyway.
+      if(isset($args['branch_assignment_permission']) && user_access($args['branch_assignment_permission']) && $siteParams['locattrs']!='') {
+        $siteParams['locattrs']='Branch CMS User ID';
+        $siteParams['attr_location_branch_cms_user_id']=$user->uid;
+        unset($siteParams['attr_location_cms_user_id']);
+        $availableSites = data_entry_helper::get_population_data(array(
+            'report'=>'library/locations/locations_list',
+            'extraParams' => $siteParams,
+            'nocache' => true
+        ));
+        foreach ($availableSites as $site) {
+          $sitesLookup[$site['location_id']]=$site['name'];
+          $sitesJs[$site['location_id']] = $site;
+        }
+        natcasesort($sitesLookup); // merge into original list in alphabetic order.
       }
       data_entry_helper::$javascript .= "indiciaData.sites = ".json_encode($sitesJs).";\n";
       $options = array(
@@ -872,8 +924,6 @@ class iform_ukbms_sectioned_transects_input_sample {
     if (isset($_POST['sample:id'])) {
       // have just posted an edit to the existing parent sample, so can use it to get the parent location id.
       $parentSampleId = $_POST['sample:id'];
-      $parentLocId = $_POST['sample:location_id'];
-      $date = $_POST['sample:date'];
       $existing=true;
       data_entry_helper::load_existing_record($auth['read'], 'sample', $parentSampleId);
     } else {
@@ -884,14 +934,14 @@ class iform_ukbms_sectioned_transects_input_sample {
         $parentSampleId = $_GET['sample_id'];
         $existing=true;
       }
-      $sample = data_entry_helper::get_population_data(array(
-        'table' => 'sample',
-        'extraParams' => $auth['read'] + array('view'=>'detail','id'=>$parentSampleId,'deleted'=>'f')
-      ));
-      $sample=$sample[0];
-      $parentLocId = $sample['location_id'];
-      $date=$sample['date_start'];
     }
+    $sample = data_entry_helper::get_population_data(array(
+      'table' => 'sample',
+      'extraParams' => $auth['read'] + array('view'=>'detail','id'=>$parentSampleId,'deleted'=>'f')
+    ));
+    $sample=$sample[0];
+    $parentLocId = $sample['location_id'];
+    $date=$sample['date_start'];
     if (!function_exists('module_exists') || !module_exists('easy_login')) {
       // work out the CMS User sample ID.
       $sampleMethods = helper_base::get_termlist_terms($auth, 'indicia:sample_methods', array('Transect'));
@@ -1073,7 +1123,7 @@ class iform_ukbms_sectioned_transects_input_sample {
 
     $extraParams = array_merge($auth['read'],
                    array('taxon_list_id' => $args['taxon_list_id'],
-                         'preferred' => 't',
+                         'preferred' => 't', // important
                          'allow_data_entry' => 't',
                          'view' => 'cache',
                          'orderby' => 'taxonomic_sort_order'));
@@ -1193,9 +1243,9 @@ class iform_ukbms_sectioned_transects_input_sample {
         $r .= '<label for="taxonLookupControl4" class="auto-width">'.lang::get('Add species to list').':</label> <input id="taxonLookupControl4" name="taxonLookupControl4" >';
       $r .= '<br /><a href="'.$args['my_walks_page'].'" class="button">'.lang::get('Finish').'</a></div>';
     }
+    $reloadPath = self::getReloadPath();
     if(isset($args['map_taxon_list_id']) && $args['map_taxon_list_id']!=''){
       // TODO convert to AJAX.
-      $reloadPath = self::getReloadPath();
       data_entry_helper::enable_validation('entry_form');
       $value = helper_base::explode_lines_key_value_pairs($args['defaults']);
       $value = isset($value['occurrence:record_status']) ? $value['occurrence:record_status'] : 'C';
@@ -1243,10 +1293,23 @@ class iform_ukbms_sectioned_transects_input_sample {
   }
 };
 jQuery(jQuery('#".$options["tabDiv"]."').parent()).bind('tabsshow', speciesMapTabHandler);\n";
+    } else // enable validation on the comments form in order to include the simplified ajax queuing for the autocomplete.
+      data_entry_helper::enable_validation('notes_form');
+
+    // for the comment form, we want to ensure that if there is a timeout error that it reloads the 
+    // data as stored in the DB.
+    $reloadParts = explode('?', $reloadPath, 2);
+    // fragment is always at the end. discard this.
+    if(count($reloadParts)>1){
+    	$params = explode('#', $reloadParts[1], 2);
+    	$params=$params[0]."&sample_id=".$parentSampleId;
+    } else {
+    	$reloadParts = explode('#', $reloadParts[0], 2);
+    	$params = "sample_id=".$parentSampleId;
     }
     
     $r .= "<div id=\"notes\">\n";
-    $r .= "<form method=\"post\">\n";
+    $r .= "<form method=\"post\" id=\"notes_form\" action=\"".$reloadParts[0].'?'.$params."#notes\">\n";
     $r .= $auth['write'];
     $r .= '<input type="hidden" name="sample:id" value="'.$parentSampleId.'" />';
     $r .= '<input type="hidden" name="website_id" value="'.$args['website_id'].'"/>';
@@ -1262,6 +1325,7 @@ jQuery(jQuery('#".$options["tabDiv"]."').parent()).bind('tabsshow', speciesMapTa
     ));    
     $r .= '<input type="submit" value="'.lang::get('Submit').'" id="save-button"/>';
     $r .= '</form>';
+    $r .= '<br /><a href="'.$args['my_walks_page'].'" class="button">'.lang::get('Finish').'</a>';
     $r .= '</div></div>';
     // A stub form for AJAX posting when we need to create an occurrence
     $r .= '<form style="display: none" id="occ-form" method="post" action="'.iform_ajaxproxy_url($node, 'occurrence').'">';
@@ -1272,9 +1336,25 @@ jQuery(jQuery('#".$options["tabDiv"]."').parent()).bind('tabsshow', speciesMapTa
     $r .= '<input name="occurrence:zero_abundance" id="occzero" />';
     $r .= '<input name="occurrence:taxa_taxon_list_id" id="ttlid" />';
     $r .= '<input name="occurrence:sample_id" id="occ_sampleid"/>';
+    if(isset($args["sensitiveAttrID"]) && $args["sensitiveAttrID"] != "" && isset($args["sensitivityPrecision"]) && $args["sensitivityPrecision"] != "") {
+      $locationTypes = helper_base::get_termlist_terms($auth, 'indicia:location_types', array(empty($args['transect_type_term']) ? 'Transect' : $args['transect_type_term']));
+      $site_attributes = data_entry_helper::getAttributes(array(
+            'valuetable'=>'location_attribute_value'
+            ,'attrtable'=>'location_attribute'
+            ,'key'=>'location_id'
+            ,'fieldprefix'=>'locAttr'
+            ,'extraParams'=>$auth['read'] + array('id'=>$args["sensitiveAttrID"])
+            ,'location_type_id'=>$locationTypes[0]['id']
+            ,'survey_id'=>$args['survey_id']
+            ,'id' => $parentLocId // location ID
+      ));
+      $r .= '<input name="occurrence:sensitivity_precision" id="occSensitive" value="'.
+            (count($site_attributes)>0 && $site_attributes[$args["sensitiveAttrID"]]['default']=="1" ? $args["sensitivityPrecision"] : '')
+            .'"/>';
+    }
     $r .= '<input name="occAttr:' . $args['occurrence_attribute_id'] . '" id="occattr"/>';
     $r .= '<input name="transaction_id" id="transaction_id"/>';
-    $r .= '<input name="user_id" value="'.hostsite_get_user_field('id').'"/>';
+    $r .= '<input name="user_id" value="'.hostsite_get_user_field('user_id', 1).'"/>';
     $r .= '</form>';
     // A stub form for AJAX posting when we need to update a sample
     $r .= '<form style="display: none" id="smp-form" method="post" action="'.iform_ajaxproxy_url($node, 'sample').'">';
@@ -1383,6 +1463,8 @@ jQuery('#tabs').bind('tabsshow', function(event, ui) {
         else // Drupal6 : it is a function
           Drupal.behaviors.tableHeader(target);
     }
+    // remove any hanging autocomplete select list.
+    jQuery('.ac_results').hide();
 });";
     return $r;
   }
@@ -1832,7 +1914,9 @@ jQuery('#tabs').bind('tabsshow', function(event, ui) {
         'sample_method_id'=>$sampleMethods[0]['id'],
         'multiValue'=>false // ensures that array_keys are the list of attribute IDs.
       ));
+      $smpDate = self::parseSingleDate($values['sample:date']);
       foreach($sections as $section){
+      	$smp = false;
         $exists=false;
         foreach($existingSubSamples as $existingSubSample){
           if($existingSubSample['location_id'] == $section['id']){
@@ -1860,7 +1944,9 @@ jQuery('#tabs').bind('tabsshow', function(event, ui) {
               }
             }
           }
-        } else { // need to ensure any date change is propagated
+        } else { // need to ensure any date change is propagated: only do if date has changed for performance reasons.
+          $subSmpDate = self::parseSingleDate($exists['date_start']);
+          if(strcmp($smpDate,$subSmpDate))
         	$smp = array('fkId' => 'parent_id',
         			'model' => array('id' => 'sample',
         					'fields' => array('survey_id' => array('value' => $values['sample:survey_id']),
@@ -1871,15 +1957,24 @@ jQuery('#tabs').bind('tabsshow', function(event, ui) {
         					)),
         			'copyFields' => array('date_start'=>'date_start','date_end'=>'date_end','date_type'=>'date_type'));
         }
-        $subsampleModels[] = $smp;
+        if($smp) $subsampleModels[] = $smp;
       }
     }
     $submission = submission_builder::build_submission($values, array('model' => 'sample'));
     if(count($subsampleModels)>0)
       $submission['subModels'] = $subsampleModels;
     }
-
     return($submission);
+  }
+  
+  // we assume that this is not quite vague: we are looking for variations of YYYY-MM-DD, with diff separators
+  // and possibly reverse ordered: month always in middle.
+  protected static function parseSingleDate($string){
+    if(preg_match('#^\d{2}/\d{2}/\d{4}$#', $string)){ // DD/MM/YYYY
+      $results = preg_split('#/#', $string);
+      return $results[2].'-'.$results[1].'-'.$results[0];
+    }
+    return $string;
   }
   
   /**

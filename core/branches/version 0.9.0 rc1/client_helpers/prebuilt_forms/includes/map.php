@@ -327,6 +327,7 @@ function iform_map_zoom_to_location($locationId, $readAuth) {
     'extraParams' => $readAuth + array('id'=>$locationId,'view' => 'detail')
   );
   $response = data_entry_helper::get_population_data($getPopDataOpts);
+  $geom = $response[0]['boundary_geom'] ? $response[0]['boundary_geom'] : $response[0]['centroid_geom'];
   // Note, since the following moves the map, we want it to be the first mapInitialisationHook
   data_entry_helper::$javascript .= "
 mapInitialisationHooks.unshift(function(mapdiv) {
@@ -335,7 +336,7 @@ mapInitialisationHooks.unshift(function(mapdiv) {
     {'sphericalMercator': true, displayInLayerSwitcher: true}
   );
   parser = new OpenLayers.Format.WKT();
-  feature = parser.read('".$response[0]['boundary_geom']."');
+  feature = parser.read('".$geom."');
   feature.style = {fillOpacity: 0, strokeColor: '#0000ff', strokeWidth: 2};  
   feature.style.fillOpacity=0;
   loclayer.addFeatures([feature]);

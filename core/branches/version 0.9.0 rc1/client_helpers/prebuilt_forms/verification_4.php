@@ -307,7 +307,7 @@ idlist=';
    * @return string HTML to insert onto the page
    */
   private static function other_tab_html() {
-    $r .= '<div id="experience-tab"><p>'.lang::get('Recorder\'s other records of this species and species group. Click to explore:').'</p><div id="experience-div"></div></div>';
+    $r = '<div id="experience-tab"><p>'.lang::get('Recorder\'s other records of this species and species group. Click to explore:').'</p><div id="experience-div"></div></div>';
     $r .= '<div id="phenology-tab"><p>'.lang::get('The following phenology chart shows the relative abundance of records through the '.
         'year for this species, <em>from the verified online recording data only.</em>').'</p><div id="chart-div"></div></div>';
     $r .= '<div id="images-tab"></div>';
@@ -384,7 +384,7 @@ idlist=';
     ));
     $r .= '<div id="details-tab"></div>';
     $r .= self::other_tab_html();
-    $r .= '</div></div></div></div>';
+    $r .= '</div></div></div></div></div>';
     return $r;
   }
 
@@ -459,6 +459,7 @@ idlist=';
       if (strpos($args['param_presets'].$args['param_defaults'], 'expertise_surveys')===false)
         $args['param_presets'].="\nexpertise_surveys={profile_surveys_expertise}";
     }
+    $args['sharing']='verification';
     $opts = array_merge(
         iform_report_get_report_options($args, $readAuth),
         array(
@@ -475,12 +476,11 @@ idlist=';
     $opts['columns'][] = array(
       'display'=>'',
       'template' => '<div class="nowrap"><button class="default-button quick-verify tools-btn" type="button" id="quick-{occurrence_id}" title="Record tools">...</button>'.
-          '<input type="hidden" class="row-input-form" value="{rootFolder}{input_form}"/><input type="hidden" class="row-belongs-to-site" value="{belongs_to_site"/><ul class="verify-tools"><li><a href="#" class="quick-verify-tool">Bulk verify similar records</a></li>'.
+          '<input type="hidden" class="row-input-form" value="{rootFolder}{input_form}"/><input type="hidden" class="row-belongs-to-site" value="{belongs_to_site}"/><ul class="verify-tools"><li><a href="#" class="quick-verify-tool">Bulk verify similar records</a></li>'.
           '<li><a href="#" class="trust-tool">Recorder\'s trust settings</a></li><li><a href="#" class="edit-record">Edit record</a></li></ul>'.
           '<input type="checkbox" class="check-row no-select" style="display: none" value="{occurrence_id}" /></div>'
     );
     $params = self::report_filter_panel($args, $readAuth);
-    $params .= $hiddenStuff;
     $opts['zoomMapToOutput']=false;
     $grid = report_helper::report_grid($opts);
     $r = str_replace(array('{grid}','{paramsForm}'), array($grid, $params),
@@ -671,6 +671,8 @@ idlist=';
     $extra['recorder'] = $record['recorder'];
     $extra['sample_id'] = $record['sample_id'];
     $extra['created_by_id'] = $record['created_by_id'];
+    $extra['input_by_first_name'] = $record['input_by_first_name'];
+    $extra['input_by_surname'] = $record['input_by_surname'];
     $extra['survey_title'] = $record['survey_title'];
     $extra['survey_id'] = $record['survey_id'];
     $extra['date'] = $record['date'];
@@ -725,7 +727,7 @@ idlist=';
     iform_load_helpers(array('data_entry_helper'));
     $images = data_entry_helper::get_population_data(array(
       'table' => 'occurrence_image',
-      'extraParams'=>$auth + array('occurrence_id'=>$_GET['occurrence_id']),
+      'extraParams'=>$readAuth + array('occurrence_id'=>$_GET['occurrence_id']),
       'nocache'=>true,
       'sharing'=>'verification'
     ));
@@ -992,8 +994,9 @@ WHERE vuser_id.value=".$_GET['user_id']);
        lang::get("{1} years ago"),
        lang::get("{1} decades ago"));
    $lengths = array("60","60","24","7","4.35","12","10");
-   for($j = 0; $difference >= $lengths[$j]; $j++)
-   $difference /= $lengths[$j];
+   for($j = 0; (($difference >= $lengths[$j]) && ($j < 7)) ; $j++) {
+     $difference /= $lengths[$j];
+   }
    $difference = round($difference);
    if($difference == 1)
      $text = str_replace('{1}', $difference, $periods[$j]);

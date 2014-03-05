@@ -11,67 +11,62 @@
   line-height: 1.3em;
 }
 
-table td.future {
-  background-color: grey;
+tr.totalrow td, td.total-column {
+  font-weight:bold;
 }
-table td.existingLink {
-  background-color: #00e7e7;
+tr.totalrow td,
+td.total-column,
+tr.datarow td,
+tr.sample-datarow td,
+tr td.week,
+tr td.links {
+  border: navy solid thin;
+  padding: 3px;
 }
-table td.otherSite {
-  background-color: yellow;
+tr.last-sample-datarow td
+{
+  border-bottom: navy solid thick;
 }
-table td.multiLink {
-  background-color: green;
+#controls-table,#downloads-table,#chartdiv-container {
+  margin-bottom: 3px;
 }
-tr.datarow td {
-	border: navy solid thin;
-	padding: 3px;
-}
-tr.totalrow td {
-	font-weight:bold;
-	border: navy solid thin;
-	padding: 3px;
-}
-td.total-column {
-	font-weight:bold;
-	border: navy solid thin;
-	padding: 3px;
-}
-tr td.week {
-	border: navy solid thin;
-	padding: 3px;
-}
-#controls-table,#chartdiv-container {
-	margin-bottom: 3px;
-}
-.controls-table {
+.controls-table, .downloads-table {
   width: 100%;
 }
 .controls-table label {
-	width: auto;
+  width: auto;
+}
+.controls-table .sensitive {
+  font-style: italic;
+}
+#downloads-table label {
+  width: auto;
+  margin-left: 5px;
+  margin-right: 5px;
 }
 .series-fieldset label {
-	width: auto;
-	margin-right: 20px;
-	margin-left: 5px;
+  width: auto;
+  margin-right: 20px;
+  margin-left: 5px;
 }
 .inline-control label {
-	width: auto;
-	margin-right: 30px;
-	margin-left: 5px;
+  width: auto;
+  margin-right: 30px;
+  margin-left: 5px;
 }
 .disable-button {
-	margin-right: 20px;
+  margin-right: 20px;
 }
 .chart-series-span {
-    white-space: nowrap; 
+  white-space: nowrap; 
 }
 .highlight-estimates {
-    color: red; 
+  color: red; 
 }
 .forcedZero {
-    color: blue; 
+  color: blue; 
 }
 div.report-summary-controls select {
-	margin-top: 0px;
+  margin-top: 0px;
 }
+

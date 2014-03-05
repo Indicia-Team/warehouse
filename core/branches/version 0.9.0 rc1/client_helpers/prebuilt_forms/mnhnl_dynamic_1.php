@@ -46,14 +46,6 @@ class iform_mnhnl_dynamic_1 extends iform_dynamic_sample_occurrence {
   }
 
   /**
-   * Get the list of permissions for this form.
-   * @return array List of permissions that this form requires.
-   */
-  public static function get_perms($nid) {
-    return array('IForm n'.$nid.' admin', 'IForm n'.$nid.' user');
-  }
-
-  /**
    * Get the list of parameters for this form.
    * @return array List of parameters that this form requires.
    */
@@ -78,7 +70,7 @@ class iform_mnhnl_dynamic_1 extends iform_dynamic_sample_occurrence {
   protected static function get_form_html($args, $auth, $attributes) {
     if($args['includeLocTools'] && function_exists('iform_loctools_listlocations')){
   		$squares = iform_loctools_listlocations($node);
-  		if(squares != "all" && count(squares)==0)
+  		if($squares != "all" && count($squares)==0)
   			return lang::get('Error: You do not have any squares allocated to you. Please contact your manager.');
   	}
     $r = call_user_func(array(self::$called_class, 'getHeaderHTML'), $args);

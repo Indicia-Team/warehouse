@@ -98,7 +98,7 @@ class iform_mnhnl_bird_transect_walks {
         'maxlength'=>200
       ),
       array(
-	    'name'=>'map_projection',
+	    'name'=>'map_projection', /* GARY */
 	    'caption'=>'Map Projection (EPSG code)',
 	    'description'=>'EPSG code to use for the map. If using 900913 then the preset layers such as Google maps will work, but for any other '.
 	        'projection make sure that your base layers support it.',
@@ -137,10 +137,6 @@ class iform_mnhnl_bird_transect_walks {
 	    'default' => 'occurrence',
       )
     ));
-  }
-
-  public static function get_perms($nid) {
-    return array('IForm n'.$nid.' admin', 'IForm n'.$nid.' user');
   }
 
   // Values that $mode can take
@@ -219,11 +215,6 @@ class iform_mnhnl_bird_transect_walks {
     $childSample = array();
     $childLoadID = null;
     $thisOccID=-1; // IDs have to be >0, so this is outside the valid range
-    $adminPerm = 'IForm n'.$node->nid.' admin';
-    $userPerm = 'IForm n'.$node->nid.' user';
-    if(!user_access($adminPerm) && !user_access($userPerm)){
-      return lang::get('LANG_no_permissions');
-    }
 
     // Load up attribute details
     $sample_walk_direction_id = self::getAttrID($auth, $args, 'sample', self::ATTR_WALK);
@@ -277,7 +268,7 @@ class iform_mnhnl_bird_transect_walks {
         }
       }
     } else {
-      if (array_key_exists('merge_sample_id1', $_GET) && array_key_exists('merge_sample_id2', $_GET) && user_access($adminPerm)){
+      if (array_key_exists('merge_sample_id1', $_GET) && array_key_exists('merge_sample_id2', $_GET) && user_access($args['edit_permission'])){
         $mode = 2;
         // first check can access the 2 samples given
         $parentLoadID = $_GET['merge_sample_id1'];
@@ -353,73 +344,13 @@ class iform_mnhnl_bird_transect_walks {
     // Work out list of locations this user can see.
     $locations = iform_loctools_listlocations($node);
     if($locations != 'all'){
-        data_entry_helper::$javascript .= "locationList = [".implode(',', $locations)."];\n";
+        data_entry_helper::$javascript .= "var locationList = [".implode(',', $locations)."];\n";
     }
-    data_entry_helper::$javascript .= "
-// Create Layers.
-// Base Layers first.
-WMSoptions = {
-          SERVICE: 'WMS',
-          VERSION: '1.1.0',
-          STYLES: '',
-          SRS: '".$optionsArray_Location['SRS']."',
-          FORMAT: '".$optionsArray_Location['FORMAT']."',
-          TRANSPARENT: 'true', ";
-    if($locations != 'all'){
-      // when given a restricted feature list we have to use the feature id to filter in order to not go over 2000 char limit on the URL
-      // Can only generate the feature id if we access a table directly, not through a view. Go direct to the locations table.
-      // don't need to worry about parent_id in this case as we know exactly which features we want.
-      // need to use btw_transects view for unrestricted so we can filter by parent_id=NULL.
-      $locFeatures = array();
-      foreach($locations as $location)
-        $locFeatures[] = "locations.".$location;
-      data_entry_helper::$javascript .= "
-        LAYERS: 'indicia:locations',
-        FEATUREID: '".implode(',', $locFeatures)."'";
-    } else {
-      data_entry_helper::$javascript .= "
-        LAYERS: '".$optionsArray_Location['LAYERS']."',
-        CQL_FILTER: 'website_id=".$args['website_id']."'";
-    }
-    data_entry_helper::$javascript .= "
-    };
-locationListLayer = new OpenLayers.Layer.WMS('".$optionsArray_Location['Name']."',
-        '".iform_proxy_url($optionsArray_Location['URL'])."',
-        WMSoptions, {
-             minScale: ".$optionsArray_Location['minScale'].",
-            maxScale: ".$optionsArray_Location['maxScale'].",
-            units: '".$optionsArray_Location['units']."',
-            isBaseLayer: false,
-            singleTile: true
-        });
-// Create vector layers: one to display the location onto, and another for the occurrence list
-// the default edit layer is used for the occurrences themselves
-locStyleMap = new OpenLayers.StyleMap({
-                \"default\": new OpenLayers.Style({
-                    fillColor: \"Green\",
-                    strokeColor: \"Black\",
-                    fillOpacity: 0.2,
-                    strokeWidth: 1
-                  })
-  });
-locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")."\",
-                                    {styleMap: locStyleMap});
-occStyleMap = new OpenLayers.StyleMap({
-                \"default\": new OpenLayers.Style({
-                    pointRadius: 3,
-                    fillColor: \"Red\",
-                    fillOpacity: 0.3,
-                    strokeColor: \"Red\",
-                    strokeWidth: 1
-          }) });
-occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_Layer")."\",
-                                    {styleMap: occStyleMap});
-";
     drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/hasharray.js', 'module');
     drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/jquery.datagrid.js', 'module');
     if (method_exists(get_called_class(), 'getHeaderHTML')) $r .= call_user_func(array(get_called_class(), 'getHeaderHTML'), $args);
     // Work out list of locations this user can see.
-    $locations = iform_loctools_listlocations($node);
+    // $locations = iform_loctools_listlocations($node);
     ///////////////////////////////////////////////////////////////////
     // default mode 0 : display a page with tabs for survey selector,
     // locations allocator and reports (last two require permissions)
@@ -451,7 +382,7 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
 
     // Create the Survey list datagrid for this user.
       drupal_add_js("jQuery(document).ready(function(){
-  $('div#smp_grid').indiciaDataGrid('rpt:mnhnl_btw_list_samples', {
+  $('div#smp_grid').indiciaDataGrid('rpt:reports_for_prebuilt_forms/MNHNL/mnhnl_btw_list_samples', {
     indiciaSvc: '".$svcUrl."',
     dataColumns: ['location_name', 'date', 'num_visit', 'num_occurrences', 'num_taxa'],
     reportColumnTitles: {location_name : '".lang::get('LANG_Transect')."', date : '".lang::get('LANG_Date')."', num_visit : '".lang::get('LANG_Visit_No')."', num_occurrences : '".lang::get('LANG_Num_Occurrences')."', num_taxa : '".lang::get('LANG_Num_Species')."'},
@@ -464,6 +395,45 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
   });
 });
       ", 'inline');
+      data_entry_helper::$javascript .= "
+// Create Layers.
+var locationListLayer;
+mapInitialisationHooks.push(function (div) {
+      \"use strict\";";
+      if($locations == 'all' || $loclist != '-1') {
+        data_entry_helper::$javascript .= "
+  var WMSoptions = {SERVICE: 'WMS', VERSION: '1.1.0', STYLES: '',
+        SRS: div.map.projection.proj.srsCode, /* Now takes it from map */
+        FORMAT: '".$optionsArray_Location['FORMAT']."',
+        TRANSPARENT: 'true', ";
+      if($locations != 'all'){
+        // when given a restricted feature list we have to use the feature id to filter in order to not go over 2000 char limit on the URL
+        // Can only generate the feature id if we access a table directly, not through a view. Go direct to the locations table.
+        // don't need to worry about parent_id in this case as we know exactly which features we want.
+        // need to use btw_transects view for unrestricted so we can filter by parent_id=NULL.
+        $locFeatures = array();
+        foreach($locations as $location)
+          $locFeatures[] = "locations.".$location;
+        data_entry_helper::$javascript .= "
+        LAYERS: 'indicia:locations',
+        FEATUREID: '".implode(',', $locFeatures)."'";
+      } else {
+        data_entry_helper::$javascript .= " LAYERS: '".$optionsArray_Location['LAYERS']."', CQL_FILTER: 'website_id=".$args['website_id']."'";
+      }
+      data_entry_helper::$javascript .= "
+  };
+  locationListLayer = new OpenLayers.Layer.WMS('".$optionsArray_Location['Name']."',
+        '".(function_exists(iform_proxy_url) ? iform_proxy_url($optionsArray_Location['URL']) : $optionsArray_Location['URL'])."',
+        WMSoptions, {
+        minScale: ".$optionsArray_Location['minScale'].",
+        maxScale: ".$optionsArray_Location['maxScale'].",
+        units: '".$optionsArray_Location['units']."',
+        isBaseLayer: false,
+        singleTile: true
+  });
+  div.map.addLayer(locationListLayer);
+});\n";
+      }
       $r .= '
   <div id="surveyList" class="mnhnl-btw-datapanel"><div id="smp_grid"></div>
     <form><input type="button" value="'.lang::get('LANG_Add_Survey').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'new')).'\'"></form></div>';
@@ -473,7 +443,7 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
   <div id="setLocations" class="mnhnl-btw-datapanel">
     <form method="post">
       <input type="hidden" id="mnhnlbtw" name="mnhnlbtw" value="mnhnlbtw" />';
-        $url = $svcUrl.'/data/location?mode=json&view=detail&auth_token='.$readAuth['auth_token']."&nonce=".$readAuth["nonce"]."&parent_id=NULL&orderby=name";
+        $url = $svcUrl.'/data/location?mode=json&view=detail&auth_token='.$readAuth['auth_token']."&nonce=".$readAuth["nonce"]."&parent_id=NULL&orderby=name&columns=id,name,parent_id";
         $session = curl_init($url);
         curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
         $entities = json_decode(curl_exec($session), true);
@@ -491,7 +461,7 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
           }
         }
         $r .= "
-      <input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save_Location_Allocations')."\" />
+      <input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('Save Location Allocations')."\" />
     </form>
   </div>";
       }
@@ -499,7 +469,7 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
       if(iform_loctools_checkaccess($node,'superuser')){
         $r .= '
   <div id="downloads" class="mnhnl-btw-datapanel">
-    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_transect_direction_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
+    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_btw_transect_direction_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
       <p>'.lang::get('LANG_Direction_Report').'</p>
       <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "direction_attr_id":'.$sample_walk_direction_id.', "closed_attr_id":'.$sample_closure_id.'}\' />
       <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Direction_Report_Button').'">
@@ -509,22 +479,22 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
       <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].'}\' />
       <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Verified_Data_Report_Button').'">
     </form>
-    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_download_report_2.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
+    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_btw_download_report_2.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
       <p>'.lang::get('LANG_Initial_Download').'</p>
       <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "closed_attr_id":'.$sample_closure_id.', "download": "INITIAL", "quality": "!R", "occattrs": "'.$occurrence_confidence_id.','.$occurrence_count_id.','.$occurrence_approximation_id.','.$occurrence_territorial_id.','.$occurrence_atlas_code_id.','.$occurrence_overflying_id.'", "smpattrs" : "'.$sample_walk_direction_id.','.$sample_reliability_id.','.$sample_visit_number_id.','.$sample_wind_id.','.$sample_precipitation_id.','.$sample_temperature_id.','.$sample_cloud_id.','.$sample_start_time_id.','.$sample_end_time_id.','.$sample_closure_id.','.$uid_attr_id.','.$email_attr_id.','.$username_attr_id.'"}\' />
       <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Initial_Download_Button').'">
     </form>
-    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_download_report_2.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
+    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_btw_download_report_2.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
       <p>'.lang::get('LANG_Confirm_Download').'</p>
       <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "closed_attr_id":'.$sample_closure_id.', "download": "CONFIRM", "quality": "V", "occattrs": "'.$occurrence_confidence_id.','.$occurrence_count_id.','.$occurrence_approximation_id.','.$occurrence_territorial_id.','.$occurrence_atlas_code_id.','.$occurrence_overflying_id.'", "smpattrs" : "'.$sample_walk_direction_id.','.$sample_reliability_id.','.$sample_visit_number_id.','.$sample_wind_id.','.$sample_precipitation_id.','.$sample_temperature_id.','.$sample_cloud_id.','.$sample_start_time_id.','.$sample_end_time_id.','.$sample_closure_id.','.$uid_attr_id.','.$email_attr_id.','.$username_attr_id.'"}\' />
       <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Confirm_Download_Button').'">
     </form>
-    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_download_report_2.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
+    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_btw_download_report_2.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
       <p>'.lang::get('LANG_Final_Download').'</p>
       <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "closed_attr_id":'.$sample_closure_id.', "download": "FINAL", "quality": "V", "occattrs": "'.$occurrence_confidence_id.','.$occurrence_count_id.','.$occurrence_approximation_id.','.$occurrence_territorial_id.','.$occurrence_atlas_code_id.','.$occurrence_overflying_id.'", "smpattrs" : "'.$sample_walk_direction_id.','.$sample_reliability_id.','.$sample_visit_number_id.','.$sample_wind_id.','.$sample_precipitation_id.','.$sample_temperature_id.','.$sample_cloud_id.','.$sample_start_time_id.','.$sample_end_time_id.','.$sample_closure_id.','.$uid_attr_id.','.$email_attr_id.','.$username_attr_id.'"}\' />
       <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Final_Download_Button').'">
     </form>
-    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_download_report_2.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
+    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_btw_download_report_2.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
       <p>'.lang::get('LANG_Complete_Final_Download').'</p>
       <input type="hidden" name="params" value=\'{"survey_id":'.$args['survey_id'].', "closed_attr_id":'.$sample_closure_id.', "download": "OFF", "quality": "NA", "occattrs": "'.$occurrence_confidence_id.','.$occurrence_count_id.','.$occurrence_approximation_id.','.$occurrence_territorial_id.','.$occurrence_atlas_code_id.','.$occurrence_overflying_id.'", "smpattrs" : "'.$sample_walk_direction_id.','.$sample_reliability_id.','.$sample_visit_number_id.','.$sample_wind_id.','.$sample_precipitation_id.','.$sample_temperature_id.','.$sample_cloud_id.','.$sample_start_time_id.','.$sample_end_time_id.','.$sample_closure_id.','.$uid_attr_id.','.$email_attr_id.','.$username_attr_id.'"}\' />
       <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Complete_Final_Download_Button').'">
@@ -534,8 +504,8 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
       // Create Map
       $options = iform_map_get_map_options($args, $readAuth);
       $olOptions = iform_map_get_ol_options($args);
-      if($locations == 'all' || $loclist != '-1')
-        $options['layers'] = array('locationListLayer');
+//      if($locations == 'all' || $loclist != '-1')
+//        $options['layers'] = array('locationListLayer');
       $options['searchLayer'] = 'false';
       $options['editLayer'] = 'false';
       $options['initialFeatureWkt'] = null;
@@ -567,6 +537,65 @@ $('#controls').bind('tabsshow', function(event, ui) {
     // First load the occurrence (and its position sample) if provided
     // Then load the parent sample if provided, or derived from occurrence.
     // $occReadOnly is set if the occurrence has been downloaded. Not even an admin user can modify it in this case.
+    data_entry_helper::$javascript .= "
+// Create Layers.
+var locationLayer, occListLayer, control;
+mapInitialisationHooks.push(function (div) {
+  \"use strict\";
+  // Create vector layers: one to display the location onto, and another for the occurrence list
+  // the default edit layer is used for the occurrences themselves
+  var locStyleMap = new OpenLayers.StyleMap({
+      'default': new OpenLayers.Style({
+        fillColor: 'Green',
+        strokeColor: 'Black',
+        fillOpacity: 0.2,
+        strokeWidth: 1
+  })});
+  locationLayer = new OpenLayers.Layer.Vector('".lang::get("LANG_Location_Layer")."', {styleMap: locStyleMap});
+  var occStyleMap = new OpenLayers.StyleMap({
+      'default': new OpenLayers.Style({
+        pointRadius: 3,
+        fillColor: 'Red',
+        fillOpacity: 0.3,
+        strokeColor: 'Red',
+        strokeWidth: 1
+  })});
+  occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_Layer")."\", {styleMap: occStyleMap});
+  div.map.addLayer(locationLayer);
+  div.map.addLayer(occListLayer);
+  var control = new OpenLayers.Control.SelectFeature(occListLayer);
+  occListLayer.map.addControl(control);
+  function onPopupClose(evt) {
+    // 'this' is the popup.
+    control.unselect(this.feature);
+  }
+  function onFeatureSelect(evt) {
+    feature = evt.feature;
+    popup = new OpenLayers.Popup.FramedCloud(\"featurePopup\",
+               feature.geometry.getBounds().getCenterLonLat(),
+                             new OpenLayers.Size(100,100),
+                             feature.attributes.taxon + \" (\" + feature.attributes.count + \")\",
+                             null, true, onPopupClose);
+    feature.popup = popup;
+    popup.feature = feature;
+    feature.layer.map.addPopup(popup);
+  }
+  function onFeatureUnselect(evt) {
+    feature = evt.feature;
+    if (feature.popup) {
+        popup.feature = null;
+        feature.layer.map.removePopup(feature.popup);
+        feature.popup.destroy();
+        feature.popup = null;
+    }
+  }
+  occListLayer.events.on({
+    'featureselected': onFeatureSelect,
+    'featureunselected': onFeatureUnselect
+  });
+  control.activate();
+});\n";
+    
     $occReadOnly = false;
     $childSample = array();
     if($childLoadID){ // load the occurrence and its associated sample (which holds the position)
@@ -635,7 +664,7 @@ $('#controls').bind('tabsshow', function(event, ui) {
     $closedFieldName = $attributes[$sample_closure_id]['fieldname'];
     $closedFieldValue = data_entry_helper::check_default_value($closedFieldName, array_key_exists('default', $attributes[$sample_closure_id]) ? $attributes[$sample_closure_id]['default'] : '0'); // default is not closed
     if($closedFieldValue == '') $closedFieldValue = '0';
-    if($closedFieldValue == '1' && !user_access($adminPerm)){
+    if($closedFieldValue == '1' && !user_access($args['edit_permission'])){
       // sample has been closed, no admin perms. Everything now set to read only.
       $surveyReadOnly = true;
       $disabledText = "disabled=\"disabled\"";
@@ -677,7 +706,7 @@ $('#controls').bind('tabsshow', function(event, ui) {
     // Set up main Survey Form.
     $r .= "<div id=\"survey\" class=\"mnhnl-btw-datapanel\">
   <p id=\"read-only-survey\"><strong>".lang::get('LANG_Read_Only_Survey')."</strong></p>";
-    if(user_access($adminPerm) && array_key_exists('sample:id', data_entry_helper::$entity_to_load)) {
+    if(user_access($args['edit_permission']) && array_key_exists('sample:id', data_entry_helper::$entity_to_load)) {
     	// check for other surveys of same date/transect: only if admin user.
         $url = $svcUrl.'/data/sample?mode=json&view=detail&auth_token='.$readAuth['auth_token']."&nonce=".$readAuth["nonce"]."&date_start=".$parentSample['sample:date_start']."&location_id=".$parentSample['sample:location_id'];
         $session = curl_init($url);
@@ -714,7 +743,6 @@ $('#controls').bind('tabsshow', function(event, ui) {
     }
 
     $defAttrOptions['validation'] = array('required');
-    $defAttrOptions['suffixTemplate']='requiredsuffix';
     if($locations == 'all'){
       $locOptions = array_merge(array('label'=>lang::get('LANG_Transect')), $defAttrOptions);
       $locOptions['extraParams'] = array_merge(array('parent_id'=>'NULL', 'view'=>'detail', 'orderby'=>'name'), $locOptions['extraParams']);
@@ -754,7 +782,7 @@ $('#controls').bind('tabsshow', function(event, ui) {
     if($surveyReadOnly) {
       $r .= data_entry_helper::text_input(array_merge($defAttrOptions, array('label' => lang::get('LANG_Date'), 'fieldname' => 'sample:date', 'disabled'=>$disabledText )));
     } else {
-      $r .= data_entry_helper::date_picker(array('label' => lang::get('LANG_Date'), 'fieldname' => 'sample:date', 'class' => 'vague-date-picker', 'suffixTemplate'=>'requiredsuffix'));
+      $r .= data_entry_helper::date_picker(array('label' => lang::get('LANG_Date'), 'fieldname' => 'sample:date', 'class' => 'vague-date-picker'));
     }
     $r .= ($sample_wind_id ?          data_entry_helper::outputAttribute($attributes[$sample_wind_id], $languageFilteredAttrOptions) :                                                                                                "<span style=\"display: none;\">Sample attribute '".self::ATTR_WIND."' not assigned to this survey</span>").
           ($sample_precipitation_id ? data_entry_helper::outputAttribute($attributes[$sample_precipitation_id], $languageFilteredAttrOptions) :                                                                                       "<span style=\"display: none;\">Sample attribute '".self::ATTR_RAIN."' not assigned to this survey</span>").
@@ -767,7 +795,7 @@ jQuery('.attr-trailer').prev('br').remove();
 ";
     unset($defAttrOptions['suffixTemplate']);
     unset($defAttrOptions['validation']);
-    if(user_access($adminPerm)) { //  users with admin permissions can override the closing of the
+    if(user_access($args['edit_permission'])) { //  users with admin permissions can override the closing of the
       // sample by unchecking the checkbox.
       // Because this is attached to the sample, we have to include the sample required fields in the
       // the post. This means they can't be disabled, so we enable all fields in this case.
@@ -798,7 +826,7 @@ jQuery('#ro-sur-occ-warn').hide();
             }
             jQuery('#close1').addClass('loading-button');
             jQuery('#SurveyForm').submit();\">\n";
-      if(!user_access($adminPerm)) {
+      if(!user_access($args['edit_permission'])) {
       	if($mode == 1) data_entry_helper::$javascript .= "jQuery('#close2').hide();\n";
        $r .= "<input type=button id=\"close2\" class=\"ui-state-default ui-corner-all \" value=\"".lang::get('LANG_Save_Survey_And_Close')."\"
         onclick=\"if(confirm('".lang::get('LANG_Close_Survey_Confirm')."')){
@@ -888,7 +916,7 @@ jQuery('#SurveyForm').ajaxForm({
        	if(data.success == 'multiple records' && data.outer_table == 'sample'){
           jQuery('#occ-form').show();
           jQuery('#na-occ-warn,#mergeSurveys').hide();";
-    if(!user_access($adminPerm)) {
+    if(!user_access($args['edit_permission'])) {
       // don't need to worry about record_status value for non admins as they can't modify when closed.
       data_entry_helper::$javascript .= "
           if(jQuery('#main-sample-closed').val() == '1'){
@@ -929,7 +957,7 @@ if(jQuery('#SurveyForm > input[name=sample\\:id]').val() != ''){
                   url=\"".iform_ajaxproxy_url($node, 'sample')."\";
                 }\n";
     // Send AJAX request to set occurrence to 'C' if closed : use sync
-    if(!user_access($adminPerm))
+    if(!user_access($args['edit_permission']))
       data_entry_helper::$javascript .= "                if(jQuery('#main-sample-closed').val() == '1'){\n";
     else
       data_entry_helper::$javascript .= "                if(jQuery('#smpAttr\\\\:".$attributes[$sample_closure_id]['attributeId'].":checked').length > 0){\n";
@@ -975,7 +1003,7 @@ if(jQuery('#SurveyForm > input[name=sample\\:id]').val() != ''){
 				case \"survey\":
 					break;
 				default:";
-    if(!user_access($adminPerm)) {
+    if(!user_access($args['edit_permission'])) {
     	data_entry_helper::$javascript .= "
 					if(jQuery('#main-sample-closed').val() == 0){
 						var a = $('ul.ui-tabs-nav a')[1];
@@ -1057,7 +1085,7 @@ loadAttributes = function(attributeTable, attributeKey, key, keyValue, prefix){
     // Set up Occurrence List tab: don't include when creating a new sample as it will have no occurrences
     // Grid populated at a later point
   $r .= "<div id=\"occurrenceList\" class=\"mnhnl-btw-datapanel\"><div id=\"occ_grid\"></div>
-  <form method=\"post\" action=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=mnhnl_btw_occurrences_report.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv\">
+  <form method=\"post\" action=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_btw_occurrences_report.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv\">
     <input type=\"hidden\" id=\"params\" name=\"params\" value='{\"survey_id\":".$args['survey_id'].", \"sample_id\":".data_entry_helper::$entity_to_load['sample:id']."}' />
     <input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Download_Occurrences')."\">
   </form></div>";
@@ -1104,7 +1132,6 @@ jQuery('#ro-occ-occ-warn').hide();
           'valueField'=>'id',
           'columns'=>2,
           'extraParams'=>$extraParams,
-          'suffixTemplate'=>'requiredsuffix',
           'disabled'=>$disabledText,
           'defaultCaption' => data_entry_helper::$entity_to_load['occurrence:taxon']
   );
@@ -1123,9 +1150,9 @@ jQuery('#ro-occ-occ-warn').hide();
     <input type=\"hidden\" id=\"occurrence:downloaded_flag\" name=\"occurrence:downloaded_flag\" value=\"N\" />
     ".data_entry_helper::autocomplete($species_ctrl_args)."
     ".($occurrence_confidence_id ? data_entry_helper::outputAttribute($attributes[$occurrence_confidence_id], array_merge($languageFilteredAttrOptions, array('noBlankText'=>''))) :  "<span style=\"display: none;\">Occurrence attribute '".self::ATTR_CONFIDENCE."' not assigned to this survey</span>")."
-    ".data_entry_helper::sref_and_system(array('label'=>lang::get('LANG_Spatial_ref'), 'systems'=>array('2169'=>'Luref (Gauss Luxembourg)'), 'suffixTemplate'=>'requiredsuffix'))."
+    ".data_entry_helper::sref_and_system(array('label'=>lang::get('LANG_Spatial_ref'), 'systems'=>array('2169'=>'Luref (Gauss Luxembourg)')))."
     <p>".lang::get('LANG_Click_on_map')."</p>
-    ".data_entry_helper::outputAttribute($attributes[$occurrence_count_id], array_merge($defAttrOptions, array('default'=>1, 'suffixTemplate'=>'requiredsuffix')))."
+    ".data_entry_helper::outputAttribute($attributes[$occurrence_count_id], array_merge($defAttrOptions, array('default'=>1)))."
     ".($occurrence_approximation_id ? data_entry_helper::outputAttribute($attributes[$occurrence_approximation_id], $defAttrOptions) :  "<span style=\"display: none;\">Occurrence attribute '".self::ATTR_APPROXIMATION."' not assigned to this survey</span>")."
     ".data_entry_helper::outputAttribute($attributes[$occurrence_territorial_id], array_merge($defAttrOptions, array('default'=>1, 'id' => 'occ-territorial')))."
     ".data_entry_helper::outputAttribute($attributes[$occurrence_atlas_code_id], $languageFilteredAttrOptions)."
@@ -1145,7 +1172,7 @@ retriggerGrid = function(){
   occListLayer.destroyFeatures();
   activateAddList = 1;
   thisOccID = -1;
-  $('div#occ_grid').indiciaDataGrid('rpt:mnhnl_btw_list_occurrences', {
+  $('div#occ_grid').indiciaDataGrid('rpt:reports_for_prebuilt_forms/MNHNL/mnhnl_btw_list_occurrences', {
     indiciaSvc: '".$svcUrl."',
     dataColumns: ['taxon', 'territorial', 'count'],
     reportColumnTitles: {taxon : '".lang::get('LANG_Species')."', territorial : '".lang::get('LANG_Territorial')."', count : '".lang::get('LANG_Count')."'},
@@ -1266,7 +1293,7 @@ if($.browser.msie) {
     // add map panel.
       $options = iform_map_get_map_options($args, $readAuth);
       $olOptions = iform_map_get_ol_options($args);
-      $options['layers'] = array('locationLayer', 'occListLayer');
+      // $options['layers'] = array('locationLayer', 'occListLayer');
       $options['searchLayer'] = 'false';
       $options['initialFeatureWkt'] = null;
       $options['proxy'] = '';
@@ -1283,39 +1310,7 @@ if($.browser.msie) {
     // 3) occurrence list feature adder must have map present in order to zoom into any
     //    current selection.
   data_entry_helper::$onload_javascript .= "
-var control = new OpenLayers.Control.SelectFeature(occListLayer);
-occListLayer.map.addControl(control);
-function onPopupClose(evt) {
-    // 'this' is the popup.
-    control.unselect(this.feature);
-}
-function onFeatureSelect(evt) {
-    feature = evt.feature;
-    popup = new OpenLayers.Popup.FramedCloud(\"featurePopup\",
-               feature.geometry.getBounds().getCenterLonLat(),
-                             new OpenLayers.Size(100,100),
-                             feature.attributes.taxon + \" (\" + feature.attributes.count + \")\",
-                             null, true, onPopupClose);
-    feature.popup = popup;
-    popup.feature = feature;
-    feature.layer.map.addPopup(popup);
-}
-function onFeatureUnselect(evt) {
-    feature = evt.feature;
-    if (feature.popup) {
-        popup.feature = null;
-        feature.layer.map.removePopup(feature.popup);
-        feature.popup.destroy();
-        feature.popup = null;
-    }
-}
 
-occListLayer.events.on({
-    'featureselected': onFeatureSelect,
-    'featureunselected': onFeatureUnselect
-});
-
-control.activate();
 
 locationChange = function(obj){
   locationLayer.destroyFeatures();
@@ -1443,7 +1438,7 @@ highlight = function(id){
 ";
   if($mode != 1){
     data_entry_helper::$onload_javascript .= "
-$('div#occ_grid').indiciaDataGrid('rpt:mnhnl_btw_list_occurrences', {
+$('div#occ_grid').indiciaDataGrid('rpt:reports_for_prebuilt_forms/MNHNL/mnhnl_btw_list_occurrences', {
     indiciaSvc: '".$svcUrl."',
     dataColumns: ['taxon', 'territorial', 'count'],
     reportColumnTitles: {taxon : '".lang::get('LANG_Species')."', territorial : '".lang::get('LANG_Territorial')."', count : '".lang::get('LANG_Count')."'},

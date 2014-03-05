@@ -45,12 +45,20 @@ class iform_report_calendar_summary {
   /* This is the URL parameter used to pass the location_id filter through */
   private static $locationKey = 'locationID';
   
-  /* This is the URL parameter used to pass the location_id filter through */
+  /* This is the URL parameter used to pass the year filter through */
   private static $yearKey = 'year';
+
+  /* This is the URL parameter used to pass the caching filter through */
+  private static $cacheKey = 'caching';
+  
+  /* This is the URL parameter used to pass the download filter through */
+  private static $downloadKey = 'downloads';
   
   private static $removableParams = array();
   
   private static $siteUrlParams = array();
+  
+  private static $branchLocationList = array();
   
   /** 
    * Return the form metadata.
@@ -79,7 +87,8 @@ class iform_report_calendar_summary {
           'type'=>'report_helper::report_picker',
           'default'=>'library/samples/samples_list_for_cms_user.xml',
           'group'=>'Report Settings'
-        ), array(
+        ),
+        array(
           'name' => 'param_presets',
           'caption' => 'Preset Parameter Values',
           'description' => 'To provide preset values for any report parameter and avoid the user having to enter them, enter each parameter into this '.
@@ -97,6 +106,15 @@ class iform_report_calendar_summary {
               'if an empty value is provided, so the taxon_list_id parameter can be listed here to provide a checkbox to remove this filter. Provide each '.
               'parameter on one line, followed by an equals then the caption of the check box, e.g. taxon_list_id=Check this box to include all species.',
           'type' => 'textarea',
+          'required' => false,
+          'group'=>'Report Settings'
+        ),
+        array(
+          'name' => 'avgFields',
+          'caption' => 'Average Fields',
+          'description' => 'Comma separated list of the fields in the report which are averaged out at a sample level. Use smpattr:<x> to run this '.
+               'processing against a sample attribute. If these are look up attributes, an attempt will be made to convert the look up to a number.',
+          'type' => 'string',
           'required' => false,
           'group'=>'Report Settings'
         ),
@@ -244,7 +262,189 @@ class iform_report_calendar_summary {
           'required' => false,
           'group' => 'Controls'
         ),
-        
+
+        array(
+          'name'=>'includeRawGridDownload',
+          'caption'=>'Raw Grid Download',
+          'description'=>'Choose whether to include the ability to download the Raw data as a grid. The inclusion of raw data is a pre-requisite for this.',
+          'type'=>'boolean',
+          'default' => false,
+          'required' => false,
+          'group' => 'Downloads'
+        ),
+        array(
+          'name'=>'includeRawListDownload',
+          'caption'=>'Raw List Download',
+          'description'=>'Choose whether to include the ability to download the Raw data as a List. The inclusion of raw data is a pre-requisite for this.',
+          'type'=>'boolean',
+          'default' => false,
+          'required' => false,
+          'group' => 'Downloads'
+        ),
+        array(
+          'name'=>'includeSummaryGridDownload',
+          'caption'=>'Summary Grid Download',
+          'description'=>'Choose whether to include the ability to download the Summary data as a grid. The inclusion of Summary data is a pre-requisite for this.',
+          'type'=>'boolean',
+          'default' => false,
+          'required' => false,
+          'group' => 'Downloads'
+        ),
+        array(
+          'name'=>'includeEstimatesGridDownload',
+          'caption'=>'Estimates Grid Download',
+          'description'=>'Choose whether to include the ability to download the Estimates data as a grid. The inclusion of Estimates data is a pre-requisite for this.',
+          'type'=>'boolean',
+          'default' => false,
+          'required' => false,
+          'group' => 'Downloads'
+        ),
+        array(
+          'name'=>'includeListDownload',
+          'caption'=>'List Download',
+          'description'=>'Choose whether to include the ability to download the data as a List. This is the summary and/or the estimates data, depending on their inclusion.',
+          'type'=>'boolean',
+          'default' => false,
+          'required' => false,
+          'group' => 'Downloads'
+        ),
+        array(
+          'name'=>'Download1Caption',
+          'caption'=>'Report 1 Download Caption',
+          'description'=>'Caption for the first download report.',
+          'type'=>'string',
+          'required' => false,
+          'default' => 'report-1',
+          'group' => 'Downloads'
+        ),
+        array(
+          'name'=>'download_report_1',
+          'caption'=>'Download Report 1',
+          'description'=>'Select the report to provide the first download report.',
+          'type'=>'report_helper::report_picker',
+          'required' => false,
+          'group'=>'Downloads'
+        ),
+        array(
+          'name'=>'download_report_1_format',
+          'caption'=>'Report Format',
+          'description'=>'Format of file produced.<br/>Note that some options have restrictions on the formats of fields (e.g. geometries in GPX and KML formats) in the report. Please see the Wiki for more details.',
+          'type'=>'select',
+          'options' => array(
+              'json' => 'JSON',
+              'xml' => 'XML',
+              'csv' => 'CSV',
+              'tsv' => 'TSV',
+              'nbn' => 'NBN',
+              'gpx' => 'GPX',
+              'kml' => 'KML'
+          ),
+          'default' => 'csv',
+          'group' => 'Downloads'
+        ),
+        array(
+          'name'=>'Download2Caption',
+          'caption'=>'Report 2 Download Caption',
+          'description'=>'Caption for the second download report.',
+          'type'=>'string',
+          'required' => false,
+          'default' => 'report-2',
+          'group' => 'Downloads'
+        ),
+        array(
+          'name'=>'download_report_2',
+          'caption'=>'Download Report 2',
+          'description'=>'Select the report to provide the second download report.',
+          'type'=>'report_helper::report_picker',
+          'required' => false,
+          'group'=>'Downloads'
+        ),
+        array(
+          'name'=>'download_report_2_format',
+          'caption'=>'Report Format',
+          'description'=>'Format of file produced.<br/>Note that some options have restrictions on the formats of fields (e.g. geometries in GPX and KML formats) in the report. Please see the Wiki for more details.',
+          'type'=>'select',
+          'options' => array(
+              'json' => 'JSON',
+              'xml' => 'XML',
+              'csv' => 'CSV',
+              'tsv' => 'TSV',
+              'nbn' => 'NBN',
+              'gpx' => 'GPX',
+              'kml' => 'KML'
+          ),
+          'default' => 'csv',
+          'group' => 'Downloads'
+        ),
+        array(
+          'name'=>'Download3Caption',
+          'caption'=>'Report 3 Download Caption',
+          'description'=>'Caption for the third download report.',
+          'type'=>'string',
+          'required' => false,
+          'default' => 'report-3',
+          'group' => 'Downloads'
+        ),
+        array(
+          'name'=>'download_report_3',
+          'caption'=>'Download Report 3',
+          'description'=>'Select the report to provide the third download report.',
+          'type'=>'report_helper::report_picker',
+          'required' => false,
+          'group'=>'Downloads'
+        ),
+        array(
+          'name'=>'download_report_3_format',
+          'caption'=>'Report Format',
+          'description'=>'Format of file produced.<br/>Note that some options have restrictions on the formats of fields (e.g. geometries in GPX and KML formats) in the report. Please see the Wiki for more details.',
+          'type'=>'select',
+          'options' => array(
+              'json' => 'JSON',
+              'xml' => 'XML',
+              'csv' => 'CSV',
+              'tsv' => 'TSV',
+              'nbn' => 'NBN',
+              'gpx' => 'GPX',
+              'kml' => 'KML'
+          ),
+          'default' => 'csv',
+          'group' => 'Downloads'
+        ),
+        array(
+          'name'=>'Download4Caption',
+          'caption'=>'Report 4 Download Caption',
+          'description'=>'Caption for the fourth download report.',
+          'type'=>'string',
+          'required' => false,
+          'default' => 'report-4',
+          'group' => 'Downloads'
+        ),
+        array(
+          'name'=>'download_report_4',
+          'caption'=>'Download Report 4',
+          'description'=>'Select the report to provide the fourth download report.',
+          'type'=>'report_helper::report_picker',
+          'required' => false,
+          'group'=>'Downloads'
+        ),
+        array(
+          'name'=>'download_report_4_format',
+          'caption'=>'Report Format',
+          'description'=>'Format of file produced.<br/>Note that some options have restrictions on the formats of fields (e.g. geometries in GPX and KML formats) in the report. Please see the Wiki for more details.',
+          'type'=>'select',
+          'options' => array(
+              'json' => 'JSON',
+              'xml' => 'XML',
+              'csv' => 'CSV',
+              'tsv' => 'TSV',
+              'nbn' => 'NBN',
+              'gpx' => 'GPX',
+              'kml' => 'KML'
+          ),
+          'default' => 'csv',
+          'group' => 'Downloads'
+        ),
+
         array(
           'name'=>'weekstart',
           'caption'=>'Start of week definition',
@@ -313,6 +513,15 @@ class iform_report_calendar_summary {
           'group' => 'Table Options'
         ),
         array(
+          'name'=>'allowMultiLocLinks',
+          'caption'=>'Allow Links for multilocation searches',
+          'description'=>'Used when generating link URLs to associated samples. Select if you wish the links to the associated samples to be generated for all report runs. Leave unselected if you wish the links only to be present when a location is selected.<br />The links are present for all locations for managers, the locations in the branch for branch coordinators, and for the samples that a normal user has produced.',
+          'type'=>'boolean',
+          'default' => false,
+          'required' => false,
+          'group' => 'Table Options'
+        ),
+      	array(
           'name' => 'chartType',
           'caption' => 'Chart Type',
           'description' => 'Type of chart.',
@@ -576,7 +785,7 @@ class iform_report_calendar_summary {
           'description' => 'A boolean location attribute, set to true if a site is sensitive.',
           'type' => 'locAttr',
           'required' => false,
-          'group' => 'Data Handling'
+          'group' => 'Controls'
         ),
         array(
           'name' => 'sensitivityAccessPermission',
@@ -584,7 +793,7 @@ class iform_report_calendar_summary {
           'description' => 'A permission, which if granted allows viewing of sensitive sites.',
           'type' => 'string',
           'required' => false,
-          'group' => 'Data Handling'
+          'group' => 'Controls'
         ),
         array(
           'name' => 'includeRawData',
@@ -690,7 +899,7 @@ class iform_report_calendar_summary {
    * parameters unless the Edit and Save button is clicked. So, apply some defaults to keep those old forms
    * working.
    */
-  protected function getArgDefaults($args) {
+  protected static function getArgDefaults($args) {
       
     if (!isset($args['includeRawData']) && !isset($args['includeSummaryData']) && !isset($args['includeEstimatesData']))
         $args['includeRawData'] = true;
@@ -711,14 +920,15 @@ class iform_report_calendar_summary {
    * @param <type> $readAuth
    * @return string
    */
-  private function get_report_calendar_options($args, $readAuth) {
+  private static function get_report_calendar_options($args, $readAuth) {
     $presets = get_options_array_with_user_data($args['param_presets']);
     $reportOptions = array(
       'id' => 'report-summary',
       'dataSource' => $args['report_name'],
       'mode' => 'report',
       'readAuth' => $readAuth,
-      'extraParams' => $presets
+      'extraParams' => $presets,
+      'downloadFilePrefix' => ''
     );
     return $reportOptions;
   }
@@ -731,7 +941,7 @@ class iform_report_calendar_summary {
   // report helper is always the CMS one.
   // Locations are always assigned by a CMS user ID attribute, not by who created them.
   
-  private function location_control($args, $readAuth, $node, &$options)
+  private static function location_control($args, $readAuth, $node, &$options)
   {
   	// note that when in user specific mode it returns the list currently assigned to the user: it does not give 
   	// locations which the user previously recorded data against, but is no longer allocated to.
@@ -744,97 +954,203 @@ class iform_report_calendar_summary {
     // this means it does not get a list of all locations if no user is selected: to be added later?
     $options['extraParams']['location_id'] = $siteUrlParams[self::$locationKey]['value'];
     $options['extraParams']['location_list'] = '';
-    if($options['extraParams']['location_id'] == '') // only allow links when a location is specified
+    if((!isset($args['allowMultiLocLinks']) || !$args['allowMultiLocLinks']) &&
+        $options['extraParams']['location_id'] == '') // only allow links when a location is specified
       unset($options['linkURL']);
+    // for branch users we can also provide links to all walks on locations allocated to us as branch coordinator.
+    // normal users only get those we create, managers (admin) get links to all.
     
-    if(!isset($args['includeUserFilter']) || !$args['includeUserFilter'] ||
-        ((!isset($options['extraParams']['user_id']) || $options['extraParams']['user_id']=="") &&
-            $siteUrlParams[self::$userKey]['value']!="branch") ||
-        !isset($args['userSpecificLocationLookUp']) || !$args['userSpecificLocationLookUp']){
-      // Get list of all locations
-      $locationListArgs=array('nocache'=>true,
-          'extraParams'=>array_merge(array('website_id'=>$args['website_id'], 'location_type_id' => ''),
-                       $readAuth),
-          'dataSource' => 'library/locations/locations_list_exclude_sensitive');
-      $description="All sites";
-    } else {
-      // Get list of locations attached to this user via the cms user id attribute: have to have included the user control to get user id, and set the userSpecificLocationLookUp flag
-      // first need to scan param_presets for survey_id..
-      $presets = get_options_array_with_user_data($args['param_presets']);
-      if(!isset($presets['survey_id']) || $presets['survey_id']=='')
-        return(lang::get('Location control: survey_id missing from presets.'));
-      $attrArgs = array(
-          'valuetable'=>'location_attribute_value',
-          'attrtable'=>'location_attribute',
-          'key'=>'location_id',
-          'fieldprefix'=>'locAttr',
-          'extraParams'=>$readAuth,
-          'survey_id'=>$presets['survey_id']);
-      if(isset($args['locationTypeFilter']) && $args['locationTypeFilter']!="")
-        $attrArgs['location_type_id'] = $args['locationTypeFilter'];
-      $locationAttributes = data_entry_helper::getAttributes($attrArgs, false);
-      if($siteUrlParams[self::$userKey]['value']=="branch"){
-        $cmsAttr= self::extract_attr($locationAttributes, $args['branchFilterAttribute']);
-        if(!$cmsAttr)
-          return(lang::get('Location control Branch Coordinator mode: missing Branch allocation attribute : ').$args['branchFilterAttribute']);
-        $attrListArgs=array('nocache'=>true,
-            'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
-                             'location_attribute_id'=>$cmsAttr['attributeId'], 'raw_value'=>$user->uid),
-                       $readAuth),
-            'table'=>'location_attribute_value');
-        $description="All branch sites";
-      } else {
-        $cmsAttr=extract_cms_user_attr($locationAttributes,false);
-        if(!$cmsAttr)
-          return(lang::get('Location control: missing CMS User ID location attribute.'));
-        $attrListArgs=array('nocache'=>true,
-            'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
-                             'location_attribute_id'=>$cmsAttr['attributeId'], 'raw_value'=>$options['extraParams']['user_id']),
-                       $readAuth),
-            'table'=>'location_attribute_value');
-        $description="All ".($user->uid == $options['extraParams']['user_id'] ? 'my' : 'user')." sites";
-      }
-      $attrList = data_entry_helper::get_population_data($attrListArgs);
-      if (isset($attrList['error']))
-        return $attrList['error'];
-      if(count($attrList)===0)
-        return(lang::get('[No sites allocated.]'));
-      $locationIDList=array();
-      foreach($attrList as $attr)
-        $locationIDList[] = $attr['location_id'];
-      $locationIDList = implode(',', $locationIDList);
-      $locationListArgs=array('nocache'=>true,
-          'extraParams'=>array_merge(array('website_id'=>$args['website_id'],  'location_type_id' => '', 'idlist'=>$locationIDList),
-                       $readAuth),
-          'dataSource'=>'library/locations/locations_list_exclude_sensitive');
-      if($siteUrlParams[self::$userKey]['value']=="branch" && $options['extraParams']['location_id']=='')
-        $options['extraParams']['location_list'] = $locationIDList;
-    }
-    $allowSensitive = empty($args['sensitivityLocAttrId']) || 
+    // Set up common data.
+    $locationListArgs=array(// 'nocache'=>true,
+    		'extraParams'=>array_merge(array('website_id'=>$args['website_id'], 'location_type_id' => '', 'sensattr' => '', 'exclude_sensitive' => 0),
+    				$readAuth),
+            'readAuth' => $readAuth,
+            'caching' => true,
+            'dataSource' => 'library/locations/locations_list_exclude_sensitive');
+    $allowSensitive = empty($args['sensitivityLocAttrId']) ||
         (function_exists('user_access') && !empty($args['sensitivityAccessPermission']) && user_access($args['sensitivityAccessPermission']));
-    $locationListArgs['extraParams']['sensattr'] = $allowSensitive ? '' : $args['sensitivityLocAttrId'];
-    $locationListArgs['extraParams']['exclude_sensitive'] = $allowSensitive ? 0 : 1;
     if(isset($args['locationTypeFilter']) && $args['locationTypeFilter']!="")
       $locationListArgs['extraParams']['location_type_id'] = $args['locationTypeFilter'];
-    $locationListArgs['readAuth'] = $readAuth;
-    $locationList = report_helper::get_report_data($locationListArgs);
-    if (isset($locationList['error']))
-      return $locationList['error'];
+    if(!empty($args['sensitivityLocAttrId']))
+      $locationListArgs['extraParams']['locattrs'] = $args['sensitivityLocAttrId']; // if we have a sensitive attribute, may want to change the template to highlight them.
+    $presets = get_options_array_with_user_data($args['param_presets']);
+    if(!isset($presets['survey_id']) || $presets['survey_id']=='')
+    	return(lang::get('Location control: survey_id missing from presets.'));
+    $attrArgs = array(
+    		'valuetable'=>'location_attribute_value',
+    		'attrtable'=>'location_attribute',
+    		'key'=>'location_id',
+    		'fieldprefix'=>'locAttr',
+    		'extraParams'=>$readAuth,
+    		'survey_id'=>$presets['survey_id']);
+    if(isset($args['locationTypeFilter']) && $args['locationTypeFilter']!="")
+    	$attrArgs['location_type_id'] = $args['locationTypeFilter'];
+    $locationAttributes = data_entry_helper::getAttributes($attrArgs, false);
+    $locationList = array();
+    
+    // If we are looking a user, then we display all that users sites. If I am that user, or if I am a person with sensitive access, then I can see all the sites, even sensitive.
+    if(isset($args['includeUserFilter']) && $args['includeUserFilter'] &&
+        isset($args['userSpecificLocationLookUp']) && $args['userSpecificLocationLookUp'] &&
+        isset($options['extraParams']['user_id']) && $options['extraParams']['user_id']!="" &&
+        $siteUrlParams[self::$userKey]['value']!="branch") {
+      if(!$allowSensitive && $options['extraParams']['user_id']!=$user->uid) { // ensure can see sensitive sites for my sites only.
+        $locationListArgs['extraParams']['sensattr'] = $args['sensitivityLocAttrId'];
+        $locationListArgs['extraParams']['exclude_sensitive'] = 1;
+      }
+      $cmsAttr=extract_cms_user_attr($locationAttributes,false);
+      if(!$cmsAttr) return lang::get('Location control: CMS User ID Attribute missing from locations.');
+      $attrListArgs=array(// 'nocache'=>true,
+      		'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
+      				'location_attribute_id'=>$cmsAttr['attributeId'], 'raw_value'=>$options['extraParams']['user_id']),
+      				$readAuth),
+      		'table'=>'location_attribute_value');
+      $description="All ".($user->uid == $options['extraParams']['user_id'] ? 'my' : 'user')." sites";
+      $attrList = data_entry_helper::get_population_data($attrListArgs);
+      if (isset($attrList['error'])) return $attrList['error'];
+      if(count($attrList)===0) {
+      	$options['downloadFilePrefix'] .= 'NS_';
+      	return(lang::get('[No sites allocated.]'));
+      }
+      $locationIDList=array();
+      foreach($attrList as $attr)
+      	$locationIDList[] = $attr['location_id'];
+      $locationListArgs['extraParams']['idlist'] = implode(',', $locationIDList);
+      $locationList = report_helper::get_report_data($locationListArgs);
+      if (isset($locationList['error']))
+      	return $locationList['error'];
+    } else
+    // If we are looking at a branch, we can see all the sites allocated to me even sensitive.
+    if(isset($args['includeUserFilter']) && $args['includeUserFilter'] &&
+        isset($args['userSpecificLocationLookUp']) && $args['userSpecificLocationLookUp'] &&
+        $siteUrlParams[self::$userKey]['value']=="branch") {
+      $description="All branch sites";
+      if(count(self::$branchLocationList)===0) {
+        $options['downloadFilePrefix'] .= 'NS_';
+        return(lang::get('[No sites allocated.]'));
+      }
+      $locationListArgs['extraParams']['idlist'] = implode(',', self::$branchLocationList);
+      $locationList = report_helper::get_report_data($locationListArgs);
+      if (isset($locationList['error'])) return $locationList['error'];
+      $options['extraParams']['location_list'] = implode(',', self::$branchLocationList);
+    } else {
+    // If we are looking at all sites, we can see all non sensitive sites, plus sensitive sites if they are allocated to me as a site or as a branch, or if I have access to sensitive.
+      $description="All sites";
+      $locationListArgs['extraParams']['idlist'] = '';
+      // get my sites, including sensitive sites.
+      $cmsAttr=extract_cms_user_attr($locationAttributes,false);
+      if(!$cmsAttr) return lang::get('Location control: CMS User ID Attribute missing from locations.');
+      $attrListArgs=array(// 'nocache'=>true,
+      		'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
+      				'location_attribute_id'=>$cmsAttr['attributeId'], 'raw_value'=>$user->uid),
+      				$readAuth),
+      		'table'=>'location_attribute_value');
+      $attrList = data_entry_helper::get_population_data($attrListArgs);
+      if (isset($attrList['error'])) return $attrList['error'];
+      if(count($attrList)>0) {
+        $locationIDList=array();
+        foreach($attrList as $attr)
+          $locationIDList[] = $attr['location_id'];
+        $locationListArgs['extraParams']['idlist'] = implode(',', $locationIDList);
+      }
+      // Next add Branch Sites.
+      if(count(self::$branchLocationList)>0)
+        $locationListArgs['extraParams']['idlist'] .= ($locationListArgs['extraParams']['idlist'] == '' ? '' : ',').implode(',', self::$branchLocationList);
+      $userLocationList = array();
+      if($locationListArgs['extraParams']['idlist'] != '') {
+        $userLocationList = report_helper::get_report_data($locationListArgs);
+        if (isset($userLocationList['error'])) return $userLocationList['error'];
+      }
+      // Next get all other sites
+      if(!$allowSensitive) {
+        $locationListArgs['extraParams']['sensattr'] = $args['sensitivityLocAttrId'];
+        $locationListArgs['extraParams']['exclude_sensitive'] = 1;
+      }
+      $locationListArgs['extraParams']['idlist']="";
+      $allLocationList = report_helper::get_report_data($locationListArgs);
+      if (isset($allLocationList['error']))
+        return $allLocationList['error'];
+      foreach($userLocationList as $loc){
+        $locationList[$loc['id']] = $loc;
+      }
+      foreach($allLocationList as $loc){
+        if(!isset($locationList[$loc['id']]))
+          $locationList[$loc['id']] = $loc;
+      }
+    }
+    // we want to sort by name, but also keep details of sensitivity.
+    $sort = array();
+    $locs = array();
+    foreach($locationList as $location){
+      $sort[$location['id']]=$location['name'];
+      $locs[$location['id']]=$location;
+    }
+    natcasesort($sort);
     $ctrlid='calendar-location-select-'.$node->nid;
     $ctrl='<label for="'.$ctrlid.'" class="location-select-label">'.lang::get('Filter by site').
           ': </label><select id="'.$ctrlid.'" class="location-select">'.
           '<option value="" class="location-select-option" '.($siteUrlParams[self::$locationKey]['value']=='' ? 'selected="selected" ' : '').'>'.$description.'</option>';
-    foreach($locationList as $location){
-      $ctrl .= '<option value='.$location['id'].' class="location-select-option" '.($siteUrlParams[self::$locationKey]['value']==$location['id'] ? 'selected="selected" ' : '').'>'.
-               $location['name'].(isset($args['includeSrefInLocationFilter']) && $args['includeSrefInLocationFilter'] ? ' ('.$location['centroid_sref'].')' : '').
+    if($siteUrlParams[self::$locationKey]['value']=='')
+      $options['downloadFilePrefix'] .= preg_replace('/[^A-Za-z0-9]/i', '', $description).'_';
+    foreach($sort as $id=>$name){
+      $ctrl .= '<option value='.$id.' class="location-select-option '.
+               (!empty($args['sensitivityLocAttrId']) && $locs[$id]['attr_location_'.$args['sensitivityLocAttrId']] === "1" ? 'sensitive' : '').
+               '" '.($siteUrlParams[self::$locationKey]['value']==$id ? 'selected="selected" ' : '').'>'.
+               $name.(isset($args['includeSrefInLocationFilter']) && $args['includeSrefInLocationFilter'] ? ' ('.$locs[$id]['centroid_sref'].')' : '').
                '</option>';
+      if($siteUrlParams[self::$locationKey]['value']==$id)
+        $options['downloadFilePrefix'] .= preg_replace('/[^A-Za-z0-9]/i', '', $name).'_';
     }
     $ctrl.='</select>';
     self::set_up_control_change($ctrlid, self::$locationKey, array());
     return $ctrl;
   }
 
-  private function user_control($args, $readAuth, $node, &$options)
+  private static function _getCacheFileName($userID)
+  {
+    /* If timeout is not set, we're not caching */
+  	$path = data_entry_helper::relative_client_helper_path() . (isset(data_entry_helper::$cache_folder) ? data_entry_helper::$cache_folder : 'cache/');
+    if(!is_dir($path) || !is_writeable($path)) return false;
+    return $path.'cache_'.data_entry_helper::$website_id.'_CMS_User_List_'.$userID;
+  }
+  
+  // Idea here is to not just cache the query used to get the user data, but also the user_loads also run
+  private static function _fetchDBCache($userID)
+  {
+    if (is_numeric(data_entry_helper::$cache_timeout) && data_entry_helper::$cache_timeout > 0) {
+      $cacheTimeOut = data_entry_helper::$cache_timeout;
+    } else {
+      $cacheTimeOut = false;
+    }
+    $cacheFile = self::_getCacheFileName($userID);
+    
+    if ($cacheTimeOut && $cacheFile && is_file($cacheFile) && filemtime($cacheFile) >= (time() - $cacheTimeOut))
+    {
+      $handle = fopen($cacheFile, 'rb');
+      if(!$handle) return false;
+      // no tags as only determined by user id
+      $response = fread($handle, filesize($cacheFile));
+      fclose($handle);
+      return(json_decode($response, true));
+    }
+    if ($cacheFile && is_file($cacheFile)) {
+      unlink($cacheFile);
+    }
+    return false;
+  }
+
+  protected static function _cacheResponse($userID, $response)
+  {
+  	// need to create the file as a binary event - so create a temp file and move across.
+    $cacheFile = self::_getCacheFileName($userID);
+  	if ($cacheFile && !is_file($cacheFile) && isset($response)) {
+  		$handle = fopen($cacheFile.getmypid(), 'wb');
+  		fwrite($handle, json_encode($response));
+  		fclose($handle);
+  		rename($cacheFile.getmypid(),$cacheFile);
+  	}
+  }
+  
+  private static function user_control($args, $readAuth, $node, &$options)
   {
     // we don't use the userID option as the user_id can be blank, and will force the parameter request if left as a blank
     global $user;
@@ -842,16 +1158,22 @@ class iform_report_calendar_summary {
       return '';
     // if the user is changed then we must reset the location
     $siteUrlParams = self::get_site_url_params();
+    var_dump($siteUrlParams);
     $options['extraParams']['user_id'] = $siteUrlParams[self::$userKey]['value'] == "branch" ? '' : $siteUrlParams[self::$userKey]['value'];
     $userList=array();
+    if (function_exists('module_exists') && module_exists('easy_login') && function_exists('hostsite_get_user_field')) {
+      $options['my_user_id']=hostsite_get_user_field('indicia_user_id');
+    } else {
+      $options['my_user_id']=$user->uid;
+    }
     if(!isset($args['managerPermission']) || $args['managerPermission']=="" || !user_access($args['managerPermission'])) {
       // user is a normal user
       $userList[$user->uid]=$user; // just me
-      $options['my_user_id']=$user;
     } else {
-      $options['my_user_id']=false; // removes restriction on links to samples based on user_id.
       // user is manager, so need to load the list of users they can choose to report against 
-      if(!isset($args['userLookUp']) || !$args['userLookUp']) {
+      if(!($userList = self::_fetchDBCache($user->uid))) {
+       $userList=array();
+       if(!isset($args['userLookUp']) || !$args['userLookUp']) {
         // look up all users, not just those that have entered data.
         $results = db_query('SELECT uid, name FROM {users}');
         if(version_compare(VERSION, '7', '<')) {
@@ -869,14 +1191,14 @@ class iform_report_calendar_summary {
             }
           }
         }
-      } else {
+       } else {
         // need to scan param_presets for survey_id.
         $presets = get_options_array_with_user_data($args['param_presets']);
         if(!isset($presets['survey_id']) || $presets['survey_id']=='') return(lang::get('User control: survey_id missing from presets.'));
         if (function_exists('module_exists') && module_exists('easy_login')) {
-          $sampleArgs=array('nocache'=>true,
+          $sampleArgs=array(// 'nocache'=>true,
             'extraParams'=>array_merge(array('view'=>'detail', 'website_id'=>$args['website_id'], 'survey_id'=>$presets['survey_id']), $readAuth),
-            'table'=>'sample');
+            'table'=>'sample','columns'=>'created_by_id');
           $sampleList = data_entry_helper::get_population_data($sampleArgs);
           if (isset($sampleList['error'])) return $sampleList['error'];
           $uList = array();
@@ -921,7 +1243,7 @@ class iform_report_calendar_summary {
           $sampleAttributes = data_entry_helper::getAttributes($attrArgs, false);
           if (false== ($cmsAttr = extract_cms_user_attr($sampleAttributes)))
             return(lang::get('User control: CMS User ID sample attribute missing.'));
-          $attrListArgs=array('nocache'=>true,
+          $attrListArgs=array(// 'nocache'=>true,
             'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
                              'sample_attribute_id'=>$cmsAttr['attributeId']),
                        $readAuth),
@@ -935,31 +1257,61 @@ class iform_report_calendar_summary {
           $results = db_query('SELECT uid, name FROM {users}');
           if(version_compare(VERSION, '7', '<')) {
             while($result = db_fetch_object($results)){
-              $account = user_load($result->uid);
-              if($result->uid && isset($userList[$account->uid]) && $userList[$account->uid])
-                $userList[$account->uid] = $account;
+              if($result->uid && isset($userList[$result->uid]) && $userList[$result->uid])
+                $userList[$account->uid] = user_load($result->uid);;
             }
           } else {
             foreach ($results as $result) { // DB handling is different in 7
-              $account = user_load($result->uid);
-              if($result->uid && isset($userList[$account->uid]) && $userList[$account->uid])
-                $userList[$account->uid] = $account;
+              if($result->uid && isset($userList[$result->uid]) && $userList[$result->uid])
+                $userList[$account->uid] = user_load($result->uid);;
             }
           }
         }
+       }
+       self::_cacheResponse($user->uid, $userList);
       }
     }
-    $ctrlid='calendar-user-select-'.$node->nid;
-    $ctrl='<label for="'.$ctrlid.'" class="user-select-label">'.lang::get('Filter by recorder').
+    $ctrlid = 'calendar-user-select-'.$node->nid;
+    $ctrl = '<label for="'.$ctrlid.'" class="user-select-label">'.lang::get('Filter by recorder').
           ': </label><select id="'.$ctrlid.'" class="user-select">'.
           '<option value='.($user->uid).' class="user-select-option" '.($siteUrlParams[self::$userKey]['value']==$user->uid  ? 'selected="selected" ' : '').'>'.lang::get('My data').'</option>'.
           (isset($args['branchManagerPermission']) && $args['branchManagerPermission']!="" && user_access($args['branchManagerPermission']) ? '<option value="branch" class="user-select-option" '.($siteUrlParams[self::$userKey]['value']=="branch"  ? 'selected="selected" ' : '').'>'.lang::get('Branch data').'</option>' : '').
           '<option value="all" class="user-select-option" '.($siteUrlParams[self::$userKey]['value']=='' ? 'selected="selected" ' : '').'>'.lang::get('All recorders').'</option>';
+    $found = $siteUrlParams[self::$userKey]['value']==$user->uid ||
+          (isset($args['branchManagerPermission']) && $args['branchManagerPermission']!="" && user_access($args['branchManagerPermission']) && $siteUrlParams[self::$userKey]['value']=="branch") ||
+          $siteUrlParams[self::$userKey]['value']=='';
+    $userListArr = array();
     foreach($userList as $id => $account) {
-      if($account !== true && $account->uid!==$user->uid){
-        $ctrl .= '<option value='.$id.' class="user-select-option" '.($siteUrlParams[self::$userKey]['value']==$id ? 'selected="selected" ' : '').'>'.$account->name.'</option>';
+      // if account comes from cache, then it is an array, if from drupal an object.
+      if(!is_array($account))
+        $account = get_object_vars($account);
+      if($account !== true && $id!=$user->uid){
+        $userListArr[$id] = $account['name'];
       }
     }
+    natcasesort($userListArr);
+    foreach($userListArr as $id => $name) {
+      $ctrl .= '<option value='.$id.' class="user-select-option" '.($siteUrlParams[self::$userKey]['value']==$id ? 'selected="selected" ' : '').'>'.$name.'</option>';
+      $found = $found || $siteUrlParams[self::$userKey]['value']==$id;
+    }
+    // masquerading may produce some odd results when flipping between accounts.
+    switch($siteUrlParams[self::$userKey]['value']){
+      case '' : $options['downloadFilePrefix'] .= lang::get('AllRecorders').'_';
+        break;
+      case $user->uid : $options['downloadFilePrefix'] .= lang::get('MyData').'_';
+        break;
+      case "branch" : $options['downloadFilePrefix'] .= lang::get('MyBranch').'_';
+        break;
+      default :
+        // if account comes from cache, then it is an array, if from drupal an object.
+        $account = is_array($userList[$siteUrlParams[self::$userKey]['value']]) ? 
+                     $userList[$siteUrlParams[self::$userKey]['value']] :
+                     get_object_vars($userList[$siteUrlParams[self::$userKey]['value']]);
+      	$options['downloadFilePrefix'] .= preg_replace('/[^A-Za-z0-9]/i', '', $account['name']).'_';
+        break;
+    }
+    // Haven't found the selected user on the list: this means select defaults to top option which is the user themselves.
+    if(!$found) $siteUrlParams[self::$userKey]['value']=$user->uid;
     $ctrl.='</select>';
     self::set_up_control_change($ctrlid, self::$userKey, array('locationID'));
     return $ctrl;
@@ -968,7 +1320,7 @@ class iform_report_calendar_summary {
   /**
    * Get the parameters required for the current filter.
    */
-  private function get_site_url_params() {
+  private static function get_site_url_params() {
     global $user;
     if (!self::$siteUrlParams) {
       self::$siteUrlParams = array(
@@ -983,6 +1335,14 @@ class iform_report_calendar_summary {
         self::$yearKey => array(
               'name' => self::$yearKey,
               'value' => isset($_GET[self::$yearKey]) ? $_GET[self::$yearKey] : date('Y')
+        ),
+        self::$cacheKey => array(
+              'name' => self::$cacheKey,
+              'value' => isset($_GET[self::$cacheKey]) ? $_GET[self::$cacheKey] : 'true'
+        ),
+        self::$downloadKey => array(
+              'name' => self::$downloadKey,
+              'value' => isset($_GET[self::$downloadKey]) ? $_GET[self::$downloadKey] : 'false'
         )
       );
       // Force defaults for the user: if none provided default to user, if all then remove it.
@@ -1000,7 +1360,7 @@ class iform_report_calendar_summary {
     return self::$siteUrlParams;
   }
 
-  private function extract_attr(&$attributes, $caption, $unset=true) {
+  private static function extract_attr(&$attributes, $caption, $unset=true) {
   	$found=false;
   	foreach($attributes as $idx => $attr) {
   		if (strcasecmp($attr['caption'], $caption)===0) { // should this be untranslated?
@@ -1017,26 +1377,27 @@ class iform_report_calendar_summary {
   	return $found;
   }
 
-  private function set_up_control_change($ctrlid, $urlparam, $skipParams, $checkBox=false) {
+  private static function set_up_control_change($ctrlid, $urlparam, $skipParams, $checkBox=false) {
     // Need to use a global for pageURI as the internal controls may have changed, and we want
     // their values to be carried over.
     $prop = ($checkBox) ? 'attr("checked")' : 'val()';
     data_entry_helper::$javascript .="
 jQuery('#".$ctrlid."').change(function(){
+  var dialog = $('<p>Please wait whilst the next set of data is loaded.</p>').dialog({ title: 'Loading...', buttons: { 'OK': function() { dialog.dialog('close'); }}});
   // no need to update other controls on the page, as we jump off it straight away.
   window.location = rebuild_page_url(pageURI, \"".$urlparam."\", jQuery(this).$prop);
 });
 ";
   }
 
-  private function copy_args($args, &$options, $list){
+  private static function copy_args($args, &$options, $list){
     foreach($list as $arg){
       if(isset($args[$arg]) && $args[$arg]!="")
         $options[$arg]=$args[$arg];
     }
   }
 
-  private function date_control($args, $readAuth, $node, &$options)
+  private static function date_control($args, $readAuth, $node, &$options)
   {
     // Future enhancements: extend this control to allow user selection by month, a fixed currentmonth, 
     // and completely free user selectable start and end dates
@@ -1045,6 +1406,7 @@ jQuery('#".$ctrlid."').change(function(){
       case 'currentyear':
         $options['date_start'] = date('Y').'-Jan-01';
         $options['date_end'] = date('Y').'-Dec-31';
+        $options['downloadFilePrefix'] .= date('Y').'_';
         return '<th>'.lang::get('Data for ').date('Y').'</th>';
       default: // case year
         // Add year paginator where it can have an impact for both tables and plots.
@@ -1063,6 +1425,7 @@ jQuery('#".$ctrlid."').change(function(){
         } else $r .= '<th/>';
         $options['date_start'] = $siteUrlParams[self::$yearKey]['value'].'-Jan-01';
         $options['date_end'] = $siteUrlParams[self::$yearKey]['value'].'-Dec-31';
+        $options['downloadFilePrefix'] .= $siteUrlParams[self::$yearKey]['value'].'_';
         return $r;
     }
   }
@@ -1094,7 +1457,9 @@ jQuery('#".$ctrlid."').change(function(){
             'chartType','rowGroupColumn','rowGroupID','width','height',
             'includeTableTotalRow','includeTableTotalColumn','includeChartTotalSeries','includeChartItemSeries',
             'includeRawData', 'includeSummaryData', 'includeEstimatesData', 'summaryDataCombining', 'dataRound',
-            'zeroPointAnchor', 'interpolation', 'firstValue', 'lastValue', 'linkURL'
+            'zeroPointAnchor', 'interpolation', 'firstValue', 'lastValue', 'linkURL',
+            'includeRawGridDownload', 'includeRawListDownload', 'includeSummaryGridDownload',
+            'includeEstimatesGridDownload', 'includeListDownload', 'avgFields'
       ));
     if (isset($_GET['outputSource']))
       $reportOptions['outputSource']=$_GET['outputSource'];
@@ -1119,12 +1484,58 @@ jQuery('#".$ctrlid."').change(function(){
       $reportOptions['extraParams']['occattrs']=$args['countColumn'];
     }
 
+    // for a normal user, we can only link to those samples we have created
+    $reportOptions['location_list'] = array();
+    // for a branch user, we have an allowed list of locations for which we can link to the sample.
+    self::$branchLocationList = array();
+    $presets = get_options_array_with_user_data($args['param_presets']);
+    if(!isset($presets['survey_id']) || $presets['survey_id']=='')
+      return(lang::get('Survey_id missing from presets.'));
+    if(isset($args['branchManagerPermission']) && $args['branchManagerPermission']!="" && user_access($args['branchManagerPermission'])) {
+      // Get list of locations attached to this user via the branch cms user id attribute
+      // first need to scan param_presets for survey_id..
+      $attrArgs = array(
+      		'valuetable'=>'location_attribute_value',
+      		'attrtable'=>'location_attribute',
+      		'key'=>'location_id',
+      		'fieldprefix'=>'locAttr',
+      		'extraParams'=>$auth,
+      		'survey_id'=>$presets['survey_id']);
+      if(isset($args['locationTypeFilter']) && $args['locationTypeFilter']!="")
+      	$attrArgs['location_type_id'] = $args['locationTypeFilter'];
+      $locationAttributes = data_entry_helper::getAttributes($attrArgs, false);
+      $cmsAttr= self::extract_attr($locationAttributes, $args['branchFilterAttribute']);
+      if(!$cmsAttr)
+         return(lang::get('Branch Manager location list lookup: missing Branch allocation attribute : ').$args['branchFilterAttribute']);
+      $attrListArgs=array(// 'nocache'=>true,
+      			'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
+      					'location_attribute_id'=>$cmsAttr['attributeId'], 'raw_value'=>$user->uid),
+      					$auth),
+      			'table'=>'location_attribute_value');
+      $attrList = data_entry_helper::get_population_data($attrListArgs);
+      if (isset($attrList['error']))
+        return $attrList['error'];
+      if(count($attrList)>0)
+        foreach($attrList as $attr)
+        	self::$branchLocationList[] = $attr['location_id'];
+      $reportOptions['location_list'] = self::$branchLocationList;
+    }
+    // for an admin, we can link to all samples.
+    if(isset($args['managerPermission']) && $args['managerPermission']!="" && user_access($args['managerPermission'])) {
+    	$reportOptions['location_list'] = 'all';
+    }
+    
+    if (function_exists('module_exists') && module_exists('easy_login') && function_exists('hostsite_get_user_field')) {
+      $reportOptions['my_user_id']=hostsite_get_user_field('indicia_user_id');
+    } else {
+      $reportOptions['my_user_id']=$user->uid;
+    }
     $retVal = '';
     // Add controls first: set up a control bar
     $retVal .= "\n<table id=\"controls-table\" class=\"ui-widget ui-widget-content ui-corner-all controls-table\"><thead class=\"ui-widget-header\"><tr>";
     $retVal .= self::date_control($args, $auth, $node, $reportOptions);
-    $retVal .= '<th></th><th>'.self::user_control($args, $auth, $node, $reportOptions).'</th>';
-    $retVal .= '<th></th><th>'.self::location_control($args, $auth, $node, $reportOptions).'</th>';
+    $retVal .= '<th>'.self::user_control($args, $auth, $node, $reportOptions).'</th>';
+    $retVal .= '<th>'.self::location_control($args, $auth, $node, $reportOptions).'</th>';
     $siteUrlParams = self::get_site_url_params();
     if (!empty($args['removable_params'])) {      
       foreach(self::$removableParams as $param=>$caption) {
@@ -1134,14 +1545,79 @@ jQuery('#".$ctrlid."').change(function(){
       }
       self::set_up_control_change('removeParam-'.$param, $param, array(), true);
     }
-    $retVal.= '</tr></thead></table>';
     // are there any params that should be set to blank using one of the removable params tickboxes?
     foreach (self::$removableParams as $param=>$caption)
-      if (isset($_GET[$param]) && $_GET[$param]==='true')    
+      if (isset($_GET[$param]) && $_GET[$param]==='true')
         $reportOptions['extraParams'][$param]='';
+    if(self::$siteUrlParams[self::$userKey]['value'] == '' && self::$siteUrlParams[self::$locationKey]['value'] == '') {
+      $checked=self::$siteUrlParams[self::$cacheKey]['value']==='true' ? ' checked="checked"' : '';
+      $retVal .= '<th><input type="checkbox" name="cachingParam" id="cachingParam" class="cachingParam"'.$checked.'/>'.
+            '<label for="cachingParam" title="'.lang::get("When fetching the full data set, selcting this improves performance by not going to the warehouse to get the data. Occassionally, even when selected, the data will be refreshed, which will appear to slow down the response.").'" >'.lang::get("Use cached data").'</label></th>';
+      $reportOptions['caching']=self::$siteUrlParams[self::$cacheKey]['value']==='true' ? true : 'store';
+      self::set_up_control_change('cachingParam', self::$cacheKey, array(), true);
+
+      $checked=self::$siteUrlParams[self::$downloadKey]['value']==='true' ? ' checked="checked"' : '';
+      if(self::$siteUrlParams[self::$downloadKey]['value']!=='true' && isset($reportOptions['includeListDownload']) && $reportOptions['includeListDownload'] ==true){
+        $reportOptions['includeRawGridDownload'] = false;
+        $reportOptions['includeRawListDownload'] = false;
+        $reportOptions['includeSummaryGridDownload'] = false;
+        $reportOptions['includeEstimatesGridDownload'] = false;
+        $reportOptions['includeListDownload'] = false;
+        for($i=1; $i<=4; $i++) {
+          unset($args['Download'.$i.'Caption']);
+          unset($args['download_report_'.$i]);
+        }
+        data_entry_helper::$javascript .=
+          "jQuery('.downloads-table-label').remove();\n".
+          "jQuery('#downloads-table thead tr').prepend('<th>".
+            "<label for=\"downloadParam\" title=\"".lang::get("When fetching the full data set, unselecting this improves performance by not including the download data in the page. This extra data can lead to a significantly increase in download time.")."\" >".
+              lang::get("Include Downloads").
+            "</label>".
+            "<input type=\"checkbox\" name=\"downloadParam\" id=\"downloadParam\" class=\"downloadParam\"".$checked."/>".
+            "</th>');\n";
+        self::set_up_control_change('downloadParam', self::$downloadKey, array(), true);
+      }
+    }
+    $retVal.= '</tr></thead></table>';
     $reportOptions['highlightEstimates']=true;
-    // $retVal .= print_r($reportOptions[extraParams], true);
     $retVal .= report_helper::report_calendar_summary($reportOptions);
+    // upto this point the report options holds the cms user id as user_id: the report_helper converts this to the indicia
+    // user_id if relevant to this installation. We now need to do the same for the report links.
+    if (isset($reportOptions['extraParams']['user_id'])) {
+      $reportOptions['extraParams']['cms_user_id'] = $reportOptions['extraParams']['user_id'];
+      if (function_exists('module_exists') && module_exists('easy_login')) {
+        $account = user_load($reportOptions['extraParams']['user_id']);
+        if (function_exists('profile_load_profile'))
+          profile_load_profile($account); /* will not be invoked for Drupal7 where the fields are already in the account object */
+        if(isset($account->profile_indicia_user_id))
+          $reportOptions['extraParams']['user_id'] = $account->profile_indicia_user_id;
+      }
+    }
+    if((isset($args['managerPermission']) && $args['managerPermission']!="" && user_access($args['managerPermission'])) || // if you are super manager then you can see all the downloads.
+        $reportOptions['extraParams']['location_list'] != '' || // only filled in for a branch user in branch mode
+        $reportOptions['extraParams']['user_id'] != '') { // if user specified - either me in normal or branch mode, or a manager
+      global $indicia_templates;
+      $indicia_templates['report_download_link'] = '<th><a href="{link}"><button type="button">{caption}</button></a></th>';
+      // format is assumed to be CSV
+      $downloadOptions = array('readAuth'=>$auth,
+        'extraParams'=>array_merge($reportOptions['extraParams'], array('date_from' => $reportOptions['date_start'], 'date_to' => $reportOptions['date_end'])),
+        'itemsPerPage' => false);
+      // there are problems dealing with location_list as an array if empty, so connvert
+      if($downloadOptions['extraParams']['location_list']=="")
+        $downloadOptions['extraParams']['location_list']="(-1)";
+      else $downloadOptions['extraParams']['location_list']='('.$downloadOptions['extraParams']['location_list'].')';
+
+      for($i=1; $i<=4; $i++){
+        if(isset($args['Download'.$i.'Caption']) && $args['Download'.$i.'Caption'] != "" && isset($args['download_report_'.$i]) && $args['download_report_'.$i] != ""){
+          $downloadOptions['caption' ]=$args['Download'.$i.'Caption'];
+          $downloadOptions['dataSource']=$args['download_report_'.$i];
+          $downloadOptions['filename']=$reportOptions['downloadFilePrefix'].preg_replace('/[^A-Za-z0-9]/i', '', $args['Download'.$i.'Caption']);
+          if(isset($args['download_report_'.$i.'_format'])) $downloadOptions['format']=$args['download_report_'.$i.'_format'];
+          data_entry_helper::$javascript .="\nif(jQuery('#downloads-table th').length==0)\n  jQuery('#downloads-table thead tr').append('<th class=\"downloads-table-label\">".lang::get("Downloads")."</th>');\njQuery('#downloads-table thead tr').append('".report_helper::report_download_link($downloadOptions)."');\n";
+        }
+      }
+    }
+
     return $retVal;
   }
 

@@ -106,7 +106,7 @@ ul.gallery li {
 
 #record-details-toolbar {
   label {
-    width: 100px;
+    width: 70px;
   }
 }
 
@@ -188,5 +188,11 @@ tr {
   }
   &.total {
     font-weight: bold;
+  }
+}
+
+.grid-verify-popup {
+  button {
+    margin-right: 1em;
   }
 }

@@ -324,7 +324,7 @@ ul.gallery li {
 
 /* line 108, sass/verification_4.scss */
 #record-details-toolbar label {
-  width: 100px;
+  width: 70px;
 }
 
 /* line 113, sass/verification_4.scss */
@@ -408,4 +408,8 @@ tr.rejected {
 /* line 189, sass/verification_4.scss */
 tr.total {
   font-weight: bold;
+}
+/* line 195, sass/verification_4.scss */
+.grid-verify-popup button {
+  margin-right: 1em;
 }

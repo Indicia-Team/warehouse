@@ -416,16 +416,15 @@ class iform_mnhnl_citizen_science_1 {
         'label'=>lang::get('Date'),
         'fieldname'=>'sample:date'
     ));
-
-
     $r .= data_entry_helper::file_box(array(
         'caption' => 'Upload your photos',
+        'readAuth' => $readAuth,
         'resizeWidth' => 1024,
         'resizeHeight' => 768,
         'table' => 'occurrence_image',
         'tabDiv' => 'other',
         // reduce the number of runtimes, because flash and silverlight don't seem reliable on this form.
-        'runtimes' => array('html5','gears','browserplus','html4')
+        'runtimes' => array('html5','html4')
     ));
 
 

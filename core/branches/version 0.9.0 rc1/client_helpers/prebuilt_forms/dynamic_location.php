@@ -122,15 +122,6 @@ class iform_dynamic_location extends iform_dynamic {
           'group'=>'User Interface'
         ),
         array(
-          'name'=>'location_images',
-          'caption'=>'Location Images',
-          'description'=>'Should locations allow images to be uploaded?',
-          'type'=>'boolean',
-          'required' => false,
-          'default'=>false,
-          'group'=>'User Interface'
-        ),
-        array(
           'name'=>'defaults',
           'caption'=>'Default Values',
           'description'=>'Supply default values for each field as required. On each line, enter fieldname=value. For custom attributes, '.
@@ -189,32 +180,41 @@ class iform_dynamic_location extends iform_dynamic {
     if (!empty($_GET['zoom_id'])) {
       self::zoom_map_when_adding($auth['read'], 'location', $_GET['zoom_id']); 
     } else
-      data_entry_helper::load_existing_record($auth['read'], 'location', $_GET['location_id']);    
+      data_entry_helper::load_existing_record($auth['read'], 'location', $_GET['location_id'], 'detail', false, true);    
   }
   
   /*
-   * Function similar in principle to load_existing_record. This function is different if that it is used when the screen is 
-   * appears to be in Add Mode (although technically it will be in edit mode) and we just want to automatically zoom the map 
-   * to an area we are adding a location to.
+   * This function is used when an add site screen is in add mode 
+   * and we just want to automatically zoom the map to a region/site we are adding a location to.
+   * This boundary is purely visual and isn't submitted.
    */
 
-  public static function zoom_map_when_adding($readAuth, $entity, $id, $view = 'detail', $sharing = false, $loadImages = false) {
-    $parentRecord = data_entry_helper::get_population_data(array(
+  public static function zoom_map_when_adding($readAuth, $entity, $id, $view = 'detail') {
+    //Get the zoom_id from the url to allow us to zoom to a specific region in add mode
+    data_entry_helper::$javascript .= "indiciaData.zoomid='".$_GET['zoom_id']."';\n";
+    $loc = data_entry_helper::get_population_data(array(
       'table' => $entity,
       'extraParams' => $readAuth + array('id' => $id, 'view' => $view),
-      'nocache' => true,
-      'sharing' => $sharing
+      'nocache' => true
     ));
     
-    if (isset($parentRecord['error'])) throw new Exception($parentRecord['error']);   
-    // set form mode
-    if (data_entry_helper::$form_mode===null) data_entry_helper::$form_mode = 'RELOAD';
-    //As we are only zooming the map, only populate the entity to load with map related items.
-    foreach($parentRecord[0] as $key => $value) {
-      if ($key==='boundary_geom'||$key==='centroid_sref'||$key==='centroid_sref_system') {
-        data_entry_helper::$entity_to_load["$entity:$key"] = $value;
-      }
-    }
+    if (isset($loc['error'])) throw new Exception($loc['error']);
+    $loc=$loc[0];
+    //Just put the feature onto the map, set the feature type to zoomToBoundary so it isn't used for anything
+    //other than being a visual cue to zoom to.
+    data_entry_helper::$javascript .= "
+mapInitialisationHooks.push(function(mapdiv) {
+  var feature, geom=OpenLayers.Geometry.fromWKT({$loc[boundary_geom]});
+
+  if (indiciaData.mapdiv.map.projection.getCode() != indiciaData.mapdiv.indiciaProjection.getCode()) {
+      geom.transform(indiciaData.mapdiv.indiciaProjection, indiciaData.mapdiv.map.projection);
+  }
+  feature = new OpenLayers.Feature.Vector(geom);
+  feature.attributes.type = 'zoomToBoundary';
+  indiciaData.mapdiv.map.editLayer.addFeatures([feature]);
+  mapdiv.map.zoomToExtent(feature.geometry.bounds);
+});
+    ";
   }
   
   protected static function getAttributes($args, $auth) {
@@ -351,8 +351,10 @@ class iform_dynamic_location extends iform_dynamic {
    */
   protected static function get_control_locationphoto($auth, $args, $tabalias, $options) {
     return data_entry_helper::file_box(array_merge(array(
-      'table'=>'location_image',
-      'caption'=>lang::get('File upload')
+      'table'=>'location_medium',
+      'readAuth' => $auth['read'],
+      'caption'=>lang::get('File upload'),
+      'readAuth' => $auth['read']
     ), $options)); 
   }
   
@@ -373,10 +375,10 @@ class iform_dynamic_location extends iform_dynamic {
     // Either an uploadable file, or a link to a Flickr external detail means include the submodel
     // (Copied from data_entry_helper::build_sample_occurrence_submission. If file_box control is used
     // then build_submission calls wrap_with_images instead)
-    if ((array_key_exists('location:image', $values) && $values['location:image'])
-        || array_key_exists('location_image:external_details', $values) && $values['location_image:external_details']) {
+    if ((array_key_exists('location:medium', $values) && $values['location:medium'])
+        || array_key_exists('location_medium:external_details', $values) && $values['location_medium:external_details']) {
       $structure['submodel'] = array(
-          'model' => 'location_image',
+          'model' => 'location_medium',
           'fk' => 'location_id'
       );
     }
@@ -473,8 +475,6 @@ class iform_dynamic_location extends iform_dynamic {
               "[location comment]\r\n".
               "[*]\r\n".
               "=*=";
-    if (!isset($args['location_images']))
-      $args['location_images'] == false; 
     if (!isset($args['grid_report']))
       $args['grid_report'] = 'reports_for_prebuilt_forms/simple_location_list';
     return $args;

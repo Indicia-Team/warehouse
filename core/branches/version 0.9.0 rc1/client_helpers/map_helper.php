@@ -115,6 +115,10 @@ class map_helper extends helper_base {
   * ID of the HTML div to output information retrieved from a click operation into, if clickableLayersOutputMode
   * is set to div.
   * </li>
+  * <li><b>allowBox</b><br/>
+  * Default true. Set to false to disable drag boxes for selecting items on clickable layers. The advantage of this is that
+  * the drag boxes don't hinder attempts to drag the map to navigate.
+  * </li>
   * <li><b>customClickFn</b>
   * Set to the name of a global custom JavaScript function which will handle the event of clicking on the map if 
   * you want custom functionality. Provide this when clickableLayersOutputMode=customFunction. The function will 
@@ -225,10 +229,6 @@ class map_helper extends helper_base {
   * <li><b>tabDiv</b><br/>
   * If loading this control onto a set of tabs, specify the tab control's div ID here. This allows the control to
   * automatically generate code which only generates the map when the tab is shown.</li>
-  * <li><b>setupJs</b><br/>
-  * When there is JavaScript to run before the map is initialised, put the JavaScript into this option. This allows the map to run the 
-  * setup JavaScript just in time, immediately before the map is created. This avoids problems where the setup JavaScript causes the OpenLayers library 
-  * to be initialised too earlier if the map is on a div.</li>
   * <li><b>setupJs</b><br/>
   * When there is JavaScript to run before the map is initialised, put the JavaScript into this option. This allows the map to run the 
   * setup JavaScript just in time, immediately before the map is created. This avoids problems where the setup JavaScript causes the OpenLayers library 
@@ -383,7 +383,7 @@ class map_helper extends helper_base {
       }
       $mapSetupJs .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
       // trigger a change event on the sref if it's set in case locking in use. This will draw the polygon on the map.
-      $srefId = empty($options['srefId']) ? '$.fn.indiciaMapPanel.defaults.srefId' : "'{$options[srefId]}'";
+      $srefId = empty($options['srefId']) ? '$.fn.indiciaMapPanel.defaults.srefId' : "'{$options['srefId']}'";
       if(!(isset($options['switchOffSrefRetrigger']) && $options['switchOffSrefRetrigger'] == true)){
         $mapSetupJs .= "      var srefId = $srefId;\n".
                        "      if (srefId && $('#' + srefId).length && $('#' + srefId).val()!=='' && indiciaData.mapdiv.settings.initialBoundaryWkt===null) {jQuery('#'+srefId).change();}\n";

@@ -18,11 +18,12 @@
  * @link    http://code.google.com/p/indicia/
  */
  
-var loadFilter, applyFilterToReports;
+var loadFilter, loadFilterUser, applyFilterToReports;
 
 jQuery(document).ready(function($) {
   "use strict";
   indiciaData.filter = {"def":{},"id":null,"title":null};
+  var saving=false, applyFilterNow;
   
   function disableIfPresent(context, fields, ctrlIds) {
     var disable=false;
@@ -104,70 +105,29 @@ jQuery(document).ready(function($) {
         }
         return r.join('<br/>');
       },
-      limitToContext:function(filterDef,context) {
-        var idlist, context_idlist;
-        if (context.taxon_group_list) {
-          if (filterDef.taxon_group_list) {
-            context_idlist=context.taxon_group_list.split(',');
-            idlist=$.grep(filterDef.taxon_group_list.split(','), function(elem) {
-              return $.inArray(elem, context_idlist)!==-1;
-            });
-            filterDef.taxon_group_list=idlist.join(',');
-            $.each(filterDef.taxon_group_names, function(id, name) {
-              if ($.inArray(id, context_idlist)===-1) {
-                delete filterDef.taxon_group_names[id];
-              }
-            });
-            
-          } else {
-            filterDef.taxon_group_list=context.taxon_group_list;
-            filterDef.taxon_group_names=$.extend({}, context.taxon_group_names);
-          }
-        } else if (context.taxa_taxon_list_list) {
-          // No point having any sort of group level filter
-          filterDef.taxon_group_list='';
-          filterDef.taxon_group_names={}; 
-          // the species that remain must be an intersection of the context and the picked list
-          if (filterDef.taxa_taxon_names_list) {
-            context_idlist=context.taxa_taxon_names_list.split(',');
-            idlist=$.grep(filterDef.taxa_taxon_names_list.split(','), function(elem) {
-              return $.inArray(elem, context_idlist)!==-1;
-            });
-            filterDef.taxa_taxon_names_list=idlist.join(',');
-            $.each(filterDef.taxa_taxon_list_names, function(id, name) {
-              if (!$.inArray(id, context_idlist)===-1) {
-                delete filterDef.taxa_taxon_list_names[id];
-              }
-            });
-          } else {
-            filterDef.taxa_taxon_names_list=context.taxa_taxon_names_list;
-            filterDef.taxa_taxon_list_names=$.extend({}, context.taxa_taxon_list_names);
-          }
-        }
-      },
       applyFormToDefinition:function() {
         // don't send unnecessary stuff
         delete indiciaData.filter.def['taxon_group_list:search'];
         delete indiciaData.filter.def['taxon_group_list:search:title'];
         delete indiciaData.filter.def['taxa_taxon_list_list:search'];
-        delete indiciaData.filter.def['taxa_taxon_list_list:search:title'];
+        delete indiciaData.filter.def['taxa_taxon_list_list:search:taxon'];
         // reset the list of group names and species
         indiciaData.filter.def.taxon_group_names={};
         indiciaData.filter.def.taxa_taxon_list_names={};
         // if nothing selected, clean up the def
-        if ($('input[name=taxon_group_list[]]').length===0) {
+        if ($('input[name=taxon_group_list\\[\\]]').length===0) {
           indiciaData.filter.def.taxon_group_list='';
         } else {
           // store the list of names in the def, though not used for the report they save web service hits later
-          $.each($('input[name=taxon_group_list[]]'), function(idx, ctrl) {
+          $.each($('input[name=taxon_group_list\\[\\]]'), function(idx, ctrl) {
             indiciaData.filter.def.taxon_group_names[$(ctrl).val()] = $.trim($(ctrl).parent().text());
           });
         }
-        if ($('input[name=taxa_taxon_list_list[]]').length===0) {
+        if ($('input[name=taxa_taxon_list_list\\[\\]]').length===0) {
           indiciaData.filter.def.taxa_taxon_list_list='';
         } else {
           // store the list of names in the def, though not used for the report they save web service hits later
-          $.each($('input[name=taxa_taxon_list_list[]]'), function(idx, ctrl) {
+          $.each($('input[name=taxa_taxon_list_list\\[\\]]'), function(idx, ctrl) {
             indiciaData.filter.def.taxa_taxon_list_names[$(ctrl).val()] = $.trim($(ctrl).parent().text());
           });
         }
@@ -176,16 +136,16 @@ jQuery(document).ready(function($) {
         if (context && context.taxa_taxon_list_list) {
           // got a species level context. So may as well disable the group level tab, it won't be useful.
           $('#what-filter-instruct').hide();
+          $( "#what-tabs" ).tabs("select", 1);
           $( "#what-tabs" ).tabs("option", "active", 1);
           $( "#what-tabs" ).tabs("option", "disabled", [0]);
           $('input#taxon_group_list\\:search\\:title').unsetExtraParams('query');
-          $('input#taxa_taxon_list_list\\:search\\:taxon').setExtraParams({"query":'{"in":{"id":['+context.taxa_taxon_list_list+']}}'});
           $('#species-tab .context-instruct').show();
         } else {
           $('#what-filter-instruct').show();
           $( "#what-tabs" ).tabs('enable', 0);
+          $( "#what-tabs" ).tabs("select", 0);
           $( "#what-tabs" ).tabs("option", "active", 0);
-          $('input#taxa_taxon_list_list\\:search\\:taxon').unsetExtraParams('query');
           if (context && context.taxon_group_list) {
             $('input#taxon_group_list\\:search\\:title').setExtraParams({"query":'{"in":{"id":['+context.taxon_group_list+']}}'});
             $('#species-group-tab .context-instruct').show();
@@ -213,64 +173,91 @@ jQuery(document).ready(function($) {
     },
     when:{
       getDescription:function() {
-        var r=[];
-        if (indiciaData.filter.def.date_from && indiciaData.filter.def.date_to) {
-          r.push('Records between ' + indiciaData.filter.def.date_from + ' and ' + indiciaData.filter.def.date_to);
-        } else if (indiciaData.filter.def.date_from) {
-          r.push('Records on or after ' + indiciaData.filter.def.date_from);
-        } else if (indiciaData.filter.def.date_to) {
-          r.push('Records on or before ' + indiciaData.filter.def.date_to);
+        var r=[], dateType='recorded', dateFromField='date_from', dateToField='date_to', dateAgeField='date_age';
+        if (typeof indiciaData.filter.def.date_type!=="undefined") {
+          dateType = indiciaData.filter.def.date_type;
+          if (dateType!=='recorded') {
+            dateFromField = dateType + '_date_from';
+            dateToField = dateType + '_date_to';
+            dateAgeField = dateType + '_date_age';
+          }
         }
-        if (indiciaData.filter.def.date_age) {
-          r.push('Last ' + indiciaData.filter.def.date_age);
+        if (indiciaData.filter.def[dateFromField] && indiciaData.filter.def[dateToField]) {
+          r.push('Records '+dateType + ' between ' + indiciaData.filter.def[dateFromField] + ' and ' + indiciaData.filter.def[dateToField]);
+        } else if (indiciaData.filter.def[dateFromField]) {
+          r.push('Records '+dateType + ' on or after ' + indiciaData.filter.def[dateFromField]);
+        } else if (indiciaData.filter.def[dateToField]) {
+          r.push('Records '+dateType + ' on or before ' + indiciaData.filter[dateToField]);
+        }
+        if (indiciaData.filter.def[dateAgeField]) {
+          r.push('Records '+dateType + ' in last ' + indiciaData.filter.def[dateAgeField]);
         }
         return r.join('<br/>');
       },
-      limitToContext:function(filterDef,context) {
-        // context limits earliest date
-        if (context.date_from && (!filterDef.date_from || dateStrIsGreater(context.date_from, filterDef.date_from))) {
-          filterDef.date_from = context.date_from; 
+      loadForm:function(context) {
+        var dateTypePrefix='';
+        if (typeof indiciaData.filter.def.date_type!=="undefined" && indiciaData.filter.def.date_type!=="recorded") {
+          dateTypePrefix = indiciaData.filter.def.date_type + '_';
         }
-        // context limits latest date
-        if (context.date_to && (!filterDef.date_to || dateStrIsGreater(filterDef.date_to, context.date_to))) {
-          filterDef.date_to = context.date_to; 
+        if (context && (context.date_from || context.date_to || context.date_age || 
+            context.input_date_from || context.input_date_to || context.input_date_age ||
+            context.edited_date_from || context.edited_date_to || context.edited_date_age ||
+            context.verified_date_from || context.verified_date_to || context.verified_date_age)) {
+          $('#controls-filter_when .context-instruct').show();
         }
-        // context limits age
-        if (context.date_age && (!filterDef.date_age || ageStrIsGreater(filterDef.date_age, context.date_age))) {
-          filterDef.date_age = context.date_age; 
+        if (dateTypePrefix) {
+          // We need to load the default values for each control, as if prefixed then they won't autoload
+          if (typeof indiciaData.filter.def[dateTypePrefix + 'date_from']!=="undefined") {
+            $('#date_from').val(indiciaData.filter.def[dateTypePrefix + 'date_from']);
+          }
+          if (typeof indiciaData.filter.def[dateTypePrefix + 'date_age']!=="undefined") {
+            $('#date_to').val(indiciaData.filter.def[dateTypePrefix + 'date_to']);
+          }
+          if (typeof indiciaData.filter.def[dateTypePrefix + 'date_age']!=="undefined") {
+            $('#date_age').val(indiciaData.filter.def[dateTypePrefix + 'date_age']);
+          }
         }
       },
-      loadForm:function(context) {
-        // limit the date range that can be selected to the context's date range
-        var format=$("#date_from").datepicker( "option", "dateFormat");
-        if (context && context.date_from) {
-          $("#date_from").datepicker("option", "minDate", context.date_from);
-          $("#date_to").datepicker("option", "minDate", context.date_from);
-        } else {
-          $("#date_from").datepicker("option", "minDate", null);
-          $("#date_to").datepicker("option", "minDate", null);
+      applyFormToDefinition:function() {
+        var dateTypePrefix='';
+        if (typeof indiciaData.filter.def.date_type!=="undefined" && indiciaData.filter.def.date_type!=="recorded") {
+          dateTypePrefix = indiciaData.filter.def.date_type + '_';
         }
-        if (context && context.date_to) {
-          $("#date_from").datepicker("option", "maxDate", jQuery.datepicker.parseDate(format, context.date_to));
-          $("#date_to").datepicker("option", "maxDate", jQuery.datepicker.parseDate(format, context.date_to));
-        } else {
-          $("#date_from").datepicker("option", "maxDate", 0);
-          $("#date_to").datepicker("option", "maxDate", 0);
-        }
-        if (context && context.date_age) {
-          $('#age-help span').html(context.date_age);
-          $('#age .context-instruct').show();
+        // make sure we clean up, especially if switching date filter type
+        delete indiciaData.filter.def.input_date_from;
+        delete indiciaData.filter.def.input_date_to;
+        delete indiciaData.filter.def.input_date_age;
+        delete indiciaData.filter.def.edited_date_from;
+        delete indiciaData.filter.def.edited_date_to;
+        delete indiciaData.filter.def.edited_date_age;
+        delete indiciaData.filter.def.verified_date_from;
+        delete indiciaData.filter.def.verified_date_to;
+        delete indiciaData.filter.def.verified_date_age;
+        // if the date filter type needs a prefix on the parameter field names, then copy the values from the
+        // date controls into the proper parameter field names
+        if (dateTypePrefix) {
+          indiciaData.filter.def[dateTypePrefix + 'date_from'] = indiciaData.filter.def.date_from;
+          indiciaData.filter.def[dateTypePrefix + 'date_to'] = indiciaData.filter.def.date_to;
+          indiciaData.filter.def[dateTypePrefix + 'date_age'] = indiciaData.filter.def.date_age;
+          // the date control values must NOT apply to the field record date in this case - we are doing a different
+          // type filter.
+          delete indiciaData.filter.def.date_from;
+          delete indiciaData.filter.def.date_to;
+          delete indiciaData.filter.def.date_age;
         }
       }
     },
     where:{
       getDescription:function() {
-        if (indiciaData.filter.def.location_id) {
+        if (indiciaData.filter.def.remembered_location_name) {
+          return 'Records in ' + indiciaData.filter.def.remembered_location_name;
+        } else if (indiciaData.filter.def['imp-location:name']) { // legacy
           return 'Records in ' + indiciaData.filter.def['imp-location:name'];
+        } else if (indiciaData.filter.def.indexed_location_id) { 
+          // legacy location ID for the user's locality. In this case we need to hijack the site type drop down shortcuts to get the locality name
+          return $('#site-type option[value=loc\\:' + indiciaData.filter.def.indexed_location_id + ']').text();
         } else if (indiciaData.filter.def.location_name) {
           return 'Records in places containing "' + indiciaData.filter.def.location_name + '"';
-        } else if (indiciaData.filter.def.indexed_location_id) {
-          return 'Records in ' + indiciaData.myLocality;
         } else if (indiciaData.filter.def.sref) {
           return 'Records in square ' + indiciaData.filter.def.sref;
         } else if (indiciaData.filter.def.searchArea) {
@@ -279,26 +266,33 @@ jQuery(document).ready(function($) {
           return '';
         }        
       },
-      limitToContext:function(filterDef,context) {
-        // context limits override the filter def
-        if (context.location_id) {
-          filterDef.location_id=context.location_id;
-        }
-        if (context.indexed_location_id) {
-          filterDef.indexed_location_id=context.indexed_location_id;
-        }
-        if (context.location_name) {
-          filterDef.location_name=context.location_name;
-        }
-        if (context.searchArea) {
-          filterDef.sref=context.sref;
-        }
-        if (context.sref) {
-          filterDef.sref=context.sref;
-        }
-      },
       applyFormToDefinition:function() {
         var geoms=[], geom;
+        indiciaData.filter.def.location_id='';
+        indiciaData.filter.def.indexed_location_id='';
+        delete indiciaData.filter.def.remembered_location_name;
+        delete indiciaData.filter.def.searchArea;
+        delete indiciaData.filter.def['imp-location:name'];
+        // if we've got a location name to search for, no need to do anything else as the where filters are exclusive.
+        if (indiciaData.filter.def.location_name) {
+          return;
+        }
+        if ($('#site-type').val()!=='') {
+          if ($('#site-type').val().match(/^loc:[0-9]+$/)) {
+            indiciaData.filter.def.indexed_location_id=$('#site-type').val().replace(/^loc:/, '');
+            indiciaData.filter.def.remembered_location_name = $('#site-type :selected').text();
+            return;
+          } else if ($('#imp-location').val()) {
+            if ($.inArray(parseInt($('#site-type').val()), indiciaData.indexedLocationTypeIds)!==-1) {
+              indiciaData.filter.def.indexed_location_id=$('#imp-location').val();
+            } else {
+              indiciaData.filter.def.location_id=$('#imp-location').val();
+            }
+            indiciaData.filter.def.remembered_location_name = $('#imp-location :selected').text();
+            return;
+          }
+        }
+        
         $.each(indiciaData.mapdiv.map.editLayer.features, function(i, feature) {
           // ignore features with a special purpose, e.g. the selected record when verifying
           if (typeof feature.tag==="undefined") {
@@ -309,9 +303,7 @@ jQuery(document).ready(function($) {
             }
           }
         });
-        if (geoms.length===0 || indiciaData.filter.def.location || indiciaData.filter.def.location_id) {
-          indiciaData.filter.def.searchArea = '';
-        } else {
+        if (geoms.length>0) {
           if (geoms[0].CLASS_NAME === 'OpenLayers.Geometry.Polygon') {
             geom = new OpenLayers.Geometry.MultiPolygon(geoms);
           } else if (geoms[0].CLASS_NAME === 'OpenLayers.Geometry.LineString') {
@@ -328,14 +320,28 @@ jQuery(document).ready(function($) {
           }
         }
       },
+      preloadForm:function() {
+        // max size the map
+        $('#filter-map-container').css('width', $(window).width()-160);
+        $('#filter-map-container').css('height', $(window).height()-380);
+      },
       loadForm:function(context) {
         indiciaData.disableMapDataLoading=true;
         indiciaData.mapOrigCentre=indiciaData.mapdiv.map.getCenter();
         indiciaData.mapOrigZoom=indiciaData.mapdiv.map.getZoom();
-        $('#location_id').attr('checked', indiciaData.filter.def.location_id ? true : false);
-        // max size the map
-        $('#filter-map-container').css('width', $(window).width()-160);
-        $('#filter-map-container').css('height', $(window).height()-280);
+        if (indiciaData.filter.def.indexed_location_id && 
+            $("#site-type option[value='loc:"+indiciaData.filter.def.indexed_location_id+"']").length > 0) {
+          $('#site-type').val('loc:'+indiciaData.filter.def.indexed_location_id);
+        } else if (indiciaData.filter.def.indexed_location_id || indiciaData.filter.def.location_id) {
+          var locationToLoad=indiciaData.filter.def.indexed_location_id ? indiciaData.filter.def.indexed_location_id : indiciaData.filter.def.location_id;
+          if (indiciaData.filter.def['site-type']) {
+            $('#site-type').val(indiciaData.filter.def['site-type']);
+          } else {
+            // legacy
+            $('#site-type').val('my');
+          }
+          changeSiteType(locationToLoad);
+        }
         if (typeof indiciaData.linkToMapDiv!=="undefined") {
           // move the map div to our container so it appears on the popup
           var element=$('#' + indiciaData.linkToMapDiv);
@@ -348,8 +354,7 @@ jQuery(document).ready(function($) {
         // select the first draw... tool if allowed to draw on the map by permissions, else select navigate
         $.each(indiciaData.mapdiv.map.controls, function(idx, ctrl) {        
           if (context && (((context.sref || context.searchArea) && ctrl.CLASS_NAME.indexOf('Control.Navigate')>-1) ||
-              ((!context.sref && !context.searchArea) && ctrl.CLASS_NAME.indexOf('Control.Draw')>-1)))
-          {
+              ((!context.sref && !context.searchArea) && ctrl.CLASS_NAME.indexOf('Control.Draw')>-1))) {
             ctrl.activate();
             return false;
           }
@@ -376,7 +381,15 @@ jQuery(document).ready(function($) {
           if (indiciaData.mapdiv.map.projection.getCode() !== indiciaData.mapdiv.indiciaProjection.getCode()) {
             feature.geometry.transform(indiciaData.mapdiv.indiciaProjection, indiciaData.mapdiv.map.projection);
           }
-          indiciaData.mapdiv.map.editLayer.addFeatures([feature]);
+          if (indiciaData.mapdiv) {
+            indiciaData.mapdiv.map.editLayer.addFeatures([feature]);
+          } else {
+            mapInitialisationHooks.push(function() {indiciaData.mapdiv.map.editLayer.addFeatures([feature]);});            
+          }
+        } else if (indiciaData.filter.def.location_id) {
+          indiciaData.mapdiv.locationSelectedInInput(indiciaData.mapdiv, indiciaData.filter.def.location_id);
+        } else if (indiciaData.filter.def.indexed_location_id) {
+          indiciaData.mapdiv.locationSelectedInInput(indiciaData.mapdiv, indiciaData.filter.def.indexed_location_id);
         }
       }
     },
@@ -386,12 +399,6 @@ jQuery(document).ready(function($) {
           return indiciaData.lang.MyRecords;
         } else {
           return '';
-        }
-      },
-      limitToContext:function(filterDef,context) {
-        // context limits override the filter def
-        if (context.my_records) {
-          filterDef.my_records=context.my_records;
         }
       },
       loadForm:function(context) {
@@ -408,17 +415,10 @@ jQuery(document).ready(function($) {
     occurrence_id:{
       getDescription:function() {
         if (indiciaData.filter.def.occurrence_id) {
-          return $('#occurrence_id_op option[value='+indiciaData.filter.def.occurrence_id_op+']').html()
+          return $('#occurrence_id_op option[value='+indiciaData.filter.def.occurrence_id_op.replace(/[<=>]/g, "\\$&")+']').html()
               + ' ' + indiciaData.filter.def.occurrence_id;
         } else {
           return '';
-        }
-      },
-      limitToContext:function(filterDef,context) {
-        // context limits override the filter def
-        if (context.occurrence_id) {
-          filterDef.occurrence_id=context.occurrence_id;
-          filterDef.occurrence_id_op=context.occurrence_id_op;
         }
       },
       loadForm:function(context) {
@@ -428,7 +428,7 @@ jQuery(document).ready(function($) {
       getDescription:function() {
         var r=[];
         if (indiciaData.filter.def.quality!=='all') {
-          r.push($('#quality-filter option[value='+indiciaData.filter.def.quality+']').html());
+          r.push($('#quality-filter option[value='+indiciaData.filter.def.quality.replace('!','\\!')+']').html());
         }
         if (indiciaData.filter.def.autochecks==='F') {
           r.push(indiciaData.lang.AutochecksFailed);
@@ -444,17 +444,6 @@ jQuery(document).ready(function($) {
         return {
           "quality" : "!R"
         };
-      },
-      limitToContext:function(filterDef,context) {
-        if (context.quality && context.quality!=='all') {
-          filterDef.quality=context.quality;
-        }
-        if (context.autochecks) {
-          filterDef.autochecks=context.autochecks;
-        }
-        if (context.has_photos) {
-          filterDef.has_photos=context.has_photos;
-        }
       },
       loadForm:function(context) {
         if (context && context.quality && context.quality!=='all') {
@@ -500,18 +489,6 @@ jQuery(document).ready(function($) {
         }
         return r.join('<br/>');
       },
-      limitToContext:function(filterDef,context) {
-        if (context.website_list_op && context.website_list) {
-          filterDef.website_list_op=context.website_list_op;
-        }
-        if (context.survey_list_op && context.survey_list) {
-          filterDef.survey_list_op=context.survey_list_op;
-        }
-        // ensure that the selected websites, surveys and forms are in the context limits
-        limitSourceToContext('website', filterDef, context);
-        limitSourceToContext('survey', filterDef, context);
-        limitSourceToContext('input_form', filterDef, context);
-      },
       loadForm: function(context) {
         if (context && ((context.website_list && context.website_list_op) || 
             (context.survey_list && context.survey_list_op) || (context.input_form_list && context.input_form_list_op))) {
@@ -541,16 +518,19 @@ jQuery(document).ready(function($) {
         disableSourceControlsForContext('input_form', context);
       },
       applyFormToDefinition:function() {
-        var website_ids = [];
+        var website_ids = [], survey_ids=[], input_forms=[];
         $.each($('#filter-websites input:checked').filter(":visible"), function(idx, ctrl) {
           website_ids.push($(ctrl).val());
         });
         indiciaData.filter.def.website_list = website_ids.join(',');
-        var survey_ids = [];
         $.each($('#filter-surveys input:checked').filter(":visible"), function(idx, ctrl) {
           survey_ids.push($(ctrl).val());
         });
         indiciaData.filter.def.survey_list = survey_ids.join(',');
+        $.each($('#filter-input_forms input:checked').filter(":visible"), function(idx, ctrl) {
+          input_forms.push("'" + $(ctrl).val() + "'");
+        });
+        indiciaData.filter.def.input_form_list = input_forms.join(',');
       }
     }
   };
@@ -601,19 +581,48 @@ jQuery(document).ready(function($) {
   });
   $('#taxon_group_list\\:add').click(function() {$('#taxa_taxon_list_list\\:sublist').children().remove();});
   
-  // Checking the checkbox linked to my locality loads the locality boundary onto the map.
-  $('#location_id').change(function() {
-    if ($('#location_id').attr('checked')) {
-      // selected to load the preferred locality. So load the boundary...
-      $.getJSON(indiciaData.read.url + 'index.php/services/data/location/' + $('#location_id').val() +
-              '?mode=json&view=detail&auth_token='+indiciaData.read.auth_token+'&nonce='+indiciaData.read.nonce+'&callback=?', function(data) {
-        var parser = new OpenLayers.Format.WKT(), feature = parser.read(data[0].boundary_geom);
-        if (indiciaData.mapdiv.map.projection.getCode() !== indiciaData.mapdiv.indiciaProjection.getCode()) {
-          feature.geometry.transform(indiciaData.mapdiv.indiciaProjection, indiciaData.mapdiv.map.projection);
+  function loadSites(filter, idToSelect) {
+    $.ajax({
+      dataType: "json",
+      url: indiciaData.read.url + 'index.php/services/data/location',
+      data: 'mode=json&view=list&orderby=name&auth_token='+indiciaData.read.auth_token+'&nonce='+indiciaData.read.nonce+'&'+filter+'&callback=?',
+      success: function(data) {
+        $.each(data, function(idx, loc) {
+          $('#imp-location').append('<option value="'+loc.id+'">' + loc.name + '</option>');
+        });
+        if (typeof idToSelect !== "undefined") {
+          $('#imp-location').val(idToSelect);
         }
-        indiciaData.mapdiv.map.editLayer.addFeatures([feature]);
-      });
+      }
+    });
+  }
+  
+  function changeSiteType(idToSelect) {
+    $('#imp-location').children().remove();
+    $('#imp-location').append('<option value="">'+indiciaData.lang.pleaseSelect+'</option>');
+    if ($('#site-type').val()==='my') {
+      // my sites
+      $('#imp-location').show();
+      if (indiciaData.includeSitesCreatedByUser) {
+        loadSites('view=detail&created_by_id='+indiciaData.user_id, idToSelect);
+      }
+    } else if ($('#site-type').val().match(/^[0-9]+$/)) {
+      // a location_type_id selected
+      $('#imp-location').show();      
+      loadSites('location_type_id='+$('#site-type').val(), idToSelect);
+    } else {
+      // a shortcut site from the site-types list
+      $('#imp-location').hide();
+      if ($('#site-type').val().match(/^loc:[0-9]+$/)) {
+        // add a dummy location entry and pick it, so we can fire change to redraw the map
+        $('#imp-location').children().append('<option selected="selected" value="'+$('#site-type').val().replace(/^loc:/, '')+'">x</option>');
+        indiciaData.mapdiv.locationSelectedInInput(indiciaData.mapdiv, $('#site-type').val().replace(/^loc:/, ''));
+      }
     }
+  }
+  
+  $('#site-type').change(function(e) {
+    changeSiteType();
   });
   
   function updateSurveySelection() {
@@ -716,9 +725,9 @@ jQuery(document).ready(function($) {
     // if a context is loaded, need to limit the filter to the records in the context
     if ($('#context-filter').length) {
       var context = indiciaData.filterContextDefs[$('#context-filter').val()];
-      $.each(paneObjList, function(name, obj) {
-        if (typeof obj.limitToContext!=="undefined") {
-          obj.limitToContext(indiciaData.filter.def, context);
+      $.each(context, function (param, value) {
+        if (value!=='') {
+          indiciaData.filter.def[param+'_context']=value;
         }
       });
     }
@@ -726,7 +735,11 @@ jQuery(document).ready(function($) {
   
   applyFilterToReports = function(applyNow) {
     applyContextLimits();
-    var filterDef = indiciaData.filter.def;
+    var filterDef = $.extend({}, indiciaData.filter.def);
+    delete filterDef.taxon_group_names;
+    delete filterDef.taxa_taxon_list_names;
+    delete filterDef.taxon_group_names_context;
+    delete filterDef.taxa_taxon_list_names_context;
     if (indiciaData.reports) {
       // apply the filter to any reports on the page
       $.each(indiciaData.reports, function(i, group) {
@@ -736,7 +749,7 @@ jQuery(document).ready(function($) {
             grid[0].settings.origParams = $.extend({}, grid[0].settings.extraParams);
           }
           // merge in the filter
-          $.extend(grid[0].settings.extraParams, filterDef);
+          grid[0].settings.extraParams = $.extend({}, grid[0].settings.origParams, filterDef);
           if (applyNow) {
             // reload the report grid
             grid.ajaxload();
@@ -764,7 +777,7 @@ jQuery(document).ready(function($) {
       indiciaData.filter.def = $.extend(indiciaData.filter.def, indiciaData.filter.orig);
     }
     indiciaData.filter.id = null;
-    $('#filter-name').val('');
+    $('#filter\\:title').val('');
     $('#select-filter').val('');
     $.each(indiciaData.reports, function(i, group) {
       $.each(group, function(j, grid) {
@@ -789,10 +802,12 @@ jQuery(document).ready(function($) {
       indiciaData.mapdiv.map.editLayer.removeAllFeatures();
     }
     updateFilterDescriptions();
+    $('#filter-build').html(indiciaData.lang.CreateAFilter);
     $('#filter-reset').addClass('disabled');
     $('#filter-delete').addClass('disabled');
+    $('#filter-apply').addClass('disabled');
     // reset the filter label
-    $('#standard-params .header h2').html(indiciaData.lang.FilterReport);
+    $('#active-filter-label').html(indiciaData.lang.FilterReport);
     $('#standard-params .header span.changed').hide();
   }
   
@@ -811,25 +826,98 @@ jQuery(document).ready(function($) {
     });
   }
   
+  function filterLoaded(data) {
+    indiciaData.filter.def = JSON.parse(data[0].definition);
+    indiciaData.filter.id = data[0].id;
+    delete indiciaData.filter.filters_user_id;
+    indiciaData.filter.title = data[0].title;
+    $('#filter\\:title').val(data[0].title);
+    applyFilterToReports(applyFilterNow);
+    $('#filter-reset').removeClass('disabled');
+    $('#filter-delete').removeClass('disabled');
+    $('#active-filter-label').html('Active filter: '+data[0].title);
+    updateFilterDescriptions();
+    $('#filter-build').html(indiciaData.lang.ModifyFilter);
+    $('#standard-params .header span.changed').hide();
+    // can't delete a filter you didn't create.
+    if (data[0].created_by_id===indiciaData.user_id) {
+      $('#filter-delete').show();
+    } else {
+      $('#filter-delete').hide();
+    }      
+  }
+  
   loadFilter = function(id, applyNow) {
+    applyFilterNow = applyNow;
+    if ($('#standard-params .header span.changed:visible').length===0 || confirm(indiciaData.lang.ConfirmFilterChangedLoad)) {
+      var def=false;
+      switch (id) {
+        case 'my-records':
+          def = "{\"quality\":\"all\",\"my_records\":1}";
+          break;
+        case 'my-queried-rejected-records':
+          def = "{\"quality\":\"DR\",\"my_records\":1}";
+          break;
+        case 'my-groups':
+          def = "{\"quality\":\"all\",\"my_records\":0,\"taxon_group_list\":"+indiciaData.userPrefsTaxonGroups+"}";
+          break;
+        case 'my-locality':
+          def = "{\"quality\":\"all\",\"my_records\":0,\"indexed_location_id\":"+indiciaData.userPrefsLocation+"}";
+          break;
+        case 'my-groups-locality':
+          def = "{\"quality\":\"all\",\"my_records\":0,\"taxon_group_list\":"+indiciaData.userPrefsTaxonGroups+",\"indexed_location_id\":"+indiciaData.userPrefsLocation+"}";
+          break;
+      }
+      if (def) {
+        filterLoaded([{"id":id,"title":$('#select-filter option:selected').html(),"definition":def}]);
+      } else {
+        $.ajax({
+          dataType: "json",
+          url: indiciaData.read.url + 'index.php/services/data/filter/' + id,
+          data: 'mode=json&view=list&auth_token='+indiciaData.read.auth_token+'&nonce='+indiciaData.read.nonce+'&callback=?',
+          success: filterLoaded,
+          async: applyFilterNow // if not applying the filter, then we are expecting immediate load so that something else can apply the filter in a moment
+        });
+      }
+    }
+  };
+  
+  function codeToSharingTerm(code) {
+    switch (code) {
+      case 'R': return 'reporting';
+      case 'V': return 'verification';
+      case 'P': return 'peer review';
+      case 'D': return 'data flow';
+      case 'M': return 'moderation';
+    }
+    return code;
+  }
+  
+  loadFilterUser = function(id, applyNow) {
     if ($('#standard-params .header span.changed:visible').length===0 || confirm(indiciaData.lang.ConfirmFilterChangedLoad)) {
       $.ajax({
         dataType: "json",
-        url: indiciaData.read.url + 'index.php/services/data/filter/' + id,
+        url: indiciaData.read.url + 'index.php/services/data/filters_user/' + id,
         data: 'mode=json&view=list&auth_token='+indiciaData.read.auth_token+'&nonce='+indiciaData.read.nonce+'&callback=?',
         success: function(data) {
-          indiciaData.filter.def = JSON.parse(data[0].definition);
-          indiciaData.filter.id = data[0].id;
-          indiciaData.filter.title = data[0].title;
-          $('#filter-name').val(data[0].title);
+          indiciaData.filter.def = JSON.parse(data[0].filter_definition);
+          indiciaData.filter.id = data[0].filter_id;
+          indiciaData.filter.filters_user_id = id;
+          indiciaData.filter.title = data[0].filter_title;
+          $('#filter\\:title').val(data[0].filter_title);
+          $('#filter\\:description').val(data[0].filter_description);
+          $('#filter\\:sharing').val(data[0].filter_sharing);
+          $('#sharing-type-label').html(codeToSharingTerm(data[0].filter_sharing));
+          $('#filters_user\\:user_id\\:person_name').val(data[0].person_name);
+          $('#filters_user\\:user_id').val(data[0].user_id);
           applyFilterToReports(applyNow);
           $('#filter-reset').removeClass('disabled');
           $('#filter-delete').removeClass('disabled');
-          $('#standard-params .header h2').html('Active filter: '+data[0].title);
+          $('#active-filter-label').html('Active filter: '+data[0].filter_title);
           updateFilterDescriptions();
           $('#standard-params .header span.changed').hide();
           // can't delete a filter you didn't create.
-          if (data[0].created_by_id===indiciaData.user_id) {
+          if (data[0].filter_created_by_id===indiciaData.user_id) {
             $('#filter-delete').show();
           } else {
             $('#filter-delete').hide();
@@ -847,7 +935,11 @@ jQuery(document).ready(function($) {
   
   $('.fb-filter-link').fancybox({
     onStart: function(e) {
-      var pane=$(e[0].href.replace(/^[^#]+/, '')), context;
+      var pane=$(e[0].href.replace(/^[^#]+/, '')),
+          paneName=$(pane).attr('id').replace('controls-filter_', '');
+      if (typeof paneObjList[paneName].preloadForm!=="undefined") {
+        paneObjList[paneName].preloadForm();
+      }
       // reset
       pane.find('.fb-apply').data('clicked', false);
       // regexp extracts the pane ID from the href. Loop through the controls in the pane      
@@ -858,7 +950,10 @@ jQuery(document).ready(function($) {
       $.each(pane.find(':checkbox'), function(idx, ctrl) {
         $(ctrl).attr('checked', typeof indiciaData.filter.def[$(ctrl).attr('name')]!=="undefined" && indiciaData.filter.def[$(ctrl).attr('name')]==$(ctrl).val());
       });
-      var paneName=$(pane).attr('id').replace('controls-filter_', '');
+    },
+    onComplete: function(e) {
+      var pane=$(e[0].href.replace(/^[^#]+/, '')), context, 
+          paneName=$(pane).attr('id').replace('controls-filter_', '');
       // if a context is loaded, need to let the forms configure themselves on this basis
       context = $('#context-filter').length ? indiciaData.filterContextDefs[$('#context-filter').val()] : null;
       $('.context-instruct').hide();
@@ -866,9 +961,6 @@ jQuery(document).ready(function($) {
       if (typeof paneObjList[paneName].loadForm!=="undefined") {
         paneObjList[paneName].loadForm(context);
       }
-    },
-    onComplete: function(e) {
-      var pane=$(e[0].href.replace(/^[^#]+/, ''));
       if (pane[0].id==='controls-filter_where') {
         indiciaData.mapdiv.map.updateSize();
         indiciaData.mapdiv.settings.drawObjectType='queryPolygon';
@@ -953,24 +1045,26 @@ jQuery(document).ready(function($) {
     $(e.currentTarget).find('.fb-apply').data('clicked', true);
     var arrays={}, arrayName;
     // persist each control value into the stored settings
-    $.each($(e.currentTarget).find(':input'), function(idx, ctrl) {
-      if ($(ctrl).attr('type')!=='checkbox' || $(ctrl).attr('checked')) {
-        // array control?
-        if ($(ctrl).attr('name').match(/\[\]$/)) {
-          // store array control data to handle later
-          arrayName=$(ctrl).attr('name').substring(0, $(ctrl).attr('name').length-2);
-          if (typeof arrays[arrayName]==="undefined") {
-            arrays[arrayName] = [];
+    $.each($(e.currentTarget).find(':input[name]'), function(idx, ctrl) {
+      if (!$(ctrl).hasClass('olButton')) { // skip open layers switcher
+        if ($(ctrl).attr('type')!=='checkbox' || $(ctrl).attr('checked')) {
+          // array control?
+          if ($(ctrl).attr('name').match(/\[\]$/)) {
+            // store array control data to handle later
+            arrayName=$(ctrl).attr('name').substring(0, $(ctrl).attr('name').length-2);
+            if (typeof arrays[arrayName]==="undefined") {
+              arrays[arrayName] = [];
+            }
+            arrays[arrayName].push($(ctrl).val());
+          } else {
+            // normal control
+            indiciaData.filter.def[$(ctrl).attr('name')]=$(ctrl).val();
           }
-          arrays[arrayName].push($(ctrl).val());
-        } else {
-          // normal control
-          indiciaData.filter.def[$(ctrl).attr('name')]=$(ctrl).val();
         }
-      }
-      else {
-        // an unchecked checkbox so clear it's value
-        indiciaData.filter.def[$(ctrl).attr('name')]='';
+        else {
+          // an unchecked checkbox so clear it's value
+          indiciaData.filter.def[$(ctrl).attr('name')]='';
+        }
       }
     });
     // convert array values to comma lists
@@ -988,29 +1082,57 @@ jQuery(document).ready(function($) {
   });
   
   var saveFilter = function() {
-    if ($.trim($('#filter-name').val())==='') {
-      alert('Please provide a name for your filter');
-      return;
-    }    
-    var url, filter = {"website_id":indiciaData.website_id, "user_id":indiciaData.user_id, "title":$('#filter-name').val(),
-          "definition":JSON.stringify(indiciaData.filter.def), "sharing":indiciaData.filterSharing};
-    if (indiciaData.filter.id && $('#filter-name').val()===indiciaData.filter.title) {
-      filter.id = indiciaData.filter.id;
+    if (saving) {
+      exit;
     }
-    // If a new filter, then also need to create a filters_users record.
-    url = typeof filter.id==="undefined" ? indiciaData.filterAndUserPostUrl : indiciaData.filterPostUrl;
+    if ($.trim($('#filter\\:title').val())==='') {
+      alert('Please provide a name for your filter.');
+      $('#filter\\:title').focus();
+      return;
+    }
+    if ($('#filters_user\\:user_id').length && $('#filters_user\\:user_id').val()==='') {
+      alert('Please fill in who this filter is for.');
+      $('#filters_user\\:user_id\\:person_name').focus();
+      return;
+    }
+    saving=true;
+    // TODO: Validate user control
+    
+    var adminMode = $('#filters_user\\:user_id').length===1,
+        user_id=adminMode ? $('#filters_user\\:user_id').val() : indiciaData.user_id,
+        sharing=adminMode ? $('#filter\\:sharing').val() : indiciaData.filterSharing,
+        url, 
+        filter = {"website_id":indiciaData.website_id, "user_id":indiciaData.user_id,
+          "filters_user:user_id":user_id, "filter:title":$('#filter\\:title').val(),
+          "filter:description":$('#filter\\:description').val(),
+          "filter:definition":JSON.stringify(indiciaData.filter.def), "filter:sharing":sharing,
+          "filter:defines_permissions":adminMode?'t':'f'};
+    // if existing filter and the title has not changed, or in admin mode, overwrite
+    if (indiciaData.filter.id && ($('#filter\\:title').val()===indiciaData.filter.title || adminMode)) {
+      filter['filter:id'] = indiciaData.filter.id;
+    }
+    // if existing filters_users then hook to same record
+    if (typeof indiciaData.filter.filters_user_id!=="undefined") {
+      filter['filters_user:id']=indiciaData.filter.filters_user_id;
+    }
+    // If a new filter or admin mode, then also need to create a filters_users record.
+    url = (typeof indiciaData.filter.id==="undefined" || indiciaData.filter.id===null || adminMode) ? indiciaData.filterAndUserPostUrl : indiciaData.filterPostUrl;
     $.post(url, filter,
       function (data) {
         if (typeof data.error === 'undefined') {
           alert(indiciaData.lang.FilterSaved);
           indiciaData.filter.id = data.outer_id;
-          indiciaData.filter.title = $('#filter-name').val();
-          $('#standard-params .header h2').html('Active filter: '+$('#filter-name').val());
+          indiciaData.filter.title = $('#filter\\:title').val();
+          indiciaData.filter.filters_user_id=data.struct.children[0].id;
+          $('#active-filter-label').html('Active filter: '+$('#filter\\:title').val());
           $('#standard-params .header span.changed').hide();
           $('#select-filter').val(indiciaData.filter.id);
           if ($('#select-filter').val()==='') {
             // this is a new filter, so add to the select list
-            $('#select-filter').append('<option val="' + indiciaData.filter.id + '" selected="selected">' + indiciaData.filter.title + '</option>');
+            $('#select-filter').append('<option value="' + indiciaData.filter.id + '" selected="selected">' + indiciaData.filter.title + '</option>');
+          }
+          if (indiciaData.redirectOnSuccess!=='') {
+            window.location=indiciaData.redirectOnSuccess;
           }
         } else {
           var handled = false;
@@ -1020,10 +1142,10 @@ jQuery(document).ready(function($) {
                 if (confirm(indiciaData.lang.FilterExistsOverwrite)) {
                   // need to load the existing filter to get it's ID, then resave
                   $.getJSON(indiciaData.read.url + 'index.php/services/data/filter?created_by_id='+indiciaData.user_id+'&title='+
-                      encodeURIComponent($('#filter-name').val())+'&sharing='+indiciaData.filterSharing+
+                      encodeURIComponent($('#filter\\:title').val())+'&sharing='+indiciaData.filterSharing+
                       '&mode=json&view=list&auth_token='+indiciaData.read.auth_token+'&nonce='+indiciaData.read.nonce+'&callback=?', function(data) {
                     indiciaData.filter.id = data[0].id;
-                    indiciaData.filter.title = $('#filter-name').val();
+                    indiciaData.filter.title = $('#filter\\:title').val();
                     saveFilter();
                   });
                 }
@@ -1035,12 +1157,17 @@ jQuery(document).ready(function($) {
             alert(data.error);
           }
         }
+        saving=false;
+        $('#filter-build').html(indiciaData.lang.ModifyFilter);
+        $('#filter-reset').removeClass('disabled');
       },
       'json'
     );
   };
   
+  $('#imp-location').hide();
   $('#filter-save').click(saveFilter);
+  $('#context-filter').change(resetFilter);
   
   filterChange();
   applyDefaults();
