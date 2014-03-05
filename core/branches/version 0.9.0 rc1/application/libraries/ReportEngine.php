@@ -753,6 +753,8 @@ class ReportEngine {
             // idlist is a special parameter type which creates an IN (...) clause. Lets you optionally provide a list
             // of ids for a report.
             $query = preg_replace("/#$name#/", "AND ".$paramDefs[$name]['fieldname']." IN ($value)", $query);
+          elseif ($paramDefs[$name]['datatype']=='excludeidlist')
+            $query = preg_replace("/#$name#/", "AND ".$paramDefs[$name]['fieldname']." NOT IN ($value)", $query);
           elseif ($paramDefs[$name]['datatype']=='smpattrs')
             $query = $this->mergeAttrListParam($query, 'sample', $value);
           elseif ($paramDefs[$name]['datatype']=='occattrs')
