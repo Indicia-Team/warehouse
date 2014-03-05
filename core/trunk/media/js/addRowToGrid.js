@@ -301,14 +301,16 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
         }
       });
     });
-    $(newRow).find('[name$=\\:sampleIDX]').each(function(idx, field) {
-      $(field).val(typeof indiciaData.control_speciesmap_existing_feature==="undefined" || indiciaData.control_speciesmap_existing_feature===null ?
-          indiciaData['gridSampleCounter-'+gridId] :
-          indiciaData.control_speciesmap_existing_feature.attributes.subSampleIndex);
-      //Allows a sample to be generated for each occurrence in the grid if required.
-      var rowNumber=$(field).attr('name').replace('sc:'+gridId+'-','');
-      rowNumber = rowNumber.substring(0,1);
-      $(field).val(rowNumber);
+    $(newRow).find("[name$='\:sampleIDX']").each(function(idx, field) {
+      if (indiciaData['subSamplePerRow-'+gridId]) {
+        //Allows a sample to be generated for each occurrence in the grid if required.
+        var rowNumber=$(field).attr('name').replace('sc:'+gridId+'-','');
+        rowNumber = rowNumber.substring(0,1);
+        $(field).val(rowNumber);
+      } else {
+        $(field).val(typeof indiciaData.control_speciesmap_existing_feature==="undefined" || indiciaData.control_speciesmap_existing_feature===null ?
+            indiciaData['gridSampleCounter-'+gridId] : indiciaData.control_speciesmap_existing_feature.attributes.subSampleIndex);
+      }
     });
     // add the row to the bottom of the grid
     newRow.appendTo('table#' + gridId +' > tbody').removeAttr('id');
