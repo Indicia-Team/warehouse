@@ -1,0 +1,62 @@
+#manual-email {
+  border: solid #cccccc 1px;
+  float: left;
+  padding: 0.5em;
+  background-color: #ffffff;
+}
+
+#manual-email span {
+  float: left;
+  width: 20%;
+  font-weight: bold;
+  clear: left;
+}
+
+#manual-email div {
+  float: left;
+  width: 600px;
+  border: solid #cccccc 1px;
+  margin-bottom: 0.5em;
+  padding: 0.2%;
+}
+
+#send_for_verification_email label {
+  width: 100px;
+}
+
+#send_for_verification_email .error {
+ margin: 2px;
+}
+
+#send_for_verification_email fieldset input, #send_for_verification_email fieldset textarea {
+  width: 400px;
+}
+
+#send_for_verification_email fieldset, #email fieldset {
+  width: 650px;
+}
+
+#comment-popup table {
+  border-collapse: separate;  
+  border-spacing: 0 10pt;
+}
+
+#comment-popup tr {
+  border: solid silver 1px;
+  border: outset 5pt;
+}
+
+#comment-popup  td {
+  vertical-align: top;
+  border: solid #E0E0E0;
+  border-width: 1pt 0;
+  border-right: solid #E0E0E0 1px;
+}
+
+#comment-popup  td.metadata {
+  padding-right: 1.5em;
+  background-color: #F0F0F0;
+  border-left: solid #E0E0E0 1px;
+  border-right: none;
+}
+  
