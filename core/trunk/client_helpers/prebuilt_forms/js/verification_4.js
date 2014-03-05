@@ -5,6 +5,16 @@ var saveComment, saveVerifyComment;
   
   var rowRequest=null, occurrence_id = null, currRec = null, urlSep, validator, speciesLayers = [], 
       trustsCounter, multimode=false, email = {to:'', subject:'', body:'', type:''};
+      
+  mapInitialisationHooks.push(function(div) {
+    // nasty hack to fix a problem where these layers get stuck and won't reload after pan/zoom on IE & Chrome
+    div.map.events.register('moveend', null, function() {
+      $.each(speciesLayers, function(idx, layer) {
+        indiciaData.mapdiv.map.removeLayer(layer);
+        indiciaData.mapdiv.map.addLayer(layer);
+      });
+    });
+  });
 
   // IE7 compatability
   if(!Array.indexOf){
