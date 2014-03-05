@@ -119,7 +119,7 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
   }
  
   /**
-   * Returns the species checklist input control setup so that there is one subsample for each row on the grid.
+   * Returns the species checklist input control setup so that there is one subsample for each tree on the grid.
    * @param array $auth Read authorisation tokens
    * @param array $args Form configuration
    * @param array $options additional options for the control, e.g. those configured in the form structure.
@@ -128,6 +128,79 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
   protected static function get_control_species($auth, $args, $tabAlias, $options) {
     $options['subSamplePerRow']=true;
     $options['speciesControlToUseSubSamples']=true;
+    //When the user enters trees onto the species, then we automatically plot them onto the map.
+    //The is done on load (in edit mode) and onChange
+    data_entry_helper::$javascript .= "
+    mapInitialisationHooks.push(function (div) {
+      var i, featureToRemove;
+      var defaultStyle = new OpenLayers.Style({
+        'pointRadius': 30,
+        'graphicWidth': 16,
+        'graphicHeight': 16,
+        'graphicOpacity': 0.8,
+        'fillOpacity': 0,
+        'strokeColor': 'green',
+        'strokeOpacity': 1,
+        'strokeWidth': 2,
+      });
+      var s = new OpenLayers.StyleMap({
+        'default': defaultStyle, 
+      });
+      //Array to store tree feature id associated with each tree grid ref cell, if this cell changes then we
+      //can change the feature as required
+      var treeFeaturesStore=[];
+      indiciaData.mapdiv = div;
+      treeLayer = new OpenLayers.Layer.Vector('Tree Layer', {styleMap: s});
+      indiciaData.mapdiv.map.addLayer(treeLayer); 
+      //Load tree features in edit mode
+      $(document).ready(function () {
+        $('[class^=\"scGridRef\"]').each(function () {
+          if ($(this).val()) {
+            draw_tree_to_map($(this).val(), $(this).attr('id'), treeFeaturesStore);
+          }
+        });
+      });
+      
+      $('[class^=\"scGridRef\"]').live('change',function () {
+        //Remove old tree when change is made.
+        //Cycle through the array of existing plotted trees, remove it if we find a match (match using id of the onscreen spatial referene text field)
+        for (i=0; i<treeFeaturesStore.length; i++) {
+          if (treeFeaturesStore[i][0]==$(this).attr('id')) {
+            featureToRemove = treeLayer.getFeatureById(treeFeaturesStore[i][1]);
+            treeLayer.removeFeatures(featureToRemove);
+          }
+        }
+        if ($(this).val()) {
+          draw_tree_to_map($(this).val(), $(this).attr('id'), treeFeaturesStore);
+        }
+      });
+    });";
+    //bng = British Nation Grid - Trees only support this spatial reference system
+    //Convert OSGB grid ref to wkt for practical code use.
+    data_entry_helper::$javascript .= "
+    function draw_tree_to_map(bng_ref, fieldId, treeFeaturesStore) {
+      var refString = \"'\" + bng_ref + \"'\";
+      $.getJSON(\"".data_entry_helper::$base_url."/index.php/services/spatial/sref_to_wkt\"+
+        \"?sref=\" + bng_ref +
+        \"&system=\" + \"OSGB\" +
+        \"&callback=?\", 
+        function(data) {
+          if(typeof data.error != 'undefined') {
+            alert(data.error);
+          } else {
+            var attributes = {name: 'tree_map'};
+            var polygon=OpenLayers.Geometry.fromWKT(data.wkt);
+            if (indiciaData.mapdiv.map.projection.getCode() != indiciaData.mapdiv.indiciaProjection.getCode()) {
+              polygon.transform(indiciaData.mapdiv.indiciaProjection, indiciaData.mapdiv.map.projection);
+            }
+            var feature = new OpenLayers.Feature.Vector(polygon, attributes);
+            treeLayer.addFeatures([feature]);
+            //Store the feature against the tree field id, so we can remove it when the value is changed
+            treeFeaturesStore.push([fieldId, feature.id]);
+          }
+        }
+      );
+    }";
     $r = parent::get_control_species($auth, $args, $tabAlias, $options);
     return $r;
   }
@@ -146,7 +219,7 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
     if (isset($values['gridmode']))
       $submission = self::get_splash_subsamples_occurrences_submission($args,$values);
     else
-      drupal_set_message('Please set the page to "gridmode"'); 
+      drupal_set_message('Please set the page to "gridmode"');
     //Cycle through each occurrence
     foreach($submission['subModels'] as &$occurrenceAndSubSampleRecord) {
       //We need to copy the location information to the sub-sample else it won't get
@@ -155,7 +228,7 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
         $occurrenceAndSubSampleRecord['model']['fields']['location_id']['value'] = $submission['fields']['location_id']['value'];
       if (!empty($submission['fields']['location_name']['value']))
         $occurrenceAndSubSampleRecord['model']['fields']['location_name']['value'] = $submission['fields']['location_name']['value'];
-    }  
+    }
     return($submission);
   }
  
@@ -206,7 +279,7 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
    */
   public static function create_splash_subsample_occurrence_structure($arr, $include_if_any_data=false,
           $zero_attrs, $zero_values=array('0','None','Absent'), $args) {
-
+   
     if (array_key_exists('website_id', $arr)){
       $website_id = $arr['website_id'];
     } else {
@@ -225,8 +298,8 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
         $b = explode(':', $a[3], 2);
         if($b[0] != "sample" && $b[0] != "smpAttr"){
           $treeOccurrenceRecords[$a[1]][$a[3]] = $value;
-          if($a[2]) $treeOccurrenceRecords[$a[1]]['id'] = $a[2]; 
-        }  
+          if($a[2]) $treeOccurrenceRecords[$a[1]]['id'] = $a[2];
+        } 
       }
       if (substr($key, 0, 3)=='sc:' && substr($key, 3, 9)=='Epiphytes'){
         $a = explode(':', $key, 4);
@@ -234,7 +307,7 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
         if($b[0] != "sample" && $b[0] != "smpAttr"){
           $epiphyteRecords[$a[1]][$a[3]] = $value;
           if($a[2]) $epiphyteRecords[$a[1]]['id'] = $a[2];
-        }  
+        } 
       }
     }
     foreach ($treeOccurrenceRecords as $key=>$treeOccurrenceRecord) {
@@ -256,7 +329,7 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
       $keepOccurrence=false;
       foreach ($subSampleModel['model']['subModels'] as $occurrencesForTreeIdx => $occurrencesForTree) {
         //Cycle through the values that make up the Epiphyte record.
-        foreach ($occurrencesForTree['model']['fields'] as $itemKey=>$itemValueArray) { 
+        foreach ($occurrencesForTree['model']['fields'] as $itemKey=>$itemValueArray) {
           //If in edit mode, the key format can 'occAttr:<attribute id>:<attribute value id>', but when we do our tests we want to ignore the
           //attribute value id
           $itemKeyParts=explode(':',$itemKey);
@@ -268,10 +341,10 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
           unset($subSampleModel['model']['subModels'][$occurrencesForTreeIdx]);
         $keepOccurrence=false;
       }
-    }
+      }
     foreach ($subModels as $treeIdx=>&$subSampleModel) {
       //If we unset any Epiphyte occurrences, there will be gaps in the arrays numbering, so reset the array numbering
-      $subSampleModel['model']['subModels'] = array_values($subSampleModel['model']['subModels']);   
+      $subSampleModel['model']['subModels'] = array_values($subSampleModel['model']['subModels']);
       //When we have removed the Epiphyte records we don't want, then if there isn't even a tree occurrence for the sub-sample,
       //then we can remove the sub-sample completely
       if (empty($subSampleModel['model']['subModels'])) {
@@ -288,13 +361,13 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
               if ($occurrenceRecordItem)
                 $subSampleModel['model']['fields']['entered_sref']['value']=$occurrenceRecordItem;
                 $subSampleModel['model']['fields']['entered_sref_system']['value']='OSGB';
+              }
             }
           }
-        }
         //Cycle through the parts that make up the Epiphyte rows on the grid.
         foreach ($epiphyteRecords as $epiphyteRecord) {   
           $present = self::wrap_species_checklist_record_present($epiphyteRecord, $include_if_any_data,
-            true, $zero_values, array($args['occurrence_record_grid_id']));       
+              true, $zero_values, array($args['occurrence_record_grid_id']));
           //If there is an existing records, and the user unchecks the presence checkbox, then delete the occurrence.
           if (array_key_exists('id', $epiphyteRecord)) {
             if ($present==0) {
@@ -303,51 +376,51 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
               $epiphyteOccModel['model']['fields']['zero_abundance']['value']=$present ? 'f' : 't';
           }
           foreach ($epiphyteRecord as $itemKey=>$epiphyteRecordItemValue) {
-            //These fields are part of the basic submission structure
-            $epiphyteOccModel['fkId']='sample_id';
-            $epiphyteOccModel['model']['id']='occurrence';
+                //These fields are part of the basic submission structure
+                $epiphyteOccModel['fkId']='sample_id';
+                $epiphyteOccModel['model']['id']='occurrence';          
             $itemKeyParts=explode(':',$itemKey);
-            //If there is an id we are dealing with an existing epiphyte occurrence record
+                //If there is an id we are dealing with an existing epiphyte occurrence record
             if (!empty($epiphyteRecord['id'])) {
               $epiphyteOccModel['model']['fields']['id']['value']=$epiphyteRecord['id'];
-            }
+                }
             //Create an occurrence if an Epiphyte is ticked as being present
             if ($itemKeyParts[0]=='occAttr' && $itemKeyParts[1]==$treeEpiCountOccAttr[$treeIdx] && !empty($epiphyteRecordItemValue)) {
-              //The different elements of the occurrence record are of the form occAttr:<occurrence attribute number> or if it already exists in the database
-              //it is occAttr:<occurrence attribute id>:<occurrence attribute value id>. If we explode this key by ":" character, then if the
-              //3rd item (index 2) of the resulting explosion is populated then we know we are dealing with editing of existing data rather than new data.
-              if (!empty($itemKeyParts[2]))
+                //The different elements of the occurrence record are of the form occAttr:<occurrence attribute number> or if it already exists in the database
+                //it is occAttr:<occurrence attribute id>:<occurrence attribute value id>. If we explode this key by ":" character, then if the
+                //3rd item (index 2) of the resulting explosion is populated then we know we are dealing with editing of existing data rather than new data.
+                if (!empty($itemKeyParts[2]))
                 $epiphyteOccModel['model']['fields']['occAttr:'.$itemKeyParts[1].':'.$itemKeyParts[2]]['value']=$epiphyteRecord['occAttr:'.$itemKeyParts[1].':'.$itemKeyParts[2]];
-              else
+                else
                 $epiphyteOccModel['model']['fields']['occAttr:'.$itemKeyParts[1]]['value']=$epiphyteRecord['occAttr:'.$itemKeyParts[1]];
               if (!empty($epiphyteRecord['present']))
                 $epiphyteOccModel['model']['fields']['present']['value']=$epiphyteRecord['present'];
-              if (!empty($epiphyteOccModel['model']['fields']['present']['value']))
-                $epiphyteOccModel['model']['fields']['taxa_taxon_list_id']['value']=$epiphyteOccModel['model']['fields']['present']['value'];
+                if (!empty($epiphyteOccModel['model']['fields']['present']['value']))
+                  $epiphyteOccModel['model']['fields']['taxa_taxon_list_id']['value']=$epiphyteOccModel['model']['fields']['present']['value'];
 
-              $epiphyteOccModel['model']['fields']['record_status']['value']='C';
-              $epiphyteOccModel['model']['fields']['website_id']=$website_id;
-              //Create the attribute that tells the system which grid the occurrence is associated with, used for reloading page.
-              //In this case we want to display the Epiphyte occurrences onto the free text grid (even if they were created on the pre-populated grid.
-              //Trees are loaded onto the same grid they were created on. We only need to do this in add mode as field doesn't need changing after that.
-              if (empty($itemKeyParts[2]))
-                $epiphyteOccModel['model']['fields']['occAttr:'.$args['occurrence_record_grid_id']]['value']='Epiphytes-free';
-              //Add the Epiphyte to the sub-models of the tree sub-sample
-              if (!empty($epiphyteOccModel['model']['fields'])) {        
-                $subSampleModel['model']['subModels'][]=$epiphyteOccModel;
-                $epiphyteOccModel=array();
-              }    
+                $epiphyteOccModel['model']['fields']['record_status']['value']='C';
+                $epiphyteOccModel['model']['fields']['website_id']=$website_id;
+                //Create the attribute that tells the system which grid the occurrence is associated with, used for reloading page.
+                //In this case we want to display the Epiphyte occurrences onto the free text grid (even if they were created on the pre-populated grid.
+                //Trees are loaded onto the same grid they were created on. We only need to do this in add mode as field doesn't need changing after that.
+                if (empty($itemKeyParts[2]))
+                  $epiphyteOccModel['model']['fields']['occAttr:'.$args['occurrence_record_grid_id']]['value']='Epiphytes-free';
+                //Add the Epiphyte to the sub-models of the tree sub-sample
+                if (!empty($epiphyteOccModel['model']['fields'])) {       
+                  $subSampleModel['model']['subModels'][]=$epiphyteOccModel;
+                  $epiphyteOccModel=array();
+                }   
+              }
+            }
+            //If there are no Epiphytes present in the checkboxes on the row, it might be because the user is deleting the record,
+            //so it still needs to be submitted for deletion
+            if (!empty($epiphyteOccModel['model']['fields'])) {       
+              $subSampleModel['model']['subModels'][]=$epiphyteOccModel;
+              $epiphyteOccModel=array();
             }
           }
-          //If there are no Epiphytes present in the checkboxes on the row, it might be because the user is deleting the record,
-          //so it still needs to be submitted for deletion
-          if (!empty($epiphyteOccModel['model']['fields'])) {        
-            $subSampleModel['model']['subModels'][]=$epiphyteOccModel;
-            $epiphyteOccModel=array();
-          } 
-        }  
+        } 
       }
-    }
     $subModels = array_values($subModels);
     return $subModels;
   }
@@ -388,7 +461,7 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
       $nonZeroCount=0;
       foreach ($record as $field=>$value) {
         // Is this a field used to trap zero abundance data, with a zero value
-        if (preg_match("/occAttr:$ids(:\d+)?$/", $field)) { 
+        if (preg_match("/occAttr:$ids(:\d+)?$/", $field)) {
           if (in_array($value, $zero_values))
             $zeroCount++;
           else
