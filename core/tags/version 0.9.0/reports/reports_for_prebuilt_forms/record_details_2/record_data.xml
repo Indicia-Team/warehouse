@@ -1,0 +1,44 @@
+<report
+    title="Record data for record details"
+    description="Report used to retrieve details of a record excluding custom attributes for the record details 2 prebuilt form."
+>
+  <query website_filter_field="o.website_id">
+  select #columns#
+  from cache_occurrences co
+  join occurrences o on o.id=co.id and o.deleted=false
+  join samples s on s.id=o.sample_id and s.deleted=false
+  join users u on u.id=o.created_by_id
+  join people p on p.id=u.person_id
+  #agreements_join#
+  #joins#
+  where co.id=#occurrence_id#
+  </query>
+  <params>
+    <param name='occurrence_id' display='Occurrence ID' description='ID of the occurrence to load' datatype='text' />
+  </params>
+  <columns>
+    <column name='occurrence_id' sql='co.id' />
+    <column name='taxon' sql="case co.zero_abundance when true then '&lt;span class=&quot;zero-abundance&quot;&gt;' || co.taxon || '&lt;span&gt; - zero abundance found' else co.taxon end" />
+    <column name='preferred_taxon' sql='CASE co.preferred_taxon WHEN co.taxon THEN null ELSE co.preferred_taxon END' />
+    <column name='survey_title' sql='co.survey_title' />
+    <column name='recorder' sql='co.recorders' />
+    <column name='inputter' sql="case p.surname || case when p.first_name is null or p.first_name='' then '' else ', ' || p.first_name end 
+        when co.recorders then null
+        else p.surname || case when p.first_name is null or p.first_name='' then '' else ', ' || p.first_name end end" />
+    <column name='record_status' visible="false" 
+        sql="CASE co.record_status WHEN 'C' THEN 'Awaiting verification' WHEN 'I' THEN 'Data entry in progress' WHEN 'R' THEN 'Rejected' WHEN 'D' THEN 'Dubious' WHEN 'V' THEN 'Verified' WHEN 'S' THEN 'Email query sent' END
+        || CASE WHEN o.sensitivity_precision IS NOT NULL THEN '&lt;br/&gt;This record is sensitive.' ELSE '' END" />
+    <column name='verifier' sql='co.verifier' />
+    <column name='date' sql='s.date_start' />
+    <column name='entered_sref' sql='co.public_entered_sref' />
+    <column name='occurrence_comment' sql='o.comment' />
+    <column name='location_name' sql="co.location_name" />
+    <column name='sample_comment' sql='case when o.sensitivity_precision is null then s.comment else null end' />
+    <column name='geom' sql="st_astext(co.public_geom)" />
+    <column name='sensitivity_precision' sql="o.sensitivity_precision" />
+    <column name='created_by_id' sql='co.created_by_id' />
+    <column name='website_id' sql='co.website_id' />
+    <column name='input_form' sql='co.input_form' />
+    <column name='taxon_meaning_id' sql='co.taxon_meaning_id' />
+  </columns>
+</report>

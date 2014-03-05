@@ -1,0 +1,57 @@
+<report
+    title="Occurrence attribute values list"
+    description="A list of occurrence attribute values, filterable by occurrence, sample or parent sample ID."
+>
+<query website_filter_field="o.website_id">
+  SELECT #columns#
+  from occurrence_attribute_values oav
+  join occurrences o on o.id=oav.occurrence_id and o.deleted=false
+  join occurrence_attributes oa on oa.id=oav.occurrence_attribute_id and oa.deleted=false
+  LEFT JOIN cache_termlists_terms ctt on ctt.id=oav.int_value AND oa.data_type='L'
+  #agreements_join#
+  #joins#
+  WHERE oav.deleted=false
+  AND #sharing_filter#   
+</query>
+<params>
+  <param name="parent_sample_id" display="Parent Sample Id" description="Parent sample to retrieve values for." datatype="text" default="">
+    <join>join samples s on s.id=o.sample_id and s.deleted=false and s.parent_id=#parent_sample_id#</join>
+  </param>  
+</params>
+<columns>
+  <column name="id" display="Attribute Value Id" sql="oav.id" datatype="integer" />
+  <column name="occurrence_id" display="Occurrence Id" sql="o.id" datatype="integer" />
+  <column name="sample_id" display="Sample Id" sql="o.sample_id" datatype="integer" />
+  <column name="taxa_taxon_list_id" display="Taxa taxon lists Id" sql="o.taxa_taxon_list_id" datatype="integer" />
+  <column name="data_type" display="Occurrence Attribute Data Type" sql="
+          CASE oa.data_type
+            WHEN 'T'::bpchar THEN 'Text'::bpchar
+            WHEN 'L'::bpchar THEN 'Lookup List'::bpchar
+            WHEN 'I'::bpchar THEN 'Integer'::bpchar
+            WHEN 'B'::bpchar THEN 'Boolean'::bpchar
+            WHEN 'F'::bpchar THEN 'Float'::bpchar
+            WHEN 'D'::bpchar THEN 'Specific Date'::bpchar
+            WHEN 'V'::bpchar THEN 'Vague Date'::bpchar
+            ELSE oa.data_type
+          END" />
+  <column name="value" display="Occurrence Attribute Value" sql="
+          CASE oa.data_type
+            WHEN 'T'::bpchar THEN oav.text_value
+            WHEN 'L'::bpchar THEN oav.int_value::character varying::text
+            WHEN 'I'::bpchar THEN oav.int_value::character varying::text
+            WHEN 'B'::bpchar THEN oav.int_value::character varying::text
+            WHEN 'F'::bpchar THEN oav.float_value::character varying::text
+            WHEN 'D'::bpchar THEN oav.date_start_value::character varying::text
+            WHEN 'V'::bpchar THEN (oav.date_start_value::character varying::text || ' - '::text) || oav.date_end_value::character varying::text
+            ELSE NULL::text
+          END" />
+  <column name="value_text" display="Occurrence Attribute Value Text Value" sql="oav.text_value" datatype="text" />
+  <column name="value_int" display="Occurrence Attribute Value Int Value" sql="oav.int_value" datatype="int" />
+  <column name="value_float" display="Occurrence Attribute Value Float Value" sql="oav.float_value" datatype="float" />
+  <column name="value_date_start" sql="oav.date_start_value" visible="false" />
+  <column name="value_date_end" sql="oav.date_end_value" visible="false" />
+  <column name="value_date_type" sql="oav.date_type_value" visible="false" />
+  <column name="date" display="Date" datatype="date" />
+  <column name="term" display="Term" sql="ctt.term" datatype="text" />
+</columns>
+</report>

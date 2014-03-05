@@ -1,0 +1,162 @@
+#iform-header {
+  height: 108px;
+}
+.government-logo {
+  height: 100px;
+}
+.gabriel-lippmann-logo {
+  height: 50px;
+}
+#iform-logo-left {
+	float: left;
+}
+#iform-logo-right {
+	float: right;
+}
+.deh-required {
+  color:red;
+}
+.control-box {
+  display:inline  !important;
+}
+.mnhnl-species-grid input, .mnhnl-species-grid select {
+  width: 95%;
+  margin: 0;
+}
+.mnhnl-species-grid td {
+  padding: 4px;
+}
+.scOccAttrCell label {
+  margin-right: 15px;
+  width: auto;
+}
+.scOccAttrCell input[type='radio'] {
+  width: auto;
+}
+input.scNumAlive {
+  margin-top: 4px;
+  width: 30px;
+}
+input.scNumDead {
+  margin-top: 4px;
+  width: 30px;
+}
+input.scExcrement {
+  margin-top: 4px;
+  width: auto;
+}
+select.scOccurrenceReliability {
+  margin-top: 4px;
+  width: auto;
+}
+.scCommentTable {
+  margin: 0;
+  width:100%;
+}
+.scCommentTableBody {
+  border-top: 0px;
+}
+td.scCommentLabelCell {
+  padding:0;
+}
+input.scComment {
+  width:99%;
+}
+p.inline-error {
+  margin-left: 0;	
+  margin-bottom: 0;
+  margin-top: 4px;
+  margin-right: 20px;	
+  display: inline;  
+}
+span.extra-text {
+  margin-left: 20px;	
+  margin-bottom: 0;
+  margin-top: 4px;
+  margin-right: 0;	
+}
+.mnhnl-species-grid td.noPadding {
+  padding: 0;
+}
+#pointgridtable input[type='text'] {
+  width: 100px;
+}
+
+.fullWidth {
+  width: 100%;
+  margin: 0;
+}
+.data {
+  margin-right: 15px;	
+}
+.remove-row {
+  color:red !important;
+}
+.narrow {
+  width: 30px;
+}
+.control-box {
+  display:inline  !important;
+}
+label.auto-width {
+	width: auto;
+}
+label.prepad {
+  padding-left: 20px;	
+}
+.coords-text {
+  margin-top: 4px;
+  margin-left: 20px;	
+}div.olControlEditingToolbar div.olControlCancelSketchItemInactive {
+  background-image: url("../images/mnhnl-mod-toolbar.png");
+  background-position: 0px 0px;
+}
+div.olControlEditingToolbar div.olControlUndoSketchPointItemInactive {
+  background-image: url("../images/mnhnl-mod-toolbar.png");
+  background-position: -25px 0px;
+}
+
+div.olControlEditingToolbar div.olControlRemoveNewSiteItemInactive {
+  background-image: url("../images/mnhnl-mod-toolbar.png");
+  background-position: -50px 0px;
+}
+
+div.olControlEditingToolbar div.olControlZoomToSiteItemInactive {
+  background-image: url("../images/mnhnl-mod-toolbar.png");
+  background-position: -75px 0px;
+}
+
+div.olControlEditingToolbar div.olControlZoomToSquareItemInactive {
+  background-image: url("../images/mnhnl-mod-toolbar.png");
+  background-position: -100px 0px;
+}
+
+div.olControlEditingToolbar div.olControlZoomToCountryItemInactive {
+  background-image: url("../images/mnhnl-mod-toolbar.png");
+  background-position: -125px 0px;
+}
+
+div.olControlEditingToolbar div.olControlStartNewSiteItemInactive {
+  background-image: url("../images/mnhnl-mod-toolbar.png");
+  background-position: -150px 0px;
+}
+
+div.olControlEditingToolbar  {
+    width: 500px;
+}
+#imp-srefX {
+	width: 60px;
+}
+#imp-srefY {
+	width: 60px;
+}
+#samples-grid td {
+  padding: 2px;
+  border: solid silver 1px;
+}
+#mousePos {
+  background-color: #FFFFFF;
+  float: right;
+  margin-top: 7px;
+  margin-right: 20px;
+}

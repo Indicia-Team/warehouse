@@ -1,0 +1,40 @@
+<report
+    title="Get plot details"
+    description="Get the details of a plot for use on an input form when a plot is selected."
+>
+  <query website_filter_field="lw.website_id">
+    SELECT #columns#
+    FROM locations plot
+      LEFT JOIN locations_websites lw on lw.location_id=plot.id AND lw.deleted=false
+      LEFT JOIN termlists_terms ttPlotType on ttPlotType.id = plot.location_type_id
+      LEFT JOIN terms termPlotType on termPlotType.id = ttPlotType.term_id
+      LEFT JOIN location_attribute_values lavCounty on lavCounty.location_id=plot.parent_id AND lavCounty.location_attribute_id='#vice_county_name_attribute_id#'
+      LEFT JOIN location_attribute_values lavOrientation on lavOrientation.location_id=plot.id AND lavOrientation.location_attribute_id='#orientation_attribute_id#'
+      LEFT JOIN location_attribute_values lavAspect on lavAspect.location_id=plot.id AND lavAspect.location_attribute_id='#aspect_attribute_id#'
+      LEFT JOIN location_attribute_values lavSlope on lavSlope.location_id=plot.id AND lavSlope.location_attribute_id='#slope_attribute_id#'
+      LEFT JOIN location_attribute_values lavAsh on lavAsh.location_id=plot.id AND lavAsh.location_attribute_id='#ash_attribute_id#'
+    WHERE (plot.id = #plot_id#)
+    AND #website_filter# AND plot.deleted=false
+  </query>
+  <order_bys>
+    <order_by>plot.id</order_by>
+  </order_bys>
+  <params>
+    <param name="plot_id" display="Id of the plot" datatype="integer"/>
+    <param name="vice_county_name_attribute_id" display="Id of the Vice County Name Attribute" datatype="integer"/>
+    <param name="orientation_attribute_id" display="Id of the Orientation Location Attribute" datatype="integer"/>
+    <param name="aspect_attribute_id" display="Id of the Aspect Location Attribute" datatype="integer"/>
+    <param name="slope_attribute_id" display="Id of the Slope Location Attribute" datatype="integer"/>
+    <param name="ash_attribute_id" display="Id of the Ash Location Attribute" datatype="integer"/>
+  </params>
+  <columns>
+    <column name='id' display='Plot ID' sql="plot.id" datatype='integer' visible="false" in_count="true"/>
+    <column name='type' display='Plot Type' sql="termPlotType.term" datatype='text' />
+    <column name='description' display='Plot Description' sql="plot.comment" datatype='text'/>
+    <column name='county' display='Vice County' sql="lavCounty.text_value" datatype='text' />
+    <column name='orientation' display='Plot Orientation' sql="lavOrientation.text_value" datatype='text'/>
+    <column name='aspect' display='Plot Aspect' sql="lavAspect.text_value" datatype='text'/>
+    <column name='slope' display='Plot Slope' sql="lavSlope.text_value" datatype='text'/>
+    <column name='ash' display='Plot Ash Cover %' sql="lavAsh.int_value" datatype='integer'/>
+  </columns>
+</report>

@@ -1,0 +1,95 @@
+.wiz-prog {
+  width: 94%;
+  padding: 1% 0 1% 1%;
+  margin: 2%;
+  border-width: 2px;
+}
+
+.wiz-prog li {
+  text-align: center;  
+  position: relative;  
+  padding: 0;
+  float: left;
+  list-style: none;
+  background: none;
+}
+
+.wiz-prog li.arrow-block {
+  border-style: solid  none solid solid;
+  border-width: 2px;  
+  height: 20px;
+  margin-right: 0;
+}
+
+.wiz-prog li.arrow-head {
+  margin-left: 0;
+  margin-right: 8px;
+  background: no-repeat top right;
+  width: 20px;
+  height: 24px;
+}
+
+.wiz-prog li a {
+  display: block;
+  width: 100%;
+  height: 100%;
+  vertical-align: bottom;
+  text-decoration: none;
+}
+
+.wiz-prog li {
+  opacity: 0.5;
+  border-color: #52bb55;
+}
+
+.wiz-prog li.wiz-complete {
+  opacity: 0.4;
+  border-color: #aaaaaa;
+}
+
+.wiz-prog li.wiz-selected {
+  opacity: 1;
+  border-color: #efad68;
+}
+
+.wiz-prog li.wiz-disabled {
+  opacity: 0.4;
+  border-color: #ff6060;
+}
+
+.wiz-prog li.arrow-head {
+  background-image: url(../images/arrow-head-green.gif);
+}
+
+.wiz-prog li.arrow-head.wiz-complete {
+  background-image: url(../images/arrow-head-complete.gif);
+}
+
+.wiz-prog li.arrow-head.wiz-selected {
+  background-image: url(../images/arrow-head-amber.gif);
+}
+
+.wiz-prog li.arrow-head.wiz-disabled { 
+  background-image: url(../images/arrow-head-red.gif);
+}
+
+.wiz-prog li.wiz-hover {
+  opacity: 1;
+}
+.wiz-prog li.wiz-selected a,
+.wiz-prog li.wiz-disabled a{
+  cursor: text;
+}
+.wiz-prog li a{
+  cursor: pointer;
+  color: #333333;
+}
+.wiz-prog li span {
+  display: block;
+  overflow: hidden;
+}
+
+.wiz-enabled {
+  cursor: pointer;
+  opacity: 1 !important;
+}

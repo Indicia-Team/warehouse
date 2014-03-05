@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="UKBMS Sample Download Report" description="Lists saved samples. Normally invoked from download bar on annual summary page.">
+  <params>
+    <param name='survey_id' display='Survey' description='Select the survey, or leave for all surveys' datatype='lookup'
+        population_call='direct:survey:id:title' />
+    <param name='date_from' display='Date From' datatype='date'/>
+    <param name='date_to' display='Date To' datatype='date'/>
+    <param name='user_id' display='Indicia User ID' description='Enter the Indicia ID of the user' datatype='int'/>
+    <param name='location_id' display='Location ID' description='Enter the ID of the location' datatype='int' />
+    <param name='location_list' display='Location List' description='Enter a bracket enclosed, comma separated list of location IDs' datatype='text' default='(-1)' />
+  </params>
+  <table tablename="samples" where="#this#.deleted = FALSE
+      and #this#.parent_id IS NULL
+      and #this#.survey_id = #survey_id#
+      AND ('#user_id#'='' OR CAST(#this#.created_by_id AS character varying)='#user_id#')
+      AND #this#.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date)
+      AND #this#.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date)"
+      >
+    <tabColumn name='id' display='Sample ID' visible='true'/>
+    <subTable tablename="locations" where="('#location_id#'='' OR CAST(#this#.id AS character varying) = '#location_id#')
+        AND ('#location_list#'='(-1)' OR #this#.id IN #location_list#)" > // allow deleted Sites!
+      <tabColumn name='id' visible='false' />
+      <tabColumn name='name' display='Site name'/>
+      <tabColumn name='code' display='Site Code' />
+      <tabColumn name='centroid_sref' display='Site Grid Ref.'/>
+    </subTable>
+    <tabColumn name='date_start' visible='false'/>
+    <tabColumn name='date_end' visible='false'/>
+    <tabColumn name='date_type' visible='false'/>
+    <tabColumn name='date' func="''" display='Visit date'/> // dummy field for the vague date processing, here so appears at logical position and with reasonable description in the report
+    <tabColumn name='comment' display='Notes'/>
+    <tabColumn name='entered_sref' display='Grid Ref.' />
+    <attributes separator='|' />
+    <tabColumn name='mean_sun' display='Mean % Sun' func="(SELECT AVG(savs.int_value) FROM samples ss JOIN sample_attribute_values savs ON savs.sample_id = ss.id AND savs.deleted = FALSE JOIN sample_attributes sas ON savs.sample_attribute_id = sas.id AND sas.deleted = FALSE AND sas.caption = '% sun' WHERE #this#.id = ss.parent_id AND ss.deleted = FALSE)"/>
+  </table>
+</report>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Dot Map Sample Report" description="Details all occurrences associated with a top level sample. Normally invoked from Occurrence List tab on the form.">
+  <params>
+    <param name='sample_id' display='Sample: ' description='ID of sample to return data for' datatype='int' />
+    <param name='language' display='Language: ' description='ISO code of language for common names' datatype='int' />
+  </params>
+  <query>SELECT DISTINCT ON (lt1.id) lt0.id AS lt0_id, lt0.date_start AS lt0_date_start, lt0.date_end AS lt0_date_end, lt0.date_type AS lt0_date_type, '' AS lt0_date, 
+lt0.entered_sref AS lt0_entered_sref, lt2.taxon_meaning_id AS lt2_taxon_meaning_id, lt4.taxon AS lt4_taxon, lt7.taxon AS lt7_taxon, 
+lt7.external_key AS lt7_external_key, lt8.id AS lt8_id, lt8.title AS lt8_title , lt6.common_taxon_id, lt4.id
+FROM samples lt0 
+INNER JOIN occurrences lt1 ON (lt1.sample_id = lt0.id AND  lt1.deleted = FALSE)  
+INNER JOIN taxa_taxon_lists lt2 ON (lt2.id = lt1.taxa_taxon_list_id AND lt2.deleted = FALSE)  
+-- latin
+INNER JOIN taxa_taxon_lists lt6 ON (lt6.taxon_meaning_id = lt2.taxon_meaning_id AND lt6.deleted = FALSE AND lt6.preferred='t')  
+INNER JOIN taxa lt7 ON (lt7.id = lt6.taxon_id AND lt7.deleted = FALSE)  INNER JOIN surveys lt8 ON (lt8.id = lt0.survey_id AND lt8.deleted = FALSE)  
+-- name in user's language
+LEFT JOIN (taxa_taxon_lists lt3
+INNER JOIN taxa lt4 ON (lt4.id = lt3.taxon_id AND lt4.deleted = FALSE)  
+INNER JOIN languages lt5 ON (lt5.id = lt4.language_id AND lt5.deleted = FALSE AND lt5.iso='#language#')) ON (lt3.taxon_meaning_id = lt2.taxon_meaning_id AND lt3.deleted = FALSE)  
+WHERE lt0.id = #sample_id#
+-- force distinct on to pick up preferred common name if available
+ORDER BY lt1.id ASC, (lt6.common_taxon_id=lt4.id) DESC
+</query>
+  <params>
+    <param name='sample_id' display='Sample: ' description='ID of sample to return data for' datatype='int' />
+    <param name='language' display='Language: ' description='ISO code of language for common names' datatype='int' />
+  </params>
+
+</report>

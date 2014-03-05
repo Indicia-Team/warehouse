@@ -1,0 +1,24 @@
+<report
+    title="Get plots for square id"
+    description="Get a list of plots associated with a given square ID."
+>
+  <query website_filter_field="lw.website_id">
+    SELECT #columns#
+    FROM locations plot
+      LEFT JOIN locations_websites lw on lw.location_id=plot.id AND lw.deleted=false
+      LEFT JOIN termlists_terms ttPlotType on ttPlotType.id = plot.location_type_id
+      LEFT JOIN terms termPlotType on termPlotType.id = ttPlotType.term_id
+    WHERE (plot.parent_id = #square_id#)
+    AND #website_filter# AND plot.deleted=false
+  </query>
+  <order_bys>
+    <order_by>plot.id</order_by>
+  </order_bys>
+  <params>
+    <param name="square_id" display="Todo" datatype="integer"/>
+  </params>
+  <columns>
+    <column name='id' display='Plot ID' sql="plot.id" datatype='integer' visible="false" in_count="true"/>
+    <column name='name' display='Plot Name' sql="'Plot at ' || plot.centroid_sref || ' ('||  termPlotType.term || ') '" datatype='text' />
+  </columns>
+</report>

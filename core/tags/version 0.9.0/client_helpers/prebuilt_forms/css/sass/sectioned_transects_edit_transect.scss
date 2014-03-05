@@ -1,0 +1,53 @@
+@import "compass/css3";
+@import "sassy-buttons";
+
+/* Change labels to fit on narrower space available */
+
+$label-width: 140px;
+$sb-padding: .3em 1em;
+
+label {
+  width: $label-width;
+}
+
+.helpText {
+  margin-left: $label-width + 4px;
+}
+
+.section-select {
+  @include inline-block;
+  margin: 0;
+  
+  li {
+    @include inline-block;
+    @include sassy-button("simple", 3px, 12px, #4ba3cc);   
+    margin: 0 0.5em;
+  }
+  
+  li.selected {
+    @include sassy-button("simple", 3px, 12px, #777700);   
+    @include sassy-button-style("inset", #777700);
+  }
+  
+  li.missing:not(.selected) {
+    @include opacity(0.5);
+  }
+  
+  li.missing.selected {
+    @include opacity(0.7);
+  }
+}
+
+.section-delete {
+  @include inline-block;
+  margin: 0;
+}
+
+.waiting-button {  background: transparent url(/misc/throbber.gif) no-repeat 50% -18px  !important ;}
+
+
+/* Hide the sections that still need to be drawn on the details tab as they are not in DB yet. */
+
+#section-details .missing {
+  display: none;
+}

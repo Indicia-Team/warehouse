@@ -1,0 +1,20 @@
+  <report
+    title="Get Count Unit Annotations"
+    description="Return a list of annotations associated with the parent count unit."
+>
+  <query website_filter_field="lw.website_id">
+    SELECT DISTINCT #columns#
+    FROM locations l
+      LEFT JOIN locations_websites lw ON lw.location_id=l.id and lw.deleted=false
+    WHERE l.location_type_id != #count_unit_boundary_location_type_id# AND l.deleted = false AND #website_filter# AND l.parent_id=#count_unit_id#
+    ORDER BY l.id desc
+  </query>
+  <params>
+    <param name="count_unit_id" datatype="integer"/>
+    <param name="count_unit_boundary_location_type_id" datatype="integer"/>
+  </params>
+  <columns>
+    <column name="id" display="ID" sql="l.id"/>
+    <column name="name" display="Name" sql="l.name"/>
+  </columns>
+</report>

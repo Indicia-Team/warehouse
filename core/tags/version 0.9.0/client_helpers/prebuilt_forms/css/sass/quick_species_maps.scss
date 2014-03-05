@@ -1,0 +1,56 @@
+@import "compass/css3";
+
+div {
+  #rightcol {
+    width: 49%; 
+    float: right;
+    @include box-shadow(silver 3px 3px 6px);
+    border: solid silver 1px;
+  }
+  #leftcol {
+    width: 49%; 
+    float: left;
+    @include box-shadow(silver 3px 3px 6px);
+    border: solid silver 1px;
+  }
+  #layerbox {
+    padding: 0 1em;
+    height:90px;
+    ul li {
+      background: none;
+      vertical-align: middle;
+      input {
+        margin: 0 0.5em;
+        vertical-align: middle;
+      }
+      img {
+        margin: 0 0.5em;
+        vertical-align: middle;
+      }
+    }
+  }
+}
+
+#report-params {
+  fieldset { 
+    border: none;
+    margin: 0;
+    padding: 0 1em;
+    legend {
+      display: none;
+    }
+  }
+  div.fieldset-wrapper > * {
+    @include inline-block;
+  }
+  .param-container > * {
+    vertical-align: middle;
+  }
+  label, input {
+    width: auto;
+    margin: 0.1em 0.25em 0.1em 0.5em;
+  }
+  input[type="checkbox"] {
+    
+  }
+}

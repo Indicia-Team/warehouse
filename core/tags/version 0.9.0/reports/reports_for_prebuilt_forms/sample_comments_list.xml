@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report
+    title="Sample Comments List"
+    description="Form Internal Report: Used to retrieve the sample comments associated with a sample."
+>
+  <query>
+  SELECT sc.id AS sample_comment_id,
+     sc."comment" AS sample_comment, 
+     sc.person_name AS created_by, 
+     sc.created_on 
+   FROM sample_comments sc
+  WHERE sc.deleted = false
+  AND sc.person_name IS NOT NULL
+  AND #sample_id# = sc.sample_id
+  UNION
+  SELECT sc.id AS sample_comment_id,
+     sc."comment" AS sample_comment, 
+     c.username AS created_by, 
+     sc.created_on 
+   FROM sample_comments sc
+   JOIN users c ON c.id = sc.created_by_id
+  WHERE sc.deleted = false
+  AND sc.person_name IS NULL
+  AND #sample_id# = sc.sample_id
+  #order_by#
+  </query>
+  <order_bys>
+    <order_by>sample_comment_id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='sample_id' display='Sample: ' description='Select the sample to return comments for?' datatype='int' />
+  </params>
+  <columns>
+    <column name='sample_comment_id' visible='false' />
+    <column name='created_on' display='Date' />
+    <column name='created_by' display='Comment by' />
+    <column name='sample_comment' display='Comment' />
+  </columns>
+</report>

@@ -1,0 +1,32 @@
+  <report
+    title="Cudi Information Sheet"
+    description="List of details of a Count Unit which has a given location_id."
+>
+  <query website_filter_field="lw.website_id">
+    SELECT #columns# 
+    FROM locations l
+      LEFT JOIN locations_websites lw ON lw.location_id=l.id 
+      LEFT JOIN location_attribute_values lav on lav.location_id=l.id
+      JOIN location_attributes la on la.id=lav.location_attribute_id
+        AND (la.id = #alternative_1_attr_id# OR la.id = #alternative_2_attr_id# OR la.id = #country_attr_id# OR la.id = #habitat_attr_id#)
+      #joins#
+    WHERE 1=1
+      #filters#
+      AND #website_filter# AND l.deleted = false
+      AND lw.deleted = false
+      AND l.id = #location_id#
+       
+  </query>
+  <params>
+    <param name="location_id" datatype="integer" emptyvalue='-1'/>
+    <param name="alternative_1_attr_id" datatype="integer"/>
+    <param name="alternative_2_attr_id" datatype="integer"/>
+    <param name="country_attr_id" datatype="integer"/>
+    <param name="habitat_attr_id" datatype="integer"/>
+  </params>
+  <columns>
+    <column name="name" display="Count Unit Name" sql="l.name" in_count="true"/>  
+    <column name="alternative_1" display="Alternative Name 1" sql="lav.text_value" in_count="true"/> 
+    <column name="abbreviation" display="Abbreviation" sql="l.code" in_count="true"/>
+  </columns>
+</report>

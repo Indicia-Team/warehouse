@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="All User Sites" description="A list of sites that are associated with all users for a website (my sites). Example use: Allows
+    administrators to maintain 'my sites' for other users.">
+  <query website_filter_field="lw.website_id">
+    SELECT #columns#
+    FROM person_attribute_values pav
+      LEFT JOIN locations l on l.id = pav.int_value AND l.deleted = false
+      LEFT JOIN people p on p.id = pav.person_id AND p.deleted=false
+      LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
+      LEFT JOIN users u ON u.person_id=p.id
+      #joins#
+    WHERE 1=1
+      #filters#
+      AND pav.deleted=false
+      AND pav.person_attribute_id=#person_site_attr_id#
+      AND #website_filter#        
+   </query>
+  <order_bys>
+    <order_by>pav.id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name="person_site_attr_id" display="Person Sites Attribute ID" description="The person attribute ID used to store My Sites" datatype="integer" />
+    <param name="location_id" display="Location Id" description="A location id user if we only want to return results for a single location." datatype="integer" default=''>
+      <where>l.id=#location_id#</where>
+    </param>
+  </params>
+  <columns>
+    <column name="id" sql="pav.id" unique="true" in_count="integer" type="hidden" visible="false"/>
+    <column name="location_id" display="Location Id" sql="l.id" datatype="integer" visible="false"/>
+    --note: Do not rename this as user_id as there appears to be automatic code associated with the website filter that looks for that name
+    <column name="pav_user_id" display="User Id" sql="u.id" datatype="integer" visible="false"/>
+    <column name="person_name" display="User's Name" sql="p.first_name || ' ' || p.surname" datatype="text"/>
+    <column name="location_name" display="Location" sql="l.name" datatype="text" />
+  </columns>
+</report>

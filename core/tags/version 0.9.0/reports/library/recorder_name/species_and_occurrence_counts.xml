@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Species &amp; Occurrence Counts by Taxon Group" description="Lists taxon groups and the number of species and occurrences within them. Optional date range and survey filters.">
+      <query>
+      SELECT o.recorders as recorder_name, count(DISTINCT o.taxon_meaning_id) as species_count, count(DISTINCT o.id) as occurrences_count, #website_id# as website_id
+      FROM cache_occurrences o
+      WHERE o.website_id=#website_id#
+      AND (CAST(o.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
+      AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR o.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+      AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+      AND o.recorders is not null AND o.recorders &lt;&gt; ''
+      GROUP BY recorder_name
+    UNION
+      SELECT 'Total' as recorder_name, count(DISTINCT o.taxon_meaning_id) as species_count, count(DISTINCT o.id) as occurrences_count, #website_id# as website_id
+      FROM cache_occurrences o
+      WHERE o.website_id=#website_id#
+      AND (CAST(o.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
+      AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR o.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+      AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+      AND '#include_total#'!='no'
+      </query>
+  <params>
+    <param name='website_id' display='Website ID' description='Select the website to return data for' datatype='integer' />
+    <param name='date_from' display='Date From' datatype='date' />
+    <param name='date_to' display='Date To' datatype='date' />
+    <param name='survey_id' display='Survey' description='Select the survey to return data for, or leave for all surveys' datatype='lookup'
+        query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title' />
+    <param name='include_total' display='Include Total' datatype='lookup' lookup_values='yes:Yes,no:No' />
+  </params>
+      <order_bys>
+            <order_by>species_count DESC</order_by>
+            <order_by>occurrences_count DESC</order_by>
+      </order_bys>
+      <columns>
+            <column name="recorder_name" display="Recorder Name" style="background-color: #e7e7e7;" />
+            <column name="species_count" display="Total no. of Species" />
+            <column name="occurrences_count" display="Total no. of Occurrences" />
+            <column name="website_id" visible="false" />
+      </columns>
+</report>

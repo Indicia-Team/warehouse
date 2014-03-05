@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report
+    title="Subject Observation List"
+    description="Form Internal Report: Used to retrieve the subject_observations associated with a sample and user."
+>
+  <query>
+  SELECT s.date_start, 
+     s.date_end, 
+     s.date_type, 
+     s.entered_sref, 
+     s.entered_sref_system, 
+     t.taxon, 
+     array_to_string(array_agg(i.coded_value),';') AS codes, 
+     so.id as subject_observation_id, 
+     substring(so.comment from 1 for 30) as short_comment, 
+     so.sample_id
+   FROM subject_observations so
+   JOIN samples s ON so.sample_id = s.id AND s.deleted = false
+   JOIN occurrences_subject_observations oso ON so.id = oso.subject_observation_id AND oso.deleted = false
+   JOIN occurrences occ ON occ.id = oso.occurrence_id AND occ.deleted = false
+   JOIN taxa_taxon_lists ttl ON occ.taxa_taxon_list_id = ttl.id
+   JOIN taxa t ON ttl.taxon_id = t.id
+   JOIN identifiers_subject_observations iso ON so.id = iso.subject_observation_id AND iso.deleted = false
+   JOIN identifiers i ON i.id = iso.identifier_id AND i.deleted = false
+  WHERE s.survey_id=#survey_id# AND so.deleted = false
+  AND #userID# = so.created_by_id
+  GROUP BY s.date_start, 
+     s.date_end, 
+     s.date_type, 
+     s.entered_sref, 
+     s.entered_sref_system, 
+     t.taxon, 
+     so.id, 
+     short_comment, 
+     so.sample_id
+  #order_by#
+  </query>
+  <order_bys>
+    <order_by>so.id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='survey_id' display='Survey: ' description='Select the survey to return data for?' datatype='lookup'
+        query='SELECT id, title as caption FROM surveys' />
+    <param name='userID' display='User ID' description='Central User ID:' datatype='int' />
+  </params>
+  <columns>
+    <column name='subject_observation_id' display='ID' />
+    <column name='sample_id' visible='false' />
+    <column name='taxon' display='Species' />
+    <column name='entered_sref_system' display='SRef System' />
+    <column name='entered_sref' display='SRef' />
+    <column name='date' display='Date' />
+    <column name='short_comment' display='Initial Comment' />
+    <column name='codes' display='Identifiers' />
+    <column name='comment' visible='false' />
+  </columns>
+</report>

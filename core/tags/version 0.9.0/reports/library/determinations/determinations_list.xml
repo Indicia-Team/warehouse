@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="Get determinations" description="Return items from the determination table based on the given parameters">
+  <query website_filter_field="lw.website_id">
+    SELECT #columns#
+    FROM determinations d
+    JOIN cache_taxa_taxon_lists ttl ON ttl.id = d.taxa_taxon_list_id
+    WHERE d.occurrence_id = #occurrence_id# and d.deleted=false
+    ORDER BY d.created_on desc
+  </query>
+  <params>
+    <param name='occurrence_id' display='Occurrence ID' description='ID of the occurrence to return determinations for.' datatype="integer"/>
+  </params>
+  <columns>
+    <column name='taxon' display='Taxon' sql='ttl.taxon' datatype='text'/>
+    <column name='taxon_html' display='Taxon HTML' 
+        sql="case ttl.preferred_language_iso when 'lat' then '&lt;em&gt;' else '' end || ttl.preferred_taxon || case ttl.preferred_language_iso when 'lat' then '&lt;/em&gt;' else '' end
+        || case when ttl.default_common_name&lt;&gt;ttl.preferred_taxon then ' (' || ttl.default_common_name || ')' else '' end" datatype='text'/>
+    <column name='person_name' display='Determiner' sql='d.person_name' datatype='text'/>
+    <column name='date' display='Date' sql="to_char(d.created_on, 'Month DDth, YYYY')" datatype='date'/>
+  </columns>
+</report>

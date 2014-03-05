@@ -1,0 +1,26 @@
+<report
+    title="Surveys list"
+    description="A general purpose list of surveys."
+>
+  <query>
+  SELECT #columns#
+  FROM surveys s
+  JOIN websites w on w.id=s.website_id AND w.deleted=false
+  #joins#
+  WHERE s.website_id in (#sharing_website_ids#)
+  #filters#
+  AND s.deleted=false
+  #order_by#
+  </query>  
+  <order_bys>
+    <order_by>s.title ASC</order_by>
+  </order_bys>  
+  <columns>
+    <column name="id" visible="false" sql="s.id" />
+    <column name="title" display='Title' datatype="text" sql="s.title" />
+    <column name="fulltitle" display='Full Title' datatype="text" sql="w.title || ' ' || s.title" />
+    <column name="description" display='Description' datatype="text" sql="s.description" />    
+    <column name="website_id" visible="false" datatype="text" sql="s.website_id" />    
+  </columns>
+</report>
+

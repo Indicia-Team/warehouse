@@ -1,0 +1,69 @@
+  <report
+    title="Locations with geometry for location type"
+    description="List of locations (with geometry) for a given location type whose parent matches the given parent id."
+>
+  <query website_filter_field="lw.website_id">
+    SELECT #columns# 
+    FROM locations l
+      LEFT JOIN locations_websites lw ON lw.location_id=l.id 
+      LEFT JOIN locations lLatestBoundaryChild on lLatestBoundaryChild.id in (select max(id) from locations where parent_id=l.id AND location_type_id=#count_unit_boundary_type_id#) 
+      --Get the preferred boundary id value
+      LEFT JOIN location_attribute_values prefAttrVal on prefAttrVal.location_id = l.id and prefAttrVal.location_attribute_id = #preferred_boundary_attribute_id#   
+      --If a preferred boundary is not set, then we assumed latest boundary is preferred
+      LEFT JOIN locations preferredLoc on preferredLoc.id = COALESCE(prefAttrVal.int_value,lLatestBoundaryChild.id)
+      LEFT JOIN locations lLatestBoundaryChildNormalUser on lLatestBoundaryChildNormalUser.created_on in 
+        (select max(created_on) from locations where parent_id=l.id 
+          AND created_by_id = #current_user_id#
+          AND created_on > preferredLoc.created_on) 
+        AND lLatestBoundaryChildNormalUser.location_type_id=#count_unit_boundary_type_id#
+      --Admin users will always see the preferred boundary, if this is not set then latest is assumed to be preferred.
+      --Normal users will see the latest boundary they have added themselves since the preferred boundary was created,
+      --if this is not available, then they see the preferred boundary using the same rules as an admin user.
+      --Both types of users also see any annotations as these are not versioned
+      LEFT JOIN locations locToShow on 
+        ((locToShow.id = COALESCE(prefAttrVal.int_value, lLatestBoundaryChild.id) and #admin_mode#=1) or 
+        (locToShow.id = COALESCE(lLatestBoundaryChildNormalUser.id,prefAttrVal.int_value,lLatestBoundaryChild.id) and #admin_mode#=0) and    
+        locToShow.location_type_id=#count_unit_boundary_type_id#) 
+        OR 
+        locToShow.location_type_id!=#count_unit_boundary_type_id# AND 
+        locToShow.parent_id = l.id
+      JOIN termlists_terms tt ON tt.id = l.location_type_id
+      JOIN terms t ON t.id = tt.term_id 
+      #joins#     
+    WHERE 1=1
+      #filters#
+      AND ((#website_filter# AND lw.deleted = false ) or l.public=true)
+      AND l.deleted = false AND tt.deleted = false AND t.deleted = false
+  </query>
+  <params>
+    <param name="location_type_id" datatype="integer">
+      <where>l.location_type_id in (#location_type_id#)</where>
+    </param>
+    <param name="parent_id" datatype="integer">
+      <join>JOIN locations lp on st_intersects(lp.boundary_geom, l.centroid_geom) and lp.id=#parent_id#</join>
+    </param>
+    <param name="preferred_boundary_attribute_id" datatype="integer"/>
+    <param name="count_unit_boundary_type_id" datatype="integer"/>
+    <param name="count_unit_type_id" datatype="integer"/>
+    <param name="admin_mode" datatype="integer"/>
+    <param name="current_user_id" datatype="integer"/>
+  </params>
+  <columns>
+    <column name="id" sql="l.id"/>
+    <column name="name" sql="l.name"/>
+    <column name="location_type_name" sql="t.term"/>
+    <column name="boundary_geom" sql="st_astext(COALESCE(l.boundary_geom, locToShow.boundary_geom))" mappable="true"/>
+    --Make sure we only return the preferred centroid otherwise we have problems with the symbols and location selection drop-down on the map page. 
+    --Return the preferred count unit boundary centroid if available, otherwise just return the centroid but make sure we don't return it from count units and their boundaries
+    <column name="centroid_geom" sql="
+                  case when locToShow.centroid_geom is not null 
+                    then st_astext(st_centroid(locToShow.centroid_geom)) 
+                  when l.centroid_geom is not null and l.location_type_id != #count_unit_boundary_type_id# 
+                    then st_astext(st_centroid(l.centroid_geom)) end" mappable="true"/>
+    <column name="location_type_id" sql="COALESCE(locToShow.location_type_id,l.location_type_id)" mappable="true"/>
+    --Return a boundary from the location, but if it isn't available, look at the count unit boundaries to get the preferred count unit boundary
+    <column name="graphic" sql="case when st_astext(COALESCE(l.boundary_geom,locToShow.boundary_geom)) is  not null then 'circle' 
+                                when st_astext(COALESCE(l.boundary_geom,locToShow.boundary_geom)) is  null and l.location_type_id = #count_unit_type_id# or l.location_type_id = #count_unit_boundary_type_id#  then 'triangle' 
+                                else 'cross' end" mappable="true"/>
+  </columns>
+</report>
