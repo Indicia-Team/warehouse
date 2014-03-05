@@ -384,7 +384,7 @@ idlist=';
     ));
     $r .= '<div id="details-tab"></div>';
     $r .= self::other_tab_html();
-    $r .= '</div></div></div></div>';
+    $r .= '</div></div></div></div></div>';
     return $r;
   }
 
