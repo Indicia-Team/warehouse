@@ -1,0 +1,56 @@
+label {
+  width: 140px;
+}
+
+.helpText {
+  margin-left: 144px;
+}
+
+table#transect-input1,table#transect-input2,table#transect-input3,table#transect-input4 {
+  width: auto;
+}
+
+table#transect-input1 td, table#transect-input1 input, table#transect-input2 td, table#transect-input2 input, table#transect-input3 td, table#transect-input3 input, table#transect-input4 td, table#transect-input4 input{
+  margin: 1px;
+  padding: 1px;
+}
+
+table#transect-input1 input,table#transect-input2 input,table#transect-input3 input,table#transect-input4 input {
+  width: 50px;
+  border: solid silver 1px;
+}
+
+table th, table td {
+  text-align: center;
+}
+
+table .alt-row {
+  background-color: #e7e7e7;
+}
+
+table tr.table-selected {
+  border-top: solid blue 1px;
+  border-bottom: solid blue 1px;
+}
+
+table td.table-selected  {
+  border-left: solid blue 1px;
+  border-right: solid blue 1px;
+}
+
+table thead.table-header {
+  display: table-header-group;
+}
+
+table td.first {
+  border-left: dashed grey 2px;
+}
+
+input.edited[type="text"], input.edited[type="password"], select.edited {
+  border: solid green 1px;
+}
+
+input.saving[type="text"], input.saving[type="password"], select.saving {
+  background: url(../../../media/images/ajax-loader.gif) no-repeat right;
+  font-style: italic;
+}

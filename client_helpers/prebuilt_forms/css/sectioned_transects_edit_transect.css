@@ -1,0 +1,186 @@
+/* Change labels to fit on narrower space available */
+/* line 9, sass/sectioned_transects_edit_transect.scss */
+label {
+  width: 140px;
+}
+
+/* line 13, sass/sectioned_transects_edit_transect.scss */
+.helpText {
+  margin-left: 144px;
+}
+
+/* line 17, sass/sectioned_transects_edit_transect.scss */
+.section-select {
+  display: -moz-inline-stack;
+  display: inline-block;
+  vertical-align: middle;
+  *vertical-align: auto;
+  zoom: 1;
+  *display: inline;
+  margin: 0;
+}
+/* line 21, sass/sectioned_transects_edit_transect.scss */
+.section-select li {
+  display: -moz-inline-stack;
+  display: inline-block;
+  vertical-align: middle;
+  *vertical-align: auto;
+  zoom: 1;
+  *display: inline;
+  font-size: 12px;
+  padding: 0.3em 1em;
+  display: inline-block;
+  cursor: pointer;
+  -webkit-border-radius: 3px;
+  -moz-border-radius: 3px;
+  -ms-border-radius: 3px;
+  -o-border-radius: 3px;
+  border-radius: 3px;
+  *zoom: 1;
+  filter: progid:DXImageTransform.Microsoft.gradient(gradientType=0, startColorstr='#FF4BA3CC', endColorstr='#FF276B8A');
+  background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #4ba3cc), color-stop(100%, #3289b2));
+  background: -webkit-linear-gradient(#4ba3cc, #3289b2);
+  background: -moz-linear-gradient(#4ba3cc, #3289b2);
+  background: -o-linear-gradient(#4ba3cc, #3289b2);
+  background: linear-gradient(#4ba3cc, #3289b2);
+  -webkit-box-shadow: #87c1dd 0 1px 0 inset;
+  -moz-box-shadow: #87c1dd 0 1px 0 inset;
+  box-shadow: #87c1dd 0 1px 0 inset;
+  border: 1px solid #2d7a9e;
+  color: white;
+  text-shadow: #205872 0 -1px 0;
+  margin: 0 0.5em;
+}
+/* line 15, C:/Ruby200-x64/lib/ruby/gems/2.0.0/gems/sassy-buttons-0.1.4/stylesheets/sassy-buttons/_sassy-button-pseudo-states.sass */
+.section-select li:hover {
+  text-decoration: none;
+}
+/* line 36, C:/Ruby200-x64/lib/ruby/gems/2.0.0/gems/sassy-buttons-0.1.4/stylesheets/sassy-buttons/_sassy-button-pseudo-states.sass */
+.section-select li:hover {
+  background-color: #2d7a9e;
+  background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #3899c6), color-stop(100%, #2d7a9e));
+  background: -webkit-linear-gradient(#3899c6, #2d7a9e);
+  background: -moz-linear-gradient(#3899c6, #2d7a9e);
+  background: -o-linear-gradient(#3899c6, #2d7a9e);
+  background: linear-gradient(#3899c6, #2d7a9e);
+}
+/* line 39, C:/Ruby200-x64/lib/ruby/gems/2.0.0/gems/sassy-buttons-0.1.4/stylesheets/sassy-buttons/_sassy-button-pseudo-states.sass */
+.section-select li:active {
+  -webkit-box-shadow: #297192 0 1px 2px inset;
+  -moz-box-shadow: #297192 0 1px 2px inset;
+  box-shadow: #297192 0 1px 2px inset;
+}
+/* line 6, C:/Ruby200-x64/lib/ruby/gems/2.0.0/gems/sassy-buttons-0.1.4/stylesheets/sassy-buttons/_sassy-button-pseudo-states.sass */
+.section-select li.disabled, .section-select li[disabled] {
+  opacity: 0.6;
+  background: #3289b2;
+  cursor: default;
+  -webkit-box-shadow: none;
+  -moz-box-shadow: none;
+  box-shadow: none;
+}
+/* line 73, C:/Ruby200-x64/lib/ruby/gems/2.0.0/gems/sassy-buttons-0.1.4/stylesheets/_sassy-buttons.sass */
+.section-select li::-moz-focus-inner {
+  padding: 0 !important;
+  margin: -1px !important;
+}
+/* line 27, sass/sectioned_transects_edit_transect.scss */
+.section-select li.selected {
+  font-size: 12px;
+  padding: 0.3em 1em;
+  display: inline-block;
+  cursor: pointer;
+  -webkit-border-radius: 3px;
+  -moz-border-radius: 3px;
+  -ms-border-radius: 3px;
+  -o-border-radius: 3px;
+  border-radius: 3px;
+  *zoom: 1;
+  filter: progid:DXImageTransform.Microsoft.gradient(gradientType=0, startColorstr='#FF777700', endColorstr='#FF111100');
+  background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #777700), color-stop(100%, #444400));
+  background: -webkit-linear-gradient(#777700, #444400);
+  background: -moz-linear-gradient(#777700, #444400);
+  background: -o-linear-gradient(#777700, #444400);
+  background: linear-gradient(#777700, #444400);
+  -webkit-box-shadow: #c3c300 0 1px 0 inset;
+  -moz-box-shadow: #c3c300 0 1px 0 inset;
+  box-shadow: #c3c300 0 1px 0 inset;
+  border: 1px solid #2a2a00;
+  color: white;
+  text-shadow: black 0 -1px 0;
+  -webkit-box-shadow: #4e4e00 0 0.2em 0.4em inset;
+  -moz-box-shadow: #4e4e00 0 0.2em 0.4em inset;
+  box-shadow: #4e4e00 0 0.2em 0.4em inset;
+  border: solid 1px #2a2a00;
+}
+/* line 15, C:/Ruby200-x64/lib/ruby/gems/2.0.0/gems/sassy-buttons-0.1.4/stylesheets/sassy-buttons/_sassy-button-pseudo-states.sass */
+.section-select li.selected:hover {
+  text-decoration: none;
+}
+/* line 36, C:/Ruby200-x64/lib/ruby/gems/2.0.0/gems/sassy-buttons-0.1.4/stylesheets/sassy-buttons/_sassy-button-pseudo-states.sass */
+.section-select li.selected:hover {
+  background-color: #2a2a00;
+  background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #5d5e00), color-stop(100%, #2a2a00));
+  background: -webkit-linear-gradient(#5d5e00, #2a2a00);
+  background: -moz-linear-gradient(#5d5e00, #2a2a00);
+  background: -o-linear-gradient(#5d5e00, #2a2a00);
+  background: linear-gradient(#5d5e00, #2a2a00);
+}
+/* line 39, C:/Ruby200-x64/lib/ruby/gems/2.0.0/gems/sassy-buttons-0.1.4/stylesheets/sassy-buttons/_sassy-button-pseudo-states.sass */
+.section-select li.selected:active {
+  -webkit-box-shadow: #1b1b00 0 1px 2px inset;
+  -moz-box-shadow: #1b1b00 0 1px 2px inset;
+  box-shadow: #1b1b00 0 1px 2px inset;
+}
+/* line 6, C:/Ruby200-x64/lib/ruby/gems/2.0.0/gems/sassy-buttons-0.1.4/stylesheets/sassy-buttons/_sassy-button-pseudo-states.sass */
+.section-select li.selected.disabled, .section-select li.selected[disabled] {
+  opacity: 0.6;
+  background: #444400;
+  cursor: default;
+  -webkit-box-shadow: none;
+  -moz-box-shadow: none;
+  box-shadow: none;
+}
+/* line 73, C:/Ruby200-x64/lib/ruby/gems/2.0.0/gems/sassy-buttons-0.1.4/stylesheets/_sassy-buttons.sass */
+.section-select li.selected::-moz-focus-inner {
+  padding: 0 !important;
+  margin: -1px !important;
+}
+/* line 13, C:/Ruby200-x64/lib/ruby/gems/2.0.0/gems/sassy-buttons-0.1.4/stylesheets/sassy-buttons/_sassy-button-styles.sass */
+.section-select li.selected:active {
+  -webkit-box-shadow: #3a3a00 0 0.2em 0.4em inset;
+  -moz-box-shadow: #3a3a00 0 0.2em 0.4em inset;
+  box-shadow: #3a3a00 0 0.2em 0.4em inset;
+}
+/* line 32, sass/sectioned_transects_edit_transect.scss */
+.section-select li.missing:not(.selected) {
+  filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=50);
+  opacity: 0.5;
+}
+/* line 36, sass/sectioned_transects_edit_transect.scss */
+.section-select li.missing.selected {
+  filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=70);
+  opacity: 0.7;
+}
+
+/* line 41, sass/sectioned_transects_edit_transect.scss */
+.section-delete {
+  display: -moz-inline-stack;
+  display: inline-block;
+  vertical-align: middle;
+  *vertical-align: auto;
+  zoom: 1;
+  *display: inline;
+  margin: 0;
+}
+
+/* line 46, sass/sectioned_transects_edit_transect.scss */
+.waiting-button {
+  background: transparent url(/misc/throbber.gif) no-repeat 50% -18px !important;
+}
+
+/* Hide the sections that still need to be drawn on the details tab as they are not in DB yet. */
+/* line 51, sass/sectioned_transects_edit_transect.scss */
+#section-details .missing {
+  display: none;
+}
