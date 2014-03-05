@@ -9,9 +9,11 @@
     JOIN websites w on w.id=cttl.website_id 
   WHERE cttl.preferred=true
   AND #website_filter#
+  ORDER BY case when cttl.default_common_name IS NOT NULL then cttl.default_common_name || ' - ' || cttl.preferred_taxon else cttl.preferred_taxon END
   </query>
   <columns>
     <column name='id' display='Name' sql='cttl.id' datatype='integer' />
+    <column name='taxon_meaning_id' display='Name' sql='cttl.taxon_meaning_id' datatype='integer' />
     <column name='name_common_preferred' display='Name' sql="case when cttl.default_common_name IS NOT NULL then cttl.default_common_name || ' - ' || cttl.preferred_taxon else cttl.preferred_taxon END" />
   </columns>
 </report>
