@@ -1,0 +1,35 @@
+<report
+    title="Track-a-tree: results report"
+    description="A list of occurrences used to build the trees results map animation."
+>
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id">
+    SELECT #columns#
+    FROM cache_occurrences o
+    JOIN websites w on w.id=o.website_id 
+    #joins#
+    WHERE o.survey_id=#survey_id#
+  </query>
+  <params>
+    <param name="occattrs" display="Occurrence attribute list" description="Comma separated list of occurrence attribute IDs to include" datatype="occattrs" />
+    <param name="survey_id" display="Survey" description="Select the survey" datatype="lookup"
+        population_call="direct:survey:id:title" />
+    <param name="date_from" display="Date From" datatype="date">
+      <where>('#date_from#'='Click here' OR o.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))</where>
+    </param>
+    <param name="date_to" display="Date To" datatype="date">
+      <where>('#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))</where>
+    </param>
+  </params>
+  <columns>
+    <column name="occurrence_id" sql="o.id" on_demand="true" datatype="integer"/>
+    <column name="sample_id" sql="o.sample_id" on_demand="true" datatype="integer"/>
+    <column name="location_id" sql="o.location_id" on_demand="true" datatype="integer"/>
+    <column name="taxon" on_demand="true" datatype="text"
+      sql="CASE WHEN o.preferred_taxon=o.default_common_name then o.preferred_taxon ELSE o.preferred_taxon || COALESCE(' | ' || o.default_common_name, '') END" />
+    <column name="taxa_taxon_list_id" sql="o.taxa_taxon_list_id" on_demand="true" datatype="integer"/>   
+    <column name="date_start" sql="o.date_start" on_demand="true"/>
+    <column name="date_end" sql="o.date_end" on_demand="true"/>
+    <column name="date_type" sql="o.date_type" on_demand="true"/>
+    <column name="geom" visible="false" mappable="true" sql="st_astext(o.public_geom)" />
+  </columns>
+</report>
