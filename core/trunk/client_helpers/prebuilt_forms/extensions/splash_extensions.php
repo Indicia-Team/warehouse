@@ -1,4 +1,4 @@
-<?php
+  <?php
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -279,20 +279,22 @@ class extension_splash_extensions {
       loadMiniSquareReport();
     });
     function loadMiniSquareReport() {
-      var squareReportRequest = indiciaData.squareReportRequest
-      + '&square_id=' + $('#squares-select-list').val()
-      + '&core_square_location_type_id=' + ".$options['coreSquareLocationTypeId']."
-      + '&callback=?';
-      $.getJSON(squareReportRequest,
-        null,
-        function(response, textStatus, jqXHR) {
-          if (response[0].type) {
-            $('#square-type-value').text(response[0].type);
-          } else {
-            $('#square-type-value').text('');
+      if ($('#squares-select-list').val()) {
+        var squareReportRequest = indiciaData.squareReportRequest
+        + '&square_id=' + $('#squares-select-list').val()
+        + '&core_square_location_type_id=' + ".$options['coreSquareLocationTypeId']."
+        + '&callback=?';
+        $.getJSON(squareReportRequest,
+          null,
+          function(response, textStatus, jqXHR) {
+            if (response[0].type) {
+              $('#square-type-value').text(response[0].type);
+            } else {
+              $('#square-type-value').text('');
+            }
           }
-        }
-      );
+        );
+      }
     }
     $('#imp-location').ready(function() {
       loadMiniPlotReport();
@@ -504,6 +506,9 @@ class extension_splash_extensions {
       drupal_set_message('Please fill in the @squareSizes option for the draw_map_plot control');
       return '';
     }
+    iform_load_helpers(array('map_helper'));
+    //Array to hold the plot width and length for Splash
+    map_helper::$javascript .= "indiciaData.plotWidthLength='';\n";
     //The user provides the square sizes associated with the various plot types as a comma seperated option list.
     $squareSizesOptionsSplit=explode(',',$options['squareSizes']);
     //Eash option consists of the following format <plot type id>|<square side lengh>
@@ -520,106 +525,36 @@ class extension_splash_extensions {
         $squareSizesArray[$squareSizeSingleOptionSplit[0]]=array($squareSizeSingleOptionSplit[1],$squareSizeSingleOptionSplit[1]);
      else
         $squareSizesArray[$squareSizeSingleOptionSplit[0]]=array($squareSizeSingleOptionSplit[1],$squareSizeSingleOptionSplit[2]);
-    }
-    iform_load_helpers(array('map_helper')); 
+    }    
+    //Javascript needs to know the square sizes for each location type (note that squares can actually be rectangles now code is extended for PSS project)
     $squareSizesForJavascript=json_encode($squareSizesArray);
     map_helper::$javascript .= "indiciaData.squareSizes=$squareSizesForJavascript;\n";
-    if (empty($options['pssMode'])) {
-      //If you change the location type then clear the features already on the map
-      map_helper::$javascript .= "
-      $('#location\\\\:location_type_id').change(function() {
-        var mapLayers = indiciaData.mapdiv.map.layers;
-        for(var a = 0; a < mapLayers.length; a++ ){
-          if (mapLayers[a].CLASS_NAME=='OpenLayers.Layer.Vector') {
-            mapLayers[a].removeAllFeatures();
-          }
-        };
-        $('#imp-boundary-geom').val('');
-      });";
+    if (!empty($options['pssMode'])) {
+      //In PSS, the size of the plot types are displayed in fields on screen.
+      map_helper::$javascript .= "indiciaData.plotWidthAttrId='".$options['plotWidthAttrId']."';\n";
+      map_helper::$javascript .= "indiciaData.plotLengthAttrId='".$options['plotLengthAttrId']."';\n";
+      map_helper::$javascript .= "indiciaData.pssMode=true;\n";
     } else {
-      map_helper::$javascript .= "indiciaData.pssMode='".$options['pssMode']."';\n";
-      //In PSS mode, the user supplies the ids of the attributes that will hold a Plot Square/Rectangle's
-      //width and length in a comma seperated list e.g. @pssMode=24,25
-      //We need to split these options
-      $pssMode = "'".$options["pssMode"]."'";
-      $widthLength = explode(',',$options["pssMode"]);
-      $widthLengthForJavascript = json_encode($widthLength);
-      map_helper::$javascript .= "indiciaData.widthLength=$widthLengthForJavascript;\n";
-      //When Plot Details page opens, never show the controls where the user can change the plot width and length
-      //as they won't have selected a plot type yet.
-      map_helper::$javascript .= " 
-      var squareSizes=$squareSizesForJavascript; 
-      $('[for=\"locAttr\\\\:$widthLength[0]\"]').hide();
-      $('#locAttr\\\\:$widthLength[0]').hide();
-      $('[for=\"locAttr\\\\:$widthLength[1]\"]').hide();
-      $('#locAttr\\\\:$widthLength[1]').hide();";
-      //When the user changes the plot type, clear the features off the map.
-      map_helper::$javascript .= "
-      $('#location\\\\:location_type_id').change(function() {
-        var mapLayers = indiciaData.mapdiv.map.layers;
-        for(var a = 0; a < mapLayers.length; a++ ){
-          if (mapLayers[a].CLASS_NAME=='OpenLayers.Layer.Vector') {
-            mapLayers[a].removeAllFeatures();
-          }
-        };
-        $('#imp-boundary-geom').val('');";
-      //If the user selects an option that is a non location type from the location type drop-down (e.g "Please select")
-      //then always hide the plot width and height selection textboxes if they are displayed and also remove the line draw tool
-      //from the map.
-      map_helper::$javascript .= " 
-        if (!$('#location\\\\:location_type_id option:selected').val()) {         
-          $('.olControlDrawFeaturePathItemActive').addClass('olControlDrawFeaturePathItemInactive');
-          $('.olControlDrawFeaturePathItemInactive').removeClass('olControlDrawFeaturePathItemActive');
-          $('.olControlDrawFeaturePathItemInactive').hide();
-          $('.olControlNavigationItemActive').addClass('olControlNavigationItemInactive');
-          $('.olControlNavigationItemInactive').removeClass('olControlNavigationItemActive');
-          $('.olControlNavigationItemInactive').hide();
-          $('.olControlClickSrefItemInactive').addClass('olControlClickSrefItemActive');
-          $('.olControlClickSrefItemActive').removeClass('olControlClickSrefItemInactive');
-          $('[for=\"locAttr\\\\:$widthLength[0]\"]').hide();
-          $('#locAttr\\\\:$widthLength[0]').hide();
-          $('[for=\"locAttr\\\\:$widthLength[1]\"]').hide();
-          $('#locAttr\\\\:$widthLength[1]').hide();";
-      //If the user select a vertical or linear plot, we just use the standard draw line tool, so display the icon for this
-      //on the map and then hide the width/length options for drawing a rectangular plot
-      map_helper::$javascript .= "        
-        } else if ($('#location\\\\:location_type_id option:selected').text()==='Vertical'|| $('#location\\\\:location_type_id option:selected').text()==='Linear') {
-          $('.olControlDrawFeaturePathItemActive').show();
-          $('.olControlDrawFeaturePathItemInactive').show();
-          $('[for=\"locAttr\\\\:$widthLength[0]\"]').hide();
-          $('#locAttr\\\\:$widthLength[0]').hide();
-          $('[for=\"locAttr\\\\:$widthLength[1]\"]').hide();
-          $('#locAttr\\\\:$widthLength[1]').hide();";
-      //If the use elects to use a rectangular plot, then hide the line drawing tool from the map. 
-      //Display the width and length controls for the rectangular plot.
-      //If the width/length boxes are not already filled in, then automatically fill them in from the default
-      //options supplied by the user.
-      map_helper::$javascript .= "
-        } else {
-          $('.olControlDrawFeaturePathItemActive').addClass('olControlDrawFeaturePathItemInactive');
-          $('.olControlDrawFeaturePathItemInactive').removeClass('olControlDrawFeaturePathItemActive');
-          $('.olControlDrawFeaturePathItemInactive').hide();
-          $('.olControlNavigationItemActive').addClass('olControlNavigationItemInactive');
-          $('.olControlNavigationItemInactive').removeClass('olControlNavigationItemActive');
-          $('.olControlNavigationItemInactive').hide();
-          $('.olControlClickSrefItemInactive').addClass('olControlClickSrefItemActive');
-          $('.olControlClickSrefItemActive').removeClass('olControlClickSrefItemInactive');
-          $('[for=\"locAttr\\\\:$widthLength[0]\"]').show();
-          $('#locAttr\\\\:$widthLength[0]').show();
-          $('[for=\"locAttr\\\\:$widthLength[1]\"]').show();
-          $('#locAttr\\\\:$widthLength[1]').show();
-          if (!$('#locAttr\\\\:$widthLength[0]').val()) {
-            $('#locAttr\\\\:$widthLength[0]').val(squareSizes[$('#location\\\\:location_type_id').val()][0]);
-          }
-          if (!$('#locAttr\\\\:$widthLength[1]').val()) {
-            $('#locAttr\\\\:$widthLength[1]').val(squareSizes[$('#location\\\\:location_type_id').val()][1]);
-          }
-        }
-      });\n";
+      map_helper::$javascript .= "indiciaData.noSizeWarning='Please select plot type from the drop-down.';\n";
     }
-    //Do not allow submission if there is no plot set
-    data_entry_helper::$javascript .= "$('#entry_form').submit(function() { if (!$('#imp-boundary-geom').val()) {alert('Please use the map control to create a plot before continuing.'); return false; }});\n";
+    //This is a small fudge, when in edit mode the page does not immediately load in a mode when the plot can be rotated until the user clicks on the map,
+    //force the user to click on the map if they want to edit by unsetting the plot type drop-down, they will be warned unless they click on the map again.
+    map_helper::$javascript .= "$('#location\\\\:location_type_id').attr('selectedIndex', 0);";
+    //If you change the location type then clear the features already on the map
+    //If no location type is selected, then don't provide the plot drawing code with plot size details, this way it automatically warns the user  
+    map_helper::$javascript .= "
+    $('#location\\\\:location_type_id').change(function() {
+      clear_map_features();
+      if ($(this).val()) {
+        plot_type_dropdown_change();
+      } else {
+        indiciaData.plotWidthLength='';
+        $('#locAttr\\\\:'+indiciaData.plotWidthAttrId).val('');
+        $('#locAttr\\\\:'+indiciaData.plotLengthAttrId).val('');
+      }
+    });\n";
+    //Do not allow submission if there is no plot set or no location type (this last check stops the user from resubmitting without click on map first otherwise it doesn't work at the moment
+    data_entry_helper::$javascript .= "$('#entry_form').submit(function() { if (!$('#imp-boundary-geom').val() || !$('#location\\\\:location_type_id').val()) {alert('Please select a plot type and create a plot before continuing.'); return false; }});\n";
   }
-
 }
 ?>
