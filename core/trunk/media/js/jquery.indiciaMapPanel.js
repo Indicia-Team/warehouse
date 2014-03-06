@@ -1305,6 +1305,7 @@ mapLocationSelectedHooks = [];
       
       // Put the geometry in the input control 
       $('#imp-geom').val(feature.geometry.toString());
+      $('#imp-boundary-geom').val(feature.geometry.toString());
       // Get the sref of the swVertex and show in control
       pointToSref(map.div, swVertex, _getSystem(), function(data) {
         if (typeof data.sref !== "undefined") {
@@ -1312,13 +1313,13 @@ mapLocationSelectedHooks = [];
         }
       }, undefined, precision);     
     }
-
+    
     /**
      * Function called by the map click handler. Converts the point clicked to an sref then 
      * calls a callback to process it.
      * Callback is a function that accepts a data structure as returned by the warehouse 
      * conversion from Wkt to Sref. Should contain properties for sref & wkt, or error if failed.
-     */
+     */ 
     function clickOnMap(xy, div, callback)
     {
       var lonlat = div.map.getLonLatFromPixel(xy);
@@ -1327,23 +1328,47 @@ mapLocationSelectedHooks = [];
       // Need to convert this map based Point to a _getSystem based Sref (done by pointToSref) and a
       // indiciaProjection based geometry (done by the callback)
       var point = new OpenLayers.Geometry.Point(lonlat.lon, lonlat.lat);
-      var polygon;
-
+      var polygon,plotShape;
       if (div.settings.clickForPlot) {
-       // Clicking to locate a plot
-       var plotShape = $('#' + div.settings.plotShapeId).val();
-       if (plotShape === 'rectangle') {
-         //create a rectangular polygon
-          var width = parseFloat($('#' + div.settings.plotWidthId).val());
-          var length = parseFloat($('#' + div.settings.plotLengthId).val());
-          // Define a polygon the size of the plot with SW corner at the click point
-          var linearRing = new OpenLayers.Geometry.LinearRing([
-            new OpenLayers.Geometry.Point(lonlat.lon, lonlat.lat),
-            new OpenLayers.Geometry.Point(lonlat.lon + width, lonlat.lat),
-            new OpenLayers.Geometry.Point(lonlat.lon + width, lonlat.lat + length),
-            new OpenLayers.Geometry.Point(lonlat.lon, lonlat.lat + length)
-          ]);
-          polygon = new OpenLayers.Geometry.Polygon([linearRing]);
+        //Get plot shape using jQuery or fall back on form structure option
+        if ($('#' + div.settings.plotShapeId).val())
+         plotShape = $('#' + div.settings.plotShapeId).val();
+        else 
+         plotShape = div.settings.plotShape;
+        // Clicking to locate a plot
+        if (plotShape === 'rectangle') {
+          var mapLayers = indiciaData.mapdiv.map.layers;
+          //When map is clicked on, then remove previous plots.
+          for(var a = 0; a < mapLayers.length; a++ ){
+            if (mapLayers[a].CLASS_NAME=='OpenLayers.Layer.Vector') {
+              mapLayers[a].removeAllFeatures();
+            }
+          };
+          $('#'+ div.settings.boundaryGeomId).val('');
+          var width,length;
+          //We might have code that wants to supply its own width and length, else get from onscreen fields
+          if (indiciaData.plotWidthLength) {
+            var widthLengthSplit=indiciaData.plotWidthLength.split(',');
+            width = widthLengthSplit[0];
+            length = widthLengthSplit[1];
+          } else {
+            //Get the width and length from fields, need to escape any colons for jQuery selector to work
+            width = parseFloat($('#' + div.settings.plotWidthId.replace(':','\\:')).val());
+            length = parseFloat($('#' + div.settings.plotLengthId.replace(':','\\:')).val());
+          }
+          if (!width || !length) {
+            if (indiciaData.noSizeWarning) {
+              alert(indiciaData.noSizeWarning);
+            } else {
+              alert('Both a plot width and length must be supplied');
+            }
+            $('#'+ div.settings.boundaryGeomId).val('');
+            return false;
+          }
+          //create a rectangular polygon
+          var coords = plot_rectangle_calculator(lonlat, width, length);
+          polygon = coords;
+          $('#'+ div.settings.boundaryGeomId).val(polygon);
         } else if (plotShape === 'circle') {
           // create a circular polygon
           var radius = parseFloat($('#' + div.settings.plotRadiusId).val());
@@ -1930,7 +1955,7 @@ mapLocationSelectedHooks = [];
           }
         });
       }
-      if (div.settings.editLayer && div.settings.allowPolygonRecording) {   
+      if (div.settings.editLayer && div.settings.allowPolygonRecording) {  
         div.map.editLayer.events.on({'featuremodified': function(evt) {
           if ($('#' + div.settings.boundaryGeomId).length>0) {
             $('#' + div.settings.boundaryGeomId).val(evt.feature.geometry.toString());
@@ -2309,3 +2334,88 @@ function format_selected_features(features, div) {
   }
 
 };
+
+//This is the code that creates the plot square/rectangle. It is called by the trigger when the user clicks on the map.
+//Firstly get the initial south-west point in the various grid reference formats (4326=lat long, 27700 = British National Grid)
+function plot_rectangle_calculator(latLongPoint, width, length) {
+  var xy3857 = latLongPoint,
+  pt3857 = new OpenLayers.Geometry.Point(xy3857.lon, xy3857.lat),
+  InitialClickPoint4326 = pt3857.clone().transform(indiciaData.mapdiv.map.projection, new OpenLayers.Projection('epsg:4326')),
+  InitialClickPoint27700 = pt3857.clone().transform(indiciaData.mapdiv.map.projection, new OpenLayers.Projection('epsg:27700'));
+
+  //Get an arbitrary point north of the original long, lat position. In our case this is 1 degree north but the amount doesn't really matter. Then convert to British National Grid
+  northTestPointLatLon = InitialClickPoint4326.clone();
+  northTestPointLatLon.y = northTestPointLatLon.y+1;
+  northTestPoint27700 = northTestPointLatLon.clone().transform('epsg:4326', new OpenLayers.Projection('epsg:27700'));
+
+  //Get a point the is at right angles to the original point and the arbitrary point north.
+  //We can do this by taking the british national grid x value of the south point and combining it with the 
+  //the y value of the north point. This will then create a right-angle triangle as the British National Grid is at an angle
+  //compared to long lat.
+  northRightAnglePoint27700 = northTestPoint27700.clone();
+  northRightAnglePoint27700.x = InitialClickPoint27700.x;
+
+  //We then work out the side lengths and angle of the right-angled triangle
+  var opposite = northTestPoint27700.x - northRightAnglePoint27700.x;
+  var adj = northRightAnglePoint27700.y - InitialClickPoint27700.y;
+  var gridAngle = Math.atan(opposite/adj);
+  //The hypotenuse is the distance north along the longitude line to our test point but in British National Grid 27700 metres.
+  var hyp = adj/Math.cos(gridAngle);
+
+  //As we now know the length in metres between the south point and our arbitrary north point (the hypotenuse), 
+  //we can now use the percent value to work out the Y distance in Lat Long 4326 format for the corner of the square above the original click point.
+  //This is because we know the distance in 4326 degrees, but now we also know the percentage the square length is along the line.
+  var hypmetrePercent = length/hyp;
+  var actualSquareNorthWestPoint4326= InitialClickPoint4326.clone();
+  actualSquareNorthWestPoint4326.y = InitialClickPoint4326.y+((northTestPointLatLon.y-InitialClickPoint4326.y)*hypmetrePercent);
+
+  //Next we need to use the same technique along the side of the square. We just need to use X values rather than Y values.
+  eastTestPointLatLon = InitialClickPoint4326.clone();
+  eastTestPointLatLon.x = eastTestPointLatLon.x+1;
+  eastTestPoint27700 = eastTestPointLatLon.clone().transform('epsg:4326', new OpenLayers.Projection('epsg:27700'));
+
+  eastRightAnglePoint27700 = eastTestPoint27700.clone();
+  eastRightAnglePoint27700.y = InitialClickPoint27700.y;
+
+  var opposite =  eastRightAnglePoint27700.y-eastTestPoint27700.y;
+  var adj = eastRightAnglePoint27700.x - InitialClickPoint27700.x;
+  var gridAngle = Math.atan(opposite/adj);
+  //The hypotenuse is the distance north along the latitude line to our east test point but in British National Grid 27700 metres.
+  var hyp = adj/Math.cos(gridAngle);
+
+  var hypmetrePercent = width/hyp;
+
+  var actualSquareSouthEastPoint4326= InitialClickPoint4326.clone();
+  actualSquareSouthEastPoint4326.x = InitialClickPoint4326.x+((eastTestPointLatLon.x-InitialClickPoint4326.x)*hypmetrePercent);
+
+  //As we know 3 of the plot corners, we can work out the 4th and then convert the plot square back into a form the map can understand   
+  actualSquareNorthEastPoint4326 = actualSquareSouthEastPoint4326.clone();
+  actualSquareNorthEastPoint4326.y = actualSquareNorthWestPoint4326.y;
+  //On the PSS site, the grid reference of the sqaure/rectangle needs to be in the middle.
+  //Just shift the corners of the square/rectangle west and south by half a side of the rectangle/square.
+  if (indiciaData.clickMiddleOfPlot) {
+    var westShift = (actualSquareSouthEastPoint4326.x - InitialClickPoint4326.x)/2;
+    var southShift = (actualSquareNorthWestPoint4326.y - InitialClickPoint4326.y)/2;
+
+    InitialClickPoint4326.x = InitialClickPoint4326.x - westShift;
+    InitialClickPoint4326.y = InitialClickPoint4326.y - southShift;
+
+    actualSquareNorthWestPoint4326.x = actualSquareNorthWestPoint4326.x - westShift;
+    actualSquareNorthWestPoint4326.y = actualSquareNorthWestPoint4326.y - southShift;
+
+    actualSquareSouthEastPoint4326.x = actualSquareSouthEastPoint4326.x - westShift;
+    actualSquareSouthEastPoint4326.y = actualSquareSouthEastPoint4326.y - southShift;
+
+    actualSquareNorthEastPoint4326.x = actualSquareNorthEastPoint4326.x - westShift;
+    actualSquareNorthEastPoint4326.y = actualSquareNorthEastPoint4326.y - southShift;
+  }
+  
+  mercOriginal = OpenLayers.Layer.SphericalMercator.forwardMercator(InitialClickPoint4326.x,InitialClickPoint4326.y);
+  mercNorth = OpenLayers.Layer.SphericalMercator.forwardMercator(actualSquareNorthWestPoint4326.x,actualSquareNorthWestPoint4326.y);
+  mercEast = OpenLayers.Layer.SphericalMercator.forwardMercator(actualSquareSouthEastPoint4326.x,actualSquareSouthEastPoint4326.y);  
+  mercNorthEast = OpenLayers.Layer.SphericalMercator.forwardMercator(actualSquareNorthEastPoint4326.x,actualSquareNorthEastPoint4326.y);
+
+  var polygonMetadata = 'POLYGON(('+mercOriginal.lon+' '+mercOriginal.lat+','+mercNorth.lon+' '+mercNorth.lat+','+mercNorthEast.lon+' '+mercNorthEast.lat+','+mercEast.lon+' '+mercEast.lat+'))';
+  var polygon=OpenLayers.Geometry.fromWKT(polygonMetadata);
+  return polygon;
+}
