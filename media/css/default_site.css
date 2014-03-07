@@ -676,6 +676,14 @@ div.olControlEditingToolbar .olControlClickSrefItemActive {
     background-position: -175px -23px;
 }
 
+div.olControlEditingToolbar .olControlFullscreenItemInactive {
+    background-position: -200px 0px;
+}
+
+div.olControlEditingToolbar .olControlFullscreenItemActive {
+    background-position: -200px -23px;
+}
+
 .delete-file {
   float: right;
 }
