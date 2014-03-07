@@ -1,0 +1,72 @@
+/* line 4, sass/quick_species_maps.scss */
+div #rightcol {
+  width: 49%;
+  float: right;
+  -moz-box-shadow: silver 3px 3px 6px;
+  -webkit-box-shadow: silver 3px 3px 6px;
+  -o-box-shadow: silver 3px 3px 6px;
+  box-shadow: silver 3px 3px 6px;
+  border: solid silver 1px;
+}
+/* line 10, sass/quick_species_maps.scss */
+div #leftcol {
+  width: 49%;
+  float: left;
+  -moz-box-shadow: silver 3px 3px 6px;
+  -webkit-box-shadow: silver 3px 3px 6px;
+  -o-box-shadow: silver 3px 3px 6px;
+  box-shadow: silver 3px 3px 6px;
+  border: solid silver 1px;
+}
+/* line 16, sass/quick_species_maps.scss */
+div #layerbox {
+  padding: 0 1em;
+  height: 90px;
+}
+/* line 19, sass/quick_species_maps.scss */
+div #layerbox ul li {
+  background: none;
+  vertical-align: middle;
+}
+/* line 22, sass/quick_species_maps.scss */
+div #layerbox ul li input {
+  margin: 0 0.5em;
+  vertical-align: middle;
+}
+/* line 26, sass/quick_species_maps.scss */
+div #layerbox ul li img {
+  margin: 0 0.5em;
+  vertical-align: middle;
+}
+
+/* line 35, sass/quick_species_maps.scss */
+#report-params fieldset {
+  border: none;
+  margin: 0;
+  padding: 0 1em;
+}
+/* line 39, sass/quick_species_maps.scss */
+#report-params fieldset legend {
+  display: none;
+}
+/* line 43, sass/quick_species_maps.scss */
+#report-params div.fieldset-wrapper > * {
+  display: -moz-inline-box;
+  -moz-box-orient: vertical;
+  display: inline-block;
+  vertical-align: middle;
+  *vertical-align: auto;
+}
+/* line 7, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/compass/stylesheets/compass/css3/_inline-block.scss */
+#report-params div.fieldset-wrapper > * {
+  *display: inline;
+}
+/* line 46, sass/quick_species_maps.scss */
+#report-params .param-container > * {
+  vertical-align: middle;
+}
+/* line 49, sass/quick_species_maps.scss */
+#report-params label, #report-params input {
+  width: auto;
+  margin: 0.1em 0.25em 0.1em 0.5em;
+}

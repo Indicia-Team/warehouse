@@ -1,0 +1,27 @@
+<report
+    title="Samples list for map"
+    description="A very simple map for the samples in UKBMS"
+>
+  <query website_filter_field="o.website_id">
+  SELECT #columns#
+  FROM cache_occurrences o
+  JOIN samples s on s.id=o.sample_id
+  JOIN samples sp on sp.id=s.parent_id
+  LEFT JOIN location_attribute_values sens on sens.location_id=sp.location_id and sens.location_attribute_id=#sensAttr# and sens.deleted=false  
+  WHERE #website_filter#
+  AND (sens.int_value is null or sens.int_value=0)
+  </query>
+  <params>
+    <param name="sensAttr" display="Sensitivity Location Attr ID" datatype="integer" />
+  </params>
+  <columns>
+    <column name='entered_sref' sql='sp.entered_sref' />
+    <column name='geom' visible='false' mappable="true" sql='st_astext(st_centroid(sp.geom))' />
+    <column name='pr' visible='false' feature_style="pointRadius" sql='5' />
+    <column name='sc' visible='false' feature_style="strokeColor" sql="'black'" aggregate='true'/>    
+    <column name='gn' visible='false' feature_style="graphicName" sql="'circle'" aggregate='true'/>    
+    <column name='year' aggregate='true' sql='max(extract(year from o.date_start))' />
+    <column name='fo' visible='false' feature_style="fillOpacity" sql="case max(extract(year from o.date_start)) when extract(year from now()) then 0.6 else 0.4 end" aggregate='true'/>
+    <column name='fc' visible='false' feature_style="fillColor" sql="case max(extract(year from o.date_start))when extract(year from now()) then 'red' else 'blue' end" aggregate='true'/>
+  </columns>
+</report>

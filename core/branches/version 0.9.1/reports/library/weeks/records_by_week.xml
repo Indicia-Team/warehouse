@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Records by week" description="Counts records by week for the last year.">
+  <query website_filter_field="o.website_id">
+    select #columns#
+    from generate_series(0,52) as weeks(no)
+    left join occurrences o on date_trunc('week', o.created_on)=date_trunc('week', CURRENT_DATE - (weeks.no*7))
+    #agreements_join#
+    #joins#
+    where #sharing_filter#
+  </query>
+  <order_bys>
+    <order_by>date_trunc('week', CURRENT_DATE - (weeks.no*7))</order_by>
+  </order_bys>    
+  <params>
+    <param name='survey_id' display='Survey' description='Select the survey to return data for, or leave for all surveys' datatype='lookup'
+        query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title'>
+      <where>o.survey_id=#survey_id#</where>
+    </param>
+    <param name="date_from" display="Date From" datatype="date">
+      <where>o.date_start&gt;='#date_from#'</where>
+    </param>
+    <param name="date_to" display="Date To" datatype="date">
+      <where>o.date_start&lt;='#date_to#'</where>
+    </param>
+    <param name="input_form" default="">
+      <where>o.input_form='#input_form#'</where>
+    </param>
+    <param name="location_id" default="" description="ID of location to return records for. This must be an indexed location using the Spatial Index Builder.">
+      <join>join index_locations_samples ils on ils.sample_id=o.sample_id and ils.location_id=#location_id#</join>
+    </param>
+    <param name="currentUser" default="" description="ID of user to report on.">
+      <where>o.created_by_id=#currentUser#</where>
+    </param>
+  </params>
+  <columns>
+    <column name="week" display="Weeks ago" sql="weeks.no" in_count="true" orderby="weekdate" />
+    <column name="weekdate" visible="false" sql="date_trunc('week', CURRENT_DATE - (weeks.no*7))" />
+    <column name="processed" display="Processed records" sql="count(case when record_status in ('V','R','D') then o.id else null end)" aggregate="true" />
+    <column name="total" display="Total" sql="count(distinct o.id)" aggregate="true" />
+  </columns>
+</report>

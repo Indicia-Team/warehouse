@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Sites and weekly counts list" description="A list of sites with links to the weekly counts available for this and last year.">
+  <query website_filter_field="lw.website_id">
+    select #columns#
+    from locations l
+    left join locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
+    left join samples slast on date_part('year', slast.date_start)=date_part('year', now())-1 and slast.location_id=l.id 
+        and slast.deleted=false and slast.parent_id is null
+        and (slast.created_by_id=#currentUser# or #currentUser#=0)
+    left join samples sthis on date_part('year', sthis.date_start)=date_part('year', now()) and sthis.location_id=l.id 
+        and sthis.deleted=false and sthis.parent_id is null
+        and (sthis.created_by_id=#currentUser# or #currentUser#=0)
+    where l.deleted=false
+    and #website_filter#
+    #filters#
+  </query>
+  <params>
+    <param name="location_type_id" display="Location Type" description="Select the location type, or leave blank to not filter by location type." datatype="lookup"
+        population_call="report:library/terms/terms_list:id:term:termlist_external_key=indicia:location_types,termlist_id=">
+      <where>l.location_type_id=#location_type_id#</where>
+    </param>
+    <param name="currentUser" display="Current User ID" description="Current user's warehouse ID. Allows filtering to only load the current user's samples." datatype="text" 
+        default="0"/>
+    <param name="ownData" display="My data only?" datatype="checkbox" default="0"/>
+  </params>
+  <columns>
+        <column name="id" visible="false" sql="l.id" datatype="integer"  />
+        <column name="name" display="Site name" sql="l.name" dataype="text" />
+        <column name="last_year" display="Previous Year" sql="date_part('year', now())-1" dataype="integer" />
+        <column name="this_year" display="This Year" sql="date_part('year', now())" dataype="integer" />
+        <column name="sample_id_last" visible="false" sql="slast.id" datatype="integer" />
+        <column name="last_yr_exists" visible="false" sql="case when slast.id is null then 'no' else 'yes' end" datatype="integer" />
+        <column name="sample_id_this" visible="false" sql="sthis.id" datatype="integer" />
+        <column name="this_yr_exists" visible="false" sql="case when sthis.id is null then 'no' else 'yes' end" datatype="integer" />
+  </columns>
+</report>

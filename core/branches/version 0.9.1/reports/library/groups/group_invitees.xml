@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Group invitees" description="Lists outstanding invites to a group which you administer.">
+      <query website_filter_field="g.website_id">
+      SELECT #columns#
+      FROM groups g
+      JOIN group_invitations i ON i.groups_id = g.id AND i.deleted = false
+      #joins#
+      WHERE g.id = #group_id#
+      AND #website_filter#
+      </query>
+  <params>
+    <param name="group_id" display="Group" description="Select the group to administer" datatype="lookup"
+        population_call="report:my_groups:id:title">
+    </param>
+  </params>
+  <order_bys>
+    <order_by>gi.email</order_by>
+  </order_bys>
+  <columns>
+        <column name="email" display="Email" sql="i.email" datatype="text" />
+  </columns>
+</report>

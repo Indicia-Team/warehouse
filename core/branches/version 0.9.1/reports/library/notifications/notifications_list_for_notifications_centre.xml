@@ -1,0 +1,46 @@
+<report
+    title="Notifications list for notifications centre"
+    description="A list of notifications for use with the notifications centre extension, 
+                 has additional functionality for handling edit and view icons on the grid when compared to the notifications_list.xml report.">
+  <query>
+  SELECT #columns#
+    FROM notifications n
+      LEFT JOIN occurrences o ON o.id=n.linked_id AND n.source='Verifications and comments'
+      LEFT JOIN cache_occurrences co ON n.linked_id=co.id AND co.website_id=#website_id# AND co.created_by_id=#user_id#
+      #joins#
+    WHERE n.acknowledged=false
+      and n.user_id=#user_id#  
+      and (o.training=#training# or o.id is null)
+    #order_by#
+  </query>  
+  <order_bys>
+    <order_by>n.id desc</order_by>
+  </order_bys>
+  <params>
+    <param name="user_id" display="User ID" description="Warehouse user ID" datatype="text" />
+    <param name="source_types" display="Source Types" 
+        description="Comma separated list of source types with each item single quoted, or blank to allow all. Options are 'T' (trigger), 'C' (comment), 'V' (verification)." datatype="text">
+      <join>
+        JOIN notifications n2 on n2.id=n.id and n2.source_type in (#source_types#)
+      </join>
+    </param>
+    <param name="system_name" display="System Name" description="Name to display instead of admin for system generated notifications" datatype="text" />
+    <param name="default_edit_page_path" display="Default edit page path" description="The default page that the notification edit link goes to if the input_form is blank and the user has rights to perform the edit" datatype="text"/>
+    <param name="view_record_page_path" display="View record page path" description="The default page that the notification view link goes to if the user has rights to view the record" datatype="text"/>
+    <param name="website_id" display="Website Id for the occurrence record." datatype="integer"/>
+  </params>
+  <columns>
+    <column name="notification_id" visible="false" sql="n.id" />
+    <column name="source" display='Source' visible="false" datatype="text" sql="n.source" />
+    <column name="source_type" display='Source type' visible="false" datatype="text" sql="n.source_type" />
+    <column name="data" display="Message" datatype="text" sql="replace(n.data, '&quot;username&quot;:&quot;admin&quot;', '&quot;username&quot;:&quot;#system_name#&quot;')" />
+    <column name="acknowledged" display="Acknowledged" datatype="boolean" sql="n.acknowledged" visible="false" />
+    <column name="user_id" display="User ID" visible="false" datatype="integer" sql="n.user_id" />
+    <column name="triggered_on" display="Notification date" datatype="date" sql="n.triggered_on" visible="false" />    
+    <column name="triggered_date" display="Notification date" datatype="date" sql="to_char(n.triggered_on, 'DD/MM/YYYY')" orderby="triggered_on" />
+    <column name="editing_form" visible="false" sql="case when co.input_form is null AND co.website_id=#website_id# AND co.created_by_id=#user_id# then'#default_edit_page_path#'else co.input_form end" />
+    <column name="viewing_form" visible="false" sql="case when co.website_id=#website_id# AND co.created_by_id=#user_id# then '#view_record_page_path#' else null end" />
+    <column name='editable_flag' visible='false' sql="case when co.website_id=#website_id# AND co.created_by_id=#user_id# AND ('#default_edit_page_path#' &lt;&gt; 'null' OR co.input_form IS NOT null) then true else false end" />
+    <column name='viewable_flag' visible='false' sql="case when co.website_id=#website_id# AND co.created_by_id=#user_id# AND '#view_record_page_path#' &lt;&gt; 'null' then true else false end" />
+  </columns>
+</report>

@@ -1,0 +1,20 @@
+<report
+  title="Get Species Names For Website"
+  description="Return the names for taxa associated with a website. Report currently returns common name with preferred name but could be extended.
+               Particularly useful for population_call used in reports for creating drop-down report parameters."
+>
+<query website_filter_field="cttl.website_id">
+  SELECT #columns#
+    FROM cache_taxa_taxon_lists cttl
+    JOIN websites w on w.id=cttl.website_id 
+  WHERE cttl.preferred=true
+  AND #website_filter#
+  ORDER BY case when cttl.default_common_name IS NOT NULL then cttl.default_common_name || ' - ' || cttl.preferred_taxon else cttl.preferred_taxon END
+  </query>
+  <columns>
+    <column name='id' display='Name' sql='cttl.id' datatype='integer' />
+    <column name='taxon_meaning_id' display='Name' sql='cttl.taxon_meaning_id' datatype='integer' />
+    <column name='name_common_preferred' display='Name' sql="case when cttl.default_common_name IS NOT NULL then cttl.default_common_name || ' - ' || cttl.preferred_taxon else cttl.preferred_taxon END" />
+  </columns>
+</report>
+

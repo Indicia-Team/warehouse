@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="Species and Occurrence Counts" description="Lists websites and the total number of occurrences and species associated with each.">
+      <query>
+      SELECT #columns#
+      FROM report_websites w
+      JOIN occurrences o ON o.website_id = w.id AND o.deleted = false
+      JOIN taxa_taxon_lists ttl ON o.taxa_taxon_list_id = ttl.id AND ttl.deleted=false
+      LEFT JOIN samples s on s.id = o.sample_id and s.deleted = false
+      LEFT JOIN surveys sv on sv.id = s.survey_id and sv.deleted = false
+      WHERE #website_filter#
+      </query>
+      <order_bys>
+            <order_by>title ASC</order_by>
+      </order_bys>
+      <columns>
+            <column name="title" display="Website Name" style="background-color: #e7e7e7;" sql="w.title" />
+            <column name="species_count" display="Total no. of Species" sql="COUNT(DISTINCT ttl.taxon_meaning_id)" aggregate="true" />
+            <column name="occurrences_count" display="Total no. of Occurrences" sql="COUNT(DISTINCT o.id)" aggregate="true" />
+      </columns>
+</report>

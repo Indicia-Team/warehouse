@@ -1,0 +1,61 @@
+#iform-header {
+  height: 108px;
+}
+.government-logo {
+  height: 100px;
+}
+.gabriel-lippmann-logo {
+  height: 50px;
+}
+#iform-logo-left {
+	float: left;
+}
+#iform-logo-right {
+	float: right;
+}
+
+label.narrow {
+  width: 30px;
+}
+#samples-grid td {
+  padding: 2px;
+  border: solid silver 1px;
+}
+.trSpeciesContainer {
+	display: inline-block;
+	width: 48%;
+	margin-right: 1%;
+	vertical-align: top;
+}
+
+.sl-input {
+  width: 50px;
+}
+
+.sectionlist p.inline-error {
+  margin-bottom:0;
+  margin-left:0;
+}
+
+.displayTransDateContainer {
+	display: inline-block;
+	width: 48%;
+	margin-right: 1%;
+	vertical-align: top;
+}
+
+div.location-allocation-wrapper-outer {
+  position: relative;
+}
+
+div.location-allocation-wrapper-inner {
+    margin-left: 6em;
+    overflow-y: auto;
+}
+
+td.freeze-first-col, th.freeze-first-col{
+	position: absolute;
+    left:0;
+    top:auto;
+    border: none;
+}

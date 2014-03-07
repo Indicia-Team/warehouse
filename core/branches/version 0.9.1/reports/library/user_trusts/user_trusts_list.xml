@@ -1,0 +1,34 @@
+<report
+  title="List of user trusts"
+  description="List all user trusts registered on the system."
+>
+  <query created_by_field="ut.created_by_id" training_filter_field="">
+select #columns#
+from user_trusts ut
+join users u on u.id=ut.user_id and u.deleted=false
+join people p on p.id=u.person_id and p.deleted=false
+join users uc on uc.id=ut.created_by_id and uc.deleted=false
+join people pc on pc.id=uc.person_id and pc.deleted=false
+left join surveys su on su.id=ut.survey_id and su.deleted=false
+left join taxon_groups tg on tg.id=ut.taxon_group_id and tg.deleted=false
+left join locations l on l.id=ut.location_id and l.deleted=false
+WHERE ut.deleted=false
+  </query>
+  <order_bys>
+    <order_by>p.surname || ', ' || p.first_name, pc.surname || ', ' || pc.first_name, su.title, tg.title, l.name</order_by>
+  </order_bys>
+  <columns>
+    <column name="id" display="User Trust ID" sql="ut.id" datatype="integer" visible="false"/>
+    <column name="trusted_user_id" display="User ID" sql="ut.user_id" datatype="integer" visible="false"/>
+    <column name="trusted_by_user_id" display="Trusted By User ID" sql="ut.created_by_id" datatype="integer" visible="false"/>
+    <column name="survey_id" display="Survey ID" sql="ut.survey_id" datatype="integer" visible="false"/>
+    <column name="taxon_group_id" display="Taxon Group ID" sql="ut.taxon_group_id" datatype="integer" visible="false"/>
+    <column name="location_id" display="Location ID" sql="ut.location_id" datatype="integer" visible="false"/>
+    <column name="person" display="Person" sql="p.surname || ', ' || p.first_name" datatype="string"/>
+    <column name="trusted_by" display="Trusted by" sql="pc.surname || ', ' || pc.first_name" datatype="string"/>
+    <column name="survey" display="Survey" sql="su.title" datatype="string"/>
+    <column name="taxon_group" display="Taxon group" sql="tg.title" datatype="string"/>
+    <column name="location" display="Location" sql="l.name" datatype="string"/>
+    <column name='belongs_to_user' display='Belongs to User' sql="CASE WHEN CAST(ut.created_by_id AS character varying) = '#user_id#' THEN true ELSE false END" visible="false" />
+  </columns>
+</report>

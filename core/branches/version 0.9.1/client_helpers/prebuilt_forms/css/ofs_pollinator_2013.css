@@ -1,0 +1,27 @@
+@CHARSET "ISO-8859-1";
+
+tr.top {
+  border-top: solid black 2px;
+}
+tr.dot-top {
+  border-top: dotted black 2px;
+}
+td.dot-right {
+  border-right: dotted black 2px;
+}
+.species-grid img {
+	height: 50px;
+}
+.species-grid td {
+    padding: 3px !important;
+}
+.species-grid input {
+	border: solid black 1px !important;
+}
+label {
+    width: auto;
+    min-width: 160px;
+}
+.control-box label {
+    min-width: 0px;
+}

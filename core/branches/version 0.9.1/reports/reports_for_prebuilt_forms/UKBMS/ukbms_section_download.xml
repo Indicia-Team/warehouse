@@ -1,0 +1,110 @@
+<report
+    title='UKBMS Section Level Download Report'
+    description='An occurrence list with a count attribute to be used as the UKBMS Section Level Download Report, with filters for Indicia user, date start and end, location.'
+>
+  <query website_filter_field='o.website_id'>
+  SELECT #field_sql#
+  FROM samples parent
+  JOIN samples s ON s.parent_id=parent.id AND s.deleted=false
+  JOIN locations l ON parent.location_id=l.id
+  JOIN locations l2 ON s.location_id=l2.id
+  JOIN occurrences o ON o.sample_id=s.id AND o.deleted=false
+  JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
+      AND (CAST(cttl.taxon_list_id AS character varying)='#taxon_list_id#' OR '#taxon_list_id#' = '')
+  LEFT JOIN (sample_attributes sa 
+    JOIN sample_attribute_values sav ON sav.sample_attribute_id = sa.id AND sav.deleted = false)
+      ON sa.caption = 'Recorder Name' AND sa.deleted = false AND sav.sample_id = parent.id
+  #joins#
+  WHERE parent.deleted = false
+  AND #website_filter#
+  #filters#
+  AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+      AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+  #order_by#
+  </query>
+  <field_sql>
+      o.id as occurrence_id, 
+      parent.id as sample_id,
+      l.name as site_name,
+      l.code as site_code,
+      s.id as subsample_id,
+      CASE l2.centroid_sref_system -- what OSGB 2letter, 6 digits
+        WHEN '4326' THEN 
+          CASE l.centroid_sref_system -- what OSGB 2letter, 6 digits
+            WHEN 'OSGB' THEN 
+              CASE (CAST(st_x(st_transform(l2.centroid_geom,27700)) AS INTEGER)/500000)*10 + (CAST(st_y(st_transform(l2.centroid_geom,27700)) AS INTEGER)/500000)
+                WHEN 0 THEN 'S' WHEN 1 THEN 'N' WHEN 10 THEN 'T' WHEN 11 THEN 'O' ELSE 'H'
+              END ||
+              CASE (mod(CAST(st_x(st_transform(l2.centroid_geom,27700)) AS INTEGER),500000)/100000)*10 + mod(CAST(st_y(st_transform(l2.centroid_geom,27700)) AS INTEGER),500000)/100000
+                WHEN  0 THEN 'V' WHEN  1 THEN 'Q' WHEN  2 THEN 'L' WHEN  3 THEN 'F' WHEN  4 THEN 'A'
+                WHEN 10 THEN 'W' WHEN 11 THEN 'R' WHEN 12 THEN 'M' WHEN 13 THEN 'G' WHEN 14 THEN 'B'
+                WHEN 20 THEN 'X' WHEN 21 THEN 'S' WHEN 22 THEN 'N' WHEN 23 THEN 'H' WHEN 24 THEN 'C'
+                WHEN 30 THEN 'Y' WHEN 31 THEN 'T' WHEN 32 THEN 'O' WHEN 33 THEN 'J' WHEN 34 THEN 'D'
+                WHEN 40 THEN 'Z' WHEN 41 THEN 'U' WHEN 42 THEN 'P' WHEN 43 THEN 'K' WHEN 44 THEN 'E' ELSE '-'
+              END ||
+              lpad(''||mod(CAST(st_x(st_transform(l2.centroid_geom,27700)) AS INTEGER), 100000)/100,3,'0') ||
+              lpad(''||mod(CAST(st_y(st_transform(l2.centroid_geom,27700)) AS INTEGER), 100000)/100,3,'0')
+            WHEN 'OSIE' THEN 
+              st_astext(st_transform(l2.centroid_geom,29903)) ||
+              CASE (mod(CAST(st_x(st_transform(l2.centroid_geom,29903)) AS INTEGER),500000)/100000)*10 + mod(CAST(st_y(st_transform(l2.centroid_geom,29903)) AS INTEGER),500000)/100000
+                WHEN  0 THEN 'V' WHEN  1 THEN 'Q' WHEN  2 THEN 'L' WHEN  3 THEN 'F' WHEN  4 THEN 'A'
+                WHEN 10 THEN 'W' WHEN 11 THEN 'R' WHEN 12 THEN 'M' WHEN 13 THEN 'G' WHEN 14 THEN 'B'
+                WHEN 20 THEN 'X' WHEN 21 THEN 'S' WHEN 22 THEN 'N' WHEN 23 THEN 'H' WHEN 24 THEN 'C'
+                WHEN 30 THEN 'Y' WHEN 31 THEN 'T' WHEN 32 THEN 'O' WHEN 33 THEN 'J' WHEN 34 THEN 'D'
+                WHEN 40 THEN 'Z' WHEN 41 THEN 'U' WHEN 42 THEN 'P' WHEN 43 THEN 'K' WHEN 44 THEN 'E' ELSE '-'
+              END ||
+              lpad(''||mod(CAST(st_x(st_transform(l2.centroid_geom,29903)) AS INTEGER), 100000)/100,3,'0') ||
+              lpad(''||mod(CAST(st_y(st_transform(l2.centroid_geom,29903)) AS INTEGER), 100000)/100,3,'0')
+            ELSE l2.centroid_sref
+          END
+        ELSE l2.centroid_sref
+      END as sref,
+      l2.code as section_name,
+      '' as date, --- allows proper positioning of date column in report
+      parent.date_start,
+      parent.date_end,
+      parent.date_type,
+      sav.text_value as recorder,
+      cttl.taxon_meaning_id,
+      cttl.preferred_taxon as taxon,
+      coalesce(cttl.default_common_name, cttl.preferred_taxon) as common
+  </field_sql>
+  <order_bys>
+    <order_by>l.name, section_name, parent.date_start, cttl.taxonomic_sort_order, o.id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='survey_id' display='Survey' description='Select the survey, or leave for all surveys' datatype='lookup'
+        population_call='direct:survey:id:title'>
+	  <where>s.survey_id=#survey_id#</where>
+	</param>
+    <param name='date_from' display='Date From' datatype='date'/>
+    <param name='date_to' display='Date To' datatype='date'/>
+    <param name='user_id' display='Indicia User ID' description='Enter the Indicia ID of the user' datatype='int' >
+      <where>parent.created_by_id=#user_id#</where>
+    </param>
+    <param name='taxon_list_id' display='Taxon list ID' description='ID of the taxon list to show' datatype='int' />
+    <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
+    <param name='location_id' display='Location ID' description='Enter the ID of the location' datatype='int' >
+      <where>parent.location_id=#location_id#</where>
+    </param>
+    <param name='location_list' display='Location List' description='Enter a comma separated list of location IDs' datatype='text' default='' >
+      <where>('#location_list#' = '(-1)' OR parent.location_id IN #location_list#)</where>
+    </param>
+  </params>
+  <columns>
+    <column name='location_id' visible='false' />
+    <column name='sublocation_id' visible='false' />
+    <column name='sample_id' visible='false' />
+    <column name='subsample_id' visible='false' />
+    <column name='occurrence_id' visible='false' />
+    <column name='site_name' display='Site Name' />
+    <column name='site_code' display='Site Code' />
+    <column name='section_name' display='Section No.' comment='used for section level data only'/>
+    <column name='sref' display='Section Grid Ref' />
+    <column name='date' display='Date' />
+    <column name='recorder' display='Recorder' />
+    <column name='taxon_meaning_id' visible='false' />
+    <column name='taxon' visible='false' comment='Latin Name' />    
+    <column name='common' display='Species' /> 
+  </columns>
+</report>
