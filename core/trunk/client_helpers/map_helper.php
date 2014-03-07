@@ -182,6 +182,7 @@ class map_helper extends helper_base {
   *    modifyFeature - a tool for selecting a feature on the map edit layer then editing the vertices of the feature.
   *    selectFeature - a tool for selecting a feature on the map edit layer.
   *    hoverFeatureHighlight - highlights the feature on the map edit layer which is under the mouse cursor position.
+  *    fullscreen - add a button allowing the map to be shown in full screen mode.
   * Default is layerSwitcher, panZoom and graticule.
   * </li>
   * <li><b>initialFeatureWkt</b><br/>

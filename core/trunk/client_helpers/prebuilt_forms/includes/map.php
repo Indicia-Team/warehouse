@@ -166,7 +166,7 @@ function iform_map_get_map_parameters() {
       'name' => 'standard_controls',
       'caption' => 'Controls to add to map',
       'description' => 'List of map controls, one per line. Select from layerSwitcher, zoomBox, panZoom, panZoomBar, drawPolygon, drawPoint, drawLine, '.
-         'hoverFeatureHighlight, clearEditLayer, modifyFeature, graticule. If using a data entry form and you add drawPolygon or drawLine controls then your '.
+         'hoverFeatureHighlight, clearEditLayer, modifyFeature, graticule, fullscreen. If using a data entry form and you add drawPolygon or drawLine controls then your '.
          'form will support recording against polygons and lines as well as grid references and points.',
       'type' => 'textarea',
       'group'=>'Other Map Settings',
