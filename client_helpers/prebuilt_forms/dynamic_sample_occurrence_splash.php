@@ -184,9 +184,8 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
         \"&system=\" + \"OSGB\" +
         \"&callback=?\", 
         function(data) {
-          if(typeof data.error != 'undefined') {
-            alert(data.error);
-          } else {
+          //Ignore errors as our regex spatial reference checker already handles this and we don't want to warn user twice
+          if(typeof data.error == 'undefined') {
             var attributes = {name: 'tree_map'};
             var polygon=OpenLayers.Geometry.fromWKT(data.wkt);
             if (indiciaData.mapdiv.map.projection.getCode() != indiciaData.mapdiv.indiciaProjection.getCode()) {
