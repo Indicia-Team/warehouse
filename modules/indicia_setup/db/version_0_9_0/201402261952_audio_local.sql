@@ -1,1 +1,0 @@
-select insert_term('Audio:Local', 'eng', null, 'indicia:media_types');

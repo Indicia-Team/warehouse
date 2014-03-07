@@ -5905,12 +5905,9 @@ if (errors$uniq.length>0) {
    * @param array $zero_values Set to an array of values which are considered to indicate a
    * zero abundance record if found for one of the zero_attrs. Values are case-insensitive. Defaults to
    * array('0','None','Absent').
-   * @param array Array of grid ids to ignore when building sub-samples for occurrences, useful for creating
-   * customised submissions that only need to build sub-samples for some grids. The grid id comes from the @id option given 
-   * to the species grid.
    */
   public static function wrap_species_checklist_with_subsamples($arr, $include_if_any_data=false,
-          $zero_attrs = true, $zero_values=array('0','None','Absent'), $gridsToExclude=array()){
+          $zero_attrs = true, $zero_values=array('0','None','Absent')){
     if (array_key_exists('website_id', $arr)){
       $website_id = $arr['website_id'];
     } else {
@@ -5937,13 +5934,7 @@ if (errors$uniq.length>0) {
     $sampleRecords = array();
     $subModels = array();
     foreach ($arr as $key=>$value){
-      $gridExcluded=false;
-      foreach ($gridsToExclude as $gridToExclude) {
-        if (substr($key, 0, strlen($gridToExclude)+3)=='sc:'.$gridToExclude) {
-          $gridExcluded=true;
-        }
-      }
-      if ($gridExcluded===false && substr($key, 0, 3)=='sc:' && substr($key, 2, 7)!=':-idx-:' && substr($key, 2, 3)!=':n:'){ //discard the hidden cloneable rows
+      if (substr($key, 0, 3)=='sc:' && substr($key, 2, 7)!=':-idx-:' && substr($key, 2, 3)!=':n:'){ //discard the hidden cloneable rows
         // Don't explode the last element for occurrence attributes
         $a = explode(':', $key, 4);
         $b = explode(':', $a[3], 2);
@@ -5954,7 +5945,7 @@ if (errors$uniq.length>0) {
           $occurrenceRecords[$a[1]][$a[3]] = $value;
           if($a[2]) $occurrenceRecords[$a[1]]['id'] = $a[2];
         }
-      }      
+      }
     }
     foreach ($sampleRecords as $id => $sampleRecord) {
       $sampleRecords[$id]['occurrences'] = array();
