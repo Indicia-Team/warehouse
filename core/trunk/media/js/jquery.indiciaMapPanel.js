@@ -2036,6 +2036,34 @@ mapLocationSelectedHooks = [];
             // if this control is not active, also need to reflect this in the layer.
             ctrlObj.gratLayer.setVisibility(false);
           }
+        } else if (ctrl==="fullscreen") {
+          var fullscreenEnabled = document.fullscreenEnabled || document.mozFullScreenEnabled || document.webkitFullscreenEnabled,
+          fullscreenchange=function () {
+            var fullscreenElement = document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement;
+            div.map.updateSize();
+            if (fullscreenElement) {
+              indiciaData.origFullscreenWidth=$(div).css('width');
+              indiciaData.origFullscreenHeight=$(div).css('height');
+              $(div).css('width','100%');
+              $(div).css('height','100%');
+            } else {
+              $(div).css('width', indiciaData.origFullscreenWidth);
+              $(div).css('height', indiciaData.origFullscreenHeight);
+            }              
+          };
+          if (fullscreenEnabled) {
+            document.addEventListener("fullscreenchange", fullscreenchange);
+            document.addEventListener("mozfullscreenchange", fullscreenchange);
+            document.addEventListener("webkitfullscreenchange", fullscreenchange);
+            document.addEventListener("msfullscreenchange", fullscreenchange);
+            ctrlObj = new OpenLayers.Control.Button({
+                displayClass: "olControlFullscreen", title: div.settings.hintFullscreen, trigger: function() {
+                  var fs = div.requestFullscreen || div.mozRequestFullScreen || div.webkitRequestFullScreen || div.msRequestFullscreen;
+                  fs.call(div);
+                }
+            });
+            toolbarControls.push(ctrlObj);
+          }
         }
         // activate the control if available and in the config settings. A null control cannot be activated.
         if (ctrlObj!==null && $.inArray(ctrl, div.settings.activatedStandardControls)>-1) {
@@ -2257,6 +2285,7 @@ jQuery.fn.indiciaMapPanel.defaults = {
     hintDrawForReportingHint: 'You can then filter the report for intersecting records.',
     hintClearSelection: 'Clear the edit layer',
     hintModifyFeature: 'Modify the selected feature. Grab and drag the handles or double click on lines to add new handles.',
+    hintFullscreen: 'Display the map in full screen mode',
     hlpClickOnceSetSref: 'Click once on the map to set your location.',
     hlpClickAgainToCorrect: 'Click on the map again to correct your position if necessary.',
     hlpPanZoom: 'Pan and zoom the map to the required place by dragging the map and double clicking or Shift-dragging to zoom.',
