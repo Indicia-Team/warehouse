@@ -1,5 +1,5 @@
 <report
-    title="Shorewatch efforts"
+    title="Splash Visits"
     description="Display a list of visits (parent samples for splash)."
 >
   <query website_filter_field="sv.website_id">
