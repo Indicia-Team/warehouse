@@ -2042,8 +2042,10 @@ mapLocationSelectedHooks = [];
             var fullscreenElement = document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement;
             div.map.updateSize();
             if (fullscreenElement) {
-              indiciaData.origFullscreenWidth=$(div).css('width');
-              indiciaData.origFullscreenHeight=$(div).css('height');
+              if (typeof indiciaData.origFullscreenWidth==="undefined") {
+                indiciaData.origFullscreenWidth=$(div).css('width');
+                indiciaData.origFullscreenHeight=$(div).css('height');
+              }
               $(div).css('width','100%');
               $(div).css('height','100%');
             } else {
