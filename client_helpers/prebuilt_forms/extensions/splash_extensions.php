@@ -537,9 +537,8 @@ class extension_splash_extensions {
     } else {
       map_helper::$javascript .= "indiciaData.noSizeWarning='Please select plot type from the drop-down.';\n";
     }
-    //This is a small fudge, when in edit mode the page does not immediately load in a mode when the plot can be rotated until the user clicks on the map,
-    //force the user to click on the map if they want to edit by unsetting the plot type drop-down, they will be warned unless they click on the map again.
-    map_helper::$javascript .= "$('#location\\\\:location_type_id').attr('selectedIndex', 0);";
+    //In edit mode, we need to manually load the plot geom
+    map_helper::$javascript .= "$('#imp-boundary-geom').val($('#imp-geom').val());";
     //If you change the location type then clear the features already on the map
     //If no location type is selected, then don't provide the plot drawing code with plot size details, this way it automatically warns the user  
     map_helper::$javascript .= "
@@ -553,8 +552,8 @@ class extension_splash_extensions {
         $('#locAttr\\\\:'+indiciaData.plotLengthAttrId).val('');
       }
     });\n";
-    //Do not allow submission if there is no plot set or no location type (this last check stops the user from resubmitting without click on map first otherwise it doesn't work at the moment
-    data_entry_helper::$javascript .= "$('#entry_form').submit(function() { if (!$('#imp-boundary-geom').val() || !$('#location\\\\:location_type_id').val()) {alert('Please select a plot type and create a plot before continuing.'); return false; }});\n";
+    //Do not allow submission if there is no plot set
+    data_entry_helper::$javascript .= "$('#entry_form').submit(function() { if (!$('#imp-boundary-geom').val()) {alert('Please select a plot type and create a plot before continuing.'); return false; }});\n";
   }
 }
 ?>
