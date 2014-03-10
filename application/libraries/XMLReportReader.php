@@ -881,7 +881,7 @@ class XMLReportReader_Core implements ReportReader
         'quality' => array('datatype'=>'lookup', 'default'=>'', 'display'=>'Quality', 
             'description'=>'Minimum quality of records to include', 
             'lookup_values'=>'=V:Verified records only,C:Recorder was certain,L:Recorder thought the record was at least likely,P:Pending verification,' .
-                'T:Pending verification for trusted recorders,!R:Everything except rejected,all:Everything including rejected,D:Queried records only,'.
+                'T:Pending verification for trusted recorders,!D:Everything except dubious or rejected,!R:Everything except rejected,all:Everything including rejected,D:Queried records only,'.
                 'R:Rejected records only,DR:Queried or rejected records',
             'wheres' => array(
               array('value'=>'V', 'operator'=>'equal', 'sql'=>"o.record_status='V'"),
@@ -889,6 +889,7 @@ class XMLReportReader_Core implements ReportReader
               array('value'=>'L', 'operator'=>'equal', 'sql'=>"o.record_status<>'R' and o.certainty in ('C','L')"),
               array('value'=>'P', 'operator'=>'equal', 'sql'=>"o.record_status in ('C','S')"),
               array('value'=>'T', 'operator'=>'equal', 'sql'=>"o.record_status in ('C','S')"),
+              array('value'=>'!D', 'operator'=>'equal', 'sql'=>"o.record_status not in ('R','D')"),
               array('value'=>'!R', 'operator'=>'equal', 'sql'=>"o.record_status<>'R'"),
               array('value'=>'D', 'operator'=>'equal', 'sql'=>"o.record_status='D'"),
               array('value'=>'R', 'operator'=>'equal', 'sql'=>"o.record_status='R'"),
