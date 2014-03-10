@@ -396,10 +396,10 @@ class map_helper extends helper_base {
       if (isset($options['tabDiv'])) {
         $divId = preg_replace('/[^a-zA-Z0-9]/', '', $options['divId']);
         $javascript .= "var mapTabHandler = function(event, ui) { \n";
-        $javascript .= "  if (ui.panel.id=='".$options['tabDiv']."' && typeof indiciaData.mapdiv !== 'undefined') {\n";
+        $javascript .= "  if (typeof indiciaData.mapdiv !== 'undefined' && $(indiciaData.mapdiv).parents('#'+ui.panel.id).length) {\n";
         $javascript .= "    indiciaData.mapdiv.map.updateSize();\n";
         $javascript .= "  }\n\n};\n";
-        $javascript .= "jQuery(jQuery('#".$options['tabDiv']."').parent()).bind('tabsshow', mapTabHandler);\n";
+        $javascript .= "$($('#".$options['tabDiv']."').parent()).bind('tabsshow', mapTabHandler);\n";
         // Insert this script at the beginning, because it must be done before the tabs are initialised or the 
         // first tab cannot fire the event
         self::$javascript = $javascript . self::$javascript;

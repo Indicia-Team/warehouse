@@ -46,6 +46,8 @@ class extension_event_reports {
     $mapOptions = iform_map_get_map_options($args, $auth['read']);
     $olOptions = iform_map_get_ol_options($args);
     $mapOptions['clickForSpatialRef'] = false;
+     if ($args['interface']!=='one_page')
+      $mapOptions['tabDiv'] = $tabalias;
     $r = map_helper::map_panel($mapOptions, $olOptions);
     if (!empty($options['output']) && $options['output']==='species')
       $type='species';
