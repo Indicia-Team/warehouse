@@ -1854,7 +1854,7 @@ mapSettingsHooks.push(function(opts) { $setLocationJs
         if (isset($options['cachePerUser']) && !$options['cachePerUser']) 
           unset($cacheOpts['user_id']);
         $cacheTimeOut = self::_getCacheTimeOut($options);
-        $cacheFolder = self::relative_client_helper_path() . (isset(parent::$cache_folder) ? parent::$cache_folder : 'cache/');
+        $cacheFolder = parent::$cache_folder ? parent::$cache_folder : self::relative_client_helper_path() . 'cache/';
         $cacheFile = self::_getCacheFileName($cacheFolder, $cacheOpts, $cacheTimeOut);        
         $response = self::_getCachedResponse($cacheFile, $cacheTimeOut, $cacheOpts);
       }
