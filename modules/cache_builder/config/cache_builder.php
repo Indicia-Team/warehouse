@@ -218,6 +218,38 @@ $config['taxa_taxon_lists']['insert']="insert into cache_taxa_taxon_lists (
 $config['taxa_taxon_lists']['join_needs_update']='join needs_update_taxa_taxon_lists nu on nu.id=ttl.id';
 $config['taxa_taxon_lists']['key_field']='ttl.id';
 
+$config['taxa_taxon_lists']['extra_multi_record_updates']=array(
+    // nullify the recorders field so it gets an update
+    'Ranks' => "with recursive q as (
+  select ttl1.id, ttl1.id as child_id, ttl1.taxon as child_taxon, ttl2.parent_id, ''::varchar as rank_taxon, ''::varchar as rank
+  from cache_taxa_taxon_lists ttl1  
+  join cache_taxa_taxon_lists ttl2 on ttl2.external_key=ttl1.external_key and ttl2.taxon_list_id=#master_list_id#
+  join needs_update_taxa_taxon_lists nu on nu.id=ttl1.id
+  union all
+  select ttl.id, q.child_id, q.child_taxon, ttl.parent_id, t.taxon as rank_taxon, tr.rank
+  from q
+  join taxa_taxon_lists ttl on ttl.id=q.parent_id
+  join taxa t on t.id=ttl.taxon_id and t.deleted=false
+  join taxon_ranks tr on tr.id=t.taxon_rank_id and tr.deleted=false 
+) select distinct * into temporary rankupdate from q;
+
+update cache_taxa_taxon_lists cttl
+set kingdom_taxa_taxon_list_id=ru.id, kingdom_taxon=rank_taxon
+from rankupdate ru
+where ru.child_id=cttl.id and ru.rank='Kingdom';
+
+update cache_taxa_taxon_lists cttl
+set order_taxa_taxon_list_id=ru.id, order_taxon=rank_taxon
+from rankupdate ru
+where ru.child_id=cttl.id and ru.rank='Order';
+
+update cache_taxa_taxon_lists cttl
+set family_taxa_taxon_list_id=ru.id, family_taxon=rank_taxon
+from rankupdate ru
+where ru.child_id=cttl.id and ru.rank='Family';
+
+drop table rankupdate;");
+
 $config['taxon_searchterms']['get_missing_items_query']="
     select distinct on (ttl.id) ttl.id, tl.deleted or ttl.deleted or ttlpref.deleted or t.deleted 
         or l.deleted or tpref.deleted or tg.deleted or lpref.deleted as deleted
