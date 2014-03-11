@@ -207,13 +207,17 @@ class cache_builder {
    * @param string $action Term describing the action, used for feedback only.
    */
   private static function run_statement($db, $table, $query, $action) {
+    $master_list_id = Kohana::config('cache_builder_variables.master_list_id', FALSE, FALSE);
+    $master_list_id = $master_list_id ? $master_list_id : 0; // default so nothing breaks
     if (is_array($query)) {
       foreach ($query as $title => $sql) {
+        $sql = str_replace('#master_list_id#', $master_list_id, $sql);
         $count = $db->query($sql)->count();
         if (variable::get("populated-$table"))
           echo ", $count $action(s) for $title";
       }
     } else {
+      $sql = str_replace('#master_list_id#', $master_list_id, $query);
       $count = $db->query($query)->count();
       if (variable::get("populated-$table"))
         echo ", $count $action(s)";

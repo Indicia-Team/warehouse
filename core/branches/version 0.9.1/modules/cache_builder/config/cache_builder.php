@@ -218,6 +218,38 @@ $config['taxa_taxon_lists']['insert']="insert into cache_taxa_taxon_lists (
 $config['taxa_taxon_lists']['join_needs_update']='join needs_update_taxa_taxon_lists nu on nu.id=ttl.id';
 $config['taxa_taxon_lists']['key_field']='ttl.id';
 
+$config['taxa_taxon_lists']['extra_multi_record_updates']=array(
+    // nullify the recorders field so it gets an update
+    'Ranks' => "with recursive q as (
+  select ttl1.id, ttl1.id as child_id, ttl1.taxon as child_taxon, ttl2.parent_id, ''::varchar as rank_taxon, ''::varchar as rank
+  from cache_taxa_taxon_lists ttl1  
+  join cache_taxa_taxon_lists ttl2 on ttl2.external_key=ttl1.external_key and ttl2.taxon_list_id=#master_list_id#
+  join needs_update_taxa_taxon_lists nu on nu.id=ttl1.id
+  union all
+  select ttl.id, q.child_id, q.child_taxon, ttl.parent_id, t.taxon as rank_taxon, tr.rank
+  from q
+  join taxa_taxon_lists ttl on ttl.id=q.parent_id
+  join taxa t on t.id=ttl.taxon_id and t.deleted=false
+  join taxon_ranks tr on tr.id=t.taxon_rank_id and tr.deleted=false 
+) select distinct * into temporary rankupdate from q;
+
+update cache_taxa_taxon_lists cttl
+set kingdom_taxa_taxon_list_id=ru.id, kingdom_taxon=rank_taxon
+from rankupdate ru
+where ru.child_id=cttl.id and ru.rank='Kingdom';
+
+update cache_taxa_taxon_lists cttl
+set order_taxa_taxon_list_id=ru.id, order_taxon=rank_taxon
+from rankupdate ru
+where ru.child_id=cttl.id and ru.rank='Order';
+
+update cache_taxa_taxon_lists cttl
+set family_taxa_taxon_list_id=ru.id, family_taxon=rank_taxon
+from rankupdate ru
+where ru.child_id=cttl.id and ru.rank='Family';
+
+drop table rankupdate;");
+
 $config['taxon_searchterms']['get_missing_items_query']="
     select distinct on (ttl.id) ttl.id, tl.deleted or ttl.deleted or ttlpref.deleted or t.deleted 
         or l.deleted or tpref.deleted or tg.deleted or lpref.deleted as deleted
@@ -404,7 +436,7 @@ $config['taxon_searchterms']['insert']['standard terms']="insert into cache_taxo
     from cache_taxa_taxon_lists cttl
     left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type in ('L','S','V') and cts.simplified='f'
     #join_needs_update#
-    where cts.taxa_taxon_list_id is null";
+    where cts.taxa_taxon_list_id is null and cttl.allow_data_entry=false";
 
 $config['taxon_searchterms']['insert']['abbreviations']="insert into cache_taxon_searchterms (
       taxa_taxon_list_id, taxon_list_id, searchterm, original, taxon_group_id, taxon_group, taxon_meaning_id, preferred_taxon,
@@ -422,7 +454,7 @@ $config['taxon_searchterms']['insert']['abbreviations']="insert into cache_taxon
       and ttlpref.deleted=false
     left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type='A'
     #join_needs_update#
-    where cts.taxa_taxon_list_id is null and cttl.language_iso='lat'";
+    where cts.taxa_taxon_list_id is null and cttl.language_iso='lat' and cttl.allow_data_entry=false";
 
 $config['taxon_searchterms']['insert']['simplified terms']="insert into cache_taxon_searchterms (
       taxa_taxon_list_id, taxon_list_id, searchterm, original, taxon_group_id, taxon_group, taxon_meaning_id, preferred_taxon,
@@ -443,7 +475,7 @@ $config['taxon_searchterms']['insert']['simplified terms']="insert into cache_ta
     from cache_taxa_taxon_lists cttl
     left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type in ('L','S','V') and cts.simplified=true
     #join_needs_update#
-    where cts.taxa_taxon_list_id is null";
+    where cts.taxa_taxon_list_id is null and cttl.allow_data_entry=false";
 
 $config['taxon_searchterms']['insert']['codes']="insert into cache_taxon_searchterms (
       taxa_taxon_list_id, taxon_list_id, searchterm, original, taxon_group_id, taxon_group, taxon_meaning_id, preferred_taxon,
@@ -460,7 +492,7 @@ $config['taxon_searchterms']['insert']['codes']="insert into cache_taxon_searcht
     join termlists_terms tltcategory on tltcategory.id=tlttype.parent_id and tltcategory.deleted=false
     join terms tcategory on tcategory.id=tltcategory.term_id and tcategory.term='searchable' and tcategory.deleted=false
     #join_needs_update#
-    where cts.taxa_taxon_list_id is null";
+    where cts.taxa_taxon_list_id is null and cttl.allow_data_entry=false";
 
 $config['taxon_searchterms']['insert']['id_diff'] = "update cache_taxon_searchterms cts
     set identification_difficulty=extkey.value::integer, id_diff_verification_rule_id=vr.id
