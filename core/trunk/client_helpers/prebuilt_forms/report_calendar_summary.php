@@ -1108,7 +1108,7 @@ class iform_report_calendar_summary {
   private static function _getCacheFileName($userID)
   {
     /* If timeout is not set, we're not caching */
-  	$path = data_entry_helper::relative_client_helper_path() . (isset(data_entry_helper::$cache_folder) ? data_entry_helper::$cache_folder : 'cache/');
+  	$path = parent::$cache_folder ? parent::$cache_folder : self::relative_client_helper_path() . 'cache/';
     if(!is_dir($path) || !is_writeable($path)) return false;
     return $path.'cache_'.data_entry_helper::$website_id.'_CMS_User_List_'.$userID;
   }

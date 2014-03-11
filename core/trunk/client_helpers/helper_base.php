@@ -316,6 +316,11 @@ class helper_base extends helper_config {
   public static $images_path = null;
   
   /**
+   * @var string Path to Indicia cache folder. Defaults to client_helpers/cache.
+   */
+  public static $cache_folder = false;
+  
+  /**
    * @var string Path to proxy script for calls to the warehouse (optional, allows the warehouse to sit behind a firewall only accessible
    * from the server).
    */
@@ -347,6 +352,18 @@ class helper_base extends helper_config {
    * @var boolean Setting to completely disable loading from the cache
    */
   public static $nocache = false;
+  
+ /**
+   * @var integer On average, every 1 in $interim_image_chance_purge times the Warehouse is called for data, all interim images
+   * older than $interim_image_expiry seconds will be deleted. These are images that should have uploaded to the warehouse but the form was not
+   * finally submitted.
+   */
+  public static $interim_image_chance_purge=100;
+
+  /**
+   * @var integer On average, every 1 in $cache_chance_expire times the Warehouse is called for data which is
+   */
+  public static $interim_image_expiry=14400;
 
   /**
    * List of methods used to report a validation failure. Options are message, message, hint, icon, colour, inline.
@@ -1893,7 +1910,7 @@ indiciaData.windowLoaded=false;
   public function cache_get($cacheOpts, $cacheTimeout=false) {
     if (!$cacheTimeout)
       $cacheTimeout = self::_getCacheTimeOut($options);
-    $cacheFolder = data_entry_helper::relative_client_helper_path() . (isset(data_entry_helper::$cache_folder) ? data_entry_helper::$cache_folder : 'cache/');
+    $cacheFolder = parent::$cache_folder ? parent::$cache_folder : self::relative_client_helper_path() . 'cache/';
     $cacheFile = data_entry_helper::_getCacheFileName($cacheFolder, $cacheOpts, $cacheTimeout);
     $r = data_entry_helper::_getCachedResponse($cacheFile, $cacheTimeout, $cacheOpts);
     return $r === false ? $r : $r['output'];
@@ -1908,7 +1925,7 @@ indiciaData.windowLoaded=false;
   public function cache_set($cacheOpts, $toCache, $cacheTimeout=false) {
     if (!$cacheTimeout)
       $cacheTimeout = self::_getCacheTimeOut($options);
-    $cacheFolder = data_entry_helper::relative_client_helper_path() . (isset(data_entry_helper::$cache_folder) ? data_entry_helper::$cache_folder : 'cache/');
+    $cacheFolder = parent::$cache_folder ? parent::$cache_folder : self::relative_client_helper_path() . 'cache/';
     $cacheFile = data_entry_helper::_getCacheFileName($cacheFolder, $cacheOpts, $cacheTimeout);
     self::_cacheResponse($cacheFile, array('output' => $toCache), $cacheOpts);
   }
@@ -2014,6 +2031,95 @@ indiciaData.windowLoaded=false;
       rename($file.getmypid(),$file);
     }
   }
+  
+  /**
+   * Helper function to clear the Indicia cache files.
+   */
+  public static function clear_cache() {
+    $cacheFolder = self::$cache_folder ? self::$cache_folder : self::relative_client_helper_path() . 'cache/';
+    if(!$dh = @opendir($cacheFolder)) {
+      return;
+    }
+    while (false !== ($obj = readdir($dh))) {
+      if($obj != '.' && $obj != '..')
+        @unlink($cacheFolder . '/' . $obj);
+    }
+    closedir($dh);
+  }
+
+  /**
+   * Internal function to ensure old cache files are purged periodically.
+   */
+  protected static function _purgeCache() {
+    $cacheFolder = self::$cache_folder ? self::$cache_folder : self::relative_client_helper_path() . 'cache/';
+    self::purgeFiles(self::$cache_chance_purge, $cacheFolder, self::$cache_timeout * 5, self::$cache_allowed_file_count);
+  }
+
+  /**
+   * Internal function to ensure old image files are purged periodically.
+   */
+  protected static function _purgeImages() {
+    $interimImageFolder = self::relative_client_helper_path() . (isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/');
+    self::purgeFiles(self::$cache_chance_purge, $interimImageFolder, self::$interim_image_expiry);
+  }
+
+  /**
+   * Performs a periodic purge of cached files.
+   * @param integer $chanceOfPurge Indicates the chance of a purge happening. 1 causes a purge
+   * every time the function is called, 10 means there is a 1 in 10 chance, etc.
+   * @param string $folder Path to the folder to purge cache files from.
+   * @param integer $timeout Age of files in seconds before they will be considered for
+   * purging.
+   * @param integer $allowedFileCount Number of most recent files to not bother purging
+   * from the cache.
+   */
+  private static function purgeFiles($chanceOfPurge, $folder, $timeout, $allowedFileCount=0) {
+    // don't do this every time.
+    if (rand(1, $chanceOfPurge)===1) {
+      // First, get an array of files sorted by date
+      $files = array();
+      $dir =  opendir($folder);
+      if ($dir) {
+        while ($filename = readdir($dir)) {
+          if ($filename == '.' || $filename == '..' || is_dir($filename))
+            continue;
+          $lastModified = filemtime($folder . $filename);
+          $files[] = array($folder .$filename, $lastModified);
+        }
+      }
+      // sort the file array by date, oldest first
+      usort($files, array('data_entry_helper', 'DateCmp'));
+      // iterate files, ignoring the number of files we allow in the cache without caring.
+      for ($i=0; $i<count($files)-$allowedFileCount; $i++) {
+        // if we have reached a file that is not old enough to expire, don't go any further
+        if ($files[$i][1] > (time() - $timeout)) {
+          break;
+        }
+        // clear out the old file
+        if (is_file($files[$i][0]))
+          unlink($files[$i][0]);
+      }
+    }
+  }
+  
+    
+  /**
+   * A custom PHP sorting function which uses the 2nd element in the compared array to 
+   * sort by. The sorted array normally contains a list of files, with the first element
+   * of each array entry being the file path and the second the file date stamp.
+   * @param int $a Datestamp of the first file to compare.
+   * @param int $b Datestamp of the second file to compare.
+   */
+  private static function DateCmp($a, $b)
+  {
+    if ($a[1]<$b[1])
+      $r = -1;
+    else if ($a[1]>$b[1])
+      $r = 1;
+    else $r=0;
+    return $r;
+  }
+
 }
 
 /**

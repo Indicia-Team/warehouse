@@ -77,18 +77,6 @@ class data_entry_helper extends helper_base {
   public static $entity_to_load=null;
 
   /**
-   * @var integer On average, every 1 in $interim_image_chance_purge times the Warehouse is called for data, all interim images
-   * older than $interim_image_expiry seconds will be deleted. These are images that should have uploaded to the warehouse but the form was not
-   * finally submitted.
-   */
-  public static $interim_image_chance_purge=100;
-
-  /**
-   * @var integer On average, every 1 in $cache_chance_expire times the Warehouse is called for data which is
-   */
-  public static $interim_image_expiry=14400;
-
-  /**
    * @var Array List of fields that are to be stored in a cookie and reloaded the next time a form is accessed. These
    * are populated by implementing a hook function called indicia_define_remembered_fields which calls set_remembered_fields.
    */
@@ -4996,7 +4984,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     }
     else {
       $cacheTimeOut = self::_getCacheTimeOut($options);
-      $cacheFolder = self::relative_client_helper_path() . (isset(parent::$cache_folder) ? parent::$cache_folder : 'cache/');
+      $cacheFolder = parent::$cache_folder ? parent::$cache_folder : self::relative_client_helper_path() . 'cache/';
       $cacheFile = self::_getCacheFileName($cacheFolder, $cacheOpts, $cacheTimeOut);
       if (!($response = self::_getCachedResponse($cacheFile, $cacheTimeOut, $cacheOpts)))
         $response = self::http_post($request, null);
@@ -5018,7 +5006,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    * Helper function to clear the Indicia cache files.
    */
   public static function clear_cache() {
-    $cacheFolder = self::relative_client_helper_path() . (isset(parent::$cache_folder) ? parent::$cache_folder : 'cache/');
+    $cacheFolder = parent::$cache_folder ? parent::$cache_folder : self::relative_client_helper_path() . 'cache/';
     if(!$dh = @opendir($cacheFolder)) {
       return;
     }
@@ -5028,79 +5016,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     }
     closedir($dh);
   }
-
-  /**
-   * Internal function to ensure old cache files are purged periodically.
-   */
-  private static function _purgeCache() {
-    $cacheFolder = self::relative_client_helper_path() . (isset(parent::$cache_folder) ? parent::$cache_folder : 'cache/');
-    self::purgeFiles(self::$cache_chance_purge, $cacheFolder, self::$cache_timeout * 5, self::$cache_allowed_file_count);
-  }
-
-  /**
-   * Internal function to ensure old image files are purged periodically.
-   */
-  private static function _purgeImages() {
-    $interimImageFolder = self::relative_client_helper_path() . (isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/');
-    self::purgeFiles(self::$cache_chance_purge, $interimImageFolder, self::$interim_image_expiry);
-  }
-
-  /**
-   * Performs a periodic purge of cached files.
-   * @param integer $chanceOfPurge Indicates the chance of a purge happening. 1 causes a purge
-   * every time the function is called, 10 means there is a 1 in 10 chance, etc.
-   * @param string $folder Path to the folder to purge cache files from.
-   * @param integer $timeout Age of files in seconds before they will be considered for
-   * purging.
-   * @param integer $allowedFileCount Number of most recent files to not bother purging
-   * from the cache.
-   */
-  private static function purgeFiles($chanceOfPurge, $folder, $timeout, $allowedFileCount=0) {
-    // don't do this every time.
-    if (rand(1, $chanceOfPurge)===1) {
-      // First, get an array of files sorted by date
-      $files = array();
-      $dir =  opendir($folder);
-      if ($dir) {
-        while ($filename = readdir($dir)) {
-          if ($filename == '.' || $filename == '..' || is_dir($filename))
-            continue;
-          $lastModified = filemtime($folder . $filename);
-          $files[] = array($folder .$filename, $lastModified);
-        }
-      }
-      // sort the file array by date, oldest first
-      usort($files, array('data_entry_helper', 'DateCmp'));
-      // iterate files, ignoring the number of files we allow in the cache without caring.
-      for ($i=0; $i<count($files)-$allowedFileCount; $i++) {
-        // if we have reached a file that is not old enough to expire, don't go any further
-        if ($files[$i][1] > (time() - $timeout)) {
-          break;
-        }
-        // clear out the old file
-        if (is_file($files[$i][0]))
-          unlink($files[$i][0]);
-      }
-    }
-  }
   
-  /**
-   * A custom PHP sorting function which uses the 2nd element in the compared array to 
-   * sort by. The sorted array normally contains a list of files, with the first element
-   * of each array entry being the file path and the second the file date stamp.
-   * @param int $a Datestamp of the first file to compare.
-   * @param int $b Datestamp of the second file to compare.
-   */
-  private static function DateCmp($a, $b)
-  {
-    if ($a[1]<$b[1])
-      $r = -1;
-    else if ($a[1]>$b[1])
-      $r = 1;
-    else $r=0;
-    return $r;
-  }
-
   /**
    * Internal function to output either a select or listbox control depending on the templates
    * passed.
@@ -6447,7 +6363,7 @@ if (errors$uniq.length>0) {
             implode(', ', $blank_configs).'. This means the respective areas of functionality will not be available.</li>';
       }
       // Test we have a writeable cache directory
-      $cacheFolder = self::relative_client_helper_path() . (isset(parent::$cache_folder) ? parent::$cache_folder : 'cache/');
+      $cacheFolder = parent::$cache_folder ? parent::$cache_folder : self::relative_client_helper_path() . 'cache/';
       if (!is_dir($cacheFolder)) {
         $r .= '<li class="ui-state-error">The cache path setting in helper_config.php points to a missing directory. This will result in slow form loading performance.</li>';
       } elseif (!is_writeable($cacheFolder)) {
