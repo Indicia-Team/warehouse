@@ -6,6 +6,7 @@
   SELECT #columns#
   FROM cache_occurrences o
   JOIN occurrences occ on occ.id=o.id and occ.deleted=false -- to get sensitivity_precision
+  JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
   JOIN samples s on s.id=o.sample_id AND s.deleted=false
   LEFT JOIN (index_locations_samples ils
     JOIN locations l on l.id=ils.location_id
@@ -47,6 +48,9 @@
       template="&lt;div class='zero-{zero_abundance}'&gt;{common}&lt;/div&gt;"
       sql="o.default_common_name" datatype='text' />
     <column name='taxon_group' display='Taxon Group' sql='o.taxon_group' datatype='text' />
+    <column name='kingdom' display='Kingdom' sql='cttl.kingdom_taxon' datatype='text' />
+    <column name='order' display='Order' sql='cttl.order_taxon' datatype='text' />
+    <column name='family' display='Family' sql='cttl.family_taxon' datatype='text' />
     <column name='taxonversionkey' display='TaxonVersionKey' sql='o.taxa_taxon_list_external_key' datatype="text" />
     <column name='taxa_taxon_list_id' visible='false' sql='o.taxa_taxon_list_id' datatype='integer' />
     <column name='record_comment' display='Comment' sql="occ.comment" datatype="text" />
