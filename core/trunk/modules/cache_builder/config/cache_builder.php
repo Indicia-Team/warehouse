@@ -170,7 +170,7 @@ $config['taxa_taxon_lists']['update'] = "update cache_taxa_taxon_lists cttl
       taxon_group_id = tpref.taxon_group_id,
       taxon_group = tg.title,
       cache_updated_on=now(),
-      allow_data_entry=ttlpref.allow_data_entry
+      allow_data_entry=ttl.allow_data_entry
     from taxon_lists tl
     join taxa_taxon_lists ttl on ttl.taxon_list_id=tl.id 
     #join_needs_update#
@@ -201,7 +201,7 @@ $config['taxa_taxon_lists']['insert']="insert into cache_taxa_taxon_lists (
       tcommon.taxon as default_common_name,
       regexp_replace(regexp_replace(regexp_replace(lower(t.taxon), E'\\\\(.+\\\\)', '', 'g'), 'ae', 'e', 'g'), E'[^a-z0-9\\\\?\\\\+]', '', 'g'), 
       tpref.external_key, ttlpref.taxon_meaning_id, tpref.taxon_group_id, tg.title,
-      now(), now(), ttlpref.allow_data_entry
+      now(), now(), ttl.allow_data_entry
     from taxon_lists tl
     join taxa_taxon_lists ttl on ttl.taxon_list_id=tl.id 
     left join cache_taxa_taxon_lists cttl on cttl.id=ttl.id
