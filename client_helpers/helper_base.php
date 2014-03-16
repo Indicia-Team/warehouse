@@ -1669,13 +1669,13 @@ indiciaData.windowLoaded=false;
   public static function enable_validation($form_id) {
     self::$validated_form_id = $form_id;
     //Only submit once if the user clicks submit button several times
-    self::$javascript .= '
-    $("'.self::$validated_form_id.'").submit(function() {
+    self::$javascript .= "
+    $('#".self::$validated_form_id."').submit(function() {
       $(this).submit(function() {
         return false;
       });
       return true;
-    });';
+    });\n";
     self::add_resource('validation');
   }
   
