@@ -742,7 +742,9 @@ class XMLReportReader_Core implements ReportReader
     if ($this->hasStandardParams) {
       // For backwards compatibility, convert a few param names...
       $this->convertDeprecatedParam($providedParams, 'location_id','location_list');
+      $this->convertDeprecatedParam($providedParams, 'survey_id','survey_list');
       $this->convertDeprecatedParam($providedParams, 'indexed_location_id','indexed_location_list');
+      $this->convertDeprecatedParam($providedParams, 'input_form','input_form_list',true);
       // always include the operation params, as their default might be needed even when no parameter is provided. E.g.
       // the default website_list_op param comes into effect if just a website_list is provided.
       $opParams = array(
@@ -1063,12 +1065,21 @@ class XMLReportReader_Core implements ReportReader
    * @param array $providedParams The array of provided parameters which will be modified.
    * @param string $from The deprecated parameter name which will be swapped from.
    * @param string $from The new parameter name which will be use instead.
+   * "param boolean $string Set to true if a text parameter so quotes can be added to the in clause
    */
-  private function convertDeprecatedParam(&$providedParams, $from, $to) {
+  private function convertDeprecatedParam(&$providedParams, $from, $to, $string=false) {
+    $quote = $string ? "'" : '';
     if (isset($providedParams[$from]) && !isset($providedParams[$to]))
-      $providedParams[$to]=$providedParams[$from];
+      $providedParams[$to]=$quote . $providedParams[$from] . $quote;
     if (isset($providedParams[$from.'_context']) && !isset($providedParams[$to.'_context']))
-      $providedParams[$to.'_context']=$providedParams[$from.'_context'];
+      $providedParams[$to.'_context']=$quote . $providedParams[$from.'_context'] . $quote;
+    if (!empty($providedParams['paramsFormExcludes'])) {
+      $excludes=json_decode($providedParams['paramsFormExcludes'], true);
+      if (in_array($from, $excludes)) {
+        $excludes[]=$to;
+        $providedParams['paramsFormExcludes']=json_encode($excludes);
+      }
+    }
   }
 
   /**
