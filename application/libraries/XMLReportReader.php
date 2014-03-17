@@ -912,6 +912,12 @@ class XMLReportReader_Core implements ReportReader
     AND o.created_by_id = #alias:ut#.user_id")
             )
         ),
+        'exclude_sensitive'=>array('datatype'=>'boolean', 'default'=>'', 'display'=>'Exclude sensitive records',
+            'description'=>'Exclude sensitive records?',
+            'wheres' => array(
+              array('value'=>'', 'operator'=>'', 'sql'=>"o.sensitivity_precision is null")
+            )
+        ),
         'release_status' => array('datatype'=>'lookup', 'default'=>'R', 'display'=>'Release status',
             'description'=>'Release status of the record',
             'lookup_values'=>'R:Released,U:Unreleased because part of a project that has not yet released the records,P:Recorder has requested a precheck before release,A:All',
