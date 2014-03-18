@@ -5399,28 +5399,27 @@ $('div#$escaped_divId').indiciaTreeBrowser({
           self::$javascript .= "\n
 $('#$divId').tabs({
   select: function(event, ui) {
-    var isValid;
-    var prev = $(this).tabs('option', 'selected'); 
-    var panel = $('.ui-tabs-panel', this).eq(prev);
+    var isValid,
+      prev = $(this).tabs('option', 'selected'),
+      panel = $('.ui-tabs-panel', this).eq(prev);
     if ($('.species-grid', panel).length != 0) {
+      var clonableRow = $('.species-grid .scClonableRow', panel),
+           display = clonableRow.css('display'),
+           current=$('#$divId').tabs('option', 'selected');
       ".
       //leaving a panel with a species table so hide the clonable row to prevent trying to validate it, unless they've started inputting
-      // a taxon name already.
-      "var clonableRow = $('.species-grid .scClonableRow');
-      var display = clonableRow.css('display');
-      clonableRow.css('display', 'none');\n" . 
-      //We handle taxon cells seperately. They are excluded from validation in tabinputs as they have no name.
-      //So we need to include them seperately as they are an exception to the rule that the item should not be included in validation if it has no name.
-      "      var current=$('#$divId').tabs('option', 'selected');
-      var taxonInputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+') .scTaxonCell').find('input,select').not(':disabled'),
-        elem=$('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select,textarea').not(':disabled,[name=],.scTaxonCell,:hidden');
-      validationResultTaxon = (taxonInputs.length > 0 ) ? taxonInputs.valid() : true;
-      validationResult = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select,textarea').not(':disabled,[name=],.scTaxonCell,.inactive').valid();
+      // a taxon name already. We handle taxon cells seperately. They are excluded from validation in tabinputs as they have no name.
+      // So we need to include them seperately as they are an exception to the rule that the item should not be included in validation if it has no name.
+      "clonableRow.css('display', 'none');
+       var taxonInputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+') .scTaxonCell').find('input,select').not(':disabled'),
+           validationResultTaxon = (taxonInputs.length > 0 ) ? taxonInputs.valid() : true,
+           validationResult = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select,textarea').not(':disabled,[name=],.scTaxonCell,.inactive,:file').valid();
+      ;
       isValid = (validationResultTaxon && validationResult)===1 ? true : false;
       //restore the clonable row
       clonableRow.css('display', display);
     } else {
-    var isValid = $('#". self::$validated_form_id ."').valid();
+      isValid = $('#". self::$validated_form_id ."').valid();
     }
     return isValid;
   }
