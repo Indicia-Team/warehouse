@@ -37,6 +37,10 @@
     <param name="ownGroups" display="My species groups only?" datatype="checkbox">      
       <where value="1">o.taxon_group_id IN (#taxon_groups#)</where>
     </param>
+    <param name="moderation" display="Moderation" description="Defined moderation requirements" datatype="lookup" default=''
+        lookup_values="exclude_anon_unverified:Exclude anonymous unverified records">
+      <where value="exclude_anon_unverified">(o.created_by_id&lt;&gt;1 or o.record_status='V')</where>
+    </param>
   </params>
   <columns>
     <column name='occurrence_id' display='ID' sql='o.id' datatype='integer' template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />
