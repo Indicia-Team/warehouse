@@ -803,14 +803,27 @@ EOD
     $r = '';
     foreach ($tabHtml as $tab => $tabContent) {
       $tabalias = $tabaliases[$pageIdx];
-      $r .= '<div id="' . $tabalias . '" data-role="subpage">' . PHP_EOL;
+      $r .= '<div id="' . $tabalias . '" data-role="page">' . PHP_EOL;
       $r .= '<div data-role="header">' . PHP_EOL;
-      if($pageIdx == 0) {
-        // Add a back button on the first page of the form.
-        $r .= '<a href="#form-body" data-icon="back" data-direction="reverse" ';
-        $r .= 'class="ui-btn-left">Back</a>' . PHP_EOL;
-      }
+    /*  if($pageIdx == 0) {
+      // Add a back button on the first page of the form.
+          $r .= '<a href="/drupal/app" data-icon="arrow-l" ';
+          $r .= 'data-iconpos="left" data-prefetch>Back</a>' . PHP_EOL;
+      } else{ */
+       $r .= '<a href="#" data-rel="back" data-icon="arrow-l" ';
+       $r .= 'data-iconpos="left">Back</a>' . PHP_EOL;
+      //}
+      
       $r .= '<h2>' . $tab . '</h2>' . PHP_EOL;
+    //  $r .= '<nav data-role="navbar"><ul>' . PHP_EOL;
+      //$r .= '<li><input type="file" onchange="previewFile()"></li>' .PHP_EOL;
+      //$r .= '<li><img id="elephant" src="" height="1000" width="1000" alt="Image preview..."></li>' .PHP_EOL;
+
+      //$r .= '<a href="/drupal/app/send-forms-dialog" onclick="updateFormCounter()" class="a-savedFormCounter" style="display:none" data-rel="dialog" data-prefetch> <span class="savedFormCounter" style="background: #BA070F; color: #fff; padding: 1px 7px; border-radius: .8em; border: 2px solid #fff;">0</span></a>' . PHP_EOL;
+      $r .= '<a href="/drupal/app/send-forms-dialog" onclick="updateFormCounter()" class="a-savedFormCounter" style="display:none" data-rel="dialog" > <span class="savedFormCounter" style="background: #BA070F; color: #fff; padding: 1px 7px; border-radius: .8em; border: 2px solid #fff;">0</span></a>' . PHP_EOL;
+    // $r .= '<li><a href="" onclick="sendSavedForm(null)" >send old</a></li>' . PHP_EOL;
+      //$r .= '<a href="#" onclick="saveForm()" >save for later</a>' . PHP_EOL;
+      //$r .= '<li><a href="" onclick="postForm()" >psot</a></li>' . PHP_EOL;
       $r .= '</div>' . PHP_EOL;
       $r .= '<div role="main" class="ui-content">' . PHP_EOL;	
       $r .= $tabContent;   

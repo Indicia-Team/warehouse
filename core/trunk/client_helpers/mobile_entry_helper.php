@@ -38,6 +38,19 @@ $indicia_templates['jqmRightButton'] = <<<'EOD'
        {caption}
      </a>
 EOD;
+$indicia_templates['jqmSave-SubmitButton'] = <<<'EOD'
+   <input onclick="submitStart()" id="{id}" type="button" {class}
+       data-icon="check" data-iconpos="right"
+       value="Submit" />
+          
+     <!--<nav data-role="navbar"><ul>
+         <li><a href="login-dialog" id="btn-login" style="display:none" data-rel="dialog" data-prefetch></a></li>
+         <li><a href="no-internet-dialog" id="no-internet-dialog" style="display:none" onclick="saveForm()" data-rel="dialog" data-prefetch></a></li>
+         
+          <li><a href="form-was-saved-dialog" onclick="saveForm()" data-rel="dialog" data-prefetch>save for later</a></li>
+         <li><a href="#" id="mysubmit" onclick="submitStart()">Submit</a></li>
+       </ul></nav>-->
+EOD;
 $indicia_templates['jqmSubmitButton'] = <<<'EOD'
      <input id="{id}" type="submit" {class}
        data-icon="check" data-iconpos="right"
@@ -464,6 +477,7 @@ EOD;
     $r = '<div data-role="footer"';
     $r .= 'class = "' . $options['class'] .= '">';
     
+    /* MOVED THE BACK BUTTON TO THE HEADER
     if ($options['prev'] != '') {
       // Add a previous button on the left.
       $options['class'] = "ui-btn-left tab-prev";
@@ -471,6 +485,7 @@ EOD;
       $options['href'] = $options['prev'];
       $r .= self::apply_template('jqmLeftButton', $options);
     }
+    */
     
     // Add a paragraph to footer to give it height.
     $r .= '<p>&nbsp;</p>';
@@ -485,7 +500,7 @@ EOD;
       // Add a save button on the right.
       $options['class'] = "ui-btn-right";
       $options['caption'] = lang::get($options['captionSave']);
-      $r .= self::apply_template('jqmSubmitButton', $options);
+      $r .= self::apply_template('jqmSave-SubmitButton', $options);
     }
     $r .= '</div>';   
     
