@@ -405,7 +405,7 @@ class report_helper extends helper_base {
         }
       }
       $r .= "</tr>";
-      if ($wantFilterRow)
+      if ($wantFilterRow && (!isset($options["forceNoFilterRow"]) || !$options["forceNoFilterRow"]))
         $r .= "<tr class=\"filter-row\" title=\"".lang::get('Use this row to filter the grid')."\">$filterRow</tr>\n";
       $r .= "</thead>\n";
     }
@@ -3068,16 +3068,7 @@ update_controls();
    }
    if(jQuery('#outputFormat').val() != 'table')
      replot();
-});\n".
-(isset($options['outputSource']) ?
-"$('#outputSource').val('".$options['outputSource']."').change();\n" :
-"if($('#viewDataEstimates').length > 0){
-    $('#outputSource').val('estimates').change();
-} else if($('#viewSummaryData').length > 0){
-    $('#outputSource').val('summary').change();
-} else {
-    $('#outputSource').val('raw').change();
-}\n");
+});\n";
     	} else $r .= '<input type="hidden" id="outputSource" name="outputSource" value="'.
            ($options['includeRawData'] ? "raw" : 
                ($options['includeSummaryData'] ? "summary" : "estimates")).'"/>';
@@ -3101,8 +3092,7 @@ update_controls();
         replot();
         break;
   }
-});
-jQuery('[name=outputFormat]').change();\n";
+});\n";
     	} else if(isset($options['simultaneousOutput']) && $options['simultaneousOutput']) {
     		// for combined format its fairly obvious what it is, so no need to add text.
             $r .= '<input type="hidden" id="outputFormat" name="outputFormat" value="both"/>';
@@ -3195,7 +3185,9 @@ jQuery('[name=outputFormat]').change();\n";
       // Finally, dump out the Javascript with our constructed parameters.
       // width stuff is a bit weird, but jqplot requires a fixed width, so this just stretches it to fill the space.
       data_entry_helper::$javascript .= "\nvar plots = [];
+var replotActive = true;
 function replot(){
+  if(!replotActive) return;
   // there are problems with the coloring of series when added to a plot: easiest just to completely redraw.
   var max=0;
   var type = jQuery('#outputSource').val();
@@ -3254,9 +3246,6 @@ function replot(){
         $r .= "</span></fieldset>\n";
         // Known issue: jqplot considers the min and max of all series when drawing on the screen, even those which are not displayed
         // so replotting doesn't scale to the displayed series!
-        if($format['chart']['display']){
-          data_entry_helper::$javascript .= "replot();\n";
-        }
         data_entry_helper::$javascript .= "
 // above done due to need to ensure get around field caching on browser refresh.
 setSeriesURLParam = function(){
@@ -3576,6 +3565,23 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
             "</tr></thead></table>\n";
       $warnings .= '<span style="display:none;">Output table complete : '.date(DATE_ATOM).'</span>'."\n";
     }
+    // Set up initial view: only want to replot once as that can be very intensive.
+    data_entry_helper::$javascript .= "replotActive = false;\n";
+    if($userPicksSource) {
+      data_entry_helper::$javascript .= (isset($options['outputSource']) ?
+          "$('#outputSource').val('".$options['outputSource']."').change();\n" :
+          "if($('#viewDataEstimates').length > 0){\n  $('#outputSource').val('estimates').change();\n".
+          "} else if($('#viewSummaryData').length > 0){\n  $('#outputSource').val('summary').change();\n".
+          "} else {\n  $('#outputSource').val('raw').change();\n}\n");
+    }
+    if($userPicksFormat) {
+      data_entry_helper::$javascript .= "jQuery('[name=outputFormat]').change();\n";
+    }
+    data_entry_helper::$javascript .= "replotActive = true;\n";
+    if($format['chart']['display']){
+    	data_entry_helper::$javascript .= "replot();\n";
+    }
+    
     if(count($summaryArray)==0)
       $r .= '<p>'.lang::get('No data returned for this period.').'</p>';
     $warnings .= '<span style="display:none;">Finish report_calendar_summary : '.date(DATE_ATOM).'</span>'."\n";
