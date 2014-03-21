@@ -1108,7 +1108,7 @@ class iform_report_calendar_summary {
   private static function _getCacheFileName($userID)
   {
     /* If timeout is not set, we're not caching */
-  	$path = parent::$cache_folder ? parent::$cache_folder : self::relative_client_helper_path() . 'cache/';
+  	$path = data_entry_helper::$cache_folder ? data_entry_helper::$cache_folder : data_entry_helper::relative_client_helper_path() . 'cache/';
     if(!is_dir($path) || !is_writeable($path)) return false;
     return $path.'cache_'.data_entry_helper::$website_id.'_CMS_User_List_'.$userID;
   }
@@ -1158,7 +1158,7 @@ class iform_report_calendar_summary {
       return '';
     // if the user is changed then we must reset the location
     $siteUrlParams = self::get_site_url_params();
-    var_dump($siteUrlParams);
+    // var_dump($siteUrlParams);
     $options['extraParams']['user_id'] = $siteUrlParams[self::$userKey]['value'] == "branch" ? '' : $siteUrlParams[self::$userKey]['value'];
     $userList=array();
     if (function_exists('module_exists') && module_exists('easy_login') && function_exists('hostsite_get_user_field')) {
