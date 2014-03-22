@@ -16,9 +16,9 @@ CREATE OR REPLACE VIEW detail_locations AS
     l.external_key,
     l.created_on, l.created_by_id, c.username AS created_by, l.updated_on, l.updated_by_id, 
     u.username AS updated_by, lw.website_id, l.public
-   FROM indicia.locations l
-   JOIN indicia.users c ON c.id = l.created_by_id
-   JOIN indicia.users u ON u.id = l.updated_by_id
-   LEFT JOIN indicia.locations_websites lw ON l.id = lw.location_id AND lw.deleted = FALSE
-   LEFT JOIN indicia.locations p ON p.id = l.parent_id
+   FROM locations l
+   JOIN users c ON c.id = l.created_by_id
+   JOIN users u ON u.id = l.updated_by_id
+   LEFT JOIN locations_websites lw ON l.id = lw.location_id AND lw.deleted = FALSE
+   LEFT JOIN locations p ON p.id = l.parent_id
   WHERE l.deleted = false AND (l.public=TRUE OR lw.website_id IS NOT NULL);
