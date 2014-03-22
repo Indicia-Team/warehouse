@@ -29,5 +29,5 @@ CREATE OR REPLACE VIEW detail_sample_comments AS
    JOIN samples s ON s.id = sc.sample_id AND s.deleted = false
    LEFT JOIN users c ON sc.created_by_id = c.id
    LEFT JOIN users u ON sc.updated_by_id = u.id 
-   JOIN indicia.surveys su ON su.id = s.survey_id
+   JOIN surveys su ON su.id = s.survey_id
   WHERE sc.deleted = false;
