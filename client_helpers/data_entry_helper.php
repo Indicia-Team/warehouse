@@ -1458,7 +1458,7 @@ $('#$escaped').change(function(e) {
       $options['id'] = 'imp-location';
     $options = self::check_options($options);
     $caption = isset(self::$entity_to_load['sample:location']) ? self::$entity_to_load['sample:location'] : null;
-    if (!$caption && !empty($options['useLocationName']) && $options['useLocationName'])
+    if (!$caption && !empty($options['useLocationName']) && $options['useLocationName'] && !empty(self::$entity_to_load['sample:location_name']))
       $caption = self::$entity_to_load['sample:location_name'];
     $options = array_merge(array(
         'table'=>'location',
