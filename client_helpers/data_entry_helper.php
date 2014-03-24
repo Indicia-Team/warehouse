@@ -3240,13 +3240,11 @@ tabscontrols.tabs('select',$('#$options[id]').parents('.ui-tabs-panel')[0].id);\
         $readableTypes = implode(', ', $linkMediaTypes) . ' ' . lang::get('or') . ' ' . $readableTypes;
       return '<div style="display: none"><div id="add-link-form" title="Add a link to a remote file">
 <p class="validateTips">'.lang::get('Paste in the web address of a resource on {1}', $readableTypes).'.</p>
-<form>
 <fieldset>
 <label for="name">URL</label>
 <input type="text" name="link_url" id="link_url" class="text ui-widget-content ui-corner-all">
 <p style="display: none" class="error"></p>
 </fieldset>
-</form>
 </div></div>';
     }
     else {
