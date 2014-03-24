@@ -839,7 +839,7 @@ class ORM extends ORM_Core {
         $this->db
           ->select('id')
           ->from(inflector::plural($fkArr['fkTable']))
-          ->where("(".$fkArr['fkSearchField']." ilike '".strtolower($fkArr['fkSearchValue'])."')");
+          ->where("(".$fkArr['fkSearchField']." ilike '".strtolower(str_replace("'","''",$fkArr['fkSearchValue']))."')");
         if (isset($fkArr['fkSearchFilterField']) && $fkArr['fkSearchFilterField']) 
           $this->db->where(array($fkArr['fkSearchFilterField']=>$fkArr['fkSearchFilterValue']));
         $matches = $this->db
