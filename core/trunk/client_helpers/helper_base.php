@@ -1508,6 +1508,10 @@ indiciaData.windowLoaded=false;
             jqElement.removeClass('ui-state-error');
           }
         },
+        submitHandler: function(f){
+          $('form input[type=submit]').attr('disabled', 'disabled');
+          f.submit();
+        },
         invalidHandler: ".$indicia_templates['invalid_handler_javascript'].",
         messages: ".json_encode(self::$validation_messages).",".
         // Do not place errors if 'message' not in validation_mode
@@ -1668,14 +1672,6 @@ indiciaData.windowLoaded=false;
   */
   public static function enable_validation($form_id) {
     self::$validated_form_id = $form_id;
-    //Only submit once if the user clicks submit button several times
-    self::$javascript .= "
-    $('#".self::$validated_form_id."').submit(function() {
-      $(this).submit(function() {
-        return false;
-      });
-      return true;
-    });\n";
     self::add_resource('validation');
   }
   
