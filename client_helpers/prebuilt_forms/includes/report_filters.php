@@ -344,6 +344,7 @@ class filter_quality extends filter_base {
         'P' => lang::get('Pending verification'),
         'T' => lang::get('Pending verification for trusted records'),
         '!R' => lang::get('Exclude rejected'),
+        '!D' => lang::get('Exclude dubious or rejected'),
         'all' => lang::get('All records'),
         'D' => lang::get('Queried records only'),
         'R' => lang::get('Rejected records only'),
