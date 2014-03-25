@@ -391,7 +391,7 @@ class report_helper extends helper_base {
                 $title=lang::get("$caption text begins with ... search. Use * as a wildcard.");
                 break;
               case 'date':
-                $title=lang::get("$caption search. Search for an exact date or use a vague<br/> date such as a year to select a range of dates.");
+                $title=lang::get("$caption search. Search for an exact date or use a vague date such as a year to select a range of dates.");
                 break;
               default: $title=lang::get("$caption search. Either enter an exact number, use >, >=, <, or <= before the number to filter for ".
                       "$caption more or less than your search value, or enter a range such as 1000-2000.");
