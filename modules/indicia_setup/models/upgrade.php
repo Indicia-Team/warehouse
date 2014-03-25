@@ -23,6 +23,8 @@ class Upgrade_Model extends Model
     
     private $slowScripts = '';
     
+    private $couldBeSlow = true;
+    
     public $pgUserScriptsToBeApplied = '';
     
     public $slowScriptsToBeApplied = '';
@@ -38,6 +40,9 @@ class Upgrade_Model extends Model
      */
     public function run()
     {
+      $cache = Cache::instance();
+      // delete the system table schema data from the cache, as we need to ensure we are not testing against a copy saved during a failed install attempt. 
+      $cache->delete('list_fieldssystem');
       $system = ORM::Factory('system');
       // Need to ensure system table has a last_run_script. It was not in the original 
       // update process pre v0.8, but is required for 0.8 and later. As it is part of the upgrade
@@ -77,6 +82,9 @@ class Upgrade_Model extends Model
     private function applyUpdateScripts($baseDir, $appName, $old_version, $last_run_script) {
       try
       {
+        // if less than 1000 occurrences, then no script is likely to be slow so we can run the whole upgrade. If more than 1000, then 
+        // scripts which perform a lot of processing on occurrences can be marked as slow and run after the upgrade. 
+        $this->couldBeSlow = $this->db->count_records('occurrences')>1000;
         $currentVersionNumbers = explode('.', $old_version);
         $stuffToDo = true;
         while ($stuffToDo) {
@@ -233,7 +241,7 @@ class Upgrade_Model extends Model
             }
             if (substr($_db_file, 0, 18) === '-- #postgres user#')
               $this->scriptsForPgUser .= $_db_file . "\n\n";
-            elseif (substr($_db_file, 0, 16) === '-- #slow script#')
+            elseif (substr($_db_file, 0, 16) === '-- #slow script#' && $this->couldBeSlow)
               $this->slowScripts .= $_db_file . "\n\n";
             else
               $result = $this->db->query($_db_file);
