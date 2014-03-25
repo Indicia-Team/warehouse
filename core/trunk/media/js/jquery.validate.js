@@ -826,7 +826,7 @@ $.extend($.validator, {
 	},
 
 	metadataRules: function(element) {
-		if (!$.metadata) return {};
+		if (!$.metadata || !$.data(element.form, 'validator')) return {};
 
 		var meta = $.data(element.form, 'validator').settings.meta;
 		return meta ?
