@@ -377,7 +377,7 @@ var checkSubmitInProgress = function () {
           alert(div.settings.msgUploadError + ' ' + resp[0].error.message);
         } else {
           filepath = div.settings.destinationFolder + file.name;
-          uniqueId = $('.filelist .media-wrapper').length - $('.filelist .progress').length;
+          uniqueId = $('.filelist .media-wrapper').length;
           fileType = $.inArray(filepath.split('.').pop().toLowerCase(), indiciaData.uploadFileTypes.Audio)===-1 ? 'Image' : 'Audio';
           if (fileType==='Image') {
             tmpl = div.settings.file_box_uploaded_imageTemplate+div.settings.file_box_uploaded_extra_fieldsTemplate;

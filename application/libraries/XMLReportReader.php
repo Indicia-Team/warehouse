@@ -742,9 +742,7 @@ class XMLReportReader_Core implements ReportReader
     if ($this->hasStandardParams) {
       // For backwards compatibility, convert a few param names...
       $this->convertDeprecatedParam($providedParams, 'location_id','location_list');
-      $this->convertDeprecatedParam($providedParams, 'survey_id','survey_list');
       $this->convertDeprecatedParam($providedParams, 'indexed_location_id','indexed_location_list');
-      $this->convertDeprecatedParam($providedParams, 'input_form','input_form_list',true);
       // always include the operation params, as their default might be needed even when no parameter is provided. E.g.
       // the default website_list_op param comes into effect if just a website_list is provided.
       $opParams = array(
@@ -883,7 +881,7 @@ class XMLReportReader_Core implements ReportReader
         'quality' => array('datatype'=>'lookup', 'default'=>'', 'display'=>'Quality', 
             'description'=>'Minimum quality of records to include', 
             'lookup_values'=>'=V:Verified records only,C:Recorder was certain,L:Recorder thought the record was at least likely,P:Pending verification,' .
-                'T:Pending verification for trusted recorders,!D:Everything except dubious or rejected,!R:Everything except rejected,all:Everything including rejected,D:Queried records only,'.
+                'T:Pending verification for trusted recorders,!R:Everything except rejected,all:Everything including rejected,D:Queried records only,'.
                 'R:Rejected records only,DR:Queried or rejected records',
             'wheres' => array(
               array('value'=>'V', 'operator'=>'equal', 'sql'=>"o.record_status='V'"),
@@ -891,7 +889,6 @@ class XMLReportReader_Core implements ReportReader
               array('value'=>'L', 'operator'=>'equal', 'sql'=>"o.record_status<>'R' and o.certainty in ('C','L')"),
               array('value'=>'P', 'operator'=>'equal', 'sql'=>"o.record_status in ('C','S')"),
               array('value'=>'T', 'operator'=>'equal', 'sql'=>"o.record_status in ('C','S')"),
-              array('value'=>'!D', 'operator'=>'equal', 'sql'=>"o.record_status not in ('R','D')"),
               array('value'=>'!R', 'operator'=>'equal', 'sql'=>"o.record_status<>'R'"),
               array('value'=>'D', 'operator'=>'equal', 'sql'=>"o.record_status='D'"),
               array('value'=>'R', 'operator'=>'equal', 'sql'=>"o.record_status='R'"),
@@ -910,12 +907,6 @@ class XMLReportReader_Core implements ReportReader
     AND ((o.taxon_group_id = #alias:ut#.taxon_group_id) or (#alias:ut#.taxon_group_id is null and (#alias:ut#.survey_id is not null or #alias:ut#.location_id is not null)))
     AND ((#alias:ils#.location_id = #alias:ut#.location_id) OR (#alias:ut#.location_id IS NULL and (#alias:ut#.survey_id is not null or #alias:ut#.taxon_group_id is not null)))
     AND o.created_by_id = #alias:ut#.user_id")
-            )
-        ),
-        'exclude_sensitive'=>array('datatype'=>'boolean', 'default'=>'', 'display'=>'Exclude sensitive records',
-            'description'=>'Exclude sensitive records?',
-            'wheres' => array(
-              array('value'=>'', 'operator'=>'', 'sql'=>"o.sensitivity_precision is null")
             )
         ),
         'release_status' => array('datatype'=>'lookup', 'default'=>'R', 'display'=>'Release status',
@@ -1071,21 +1062,12 @@ class XMLReportReader_Core implements ReportReader
    * @param array $providedParams The array of provided parameters which will be modified.
    * @param string $from The deprecated parameter name which will be swapped from.
    * @param string $from The new parameter name which will be use instead.
-   * "param boolean $string Set to true if a text parameter so quotes can be added to the in clause
    */
-  private function convertDeprecatedParam(&$providedParams, $from, $to, $string=false) {
-    $quote = $string ? "'" : '';
+  private function convertDeprecatedParam(&$providedParams, $from, $to) {
     if (isset($providedParams[$from]) && !isset($providedParams[$to]))
-      $providedParams[$to]=$quote . $providedParams[$from] . $quote;
+      $providedParams[$to]=$providedParams[$from];
     if (isset($providedParams[$from.'_context']) && !isset($providedParams[$to.'_context']))
-      $providedParams[$to.'_context']=$quote . $providedParams[$from.'_context'] . $quote;
-    if (!empty($providedParams['paramsFormExcludes'])) {
-      $excludes=json_decode($providedParams['paramsFormExcludes'], true);
-      if (in_array($from, $excludes)) {
-        $excludes[]=$to;
-        $providedParams['paramsFormExcludes']=json_encode($excludes);
-      }
-    }
+      $providedParams[$to.'_context']=$providedParams[$from.'_context'];
   }
 
   /**

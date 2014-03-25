@@ -259,10 +259,8 @@ mapInitialisationHooks.push(function(mapdiv) {
       iform_map_get_map_options($args, $auth['read']),
       $options
     );
-    // If a drawing tool is on the map we can support boundaries or if automatic plot creation is enabled.
+    // If a drawing tool is on the map we can support boundaries.
     $boundaries = false;
-    if (!empty($options['clickForPlot']) && $options['clickForPlot']==true)
-      $boundaries = true;     
     foreach ($options['standardControls'] as $ctrl) {
       if (substr($ctrl, 0, 4)==='draw') {
         $boundaries = true;

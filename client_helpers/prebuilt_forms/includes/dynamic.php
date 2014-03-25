@@ -214,9 +214,6 @@ class iform_dynamic {
       if (($mode === self::MODE_EXISTING || $mode === self::MODE_EXISTING_RO || $mode === self::MODE_CLONE) && is_null(data_entry_helper::$entity_to_load)) { 
         // only load if not in error situation. 
         call_user_func_array(array(self::$called_class, 'getEntity'), array(&$args, $auth));
-        // when editing, no need to step through all the pages to save a change.
-        if ($mode === self::MODE_EXISTING)
-          $args['save_button_below_all_pages']=true;
       }
       // attributes must be fetched after the entity to load is filled in - this is because the id gets filled in then!
       $attributes = (method_exists(self::$called_class, 'getAttributes'))

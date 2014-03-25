@@ -341,8 +341,6 @@ class iform_dynamic_report_explorer extends iform_dynamic {
       $options
     );
     $olOptions = iform_map_get_ol_options($args);
-    if ($args['interface']!=='one_page')
-      $options['tabDiv'] = $tabalias;
     $r .= map_helper::map_panel($options, $olOptions);
     return $r;
   }

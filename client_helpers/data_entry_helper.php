@@ -77,6 +77,18 @@ class data_entry_helper extends helper_base {
   public static $entity_to_load=null;
 
   /**
+   * @var integer On average, every 1 in $interim_image_chance_purge times the Warehouse is called for data, all interim images
+   * older than $interim_image_expiry seconds will be deleted. These are images that should have uploaded to the warehouse but the form was not
+   * finally submitted.
+   */
+  public static $interim_image_chance_purge=100;
+
+  /**
+   * @var integer On average, every 1 in $cache_chance_expire times the Warehouse is called for data which is
+   */
+  public static $interim_image_expiry=14400;
+
+  /**
    * @var Array List of fields that are to be stored in a cookie and reloaded the next time a form is accessed. These
    * are populated by implementing a hook function called indicia_define_remembered_fields which calls set_remembered_fields.
    */
@@ -1458,7 +1470,7 @@ $('#$escaped').change(function(e) {
       $options['id'] = 'imp-location';
     $options = self::check_options($options);
     $caption = isset(self::$entity_to_load['sample:location']) ? self::$entity_to_load['sample:location'] : null;
-    if (!$caption && !empty($options['useLocationName']) && $options['useLocationName'] && !empty(self::$entity_to_load['sample:location_name']))
+    if (!$caption && !empty($options['useLocationName']) && $options['useLocationName'])
       $caption = self::$entity_to_load['sample:location_name'];
     $options = array_merge(array(
         'table'=>'location',
@@ -3240,11 +3252,13 @@ tabscontrols.tabs('select',$('#$options[id]').parents('.ui-tabs-panel')[0].id);\
         $readableTypes = implode(', ', $linkMediaTypes) . ' ' . lang::get('or') . ' ' . $readableTypes;
       return '<div style="display: none"><div id="add-link-form" title="Add a link to a remote file">
 <p class="validateTips">'.lang::get('Paste in the web address of a resource on {1}', $readableTypes).'.</p>
+<form>
 <fieldset>
 <label for="name">URL</label>
 <input type="text" name="link_url" id="link_url" class="text ui-widget-content ui-corner-all">
 <p style="display: none" class="error"></p>
 </fieldset>
+</form>
 </div></div>';
     }
     else {
@@ -4982,7 +4996,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     }
     else {
       $cacheTimeOut = self::_getCacheTimeOut($options);
-      $cacheFolder = parent::$cache_folder ? parent::$cache_folder : self::relative_client_helper_path() . 'cache/';
+      $cacheFolder = self::relative_client_helper_path() . (isset(parent::$cache_folder) ? parent::$cache_folder : 'cache/');
       $cacheFile = self::_getCacheFileName($cacheFolder, $cacheOpts, $cacheTimeOut);
       if (!($response = self::_getCachedResponse($cacheFile, $cacheTimeOut, $cacheOpts)))
         $response = self::http_post($request, null);
@@ -5004,7 +5018,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    * Helper function to clear the Indicia cache files.
    */
   public static function clear_cache() {
-    $cacheFolder = parent::$cache_folder ? parent::$cache_folder : self::relative_client_helper_path() . 'cache/';
+    $cacheFolder = self::relative_client_helper_path() . (isset(parent::$cache_folder) ? parent::$cache_folder : 'cache/');
     if(!$dh = @opendir($cacheFolder)) {
       return;
     }
@@ -5014,7 +5028,79 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     }
     closedir($dh);
   }
+
+  /**
+   * Internal function to ensure old cache files are purged periodically.
+   */
+  private static function _purgeCache() {
+    $cacheFolder = self::relative_client_helper_path() . (isset(parent::$cache_folder) ? parent::$cache_folder : 'cache/');
+    self::purgeFiles(self::$cache_chance_purge, $cacheFolder, self::$cache_timeout * 5, self::$cache_allowed_file_count);
+  }
+
+  /**
+   * Internal function to ensure old image files are purged periodically.
+   */
+  private static function _purgeImages() {
+    $interimImageFolder = self::relative_client_helper_path() . (isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/');
+    self::purgeFiles(self::$cache_chance_purge, $interimImageFolder, self::$interim_image_expiry);
+  }
+
+  /**
+   * Performs a periodic purge of cached files.
+   * @param integer $chanceOfPurge Indicates the chance of a purge happening. 1 causes a purge
+   * every time the function is called, 10 means there is a 1 in 10 chance, etc.
+   * @param string $folder Path to the folder to purge cache files from.
+   * @param integer $timeout Age of files in seconds before they will be considered for
+   * purging.
+   * @param integer $allowedFileCount Number of most recent files to not bother purging
+   * from the cache.
+   */
+  private static function purgeFiles($chanceOfPurge, $folder, $timeout, $allowedFileCount=0) {
+    // don't do this every time.
+    if (rand(1, $chanceOfPurge)===1) {
+      // First, get an array of files sorted by date
+      $files = array();
+      $dir =  opendir($folder);
+      if ($dir) {
+        while ($filename = readdir($dir)) {
+          if ($filename == '.' || $filename == '..' || is_dir($filename))
+            continue;
+          $lastModified = filemtime($folder . $filename);
+          $files[] = array($folder .$filename, $lastModified);
+        }
+      }
+      // sort the file array by date, oldest first
+      usort($files, array('data_entry_helper', 'DateCmp'));
+      // iterate files, ignoring the number of files we allow in the cache without caring.
+      for ($i=0; $i<count($files)-$allowedFileCount; $i++) {
+        // if we have reached a file that is not old enough to expire, don't go any further
+        if ($files[$i][1] > (time() - $timeout)) {
+          break;
+        }
+        // clear out the old file
+        if (is_file($files[$i][0]))
+          unlink($files[$i][0]);
+      }
+    }
+  }
   
+  /**
+   * A custom PHP sorting function which uses the 2nd element in the compared array to 
+   * sort by. The sorted array normally contains a list of files, with the first element
+   * of each array entry being the file path and the second the file date stamp.
+   * @param int $a Datestamp of the first file to compare.
+   * @param int $b Datestamp of the second file to compare.
+   */
+  private static function DateCmp($a, $b)
+  {
+    if ($a[1]<$b[1])
+      $r = -1;
+    else if ($a[1]>$b[1])
+      $r = 1;
+    else $r=0;
+    return $r;
+  }
+
   /**
    * Internal function to output either a select or listbox control depending on the templates
    * passed.
@@ -5397,27 +5483,28 @@ $('div#$escaped_divId').indiciaTreeBrowser({
           self::$javascript .= "\n
 $('#$divId').tabs({
   select: function(event, ui) {
-    var isValid,
-      prev = $(this).tabs('option', 'selected'),
-      panel = $('.ui-tabs-panel', this).eq(prev);
+    var isValid;
+    var prev = $(this).tabs('option', 'selected'); 
+    var panel = $('.ui-tabs-panel', this).eq(prev);
     if ($('.species-grid', panel).length != 0) {
-      var clonableRow = $('.species-grid .scClonableRow', panel),
-           display = clonableRow.css('display'),
-           current=$('#$divId').tabs('option', 'selected');
       ".
       //leaving a panel with a species table so hide the clonable row to prevent trying to validate it, unless they've started inputting
-      // a taxon name already. We handle taxon cells seperately. They are excluded from validation in tabinputs as they have no name.
-      // So we need to include them seperately as they are an exception to the rule that the item should not be included in validation if it has no name.
-      "clonableRow.css('display', 'none');
-       var taxonInputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+') .scTaxonCell').find('input,select').not(':disabled'),
-           validationResultTaxon = (taxonInputs.length > 0 ) ? taxonInputs.valid() : true,
-           validationResult = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select,textarea').not(':disabled,[name=],.scTaxonCell,.inactive,:file').valid();
-      ;
+      // a taxon name already.
+      "var clonableRow = $('.species-grid .scClonableRow');
+      var display = clonableRow.css('display');
+      clonableRow.css('display', 'none');\n" . 
+      //We handle taxon cells seperately. They are excluded from validation in tabinputs as they have no name.
+      //So we need to include them seperately as they are an exception to the rule that the item should not be included in validation if it has no name.
+      "      var current=$('#$divId').tabs('option', 'selected');
+      var taxonInputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+') .scTaxonCell').find('input,select').not(':disabled'),
+        elem=$('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select,textarea').not(':disabled,[name=],.scTaxonCell,:hidden');
+      validationResultTaxon = (taxonInputs.length > 0 ) ? taxonInputs.valid() : true;
+      validationResult = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select,textarea').not(':disabled,[name=],.scTaxonCell,.inactive').valid();
       isValid = (validationResultTaxon && validationResult)===1 ? true : false;
       //restore the clonable row
       clonableRow.css('display', display);
     } else {
-      isValid = $('#". self::$validated_form_id ."').valid();
+    var isValid = $('#". self::$validated_form_id ."').valid();
     }
     return isValid;
   }
@@ -5818,12 +5905,9 @@ if (errors$uniq.length>0) {
    * @param array $zero_values Set to an array of values which are considered to indicate a
    * zero abundance record if found for one of the zero_attrs. Values are case-insensitive. Defaults to
    * array('0','None','Absent').
-   * @param array Array of grid ids to ignore when building sub-samples for occurrences, useful for creating
-   * customised submissions that only need to build sub-samples for some grids. The grid id comes from the @id option given 
-   * to the species grid.
    */
   public static function wrap_species_checklist_with_subsamples($arr, $include_if_any_data=false,
-          $zero_attrs = true, $zero_values=array('0','None','Absent'), $gridsToExclude=array()){
+          $zero_attrs = true, $zero_values=array('0','None','Absent')){
     if (array_key_exists('website_id', $arr)){
       $website_id = $arr['website_id'];
     } else {
@@ -5850,13 +5934,7 @@ if (errors$uniq.length>0) {
     $sampleRecords = array();
     $subModels = array();
     foreach ($arr as $key=>$value){
-      $gridExcluded=false;
-      foreach ($gridsToExclude as $gridToExclude) {
-        if (substr($key, 0, strlen($gridToExclude)+3)=='sc:'.$gridToExclude) {
-          $gridExcluded=true;
-        }
-      }
-      if ($gridExcluded===false && substr($key, 0, 3)=='sc:' && substr($key, 2, 7)!=':-idx-:' && substr($key, 2, 3)!=':n:'){ //discard the hidden cloneable rows
+      if (substr($key, 0, 3)=='sc:' && substr($key, 2, 7)!=':-idx-:' && substr($key, 2, 3)!=':n:'){ //discard the hidden cloneable rows
         // Don't explode the last element for occurrence attributes
         $a = explode(':', $key, 4);
         $b = explode(':', $a[3], 2);
@@ -5867,7 +5945,7 @@ if (errors$uniq.length>0) {
           $occurrenceRecords[$a[1]][$a[3]] = $value;
           if($a[2]) $occurrenceRecords[$a[1]]['id'] = $a[2];
         }
-      }      
+      }
     }
     foreach ($sampleRecords as $id => $sampleRecord) {
       $sampleRecords[$id]['occurrences'] = array();
@@ -6360,7 +6438,7 @@ if (errors$uniq.length>0) {
             implode(', ', $blank_configs).'. This means the respective areas of functionality will not be available.</li>';
       }
       // Test we have a writeable cache directory
-      $cacheFolder = parent::$cache_folder ? parent::$cache_folder : self::relative_client_helper_path() . 'cache/';
+      $cacheFolder = self::relative_client_helper_path() . (isset(parent::$cache_folder) ? parent::$cache_folder : 'cache/');
       if (!is_dir($cacheFolder)) {
         $r .= '<li class="ui-state-error">The cache path setting in helper_config.php points to a missing directory. This will result in slow form loading performance.</li>';
       } elseif (!is_writeable($cacheFolder)) {

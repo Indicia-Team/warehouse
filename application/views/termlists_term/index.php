@@ -24,23 +24,22 @@
 if (!empty($parent_list_id)) : ?>
 <script type="text/javascript">
 /*<![CDATA[*/
-var add_parent_term = function() {
+add_parent_term = function() {
   // ask the warehouse to copy the term from the parent list to the child list
   $.post('<?php echo url::site('termlists_term/add_parent_term'); ?>', {
       termlist_id: <?php echo $termlist_id; ?>,
       termlists_term_id: $('#add-from-parent').val()
     }, function(data, textStatus) {
-      if (isNaN(parseInt(data))) {
+      if (isNaN(parseInt(data)))
         // if text returned, it is a message to display
         alert(data);
-      } else {
+      else
         // if OK, it returns the new record ID. Add it to the grid, using the global var created
         // when the grid was created.
-        indiciaData.reports.termlists_term.grid_termlists_term.addRecords('id', data);
-      }
+        grid_termlists_term.addRecords('id', data);
     }
   );
-};
+}
 /*]]>*/
 </script>
 <?php

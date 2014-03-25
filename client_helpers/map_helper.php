@@ -182,7 +182,6 @@ class map_helper extends helper_base {
   *    modifyFeature - a tool for selecting a feature on the map edit layer then editing the vertices of the feature.
   *    selectFeature - a tool for selecting a feature on the map edit layer.
   *    hoverFeatureHighlight - highlights the feature on the map edit layer which is under the mouse cursor position.
-  *    fullscreen - add a button allowing the map to be shown in full screen mode.
   * Default is layerSwitcher, panZoom and graticule.
   * </li>
   * <li><b>initialFeatureWkt</b><br/>
@@ -396,10 +395,10 @@ class map_helper extends helper_base {
       if (isset($options['tabDiv'])) {
         $divId = preg_replace('/[^a-zA-Z0-9]/', '', $options['divId']);
         $javascript .= "var mapTabHandler = function(event, ui) { \n";
-        $javascript .= "  if (typeof indiciaData.mapdiv !== 'undefined' && $(indiciaData.mapdiv).parents('#'+ui.panel.id).length) {\n";
+        $javascript .= "  if (ui.panel.id=='".$options['tabDiv']."' && typeof indiciaData.mapdiv !== 'undefined') {\n";
         $javascript .= "    indiciaData.mapdiv.map.updateSize();\n";
         $javascript .= "  }\n\n};\n";
-        $javascript .= "$($('#".$options['tabDiv']."').parent()).bind('tabsshow', mapTabHandler);\n";
+        $javascript .= "jQuery(jQuery('#".$options['tabDiv']."').parent()).bind('tabsshow', mapTabHandler);\n";
         // Insert this script at the beginning, because it must be done before the tabs are initialised or the 
         // first tab cannot fire the event
         self::$javascript = $javascript . self::$javascript;

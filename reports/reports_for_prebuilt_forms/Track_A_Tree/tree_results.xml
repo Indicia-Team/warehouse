@@ -19,19 +19,17 @@
     <param name="date_to" display="Date To" datatype="date">
       <where>('#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))</where>
     </param>
-    <param name="sample_method" display="Sample Method" description="Select the sample method." >
-      <where>(o.sample_method = '#sample_method#')</where>
-    </param>
   </params>
   <columns>
-    <column name="occurrence_id" sql="o.id" datatype="integer"/>
-    <column name="sample_id" sql="o.sample_id" datatype="integer"/>
-    <column name="location_id" sql="o.location_id" datatype="integer"/>
-    <column name="taxon" sql="o.default_common_name" datatype="text"/>
-    <column name="species_id" sql="o.taxa_taxon_list_id" datatype="integer"/>   
-    <column name="date_start" sql="o.date_start"/>
-    <column name="date_end" sql="o.date_end" />
-    <column name="date_type" sql="o.date_type" />
-    <column name="geom" visible="false" mappable="true" sql="st_astext(ST_Centroid(o.public_geom))" />
+    <column name="occurrence_id" sql="o.id" on_demand="true" datatype="integer"/>
+    <column name="sample_id" sql="o.sample_id" on_demand="true" datatype="integer"/>
+    <column name="location_id" sql="o.location_id" on_demand="true" datatype="integer"/>
+    <column name="taxon" on_demand="true" datatype="text"
+      sql="CASE WHEN o.preferred_taxon=o.default_common_name then o.preferred_taxon ELSE o.preferred_taxon || COALESCE(' | ' || o.default_common_name, '') END" />
+    <column name="taxa_taxon_list_id" sql="o.taxa_taxon_list_id" on_demand="true" datatype="integer"/>   
+    <column name="date_start" sql="o.date_start" on_demand="true"/>
+    <column name="date_end" sql="o.date_end" on_demand="true"/>
+    <column name="date_type" sql="o.date_type" on_demand="true"/>
+    <column name="geom" visible="false" mappable="true" sql="st_astext(o.public_geom)" />
   </columns>
 </report>
