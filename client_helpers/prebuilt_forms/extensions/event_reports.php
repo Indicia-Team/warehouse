@@ -56,7 +56,7 @@ class extension_event_reports {
     $reportOptions = array_merge(
       iform_report_get_report_options($args, $auth['read']),
       array(
-        'dataSource' => "library/locations/{$type}_counts_mappable_for_event",
+        'dataSource' => "library/locations/filterable_{$type}_counts_mappable",
         'featureDoubleOutlineColour' => '#f7f7f7',
         'rowId' => 'id'
       ),
@@ -86,7 +86,7 @@ class extension_event_reports {
     $reportOptions = array_merge(
       iform_report_get_report_options($args, $auth['read']),
       array(
-        'dataSource' => 'library/totals/species_occurrence_image_counts'       
+        'dataSource' => 'library/totals/filterable_species_occurrence_image_counts'       
       ),
       $options
     );
@@ -118,10 +118,10 @@ class extension_event_reports {
     $reportOptions = array_merge(      
       iform_report_get_report_options($args, $auth['read']),
       array(
-        'dataSource' => 'library/occurrence_images/images_for_event',
+        'dataSource' => 'library/occurrence_images/filterable_explore_list',
         'bands' => array(array('content'=>
           '<div class="gallery-item status-{record_status} certainty-{certainty} ">'.
-          '<a class="fancybox" href="{imageFolder}{path}"><img src="{imageFolder}thumb-{path}" title="{taxon}" alt="{taxon}"/><br/>{formatted}</a></div>')),
+          '<a class="fancybox" href="{imageFolder}{media}"><img src="{imageFolder}thumb-{media}" title="{taxon}" alt="{taxon}"/><br/>{formatted}</a></div>')),
         'limit' => 10
       ),
       $options
@@ -150,7 +150,7 @@ class extension_event_reports {
     $reportOptions = array_merge(      
       iform_report_get_report_options($args, $auth['read']),
       array(
-        'dataSource' => 'library/users/trending_people_for_event',
+        'dataSource' => 'library/users/filterable_trending_people',
         'header' => '<ul class="people cloud">',
         'bands' => array(array('content'=>
           '<li style="font-size: {font_size}px">{recorders}</li>')),
@@ -183,7 +183,7 @@ class extension_event_reports {
     $reportOptions = array_merge(      
       iform_report_get_report_options($args, $auth['read']),
       array(
-        'dataSource' => 'library/taxa/trending_taxa_for_event',
+        'dataSource' => 'library/taxa/filterable_trending_taxa',
         'header' => '<ul class="taxon cloud">',
         'bands' => array(array('content'=>
           '<li style="font-size: {font_size}px">{species}</li>')),
@@ -215,7 +215,7 @@ class extension_event_reports {
     $reportOptions = array_merge(      
       iform_report_get_report_options($args, $auth['read']),
       array(
-        'dataSource' => 'library/taxon_groups/group_counts_for_event',
+        'dataSource' => 'library/taxon_groups/filterable_group_counts',
         'id' => 'groups-pie',
         'width'=> 340,
         'height'=> 340,
@@ -237,7 +237,7 @@ class extension_event_reports {
   
   public static function species_by_location_league($auth, $args, $tabalias, $options, $path) {
     $label = empty($options['label']) ? 'Location' : $options['label'];
-    return self::league_table($auth, $args, $options, 'library/locations/species_counts_league_for_event', $label);
+    return self::league_table($auth, $args, $options, 'library/locations/filterable_species_counts_league', $label);
   }
   
   /**
@@ -256,7 +256,7 @@ class extension_event_reports {
   public static function species_by_recorders_league($auth, $args, $tabalias, $options, $path) { 
     $label = empty($options['label']) ? 'Recorders' : $options['label'];
     $groupby = isset($options['groupByRecorderName']) && $options['groupByRecorderName'] ? 'recorder_name' : 'users';
-    return self::league_table($auth, $args, $options, "library/$groupby/species_counts_league_for_event", $label);  
+    return self::league_table($auth, $args, $options, "library/$groupby/filterable_species_counts_league", $label);  
   }
   
   private static function league_table($auth, $args, $options, $report, $label) { 
