@@ -13,7 +13,7 @@ $lang = array
     'user account for both the database connection user as well as the report user. However for a live server it is recommended that you create '.
     'a second user and only grant read only privileges to the tables and views you want accessible from reports to use as the report user. '.
     'The schema you define below will be auto-created by the setup procedure. For more information, see the '.
-    '<a href="http://code.google.com/p/indicia/wiki/Installation">Installation Guide</a>.',
+    '<a href="http://indicia-docs.readthedocs.org/en/latest/administrating/warehouse/warehouse-installation.html">Installation Guide</a>.',
     'database'    => 'Database',
     'db_schema'   => 'Schema for Indicia tables',
     'db_host'     => 'Host',
@@ -42,7 +42,7 @@ $lang = array
     'error_db_schema'         => 'Schema connection problem. Verify the schema name.',
     'error_db_postgis'        => 'It seems that postgis scripts arent installed in the public schema.',
     'error_db_file'           => 'The indicia setup sql file must be readable by php scripts:',
-    'error_db_user'           => 'The following users dosent exists:',
+    'error_db_user'           => 'The following user doesn\'t exist:',
     'error_db_connect'        => 'Could not connect to the database. Please verify database connection data.',
     'error_db_setup'          => 'Setup failed. Database transactions have been rolled back.',
     'error_db_database_config' => 'Setup failed. Database transactions have been rolled back. Could not write /application/config/database.php file. Please check file write permission.',
