@@ -1,0 +1,2 @@
+ALTER TABLE person_attributes ADD COLUMN system_function character varying(30);
+COMMENT ON COLUMN person_attributes.system_function IS 'Machine readable function of this attribute. Defines how the field can be interpreted by the system.';
