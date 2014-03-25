@@ -396,7 +396,7 @@ class extension_splash_extensions {
     $indicia_templates['prefix']='<div id="container-{fieldname}" class="param-container read-only-capable">';
     $indicia_templates['suffix']='</div>';
     //Hide the location name field as this will be auto-populated with the grid reference when the user submits
-    data_entry_helper::$javascript = "$('#container-location\\\\:name').hide();\n";
+    data_entry_helper::$javascript .= "$('#container-location\\\\:name').hide();\n";
     data_entry_helper::$javascript .= "$('#entry_form').submit(function() { $('#location\\\\:name').val($('#imp-sref').val());});\n";
     //Make the page read-only in summary mode
     if (!empty($_GET['summary_mode']) && $_GET['summary_mode']==true) {
