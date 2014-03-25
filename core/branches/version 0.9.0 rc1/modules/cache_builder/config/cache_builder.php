@@ -170,7 +170,7 @@ $config['taxa_taxon_lists']['update'] = "update cache_taxa_taxon_lists cttl
       taxon_group_id = tpref.taxon_group_id,
       taxon_group = tg.title,
       cache_updated_on=now(),
-      allow_data_entry=ttlpref.allow_data_entry
+      allow_data_entry=ttl.allow_data_entry
     from taxon_lists tl
     join taxa_taxon_lists ttl on ttl.taxon_list_id=tl.id 
     #join_needs_update#
@@ -201,7 +201,7 @@ $config['taxa_taxon_lists']['insert']="insert into cache_taxa_taxon_lists (
       tcommon.taxon as default_common_name,
       regexp_replace(regexp_replace(regexp_replace(lower(t.taxon), E'\\\\(.+\\\\)', '', 'g'), 'ae', 'e', 'g'), E'[^a-z0-9\\\\?\\\\+]', '', 'g'), 
       tpref.external_key, ttlpref.taxon_meaning_id, tpref.taxon_group_id, tg.title,
-      now(), now(), ttlpref.allow_data_entry
+      now(), now(), ttl.allow_data_entry
     from taxon_lists tl
     join taxa_taxon_lists ttl on ttl.taxon_list_id=tl.id 
     left join cache_taxa_taxon_lists cttl on cttl.id=ttl.id
@@ -217,6 +217,38 @@ $config['taxa_taxon_lists']['insert']="insert into cache_taxa_taxon_lists (
 
 $config['taxa_taxon_lists']['join_needs_update']='join needs_update_taxa_taxon_lists nu on nu.id=ttl.id';
 $config['taxa_taxon_lists']['key_field']='ttl.id';
+
+$config['taxa_taxon_lists']['extra_multi_record_updates']=array(
+    // nullify the recorders field so it gets an update
+    'Ranks' => "with recursive q as (
+  select ttl1.id, ttl1.id as child_id, ttl1.taxon as child_taxon, ttl2.parent_id, ''::varchar as rank_taxon, ''::varchar as rank
+  from cache_taxa_taxon_lists ttl1  
+  join cache_taxa_taxon_lists ttl2 on ttl2.external_key=ttl1.external_key and ttl2.taxon_list_id=#master_list_id#
+  join needs_update_taxa_taxon_lists nu on nu.id=ttl1.id
+  union all
+  select ttl.id, q.child_id, q.child_taxon, ttl.parent_id, t.taxon as rank_taxon, tr.rank
+  from q
+  join taxa_taxon_lists ttl on ttl.id=q.parent_id
+  join taxa t on t.id=ttl.taxon_id and t.deleted=false
+  join taxon_ranks tr on tr.id=t.taxon_rank_id and tr.deleted=false 
+) select distinct * into temporary rankupdate from q;
+
+update cache_taxa_taxon_lists cttl
+set kingdom_taxa_taxon_list_id=ru.id, kingdom_taxon=rank_taxon
+from rankupdate ru
+where ru.child_id=cttl.id and ru.rank='Kingdom';
+
+update cache_taxa_taxon_lists cttl
+set order_taxa_taxon_list_id=ru.id, order_taxon=rank_taxon
+from rankupdate ru
+where ru.child_id=cttl.id and ru.rank='Order';
+
+update cache_taxa_taxon_lists cttl
+set family_taxa_taxon_list_id=ru.id, family_taxon=rank_taxon
+from rankupdate ru
+where ru.child_id=cttl.id and ru.rank='Family';
+
+drop table rankupdate;");
 
 $config['taxon_searchterms']['get_missing_items_query']="
     select distinct on (ttl.id) ttl.id, tl.deleted or ttl.deleted or ttlpref.deleted or t.deleted 
@@ -404,7 +436,7 @@ $config['taxon_searchterms']['insert']['standard terms']="insert into cache_taxo
     from cache_taxa_taxon_lists cttl
     left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type in ('L','S','V') and cts.simplified='f'
     #join_needs_update#
-    where cts.taxa_taxon_list_id is null";
+    where cts.taxa_taxon_list_id is null and cttl.allow_data_entry=true";
 
 $config['taxon_searchterms']['insert']['abbreviations']="insert into cache_taxon_searchterms (
       taxa_taxon_list_id, taxon_list_id, searchterm, original, taxon_group_id, taxon_group, taxon_meaning_id, preferred_taxon,
@@ -422,7 +454,7 @@ $config['taxon_searchterms']['insert']['abbreviations']="insert into cache_taxon
       and ttlpref.deleted=false
     left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type='A'
     #join_needs_update#
-    where cts.taxa_taxon_list_id is null and cttl.language_iso='lat'";
+    where cts.taxa_taxon_list_id is null and cttl.language_iso='lat' and cttl.allow_data_entry=true";
 
 $config['taxon_searchterms']['insert']['simplified terms']="insert into cache_taxon_searchterms (
       taxa_taxon_list_id, taxon_list_id, searchterm, original, taxon_group_id, taxon_group, taxon_meaning_id, preferred_taxon,
@@ -443,7 +475,7 @@ $config['taxon_searchterms']['insert']['simplified terms']="insert into cache_ta
     from cache_taxa_taxon_lists cttl
     left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type in ('L','S','V') and cts.simplified=true
     #join_needs_update#
-    where cts.taxa_taxon_list_id is null";
+    where cts.taxa_taxon_list_id is null and cttl.allow_data_entry=true";
 
 $config['taxon_searchterms']['insert']['codes']="insert into cache_taxon_searchterms (
       taxa_taxon_list_id, taxon_list_id, searchterm, original, taxon_group_id, taxon_group, taxon_meaning_id, preferred_taxon,
@@ -460,7 +492,7 @@ $config['taxon_searchterms']['insert']['codes']="insert into cache_taxon_searcht
     join termlists_terms tltcategory on tltcategory.id=tlttype.parent_id and tltcategory.deleted=false
     join terms tcategory on tcategory.id=tltcategory.term_id and tcategory.term='searchable' and tcategory.deleted=false
     #join_needs_update#
-    where cts.taxa_taxon_list_id is null";
+    where cts.taxa_taxon_list_id is null and cttl.allow_data_entry=false";
 
 $config['taxon_searchterms']['insert']['id_diff'] = "update cache_taxon_searchterms cts
     set identification_difficulty=extkey.value::integer, id_diff_verification_rule_id=vr.id
@@ -629,7 +661,8 @@ $config['occurrences']['update'] = "update cache_occurrences co
       training=o.training,
       location_id=s.location_id,
       input_form=s.input_form,
-      data_cleaner_info=case when o.last_verification_check_date is null then null else case sub.info when '' then 'pass' else sub.info end end
+      data_cleaner_info=case when o.last_verification_check_date is null then null else case sub.info when '' then 'pass' else sub.info end end,
+      sensitivity_precision=o.sensitivity_precision
     from occurrences o
     #join_needs_update#
     join (
@@ -670,7 +703,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       taxon, authority, preferred_taxon, preferred_authority, default_common_name, 
       search_name, taxa_taxon_list_external_key, taxon_meaning_id, taxon_group_id, taxon_group,
       created_by_id, cache_created_on, cache_updated_on, certainty, location_name, recorders, 
-      verifier, verified_on, images, training, location_id, input_form
+      verifier, verified_on, images, training, location_id, input_form, sensitivity_precision
     )
   select distinct on (o.id) o.id, o.record_status, o.release_status, o.downloaded_flag, o.zero_abundance,
     su.website_id as website_id, su.id as survey_id, s.id as sample_id, su.title as survey_title,
@@ -713,7 +746,8 @@ $config['occurrences']['insert']="insert into cache_occurrences (
     images.list,
     o.training,
     s.location_id,
-    s.input_form
+    s.input_form,
+    o.sensitivity_precision
   from occurrences o
   left join cache_occurrences co on co.id=o.id
   join samples s on s.id=o.sample_id 

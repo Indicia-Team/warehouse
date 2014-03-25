@@ -1,13 +1,4 @@
-﻿ALTER TABLE cache_taxon_searchterms
-   ADD COLUMN identification_difficulty integer;
-
-COMMENT ON COLUMN cache_taxon_searchterms.identification_difficulty IS 'Identification difficulty assigned by the data_cleaner module, on a scale from 1 (easy) to 5 (difficult)';
-
-ALTER TABLE cache_taxon_searchterms
-   ADD COLUMN id_diff_verification_rule_id integer;
-
-COMMENT ON COLUMN cache_taxon_searchterms.id_diff_verification_rule_id  IS 'Verification rule that is associated with the identification difficulty.';
-
+﻿-- NEEDS TO RUN AFTER CORE SCRIPTS
 CREATE OR REPLACE function f_update_cts (OUT success bool)
     LANGUAGE plpgsql AS
 $func$

@@ -1,2 +1,0 @@
-DROP INDEX IF EXISTS ix_cache_taxa_taxon_lists_updated_on;
-CREATE INDEX ix_cache_taxa_taxon_lists_updated_on ON cache_taxa_taxon_lists(cache_updated_on);

@@ -1,7 +1,11 @@
--- Table: cache_termlists_terms
+CREATE OR REPLACE function f_add_ddl (OUT success bool)
+    LANGUAGE plpgsql AS
+$func$
+BEGIN 
+  
+success := TRUE;
 
--- DROP TABLE cache_termlists_terms;
-
+BEGIN
 CREATE TABLE cache_termlists_terms
 (
   id integer NOT NULL,
@@ -26,60 +30,53 @@ CREATE TABLE cache_termlists_terms
 WITH (
   OIDS=FALSE
 );
+EXCEPTION
+    WHEN duplicate_table THEN 
+      RAISE NOTICE 'table exists.';
+      success := FALSE;
+END;
+
+END
+$func$;
+
+SELECT f_add_ddl();
+
+DROP FUNCTION f_add_ddl();
+
 COMMENT ON TABLE cache_termlists_terms IS 'A cache of all termlist_terms entry including joins to the most likely fields to be required of any query. Updated when the scheduled_tasks action is called so should not be used when fully up to date information is required.';
 
--- Index: ix_cache_termlists_terms_language_iso
-
--- DROP INDEX ix_cache_termlists_terms_language_iso;
-
+DROP INDEX IF EXISTS ix_cache_termlists_terms_language_iso;
 CREATE INDEX ix_cache_termlists_terms_language_iso
   ON cache_termlists_terms
   USING btree
   (language_iso);
 
--- Index: ix_cache_termlists_terms_parent_id
-
--- DROP INDEX ix_cache_termlists_terms_parent_id;
-
+DROP INDEX IF EXISTS ix_cache_termlists_terms_parent_id;
 CREATE INDEX ix_cache_termlists_terms_parent_id
   ON cache_termlists_terms
   USING btree
   (parent_id);
-
--- Index: ix_cache_termlists_terms_sort_order
-
--- DROP INDEX ix_cache_termlists_terms_sort_order;
-
+  
+DROP INDEX IF EXISTS ix_cache_termlists_terms_sort_order;
 CREATE INDEX ix_cache_termlists_terms_sort_order
   ON cache_termlists_terms
   USING btree
   (sort_order);
 
--- Index: ix_cache_termlists_terms_term
-
--- DROP INDEX ix_cache_termlists_terms_term;
-
+DROP INDEX IF EXISTS ix_cache_termlists_terms_term;
 CREATE INDEX ix_cache_termlists_terms_term
   ON cache_termlists_terms
   USING btree
   (term);
-
--- Index: ix_cache_termlists_terms_termlist_id
-
--- DROP INDEX ix_cache_termlists_terms_termlist_id;
-
+  
+DROP INDEX IF EXISTS ix_cache_termlists_terms_termlist_id;
 CREATE INDEX ix_cache_termlists_terms_termlist_id
   ON cache_termlists_terms
   USING btree
   (termlist_id);
-
-  -- Index: ix_cache_termlists_terms_meaning_id
-
--- DROP INDEX ix_cache_termlists_terms_meaning_id;
-
+  
+DROP INDEX IF EXISTS ix_cache_termlists_terms_meaning_id;
 CREATE INDEX ix_cache_termlists_terms_meaning_id
   ON cache_termlists_terms
   USING btree
   (meaning_id);
-
-
