@@ -1,0 +1,198 @@
+@import "compass/css3";
+@import "sassy-buttons";
+@import "blueprint/form";
+
+$verify-color: #00a000;
+$reject-color: #a00000;
+$query-color: #f0a000;
+$default-color: #4ba3cc;
+$hover-color: #ffffcc;
+$selected-color: #027AC6;
+$header-font-color: #027AC6;
+$selected-font-color: #ffffff;
+
+table.report-grid {
+  font-size: 80%;  
+  width: 100%;
+  tr:hover, table.report-grid tr.odd:hover {
+    background-color: $hover-color;
+  }
+  tr.selected, tr.selected td {
+    background-color: $selected-color;
+    color: white;
+  }
+  .nowrap {
+    whitespace: nowrap;
+  }
+}
+
+ul.gallery li {
+  @include inline-block;
+  list-style-type: none;
+  text-align: center;
+  background: none;
+}
+
+#btn-verify, #btn-verify-all {
+  @include sassy-button("simple", 4px, 11px, $verify-color, darken($verify-color, 20%), white, raised);
+}
+
+#btn-reject {
+  @include sassy-button("simple", 4px, 11px, $reject-color, darken($reject-color, 20%), white, raised);
+}
+
+#btn-query {
+  @include sassy-button("simple", 4px, 11px, $query-color, darken($query-color, 20%), white, raised);
+}
+
+#btn-multiple {
+  @include sassy-button("simple", 4px, 11px, $default-color, darken($default-color, 20%), white, raised);
+  @include sassy-button-style("push", $default-color);
+}
+
+#btn-multiple.active {
+  @include sassy-button-style("inset", darken($default-color, 30%))
+}
+
+#comment-text {
+  display: block;
+  width: 100%;
+}
+
+.popup-form {
+  width: 500px;
+  @include blueprint-form-layout;
+  @include blueprint-form-sizes(360px, 360px);
+  @include blueprint-inline-form;
+
+  label {
+    width: 120px;
+    &.error {
+      width: auto;
+      margin: 0 0 0 120px;
+      line-height: 1em;
+    }
+  }
+  .warning {
+    line-height: 1.2em;
+    @include box-shadow($reject-color 1px 1px 3px);
+    @include border-radius(4px);
+    padding: 1em;
+    margin: 1em;
+  }
+}
+
+.manual-email {
+  width: 600px;
+
+  .left {
+    width: 120px;
+  }
+  .right {
+    width: 450px;
+  }
+}
+
+#instructions {
+  padding: 1em;
+  @include background(linear-gradient(top, lighten($default-color, 60%), lighten($default-color, 30%)));
+  li {
+    background-image: none;
+    list-style-type: circle;
+    list-style-position:inside;
+    padding-top: 0.1em;
+  }
+}
+
+#record-details-toolbar {
+  label {
+    width: 70px;
+  }
+}
+
+#record-details-tabs {
+  font-size: 80%;
+
+  #details-tab {
+    table {
+      td {
+        &.header {
+          color: $header-font-color;
+          font-weight: bold;
+          border-bottom: solid silver 1px;
+        }
+        &.caption {
+          padding: 0 1em 0 0.5em;
+          font-weight: bold;
+        }
+      }
+    }  
+  }
+
+  #phenology-tab {
+    p {
+      margin: 0;
+    }
+  }
+}
+
+input[type="button"].tools-btn, button.tools-btn {
+  padding: 0.3em;
+}
+
+.quick-verify-popup {
+  label {
+    width: auto;
+    margin-left: 2em;
+  }
+  button {
+    margin-top: 1em;
+  }
+  .helpText {
+    margin-left: 45px;
+  }
+  h2, h3 {
+    margin-bottom: 4px;
+  }
+  a {
+    text-decoration: underline;
+    margin: 0px 6px;
+    &:hover, &:active {
+      background-color: #ffffcc;
+    }
+  }
+  
+}
+
+.verify-tools {
+  display: none;
+  position: absolute;
+  background: white;
+  border: solid silver 1px;
+  li {
+    background-image: none;
+    padding: 0.2em 0.5em;
+  }
+}
+
+tr {
+  &.verified, &.rejected, &.total {
+    text-align: right;
+    padding-right: 1em;
+  }
+  &.verified {
+    font-color: $verify-color;
+  }
+  &.rejected {
+    font-color: $verify-color;
+  }
+  &.total {
+    font-weight: bold;
+  }
+}
+
+.grid-verify-popup {
+  button {
+    margin-right: 1em;
+  }
+}

@@ -1,0 +1,273 @@
+#standard-params .header {
+  padding: 1px;
+}
+
+#standard-params .header > div:first-child {
+  float: left;
+  width: auto;
+}
+#standard-params .header > div:last-child {
+  float: right;
+  width: auto;
+  margin-left: 0.5em;
+}
+
+#standard-params .header * {
+  vertical-align: middle;
+  margin: 0 4px 0 0; 
+  padding: 0;
+}
+
+#standard-params .header label {
+  width: auto;
+}
+
+#standard-params .header h2 {
+  margin: 0 4px 0;
+  display:-moz-inline-stack;
+  display:inline-block;
+  zoom:1;
+  *display:inline;
+}
+
+#standard-params .disabled {
+  opacity: 0.3;
+}
+
+#standard-params .header button, #standard-params .header select, #standard-params .toolbar button, #standard-params .toolbar select{  
+  padding: 0;
+}
+#standard-params #filter-panes {
+  padding-right: 22px;
+  box-sizing:border-box;
+  -moz-box-sizing:border-box;
+  -webkit-box-sizing:border-box
+}
+#standard-params .pane {
+  display:-moz-inline-stack;
+  display:inline-block;
+  zoom:1;
+  *display:inline;
+  margin: 2px 0.5% 2px 0; 
+  vertical-align: top;
+  width: 24.625%;
+  background-color: #DFDFDE;
+}
+#standard-params .pane:nth-child(3), #standard-params .pane:last-child {
+  margin-right: 0;
+}
+
+#standard-params .pane:nth-child(1), #standard-params .pane:nth-child(2), #standard-params .pane:nth-child(3) {
+  width: 33%;
+}
+
+#pane-filter_what a {
+  background: url(../images/nuvola/viewmag-32px.png) no-repeat 6px 6px;
+}
+
+#pane-filter_when a {
+  background-image: url(../images/nuvola/date-32px.png);
+}
+
+#pane-filter_where a {
+  background-image: url(../images/nuvola/globe-32px.png);
+}
+
+#pane-filter_who a {
+  background-image: url(../images/nuvola/people-32px.png);
+}
+
+#pane-filter_occurrence_id a {
+  background-image: url(../images/nuvola/number-32px.png);
+}
+
+#pane-filter_source a {
+  background-image: url(../images/nuvola/source-32px.png);
+}
+
+#pane-filter_quality a {
+  background-image: url(../images/nuvola/ok-32px.png);
+}
+
+#standard-params .pane .filter-desc {
+  font-size: 90%;
+}
+
+#standard-params .pane a, #standard-params .pane a:hover {
+  padding: 6px 6px 6px 42px;  
+  display: block;
+  text-decoration: none;
+  min-height: 54px;
+  background-repeat: no-repeat;
+  background-position: 6px 6px;
+}
+
+#standard-params .pane a:hover {
+  background-color: #f3f3f3;
+}
+
+#standard-params .pane .pane-title {
+  margin: 0;
+  line-height: 1.2em;
+  font-size: 1.2em;
+  font-weight: bold;
+  display: block;
+}
+#standard-params .pane h4 {
+  margin: 0;
+  line-height: 1em;
+  font-size: 1em;
+  font-weight: bold;
+}
+
+.filter-controls h3 {
+   margin: 0;
+}
+
+.filter-controls h4 {
+   margin: 1em 0 0 0;
+}
+
+.olMap .olControlDrawFeaturePolygonItemActive, .olMap .olControlDrawFeaturePolygonItemInactive, 
+.olMap .olControlDrawFeaturePathItemActive, .olMap .olControlDrawFeaturePathItemInactive, 
+.olMap .olControlDrawFeaturePointItemActive, .olMap .olControlDrawFeaturePointItemInactive,
+.olMap .olControlclearEditLayerItemActive, .olMap .olControlclearEditLayerItemInactive {
+  display: none;
+}
+
+.olMap .olControlSelectFeatureItemActive, .olMap .olControlSelectFeatureItemInactive {
+  display: block;
+}
+
+#controls-filter_where .olMap .olControlDrawFeaturePolygonItemActive, #controls-filter_where .olMap .olControlDrawFeaturePolygonItemInactive, 
+#controls-filter_where .olMap .olControlDrawFeaturePathItemActive, #controls-filter_where .olMap .olControlDrawFeatureLinePathInactive, 
+#controls-filter_where .olMap .olControlDrawFeaturePointItemActive, #controls-filter_where .olMap .olControlDrawFeaturePointItemInactive,
+#controls-filter_where .olMap .olControlclearEditLayerItemActive, #controls-filter_where .olMap .olControlclearEditLayerItemInactive {
+  display: block;
+}
+#controls-filter_where .olMap .olControlDrawFeaturePolygonItemActive.disabled, #controls-filter_where .olMap .olControlDrawFeaturePolygonItemInactive.disabled, 
+#controls-filter_where .olMap .olControlDrawFeaturePathItemActive.disabled, #controls-filter_where .olMap .olControlDrawFeatureLinePathInactive.disabled, 
+#controls-filter_where .olMap .olControlDrawFeaturePointItemActive.disabled, #controls-filter_where .olMap .olControlDrawFeaturePointItemInactive.disabled,
+#controls-filter_where .olMap .olControlclearEditLayerItemActive.disabled, #controls-filter_where .olMap .olControlclearEditLayerItemInactive.disabled {
+  display: none;
+}
+
+#controls-filter_where .olMap .olControlSelectFeatureItemActive, #controls-filter_where .olMap .olControlSelectFeatureItemInactive {
+  display: none;
+}
+
+#filter-done {
+  float: right;
+  margin: 0;
+  padding: 0;
+}
+
+#filter-details .toolbar {
+  background: #f7f7f7;
+}
+
+#filter-details .toolbar * {
+  vertical-align: middle;
+}
+
+img.button {
+  cursor: pointer;
+  margin-left: 6px;
+}
+
+img.button.disabled {
+  cursor: auto;
+}
+
+fieldset.inline {
+  padding: 0;
+}
+
+fieldset.inline * {
+  vertical-align: middle;
+}
+
+fieldset.inline fieldset, div.filter-popup-columns {
+  display:-moz-inline-stack;
+  display:inline-block;
+  zoom:1;
+  *display:inline;
+  vertical-align: top;
+  border: none;
+  padding: 4px 12px;
+  margin: 0;
+}
+
+fieldset.inline fieldset label {
+  width: auto;
+}
+
+div.filter-popup-columns {
+  width: 250px;
+  max-height: 600px;
+  overflow: auto;
+  border-right: solid silver 1px;
+}
+div.filter-popup-columns:last-child {
+  border: none;
+}
+div.filter-popup-columns li {
+  background: none;
+  border-bottom: 1px solid #F0F0F0;
+  padding: 0.2em 0;
+}
+div.filter-popup-columns li:last-child {
+  border: none;
+}
+div.filter-popup-columns * {
+  vertical-align: middle;
+  margin: 0 6px;
+}
+
+#what-tabs ul.inline {
+  margin-left: 1em;
+}
+
+#what-tabs ul.inline li {
+  display:-moz-inline-stack;
+  display:inline-block;
+  zoom:1;
+  *display:inline;
+  margin: 0 1em;
+}
+
+.context-instruct {
+  display: none;
+}
+
+input[disabled] {
+  opacity: 0.5;
+}
+
+.filter-controls select, .filter-controls input, .filter-controls label {
+  vertical-align: middle;
+}
+
+#controls-filter_who, #controls-filter_occurrence_id{
+  width: 300px;
+}
+#controls-filter_occurrence_id label {
+  width: auto;
+}
+
+#controls-filter_quality {
+  width: 600px;
+}
+
+#controls-filter_source {
+ width: 860px;
+}
+
+#controls-filter_source .filter-popup-columns ul {
+  overflow: auto;
+  max-height: 500px;
+}
+
+.survey-hide, .website-hide {
+  display: none;
+}

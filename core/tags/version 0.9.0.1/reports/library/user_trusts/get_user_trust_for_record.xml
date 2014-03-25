@@ -1,0 +1,40 @@
+<report
+  title="Get user trust for record"
+  description="List all of the trusts associated with a particular record."
+>
+  <query website_filter_field="o.website_id">
+    SELECT DISTINCT #columns#
+    FROM user_trusts ut
+      LEFT JOIN surveys s on ut.survey_id = s.id
+      LEFT JOIN taxon_groups tg on ut.taxon_group_id = tg.id
+      LEFT JOIN index_locations_samples ils on (ils.location_id=ut.location_id or ut.location_id is null)
+      LEFT JOIN locations l on ut.location_id = l.id
+      LEFT JOIN users u on ut.user_id = u.id
+    WHERE 
+      ut.user_id = '#user_id#'
+        AND (ut.survey_id = '#survey_id#' or (ut.survey_id is null and (ut.taxon_group_id is not null or ut.location_id is not null)))
+        AND (ut.taxon_group_id = '#taxon_group_id#' or (ut.taxon_group_id is null and (ut.survey_id is not null or ut.location_id is not null)))
+        AND ((ut.location_id is null and (ut.survey_id is not null or ut.taxon_group_id is not null)) or string_to_array('#location_ids#', '|') @> string_to_array(ut.location_id::varchar, '|'))
+        AND ut.deleted=false
+  </query>
+  <order_bys>
+    <order_by>ut.id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='user_id' display='User Id' description='User id of the recorder associated with the trusts' datatype='integer' />
+    <param name='survey_id' display='Survey Id' description='Survey id of the recorder associated with the trusts' datatype='integer' />
+    <param name='taxon_group_id' display='Taxon Group Id' description='' datatype='integer' />
+    <param name='location_ids' display='Location Ids' description='Localities the record overlaps with, separated by | if multiple.' datatype='text' />
+  </params>
+  <columns>
+    <column name='user_id' display='User ID' sql='ut.user_id' datatype='integer'/>
+    <column name='survey_id' display='Survey ID' sql='ut.survey_id' datatype='integer'/>
+    <column name='taxon_group_id' display='Taxon Group ID' sql='ut.taxon_group_id' datatype='integer'/>
+    <column name='location_id' display='Location ID' sql='ut.location_id' datatype='integer'/>
+    <column name='survey_title' display='Survey Title' sql='s.title' datatype='text'/>
+    <column name='taxon_group' display='Taxon Group' sql='tg.title' datatype='text'/>
+    <column name='location_name' display='Location Name' sql='l.name' datatype='text'/>
+    <column name='recorder_name' displayed='Recorder Name' sql='u.username' datatype='text'/>
+    <column name='trust_id' displayed='Trust Id' sql='ut.id' datatype='integer'/>
+  </columns>
+</report>

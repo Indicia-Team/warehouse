@@ -1,0 +1,188 @@
+#iform-header {
+  height: 108px;
+}
+.government-logo {
+  height: 100px;
+}
+.gabriel-lippmann-logo {
+  height: 50px;
+}
+#iform-logo-left {
+	float: left;
+}
+#iform-logo-right {
+	float: right;
+}
+.redOption {
+  color:red !important;
+}
+.cggrid-row,.cgAddedRow {
+  border-top: solid black 2px;
+}
+.remove-cgnewrow {
+  color:red !important;
+  cursor: pointer;
+}
+.clear-cgrow {
+  color:red !important;
+  cursor: pointer;
+}
+.remove-sgnewrow {
+  color:red !important;
+  cursor: pointer;
+}
+.clear-sgrow {
+  color:red !important;
+  cursor: pointer;
+}
+.narrow {
+  width: 30px;
+}
+input.cgAttr {
+  width: 50px;
+}
+#conditions-grid label {
+	width: 108px;
+	padding-left: 6px;
+}
+#conditions-grid label.auto-width {
+	width: auto;
+}
+#conditions-grid td {
+  border: solid silver 1px;
+}
+.control-box span {
+  margin-left: 0px;
+}
+.control-box span * {
+  margin-left: 0px;
+}
+.control-box input {
+  width: auto;
+}
+#conditions-grid .control-box label {
+  width: auto;
+}
+.cggrid-date {
+  width: 90px;
+}
+.cggrid-comment{
+  width: 150px;
+}
+p.inline-error {
+  margin-left: 0;	
+  margin-bottom: 0;
+  margin-top: 4px;
+  margin-right: 20px;	
+  display: inline;  
+}
+
+.deh-required {
+  color:red;
+}
+.control-box {
+  display:inline  !important;
+}
+label.auto-width {
+	width: auto;
+}
+label.prepad {
+  padding-left: 20px;	
+}
+.coords-text {
+  margin-top: 4px;
+  margin-left: 20px;	
+}
+#pointgridtable input[type='text'] {
+  width: 100px;
+}
+div.olControlEditingToolbar div.olControlCancelSketchItemInactive {
+  background-image: url("../images/mnhnl-mod-toolbar.png");
+  background-position: 0px 0px;
+}
+div.olControlEditingToolbar div.olControlUndoSketchPointItemInactive {
+  background-image: url("../images/mnhnl-mod-toolbar.png");
+  background-position: -25px 0px;
+}
+
+div.olControlEditingToolbar div.olControlRemoveNewSiteItemInactive {
+  background-image: url("../images/mnhnl-mod-toolbar.png");
+  background-position: -50px 0px;
+}
+
+div.olControlEditingToolbar div.olControlZoomToSiteItemInactive {
+  background-image: url("../images/mnhnl-mod-toolbar.png");
+  background-position: -75px 0px;
+}
+
+div.olControlEditingToolbar div.olControlZoomToSquareItemInactive {
+  background-image: url("../images/mnhnl-mod-toolbar.png");
+  background-position: -100px 0px;
+}
+
+div.olControlEditingToolbar div.olControlZoomToCountryItemInactive {
+  background-image: url("../images/mnhnl-mod-toolbar.png");
+  background-position: -125px 0px;
+}
+
+div.olControlEditingToolbar div.olControlStartNewSiteItemInactive {
+  background-image: url("../images/mnhnl-mod-toolbar.png");
+  background-position: -150px 0px;
+}
+
+div.olControlEditingToolbar  {
+    width: 500px;
+}
+#imp-srefX {
+	width: 60px;
+}
+#imp-srefY {
+	width: 60px;
+}
+#samples-grid td {
+  padding: 2px;
+  border: solid silver 1px;
+}
+#mousePos {
+  background-color: #FFFFFF;
+  float: right;
+  margin-top: 7px;
+  margin-right: 20px;
+}
+.ac_input {
+	width: 400px;
+}
+.mnhnl-species-grid input, .mnhnl-species-grid select {
+  width: 95%;
+  margin: 0;
+}
+.mnhnl-species-grid td {
+  padding: 4px;
+}
+#mnhnl-species-grid-container{
+ overflow-y: scroll; 
+ max-height: 450px;
+}
+#mnhnl-species-grid {
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+#mnhnl-species-grid-head {
+  margin-bottom: 0px;
+}
+
+div.location-allocation-wrapper-outer {
+  position: relative;
+}
+
+div.location-allocation-wrapper-inner {
+    margin-left: 6em;
+    overflow-y: auto;
+}
+
+td.freeze-first-col, th.freeze-first-col{
+	position: absolute;
+    left:0;
+    top:auto;
+    border: none;
+}

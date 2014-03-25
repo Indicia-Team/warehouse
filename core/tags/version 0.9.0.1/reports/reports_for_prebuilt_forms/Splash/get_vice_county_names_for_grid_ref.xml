@@ -1,0 +1,23 @@
+<report
+    title="Get vice county names for grid reference"
+    description="To aid performance, the vice county name for a square is held as a custom attribute. For additional squares, this name is placed in the custom attribute 
+        at the time the square is saved. This report finds the vice county from the grid reference. Note that multiple vice counties are supported if a square overlaps two or more,
+        multiple vice counties are entered into the custom attribute by the php code."
+>
+  <query website_filter_field="lw.website_id">
+    SELECT #columns#
+    FROM locations viceCounty
+    LEFT JOIN locations_websites lw on lw.location_id=viceCounty.id AND lw.deleted=false
+    WHERE 
+      viceCounty.location_type_id=#vice_county_location_type_id# AND st_intersects(st_geomfromtext('#square_grid_ref#',900913), viceCounty.boundary_geom) AND viceCounty.deleted=false
+      AND #website_filter#
+  </query>
+  <params>
+    <param name="vice_county_location_type_id" display="Vice County Location Id" datatype="integer"/>
+    <param name="square_grid_ref" display="Additional Square Grid Reference" datatype="integer"/>
+  </params>
+  <columns>
+    <column name='id' display='Location ID' sql="viceCounty.id" datatype='integer' visible="false"/>
+    <column name='name' display='Location Name' sql="viceCounty.name" datatype='text'/>
+  </columns>
+</report>

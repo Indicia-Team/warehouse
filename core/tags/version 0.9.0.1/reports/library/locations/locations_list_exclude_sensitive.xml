@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<report
+    title="Locations list excluding sensitive records"
+    description="A list of locations, excluding sensitive locations defined by a boolean custom attribute."
+>
+  <query website_filter_field="lw.website_id">
+  SELECT #columns#
+  FROM locations l
+  LEFT JOIN locations_websites lw on lw.location_id=l.id AND lw.deleted=false
+  LEFT JOIN cache_termlists_terms lt on lt.id=l.location_type_id
+  #joins#
+  WHERE l.deleted=false
+  AND #website_filter#
+  </query>
+  <order_bys>
+    <order_by>l.name ASC</order_by>
+  </order_bys>
+  <params>
+    <param name='location_type_id' display='Location Type' description='Select the location type, or leave blank to not filter by location type.' datatype='lookup'
+            population_call='report:library/terms/terms_list:id:term:termlist_external_key=indicia:location_types,termlist_id='>
+      <where>l.location_type_id=#location_type_id#</where>
+    </param>
+    <param name="sensattr" display="Sensitivity Attribute" description="Boolean location attribute used to filter for sensitivity of the site." datatype="integer"
+        population_call="table:location_attribute:id:caption">
+      <join>LEFT JOIN location_attribute_values sens on sens.location_id=l.id and sens.location_attribute_id=#sensattr# and sens.deleted=false</join>
+    </param>
+    <param name="exclude_sensitive" display="Exclude sensitive sites?" datatype="boolean" >
+      <where>(sens.int_value is null or sens.int_value=0)</where>      
+    </param>
+    <param name='locattrs' display='Location attribute list' description='Comma separated list of location attribute IDs to include' datatype='locattrs' default='' />
+    <param name="idlist" display="Location IDs" description="Comma separated list of location IDs to load" datatype="text" default=''>
+      <where>l.id in (#idlist#)</where>
+    </param>
+  </params>
+  <columns>
+    <column name="id" display="ID" sql="l.id" />
+    <column name="name" display="Name" sql="l.name" />
+    <column name="location_type_id" visible="false" sql="l.location_type_id" />
+    <column name="location_type" display="Type" sql="lt.term" />
+    <column name="centroid_sref" display="Centroid" sql="l.centroid_sref" />
+    <column name="centroid_sref_system" visible="false" sql="l.centroid_sref_system" />
+  </columns>
+</report>

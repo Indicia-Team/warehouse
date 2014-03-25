@@ -1,0 +1,41 @@
+<report
+    title="A list of images for event reporting"
+    description="Designed for fast reporting on events like bioblitzes with a simple survey/date filter."
+>
+  <query website_filter_field="o.website_id">
+  SELECT #columns#
+  FROM cache_occurrences o  
+  JOIN occurrence_images oi on oi.occurrence_id=o.id and oi.deleted=false
+  #agreements_join#
+  #joins#
+  WHERE #sharing_filter#
+  AND o.record_status&lt;&gt;'R'
+  </query>
+  <order_bys>
+    <order_by>o.id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='survey_id' display='Survey' description='Select the survey to return data for, or leave for all surveys' datatype='lookup'
+        query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title'>
+      <where>o.survey_id=#survey_id#</where>
+    </param>
+    <param name="date_from" display="Date From" datatype="date">
+      <where>o.date_start&gt;='#date_from#'</where>
+    </param>
+    <param name="date_to" display="Date To" datatype="date">
+      <where>o.date_start&lt;='#date_to#'</where>
+    </param>
+    <param name="input_form" default="">
+      <where>o.input_form='#input_form#'</where>
+    </param>
+  </params>
+  <columns>
+    <column name='occurrence_id' display='ID' sql='o.id' datatype='integer' template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />
+    <column name='taxon' display='Species' sql="CASE WHEN o.preferred_taxon=o.default_common_name then o.preferred_taxon ELSE o.preferred_taxon || COALESCE(' | ' || o.default_common_name, '') END" datatype='text' />
+    <column name='formatted' display="Formatted name" sql="CASE WHEN o.preferred_taxon=o.default_common_name then '&lt;em&gt;' || o.preferred_taxon || '&lt;/em&gt;' 
+	    ELSE '&lt;em&gt;' || o.preferred_taxon || '&lt;/em&gt;' || COALESCE('&lt;br/&gt;' || o.default_common_name, '') END" datatype='text' />	
+    <column name='taxon_group' display='Taxon Group' sql='o.taxon_group' datatype='text' />
+    <column name='path' sql="oi.path" display='Photo' img='true' />
+    <column name='caption' sql="oi.caption" display='Caption' datatype='text' />
+  </columns>
+</report>

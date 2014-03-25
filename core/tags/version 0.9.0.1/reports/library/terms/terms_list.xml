@@ -1,0 +1,29 @@
+<report
+    title="List of terms"
+    description="A simple list of terms"
+>
+  <query website_filter_field="" training_filter_field="">
+    select #columns#
+    from termlists_terms tlt
+    join terms t on t.id=tlt.term_id and t.deleted=false
+    join termlists tl on tl.id=tlt.termlist_id and tl.deleted=false
+    #agreements_join#
+    #joins#
+    WHERE #sharing_filter# 
+    and tlt.deleted=false
+  </query>
+  <params>
+    <param name="termlist_id" display="Termlist" datatype="lookup" population_call="direct:termlist:id:title" >
+      <where>tl.id=#termlist_id#</where>
+    </param>
+    <param name="parent_id" display="Parent" default="" >
+      <where>tlt.parent_id=#parent_id#</where>
+    </param>
+  </params>
+  <columns>
+    <column name="termlist_id" display="Termlist ID" sql="tl.id" datatype="integer" visible="false"/>
+    <column name="termlists_term_id" display="Termlist Term ID" sql="tlt.id" datatype="integer" visible="false"/>
+    <column name="termlist" sql="tl.title" datatype="text" />
+    <column name="term" sql="t.term" datatype="text" />
+  </columns>
+</report>

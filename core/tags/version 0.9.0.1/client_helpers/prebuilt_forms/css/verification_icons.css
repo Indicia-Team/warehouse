@@ -1,0 +1,86 @@
+/* line 19, sass/verification_icons.scss */
+.pass-icon {
+  width: 16px;
+  height: 16px;
+  padding: 2px;
+  border: solid 1px;
+  -moz-border-radius: 4px;
+  -webkit-border-radius: 4px;
+  -o-border-radius: 4px;
+  -ms-border-radius: 4px;
+  -khtml-border-radius: 4px;
+  border-radius: 4px;
+  display: -moz-inline-box;
+  -moz-box-orient: vertical;
+  display: inline-block;
+  vertical-align: middle;
+  *vertical-align: auto;
+  background-repeat: no-repeat;
+  background-position: 2px 2px;
+  border-color: #00a000;
+  -moz-box-shadow: #00a000 1px 1px 3px;
+  -webkit-box-shadow: #00a000 1px 1px 3px;
+  -o-box-shadow: #00a000 1px 1px 3px;
+  box-shadow: #00a000 1px 1px 3px;
+  background-image: url("../images/nuvola/ok-16px.png");
+}
+/* line 7, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/compass/stylesheets/compass/css3/_inline-block.scss */
+.pass-icon {
+  *display: inline;
+}
+
+/* line 26, sass/verification_icons.scss */
+.fail-icon {
+  width: 16px;
+  height: 16px;
+  padding: 2px;
+  border: solid 1px;
+  -moz-border-radius: 4px;
+  -webkit-border-radius: 4px;
+  -o-border-radius: 4px;
+  -ms-border-radius: 4px;
+  -khtml-border-radius: 4px;
+  border-radius: 4px;
+  display: -moz-inline-box;
+  -moz-box-orient: vertical;
+  display: inline-block;
+  vertical-align: middle;
+  *vertical-align: auto;
+  background-repeat: no-repeat;
+  background-position: 2px 2px;
+  border-color: #a00000;
+  -moz-box-shadow: #a00000 1px 1px 3px;
+  -webkit-box-shadow: #a00000 1px 1px 3px;
+  -o-box-shadow: #a00000 1px 1px 3px;
+  box-shadow: #a00000 1px 1px 3px;
+  background-image: url("../images/nuvola/help-16px.png");
+}
+/* line 7, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/compass/stylesheets/compass/css3/_inline-block.scss */
+.fail-icon {
+  *display: inline;
+}
+
+/* line 33, sass/verification_icons.scss */
+div.data_cleaner_identification_difficulty {
+  background-image: url("../images/nuvola/xmag-16px.png");
+}
+
+/* line 37, sass/verification_icons.scss */
+div.data_cleaner_period {
+  background-image: url("../images/nuvola/history-16px.png");
+}
+
+/* line 41, sass/verification_icons.scss */
+div.data_cleaner_period_within_year {
+  background-image: url("../images/nuvola/date-16px.png");
+}
+
+/* line 45, sass/verification_icons.scss */
+div.data_cleaner_without_polygon {
+  background-image: url("../images/nuvola/browser-16px.png");
+}
+
+/* line 49, sass/verification_icons.scss */
+div.verification_check_species_designation {
+  background-image: url("../images/nuvola/bottom-16px.png");
+}

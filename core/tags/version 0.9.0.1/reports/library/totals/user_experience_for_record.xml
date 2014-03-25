@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="User experience for a record" description="Gives a summary of records of a species and taxon group by a user for a selected record.
+    Used in the verification process to give feedback as to whether the recorder is likely to give an accurate ID for this record.">
+  <query website_filter_field="o.website_id">
+    select 'species' as type, r.taxon_meaning_id as what_id, r.preferred_taxon as what, 
+    sum(1) as total_total, 
+    sum(case when now()-co.cache_created_on&lt;'3 months'::interval then 1 else 0 end) as total_3months,
+    sum(case when now()-co.cache_created_on&lt;'1 year'::interval then 1 else 0 end) as total_1year,
+    sum(case co.record_status when 'V' then 1 else 0 end) as v_total, 
+    sum(case when now()-co.cache_created_on&lt;'3 months'::interval and co.record_status='V' then 1 else 0 end) as v_3months,
+    sum(case when now()-co.cache_created_on&lt;'1 year'::interval and co.record_status='V' then 1 else 0 end) as v_1year,
+    sum(case co.record_status when 'R' then 1 else 0 end) as r_total, 
+    sum(case when now()-co.cache_created_on&lt;'3 months'::interval and co.record_status='R' then 1 else 0 end) as r_3months,
+    sum(case when now()-co.cache_created_on&lt;'1 year'::interval and co.record_status='R' then 1 else 0 end) as r_1year
+    from cache_occurrences r
+    left join cache_occurrences co on co.taxon_meaning_id=r.taxon_meaning_id and co.created_by_id=r.created_by_id
+    where r.id=#occurrence_id#
+    group by r.taxon_meaning_id, r.preferred_taxon
+    union
+    select 'group', r.taxon_group_id as what_id, r.taxon_group as what, 
+    sum(1) as total_total, 
+    sum(case when now()-co.cache_created_on&lt;'3 months'::interval then 1 else 0 end) as total_3months,
+    sum(case when now()-co.cache_created_on&lt;'1 year'::interval then 1 else 0 end) as total_1year,
+    sum(case co.record_status when 'V' then 1 else 0 end) as v_total, 
+    sum(case when now()-co.cache_created_on&lt;'3 months'::interval and co.record_status='V' then 1 else 0 end) as v_3months,
+    sum(case when now()-co.cache_created_on&lt;'1 year'::interval and co.record_status='V' then 1 else 0 end) as v_1year,
+    sum(case co.record_status when 'R' then 1 else 0 end) as r_total, 
+    sum(case when now()-co.cache_created_on&lt;'3 months'::interval and co.record_status='R' then 1 else 0 end) as r_3months,
+    sum(case when now()-co.cache_created_on&lt;'1 year'::interval and co.record_status='R' then 1 else 0 end) as r_1year
+    from cache_occurrences r 
+    left join cache_occurrences co on co.taxon_group_id=r.taxon_group_id and co.created_by_id=r.created_by_id
+    where r.id=#occurrence_id#
+    group by r.taxon_group_id, r.taxon_group
+  </query>
+  <params>
+    <param name='occurrence_id' display='Occurrence ID' datatype='integer' />
+  </params>
+</report>

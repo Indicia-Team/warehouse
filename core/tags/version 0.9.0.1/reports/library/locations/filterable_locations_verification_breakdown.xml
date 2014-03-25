@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Locations verification breakdown (filterable)" description="Verification breakdown by indexed locality with standard filters.">
+  <query website_filter_field="o.website_id" standard_params="true">
+    select #columns#
+    from cache_occurrences o
+    join index_locations_samples ils on ils.sample_id=o.sample_id
+    join locations l on l.id=ils.location_id and l.deleted=false
+    #agreements_join#
+    #joins#
+    where #sharing_filter#
+  </query>
+  <params>
+    <param name="location_type_id" display="location_type" datatype="lookup" population_call="report:library/terms/terms_list:id:term:termlist_external_key=indicia:location_types,termlist_id=">
+      <where>l.location_type_id=#location_type_id#</where>
+    </param>
+  </params>
+  <order_bys>
+    <order_by>count(distinct o.id) desc</order_by>
+  </order_bys>
+  <columns>
+    <column name="location" display="Location" sql="l.name" in_count="true" />
+    <column name="pending" display="Pending" sql="count(case record_status when 'C' then o.id else null end)" aggregate="true" />
+    <column name="verified" display="Verified" sql="count(case record_status when 'V' then o.id else null end)" aggregate="true" />
+    <column name="queried" display="Queried" sql="count(case record_status when 'D' then o.id when 'S' then o.id else null end)" aggregate="true" />
+    <column name="rejected" display="Rejected" sql="count(case record_status when 'R' then o.id else null end)" aggregate="true" />
+    <column name="total" display="Total" sql="count(distinct o.id)" aggregate="true" />
+  </columns>
+</report>

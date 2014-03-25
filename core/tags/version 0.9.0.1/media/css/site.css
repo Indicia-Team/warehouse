@@ -1,0 +1,389 @@
+*
+{
+  margin: 0;
+  padding: 0;
+}
+
+body
+{
+  margin: auto;
+  width: 980px;
+  font-size: 70%;
+  background: #E5E0C3 url(../images/gradient.png) repeat-x top left;
+  text-align: center;
+  font-family: Trebuchet MS, Helvetica, sans-serif;
+}
+
+p
+{
+  margin-bottom: 0.5em;
+}
+
+#wrapper
+{
+  text-align: left;
+  background-color: #FFFFFF;
+  padding: 6px;
+  border: solid #CCCCCC 1px;
+}
+
+#banner
+{
+  background: #000000 url(../images/banner.jpg) no-repeat top right;
+  color: #FEFEFE;
+  height: 126px;
+  width: 966px;
+}
+
+table
+{
+  margin-bottom: 6px;
+}
+
+th
+{
+  text-align: left;
+  padding: 3px 6px 3px 6px;
+}
+
+table#pageGrid thead tr th
+{
+  padding-right: 20px;
+  cursor: pointer;
+}
+
+td
+{
+  padding: 0.2em;
+  vertical-align: top;
+}
+
+td a
+{
+  text-decoration: none;
+  color: #203080;
+}
+
+td a:hover
+{
+  text-decoration: underline;
+}
+
+
+tr.oddRow
+{
+  background: #F2F2F2;
+}
+
+.gvFilter
+{
+  margin-bottom: 1em;
+}
+
+#content
+{
+  margin: 20px;
+  clear: left;
+  min-height: 400px;
+}
+
+h1
+{
+  color: #103A6A;
+  margin-bottom: 12px;
+  font-size: 1.4em;
+  font-family: Verdana,Arial,sans-serif;
+  font-weight: normal;
+}
+
+h2
+{
+  color: #103A6A;
+  margin-bottom: 2px;
+  font-size: 1.2em;
+  Verdana,Arial,sans-serif;
+
+}
+
+#footer
+{
+  clear:both;
+  margin-top:1em;
+  border-top: 2px solid #C1DAD7;
+  padding: 1em;
+  color:#666666;
+  font-size:1em;
+}
+
+#metadata_toggle {
+text-align: right;
+}
+
+#metadata_toggle span
+{
+  color: #103A6A;
+  display: none;
+  cursor: pointer;
+}
+
+.instruct
+{
+  width: 600px;
+  color: #666666;
+  font-size: 90%;
+}
+
+.error {
+  background-color: #FFEEEE;
+  border: solid red 1px;
+  padding: 1em;
+  width: 700px;
+}
+
+.error p {
+  background: url(../images/cross.png) top left no-repeat;
+  padding-left: 26px;
+}
+
+.success {
+  background-color: #EEFFEE;
+  border: solid green 1px;
+  padding: 1em;
+  width: 700px;
+}
+
+.success p {
+  background: url(../images/tick.png) top left no-repeat;
+  padding-left: 26px;
+}
+
+#tabs {
+  margin-bottom: 0.5em;
+}
+
+.code {
+  margin: 4px;
+  padding: 0.5em 0 0.5em 1em;
+  border-left: solid silver 2px;
+  font-family: calibri;
+  display: block;
+}
+
+.button {
+  padding: 0.3em;
+  text-decoration: none;
+  color: #000000 !important;
+  width: auto !important;
+}
+
+fieldset.button-set {
+	border: none !important;
+}
+
+fieldset.button-set label, fieldset.button-set select {
+  width: auto !important;
+  vertical-align: middle;
+  margin: 0 0.5em;
+}
+
+.page-notice {
+  margin-bottom: 1em;
+  padding: 0.3em;
+  display: block;
+}
+
+.page-notice p {
+  margin: 0.7em 1.5em 0.7em 1.5em;
+}
+
+.page-notice label {
+  margin-left: 1.5em;
+}
+
+.page-notice span.ui-icon {
+  float: left;
+}
+
+.page-notice a.button {
+  position: relative;
+  display: inline-block;
+  zoom: 1;
+  *display: inline;
+  margin-left: 1.5em;
+}
+
+.page-notice a.button .ui-icon {
+  float: none;
+  display: inline-block;
+}
+
+.auto {
+	width: auto;
+}
+
+.grid-button {
+  padding: 1px;
+  margin: 1px;
+  font-size: 80%;
+}
+
+.imagelist {
+  padding: 0.5em;
+}
+
+.imagelist a {
+  margin: 0.5em;
+}
+
+.readonly {
+  background-color: #E7E7E7;
+}
+
+fieldset.filter select {
+  width: 200px;
+}
+
+#breadcrumbs {
+  font-size: 90%;
+  margin-bottom: 0.5em;
+}
+
+#progress {
+  padding: 0.5em;
+  margin-top: 1em;
+}
+
+ul#top-blocks, ul#top-blocks ul, ul.control-list {
+  list-style-type: none;
+}
+
+ul#top-blocks li, ul#top-blocks ul li, ul.control-list li {
+  margin: 0.2em;
+  padding: 0.3em;
+}
+
+ul#top-blocks ul {
+  margin-left: 1em;
+}
+
+.drop-active {
+  background-color: #ffccaa;
+}
+
+.grid-action {
+  color: #000070;
+  margin: 0 0.5em; 
+}
+
+.handle {
+  float: left;
+  margin-right: 1em;
+  background: url(../images/drag-handle.png) no-repeat 0 0;
+  width: 26px;
+  height: 24px;
+  cursor: move;
+}
+
+.draggable-control .caption, .draggable-block .caption {
+  float: left;
+}
+
+.draggable-control a, .draggable-block a {
+  float: right;
+  margin: 0 0.2em;
+}
+
+.draggable-block {
+  border: dotted 1px silver;
+  background-color: #E7E7E7;
+}
+
+.deleted {
+  opacity: 0.4;
+  border: dotted red 1px;
+}
+
+#layout-change-form, #actions-new-block {
+  margin: 0.5em 0;
+}
+
+.ui-droppable {
+  border: dotted #aaaaaa 1px;
+}
+
+.block-list input.caption {
+  padding: 2px;
+  border: solid #AAAAAA 1px;
+}
+
+.rename-apply {
+  padding: 2px;
+  margin-left: 2px;
+}
+
+.block-list span.caption {
+  margin: 3px 2px;
+}
+
+/* Apply line-up to inputs, selects and buttons that are displayed in a row to help them line-up together. Setting the border
+explicitly removes inconsistencies between IE and FireFox */
+.line-up {
+  padding: 2px;
+  vertical-align: middle;
+  border: solid 1px silver
+}
+
+/* General purpose helper to make a div display inline. */
+.check-or-radio-box {
+  display: inline-block;
+  zoom: 1;
+  *display: inline;
+  margin-bottom: 0.5em;
+}
+
+.notifications {
+  margin-top: 1em;  
+  padding: 0.2em;
+}
+
+.notifications table {
+  padding: 0em 1em;
+}
+
+.notifications  h2 {
+  padding: 1em 1em 0 1em;
+}
+
+.notifications th {
+  border-bottom: solid #555555 1px;
+  padding: 0.2em;
+}
+
+.heading-option {
+  font-weight: bold;
+}
+
+.sub-option {
+  margin-left: 1em;
+}
+
+li {
+  list-style-position: inside;
+}
+
+.log-message {
+  font-weight: bold;
+  margin: 0.25em 1em 0 0;
+}
+
+.log-line {
+  margin-left: 2em;
+}
+
+.log-error {
+  color: red;
+}
+
+#ui-datepicker-div {
+z-index: 1000;
+}

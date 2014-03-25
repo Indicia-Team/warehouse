@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="UKBMS Walks: Top level samples list for a Branch Manager" 
+    description="A list of top level samples for use in the UKBMS Branch Walks report calendar grid. Filtered according to the ID of the manager when logged into the CMS, and optional location ID List. Top level means that the parent_id field of the samples is null.">
+  <query website_filter_field="su.website_id">
+    SELECT #field_sql#
+    FROM samples s
+      JOIN surveys su on su.id=s.survey_id and su.deleted=false
+      LEFT JOIN cache_termlists_terms ctt on ctt.id=s.sample_method_id
+      LEFT JOIN locations l ON l.id=s.location_id
+      #joins#
+    WHERE s.deleted = FALSE AND s.parent_id IS NULL
+      AND #website_filter#
+      AND (CAST(s.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
+      AND (CAST(s.sample_method_id AS character varying)='#sample_method_id#' OR '#sample_method_id#'='' OR ctt.term='#sample_method_id#')
+      AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+      AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+      AND (CAST(l.id AS character varying)='#location_id#' OR '#location_id#' = '')
+    #order_by#
+  </query>
+  <order_bys>
+    <order_by>s.id DESC</order_by>
+    <order_by>s.date_start DESC</order_by>
+  </order_bys>
+  <field_sql>
+    s.id as sample_id,
+    su.title as survey,
+    COALESCE(l.name, s.location_name) as location_name,
+    l.id as location_id,
+    l.code,
+    s.entered_sref,
+    s.date_start,
+    s.date_end,
+    s.date_type
+  </field_sql>
+  <params>
+    <param name='date_from' display='Date From' datatype='date' />
+    <param name='date_to' display='Date To' datatype='date' />
+    <param name='survey_id' display='Survey' description='Select the survey to return data for, or leave for all surveys' datatype='lookup'
+            query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title' />
+    <param name='location_id' display='Location ID' description='Enter the Location ID.' datatype='int' />
+    <param name='locattrs' display='Location attribute list' description='Comma separated list of location attribute IDs to include' datatype='locattrs' />
+    <param name='sample_method_id' display='Sample Method' description='Select the sample method, or leave blank to not filter by sample method.' datatype='lookup'
+            population_call='report:library/terms/terms_list:id:term:termlist_external_key=indicia:sample_methods,termlist_id=' />
+  </params>
+  <columns>
+    <column name='sample_id' visible='true' />
+    <column name='survey' display='Survey' />
+    <column name='location_name' display='Site name' />
+    <column name='code' display='Site code' />
+    <column name='entered_sref' display='SRef' />
+    <column name='date' display='Date' />
+  </columns>
+</report>

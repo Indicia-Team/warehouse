@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Surveys verification breakdown" description="Verification breakdown by survey with standard filters.">
+  <query website_filter_field="o.website_id" standard_params="true">
+    select #columns#
+    from cache_occurrences o
+    #agreements_join#
+    #joins#
+    where #sharing_filter#
+  </query>
+  <order_bys>
+    <order_by>count(distinct o.id) desc</order_by>
+  </order_bys>
+  <columns>
+    <column name="survey" display="Survey" sql="o.survey_title" in_count="true" />
+    <column name="pending" display="Pending" sql="count(case record_status when 'C' then o.id else null end)" aggregate="true" />
+    <column name="verified" display="Verified" sql="count(case record_status when 'V' then o.id else null end)" aggregate="true" />
+    <column name="queried" display="Queried" sql="count(case record_status when 'D' then o.id when 'S' then o.id else null end)" aggregate="true" />
+    <column name="rejected" display="Rejected" sql="count(case record_status when 'R' then o.id else null end)" aggregate="true" />
+    <column name="total" display="Total" sql="count(distinct o.id)" aggregate="true" />
+  </columns>
+</report>

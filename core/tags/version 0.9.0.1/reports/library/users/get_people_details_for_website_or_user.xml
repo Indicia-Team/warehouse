@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Get people details for website or user" description="List users' details such as names for a given website or user id.">
+  <query website_filter_field="uw.website_id">
+    SELECT #columns#
+    FROM users u
+      JOIN people p on u.person_id=p.id
+      JOIN users_websites uw on u.id=uw.user_id  
+    WHERE u.deleted = false
+    AND #website_filter#
+  </query>
+  <params>
+    <param name='user_id' display='User ID' datatype='integer' emptyvalue='' default=''>
+      <where>u.id=#user_id#</where>
+    </param>
+    <param name='website_id' display='Website ID' datatype='integer' emptyvalue='' default=''>
+      <where>uw.website_id=#website_id#</where>
+    </param>
+  </params>
+  <columns>
+    <column name="id" display="User ID" sql="u.id" datatype="integer" in_count="true"/>
+    <column name="firstname" display="First name" sql="p.first_name" datatype="text"/>
+    <column name="surname" display="Surname" sql="p.surname" datatype="text"/>
+    <column name="fullname_surname_first" display="Full name" sql="p.surname || ', ' || p.first_name" datatype="text"/>
+    <column name="fullname_firstname_first" display="Full name" sql="p.first_name || ' ' || p.surname" datatype="text"/>
+    <column name="fullname_surname_first_email" display="Full name with email" sql="p.surname || ', ' || p.first_name || ' (' || p.email_address || ')'" datatype="text"/>
+  </columns>
+</report>
