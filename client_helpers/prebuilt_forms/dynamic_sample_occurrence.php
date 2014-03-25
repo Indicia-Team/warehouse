@@ -1021,6 +1021,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       $value = isset($args['defaults']['occurrence:record_status']) ? $args['defaults']['occurrence:record_status'] : 'C';
       $r .= '<input type="hidden" id="occurrence:record_status" name="occurrence:record_status" value="' . $value . '" />' . PHP_EOL;
     }
+    if (!empty($args['defaults']['occurrence:release_status']))
+      $r .= '<input type="hidden" id="occurrence:release_status" name="occurrence:release_status" value="' . $args['defaults']['occurrence:release_status'] . '" />' . PHP_EOL;
     $r .= get_user_profile_hidden_inputs($attributes, $args, isset(data_entry_helper::$entity_to_load['sample:id']), $auth['read']);
     return $r;
   }

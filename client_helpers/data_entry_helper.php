@@ -6730,9 +6730,7 @@ if (errors$uniq.length>0) {
             }
             self::$javascript .= "indiciaData.privateGroups=".json_encode($privateGroups).";
 $('#".str_replace(':', '\\\\:', $attrOptions['id'])."').change(function(evt) {
-  if ($.inArray($(evt.currentTarget).val(), indiciaData.privateGroups)) {
-    //$('#occurrence\\:release_status').val('
-  }
+  $('#occurrence\\\\:release_status').val($.inArray($(evt.currentTarget).val(), indiciaData.privateGroups) ? 'U' : 'R');
 });
 ";
             
