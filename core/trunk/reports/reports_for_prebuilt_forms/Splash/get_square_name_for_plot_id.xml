@@ -9,7 +9,7 @@
     LEFT JOIN location_attribute_values lav on lav.location_id=square.id AND lav.location_attribute_id = #vice_county_location_attribute_id# AND lav.deleted=false
   WHERE 
     l.id = #plot_id# AND l.deleted=false
-  GROUP BY square.centroid_sref,lav.text_value
+  GROUP BY square.centroid_sref,lav.text_value,square.id
   </query>
   <params>
     <param name="plot_id" display="Id of the plot to get the parent square name for" datatype="integer"/>
@@ -17,7 +17,7 @@
     <param name="vice_county_location_attribute_id" display="The location attribute id that hold's the Vice County name." datatype="integer"/>
   </params>
   <columns>
-    <column name='id' display='square.id' datatype='integer'/>
+    <column name='id' display='Square ID' sql='square.id' datatype='integer'/>
     <column name='name' display='Square Name' sql="square.centroid_sref || ' - ' || coalesce(lav.text_value,'#no_vice_county_found_message#')" datatype='text'/>
   </columns>
 </report>
