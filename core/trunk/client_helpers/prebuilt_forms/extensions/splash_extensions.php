@@ -464,11 +464,15 @@ class extension_splash_extensions {
       if (!empty($_GET['parent_square_id'])) 
         $reportOptions['extraParams']['square_id']= $_GET['parent_square_id'];
     }
-    
+    //Make the name of the square a link to the maintain square page
     if (!empty($reportOptions)) {
       $squareNameData = data_entry_helper::get_report_data($reportOptions);
-      if (!empty($squareNameData[0]['name']))
-        return '<div><label>Square name:</label>'.$squareNameData[0]['name'].'</div>';
+      if (!empty($squareNameData[0]['name'])) {      
+        $urlParam=array('location_id'=>$squareNameData[0]['id']);
+        return '<div><label>Square name:</label><a href="'.
+            url($options['squareDetailsPage'], array('query'=>$urlParam)).
+            '">'.$squareNameData[0]['name'].'</a></div>';
+      }
     }
   }
   
