@@ -234,7 +234,7 @@ class iform_report_calendar_summary {
         array(
           'name'=>'userSpecificLocationLookUp',
           'caption'=>'Make location list user specific',
-          'description'=>'Choose whether to restrict the list of locations to those assigned to the selected user the CMS User ID location attribute.',
+          'description'=>'Choose whether to restrict the list of locations to those assigned to the selected user using the CMS User ID location attribute.',
           'type'=>'boolean',
           'default' => true,
           'required' => false,
@@ -1038,19 +1038,20 @@ class iform_report_calendar_summary {
       $locationListArgs['extraParams']['idlist'] = '';
       // get my sites, including sensitive sites.
       $cmsAttr=extract_cms_user_attr($locationAttributes,false);
-      if(!$cmsAttr) return lang::get('Location control: CMS User ID Attribute missing from locations.');
-      $attrListArgs=array(// 'nocache'=>true,
-      		'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
-      				'location_attribute_id'=>$cmsAttr['attributeId'], 'raw_value'=>$user->uid),
-      				$readAuth),
-      		'table'=>'location_attribute_value');
-      $attrList = data_entry_helper::get_population_data($attrListArgs);
-      if (isset($attrList['error'])) return $attrList['error'];
-      if(count($attrList)>0) {
-        $locationIDList=array();
-        foreach($attrList as $attr)
-          $locationIDList[] = $attr['location_id'];
-        $locationListArgs['extraParams']['idlist'] = implode(',', $locationIDList);
+      if($cmsAttr) {
+        $attrListArgs=array(// 'nocache'=>true,
+            'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
+                'location_attribute_id'=>$cmsAttr['attributeId'], 'raw_value'=>$user->uid),
+                $readAuth),
+            'table'=>'location_attribute_value');
+        $attrList = data_entry_helper::get_population_data($attrListArgs);
+        if (isset($attrList['error'])) return $attrList['error'];
+        if(count($attrList)>0) {
+          $locationIDList=array();
+          foreach($attrList as $attr)
+            $locationIDList[] = $attr['location_id'];
+          $locationListArgs['extraParams']['idlist'] = implode(',', $locationIDList);
+        }
       }
       // Next add Branch Sites.
       if(count(self::$branchLocationList)>0)
