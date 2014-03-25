@@ -226,6 +226,9 @@ Record ID',
    */
   protected static function get_control_recorddetails($auth, $args, $tabalias, $options) {
     iform_load_helpers(array('report_helper'));
+    $options = array_merge(array(
+      'dataSource'=>'reports_for_prebuilt_forms/record_details_2/record_data_attributes_with_hiddens'
+    ), $options);
     $fields=helper_base::explode_lines($args['fields']);
     $fieldsLower=helper_base::explode_lines(strtolower($args['fields']));
     //Draw the Record Details, but only if they aren't requested as hidden by the administrator
@@ -262,7 +265,7 @@ Record ID',
       $attrs_report = report_helper::freeform_report(array(
         'readAuth' => $auth['read'],
         'class'=>'record-details-fields ui-helper-clearfix',
-        'dataSource'=>'reports_for_prebuilt_forms/record_details_2/record_data_attributes_with_hiddens',
+        'dataSource'=>$options['dataSource'],
         'bands'=>array(array('content'=>$attrsTemplate)),
         'extraParams'=>array(
           'occurrence_id'=>$_GET['occurrence_id'],
