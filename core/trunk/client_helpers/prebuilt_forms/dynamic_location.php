@@ -204,12 +204,16 @@ class iform_dynamic_location extends iform_dynamic {
     //other than being a visual cue to zoom to.
     data_entry_helper::$javascript .= "
 mapInitialisationHooks.push(function(mapdiv) {
-  var feature, geom=OpenLayers.Geometry.fromWKT({$loc[boundary_geom]});
-
+  var feature, geom;
+  if ('".$loc['boundary_geom']."') {
+    geom=OpenLayers.Geometry.fromWKT('".$loc['boundary_geom']."');
+  } else {
+    geom=OpenLayers.Geometry.fromWKT('".$loc['centroid_geom']."');
+  }
   if (indiciaData.mapdiv.map.projection.getCode() != indiciaData.mapdiv.indiciaProjection.getCode()) {
       geom.transform(indiciaData.mapdiv.indiciaProjection, indiciaData.mapdiv.map.projection);
   }
-  feature = new OpenLayers.Feature.Vector(geom);
+  feature = new OpenLayers.Feature.Vector(geom);   
   feature.attributes.type = 'zoomToBoundary';
   indiciaData.mapdiv.map.editLayer.addFeatures([feature]);
   mapdiv.map.zoomToExtent(feature.geometry.bounds);
@@ -281,9 +285,13 @@ mapInitialisationHooks.push(function(mapdiv) {
     $r = '';
     $r .= data_entry_helper::map_panel($options, $olOptions);
     // Add a geometry hidden field for boundary support
-    if ($boundaries) 
-      $r .= '<input type="hidden" name="location:boundary_geom" id="imp-boundary-geom" value="' .
-          data_entry_helper::$entity_to_load['location:boundary_geom'] . '"/>';
+    if ($boundaries) {
+      if (!empty(data_entry_helper::$entity_to_load['location:boundary_geom'])) 
+        $impBoundaryGeomVal=data_entry_helper::$entity_to_load['location:boundary_geom'];
+      else 
+        $impBoundaryGeomVal='';   
+      $r .= '<input type="hidden" name="location:boundary_geom" id="imp-boundary-geom" value="'.$impBoundaryGeomVal.'"/>';
+    }
     return $r;
   }
 
