@@ -1,6 +1,3 @@
-alter table cache_occurrences 
-add column data_cleaner_info character varying;
-
 update cache_occurrences o
 set data_cleaner_info=case when sub.last_verification_check_date is null then null else
   case when sub.info is null then 'pass' else sub.info end

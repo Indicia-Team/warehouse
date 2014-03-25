@@ -1,5 +1,4 @@
 UPDATE cache_occurrences co
-SET verified_on=o.verified_on
+SET release_status=o.release_status
 FROM occurrences o
 WHERE o.id=co.id
-AND o.verified_on is not null;

@@ -1,9 +1,4 @@
-﻿ALTER TABLE cache_occurrences
-   ADD COLUMN recorders character varying;
-
-COMMENT ON COLUMN cache_occurrences.recorders IS 'Recorder username, name or names';
-
-update cache_occurrences co
+﻿update cache_occurrences co
 set recorders=s.recorder_names
 from samples s
 where s.id=co.sample_id and s.deleted=false
