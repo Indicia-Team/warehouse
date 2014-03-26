@@ -467,9 +467,14 @@ class extension_splash_extensions {
     //Make the name of the square a link to the maintain square page
     if (!empty($reportOptions)) {
       $squareNameData = data_entry_helper::get_report_data($reportOptions);
-      if (!empty($squareNameData[0]['name'])) {      
+      if (!empty($squareNameData[0]['name'])) {
+        //Use user supplied option if present
+        if (!empty($options['label']))
+          $label=$options['label'];
+        else
+          $label='Square Name';
         $urlParam=array('location_id'=>$squareNameData[0]['id']);
-        return '<div><label>Square name:</label><a href="'.
+        return '<div><label>'.$label.':</label><a href="'.
             url($options['squareDetailsPage'], array('query'=>$urlParam)).
             '">'.$squareNameData[0]['name'].'</a></div>';
       }
