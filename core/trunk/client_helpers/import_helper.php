@@ -644,6 +644,7 @@ class import_helper extends helper_base {
   * @return array Depending on the mode, we either are interested in the $selected value or the $itWasSaved value.
   */ 
   private static function auto_detection_rules($column, $defaultCaption, $strippedScreenCaption, $prefix, $labelList, $itWasSaved, $saveDetectedMode) {
+    $column=trim($column);
     /*
     * This is an array of drop-down options with a list of possible column headings the system will use to match against that option.
     * The key is in the format heading:option, all lowercase e.g. occurrence:comment 
