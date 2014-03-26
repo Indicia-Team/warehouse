@@ -4267,7 +4267,11 @@ $('#".$options['id']." .species-filter').click(function(evt) {
     $r .= '</div></fieldset>';
     self::$javascript .= "
 var doSensitivityChange = function(evt) {
-  $('#sensitivity-controls input, #sensitivity-controls select').attr('disabled', $('#sensitive-checkbox').attr('checked')===true ? false : true);
+  if ($('#sensitive-checkbox').attr('checked')) {
+    $('#sensitivity-controls input, #sensitivity-controls select').removeAttr('disabled');
+  } else {
+    $('#sensitivity-controls input, #sensitivity-controls select').attr('disabled', true);
+  }
   $('#sensitivity-controls').css('opacity', $('#sensitive-checkbox').attr('checked') ? 1 : .5);
   if ($('#sensitive-checkbox').attr('checked')=== true && typeof evt!=='undefined' && $('#sensitive-blur').val()==='') {
     // set a default
@@ -5779,7 +5783,7 @@ if (errors$uniq.length>0) {
           if (isset($determiner_id)) 
             $record['determiner_id'] = $determiner_id;
           if (isset($training))
-            $record['training'] = $training
+            $record['training'] = $training;
           if (isset($record_status))
             $record['record_status'] = $record_status;
           if (isset($release_status))
