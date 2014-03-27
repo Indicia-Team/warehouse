@@ -88,7 +88,7 @@ $indicia_templates = array(
   'listbox_item' => '<option value="{value}"{selected} >{caption}</option>',
   'list_in_template' => '<ul{class} {title}>{items}</ul>',
   'check_or_radio_group' => '<span {class}>{items}</span>',
-  'check_or_radio_group_item' => '<nobr><span><input type="{type}" name="{fieldname}" id="{itemId}" value="{value}"{class}{checked} {disabled}/><label for="{itemId}">{caption}</label></span></nobr>{sep}',
+  'check_or_radio_group_item' => '<nobr><span><input type="{type}" name="{fieldname}" id="{itemId}" value="{value}"{class}{checked}{title} {disabled}/><label for="{itemId}">{caption}</label></span></nobr>{sep}',
   'map_panel' => "<div id=\"{divId}\" style=\"width: {width}; height: {height};\"{class}></div>",
   'georeference_lookup' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
     "document.write('<input type=\"text\" id=\"imp-georef-search\"{class} />{searchButton}');\n".
@@ -1042,6 +1042,13 @@ $('.ui-state-default').live('mouseout', function() {
           $extras[$extraItem[0]] = $extraItem[1];
         }
       }
+      // allow local page configuration to apply extra restrictions on the return values: e.g. only return some location_types from the termlist
+      if(isset($options['param_lookup_extras']) && isset($options['param_lookup_extras'][$key])){
+        foreach($options['param_lookup_extras'][$key] as $param => $value)
+          // direct table access can handle 'in' statements, reports can't.
+          $extras[$param] = ($popOpts[0]=='direct' ? $value : (is_array($value) ? implode(',',$value) : $value));
+          // $extras[$param] = $value;
+      }
       $ctrlOptions = array_merge($ctrlOptions, array(
         'valueField'=>$popOpts[2],
         'captionField'=>$popOpts[3],
@@ -1562,9 +1569,11 @@ indiciaData.windowLoaded=false;
         $error = self::check_errors($options['fieldname'], true);
       }
     }
-    // Add a hint to the control if there is an error and this option is set
-    if ($error && in_array('hint', $options['validation_mode'])) {
-      $options['title'] = 'title="'.$error.'"';
+    // Add a hint to the control if there is an error and this option is set, or a hint option
+    if (($error && in_array('hint', $options['validation_mode'])) || isset($options['hint'])) {
+      $hint = ($error && in_array('hint', $options['validation_mode'])) ? array($error) : array();
+      if(isset($options['hint'])) $hint[] = $options['hint'];
+      $options['title'] = 'title="'.implode(' : ',$hint).'"';
     } else {
       $options['title'] = '';
     }
