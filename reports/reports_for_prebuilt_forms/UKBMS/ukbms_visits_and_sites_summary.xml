@@ -13,8 +13,11 @@
         AND (((trim('#date_to#')='' OR '#date_to#'='Click here') AND p.date_start &lt;= CAST(extract(YEAR from NOW())||'-12-31' as date))
           OR (trim('#date_to#')&lt;&gt;'' AND '#date_to#'&lt;&gt;'Click here' AND p.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date)))
       JOIN locations l  ON p.location_id = l.id AND l.deleted = false
+      LEFT JOIN cache_termlists_terms ctt on ctt.id=l.location_type_id
       #joins#
     WHERE (CAST(p.created_by_id AS character varying)='#user_id#' OR '#user_id#' = '')
+      AND (CAST(l.location_type_id AS character varying)='#location_type_id#' OR '#location_type_id#'='' OR ctt.term='#location_type_id#')
+      AND #website_filter#
   </query>
   <order_bys>
     <order_by>coalesce(cttl.default_common_name, cttl.preferred_taxon)</order_by>
@@ -25,6 +28,8 @@
     <param name='date_from' display='Date From' datatype='date' description = "If not provided, defaults to the start of the current year" />
     <param name='date_to' display='Date To' datatype='date' description = "If not provided, defaults to the end of the current year" />
     <param name='user_id' display='Indicia User ID' description='Enter the Indicia ID of the user, or leave blank for all users' datatype='int' />
+    <param name='location_type_id' display='Location Type ID' description='Enter the type of location' datatype='lookup'
+            population_call='report:library/terms/terms_list:termlists_term_id:term:termlist_external_key=indicia:location_types,termlist_id=' />
   </params>
   <columns>
     <column name='taxon_meaning_id' visible="false" sql="cttl.taxon_meaning_id" in_count="true"/>
