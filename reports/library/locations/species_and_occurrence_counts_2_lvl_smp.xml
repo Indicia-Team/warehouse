@@ -31,7 +31,7 @@
         <param name='survey_id' display='Survey' description='Select the survey to return data for, or leave for all surveys' datatype='lookup'
             query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title' />
         <param name='location_type_id' display='Location Type' description='Select the location type, or leave blank to not filter by location type.' datatype='lookup'
-            population_call='report:library/terms/terms_list:id:term:termlist_external_key=indicia:location_types,termlist_id=' />
+            population_call='report:library/terms/terms_list:termlists_term_id:term:termlist_external_key=indicia:location_types,termlist_id=' />
         <param name='locattrs' display='Location attribute list' description='Comma separated list of location attribute IDs to include' datatype='locattrs' />
       </params>
       <columns>
