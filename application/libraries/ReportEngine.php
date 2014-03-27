@@ -159,7 +159,7 @@ class ReportEngine {
     // is the default sharing mode of "reporting" being overridden?
     if (isset($this->providedParams['sharing']))
       $this->sharingMode = $this->providedParams['sharing'];
-    Kohana::log('debug', "Received request for report: $report, source: $reportSource");
+    Kohana::log('debug', "requestReport: Received request for report: $report, source: $reportSource");
     if ($reportSource == null) {
       $reportSource='local';
     }
@@ -636,6 +636,7 @@ class ReportEngine {
   {
     // $request here stores the report itself - we save it to a temporary place.
     $uploadDir = $this->localReportDir.'/tmp/';
+    Kohana::log('debug', "fetchProvidedReport using directory ".$uploadDir);
     if (is_dir($uploadDir))
     {
       $fname = time();
@@ -651,13 +652,15 @@ class ReportEngine {
       if (file_put_contents($uploadDir.$fname, $request))
         $this->report = $uploadDir.$fname;
       else {
-  // Error - unable to write to temp dir.
+        Kohana::log('debug', "fetchProvidedReport Error - unable to write ".$uploadDir.$fname);
+      	// Error - unable to write to temp dir.
   // TODO
       }
     }
     else
     {
-      // Unable to cache the report - could try other things, but nah.
+        Kohana::log('debug', "No Directory ".$uploadDir);
+    	// Unable to cache the report - could try other things, but nah.
     }
   }
 
@@ -726,7 +729,7 @@ class ReportEngine {
   
   private function mergeQueryWithParams($query, $counting=false)
   {
-    // Replace each parameter in place
+  	// Replace each parameter in place
     $paramDefs = $this->reportReader->getParams();
     // Pre-parse joins defined by parameters, so that join SQL also gets other parameter values
     // inserted
@@ -882,12 +885,12 @@ class ReportEngine {
     $this->reportDb
         ->select('distinct a.id, a.data_type, a.caption, a.validation_rules, a.system_function')
         ->from("{$type}_attributes as a");
-    if ($this->websiteIds)
+/*    if ($this->websiteIds)
       $this->reportDb
           ->join("{$type}_attributes_websites as aw", "aw.{$type}_attribute_id", 'a.id')
           ->join('index_websites_website_agreements as wa', 'wa.from_website_id', 'aw.website_id')
           ->in('wa.to_website_id', $this->websiteIds)
-          ->where(array('wa.provide_for_'.$this->sharingMode=>'t', 'aw.deleted' => 'f'));
+          ->where(array('wa.provide_for_'.$this->sharingMode=>'t', 'aw.deleted' => 'f')); */
     $ids = array();
     $captions = array();
     $sysfuncs = array();
