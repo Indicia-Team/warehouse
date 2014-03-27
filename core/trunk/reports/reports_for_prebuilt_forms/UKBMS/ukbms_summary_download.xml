@@ -52,6 +52,10 @@
     <param name='location_list' display='Location List' description='Enter a comma separated list of location IDs' datatype='text' default='' >
       <where>('#location_list#' = '(-1)' OR parent.location_id IN #location_list#)</where>
     </param>
+    <param name='location_type_id' display='Location Type ID' description='Enter the ID of the location' datatype='lookup'
+            population_call='report:library/terms/terms_list:termlists_term_id:term:termlist_external_key=indicia:location_types,termlist_id=' >
+      <where>l.location_type_id=#location_type_id#</where>
+    </param>
   </params>
   <columns>
     <column name='site_name' display='Site Name' />
