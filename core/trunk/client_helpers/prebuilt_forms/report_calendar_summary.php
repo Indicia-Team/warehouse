@@ -1544,7 +1544,7 @@ jQuery('#".$ctrlid."').change(function(){
       		'extraParams'=>$auth,
       		'survey_id'=>$presets['survey_id']);
       if(isset($args['locationTypesFilter']) && $args['locationTypesFilter']!=""){
-        $terms = self::get_sorted_termlist_terms(array('read'=>$auth), 'indicia:location_types', explode(',',$args['locationTypesFilter']));
+      	$terms = self::get_sorted_termlist_terms(array('read'=>$auth), 'indicia:location_types', explode(',',$args['locationTypesFilter']));
         $attrArgs['location_type_id'] = $terms[0]['id'];
       }
       $locationAttributes = data_entry_helper::getAttributes($attrArgs, false);
@@ -1625,7 +1625,7 @@ jQuery('#".$ctrlid."').change(function(){
     if(self::$siteUrlParams[self::$locationTypeKey]['value'] == '') {
       if(isset($args['locationTypesFilter']) && $args['locationTypesFilter']!=""){
         $types = explode(',',$args['locationTypesFilter']);
-        $terms = self::get_sorted_termlist_terms(array('read'=>$readAuth), 'indicia:location_types', array($types[0]));
+        $terms = self::get_sorted_termlist_terms(array('read'=>$auth), 'indicia:location_types', array($types[0]));
         $reportOptions['extraParams']['location_type_id'] = $terms[0]['id'];
       }
     } else
