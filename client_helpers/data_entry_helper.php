@@ -3823,9 +3823,19 @@ $('#".$options['id']." .species-filter').click(function(evt) {
     } else {
       $taxalist = array();
     }
-    foreach ($taxalist as $taxon) {
-      // create a list of the rows we are going to add to the grid, with the preloaded species names linked to them
-      $taxonRows[] = array('ttlId'=>$taxon['id']);
+    if ($options['taxonFilterField'] == 'id') { // when using an id, sort by order provided.
+      foreach ($options['taxonFilter'] as $taxonFilter) {
+        foreach ($taxalist as $taxon) {
+          // create a list of the rows we are going to add to the grid, with the preloaded species names linked to them
+          if($taxonFilter == $taxon['id'])
+            $taxonRows[] = array('ttlId'=>$taxon['id']);
+        }
+      }
+    } else { 
+      foreach ($taxalist as $taxon) {
+        // create a list of the rows we are going to add to the grid, with the preloaded species names linked to them
+        $taxonRows[] = array('ttlId'=>$taxon['id']);
+      }
     }
     // If there are any existing records to add to the list from the lookup list/add rows feature, get their details
     if (self::$entity_to_load) {
@@ -5069,13 +5079,17 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   private static function get_list_items_from_options($options, $selectedItemAttribute) {
     $r = array();
     global $indicia_templates;
+    $hints = (isset($options['optionHints']) ? (is_array($options['optionHints']) ? $options['optionHints'] : json_decode($options['optionHints'])) : array());
+    if (is_object($hints)) {
+      $hints = get_object_vars($hints);
+    }
     if (isset($options['lookupValues'])) {
       // lookup values are provided, so run these through the item template
       foreach ($options['lookupValues'] as $key=>$value) {
         $selected=self::get_list_item_selected_attribute($key, $selectedItemAttribute, $options, $itemFieldname);
         $r[$key] = str_replace(
-            array('{value}', '{caption}', '{'.$selectedItemAttribute.'}'),
-            array(htmlspecialchars($key), htmlspecialchars($value), $selected),
+            array('{value}', '{caption}', '{'.$selectedItemAttribute.'}', '{title}'),
+            array(htmlspecialchars($key), htmlspecialchars($value), $selected, (isset($hints[$value]) ? ' title="'.$hints[$value].'" ' : '')),
             $indicia_templates[$options['itemTemplate']]
         );
       }
@@ -5108,8 +5122,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
             if ($itemFieldname)
               $value .= ":$itemFieldname";
             $item = str_replace(
-                array('{value}', '{caption}', '{'.$selectedItemAttribute.'}'),
-                array($value, $caption, $selected),
+                array('{value}', '{caption}', '{'.$selectedItemAttribute.'}', '{title}'),
+                array($value, $caption, $selected, (isset($hints[$value]) ? ' title="'.$hints[$value].'" ' : '')),
                 $indicia_templates[$options['itemTemplate']]
             );
             $r[$record[$options['valueField']]] = $item;
