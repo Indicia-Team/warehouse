@@ -41,7 +41,7 @@
     <param name='location_id' display='Location ID' description='Enter the Location ID.' datatype='int' />
     <param name='locattrs' display='Location attribute list' description='Comma separated list of location attribute IDs to include' datatype='locattrs' />
     <param name='sample_method_id' display='Sample Method' description='Select the sample method, or leave blank to not filter by sample method.' datatype='lookup'
-            population_call='report:library/terms/terms_list:id:term:termlist_external_key=indicia:sample_methods,termlist_id=' />
+            population_call='report:library/terms/terms_list:termlists_term_id:term:termlist_external_key=indicia:sample_methods,termlist_id=' />
   </params>
   <columns>
     <column name='sample_id' visible='true' />
