@@ -34,10 +34,6 @@
     <order_by>cttl.taxonomic_sort_order, cttl.taxon_meaning_id, s.location_id</order_by>
   </order_bys>
   <params>
-    <param name='survey_id' display='Survey' description='Select the survey, or leave for all surveys' datatype='lookup'
-        population_call='direct:survey:id:title'>
-      <where>s.survey_id=#survey_id#</where>
-    </param>
     <param name='date_from' display='Date From' datatype='date'>
       <where>s.date_end &gt;= CAST('#date_from#' as date)</where>
     </param>
