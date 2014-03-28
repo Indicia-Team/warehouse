@@ -32,9 +32,20 @@ require_once('includes/user.php');
  */
 class iform_report_calendar_grid {
 
-  private static $locationKey = 'location_id';
-  private static $siteUrlParams;
+  /* This is the URL parameter used to pass the location_id filter through */
+  private static $locationKey = 'locationID';
   
+  /* This is the URL parameter used to pass the location_type_id filter through */
+  private static $locationTypeKey = 'locationType';
+  
+  /* This is the URL parameter used to pass the year filter through */
+  private static $yearKey = 'year';
+
+  // internal key, not used on URL: maps the location_id to the survey_id.
+  private static $SurveyKey = 'survey_id';
+  
+  private static $siteUrlParams = array();
+
   /** 
    * Return the form metadata.
    * @return string The definition of the form.
@@ -80,20 +91,16 @@ class iform_report_calendar_grid {
           'type'=>'boolean',
           'default' => false,
           'required' => false,
-          'group' => 'Report Settings'
+          'group' => 'Controls'
         ),
         array(
-          'name'=>'locationTypeFilter',
-          'caption'=>'Restrict locations to type',
-          'description'=>'Retrict the locations in the user specific location filter to a particular location type. The CMS User ID attribute must be defined for this location type or all location types.',
-          'type'=>'select',
-          'table'=>'termlists_term',
-          'captionField'=>'term',
-          'valueField'=>'id',
-          'extraParams'=>array('termlist_external_key'=>'indicia:location_types'),
+          'name'=>'locationTypesFilter',
+          'caption'=>'Restrict locations to types',
+          'description'=>'Implies a location type selection control. Comma separated list of the [location types]:[survey_id] to be included in the control. Retricts the locations in the user specific location filter to the selected location type. The CMS User ID attribute must be defined for all location types selected or all location types.',
+          'type'=>'string',
           'default' => false,
           'required' => false,
-          'group' => 'Report Settings'
+          'group' => 'Controls'
         ),
         array(
           'name'=>'includeSrefInLocationFilter',
@@ -102,7 +109,7 @@ class iform_report_calendar_grid {
           'type'=>'boolean',
           'default' => true,
           'required' => false,
-          'group' => 'Report Settings'
+          'group' => 'Controls'
         ),
         array(
           'name'=>'weekstart',
@@ -194,13 +201,8 @@ class iform_report_calendar_grid {
    * @param <type> $readAuth
    * @return string
    */
-  private static function  get_report_calendar_options($args, $readAuth) {
-    self::$siteUrlParams = array(
-        self::$locationKey => array(
-            'name' => self::$locationKey,
-            'value' => isset($_GET[self::$locationKey]) ? $_GET[self::$locationKey] : null
-        )
-    );
+  private static function get_report_calendar_options($args, $readAuth) {
+    $siteUrlParams = self::get_site_url_params();
     $presets = get_options_array_with_user_data($args['param_presets']);
     $reportOptions = array(
       'id' => 'report-grid',
@@ -208,19 +210,107 @@ class iform_report_calendar_grid {
       'mode' => 'report',
       'readAuth' => $readAuth,
       'extraParams' => $presets);
-    if (self::$siteUrlParams[self::$locationKey]['value'] != null)
-      $reportOptions['extraParams']['location_id'] = self::$siteUrlParams[self::$locationKey]['value'];
+    if(isset($siteUrlParams[self::$SurveyKey])){
+      $reportOptions['extraParams']['survey_id'] = $siteUrlParams[self::$SurveyKey]; // location_type mapping overrides preset
+    }
+    if ($siteUrlParams[self::$locationKey]['value'] != null)
+      $reportOptions['extraParams']['location_id'] = $siteUrlParams[self::$locationKey]['value'];
     return $reportOptions;
   }
 
+  /**
+   * Get the parameters required for the current filter.
+   */
+  private static function get_site_url_params() {
+    if (!self::$siteUrlParams) {
+      self::$siteUrlParams = array(
+        self::$locationKey => array('name' => self::$locationKey,'value' => isset($_GET[self::$locationKey]) ? $_GET[self::$locationKey] : ''),
+        self::$locationTypeKey => array('name' => self::$locationTypeKey,'value' => isset($_GET[self::$locationTypeKey]) ? $_GET[self::$locationTypeKey] : ''),
+        self::$yearKey => array('name' => self::$yearKey,'value' => isset($_GET[self::$yearKey]) ? $_GET[self::$yearKey] : date('Y')));
+  	}
+  	return self::$siteUrlParams;
+  }
+  
+  public static function get_sorted_termlist_terms($auth, $key, $filter){
+  	$terms = helper_base::get_termlist_terms($auth, $key, $filter);
+  	$retVal = array();
+  	foreach($filter as $f) {
+  		foreach($terms as $term) {
+  			if($f == $term['term']) $retVal[] = $term;
+  		}
+  	}
+  	return $retVal;
+  }
+
+  private static function set_up_control_change($ctrlid, $urlparam, $skipParams, $checkBox=false) {
+  	// Need to use a global for pageURI as the internal controls may have changed, and we want
+  	// their values to be carried over.
+  	$prop = ($checkBox) ? 'attr("checked")' : 'val()';
+  	data_entry_helper::$javascript .="
+jQuery('#".$ctrlid."').change(function(){
+  var dialog = $('<p>Please wait whilst the next set of data is loaded.</p>').dialog({ title: 'Loading...', buttons: { 'OK': function() { dialog.dialog('close'); }}});
+  // no need to update other controls on the page, as we jump off it straight away.
+  window.location = rebuild_page_url(pageURI, \"".$urlparam."\", jQuery(this).$prop);
+});
+  ";
+  }
+
+  private static function location_type_control($args, $readAuth, $node)
+  {
+    $siteUrlParams = self::get_site_url_params();
+    $presets = get_options_array_with_user_data($args['param_presets']);
+    if(isset($presets['survey_id'])) {
+      self::$siteUrlParams[self::$SurveyKey] = $presets['survey_id'];
+    }
+    
+    if(isset($args['locationTypesFilter']) && $args['locationTypesFilter']!=""){
+      $types = explode(',',$args['locationTypesFilter']);
+      $types1=array();
+      $types2=array();
+      foreach($types as $type){
+        $parts = explode(':',$type);
+        $types1[] = $parts[0];
+        $types2[] = $parts;
+      }
+      $terms = self::get_sorted_termlist_terms(array('read'=>$readAuth), 'indicia:location_types', $types1);
+      $default = $siteUrlParams[self::$locationTypeKey]['value'] == '' ? $terms[0]['id'] : $siteUrlParams[self::$locationTypeKey]['value'];
+      self::$siteUrlParams[self::$locationTypeKey]['value'] = $default;
+      for($i = 0; $i < count($terms); $i++){
+         if($terms[$i]['id'] == $default && count($types2[$i])>1 && $types2[$i][1]!='') {
+           self::$siteUrlParams[self::$SurveyKey] = $types2[$i][1];
+         }
+      }
+      if(count($types)>1){
+        $lookUpValues = array();
+        foreach($terms as $termDetails){
+          $lookUpValues[$termDetails['id']] = $termDetails['term'];
+        }
+        // if location is predefined, can not change unless a 'managerPermission'
+        $ctrlid='calendar-location-type-'.$node->nid;
+        self::set_up_control_change($ctrlid, self::$locationTypeKey, array(self::$locationKey));
+        return data_entry_helper::select(array(
+            'label' => lang::get('Site Type'),
+            'id' => $ctrlid,
+            'fieldname' => 'location_type_id',
+            'lookupValues' => $lookUpValues,
+            'default' => $default
+        ));
+      }
+    }
+    return '';
+  }
+  
   private static function location_control($args, $readAuth, $node)
   {
     global $user;
+    $siteUrlParams = self::get_site_url_params();
+    // survey_id either comes from the location_type control, or from presets; in that order.
     // loctools is not appropriate here as it is based on a node, for which this is a very simple one, invoking other nodes for the sample creation
     // need to scan param_presets for survey_id..
     $presets = get_options_array_with_user_data($args['param_presets']);
-    if(!isset($presets['survey_id']) || $presets['survey_id']==''){
-      return('<p>'.lang::get('The location selection control requires that survey_id is set in the presets in the form parameters.').'</p>');
+
+    if(!isset($siteUrlParams[self::$SurveyKey]) || $siteUrlParams[self::$SurveyKey]==''){
+      return('<p>'.lang::get('The location selection control requires that survey_id {'.$siteUrlParams[self::$SurveyKey].'} is set in either the presets or mapped against the location_type, in the form parameters.').'</p>');
     }
     $attrArgs = array(
         'valuetable'=>'location_attribute_value',
@@ -228,9 +318,9 @@ class iform_report_calendar_grid {
         'key'=>'location_id',
         'fieldprefix'=>'locAttr',
         'extraParams'=>$readAuth,
-        'survey_id'=>$presets['survey_id']);
-    if(isset($args['locationTypeFilter']) && $args['locationTypeFilter']!="")
-      $attrArgs['location_type_id'] = $args['locationTypeFilter'];
+        'survey_id'=>$siteUrlParams[self::$SurveyKey]);
+    if($siteUrlParams[self::$locationTypeKey]['value']!="")
+      $attrArgs['location_type_id'] = $siteUrlParams[self::$locationTypeKey]['value'];
     $locationAttributes = data_entry_helper::getAttributes($attrArgs, false);
     $cmsAttr=extract_cms_user_attr($locationAttributes,false);
     if(!$cmsAttr){
@@ -259,7 +349,7 @@ class iform_report_calendar_grid {
     }
     $ctrlid='calendar-location-select-'.$node->nid;
     $ctrl='<label for="'.$ctrlid.'" class="location-select-label">'.lang::get('Filter by site').
-          ' :</label><select id="'.$ctrlid.'" class="location-select">'.
+          ' :</label> <select id="'.$ctrlid.'" class="location-select">'.
           '<option value="" class="location-select-option" '.(self::$siteUrlParams[self::$locationKey]['value']==null ? 'selected=\"selected\" ' : '').'>'.lang::get('All sites').'</option>';
     foreach($locationList as $location){
       $ctrl .= '<option value='.$location['id'].' class="location-select-option" '.(self::$siteUrlParams[self::$locationKey]['value']==$location['id'] ? 'selected=\"selected\" ' : '').'>'.
@@ -278,6 +368,7 @@ class iform_report_calendar_grid {
       }
     }
     $param=(strpos($reloadUrl['path'],'?')===false ? '?' : '&').self::$locationKey.'=';
+    self::set_up_control_change($ctrlid, self::$locationKey, array());
     data_entry_helper::$javascript .="
 jQuery('#".$ctrlid."').change(function(){
   window.location = '".$reloadUrl['path']."' + (jQuery(this).val()=='' ? '' : '".$param."'+jQuery(this).val());
@@ -296,15 +387,23 @@ jQuery('#".$ctrlid."').change(function(){
   public static function get_form($args, $node, $response) {
   // Future enhancement? manager user access right who can see all walks by all people, with a person filter drop down.
   // Future enhancement? Download list of surveys used as basis for calendar
-  // Future Enhancement? Restrict to location_type_id
     global $user;
+    
     $logged_in = $user->uid>0;
     if(!$logged_in) {
       return('<p>'.lang::get('Please log in before attempting to use this form.').'</p>');
     }
+    // can't really do this automatically: better to give warning
+    if(isset($args['locationTypeFilter'])) {
+      return('<p>'.lang::get('Please contact the site administrator. This version of the form uses a different method of specifying the location types.').'</p>');
+    }
     iform_load_helpers(array('report_helper'));
     $auth = report_helper::get_read_auth($args['website_id'], $args['password']);
-    /* survey_id should be set in param_presets $args entry. This is then fetched by iform_report_get_report_options */
+    
+    $grid = self::location_type_control($args, $auth, $node).
+            (isset($args['includeLocationFilter']) && $args['includeLocationFilter'] ? self::location_control($args, $auth, $node) : '');
+    
+    /* survey_id should be set in param_presets $args entry.  */
     $reportOptions = self::get_report_calendar_options($args, $auth);
     // get the grid output before outputting the download link, so we can check if the download link is needed.
     $reportOptions['id']='calendar-grid-'.$node->nid;
@@ -328,8 +427,7 @@ jQuery('#".$ctrlid."').change(function(){
       $reportOptions['newURL'].=(strpos($reportOptions['newURL'],'?')===false ? '?' : '&').$args['newURLLocationParam'].'='.$_GET['location_id'];
     }
     // note that we want to see samples entered on other days, so do not want to filter by the location_id.
-    $grid = (isset($args['includeLocationFilter']) && $args['includeLocationFilter'] ? self::location_control($args, $auth, $node) : '').
-            report_helper::report_calendar_grid($reportOptions);
+    $grid .= report_helper::report_calendar_grid($reportOptions);
     return $grid;
   }
 }
