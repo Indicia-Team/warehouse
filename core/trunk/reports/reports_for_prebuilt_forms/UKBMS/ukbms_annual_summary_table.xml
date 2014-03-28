@@ -50,7 +50,7 @@
     <param name='taxon_list_id' display='Taxon list ID' description='ID of the taxon list to show' datatype='int' />
     <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
     <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' default='' />
-    <param name='location_type_id' display='Location Type ID' description='Enter the ID of the location' datatype='lookup'
+    <param name='location_type_id' display='Location Type ID' description='Enter the type of location' datatype='lookup'
             population_call='report:library/terms/terms_list:termlists_term_id:term:termlist_external_key=indicia:location_types,termlist_id=' >
       <where>l.location_type_id=#location_type_id#</where>
     </param>
