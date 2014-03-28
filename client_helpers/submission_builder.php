@@ -178,8 +178,9 @@ class submission_builder extends helper_config {
           // This should be a field in the model.
           // Add a new field to the save array
           $sa['fields'][$key] = array('value' => $value);
-        } elseif ($attrEntity && (strpos($key, "$attrEntity:")===0)) {
-          // custom attribute data can also go straight into the submission for the "master" table. Array data might need 
+        } elseif ($attrEntity && (strpos($key, "$attrEntity:")===0) && substr_count($key, ':')<4) {
+          // Skip fields smpAttr:atrrId:attrValId:uniqueIdx:controlname because :controlname indicates this is the extra control used for autocomplete, not the data to post.
+          // Custom attribute data can also go straight into the submission for the "master" table. Array data might need 
           // special handling to link it to existing database records.
           if (is_array($value) && count($value)>0) {
             // The value is an array
