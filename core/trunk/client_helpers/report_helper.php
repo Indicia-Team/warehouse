@@ -2342,6 +2342,29 @@ if (typeof mapSettingsHooks!=='undefined') {
     if (isset($response['parameterRequest'])) {
       return '<p>Internal Error: Report request parameters not set up correctly.<br />'.(print_r($response,true)).'<p>';
     }
+    data_entry_helper::$javascript .= "
+var pageURI = \"".$_SERVER['REQUEST_URI']."\";
+function rebuild_page_url(oldURL, overrideparam, overridevalue) {
+  var parts = oldURL.split('?');
+  var params = [];
+  if(overridevalue!=='') params.push(overrideparam+'='+overridevalue);
+  if(parts.length > 1) {
+    var oldparams = parts[1].split('&');
+    for(var i = 0; i < oldparams.length; i++){
+      var bits = oldparams[i].split('=');
+      if(bits[0] != overrideparam) params.push(oldparams[i]);
+    }
+  }
+  return parts[0]+(params.length > 0 ? '?'+params.join('&') : '');
+};
+function update_controls(){
+  $('#year-control-previous').attr('href',rebuild_page_url(pageURI,'year',".substr($options['date_start'],0,4)."-1));
+  $('#year-control-next').attr('href',rebuild_page_url(pageURI,'year',".substr($options['date_start'],0,4)."+1));
+  // user and location ids are dealt with in the main form. their change functions look a pageURI
+};
+update_controls();
+";
+    
     // convert records to a date based array so it can be used when generating the grid.
     $records = $response['records'];
     $dateRecords=array();
