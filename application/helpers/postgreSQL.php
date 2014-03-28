@@ -66,6 +66,7 @@ class postgreSQL {
       $db = new Database();
     // note this query excludes user 1 from the notifications (admin user) as they are records which don't
     // have a warehouse user ID. Also excludes any previous notifications of this exact source for this user.
+    // ID difficulty notifications only passed through for level 3 and above.
     return $db->query("select case when oc.auto_generated=true then 'A' when o.verified_on>'$last_run_date' and o.record_status not in ('I','T','C') then 'V' else 'C' end as source_type,
         co.id, co.created_by_id as notify_user_id, co.taxon, co.date_start, co.date_end, co.date_type, co.public_entered_sref, u.username, 
         o.verified_on, co.public_entered_sref, oc.comment, oc.auto_generated, oc.generated_by, o.record_status, o.updated_on, oc.created_by_id as occurrence_comment_created_by_id,
@@ -73,6 +74,7 @@ class postgreSQL {
       from occurrences o
       join cache_occurrences co on co.id=o.id
       left join occurrence_comments oc on oc.occurrence_id=o.id and oc.deleted=false and oc.created_on>'$last_run_date' and oc.created_by_id<>o.created_by_id
+          and (coalesce(oc.generated_by, '')<>'data_cleaner_identification_difficulty' or coalesce(oc.generated_by_subtype, '') not in ('1','2')) 
       join users u on u.id=coalesce(oc.created_by_id, o.verified_by_id)
       left join notifications n on n.linked_id=o.id 
           and n.source_type=case when oc.auto_generated=true then 'A' when o.verified_on>'$last_run_date' and o.record_status not in ('I','T','C') then 'V' else 'C' end
