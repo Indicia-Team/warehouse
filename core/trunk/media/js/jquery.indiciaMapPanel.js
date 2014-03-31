@@ -1299,7 +1299,7 @@ mapLocationSelectedHooks = [];
     /**
      * Function called by the map click handler.
      */
-    function clickOnMap(xy, div, callback) {
+    function clickOnMap(xy, div) {
       var lonlat = div.map.getLonLatFromPixel(xy);
       processLonLatPositionOnMap(lonlat, div);
     }
@@ -1440,11 +1440,6 @@ mapLocationSelectedHooks = [];
         }
       }
     }
-
-    var handleClickOnMapTrigger = function(e, div, data) {
-      var lonlat=div.map.getLonLatFromPixel(e.xy);
-      handleSelectedPositionOnMap(lonlat, div, data);
-    };
 
     /*
      * Handle click on map, but also if user changes the spatial reference when a plot needs to be drawn.
@@ -1943,11 +1938,7 @@ mapLocationSelectedHooks = [];
           defaultHandlerOptions: {'single': true, 'double': false, 'pixelTolerance': 0, 'stopSingle': false, 'stopDouble': false},
           title: div.settings.hintClickSpatialRefTool,
           trigger: function(e) {
-            clickOnMap(e.xy, div, function(data)
-              {
-                handleClickOnMapTrigger(e, div,data);
-              }
-            );
+            clickOnMap(e.xy, div);
           },
           initialize: function(options)
           {
