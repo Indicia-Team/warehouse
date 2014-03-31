@@ -815,15 +815,8 @@ EOD
       //}
       
       $r .= '<h2>' . $tab . '</h2>' . PHP_EOL;
-    //  $r .= '<nav data-role="navbar"><ul>' . PHP_EOL;
-      //$r .= '<li><input type="file" onchange="previewFile()"></li>' .PHP_EOL;
-      //$r .= '<li><img id="elephant" src="" height="1000" width="1000" alt="Image preview..."></li>' .PHP_EOL;
 
-      //$r .= '<a href="/drupal/app/send-forms-dialog" onclick="updateFormCounter()" class="a-savedFormCounter" style="display:none" data-rel="dialog" data-prefetch> <span class="savedFormCounter" style="background: #BA070F; color: #fff; padding: 1px 7px; border-radius: .8em; border: 2px solid #fff;">0</span></a>' . PHP_EOL;
-      $r .= '<a href="/drupal/app/send-forms-dialog" onclick="updateFormCounter()" class="a-savedFormCounter" style="display:none" data-rel="dialog" > <span class="savedFormCounter" style="background: #BA070F; color: #fff; padding: 1px 7px; border-radius: .8em; border: 2px solid #fff;">0</span></a>' . PHP_EOL;
-    // $r .= '<li><a href="" onclick="sendSavedForm(null)" >send old</a></li>' . PHP_EOL;
-      //$r .= '<a href="#" onclick="saveForm()" >save for later</a>' . PHP_EOL;
-      //$r .= '<li><a href="" onclick="postForm()" >psot</a></li>' . PHP_EOL;
+      //$r .= '<a href="/drupal/app/send-forms-dialog" onclick="updateFormCounter()" class="a-savedFormCounter" style="display:none"> <span class="savedFormCounter" style="background: #BA070F; color: #fff; padding: 1px 7px; border-radius: .8em; border: 2px solid #fff;">0</span></a>' . PHP_EOL;
       $r .= '</div>' . PHP_EOL;
       $r .= '<div role="main" class="ui-content">' . PHP_EOL;	
       $r .= $tabContent;   
