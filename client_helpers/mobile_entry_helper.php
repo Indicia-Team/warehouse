@@ -42,14 +42,6 @@ $indicia_templates['jqmSave-SubmitButton'] = <<<'EOD'
    <input onclick="submitStart()" id="{id}" type="button" {class}
        data-icon="check" data-iconpos="right"
        value="Submit" />
-          
-     <!--<nav data-role="navbar"><ul>
-         <li><a href="login-dialog" id="btn-login" style="display:none" data-rel="dialog" data-prefetch></a></li>
-         <li><a href="no-internet-dialog" id="no-internet-dialog" style="display:none" onclick="saveForm()" data-rel="dialog" data-prefetch></a></li>
-         
-          <li><a href="form-was-saved-dialog" onclick="saveForm()" data-rel="dialog" data-prefetch>save for later</a></li>
-         <li><a href="#" id="mysubmit" onclick="submitStart()">Submit</a></li>
-       </ul></nav>-->
 EOD;
 $indicia_templates['jqmSubmitButton'] = <<<'EOD'
      <input id="{id}" type="submit" {class}
@@ -115,13 +107,11 @@ class mobile_entry_helper extends data_entry_helper {
       var year = d.getFullYear()
       var date = year + '-' + month + '-' + day;
       
-      $('#date').text('The date is ' + date);
       $('#$id').attr('value', date);
     }) (jqm);
     ";
     
     // HTML which will accept the date value
-    $r = '<p id="date">Replace this with the date.</p>';
     $r .= self::hidden_text($options);
     return $r;
   }
@@ -166,44 +156,55 @@ class mobile_entry_helper extends data_entry_helper {
     // JavaScript to obtain the sref value;
     self::$javascript .= "
 //    (function ($) {
-      if(!navigator.geolocation) {
+  if(!navigator.geolocation) {
         // Early return if geolocation not supported.
-        $('#sref').text('Geolocation is not supported by your browser.');
+        makePopup('<div style=\"padding:10px 20px;\"><center><h2>Geolocation is not supported by your browser.</h2></center></div>');   
+        jQuery('#app-popup').popup();
+        jQuery('#app-popup').popup('open');
         return;
       }
-      
+      window.SREF_ACCURACY_LIMIT = 20; //meters
+      window.GEOLOCATION_ID; // watch geo id
       // Callback if geolocation succeeds.
+      var counter = 0;
       function success(position) {
         var latitude  = position.coords.latitude;
         var longitude = position.coords.longitude;
         var accuracy = position.coords.accuracy;
-        $('#sref').html('Lat: ' + latitude + 
-                        '<br/> Long: ' + longitude +
-                        '<br/> Accuracy: ' + accuracy + 'm');
         $('#$id').attr('value', latitude + ', ' + longitude);
+        $('#sref_accuracy').attr('value', accuracy);
+        if (accuracy < SREF_ACCURACY_LIMIT){
+            navigator.geolocation.clearWatch(window.GEOLOCATION_ID);
+        }
       };
       
       // Callback if geolocation fails.
       function error(error) {
-        $('#sref').text('ERROR(' + error.code + '): ' + error.message);
+        console.log('Geolocation error.');
       };
       
       // Geolocation options.
       var options = {
         enableHighAccuracy: true,
         maximumAge: 0,
-        timeout: 10000
+        timeout: 120000
       };
       
       // Request geolocation.
-      navigator.geolocation.getCurrentPosition(success, error, options);
+     // window.GEOLOCATION_ID = navigator.geolocation.watchPosition(success, error, options);
 
 //    }) (jqm);
     ";
     
     // HTML which will accept the sref value
-    $r = '<p id="sref">Replace this with the sref.</p>';
+    // $r = '<p id="sref">Replace this with the sref.</p>';
     $r .= self::sref_hidden($options);
+    $r .= self::hidden_text(array(
+      'fieldname' => 'smpAttr:' . $options['accuracy_attr'],
+      'id' => 'sref_accuracy',
+      'default' => '-1'
+    ));
+    
     return $r;
   }
   
@@ -476,16 +477,6 @@ EOD;
     // We'll arrange the buttons in a footer.
     $r = '<div data-role="footer"';
     $r .= 'class = "' . $options['class'] .= '">';
-    
-    /* MOVED THE BACK BUTTON TO THE HEADER
-    if ($options['prev'] != '') {
-      // Add a previous button on the left.
-      $options['class'] = "ui-btn-left tab-prev";
-      $options['caption'] = lang::get($options['captionPrev']);
-      $options['href'] = $options['prev'];
-      $r .= self::apply_template('jqmLeftButton', $options);
-    }
-    */
     
     // Add a paragraph to footer to give it height.
     $r .= '<p>&nbsp;</p>';
