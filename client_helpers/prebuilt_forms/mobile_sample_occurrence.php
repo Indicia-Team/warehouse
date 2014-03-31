@@ -804,19 +804,13 @@ EOD
     foreach ($tabHtml as $tab => $tabContent) {
       $tabalias = $tabaliases[$pageIdx];
       $r .= '<div id="' . $tabalias . '" data-role="page">' . PHP_EOL;
-      $r .= '<div data-role="header">' . PHP_EOL;
-    /*  if($pageIdx == 0) {
-      // Add a back button on the first page of the form.
-          $r .= '<a href="/drupal/app" data-icon="arrow-l" ';
-          $r .= 'data-iconpos="left" data-prefetch>Back</a>' . PHP_EOL;
-      } else{ */
+      $r .= '<div data-role="header" data-position="fixed">' . PHP_EOL;
        $r .= '<a href="#" data-rel="back" data-icon="arrow-l" ';
        $r .= 'data-iconpos="left">Back</a>' . PHP_EOL;
-      //}
+
       
       $r .= '<h2>' . $tab . '</h2>' . PHP_EOL;
 
-      //$r .= '<a href="/drupal/app/send-forms-dialog" onclick="updateFormCounter()" class="a-savedFormCounter" style="display:none"> <span class="savedFormCounter" style="background: #BA070F; color: #fff; padding: 1px 7px; border-radius: .8em; border: 2px solid #fff;">0</span></a>' . PHP_EOL;
       $r .= '</div>' . PHP_EOL;
       $r .= '<div role="main" class="ui-content">' . PHP_EOL;	
       $r .= $tabContent;   
