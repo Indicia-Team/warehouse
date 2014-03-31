@@ -45,9 +45,9 @@ mapLocationSelectedHooks = [];
 
     // The ghost grid square drawn when hovering
     var ghost=null;
-    
+   
     var plusKeyDown=false, minusKeyDown=false, overMap=false, currentMousePixel=null;
-    
+   
     /**
      * Adds the distribution point indicated by a record object to a list of features.
      */
@@ -95,7 +95,7 @@ mapLocationSelectedHooks = [];
       });
       layer.removeFeatures(toRemove, {});
     }
-    
+   
     /**
      * A public method that can be fired when a location is selected in an input control, to load the location's
      * boundary onto the map. Automatic for #imp-location, but can be attached to other controls as well.
@@ -172,26 +172,26 @@ mapLocationSelectedHooks = [];
      * Convert any projection representation to a system string.
      */
     function _projToSystem(proj, convertGoogle) {
-    	var system;
-    	if(typeof proj != "string") { // assume a OpenLayers Projection Object
-    		system = proj.getCode();
-    	} else {
-    		system = proj;
-    	}
-    	if(system.substring(0,5)=='EPSG:'){
-    		system = system.substring(5);
-    	}
-    	if(convertGoogle && system=="900913"){
-    		system="3857";
-    	}
-    	return system;
+        var system;
+        if(typeof proj != "string") { // assume a OpenLayers Projection Object
+            system = proj.getCode();
+        } else {
+            system = proj;
+        }
+        if(system.substring(0,5)=='EPSG:'){
+            system = system.substring(5);
+        }
+        if(convertGoogle && system=="900913"){
+            system="3857";
+        }
+        return system;
     }
 
     /**
      * Compare 2 projection representations.
      */
     function _diffProj(proj1, proj2) {
-    	return (_projToSystem(proj1, true) != _projToSystem(proj2, true));
+        return (_projToSystem(proj1, true) != _projToSystem(proj2, true));
     }
 
     /**
@@ -240,7 +240,7 @@ mapLocationSelectedHooks = [];
           if (geometry) {
             bounds.extend(geometry.getBounds());
           }
-        });        
+        });       
       }
 
       if(invisible !== null){
@@ -334,22 +334,10 @@ mapLocationSelectedHooks = [];
      * bound to them to associate them with the map.
      */
     function _bindControls(div) {
-
-      // If clickForPlot then do not bind to spatial ref input as currently it will 
-      // do the wrong thing.
-      if (opts.clickForPlot) {
-        // Disable the spatial ref input so users do not think they can enter a value
-        var version = $().jquery;
-        var aryVersion = version.split('.');
-        if (aryVersion[0] == 1 && aryVersion[1] < 6 ) {
-          $('#'+opts.srefId).attr('readonly', true);
-        } else {
-          $('#'+opts.srefId).prop('readonly', true);
-        }        
-      } else if (opts.clickForSpatialRef) {
+      if (opts.clickForSpatialRef) {
         // If the spatial ref input control exists, bind it to the map, so entering a ref updates the map
         $('#'+opts.srefId).change(function() {
-          _handleEnteredSref($(this).val(), div);
+          _handleEnteredSref($(this).val(), div);       
         });
         // If the spatial ref latitude or longitude input control exists, bind it to the map, so entering a ref updates the map
         $('#'+opts.srefLatId).change(function() {
@@ -393,9 +381,9 @@ mapLocationSelectedHooks = [];
         locChange();
       }
     }
+   
+   
     
-    
-     
     function _getPrecisionHelp(div, value) {
       var helptext = [],info;
       if (div.settings.helpToPickPrecisionMin && typeof indiciaData.srefHandlers!=="undefined" &&
@@ -440,7 +428,7 @@ mapLocationSelectedHooks = [];
           url: div.settings.indiciaSvc + "index.php/services/spatial/sref_to_wkt",
           data:"sref=" + value +
             "&system=" + _getSystem() +
-            "&mapsystem=" + _projToSystem(div.map.projection, false), 
+            "&mapsystem=" + _projToSystem(div.map.projection, false),
           success: function(data) {
             if(typeof data.error != 'undefined')
               if(data.code === 4001)
@@ -451,6 +439,30 @@ mapLocationSelectedHooks = [];
               // data should contain 2 wkts, one in indiciaProjection which is stored in the geom field,
               // and one in mapProjection which is used to draw the object.
               if (div.map.editLayer) {
+                //Code for drawing a plot if the user clicks on the map or changes a spatial reference.
+                if (div.settings.clickForPlot) {
+                  data.sref = value;
+                  //Get front of the WKT to find out the spatial reference type the user used, a point would be a lat long, a polygon would be an OSGB square
+                  var typeCheck = data.mapwkt.substr(0,6); 
+                  var pointFromWkt;
+                  //The plot is drawn from a lat long position, if it is an OSGB square, there will be 4 corners. Just take the 
+                  //first value to draw the plot from for lat/long, use the last point value to draw for OSGB as there are multiple points in that instance representing the OSGB square
+                  //and the last point works best.
+                  //Note the OSGB value will be a small square such as 1m (we obviously need to draw a plot that is bigger than the OSGB square we draw from)
+                  if (typeCheck=="POINT(") {
+                    pointFromWkt = data.mapwkt.slice(6).split(')');
+                    pointFromWkt = pointFromWkt[0].split(' ');
+                  } else {
+                    pointFromWkt = data.mapwkt.slice(9).split(',');
+                    pointFromWkt = pointFromWkt[4].split(' ');
+                  }
+                  
+                  var latlong = new OpenLayers.LonLat();
+                  latlong.lon = parseFloat(pointFromWkt[0]);
+                  latlong.lat = parseFloat(pointFromWkt[1]);
+                  //Run code that handles when a user has selected a position on the map (either a click or changing sref)
+                  processLonLatPositionOnMap(latlong,div);  
+                }
                 _showWktFeature(div, data.mapwkt, div.map.editLayer, null, false, "clickPoint");
               }
               $('#'+opts.geomId).val(data.wkt);
@@ -469,7 +481,7 @@ mapLocationSelectedHooks = [];
     }
 
     /**
-     * Having clicked on the map, and asked warehouse services to transform this to a WKT, 
+     * Having clicked on the map, and asked warehouse services to transform this to a WKT,
      * add the feature to the map editlayer. If the feature is a plot, enable dragging and
      * rotating. Finally add relevant help.
      */
@@ -486,7 +498,7 @@ mapLocationSelectedHooks = [];
         $('#' + opts.srefLatId).val(part1);
         $('#' + opts.srefLongId).val(parts.join(''));
       }
-      if ($('#annotations-mode-on').length && $('#annotations-mode-on').val()==='yes') { 
+      if ($('#annotations-mode-on').length && $('#annotations-mode-on').val()==='yes') {
         //When in annotations mode, if the user sets the centroid on the map, we only want the previous centroid point to be removed.
         removeAllFeatures(div.map.editLayer, 'clickPoint');
       } else {
@@ -510,9 +522,17 @@ mapLocationSelectedHooks = [];
       feature.attributes = {type: "clickPoint"};
       feature.style = new style('default');
       div.map.editLayer.addFeatures([feature]);
-      
+
       if (div.settings.clickForPlot) {
         // if adding a plot, select it for modification
+        var modifier = new OpenLayers.Control.ModifyFeature(div.map.editLayer, {
+          standalone: true,
+          mode: OpenLayers.Control.ModifyFeature.DRAG | OpenLayers.Control.ModifyFeature.ROTATE
+        });
+        div.map.addControl(modifier);
+        div.map.editLayer.events.register('featuremodified', modifier, modifyPlot);
+        modifier.activate();
+        div.map.plotModifier = modifier;
         div.map.plotModifier.selectFeature(feature);
       }
       
@@ -765,7 +785,7 @@ mapLocationSelectedHooks = [];
       }
       return r;
     }
-    
+   
     /**
      * Converts a bounds to a point or polygon geom.
      */
@@ -800,7 +820,7 @@ mapLocationSelectedHooks = [];
       var testGeom, tolerantGeom, layer, tolerance, testGeoms={},
           getRadius, getStrokeWidth, radius, strokeWidth, match;
       if (position instanceof OpenLayers.Bounds) {
-        testGeom=boundsToGeom(position, div);        
+        testGeom=boundsToGeom(position, div);       
         for(var l=0; l<layers.length; ++l) {
           // set defaults
           getRadius=null;
@@ -1241,7 +1261,7 @@ mapLocationSelectedHooks = [];
         if (feature!==evt.feature && (feature.attributes.type===evt.feature.attributes.type || feature.attributes.type==='boundary')) {
           oldFeatures.push(feature);
         }
-      });   
+      });  
       if (oldFeatures.length>0) {
         if (confirm(div.settings.msgReplaceBoundary)) {
           evt.feature.layer.removeFeatures(oldFeatures, {});
@@ -1281,8 +1301,8 @@ mapLocationSelectedHooks = [];
     }
 
     /**
-     * Event handler for feature modify on the edit layer when clickForPlot is enabled. 
-     * Puts the geom in the hidden input for the sample geom, plus sets the visible spatial 
+     * Event handler for feature modify on the edit layer when clickForPlot is enabled.
+     * Puts the geom in the hidden input for the sample geom, plus sets the visible spatial
      * ref control to the SW corner in the currently selected system.
      */
     function modifyPlot(evt) {
@@ -1290,9 +1310,9 @@ mapLocationSelectedHooks = [];
       var feature = evt.feature;
       var map = modifier.map;
       var precision = map.div.settings.plotPrecision;
-      
+     
       var vertices = feature.geometry.getVertices();
-      // Initialise swVertex to somewhere very northwest. 
+      // Initialise swVertex to somewhere very northwest.
       // This might need modifying for southern hemisphere.
       var swVertex = new OpenLayers.Geometry.Point(1e10, 1e10);
       $.each(vertices, function(i, vertex) {
@@ -1300,10 +1320,10 @@ mapLocationSelectedHooks = [];
           // Find the most southerly vertex and, of two equally southerly, take the
           // most westerly as our reference point.
           swVertex = vertex;
-        }       
+        }      
       });
-      
-      // Put the geometry in the input control 
+     
+      // Put the geometry in the input control
       $('#imp-geom').val(feature.geometry.toString());
       $('#imp-boundary-geom').val(feature.geometry.toString());
       // Get the sref of the swVertex and show in control
@@ -1311,19 +1331,26 @@ mapLocationSelectedHooks = [];
         if (typeof data.sref !== "undefined") {
           $('#'+map.div.settings.srefId).val(data.sref);
         }
-      }, undefined, precision);     
+      }, undefined, precision);    
+    }
+   
+    /**
+     * Function called by the map click handler. 
+     */
+    function clickOnMap(xy, div, callback) {
+      var lonlat = div.map.getLonLatFromPixel(xy);
+      processLonLatPositionOnMap(lonlat, div)
     }
     
     /**
-     * Function called by the map click handler. Converts the point clicked to an sref then 
-     * calls a callback to process it.
-     * Callback is a function that accepts a data structure as returned by the warehouse 
+     * Converts lat/long then call a function to process it.
+     * Function accepts a data structure as returned by the warehouse
      * conversion from Wkt to Sref. Should contain properties for sref & wkt, or error if failed.
-     */ 
-    function clickOnMap(xy, div, callback)
+     */
+    
+    function processLonLatPositionOnMap(lonlat, div)
     {
-      var lonlat = div.map.getLonLatFromPixel(xy);
-      // This is in the SRS of the current base layer, which should but may not be the same projection 
+      // This is in the SRS of the current base layer, which should but may not be the same projection
       // as the map! Definitely not indiciaProjection!
       // Need to convert this map based Point to a _getSystem based Sref (done by pointToSref) and a
       // indiciaProjection based geometry (done by the callback)
@@ -1333,7 +1360,7 @@ mapLocationSelectedHooks = [];
         //Get plot shape using jQuery or fall back on form structure option
         if ($('#' + div.settings.plotShapeId).val())
          plotShape = $('#' + div.settings.plotShapeId).val();
-        else 
+        else
          plotShape = div.settings.plotShape;
         // Clicking to locate a plot
         if (plotShape === 'rectangle') {
@@ -1384,27 +1411,27 @@ mapLocationSelectedHooks = [];
           plot.wkt = plot.mapwkt;
         } else {
           plot.wkt = feature.geometry.transform(div.map.projection, div.indiciaProjection).toString();
-        }           
+        }          
         var precision = div.settings.plotPrecision;
         // Request sref of point that was clicked
         pointToSref(div, point, _getSystem(), function(data){
           plot.sref = data.sref;
-          callback(plot);     
+          handleSelectedPositionOnMap(lonlat,div,plot);    
         }, undefined, precision);
-      } 
-      else 
+      }
+      else
       {
         // Clicking to locate an sref (eg an OSGB grid square)
         pointToSref(div, point, _getSystem(), function(data){
-          callback(data);     
+          handleSelectedPositionOnMap(lonlat,div,data);    
         });
-      }      
+      }     
     }
-    
+   
     function showGridRefHints(div) {
       if (div.settings.gridRefHint && typeof indiciaData.srefHandlers!=="undefined" &&
           typeof indiciaData.srefHandlers[_getSystem().toLowerCase()]!=="undefined") {
-        var ll = div.map.getLonLatFromPixel(currentMousePixel), precisionInfo, 
+        var ll = div.map.getLonLatFromPixel(currentMousePixel), precisionInfo,
               handler=indiciaData.srefHandlers[_getSystem().toLowerCase()], largestSrefLen, pt,
               proj, recalcGhost = ghost===null || !ghost.atPoint(ll, 0, 0), r;
         if ($.inArray('precisions', handler.returns)!==-1 && $.inArray('gridNotation', handler.returns)!==-1) {
@@ -1425,7 +1452,7 @@ mapLocationSelectedHooks = [];
             }
           }
           // almost every mouse move causes the smallest + key square to change
-          if (handler.sreflenToPrecision(largestSrefLen+4)!==false && 
+          if (handler.sreflenToPrecision(largestSrefLen+4)!==false &&
                 handler.sreflenToPrecision(largestSrefLen+4).metres !== handler.sreflenToPrecision(largestSrefLen+2).metres) {
             $('.hint-plus .label').html(handler.sreflenToPrecision(largestSrefLen+4).display + ':');
             $('.hint-plus .data').html(handler.pointToGridNotation(pt, largestSrefLen+2));
@@ -1433,10 +1460,10 @@ mapLocationSelectedHooks = [];
           } else {
             $('.hint-plus').css('opacity', 0);
           }
-          // don't recalculate if mouse is still over the existing ghost                
+          // don't recalculate if mouse is still over the existing ghost               
           if (recalcGhost || $('.hint-normal').css('opacity')===0) {
             // since we've moved a square, redo the grid ref hints
-            if (handler.sreflenToPrecision(largestSrefLen)!==false && 
+            if (handler.sreflenToPrecision(largestSrefLen)!==false &&
                 handler.sreflenToPrecision(largestSrefLen).metres !== handler.sreflenToPrecision(largestSrefLen+2).metres) {
               $('.hint-minus .label').html(handler.sreflenToPrecision(largestSrefLen).display + ':');
               $('.hint-minus .data').html(handler.pointToGridNotation(pt, largestSrefLen-2));
@@ -1451,7 +1478,37 @@ mapLocationSelectedHooks = [];
         }
       }
     }
+   
+    var handleClickOnMapTrigger = function(e, div, data) {
+      var lonlat=div.map.getLonLatFromPixel(e.xy);
+      handleSelectedPositionOnMap(lonlat, div, data);
+    }
     
+    /*
+     * Handle click on map, but also if user changes the spatial reference when a plot needs to be drawn.
+     */
+    var handleSelectedPositionOnMap = function(lonlat, div, data) {
+      if(typeof data.error !== 'undefined') {
+        if(data.error == 'The spatial reference system is not set.') {
+            alert(div.settings.msgSrefSystemNotSet);
+        } else {
+          // We can switch to lat long if the system is available for selection
+          var system=$('#'+opts.srefSystemId+' option[value=4326]');
+          if (system.length===1) {
+            $('#'+opts.srefSystemId).val('4326');
+            pointToSref(div, new OpenLayers.Geometry.Point(lonlat.lon, lonlat.lat), '4326', function(data) {
+              _setClickPoint(data, div); // data sref in 4326, wkt in indiciaProjection, mapwkt in mapProjection
+            });
+          } else {
+            alert(div.settings.msgSrefOutsideGrid);
+          }
+        }
+      }
+      else {
+        _setClickPoint(data, div); // data sref in _getSystem, wkt in indiciaProjection, mapwkt in mapProjection
+      }
+    }
+   
     function clearGridRefHints() {
       $('.grid-ref-hint').css('opacity', 0);
     }
@@ -1548,12 +1605,12 @@ mapLocationSelectedHooks = [];
 
       // Constructs the map
       div.map = new OpenLayers.Map($(this)[0], olOptions);
-      
+     
       // track plus and minus key presses, which influence selected grid square size
       $(document).keydown(function(evt) {
         var change=false;
         switch (evt.which) {
-          
+         
           case 61: case 107: case 187:
             if (overMap) {
               // prevent + affecting other controls
@@ -1731,7 +1788,7 @@ mapLocationSelectedHooks = [];
         // after half a second, reset the map size
         setTimeout("tmp.style.height = (parseInt(tmp.style.height) + 1) + 'px'", 500);
       });
-      
+     
       if (this.settings.editLayer) {
         if (indiciaData.zoomid) {
           //Change the feature colour to make it a ghost when we are in add mode and zoomed into a location (as the location boundary isn't
@@ -1760,7 +1817,7 @@ mapLocationSelectedHooks = [];
           added=this.settings.initialBoundaryWkt = $('#'+this.settings.boundaryGeomId).val();
           added.style = new style('boundary');
         }
-        
+       
         // Draw the feature to be loaded on startup, if present
         var zoomToCentroid = (this.settings.initialBoundaryWkt) ? false : true;
         if (this.settings.initialFeatureWkt) {
@@ -1768,7 +1825,7 @@ mapLocationSelectedHooks = [];
         }
         if (this.settings.initialBoundaryWkt) {
           var featureType;
-          //If the map is zoomed in add mode, then the featuretype is nothing as the boundary should act as a "ghost" that isn't used for 
+          //If the map is zoomed in add mode, then the featuretype is nothing as the boundary should act as a "ghost" that isn't used for
           //anything other than zooming.
           if (indiciaData.zoomid) {
             featureType="";
@@ -1925,25 +1982,7 @@ mapLocationSelectedHooks = [];
           trigger: function(e) {
             clickOnMap(e.xy, div, function(data)
               {
-                if(typeof data.error !== 'undefined') {
-                  if(data.error == 'The spatial reference system is not set.') {
-                      alert(div.settings.msgSrefSystemNotSet);
-                  } else {
-                    // We can switch to lat long if the system is available for selection
-                    var system=$('#'+opts.srefSystemId+' option[value=4326]');
-                    if (system.length===1) {
-                      var lonlat=div.map.getLonLatFromPixel(e.xy);
-                      $('#'+opts.srefSystemId).val('4326');
-                      pointToSref(div, new OpenLayers.Geometry.Point(lonlat.lon, lonlat.lat), '4326', function(data) {
-                        _setClickPoint(data, div); // data sref in 4326, wkt in indiciaProjection, mapwkt in mapProjection
-                      });
-                    } else {
-                      alert(div.settings.msgSrefOutsideGrid);
-                    }
-                  }
-                }
-                else
-                  _setClickPoint(data, div); // data sref in _getSystem, wkt in indiciaProjection, mapwkt in mapProjection
+                handleClickOnMapTrigger(e, div,data);
               }
             );
           },
@@ -1955,7 +1994,7 @@ mapLocationSelectedHooks = [];
           }
         });
       }
-      if (div.settings.editLayer && div.settings.allowPolygonRecording) {  
+      if (div.settings.editLayer && div.settings.allowPolygonRecording) { 
         div.map.editLayer.events.on({'featuremodified': function(evt) {
           if ($('#' + div.settings.boundaryGeomId).length>0) {
             $('#' + div.settings.boundaryGeomId).val(evt.feature.geometry.toString());
@@ -2102,7 +2141,7 @@ mapLocationSelectedHooks = [];
         div.map.addControl(toolbar);
         if (typeof click!=="undefined") {
           click.activate();
-        } 
+        }
         else {
           nav.activate();
         }
@@ -2116,19 +2155,6 @@ mapLocationSelectedHooks = [];
         if (clickInfoCtrl !== null) {
           div.map.addControl(clickInfoCtrl);
           clickInfoCtrl.activate();
-        }
-        if (div.settings.editLayer && div.settings.clickForPlot) {
-          // When clickForPlot is true add a ModifyFeature control to the map
-          // so that the plot can be dragged and rotated
-          var modifier = new OpenLayers.Control.ModifyFeature(div.map.editLayer, {
-            standalone: true,
-            mode: OpenLayers.Control.ModifyFeature.DRAG | OpenLayers.Control.ModifyFeature.ROTATE
-          });
-          div.map.addControl(modifier);
-          div.map.editLayer.events.register('featuremodified', modifier, modifyPlot);
-          modifier.activate();
-          // Store a reference to the control
-          div.map.plotModifier = modifier;
         }
       }
 
@@ -2151,7 +2177,7 @@ mapLocationSelectedHooks = [];
 
   };
 })(jQuery);
-  
+ 
 /**
  * Main default options for the map
  */
@@ -2380,7 +2406,7 @@ function plot_rectangle_calculator(latLongPoint, width, length) {
   northTestPoint27700 = northTestPointLatLon.clone().transform('epsg:4326', new OpenLayers.Projection('epsg:27700'));
 
   //Get a point the is at right angles to the original point and the arbitrary point north.
-  //We can do this by taking the british national grid x value of the south point and combining it with the 
+  //We can do this by taking the british national grid x value of the south point and combining it with the
   //the y value of the north point. This will then create a right-angle triangle as the British National Grid is at an angle
   //compared to long lat.
   northRightAnglePoint27700 = northTestPoint27700.clone();
@@ -2393,7 +2419,7 @@ function plot_rectangle_calculator(latLongPoint, width, length) {
   //The hypotenuse is the distance north along the longitude line to our test point but in British National Grid 27700 metres.
   var hyp = adj/Math.cos(gridAngle);
 
-  //As we now know the length in metres between the south point and our arbitrary north point (the hypotenuse), 
+  //As we now know the length in metres between the south point and our arbitrary north point (the hypotenuse),
   //we can now use the percent value to work out the Y distance in Lat Long 4326 format for the corner of the square above the original click point.
   //This is because we know the distance in 4326 degrees, but now we also know the percentage the square length is along the line.
   var hypmetrePercent = length/hyp;
@@ -2419,7 +2445,7 @@ function plot_rectangle_calculator(latLongPoint, width, length) {
   var actualSquareSouthEastPoint4326= InitialClickPoint4326.clone();
   actualSquareSouthEastPoint4326.x = InitialClickPoint4326.x+((eastTestPointLatLon.x-InitialClickPoint4326.x)*hypmetrePercent);
 
-  //As we know 3 of the plot corners, we can work out the 4th and then convert the plot square back into a form the map can understand   
+  //As we know 3 of the plot corners, we can work out the 4th and then convert the plot square back into a form the map can understand  
   actualSquareNorthEastPoint4326 = actualSquareSouthEastPoint4326.clone();
   actualSquareNorthEastPoint4326.y = actualSquareNorthWestPoint4326.y;
   //On the PSS site, the grid reference of the sqaure/rectangle needs to be in the middle.
@@ -2440,10 +2466,10 @@ function plot_rectangle_calculator(latLongPoint, width, length) {
     actualSquareNorthEastPoint4326.x = actualSquareNorthEastPoint4326.x - westShift;
     actualSquareNorthEastPoint4326.y = actualSquareNorthEastPoint4326.y - southShift;
   }
-  
+ 
   mercOriginal = OpenLayers.Layer.SphericalMercator.forwardMercator(InitialClickPoint4326.x,InitialClickPoint4326.y);
   mercNorth = OpenLayers.Layer.SphericalMercator.forwardMercator(actualSquareNorthWestPoint4326.x,actualSquareNorthWestPoint4326.y);
-  mercEast = OpenLayers.Layer.SphericalMercator.forwardMercator(actualSquareSouthEastPoint4326.x,actualSquareSouthEastPoint4326.y);  
+  mercEast = OpenLayers.Layer.SphericalMercator.forwardMercator(actualSquareSouthEastPoint4326.x,actualSquareSouthEastPoint4326.y); 
   mercNorthEast = OpenLayers.Layer.SphericalMercator.forwardMercator(actualSquareNorthEastPoint4326.x,actualSquareNorthEastPoint4326.y);
 
   var polygonMetadata = 'POLYGON(('+mercOriginal.lon+' '+mercOriginal.lat+','+mercNorth.lon+' '+mercNorth.lat+','+mercNorthEast.lon+' '+mercNorthEast.lat+','+mercEast.lon+' '+mercEast.lat+'))';
