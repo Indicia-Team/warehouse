@@ -475,7 +475,7 @@ EOD;
     $options = array_merge($defaults, $options);
     
     // We'll arrange the buttons in a footer.
-    $r = '<div data-role="footer"';
+    $r = '<div data-role="footer" data-position="fixed"';
     $r .= 'class = "' . $options['class'] .= '">';
     
     // Add a paragraph to footer to give it height.
