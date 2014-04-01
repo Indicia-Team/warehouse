@@ -40,9 +40,8 @@ $indicia_templates['jqmRightButton'] = <<<'EOD'
 EOD;
 $indicia_templates['jqmSave-SubmitButton'] = <<<'EOD'
    <div align="right">
-     <button style="width:200px" onclick="submitStart()" 
-      data-icon="check" data-theme="b" 
-      data-iconpos="right">Submit</button>
+     <input style="width:200px" type="button" onclick="submitStart()" 
+      data-icon="check" data-theme="b" value="Submit" data-iconpos="right">
    </div>
 EOD;
 $indicia_templates['jqmSubmitButton'] = <<<'EOD'
