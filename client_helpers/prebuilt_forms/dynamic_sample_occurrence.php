@@ -389,6 +389,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           'options' => array(
             'autocomplete' => 'Autocomplete',
             'select' => 'Select',
+            'hierarchical_select' => 'Hierarchical select',
             'listbox' => 'List box',
             'radio_group' => 'Radio group',
             'treeview' => 'Treeview',
@@ -1443,6 +1444,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       $extraParams['taxon_list_id'] = $args['extra_list_id'];
     elseif ($args['extra_list_id'] !== '' && $args['list_id'] !== '')
       $extraParams['query'] = json_encode(array('in' => array('taxon_list_id' => array($args['list_id'],$args['extra_list_id']))));
+
+    // Add a txon group selector if that option was chosen
     if (isset($options['taxonGroupSelect']) && $options['taxonGroupSelect']) {
       $label = isset($options['taxonGroupSelectLabel']) ? $options['taxonGroupSelectLabel'] : 'Species Group';
       $helpText = isset($options['taxonGroupSelectHelpText']) ? $options['taxonGroupSelectHelpText'] : 'Choose which species group you want to pick a species from.';
@@ -1471,8 +1474,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       $options['parentControlLabel'] = lang::get($label);
       $options['filterField'] = 'taxon_group_id';
     }
+    
     $options['speciesNameFilterMode'] = self::getSpeciesNameFilterMode($args);
-    global $indicia_templates;
     $ctrl = $args['species_ctrl'] === 'autocomplete' ? 'species_autocomplete' : $args['species_ctrl'];
     $species_ctrl_opts = array_merge(array(
         'fieldname' => 'occurrence:taxa_taxon_list_id',
@@ -1489,6 +1492,11 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     else {
       $species_ctrl_opts['extraParams'] = $extraParams;
     }
+    $species_ctrl_opts['extraParams'] = array_merge(array(
+        'view' => 'detail', //required for hierarchical select to get parent id
+        'orderby' => 'taxonomic_sort_order',
+        'sortdir' => 'ASC' 
+    ), $species_ctrl_opts['extraParams']);
     if (!empty($args['taxon_filter'])) {
       $species_ctrl_opts['taxonFilterField'] = $args['taxon_filter_field']; // applies to autocompletes
       $species_ctrl_opts['taxonFilter'] = helper_base::explode_lines($args['taxon_filter']); // applies to autocompletes
@@ -1499,7 +1507,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     // get local vars for the array
     extract($db);
     
-    if ($ctrl!=='species_autocomplete') {
+    if ($ctrl !== 'species_autocomplete') {
       // The species autocomplete has built in support for the species name filter.
       // For other controls we need to apply the species name filter to the params used for population
       if (!empty($species_ctrl_opts['taxonFilter']) || $options['speciesNameFilterMode'])
@@ -1513,6 +1521,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     }
     // if using something other than an autocomplete, then set the caption template to include the appropriate names. Autocompletes
     // use a JS function instead.
+    global $indicia_templates;
     if ($ctrl!=='autocomplete' && isset($args['species_include_both_names']) && $args['species_include_both_names']) {
       if ($args['species_names_filter']==='all')
         $indicia_templates['species_caption'] = "{{$colTaxon}}";
@@ -1522,12 +1531,14 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         $indicia_templates['species_caption'] = "{{$colTaxon}} - {{$colCommon}}";
       $species_ctrl_opts['captionTemplate'] = 'species_caption';
     }
+    
     if ($ctrl=='tree_browser') {
       // change the node template to include images
       $indicia_templates['tree_browser_node']='<div>'.
           '<img src="'.data_entry_helper::$base_url.'/upload/thumb-{image_path}" alt="Image of {caption}" width="80" /></div>'.
           '<span>{caption}</span>';
     }
+    
     // Dynamically generate the species selection control required.
     $r .= call_user_func(array('data_entry_helper', $ctrl), $species_ctrl_opts);
     return $r;
