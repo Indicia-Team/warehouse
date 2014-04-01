@@ -4368,7 +4368,8 @@ $('#sensitive-blur').change(function() {
   * <li><b>table</b><br/>
   * Required. Name (Kohana-style) of the database entity to be queried.</li>
   * <li><b>view</b><br/>
-  * Name of the view of the table required (list, detail).</li>
+  * Name of the view of the table required (list, detail). This view must contain
+  * the parent field so, for taxa, ensure you set this to detail.</li>
   * <li><b>captionField</b><br/>
   * Field to draw values to show in the control from.</li>
   * <li><b>valueField</b><br/>
@@ -4416,14 +4417,16 @@ $('#sensitive-blur').change(function() {
     // lop the comma off the end
     $sParams = substr($sParams, 0, -1);
     extract($options, EXTR_PREFIX_ALL, 'o');
-    self::$javascript .= "jQuery('#tr$o_fieldname').treeview({
+    
+    $escaped_fieldname = self::jq_esc($o_fieldname);
+    self::$javascript .= "jQuery('#tr$escaped_fieldname').treeview({
       url: '$url/$o_table',
       extraParams : {
         orderby : '$o_captionField',
         mode : 'json',
         $sParams
       },
-      valueControl: '$o_fieldname',
+      valueControl: '$escaped_fieldname',
       valueField: '$o_valueField',
       captionField: '$o_captionField',
       view: '$o_view',
