@@ -1437,16 +1437,16 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    */
   protected static function get_control_species_single($auth, $args, $extraParams, $options) {
     $r = '';
-    if ($args['extra_list_id']==='' && $args['list_id']!=='')
+    if ($args['extra_list_id'] === '' && $args['list_id'] !== '')
       $extraParams['taxon_list_id'] = $args['list_id'];
-    elseif ($args['extra_list_id']!=='' && $args['list_id']==='')
+    elseif ($args['extra_list_id'] !== '' && $args['list_id'] === '')
       $extraParams['taxon_list_id'] = $args['extra_list_id'];
-    elseif ($args['extra_list_id']!=='' && $args['list_id']!=='')
-      $extraParams['query'] = json_encode(array('in'=>array('taxon_list_id'=>array($args['list_id'],$args['extra_list_id']))));
+    elseif ($args['extra_list_id'] !== '' && $args['list_id'] !== '')
+      $extraParams['query'] = json_encode(array('in' => array('taxon_list_id' => array($args['list_id'],$args['extra_list_id']))));
     if (isset($options['taxonGroupSelect']) && $options['taxonGroupSelect']) {
       $label = isset($options['taxonGroupSelectLabel']) ? $options['taxonGroupSelectLabel'] : 'Species Group';
       $helpText = isset($options['taxonGroupSelectHelpText']) ? $options['taxonGroupSelectHelpText'] : 'Choose which species group you want to pick a species from.';
-      $default='';
+      $default = '';
       if (!empty(data_entry_helper::$entity_to_load['occurrence:taxa_taxon_list_id'])) {
         // need to find the default value
         $species = data_entry_helper::get_population_data(array(
@@ -1474,21 +1474,24 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     $options['speciesNameFilterMode'] = self::getSpeciesNameFilterMode($args);
     global $indicia_templates;
     $ctrl = $args['species_ctrl'] === 'autocomplete' ? 'species_autocomplete' : $args['species_ctrl'];
-    $species_ctrl_opts=array_merge(array(
-        'fieldname'=>'occurrence:taxa_taxon_list_id',
-        'label'=>lang::get('occurrence:taxa_taxon_list_id'),
-        'columns'=>2, // applies to radio buttons
-        'parentField'=>'parent_id', // applies to tree browsers
-        'blankText'=>lang::get('Please select'), // applies to selects
-        'cacheLookup'=>$args['cache_lookup']
+    $species_ctrl_opts = array_merge(array(
+        'fieldname' => 'occurrence:taxa_taxon_list_id',
+        'label' => lang::get('occurrence:taxa_taxon_list_id'),
+        'columns' => 2, // applies to radio buttons
+        'parentField' => 'parent_id', // applies to tree browsers
+        'view' => 'detail', // required for tree browsers to get parent id
+        'blankText' => lang::get('Please select'), // applies to selects
+        'cacheLookup' => $args['cache_lookup']
     ), $options);
-    if (isset($species_ctrl_opts['extraParams']))
-      $species_ctrl_opts['extraParams']=array_merge($extraParams, $species_ctrl_opts['extraParams']);
-    else
-      $species_ctrl_opts['extraParams']=$extraParams;
+    if (isset($species_ctrl_opts['extraParams'])) {
+      $species_ctrl_opts['extraParams'] = array_merge($extraParams, $species_ctrl_opts['extraParams']);
+    }
+    else {
+      $species_ctrl_opts['extraParams'] = $extraParams;
+    }
     if (!empty($args['taxon_filter'])) {
-      $species_ctrl_opts['taxonFilterField']=$args['taxon_filter_field']; // applies to autocompletes
-      $species_ctrl_opts['taxonFilter']=helper_base::explode_lines($args['taxon_filter']); // applies to autocompletes
+      $species_ctrl_opts['taxonFilterField'] = $args['taxon_filter_field']; // applies to autocompletes
+      $species_ctrl_opts['taxonFilter'] = helper_base::explode_lines($args['taxon_filter']); // applies to autocompletes
     }
 
     // obtain table to query and hence fields to use     
