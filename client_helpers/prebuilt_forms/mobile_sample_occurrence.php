@@ -805,12 +805,32 @@ EOD
       $tabalias = $tabaliases[$pageIdx];
       $r .= '<div id="' . $tabalias . '" data-role="page">' . PHP_EOL;
       $r .= '<div data-role="header" data-position="fixed">' . PHP_EOL;
-       $r .= '<a href="#" data-rel="back" data-icon="arrow-l" ';
-       $r .= 'data-iconpos="left">Back</a>' . PHP_EOL;
-
+      $r .= '<a href="#" data-rel="back" data-icon="arrow-l" ';
+      $r .= 'data-iconpos="left">Back</a>' . PHP_EOL;
       
       $r .= '<h2>' . $tab . '</h2>' . PHP_EOL;
 
+      $r .= '
+        <a href="#" class="geoloc_icon" onclick="
+               var coords = jQuery(\'#imp-sref\').val();
+               var accuracy = jQuery(\'#sref_accuracy\').val();
+               makePopup(\'<center><h2>GPS</h2></center><h3><b>Your coordinates:</b> \' + coords + \'</h3><h3><b>Accuracy:</b> \' + accuracy + \'m</h3> \');
+               jQuery(\'#app-popup\').popup().popup(\'open\');" style="display:none; width: 27px; height: 27px; padding:4px;">
+          <div style="width: 3px; height: 3px; background: transparent; box-shadow: 
+              12px   6px   #518b41,12px   12px  #518b41,  12px  15px  #518b41 ,
+              12px   21px  #518b41,  12px  18px  #518b41,  12px   9px  #518b41 ,
+              15px   12px  #518b41 ,18px   12px  #518b41 ,24px   12px  #518b41,  
+              9px  12px   #518b41,  6px  12px  #518b41,   0px   12px  #518b41 ,
+              12px   0px   #518b41,  12px   24px   #518b41,  3px   12px  #518b41,  
+              3px   9px   #518b41,  6px   6px   #518b41,  12px  3px   #518b41,  
+              9px   3px   #518b41,  15px  3px   #518b41 , 21px   12px   #518b41 , 
+              21px  9px   #518b41,  18px  6px   #518b41,  3px   15px  #518b41,  
+              6px   18px  #518b41,  9px   21px  #518b41,  15px  21px    #518b41,  
+              18px  18px  #518b41,  21px  15px  #518b41, 18px 3px #518b41,
+              21px 6px #518b41, 6px 3px #518b41, 3px 6px #518b41, 18px 21px #518b41,
+              21px 18px #518b41,6px 21px #518b41,3px 18px #518b41;">
+         </div>
+       </a>' . PHP_EOL;
       $r .= '</div>' . PHP_EOL;
       $r .= '<div role="main" class="ui-content">' . PHP_EOL;	
       $r .= $tabContent;   
