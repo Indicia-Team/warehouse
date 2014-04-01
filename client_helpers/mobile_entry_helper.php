@@ -39,9 +39,11 @@ $indicia_templates['jqmRightButton'] = <<<'EOD'
      </a>
 EOD;
 $indicia_templates['jqmSave-SubmitButton'] = <<<'EOD'
-   <input onclick="submitStart()" id="{id}" type="button" {class}
-       data-icon="check" data-iconpos="right"
-       value="Submit" />
+   <div align="right">
+     <button style="width:200px" onclick="submitStart()" 
+      data-icon="check" data-theme="b" 
+      data-iconpos="right">Submit</button>
+   </div>
 EOD;
 $indicia_templates['jqmSubmitButton'] = <<<'EOD'
      <input id="{id}" type="submit" {class}
@@ -175,6 +177,7 @@ class mobile_entry_helper extends data_entry_helper {
         $('#sref_accuracy').attr('value', accuracy);
         if (accuracy < SREF_ACCURACY_LIMIT){
             navigator.geolocation.clearWatch(window.GEOLOCATION_ID);
+            $('.geoloc_icon').css('display', '');
         }
       };
       
@@ -189,9 +192,8 @@ class mobile_entry_helper extends data_entry_helper {
         maximumAge: 0,
         timeout: 120000
       };
-      
       // Request geolocation.
-     // window.GEOLOCATION_ID = navigator.geolocation.watchPosition(success, error, options);
+      window.GEOLOCATION_ID = navigator.geolocation.watchPosition(success, error, options);
 
 //    }) (jqm);
     ";
@@ -478,10 +480,9 @@ EOD;
     $r = '<div data-role="footer" data-position="fixed"';
     $r .= 'class = "' . $options['class'] .= '">';
     
-    // Add a paragraph to footer to give it height.
-    $r .= '<p>&nbsp;</p>';
-    
     if ($options['next'] != '') {
+       // Add a paragraph to footer to give it height.
+       $r .= '<p>&nbsp;</p>';
       // Add a next button on the right.
       $options['class'] = "ui-btn-right tab-next";
       $options['caption'] = lang::get($options['captionNext']);
