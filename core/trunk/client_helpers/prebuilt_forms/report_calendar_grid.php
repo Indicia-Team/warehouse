@@ -215,6 +215,8 @@ class iform_report_calendar_grid {
     }
     if ($siteUrlParams[self::$locationKey]['value'] != null)
       $reportOptions['extraParams']['location_id'] = $siteUrlParams[self::$locationKey]['value'];
+    if ($siteUrlParams[self::$locationTypeKey]['value'] != null)
+      $reportOptions['extraParams']['location_type_id'] = $siteUrlParams[self::$locationTypeKey]['value'];
     return $reportOptions;
   }
 
@@ -304,6 +306,7 @@ jQuery('#".$ctrlid."').change(function(){
   {
     global $user;
     $siteUrlParams = self::get_site_url_params();
+    $ctrl = '';
     // survey_id either comes from the location_type control, or from presets; in that order.
     // loctools is not appropriate here as it is based on a node, for which this is a very simple one, invoking other nodes for the sample creation
     // need to scan param_presets for survey_id..
@@ -324,7 +327,7 @@ jQuery('#".$ctrlid."').change(function(){
     $locationAttributes = data_entry_helper::getAttributes($attrArgs, false);
     $cmsAttr=extract_cms_user_attr($locationAttributes,false);
     if(!$cmsAttr){
-      return('<p>'.lang::get('The location selection control requires that CMS User ID location attribute is defined for locations in this survey. If restricting to a particular location type, this must be set in the parameters page for this form instance.').'</p>');
+      return('<p>'.lang::get('The location selection control requires that CMS User ID location attribute is defined for locations in this survey {'.$siteUrlParams[self::$SurveyKey].'}. If restricting to a particular location type, this must be set in the parameters page for this form instance.').'</p>');
     }
     $attrListArgs=array('nocache'=>true,
         'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
@@ -343,13 +346,15 @@ jQuery('#".$ctrlid."').change(function(){
         'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'], 'id'=>$locationIDList),
                      $readAuth),
         'table'=>'location');
+    if($siteUrlParams[self::$locationTypeKey]['value']!="")
+      $locationListArgs['extraParams']['location_type_id'] = $siteUrlParams[self::$locationTypeKey]['value'];
     $locationList = data_entry_helper::get_population_data($locationListArgs);
     if (isset($locationList['error'])) {
       return $locationList['error'];
     }
     $ctrlid='calendar-location-select-'.$node->nid;
-    $ctrl='<label for="'.$ctrlid.'" class="location-select-label">'.lang::get('Filter by site').
-          ' :</label> <select id="'.$ctrlid.'" class="location-select">'.
+    $ctrl .='<label for="'.$ctrlid.'" class="location-select-label">'.lang::get('Filter by site').
+          ':</label> <select id="'.$ctrlid.'" class="location-select">'.
           '<option value="" class="location-select-option" '.(self::$siteUrlParams[self::$locationKey]['value']==null ? 'selected=\"selected\" ' : '').'>'.lang::get('All sites').'</option>';
     foreach($locationList as $location){
       $ctrl .= '<option value='.$location['id'].' class="location-select-option" '.(self::$siteUrlParams[self::$locationKey]['value']==$location['id'] ? 'selected=\"selected\" ' : '').'>'.
