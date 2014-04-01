@@ -1172,6 +1172,9 @@ $('#$escaped').change(function(e) {
   * Optional. Associative array of items to pass via the query string to the service. This
   * should at least contain the read authorisation array if the select is being populated by a service call. It can also contain
   * view=cache to use the cached termlists entries or view=detail for the uncached version.</li>
+  * <li><b>captionTemplate</b><br/>
+  * Optional and only relevant when loading content from a data service call. Specifies the template used to build the caption,
+  * with each database field represented as {fieldname}.</li>
   * </ul>
   * The output of this control can be configured using the following templates: 
   * <ul>
@@ -1194,17 +1197,26 @@ $('#$escaped').change(function(e) {
     $options['extraParams']['preferred']='t';
     // Get the data for the control. Not Ajax populated at the moment. We either populate the lookupValues for the top level control
     // or store in the childData for output into JavaScript
-    $values = self::get_population_data($options);
+    $items = self::get_population_data($options);
     $lookupValues=array();
     $childData=array();
-    foreach ($values as $value) {
-      if (empty($value['parent_id']))
-        $lookupValues[$value[$options['valueField']]]=$value[$options['captionField']];
+    foreach ($items as $item) {
+      $itemValue = $item[$options['valueField']];
+      if (isset($options['captionTemplate'])) {
+        $itemCaption = self::mergeParamsIntoTemplate($item, $options['captionTemplate']);
+      }
+      else {
+        $itemCaption = $item[$options['captionField']];
+      }
+      
+      if (empty($item['parent_id']))
+        $lookupValues[$itemValue] = $itemCaption;
       else {
         // not a top level item, so put in a data array we can store in JSON.
-        if (!isset($childData[$value['parent_id']]))
-          $childData[$value['parent_id']]=array();
-        $childData[$value['parent_id']][] = array('id'=>$value[$options['valueField']], 'caption'=>$value[$options['captionField']]);
+        if (!isset($childData[$item['parent_id']])) {
+          $childData[$item['parent_id']] = array();
+        }
+        $childData[$item['parent_id']][] = array('id' => $itemValue, 'caption' => $itemCaption);
       }
     }
     // build an ID with just alphanumerics, that we can use to keep JavaScript function and data names unique
@@ -1216,7 +1228,7 @@ $('#$escaped').change(function(e) {
     unset($options['report']);
     unset($options['captionField']);
     unset($options['valueField']);
-    $options['lookupValues']=$lookupValues;
+    $options['lookupValues'] = $lookupValues;
     
     // as we are going to output a select using the options, but will use a hidden field for the form value for the selected item, 
     // grab the fieldname and prevent the topmost select having the same name.
