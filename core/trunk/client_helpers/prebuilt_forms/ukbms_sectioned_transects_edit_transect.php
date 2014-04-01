@@ -92,7 +92,7 @@ class iform_ukbms_sectioned_transects_edit_transect extends iform_sectioned_tran
           'extraParams' => array('termlist_external_key'=>'indicia:location_types'),
           'required' => false,
           'group'=>'Transects Editor Settings'
-          ),
+        ),
         array(
           'name'=>'can_change_section_number_2',
           'caption'=>'Change section number 2',
@@ -143,22 +143,19 @@ class iform_ukbms_sectioned_transects_edit_transect extends iform_sectioned_tran
     foreach($parentVal as $param){
       switch($param['name']) {
         case 'transect_type_term': break;
+      	case 'survey_id':
+          $param['description'] = 'The survey that data will be used to define custom attributes. This needs to match the survey used to submit visit data for sites of the first location type.';
+          $param['group'] = 'Transects Editor Settings';
+          $retVal[] = $param;
+          break;
         default:
           $retVal[] = $param;
           break;
       }
     }
     return $retVal;
-/*    						'name'=>'managerPermission',
-    						'description'=>'Enter the Drupal permission name to be used to determine if this user is a manager. Entering this will allow the identified users to delete or modify the site even there are walks (samples) associated with it.',
-    				),
-    				), array(
-    						'name' => 'maxSectionCount',
-    						'type' => 'int',
-    						'description' => 'The maximum number of sections a user is allowed to create for a transect site. If there is no user selectable attribute to set the number of sections, then the number is fixed at this value and the user will not be able to delete sections.',
-    				),
-    		) */
   }
+
   /**
    * Return the generated form output.
    * @param array $args List of parameter values passed through to the form depending on how the form has been configured.
@@ -224,7 +221,7 @@ class iform_ukbms_sectioned_transects_edit_transect extends iform_sectioned_tran
       // keep a copy of the cms user ID attribute so we can use it later.
       self::$cmsUserAttrId = $settings['cmsUserAttr']['attributeId'];
     }
-    
+
     // need to check if branch allocation is active.
     if ($args['branch_assignment_permission'] != '') {
       if (false== ($settings['branchCmsUserAttr'] = self::extract_attr($settings['attributes'], "Branch CMS User ID")))
@@ -392,7 +389,6 @@ class iform_ukbms_sectioned_transects_edit_transect extends iform_sectioned_tran
     $r .= '<div id="cols" class="ui-helper-clearfix"><div class="left" style="width: 54%">';
     $r .= '<fieldset><legend>'.lang::get('Site Details').'</legend>';
     $r .= "<input type=\"hidden\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";
-    $r .= "<input type=\"hidden\" name=\"survey_id\" value=\"".$args['survey_id']."\" />\n";
     $typeTerms = array();
     if(!empty($args['main_type_term_1'])) $typeTerms[] = $args['main_type_term_1'];
     if(!empty($args['main_type_term_2'])) $typeTerms[] = $args['main_type_term_2'];
