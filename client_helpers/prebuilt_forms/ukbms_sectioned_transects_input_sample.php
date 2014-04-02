@@ -722,6 +722,8 @@ class iform_ukbms_sectioned_transects_input_sample {
       $site = $site[0];
       $r .= '<input type="hidden" name="sample:location_id" value="'.$locationId.'"/>';
       $r .= '<input type="hidden" name="sample:entered_sref" value="'.$site['centroid_sref'].'"/>';
+      if(in_array($site['centroid_sref_system'], array('osgb','osie')))
+        $site['centroid_sref_system'] = strtoupper($site['centroid_sref_system']);
       $r .= '<input type="hidden" name="sample:entered_sref_system" value="'.$site['centroid_sref_system'].'"/>';
     }
 
@@ -1935,6 +1937,8 @@ jQuery('#tabs').bind('tabsshow', function(event, ui) {
         ));
         $site = $site[0];
         $values['sample:entered_sref'] = $site['centroid_sref'];
+        if(in_array($site['centroid_sref_system'], array('osgb','osie')))
+          $site['centroid_sref_system'] = strtoupper($site['centroid_sref_system']);
         $values['sample:entered_sref_system'] = $site['centroid_sref_system'];
       }
       // Build the subsamples

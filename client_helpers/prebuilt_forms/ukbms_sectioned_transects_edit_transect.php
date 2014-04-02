@@ -312,6 +312,8 @@ class iform_ukbms_sectioned_transects_edit_transect extends iform_sectioned_tran
       ));
       foreach($sections as $section) {
         $code = $section['code'];
+        if(in_array($section['centroid_sref_system'], array('osgb','osie')))
+        	$section['centroid_sref_system'] = strtoupper($section['centroid_sref_system']);
         data_entry_helper::$javascript .= "indiciaData.sections.$code = {'geom':'".$section['boundary_geom']."','id':'".$section['id']."','sref':'".$section['centroid_sref']."','system':'".$section['centroid_sref_system']."'};\n";
         $settings['sections'][$code]=$section;
       }
@@ -455,6 +457,9 @@ class iform_ukbms_sectioned_transects_edit_transect extends iform_sectioned_tran
     foreach($list as $system) {
       $systems[$system] = lang::get($system);
     }
+    if(isset(data_entry_helper::$entity_to_load['location:centroid_sref_system']) &&
+        in_array(data_entry_helper::$entity_to_load['location:centroid_sref_system'], array('osgb','osie')))
+      data_entry_helper::$entity_to_load['location:centroid_sref_system'] = strtoupper(data_entry_helper::$entity_to_load['location:centroid_sref_system']);
     $r .= data_entry_helper::sref_and_system(array(
       'fieldname' => 'location:centroid_sref',
       'geomFieldname' => 'location:centroid_geom',
