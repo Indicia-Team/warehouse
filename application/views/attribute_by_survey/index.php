@@ -364,14 +364,14 @@ function get_controls($block_id, $controlfilter) {
         orderby('weight', 'ASC')->find_all();
   foreach($child_controls as $control) {
     echo '<li class="control-drop"></li>';
-	// prepare some dynamic property names
+    // prepare some dynamic property names
     $attr = $_GET['type'].'_attribute';
-	$attrId = $attr.'_id';
+    $attrId = $attr.'_id';
     echo '<li id="control-'.$control->id.'" class="attribute-'.$control->$attrId.' draggable-control ui-widget ui-widget-content ui-corner-all ui-helper-clearfix">'.
         "<span class=\"handle\">&nbsp;</span>\n".
         '<span class="caption">'.$control->$attr->caption."</span>\n".
         '<a href="'.url::site().'attribute_by_survey/edit/'.$control->id.'?type='.$_GET['type']."\">Edit</a>\n".
-		'<a href="" class="control-delete">Delete</a>'.
+        '<a href="" class="control-delete">Delete</a>'.
         "</li>\n";
   }
   // extra item to allow drop at end of list
