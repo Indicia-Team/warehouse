@@ -157,6 +157,8 @@ class mobile_entry_helper extends data_entry_helper {
     // JavaScript to obtain the sref value;
     self::$javascript .= "
 //    (function ($) {
+  indiciaData.GPS_ACCURACY_LIMIT = " . $options['gps_accuracy_limit'] . "; //meters
+  
   if(!navigator.geolocation) {
         // Early return if geolocation not supported.
         makePopup('<div style=\"padding:10px 20px;\"><center><h2>Geolocation is not supported by your browser.</h2></center></div>');   
@@ -164,8 +166,7 @@ class mobile_entry_helper extends data_entry_helper {
         jQuery('#app-popup').popup('open');
         return;
       }
-      window.SREF_ACCURACY_LIMIT = 20; //meters
-      window.GEOLOCATION_ID; // watch geo id
+      
       // Callback if geolocation succeeds.
       var counter = 0;
       function success(position) {
@@ -174,8 +175,8 @@ class mobile_entry_helper extends data_entry_helper {
         var accuracy = position.coords.accuracy;
         $('#$id').attr('value', latitude + ', ' + longitude);
         $('#sref_accuracy').attr('value', accuracy);
-        if (accuracy < SREF_ACCURACY_LIMIT){
-            navigator.geolocation.clearWatch(window.GEOLOCATION_ID);
+        if (accuracy < indiciaData.GPS_ACCURACY_LIMIT){
+            navigator.geolocation.clearWatch(indiciaData.gps_running_id);
             $('.geoloc_icon').css('display', '');
         }
       };
@@ -192,7 +193,7 @@ class mobile_entry_helper extends data_entry_helper {
         timeout: 120000
       };
       // Request geolocation.
-      window.GEOLOCATION_ID = navigator.geolocation.watchPosition(success, error, options);
+      indiciaData.gps_running_id = navigator.geolocation.watchPosition(success, error, options);
 
 //    }) (jqm);
     ";
