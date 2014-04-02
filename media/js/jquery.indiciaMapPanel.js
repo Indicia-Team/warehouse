@@ -442,24 +442,35 @@ mapLocationSelectedHooks = [];
                   data.sref = value;
                   //Get front of the WKT to find out the spatial reference type the user used, a point would be a lat long, a polygon would be an OSGB square
                   var typeCheck = data.mapwkt.substr(0,6);
-                  var pointFromWkt;
-                  //The plot is drawn from a lat long position, if it is an OSGB square, there will be 4 corners. Just take the
-                  //first value to draw the plot from for lat/long, use the last point value to draw for OSGB as there are multiple points in that instance representing the OSGB square
-                  //and the last point works best.
+                  var wktPoints=[];
+                  //The plot is drawn from a lat long position, Just take the
+                  //first value to draw the plot from for lat/long. For OSGB, take an average of all the points to get a single point to draw the plot from as 
+                  //there are multiple points in that instance representing the OSGB square.
                   //Note the OSGB value will be a small square such as 1m (we obviously need to draw a plot that is bigger than the OSGB square we draw from)
+                  var openlayersLatlong = new OpenLayers.LonLat();
+                  var splitPointFromWkt;
+                  openlayersLatlong.lon=0;
+                  openlayersLatlong.lat=0;
+                  //Split the points making up the wkt into an array for working on
                   if (typeCheck=="POINT(") {
-                    pointFromWkt = data.mapwkt.slice(6).split(')');
-                    pointFromWkt = pointFromWkt[0].split(' ');
+                    data.mapwkt = data.mapwkt.slice(6).split(')');
+                    wktPoints[0] = data.mapwkt[0];
                   } else {
-                    pointFromWkt = data.mapwkt.slice(9).split(',');
-                    pointFromWkt = pointFromWkt[4].split(' ');
+                    data.mapwkt = data.mapwkt.slice(9);
+                    data.mapwkt = data.mapwkt.slice(0,-2);
+                    wktPoints = data.mapwkt.split(',');
                   }
-
-                  var latlong = new OpenLayers.LonLat();
-                  latlong.lon = parseFloat(pointFromWkt[0]);
-                  latlong.lat = parseFloat(pointFromWkt[1]);
+                  //If there are multiple points representing the spatial reference (e.g. OSGB square)
+                  //then average all the points to get single point to draw from.
+                  for (var i=0; i<wktPoints.length;i++) {
+                    splitPointFromWkt = wktPoints[i].split(' '); 
+                    openlayersLatlong.lon = openlayersLatlong.lon + parseFloat(splitPointFromWkt[0]);
+                    openlayersLatlong.lat = openlayersLatlong.lat + parseFloat(splitPointFromWkt[1]);
+                  }  
+                  openlayersLatlong.lon=openlayersLatlong.lon/wktPoints.length;
+                  openlayersLatlong.lat=openlayersLatlong.lat/wktPoints.length;
                   //Run code that handles when a user has selected a position on the map (either a click or changing sref)
-                  processLonLatPositionOnMap(latlong,div);
+                  processLonLatPositionOnMap(openlayersLatlong,div);
                 }
                 _showWktFeature(div, data.mapwkt, div.map.editLayer, null, false, "clickPoint");
               }
@@ -523,7 +534,7 @@ mapLocationSelectedHooks = [];
         // if adding a plot, select it for modification
         var modifier = new OpenLayers.Control.ModifyFeature(div.map.editLayer, {
           standalone: true,
-          mode: OpenLayers.Control.ModifyFeature.DRAG || OpenLayers.Control.ModifyFeature.ROTATE
+          mode: OpenLayers.Control.ModifyFeature.DRAG | OpenLayers.Control.ModifyFeature.ROTATE
         });
         div.map.addControl(modifier);
         div.map.editLayer.events.register('featuremodified', modifier, modifyPlot);
