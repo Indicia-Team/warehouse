@@ -34,7 +34,7 @@
       #filters#
       AND ((#website_filter# AND lw.deleted = false ) or l.public=true)
       AND l.deleted = false AND tt.deleted = false AND t.deleted = false
-      AND (deactivateSiteLav.int_value is null or deactivateSiteLav.int_value = 0 or (deactivateSiteLav.int_value=1 AND #admin_mode#=1))  
+      AND (deactivateSiteLav.int_value is null or deactivateSiteLav.int_value = 0 or (deactivateSiteLav.int_value=1 AND #admin_mode#=1)) 
   </query>
   <params>
     <param name="location_id" datatype="integer" emptyvalue="-1">
@@ -44,7 +44,7 @@
       <where>l.location_type_id in (#location_type_id#)</where>
     </param>
     <param name="parent_id" datatype="integer" emptyvalue="-1">
-      <join>JOIN locations lp on st_intersects(lp.boundary_geom, COALESCE(l.boundary_geom,l.centroid_geom)) and lp.id=#parent_id#</join>
+      <join>JOIN locations lp on st_intersects(COALESCE(l.boundary_geom,l.centroid_geom), lp.boundary_geom) and lp.id=#parent_id#</join>
     </param>
     <param name="preferred_boundary_attribute_id" datatype="integer" emptyvalue="-1"/>
     <param name="count_unit_boundary_type_id" datatype="integer" emptyvalue="-1"/>
