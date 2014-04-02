@@ -422,10 +422,10 @@ EOD
           'options' => array(
             'autocomplete' => 'Autocomplete',
             'select' => 'Select',
+            'hierarchical_select' => 'Hierarchical select',
+            'collapsible_select' => 'Collapsible select',
             'listbox' => 'List box',
             'radio_group' => 'Radio group',
-            'treeview' => 'Treeview',
-            'tree_browser' => 'Tree browser'
           ),
           'default' => 'autocomplete',
           'group' => 'Species',
@@ -1283,6 +1283,8 @@ EOD
     $r = '';
     $extraParams['taxon_list_id'] = empty($args['extra_list_id']) ?
             $args['list_id'] : $args['extra_list_id'];
+
+    // Add a txon group selector if that option was chosen
     if (isset($options['taxonGroupSelect']) && $options['taxonGroupSelect']) {
       $label = isset($options['taxonGroupSelectLabel']) ?
               $options['taxonGroupSelectLabel'] : 'Species Group';
@@ -1319,8 +1321,9 @@ EOD
       $options['parentControlLabel'] = lang::get($label);
       $options['filterField'] = 'taxon_group_id';
     }
+    
+    // Set up options for control
     $options['speciesNameFilterMode'] = self::getSpeciesNameFilterMode($args);
-    global $indicia_templates;
     $ctrl = $args['species_ctrl'] === 'autocomplete' ?
             'species_autocomplete' : $args['species_ctrl'];
     $species_ctrl_opts = array_merge(array(
@@ -1328,14 +1331,23 @@ EOD
         'label'=>lang::get('occurrence:taxa_taxon_list_id'),
         'columns'=>2, // applies to radio buttons
         'parentField' => 'parent_id', // applies to tree browsers
+        'view' => 'detail', // required for tree browsers to get parent id
         'blankText'=>lang::get('Please select'), // applies to selects
         'cacheLookup'=>$args['cache_lookup']
     ), $options);
-    if (isset($species_ctrl_opts['extraParams']))
+    if (isset($species_ctrl_opts['extraParams'])) {
       $species_ctrl_opts['extraParams'] = 
             array_merge($extraParams, $species_ctrl_opts['extraParams']);
-    else
+    }
+    else {
       $species_ctrl_opts['extraParams']=$extraParams;
+    }
+    $species_ctrl_opts['extraParams'] = array_merge(array(
+        'view' => 'detail', //required for hierarchical select to get parent id
+        'orderby' => 'taxonomic_sort_order',
+        'sortdir' => 'ASC' 
+    ), $species_ctrl_opts['extraParams']);
+    
     if (!empty($args['taxon_filter'])) {
       // applies to autocompletes
       $species_ctrl_opts['taxonFilterField'] = $args['taxon_filter_field'];
@@ -1368,6 +1380,7 @@ EOD
     // if using something other than an autocomplete, then set the caption
     // template to include the appropriate names. Autocompletes use a JS 
     // function instead.
+    global $indicia_templates;
     if ($ctrl!=='autocomplete' &&
             isset($args['species_include_both_names']) &&
             $args['species_include_both_names']) {
@@ -1379,6 +1392,7 @@ EOD
         $indicia_templates['species_caption'] = "{{$colTaxon}} - {{$colCommon}}";
       $species_ctrl_opts['captionTemplate'] = 'species_caption';
     }
+
     if ($ctrl=='tree_browser') {
       // change the node template to include images
       $indicia_templates['tree_browser_node'] = '<div><img src="'
@@ -1386,8 +1400,9 @@ EOD
            . '/upload/thumb-{image_path}" alt="Image of {caption}" width="80" />'
            . '</div><span>{caption}</span>';
     }
+    
     // Dynamically generate the species selection control required.
-    $r .= call_user_func(array('data_entry_helper', $ctrl), $species_ctrl_opts);
+    $r .= call_user_func(array('mobile_entry_helper', $ctrl), $species_ctrl_opts);
     return $r;
   }
 
