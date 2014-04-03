@@ -38,6 +38,7 @@ $indicia_templates = array(
       "document.write('{content}');".
       "/* ]]> */</script>\n",
   'label' => '<label for="{id}"{labelClass}>{label}:</label>'."\n",
+  'toplabel' => '<label data-for="{id}"{labelClass}>{label}:</label>'."\n",
   'suffix' => "<br/>\n",
   'nosuffix' => " \n",
   'nullsuffix' => "",
@@ -1630,7 +1631,7 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
               array_key_exists('inputId', $options) ? $options['inputId'] : $options['id'],
               array_key_exists('labelClass', $options) ? ' class="'.$options['labelClass'].'"' : '',
           ),
-          $indicia_templates['label']
+          isset($options['labelTemplate']) ? $indicia_templates[$options['labelTemplate']] : $indicia_templates['label']
       );
     }
     // Output the main control

@@ -35,6 +35,10 @@ require_once('submission_builder.php');
  * <ul>
  * <li><b>label</b><br/>
  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+ * <li><b>labelTemplate</b>
+ * If you need to change the label for this control only, set this to refer to the name of an alternate template you
+ * have added to the global $indicia_templates array. To change the label for all controls, you can update the value of
+ * $indicia_templates['label'] before building the form.</li>
  * <li><b>helpText</b><br/>
  * Optional. Defines help text to be displayed alongside the control. The position of the text is defined by
  * helper_base::$helpTextPos, which can be set to before or after (default). The template is defined by
@@ -5282,14 +5286,13 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     }
     $options['items']=$items;
     // We don't want to output for="" in the top label, as it is not directly associated to a button
-    $lblTemplate = $indicia_templates['label'];
-    $indicia_templates['label'] = str_replace(' for="{id}"', '', $lblTemplate);
+    $options['labelTemplate'] = 'toplabel';
     if (isset($itemClass) && !empty($itemClass) && strpos($itemClass, 'required')!==false) {
       $options['suffixTemplate'] = 'requiredsuffix';
     }
     $r = self::apply_template($options['template'], $options);
     // reset the old template
-    $indicia_templates['label'] = $lblTemplate;
+    unset($options['labelTemplate']);
     // Is there an option for "Other", which requires an additional attribute to display to capture the other information?
     if (!empty($options['otherItemId'])&&!empty($options['otherValueAttrId'])) {
       //Code elsewhere can automatically draw attributes to the page if the user has specified the * option in the form structure.
