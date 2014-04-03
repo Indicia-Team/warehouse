@@ -115,9 +115,19 @@ class iform_big_sea_survey extends iform_dynamic_sample_occurrence {
           'type'=>'textfield',          
           'required' => true,
           'group'=>'Big Sea setup'
+        ),
+        array(
+          'name' => 'parent_sample_method_id',
+          'caption' => 'Parent Sample Method',
+          'type' => 'select',
+          'table'=>'termlists_term',
+          'captionField'=>'term',
+          'valueField'=>'id',
+          'extraParams' => array('termlist_external_key'=>'indicia:sample_methods'),
+          'required' => false,
+          'helpText' => 'The sample method that will be used for created visit samples.',
+          'group'=>'Big Sea setup'
         )
-        
-        
       )
     );
     return $r;
@@ -129,7 +139,7 @@ class iform_big_sea_survey extends iform_dynamic_sample_occurrence {
    */
   protected static function get_form_html($args, $auth, $attributes) { 
     if (empty($_GET['id'])) 
-      return 'This form must called with an id in the URL parameters';
+      return 'This form must be called with an id in the URL parameters';
     data_entry_helper::$javascript .= "indiciaData.latLongNotationPrecision=5;\n";
     return parent::get_form_html($args, $auth, $attributes);
   }
@@ -140,7 +150,10 @@ class iform_big_sea_survey extends iform_dynamic_sample_occurrence {
       'extraParams' => $auth['read'] + array('id' => $_GET['id'], 'view' => 'detail'),
       'nocache' => true
     ));
-    $attrs = self::getAttributesForSample($args, $auth, $_GET['id']);
+    // since getting attrs from the parent, so filter on the parent's sample method not the child's
+    $parentargs = array_merge($args);
+    $parentargs['sample_method_id']=$args['parent_sample_method_id'];
+    $attrs = self::getAttributesForSample($parentargs, $auth, $_GET['id']);
     self::$parentSampleAttrs = array();
     // convert to keyed array
     foreach ($attrs as $attr) 
@@ -230,12 +243,12 @@ class iform_big_sea_survey extends iform_dynamic_sample_occurrence {
         $selected = (self::$selectedZoneAttrId===$attr['id']) && (self::$selectedTransect==$i);
         if ($selected) {
           // As this is the selected zone/transect, we can grab the information about it now
-          $title = "$captions[$idx] - $i";
+          $title = "$captions[$idx] - transect $i";
           $fld = self::$thisSampleAttrs['smpAttr:'.$args['child_sample_zone_attr_id']]['fieldname'];
           $r .= "<input type=\"hidden\" name=\"$fld\" value=\"$captions[$idx]\"/>";
           $fld = self::$thisSampleAttrs['smpAttr:'.$args['child_sample_transect_attr_id']]['fieldname'];
           $r .= "<input type=\"hidden\" name=\"$fld\" value=\"$i\"/>";
-          $wantNext = true;          
+          $wantNext = true;
         } elseif ($wantNext) {
           // This is the button after the selected transect. Store the values required to find the next page after successful save.
           $r .= "<input type=\"hidden\" name=\"next-zone\" value=\"$id\"/>";
@@ -268,6 +281,7 @@ class iform_big_sea_survey extends iform_dynamic_sample_occurrence {
   protected static function get_control_fixedspecies($auth, $args, $tabAlias, $options) {
     unset($args['extra_list_id']);
     $options['rowInclusionCheck']='hasData';
+    $options['id']='fixed-list';
     return parent::get_control_species($auth, $args, $tabAlias, $options);
   }
   
@@ -286,6 +300,7 @@ class iform_big_sea_survey extends iform_dynamic_sample_occurrence {
     $args['taxon_filter_field']='taxa_taxon_list_id';
     $args['taxon_filter']=implode("\n", $ttlIds);
     $options['rowInclusionCheck']='alwaysFixed';
+    $options['id']='search-list';
     unset($args['extra_list_id']);
     return parent::get_control_species($auth, $args, $tabAlias, $options);
   }
@@ -297,12 +312,12 @@ class iform_big_sea_survey extends iform_dynamic_sample_occurrence {
     $r = data_entry_helper::text_input(array(
       'label'=>'Transect start',
       'fieldname'=>'gpsstart',
-      'helpText' => lang::get('Transect start, GPS coordinate (decimal WGS84 latitude and longitude)')
+      'helpText' => lang::get('Transect start, GPS coordinate (decimal WGS84 latitude and longitude). Click once on the map to set.')
     ));
     $r .= data_entry_helper::text_input(array(
       'label'=>'Transect end',
       'fieldname'=>'gpsend',
-      'helpText' => lang::get('Transect end, GPS coordinate (decimal WGS84 latitude and longitude)')
+      'helpText' => lang::get('Transect end, GPS coordinate (decimal WGS84 latitude and longitude). Click again on the map to set.')
     ));
     return $r;
   }
