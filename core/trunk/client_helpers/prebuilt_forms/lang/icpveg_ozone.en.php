@@ -41,9 +41,8 @@ $custom_terms = array_merge($custom_terms, array(
     // Species.
     'LANG_Tab_species' => 'Species',
     'LANG_Tab_species help' => 'Now identify the plant species which was affected.',
-    'ICPVeg Vegetation Type' => 'Select the broad vegetation type first and then refine the description in the control that appears.',
-    'ICPVeg Vegetation Type Other' => 'If you selected \'Other\' above, please describe the vegetation type.',
-    'ICPVeg Species' => 'If known, please provide the species name.',
+    'occurrence:taxa_taxon_list_id' => 'Use the selectors below as far as possible to choose a species.',
+    'ICPVeg Species' => 'If you chose one of the \'Other\' options above, please provide the species name.',
     // Photograph.
     'LANG_Tab_photograph' => 'Photographs',
     'LANG_Tab_photograph help' => 'Please upload two photographs:<br/>'

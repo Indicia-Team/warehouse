@@ -58,6 +58,15 @@ $indicia_templates['check_or_radio_group_item'] = <<<'EOD'
       {class}{checked} {disabled}/>
     <label for="{itemId}">{caption}</label>
 EOD;
+$indicia_templates['check_or_radio_group'] =  <<<'EOD'
+    <fieldset data-role="controlgroup" {class}>
+      {items}
+    </fieldset>
+EOD;
+
+// jQuery Mobile fieldcontainer grouping
+$indicia_templates['fieldcontain_prefix'] = '<div class="ui-field-contain">';
+$indicia_templates['fieldcontain_suffix'] = '</div>';
 
 /**
  * Static helper class that provides automatic HTML and JavaScript generation for 
