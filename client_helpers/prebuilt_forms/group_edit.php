@@ -228,13 +228,19 @@ class iform_group_edit {
       'helpText' => lang::get('Description and notes about the {1}.', self::$groupType)
     ));
     $r .= self::dateControls($args);
-    if ($args['include_private_records']) 
+    if ($args['include_private_records']) {
       $r .= data_entry_helper::checkbox(array(
         'label' => lang::get('Records are private'),
         'fieldname'=>'group:private_records',
         'helpText'=>lang::get('Tick this box if you want to withold the release of the records from this {1} until a '.
           'later point in time, e.g. when a project is completed.', self::$groupType)
       ));
+      // If an existing group with private records, then we might need to display a message warning the user about releasing the records. 
+      // Initially hidden, we use JS to display it when appropriate.
+      if (!empty(data_entry_helper::$entity_to_load['group:id']) && data_entry_helper::$entity_to_load['group:private_records']==='t')
+        $r .= '<p class="warning" style="display: none" id="release-warning">'.
+            lang::get('You are about to release the records belonging to this group. Do not proceed unless you intend to do this!').'</p>';
+    }
     $r .= self::memberControls($args, $auth);
     $r .= self::reportFilterBlock($args, $auth, $hiddenPopupDivs);
     // auto-insert the creator as an admin of the new group, unless the admins are manually specified
