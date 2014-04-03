@@ -63,6 +63,11 @@ $indicia_templates['check_or_radio_group'] =  <<<'EOD'
       {items}
     </fieldset>
 EOD;
+$indicia_templates['collapsible_select'] =  <<<'EOD'
+    <div>
+      {items}
+    </div>
+EOD;
 
 // jQuery Mobile fieldcontainer grouping
 $indicia_templates['fieldcontain_prefix'] = '<div class="ui-field-contain">';
@@ -574,11 +579,8 @@ EOD;
    * </ul>
    */
   public static function collapsible_select($options) {
-    $options = array_merge(array(
-      'id' => 'select-' . rand(0,10000),
-      'blankText' => '<please select>'
-    ), $options);
-    $options['extraParams']['preferred'] = 't';
+   $options = self::check_options($options);
+   $options['extraParams']['preferred'] = 't';
     
     // Get the data for the control. 
     $items = self::get_population_data($options);
@@ -616,8 +618,11 @@ EOD;
       }
     }
 
-    // Construct the html to output the options
-      return self::_collapsible_select_html($primaryData, $childData, $options);
+    // Construct the html to output the choices
+    $options['items'] = self::_collapsible_select_html($primaryData, $childData, $options);
+    // Wrap items and add label  
+    $options['labelTemplate'] = 'toplabel';
+    return self::apply_template('collapsible_select', $options);
   }
   
   private static function _collapsible_select_html($primaryData, $childData, $options) {
