@@ -1934,7 +1934,7 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
     if (!$cacheTimeout)
       $cacheTimeout = self::_getCacheTimeOut($options);
     $cacheFolder = parent::$cache_folder ? parent::$cache_folder : self::relative_client_helper_path() . 'cache/';
-    $cacheFile = data_entry_helper::_getCacheFileName($cacheFolder, $cacheOpts, $cacheTimeout);
+    $cacheFile = self::_getCacheFileName($cacheFolder, $cacheOpts, $cacheTimeout);
     self::_cacheResponse($cacheFile, array('output' => $toCache), $cacheOpts);
   }
   
