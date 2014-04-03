@@ -38,9 +38,9 @@ $indicia_templates['jqmRightButton'] = <<<'EOD'
        {caption}
      </a>
 EOD;
-$indicia_templates['jqmSave-SubmitButton'] = <<<'EOD'
+$indicia_templates['jqmControlSubmitButton'] = <<<'EOD'
    <div align="right">
-     <input style="width:200px" type="button" onclick="submitStart()" 
+     <input id ="entry-form-submit" style="width:200px" type="button" 
       data-icon="check" data-theme="b" value="Submit" data-iconpos="right">
    </div>
 EOD;
@@ -511,7 +511,7 @@ EOD;
       // Add a save button on the right.
       $options['class'] = "ui-btn-right";
       $options['caption'] = lang::get($options['captionSave']);
-      $r .= self::apply_template('jqmSave-SubmitButton', $options);
+      $r .= self::apply_template('jqmControlSubmitButton', $options);
     }
     $r .= '</div>';   
     

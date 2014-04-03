@@ -1434,6 +1434,7 @@ $('.ui-state-default').live('mouseout', function() {
 indiciaData.imagesPath='" . self::$images_path . "';
 indiciaData.warehouseUrl='" . self::$base_url . "';
 indiciaData.windowLoaded=false;
+indiciaData.jQuery = jQuery; //saving the current version of jQuery
 ";
       if (self::$js_read_tokens) {
         if (!empty(parent::$warehouse_proxy))
@@ -1483,6 +1484,7 @@ indiciaData.windowLoaded=false;
     if (self::$validated_form_id) {
       global $indicia_templates;
       self::$javascript .= "
+      
         var validator = $('#".self::$validated_form_id."').validate({
         ignore: \":hidden,.inactive\",
         errorClass: \"".$indicia_templates['error_class']."\",
