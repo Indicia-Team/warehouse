@@ -33,13 +33,13 @@ class iform_icpveg_mobile extends iform_mobile_sample_occurrence {
       $default_value = '';
     }
     
-    return data_entry_helper::select(array(
+    return data_entry_helper::select(array_merge(array(
       'fieldname'=>'occurrence:sensitivity_precision',
       'label'=>lang::get('ICPVeg Sensitivity'),
       'lookupValues' => array('50000'=>lang::get('ICPVeg Sensitivity 50km')),
       'blankText' => lang::get('ICPVeg Sensitivity blankText'),
       'default' => $default_value,
-    ));
+    ), $options));
   }
   
 }
