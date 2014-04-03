@@ -756,6 +756,7 @@ class iform_ukbms_sectioned_transects_input_sample {
       $types = helper_base::explode_lines($args['locationTypesFilter']);
       $siteTypes = array();
       $surveys = array();
+      $sitesJs = array();
       foreach($types as $type){
         // build site list for this location type.
         $parts = explode(':',$type);
@@ -775,7 +776,6 @@ class iform_ukbms_sectioned_transects_input_sample {
         ));
         // convert the report data to an array to pass to the JS so it can keep the hidden sref fields updated
         // the site list is created on the fly depending on the user entered type.
-        $sitesJs = array();
         foreach ($availableSites as $site)
           $sitesJs[$site['location_id']] = $site;
         // bolt in branch locations. Don't assume that branch list is superset of normal sites list.
