@@ -687,6 +687,18 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
     $r .= '<img src="'.data_entry_helper::$images_path.'trash-22px.png" width="22" height="22" alt="Bin this filter" title="Bin this filter" class="button disabled" id="filter-delete"/>';
   }  
   $r .= '</div></div>'; // toolbar + clearfix
+  if (!empty($options['filters_user_id'])) {
+    // if we are preloading based on a filter user ID, we need to get the information now so that the sharing mode can be known
+    // when loading controls
+    $fu = data_entry_helper::get_population_data(array(
+        'table' => 'filters_user',
+        'extraParams' => $readAuth + array('id' => $options['filters_user_id']),
+        'caching' => false
+    ));
+    if (count($fu)!==1)
+      throw new exception('Could not find filter user record');
+    $options['sharing'] = report_filters_sharing_code_to_full_term($fu[0]['filter_sharing']);
+  }
   report_helper::$javascript .= "indiciaData.lang={pleaseSelect:\"".lang::get('Please select')."\"};\n";
   // create the hidden panels required to populate the popups for setting each type of filter up.
   $hiddenStuff = '';
@@ -721,23 +733,35 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
   report_helper::$javascript .= "indiciaData.website_id=".$website_id.";\n";
   report_helper::$javascript .= "indiciaData.redirectOnSuccess='$options[redirect_on_success]';\n";
   // load up the filter, BEFORE any AJAX load of the grid code. First fetch any URL param overrides.
-  $overrideJs = '';
-  foreach(array_merge($options, $_GET) as $key=>$value) {
+  $getParams = array();
+  $optionParams = array();
+  foreach($_GET as $key=>$value) {
     if (substr($key, 0, 7)==='filter-') {
-      $overrideJs .= "indiciaData.filter.def['".substr($key, 7)."']='".str_replace("'", "\\'", $value)."';\n";
+      $getParams[substr($key, 7)]=$value;
     }
   }
-  if (!empty($overrideJs)) {
-    $overrideJs .= "indiciaData.filter.orig=$.extend({}, indiciaData.filter.def);\n";
-    $overrideJs .= "applyFilterToReports(false);\n";
+  foreach($options as $key=>$value) {
+    if (substr($key, 0, 7)==='filter-') {
+      $optionParams[substr($key, 7)]=$value;
+    }
   }
-  if (!empty($options['filters_user_id']))
-    report_helper::$onload_javascript = "loadFilterUser($options[filters_user_id]);\n" . $overrideJs . report_helper::$onload_javascript;
-  else 
-    report_helper::$onload_javascript = "if ($('#select-filter').val()) {".
-        "loadFilter($('#select-filter').val(), false);" .
-        "};\n" . $overrideJs . report_helper::$onload_javascript;
-    
+  $allParams = array_merge($optionParams, $getParams);
+  if (!empty($allParams)) {
+    $allParams = json_encode($allParams);
+    report_helper::$onload_javascript .= "var params = $allParams;\n";
+    report_helper::$onload_javascript .= "indiciaData.filter.def=$.extend(indiciaData.filter.def, params);\n";
+    report_helper::$onload_javascript .= "indiciaData.filter.orig=$.extend({}, params);\n";
+  }
+  $getParams = empty($getParams) ? '{}' : json_encode($getParams);
+  if (!empty($options['filters_user_id'])) {
+    report_helper::$onload_javascript .= "loadFilterUser(".json_encode($fu[0]).", $getParams);\n";
+  } else {
+    report_helper::$onload_javascript .= "if ($('#select-filter').val()) {\n".
+        "  loadFilter($('#select-filter').val(), $getParams);\n" .
+        "} else {\n".
+        "  applyFilterToReports(true);\n".
+        "}\n";
+  }
   return $r;
 }
 
