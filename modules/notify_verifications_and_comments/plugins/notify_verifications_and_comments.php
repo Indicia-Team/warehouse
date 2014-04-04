@@ -20,6 +20,7 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
+// @todo Update to use occdelta
 /**
  * Hook into the task scheduler. Runs a query to find all comments and verification status updates that need
  * to be notified back to the recorder of a record. 
