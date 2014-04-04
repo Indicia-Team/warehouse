@@ -27,6 +27,13 @@
  * @todo Filter to a config file defined list of location types
  */
 
+function spatial_index_builder_metadata() {
+  return array(
+    'requires_occurrences_delta'=>TRUE,
+    'always_run'=>TRUE // don't skip this plugin as the scheduled tasks runner does not take into account changed locations
+  );
+}
+
 /**
  * Hook into the task scheduler. Creates a table which identifies a list of records
  * which overlap with each site, allowing fast site based reporting.
@@ -40,7 +47,7 @@ function spatial_index_builder_scheduled_task($last_run_date, $db) {
     // first run, so get all records changed in last day. Query will automatically gradually pick up the rest.
     $last_run_date=date('Y-m-d', time()-60*60*24);
   try {
-    $recordCount = spatial_index_builder_get_sample_list($last_run_date, $db);
+    $recordCount = $db->count_records('occdelta');
     $locCount = spatial_index_builder_get_location_list($last_run_date, $db);
     if ($recordCount + $locCount > 0) 
       spatial_index_builder_populate($db);
@@ -49,24 +56,6 @@ function spatial_index_builder_scheduled_task($last_run_date, $db) {
     echo $e->getMessage();
   }
   
-}
-
-/**
- * Build a temporary table with the list of samples we will process, so that we have
- * consistency if changes are happening concurrently. 
- * @param type $db 
- */
-function spatial_index_builder_get_sample_list($last_run_date, $db) {
-  $query = "select s.id, now() as timepoint into temporary smplist 
-from samples s 
-where s.deleted=false 
-and s.updated_on>'$last_run_date'";
-  $db->query($query);
-  $r = $db->query('select count(*) as count from smplist')->result_array(false);
-  $message = "Building spatial index for ".$r[0]['count']." sample(s)";
-  echo "$message<br/>";
-  Kohana::log('debug', $message);
-  return $r[0]['count'];
 }
 
 /**
@@ -119,7 +108,7 @@ function spatial_index_builder_populate($db) {
     );";
   $db->query($query);
   $query = "delete from index_locations_samples where sample_id in (
-      select id from smplist union select id from samples where deleted=true
+      select sample_id from occdelta union select id from samples where deleted=true
     );";
   $db->query($query);
   Kohana::log('debug', "Cleaned up index_locations_samples before populating new values.");
@@ -134,7 +123,7 @@ function spatial_index_builder_populate($db) {
     join samples s on s.deleted=false and st_intersects(l.boundary_geom, s.geom)
     where l.deleted=false
     and (l.id in (select id from loclist)
-    or s.id in (select id from smplist))
+    or s.id in (select sample_id from occdelta))
     $where";
   $message = $db->query($query)->count().' index_locations_samples entries created.';
   echo "$message<br/>";
@@ -142,7 +131,6 @@ function spatial_index_builder_populate($db) {
 }
 
 function spatial_index_builder_cleanup($db) {
-  $db->query('drop table smplist');
   $db->query('drop table loclist');
 }
 
