@@ -23,7 +23,7 @@ var loadFilter, loadFilterUser, applyFilterToReports;
 jQuery(document).ready(function($) {
   "use strict";
   indiciaData.filter = {"def":{},"id":null,"title":null};
-  var saving=false, applyFilterNow;
+  var saving=false, filterOverride={};
   
   function disableIfPresent(context, fields, ctrlIds) {
     var disable=false;
@@ -376,20 +376,18 @@ jQuery(document).ready(function($) {
         
       },
       loadFilter: function() {
-        if (indiciaData.filter.def.searchArea && indiciaData.mapdiv) {
-          var parser = new OpenLayers.Format.WKT(), feature = parser.read(indiciaData.filter.def.searchArea);
-          if (indiciaData.mapdiv.map.projection.getCode() !== indiciaData.mapdiv.indiciaProjection.getCode()) {
-            feature.geometry.transform(indiciaData.mapdiv.indiciaProjection, indiciaData.mapdiv.map.projection);
-          }
-          if (indiciaData.mapdiv) {
+        if (typeof indiciaData.mapdiv!=="undefined") {
+          if (indiciaData.filter.def.searchArea) {
+            var parser = new OpenLayers.Format.WKT(), feature = parser.read(indiciaData.filter.def.searchArea);
+            if (indiciaData.mapdiv.map.projection.getCode() !== indiciaData.mapdiv.indiciaProjection.getCode()) {
+              feature.geometry.transform(indiciaData.mapdiv.indiciaProjection, indiciaData.mapdiv.map.projection);
+            }
             indiciaData.mapdiv.map.editLayer.addFeatures([feature]);
-          } else {
-            mapInitialisationHooks.push(function() {indiciaData.mapdiv.map.editLayer.addFeatures([feature]);});            
+          } else if (indiciaData.filter.def.location_id) {
+            indiciaData.mapdiv.locationSelectedInInput(indiciaData.mapdiv, indiciaData.filter.def.location_id);
+          } else if (indiciaData.filter.def.indexed_location_id) {
+            indiciaData.mapdiv.locationSelectedInInput(indiciaData.mapdiv, indiciaData.filter.def.indexed_location_id);
           }
-        } else if (indiciaData.filter.def.location_id) {
-          indiciaData.mapdiv.locationSelectedInInput(indiciaData.mapdiv, indiciaData.filter.def.location_id);
-        } else if (indiciaData.filter.def.indexed_location_id) {
-          indiciaData.mapdiv.locationSelectedInInput(indiciaData.mapdiv, indiciaData.filter.def.indexed_location_id);
         }
       }
     },
@@ -415,7 +413,8 @@ jQuery(document).ready(function($) {
     occurrence_id:{
       getDescription:function() {
         if (indiciaData.filter.def.occurrence_id) {
-          return $('#occurrence_id_op option[value='+indiciaData.filter.def.occurrence_id_op.replace(/[<=>]/g, "\\$&")+']').html()
+          var op = typeof indiciaData.filter.def.occurrence_id_op==="undefined" ? '=' : indiciaData.filter.def.occurrence_id_op.replace(/[<=>]/g, "\\$&");
+          return $('#occurrence_id_op option[value='+op+']').html()
               + ' ' + indiciaData.filter.def.occurrence_id;
         } else {
           return '';
@@ -733,7 +732,7 @@ jQuery(document).ready(function($) {
     }
   }
   
-  applyFilterToReports = function(applyNow) {
+  applyFilterToReports = function() {
     applyContextLimits();
     var filterDef = $.extend({}, indiciaData.filter.def);
     delete filterDef.taxon_group_names;
@@ -750,12 +749,10 @@ jQuery(document).ready(function($) {
           }
           // merge in the filter
           grid[0].settings.extraParams = $.extend({}, grid[0].settings.origParams, filterDef);
-          if (applyNow) {
-            // reload the report grid
-            grid.ajaxload();
-            if (grid[0].settings.linkFilterToMap) {
-              grid.mapRecords(grid[0].settings.mapDataSource, grid[0].settings.mapDataSourceLoRes);
-            }
+          // reload the report grid
+          grid.ajaxload();
+          if (grid[0].settings.linkFilterToMap) {
+            grid.mapRecords(grid[0].settings.mapDataSource, grid[0].settings.mapDataSourceLoRes);
           }
         });
       });
@@ -787,7 +784,7 @@ jQuery(document).ready(function($) {
         }
       });
     });
-    applyFilterToReports(true);
+    applyFilterToReports();
     $.each(indiciaData.reports, function(i, group) {
       $.each(group, function(j, grid) {
         // reload the report grid
@@ -827,12 +824,12 @@ jQuery(document).ready(function($) {
   }
   
   function filterLoaded(data) {
-    indiciaData.filter.def = JSON.parse(data[0].definition);
+    indiciaData.filter.def = $.extend(JSON.parse(data[0].definition), filterOverride);
     indiciaData.filter.id = data[0].id;
     delete indiciaData.filter.filters_user_id;
     indiciaData.filter.title = data[0].title;
     $('#filter\\:title').val(data[0].title);
-    applyFilterToReports(applyFilterNow);
+    applyFilterToReports();
     $('#filter-reset').removeClass('disabled');
     $('#filter-delete').removeClass('disabled');
     $('#active-filter-label').html('Active filter: '+data[0].title);
@@ -847,8 +844,8 @@ jQuery(document).ready(function($) {
     }      
   }
   
-  loadFilter = function(id, applyNow) {
-    applyFilterNow = applyNow;
+  loadFilter = function(id, getParams) {
+    filterOverride = getParams;
     if ($('#standard-params .header span.changed:visible').length===0 || confirm(indiciaData.lang.ConfirmFilterChangedLoad)) {
       var def=false;
       switch (id) {
@@ -875,8 +872,7 @@ jQuery(document).ready(function($) {
           dataType: "json",
           url: indiciaData.read.url + 'index.php/services/data/filter/' + id,
           data: 'mode=json&view=list&auth_token='+indiciaData.read.auth_token+'&nonce='+indiciaData.read.nonce+'&callback=?',
-          success: filterLoaded,
-          async: applyFilterNow // if not applying the filter, then we are expecting immediate load so that something else can apply the filter in a moment
+          success: filterLoaded
         });
       }
     }
@@ -893,38 +889,28 @@ jQuery(document).ready(function($) {
     return code;
   }
   
-  loadFilterUser = function(id, applyNow) {
-    if ($('#standard-params .header span.changed:visible').length===0 || confirm(indiciaData.lang.ConfirmFilterChangedLoad)) {
-      $.ajax({
-        dataType: "json",
-        url: indiciaData.read.url + 'index.php/services/data/filters_user/' + id,
-        data: 'mode=json&view=list&auth_token='+indiciaData.read.auth_token+'&nonce='+indiciaData.read.nonce+'&callback=?',
-        success: function(data) {
-          indiciaData.filter.def = JSON.parse(data[0].filter_definition);
-          indiciaData.filter.id = data[0].filter_id;
-          indiciaData.filter.filters_user_id = id;
-          indiciaData.filter.title = data[0].filter_title;
-          $('#filter\\:title').val(data[0].filter_title);
-          $('#filter\\:description').val(data[0].filter_description);
-          $('#filter\\:sharing').val(data[0].filter_sharing);
-          $('#sharing-type-label').html(codeToSharingTerm(data[0].filter_sharing));
-          $('#filters_user\\:user_id\\:person_name').val(data[0].person_name);
-          $('#filters_user\\:user_id').val(data[0].user_id);
-          applyFilterToReports(applyNow);
-          $('#filter-reset').removeClass('disabled');
-          $('#filter-delete').removeClass('disabled');
-          $('#active-filter-label').html('Active filter: '+data[0].filter_title);
-          updateFilterDescriptions();
-          $('#standard-params .header span.changed').hide();
-          // can't delete a filter you didn't create.
-          if (data[0].filter_created_by_id===indiciaData.user_id) {
-            $('#filter-delete').show();
-          } else {
-            $('#filter-delete').hide();
-          }
-        },
-        async: applyNow // if not applying the filter, then we are expecting immediate load so that something else can apply the filter in a moment
-      });
+  loadFilterUser = function(fu, getParams) {
+    indiciaData.filter.def = $.extend(JSON.parse(fu.filter_definition), getParams);
+    indiciaData.filter.id = fu.filter_id;
+    indiciaData.filter.filters_user_id = fu.id;
+    indiciaData.filter.title = fu.filter_title;
+    $('#filter\\:title').val(fu.filter_title);
+    $('#filter\\:description').val(fu.filter_description);
+    $('#filter\\:sharing').val(fu.filter_sharing);
+    $('#sharing-type-label').html(codeToSharingTerm(fu.filter_sharing));
+    $('#filters_user\\:user_id\\:person_name').val(fu.person_name);
+    $('#filters_user\\:user_id').val(fu.user_id);
+    applyFilterToReports();
+    $('#filter-reset').removeClass('disabled');
+    $('#filter-delete').removeClass('disabled');
+    $('#active-filter-label').html('Active filter: '+fu.filter_title);
+    updateFilterDescriptions();
+    $('#standard-params .header span.changed').hide();
+    // can't delete a filter you didn't create.
+    if (fu.filter_created_by_id===indiciaData.user_id) {
+      $('#filter-delete').show();
+    } else {
+      $('#filter-delete').hide();
     }
   };
   
@@ -986,7 +972,7 @@ jQuery(document).ready(function($) {
   });
 
   $('#filter-apply').click(function() {
-    loadFilter($('#select-filter').val(), true);
+    loadFilter($('#select-filter').val(), {});
   });  
   
   $('#filter-reset').click(function() {
@@ -1076,14 +1062,14 @@ jQuery(document).ready(function($) {
     if (typeof paneObjList[pane].applyFormToDefinition!=="undefined") {
       paneObjList[pane].applyFormToDefinition();
     }
-    applyFilterToReports(true);
+    applyFilterToReports();
     updateFilterDescriptions();
     $.fancybox.close();
   });
   
   var saveFilter = function() {
     if (saving) {
-      exit;
+      return;
     }
     if ($.trim($('#filter\\:title').val())==='') {
       alert('Please provide a name for your filter.');
@@ -1138,7 +1124,7 @@ jQuery(document).ready(function($) {
           var handled = false;
           if (typeof data.errors!=="undefined") {
             $.each(data.errors, function(key, msg) {
-              if (key==='filter:general' && msg.indexOf('uc_filter_name')>-1) {
+              if (msg.indexOf('duplicate')>-1) {
                 if (confirm(indiciaData.lang.FilterExistsOverwrite)) {
                   // need to load the existing filter to get it's ID, then resave
                   $.getJSON(indiciaData.read.url + 'index.php/services/data/filter?created_by_id='+indiciaData.user_id+'&title='+
