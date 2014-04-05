@@ -27,13 +27,11 @@
         locToShow.location_type_id=#count_unit_boundary_type_id#)
       --Normal users do not have access to deactivated sites
       LEFT JOIN location_attribute_values deactivateSiteLav on deactivateSiteLav.location_attribute_id=#deactivate_site_attribute_id# AND deactivateSiteLav.location_id=l.id        
-      JOIN termlists_terms tt ON tt.id = l.location_type_id
-      JOIN terms t ON t.id = tt.term_id 
       #joins#     
     WHERE 1=1
       #filters#
       AND ((#website_filter# AND lw.deleted = false ) or l.public=true)
-      AND l.deleted = false AND tt.deleted = false AND t.deleted = false
+      AND l.deleted = false
       AND (deactivateSiteLav.int_value is null or deactivateSiteLav.int_value = 0 or (deactivateSiteLav.int_value=1 AND #admin_mode#=1)) 
   </query>
   <params>
@@ -57,7 +55,6 @@
     <column name="parent_id" sql="l.id"/>
     <column name="id" sql="COALESCE(locToShow.id,l.id)"/>
     <column name="name" sql="COALESCE(locToShow.name,l.name)"/>
-    <column name="location_type_name" sql="t.term"/>
     <column name="boundary_geom" sql="st_astext(COALESCE(l.boundary_geom, locToShow.boundary_geom))" mappable="true"/>
     --Make sure we only return the preferred centroid otherwise we have problems with the symbols and location selection drop-down on the map page. 
     --Return the preferred count unit boundary centroid if available, otherwise just return the centroid but make sure we don't return it from count units and their boundaries
