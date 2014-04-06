@@ -8,9 +8,12 @@
     SELECT DISTINCT #columns#
     FROM locations l
       LEFT JOIN locations_websites lw ON lw.location_id=l.id and lw.deleted=false
-      LEFT JOIN locations lcu on lcu.id=#location_id#
+      LEFT JOIN locations selectedLoc on selectedLoc.id=#location_id#
     WHERE 
-      st_intersects(COALESCE(l.boundary_geom,l.centroid_geom), COALESCE(lcu.boundary_geom,lcu.centroid_geom))
+      --select a location if its centroid falls inside the parent boundary, or if the location_id is a count unit boundary, then we need to get
+      --the parent count unit by finding the count unit whose centroid falls within that boundary
+      (st_intersects(selectedLoc.centroid_geom, COALESCE(l.boundary_geom,l.centroid_geom)) 
+      OR st_intersects(l.centroid_geom, COALESCE(selectedLoc.boundary_geom,selectedLoc.centroid_geom)))
       AND l.deleted = false AND #website_filter# and l.location_type_id in (#location_type_ids#)
   </query>
   <params>

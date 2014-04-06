@@ -46,7 +46,7 @@
       <where>l.location_type_id in (#location_type_id#)</where>
     </param>
     <param name="parent_id" datatype="integer" emptyvalue="-1">
-      <join>JOIN locations lp on st_intersects(COALESCE(l.boundary_geom,l.centroid_geom), lp.boundary_geom) and lp.id=#parent_id#</join>
+      <join>JOIN locations lp on st_intersects(l.centroid_geom, lp.boundary_geom) and lp.id=#parent_id#</join>
     </param>
     <param name="preferred_boundary_attribute_id" datatype="integer" emptyvalue="-1"/>
     <param name="count_unit_boundary_type_id" datatype="integer" emptyvalue="-1"/>
