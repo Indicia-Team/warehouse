@@ -28,10 +28,11 @@ function data_cleaner_metadata() {
 /**
  * Hook into the task scheduler to run the rules against new records on the system.
  */
-function data_cleaner_scheduled_task($timestamp, $db) {
+function data_cleaner_scheduled_task($timestamp, $db, $endtime) {
   $rules = data_cleaner::get_rules();
   data_cleaner_cleanout_old_messages($rules, $db);
   data_cleaner_run_rules($rules, $db);
+  data_cleaner_update_occurrence_metadata($db, $endtime);
   data_cleaner_set_cache_fields($db);
 }
 
@@ -108,6 +109,20 @@ function data_cleaner_run_rules($rules, $db) {
   }
   
   echo "Data cleaner generated $count messages.<br/>";
+}
+
+/**
+ * Update the metadata associated with each occurrence so we know the rules have been run.
+ * @param type $db Kohana database instance.
+ */
+function data_cleaner_update_occurrence_metadata($db, $endtime) { 
+  // Note we use the information from the point when we started the process, in case
+  // any changes have happened in the meanwhile which might otherwise be missed.
+  $query = "update occurrences o
+set last_verification_check_date='$endtime'
+from occdelta
+where occdelta.id=o.id";
+  $db->query($query);
 }
 
 /**
