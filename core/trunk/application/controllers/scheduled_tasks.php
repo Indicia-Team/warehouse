@@ -426,7 +426,8 @@ class Scheduled_Tasks_Controller extends Controller {
   private function runScheduledPlugins($system, $tasks) {
     // take 1 second off current time to use as the end of the scanned time period. Avoids possibilities of records
     // being lost half way through the current second.
-    $currentTime = date("Y-m-d H:i:s", time()-1);
+    $t = time()-1;
+    $currentTime = date("Y-m-d H:i:s", $t);
     $plugins = $this->getScheduledPlugins();
     // Load the plugins and last run date info from the system table. Any not run before will start from the current timepoint.
     // We need this to be sorted, so we can process the list of changed records for each group of plugins with the same timestamp together.
@@ -440,6 +441,14 @@ class Scheduled_Tasks_Controller extends Controller {
     foreach ($pluginsFromDb as $plugin) {
       $sortedPlugins[$plugin->name] = $plugin->last_scheduled_task_check===null ? $currentTime : $plugin->last_scheduled_task_check;
     }
+    // Any new plugins not run before should also be included in the list
+    foreach ($plugins as $plugin) {
+      if (!isset($sortedPlugins[$plugin]))
+        $sortedPlugins[$plugin] = $currentTime;
+    }
+    echo '<br/>';
+    var_export($sortedPlugins);
+    echo '<br/>';    
     // Now go through timestamps in order of time since they were run
     foreach ($sortedPlugins as $plugin=>$timestamp) {
       // allow the list of scheduled plugins we are running to be controlled from the URL parameters.
@@ -463,7 +472,7 @@ class Scheduled_Tasks_Controller extends Controller {
               'version' => '0.1.0',
               'name' => $plugin,
               'repository'=>'Not specified',
-              'release_date'=>date('Y-m-d', $currentTime),
+              'release_date'=>date('Y-m-d', $t),
               'last_scheduled_task_check'=>$timestamp,
               'last_run_script'=>null
           ));
