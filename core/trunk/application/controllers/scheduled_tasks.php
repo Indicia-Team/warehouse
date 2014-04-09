@@ -516,13 +516,14 @@ class Scheduled_Tasks_Controller extends Controller {
         $this->db->query('DROP TABLE IF EXISTS occdelta;');
         $query = "select co.*,
 case when o.created_on>'$timestamp' then 'C' when o.deleted=true then 'D' else 'U' end as CUD,
-greatest(o.updated_on, s.updated_on, sp.updated_on) as timestamp
+greatest(o.updated_on, s.updated_on, sp.updated_on) as timestamp,
+w.verification_checks_enabled
 into temporary occdelta 
 from cache_occurrences co
 join occurrences o on o.id=co.id
 inner join samples s on s.id=o.sample_id and s.deleted=false
 left join samples sp on sp.id=s.parent_id and sp.deleted=false
-inner join websites w on w.id=o.website_id and w.deleted=false and w.verification_checks_enabled=true
+inner join websites w on w.id=o.website_id and w.deleted=false
 where o.deleted=false and o.record_status not in ('I','V','R','D')
 and ((o.updated_on>'$timestamp' and o.updated_on<='$currentTime')
 or (s.updated_on>'$timestamp' and s.updated_on<='$currentTime')

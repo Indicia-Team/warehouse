@@ -139,8 +139,9 @@ class Data_cleaner_Controller extends Service_Base_Controller {
         $sql = 'select distinct co.taxa_taxon_list_id, '.$ruleErrorField.$errorMsgSuffix.' as message from occdelta co';
         if (isset($query['joins']))
           $sql .= "\n" . $query['joins'];
+        $sql .= "\nwhere co.verification_checks_enabled=true";
         if (isset($query['where']))
-          $sql .= "\nwhere " . $query['where'];
+          $sql .= "\nand " . $query['where'];
         // we now have the query ready to run which will return a list of the occurrence ids that fail the check.
         $messages = $db->query($sql)->result_array(false);
         $r = $r + $messages;
