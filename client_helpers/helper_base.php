@@ -1918,7 +1918,7 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
   public function cache_get($cacheOpts, $cacheTimeout=false) {
     if (!$cacheTimeout)
       $cacheTimeout = self::_getCacheTimeOut($options);
-    $cacheFolder = parent::$cache_folder ? parent::$cache_folder : self::relative_client_helper_path() . 'cache/';
+    $cacheFolder = self::$cache_folder ? self::$cache_folder : self::relative_client_helper_path() . 'cache/';
     $cacheFile = data_entry_helper::_getCacheFileName($cacheFolder, $cacheOpts, $cacheTimeout);
     $r = data_entry_helper::_getCachedResponse($cacheFile, $cacheTimeout, $cacheOpts);
     return $r === false ? $r : $r['output'];
@@ -1933,7 +1933,7 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
   public function cache_set($cacheOpts, $toCache, $cacheTimeout=false) {
     if (!$cacheTimeout)
       $cacheTimeout = self::_getCacheTimeOut($options);
-    $cacheFolder = parent::$cache_folder ? parent::$cache_folder : self::relative_client_helper_path() . 'cache/';
+    $cacheFolder = self::$cache_folder ? self::$cache_folder : self::relative_client_helper_path() . 'cache/';
     $cacheFile = self::_getCacheFileName($cacheFolder, $cacheOpts, $cacheTimeout);
     self::_cacheResponse($cacheFile, array('output' => $toCache), $cacheOpts);
   }
