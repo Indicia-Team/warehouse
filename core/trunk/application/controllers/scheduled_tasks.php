@@ -451,11 +451,11 @@ class Scheduled_Tasks_Controller extends Controller {
         if (!$this->pluginMetadata['requires_occurrences_delta'] || $this->occdeltaCount>0 || $this->pluginMetadata['always_run']) {
           // call the plugin, only if there are records to process, or it doesn't care
           self::msg("Running $plugin");
-          call_user_func($plugin.'_scheduled_task', $timestamp, $this->db); 
+          call_user_func($plugin.'_scheduled_task', $timestamp, $this->db, $currentTime); 
         }
         // log plugins which take more than 5 seconds
         if (microtime(true) - $tm>5)
-          self::msg('alert', "Scheduled plugin $plugin took $tm seconds", 'alert');
+          self::msg("Scheduled plugin $plugin took $tm seconds", 'alert');
         // mark the time of the last scheduled task check so we can get the correct list of updates next time
         $timestamp = $this->pluginMetadata['requires_occurrences_delta'] ? $this->occdeltaEndTimestamp : $currentTime;
         if (!$this->db->update('system', array('last_scheduled_task_check'=>$timestamp), array('name' => $plugin))->count())
