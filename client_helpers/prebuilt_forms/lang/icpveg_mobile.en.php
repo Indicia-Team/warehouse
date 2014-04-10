@@ -63,13 +63,13 @@ $custom_terms = array_merge($custom_terms, array(
     'ICPVeg Injury Evidence Other' => 'If you checked \'Other\' above, please describe the symptoms here.',
     // Weather.
     'LANG_Tab_weather' => 'Weather',
-    'LANG_Tab_weather help' => 'Please provide an indication of recent weather where the injury was seen.',
-    'ICPVeg Weather Temp' => 'In the last week, what has the maximum temperature each day been on average?',
-    'ICPVeg Weather Rain' => 'In the last week, on how many days has there been rain?',
+    'LANG_Tab_weather help' => 'Please provide an indication of weather, in the last week, where the injury was seen.',
+    'ICPVeg Weather Temp' => 'What was the maximum daily temperature on average?',
+    'ICPVeg Weather Rain' => 'On how many days was there rain?',
     // Pollution.
     'LANG_Tab_pollution' => 'Ozone',
-    'LANG_Tab_pollution help' => 'If you are aware of ozone concentrations in the area, please answer the following questions.',
-    'ICPVeg Ozone Maximum' => 'In the last week, what has the maximum ozone concentration been?',
-    'ICPVeg Ozone Persistence' => 'In the last week, on how many days has the ozone concentration exceeded 50 ppb?',
+    'LANG_Tab_pollution help' => 'If you are aware of ozone concentrations in the area, in the last week, please answer the following questions.',
+    'ICPVeg Ozone Maximum' => 'What was the maximum ozone concentration?',
+    'ICPVeg Ozone Persistence' => 'On how many days has the ozone concentration exceeded 50 ppb?',
     )
 );
