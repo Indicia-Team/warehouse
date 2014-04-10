@@ -518,6 +518,9 @@ class extension_splash_extensions {
     iform_load_helpers(array('map_helper'));
     //Array to hold the plot width and length for Splash
     map_helper::$javascript .= "indiciaData.plotWidthLength='';\n";
+    //Some Splash plot types use the polygon tool to draw the plot as any shape, specify the plot types and pass to Javascript.
+    if (!empty($options['freeDrawPlotTypeNames']))
+      map_helper::$javascript .= "indiciaData.freeDrawPlotTypeNames=".json_encode(explode(',',$options['freeDrawPlotTypeNames'])).";";
     //The user provides the square sizes associated with the various plot types as a comma seperated option list.
     $squareSizesOptionsSplit=explode(',',$options['squareSizes']);
     //Eash option consists of the following format <plot type id>|<square side lengh>
