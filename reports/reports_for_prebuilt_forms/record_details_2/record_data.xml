@@ -43,5 +43,7 @@
     <column name='website_id' sql='co.website_id' />
     <column name='input_form' sql='co.input_form' />
     <column name='taxon_meaning_id' sql='co.taxon_meaning_id' />
+    <column name='created_on' sql='o.created_on' />
+    <column name='updated_on' sql='o.updated_on' />
   </columns>
 </report>
