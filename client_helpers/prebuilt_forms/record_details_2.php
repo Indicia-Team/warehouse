@@ -258,6 +258,12 @@ Record ID',
       if ($test===in_array(strtolower($caption), $fieldsLower) && !empty(self::$record[$field]))
         $details_report .= str_replace(array('{caption}','{value}'), array($caption, self::$record[$field]), $attrsTemplate);      
     }
+    $created = date('jS F Y \a\t H:i', strtotime(self::$record['created_on']));
+    $updated = date('jS F Y \a\t H:i', strtotime(self::$record['updated_on']));
+    $dateInfo = lang::get('Entered on {1}', $created);
+    if ($created!==$updated)
+      $dateInfo .= lang::get(' and last updated on {1}', $updated);
+    $details_report .= str_replace(array('{caption}','{value}'), array(lang::get('Submission date'), $dateInfo), $attrsTemplate);
     $details_report .= '</div>';
     
     if (!self::$record['sensitivity_precision']) {
