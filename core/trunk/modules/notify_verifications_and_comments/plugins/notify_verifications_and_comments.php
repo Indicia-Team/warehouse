@@ -59,8 +59,12 @@ function notify_verifications_and_comments_scheduled_task($last_run_date) {
             ? ' as being of a species for which identification is not always trivial. <br/><em>'
             : '. The following information was given: <br/><em>';
         }
-        elseif ($notification->verified_on>$last_run_date and $notification->record_status!=='I' and $notification->record_status!=='T' and $notification->record_status!=='C')
-          $comment = 'Your record of '.$notification->taxon.' at '.$notification->public_entered_sref.' on '.$date.' was examined by an expert.<br/>"';
+        elseif ($notification->verified_on>$last_run_date && $notification->record_status!=='I' && $notification->record_status!=='T' && $notification->record_status!=='C') {
+          if ($notification->record_owner==='t')
+            $comment = 'Your record of '.$notification->taxon.' at '.$notification->public_entered_sref.' on '.$date.' was examined by an expert.<br/>"';
+          else
+            $comment = 'A record of '.$notification->taxon.' at '.$notification->public_entered_sref.' on '.$date.' which you\'d previously commented on was examined by an expert.<br/>"';
+        }
         elseif ($notification->record_owner==='t')
           $comment = 'A comment was added to your record of '.$notification->taxon.' at '.$notification->public_entered_sref.' on '.$date.'.<br/>"';          
         else
