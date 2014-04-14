@@ -26,7 +26,7 @@
         when co.recorders then null
         else p.surname || case when p.first_name is null or p.first_name='' then '' else ', ' || p.first_name end end" />
     <column name='record_status' visible="false" 
-        sql="CASE co.record_status WHEN 'C' THEN 'Awaiting verification' WHEN 'I' THEN 'Data entry in progress' WHEN 'R' THEN 'Rejected' WHEN 'D' THEN 'Dubious' WHEN 'V' THEN 'Verified' WHEN 'S' THEN 'Email query sent' END
+        sql="CASE co.record_status WHEN 'C' THEN 'Awaiting verification' WHEN 'I' THEN 'Data entry in progress' WHEN 'R' THEN 'Rejected' WHEN 'D' THEN 'Queried' WHEN 'V' THEN 'Verified' WHEN 'S' THEN 'Email query sent' END
         || CASE WHEN o.sensitivity_precision IS NOT NULL THEN '&lt;br/&gt;This record is sensitive.' ELSE '' END" />
     <column name='verifier' sql='co.verifier' />
     <column name='date_start' sql='s.date_start' visible='false' />
