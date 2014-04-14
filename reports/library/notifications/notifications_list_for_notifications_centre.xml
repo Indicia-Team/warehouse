@@ -5,7 +5,7 @@
   <query>
   SELECT #columns#
     FROM notifications n
-      LEFT JOIN occurrences o ON o.id=n.linked_id AND n.source='Verifications and comments'
+      LEFT JOIN cache_occurrences o ON o.id=n.linked_id AND n.source='Verifications and comments'
       LEFT JOIN cache_occurrences co ON n.linked_id=co.id AND co.website_id=#website_id# AND co.created_by_id=#user_id#
       #joins#
     WHERE n.acknowledged=false
@@ -38,9 +38,9 @@
     <column name="user_id" display="User ID" visible="false" datatype="integer" sql="n.user_id" />
     <column name="triggered_on" display="Notification date" datatype="date" sql="n.triggered_on" visible="false" />    
     <column name="triggered_date" display="Notification date" datatype="date" sql="to_char(n.triggered_on, 'DD/MM/YYYY')" orderby="triggered_on" />
-    <column name="editing_form" visible="false" sql="case when co.input_form is null AND co.website_id=#website_id# AND co.created_by_id=#user_id# then'#default_edit_page_path#'else co.input_form end" />
-    <column name="viewing_form" visible="false" sql="case when co.website_id=#website_id# AND co.created_by_id=#user_id# then '#view_record_page_path#' else null end" />
-    <column name='editable_flag' visible='false' sql="case when co.website_id=#website_id# AND co.created_by_id=#user_id# AND ('#default_edit_page_path#' &lt;&gt; 'null' OR co.input_form IS NOT null) then true else false end" />
-    <column name='viewable_flag' visible='false' sql="case when co.website_id=#website_id# AND co.created_by_id=#user_id# AND '#view_record_page_path#' &lt;&gt; 'null' then true else false end" />
+    <column name="editing_form" visible="false" sql="case when o.input_form is null AND o.website_id=#website_id# AND o.created_by_id=#user_id# then'#default_edit_page_path#'else o.input_form end" />
+    <column name="viewing_form" visible="false" sql="case when o.website_id=#website_id# then '#view_record_page_path#' else null end" />
+    <column name='editable_flag' visible='false' sql="case when o.website_id=#website_id# AND o.created_by_id=#user_id# AND ('#default_edit_page_path#' &lt;&gt; 'null' OR o.input_form IS NOT null) then true else false end" />
+    <column name='viewable_flag' visible='false' sql="case when o.website_id=#website_id# AND '#view_record_page_path#' &lt;&gt; 'null' then true else false end" />
   </columns>
 </report>
