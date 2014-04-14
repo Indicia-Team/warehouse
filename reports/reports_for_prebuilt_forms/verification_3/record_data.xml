@@ -31,6 +31,8 @@
     <column name='verifier' display='Record:Verified by' sql='co.verifier' />
     <column name='preferred_taxon' display='Record:Preferred species name' sql='CASE co.preferred_taxon WHEN co.taxon THEN null ELSE co.preferred_taxon END' />
     <column name='occurrence_comment' display='Record:Comment' sql='o.comment' />
+    <column name='created_on' display='Record:Submitted on' sql='o.created_on' />
+    <column name='updated_on' display='Record:Last updated on' sql='o.updated_on' />
     <column name='sample_id' display='Sample:ID' visible="false" sql='s.id' />
     <column name='entered_sref' display='Sample:Georeference' sql='coalesce(s.entered_sref, l.centroid_sref)' />
     <column name='date' display='Sample:Date' sql='s.date_start' />
