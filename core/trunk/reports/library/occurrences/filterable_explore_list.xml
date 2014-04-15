@@ -23,7 +23,7 @@
     <column name='occurrence_id' display='ID' sql='o.id' template="&lt;div class='status-{record_status} certainty-{certainty} record-id'&gt;{occurrence_id}&lt;/div&gt;" datatype="integer" />
     <column name='source' display='Source' sql="w.title || ' | ' || o.survey_title" datatype="text" />
     <column name='sample_id' visible='false' sql='o.sample_id' datatype="integer" />
-    <column name='taxon' display='Species' datatype="text" sql="o.preferred_taxon" />
+    <column name='taxon' display='Species' datatype="species" sql="o.preferred_taxon" />
     <column name='common' display='Common Name' datatype="text" sql="o.default_common_name" />
     <column name='taxon_group' display='Taxon Group' sql='o.taxon_group' datatype="text" />
     <column name='taxon_group_id' display='Taxon Group ID' sql='o.taxon_group_id' visible='false' datatype="integer" />
