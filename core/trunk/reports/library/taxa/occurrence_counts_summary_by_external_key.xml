@@ -43,9 +43,8 @@
       </params>
       <columns>
             <column name="external_key"  sql="cttl.external_key" unique="true" in_count="true" datatype="text" visible="false" />
-            <column name='taxon' display='Species' 
-              template="&lt;div class='zero-{zero_abundance}'&gt;{taxon}&lt;/div&gt;"
-              sql="CASE WHEN cttl.preferred_taxon=cttl.default_common_name then cttl.preferred_taxon ELSE cttl.preferred_taxon || COALESCE(' | ' || cttl.default_common_name, '') END" datatype='text' />
+            <column name='taxon' display='Species' sql="cttl.preferred_taxon" datatype='species' />
+            <column name='common_name' display='Common name' sql="cttl.default_common_name" datatype='text' />
             <column name='taxon_group' display='Taxon Group' sql='cttl.taxon_group' datatype='text' />
             <column name="value" display="No. of Records" sql="count(*)" aggregate="true" datatype="int"/>
       </columns>
