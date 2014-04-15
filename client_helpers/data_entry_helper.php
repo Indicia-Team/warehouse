@@ -6350,7 +6350,14 @@ if (errors$uniq.length>0) {
       $r .= '<li class="ui-state-error">Warning: The cUrl PHP library is not installed on the server and is required for communication with the Indicia Warehouse.</li>';
     } else {
       if ($fullInfo) {
-        $r .= '<li>Success: The cUrl PHP library is installed.</li>';
+        $curlVersionArray = curl_version();
+        if (is_array($curlVersionArray)) {
+          $curlVersion = $curlVersionArray['version'];
+      }
+        else {
+          $curlVersion = $curlVersionArray;
+        }
+        $r .= '<li>Success: The cUrl PHP library version ' . $curlVersion . ' is installed.</li>';
       }
       // Test we have full access to the server - it doesn't matter what website id we pass here.'
       $postargs = "website_id=0";
