@@ -834,8 +834,16 @@ class ReportEngine {
     return $query;
   }
   
+  /**
+   * Retrieve the filter required by a column filter row search
+   */
   private function getFilterClause($field, $datatype, &$operator, &$value) {
-    if ($datatype=='text') {
+    if ($datatype=='text' || $datatype==='species') {
+      if ($datatype==='species') {
+        // skip subgenera from species searches
+        $value = preg_replace('/\(.*?\) /', '', $value);
+        $field = "regexp_replace($field, '(\(.*\)|\s)', '', 'g')";
+      }
       // quote text values and replace * wildcards with SQL friendly ones.
       $value=str_replace('*','%',$value);
       //by default add a wildcard to the end
@@ -858,7 +866,7 @@ class ReportEngine {
       if (preg_match('/(?P<op>(>|<|>=|<=))(?P<val>\d+(\.\d+)?)/', $value, $matches)) 
         return "$field ".$matches['op']." ".$matches['val'];
     } 
-    if ($datatype=='text') {
+    if ($datatype==='text' || $datatype==='species') {
       // ensure value is escaped for apostrophes
       $value = pg_escape_string($value);
       // quote text and date values 
