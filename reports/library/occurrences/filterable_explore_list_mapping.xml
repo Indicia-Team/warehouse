@@ -20,7 +20,7 @@
     <column name='occurrence_id' sql='o.id' on_demand="true" datatype="integer" />
     <column name='source' sql="w.title || ' | ' || o.survey_title" on_demand="true" datatype="text" />
     <column name='sample_id' sql='o.sample_id' on_demand="true" datatype="integer" />
-    <column name='taxon' sql="o.preferred_taxon" on_demand="true" datatype="text" />
+    <column name='taxon' sql="o.preferred_taxon" on_demand="true" datatype="species" />
     <column name='common' sql="o.default_common_name" on_demand="true" datatype="text" />
     <column name='taxon_group' sql='o.taxon_group' on_demand="true" datatype="text" />
     <column name='taxon_group_id' sql='o.taxon_group_id' on_demand="true" datatype="integer" />

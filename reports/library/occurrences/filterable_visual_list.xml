@@ -25,7 +25,7 @@
   </params>
   <columns>
     <column name='occurrence_id' display='ID' sql='o.id' template="&lt;div class='status-{record_status} certainty-{certainty} record-id'&gt;{occurrence_id}&lt;/div&gt;" datatype="integer" />
-    <column name='taxon' display='Species' datatype="text" sql="o.preferred_taxon" />
+    <column name='taxon' display='Species' datatype="species" sql="o.preferred_taxon" />
     <column name='common' display='Common name' datatype="text" sql="o.default_common_name" />
     <column name='taxon_group' display='Taxon Group' sql='o.taxon_group' datatype="text" />
     <column name='location_name' display='Site name' sql='o.location_name' datatype="text" />
