@@ -3,19 +3,18 @@
 <report title="Record counts by taxon external key" description="Lists taxa and the number of records of each. Uses the external key to identify each unique taxon">
       <query website_filter_field="o.website_id">
       SELECT #columns#
-      FROM cache_taxa_taxon_lists cttl
-      JOIN cache_occurrences o on o.taxa_taxon_list_external_key=cttl.external_key
+      FROM cache_occurrences o
+      JOIN cache_taxa_taxon_lists cttl 
+          ON cttl.external_key=o.taxa_taxon_list_external_key
+          AND cttl.preferred=true
       #agreements_join# 
       #joins#
       WHERE  #sharing_filter# 
-      and cttl.id=cttl.preferred_taxa_taxon_list_id
       AND (o.zero_abundance='f')
-      AND quality_check('#quality#', o.record_status, o.certainty)=true
-      AND o.record_status&lt;&gt;'R'  
-      AND cttl.preferred=true
+      AND (o.record_status = 'V' or (o.certainty='C' and o.record_status='C'))      
       </query>
       <order_by>
-        count(distinct o.id) desc
+        count(*) desc
       </order_by>
       <params>
         <param name="date_from" display="Date From" datatype="date">
@@ -48,6 +47,6 @@
               template="&lt;div class='zero-{zero_abundance}'&gt;{taxon}&lt;/div&gt;"
               sql="CASE WHEN cttl.preferred_taxon=cttl.default_common_name then cttl.preferred_taxon ELSE cttl.preferred_taxon || COALESCE(' | ' || cttl.default_common_name, '') END" datatype='text' />
             <column name='taxon_group' display='Taxon Group' sql='cttl.taxon_group' datatype='text' />
-            <column name="value" display="No. of Records" sql="count(distinct o.id)" aggregate="true" datatype="int"/>
+            <column name="value" display="No. of Records" sql="count(*)" aggregate="true" datatype="int"/>
       </columns>
 </report>
