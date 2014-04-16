@@ -743,12 +743,13 @@ $('.ui-state-default').live('mouseout', function() {
     // Do the POST and then close the session
     $response = curl_exec($session);
     $httpCode = curl_getinfo($session, CURLINFO_HTTP_CODE); 
+    $curlErrno = curl_errno($session);
     // Check for an error, or check if the http response was not OK.
-    if (curl_errno($session) || $httpCode!==200) {
+    if ($curlErrno || $httpCode != 200) {
       if ($output_errors) {
         echo '<div class="error">cUrl POST request failed. Please check cUrl is installed on the server and the $base_url setting is correct.<br/>URL:'.$url.'<br/>';
-        if (curl_errno($session)) {
-          echo 'Error number: '.curl_errno($session).'<br/>';
+        if ($curlErrno) {
+          echo 'Error number: '.$curlErrno.'<br/>';
           echo 'Error message: '.curl_error($session).'<br/>';
         }
         echo "Server response<br/>";
@@ -756,14 +757,14 @@ $('.ui-state-default').live('mouseout', function() {
       }
       $return = array(
           'result'=>false,
-          'output'=> curl_errno($session) ? curl_error($session) : $response,
-          'errno'=>curl_errno($session),
-          'status'=>$httpCode
+          'output' => $curlErrno ? curl_error($session) : $response,
+          'errno' => $curlErrno,
+          'status' => $httpCode
       );
     } else {
       $arr_response = explode("\r\n\r\n",$response);
       // last part of response is the actual data
-      $return = array('result'=>true,'output'=>array_pop($arr_response));
+      $return = array('result' => true,'output' => array_pop($arr_response));
     }
     curl_close($session);
     return $return;
