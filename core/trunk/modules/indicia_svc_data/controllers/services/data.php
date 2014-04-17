@@ -76,6 +76,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       'sample_medium',
       'survey',
       'taxa_taxon_list',
+      'taxon_rank',
       'taxon_relation',
       'taxon_group',
       'termlists_term',
@@ -91,6 +92,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       'filter',
       'filters_user',
       'taxa_taxon_list',
+      'taxon_rank',
       'taxon_relation',
       'taxon_group',
       'taxon_medium',
@@ -405,6 +407,15 @@ class Data_Controller extends Data_Service_Base_Controller {
   public function taxon_list()
   {
     $this->handle_call('taxon_list');
+  }
+  
+  /**
+  * Provides the /services/data/taxon_list service.
+  * Provides access to taxon_lists.
+  */
+  public function taxon_rank()
+  {
+    $this->handle_call('taxon_rank');
   }
 
   /**

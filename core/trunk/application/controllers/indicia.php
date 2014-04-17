@@ -120,6 +120,7 @@ class Indicia_Controller extends Template_Controller {
         $adminMenu['Website Agreements']='website_agreement';
         $adminMenu['Languages']='language';
         $adminMenu['Titles']='title';
+        $adminMenu['Taxon Ranks']='taxon_rank';
         $adminMenu['Taxon Relations']='taxon_relation_type';
       }
       $menu['Admin'] = $adminMenu;
