@@ -43,8 +43,11 @@ class filter_what extends filter_base {
     $r = "<p id=\"what-filter-instruct\">".lang::get('You can either filter by species group (first tab) or a selection of individual species (second tab)')."</p>\n".
         '<div id="what-tabs">'."\n";
     // data_entry_helper::tab_header breaks inside fancybox. So output manually.
-    $r .= '<ul class="ui-helper-hidden"><li id="species-group-tab-tab"><a href="#species-group-tab" rel="address:species-group-tab"><span>Species groups</span></a></li>' .
-        '<li id="species-tab-tab"><a href="#species-tab" rel="address:species-tab"><span>Species and other taxa</span></a></li></ul>';
+    $r .= '<ul class="ui-helper-hidden">' .
+        '<li id="species-group-tab-tab"><a href="#species-group-tab" rel="address:species-group-tab"><span>Species groups</span></a></li>' .
+        '<li id="species-tab-tab"><a href="#species-tab" rel="address:species-tab"><span>Species and other taxa</span></a></li>' . 
+        '<li id="rank-tab-tab"><a href="#rank-tab" rel="address:rank-tab"><span>Level</span></a></li>' .
+        '</ul>';
     $r .= '<div id="species-group-tab">' . "\n";
     $myGroupIds = hostsite_get_user_field('taxon_groups', '');
     if ($myGroupIds) {
@@ -87,6 +90,23 @@ class filter_what extends filter_base {
       'valueField' => 'id',
       'extraParams' => $readAuth + array('taxon_list_id' => $options['taxon_list_id'], 'preferred' => 't'),
       'addToTable' => false
+    ));
+    $r .= "</div>\n";
+    $r .= "<div id=\"rank-tab\">\n";
+    $r .= data_entry_helper::select(array(
+      'label'=>lang::get('Include records where the level'),
+      'labelClass'=>'auto',
+      'suffixTemplate'=>'nosuffix',
+      'fieldname'=>'taxon_rank_sort_order_op',
+      'blankText' => '<'.lang::get('Please select').'>',
+      'lookupValues'=>array('='=>lang::get('is'), '>='=>lang::get('is the same or lower than'), '<='=>lang::get('is the same or higher than'))
+    ));
+    $r .= data_entry_helper::select(array(
+      'fieldname'=>'taxon_rank_sort_order',
+      'table'=>'taxon_rank',
+      'captionField' => 'rank',
+      'valueField' => 'sort_order',
+      'extraParams' => $readAuth
     ));
     $r .= "</div>\n";
     $r .= "</div>\n";

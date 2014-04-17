@@ -271,3 +271,7 @@ input[disabled] {
 .survey-hide, .website-hide {
   display: none;
 }
+
+#ctrl-wrap-taxon_rank_sort_order_op {
+  display: inline-block;
+}
