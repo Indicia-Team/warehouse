@@ -219,14 +219,18 @@ $config['taxa_taxon_lists']['join_needs_update']='join needs_update_taxa_taxon_l
 $config['taxa_taxon_lists']['key_field']='ttl.id';
 
 $config['taxa_taxon_lists']['extra_multi_record_updates']=array(
-    // nullify the recorders field so it gets an update
-    'Ranks' => "with recursive q as (
-  select ttl1.id, ttl1.id as child_id, ttl1.taxon as child_taxon, ttl2.parent_id, ''::varchar as rank_taxon, ''::varchar as rank
+    'Ranks' => "
+with recursive q as (
+  select ttl1.id, ttl1.id as child_id, ttl1.taxon as child_taxon, ttl2.parent_id, 
+      t.taxon as rank_taxon, tr.rank, tr.id as taxon_rank_id, tr.sort_order as taxon_rank_sort_order
   from cache_taxa_taxon_lists ttl1  
   join cache_taxa_taxon_lists ttl2 on ttl2.external_key=ttl1.external_key and ttl2.taxon_list_id=#master_list_id#
+  join taxa_taxon_lists ttl2raw on ttl2raw.id=ttl2.id
+  join taxa t on t.id=ttl2raw.taxon_id and t.deleted=false
+  join taxon_ranks tr on tr.id=t.taxon_rank_id and tr.deleted=false 
   join needs_update_taxa_taxon_lists nu on nu.id=ttl1.id
   union all
-  select ttl.id, q.child_id, q.child_taxon, ttl.parent_id, t.taxon as rank_taxon, tr.rank
+  select ttl.id, q.child_id, q.child_taxon, ttl.parent_id, t.taxon as rank_taxon, tr.rank, tr.id as taxon_rank_id, tr.sort_order as taxon_rank_sort_order
   from q
   join taxa_taxon_lists ttl on ttl.id=q.parent_id
   join taxa t on t.id=ttl.taxon_id and t.deleted=false
@@ -247,6 +251,11 @@ update cache_taxa_taxon_lists cttl
 set family_taxa_taxon_list_id=ru.id, family_taxon=rank_taxon
 from rankupdate ru
 where ru.child_id=cttl.id and ru.rank='Family';
+
+update cache_taxa_taxon_lists cttl
+set taxon_rank_id=ru.taxon_rank_id, taxon_rank=ru.rank, taxon_rank_sort_order=ru.taxon_rank_sort_order
+from rankupdate ru
+where ru.id=cttl.id;
 
 drop table rankupdate;");
 
@@ -325,7 +334,8 @@ $config['taxon_searchterms']['update']['standard terms'] = "update cache_taxon_s
       preferred=cttl.preferred,
       searchterm_length=length(cttl.taxon),
       parent_id=cttl.parent_id,
-      preferred_taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id
+      preferred_taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id,
+      taxon_rank_sort_order=cttl.taxon_rank_sort_order
     from cache_taxa_taxon_lists cttl
     #join_needs_update#
     where cts.taxa_taxon_list_id=cttl.id and cts.name_type in ('L','S','V') and cts.simplified=false";
@@ -352,7 +362,8 @@ $config['taxon_searchterms']['update']['abbreviations'] = "update cache_taxon_se
       preferred=cttl.preferred,
       searchterm_length=length(taxon_abbreviation(cttl.taxon)),
       parent_id=cttl.parent_id,
-      preferred_taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id
+      preferred_taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id,
+      taxon_rank_sort_order=cttl.taxon_rank_sort_order
     from cache_taxa_taxon_lists cttl
     #join_needs_update#
     where cts.taxa_taxon_list_id=cttl.id and cts.name_type='A' and cttl.language_iso='lat'";
