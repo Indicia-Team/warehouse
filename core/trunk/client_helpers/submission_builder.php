@@ -153,7 +153,7 @@ class submission_builder extends helper_config {
    */
   public static function wrap($array, $entity, $field_prefix=null)
   {
-    if (array_key_exists('save-site-flag', $array) && $array['save-site-flag']==='1')
+    if (array_key_exists('save-site-flag', $array) && $array['save-site-flag']==='1' && $entity==='sample')
       self::create_personal_site($array);
     // Initialise the wrapped array
     $sa = array(
