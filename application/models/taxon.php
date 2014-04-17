@@ -46,7 +46,8 @@ class Taxon_Model extends ORM {
       'authority',
       'deleted',
       'search_code',
-      'description'
+      'description',
+      'taxon_rank_id'
     );
     return parent::validate($array, $save);
   }

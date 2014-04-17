@@ -28,7 +28,7 @@
  * @subpackage Models
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
-class Taxon_Rank_Model extends ORM {
+class Taxon_rank_Model extends ORM {
 
   public $search_field='rank';
   

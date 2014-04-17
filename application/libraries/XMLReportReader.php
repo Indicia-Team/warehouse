@@ -766,6 +766,10 @@ class XMLReportReader_Core implements ReportReader
         'indexed_location_list' => array('datatype'=>'lookup', 'default'=>'in', 'display'=>'Indexed location IDs mode', 
             'description'=>'Include or exclude the list of indexed locations', 'lookup_values'=>'in:Include,not in:Exclude'
         ),
+        'taxon_rank_sort_order' => array('datatype'=>'lookup', 'default'=>'', 'display'=>'Taxon rank mode',
+            'description'=>'Mode for filtering by taxon rank in the hierarchy', 
+            'lookup_values'=>'=:include only this level in the hierarchy,>=:include this level and lower,<=:include this level and higher'
+        ),
       );
       foreach ($opParams as $param => $cfg) {
         if (!empty($providedParams[$param]))
@@ -787,6 +791,15 @@ class XMLReportReader_Core implements ReportReader
             'description'=>'Record ID',
             'wheres' => array(
               array('value'=>'', 'operator'=>'', 'sql'=>"o.id #occurrence_id_op# #occurrence_id#")
+            )
+        ),
+        'taxon_rank_sort_order' => array('datatype'=>'integer', 'default'=>'', 'display'=>'Taxon rank',
+            'description'=>'Rank of the identified taxon in the taxonomic hierarchy',
+            'joins' => array(
+              array('value'=>'', 'operator'=>'', 'sql'=>"join cache_taxa_taxon_lists cttlsp on cttlsp.id=o.preferred_taxa_taxon_list_id")
+            ),
+            'wheres' => array(
+              array('value'=>'', 'operator'=>'', 'sql'=>"cttlsp.taxon_rank_sort_order #taxon_rank_sort_order_op# #taxon_rank_sort_order#")
             )
         ),
         'location_name' => array('datatype'=>'text', 'default'=>'', 'display'=>'Location name', 
@@ -920,11 +933,13 @@ class XMLReportReader_Core implements ReportReader
         ),
         'release_status' => array('datatype'=>'lookup', 'default'=>'R', 'display'=>'Release status',
             'description'=>'Release status of the record',
-            'lookup_values'=>'R:Released,U:Unreleased because part of a project that has not yet released the records,P:Recorder has requested a precheck before release,A:All',
+            'lookup_values'=>'R:Released,R:Released by other recorders plus my own unreleased records;U:Unreleased because part of a project that has not yet released the records,' .
+                'P:Recorder has requested a precheck before release,A:All',
             'wheres' => array(
               array('value'=>'R', 'operator'=>'equal', 'sql'=>"(o.release_status='R' or o.release_status is null)"),
               array('value'=>'U', 'operator'=>'equal', 'sql'=>"(o.release_status='U' or o.release_status is null)"),
               array('value'=>'P', 'operator'=>'equal', 'sql'=>"(o.release_status='P' or o.release_status is null)"),
+              array('value'=>'RM', 'operator'=>'equal', 'sql'=>"(o.release_status='R' or o.release_status is null or o.created_by_id=#user_id#)"),
               // The all filter does not need any SQL
             ),
         ),
@@ -1013,6 +1028,7 @@ class XMLReportReader_Core implements ReportReader
       );
       $this->defaultParamValues = array_merge(array(
           'occurrence_id_op'=>'=',
+          'taxon_rank_sort_order_op'=>'=',
           'website_list_op'=>'in',
           'survey_list_op'=>'in',
           'input_form_list_op'=>'in',

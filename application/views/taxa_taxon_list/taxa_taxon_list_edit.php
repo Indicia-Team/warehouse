@@ -147,6 +147,24 @@ echo $metadata;
 <?php echo html::error_message($model->getError('taxon:taxon_group_id')); ?>
 </li>
 <li>
+<label for="taxon_rank_id">Taxon Rank:</label>
+<select id="taxon_rank_id" name="taxon:taxon_rank_id">
+  <option value=''>&lt;Please select&gt;</option>
+<?php
+  $taxon_ranks = ORM::factory('taxon_rank')->orderby('sort_order','asc')->where('deleted', 'f')->find_all();
+  $selected = html::initial_value($values, 'taxon:taxon_rank_id');
+  foreach ($taxon_ranks as $rank) {
+    echo '	<option value="'.$rank->id.'" ';
+    if ($rank->id==$selected) {
+      echo 'selected="selected" ';
+    }
+    echo '>'.$rank->rank.'</option>';
+  }
+?>
+</select>
+<?php echo html::error_message($model->getError('taxon:taxon_rank_id')); ?>
+</li>
+<li>
 <label for="description">General description:</label>
 <textarea rows="3"  cols="40" id="description" name="taxon:description"><?php echo html::initial_value($values, 'taxon:description'); ?></textarea>
 </li>
