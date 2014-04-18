@@ -88,8 +88,8 @@ $indicia_templates = array(
   'listbox' => '<select id="{id}" name="{fieldname}"{class} {disabled} size="{size}" multiple="{multiple}" {title}>{items}</select>',
   'listbox_item' => '<option value="{value}"{selected} >{caption}</option>',
   'list_in_template' => '<ul{class} {title}>{items}</ul>',
-  'check_or_radio_group' => '<span {class}>{items}</span>',
-  'check_or_radio_group_item' => '<nobr><span><input type="{type}" name="{fieldname}" id="{itemId}" value="{value}"{class}{checked}{title} {disabled}/><label for="{itemId}">{caption}</label></span></nobr>{sep}',
+  'check_or_radio_group' => '<ul {class} id="{id}">{items}</ul>',
+  'check_or_radio_group_item' => '<li><input type="{type}" name="{fieldname}" id="{itemId}" value="{value}"{class}{checked}{title} {disabled}/><label for="{itemId}">{caption}</label></li>',
   'map_panel' => "<div id=\"{divId}\" style=\"width: {width}; height: {height};\"{class}></div>",
   'georeference_lookup' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
     "document.write('<input type=\"text\" id=\"imp-georef-search\"{class} />{searchButton}');\n".
@@ -257,7 +257,16 @@ if ($("#{escapedId} option").length===0) {
   'report_download_link' => '<div class="report-download-link"><a href="{link}">{caption}</a></div>',
   'verification_panel' => '<div id="verification-panel">{button}<div class="messages" style="display: none"></div></div>',
   'two-col-50' => '<div class="two columns"><div class="column">{col-1}</div><div class="column">{col-2}</div></div>',
-  'loading_overlay' => '<div class="loading-overlay"></div>'
+  'loading_overlay' => '<div class="loading-overlay"></div>',
+  'report-table' => '<table{class}>{content}</table>',
+  'report-thead' => '<thead{class}>{content}</thead>',
+  'report-thead-tr' => '<tr{class}{title}>{content}</tr>',
+  'report-thead-th' => '<th>{content}</th>',
+  'report-tbody' => '<tbody>{content}</tbody>',
+  'report-tbody-tr' => '<tr{class}{rowId}{rowTitle}>{content}</tr>',
+  'report-tbody-td' => '<td{class}>{content}</td>',
+  
+    
 );
 
 

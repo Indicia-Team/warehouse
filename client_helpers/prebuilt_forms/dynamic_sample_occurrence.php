@@ -41,7 +41,6 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   // The ids we are loading if editing existing data
   protected static $loadedSampleId;
   protected static $loadedOccurrenceId;
-  protected static $occurrenceIds = array();
   
   /**
    * The list of attributes loaded for occurrences. Keep a class level variable, so that we can track the ones we have already
@@ -686,7 +685,6 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     if (!empty($_GET['occurrence_id']) && $_GET['occurrence_id']!='{occurrence_id}'){
       $mode = self::MODE_EXISTING;
       self::$loadedOccurrenceId = $_GET['occurrence_id'];
-      self::$occurrenceIds = array(self::$loadedOccurrenceId);
     }
     if ($mode != self::MODE_EXISTING && array_key_exists('new', $_GET)){
       $mode = self::MODE_NEW;
@@ -844,36 +842,33 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    */
   protected static function getEntity($args, $auth) {
     data_entry_helper::$entity_to_load = array();
-
-    // If we know the occurrence ID but not the sample, we must look it up
-    if ( self::$loadedOccurrenceId && !self::$loadedSampleId  ) {
-      $response = data_entry_helper::get_population_data(array(
-        'table' => 'occurrence',
-        'extraParams' => $auth['read'] + array('id' => self::$loadedOccurrenceId, 'view' => 'detail')
-      ));
-      if (count($response) != 0) {
-        //we found an occurrence
-        self::$loadedSampleId = $response[0]['sample_id'];       
+    if (self::getGridMode($args)) {
+      // multi-record mode using a checklist grid. We really just need to know the sample ID.
+      if (self::$loadedOccurrenceId && !self::$loadedSampleId) {
+        $response = data_entry_helper::get_population_data(array(
+            'table' => 'occurrence',
+            'extraParams' => $auth['read'] + array('id' => self::$loadedOccurrenceId, 'view' => 'detail')
+        ));
+        if (count($response) != 0) {
+          //we found an occurrence so use it to detect the sample
+          self::$loadedSampleId = $response[0]['sample_id'];       
+        }
       }
-    }
-
-    // For a single occurrence, if we know the sample ID but not the occurrence, we must
-    // look it up
-    if ( !self::$loadedOccurrenceId && self::$loadedSampleId && !self::getGridMode($args) ) {
-     $response = data_entry_helper::get_population_data(array(
-        'table' => 'occurrence',
-        'extraParams' => $auth['read'] + array('sample_id' => self::$loadedSampleId, 'view' => 'detail')          
-      ));
-      if (count($response) != 0) {
-        //we found an occurrence for this sample
-        self::$loadedOccurrenceId = $response[0]['id'];       
-        self::$occurrenceIds = array(self::$loadedOccurrenceId);
+    } else {
+      // single record entry mode. We want to load the occurrence entity and to know the sample ID.
+      if (self::$loadedOccurrenceId) {
+        data_entry_helper::load_existing_record($auth['read'], 'occurrence', self::$loadedOccurrenceId, 'detail', false, true);
+        drupal_set_message(print_r(data_entry_helper::$entity_to_load, true));
+      } 
+      elseif (self::$loadedSampleId) {
+        $response = data_entry_helper::get_population_data(array(
+          'table' => 'occurrence',
+          'extraParams' => $auth['read'] + array('sample_id' => self::$loadedSampleId, 'view' => 'detail')          
+        ));
+        self::$loadedOccurrenceId = $response[0]['id'];
+        data_entry_helper::load_existing_record_from($response[0], $auth['read'], 'occurrence', self::$loadedOccurrenceId, 'detail', false, true);
       }
-    }
-    
-    // For a single occurrence we must load the occurrence record.
-    if (self::$loadedOccurrenceId && !self::getGridMode($args)) {
-      data_entry_helper::load_existing_record($auth['read'], 'occurrence', self::$loadedOccurrenceId, 'detail', false, true);
+      self::$loadedSampleId = data_entry_helper::$entity_to_load['occurrence:sample_id'];
     }
     
     // Load the sample record
@@ -882,6 +877,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       if (!empty(data_entry_helper::$entity_to_load['sample:parent_id'])) 
         data_entry_helper::load_existing_record($auth['read'], 'sample', data_entry_helper::$entity_to_load['sample:parent_id']);
     }
+    
     // Ensure that if we are used to load a different survey's data, then we get the correct survey attributes. We can change args
     // because the caller passes by reference.
     $args['survey_id']=data_entry_helper::$entity_to_load['sample:survey_id'];
@@ -1660,7 +1656,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     else 
       $label = 'Overall Photo';
     return data_entry_helper::file_box(array_merge(array(
-      'table'=>'sample_image',
+      'table'=>'sample_medium',
       'readAuth' => $auth['read'],
       'caption'=>lang::get($label),
       'readAuth'=>$auth['read']
@@ -2135,9 +2131,9 @@ else
          'extraParams'=>$readAuth,
          'survey_id'=>$surveyId
       );
-      if (count(self::$occurrenceIds)==1) {
+      if (self::$loadedOccurrenceId) {
         // if we have a single occurrence Id to load, use it to get attribute values
-        $attrArgs['id'] = self::$occurrenceIds[0];
+        $attrArgs['id'] = self::$loadedOccurrenceId;
       }
       self::$occAttrs = data_entry_helper::getAttributes($attrArgs, false);
     }
@@ -2152,7 +2148,7 @@ else
    */
   protected static function occurrence_photo_input($readAuth, $options, $tabAlias, $args) {
     $opts = array(
-      'table'=>'occurrence_image',
+      'table'=>'occurrence_medium',
       'readAuth' => $readAuth,
       'label'=>lang::get('Upload your photos'),
       'caption'=>lang::get('Photos'),

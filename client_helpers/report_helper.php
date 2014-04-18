@@ -326,6 +326,10 @@ class report_helper extends helper_base {
   */
   public static function report_grid($options) {
     global $indicia_templates;
+    /*$indicia_templates['report-table']='{content}';
+    $indicia_templates['report-tbody']='{content}';
+    $indicia_templates['report-tbody-tr']='{content}';
+    $indicia_templates['report-tbody-td']='<div style="border: solid red 1px">{content}</div>';*/
     self::add_resource('fancybox');
     $sortAndPageUrlParams = self::get_report_grid_sort_page_url_params($options);
     $options = self::get_report_grid_options($options);
@@ -344,9 +348,12 @@ class report_helper extends helper_base {
     $pageUrl = self::report_grid_get_reload_url($sortAndPageUrlParams);
     $thClass = $options['thClass'];
     $r .= $indicia_templates['loading_overlay'];
-    $r .= "\n<table class=\"".$options['class']."\">";
+    $r .= "\n";
+    $thead = '';
+    $tbody = '';
+    $tfoot = '';
     if ($options['headers']!==false) {
-      $r .= "\n<thead class=\"$thClass\"><tr>\n";
+      //$thead .= "\n<thead class=\"$thClass\">\n";
       // build a URL with just the sort order bit missing, so it can be added for each table heading link
       $sortUrl = $pageUrl . ($sortAndPageUrlParams['page']['value'] ?
           $sortAndPageUrlParams['page']['name'].'='.$sortAndPageUrlParams['page']['value'].'&' :
@@ -384,7 +391,7 @@ class report_helper extends helper_base {
             $fieldId = '';
             $captionLink=$caption;
           }
-          $r .= "<th$fieldId class=\"$thClass$orderStyle\">$captionLink</th>\n";
+          $thead .= "<th$fieldId class=\"$thClass$orderStyle\">$captionLink</th>\n";
           if (isset($field['datatype']) && !empty($caption)) {
             switch ($field['datatype']) {
               case 'text':
@@ -404,10 +411,11 @@ class report_helper extends helper_base {
             $filterRow .= '<th></th>';
         }
       }
-      $r .= "</tr>";
+      $thead = str_replace(array('{class}','{title}','{content}'), array('','',$thead), $indicia_templates['report-thead-tr']);
       if ($wantFilterRow && (!isset($options["forceNoFilterRow"]) || !$options["forceNoFilterRow"]))
-        $r .= "<tr class=\"filter-row\" title=\"".lang::get('Use this row to filter the grid')."\">$filterRow</tr>\n";
-      $r .= "</thead>\n";
+        $thead .= str_replace(array('{class}','{title}','{content}'), 
+            array(' class="filter-row"','title="'.lang::get('Use this row to filter the grid').'"',$filterRow), $indicia_templates['report-thead-tr']);
+      $thead = str_replace(array('{class}', '{content}'), array(" class=\"$thClass\"", $thead), $indicia_templates['report-thead']);
     }
     $currentUrl = self::get_reload_link_parts();
     // automatic handling for Drupal clean urls.
@@ -417,8 +425,8 @@ class report_helper extends helper_base {
     if ($pathParam==='q' && isset($currentUrl['params']['q']) && strpos($currentUrl['path'], '?')===false) {
       $currentUrl['path'] = $currentUrl['path'].'?q='.$currentUrl['params']['q'];
     }
-    $r .= '<tfoot>';
-    $r .= '<tr><td colspan="'.count($options['columns'])*$options['galleryColCount'].'">'.self::output_pager($options, $pageUrl, $sortAndPageUrlParams, $response).'</td></tr>'.
+    $tfoot .= '<tfoot>';
+    $tfoot .= '<tr><td colspan="'.count($options['columns'])*$options['galleryColCount'].'">'.self::output_pager($options, $pageUrl, $sortAndPageUrlParams, $response).'</td></tr>'.
     $extraFooter = '';
     if (isset($options['footer']) && !empty($options['footer'])) {
       $footer = str_replace(array('{rootFolder}', '{currentUrl}'),
@@ -431,9 +439,8 @@ class report_helper extends helper_base {
       $extraFooter .= '<div class="right">'.self::report_download_link($downloadOpts).'</div>';
     }
     if (!empty($extraFooter))
-      $r .= '<tr><td colspan="'.count($options['columns']).'">'.$extraFooter.'</td></tr>';
-    $r .= '</tfoot>';
-    $r .= "<tbody>\n";
+      $tfoot .= '<tr><td colspan="'.count($options['columns']).'">'.$extraFooter.'</td></tr>';
+    $tfoot .= '</tfoot>';
     $altRowClass = '';
     $outputCount = 0;
     $imagePath = self::get_uploaded_image_folder();
@@ -466,8 +473,9 @@ class report_helper extends helper_base {
           if (isset($options['rowClass']))
             $classes[]=self::mergeParamsIntoTemplate($row, $options['rowClass'], true, true);
           $classes=implode(' ',$classes);
-          $class = empty($classes) ? '' : "class=\"$classes\" ";
-          $r .= "<tr $class$rowId$rowTitle>";
+          $rowClass = empty($classes) ? '' : "class=\"$classes\" ";
+          
+          $tr = '';
           $rowInProgress=true;
         }
         // decode any data in columns that are defined as containing JSON
@@ -541,11 +549,11 @@ jQuery('#updateform-".$updateformID."').ajaxForm({
               }
             }
           }
-          $r .= "<td$class>$value</td>\n";
+          $tr .= str_replace(array('{class}','{content}'), array($class, $value), $indicia_templates['report-tbody-td']);
         }
         if ($rowIdx % $options['galleryColCount']==$options['galleryColCount']-1) {
           $rowInProgress=false;
-          $r .= '</tr>';
+          $tbody .= str_replace(array('{class}','{rowId}','{title}','{content}'), array($rowClass, $rowId, $rowTitle, $tr), $indicia_templates['report-tbody-tr']);
         }
         $altRowClass = empty($altRowClass) ? $options['altRowClass'] : '';
         $outputCount++;
@@ -564,11 +572,13 @@ jQuery('#updateform-".$updateformID."').ajaxForm({
         }
       }
       if ($rowInProgress)
-        $r .= '</tr>';
+        $tbody .= str_replace(array('{class}','{rowId}','{title}','{content}'), array($rowClass, $rowId, $rowTitle,$tr), $indicia_templates['table-tbody-tr']);
     } else {
-      $r .= '<tr><td></td></tr>';
+      $tbody .= '<tr><td></td></tr>';
+      $tbody .= str_replace(array('{class}','{rowId}','{title}','{content}'), array('','','','<td></td>'), $indicia_templates['report-tbody-tr']);
     }
-    $r .= "</tbody></table>\n";
+    $tbody = str_replace('{content}', $tbody, $indicia_templates['report-tbody']);
+    $r .= str_replace(array('{class}', '{content}'), array(' class="'.$options['class'].'"', "$thead\n$tbody\n$tfoot"), $indicia_templates['report-table'])."\n";
     if($haveUpdates){
       self::$javascript .= "
 function checkErrors(data) {

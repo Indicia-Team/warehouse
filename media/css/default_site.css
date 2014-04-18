@@ -409,8 +409,23 @@ td.row-buttons img {
   padding: 0;
 }
 
-.ui-tabs .ui-tabs-nav li {
+.ui-tabs .ui-tabs-nav li, .control-box li {
   list-style-type: none;
+}
+
+.control-box li {
+  background: none;
+}
+
+.control-box li * {
+  margin: 0 0.5em;
+}
+
+.control-box.inline li {
+  display:-moz-inline-stack;
+  display:inline-block;
+  zoom:1;
+  *display:inline;
 }
 
 .species-checklist-select-species {

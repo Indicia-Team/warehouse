@@ -96,7 +96,8 @@ function iform_map_get_map_parameters() {
       'description'=>'Select the preset base layers that are available for the map. When using Google map layers, please ensure you adhere to the '.
           '<a href="http://code.google.com/apis/maps/terms.html">Google Maps/Google Earth APIs Terms of Service</a>. When using the Bing map layers, '.
           'please ensure that you read and adhere to the <a href="http://www.microsoft.com/maps/product/terms.html">Bing Maps terms of use</a>. '.
-          'The Microsoft Virtual Earth layer is now mapped to the Bing Aerial layer so is provided for backwards compatibility only.',
+          'The Microsoft Virtual Earth layer is now mapped to the Bing Aerial layer so is provided for backwards compatibility only. You can '.
+          'sort the layers into the order you require by dragging and dropping the layer labels.',
       'type'=>'list',
       'options' => array(
         'google_physical' => 'Google Physical',
@@ -110,6 +111,7 @@ function iform_map_get_map_parameters() {
         'osm' => 'OpenStreetMap',
         'osm_th' => 'OpenStreetMap Tiles@Home'
       ),
+      'sortable'=>true,
       'group'=>'Base Map Layers',
       'required'=>false
     ),
