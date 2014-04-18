@@ -655,7 +655,7 @@ $('#$escaped').change(function(e) {
   * Optional. The default value to assign to the control. This is overridden when reloading a
   * record with existing data for this control.</li>
   * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
+  * Optional. CSS class names to add to the control. Defaults to inline when not sortable.</li>
   * <li><b>table</b><br/>
   * Required. Table name to get data from for the select options.</li>
   * <li><b>captionField</b><br/>
@@ -692,6 +692,10 @@ $('#$escaped').change(function(e) {
   * <li><b>captionTemplate</b><br/>
   * Optional and only relevant when loading content from a data service call. Specifies the template used to build the caption,
   * with each database field represented as {fieldname}.</li>
+  * <li><b>sortable</b></br>
+  * Set to true to allow drag sorting of the list of checkboxes. If sortable, then the layout will be a vertical
+  * column of checkboxes rather than inline.
+  * </li>
   * </ul>
   * The output of this control can be configured using the following templates: 
   * <ul>
@@ -707,8 +711,31 @@ $('#$escaped').change(function(e) {
   */
   public static function checkbox_group($options) { 
     $options = self::check_options($options);
+    $options = array_merge(array(
+      'class'=>empty($options['sortable']) || !$options['sortable'] ? 'inline' : ''
+    ), $options);
     if (substr($options['fieldname'],-2) !='[]')
       $options['fieldname'] .= '[]';
+    if (!empty($options['sortable']) && $options['sortable']) {
+      self::$javascript .= "$('#$options[id]').sortable();\n";
+      self::$javascript .= "$('#$options[id]').disableSelection();\n";
+      // resort the available options into the saved order
+      if (!empty($options['default']) && !empty($options['lookupValues'])) {
+        $sorted = array();
+        // First copy over the ones that are ticked, in order
+        foreach ($options['default'] as $option) {
+          if (!empty($options['lookupValues'][$option]))
+          $sorted[$option] = $options['lookupValues'][$option];
+        }
+        // now the unticked ones in original order
+        foreach ($options['lookupValues'] as $option => $caption) {
+         if (!isset($sorted[$option]))
+          $sorted[$option]=$caption;
+        }
+        $options['lookupValues']=$sorted;
+      }
+      
+    }
     return self::check_or_radio_group($options, 'checkbox');
   }
 
@@ -4877,12 +4904,31 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         'extraParams' => $readAuth + array('id' => $id, 'view' => $view),
         'nocache' => true,
         'sharing' => $sharing
-      ));
+    ));
+    self::load_existing_record_from($record[0], $readAuth, $entity, $id, $view, $sharing, $loadImages);
+  }
+  
+  /**
+   * Version of load_existing_record which accepts an already queried record array from the database
+   * as an input parameter.
+   * @param array $record Record loaded from the db
+   * @param array $readAuth Read authorisation tokens
+   * @param string $entity Name of the entity to load data from.
+   * @param integer $id ID of the database record to load
+   * @param string $view Name of the view to load attributes from, normally 'list' or 'detail'. 
+   * @param boolean $sharing Defaults to false. If set to the name of a sharing task 
+   * (reporting, peer_review, verification, data_flow or moderation), then the record can be 
+   * loaded from another client website if a sharing agreement is in place.
+   * @link https://indicia-docs.readthedocs.org/en/latest/administrating/warehouse/website-agreements.html
+   * @param boolean $loadImages If set to true, then image information is loaded as well.
+   * @throws Exception
+   */
+  public static function load_existing_record_from($record, $readAuth, $entity, $id, $view = 'detail', $sharing = false, $loadImages = false) {
     if (isset($record['error'])) throw new Exception($record['error']);
     // set form mode
     if (self::$form_mode===null) self::$form_mode = 'RELOAD';
     // populate the entity to load with the record data
-    foreach($record[0] as $key => $value) {
+    foreach($record as $key => $value) {
       self::$entity_to_load["$entity:$key"] = $value;
     }
     if ($entity=='sample') {
@@ -4896,7 +4942,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     if ($loadImages) {
       $images = self::get_population_data(array(
         'table' => $entity . '_medium',
-        'extraParams' => $readAuth + array($entity . '_id' => $id, 'test'=>'test'),
+        'extraParams' => $readAuth + array($entity . '_id' => $id),
         'nocache' => true,
         'sharing' => $sharing
       ));

@@ -37,7 +37,6 @@ class iform_dynamic_sample_occurrence_splash extends iform_dynamic_sample_occurr
   // The ids we are loading if editing existing data
   protected static $loadedSampleId;
   protected static $loadedOccurrenceId;
-  protected static $occurrenceIds = array();
  
   /**
    * The list of attributes loaded for occurrences. Keep a class level variable, so that we can track the ones we have already
