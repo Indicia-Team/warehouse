@@ -182,8 +182,9 @@ class report_helper extends helper_base {
   *      and urlParams values can all use the field names from the report in braces as substitutions, for example {id} is replaced
   *      by the value of the field called id in the respective row. In addition, the url can use {currentUrl} to represent the
   *      current page's URL, {rootFolder} to represent the folder on the server that the current PHP page is running from, {input_form}
-  *     (provided it is returned by the report) to represent the path to the form that created the record, and
-  *      {imageFolder} for the image upload folder. Because the javascript may pass the field values as parameters to functions,
+  *      (provided it is returned by the report) to represent the path to the form that created the record, {imageFolder} for the image 
+  *      upload folder and {sep} to specify either a ? or & between the URL and the first query parameter, depending on whether 
+  *      {rootFolder} already contains a ?. Because the javascript may pass the field values as parameters to functions,
   *      there are escaped versions of each of the replacements available for the javascript action type. Add -escape-quote or
   *      -escape-dblquote to the fieldname for quote escaping, or -escape-htmlquote/-escape-htmldblquote for escaping quotes in HTML
   *      attributes. For example this would be valid in the action javascript: foo("{bar-escape-dblquote}");
@@ -429,8 +430,8 @@ class report_helper extends helper_base {
     $tfoot .= '<tr><td colspan="'.count($options['columns'])*$options['galleryColCount'].'">'.self::output_pager($options, $pageUrl, $sortAndPageUrlParams, $response).'</td></tr>'.
     $extraFooter = '';
     if (isset($options['footer']) && !empty($options['footer'])) {
-      $footer = str_replace(array('{rootFolder}', '{currentUrl}'),
-          array($rootFolder, $currentUrl['path']), $options['footer']);
+      $footer = str_replace(array('{rootFolder}', '{currentUrl}', '{sep}'),
+          array($rootFolder, $currentUrl['path'], strpos($rootFolder, '?')===FALSE ? '?' : '&'), $options['footer']);
       $extraFooter .= '<div class="left">'.$footer.'</div>';
     }
     if (isset($options['downloadLink']) && $options['downloadLink'] && (count($records)>0 || $options['ajax'])) {
@@ -459,6 +460,7 @@ class report_helper extends helper_base {
         // Put some extra useful paths into the row data, so it can be used in the templating
         $row = array_merge($row, array(
             'rootFolder'=>$rootFolder,
+            'sep'=>strpos($rootFolder, '?')===FALSE ? '?' : '&',
             'imageFolder'=>$imagePath,
             // allow the current URL to be replaced into an action link. We extract url parameters from the url, not $_GET, in case
             // the url is being rewritten.
@@ -633,6 +635,7 @@ $('.update-input').focus(function(evt) {
         $warehouseUrl = parent::$warehouse_proxy;
       else
         $warehouseUrl = parent::$base_url;
+      $rootFolder = self::getRootFolder() . (empty($pathParam) ? '' : "?$pathParam=");
       self::$javascript .= "
 if (typeof indiciaData.reports==='undefined') { indiciaData.reports={}; }
 if (typeof indiciaData.reports.$group==='undefined') { indiciaData.reports.$group={}; }
@@ -649,7 +652,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   url: '$warehouseUrl',
   reportGroup: '$options[reportGroup]',
   autoParamsForm: '$options[autoParamsForm]',
-  rootFolder: '" . self::getRootFolder() . "',
+  rootFolder: '" . $rootFolder . "',
   imageFolder: '" . self::get_uploaded_image_folder() . "',
   currentUrl: '$currentUrl[path]',
   rowId: '" . (isset($options['rowId']) ? $options['rowId'] : '') . "',
@@ -2153,7 +2156,8 @@ if (typeof mapSettingsHooks!=='undefined') {
       }
       $class=(isset($action['class'])) ? ' '.$action['class'] : '';
       if (isset($action['img'])) {
-        $img=str_replace(array('{rootFolder}'), array(self::getRootfolder()), $action['img']);
+        $rootFolder = self::getRootfolder();
+        $img=str_replace(array('{rootFolder}', '{sep}'), array($rootFolder, strpos($rootFolder, '?')===FALSE ? '?' : '&'), $action['img']);
         $content = '<img src="'.$img.'" title="'.$action['caption'].'" />';
       } elseif (isset($action['caption']))
         $content = $action['caption'];
