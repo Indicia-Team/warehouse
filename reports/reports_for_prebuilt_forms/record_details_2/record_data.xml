@@ -7,6 +7,7 @@
   from cache_occurrences co
   join occurrences o on o.id=co.id and o.deleted=false
   join samples s on s.id=o.sample_id and s.deleted=false
+  join cache_taxa_taxon_lists cttl on cttl.id=co.preferred_taxa_taxon_list_id
   join users u on u.id=o.created_by_id
   join people p on p.id=u.person_id
   #agreements_join#
@@ -20,6 +21,7 @@
     <column name='occurrence_id' sql='co.id' />
     <column name='taxon' sql="case co.zero_abundance when true then '&lt;span class=&quot;zero-abundance&quot;&gt;' || co.taxon || '&lt;span&gt; - zero abundance found' else co.taxon end" />
     <column name='preferred_taxon' sql='CASE co.preferred_taxon WHEN co.taxon THEN null ELSE co.preferred_taxon END' />
+    <column name='taxonomy' sql="COALESCE(cttl.kingdom_taxon, '-') || ' :: ' || COALESCE(cttl.order_taxon, '-') || ' :: ' || COALESCE(cttl.family_taxon, '-')" />
     <column name='survey_title' sql='co.survey_title' />
     <column name='recorder' sql='co.recorders' />
     <column name='inputter' sql="case p.surname || case when p.first_name is null or p.first_name='' then '' else ', ' || p.first_name end 
