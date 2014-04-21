@@ -133,6 +133,8 @@ var simple_tooltip;
       // Also do some standard params from the settings, for various paths/urls
       regex = new RegExp('\\{rootFolder\\}','g');
       template = template.replace(regex, div.settings.rootFolder);
+      regex = new RegExp('\\{sep\\}','g');
+      template = template.replace(regex, div.settings.rootFolder.indexOf('?')===-1 ? '?' : '&');
       regex = new RegExp('\\{imageFolder\\}','g');
       template = template.replace(regex, div.settings.imageFolder);
       regex = new RegExp('\\{currentUrl\\}','g');
