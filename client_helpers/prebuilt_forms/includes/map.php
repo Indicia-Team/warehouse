@@ -330,11 +330,15 @@ function iform_map_zoom_to_location($locationId, $readAuth) {
   );
   $response = data_entry_helper::get_population_data($getPopDataOpts);
   $geom = $response[0]['boundary_geom'] ? $response[0]['boundary_geom'] : $response[0]['centroid_geom'];
+  iform_map_zoom_to_geom($geom, lang::get('{1} boundary', $response[0]['name']));
+}
+
+function iform_map_zoom_to_geom($geom, $name, $restrict=false) {
   // Note, since the following moves the map, we want it to be the first mapInitialisationHook
   data_entry_helper::$javascript .= "
 mapInitialisationHooks.unshift(function(mapdiv) {
   var parser, feature, loclayer = new OpenLayers.Layer.Vector(
-    '".lang::get('My Preferred Locality')."',
+    '".$name."',
     {'sphericalMercator': true, displayInLayerSwitcher: true}
   );
   parser = new OpenLayers.Format.WKT();
@@ -351,11 +355,19 @@ mapInitialisationHooks.unshift(function(mapdiv) {
     }
     else {
       // Set the default view to show the feature we are loading
-      //mapdiv.map.zoomToExtent(bounds, true);
-      mapdiv.map.setCenter(bounds.getCenterLonLat(), mapdiv.map.getZoomForExtent(bounds));
-    }  
+      mapdiv.map.zoomToExtent(bounds, true);
+    }
   }
-  mapdiv.map.addLayer(loclayer);
+  ";
+  if ($restrict) {
+    // restrict extent and zoom in if being asked to do so
+    data_entry_helper::$javascript .= "mapdiv.map.setOptions({restrictedExtent: bounds});
+    if (mapdiv.map.getZoomForExtent(bounds)>mapdiv.map.getZoom()) {
+      mapdiv.map.zoomTo(mapdiv.map.getZoomForExtent(bounds));
+    }
+  ";
+  }
+      data_entry_helper::$javascript .= "mapdiv.map.addLayer(loclayer);
 });\n";
 }
 

@@ -22,6 +22,7 @@
 
 require_once('dynamic_report_explorer.php');
 require_once('includes/report_filters.php');
+require_once('includes/groups.php');
 
 /**
  * 
@@ -41,7 +42,8 @@ class iform_group_home extends iform_dynamic_report_explorer {
       'title'=>'Group home page',
       'category' => 'Recording groups',
       'description'=>'A home page for recording groups. This is based on a dynamic report explorer, but it applies '.
-          'an automatic filter to the page output based on a group_id URL parameter.'
+          'an automatic filter to the page output based on a group_id URL parameter.',
+      'supportsGroups'=>true
     );
   }
   
@@ -60,26 +62,23 @@ class iform_group_home extends iform_dynamic_report_explorer {
       return 'This page needs a group_id URL parameter.';
     }
     self::$auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
+    group_authorise_form($node, self::$auth['read']);
     $group = data_entry_helper::get_population_data(array(
       'table'=>'group',
-      'extraParams'=>self::$auth['read'] + array('id'=>$_GET['group_id'])
+      'extraParams'=>self::$auth['read'] + array('id'=>$_GET['group_id'], 'view'=>'detail')
     ));
     $group = $group[0];
     hostsite_set_page_title($group['title']);
-    $filter = data_entry_helper::get_population_data(array(
-      'table'=>'filter',
-      'extraParams'=>self::$auth['read'] + array('id'=>$group['filter_id'])
-    ));
-    $filter = $filter[0];
-    $def = json_decode($filter['definition'], true);
+    $def = json_decode($group['filter_definition'], true);
     $defstring='';
     // reconstruct this as a string to feed into dynamic report explorer
     foreach($def as $key=>$value) {
       if ($key)
         $defstring .= "$key=$value\n";
     }
+    $prefix = (empty($_GET['implicit']) || $_GET['implicit']==='true') ? 'implicit_' : ''; 
     // add the group parameters to the preset parameters passed to all reports on this page
-    $args['param_presets']=implode("\n", array($args['param_presets'], $defstring, "group_id=".$_GET['group_id']));
+    $args['param_presets']=implode("\n", array($args['param_presets'], $defstring, "{$prefix}group_id=".$_GET['group_id']));
     return parent::get_form($args, $node);
   }
 
