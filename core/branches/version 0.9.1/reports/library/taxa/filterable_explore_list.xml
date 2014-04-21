@@ -5,6 +5,7 @@
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
   SELECT #columns#
   FROM cache_occurrences o
+  JOIN cache_taxa_taxon_lists cttl on cttl.id=o.preferred_taxa_taxon_list_id
   JOIN websites w on w.id=o.website_id and w.deleted=false
   #agreements_join#
   #joins#
@@ -12,16 +13,17 @@
   #idlist#
   </query>
   <order_bys>
-    <order_by>o.taxon_group, o.preferred_taxon ASC</order_by>
+    <order_by>o.taxon_group, max(o.preferred_taxon) ASC</order_by>
   </order_bys>
   <columns>
     <column name='taxon_meaning_id' display='ID' sql='o.taxon_meaning_id' visible="false" in_count="true" />
-    <column name='taxon' display='Preferred Name' sql="o.preferred_taxon" />
-    <column name='common' display='Common Name' sql="o.default_common_name" />
+    <column name='taxon' display='Preferred Name' sql="max(o.preferred_taxon)" aggregate="true" />
+    <column name='common' display='Common Name' sql="max(o.default_common_name)" aggregate="true" />
     <column name='taxon_group' display='Taxon Group' sql='o.taxon_group' />
     <column name='taxon_group_id' display='Taxon Group ID' sql='o.taxon_group_id' on_demand="true" visible="false" />
-    <column name="first_date" display="First Recorded Date" sql="min(coalesce(o.date_start, o.date_end))" aggregate="true" />
-    <column name="last_date" display="Last Recorded Date" sql="max(coalesce(o.date_end, o.date_start))" aggregate="true" />
-    <column name="count" display="Number of Records" sql="count(distinct o.id)" aggregate="true" />
+    <column name='taxonomy' display="Taxonomy" sql="COALESCE(cttl.kingdom_taxon || ' :: ', '') || COALESCE(cttl.order_taxon, '-') || ' :: ' || COALESCE(cttl.family_taxon, '-')" />
+    <column name="first_date" display="First Record Date" sql="min(coalesce(o.date_start, o.date_end))" aggregate="true" />
+    <column name="last_date" display="Last Record Date" sql="max(coalesce(o.date_end, o.date_start))" aggregate="true" />
+    <column name="count" display="Records" sql="count(distinct o.id)" aggregate="true" />
   </columns>
 </report>
