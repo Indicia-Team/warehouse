@@ -330,9 +330,10 @@ class ORM extends ORM_Core {
         return FALSE;
       }
     } catch (Exception $e) {
+      kohana::log('error', 'Error: '.$e->getMessage());
       if (strpos($e->getMessage(), '_unique')!==false) {
         // duplicate key violation
-        $this->errors = array('You cannot add the record as it would create a duplicate.');
+        $this->errors = array('general' => 'You cannot add the record as it would create a duplicate.');
         $this->uniqueKeyViolation=true;
         return FALSE;
       } else 
@@ -839,7 +840,7 @@ class ORM extends ORM_Core {
         $this->db
           ->select('id')
           ->from(inflector::plural($fkArr['fkTable']))
-          ->where("(".$fkArr['fkSearchField']." ilike '".strtolower($fkArr['fkSearchValue'])."')");
+          ->where("(".$fkArr['fkSearchField']." ilike '".strtolower(str_replace("'","''",$fkArr['fkSearchValue']))."')");
         if (isset($fkArr['fkSearchFilterField']) && $fkArr['fkSearchFilterField']) 
           $this->db->where(array($fkArr['fkSearchFilterField']=>$fkArr['fkSearchFilterValue']));
         $matches = $this->db
