@@ -31,5 +31,9 @@ CREATE OR REPLACE VIEW detail_groups_users AS
    JOIN users c ON c.id = gu.created_by_id
    JOIN users up ON up.id = gu.updated_by_id
   WHERE gu.deleted = false;
-
   
+CREATE OR REPLACE VIEW list_group_pages AS 
+ SELECT gp.id, gp."path", gp.caption, gp.administrator, g.website_id
+   FROM group_pages gp
+   JOIN groups g on g.id=gp.group_id AND g.deleted=false
+  WHERE gp.deleted = false;

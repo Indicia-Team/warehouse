@@ -40,13 +40,11 @@
 * directly request this information. As such, we do the following:
 * <ol>
 * <li> Grab the report and parse it for parameters. </li>
-* <li> Cache the report (if it didn't exist on the server already) and assign it a unique id,
-* which we store temporarily in the Kohana cache. </li>
 * <li> Send a response back to the requester, inviting them to fill in the parameters. This
 * reponse will include the id generated in step 3. </li>
 * <li> The requester sends back the requested parameters, which are checked against the cache to
 * ensure they're all there. If not, repeat these steps. </li>
-* <li> The core retrieves the report from cache, merges the parameters in and executes the query
+* <li> The core reparses the report, merges the parameters in and executes the query
 * against the core database. Results are formatted and returned to the requester. </li>
 * </ol>
 *
@@ -71,7 +69,6 @@ class ReportEngine {
   private $expectedParams;
   private $providedParams;
   private $localReportDir;
-  private $cache;
   const rowsPerUpdate = 50;
   private $websiteIds;
   private $userId = null;
@@ -216,40 +213,6 @@ class ReportEngine {
     );
   }
 
-  public function resumeReport($uid = null, $params = array())
-  {
-
-    if ($uid == null || $params == null)
-    {
-      $err = array
-      (
-      'error' => 'Trying to resume a report but one or more of params or uid is null',
-      'uid' => $uid,
-      'params' => $params
-      );
-      return $err;
-
-    }
-
-    // Retrieve the report from cache
-    if (!$this->retrieveCachedReport($uid))
-    {
-      // Error here - the cached report has expired
-      // TODO
-    }
-
-    // Merge the new parameters in
-    $this->limit = isset($this->providedParams['limit']) ? $this->providedParams['limit'] : $this->limit;
-    $this->offset = isset($this->providedParams['offset']) ? $this->providedParams['offset'] : $this->offset;
-    $this->orderby = isset($this->providedParams['orderby']) ? $this->providedParams['orderby'] : $this->orderby;
-    $this->sortdir = isset($this->providedParams['sortdir']) ? $this->providedParams['sortdir'] : $this->sortdir;
-
-    return array(
-      'description' => $this->reportReader->describeReport(ReportReader::REPORT_DESCRIPTION_BRIEF),
-      'content' => $this->compileReport()
-    );
-  }
-
   /**
   * Checks parameters and returns request if they're not all there, else compiles the report.
   *
@@ -267,14 +230,10 @@ class ReportEngine {
     }
     if (!empty($unpopulatedParams))
     {
-      // We need more parameters, so cache the report (and any existing parameters), get an id for
-      // it and send a request for the others back to the requester.
-      $uid = $this->cacheReport();
-
       // Send a request for further parameters back to the client. If the request specified the list of parameters to drop
       // in the paramsFormExcludes parameter, then the list of parameters is always the ones that are not excluded. Else
       // the list of parameters is the list of unpopulated parameters.
-      $res = array('parameterRequest' => isset($includedParams) ? $includedParams : $unpopulatedParams, 'uid' => $uid);
+      $res = array('parameterRequest' => isset($includedParams) ? $includedParams : $unpopulatedParams);
       return $res;
 
     }
@@ -661,50 +620,6 @@ class ReportEngine {
     }
   }
 
-  private function cacheReport()
-  {
-    $cachedReport = Array
-    (
-    'reportReader' => $this->reportReader,
-    'providedParams' => $this->providedParams,
-    'expectedParams' => $this->expectedParams,
-    'specialParams' =>
-        Array('limit' => $this->limit,
-              'offset' => $this->offset,
-              'orderby' => $this->orderby,
-              'sortdir' => $this->sortdir)
-    );
-
-    // Set the object in the cache
-    $uid = md5(time().rand());
-    $this->cache = new Cache;
-    $this->cache->set($uid, $cachedReport, array('report'), 3600);
-    return $uid;
-  }
-
-  private function retrieveCachedReport($cacheid)
-  {
-    $this->cache = new Cache;
-    if ($a = $this->cache->get($cacheid))
-    {
-      $this->reportReader = $a['reportReader'];
-      $this->providedParams = $a['providedParams'];
-      $this->expectedParams = $a['expectedParams'];
-      $this->limit = $a['specialParams']['limit'];
-      $this->offset = $a['specialParams']['offset'];
-      $this->orderby = $a['specialParams']['orderby'];
-      $this->sortdir = $a['specialParams']['sortdir'];
-      
-      return true;
-    }
-    else
-    {
-      // Cache has timed out / bad UID
-      return false;
-    }
-
-  }
-
   private function mergeQuery()
   {
     // Grab the query from the report reader
@@ -791,7 +706,7 @@ class ReportEngine {
       }
     }
     // column replacements and additional join to samples for geometry permissions autoswitching
-    if ($this->sharingMode==='me' || $this->sharingMode==='verification') {
+    if ($this->sharingMode==='me' || $this->sharingMode==='verification' || $this->groupAllowsSensitiveAccess()) {
       // don't add the join to samples when it is not necessary.
       if (strpos($query, '#sample_sref_field#') || strpos($query, '#sample_geom_field#')) 
         $query = str_replace('#joins#', "JOIN samples s on s.id=o.sample_id AND s.deleted=false \n#joins#", $query);
@@ -829,6 +744,32 @@ class ReportEngine {
       $query = preg_replace("/#order_by#/",  "", $query);
     }
     return $query;
+  }
+  
+  /**
+   * Returns true if the report is using standard parameters and is limited to a group ID which allows its members to view
+   * sensitive records, only if the current user is a group member.
+   */
+  private function groupAllowsSensitiveAccess() {
+    // basic checks we can perform to avoid unnecessary db access
+    if (!$this->reportReader->hasStandardParams || !$this->userId || 
+        (empty($this->providedParams['group_id']) && empty($this->providedParams['implicit_group_id'])))
+      return false;
+    $group_id = empty($this->providedParams['group_id']) ? $this->providedParams['implicit_group_id'] : $this->providedParams['group_id'];
+    // use the cache to avoid db access
+    $key = "allowSensitiveAccessForGroup-$group_id-$this->userId";
+    $cache = new Cache();
+    $value = $cache->get($key);
+    if ($value===null) {
+      // this checks both that the group allows full precision viewing, plus that the user is a group member.
+      $value = $this->reportDb->select('groups.id')
+          ->from('groups')
+          ->join('groups_users', 'groups_users.group_id', 'groups.id')
+          ->where(array('group_id' => $group_id, 'view_full_precision'=>'t', 'groups_users.user_id'=>$this->userId))
+          ->get()->count() > 0;
+      $cache->set($key, $value);
+    }
+    return $value;
   }
   
   /**

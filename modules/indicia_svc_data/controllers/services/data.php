@@ -61,6 +61,11 @@ class Data_Controller extends Data_Service_Base_Controller {
       'determination',
       'filter',
       'filters_user',
+      'group',
+      'group_page',
+      'groups_user',
+      'group_invitation',
+      'group_relation',
       'location',
       'location_medium',
       'notification',
@@ -107,7 +112,6 @@ class Data_Controller extends Data_Service_Base_Controller {
   protected $tables_without_views = array(
     'cache_taxon_searchterms',
     'cache_taxa_taxon_lists',
-    'filters',
     'index_websites_website_agreements',
     'verification_rule_data'
   );
@@ -147,6 +151,51 @@ class Data_Controller extends Data_Service_Base_Controller {
   public function filters_user()
   {
     $this->handle_call('filters_user');
+  }
+  
+  /**
+  * Provides the /services/data/group service.
+  * Retrieves details of a single group.
+  */
+  public function group()
+  {
+    $this->handle_call('group');
+  }
+  
+  /**
+  * Provides the /services/data/group_page service.
+  * Retrieves details of a single group.
+  */
+  public function group_page()
+  {
+    $this->handle_call('group_page');
+  }
+  
+  /**
+  * Provides the /services/data/group_invitation service.
+  * Retrieves details of a single group_invitation.
+  */
+  public function group_invitation()
+  {
+    $this->handle_call('group_invitation');
+  }
+  
+  /**
+  * Provides the /services/data/group_relation service.
+  * Retrieves details of a single group_relation.
+  */
+  public function group_relation()
+  {
+    $this->handle_call('group_relation');
+  }
+  
+  /**
+  * Provides the /services/data/groups_user service.
+  * Retrieves details of a single groups_user.
+  */
+  public function groups_user()
+  {
+    $this->handle_call('groups_user');
   }
   
   /**

@@ -58,17 +58,17 @@ class XMLReportReader_Core implements ReportReader
    */
   public $filterableColumns = array();
 
+  /** 
+   * @var boolean Track if this report supports the standard set of parameters.
+   */
+  public $hasStandardParams = false;
+  
   /**
    * @var boolean Identify if we have got SQL defined for aggregated fields. If so we need to implement a group by for
    * the other fields.
    */
   private $hasAggregates = false;
   
-  /** 
-   * @var boolean Track if this report supports the standard set of parameters.
-   */
-  private $hasStandardParams = false;
-
   /**
    * Returns a simple array containing the title and description of a report. Static so you don't have to load the full report object to get this
    * information.
@@ -967,6 +967,15 @@ class XMLReportReader_Core implements ReportReader
             'description'=>'Specify the ID of a recording group. This filters the report to the members of the group.',
             'joins' => array(
               array('value'=>'', 'operator'=>'', 'sql'=>"join groups_users #alias:gu# on #alias:gu#.user_id=o.created_by_id and #alias:gu#.group_id=#group_id#")
+            ),
+            'wheres' => array(
+              array('value'=>'', 'operator'=>'', 'sql'=>"o.group_id=#group_id#")
+            )
+        ),
+        'implicit_group_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>"ID of a group to filter to the members of",
+            'description'=>'Specify the ID of a recording group. This filters the report to the members of the group.',
+            'joins' => array(
+              array('value'=>'', 'operator'=>'', 'sql'=>"join groups_users #alias:gu# on #alias:gu#.user_id=o.created_by_id and #alias:gu#.group_id=#implicit_group_id#")
             )
         ),
         'website_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Website IDs", 

@@ -34,7 +34,7 @@ class Group_Model extends ORM {
       
   protected $has_and_belongs_to_many = array('users');
   
-  protected $has_many = array('group_invitations');
+  protected $has_many = array('group_invitations', 'group_pages');
   
   /** 
    * @var boolean Flag indicating if the group's private records status is changing, indicating we need to update the release status of records.
@@ -47,7 +47,7 @@ class Group_Model extends ORM {
     $array->add_rules('group_type_id', 'required');
     $array->add_rules('website_id', 'required');
     $this->unvalidatedFields = array('code', 'description', 'from_date','to_date','private_records',
-        'filter_id', 'joining_method', 'deleted');
+        'filter_id', 'joining_method', 'deleted', 'implicit_record_inclusion', 'view_full_precision');
     // has the private records flag changed?
     $this->wantToUpdateReleaseStatus = isset($this->submission['fields']['private_records']) && $this->submission['fields']['private_records']!==$this->private_records;
     return parent::validate($array, $save);
