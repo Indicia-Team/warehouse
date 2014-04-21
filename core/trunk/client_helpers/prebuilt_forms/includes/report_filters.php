@@ -40,7 +40,7 @@ class filter_what extends filter_base {
    * Define the HTML required for this filter's UI panel.
    */
   public function get_controls($readAuth, $options) {
-    $r = "<p id=\"what-filter-instruct\">".lang::get('You can either filter by species group (first tab) or a selection of individual species (second tab)')."</p>\n".
+    $r = "<p id=\"what-filter-instruct\">".lang::get('You can filter by species group (first tab), a selection of individual species (second tab) or the level within the taxonomic hierarchy (third tab).')."</p>\n".
         '<div id="what-tabs">'."\n";
     // data_entry_helper::tab_header breaks inside fancybox. So output manually.
     $r .= '<ul class="ui-helper-hidden">' .
@@ -93,21 +93,24 @@ class filter_what extends filter_base {
     ));
     $r .= "</div>\n";
     $r .= "<div id=\"rank-tab\">\n";
+    $r .= '<p id="level-label">'.lang::get('Include records where the level').'</p>';
     $r .= data_entry_helper::select(array(
-      'label'=>lang::get('Include records where the level'),
       'labelClass'=>'auto',
       'suffixTemplate'=>'nosuffix',
       'fieldname'=>'taxon_rank_sort_order_op',
-      'blankText' => '<'.lang::get('Please select').'>',
       'lookupValues'=>array('='=>lang::get('is'), '>='=>lang::get('is the same or lower than'), '<='=>lang::get('is the same or higher than'))
     ));
-    $r .= data_entry_helper::select(array(
-      'fieldname'=>'taxon_rank_sort_order',
-      'table'=>'taxon_rank',
-      'captionField' => 'rank',
-      'valueField' => 'sort_order',
-      'extraParams' => $readAuth
+    // we fudge this select rather than using data entry helper, since we want to allow duplicate keys which share the same sort order. We also
+    // include both the selected ID and sort order in the key, and split it out later.
+    $ranks = data_entry_helper::get_population_data(array(
+      'table' => 'taxon_rank',
+      'extraParams' => $readAuth + array('orderby'=>'sort_order', 'sortdir'=>'DESC')
     ));
+    $r .= '<select id="taxon_rank_sort_order_combined" name="taxon_rank_sort_order_combined"><option value="">&lt;'.lang::get('Please select').'&gt;</option>';
+    foreach ($ranks as $rank) {
+      $r .= "<option value=\"$rank[sort_order]:$rank[id]\">$rank[rank]</option>";
+    }
+    $r .= '</select><br/>';
     $r .= "</div>\n";
     $r .= "</div>\n";
     data_entry_helper::enable_tabs(array(
