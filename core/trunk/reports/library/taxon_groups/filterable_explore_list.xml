@@ -1,0 +1,23 @@
+<report
+    title="Explore taxon groups with standard filters"
+    description="Report designed for the explore records facility in iRecord, with standardised filtering parameters."
+>
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
+  SELECT #columns#
+  FROM cache_occurrences o
+  JOIN websites w on w.id=o.website_id and w.deleted=false
+  #agreements_join#
+  #joins#
+  WHERE #sharing_filter# 
+  #idlist#
+  </query>
+  <order_bys>
+    <order_by>o.taxon_group</order_by>
+  </order_bys>
+  <columns>
+    <column name='taxon_group_id' display='Taxon Group ID' sql='o.taxon_group_id' visible="false" in_count="true" />
+    <column name='taxon_group' display='Taxon Group' sql='o.taxon_group' />
+    <column name="count" display="Number of Records" sql="count(distinct o.id)" aggregate="true" />
+    <column name="taxon_count" display="Number of Taxa" sql="count(distinct o.taxa_taxon_list_external_key)" aggregate="true" />
+  </columns>
+</report>
