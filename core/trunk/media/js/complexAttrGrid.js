@@ -3,6 +3,35 @@ var changeComplexGridRowCount;
 $(document).ready(function($) {
   "use strict"; 
   
+  function updateUniqueSelects(table) {
+    var
+      attrName=table.id.replace('complex-attr-grid-', '').split('-'),
+      attrTypeTag=attrName[0], attrId=attrName[1],
+      gridDef=indiciaData['complexAttrGrid-'+attrTypeTag+'-'+attrId];
+    $.each(gridDef.cols, function(idx, col) {
+      if (col.datatype==='lookup' && typeof col.validation!=='undefined' && $.inArray('unique', col.validation)>=0) {
+        // got a select column with a unique validation rule defined. Let's strip the used options
+        var selects = $(table).find('td:nth-child('+(idx+1) +') select'), values=[];
+        // Find the values in use
+        $.each(selects, function() {
+          if ($(this).val()!=='') {
+            values.push($(this).val());
+          }
+        });
+        $.each(selects, function(i, select) {
+          $.each($(select).find('option'), function(j, option) {
+            if ($(option).attr('value')==='' || $(option).attr('value')===$(select).val() || $.inArray($(option).attr('value'), values)===-1) {
+              $(option).show();
+            } else {
+              $(option).hide();
+            }
+          });
+        });
+        
+      }
+    });
+  }
+  
   function addRowToTable(table) {
     var
       attrName=table.id.replace('complex-attr-grid-', '').split('-'),
@@ -12,8 +41,8 @@ $(document).ready(function($) {
       fieldname;
     
     gridDef.rowCount++; 
-    $.each(gridDef.cols, function(name, def) {
-      fieldname = attrTypeTag+"+:"+attrId+"::"+(gridDef.rowCount-1)+":"+name;
+    $.each(gridDef.cols, function(idx, def) {
+      fieldname = attrTypeTag+"+:"+attrId+"::"+(gridDef.rowCount-1)+":"+idx;
       row += '<td>';
       if (def.datatype==='lookup' && typeof def.control!=="undefined" && def.control==='checkbox_group') {
         var checkboxes=[];
@@ -23,7 +52,7 @@ $(document).ready(function($) {
         row += checkboxes.join('</td><td>');
       } else if (def.datatype==='lookup') {
         row += '<select name="'+fieldname+'"><option value="">&lt;'+indiciaData.langPleaseSelect+'&gt;</option>';
-        $.each(indiciaData['tl'+def.termlist_id], function(idx, term) {
+        $.each(indiciaData['tl'+idx], function(idx, term) {
           row += '<option value="'+term[0]+':' + term[1] + '">'+term[1]+'</option>';
         });
         row += '</select>';
@@ -42,6 +71,7 @@ $(document).ready(function($) {
     }
     row += '</td></tr>';
     $(table).find('tbody').append(row);
+    $(table).find('tbody tr:last-child select').change(function() {updateUniqueSelects(table);});
   }
   
   changeComplexGridRowCount = function(countCtrlId, attrTypeTag, attrId) {
@@ -69,7 +99,7 @@ $(document).ready(function($) {
     var table=$(e.currentTarget).closest('table')[0];
     addRowToTable(table);
   });
-  
+
   $('table.complex-attr-grid tbody').click(function(e) {
     // e.target is the actual thing clicked on inside the tbody
     if ($(e.target).hasClass('ind-delete-icon')) {
@@ -78,9 +108,12 @@ $(document).ready(function($) {
       $(row).find('input').css('text-decoration', 'line-through');
       $(row).find('.delete-flag').val('t');
       $(row).find('input').not(':hidden').attr('disabled', true);
+      updateUniqueSelects($(e.target).closest('table')[0]);
     }
   });
   
-  
+  $('table.complex-attr-grid select').change(function(e) {
+    updateUniqueSelects($(e.target).closest('table')[0]);
+  });
 
 });
