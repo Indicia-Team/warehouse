@@ -164,27 +164,6 @@ class Report_Controller extends Data_Service_Base_Controller {
       }
     }
     return $vars;
-}
-
-  /**
-   * When a report was requested, but the report needed parameter inputs which were requested,
-   * this action allows the caller to restart the report having obtained the parameters.
-   *
-   * @param int $cacheid Id of the report, returned by the original call to requestReport.
-   */
-  public function resumeReport($cacheid = null)
-  {
-    try {
-      $this->setup();
-      // Check we have both a uid and a set of parameters given
-      $uid = $cacheid ? $cacheid : $this->input->post('uid', null);
-      $params = json_decode($this->input->post('params', '{}'), true);
-
-      return $this->formatJSON($this->reportEngine->resumeReport($uid, $params));
-    }
-    catch (Exception $e) {
-      $this->handle_error($e);
-    }
   }
 
   private function formatJSON($stuff)

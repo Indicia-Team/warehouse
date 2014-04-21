@@ -673,7 +673,8 @@ $config['occurrences']['update'] = "update cache_occurrences co
       location_id=s.location_id,
       input_form=s.input_form,
       data_cleaner_info=case when o.last_verification_check_date is null then null else case sub.info when '' then 'pass' else sub.info end end,
-      sensitivity_precision=o.sensitivity_precision
+      sensitivity_precision=o.sensitivity_precision,
+      group_id=s.group_id
     from occurrences o
     #join_needs_update#
     join (
@@ -714,7 +715,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       taxon, authority, preferred_taxon, preferred_authority, default_common_name, 
       search_name, taxa_taxon_list_external_key, taxon_meaning_id, taxon_group_id, taxon_group,
       created_by_id, cache_created_on, cache_updated_on, certainty, location_name, recorders, 
-      verifier, verified_on, images, training, location_id, input_form, sensitivity_precision
+      verifier, verified_on, images, training, location_id, input_form, sensitivity_precision, group_id
     )
   select distinct on (o.id) o.id, o.record_status, o.release_status, o.downloaded_flag, o.zero_abundance,
     su.website_id as website_id, su.id as survey_id, s.id as sample_id, su.title as survey_title,
@@ -758,7 +759,8 @@ $config['occurrences']['insert']="insert into cache_occurrences (
     o.training,
     s.location_id,
     s.input_form,
-    o.sensitivity_precision
+    o.sensitivity_precision,
+    s.group_id
   from occurrences o
   left join cache_occurrences co on co.id=o.id
   join samples s on s.id=o.sample_id 
