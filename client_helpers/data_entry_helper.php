@@ -266,7 +266,8 @@ class data_entry_helper extends helper_base {
    *   * termlist_id - If datatype=lookup, then provide the termlist_id of the list to load terms for as options in the control.
    *   * unit - An optional unit label to display after the control (e.g. 'cm', 'kg').
    *   * regex - A regular expression which validates the controls input value.
-   * * **default** - An array of default values, as obtained by a call to getAttributes.
+   *   * default - default value for this control used for new rows
+   * * **default** - An array of default values loaded for existing data, as obtained by a call to getAttributes.
    * * **rowCountControl** - Pass the ID of an input control that will contain an integer value to define the number of rows in the
    *   grid. If not set, then a button is shown allowing additional rows to be added.
    */
@@ -288,24 +289,34 @@ class data_entry_helper extends helper_base {
     $r .= '<thead><tr>';
     $lookupData = array();
     $thRow2 = '';
-    foreach ($options['columns'] as $name => &$def) {
+    foreach ($options['columns'] as $idx => &$def) {
       // whilst we are iterating the columns, may as well do some setup.
       // apply i18n to unit now, as it will be used in JS later
       if ($def['unit'])
         $def['unit'] = lang::get($def['unit']);
-      if ($def['datatype']==='lookup' && !empty($def['termlist_id'])) {
-        $termlistData = self::get_population_data(array(
-          'table'=>'termlists_term',
-          'extraParams'=>$options['extraParams'] + array('termlist_id'=>$def['termlist_id'], 'view'=>'cache')
-        ));
+      if ($def['datatype']==='lookup') {
         $minified = array();
-        foreach ($termlistData as $term) {
-          $minified[] = array($term['id'], $term['term']);
-          if (isset($def['control']) && $def['control']==='checkbox_group')
-            $thRow2 .= "<th>$term[term]</th>";
+        // no matter if the lookup comes from the db, or from a local array, we want it in the same minimal format
+        if (!empty($def['termlist_id'])) {
+          $termlistData = self::get_population_data(array(
+            'table'=>'termlists_term',
+            'extraParams'=>$options['extraParams'] + array('termlist_id'=>$def['termlist_id'], 'view'=>'cache')
+          ));
+          foreach ($termlistData as $term) {
+            $minified[] = array($term['id'], $term['term']);
+          }
         }
-        $lookupData['tl'.$def['termlist_id']] = $minified;
-        self::$javascript .= "indiciaData.tl$def[termlist_id]=".json_encode($minified).";\n";
+        elseif (isset($def['lookupValues'])) {
+          foreach ($def['lookupValues'] as $id => $term) {
+            $minified[] = array($id, $term);
+          }
+        }
+        foreach ($minified as $tokens) {          
+          if (isset($def['control']) && $def['control']==='checkbox_group')
+            $thRow2 .= "<th>$minified[1]</th>";
+        }
+        $lookupData["tl$idx"] = $minified;
+        self::$javascript .= "indiciaData.tl$idx=".json_encode($minified).";\n";
       }
       // checkbox groups output a second row of cells for each checkbox label
       $rowspan = isset($def['control']) && $def['control']==='checkbox_group' ? 1 : 2;
@@ -326,14 +337,15 @@ class data_entry_helper extends helper_base {
     for ($i = 0; $i<=$rowCount-1; $i++) {
       $r .= '<tr>';
       $defaults=isset($options['default'][$i]) ? json_decode($options['default'][$i]['default'], true) : array();
-      foreach ($options['columns'] as $name => $def) {
+      foreach ($options['columns'] as $idx => $def) {
         if (isset($options['default'][$i]))
           $fieldnamePrefix = str_replace('Attr:', 'Attr+:', $options['default'][$i]['fieldname']);
         else
           $fieldnamePrefix = "$attrTypeTag+:$attrId:";
-        $fieldname="$fieldnamePrefix:$i:$name";
+        $fieldname="$fieldnamePrefix:$i:$idx";
         $default = isset(self::$entity_to_load[$fieldname]) ? self::$entity_to_load[$fieldname] :
-            (isset($defaults[$name]) ? $defaults[$name] : '');
+            (isset($defaults[$idx]) ? $defaults[$idx] : 
+                (isset($def['default']) ? $def['default'] : ''));
         $r .= "<td>";
         if ($def['datatype']==='lookup' && isset($def['control']) && $def['control']) {
           $checkboxes=array();
@@ -347,7 +359,7 @@ class data_entry_helper extends helper_base {
           $extraCols .= count($checkboxes)-1;
         } elseif ($def['datatype']==='lookup') {
           $r .= "<select name=\"$fieldname\"><option value=''>&lt;".lang::get('Please select')."&gt;</option>";
-          foreach ($lookupData['tl'.$def['termlist_id']] as $term) {
+          foreach ($lookupData["tl$idx"] as $term) {
             $selected = $default=="$term[0]" ? ' selected="selected"' : '';
             $r .= "<option value=\"$term[0]:$term[1]\"$selected>$term[1]</option>";
           }
