@@ -39,6 +39,7 @@ class iform_species_details extends iform_dynamic {
   private static $preferred;
   private static $synonyms = array();
   private static $commonNames = array();
+  private static $taxonomy = array();
   private static $taxa_taxon_list_id;
   private static $taxon_meaning_id;
     
@@ -305,6 +306,7 @@ class iform_species_details extends iform_dynamic {
     }
     
     self::get_names($auth);
+    hostsite_set_page_title(lang::get('Summary details for {1}', self::$preferred));
 
     return parent::get_form_html($args, $auth, $attributes);
   }
@@ -346,6 +348,16 @@ class iform_species_details extends iform_dynamic {
       else
         self::$commonNames[] = $speciesData['taxon'];
     }
+    $taxon = data_entry_helper::get_population_data(array(
+      'table' => 'cache_taxa_taxon_list',
+      'extraParams'=>$auth['read']+$extraParams
+    ));
+    if (!empty($taxon[0]['kingdom_taxon']))
+      self::$taxonomy[] = $taxon[0]['kingdom_taxon'];
+    if (!empty($taxon[0]['order_taxon']))
+      self::$taxonomy[] = $taxon[0]['order_taxon'];
+    if (!empty($taxon[0]['family_taxon']))
+      self::$taxonomy[] = $taxon[0]['family_taxon'];
   }
 
   
@@ -366,13 +378,16 @@ class iform_species_details extends iform_dynamic {
       $hidePreferred = false;
       $hideCommon = false;
       $hideSynonym = false;
+      $hideTaxonomy = false;
       foreach ($fieldsLower as $theField) {
         if ($theField=='preferred names'|| $theField=='preferred name'|| $theField=='preferred')
           $hidePreferred = true;
-        if ($theField=='common names' || $theField=='common name'|| $theField=='common')
+        elseif ($theField=='common names' || $theField=='common name'|| $theField=='common')
           $hideCommon = true;
-        if ($theField=='synonym names' || $theField=='synonym name'|| $theField=='synonym')
+        elseif ($theField=='synonym names' || $theField=='synonym name'|| $theField=='synonym')
           $hideSynonym = true;
+        elseif ($theField=='taxonomy')
+          $hideTaxonomy = true;
       }
     }
     
@@ -382,17 +397,20 @@ class iform_species_details extends iform_dynamic {
       $hidePreferred = true;
       $hideCommon = true;
       $hideSynonym = true;
+      $hideTaxonomy = true;
       foreach ($fieldsLower as $theField) {
         if ($theField=='preferred names'|| $theField=='preferred name'|| $theField=='preferred')
           $hidePreferred = false;
-        if ($theField=='common names' || $theField=='common name'|| $theField=='common')
+        elseif ($theField=='common names' || $theField=='common name'|| $theField=='common')
           $hideCommon = false;
-        if ($theField=='synonym names' || $theField=='synonym name'|| $theField=='synonym')
+        elseif ($theField=='synonym names' || $theField=='synonym name'|| $theField=='synonym')
           $hideSynonym = false;
+        elseif ($theField=='taxonomy')
+          $hideTaxonomy = true;
       }
     }
     //Draw the names on the page
-    $details_report = self::draw_names($auth['read'], $hidePreferred, $hideCommon, $hideSynonym);
+    $details_report = self::draw_names($auth['read'], $hidePreferred, $hideCommon, $hideSynonym, $hideTaxonomy);
 
     $attrsTemplate='<div class="field ui-helper-clearfix"><span>{caption}:</span><span>{value}</span></div>';
 
@@ -429,7 +447,7 @@ class iform_species_details extends iform_dynamic {
    * @package    Client
    * @subpackage PrebuiltForms
    */
-  protected static function draw_names($auth, $hidePreferred, $hideCommon, $hideSynonym) {
+  protected static function draw_names($auth, $hidePreferred, $hideCommon, $hideSynonym, $hideTaxonomy) {
     $attrsTemplate='<div class="field ui-helper-clearfix"><span>{caption}:</span><span>{value}</span></div>';
     $r = '';
     if (!$hidePreferred)
@@ -441,6 +459,9 @@ class iform_species_details extends iform_dynamic {
     if ($hideSynonym == false && !empty(self::$synonyms)) {
       $label = (count(self::$synonyms)===1) ? 'Synonym' : 'Synonyms';
       $r .= str_replace(array('{caption}','{value}'), array(lang::get($label), implode(', ', self::$synonyms)), $attrsTemplate);
+    }
+    if ($hideTaxonomy == false && !empty(self::$taxonomy)) {
+      $r .= str_replace(array('{caption}','{value}'), array(lang::get('Taxonomy'), implode(' :: ', self::$taxonomy)), $attrsTemplate);
     }
     return $r;
   }
