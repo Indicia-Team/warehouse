@@ -29,6 +29,7 @@
  */
 
 require_once('includes/dynamic.php');
+require_once('includes/groups.php');
 
 /**
  * Store remembered field settings, since these need to be accessed from a hook function which runs outside the class.
@@ -41,6 +42,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   // The ids we are loading if editing existing data
   protected static $loadedSampleId;
   protected static $loadedOccurrenceId;
+  protected static $group = false;
   
   /**
    * The list of attributes loaded for occurrences. Keep a class level variable, so that we can track the ones we have already
@@ -60,7 +62,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       'helpLink'=>'http://code.google.com/p/indicia/wiki/TutorialDynamicForm',
       'description'=>'A sample and occurrence entry form with an optional grid listing the user\'s samples so forms can be ' .
         'reloaded for editing. Can be used for entry of a single occurrence, ticking species off a checklist, or entering ' .
-        'species into a grid. The attributes on the form are dynamically generated from the survey setup on the Indicia Warehouse.'
+        'species into a grid. The attributes on the form are dynamically generated from the survey setup on the Indicia Warehouse.',
+      'supportsGroups'=>true
     );
   }
 
@@ -635,10 +638,35 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    * it available to a hook function which exists outside the form.
    */
   protected static function get_form_html($args, $auth, $attributes) { 
+    group_authorise_form($node, $auth['read']);
     // We always want an autocomplete formatter function for species lookups..
     call_user_func(array(self::$called_class, 'build_grid_autocomplete_function'), $args);
     global $remembered;
     $remembered = isset($args['remembered']) ? $args['remembered'] : '';
+    if (empty(data_entry_helper::$entity_to_load['sample:group_id']) && !empty($_GET['group_id']))
+      data_entry_helper::$entity_to_load['sample:group_id']=$_GET['group_id'];
+    if (!empty(data_entry_helper::$entity_to_load['sample:group_id'])) {
+      self::$group = data_entry_helper::get_population_data(array(
+          'table'=>'group',
+          'extraParams'=>$auth['read']+array('view'=>'detail','id'=>data_entry_helper::$entity_to_load['sample:group_id'])
+      ));
+      self::$group=self::$group[0];
+      $filterdef = json_decode(self::$group['filter_definition']);
+      // does the group filter define a site or boundary for the recording? If so we need to show it and limit the map extent
+      $locationIDToLoad = empty($filterdef->location_id) ? 
+          (empty($filterdef->indexed_location_id) ? false : $filterdef->indexed_location_id) : $filterdef->location_id;
+      if ($locationIDToLoad) {
+        $response = data_entry_helper::get_population_data(array(
+          'table' => 'location',
+          'extraParams' => $auth['read'] + array('id'=>$locationIDToLoad, 'view' => 'detail')
+        ));
+        $geom = $response[0]['boundary_geom'] ? $response[0]['boundary_geom'] : $response[0]['centroid_geom'];  
+        iform_map_zoom_to_geom($geom, lang::get('Boundary of {1} for the {2} group', $response[0]['name'], self::$group['title']), true);
+      }
+      elseif (!empty($filterdef->searchArea)) {
+        iform_map_zoom_to_geom($filterdef->searchArea, lang::get('Recording area for the {1} group', self::$group['title']), true);
+      }
+    }
     return parent::get_form_html($args, $auth, $attributes);
   }
 
@@ -1011,6 +1039,14 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     }
     if (isset(data_entry_helper::$entity_to_load['occurrence:id'])) {
       $r .= '<input type="hidden" id="occurrence:id" name="occurrence:id" value="' . data_entry_helper::$entity_to_load['occurrence:id'] . '" />' . PHP_EOL;
+    }
+    if (!empty(data_entry_helper::$entity_to_load['sample:group_id'])) {
+      $r .= "<input type=\"hidden\" id=\"group_id\" name=\"sample:group_id\" value=\"".data_entry_helper::$entity_to_load['sample:group_id']."\" />\n";
+      if (empty(data_entry_helper::$entity_to_load['sample:group_title'])) {
+        data_entry_helper::$entity_to_load['sample:group_title'] = self::$group['title'];
+      }
+      $msg=empty(self::$loadedSampleId) ? 'This form will be posted to the <strong>{1}</strong> group.' : 'This form was posted to the <strong>{1}</strong> group.';
+      $r .= '<p>' . lang::get($msg, data_entry_helper::$entity_to_load['sample:group_title']) . '</p>';
     }
     // Check if Record Status is included as a control. If not, then add it as a hidden.
     $arr = helper_base::explode_lines($args['structure']);

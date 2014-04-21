@@ -21,6 +21,7 @@
  */
  
 require_once('includes/user.php');
+require_once('includes/groups.php');
 
 /**
  * Prebuilt Indicia data form that provides an import wizard
@@ -39,7 +40,8 @@ class iform_importer {
       'title'=>'Importer',
       'category' => 'Utilities',
       'description'=>'A page containing a wizard for uploading CSV file data.',
-      'helpLink'=>'https://readthedocs.org/projects/indicia-docs/en/latest/site-building/iform/prebuilt-forms/importer.html'
+      'helpLink'=>'https://readthedocs.org/projects/indicia-docs/en/latest/site-building/iform/prebuilt-forms/importer.html',
+      'supportsGroups'=>true
     );
   }
   
@@ -83,8 +85,8 @@ class iform_importer {
    */
   public static function get_form($args, $node, $response) {
     iform_load_helpers(array('import_helper'));
-    
     $auth = import_helper::get_read_write_auth($args['website_id'], $args['password']);
+    group_authorise_form($node, $auth['read']);
     if ($args['model']=='url') {
       if (!isset($_GET['type']))
         return "This form is configured so that it must be called with a type parameter in the URL";
@@ -96,6 +98,24 @@ class iform_importer {
       $presets = array_merge(array('website_id'=>$args['website_id'], 'password'=>$args['password']), $presets);
     } else {
       $presets = array('website_id'=>$args['website_id'], 'password'=>$args['password']);
+    }
+    
+    if (!empty($_GET['group_id'])) {
+      // loading data into a recording group. 
+      $group = data_entry_helper::get_population_data(array(
+        'table'=>'group',
+        'extraParams'=>$auth['read'] + array('id'=>$_GET['group_id'], 'view'=>'detail')
+      ));
+      $group = $group[0];
+      $presets['sample:group_id'] = $_GET['group_id'];      
+      hostsite_set_page_title(lang::get('Import data into the {1} group', $group['title']));
+      // if a single survey specified for this group, then force the data into the correct survey
+      $filterdef = json_decode($group['filter_definition'], true);
+      if (!empty($filterdef['survey_list_op']) && $filterdef['survey_list_op']==='in' && !empty($filterdef['survey_list'])) {
+        $surveys = explode(',', $filterdef['survey_list']);
+        if (count($surveys)===1)
+          $presets['survey_id'] = $surveys[0];
+      }
     }
     $r = import_helper::importer(array(
       'model' => $model,

@@ -70,7 +70,8 @@ class iform_group_edit {
         'table'=>'termlists_term',
         'valueField'=>'id',
         'captionField'=>'term',
-        'extraParams'=>array('termlist_external_key'=>'indicia:group_relationship_types')
+        'extraParams'=>array('termlist_external_key'=>'indicia:group_relationship_types'),
+        'required'=>false
       ), array(
         'name'=>'join_methods',
         'caption'=>'Available joining methods',
@@ -139,6 +140,18 @@ class iform_group_edit {
         'required'=>false
       ),
       array(
+        'name' => 'data_inclusion_mode',
+        'caption' => 'Group data inclusion',
+        'description' => 'How will the decision regarding how records are included in group data be made',
+        'type'=>'select',
+        'lookupValues' => array(
+            'implicit' => 'Implicit. Records posted by group members which meet the filter criteria will be included in group data.',
+            'explicit' => 'Explicit. Records must be deliberately posted into the group.',
+            'choose' => 'Let the group administrator decide this'
+        ),
+        'default' => 'choose'
+      ),
+      array(
         'name' => 'filter_types',
         'caption'=>'Filter Types',
         'description'=>'JSON describing the filter types that are available if the include report filter option is checked.',
@@ -169,7 +182,8 @@ class iform_group_edit {
       'include_private_records'=>false,
       'include_administrators'=>false,
       'include_members'=>false, 
-      'filter_types' => '{"":"what,where,when","Advanced":"source,quality"}'
+      'filter_types' => '{"":"what,where,when","Advanced":"source,quality"}',
+      'data_inclusion_mode' => 'choose'
     ), $args);
     $args['filter_types']=json_decode($args['filter_types'], true);
     $reloadPath = self::getReloadPath();   
@@ -222,6 +236,12 @@ class iform_group_edit {
       ));
     }
     $r .= self::joinMethodsControl($args);
+    $r .= self::inclusionMethodControl($args);
+    $r .= data_entry_helper::checkbox(array(
+      'label' => lang::get('Show records at full precision'),
+      'fieldname' => 'group:view_full_precision',
+      'helpText' => lang::get('If checked, then group members can see sensitive records explicitly posted into the group at full precision. USE ONLY FOR GROUPS WITH RESTRICTED MEMBERSHIP.')
+    ));
     $r .= data_entry_helper::textarea(array(
       'label' => ucfirst(lang::get('{1} description', self::$groupType)),
       'fieldname' => 'group:description',
@@ -243,6 +263,7 @@ class iform_group_edit {
     }
     $r .= self::memberControls($args, $auth);
     $r .= self::reportFilterBlock($args, $auth, $hiddenPopupDivs);
+    $r .= self::formsBlock($args, $auth, $node);
     // auto-insert the creator as an admin of the new group, unless the admins are manually specified
     if (!$args['include_administrators'] && empty($_GET['group_id']))
       $r .= '<input type="hidden" name="groups_user:admin_user_id[]" value="' .hostsite_get_user_field('indicia_user_id'). '"/>';
@@ -261,6 +282,85 @@ $('#entry_form').submit(function() {
   $('#filter-title-val').val('" . lang::get('Filter for user group') . " ' + $('#group\\\\:title').val());
   $('#filter-def-val').val(JSON.stringify(indiciaData.filter.def));
 });\n";
+    return $r;
+  }
+  
+  private static function formsBlock($args, $auth, $node) {
+    $r .= '<fieldset><legend>' . lang::get('Group pages') . '</legend>';
+    $r .= '<p>' . lang::get('Use the following grid to define any pages that you would like your group members to use. You only need to '.
+        'specify a link caption if you want to override the default page name when accessed via your group.') . '</p>';
+    $pages = self::getAvailablePages($_GET['group_id']);
+    $r .= data_entry_helper::complex_attr_grid(array(
+      'fieldname' => 'group:pages[]',
+      'columns' => array(
+        array(
+          'label' => 'Form',
+          'datatype' => 'lookup',
+          'lookupValues' => $pages,
+          'validation' => array('unique')
+        ), array(
+          'label' => 'Link caption',
+          'datatype' => 'text'
+        ), array(
+          'label' => 'Access control',
+          'datatype' => 'lookup',
+          'lookupValues' => array(
+            'f' => 'Available to all group members',
+            't' => 'Available only to group admins',
+          ),
+          'default' => 'f'
+        )
+      ), 
+      'default' => self::getGroupPages($args, $auth),
+      'defaultRows' => min(3, count($pages))
+    ));
+    $r .= '</fieldset>';
+    return $r;
+  }
+  
+  /**
+   * Retrieve all the pages that are available for linking to this group.
+   */
+  private static function getAvailablePages($group_id) {
+    $sql = "SELECT n.nid, COALESCE(u.dst, CONCAT('node/', i.nid)) as path, n.title
+        FROM {iform} i
+        JOIN {node} n ON n.nid=i.nid
+        LEFT JOIN {url_alias} u ON u.src = CONCAT('node/', i.nid)
+        WHERE i.available_for_groups=1 AND ";
+    if (empty($group_id))
+      $sql .= 'i.limit_to_group_id IS NULL';
+    else {
+      $sql .= '(i.limit_to_group_id IS NULL OR i.limit_to_group_id = ' . $group_id . ')';
+    }
+    $qry = db_query($sql);
+    $pages=array();
+    if (substr(VERSION, 0, 1)==='6') {
+      while ($row=db_fetch_object($qry)) {
+        $pages[$row->path] = $row->title;
+      }
+    } elseif (substr(VERSION, 0, 1)==='7') {
+      foreach ($qry as $row) {
+        $pages[$row->path] = $row->title;
+      }
+    }
+    return $pages;
+  }
+  
+  /** 
+   * Retrieve the pages linked to this group from the database.
+   */
+  private static function getGroupPages($args, $auth) {
+    if (empty($_GET['group_id']))
+      return null;
+    $pages = data_entry_helper::get_population_data(array(
+      'table' => 'group_page',
+      'extraParams' => $auth['read'] + array('group_id'=>$_GET['group_id']),
+      'nocache'=>true
+    ));
+    $r = array();
+    foreach ($pages as $page) {
+      $r[] = array('fieldname' => "group+:pages:$page[id]", 'default'=>json_encode(array($page['path'], $page['caption'], $page['administrator'])));
+    }
     return $r;
   }
   
@@ -285,6 +385,40 @@ $('#entry_form').submit(function() {
         'sep' => '<br/>',
         'validation'=>array('required')
       ));
+    }
+    return $r;
+  }
+ 
+  /**
+   * Returns a control for picking one of the allowed record inclusion methods methods. If there is only one allowed, 
+   * then this is output as a single hidden input.
+   * @param array $args Form configuration arguments
+   * @return string HTML to output
+   */
+  private static function inclusionMethodControl($args) {    
+    $r = '';
+    switch ($args['data_inclusion_mode']) {
+      case 'implicit':
+        $implicit = 't';
+      case 'explicit':
+        $implicit = 'f';
+        $r = data_entry_helper::hidden_text(array(
+          'fieldname' => 'group:implicit_record_inclusion',
+          'default' => $implicit
+        ));
+        break;
+      default: 
+        $r = data_entry_helper::select(array(
+          'fieldname' => 'group:implicit_record_inclusion',
+          'label' => 'How should records be included?',
+          'lookupValues' => array(
+            't' => 'Records are included for all group members, as long as they match the group\'s parameters defined below',
+            'f' => 'Records are only included in the group if explicitly posted to the group'
+          ),
+          'helpText' => 'Note that some functionality such as allowing group members to view full record precision depends on records being explicitly posted into the group. ' .
+              'If you choose to require records to be explicitly posted into the group, then make sure that you select at least 1 data entry form in the Group Pages section below ' .
+              'so that group members can easily post records into the group.'
+        ));
     }
     return $r;
   }
@@ -394,6 +528,42 @@ $('#entry_form').submit(function() {
       $values['group_relation:relationship_type_id']=$args['parent_group_relationship_type'];
     }
     $s = submission_builder::build_submission($values, $struct);
+    // scan the posted values for group pages. This search grabs the first column value keys.
+    $pageKeys = preg_grep('/^group\+:pages:\d*:\d+:0$/', array_keys($values));
+    $pages = array();
+    foreach ($pageKeys as $key) {
+      // skip empty rows, unless they were rows loaded for an existing group_pages record
+      if (!empty($values[$key]) || preg_match('/^group\+:pages:(\d+)/', $key)) {
+        // get the key without the column index, so we can access any column we want
+        $base = preg_replace('/0$/', '', $key);
+        if ($values[$base.'deleted']==='t' || empty($values[$base.'0']))
+          $page = array('deleted'=>'t');
+        else {
+          $tokens=explode(':',$values[$base.'0']);
+          $path = $tokens[0];
+          $caption=empty($values[$base.'1']) ? $tokens[1] : $values[$base.'1'];
+          $administrator=explode(':',$values[$base.'2']);
+          $administrator = empty($administrator) ? 'f' : $administrator[0];
+          $page = array(
+            'caption' => $caption,
+            'path' => $path,
+            'administrator' => $administrator
+          );
+        }
+        // if existing group page, hook up to the id
+        if (preg_match('/^group\+:pages:(\d+)/', $key, $matches)) {
+          $page['id'] = $matches[1];
+        }
+        $pages[] = $page;
+      }
+    }
+    if (!empty($pages)) {
+      if (!isset($s['subModels']))
+        $s['subModels'] = array();
+      foreach ($pages as $page) {
+        $s['subModels'][] = array('fkId' => 'group_id', 'model'=>array('id'=>'group_page', 'fields'=>$page));
+      }
+    }
     // need to manually build the submission for the admins sub_list, since we are hijacking what is 
     // intended to be a custom attribute control
     self::extractUserInfoFromFormValues($s, $values, 'admin_user_id', 't');

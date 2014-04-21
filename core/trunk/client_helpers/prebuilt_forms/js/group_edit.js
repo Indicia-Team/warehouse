@@ -6,4 +6,16 @@ jQuery(document).ready(function($) {
       $('#release-warning').show();
     }
   });
+  function checkViewSensitiveAllowed() {
+    // fully public groups can't allow sensitive data to be viewed
+    if ($('input[name=group\\:joining_method]:checked').val()==='P') {
+      $('#group\\:view_full_precision').removeAttr('checked');
+      $('#group\\:view_full_precision').attr('disabled', true);
+    } 
+    else {
+      $('#group\\:view_full_precision').removeAttr('disabled');
+    }
+  }
+  $('input[name=group\\:joining_method]').change(checkViewSensitiveAllowed);
+  checkViewSensitiveAllowed();
 });
