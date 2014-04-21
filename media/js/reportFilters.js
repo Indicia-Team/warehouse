@@ -103,6 +103,10 @@ jQuery(document).ready(function($) {
         if (taxa.length>0) {
           r.push(taxa.join(', '));
         }
+        if (typeof indiciaData.filter.def.taxon_rank_sort_order_combined!=="undefined" && 
+            indiciaData.filter.def.taxon_rank_sort_order_combined!=="") {
+          r.push($("#level-label").text() + ' ' + $("#taxon_rank_sort_order_op option:selected").text() + ' ' + $("#taxon_rank_sort_order_combined option:selected").text());
+        }
         return r.join('<br/>');
       },
       applyFormToDefinition:function() {
@@ -130,6 +134,10 @@ jQuery(document).ready(function($) {
           $.each($('input[name=taxa_taxon_list_list\\[\\]]'), function(idx, ctrl) {
             indiciaData.filter.def.taxa_taxon_list_names[$(ctrl).val()] = $.trim($(ctrl).parent().text());
           });
+        }
+        // because the rank sort order key includes both the sort order and rank ID, clean this up for the actual filter
+        if (typeof indiciaData.filter.def.taxon_rank_sort_order_combined!=="undefined") {
+          indiciaData.filter.def.taxon_rank_sort_order = indiciaData.filter.def.taxon_rank_sort_order_combined.split(':')[0];
         }
       },
       loadForm:function(context) {
