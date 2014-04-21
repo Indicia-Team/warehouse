@@ -11,6 +11,11 @@ $selected-color: #027AC6;
 $header-font-color: #027AC6;
 $selected-font-color: #ffffff;
 
+#verification-grid {
+  height: 650px;
+  overflow-y: scroll;
+}
+
 table.report-grid {
   font-size: 80%;  
   width: 100%;
