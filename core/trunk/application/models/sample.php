@@ -83,7 +83,8 @@ class Sample_Model extends ORM_Tree
       'comment',
       'sample_method_id',
       'input_form',
-      'external_key'
+      'external_key',
+      'group_id'
     );
     $array->add_rules('survey_id', 'required');
     // when deleting a sample, only need the id and the deleted flag, don't need the date or location details, but copy over if they are there.
