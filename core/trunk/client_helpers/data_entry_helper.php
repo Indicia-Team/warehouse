@@ -997,7 +997,15 @@ $('#$escaped').change(function(e) {
       'maxUploadSize' => self::convert_to_bytes(isset(parent::$maxUploadSize) ? parent::$maxUploadSize : '4M'),
       'codeGenerated' => 'all',
       'mediaTypes' => array('Image:Local'),
-      'imgPath' => empty(self::$images_path) ? self::relative_client_helper_path()."../media/images/" : self::$images_path
+      'imgPath' => empty(self::$images_path) ? self::relative_client_helper_path()."../media/images/" : self::$images_path,
+      'addBtnCaption' => lang::get('Add {1}'),
+      'msgPhoto' => lang::get('photo'),
+      'msgFile' => lang::get('file'),
+      'msgLink' => lang::get('link'),
+      'msgNewImage' => lang::get('New {1}'),
+      'msgDelete' => lang::get('Delete this item'),
+      'msgUseAddFileBtn' => lang::get('Use the Add file button to select a file from your local disk. Files of type {1} are allowed.'),
+      'msgUseAddLinkBtn' => lang::get('Use the Add link button to add a link to information stored elsewhere on the internet. You can enter links from {1}.')
     );    
     if (isset(self::$final_image_folder_thumbs))
       $defaults['finalImageFolderThumbs'] = $relpath . self::$final_image_folder_thumbs;
