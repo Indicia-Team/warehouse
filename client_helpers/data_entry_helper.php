@@ -292,7 +292,7 @@ class data_entry_helper extends helper_base {
     foreach ($options['columns'] as $idx => &$def) {
       // whilst we are iterating the columns, may as well do some setup.
       // apply i18n to unit now, as it will be used in JS later
-      if ($def['unit'])
+      if (!empty($def['unit']))
         $def['unit'] = lang::get($def['unit']);
       if ($def['datatype']==='lookup') {
         $minified = array();
@@ -545,7 +545,7 @@ $('#$escaped').change(function(e) {
     if (array_key_exists('default', $options) && is_array($options['default'])) {
       foreach ($options['default'] as $item) {
         $items .= str_replace(array('{caption}', '{value}', '{fieldname}'), 
-          array($item['caption'], $item['default'], $item['fieldname']), 
+          array($item['caption'], $item['default'], $item['fieldname']),
           $indicia_templates['sub_list_item']);
         // a hidden input to put a blank in the submission if it is deleted
         $r .= "<input type=\"hidden\" value=\"\" name=\"$item[fieldname]\">";
@@ -6283,6 +6283,11 @@ if (errors$uniq.length>0) {
           self::$validation_errors = $response['errors'];
           // And tell the helper to reload the existing data.
           self::$entity_to_load = $_POST;
+          if (isset($response['code'])) {
+            switch ($response['code']) {
+              case 2003: hostsite_show_message(lang::get('The data could not be saved because it would create a duplicate.'), 'error');
+            }
+          }
         } else {
           $r .= "<div class=\"ui-state-error ui-corner-all\">\n";
           $r .= "<p>An error occurred when the data was submitted.</p>\n";

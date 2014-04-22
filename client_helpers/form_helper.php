@@ -167,8 +167,12 @@ class form_helper extends helper_base {
   private static function link_to_group_fields($readAuth, $options) {
     $r = '';
     if (function_exists('db_query')) {
-      $t = db_fetch_object(db_query("SELECT count(*) as count FROM {iform} WHERE iform='group_edit'"));
-      if ($t->count>0) {
+      $qry = db_query("SELECT count(*) as count FROM {iform} WHERE iform='group_edit'");
+      if (function_exists('db_fetch_object'))
+        $row = db_fetch_object($qry);
+      else 
+        $row = $qry->fetchObject();
+      if ($row->count>0) {
         $r .= data_entry_helper::checkbox(array(
           'label' => lang::get('Allow this form to be used by recording groups'),
           'fieldname' => 'available_for_groups',
@@ -235,12 +239,11 @@ $('#form-category-picker').change(function(e) {
 });
 
 $('#form-picker').change(function(e) {
-  var details='', def, selection;
+  var details='', def;
   $('#load-params').attr('disabled', false);
   $('#form-params').html('');
   if ($(e.target).val()!=='') {
-    selection=$('#form-picker').val().split(':');
-    def = prebuilt_forms[selection[0]][selection[1]];
+    def = prebuilt_forms[$('#form-category-picker').val()][$('#form-picker').val()];
     if (typeof def.description !== 'undefined') {
       details += '<p>'+def.description+'</p>';
     }

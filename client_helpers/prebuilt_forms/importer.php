@@ -86,7 +86,7 @@ class iform_importer {
   public static function get_form($args, $node, $response) {
     iform_load_helpers(array('import_helper'));
     $auth = import_helper::get_read_write_auth($args['website_id'], $args['password']);
-    group_authorise_form($node, $auth['read']);
+    group_authorise_form($args, $auth['read']);
     if ($args['model']=='url') {
       if (!isset($_GET['type']))
         return "This form is configured so that it must be called with a type parameter in the URL";

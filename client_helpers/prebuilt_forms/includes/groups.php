@@ -26,8 +26,8 @@
  * @subpackage PrebuiltForms.
  */
 
-function group_authorise_form($node, $readAuth) {
-  if (!empty($node->limit_to_group_id) && $node->limit_to_group_id!==(empty($_GET['group_id']) ? '' : $_GET['group_id'])) {
+function group_authorise_form($args, $readAuth) {
+  if (!empty($args['limit_to_group_id']) && $args['limit_to_group_id']!==(empty($_GET['group_id']) ? '' : $_GET['group_id'])) {
     // page owned by a different group, so throw them out
     hostsite_show_message(lang::get('This page is a private recording group page which you cannot access.'), 'alert');
     hostsite_goto_page('<front>');

@@ -279,17 +279,24 @@ class iform_group_edit {
     // JavaScript to grab the filter definition and store in the form for posting when the form is submitted
     data_entry_helper::$javascript .= "
 $('#entry_form').submit(function() {
-  $('#filter-title-val').val('" . lang::get('Filter for user group') . " ' + $('#group\\\\:title').val());
+  $('#filter-title-val').val('" . lang::get('Filter for user group') . " ' + $('#group\\\\:title').val() + ' ' + new Date().getTime());
   $('#filter-def-val').val(JSON.stringify(indiciaData.filter.def));
 });\n";
+    // for existing groups, prevent removal of yourself as a member. Someone else will have to do this for you so we don't orphan groups.
+    if (!empty(data_entry_helper::$entity_to_load['group:id'])) {
+      data_entry_helper::$javascript .= "$('#groups_user\\\\:admin_user_id\\\\:sublist input[value=".hostsite_get_user_field('indicia_user_id')."]').closest('li').children('span').remove();\n";
+    }
     return $r;
   }
   
   private static function formsBlock($args, $auth, $node) {
-    $r .= '<fieldset><legend>' . lang::get('Group pages') . '</legend>';
+    $r = '<fieldset><legend>' . lang::get('Group pages') . '</legend>';
     $r .= '<p>' . lang::get('Use the following grid to define any pages that you would like your group members to use. You only need to '.
-        'specify a link caption if you want to override the default page name when accessed via your group.') . '</p>';
-    $pages = self::getAvailablePages($_GET['group_id']);
+        'specify a link caption if you want to override the default page name when accessed via your group. ' .
+        'Please note that you must link at least one recording form page to the group if you want to allow your members '.
+        'to explicitly post records into the group. You must also link at least one reporting page if you want your '.
+        'members to be able to view the output of the group.') . '</p>';
+    $pages = self::getAvailablePages(empty($_GET['group_id']) ? null : $_GET['group_id']);
     $r .= data_entry_helper::complex_attr_grid(array(
       'fieldname' => 'group:pages[]',
       'columns' => array(
@@ -322,10 +329,9 @@ $('#entry_form').submit(function() {
    * Retrieve all the pages that are available for linking to this group.
    */
   private static function getAvailablePages($group_id) {
-    $sql = "SELECT n.nid, COALESCE(u.dst, CONCAT('node/', i.nid)) as path, n.title
+    $sql = "SELECT n.nid, n.title
         FROM {iform} i
         JOIN {node} n ON n.nid=i.nid
-        LEFT JOIN {url_alias} u ON u.src = CONCAT('node/', i.nid)
         WHERE i.available_for_groups=1 AND ";
     if (empty($group_id))
       $sql .= 'i.limit_to_group_id IS NULL';
@@ -336,11 +342,11 @@ $('#entry_form').submit(function() {
     $pages=array();
     if (substr(VERSION, 0, 1)==='6') {
       while ($row=db_fetch_object($qry)) {
-        $pages[$row->path] = $row->title;
+        $pages[hostsite_get_url("node/$row->nid")] = $row->title;
       }
     } elseif (substr(VERSION, 0, 1)==='7') {
       foreach ($qry as $row) {
-        $pages[$row->path] = $row->title;
+        $pages[hostsite_get_url("node/$row->nid")] = $row->title;
       }
     }
     return $pages;
@@ -453,6 +459,7 @@ $('#entry_form').submit(function() {
    */
   private static function memberControls($args, $auth) {
     $r = '';
+    $class = empty(data_entry_helper::$validation_errors['groups_user:general']) ? '' : 'ui-state-error';
     if ($args['include_administrators']) {
       $r .= data_entry_helper::sub_list(array(
         'fieldname'=>'groups_user:admin_user_id',
@@ -461,8 +468,9 @@ $('#entry_form').submit(function() {
         'captionField'=>'person_name',
         'valueField'=>'id',
         'extraParams'=>$auth['read']+array('view'=>'detail'),
-        'helpText'=>lang::get('Search for users to assign admin role to by typing a few characters of their surname'),
-        'addToTable'=>false
+        'helpText'=>lang::get('Search for users to make administrators of this group by typing a few characters of their surname'),
+        'addToTable'=>false,
+        'class' => $class
       ));
     }
     if ($args['include_members']) {
@@ -474,8 +482,18 @@ $('#entry_form').submit(function() {
         'valueField'=>'id',
         'extraParams'=>$auth['read']+array('view'=>'detail'),
         'helpText'=>lang::get('Search for users to give membership to by typing a few characters of their surname'),
-        'addToTable'=>false
+        'addToTable'=>false,
+        'class' => $class
       ));
+    }
+    if (data_entry_helper::$validation_errors['groups_user:general']) {
+      global $indicia_templates;
+      $fieldname = $args['include_administrators'] ? 'groups_user:admin_user_id' :
+          ($args['include_members'] ? 'groups_user:user_id' : '');
+      $template = str_replace('{class}', $indicia_templates['error_class'], $indicia_templates['validation_message']);
+      $template = str_replace('{for}', $fieldname, $template);
+      $r .= str_replace('{error}', lang::get(data_entry_helper::$validation_errors['groups_user:general']), $template);
+      $r .= '<br/>';
     }
     return $r;
   }
@@ -566,32 +584,74 @@ $('#entry_form').submit(function() {
     }
     // need to manually build the submission for the admins sub_list, since we are hijacking what is 
     // intended to be a custom attribute control
-    self::extractUserInfoFromFormValues($s, $values, 'admin_user_id', 't');
+    if (self::extractUserInfoFromFormValues($s, $values, 'admin_user_id', 't')===0 && empty($values['group:id'])) {
+      // no admins created when setting up the group initially, so need to set the current user as an admin
+      $s['subModels'][]=array('fkId' => 'group_id', 
+          'model' => submission_builder::wrap(array('user_id'=>hostsite_get_user_field('indicia_user_id'), 'administrator'=>'t'), 'groups_user'));
+    };
     self::extractUserInfoFromFormValues($s, $values, 'user_id', 'f');
+    self::deleteExistingUsers($s, $values);
     return $s;
-  }  
+  }
   
+  private static function deleteExistingUsers(&$s, $values) {
+    $existingUsers=preg_grep("/^groups_user\:user_id\:[0-9]+$/", array_keys($values));
+    // for existing, we just need to look for deletions which will have an empty value
+    foreach($existingUsers as $user) {
+      if (empty($values[$user])) {
+        $id=substr($user, 20);
+        $s['subModels'][]=array('fkId' => 'group_id', 
+            'model' => submission_builder::wrap(array('id'=>$id, 'deleted'=>'t'), 'groups_user'));
+      }
+    }
+  }
+  
+  /** 
+   * Extracts the sub-models required to populate member and administrator info from the form data.
+   */
   private static function extractUserInfoFromFormValues(&$s, $values, $fieldname, $isAdmin) {
-    $existingAdmins=preg_grep("/^groups_user\:$fieldname\:[0-9]+$/", array_keys($values));
+    $count=0;
     if (!empty($values["groups_user:$fieldname"]) || !empty($existingAdmins)) {
       if (!isset($s['subModels']))
         $s['subModels']=array();
       if (!empty($values["groups_user:$fieldname"])) {
         foreach($values["groups_user:$fieldname"] as $userId) {
+          $values = array('user_id'=>$userId, 'administrator'=>$isAdmin);
           $s['subModels'][]=array('fkId' => 'group_id', 
-            'model' => submission_builder::wrap(array('user_id'=>$userId, 'administrator'=>$isAdmin), 'groups_user'));
-        }
-      }
-      // for existing, we just need to look for deletions which will have an empty value
-      foreach($existingAdmins as $admin) {
-        if (empty($values[$admin])) {
-          $id=substr($admin, 20);
-          $s['subModels'][]=array('fkId' => 'group_id', 
-            'model' => submission_builder::wrap(array('id'=>$id, 'deleted'=>'t'), 'groups_user'));
+            'model' => submission_builder::wrap($values, 'groups_user'));
+          $count++;
         }
       }
     }
-    return $s;
+    return $count;
+  }
+  
+  /**
+   * Perform some duplication checking on the members list.
+   */
+  public static function get_validation_errors($values) {
+    $duplicate=false;
+    $existingUsers=preg_grep("/^groups_user\:user_id\:[0-9]+$/", array_keys($values));
+    $newUsers = preg_grep("/^groups_user\:(admin_)?user_id$/", array_keys($values));
+    $users = array_merge(array_values($existingUsers), array_values($newUsers));
+    $userData = array_intersect_key($values, array_combine($users, $users));
+    $foundUsers = array();
+    foreach ($userData as $value) {
+      if (is_array($value)) {
+        foreach ($value as $item) {
+          if (in_array($item, $foundUsers))
+            $duplicate=true;
+          $foundUsers [] = $item;
+        }
+      }
+      else {
+        if (in_array($value, $foundUsers))
+          $duplicate=true;
+        $foundUsers [] = $value;
+      }
+    }
+    if ($duplicate)
+      return array('groups_user:general'=>lang::get("Please ensure that the list of administrators and group members only includes each person once."));
   }
   
   /** 

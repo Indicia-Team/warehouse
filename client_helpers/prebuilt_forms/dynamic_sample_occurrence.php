@@ -638,7 +638,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    * it available to a hook function which exists outside the form.
    */
   protected static function get_form_html($args, $auth, $attributes) { 
-    group_authorise_form($node, $auth['read']);
+    group_authorise_form($args, $auth['read']);
     // We always want an autocomplete formatter function for species lookups..
     call_user_func(array(self::$called_class, 'build_grid_autocomplete_function'), $args);
     global $remembered;
