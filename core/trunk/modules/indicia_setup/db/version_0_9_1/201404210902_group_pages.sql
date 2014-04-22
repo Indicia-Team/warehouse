@@ -31,7 +31,7 @@ COMMENT ON COLUMN group_pages.id IS 'Unique identifier and primary key for the t
 COMMENT ON COLUMN group_pages.group_id IS 'Foreign key to the groups table. Identifies the group of which the user is a member.';
 COMMENT ON COLUMN group_pages.caption IS 'Caption shown for this form when viewed in the group.';
 COMMENT ON COLUMN group_pages.path IS 'Path to the page on the client site which is enabled for this group';
-COMMENT ON COLUMN group_pages.admininstrator IS 'Set to true for pages that require group admin rights to be able to see them.';
+COMMENT ON COLUMN group_pages.administrator IS 'Set to true for pages that require group admin rights to be able to see them.';
 COMMENT ON COLUMN group_pages.created_on IS 'Date this record was created.';
 COMMENT ON COLUMN group_pages.created_by_id IS 'Foreign key to the users table (creator).';
 COMMENT ON COLUMN group_pages.updated_on IS 'Date this record was last updated.';
