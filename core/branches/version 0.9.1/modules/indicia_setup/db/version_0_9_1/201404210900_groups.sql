@@ -189,11 +189,6 @@ DROP FUNCTION f_add_ddl();
 DROP INDEX IF EXISTS ix_group_invitation_token_unique;
 CREATE UNIQUE INDEX ix_group_invitation_token_unique
    ON group_invitations (token ASC NULLS LAST);
-   
-DROP INDEX IF EXISTS idx_groups_users_unique;
-CREATE UNIQUE INDEX idx_groups_users_unique
-ON groups_users(group_id , user_id)
-WHERE deleted=false;
 
 COMMENT ON TABLE groups IS 'A list of entities which involve groupings of people, such as recording groups, projects or organisations.';
 COMMENT ON COLUMN groups.id IS 'Primary key and unique identifier for the table';
