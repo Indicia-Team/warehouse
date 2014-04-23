@@ -812,7 +812,8 @@ class XMLReportReader_Core implements ReportReader
             'description'=>'Comma separated list of location IDs',
             'joins' => array(
               array('value'=>'', 'operator'=>'', 'sql'=>"JOIN locations #alias:lfilt# on #alias:lfilt#.id #location_list_op# (#location_list#) and #alias:lfilt#.deleted=false " .
-                  "and st_intersects(coalesce(#alias:lfilt#.boundary_geom, #alias:lfilt#.centroid_geom), #sample_geom_field#)")
+                  "and st_intersects(coalesce(#alias:lfilt#.boundary_geom, #alias:lfilt#.centroid_geom), #sample_geom_field#) " .
+                  "and not st_touches(coalesce(#alias:lfilt#.boundary_geom, #alias:lfilt#.centroid_geom), #sample_geom_field#)")
             )
         ),
         'indexed_location_list' => array('datatype'=>'integer', 'default'=>'', 'display'=>'Location IDs (indexed)', 
