@@ -39,7 +39,7 @@ OpenLayers.Control.IndiciaGraticule = OpenLayers.Class(OpenLayers.Control, {
     * APIProperty: intervals
     * {Array(Float)} A list of possible graticule widths in degrees.
     */
-    intervals: [ 100000,10000,1000,100 ],
+    intervals: [100000,10000,1000,100],
 
     /**
      * APIProperty: displayInLayerSwitcher

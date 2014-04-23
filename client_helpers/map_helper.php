@@ -237,7 +237,9 @@ class map_helper extends helper_base {
   * <li><b>graticuleProjection</b><br/>
   * EPSG code (including EPSG:) for the projection used for the graticule (grid overlay).</li>
   * <li><b>graticuleBounds</b><br/>
-  * Array of the bounding box coordinates for the graticule(W,S,E,N).</li>
+  * Array of the bounding box coordinates for the graticule(W,S,E,N) in the coordinate system of the graticule.</li>
+  * <li><b>graticuleIntervals</b><br/>
+  * A list of possible graticule widths in the coordinate system of the graticule.</li>
   * <li><b>rememberPos</b><br/>
   * Set to true to enable restoring the map position when the page is reloaded. Requires jquery.cookie plugin. As this feature
   * requires cookies, you should notify your users in compliance with European cookie law if you use this option.</li>
