@@ -2034,7 +2034,7 @@ mapLocationSelectedHooks = [];
               {'displayClass': align + 'olControlModifyFeature', 'title':div.settings.hintModifyFeature});
           toolbarControls.push(ctrlObj);
         } else if (ctrl=='graticule') {
-          ctrlObj = new OpenLayers.Control.IndiciaGraticule({projection: div.settings.graticuleProjection, bounds: div.settings.graticuleBounds});
+          ctrlObj = new OpenLayers.Control.IndiciaGraticule({projection: div.settings.graticuleProjection, bounds: div.settings.graticuleBounds, intervals: div.settings.graticuleIntervals});
           div.map.addControl(ctrlObj);
           if ($.inArray(ctrl, div.settings.activatedStandardControls)===-1) {
             // if this control is not active, also need to reflect this in the layer.
@@ -2243,7 +2243,7 @@ jQuery.fn.indiciaMapPanel.defaults = {
     cursor: '',
     graticuleProjection: 'EPSG:27700',
     graticuleBounds: [0,0,700000,1300000],
-
+    graticuleIntervals: [100000,10000,1000,100],
     /* Intention is to also implement hoveredSrefPrecisionMin and Max for a square size shown when you hover, and also a
      * displayedSrefPrecisionMin and Mx for a square size output into a list box as you hover. Both of these could either be
      * absolute numbers, or a number preceded by - or + to be relative to the default square size for this zoom level. */
