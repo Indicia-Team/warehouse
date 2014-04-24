@@ -328,15 +328,20 @@ var saveComment, saveVerifyComment;
       if (indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] === 'details') {
         $('#details-tab').html(currRec.content);
       } else if (indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] === 'experience') {
-        $.get(
-          indiciaData.ajaxUrl + '/experience/' + indiciaData.nid + urlSep +
-              'occurrence_id=' + occurrence_id + '&user_id=' + currRec.extra.created_by_id +
-              '&nonce=' + indiciaData.read.nonce + '&auth_token=' + indiciaData.read.auth_token,
-          null,
-          function (data) {
-            $('#experience-div').html(data);
-          }
-        );
+        if (currRec.extra.created_by_id==='1') {
+          $('#experience-div').html('No experience information available. This record does not have the required information for other records by the same recorder to be extracted.');
+        } 
+        else {
+          $.get(
+            indiciaData.ajaxUrl + '/experience/' + indiciaData.nid + urlSep +
+                'occurrence_id=' + occurrence_id + '&user_id=' + currRec.extra.created_by_id +
+                '&nonce=' + indiciaData.read.nonce + '&auth_token=' + indiciaData.read.auth_token,
+            null,
+            function (data) {
+              $('#experience-div').html(data);
+            }
+          );
+        }
       } else if (indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] === 'phenology') {
         $.getJSON(
           indiciaData.ajaxUrl + '/phenology/' + indiciaData.nid + urlSep +
@@ -526,8 +531,8 @@ var saveComment, saveVerifyComment;
       else {
         // verifier can verify anywhere
         if (currRec.extra.locality_ids!=='') {
-          popupHtml += '<label>Trust will be applied to records from locality:</label><br/>'+
-              '<label><input type="radio" name="trust-location" value="all"> All </label><br/>';
+          popupHtml += '<label>Trust will be applied to records from locality:</label>'+
+              '<label><input type="radio" name="trust-location" value="all"> All </label>';
           // the record could intersect multiple locality boundaries. So can choose which...
           var locationIds = currRec.extra.locality_ids.split('|'), locations = currRec.extra.localities.split('|');
           // can choose to trust all localities or record's location
@@ -845,6 +850,7 @@ var saveComment, saveVerifyComment;
               if (!data[i].location_name) {
                 textMessage = textMessage.substring(0, textMessage.length - 2);
               }
+              textMessage += '<br/>&nbsp;&nbsp;- trust was setup by ' + data[i].trusted_by;
               textMessage += ' <a class="default-button existingTrustRemoveButton" id="deleteTrust-' +
                   data[i].trust_id + '" >Remove</a><br/>';
               if(data.length>1) {
