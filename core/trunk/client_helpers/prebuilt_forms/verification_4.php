@@ -858,7 +858,7 @@ idlist=';
       if ($row['v_total']===0) {
         $r .= '<p>This recorder has not recorded this ' + $row['type'] + ' before.</p>';
       } else {
-        $r .= '<p>Records of ' . $row['what'] . '<p>';
+        $r .= '<h3>Records of ' . $row['what'] . '</h3>';
         $r .= '<table><thead><th></th><th>Last 3 months</th><th>Last year</th><th>All time</th></thead>';
         $r .= '<tbody>';
         $r .= '<tr class="verified"><th>Verified</th><td>' . self::records_link($row, 'v_3months', $node) . '</td><td>' . 
@@ -894,27 +894,33 @@ WHERE vuser_id.value=".$_GET['user_id']);
   private static function records_link($row, $value, $node) {
     if (!empty($node->params['view_records_report_path']) && !empty($_GET['user_id'])) {
       $tokens = explode('_', $value);
-      $params = array('dynamic-ownGroups'=>0,'dynamic-recent'=>0,'dynamic-user_filter'=>$_GET['user_id']);
+      $params = array(
+          'filter-date_age' => '', 
+          'filter-indexed_location_list' => '', 
+          'filter-taxon_group_list' => '', 
+          'filter-user_id' => $_GET['user_id'], 
+          'filter-my_records' => 1
+      );
       switch ($tokens[0]) {
         case 'r' : 
-          $params['dynamic-record_status'] = 'R';
+          $params['filter-quality'] = 'R';
           break;
         case 'v' :
-          $params['dynamic-record_status'] = 'V';
+          $params['filter-quality'] = 'V';
           break;
       }
       switch ($tokens[1]) {
         case '3months' :
-          $params['dynamic-input_date_from'] = date('Y-m-d', strToTime('3 months ago'));
+          $params['filter-date_age'] = '3 months';
           break;
         case '1year' :
-          $params['dynamic-input_date_from'] = date('Y-m-d', strToTime('1 year ago'));
+          $params['filter-date_age'] = '1 year';
           break;
       }
       if ($row['type']==='species')
-        $params['dynamic-taxon_meaning_id'] = $row['what_id'];
+        $params['filter-taxon_meaning_list'] = $row['what_id'];
       else
-        $params['dynamic-taxon_group_id'] = $row['what_id'];
+        $params['filter-taxon_group_list'] = $row['what_id'];
       return l($row[$value], $node->params['view_records_report_path'], 
           array('attributes'=>array('target' => '_blank'), 'query'=>$params));
       
