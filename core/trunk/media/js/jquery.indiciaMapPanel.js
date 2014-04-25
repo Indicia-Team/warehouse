@@ -2034,7 +2034,8 @@ mapLocationSelectedHooks = [];
               {'displayClass': align + 'olControlModifyFeature', 'title':div.settings.hintModifyFeature});
           toolbarControls.push(ctrlObj);
         } else if (ctrl=='graticule') {
-          ctrlObj = new OpenLayers.Control.IndiciaGraticule({projection: div.settings.graticuleProjection, bounds: div.settings.graticuleBounds, intervals: div.settings.graticuleIntervals});
+          ctrlObj = new OpenLayers.Control.IndiciaGraticule({projection: div.settings.graticuleProjection, bounds: div.settings.graticuleBounds, 
+              intervals: div.settings.graticuleIntervals, intervalColours: div.settings.graticuleIntervalColours});
           div.map.addControl(ctrlObj);
           if ($.inArray(ctrl, div.settings.activatedStandardControls)===-1) {
             // if this control is not active, also need to reflect this in the layer.
