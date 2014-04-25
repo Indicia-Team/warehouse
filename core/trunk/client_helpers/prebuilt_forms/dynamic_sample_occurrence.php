@@ -2186,8 +2186,6 @@ else
     $opts = array(
       'table'=>'occurrence_medium',
       'readAuth' => $readAuth,
-      'label'=>lang::get('Upload your photos'),
-      'caption'=>lang::get('Photos'),
       'resizeWidth' => 1600,
       'resizeHeight' => 1600,
       'readAuth' => $readAuth

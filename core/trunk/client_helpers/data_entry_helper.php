@@ -978,7 +978,6 @@ $('#$escaped').change(function(e) {
     $relpath = self::getRootFolder() . self::client_helper_path();
     // Allow options to be defaulted and overridden
     $defaults = array(
-      'caption' => lang::get('Files'),
       'id' => 'default',
       'upload' => true,
       'maxFileCount' => 4,
@@ -1006,7 +1005,8 @@ $('#$escaped').change(function(e) {
       'msgDelete' => lang::get('Delete this item'),
       'msgUseAddFileBtn' => lang::get('Use the Add file button to select a file from your local disk. Files of type {1} are allowed.'),
       'msgUseAddLinkBtn' => lang::get('Use the Add link button to add a link to information stored elsewhere on the internet. You can enter links from {1}.')
-    );    
+    ); 
+    $defaults['caption'] = (!isset($options['mediaTypes']) || $options['mediaTypes']===array('Image:Local')) ? lang::get('Photos') : lang::get('Media files');
     if (isset(self::$final_image_folder_thumbs))
       $defaults['finalImageFolderThumbs'] = $relpath . self::$final_image_folder_thumbs;
     $browser = self::get_browser_info();
