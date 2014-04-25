@@ -285,7 +285,7 @@ $('#".data_entry_helper::$validated_form_id."').submit(function() {
     return false;
   }
   return true;
-});";
+});\n";
       }
     }
     // Output the dynamic tab content
