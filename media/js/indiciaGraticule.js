@@ -46,7 +46,11 @@
     */
     intervals: [100000,10000,1000,100],
     
-    intervalColours: ["#777777","#999999","#aaaaaa","#cccccc"],
+    /**
+    * APIProperty: intervalColours
+    * {Array(string)} A list of possible CSS colours corresponding to the lines drawn for each graticule width.
+    */
+    intervalColours: ["#999999","#999999","#999999","#999999"],
 
     /**
      * APIProperty: displayInLayerSwitcher
@@ -182,8 +186,9 @@
       }
     },
     
-    buildGrid: function(xInterval, yInterval, mapCenterLL, llProj, mapProj, mapBounds, colour) {
-      var style=$.extend(this.lineStyle, {strokeColor: colour});
+    buildGrid: function(xInterval, yInterval, mapCenterLL, llProj, mapProj, gridStyle) {
+      var style = $.extend({}, this.lineStyle, gridStyle),
+          mapBounds = this.map.getExtent();;
       //round the LL center to an even number based on the interval
       mapCenterLL.x = Math.floor(mapCenterLL.x/xInterval)*xInterval;
       mapCenterLL.y = Math.floor(mapCenterLL.y/yInterval)*yInterval;
@@ -203,13 +208,13 @@
           newPoint = newPoint.offset(new OpenLayers.Pixel(0,yInterval));
           mapXY = OpenLayers.Projection.transform(newPoint.clone(), llProj, mapProj);
           centerLonPoints.unshift(newPoint);
-      } while (mapBounds.containsPixel(mapXY) && ++iter<1000);
+      } while (mapBounds.top>=mapXY.y && ++iter<1000);
       newPoint = mapCenterLL.clone();
       do {          
           newPoint = newPoint.offset(new OpenLayers.Pixel(0,-yInterval));
           mapXY = OpenLayers.Projection.transform(newPoint.clone(), llProj, mapProj);
           centerLonPoints.push(newPoint);
-      } while (mapBounds.containsPixel(mapXY) && ++iter<1000);
+      } while (mapBounds.bottom<=mapXY.y && ++iter<1000);
       
       //get the central latitude line, increment the longitude
       iter = 0;
@@ -219,13 +224,13 @@
           newPoint = newPoint.offset(new OpenLayers.Pixel(-xInterval, 0));
           mapXY = OpenLayers.Projection.transform(newPoint.clone(), llProj, mapProj);
           centerLatPoints.unshift(newPoint);
-      } while (mapBounds.containsPixel(mapXY) && ++iter<1000);
+      } while (mapBounds.left<=mapXY.x && ++iter<1000);
       newPoint = mapCenterLL.clone();
       do {          
           newPoint = newPoint.offset(new OpenLayers.Pixel(xInterval, 0));
           mapXY = OpenLayers.Projection.transform(newPoint.clone(), llProj, mapProj);
           centerLatPoints.push(newPoint);
-      } while (mapBounds.containsPixel(mapXY) && ++iter<1000);
+      } while (mapBounds.right>=mapXY.x && ++iter<1000);
       
       //now generate a line for each node in the central lat and lon lines
       //first loop over constant longitude
@@ -247,7 +252,7 @@
           lat += latDelta;
         }
         var geom = new OpenLayers.Geometry.LineString(pointList);
-        lines.push(new OpenLayers.Feature.Vector(geom, {}, style));
+        lines.push(new OpenLayers.Feature.Vector(geom, null, style));
       }
       
       //now draw the lines of constant latitude
@@ -268,7 +273,7 @@
           lon += lonDelta;
         }
         var geom = new OpenLayers.Geometry.LineString(pointList);
-        lines.push(new OpenLayers.Feature.Vector(geom, {}, style));
+        lines.push(new OpenLayers.Feature.Vector(geom, null, style));
       }
       this.gratLayer.addFeatures(lines);
     },
@@ -337,9 +342,9 @@
           break;
         }
       }
-      this.buildGrid(xInterval, yInterval, mapCenterLL.clone(), llProj, mapProj, mapBounds, colour);
+      this.buildGrid(xInterval, yInterval, mapCenterLL.clone(), llProj, mapProj, {strokeColor: colour, strokeOpacity: 0.4});
       if (xLargeInterval) {
-        this.buildGrid(xLargeInterval, yLargeInterval, mapCenterLL, llProj, mapProj, mapBounds, largeColour);
+        this.buildGrid(xLargeInterval, yLargeInterval, mapCenterLL, llProj, mapProj, {strokeColor: largeColour, strokeOpacity: 0.7});
       }
     },
     
