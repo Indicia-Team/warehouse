@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Trending people report using standard filter" description="Gives a list of top 10 recent contributors, with their number of records. Ideal for populating
+        a 'trends cloud'.">
+      <query website_filter_field="o.website_id" standard_params="true">
+      SELECT *, greatest(11, cast((15 - (sqrt(#records_to_scan#) / sqrt(records)))*2 as integer)) as font_size FROM (
+        SELECT case position(',' in recorders) when 0 then recorders 
+            else regexp_replace(recorders, '(.+), ', '') || ' ' || regexp_replace(recorders, ',(.+)', '') end as recorders, 
+            count(id) as records
+        FROM (SELECT o.id, o.recorders
+          FROM cache_occurrences o
+          #agreements_join#
+          #joins#
+          WHERE #sharing_filter#
+          #filters#
+          ORDER BY id DESC
+          LIMIT #records_to_scan#) list
+        GROUP BY recorders
+        ORDER BY count(id) DESC
+        LIMIT #recorders_to_return#
+      ) AS list ORDER BY recorders ASC
+      </query>
+  <params>
+    <param name="records_to_scan" datatype="integer" default="1000" />
+    <param name="recorders_to_return" datatype="integer" default="15" />
+  </params>
+</report>
