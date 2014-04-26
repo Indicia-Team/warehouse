@@ -84,12 +84,12 @@ class user_identifier {
     // this user is attributed correctly to the warehouse user.
     if (!isset($request['cms_user_id']) || !$request['cms_user_id'])
       throw new exception('Call to get_user_id requires a cms_user_id in the GET or POST data.');
-    $dataObj = new stdClass();
-    $dataObj->db = new Database();
+    $userPersonObj = new stdClass();
+    $userPersonObj->db = new Database();
     if (!empty($request['warehouse_user_id'])) {
       $userId=$request['warehouse_user_id'];
-      $qry = $dataObj->db->select('person_id')->from('users')->where(array('id'=>$userId))->get()->result_array(false);
-      $dataObj->person_id = $qry[0]['person_id'];
+      $qry = $userPersonObj->db->select('person_id')->from('users')->where(array('id'=>$userId))->get()->result_array(false);
+      $userPersonObj->person_id = $qry[0]['person_id'];
     } else {
       $existingUsers = array();
       // work through the list of identifiers and find the users for the ones we already know about, 
@@ -105,7 +105,7 @@ class user_identifier {
           $joinType='LEFT';
         } else
           $joinType='INNER';
-        $dataObj->db->select('DISTINCT u.id as user_id, u.person_id')
+        $userPersonObj->db->select('DISTINCT u.id as user_id, u.person_id')
             ->from('users as u')
             ->join('people as p', 'p.id', 'u.person_id')
             ->join('user_identifiers as um', 'um.user_id', 'u.id', $joinType)
@@ -115,18 +115,18 @@ class user_identifier {
             ->where(array('u.deleted'=>'f', 'p.deleted'=>'f'));
         if ($identifier->type==='email') {
           // Filter to find either the user identifier or the email in the person record
-          $dataObj->db->where("(um.identifier ='".$identifier->identifier."' OR p.email_address='".$identifier->identifier."')");
-          $dataObj->db->where("(t.term='".$identifier->type."' OR p.email_address='".$identifier->identifier."')");
+          $userPersonObj->db->where("(um.identifier ='".$identifier->identifier."' OR p.email_address='".$identifier->identifier."')");
+          $userPersonObj->db->where("(t.term='".$identifier->type."' OR p.email_address='".$identifier->identifier."')");
         } else {
-          $dataObj->db->where("um.identifier='".$identifier->identifier."'");
-          $dataObj->db->where("t.term IN ('".$identifier->type."')");
+          $userPersonObj->db->where("um.identifier='".$identifier->identifier."'");
+          $userPersonObj->db->where("t.term IN ('".$identifier->type."')");
         }
 
         if (isset($request['users_to_merge'])) {
           $usersToMerge = json_decode($request['users_to_merge']);
-          $dataObj->db->in('user_id', $usersToMerge);
+          $userPersonObj->db->in('user_id', $usersToMerge);
         }
-        $r = $dataObj->db->get()->result_array(true);
+        $r = $userPersonObj->db->get()->result_array(true);
         foreach($r as $existingUser) {
           // create a placeholder for the known user we just found
           if (!isset($existingUsers[$existingUser->user_id]))
@@ -147,12 +147,12 @@ class user_identifier {
       // means 2 user records refer to the same physical person, or someone is sharing their
       // identifiers!
       if (count($existingUsers)===0)
-        $userId = self::createUser($email, $dataObj);
+        $userId = self::createUser($email, $userPersonObj);
       elseif (count($existingUsers)===1) {
         // single, known user associated with these identifiers
         $keys = array_keys($existingUsers);
         $userId = array_pop($keys);
-        $dataObj->person_id = $existingUsers[$userId][0]['person_id'];
+        $userPersonObj->person_id = $existingUsers[$userId][0]['person_id'];
       }
       if (!isset($userId)) {
         $resolution = self::resolveMultipleUsers($identifiers, $existingUsers);        
@@ -162,15 +162,15 @@ class user_identifier {
           return;
         } else {
           $userId = $resolution['userId'];
-          $dataObj->person_id = $existingUsers[$userId][0]['person_id'];
+          $userPersonObj->person_id = $existingUsers[$userId][0]['person_id'];
         }
       }
     }
-    self::storeIdentifiers($userId, $identifiers, $dataObj);
-    self::associateWebsite($userId,$dataObj, $websiteId);
-    self::storeSharingPreferences($userId);
-    $attrs = self::getAttributes($dataObj, $websiteId);
-    self::storeCustomAttributes($userId, $attrs);
+    self::storeIdentifiers($userId, $identifiers, $userPersonObj);
+    self::associateWebsite($userId,$userPersonObj, $websiteId);
+    self::storeSharingPreferences($userId, $userPersonObj);
+    $attrs = self::getAttributes($userPersonObj, $websiteId);
+    self::storeCustomAttributes($userId, $attrs,$userPersonObj);
     // Convert the attributes to update in the client website account into an array
     // of captions & values
     $attrsToReturn = array();
@@ -179,7 +179,7 @@ class user_identifier {
     // If allocating a new user ID, then update the created_by_id for all records that were created by this cms_user_id. This 
     // takes ownership of the records.
     if (empty($request['warehouse_user_id']))
-      postgreSQL::setOccurrenceCreatorByCmsUser($websiteId, $userId, $request['cms_user_id'], $dataObj->db);
+      postgreSQL::setOccurrenceCreatorByCmsUser($websiteId, $userId, $request['cms_user_id'], $userPersonObj->db);
     return array(
       'userId'=>$userId,
       'attrs'=>$attrsToReturn
@@ -192,16 +192,16 @@ class user_identifier {
    * associated values.
    * @return array List of the attributes to synchronise into the client site. 
    */
-  private static function getAttributes($dataObj, $websiteId) {
+  private static function getAttributes($userPersonObj, $websiteId) {
     // find the attribute Ids for the ones we have values for, that are synchronisable 
     // and associated with the current website. Note we deliberately read deleted
     // values so that we can return blanks
-    $attrs = $dataObj->db->select('DISTINCT ON (pa.id) pa.id, pav.id as value_id, pa.caption, pa.data_type, '.
+    $attrs = $userPersonObj->db->select('DISTINCT ON (pa.id) pa.id, pav.id as value_id, pa.caption, pa.data_type, '.
           'pav.text_value, pav.int_value, pav.float_value, pav.date_start_value, pav.deleted')
         ->from('person_attributes as pa')
         ->join('person_attributes_websites as paw', 'paw.person_attribute_id', 'pa.id')
         ->join('person_attribute_values as pav', 'pav.person_attribute_id', 'pa.id', 'LEFT')
-        ->in('pav.person_id',array(null, $dataObj->person_id))
+        ->in('pav.person_id',array(null, $userPersonObj->person_id))
         ->where(array(
           'pa.synchronisable'=>'t',
           'pa.deleted'=>'f',
@@ -243,7 +243,7 @@ class user_identifier {
    * Creates a new user account using the surname and first_name (if available)
    * in the $_REQUEST.
    */
-  private static function createUser($email, $dataObj) {
+  private static function createUser($email, $userPersonObj) {
     $person = ORM::factory('person')->where(array('email_address'=>$email, 'deleted'=>'f'))->find();
     if ($person->loaded
         && ((!empty($person->first_name) && $person->first_name != '?'
@@ -269,7 +269,7 @@ class user_identifier {
       $rolling = $unique===0 ? '' : '_'.$unique;
       $username = substr($uname, 0, 30-strlen($rolling)).$rolling;
       $unique++;
-    } while ($dataObj->db->select('id')->from('users')->where(array('username'=>$username))->get()->count()>0);
+    } while ($userPersonObj->db->select('id')->from('users')->where(array('username'=>$username))->get()->count()>0);
     $data = array(
       'person_id'=>$person->id,
       'email_visible'=>'f',
@@ -279,7 +279,7 @@ class user_identifier {
     );
     $user->validate(new Validation($data), true);
     self::checkErrors($user);
-    $dataObj->person_id=$person->id;
+    $userPersonObj->person_id=$person->id;
     return $user->id;
   }
   
@@ -287,7 +287,7 @@ class user_identifier {
    * For the list of identifiers passed through for a user, ensure they are all 
    * persisted in the database. 
    */
-  private static function storeIdentifiers($userId, $identifiers, $dataObj) {
+  private static function storeIdentifiers($userId, $identifiers, $userPersonObj) {
     // build a list of all the identifier types we will need, to ensure that we have terms for them.
     $typeTerms = array();
     foreach ($identifiers as $identifier) {
@@ -297,7 +297,7 @@ class user_identifier {
     // now ensure the termlist is populated
     $defaultLang = kohana::config('indicia.default_lang');
     foreach ($typeTerms as $term) {
-      $qry = $dataObj->db->select('t.id')
+      $qry = $userPersonObj->db->select('t.id')
           ->from('terms as t')
           ->join('termlists_terms as tlt', array('tlt.term_id'=>'t.id'))
           ->join('termlists as tl', array('tl.id'=>'tlt.termlist_id'))
@@ -306,12 +306,12 @@ class user_identifier {
           ->get()->result_array(false);
       if (count($qry)===0) {
         // missing term so insert
-        $dataObj->db->query("SELECT insert_term('$term', '$defaultLang', null, 'indicia:user_identifier_types');");
+        $userPersonObj->db->query("SELECT insert_term('$term', '$defaultLang', null, 'indicia:user_identifier_types');");
       }
     }
     // Check each identifier to see if it already exists for the user.
     foreach ($identifiers as $identifier) {
-      $r = $dataObj->db->select('ui.user_id')
+      $r = $userPersonObj->db->select('ui.user_id')
           ->from('terms as t')
           ->join('termlists_terms as tlt1', array('tlt1.term_id'=>'t.id'))
           ->join('termlists_terms as tlt2', array('tlt2.meaning_id'=>'tlt1.meaning_id'))
@@ -327,11 +327,11 @@ class user_identifier {
           ->get()->result_array(false);
       if (!count($r)) {
         // identifier does not yet exist so create it
-        self::loadIdentifierTypes($dataObj);
+        self::loadIdentifierTypes($userPersonObj);
         $new=ORM::factory('user_identifier');
         $data = array(
           'user_id'=>$userId,
-          'type_id'=>$dataObj->identifierTypes[$identifier->type],
+          'type_id'=>$userPersonObj->identifierTypes[$identifier->type],
           'identifier'=>$identifier->identifier
         );
         $new->validate(new Validation($data), true);
@@ -343,10 +343,10 @@ class user_identifier {
   /**
    * Loads the contents of the user identifier types termlist into a memory array, making it quicker to lookup.
    */
-  private static function loadIdentifierTypes($dataObj) {
-    if (!isset($dataObj->identifierTypes)) {
-      $dataObj->identifierTypes=array();
-      $terms = $dataObj->db
+  private static function loadIdentifierTypes($userPersonObj) {
+    if (!isset($userPersonObj->identifierTypes)) {
+      $userPersonObj->identifierTypes=array();
+      $terms = $userPersonObj->db
         ->select('termlists_terms.id, term')
         ->from('termlists_terms')
         ->join('terms', 'terms.id', 'termlists_terms.term_id')
@@ -355,7 +355,7 @@ class user_identifier {
         ->orderby(array('termlists_terms.sort_order'=>'ASC', 'terms.term'=>'ASC'))
         ->get();
       foreach ($terms as $term) {
-        $dataObj->identifierTypes[$term->term] = $term->id;
+        $userPersonObj->identifierTypes[$term->term] = $term->id;
       }
     }
   }
@@ -375,8 +375,8 @@ class user_identifier {
    * Create the associations between a user and the website that the call was made on,
    * if the association does not already exist.
    */
-  private static function associateWebsite($userId, $dataObj, $websiteId) {
-    $qry = $dataObj->db->select('id')
+  private static function associateWebsite($userId, $userPersonObj, $websiteId) {
+    $qry = $userPersonObj->db->select('id')
         ->from('users_websites')
         ->where(array('user_id'=>$userId, 'website_id'=>$websiteId))
         ->get()->result_array(false);
@@ -405,7 +405,7 @@ class user_identifier {
    * stores them against the user record. E.g. the user might opt of allowing other
    * websites to pass on their records via the sharing mechanism.
    */
-  private static function storeSharingPreferences($userId) {
+  private static function storeSharingPreferences($userId, $userPersonObj) {
     if (isset($_REQUEST['shares_to_prevent'])) {
       // the request parameter is a comma separated list of the tasks this user does not
       // want to share their records with other sites for
@@ -417,7 +417,7 @@ class user_identifier {
         $values["allow_share_for_$task"]=(in_array($task, $preventShares) ? 'f' : 't');
       }
       // update their user record.
-      $dataObj->db->update('users', $values, array('id'=>$userId));    
+      $userPersonObj->db->update('users', $values, array('id'=>$userId));    
     }
   }
   
@@ -426,8 +426,9 @@ class user_identifier {
    * with the user. 
    * @param integer $userId User ID,
    * @param array $attrs Array of attribute & value data.
+   * @param object $userPersonObj object containing data including relating to the person/user
    */
-  private static function storeCustomAttributes($userId, &$attrs) {
+  private static function storeCustomAttributes($userId, &$attrs,$userPersonObj) {
     if (!empty($_REQUEST['attribute_values'])) {
       $valueData = json_decode($_REQUEST['attribute_values'], true);
       if (count($valueData)) {
@@ -438,7 +439,7 @@ class user_identifier {
           // Ignore any attributes we don't have a change value for
           if (in_array($attr['caption'], $attrCaptions)) {
             $data = array(
-                'person_id' => $dataObj->person_id,
+                'person_id' => $userPersonObj->person_id,
                 'person_attribute_id' => $attr['id'],
                 'text_value' => $valueData[$attr['caption']]
             );
@@ -467,7 +468,7 @@ class user_identifier {
    * can consider the best action. If force=merge then users_to_merge can be set to an array of user IDs that the
    * merge applies to.
    */
-  private static function resolveMultipleUsers($identifiers, $existingUsers) {
+  private static function resolveMultipleUsers($identifiers, $existingUsers,$userPersonObj) {
     if (isset($_REQUEST['force'])) {
       if ($_REQUEST['force']==='split') {
         $uid = self::findBestFit($identifiers, $existingUsers);
@@ -482,7 +483,7 @@ class user_identifier {
       // we need to propose that there are several possible existing users which match the supplied identifiers
       // to the client website
       $users = array_keys($existingUsers);
-      $dataObj->db->select('users_websites.user_id, users_websites.website_id, websites.title')
+      $userPersonObj->db->select('users_websites.user_id, users_websites.website_id, websites.title')
         ->from('websites')
         ->join('users_websites', 'users_websites.website_id', 'websites.id')
         ->join('users', 'users.id', 'users_websites.user_id')
@@ -492,9 +493,9 @@ class user_identifier {
         ->in('users_websites.user_id', $users);
       if (isset($_REQUEST['users_to_merge'])) {
         $usersToMerge = json_decode($_REQUEST['users_to_merge']);
-        $dataObj->db->in('users_websites.user_id', $usersToMerge);
+        $userPersonObj->db->in('users_websites.user_id', $usersToMerge);
       }
-      return array('possibleMatches'=>$dataObj->db->get()->result_array(false));
+      return array('possibleMatches'=>$userPersonObj->db->get()->result_array(false));
     }
   }
   
@@ -509,7 +510,7 @@ class user_identifier {
     $nameMatches = array();    
     foreach ($identifiers as $identifier) {
       // find all the existing users which match this identifier.
-      $dataObj->db->select('ui.user_id, p.first_name, p.surname')
+      $userPersonObj->db->select('ui.user_id, p.first_name, p.surname')
           ->from('users as u')
           ->join('people as p', 'p.id', 'u.person_id')
           ->join('user_identifiers as ui', 'ui.user_id', 'u.id')
@@ -521,9 +522,9 @@ class user_identifier {
               'u.deleted'=>'f', 'p.deleted'=>'f', 'ui.deleted'=>'f', 'tlt1.deleted'=>'f', 'tlt2.deleted'=>'f', 't.deleted'=>'f'));
       if (isset($_REQUEST['users_to_merge'])) {
         $usersToMerge = json_decode($_REQUEST['users_to_merge']);
-        $dataObj->db->in('ui.user_id', $usersToMerge);
+        $userPersonObj->db->in('ui.user_id', $usersToMerge);
       }
-      $qry = $dataObj->db->get()->result();
+      $qry = $userPersonObj->db->get()->result();
       foreach($qry as $match) {
         if (!isset($existingUsers[$match->user_id]['matches']))
           $existingUsers[$match->user_id]['matches']=1;
@@ -561,12 +562,12 @@ class user_identifier {
   /**
    * If a request is received with the force parameter set to merge, this means we can merge the detected users into one.
    */
-  private static function mergeUsers($uid, $existingUsers) {
+  private static function mergeUsers($uid, $existingUsers,$userPersonObj) {
     foreach($existingUsers as $userIdToMerge=>$websites) {
       if ($userIdToMerge!=$uid && (!isset($_REQUEST['users_to_merge']) || in_array($userIdToMerge, $_REQUEST['users_to_merge']))) {
         // Own the occurrences
-        $dataObj->db->update('occurrences', array('created_by_id'=>$uid), array('created_by_id'=>$userIdToMerge));
-        $dataObj->db->update('occurrences', array('updated_by_id'=>$uid), array('updated_by_id'=>$userIdToMerge));
+        $userPersonObj->db->update('occurrences', array('created_by_id'=>$uid), array('created_by_id'=>$userIdToMerge));
+        $userPersonObj->db->update('occurrences', array('updated_by_id'=>$uid), array('updated_by_id'=>$userIdToMerge));
         // delete the old user
         $uidsToDelete[] = $userIdToMerge;
         kohana::log('debug', "User merge operation resulted in deletion of user $userIdToMerge plus the related person");
@@ -574,12 +575,12 @@ class user_identifier {
     }
     
     // use the User Ids list to find a list of people to delete.
-    $psnIds = $dataObj->db->select('person_id')->from('users')->in('id', $uidsToDelete)->get()->result_array();
+    $psnIds = $userPersonObj->db->select('person_id')->from('users')->in('id', $uidsToDelete)->get()->result_array();
     $pidsToDelete = array();
     foreach ($psnIds as $psnId)
       $pidsToDelete[] = $psnId->person_id;
     // do the actual deletions
-    $dataObj->db->from('users')->set(array('deleted'=>'t'))->in('id', $uidsToDelete)->update();
-    $dataObj->db->from('people')->set(array('deleted'=>'t'))->in('id', $pidsToDelete)->update();
+    $userPersonObj->db->from('users')->set(array('deleted'=>'t'))->in('id', $uidsToDelete)->update();
+    $userPersonObj->db->from('people')->set(array('deleted'=>'t'))->in('id', $pidsToDelete)->update();
   }
 }
