@@ -312,7 +312,7 @@
        */
       //find lat/lon interval that results in a grid of less than the target size
       var testSq = this.targetSize*mapRes,
-        xIntervals, yIntervals, xInterval, yInterval, xLargeInterval=false, yLargeInterval, colour, largeColour, xDelta, yDelta, p1, p2, distSq;
+        xIntervals, yIntervals, xDelta, yDelta, p1, p2, distSq, i, smallestLayerIdx;
       testSq *= testSq;   //compare squares rather than doing a square root to save time
       // can either be a single array for both dims, or 2 arrays in the intervals
       if ($.isArray(this.intervals[0])) {
@@ -322,29 +322,21 @@
         xIntervals = this.intervals;
         yIntervals = this.intervals;
       }
-      for (var i=0; i<xIntervals.length; ++i) {
-        xInterval = xIntervals[i];
-        yInterval = yIntervals[i];
-        colour = this.intervalColours[i];
-        if (i>0) {
-          xLargeInterval = xIntervals[i-1];
-          yLargeInterval = yIntervals[i-1];
-          largeColour = this.intervalColours[i-1];
-        }
-        xDelta = xInterval/2;
-        yDelta = yInterval/2;  
+      for (i=0; i<xIntervals.length; ++i) {
+        xDelta = xIntervals[i]/2;
+        yDelta = yIntervals[i]/2;  
         var p1 = mapCenterLL.offset(new OpenLayers.Pixel(-xDelta, -yDelta));  //test coords in EPSG:4326 space
         var p2 = mapCenterLL.offset(new OpenLayers.Pixel( xDelta,  yDelta));
         OpenLayers.Projection.transform(p1, llProj, mapProj); // convert them back to map projection
         OpenLayers.Projection.transform(p2, llProj, mapProj);
         var distSq = (p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y);
+        smallestLayerIdx = i;
         if (distSq <= testSq) {
           break;
         }
       }
-      this.buildGrid(xInterval, yInterval, mapCenterLL.clone(), llProj, mapProj, {strokeColor: colour, strokeOpacity: 0.4});
-      if (xLargeInterval) {
-        this.buildGrid(xLargeInterval, yLargeInterval, mapCenterLL, llProj, mapProj, {strokeColor: largeColour, strokeOpacity: 0.7});
+      for (i=smallestLayerIdx; i>=0; i--) {
+        this.buildGrid(xIntervals[i], yIntervals[i], mapCenterLL.clone(), llProj, mapProj, {strokeColor: this.intervalColours[i], strokeOpacity: 0.7 - i/10});
       }
     },
     
