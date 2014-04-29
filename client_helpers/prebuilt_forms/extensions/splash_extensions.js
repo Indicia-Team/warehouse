@@ -55,9 +55,10 @@ var clear_map_features, plot_type_dropdown_change;
       if (indiciaData.pssMode && $('#location\\:location_type_id option:selected').text()!='linear' && $('#location\\:location_type_id option:selected').text()!='Vertical') {
         //Rectangular PSS plots have the grid reference in the middle of the plot
         indiciaData.clickMiddleOfPlot=true;
-      } else {
-        indiciaData.plotWidthLength = indiciaData.squareSizes[$('#location\\:location_type_id').val()][0]+ ',' + indiciaData.squareSizes[$('#location\\:location_type_id').val()][1];
-      }  
+      } 
+      //Splash plots get their rectangle sizes from user configurable options which are not displayed on screen
+      if (!indiciaData.pssMode)
+        indiciaData.plotWidthLength = indiciaData.squareSizes[$('#location\\:location_type_id').val()][0]+ ',' + indiciaData.squareSizes[$('#location\\:location_type_id').val()][1];      
     }
   }
   
