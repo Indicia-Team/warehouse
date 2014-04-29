@@ -482,8 +482,9 @@ class extension_splash_extensions {
   }
   
   /*
-   * For the PSS project "Vertical" and "Linear" plot types, the user just uses the line drawing tool to draw plots on the map.
-   * For the Splash project and PSS project Plot Squares/Rectangles plot types, when the user clicks on the map on the plot details page, we calculate a plot square on the map where the south-west corner is the clicked point.
+   * For some plot types we simply provide the user with a free drawing tool (drawPolygon) to draw the plot.
+   * For Plot Squares/Rectangles plot types, when the user clicks on the map on the plot details page, we calculate a plot square on the map where the south-west corner is the clicked point
+   * or for PSS the middle is the click point.
    * The size of the plot square depends on the plot type but it extends north/east along the lat long grid system (as opposed to British National Grid which is at a slight angle).
    * However we cannot calculate points a certain number of metres apart using lat/long because the unit is degrees, so to make the square calculation we need to use the British National Grid 
    * to help as this is in metres. However the BNG is also at a slight angle which makes the situation complicated, the high level algorithm for calculating a grid square is as follows,
@@ -505,7 +506,10 @@ class extension_splash_extensions {
    * $options Options array with the following possibilities:<ul>
    * <li><b>squareSizes</b><br/>
    * The length of the plot square associated with each plot type. Mandatory. Comma seperated list in the following format,
-   * plot_location_type_id|length_in_metres,plot_location_type_id|length_in_metres.....e.g. 2543|10,2544|10,2545|20,2546|20</li>
+   * 2543|10|20,2544|10|20,2545|0,2546|20. 
+   * The first number is the plot location type, the second is the rectangle width and the third is the length.
+   * If only two numbers are specified then the plot will be a square when the side length matches the second number.
+   * For plots where drawPolygon is used, the size should be 0 e.g. 2545|0 in the example above</li>
    * </ul>
    * 
    */
@@ -523,16 +527,16 @@ class extension_splash_extensions {
       map_helper::$javascript .= "indiciaData.freeDrawPlotTypeNames=".json_encode(explode(',',$options['freeDrawPlotTypeNames'])).";";
     //The user provides the square sizes associated with the various plot types as a comma seperated option list.
     $squareSizesOptionsSplit=explode(',',$options['squareSizes']);
-    //Eash option consists of the following format <plot type id>|<square side lengh>
+    //Eash option consists of the following formats 
+    //<plot type id>|<square side lengh> or <plot type id>|<rectangle width>|<rectangle length> or <plot type id>|0 (for drawPolygon plots)
     //So these options need splitting into an array for use
     foreach ($squareSizesOptionsSplit as $squareSizeOption) {
       $squareSizeSingleOptionSplit = explode('|',$squareSizeOption);
-      //The user can supply the options for the plot in two formats, either a square like this,
-      //<location_type_id>|<plot side length>,<location_type_id>|<plot side length>...
-      //Or a rectangle like this
-      //<location_type_id>|<plot width>|<plot length>,<location_type_id>|<plot width>|<plot length>...
-      //In code, both formats are treated the same way, if we find the is length missing then we know
-      //all sides will be the same length (a square)
+      //The user can supply the options for the plot in two formats, like this,
+      //<location_type_id>|<number>,<location_type_id>|<number>...
+      //Or like this,
+      //<location_type_id>|<number>|<number>,<location_type_id>|<number>|<number>...
+      //In code, both formats are treated the same way, if the second number is missing, the use the first number twice
       if (empty($squareSizeSingleOptionSplit[2]))
         $squareSizesArray[$squareSizeSingleOptionSplit[0]]=array($squareSizeSingleOptionSplit[1],$squareSizeSingleOptionSplit[1]);
      else
