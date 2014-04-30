@@ -14,13 +14,7 @@
  */
 
 /**
- * Helper methods for accessing the Google AJAX Search API
- */
-
-google.load("search", "1");
-
-/**
-* Function to decode an entered postcode using the Google Search API
+* Function to decode an entered postcode using the Google Places API
 * to get locality information and lat/long info.
 * postcodeField - The id of the control which contains the postcode
 * srefField - Optional, the id of the control which receives the lat/long
@@ -33,9 +27,9 @@ function decodePostcode(addressField) {
     usePointFromPostcode(
         $('#imp-postcode').val(),
         function(place) {
-          var wkt='POINT(' + place.lng + ' ' + place.lat + ')';
+          var wkt='POINT(' + place.geometry.location.lng + ' ' + place.geometry.location.lat + ')';
           if (addressField!=='') {
-            document.getElementById(addressField).value=place.addressLines.join('\n');
+            document.getElementById(addressField).value=place.formatted_address;
           }
           
           if (indiciaData.mapdiv!=="undefined") {
@@ -63,16 +57,22 @@ function decodePostcode(addressField) {
 
 // Private method
 function usePointFromPostcode(postcode, callbackFunction) {
-  var localSearch = new google.search.LocalSearch();  
-  localSearch.setSearchCompleteCallback(null,
-    function() {
-      if (localSearch.results[0])
-      {
-        callbackFunction(localSearch.results[0]);
-      }else{
-        alert("Postcode not found!");
+  $.ajax({
+      dataType: "json",
+      url: $.fn.indiciaMapPanel.georeferenceLookupSettings.proxy,
+      data: {"url":"https://maps.googleapis.com/maps/api/place/textsearch/json","key":indiciaData.google_api_key, "query":postcode, "sensor":"false"},
+      success: function(data) {
+        var done=false;
+        $.each(data.results, function() {
+          if ($.inArray('postcode', this.types)) {
+            callbackFunction(this);
+            done=true;
+            return false;
+          }
+        });
+        if (!done) {
+          alert("Postcode not found!");
+        }
       }
-    });
-
-  localSearch.execute(postcode + ", UK");
+  });
 };
