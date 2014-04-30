@@ -455,6 +455,11 @@ class helper_base extends helper_config {
    * @var array A place to keep data and settings for Indicia code, to avoid using globals.
    */
   public static $data = array();
+  
+  /**
+   * @var string Google API key. Placed here rather than helper_config.php, as only recently introduced. 
+   */
+  public static $google_api_key = '';
 
   /**
    * @var Boolean indicates if any form controls have specified the lockable option.
@@ -505,8 +510,7 @@ class helper_base extends helper_config {
    * <li>addrowtogrid</li>
    * <li>indiciaMapPanel</li>
    * <li>indiciaMapEdit</li>
-   * <li>georeference_google_search_api</li>
-   * <li>google_search</li>
+   * <li>postcode_search</li>
    * <li>locationFinder</li>
    * <li>createPersonalSites</li>
    * <li>autocomplete</li>
@@ -522,7 +526,6 @@ class helper_base extends helper_config {
    * <li>googlemaps</li>
    * <li>multimap</li>
    * <li>virtualearth</li>
-   * <li>google_search</li>
    * <li>fancybox</li>
    * <li>treeBrowser</li>
    * <li>defaultStylesheet</li>
@@ -597,10 +600,7 @@ class helper_base extends helper_config {
         'addrowtogrid' => array('deps' => array('validation'), 'javascript' => array(self::$js_path."addRowToGrid.js")),
         'indiciaMapPanel' => array('deps' =>array('jquery', 'openlayers', 'jquery_ui', 'jquery_cookie'), 'javascript' => array(self::$js_path."jquery.indiciaMapPanel.js")),
         'indiciaMapEdit' => array('deps' =>array('indiciaMap'), 'javascript' => array(self::$js_path."jquery.indiciaMap.edit.js")),
-        // this resource is required for the georeferencer which dynamically constructs the resource name depending on the driver selected.
-        'georeference_google_search_api' => array('javascript' => array("http://www.google.com/jsapi")),
-        // For any other usage of google search, e.g. postcode textbox
-        'google_search' => array('deps' =>array('georeference_google_search_api'), 'javascript' => array(self::$js_path."google_search.js")),
+        'postcode_search' => array('javascript' => array(self::$js_path."postcode_search.js")),
         'locationFinder' => array('deps' =>array('indiciaMapEdit'), 'javascript' => array(self::$js_path."jquery.indiciaMap.edit.locationFinder.js")),
         'createPersonalSites' => array('deps' => array('jquery'), 'javascript' => array(self::$js_path."createPersonalSites.js")),
         'autocomplete' => array('deps' => array('jquery'), 'stylesheets' => array(self::$css_path."jquery.autocomplete.css"), 'javascript' => array(self::$js_path."jquery.autocomplete.js")),

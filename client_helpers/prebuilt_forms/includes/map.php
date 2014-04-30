@@ -229,7 +229,7 @@ function iform_map_get_georef_parameters() {
       'default'=>'geoplanet',
       'options' => array(
         'geoplanet' => 'Yahoo! GeoPlanet (all round place search)',
-        'google_search_api' => 'Google AJAX Search API (works well with postcodes or for places near the preferred area). Note this API is deprecated and may not be supported in future.',
+        'google_places' => 'Google Places API text search.',
         'geoportal_lu' => 'ACT Geoportal Luxembourg (for places in Luxumbourg)',
         'indicia_locations' => 'Search the Indicia locations list.'
       ),
