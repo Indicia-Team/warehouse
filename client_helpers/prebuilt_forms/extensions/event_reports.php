@@ -86,7 +86,8 @@ class extension_event_reports {
     $reportOptions = array_merge(
       iform_report_get_report_options($args, $auth['read']),
       array(
-        'dataSource' => 'library/totals/filterable_species_occurrence_image_counts'       
+        'dataSource' => 'library/totals/filterable_species_occurrence_image_counts',
+        'autoParamsForm' => false
       ),
       $options
     );
@@ -122,7 +123,8 @@ class extension_event_reports {
         'bands' => array(array('content'=>
           '<div class="gallery-item status-{record_status} certainty-{certainty} ">'.
           '<a class="fancybox" href="{imageFolder}{media}"><img src="{imageFolder}thumb-{media}" title="{taxon}" alt="{taxon}"/><br/>{formatted}</a></div>')),
-        'limit' => 10
+        'limit' => 10,
+        'autoParamsForm' => false
       ),
       $options
     );
@@ -155,7 +157,8 @@ class extension_event_reports {
         'bands' => array(array('content'=>
           '<li style="font-size: {font_size}px">{recorders}</li>')),
         'footer' => '</ul>',
-        'limit' => 15
+        'limit' => 15,
+        'autoParamsForm' => false
       ),
       $options
     );
@@ -188,7 +191,8 @@ class extension_event_reports {
         'bands' => array(array('content'=>
           '<li style="font-size: {font_size}px">{species}</li>')),
         'footer' => '</ul>',
-        'limit' => 15
+        'limit' => 15,
+        'autoParamsForm' => false
       ),
       $options
     );
@@ -228,7 +232,8 @@ class extension_event_reports {
           'dataLabelThreshold' => 2,
           'dataLabels' => 'label',
           'dataLabelPositionFactor' => 1
-        )
+        ),
+        'autoParamsForm' => false
       ),
       $options
     );
@@ -265,7 +270,8 @@ class extension_event_reports {
       iform_report_get_report_options($args, $auth['read']),
       array(
         'dataSource' => $report,
-        'limit' => 20
+        'limit' => 20,
+        'autoParamsForm' => false
       ),
       $options
     );
