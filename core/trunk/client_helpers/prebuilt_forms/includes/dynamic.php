@@ -665,12 +665,8 @@ $('#".data_entry_helper::$validated_form_id."').submit(function() {
   /** 
    * Get the location search control.
    */
-  Protected static function get_control_placesearch($auth, $args, $tabalias, $options) {
+  protected static function get_control_placesearch($auth, $args, $tabalias, $options) {
     $georefOpts = iform_map_get_georef_options($args, $auth['read']);
-    if ($georefOpts['driver']=='geoplanet' && empty(helper_config::$geoplanet_api_key)) {
-      // can't use place search without the driver API key
-      return 'The form structure includes a [place search] control but needs a geoplanet api key.<br/>';
-    }
     return data_entry_helper::georeference_lookup(array_merge(
       $georefOpts,
       $options

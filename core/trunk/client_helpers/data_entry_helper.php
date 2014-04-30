@@ -1120,9 +1120,7 @@ $('#$escaped').change(function(e) {
   * <li><b>driver</b><br/>
   * Optional. Driver to use for the georeferencing operation. Supported options are:<br/>
   *   geoplanet - uses the Yahoo! GeoPlanet place search. This is the default.<br/>
-  *   google_search_api - uses the Google AJAX API LocalSearch service. This method requires both a
-  *       georefPreferredArea and georefCountry to work correctly. Note that the Google AJAX API is deprecated
-  *       so its future support is not guaranteed.<br/>
+  *   google_places_api - uses the Google Places API text search service.<br/>
   *   geoportal_lu - Use the Luxembourg specific place name search provided by geoportal.lu.
   *   indicia_locations - Use the list of locations available to the current website in Indicia as a search list.
   * </li>
@@ -1141,6 +1139,11 @@ $('#$escaped').change(function(e) {
   */
   public static function georeference_lookup($options) {
     $options = self::check_options($options);
+    if (($options['driver']==='geoplanet' && empty(self::$geoplanet_api_key)) ||
+        ($options['driver']==='google_places' && empty(self::$google_api_key))) {
+      // can't use place search without the driver API key
+      return 'The georeference lookup control requires an API key configured for the place search API in use.<br/>';
+    }
     global $indicia_templates;
     $options = array_merge(array(
       'id' => 'imp-georef-search',
@@ -1165,12 +1168,10 @@ $('#$escaped').change(function(e) {
         self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.$key='$value';\n";
       }
     }
-    foreach (get_class_vars('helper_config') as $key=>$value) {
-      // if any of the config settings are for the georeferencer driver, then we must set them in the JavaScript.
-      if (substr($key, 0, strlen($options['driver']))==$options['driver']) {
-        self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.$key='$value';\n";
-      }
-    }
+    if ($options['driver']==='geoplanet')
+      self::$javascript .= '$.fn.indiciaMapPanel.georeferenceLookupSettings.geoplanet_api_key=\''.self::$geoplanet_api_key."';\n";
+    if ($options['driver']==='google_places')
+      self::$javascript .= '$.fn.indiciaMapPanel.georeferenceLookupSettings.google_api_key=\''.self::$google_api_key."';\n";
     // If the lookup service driver uses cross domain JavaScript, this setting provides
     // a path to a simple PHP proxy script on the server.
     self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.proxy='".
@@ -2003,6 +2004,8 @@ $('#$escaped').change(function(e) {
   * @return string HTML to insert into the page for the postcode control.
   */
   public static function postcode_textbox($options) {
+    if (empty(self::$google_api_key))
+      return 'The postcode textbox control requires a Google API Key in the configuration';
     // The id must be set to imp-postcode otherwise the search does not work
     $options = array_merge($options, array('id'=>'imp-postcode'));
     $options = self::check_options($options);
@@ -2013,7 +2016,7 @@ $('#$escaped').change(function(e) {
         'hiddenFields'=>true,
         'linkedAddressBoxId'=>''
         ), $options);
-    self::add_resource('google_search');
+    self::add_resource('postcode_search');
     $r = self::apply_template('postcode_textbox', $options);
     if ($options['hiddenFields']) {
       $defaultSref=self::check_default_value($options['srefField']);
@@ -2022,6 +2025,7 @@ $('#$escaped').change(function(e) {
       $r .= "<input type='hidden' name='".$options['systemField']."' id='imp-sref-system' value='$defaultSystem' />";
     }
     $r .= self::check_errors($options['fieldname']);
+    self::$javascript .= "indiciaData.google_api_key='".self::$google_api_key."';\n";
     return $r;
   }
 
@@ -6460,6 +6464,7 @@ if (errors$uniq.length>0) {
          $r .= '<li class="ui-widget ui-state-error">Warning: The $geoserver_url setting in helper_config.php should include the protocol (e.g. http://).</li>';
       }
       self::check_config('$geoplanet_api_key', isset(self::$geoplanet_api_key), empty(self::$geoplanet_api_key), $missing_configs, $blank_configs);
+      self::check_config('$google_api_key', isset(self::$google_api_key), empty(self::$google_api_key), $missing_configs, $blank_configs);
       self::check_config('$bing_api_key', isset(self::$bing_api_key), empty(self::$bing_api_key), $missing_configs, $blank_configs);
       // Warn the user of the missing ones - the important bit.
       if (count($missing_configs)>0) {

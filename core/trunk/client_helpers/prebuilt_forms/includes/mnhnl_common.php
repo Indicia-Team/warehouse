@@ -445,11 +445,7 @@ function iform_mnhnl_locModTool($auth, $args, $node) {
   if($args['locationMode']!='parent') { // this includes multi as well (see above)
     // can't call the protested control function
     $georefOpts = iform_map_get_georef_options($args, $auth['read']);
-    // can't use place search without the driver API key
-    if ($georefOpts['driver']=='geoplanet' && empty(helper_config::$geoplanet_api_key))
-      $retVal .= '<p>The form structure includes a [place search] control but needs a geoplanet api key.</p>';
-    else
-      $retVal .=  data_entry_helper::georeference_lookup($georefOpts);
+    $retVal .=  data_entry_helper::georeference_lookup($georefOpts);
     $mapOptions['searchLayer']=true;
     $mapOptions['searchUpdatesSref']=false;
     $mapOptions['searchDisplaysPoint']=false;

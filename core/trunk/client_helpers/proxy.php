@@ -65,6 +65,7 @@ if (count($httpHeader)>0) {
 curl_setopt($session, CURLOPT_HEADER, true);
 curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($session, CURLOPT_REFERER, $_SERVER['HTTP_HOST']);
+curl_setopt($session, CURLOPT_SSL_VERIFYPEER, false);
 
 
 // Do the POST and then close the session

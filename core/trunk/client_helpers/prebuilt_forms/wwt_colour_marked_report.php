@@ -1823,9 +1823,6 @@ class iform_wwt_colour_marked_report {
    */
   private static function get_control_placesearch($auth, $args, $tabalias, $options) {
     $georefOpts = iform_map_get_georef_options($args, $auth['read']);
-    if ($georefOpts['driver']=='geoplanet' && empty(helper_config::$geoplanet_api_key))
-      // can't use place search without the driver API key
-      return '';
     return data_entry_helper::georeference_lookup(array_merge(
       $georefOpts,
       $options
