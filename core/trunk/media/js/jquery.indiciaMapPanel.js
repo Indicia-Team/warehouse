@@ -78,7 +78,7 @@ mapLocationSelectedHooks = [];
 
     /**
      * Remove all features of a specific type or not of a specific type
-     * This functionality allows a location to havea centroid and separate boundary.
+     * This functionality allows a location to have a centroid and separate boundary.
      * Note that inverse mode does not interfere with annotations mode as this is a seperate mode added after code was originally created.
      */
     function removeAllFeatures(layer, type, inverse) {
@@ -1341,7 +1341,7 @@ mapLocationSelectedHooks = [];
           //When map is clicked on, then remove previous plots.
           for(var a = 0; a < mapLayers.length; a++ ){
             if (mapLayers[a].CLASS_NAME=='OpenLayers.Layer.Vector') {
-              mapLayers[a].removeAllFeatures();
+              mapLayers[a].destroyFeatures();
             }
           }
           $('#'+ div.settings.boundaryGeomId).val('');
