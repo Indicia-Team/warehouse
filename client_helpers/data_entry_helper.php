@@ -4923,13 +4923,15 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    * @param boolean $loadImages If set to true, then image information is loaded as well.
    */
   public static function load_existing_record($readAuth, $entity, $id, $view = 'detail', $sharing = false, $loadImages = false) {
-    $record = self::get_population_data(array(
+    $records = self::get_population_data(array(
         'table' => $entity,
         'extraParams' => $readAuth + array('id' => $id, 'view' => $view),
         'nocache' => true,
         'sharing' => $sharing
     ));
-    self::load_existing_record_from($record[0], $readAuth, $entity, $id, $view, $sharing, $loadImages);
+    if (empty($records))
+      throw new exception(lang::get('The record you are trying to load does not exist.'));
+    self::load_existing_record_from($records[0], $readAuth, $entity, $id, $view, $sharing, $loadImages);
   }
   
   /**
@@ -6279,11 +6281,10 @@ if (errors$uniq.length>0) {
   * @param string $response Return value from a call to forward_post_to().
   * @param boolean $inline Set to true if the errors are to be placed alongside the controls rather than at the top of the page.
   * Default is true.
-  * @param string $successMessage Set to the message to display on success. Leave blank to use the default.
   * @see forward_post_to()
   * @link http://code.google.com/p/indicia/wiki/TutorialBuildingBasicPage#Build_a_data_entry_page
   */
-  public static function dump_errors($response, $inline=true, $successMessage='')
+  public static function dump_errors($response, $inline=true)
   {
     $r = "";
     if (is_array($response)) {
@@ -6332,8 +6333,7 @@ if (errors$uniq.length>0) {
         }
       }
       elseif (array_key_exists('success',$response)) {
-        if (empty($successMessage)) 
-          $successMessage = lang::get('Thank you for submitting your data.');
+        $successMessage = lang::get('Thank you for submitting your data.');
         if (function_exists('hostsite_show_message'))
           hostsite_show_message($successMessage);
         else
