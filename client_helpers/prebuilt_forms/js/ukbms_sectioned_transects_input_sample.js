@@ -204,7 +204,7 @@ function count_keydown (evt) {
     }
   }
   if (targetRow.length>0) {
-    targetInput = targetRow.find('input[id^='+type+'\\:][id$=\\:'+code+']');
+    targetInput = targetRow.find('input[id^='+type+'\:][id$=\:'+code+']');
   }
   // right arrow - move to next cell if at end of text
   if (evt.keyCode===39 && evt.target.selectionEnd >= evt.target.value.length) {
