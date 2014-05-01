@@ -249,7 +249,7 @@ var simple_tooltip;
         showing = showing.replace('{3}', div.settings.recordCount);
         pagerContent = pagerContent.replace('{showing}', showing);
       }
-      
+
       pager.append(pagerContent);
     }
 
@@ -381,18 +381,8 @@ var simple_tooltip;
                   features.push(feature);
                 }
                 if (col.visible!==false && col.visible!=='false') {
-                  // either template the output, or just use the content according to the fieldname
-                  if (typeof col.template !== "undefined") {
-                    value = mergeParamsIntoTemplate(div, row, col.template);
-                  } else if (typeof col.actions !== "undefined") {
-                    value = getActions(div, row, col.actions);
-                  } else {
-                    value = row[col.fieldname];
-                  }
-                  // clear null value cells
-                  value = (value===null || typeof value==="undefined") ? '' : value;
-                  if ((col.img === true || col.img==='true') && value!=='') {
-                    var imgs = value.split(','), imgclass=imgs.length>1 ? 'multi' : 'single', match;
+                  if ((col.img === true || col.img==='true') && row[col.fieldname]!=='') {
+                    var imgs = row[col.fieldname].split(','), imgclass=imgs.length>1 ? 'multi' : 'single', match;
                     value='';
                     $.each(imgs, function(idx, img) {
                       match = img.match(/^http(s)?:\/\/(www\.)?([a-z]+)/);
@@ -403,9 +393,19 @@ var simple_tooltip;
                       } else {
                         value += '<a href="'+div.settings.imageFolder+img+'" class="fancybox ' + imgclass + '"><img src="'+div.settings.imageFolder+'thumb-'+img+'" /></a>';
                       }
-                      
                     });
+                    row[col.fieldname] = value;
                   }
+                  // either template the output, or just use the content according to the fieldname
+                  if (typeof col.template !== "undefined") {
+                    value = mergeParamsIntoTemplate(div, row, col.template);
+                  } else if (typeof col.actions !== "undefined") {
+                    value = getActions(div, row, col.actions);
+                  } else {
+                    value = row[col.fieldname];
+                  }
+                  // clear null value cells
+                  value = (value===null || typeof value==="undefined") ? '' : value;
                   rowOutput += '<td>' + value + '</td>';
                 }
               });
@@ -441,7 +441,7 @@ var simple_tooltip;
           if (div.settings.callback !== "") {
             window[div.settings.callback]();
           }
-          
+
         },
         error: function() {
           if ($.support.cssFloat) {$(div).find(".loading-overlay").hide();}
@@ -496,7 +496,7 @@ var simple_tooltip;
           div.settings.offset += $(div).find('tbody').children().length; // in case not showing full page after deletes
           if (div.settings.offset>lastPageOffset) {
             div.settings.offset=lastPageOffset;
-          } 
+          }
           load(div, false);
         });
 
@@ -588,7 +588,7 @@ var simple_tooltip;
         load(div, recount);
       });
     };
-    
+
     /**
      * Public method to support late-loading of the initial page of grid data via AJAX.
      * Automatically waits for the current tab to load if on jquery tabs.
@@ -607,9 +607,9 @@ var simple_tooltip;
         this.reload(true);
       }
     };
-    
+
     var BATCH_SIZE=2000, currentMapRequest;
-        
+
     function hasIntersection(a, b) {
       var ai=0, bi=0;
 
@@ -624,7 +624,7 @@ var simple_tooltip;
 
       return false;
     }
-    
+
     function _internalMapRecords(div, request, offset, callback, recordCount) {
       $(indiciaData.mapdiv).parent().find(".loading-overlay").css({
           top     : $(indiciaData.mapdiv).position().top,
@@ -650,12 +650,12 @@ var simple_tooltip;
             // start the load of the next batch
             if (offset+BATCH_SIZE<recordCount) {
               _internalMapRecords(div, request, offset+BATCH_SIZE, async, recordCount);
-            }              
+            }
             // whilst that is loading, put the dots on the map
             var features=[];
             $.each(response, function (idx, obj) {
               feature=indiciaData.mapdiv.addPt(features, obj, 'geom', {"type":"vector"}, obj[div.settings.rowId]);
-              if (typeof indiciaData.selectedRows!=="undefined" && 
+              if (typeof indiciaData.selectedRows!=="undefined" &&
                   ((typeof obj[div.settings.rowId]!=="undefined" && $.inArray(div.settings.rowId, indiciaData.selectedRows)) ||
                   // plural - report returns list of IDs
                   (typeof obj[div.settings.rowId+'s']!=="undefined" && hasIntersection(obj[div.settings.rowId+'s'].split(','), indiciaData.selectedRows)))) {
@@ -675,8 +675,8 @@ var simple_tooltip;
       });
     }
 
-    /** 
-     * Public function which loads the current report request output onto a map. 
+    /**
+     * Public function which loads the current report request output onto a map.
      * The request is handled in chunks of 1000 records. Optionally supply an id to map just 1 record.
      */
     function mapRecords(div, zooming, id, callback) {
@@ -684,7 +684,7 @@ var simple_tooltip;
         return false;
       }
       var layerInfo = {bounds: null}, map=indiciaData.mapdiv.map, currentBounds=null;
-      // we need to reload the map layer using the mapping report, so temporarily switch the report      
+      // we need to reload the map layer using the mapping report, so temporarily switch the report
       var origReport=div.settings.dataSource, request;
       if (div.settings.mapDataSource!=='') {
         if (map.resolution>30 && div.settings.mapDataSourceLoRes) {
@@ -712,9 +712,9 @@ var simple_tooltip;
           request += '&' + div.settings.rowId + '=' + id;
         } else {
           // if zoomed in below a 10k map, use the map bounding box to limit the loaded features. Having an indexed site filter changes the threshold as it is less necessary.
-          if (map.zoom<=600 && div.settings.mapDataSourceLoRes && 
+          if (map.zoom<=600 && div.settings.mapDataSourceLoRes &&
               (map.zoom<=30 || typeof div.settings.extraParams.indexed_location_id==="undefined" || div.settings.extraParams.indexed_location_id==='')) {
-            // get the current map bounds. If zoomed in close, get a larger bounds so that the map can be panned a bit without reload.          
+            // get the current map bounds. If zoomed in close, get a larger bounds so that the map can be panned a bit without reload.
             layerInfo.bounds = map.calculateBounds(map.getCenter(), Math.max(39, map.getResolution()));
             // plus the current bounds to test if a reload is necessary
             currentBounds = map.calculateBounds();
@@ -725,7 +725,7 @@ var simple_tooltip;
             request += '&bounds='+encodeURIComponent(layerInfo.bounds.toGeometry().toString());
           }
         }
-      }      
+      }
       finally {
         div.settings.dataSource=origReport;
       }
@@ -741,7 +741,7 @@ var simple_tooltip;
         }
       }
     }
-    
+
     this.mapRecords = function(report, reportLoRes, zooming) {
       if (typeof zooming==="undefined") {
         zooming=false;
@@ -754,7 +754,7 @@ var simple_tooltip;
         mapRecords(div, zooming);
       });
     };
-    
+
     /**
      * Public method to be called after deleting rows from the grid - to keep paginator updated
      */
@@ -813,7 +813,7 @@ var simple_tooltip;
         });
         window.location=url;
       });
-      
+
       var doFilter = function(e) {
         if (e.target.hasChanged) {
           var fieldname = e.target.id.match(new RegExp('^col-filter-(.*)-' + div.id + '$'))[1];
@@ -854,7 +854,7 @@ var simple_tooltip;
             return;
           }
           if (typeof indiciaData.reportlayer!=="undefined") {
-            var tr=$(e.target).parents('tr')[0], featureId=tr.id.substr(3), 
+            var tr=$(e.target).parents('tr')[0], featureId=tr.id.substr(3),
                 featureArr, map=indiciaData.reportlayer.map;
             featureArr=map.div.getFeaturesByVal(indiciaData.reportlayer, featureId, div.settings.rowId);
             // deselect any existing selection and select the feature
@@ -866,7 +866,7 @@ var simple_tooltip;
         });
         $(div).find('tbody').dblclick(function(e) {
           if (typeof indiciaData.reportlayer!=="undefined") {
-            var tr=$(e.target).parents('tr')[0], featureId=tr.id.substr(3), 
+            var tr=$(e.target).parents('tr')[0], featureId=tr.id.substr(3),
                 featureArr, map=indiciaData.reportlayer.map, extent, zoom;
             featureArr=map.div.getFeaturesByVal(indiciaData.reportlayer, featureId, div.settings.rowId);
             var zoomToFeature=function() {
@@ -881,7 +881,7 @@ var simple_tooltip;
               }
             }
             if (featureArr.length===0) {
-              // feature not available on the map, probably because we are loading just the viewport and 
+              // feature not available on the map, probably because we are loading just the viewport and
               // and the point is not visible. So try to load it with a callback to zoom in.
               mapRecords(div, false, featureId, function() {
                 featureArr=map.div.getFeaturesByVal(indiciaData.reportlayer, featureId, div.settings.rowId);
@@ -902,7 +902,7 @@ var simple_tooltip;
 
     });
   };
-  
+
   $('.social-icon').live('click', function(e) {
     e.preventDefault();
     var href=$(e.target).attr('href');
