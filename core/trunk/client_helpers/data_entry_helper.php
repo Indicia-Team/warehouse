@@ -6298,7 +6298,7 @@ if (errors$uniq.length>0) {
           self::$entity_to_load = $_POST;
           if (isset($response['code'])) {
             switch ($response['code']) {
-              case 2003: hostsite_show_message(lang::get('The data could not be saved because it would create a duplicate.'), 'error');
+              case 2003: hostsite_show_message(lang::get('The data could not be saved.'), 'error');
             }
           }
         } else {
