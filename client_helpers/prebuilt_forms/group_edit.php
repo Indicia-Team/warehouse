@@ -342,14 +342,24 @@ $('#entry_form').submit(function() {
     $pages=array();
     if (substr(VERSION, 0, 1)==='6') {
       while ($row=db_fetch_object($qry)) {
-        $pages[hostsite_get_url("node/$row->nid")] = $row->title;
+        $pages[self::get_path($row->nid)] = $row->title;
       }
     } elseif (substr(VERSION, 0, 1)==='7') {
       foreach ($qry as $row) {
-        $pages[hostsite_get_url("node/$row->nid")] = $row->title;
+        $pages[self::get_path($row->nid)] = $row->title;
       }
     }
     return $pages;
+  }
+  
+  /**
+   * Gets the path we want to store for a page node to link to the group.
+   * @param integer $nid Node ID
+   */
+  private static function get_path($nid) {
+    $path = hostsite_get_url("node/$nid");
+    $path = preg_replace('/^\/(\?q=)?/', '', $path);
+    return $path;
   }
   
   /** 
@@ -554,7 +564,7 @@ $('#entry_form').submit(function() {
       if (!empty($values[$key]) || preg_match('/^group\+:pages:(\d+)/', $key)) {
         // get the key without the column index, so we can access any column we want
         $base = preg_replace('/0$/', '', $key);
-        if ($values[$base.'deleted']==='t' || empty($values[$base.'0']))
+        if ((isset($values[$base.'deleted']) && $values[$base.'deleted']==='t') || empty($values[$base.'0']))
           $page = array('deleted'=>'t');
         else {
           $tokens=explode(':',$values[$base.'0']);
@@ -634,24 +644,26 @@ $('#entry_form').submit(function() {
     $existingUsers=preg_grep("/^groups_user\:user_id\:[0-9]+$/", array_keys($values));
     $newUsers = preg_grep("/^groups_user\:(admin_)?user_id$/", array_keys($values));
     $users = array_merge(array_values($existingUsers), array_values($newUsers));
-    $userData = array_intersect_key($values, array_combine($users, $users));
-    $foundUsers = array();
-    foreach ($userData as $value) {
-      if (is_array($value)) {
-        foreach ($value as $item) {
-          if (in_array($item, $foundUsers))
+    if (count($users)) {
+      $userData = array_intersect_key($values, array_combine($users, $users));
+      $foundUsers = array();
+      foreach ($userData as $value) {
+        if (is_array($value)) {
+          foreach ($value as $item) {
+            if (in_array($item, $foundUsers))
+              $duplicate=true;
+            $foundUsers [] = $item;
+          }
+        }
+        else {
+          if (in_array($value, $foundUsers))
             $duplicate=true;
-          $foundUsers [] = $item;
+          $foundUsers [] = $value;
         }
       }
-      else {
-        if (in_array($value, $foundUsers))
-          $duplicate=true;
-        $foundUsers [] = $value;
-      }
+      if ($duplicate)
+        return array('groups_user:general'=>lang::get("Please ensure that the list of administrators and group members only includes each person once."));
     }
-    if ($duplicate)
-      return array('groups_user:general'=>lang::get("Please ensure that the list of administrators and group members only includes each person once."));
   }
   
   /** 
