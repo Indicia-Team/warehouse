@@ -886,7 +886,6 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       // single record entry mode. We want to load the occurrence entity and to know the sample ID.
       if (self::$loadedOccurrenceId) {
         data_entry_helper::load_existing_record($auth['read'], 'occurrence', self::$loadedOccurrenceId, 'detail', false, true);
-        drupal_set_message(print_r(data_entry_helper::$entity_to_load, true));
       } 
       elseif (self::$loadedSampleId) {
         $response = data_entry_helper::get_population_data(array(
