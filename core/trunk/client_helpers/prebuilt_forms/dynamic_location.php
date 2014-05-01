@@ -499,5 +499,24 @@ mapInitialisationHooks.push(function(mapdiv) {
     ));
   }
   
+  /** 
+   * Override the default submit buttons to add a delete button where appropriate.
+   */
+  protected static function getSubmitButtons($args) {
+    $r = '';
+    if (!empty(data_entry_helper::$entity_to_load['location:id'])) {
+      // use a button here, not input, as Chrome does not post the input value
+      $r .= '<button type="submit" class="indicia-button" id="delete-button" name="delete-button" value="delete" >'.lang::get('Delete')."</button>\n";
+      data_entry_helper::$javascript .= "$('#delete-button').click(function(e) {
+        if (!confirm(\"Are you sure you want to delete this location?\")) {
+          e.preventDefault();
+          return false;
+        }
+      });\n";
+    }
+    $r .= '<input type="submit" class="indicia-button" id="save-button" value="'.lang::get('Submit')."\" />\n";
+    return $r;
+  }
+  
 }
 

@@ -2226,7 +2226,8 @@ else
     $r = '';
     if(self::$mode === self::MODE_EXISTING_RO) return $r; // don't allow users to submit if in read only mode.
     if (!empty(self::$loadedSampleId) && $args['multiple_occurrence_mode']==='single') {
-      $r .= '<input type="submit" class="indicia-button" id="delete-button" name="delete-button" value="'.lang::get('Delete')."\" />\n";
+      // use a button here, not input, as Chrome does not post the input value
+      $r .= '<button type="submit" class="indicia-button" id="delete-button" name="delete-button" value="delete" >'.lang::get('Delete')."</button>\n";
       data_entry_helper::$javascript .= "$('#delete-button').click(function(e) {
         if (!confirm(\"Are you sure you want to delete this record?\")) {
           e.preventDefault();
