@@ -420,15 +420,15 @@ var saveComment, saveVerifyComment;
 
   $(document).ready(function () {
     //Use jQuery to add a button to the top of the verification page. Use this button to access the popup
-    //which allows you to verify all trusted records.
-    var verifyAllTrustedButton = '<input type="button" value="..." class="default-button verify-grid-trusted tools-btn" id="verify-grid-trusted"/>', 
+    //which allows you to verify all trusted records or all records.
+    var verifyGridButton = '<input type="button" value="Verify grid" class="default-button verify-grid-trusted tools-btn" id="verify-grid-trusted"/>', 
         trustedHtml;
-    $('#filter-build').after(verifyAllTrustedButton);
+    $('#filter-build').after(verifyGridButton);
     $('#verify-grid-trusted').click(function() {
-      trustedHtml = '<div class="grid-verify-popup" style="width: 550px"><h2>Verify sets of records</h2>'+
+      trustedHtml = '<div class="grid-verify-popup" style="width: 550px"><h2>Verify all grid data</h2>'+
                     '<p>This facility allows you to verify entire sets of records in one step. Before using this '+
                     'facility, you should filter the grid so that only the records you want to verify are listed. '+
-                    'You can then choose to either verify the entire set of records from all pages of the grid '+
+                    'You can then choose to either verify the entire set of records from <em>all pages of the grid</em> '+
                     'or you can verify only those records where the recorder is trusted based on the record\'s '+
                     'survey, taxon group and location. Before using the latter method of verification, set up the recorders '+
                     'you wish to trust using the ... button next to each record.</p>';
