@@ -221,7 +221,7 @@ function iform_report_get_report_options($args, $readAuth) {
     'id' => 'report-grid',
     'reportGroup' => isset($args['report_group']) ? $args['report_group'] : '',
     'rememberParamsReportGroup' => isset($args['remember_params_report_group']) ? $args['remember_params_report_group'] : '',
-    'dataSource' => $args['report_name'],
+    'dataSource' => isset($args['report_name']) ? $args['report_name'] : '',
     'mode' => 'report',
     'readAuth' => $readAuth,
     'columns' => $columns,
