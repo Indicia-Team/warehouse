@@ -476,7 +476,6 @@ class report_helper extends helper_base {
             $classes[]=self::mergeParamsIntoTemplate($row, $options['rowClass'], true, true);
           $classes=implode(' ',$classes);
           $rowClass = empty($classes) ? '' : "class=\"$classes\" ";
-          
           $tr = '';
           $rowInProgress=true;
         }
@@ -494,7 +493,21 @@ class report_helper extends helper_base {
                 (empty($rowId) ? '' : ", '".$row[$options['rowId']]."'").");\n";
           }
           if (isset($field['visible']) && ($field['visible']==='false' || $field['visible']===false))
-            continue; // skip this column as marked invisible
+            continue; // skip this column as marked invisible          
+          if (isset($field['img']) && $field['img']=='true' && !empty($row[$field['fieldname']])) {
+            $imgs = explode(',', $row[$field['fieldname']]);
+            $value='';
+            $imgclass=count($imgs)>1 ? 'multi' : 'single';
+            foreach($imgs as $img) {
+              if (preg_match('/^http(s)?:\/\/(www\.)?(?P<site>[a-z]+)/', $img, $matches)) {
+                // http, means an external file
+                $value .= "<a href=\"$img\" class=\"social-icon $matches[site]\"></a>";
+              } else {
+                $value .= "<a href=\"$imagePath$img\" class=\"fancybox $imgclass\"><img src=\"$imagePath"."thumb-$img\" /></a>";
+              }
+            }
+            $row[$field['fieldname']] = $value;
+          }
           if (isset($field['actions'])) {
             $value = self::get_report_grid_actions($field['actions'],$row, $pathParam);
             $classes[]='actions';
@@ -538,19 +551,6 @@ jQuery('#updateform-".$updateformID."').ajaxForm({
             $class = ' class="'.implode(' ', $classes).'"';
           else
             $class = '';
-          if (isset($field['img']) && $field['img']=='true' && !empty($value)) {
-            $imgs = explode(',',$value);
-            $value='';
-            $imgclass=count($imgs)>1 ? 'multi' : 'single';
-            foreach($imgs as $img) {
-              if (preg_match('/^http(s)?:\/\/(www\.)?(?P<site>[a-z]+)/', $img, $matches)) {
-                // http, means an external file
-                $value .= "<a href=\"$img\" class=\"social-icon $matches[site]\"></a>";
-              } else {
-                $value .= "<a href=\"$imagePath$img\" class=\"fancybox $imgclass\"><img src=\"$imagePath"."thumb-$img\" /></a>";
-              }
-            }
-          }
           $tr .= str_replace(array('{class}','{content}'), array($class, $value), $indicia_templates['report-tbody-td']);
         }
         if ($rowIdx % $options['galleryColCount']==$options['galleryColCount']-1) {
@@ -574,7 +574,7 @@ jQuery('#updateform-".$updateformID."').ajaxForm({
         }
       }
       if ($rowInProgress)
-        $tbody .= str_replace(array('{class}','{rowId}','{title}','{content}'), array($rowClass, $rowId, $rowTitle,$tr), $indicia_templates['table-tbody-tr']);
+        $tbody .= str_replace(array('{class}','{rowId}','{title}','{content}'), array($rowClass, $rowId, $rowTitle, $tr), $indicia_templates['report-tbody-tr']);
     } else {
       $tbody .= '<tr><td></td></tr>';
       $tbody .= str_replace(array('{class}','{rowId}','{title}','{content}'), array('','','','<td></td>'), $indicia_templates['report-tbody-tr']);

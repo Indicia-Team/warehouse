@@ -495,7 +495,8 @@ class iform_species_details extends iform_dynamic {
       'columns' => array(
         array(
           'fieldname' => 'path',
-          'template' => '<div class="gallery-item"><a class="fancybox" href="{imageFolder}{path}"><img src="{imageFolder}thumb-{path}" title="{caption}" alt="{caption}"/><br/>{caption}</a></div>'
+          'template' => '<div class="gallery-item">{path}<br/>{caption}</div>',
+          'img'=>true
         )
       ),
       'mode' => 'report',

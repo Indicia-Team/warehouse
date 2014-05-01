@@ -335,7 +335,8 @@ Record ID',
       'columns' => array(
         array(
           'fieldname' => 'path',
-          'template' => '<div class="gallery-item"><a class="fancybox" href="{imageFolder}{path}"><img src="{imageFolder}thumb-{path}" title="{caption}" alt="{caption}"/><br/>{caption}</a></div>'
+          'template' => '<div class="gallery-item">{path}<br/>{caption}</div>',
+          'img'=>true
         )
       ),
       //mode direct means the datasource is a table instead of a report
@@ -344,9 +345,10 @@ Record ID',
       'includeAllColumns' => false,
       'headers' => false,
       'galleryColCount' => $options['galleryColCount'],
+      'pager' => false,
       'extraParams' => array(
         'occurrence_id'=>$_GET['occurrence_id'],
-        'sharing'=>'reporting'
+        'sharing'=>'reporting'        
       ),
       'ajax' => true
     ));
