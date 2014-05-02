@@ -43,7 +43,7 @@ setupButtons = function (tabs, index) {
     var wizList = $(this).parent();
     var tabs = wizList.parent();
     // first, validate
-    var current=wizList.parent().children('.ui-tabs').tabs('option', 'selected');
+    var current=indiciaFns.activeTab(wizList.parent().children('.ui-tabs'));
     var tabinputs = $('#entry_form div > .ui-tabs-panel:eq('+current+')').find('input,select').not(':disabled,[name=],.scTaxonCell,.inactive');
     if (typeof tabinputs.valid !== "undefined" && tabinputs.length>0 && !tabinputs.valid()) {
       return;
@@ -74,7 +74,7 @@ setupButtons = function (tabs, index) {
       var wizList = $(this).parent();
       var tabs = wizList.parent();
       // first, validate
-      var current=wizList.parent().children('.ui-tabs').tabs('option', 'selected');
+      var current=indiciaFns.activeTab(wizList.parent().children('.ui-tabs'));
       var tabinputs = $('#entry_form div > .ui-tabs-panel:eq('+current+')').find('input,select').not(':disabled');
       if (typeof tabinputs.valid !== "undefined" && !tabinputs.valid()) {
         return;
