@@ -21,7 +21,7 @@ function get_filters_without_existing_notification($db) {
     ->select('f.id,f.definition,fu.user_id')
     ->from('filters f')
     ->join('filters_users as fu','fu.filter_id','f.id')
-    ->join('notifications as n', "(n.user_id=fu.user_id and n.source_type='V' and n.acknowledged=false)", '', 'LEFT')
+    ->join('notifications as n', "(n.user_id=fu.user_id and n.source_type='VT' and n.acknowledged=false)", '', 'LEFT')
     ->where(array('f.sharing'=>'V', 'f.defines_permissions'=>'t','n.id'=>null,
                   'f.deleted'=>'f','fu.deleted'=>'f'))
     ->get()->result_array(FALSE);
@@ -78,7 +78,8 @@ function loop_through_filters_and_create_notifications($filters,$userDataWithIdK
           $notificationObj->acknowledged='false';
           $notificationObj->triggered_on=date("Ymd H:i:s");
           $notificationObj->user_id=$filter['user_id'];
-          $notificationObj->source_type='V'; 
+          //Use VT "Verifier Task" notification typeas we are informing the verifier that they need to perform a task.
+          $notificationObj->source_type='VT'; 
           $notificationObj->data=json_encode(
             array('username'=>$userDataWithIdKey[$filter['user_id']],
                   'comment'=>'You have records to verify.',
