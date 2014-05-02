@@ -373,7 +373,7 @@ class report_helper extends helper_base {
           if (empty($field['display']) && empty($field['fieldname']))
             $caption='';
           else
-            $caption = lang::get(empty($field['display']) ? $field['fieldname'] : $field['display']);
+            $caption = empty($field['display']) ? $field['fieldname'] : lang::get($field['display']);
           if (isset($field['fieldname']) && !(isset($field['img']) && $field['img']=='true')) {
             if (empty($field['orderby'])) $field['orderby']=$field['fieldname'];
             $sortLink = $sortUrl.$sortAndPageUrlParams['orderby']['name'].'='.$field['orderby'];
@@ -396,13 +396,13 @@ class report_helper extends helper_base {
           if (isset($field['datatype']) && !empty($caption)) {
             switch ($field['datatype']) {
               case 'text':
-                $title=lang::get("$caption text begins with ... search. Use * as a wildcard.");
+                $title=lang::get("{1} text begins with ... search. Use * as a wildcard.", $caption);
                 break;
               case 'date':
-                $title=lang::get("$caption search. Search for an exact date or use a vague date such as a year to select a range of dates.");
+                $title=lang::get("{1} search. Search for an exact date or use a vague date such as a year to select a range of dates.", $caption);
                 break;
-              default: $title=lang::get("$caption search. Either enter an exact number, use >, >=, <, or <= before the number to filter for ".
-                      "$caption more or less than your search value, or enter a range such as 1000-2000.");
+              default: $title=lang::get("{1} search. Either enter an exact number, use >, >=, <, or <= before the number to filter for ".
+                      "{1} more or less than your search value, or enter a range such as 1000-2000.", $caption);
             }
             $title = htmlspecialchars(lang::get('Type here to filter.').' '.$title);
             //The filter's input id includes the grid id ($options['id']) in its id as there maybe more than one grid and we need to make the id unique.
