@@ -1372,7 +1372,7 @@ jQuery('#imp-location').unbind('change');
 jQuery('#imp-location').change(function(){
   locationChange(this);
 });
-var selected = $('#controls').tabs('option', 'selected');
+var selected = indiciaFns.activeTab($('#controls'));
 
 // Only leave the click control activated for edit/add occurrence tab.
 if(selected != 1){

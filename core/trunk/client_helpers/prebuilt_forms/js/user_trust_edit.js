@@ -32,13 +32,13 @@ $(document).ready(function($) {
   });
   // focus controls can select appropriate summary tab
   $('#user_trust\\:survey_id\\:title').focus(function() {
-    $('#summary-tabs').tabs('option', 'selected', 0);
+    indiciaFns.activeTab($('#summary-tabs'), 0);
   });
   $('#user_trust\\:taxon_group_id\\:title').focus(function() {
-    $('#summary-tabs').tabs('option', 'selected', 1);
+    indiciaFns.activeTab($('#summary-tabs'), 1);
   });
   $('#user_trust\\:location_id\\:name').focus(function() {
-    $('#summary-tabs').tabs('option', 'selected', 2);
+    indiciaFns.activeTab($('#summary-tabs'), 2);
   });
   
 });

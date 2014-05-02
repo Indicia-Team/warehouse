@@ -5477,14 +5477,14 @@ $('div#$escaped_divId').indiciaTreeBrowser({
           isset($options['navButtons']) && $options['navButtons']) {
         //Add javascript for moving through wizard
         self::$javascript .= "\n$('.tab-submit').click(function() {\n";
-        self::$javascript .= "  var current=$('#$divId').tabs('option', 'selected');\n";
+        self::$javascript .= "  var current=indiciaFns.activeTab($('#$divId'));\n";
         self::validate_inputs_on_current_tab();
         // If all is well, submit.
         self::$javascript .= "      var form = $(this).parents('form:first');
         form.submit();
       });";
         self::$javascript .= "\n$('.tab-next').click(function() {\n";
-        self::$javascript .= "  var current=$('#$divId').tabs('option', 'selected');\n";
+        self::$javascript .= "  var current=indiciaFns.activeTab($('#$divId'));\n";
         self::validate_inputs_on_current_tab('Before going to the next step, some of the values in the input boxes on this step need checking. '.
             'They have been highlighted on the form for you.');
         // If all is well, move to the next tab. Note the code detects if the top of the tabset is not visible, if so
@@ -5494,8 +5494,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   scrollTopIntoView('$topSelector');
 });";
         self::$javascript .= "\n$('.tab-prev').click(function() {
-  var current=$('#$divId').tabs('option', 'selected');
-  var a = $('ul.ui-tabs-nav a')[current-1];
+  var current=indiciaFns.activeTab($('#$divId')),
+      a = $('ul.ui-tabs-nav a')[current-1];
   $(a).click();
   scrollTopIntoView('$topSelector');
 });\n";
@@ -5506,12 +5506,12 @@ $('div#$escaped_divId').indiciaTreeBrowser({
 $('#$divId').tabs({
   select: function(event, ui) {
     var isValid,
-      prev = $(this).tabs('option', 'selected'),
+      prev = indiciaFns.activeTab($(this)),
       panel = $('.ui-tabs-panel', this).eq(prev);
     if ($('.species-grid', panel).length != 0) {
       var clonableRow = $('.species-grid .scClonableRow', panel),
            display = clonableRow.css('display'),
-           current=$('#$divId').tabs('option', 'selected');
+           current=indiciaFns.activeTab($('#$divId'));
       ".
       //leaving a panel with a species table so hide the clonable row to prevent trying to validate it, unless they've started inputting
       // a taxon name already. We handle taxon cells seperately. They are excluded from validation in tabinputs as they have no name.
