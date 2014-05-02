@@ -277,6 +277,15 @@ class iform_verification_4 {
           'description'=>'Path to page used to show a list of records, e.g. when clicking on the record counts on the Experience tab',
           'type'=>'string',
           'required' => 'false'
+        ),
+        array(
+          'name'=>'clear_verification_task_notifications',
+          'caption'=>'Clear verification task notifications?',
+          'description'=>'Automatically clear any verification task notifications when the user opens the verification screen.',
+          'type'=>'boolean',
+          'group'=>'Notification Settings',
+          'default' => false,
+          'required' => 'false'
         )
       )
     );
@@ -419,6 +428,9 @@ idlist=';
    * @return HTML string
    */
   public static function get_form($args, $node, $response) {
+    //Clear Verifier Tasks automatically when they open the screen if the option is set.
+    if ($args['clear_verification_task_notifications']&&hostsite_get_user_field('indicia_user_id'))
+      self::clear_verifier_task_notifications($args['website_id'],$args['password']);  
     // set some defaults, applied when upgrading from a form configured on a previous form version.
     if (empty($args['email_subject_send_to_recorder']))
       $args['email_subject_send_to_recorder'] = 'Record of %taxon% requires confirmation (ID:%id%)';
@@ -560,6 +572,38 @@ idlist=';
     data_entry_helper::add_resource('jqplot_bar');
     return $r;
 
+  }
+    
+  /*
+   * When the user opens the Verification screen, clear any notifications of source_type VT (Verifier Task).
+   * This method is only run if the user has configured the page to run with this behaviour.
+   */
+  private static function clear_verifier_task_notifications($website_id,$password) {
+    $auth = data_entry_helper::get_read_write_auth($website_id, $password);
+    //Using 'submission_list' and 'entries' allows us to specify several top-level submissions to the system
+    //i.e. we need to be able to submit several notifications.
+    $submission['submission_list']['entries'] = array();
+    $submission['id']='notification';
+    $notifications = data_entry_helper::get_population_data(array(
+      'table' => 'notification',
+      'extraParams' => $auth['read'] + array('acknowledged' => 'f', 'user_id'=>hostsite_get_user_field('indicia_user_id'),
+          'query' => json_encode(array('in' => array('source_type' => array('VT'))))),
+      'nocache' => true
+    ));
+    
+    if (count($notifications)>0) {
+      //Setup the structure we need to submit.
+      foreach ($notifications as $notification) { 
+        $data['id']='notification';
+        $data['fields']['id']['value'] = $notification['id'];
+        $data['fields']['acknowledged']['value'] = 't';
+        $submission['submission_list']['entries'][] = $data;
+      }
+      //Submit the stucture for processing
+      $response = data_entry_helper::forward_post_to('save', $submission, $auth['write_tokens']);
+      if (!is_array($response) || !array_key_exists('success', $response))
+        drupal_set_message(print_r($response,true));        
+    }
   }
 
   /**
