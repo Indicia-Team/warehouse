@@ -223,7 +223,7 @@ jQuery('#sample\\\\:date').change(function(){updateSampleDate(this, true);});
 updateSampleDate('#sample\\\\:date', false);
 jQuery('.tab-submit').unbind('click');
 jQuery('.tab-submit').click(function() {
-  var current=jQuery('#controls').tabs('option', 'selected');
+  var current=indiciaFns.activeTab($('#controls'));
   var tabinputs = jQuery('#entry_form div > .ui-tabs-panel:eq('+current+')').find('input,select');
   var secList = '';
   if (!tabinputs.valid()) { return; }

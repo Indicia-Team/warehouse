@@ -52,7 +52,7 @@ if(!Array.indexOf){
           $('#record-details-tabs').tabs('url', indiciaData.detailsTabs.indexOf('images'), indiciaData.ajaxUrl + '/images/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id);
           $('#record-details-tabs').tabs('url', indiciaData.detailsTabs.indexOf('comments'), indiciaData.ajaxUrl + '/comments/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id);
           // reload current tabs
-          $('#record-details-tabs').tabs('load', $('#record-details-tabs').tabs('option', 'selected'));
+          $('#record-details-tabs').tabs('load', indiciaFns.activeTab($('#record-details-tabs'));
           $('#record-details-toolbar *').attr('disabled', '');
           showTab();
           // remove any wms layers for species or the gateway data
@@ -127,9 +127,9 @@ if(!Array.indexOf){
         $('#row' + id + ' td:first div, #details-tab td.status').addClass('status-' + status);
         var text = indiciaData.statusTranslations[status], nextRow;
         $('#details-tab td.status').html(text);
-        if (indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] === 'details' ||
-            indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] === 'comments') {
-          $('#record-details-tabs').tabs('load', $('#record-details-tabs').tabs('option', 'selected'));
+        if (indiciaData.detailsTabs[indiciaFns.activeTab($('#record-details-tabs'))] === 'details' ||
+            indiciaData.detailsTabs[indiciaFns.activeTab($('#record-details-tabs'))] === 'comments') {
+          $('#record-details-tabs').tabs('load', indiciaFns.activeTab($('#record-details-tabs')));
         }
         if (indiciaData.autoDiscard) {
           nextRow = $('#row' + id).next();
@@ -367,9 +367,9 @@ if(!Array.indexOf){
   showTab = function showTab() {
     "use strict";
     if (currRec !== null) {
-      if (indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] === 'details') {
+      if (indiciaData.detailsTabs[indiciaFns.activeTab($('#record-details-tabs'))] === 'details') {
         $('#details-tab').html(currRec.content);
-      } else if (indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] === 'experience') {
+      } else if (indiciaData.detailsTabs[indiciaFns.activeTab($('#record-details-tabs'))] === 'experience') {
         $.get(
           indiciaData.ajaxUrl + '/experience/' + indiciaData.nid + urlSep +
               'occurrence_id=' + occurrence_id + '&user_id=' + currRec.extra.created_by_id,
@@ -378,7 +378,7 @@ if(!Array.indexOf){
             $('#experience-div').html(data);
           }
         );
-      } else if (indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] === 'phenology') {
+      } else if (indiciaData.detailsTabs[indiciaFns.activeTab($('#record-details-tabs'))] === 'phenology') {
         $.getJSON(
           indiciaData.ajaxUrl + '/phenology/' + indiciaData.nid + urlSep +
               'external_key=' + currRec.extra.taxon_external_key +
@@ -396,7 +396,7 @@ if(!Array.indexOf){
             $('#chart-div').css('opacity',1);
           }
         );
-      } else if (indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] === 'images') {
+      } else if (indiciaData.detailsTabs[indiciaFns.activeTab($('#record-details-tabs'))] === 'images') {
         $('#images-tab a.fancybox').fancybox();
       }
       // make it clear things are loading
