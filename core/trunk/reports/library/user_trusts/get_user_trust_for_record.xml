@@ -9,7 +9,10 @@
       LEFT JOIN taxon_groups tg on ut.taxon_group_id = tg.id
       LEFT JOIN index_locations_samples ils on (ils.location_id=ut.location_id or ut.location_id is null)
       LEFT JOIN locations l on ut.location_id = l.id
-      LEFT JOIN users u on ut.user_id = u.id
+      JOIN users u on ut.user_id = u.id
+      JOIN people p on p.id=u.person_id and p.deleted=false
+      JOIN users uc on uc.id=ut.created_by_id and uc.deleted=false
+      JOIN people pc on pc.id=uc.person_id and pc.deleted=false
     WHERE 
       ut.user_id = '#user_id#'
         AND (ut.survey_id = '#survey_id#' or (ut.survey_id is null and (ut.taxon_group_id is not null or ut.location_id is not null)))
@@ -34,7 +37,8 @@
     <column name='survey_title' display='Survey Title' sql='s.title' datatype='text'/>
     <column name='taxon_group' display='Taxon Group' sql='tg.title' datatype='text'/>
     <column name='location_name' display='Location Name' sql='l.name' datatype='text'/>
-    <column name='recorder_name' displayed='Recorder Name' sql='u.username' datatype='text'/>
+    <column name='recorder_name' displayed='Recorder Name' sql="p.surname || coalesce(', ' || p.first_name, '')" datatype='text'/>
     <column name='trust_id' displayed='Trust Id' sql='ut.id' datatype='integer'/>
+    <column name='trusted_by' displayed='Trust created by' sql="pc.surname || coalesce(', ' || pc.first_name, '')" datatype="text"/>
   </columns>
 </report>
