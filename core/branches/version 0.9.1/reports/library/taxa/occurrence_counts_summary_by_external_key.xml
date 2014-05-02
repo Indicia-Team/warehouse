@@ -11,7 +11,9 @@
       #joins#
       WHERE  #sharing_filter# 
       AND (o.zero_abundance='f')
-      AND (o.record_status = 'V' or (o.certainty='C' and o.record_status='C'))      
+      AND (o.record_status = 'V' 
+          or ('#quality#'='C' and o.certainty='C' and o.record_status='C')
+          or ('#quality#'='!D' and o.record_status ='C'))
       </query>
       <order_by>
         count(*) desc
@@ -28,7 +30,7 @@
           <where>o.survey_id=#survey_id#</where>
         </param>
         <param name='quality' display='Data quality' description='Quality level required of data to be included in the report.' datatype='lookup' 
-            lookup_values='V:Data must be verified,C:Data must be verified or certain,L:Data must be at least likely,!D:Include anything not dubious or rejected,!R:Include anything not rejected' />
+            lookup_values='V:Data must be verified,C:Data must be verified or certain,!D:Include anything not dubious or rejected' />
         <param name="currentUser" display="Current User ID" description="Current user's warehouse ID. Allows a column to be output indicating that the user owns the record." datatype="text" />
         <param name="ownData" display="My data only?" datatype="checkbox">
           <where>o.created_by_id='#currentUser#'</where>
@@ -43,9 +45,8 @@
       </params>
       <columns>
             <column name="external_key"  sql="cttl.external_key" unique="true" in_count="true" datatype="text" visible="false" />
-            <column name='taxon' display='Species' 
-              template="&lt;div class='zero-{zero_abundance}'&gt;{taxon}&lt;/div&gt;"
-              sql="CASE WHEN cttl.preferred_taxon=cttl.default_common_name then cttl.preferred_taxon ELSE cttl.preferred_taxon || COALESCE(' | ' || cttl.default_common_name, '') END" datatype='text' />
+            <column name='taxon' display='Species' sql="cttl.preferred_taxon" datatype='species' />
+            <column name='common_name' display='Common name' sql="cttl.default_common_name" datatype='text' />
             <column name='taxon_group' display='Taxon Group' sql='cttl.taxon_group' datatype='text' />
             <column name="value" display="No. of Records" sql="count(*)" aggregate="true" datatype="int"/>
       </columns>
