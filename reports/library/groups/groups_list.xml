@@ -18,9 +18,10 @@
     <param name="currentUser" display="Current User ID" description="Current user's warehouse ID." datatype="text" emptyvalue="0"/>
     <param name="userFilterMode" display="userFilterMode" description="Include which groups for the user?"
         datatype="lookup" default="member" 
-        lookup_values='all:All groups,joinable:Groups they can join or request,pending:Groups they are pending approval to join,member:Groups they are a member of,admin:Groups they administer,create:Groups they created,create_admin:Groups they created or administer'>
+        lookup_values='all:All groups,joinable:Groups they can join or request,allvisible:Groups they can join or request or are already a member of,pending:Groups they are pending approval to join,member:Groups they are a member of,admin:Groups they administer,create:Groups they created,create_admin:Groups they created or administer'>
       <wheres>
         <where value="joinable" operator="equal">g.joining_method&lt;&gt;'I'</where>
+        <where value="allvisible" operator="equal">(g.joining_method&lt;&gt;'I' OR gu.id IS NOT NULL)</where>
         <where value="pending" operator="equal">gu.id is not null AND gu.pending=true</where>
         <where value="member" operator="equal">gu.id is not null AND gu.pending=false</where>
         <where value="admin" operator="equal">gu.id is not null AND gu.pending=false AND gu.administrator=true</where>
