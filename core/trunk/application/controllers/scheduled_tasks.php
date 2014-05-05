@@ -449,6 +449,9 @@ class Scheduled_Tasks_Controller extends Controller {
     echo '<br/>';
     var_export($sortedPlugins);
     echo '<br/>';    
+    //Make sure the cache_builder runs first as some other modules depend on the cache_occurrences table
+    if (array_key_exists('cache_builder', $sortedPlugins))
+      $sortedPlugins = array('cache_builder' => $sortedPlugins['cache_builder']) + $sortedPlugins;
     // Now go through timestamps in order of time since they were run
     foreach ($sortedPlugins as $plugin=>$timestamp) {
       // allow the list of scheduled plugins we are running to be controlled from the URL parameters.
