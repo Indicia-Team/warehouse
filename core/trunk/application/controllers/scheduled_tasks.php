@@ -524,7 +524,7 @@ join occurrences o on o.id=co.id
 inner join samples s on s.id=o.sample_id and s.deleted=false
 left join samples sp on sp.id=s.parent_id and sp.deleted=false
 inner join websites w on w.id=o.website_id and w.deleted=false
-where o.deleted=false and o.record_status not in ('I','V','R','D')
+where o.deleted=false
 and ((o.updated_on>'$timestamp' and o.updated_on<='$currentTime')
 or (s.updated_on>'$timestamp' and s.updated_on<='$currentTime')
 or (sp.updated_on>'$timestamp' and sp.updated_on<='$currentTime'))";

@@ -48,18 +48,19 @@ function data_cleaner_cleanout_old_messages($rules, $db) {
   foreach ($rules as $rule) {
     if (!in_array($rule['plugin'], $modulesDone)) {
       // mark delete any previous occurrence comments for this plugin for taxa we are rechecking
-      $query = 'update occurrence_comments oc
+      $query = "update occurrence_comments oc
         set deleted=true
         from occdelta o
-        where oc.occurrence_id=o.id
-        and oc.generated_by=\''.$rule['plugin'].'\'';
+        where oc.occurrence_id=o.id and o.record_status not in ('I','V','R','D')
+        and oc.generated_by='$rule[plugin]'";
       $db->query($query);
-      // and cleanup the notifications generated previously
+      // and cleanup the notifications generated previously for verifications and auto-checks
       $query = "delete 
         from notifications
         using occdelta o 
-        where source='Verifications and comments'
-        and linked_id = o.id";
+        where source='Verifications and comments' and source_type in ('V','A')
+        and linked_id = o.id 
+        and o.record_status not in ('I','V','R','D')";
       $db->query($query);
       $modulesDone[]=$rule['plugin'];
     }
@@ -94,6 +95,7 @@ function data_cleaner_run_rules($rules, $db) {
         $sql .= "\n" . $query['joins'];
       if (isset($query['where']))
         $sql .= "\nwhere " . $query['where'];
+      $sql .= "\n and co.record_status not in ('I','V','R','D')";
       // we now have the query ready to run which will return a list of the occurrence ids that fail the check.
       try {
         $count += $db->query($sql)->count();
@@ -121,7 +123,7 @@ function data_cleaner_update_occurrence_metadata($db, $endtime) {
   $query = "update occurrences o
 set last_verification_check_date='$endtime'
 from occdelta
-where occdelta.id=o.id";
+where occdelta.id=o.id and occdelta.record_status not in ('I','V','R','D')";
   $db->query($query);
 }
 
@@ -138,14 +140,14 @@ join (
       select o.id, o.last_verification_check_date, 
         array_to_string(array_agg(distinct '[' || oc.generated_by || ']{' || oc.comment || '}'),' ') as info
       from occurrences o
-      join occdelta on occdelta.id=o.id
+      join occdelta on occdelta.id=o.id and occdelta.record_status not in ('I','V','R','D')
             left join occurrence_comments oc 
             on oc.occurrence_id=o.id 
             and oc.implies_manual_check_required=true 
             and oc.deleted=false
       group by o.id, o.last_verification_check_date
     ) sub on sub.id=o.id
-where occdelta.id=co.id";
+where occdelta.id=co.id and occdelta.record_status not in ('I','V','R','D')";
   $db->query($query);
   }
 }
