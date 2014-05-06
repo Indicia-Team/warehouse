@@ -54,7 +54,7 @@ class extension_splash_extensions {
     //- Make a count of all attributes that are found as present (checked), taking into account rows can be deleted. As we are only checking the cells for trees not on the trees grid
     //if the error count is above 0 then we know there are problems on the page
     data_entry_helper::$javascript .= "
-    $('<span class=\"deh-required\">*</span>').insertAfter('.scGridRef\\\\/Accuracy');
+    $('<span class=\"deh-required\">*</span>').insertAfter('.scGridRef');
     $('#entry_form').submit(function() {     
       if ($('#imp-location').val()==='<Please select>'||$('#squares-select-list').val()==='<Please select>'||
           $('#imp-location').val()===''||$('#squares-select-list').val()==='') {
@@ -75,7 +75,7 @@ class extension_splash_extensions {
       $treeOccurrenceAttrIds=explode(',',$options['treeOccurrenceAttrIds']);
       data_entry_helper::$javascript .= "
       var treeOccurrenceAttrIds = ".json_encode($treeOccurrenceAttrIds).";
-      if ($('.scGridRef\\\\/Accuracy[value=]').length>=3) {
+      if ($('.scGridRef[value=]').length>=3) {
         alert('Please fill in the grid reference field for all trees.');
         return false;
       }
