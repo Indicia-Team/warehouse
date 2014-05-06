@@ -33,5 +33,6 @@
     <column name="date_end" sql="o.date_end" />
     <column name="date_type" sql="o.date_type" />
     <column name="geom" visible="false" mappable="true" sql="st_astext(ST_Centroid(o.public_geom))" />
+    <column name="created_by_id" sql="o.created_by_id" />
   </columns>
 </report>
