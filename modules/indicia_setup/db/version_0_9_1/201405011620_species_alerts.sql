@@ -44,6 +44,7 @@ BEGIN
   success := TRUE;
 EXCEPTION
     WHEN duplicate_table THEN RAISE NOTICE 'table exists.';
+END;
 
 COMMENT ON TABLE species_alerts
   IS 'Holds the data required for the system to know what species alerts should be created for new or verified records e.g. location_id holds a link to the boundary to limit the alerts to, taxon_meaning_id or external_key limits the alerts per taxon.';
