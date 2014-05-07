@@ -381,7 +381,7 @@ var simple_tooltip;
                   features.push(feature);
                 }
                 if (col.visible!==false && col.visible!=='false') {
-                  if ((col.img === true || col.img==='true') && row[col.fieldname]!=='') {
+                  if ((col.img === true || col.img==='true') && row[col.fieldname]!==null && row[col.fieldname]!=='') {
                     var imgs = row[col.fieldname].split(','), imgclass=imgs.length>1 ? 'multi' : 'single', match;
                     value='';
                     $.each(imgs, function(idx, img) {
