@@ -693,7 +693,7 @@ class iform_species_details extends iform_dynamic {
         'taxon_meaning_id'=>self::$taxon_meaning_id,
       )
     ));    
-    return '<h3>Images</h3>'.$reportResults;
+    return '<h3>Photos and media</h3>'.$reportResults;
   }
   
   /**
