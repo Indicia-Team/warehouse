@@ -328,7 +328,7 @@ Record ID',
       $options['galleryColCount'] = 3;
     }  
 
-    return '<h3>Photos</h3>'.report_helper::report_grid(array(
+    return '<h3>Photos and media</h3>'.report_helper::report_grid(array(
       'readAuth' => $auth['read'],
       'dataSource'=>'occurrence_image',
       'itemsPerPage' => $options['itemsPerPage'],
