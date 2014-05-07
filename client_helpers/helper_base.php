@@ -1932,7 +1932,7 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
    * @param integer $cacheTimeout Timeout in seconds, if overriding the default cache timeout.
    * @return mixed String read from the cache, or false if not read.
    */   
-  public function cache_get($cacheOpts, $cacheTimeout=false) {
+  public static function cache_get($cacheOpts, $cacheTimeout=false) {
     if (!$cacheTimeout)
       $cacheTimeout = self::_getCacheTimeOut($options);
     $cacheFolder = self::$cache_folder ? self::$cache_folder : self::relative_client_helper_path() . 'cache/';
@@ -1947,7 +1947,7 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
    * @param string $toCache String data to cache.
    * @param integer $cacheTimeout Timeout in seconds, if overriding the default cache timeout.
    */   
-  public function cache_set($cacheOpts, $toCache, $cacheTimeout=false) {
+  public static function cache_set($cacheOpts, $toCache, $cacheTimeout=false) {
     if (!$cacheTimeout)
       $cacheTimeout = self::_getCacheTimeOut($options);
     $cacheFolder = self::$cache_folder ? self::$cache_folder : self::relative_client_helper_path() . 'cache/';
