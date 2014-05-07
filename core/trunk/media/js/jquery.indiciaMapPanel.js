@@ -320,6 +320,8 @@ mapLocationSelectedHooks = [];
           this.strokeColor = opts.strokeColorBoundary;
           this.strokeWidth = opts.strokeWidthBoundary;
           this.strokeDashstyle = opts.strokeDashstyleBoundary;
+          //pointRadius needed for clickForPlot rotation handle circle size.
+          this.pointRadius = 10;
           break;
         case "invisible":
           this.pointRadius = 0;
@@ -1759,7 +1761,11 @@ mapLocationSelectedHooks = [];
 
       if (this.settings.editLayer) {
         var editLayer;
-        if (indiciaData.zoomid) {
+        //If using click for plot, there can be a zoom ghost on the page, but we don't want
+        //the ghost's style to carry over when the user clicks to create the plot as the vertex
+        //rotate handles will be the same colour as the main plot. To get round this, use the boundary
+        //colours as this will allow the vertex handles to be red.
+        if (indiciaData.zoomid && !div.settings.clickForPlot) {
           //Change the feature colour to make it a ghost when we are in add mode and zoomed into a location (as the location boundary isn't
           //used, it is only visual)
           editLayer = new OpenLayers.Layer.Vector(
