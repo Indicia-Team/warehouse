@@ -1300,13 +1300,20 @@ $('.ui-state-default').live('mouseout', function() {
   */
   public static function get_read_auth($website_id, $password) {
     self::$website_id = $website_id; /* Store this for use with data caching */
-    $postargs = "website_id=$website_id";
-    $response = self::http_post(parent::$base_url.'index.php/services/security/get_read_nonce', $postargs);
-    $nonce = $response['output'];
-    return array(
-        'auth_token' => sha1("$nonce:$password"),
-        'nonce' => $nonce
-    );
+    $r = self::cache_get(array('readauth-wid'=>$website_id), 600);
+    if ($r===false) {
+      $postargs = "website_id=$website_id";
+      $response = self::http_post(parent::$base_url.'index.php/services/security/get_read_nonce', $postargs);
+      $nonce = $response['output'];
+      $r = array(
+          'auth_token' => sha1("$nonce:$password"),
+          'nonce' => $nonce
+      );
+      self::cache_set(array('readauth-wid'=>$website_id), json_encode($r));
+    } 
+    else
+      $r = json_decode($r, true);
+    return $r;
   }
 
 /**
