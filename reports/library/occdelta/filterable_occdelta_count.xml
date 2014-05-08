@@ -7,7 +7,7 @@
     FROM occdelta o
       #agreements_join#
       #joins#
-    WHERE o.record_status = 'C' AND
+    WHERE 1=1 AND
     #sharing_filter#
     #idlist#
   </query>
