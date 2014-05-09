@@ -437,7 +437,7 @@ class helper_base extends helper_config {
    * cached but older than the cache timeout, the cached data will be refreshed. This introduces a random element to
    * cache refreshes so that no single form load event is responsible for refreshing all cached content.
    */
-  public static $cache_chance_refresh_file=5;
+  public static $cache_chance_refresh_file=10;
 
   /**
    * @var integer On average, every 1 in $cache_chance_purge times the Warehouse is called for data, all files
@@ -1300,7 +1300,8 @@ $('.ui-state-default').live('mouseout', function() {
   */
   public static function get_read_auth($website_id, $password) {
     self::$website_id = $website_id; /* Store this for use with data caching */
-    $r = self::cache_get(array('readauth-wid'=>$website_id), 600);
+    // Keep a non-random cache for 10 minutes. It MUST be shorter than the normal cache lifetime so this expires more frequently.
+    $r = self::cache_get(array('readauth-wid'=>$website_id), 600, false);
     if ($r===false) {
       $postargs = "website_id=$website_id";
       $response = self::http_post(parent::$base_url.'index.php/services/security/get_read_nonce', $postargs);
@@ -1928,21 +1929,25 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
   
   /**
    * Utility function for external access to the iform cache.
+   * 
    * @param array $cacheOpts Options array which defines the cache "key", i.e. the unique set of options being cached.
    * @param integer $cacheTimeout Timeout in seconds, if overriding the default cache timeout.
+   * @param boolean $random Should a random element be introduced to prevent simultaneous expiry of multiple
+   * caches? Default true.
    * @return mixed String read from the cache, or false if not read.
    */   
-  public static function cache_get($cacheOpts, $cacheTimeout=false) {
+  public static function cache_get($cacheOpts, $cacheTimeout=false, $random=true) {
     if (!$cacheTimeout)
       $cacheTimeout = self::_getCacheTimeOut(array());
     $cacheFolder = self::$cache_folder ? self::$cache_folder : self::relative_client_helper_path() . 'cache/';
     $cacheFile = self::_getCacheFileName($cacheFolder, $cacheOpts, $cacheTimeout);
-    $r = self::_getCachedResponse($cacheFile, $cacheTimeout, $cacheOpts);
+    $r = self::_getCachedResponse($cacheFile, $cacheTimeout, $cacheOpts, $random);
     return $r === false ? $r : $r['output'];
   }
   
   /**
-   * Utility function for external writes to the iform cache. 
+   * Utility function for external writes to the iform cache.
+   *   
    * @param array $cacheOpts Options array which defines the cache "key", i.e. the unique set of options being cached.
    * @param string $toCache String data to cache.
    * @param integer $cacheTimeout Timeout in seconds, if overriding the default cache timeout.
@@ -1956,10 +1961,10 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
   }
   
   /**
-   * Protected function to fetch a validated timeout value from passed in options array
-   * @param array $options Options array with the following possibilities:<ul>
-   * <li><b>cachetimeout</b><br/>
-   * Optional. The length in seconds before the cache times out and is refetched.</li></ul>
+   * Protected function to fetch a validated timeout value from passed in options array.
+   *
+   * @param array $options Options array with the following possibilities:
+   * * **cachetimeout** - Optional. The length in seconds before the cache times out and is refetched.
    * @return Timeout in number of seconds, else FALSE if data is not to be cached.
    */
   protected static function _getCacheTimeOut($options)
@@ -2002,17 +2007,22 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
 
   /**
    * Protected function to return the cached data stored in the specified local file.
+   * 
    * @param string $file Cache file to be used, includes path
    * @param number $timeout - will be false if no caching to take place
    * @param array $options Options array : contents used to confirm what this data is.
+   * @param boolean $random Should a random element be introduced to prevent simultaneous expiry of multiple
+   * caches? Default true.
    * @return array equivalent of call to http_post, else FALSE if data is not to be cached.
    */
-  protected static function _getCachedResponse($file, $timeout, $options)
+  protected static function _getCachedResponse($file, $timeout, $options, $random=true)
   {
     // Note the random element, we only timeout a cached file sometimes.
-    if (($timeout && $file && is_file($file) &&
-        (rand(1, self::$cache_chance_refresh_file)!=1 || filemtime($file) >= (time() - $timeout)))
-    ) {
+    $wantToCache = $timeout!==false;
+    $haveFile = $file && is_file($file);
+    $fresh = filemtime($file) >= (time() - $timeout);
+    $randomSurvival = $random && (rand(1, self::$cache_chance_refresh_file)!=1);
+    if ($wantToCache && $haveFile && ($fresh || $randomSurvival)) {
       $response = array();
       $handle = fopen($file, 'rb');
       if(!$handle) return false;
