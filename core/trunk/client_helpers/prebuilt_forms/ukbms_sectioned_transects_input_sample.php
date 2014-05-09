@@ -78,6 +78,16 @@ class iform_ukbms_sectioned_transects_input_sample {
       iform_map_get_map_parameters(),
       array(
         array(
+          'name'=>'survey_id',
+          'caption'=>'Survey',
+          'description'=>'The survey that data will be posted into.',
+          'type'=>'select',
+          'table'=>'survey',
+          'captionField'=>'title',
+          'valueField'=>'id',
+          'siteSpecific'=>true
+        ),
+        array(
           'name'=>'occurrence_attribute_id',
           'caption'=>'Occurrence Attribute',
           'description'=>'The attribute (typically an abundance attribute) that will be presented in the grid for input. Entry of an attribute value will create '.
@@ -90,14 +100,29 @@ class iform_ukbms_sectioned_transects_input_sample {
           'siteSpecific'=>true
         ),
         array(
-          'name'=>'locationTypesFilter',
-           'caption'=>'Location type definitions',
-           'description'=>'Implies a location type selection control. Comma separated list of the [location types]:[survey_id] to be included in the control. Retricts the locations in the user specific location filter to the selected location type. The CMS User ID attribute must be defined for all location types selected or all location types.',
-           'type'=>'textarea',
-           'default' => false,
-           'required' => true,
-           'group' => 'Transects Editor Settings'
+          'name'=>'transect_type_term',
+          'caption'=>'Transect type term',
+          'description'=>'Select the term used for transect location types.',
+          'type' => 'select',
+          'table'=>'termlists_term',
+          'captionField'=>'term',
+          'valueField'=>'term',
+          'extraParams' => array('termlist_external_key'=>'indicia:location_types'),
+          'required' => true,
+          'group'=>'Transects Editor Settings'
         ),
+        array(
+          'name'=>'section_type_term',
+          'caption'=>'Section type term',
+          'description'=>'Select the term used for section location types.',
+          'type' => 'select',
+          'table'=>'termlists_term',
+          'captionField'=>'term',
+          'valueField'=>'term',
+          'extraParams' => array('termlist_external_key'=>'indicia:location_types'),
+          'required' => true,            
+          'group'=>'Transects Editor Settings'
+        ), 
         array(
           'name'=>'species_tab_1',
           'caption'=>'Species Tab 1 Title',
@@ -710,6 +735,7 @@ class iform_ukbms_sectioned_transects_input_sample {
     if (isset(data_entry_helper::$entity_to_load['sample:id'])) {
       $r .= '<input type="hidden" name="sample:id" value="'.data_entry_helper::$entity_to_load['sample:id'].'"/>';
     }
+    $r .= '<input type="hidden" name="sample:survey_id" value="'.$args['survey_id'].'"/>';
 
     if(isset($args['include_map_samples_form']) && $args['include_map_samples_form'])
       $r .= '<div id="cols" class="ui-helper-clearfix"><div class="left" style="width: '.(98-(isset($args['percent_width']) ? $args['percent_width'] : 50)).'%">';
@@ -726,139 +752,60 @@ class iform_ukbms_sectioned_transects_input_sample {
         $site['centroid_sref_system'] = strtoupper($site['centroid_sref_system']);
       $r .= '<input type="hidden" name="sample:entered_sref_system" value="'.$site['centroid_sref_system'].'"/>';
     }
-
-    $sampleMethods = helper_base::get_termlist_terms($auth, 'indicia:sample_methods', array('Transect'));
-    $attributes = data_entry_helper::getAttributes(array(
-    		'id' => $sampleId,
-    		'valuetable'=>'sample_attribute_value',
-    		'attrtable'=>'sample_attribute',
-    		'key'=>'sample_id',
-    		'fieldprefix'=>'smpAttr',
-    		'extraParams'=>$auth['read'],
-    		'survey_id'=>self::getBaselineSurvey($args), // WARNING: we make the assumption that the same sample attributes are assigned to all surveys.
-    		'sample_method_id'=>$sampleMethods[0]['id']
-    ));
-    
     if ($locationId && (isset(data_entry_helper::$entity_to_load['sample:id']) || isset($_GET['site']))) {
       // for reload of existing or the the site is specified in the URL, don't let the user switch the transect as that would mess everything up.
       $r .= '<label>'.lang::get('Transect').':</label> <span class="value-label">'.$site['name'].'</span><br/>';
-      data_entry_helper::load_existing_record($auth['read'], 'location', $locationId);
-      $types = helper_base::explode_lines($args['locationTypesFilter']);
-      foreach($types as $type){
-        $parts = explode(':',$type);
-        $locationType = helper_base::get_termlist_terms($auth, 'indicia:location_types', array($parts[0]));
-        if($locationType[0]['id'] == data_entry_helper::$entity_to_load['location:location_type_id'])
-          $r .= '<input type="hidden" id="survey-id" name="sample:survey_id" value="'.$parts[1].'"/>';
-      }
     } else {
-      $r .= '<input type="hidden" id="survey-id" name="sample:survey_id" value=""/>';
-      // loop through each location type.
-      $types = helper_base::explode_lines($args['locationTypesFilter']);
-      $siteTypes = array();
-      $surveys = array();
+      // Output only the locations for this website and transect type. Note we load both transects and sections, just so that
+      // we always use the same warehouse call and therefore it uses the cache.
+      $typeTerms = array(
+        empty($args['transect_type_term']) ? 'Transect' : $args['transect_type_term'],
+        empty($args['section_type_term']) ? 'Section' : $args['section_type_term']
+      );
+      $locationTypes = helper_base::get_termlist_terms($auth, 'indicia:location_types', $typeTerms);
+      $siteParams = $auth['read'] + array('website_id' => $args['website_id'], 'location_type_id'=>$locationTypes[0]['id']);
+      if ((!isset($args['user_locations_filter']) || $args['user_locations_filter']) &&
+          (!isset($args['managerPermission']) || !user_access($args['managerPermission']))) {
+        $siteParams += array('locattrs'=>'CMS User ID', 'attr_location_cms_user_id'=>$user->uid);
+      } else
+        $siteParams += array('locattrs'=>'');
+      $availableSites = data_entry_helper::get_population_data(array(
+        'report'=>'library/locations/locations_list',
+        'extraParams' => $siteParams,
+        'nocache' => true
+      ));
+      // convert the report data to an array for the lookup, plus one to pass to the JS so it can keep the hidden sref fields updated
+      $sitesLookup = array();
       $sitesJs = array();
-      foreach($types as $type){
-        // build site list for this location type.
-        $parts = explode(':',$type);
-        $locationType = helper_base::get_termlist_terms($auth, 'indicia:location_types', array($parts[0]));
-        $siteTypes[$locationType[0]['id']] = $parts[0];
-        $surveys[$locationType[0]['id']] = $parts[1];
-        $siteParams = $auth['read'] + array('website_id' => $args['website_id'], 'location_type_id'=>$locationType[0]['id']);
-        if ((!isset($args['user_locations_filter']) || $args['user_locations_filter']) &&
-            (!isset($args['managerPermission']) || !user_access($args['managerPermission']))) {
-          $siteParams += array('locattrs'=>'CMS User ID', 'attr_location_cms_user_id'=>$user->uid);
-        } else
-          $siteParams['locattrs']='';
+      foreach ($availableSites as $site) {
+        $sitesLookup[$site['location_id']]=$site['name'];
+        $sitesJs[$site['location_id']] = $site;
+      }
+      // bolt in branch locations. Don't assume that branch list is superset of normal sites list.
+      // Only need to do if not a manager - they have already fetched the full list anyway.
+      if(isset($args['branch_assignment_permission']) && user_access($args['branch_assignment_permission']) && $siteParams['locattrs']!='') {
+        $siteParams['locattrs']='Branch CMS User ID';
+        $siteParams['attr_location_branch_cms_user_id']=$user->uid;
+        unset($siteParams['attr_location_cms_user_id']);
         $availableSites = data_entry_helper::get_population_data(array(
-          'report'=>'library/locations/locations_list',
-          'extraParams' => $siteParams,
-          'nocache' => true
-        ));
-        // convert the report data to an array to pass to the JS so it can keep the hidden sref fields updated
-        // the site list is created on the fly depending on the user entered type.
-        foreach ($availableSites as $site)
-          $sitesJs[$site['location_id']] = $site;
-        // bolt in branch locations. Don't assume that branch list is superset of normal sites list.
-        // Only need to do if not a manager - they have already fetched the full list anyway.
-        if(isset($args['branch_assignment_permission']) && user_access($args['branch_assignment_permission']) && $siteParams['locattrs']!='') {
-          $siteParams['locattrs']='Branch CMS User ID';
-          $siteParams['attr_location_branch_cms_user_id']=$user->uid;
-          unset($siteParams['attr_location_cms_user_id']);
-          $availableSites = data_entry_helper::get_population_data(array(
             'report'=>'library/locations/locations_list',
             'extraParams' => $siteParams,
             'nocache' => true
-          ));
-          foreach ($availableSites as $site)
-            $sitesJs[$site['location_id']] = $site;
+        ));
+        foreach ($availableSites as $site) {
+          $sitesLookup[$site['location_id']]=$site['name'];
+          $sitesJs[$site['location_id']] = $site;
         }
+        natcasesort($sitesLookup); // merge into original list in alphabetic order.
       }
-      $options = array(
-        'label' => lang::get('Select Site Type'),
-        'validation' => array('required'),
-        'blankText'=>lang::get('please select'),
-        'lookupValues' => $siteTypes,
-        'fieldname'=>'location_type_id',
-        'id'=>'location_type_id'
-      );
-      // the WCBS is to record Butterflies, moths and odonata: these can be covered sufficiently in the 
-      // existing tabs: butterflies, moths, others. Leave species definitions fixed at moment.
-      data_entry_helper::$javascript .= "$('#location_type_id').change(function(){
-  if($(this).val() == ''){
-    $('#imp-location').val('').attr('disabled',true).find('option').not('[value=]').remove();
-  } else {
-    $('#imp-location').removeAttr('disabled').find('option').not('[value=]').remove();
-    if(typeof indiciaData.surveys[$(this).val()] != 'undefined'){
-      $('#survey-id').val(indiciaData.surveys[$(this).val()]);\n";
-      // Recorder Name - assume Easy Login uid
-      if (function_exists('module_exists') && module_exists('easy_login')) {
-      	$userId = hostsite_get_user_field('indicia_user_id');
-      	// For non easy login test only     $userId = 1;
-      	foreach($attributes as $attrID => $attr){
-      		if(strcasecmp('Recorder Name', $attr["untranslatedCaption"]) == 0 && !empty($userId)){
-      			// determining which you have used is difficult from a services based autocomplete, esp when the created_by_id is not available on the data.
-      			data_entry_helper::$javascript .= "      $('#smpAttr\\:$attrID').setExtraParams({\"survey_id\":indiciaData.surveys[$(this).val()]});\n";
-      		}
-      	}
-      }
-      data_entry_helper::$javascript .= "    }
-    jQuery.ajax({
-      'url': indiciaData.indiciaSvc+'index.php/services/data/location',
-      'data': {
-        'location_type_id': $(this).val(),
-        'auth_token': indiciaData.readAuth.auth_token,
-        'nonce': indiciaData.readAuth.nonce,
-        'mode': 'json'
-      },
-      'dataType': 'jsonp',
-      'success': function(ldata) {
-        // next get all transect section subsamples
-        for(var i=0; i<ldata.length; i++)
-          if(typeof indiciaData.sites[ldata[i].id] != 'undefined')
-            $('#imp-location').append('<option value=\"'+ldata[i].id+'\">'+ldata[i].name+'</option>');
-      }
-    });
-  }
-});\n";
-      data_entry_helper::$late_javascript .= "$('#location_type_id').change();\n";
-      
-      $locationTypeId = isset($_GET['location_type_id']) ? $_GET['location_type_id'] : null;
-      if (!$locationTypeId && isset($_POST['location_type_id']))
-        $locationTypeId = $_POST['location_type_id'];
-      if ($locationTypeId)
-        $options['default'] = $locationTypeId;
-      
-      $r .= data_entry_helper::select($options);
       data_entry_helper::$javascript .= "indiciaData.sites = ".json_encode($sitesJs).";\n";
-      data_entry_helper::$javascript .= "indiciaData.surveys = ".json_encode($surveys).";\n";
       $options = array(
         'label' => lang::get('Select Transect'),
         'validation' => array('required'),
         'blankText'=>lang::get('please select'),
-        'lookupValues' => array(),
-        'disabled'=>'disabled="true"'
+        'lookupValues' => $sitesLookup,
       );
-      if ($locationId) // error situation.
+      if ($locationId)
         $options['default'] = $locationId;
       $r .= data_entry_helper::location_select($options);
     }
@@ -867,6 +814,17 @@ class iform_ukbms_sectioned_transects_input_sample {
       $r .= '<input type="hidden" name="sample:entered_sref_system" value="" id="entered_sref_system"/>';
       // sref values for the sample will be populated automatically when the submission is built.
     }
+    $sampleMethods = helper_base::get_termlist_terms($auth, 'indicia:sample_methods', array('Transect'));
+    $attributes = data_entry_helper::getAttributes(array(
+      'id' => $sampleId,
+      'valuetable'=>'sample_attribute_value',
+      'attrtable'=>'sample_attribute',
+      'key'=>'sample_id',
+      'fieldprefix'=>'smpAttr',
+      'extraParams'=>$auth['read'],
+      'survey_id'=>$args['survey_id'],
+      'sample_method_id'=>$sampleMethods[0]['id']
+    ));
     $r .= get_user_profile_hidden_inputs($attributes, $args, '', $auth['read']);
     if(isset($_GET['date'])){
       $r .= '<input type="hidden" name="sample:date" value="'.$_GET['date'].'"/>';
@@ -888,14 +846,13 @@ class iform_ukbms_sectioned_transects_input_sample {
       $blockOptions = get_attr_options_array_with_user_data($args['custom_attribute_options']);
     else 
       $blockOptions=array();
-    $args['survey_id'] = self::getBaselineSurvey($args); // WARNING: we make the assumption that the same sample attributes are assigned to all surveys.
     $r .= get_attribute_html($attributes, $args, array('extraParams'=>$auth['read']), null, $blockOptions);
     $r .= '<input type="hidden" name="sample:sample_method_id" value="'.$sampleMethods[0]['id'].'" />';
     $r .= '<input type="submit" value="'.lang::get('Next').'" />';
     $r .= '<a href="'.$args['my_walks_page'].'" class="button">'.lang::get('Cancel').'</a>';
     if (isset(data_entry_helper::$entity_to_load['sample:id']))
       $r .= '<button id="delete-button" type="button" class="ui-state-default ui-corner-all" />'.lang::get('Delete').'</button>';
-    
+
     if(isset($args['include_map_samples_form']) && $args['include_map_samples_form']){
       $r .= "</div>" .
             '<div class="right" style="width: '.(isset($args['percent_width']) ? $args['percent_width'] : 50).'%">';
@@ -910,7 +867,7 @@ class iform_ukbms_sectioned_transects_input_sample {
       $r .= map_helper::map_panel($options, $olOptions);
       $r .= "</div>"; // right
     }
-    
+
     $r .= '</form>';
     // Recorder Name - assume Easy Login uid
     if (function_exists('module_exists') && module_exists('easy_login')) {
@@ -920,11 +877,10 @@ class iform_ukbms_sectioned_transects_input_sample {
         if(strcasecmp('Recorder Name', $attr["untranslatedCaption"]) == 0 && !empty($userId)){
           // determining which you have used is difficult from a services based autocomplete, esp when the created_by_id is not available on the data.
           data_entry_helper::add_resource('autocomplete');
-          data_entry_helper::$javascript .= "bindRecorderNameAutocomplete(".$attrID.", '".$userId."', '".data_entry_helper::$base_url."', '".self::getBaselineSurvey($args)."', '".$auth['read']['auth_token']."', '".$auth['read']['nonce']."');\n";
+          data_entry_helper::$javascript .= "bindRecorderNameAutocomplete(".$attrID.", '".$userId."', '".data_entry_helper::$base_url."', '".$args['survey_id']."', '".$auth['read']['auth_token']."', '".$auth['read']['nonce']."');\n";
         }
       }
     }
-    
     if (isset(data_entry_helper::$entity_to_load['sample:id'])){
       // allow deletes if sample id is present.
       data_entry_helper::$javascript .= "jQuery('#delete-button').click(function(){
@@ -941,14 +897,11 @@ class iform_ukbms_sectioned_transects_input_sample {
       $r .= '<input type="hidden" name="sample:deleted" value="t"/>';
       $r .= '</form>';
     }
-    data_entry_helper::$javascript .= "indiciaData.indiciaSvc = '".data_entry_helper::$base_url."';\n";
-    data_entry_helper::$javascript .= "indiciaData.readAuth = {nonce: '".$auth['read']['nonce']."', auth_token: '".$auth['read']['auth_token']."'};\n";
     data_entry_helper::enable_validation('sample');
     return $r;
   }
 
   public static function get_occurrences_form($args, $node, $response) {
-    // TODO work out survey_id
     global $user;
   	if (!module_exists('iform_ajaxproxy'))
       return 'This form must be used in Drupal with the Indicia AJAX Proxy module enabled.';
@@ -1000,7 +953,7 @@ class iform_ukbms_sectioned_transects_input_sample {
         'key'=>'sample_id',
         'fieldprefix'=>'smpAttr',
         'extraParams'=>$auth['read'],
-        'survey_id'=>$sample['survey_id'],
+        'survey_id'=>$args['survey_id'],
         'sample_method_id'=>$sampleMethods[0]['id']
       ));
       if (false== ($cmsUserAttr = extract_cms_user_attr($attributes)))
@@ -1014,7 +967,7 @@ class iform_ukbms_sectioned_transects_input_sample {
       'key'=>'sample_id',
       'fieldprefix'=>'smpAttr',
       'extraParams'=>$auth['read'],
-      'survey_id'=>$sample['survey_id'],
+      'survey_id'=>$args['survey_id'],
       'sample_method_id'=>$sampleMethods[0]['id'],
       'multiValue'=>false // ensures that array_keys are the list of attribute IDs.
     ));
@@ -1043,7 +996,7 @@ class iform_ukbms_sectioned_transects_input_sample {
       if(isset($args['occurrence_attribute_id_4']) && $args['occurrence_attribute_id_4'] != "") $attrs[] = $args['occurrence_attribute_id_4'];
       $o = data_entry_helper::get_population_data(array(
         'report' => 'reports_for_prebuilt_forms/UKBMS/ukbms_occurrences_list_for_parent_sample',
-        'extraParams' => $auth['read'] + array('view'=>'detail','sample_id'=>$parentSampleId,'survey_id'=>$sample['survey_id'],'date_from'=>'','date_to'=>'','taxon_group_id'=>'',
+        'extraParams' => $auth['read'] + array('view'=>'detail','sample_id'=>$parentSampleId,'survey_id'=>$args['survey_id'],'date_from'=>'','date_to'=>'','taxon_group_id'=>'',
             'smpattrs'=>'', 'occattrs'=>implode(',',$attrs)),
         // don't cache as this is live data
         'nocache' => true
@@ -1073,7 +1026,7 @@ class iform_ukbms_sectioned_transects_input_sample {
     		'key'=>'occurrence_id',
     		'fieldprefix'=>'occAttr',
     		'extraParams'=>$auth['read'],
-    		'survey_id'=>$sample['survey_id'],
+    		'survey_id'=>$args['survey_id'],
     		'multiValue'=>false // ensures that array_keys are the list of attribute IDs.
     ));
     data_entry_helper::$javascript .= "indiciaData.occurrence_attribute = [];\n";
@@ -1210,7 +1163,7 @@ class iform_ukbms_sectioned_transects_input_sample {
 
     $allTaxonMeaningIdsAtTransect = data_entry_helper::get_population_data(array(
         'report' => 'reports_for_prebuilt_forms/UKBMS/ukbms_taxon_meanings_at_transect',
-        'extraParams' => $auth['read'] + array('location_id' => $parentLocId, 'survey_id'=>$sample['survey_id']),
+        'extraParams' => $auth['read'] + array('location_id' => $parentLocId, 'survey_id'=>$args['survey_id']),
         // don't cache as this is live data
         'nocache' => true
     ));
@@ -1302,7 +1255,7 @@ class iform_ukbms_sectioned_transects_input_sample {
       $r .= '<div id="gridmap">'."\n".'<form method="post" id="entry_form" action="'.$reloadPath.'">'.$auth['write'].
             '<p>When using this page, please remember that the data is not saved to the database as you go (which is the case for the previous tabs). In order to save the data entered in this page you must click on the Save button at the bottom of the page.</p>'.
             '<input type="hidden" id="website_id" name="website_id" value="'.$args["website_id"].'" />'.
-            '<input type="hidden" id="survey_id" name="sample:survey_id" value="'.$sample['survey_id'].'" />'.
+            '<input type="hidden" id="survey_id" name="sample:survey_id" value="'.$args["survey_id"].'" />'.
             '<input type="hidden" id="occurrence:record_status" name="occurrence:record_status" value="'.$value.'" />'.
             '<input type="hidden" name="sample:id" value="'.data_entry_helper::$entity_to_load['sample:id'].'"/>'.
             '<input type="hidden" name="page" value="speciesmap"/>'.
@@ -1362,7 +1315,7 @@ jQuery(jQuery('#".$options["tabDiv"]."').parent()).bind('tabsshow', speciesMapTa
     $r .= $auth['write'];
     $r .= '<input type="hidden" name="sample:id" value="'.$parentSampleId.'" />';
     $r .= '<input type="hidden" name="website_id" value="'.$args['website_id'].'"/>';
-    $r .= '<input type="hidden" name="survey_id" value="'.$sample['survey_id'].'"/>';
+    $r .= '<input type="hidden" name="survey_id" value="'.$args['survey_id'].'"/>';
     $r .= '<input type="hidden" name="page" value="notes"/>';
     $r .= '<p  class="page-notice ui-state-highlight ui-corner-all">'.
           lang::get('When using this page, please remember that the data is not saved to the database as you go (which is the case for the previous tabs). In order to save the data entered in this page you must click on the Submit button at the bottom of the page.').
@@ -1379,22 +1332,22 @@ jQuery(jQuery('#".$options["tabDiv"]."').parent()).bind('tabsshow', speciesMapTa
     // A stub form for AJAX posting when we need to create an occurrence
     $r .= '<form style="display: none" id="occ-form" method="post" action="'.iform_ajaxproxy_url($node, 'occurrence').'">';
     $r .= '<input name="website_id" value="'.$args['website_id'].'"/>';
-    $r .= '<input name="survey_id" value="'.$sample['survey_id'].'" />';
+    $r .= '<input name="survey_id" value="'.$args["survey_id"].'" />';
     $r .= '<input name="occurrence:id" id="occid" />';
     $r .= '<input name="occurrence:deleted" id="occdeleted" />';
     $r .= '<input name="occurrence:zero_abundance" id="occzero" />';
     $r .= '<input name="occurrence:taxa_taxon_list_id" id="ttlid" />';
     $r .= '<input name="occurrence:sample_id" id="occ_sampleid"/>';
     if(isset($args["sensitiveAttrID"]) && $args["sensitiveAttrID"] != "" && isset($args["sensitivityPrecision"]) && $args["sensitivityPrecision"] != "") {
-      $locationType = helper_base::get_termlist_terms($auth, 'indicia:location_types', array(empty($args['transect_type_term']) ? 'Transect' : $args['transect_type_term']));
+      $locationTypes = helper_base::get_termlist_terms($auth, 'indicia:location_types', array(empty($args['transect_type_term']) ? 'Transect' : $args['transect_type_term']));
       $site_attributes = data_entry_helper::getAttributes(array(
             'valuetable'=>'location_attribute_value'
             ,'attrtable'=>'location_attribute'
             ,'key'=>'location_id'
             ,'fieldprefix'=>'locAttr'
             ,'extraParams'=>$auth['read'] + array('id'=>$args["sensitiveAttrID"])
-            ,'location_type_id'=>$locationType[0]['id']
-            ,'survey_id'=>$sample['survey_id']
+            ,'location_type_id'=>$locationTypes[0]['id']
+            ,'survey_id'=>$args['survey_id']
             ,'id' => $parentLocId // location ID
       ));
       $r .= '<input name="occurrence:sensitivity_precision" id="occSensitive" value="'.
@@ -1410,7 +1363,7 @@ jQuery(jQuery('#".$options["tabDiv"]."').parent()).bind('tabsshow', speciesMapTa
     $r .= '<input name="website_id" value="'.$args['website_id'].'"/>';
     $r .= '<input name="sample:id" id="smpid" />';
     $r .= '<input name="sample:parent_id" value="'.$parentSampleId.'" />';
-    $r .= '<input name="sample:survey_id" value="'.$sample['survey_id'].'" />';
+    $r .= '<input name="sample:survey_id" value="'.$args['survey_id'].'" />';
     $r .= '<input name="sample:sample_method_id" value="'.$sampleMethods[0]['id'].'" />';
     $r .= '<input name="sample:entered_sref" id="smpsref" />';
     $r .= '<input name="sample:entered_sref_system" id="smpsref_system" />';
@@ -1541,7 +1494,6 @@ jQuery('#tabs').bind('tabsshow', function(event, ui) {
    */
   protected static function control_speciesmap($auth, $args, $tabAlias, $options) {
   	// The ID must be done here so it can be accessed by both the species grid and the buttons.
-  	$r = "WARNING NEEDS TESTING FOLLOWING MULTI LOCATION TYPE CHANGES<br/>";
   	$code = rand(0,1000);
   	$defaults = array('id' => 'species-grid-'.$code, buttonsId => 'species-grid-buttons-'.$code);
   	$options = array_merge($defaults, $options);
@@ -1796,7 +1748,7 @@ jQuery('#tabs').bind('tabsshow', function(event, ui) {
   			'label' => lang::get('occurrence:taxa_taxon_list_id'),
   			'columns' => 1,
   			'extraParams' => $extraParams,
-  			'survey_id' => self::getBaselineSurvey($args),
+  			'survey_id' => $args['survey_id'],
   			'occurrenceComment' => $args['occurrence_comment'],
   			'occurrenceSensitivity' => (isset($args['occurrence_sensitivity']) ? $args['occurrence_sensitivity'] : false),
   			'occurrenceImages' => $args['occurrence_images'],
@@ -1898,7 +1850,7 @@ jQuery('#tabs').bind('tabsshow', function(event, ui) {
   			,'key'=>'sample_id'
   			,'fieldprefix'=>'smpAttr'
   			,'extraParams'=>$auth['read']
-  			,'survey_id'=>self::getBaselineSurvey($args) // TODO ????
+  			,'survey_id'=>$args['survey_id']
   	);
   	if (!empty($id))
   		$attrOpts['id'] = $id;
@@ -1908,13 +1860,6 @@ jQuery('#tabs').bind('tabsshow', function(event, ui) {
   		$attrOpts['sample_method_id']=$args['sample_method_id'];
   	$attributes = data_entry_helper::getAttributes($attrOpts, false);
   	return $attributes;
-  }
-
-  private static function getBaselineSurvey($args) {
-    // WARNING: we are assuming that all the surveys and attribute allocation are set up identically
-    $types = helper_base::explode_lines($args['locationTypesFilter']);
-    $first = explode(':',$types[0]);
-    return $first[1];
   }
   
 
