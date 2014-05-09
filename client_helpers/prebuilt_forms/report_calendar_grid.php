@@ -43,6 +43,9 @@ class iform_report_calendar_grid {
 
   // internal key, not used on URL: maps the location_id to the survey_id.
   private static $SurveyKey = 'survey_id';
+
+  // internal key, not used on URL: maps the location_id to a url extension.
+  private static $URLExtensionKey = 'URLExtension';
   
   private static $siteUrlParams = array();
 
@@ -96,7 +99,11 @@ class iform_report_calendar_grid {
         array(
           'name'=>'locationTypesFilter',
           'caption'=>'Restrict locations to types',
-          'description'=>'Implies a location type selection control. Comma separated list of the [location types]:[survey_id] to be included in the control. Retricts the locations in the user specific location filter to the selected location type. The CMS User ID attribute must be defined for all location types selected or all location types.',
+          'description'=>'Implies a location type selection control. Comma separated list of the [location types]:[survey_id]:[url extension] to be included in the control. '.
+              'Retricts the locations in the user specific location filter to the selected location type. '.
+              'The CMS User ID attribute must be defined for all the individual location types listed, or for all location types. '.
+              'If provided the survey_id is used to override any preset values when running the report. '.
+              'If provided the url extension is added to the New Sample URL and Existing Sample URL. To add it as part of the path, prefix with a "/", and to add as a parameter, prefix with a "&amp".',
           'type'=>'string',
           'default' => false,
           'required' => false,
@@ -219,9 +226,7 @@ class iform_report_calendar_grid {
       'mode' => 'report',
       'readAuth' => $readAuth,
       'extraParams' => $presets);
-    if(isset($siteUrlParams[self::$SurveyKey])){
-      $reportOptions['extraParams']['survey_id'] = $siteUrlParams[self::$SurveyKey]; // location_type mapping overrides preset
-    }
+    $reportOptions['extraParams']['survey_id'] = $siteUrlParams[self::$SurveyKey]['value']; // location_type mapping overrides preset
     if ($siteUrlParams[self::$locationKey]['value'] != null)
       $reportOptions['extraParams']['location_id'] = $siteUrlParams[self::$locationKey]['value'];
     if ($siteUrlParams[self::$locationTypeKey]['value'] != null)
@@ -237,7 +242,10 @@ class iform_report_calendar_grid {
       self::$siteUrlParams = array(
         self::$locationKey => array('name' => self::$locationKey,'value' => isset($_GET[self::$locationKey]) ? $_GET[self::$locationKey] : ''),
         self::$locationTypeKey => array('name' => self::$locationTypeKey,'value' => isset($_GET[self::$locationTypeKey]) ? $_GET[self::$locationTypeKey] : ''),
-        self::$yearKey => array('name' => self::$yearKey,'value' => isset($_GET[self::$yearKey]) ? $_GET[self::$yearKey] : date('Y')));
+        self::$yearKey => array('name' => self::$yearKey,'value' => isset($_GET[self::$yearKey]) ? $_GET[self::$yearKey] : date('Y')),
+        self::$SurveyKey => array('name' => self::$SurveyKey,'value' => ''),
+        self::$URLExtensionKey => array('name' => self::$URLExtensionKey,'value' => '')
+      );
   	}
   	return self::$siteUrlParams;
   }
@@ -272,7 +280,7 @@ jQuery('#".$ctrlid."').change(function(){
     $siteUrlParams = self::get_site_url_params();
     $presets = get_options_array_with_user_data($args['param_presets']);
     if(isset($presets['survey_id'])) {
-      self::$siteUrlParams[self::$SurveyKey] = $presets['survey_id'];
+      self::$siteUrlParams[self::$SurveyKey]['value'] = $presets['survey_id'];
     }
     
     if(isset($args['locationTypesFilter']) && $args['locationTypesFilter']!=""){
@@ -289,7 +297,10 @@ jQuery('#".$ctrlid."').change(function(){
       self::$siteUrlParams[self::$locationTypeKey]['value'] = $default;
       for($i = 0; $i < count($terms); $i++){
          if($terms[$i]['id'] == $default && count($types2[$i])>1 && $types2[$i][1]!='') {
-           self::$siteUrlParams[self::$SurveyKey] = $types2[$i][1];
+           self::$siteUrlParams[self::$SurveyKey]['value'] = $types2[$i][1];
+         }
+         if($terms[$i]['id'] == $default && count($types2[$i])>2 && $types2[$i][2]!='') {
+           self::$siteUrlParams[self::$URLExtensionKey]['value'] = $types2[$i][2];
          }
       }
       if(count($types)>1){
@@ -322,8 +333,8 @@ jQuery('#".$ctrlid."').change(function(){
     // need to scan param_presets for survey_id..
     $presets = get_options_array_with_user_data($args['param_presets']);
 
-    if(!isset($siteUrlParams[self::$SurveyKey]) || $siteUrlParams[self::$SurveyKey]==''){
-      return('<p>'.lang::get('The location selection control requires that survey_id {'.$siteUrlParams[self::$SurveyKey].'} is set in either the presets or mapped against the location_type, in the form parameters.').'</p>');
+    if($siteUrlParams[self::$SurveyKey]['value']==''){
+      return('<p>'.lang::get('The location selection control requires that survey_id {'.$siteUrlParams[self::$SurveyKey]['value'].'} is set in either the presets or mapped against the location_type, in the form parameters.').'</p>');
     }
     $attrArgs = array(
         'valuetable'=>'location_attribute_value',
@@ -331,13 +342,13 @@ jQuery('#".$ctrlid."').change(function(){
         'key'=>'location_id',
         'fieldprefix'=>'locAttr',
         'extraParams'=>$readAuth,
-        'survey_id'=>$siteUrlParams[self::$SurveyKey]);
+        'survey_id'=>$siteUrlParams[self::$SurveyKey]['value']);
     if($siteUrlParams[self::$locationTypeKey]['value']!="")
       $attrArgs['location_type_id'] = $siteUrlParams[self::$locationTypeKey]['value'];
     $locationAttributes = data_entry_helper::getAttributes($attrArgs, false);
     $cmsAttr=extract_cms_user_attr($locationAttributes,false);
     if(!$cmsAttr){
-      return('<p>'.lang::get('The location selection control requires that CMS User ID location attribute is defined for locations in this survey {'.$siteUrlParams[self::$SurveyKey].'}. If restricting to a particular location type, this must be set in the parameters page for this form instance.').'</p>');
+      return('<p>'.lang::get('The location selection control requires that CMS User ID location attribute is defined for locations in this survey {'.$siteUrlParams[self::$SurveyKey]['value'].'}. If restricting to a particular location type, this must be set in the parameters page for this form instance.').'</p>');
     }
     $attrListArgs=array('nocache'=>true,
         'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
@@ -372,6 +383,7 @@ jQuery('#".$ctrlid."').change(function(){
                '</option>';
     }
     $ctrl.='</select>';
+    /*
     // get the url parameters. Don't use $_GET, because it contains any parameters that are not in the
     // URL when search friendly URLs are used (e.g. a Drupal path node/123 is mapped to index.php?q=node/123
     // using Apache mod_alias but we don't want to know about that)
@@ -382,7 +394,7 @@ jQuery('#".$ctrlid."').change(function(){
         $reloadUrl['path'] .= (strpos($reloadUrl['path'],'?')===false ? '?' : '&')."$key=$value";
       }
     }
-    $param=(strpos($reloadUrl['path'],'?')===false ? '?' : '&').self::$locationKey.'=';
+    $param=(strpos($reloadUrl['path'],'?')===false ? '?' : '&').self::$locationKey.'='; */
     self::set_up_control_change($ctrlid, self::$locationKey, array());
     return $ctrl;
   }
@@ -429,19 +441,46 @@ jQuery('#".$ctrlid."').change(function(){
     if(isset($args['weekNumberFilter'])) {
       $reportOptions['weekNumberFilter']= $args['weekNumberFilter'];
     }
-    $reportOptions['newURL']=$args['newURL'];
-    $reportOptions['existingURL']=$args['existingURL'];
     $reportOptions['buildLinkFunc']=array('iform_report_calendar_grid', 'build_link');
     
     $siteUrlParams = self::get_site_url_params();
+    $extensions = array($siteUrlParams[self::$URLExtensionKey]['value']);
+    $reportOptions['existingURL'] = self::get_url($args['existingURL'], $extensions);
     if($siteUrlParams[self::$locationKey]['value'] != null){
-      $reportOptions['siteIDFilter']=$siteUrlParams[self::$locationKey]['value']; // this gets passed through to buildLinkFunc Callback
-      $reportOptions['newURL'].=(strpos($reportOptions['newURL'],'?')===false ? '?' : '&').$args['newURLLocationParam'].'='.$siteUrlParams[self::$locationKey]['value'];
+    	$reportOptions['siteIDFilter']=$siteUrlParams[self::$locationKey]['value']; // this gets passed through to buildLinkFunc Callback
+    	$extensions[] = '&'.$args['newURLLocationParam'].'='.$siteUrlParams[self::$locationKey]['value'];
     } else if($siteUrlParams[self::$locationTypeKey]['value'] != null){
-      $reportOptions['newURL'].=(strpos($reportOptions['newURL'],'?')===false ? '?' : '&').$args['newURLLocationTypeParam'].'='.$siteUrlParams[self::$locationTypeKey]['value'];
+    	$extensions[] = '&'.$args['newURLLocationTypeParam'].'='.$siteUrlParams[self::$locationTypeKey]['value'];
     }
-    // note that we want to see samples entered on other days, so do not want to filter by the location_id.
+    $reportOptions['newURL'] = self::get_url($args['newURL'], $extensions);
     $grid .= report_helper::report_calendar_grid($reportOptions);
     return $grid;
   }
+  
+  private static function get_url($url, $extensions) {
+    $split = strpos($url, '?');
+    // convert the query parameters into an array
+    $gets = ($split!==false && strlen($url) > $split+1) ? explode('&', substr($url, $split+1)) : array();
+    $getsAssoc = array();
+    foreach ($gets as $get) {
+    	var_dump($get);
+    	 
+      $tokens = explode('=', $get);
+      if (count($tokens)===1) $tokens[] = '';
+      $getsAssoc[$tokens[0]] = $tokens[1];
+    }
+     $path = $split!==false ? substr($url, 0, $split) : $url;
+    foreach($extensions as $extension){
+  	var_dump($extension);
+    	if(strpos($extension, '&') !== false) {
+        $tokens = explode('=', substr($extension, 1));
+        $getsAssoc[$tokens[0]] = $tokens[1]; // this means that the extension can/will override the original url it the same.
+      } else
+      	$path .= $extension;
+    }
+  	foreach($getsAssoc as $key=>$value)
+      $path .= (strpos($path, '?') === false ? '?' : '&').$key.'='.$value;
+    return $path;
+  }
+  
 }
