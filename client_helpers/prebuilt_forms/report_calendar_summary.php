@@ -446,7 +446,16 @@ class iform_report_calendar_summary {
           'default' => 'csv',
           'group' => 'Downloads'
         ),
-
+        array(
+          'name'=>'includeFilenameTimestamps',
+          'caption'=>'Include Timestamp in Filename',
+          'description'=>'Include a Timestamp (YYYYMMDDHHMMSS) in the download filenames.',
+          'type'=>'boolean',
+          'default' => false,
+          'required' => false,
+          'group' => 'Downloads'
+        ),
+      		
         array(
           'name'=>'weekstart',
           'caption'=>'Start of week definition',
@@ -1035,6 +1044,7 @@ class iform_report_calendar_summary {
                  'default' => $siteUrlParams[self::$locationTypeKey]['value']
         )).'</th><th>';
         self::set_up_control_change($ctrlid, self::$locationTypeKey, array());
+      	$options['downloadFilePrefix'] .= preg_replace('/[^A-Za-z0-9]/i', '', $lookUpValues[$siteUrlParams[self::$locationTypeKey]['value']]).'_';
       }
     }
     
@@ -1657,6 +1667,8 @@ jQuery('#".$ctrlid."').change(function(){
     } else
       $reportOptions['extraParams']['location_type_id'] = self::$siteUrlParams[self::$locationTypeKey]['value'];
     
+    $reportOptions['includeReportTimeStamp']=isset($args['includeFilenameTimestamps']) && $args['includeFilenameTimestamps'];
+    
     $retVal.= '</tr></thead></table>';
     $reportOptions['highlightEstimates']=true;
     $retVal .= report_helper::report_calendar_summary($reportOptions);
@@ -1691,6 +1703,7 @@ jQuery('#".$ctrlid."').change(function(){
           $downloadOptions['caption' ]=$args['Download'.$i.'Caption'];
           $downloadOptions['dataSource']=$args['download_report_'.$i];
           $downloadOptions['filename']=$reportOptions['downloadFilePrefix'].preg_replace('/[^A-Za-z0-9]/i', '', $args['Download'.$i.'Caption']);
+          $downloadOptions['filename'] .= (isset($reportOptions['includeReportTimeStamp']) && $reportOptions['includeReportTimeStamp'] ? '_'.date('YmdHis') : '');
           if(isset($args['download_report_'.$i.'_format'])) $downloadOptions['format']=$args['download_report_'.$i.'_format'];
           data_entry_helper::$javascript .="\nif(jQuery('#downloads-table th').length==0)\n  jQuery('#downloads-table thead tr').append('<th class=\"downloads-table-label\">".lang::get("Downloads")."</th>');\njQuery('#downloads-table thead tr').append('".report_helper::report_download_link($downloadOptions)."');\n";
         }
