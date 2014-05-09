@@ -25,7 +25,7 @@ var createNotifications;
   //If user elects to continue, set the hidden field that indicates
   //they want to continue with the removal.
   acknowledge_all_notifications = function(id, title) { 
-    if ($('#' + id + ' .source_types').val()) {
+    if ($('#notifications-' + id + ' tr').not('thead tr').not('tfoot tr').length>0) {
       var confirmation = confirm('Are you sure you want to acknowledge all ' + title + ' in this list?');
       if (confirmation) { 
         $('.remove-notifications').val(1); 
@@ -33,6 +33,7 @@ var createNotifications;
         return false;
       }
     } else {
+      alert('There are no notifications to remove');
       return false;
     }
   };
