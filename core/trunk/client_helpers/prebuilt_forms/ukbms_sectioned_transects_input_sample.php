@@ -840,6 +840,14 @@ class iform_ukbms_sectioned_transects_input_sample {
     });
   }
 });\n";
+      data_entry_helper::$late_javascript .= "$('#location_type_id').change();\n";
+      
+      $locationTypeId = isset($_GET['location_type_id']) ? $_GET['location_type_id'] : null;
+      if (!$locationTypeId && isset($_POST['location_type_id']))
+        $locationTypeId = $_POST['location_type_id'];
+      if ($locationTypeId)
+        $options['default'] = $locationTypeId;
+      
       $r .= data_entry_helper::select($options);
       data_entry_helper::$javascript .= "indiciaData.sites = ".json_encode($sitesJs).";\n";
       data_entry_helper::$javascript .= "indiciaData.surveys = ".json_encode($surveys).";\n";

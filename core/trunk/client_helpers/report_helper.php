@@ -2358,7 +2358,7 @@ if (typeof mapSettingsHooks!=='undefined') {
     }
     data_entry_helper::$javascript .= "
 var pageURI = \"".$_SERVER['REQUEST_URI']."\";
-function rebuild_page_url(oldURL, overrideparam, overridevalue) {
+function rebuild_page_url(oldURL, overrideparam, overridevalue, removeparam) {
   var parts = oldURL.split('?');
   var params = [];
   if(overridevalue!=='') params.push(overrideparam+'='+overridevalue);
@@ -2366,14 +2366,15 @@ function rebuild_page_url(oldURL, overrideparam, overridevalue) {
     var oldparams = parts[1].split('&');
     for(var i = 0; i < oldparams.length; i++){
       var bits = oldparams[i].split('=');
-      if(bits[0] != overrideparam) params.push(oldparams[i]);
+      if(bits[0] != overrideparam && removeparam.indexOf(bits[0])<0) params.push(oldparams[i]);
     }
   }
-  return parts[0]+(params.length > 0 ? '?'+params.join('&') : '');
+  var retVal = parts[0]+(params.length > 0 ? '?'+(params.join('&')) : '');
+  return retVal;
 };
 function update_controls(){
-  $('#year-control-previous').attr('href',rebuild_page_url(pageURI,'year',".substr($options['date_start'],0,4)."-1));
-  $('#year-control-next').attr('href',rebuild_page_url(pageURI,'year',".substr($options['date_start'],0,4)."+1));
+  $('#year-control-previous').attr('href',rebuild_page_url(pageURI,'year',".substr($options['date_start'],0,4)."-1,[]));
+  $('#year-control-next').attr('href',rebuild_page_url(pageURI,'year',".substr($options['date_start'],0,4)."+1,[]));
   // user and location ids are dealt with in the main form. their change functions look a pageURI
 };
 update_controls();
@@ -3586,16 +3587,19 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
       $r .= "</tbody></table>\n";
       $r .= "</div>";
       $downloads="";
+
+      $timestamp = (isset($options['includeReportTimeStamp']) && $options['includeReportTimeStamp'] ? '_'.date('YmdHis') : '');
+
       if($options['includeRawData']){
-        if($options['includeRawGridDownload']) $downloads .= '<th><a download="'.$options['downloadFilePrefix'].'rawDataGrid.csv" href="data:application/csv;charset=utf-8,'.str_replace(array(' ','"'),array('%20','%22'),$rawDataDownloadGrid).'"><button type="button">Raw Grid Data</button></a></th>'."\n";
-        if($options['includeRawListDownload']) $downloads .= '<th><a download="'.$options['downloadFilePrefix'].'rawDataList.csv" href="data:application/csv;charset=utf-8,'.str_replace(array(' ','"'),array('%20','%22'),$rawDataDownloadList).'"><button type="button">Raw List Data</button></a></th>'."\n";
+        if($options['includeRawGridDownload']) $downloads .= '<th><a download="'.$options['downloadFilePrefix'].'rawDataGrid'.$timestamp.'.csv" href="data:application/csv;charset=utf-8,'.str_replace(array(' ','"'),array('%20','%22'),$rawDataDownloadGrid).'"><button type="button">Raw Grid Data</button></a></th>'."\n";
+        if($options['includeRawListDownload']) $downloads .= '<th><a download="'.$options['downloadFilePrefix'].'rawDataList'.$timestamp.'.csv" href="data:application/csv;charset=utf-8,'.str_replace(array(' ','"'),array('%20','%22'),$rawDataDownloadList).'"><button type="button">Raw List Data</button></a></th>'."\n";
       }
       if($options['includeSummaryData'] && $options['includeSummaryGridDownload'])
-        $downloads .= '<th><a download="'.$options['downloadFilePrefix'].'summaryDataGrid.csv" href="data:application/csv;charset=utf-8,'.str_replace(array(' ','"'),array('%20','%22'),$summaryDataDownloadGrid).'"><button type="button">Summary Grid Data</button></a></th>'."\n";
+        $downloads .= '<th><a download="'.$options['downloadFilePrefix'].'summaryDataGrid'.$timestamp.'.csv" href="data:application/csv;charset=utf-8,'.str_replace(array(' ','"'),array('%20','%22'),$summaryDataDownloadGrid).'"><button type="button">Summary Grid Data</button></a></th>'."\n";
       if($options['includeEstimatesData'] && $options['includeEstimatesGridDownload'])
-        $downloads .= '<th><a download="'.$options['downloadFilePrefix'].'estimateDataGrid.csv" href="data:application/csv;charset=utf-8,'.str_replace(array(' ','"'),array('%20','%22'),$estimateDataDownloadGrid).'"><button type="button">Estimate Grid Data</button></a></th>'."\n";
+        $downloads .= '<th><a download="'.$options['downloadFilePrefix'].'estimateDataGrid'.$timestamp.'.csv" href="data:application/csv;charset=utf-8,'.str_replace(array(' ','"'),array('%20','%22'),$estimateDataDownloadGrid).'"><button type="button">Estimate Grid Data</button></a></th>'."\n";
       if(($options['includeSummaryData'] || $options['includeEstimatesData']) && $options['includeListDownload'])
-        $downloads .= '<th><a download="'.$options['downloadFilePrefix'].'dataList.csv" href="data:application/csv;charset=utf-8,'.str_replace(array(' ','"'),array('%20','%22'),$downloadList).'"><button type="button">List Data</button></a></th>'."\n";
+        $downloads .= '<th><a download="'.$options['downloadFilePrefix'].'dataList'.$timestamp.'.csv" href="data:application/csv;charset=utf-8,'.str_replace(array(' ','"'),array('%20','%22'),$downloadList).'"><button type="button">List Data</button></a></th>'."\n";
 //      $r .= '<br/><table id="downloads-table" class="ui-widget ui-widget-content ui-corner-all downloads-table" '.($downloads == '' ? 'style="display:none"' : '').'><thead class="ui-widget-header"><tr>'.
       $r .= '<br/><table id="downloads-table" class="ui-widget ui-widget-content ui-corner-all downloads-table" ><thead class="ui-widget-header"><tr>'.
             ($downloads == '' ? '' : '<th class="downloads-table-label">Downloads</th>'.$downloads).

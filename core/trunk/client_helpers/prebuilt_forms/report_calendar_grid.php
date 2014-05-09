@@ -166,6 +166,15 @@ class iform_report_calendar_grid {
           'group' => 'Report Settings'
         ),
         array(
+          'name'=>'newURLLocationTypeParam',
+          'caption'=>'New Sample Location Type Parameter',
+          'description'=>'When generating a new sample and the location type filter has been set, use this parameter to pass the location '.
+                         'type ID to the next form.',
+          'default'=>'location_type_id',
+          'type'=>'string',
+          'group' => 'Report Settings'
+        ),
+        array(
           'name'=>'existingURL',
           'caption'=>'Existing Sample URL',
           'description'=>'The URL to invoke when selecting an existing sample.<br />'.
@@ -252,7 +261,8 @@ class iform_report_calendar_grid {
 jQuery('#".$ctrlid."').change(function(){
   var dialog = $('<p>Please wait whilst the next set of data is loaded.</p>').dialog({ title: 'Loading...', buttons: { 'OK': function() { dialog.dialog('close'); }}});
   // no need to update other controls on the page, as we jump off it straight away.
-  window.location = rebuild_page_url(pageURI, \"".$urlparam."\", jQuery(this).$prop);
+  var newUrl = rebuild_page_url(pageURI, \"".$urlparam."\", jQuery(this).$prop, ['".implode("','",$skipParams)."']);
+  window.location.assign(newUrl);
 });
   ";
   }
@@ -374,11 +384,6 @@ jQuery('#".$ctrlid."').change(function(){
     }
     $param=(strpos($reloadUrl['path'],'?')===false ? '?' : '&').self::$locationKey.'=';
     self::set_up_control_change($ctrlid, self::$locationKey, array());
-    data_entry_helper::$javascript .="
-jQuery('#".$ctrlid."').change(function(){
-  window.location = '".$reloadUrl['path']."' + (jQuery(this).val()=='' ? '' : '".$param."'+jQuery(this).val());
-});
-";
     return $ctrl;
   }
 
@@ -427,9 +432,13 @@ jQuery('#".$ctrlid."').change(function(){
     $reportOptions['newURL']=$args['newURL'];
     $reportOptions['existingURL']=$args['existingURL'];
     $reportOptions['buildLinkFunc']=array('iform_report_calendar_grid', 'build_link');
-    if(isset($_GET['location_id'])){
-      $reportOptions['siteIDFilter']=$_GET['location_id']; // this gets passed through to buildLinkFunc Callback
-      $reportOptions['newURL'].=(strpos($reportOptions['newURL'],'?')===false ? '?' : '&').$args['newURLLocationParam'].'='.$_GET['location_id'];
+    
+    $siteUrlParams = self::get_site_url_params();
+    if($siteUrlParams[self::$locationKey]['value'] != null){
+      $reportOptions['siteIDFilter']=$siteUrlParams[self::$locationKey]['value']; // this gets passed through to buildLinkFunc Callback
+      $reportOptions['newURL'].=(strpos($reportOptions['newURL'],'?')===false ? '?' : '&').$args['newURLLocationParam'].'='.$siteUrlParams[self::$locationKey]['value'];
+    } else if($siteUrlParams[self::$locationTypeKey]['value'] != null){
+      $reportOptions['newURL'].=(strpos($reportOptions['newURL'],'?')===false ? '?' : '&').$args['newURLLocationTypeParam'].'='.$siteUrlParams[self::$locationTypeKey]['value'];
     }
     // note that we want to see samples entered on other days, so do not want to filter by the location_id.
     $grid .= report_helper::report_calendar_grid($reportOptions);
