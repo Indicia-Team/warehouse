@@ -1,4 +1,3 @@
-
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -20,13 +19,13 @@ var remove_message;
 var reply;
 var createNotifications;
 
-(function ($) {  
+(function ($) {
   //Setup confirmation for Remove Notifications buttons.
   //If user elects to continue, set the hidden field that indicates
   //they want to continue with the removal.
-  acknowledge_all_notifications = function(id, title) { 
+  acknowledge_all_notifications = function(id) { 
     if ($('#notifications-' + id + ' tr').not('thead tr').not('tfoot tr').length>0) {
-      var confirmation = confirm('Are you sure you want to acknowledge all ' + title + ' in this list?');
+      var confirmation = confirm('Are you sure you want to acknowledge all notifications in this list?');
       if (confirmation) { 
         $('.remove-notifications').val(1); 
       } else {
