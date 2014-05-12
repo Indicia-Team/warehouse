@@ -2245,15 +2245,17 @@ if (typeof mapSettingsHooks!=='undefined') {
         $cookieData=array();
       if (!empty($cookieData[$options['rememberParamsReportGroup']]))
         $cookieParams = $cookieData[$options['rememberParamsReportGroup']];
-        // We shouldn't use the cookie values to overwrite any parameters that are hidden in the form as this is confusing.
-        $ignoreParamNames = array();
-        foreach($options['paramsToExclude'] as $param)
-          $ignoreParamNames[$options['reportGroup']."-$param"] = '';
-        $cookieParams = array_diff_key($cookieParams, $ignoreParamNames);       
-        $providedParams = array_merge(
-          $cookieParams,
-          $providedParams
-        );
+        if (is_array($cookieParams)) {
+          // We shouldn't use the cookie values to overwrite any parameters that are hidden in the form as this is confusing.
+          $ignoreParamNames = array();
+          foreach($options['paramsToExclude'] as $param)
+            $ignoreParamNames[$options['reportGroup']."-$param"] = '';
+          $cookieParams = array_diff_key($cookieParams, $ignoreParamNames);       
+          $providedParams = array_merge(
+            $cookieParams,
+            $providedParams
+          );
+        }
     }
     if (!empty($options['rememberParamsReportGroup'])) {
       // need to store the current set of saved params. These need to be merged into an array to go in
