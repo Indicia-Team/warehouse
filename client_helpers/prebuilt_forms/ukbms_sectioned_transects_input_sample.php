@@ -758,12 +758,8 @@ class iform_ukbms_sectioned_transects_input_sample {
     } else {
       // Output only the locations for this website and transect type. Note we load both transects and sections, just so that
       // we always use the same warehouse call and therefore it uses the cache.
-      $typeTerms = array(
-        empty($args['transect_type_term']) ? 'Transect' : $args['transect_type_term'],
-        empty($args['section_type_term']) ? 'Section' : $args['section_type_term']
-      );
-      $locationTypes = helper_base::get_termlist_terms($auth, 'indicia:location_types', $typeTerms);
-      $siteParams = $auth['read'] + array('website_id' => $args['website_id'], 'location_type_id'=>$locationTypes[0]['id']);
+      $locationType = helper_base::get_termlist_terms($auth, 'indicia:location_types', array(empty($args['transect_type_term']) ? 'Transect' : $args['transect_type_term']));
+      $siteParams = $auth['read'] + array('website_id' => $args['website_id'], 'location_type_id'=>$locationType[0]['id']);
       if ((!isset($args['user_locations_filter']) || $args['user_locations_filter']) &&
           (!isset($args['managerPermission']) || !user_access($args['managerPermission']))) {
         $siteParams += array('locattrs'=>'CMS User ID', 'attr_location_cms_user_id'=>$user->uid);
@@ -1042,9 +1038,12 @@ class iform_ukbms_sectioned_transects_input_sample {
       data_entry_helper::$javascript .= "indiciaData.occurrence_attribute[".($idx+1)."] = $attr;\n";
       data_entry_helper::$javascript .= "indiciaData.occurrence_attribute_ctrl[".($idx+1)."] = jQuery('".(str_replace("\n","",$ctrl))."');\n";
     }
+    
+    // Fetch the sections
+    $sectionLocationType = helper_base::get_termlist_terms($auth, 'indicia:location_types', array(empty($args['section_type_term']) ? 'Section' : $args['section_type_term']));
     $sections = data_entry_helper::get_population_data(array(
       'table' => 'location',
-      'extraParams' => $auth['read'] + array('view'=>'detail','parent_id'=>$parentLocId,'deleted'=>'f'),
+      'extraParams' => $auth['read'] + array('view'=>'detail','parent_id'=>$parentLocId,'deleted'=>'f','location_type_id'=>$sectionLocationType[0]['id']),
       'nocache' => true
     ));
     usort($sections, "ukbms_stis_sectionSort");
@@ -1339,14 +1338,14 @@ jQuery(jQuery('#".$options["tabDiv"]."').parent()).bind('tabsshow', speciesMapTa
     $r .= '<input name="occurrence:taxa_taxon_list_id" id="ttlid" />';
     $r .= '<input name="occurrence:sample_id" id="occ_sampleid"/>';
     if(isset($args["sensitiveAttrID"]) && $args["sensitiveAttrID"] != "" && isset($args["sensitivityPrecision"]) && $args["sensitivityPrecision"] != "") {
-      $locationTypes = helper_base::get_termlist_terms($auth, 'indicia:location_types', array(empty($args['transect_type_term']) ? 'Transect' : $args['transect_type_term']));
+      $locationType = helper_base::get_termlist_terms($auth, 'indicia:location_types', array(empty($args['transect_type_term']) ? 'Transect' : $args['transect_type_term']));
       $site_attributes = data_entry_helper::getAttributes(array(
             'valuetable'=>'location_attribute_value'
             ,'attrtable'=>'location_attribute'
             ,'key'=>'location_id'
             ,'fieldprefix'=>'locAttr'
             ,'extraParams'=>$auth['read'] + array('id'=>$args["sensitiveAttrID"])
-            ,'location_type_id'=>$locationTypes[0]['id']
+            ,'location_type_id'=>$locationType[0]['id']
             ,'survey_id'=>$args['survey_id']
             ,'id' => $parentLocId // location ID
       ));
