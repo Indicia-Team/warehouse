@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="Record counts by location using standard filter params" description="Lists locations with mappable boundary output and the number of records within them.">
+  <query website_filter_field="o.website_id" standard_params="true">
+    SELECT #columns#
+    FROM locations l1 
+    JOIN (
+    SELECT l.id, count(distinct o.id) as count
+    FROM locations l
+    JOIN (index_locations_samples ils 
+      JOIN cache_occurrences o ON o.sample_id=ils.sample_id 
+      #agreements_join#
+      #joins#
+      AND #sharing_filter# 
+      #filters#
+      #idlist#
+    ) ON ils.location_id=l.id
+    WHERE l.deleted=false
+    AND l.location_type_id=#location_type_id#
+    AND l.public=true
+    AND (l.code NOT LIKE ('%+%') OR l.code IS NULL)
+    GROUP BY l.id, l.name
+    ) as l2 ON l2.id=l1.id
+  </query>
+  <params>
+    <param name="location_type_id" display="Location Type" description="Select the location type, or leave blank to not filter by location type." datatype="lookup"
+        population_call="report:library/terms/terms_list:id:term:termlist_external_key=indicia:location_types,termlist_id="/>
+    </params>
+    <param name="simplifyFeatureTo" datatype="integer" default="100" />
+  <columns>
+        <column name="id" visible="false" sql="l1.id" />
+        <column name="name" display="Site Name" sql="l1.name" />
+        <column name="boundary" display="Boundary" sql="st_astext(ST_SnapToGrid(ST_Simplify(COALESCE(l1.boundary_geom, l1.centroid_geom), #simplifyFeatureTo#), #simplifyFeatureTo#, #simplifyFeatureTo#))" visible="false" mappable="true"/>
+        <column name="value" display="No. of Taxa"  sql="count" feature_style="label"/>
+        <column name="oc" visible="false" feature_style="labelOutlineColor" sql="'white'" />
+        <column name="ow" visible="false" feature_style="labelOutlineWidth" sql="5" />
+        <column name="fo" visible="false" feature_style="fillOpacity" sql="0" />
+        <column name="sw" visible="false" feature_style="strokeWidth" sql="2" />
+        <column name="fs" visible="false" feature_style="fontSize" sql="case when count>1000 then 8 else 9 end" />
+  </columns>
+</report>  

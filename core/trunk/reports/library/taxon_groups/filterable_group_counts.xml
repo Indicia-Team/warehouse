@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Group counts using standard parameters" description="Gives the count of species groups recorded at an event.">
+      <query website_filter_field="o.website_id" standard_params="true">
+      (SELECT taxon_group, count(*) as count
+      FROM cache_occurrences o
+      #agreements_join#
+      #joins#
+      WHERE #sharing_filter#
+      #filters#
+      GROUP BY taxon_group
+      ORDER BY count(*) DESC
+      LIMIT #top_n_groups_to_include#)
+      UNION
+      SELECT 'Others', sum(count) FROM (
+        SELECT taxon_group, count(*)
+        FROM cache_occurrences o
+        #agreements_join#
+        #joins#
+        WHERE #sharing_filter#
+        #filters#
+        GROUP BY taxon_group
+        ORDER BY count(*) DESC
+        OFFSET #top_n_groups_to_include#
+      ) as sub
+      ORDER BY taxon_group
+      </query>
+  <params>
+    <param name="top_n_groups_to_include" datatype="integer" default="8" />
+  </params>
+</report>
