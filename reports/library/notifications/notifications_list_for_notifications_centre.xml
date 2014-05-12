@@ -11,6 +11,7 @@
     WHERE n.acknowledged=false
       and n.user_id=#user_id#  
       and (o.training=#training# or o.id is null)
+      and n.source_type&lt;&gt;'T' -- skip trigger notifications which don't display correctly in the grid
     #order_by#
   </query>  
   <order_bys>
@@ -19,22 +20,21 @@
   <params>
     <param name="user_id" display="User ID" description="Warehouse user ID" datatype="text" />
     <!-- parameter for grid drop-down filter -->
-    <param name="source_filter" display="Notification Type" description="Source Filter" datatype='lookup' lookup_values='all:All notifications,verifications:Verifications,rejections_queries:Rejections and queries,record_cleaner:Record cleaner,record_comments:Record comments,achievements:Achievements,other:Other'>
+    <param name="source_filter" display="Show notifications for" datatype='lookup' lookup_values='all:Anything,verifications:Verifications,rejections_queries:Rejections and queries,record_cleaner:Record Cleaner,record_comments:Record comments'>
       <wheres>
         <where value="all" operator="equal">n.source_type != ''</where>
         <where value="verifications" operator="equal">n.source_type='V' AND coFilter.record_status='V'</where>
-        <where value="rejections_queries" operator="equal">n.source_type='V' AND coFilter.record_status='R' or coFilter.record_status='D'</where>
+        <where value="rejections_queries" operator="equal">n.source_type='V' AND (coFilter.record_status='R' or coFilter.record_status='D')</where>
         <where value="record_cleaner" operator="equal">n.source_type ='A'</where>
         <where value="record_comments" operator="equal">n.source_type='C'</where>
-        <where value="achievements" operator="equal">n.source_type='AC'</where>
-        <where value="other" operator="equal">n.source_type!='V' AND n.source_type!='A' AND n.source_type!='C' AND n.source_type!='AC'</where>
+        <!--<where value="achievements" operator="equal">n.source_type='AC'</where>-->
+        <!--<where value="other" operator="equal">n.source_type!='V' AND n.source_type!='A' AND n.source_type!='C' AND n.source_type!='AC'</where>-->
       </wheres>
     </param>
     <!-- parameter for user configurable source types on edit tab. -->
     <param name="source_types" display="Source Types" 
-        description="Comma separated list of source types with each item single quoted, or blank to allow all." datatype="text" emptyvalue='0' default='0'>
+        description="Comma separated list of source types with each item single quoted, or blank to allow all." datatype="text" default=''>
       <wheres>
-        <where value="0">n.source_type != ''</where>
         <where>n.source_type in (#source_types#)</where>
       </wheres>
     </param>
