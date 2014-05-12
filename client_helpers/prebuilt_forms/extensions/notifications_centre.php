@@ -41,7 +41,6 @@ class extension_notifications_centre {
       'id' => 'auto-check-notifications',
       'title' => 'automatic check notifications',
       'sourceType' => 'A',
-      'sourceFilter' => 'hide',
       'allowReply' => false,
       'allowEditRecord' => true
     ), $options);
@@ -62,7 +61,6 @@ class extension_notifications_centre {
       'id' => 'user-notifications',
       'title' => 'user message notifications',
       'sourceType' => 'C,V,S,VT,AC',
-      'sourceFilter' => 'hide',
       'allowReply' => true,
       'allowEditRecord' => true,
     ), $options);
@@ -70,8 +68,8 @@ class extension_notifications_centre {
   }
    
   /*
-   * Use options @sourceType=S,V and @sourceFilter=hide to show specific source types on the grid, the "S,V" in this example can be replaced with any source_type letter comma separated list.
-   * Removing both of these options will display a filter drop-down that the user can select from.
+   * Use options @sourceType=S,V to show specific source types on the grid, the "S,V" in this example can be replaced with any source_type letter comma separated list.
+   * Removing the @sourceType option will display a filter drop-down that the user can select from.
    */
   public static function messages_grid($auth, $args, $tabalias, $options, $path) {
     if (empty($options['id']))
@@ -109,7 +107,7 @@ class extension_notifications_centre {
         //called remove-notifications is set. We can check for this when the 
         //page reloads and then call the remove notifications code.    
         if (!empty($_POST['remove-notifications']) && $_POST['remove-notifications']==1)
-          self::build_notifications_removal_submission($_POST, $auth, $user_id,$options);
+          self::build_notifications_removal_submission($_POST, $user_id, $options);
       }
       self::$initialised = true;
     }
@@ -120,29 +118,23 @@ class extension_notifications_centre {
    */
   private static function notifications_grid($auth, $options, $website_id, $user_id) {
     //There can be more than one sourcetype, this is supplied as a comma seperated list and needs putting into an array
-    $sourceType=explode(',',$options['sourceType']);
+    $sourceType=empty($options['sourceType']) ? array() : explode(',',$options['sourceType']);
     //reload path to current page
     $reloadPath = self::getReloadPath ();
     $r='';
-    $r .= "<form method = \"POST\" action=\"$reloadPath\" id=\"".$options['id']."\">\n";
+    $r .= self::get_notifications_html($auth, $sourceType, $website_id, $user_id, $options);
+    $r .= "<form method = \"POST\" action=\"$reloadPath\">\n";
     //hidden field is set when Remove Notifications for user notifications is clicked,
     //when the page reloads this is then checked for
     $r .= '<input type="hidden" name="remove-notifications" class="remove-notifications"/>';
-    $r .= self::get_notifications_html($auth, $sourceType, $website_id, $user_id, $options);
-    $r .= self::remove_all_button($options);
     //We need to store a list of source types on the grid, so we know what to clean up when the remove all button is clicked.
-    $r .= '<input style="display:none" name="source_types" class="source_types" value="">';
+    $r .= '<input style="display:none" name="source-types" value="' . implode($sourceType) . '">';
+    if (!empty($_POST['notifications-'.$options['id'].'-source_filter']))
+      $r .= '<input style="display:none" name="source-filter" value="' . $_POST['notifications-'.$options['id'].'-source_filter'] . '">';
+    $r .= self::remove_all_button($options);
     $r .= "</form>";
     return $r;
   }
-  
-  /*
-   * Get all the notification ids in the grids and put them in hidden fields so we can remove notifications that are on pages that aren't visible
-   */
-  private static function setup_source_types_hidden_fields($options, $sourceType, $website_id, $auth) {
-    $sourceTypesList = implode(',', $sourceType);
-    report_helper::$javascript .= "$('#".$options['id']." .source_types').val('$sourceTypesList');\n";
-    }
   
   /**
    * Build a submission that the system can understand that includes the notifications we
@@ -153,7 +145,9 @@ class extension_notifications_centre {
    * @param array $options
    * 
    */
-  private static function build_notifications_removal_submission($_POST, $auth, $user_id,$options) {
+  private static function build_notifications_removal_submission($_POST, $user_id,$options) {
+    // rebuild the auth token since this is a reporting page but we need to submit data.
+    $auth = data_entry_helper::get_read_write_auth(variable_get('indicia_website_id', ''), variable_get('indicia_password', ''));
     //Using 'submission_list' and 'entries' allows us to specify several top-level submissions to the system
     //i.e. we need to be able to submit several notifications.
     $submission['submission_list']['entries'] = array();
@@ -167,13 +161,11 @@ class extension_notifications_centre {
     );
     //If the page is using a filter drop-down option, then collect the type of notification
     //to remove from the filter drop-down
-    if (!empty($_POST['notifications-'.$options['id'].'-source_filter'])) {
-      $extraParams['source_filter']=$_POST['notifications-'.$options['id'].'-source_filter'];
+    $extraParams['source_filter']=empty($_POST['source-filter']) ? 'all' : $_POST['source-filter'];
     //Get the source types to remove from a hidden field if the user has configured the page
     //to use a user specified option to specify exactly what kind of notifications to display
-    } elseif (!empty($_POST['source_types'])) {
+    if (!empty($_POST['source_types'])) 
       $sourceTypesToClearFromConfig = explode(',', $_POST['source_types']);
-    }
     //Place quotes around the source type letters for the report to accept as strings
     if (!empty($sourceTypesToClearFromConfig)) {
       if (array_key_exists(0,$sourceTypesToClearFromConfig) && !empty($sourceTypesToClearFromConfig[0])) {
@@ -182,10 +174,10 @@ class extension_notifications_centre {
         $extraParams['source_types'] = implode(',',$sourceTypesToClearFromConfig);
       }
     }
-    //If the user has supplied some config options for the different source types, they must also supply
-    //a sourceFilter option as 'hide' as this will hide the sourceFilter drop-down
-    if ($options['sourceFilter']=='hide')
-       $extraParams['source_filter'] = 'all';
+    //If the user has supplied some config options for the different source types
+    if (!empty($options['sourceTypes']))
+      // this disables the param for picking a single source type
+      $extraParams['source_filter'] = 'all';
     $notifications = data_entry_helper::get_report_data(array(
       'dataSource'=>'library/notifications/notifications_list_for_notifications_centre',
       'readAuth'=>$auth['read'],
@@ -217,8 +209,9 @@ class extension_notifications_centre {
    * Draw the remove all notifications button.
    */
   private static function remove_all_button($options) {
-    return "<input onclick=\"return acknowledge_all_notifications('".$options['id']."', '".$options['title']."')\" type=\"submit\" ".
-        "class=\"indicia-button\" value=\"".lang::get('Acknowledge all '.$options['title'])."\"/>\n";
+    $title = empty($options['title']) ? lang::get('shown') : lang::get($options['title']);
+    return "<input onclick=\"return acknowledge_all_notifications('".$options['id']."')\" type=\"submit\" ".
+        "class=\"indicia-button\" value=\"".lang::get('Acknowledge all {1} notifications', $title)."\"/>\n";
   }
   
   /*
@@ -226,7 +219,6 @@ class extension_notifications_centre {
    */
   private static function get_notifications_html($auth, $sourceType, $website_id, $user_id, $options) {
     iform_load_helpers(array('report_helper'));
-    global $auth;
     $readNonce = $auth['nonce'];
     $readAuthToken = $auth['auth_token'];      
     $imgPath = empty(data_entry_helper::$images_path) ? data_entry_helper::relative_client_helper_path()."../media/images/" : data_entry_helper::$images_path;
@@ -246,10 +238,6 @@ class extension_notifications_centre {
       }
     };\n
     "; 
-    
-    //Setup the javascript needed to support the remove notification button.
-    self::setup_source_types_hidden_fields($options, $sourceType, $website_id, $auth);  
-    $auth = report_helper::get_read_auth(variable_get('indicia_website_id',''), variable_get('indicia_password',''));
     
     $availableActions = 
       array(
@@ -273,27 +261,22 @@ class extension_notifications_centre {
       'website_id'=>$website_id);
     //Implode the source types so we can submit to the database in one text field.
     if (!empty($sourceType)) {
-      if (array_key_exists(0,$sourceType) && !empty($sourceType[0])) {
-        foreach ($sourceType as &$type)
-          $type="'".$type."'";
-        $sourceType = implode(',',$sourceType);
-        $extraParams['source_types'] = $sourceType;
-      }
+      $extraParams['source_types'] = "'" . implode("' ,'", $sourceType) . "'";
+      //If the user has supplied some config options for the different source types then we don't need the 
+      // source filter drop down.
+      $extraParams['source_filter'] = 'all';
     }
-    //If the user has supplied some config options for the different source types, they must also supply
-    //a sourceFilter option as 'hide' as this will hide the sourceFilter drop-down
-    if ($options['sourceFilter']=='hide')
-       $extraParams['source_filter'] = 'all';
     $r .= report_helper::report_grid(array(
       'id'=>'notifications-'.$options['id'],
-      'readAuth' => $auth,
+      'readAuth' => $auth['read'],
       'itemsPerPage'=>10,
       'dataSource'=>'library/notifications/notifications_list_for_notifications_centre',
       'rowId'=>'notification_id',
       'ajax'=>true,
       'mode'=>'report',
-      'completeParamsForm'=>false,
       'extraParams'=>$extraParams,
+      'paramDefaults'=>array('source_filter'=>'all'),
+      'paramsFormButtonCaption'=>lang::get('Filter'),
       'columns'=>array(
         array('fieldname'=>'data','json'=>true,
             'template'=>'<div class="type-{source_type}"><div class="status-{record_status}"></div></div><div class="note-type-{source_type}">{comment}</div>'.
@@ -302,7 +285,7 @@ class extension_notifications_centre {
         array('fieldname'=>'triggered_date', 'visible' => false)
       ),
     ));
-    $r .= "<input type=\"submit\" value=\"Get Notifications\"><br>\n";
+    //$r .= "<input type=\"submit\" value=\"Get Notifications\"><br>\n";
     return $r;
   }
 
