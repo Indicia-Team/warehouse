@@ -2020,7 +2020,7 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
     // Note the random element, we only timeout a cached file sometimes.
     $wantToCache = $timeout!==false;
     $haveFile = $file && is_file($file);
-    $fresh = filemtime($file) >= (time() - $timeout);
+    $fresh = $haveFile && filemtime($file) >= (time() - $timeout);
     $randomSurvival = $random && (rand(1, self::$cache_chance_refresh_file)!=1);
     if ($wantToCache && $haveFile && ($fresh || $randomSurvival)) {
       $response = array();
