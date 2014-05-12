@@ -364,7 +364,7 @@ jQuery('#".$ctrlid."').change(function(){
       $locationIDList[] = $attr['location_id'];
     }
     $locationListArgs=array('nocache'=>true,
-        'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'], 'id'=>$locationIDList),
+        'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'], 'id'=>$locationIDList, 'orderby'=>'name'),
                      $readAuth),
         'table'=>'location');
     if($siteUrlParams[self::$locationTypeKey]['value']!="")
