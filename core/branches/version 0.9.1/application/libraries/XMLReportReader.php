@@ -934,7 +934,7 @@ class XMLReportReader_Core implements ReportReader
         ),
         'release_status' => array('datatype'=>'lookup', 'default'=>'R', 'display'=>'Release status',
             'description'=>'Release status of the record',
-            'lookup_values'=>'R:Released,R:Released by other recorders plus my own unreleased records;U:Unreleased because part of a project that has not yet released the records,' .
+            'lookup_values'=>'R:Released,RM:Released by other recorders plus my own unreleased records;U:Unreleased because part of a project that has not yet released the records,' .
                 'P:Recorder has requested a precheck before release,A:All',
             'wheres' => array(
               array('value'=>'R', 'operator'=>'equal', 'sql'=>"(o.release_status='R' or o.release_status is null)"),
@@ -1006,18 +1006,18 @@ class XMLReportReader_Core implements ReportReader
         'taxa_taxon_list_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Taxa taxon list IDs", 
             'description'=>'Comma separated list of preferred IDs',
             'wheres' => array(
-              array('value'=>'', 'operator'=>'', 'sql'=>"o.preferred_taxa_taxon_list_id in (#taxa_taxon_list_list#)")
+              array('value'=>'', 'operator'=>'', 'sql'=>"o.taxa_taxon_list_external_key in (#taxa_taxon_list_list#)")
             ),
             'preprocess' => // faster than embedding this query in the report            
   "with recursive q as ( 
-    select id 
+    select id, external_key 
     from cache_taxa_taxon_lists t 
     where id in (#taxa_taxon_list_list#) 
     union all 
-    select tc.id 
+    select tc.id, tc.external_key
     from q 
     join cache_taxa_taxon_lists tc on tc.parent_id = q.id 
-  ) select array_to_string(array_agg(distinct id::varchar), ',') from q"
+  ) select '''' || array_to_string(array_agg(distinct external_key::varchar), ''',''') || '''' from q"
         ),
         'taxon_meaning_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Taxon meaning IDs", 
             'description'=>'Comma separated list of taxon meaning IDs',
