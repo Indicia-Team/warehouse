@@ -31,7 +31,7 @@
     <column name='square_id' display='Square ID' sql="square.id" datatype='integer' visible="false"/>
     <column name='parent_id' display='Parent ID' sql="l.parent_id" datatype='integer' visible="false"/>
     <column name='show_square_add_plot_control' display='Show Square Add Plot Control' sql="case when l.parent_id is null then true else false end" visible="false"/>
-    <column name='show_square_edit_control' display='Show Square Edit Control' sql="case when l.created_by_id=#current_user_id# then true else false end" visible="false"/>
+    <column name='show_square_edit_control' display='Show Square Edit Control' sql="case when l.parent_id is null AND l.created_by_id=#current_user_id# then true else false end" visible="false"/>
     <column name='show_plot_view_control' display='Show Plot View Control' sql="case when l.parent_id is not null then true else false end" visible="false"/>
     <column name='show_plot_edit_control' display='Show Plot Edit Control' sql="case when l.parent_id is not null AND count(locationSamples.id) = 0 then true else false end" visible="false" aggregate="true"/>
     <column name='name' display='Location Name' sql="case when l.parent_id is null then '&lt;b&gt;' || square.centroid_sref || ' - ' || coalesce(lav.text_value,'#no_vice_county_found_message#') || '&lt;/b&gt;' else '&lt;i&gt;' || 'Plot at ' || l.centroid_sref || ' ('||  termPlotType.term || ') ' || '&lt;/i&gt;' end" datatype='text' />
