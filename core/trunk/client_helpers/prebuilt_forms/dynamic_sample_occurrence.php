@@ -1205,11 +1205,11 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         'MoveMessage2' => lang::get("Please click on the map to choose the new position. Press the Cancel button to choose another set of records to move instead."),
         
         'ModifyLabel' => lang::get("Modify records"),
-            'ModifyMessage1' => lang::get("Please select the records on the map you wish to change."),
-        'ModifyMessage2' => lang::get("Change (or add to) the records for this position. When you have finished, click the Finish button: this will return you to the map where you may choose another set of records to change."),
+        'ModifyMessage1' => lang::get("Please select the records on the map you wish to change."),
+        'ModifyMessage2' => lang::get("Change (or add to) the records for this position. When you have finished, click the Finish button which will return you to the map where you may choose another set of records to change."),
         
         'DeleteLabel' => lang::get("Delete records"),
-            'DeleteMessage' => lang::get("Please select the records on the map you wish to delete."),
+        'DeleteMessage' => lang::get("Please select the records on the map you wish to delete."),
         'ConfirmDeleteTitle' => lang::get("Confirm deletion of records"),
         'ConfirmDeleteText' => lang::get("Are you sure you wish to delete all the records at {OLD}?"),
         

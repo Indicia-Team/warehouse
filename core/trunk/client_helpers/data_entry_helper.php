@@ -311,7 +311,7 @@ class data_entry_helper extends helper_base {
             $minified[] = array($id, $term);
           }
         }
-        foreach ($minified as $tokens) {          
+        foreach ($minified as $tokens) {
           if (isset($def['control']) && $def['control']==='checkbox_group')
             $thRow2 .= "<th>$minified[1]</th>";
         }
@@ -351,7 +351,7 @@ class data_entry_helper extends helper_base {
           $checkboxes=array();
           // array field
           $fieldname .= '[]';
-          foreach ($lookupData['tl'.$def['termlist_id']] as $term) {
+          foreach ($lookupData["tl$idx"] as $term) {
             $checked = is_array($default) && in_array($term[0], $default) ? ' checked="checked"' : '';
             $checkboxes[] = "<input title=\"$term[1]\" type=\"checkbox\" name=\"$fieldname\" value=\"$term[0]:$term[1]\"$checked>";
           }
