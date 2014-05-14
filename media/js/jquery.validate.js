@@ -837,9 +837,9 @@ $.extend($.validator, {
 	staticRules: function(element) {
 		var rules = {};
 		var validator = $.data(element.form, 'validator');
-		if (validator.settings.rules) {
-			rules = $.validator.normalizeRule(validator.settings.rules[element.name]) || {};
-		}
+    if (typeof validator!=="undefined" && validator.settings.rules) {
+      rules = $.validator.normalizeRule(validator.settings.rules[element.name]) || {};
+    }
 		return rules;
 	},
 
