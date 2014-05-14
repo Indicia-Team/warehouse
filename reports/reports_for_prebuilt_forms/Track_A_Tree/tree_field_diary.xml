@@ -1,0 +1,43 @@
+<report
+    title="Track-a-tree: Samples Comment (Field Diary) entries for a warehouse user"
+    description="A list of samples with comments filtered according to the ID of the user as registered on the warehouse."
+>
+<query website_filter_field="su.website_id">
+  SELECT #columns#
+  FROM samples s
+  JOIN surveys su on su.id=s.survey_id and su.deleted=false
+  JOIN locations l ON l.id=s.location_id
+  JOIN locations sl ON sl.id=l.parent_id
+  JOIN termlists_terms ttl1 ON ttl1.id=s.sample_method_id
+  JOIN termlists_terms ttl2 ON ttl2.meaning_id=ttl1.meaning_id
+  JOIN terms t ON ttl2.term_id=t.id AND (CAST(ttl2.id AS character varying)='#sample_method_id#' OR '#sample_method_id#'='' OR t.term='#sample_method_id#')
+  #joins#
+  WHERE s.deleted = FALSE
+  AND #website_filter#
+  AND (CAST(s.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
+  AND (CAST(s.created_by_id AS character varying)='#iUserID#' OR '#iUserID#'='')
+  #order_by#
+  </query>
+  <order_bys>
+    <order_by>s.id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='survey_id' display='Survey' description='Select the survey, or leave for all surveys' datatype='lookup'
+        population_call='direct:survey:id:title' />
+    <param name='iUserID' display='Warehouse User ID' description='Enter the ID of the warehouse user' datatype='int' />
+    <param name='sample_method_id' display='Sample Method' description='Select the sample method, or leave blank to not filter by sample method.' datatype='lookup'
+            population_call='report:library/terms/terms_list:id:term:termlist_external_key=indicia:sample_methods,termlist_id=' default='TreeVisit' />
+  </params>
+  <columns>
+    <column name="sample_id" display="Visit ID" visible="false" sql="s.id" datatype="integer" />
+    <column name="site_name" display="Site name" sql="sl.name" datatype="text" />
+    <column name="site_id" display="Site ID" visible="false" sql="sl.id" />
+    <column name="tree_name" display="Tree name" sql="COALESCE(l.name, s.location_name)" datatype="text" />
+    <column name="tree_id" display="Tree ID" visible="false" sql="l.id" />
+    <column name='date_start' sql='s.date_start' visible="false" />
+    <column name='date_end' sql='s.date_end' visible="false" />
+    <column name='date_type' sql='s.date_type' visible="false" />
+    <column name='date' display='Date' datatype="date" />
+    <column name='comment' display='Field Diary Entry' datatype="text" />
+  </columns>
+</report>
