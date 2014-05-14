@@ -19,7 +19,7 @@
   #order_by#
   </query>
   <order_bys>
-    <order_by>s.id DESC</order_by>
+    <order_by>s.date_start DESC</order_by>
   </order_bys>
   <params>
     <param name='survey_id' display='Survey' description='Select the survey, or leave for all surveys' datatype='lookup'
@@ -38,6 +38,6 @@
     <column name='date_end' sql='s.date_end' visible="false" />
     <column name='date_type' sql='s.date_type' visible="false" />
     <column name='date' display='Date' datatype="date" />
-    <column name='comment' display='Field Diary Entry' datatype="text" />
+    <column name='comment' sql='s.comment' display='Field Diary Entry' datatype="text" />
   </columns>
 </report>
