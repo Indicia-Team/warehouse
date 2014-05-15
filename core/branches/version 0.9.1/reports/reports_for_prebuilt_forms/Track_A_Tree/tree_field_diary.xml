@@ -16,6 +16,7 @@
   AND #website_filter#
   AND (CAST(s.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
   AND (CAST(s.created_by_id AS character varying)='#iUserID#' OR '#iUserID#'='')
+  AND s.comment IS NOT NULL AND s.comment != ''
   #order_by#
   </query>
   <order_bys>
