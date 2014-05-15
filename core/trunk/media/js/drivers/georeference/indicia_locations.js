@@ -24,23 +24,15 @@ var Georeferencer;
   Georeferencer = function(mapdiv, callback) {
 
     this.georeference = function(searchtext) {
-      var request, query={}, queryStr, where={}, hasWhere=false;
+      var request, queryStr, where=[];
       if (mapdiv.georefOpts['public']===undefined || mapdiv.georefOpts['public']==='f') {
-        where['public'] = 'f';
-        hasWhere=true;
+        where.push("public='f'");
       }
       if (mapdiv.georefOpts.locationTypeId!==null) {
-        where.location_type_id=mapdiv.georefOpts.locationTypeId;
-        hasWhere=true;
-      } 
-      if (hasWhere) {
-        query = {'where': where};
+        where.push("location_type_id="+mapdiv.georefOpts.locationTypeId);
       }
-      // specifying orlike2 & orlike3 is a fudge to build the object. We replace them with orlike later.
-      $.extend(query, {'like': ['name',searchtext],
-        'orlike': {'comment':searchtext,'code':searchtext,'centroid_sref':searchtext}
-      });
-      queryStr=encodeURI(JSON.stringify(query));
+      where.push("(name ilike '%" + searchtext + "%' or comment ilike '%" + searchtext + "%' or code ilike '%" + searchtext + "%' or centroid_sref ilike '%" + searchtext + "%')");
+      queryStr=encodeURI(JSON.stringify({'where':[where.join(' and ')]}));
       request = mapdiv.georefOpts.warehouseUrl + 'index.php/services/data/location?mode=json&nonce=' + mapdiv.georefOpts.nonce +
             '&auth_token=' + mapdiv.georefOpts.auth_token +
             '&view=detail&query='+queryStr+'&callback=?';
