@@ -185,7 +185,7 @@ var simple_tooltip;
             href='';
           }
           if (typeof action.img!=="undefined") {
-            img=action.img.replace(/{rootFolder}/g, div.settings.rootFolder);
+            img=action.img.replace(/{rootFolder}/g, div.settings.rootFolder.replace(/\?q=$/, ''));
             content = '<img src="'+img+'" title="'+action.caption+'" />';
           } else
             content = action.caption;
