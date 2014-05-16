@@ -214,14 +214,14 @@ class iform_group_edit {
       'fieldname'=>'group:title',
       'validation'=>array('required'),
       'class'=>'control-width-5',
-      'helpText'=>lang::get('The full title of the {1}', self::$groupType)
+      'helpText'=>lang::get('Provide the full title of the {1}', self::$groupType)
     ));
     if ($args['include_code'])
       $r .= data_entry_helper::text_input(array(
         'label' => lang::get('Code'),
         'fieldname'=>'group:code',
         'class'=>'control-width-4',
-        'helpText'=>lang::get('A code or abbreviation identifying the {1}', self::$groupType)
+        'helpText'=>lang::get('Provide a code or abbreviation identifying the {1}', self::$groupType)
       ));
     if (empty($args['group_type'])) {
       $r .= data_entry_helper::select(array(
@@ -232,7 +232,8 @@ class iform_group_edit {
         'valueField'=>'id',
         'captionField'=>'term',
         'extraParams'=>$auth['read'] + array('termlist_external_key'=>'indicia:group_types'),
-        'class'=>'control-width-4'
+        'class'=>'control-width-4',
+        'helpText'=>lang::get('Choose the type of group')
       ));
     }
     $r .= self::joinMethodsControl($args);
@@ -240,12 +241,13 @@ class iform_group_edit {
     $r .= data_entry_helper::checkbox(array(
       'label' => lang::get('Show records at full precision'),
       'fieldname' => 'group:view_full_precision',
-      'helpText' => lang::get('If checked, then group members can see sensitive records explicitly posted into the group at full precision. USE ONLY FOR GROUPS WITH RESTRICTED MEMBERSHIP.')
+      'helpText' => lang::get('Any sensitive records added to the system are normally shown blurred to a lower grid reference precision. If this box '.
+          'is checked, then group members can see sensitive records explicitly posted into the group at full precision. USE ONLY FOR GROUPS WITH RESTRICTED MEMBERSHIP.')
     ));
     $r .= data_entry_helper::textarea(array(
       'label' => ucfirst(lang::get('{1} description', self::$groupType)),
       'fieldname' => 'group:description',
-      'helpText' => lang::get('Description and notes about the {1}.', self::$groupType)
+      'helpText' => lang::get('Description and notes about the {1} which will be shown in the {1} listing pages.', self::$groupType)
     ));
     $r .= self::dateControls($args);
     if ($args['include_private_records']) {
@@ -291,11 +293,7 @@ $('#entry_form').submit(function() {
   
   private static function formsBlock($args, $auth, $node) {
     $r = '<fieldset><legend>' . lang::get('Group pages') . '</legend>';
-    $r .= '<p>' . lang::get('Use the following grid to define any pages that you would like your group members to use. You only need to '.
-        'specify a link caption if you want to override the default page name when accessed via your group. ' .
-        'Please note that you must link at least one recording form page to the group if you want to allow your members '.
-        'to explicitly post records into the group. You must also link at least one reporting page if you want your '.
-        'members to be able to view the output of the group.') . '</p>';
+    $r .= '<p>' . lang::get('LANG_Pages_Instruct') . '</p>';
     $pages = self::getAvailablePages(empty($_GET['group_id']) ? null : $_GET['group_id']);
     $r .= data_entry_helper::complex_attr_grid(array(
       'fieldname' => 'group:pages[]',
@@ -309,7 +307,7 @@ $('#entry_form').submit(function() {
           'label' => 'Link caption',
           'datatype' => 'text'
         ), array(
-          'label' => 'Access control',
+          'label' => 'Who can access the page?',
           'datatype' => 'lookup',
           'lookupValues' => array(
             'f' => 'Available to all group members',
@@ -357,7 +355,7 @@ $('#entry_form').submit(function() {
    * @param integer $nid Node ID
    */
   private static function get_path($nid) {
-    $path = hostsite_get_url("node/$nid");
+    $path = drupal_get_path_alias("node/$nid");
     $path = preg_replace('/^\/(\?q=)?/', '', $path);
     return $path;
   }
@@ -397,7 +395,7 @@ $('#entry_form').submit(function() {
         'label' => ucfirst(lang::get('{1} membership', self::$groupType)),
         'fieldname' => 'group:joining_method',
         'lookupValues' => $joinMethods,
-        'helpText' => lang::get('How can users join this group?'),
+        'helpText' => lang::get('Select how users join this group'),
         'sep' => '<br/>',
         'validation'=>array('required')
       ));
@@ -428,12 +426,15 @@ $('#entry_form').submit(function() {
           'fieldname' => 'group:implicit_record_inclusion',
           'label' => 'How should records be included?',
           'lookupValues' => array(
-            't' => 'Records are included for all group members, as long as they match the group\'s parameters defined below',
+            't' => 'Records are included for all group members, as long as they are of interest to the group as defined below',
             'f' => 'Records are only included in the group if explicitly posted to the group'
           ),
-          'helpText' => 'Note that some functionality such as allowing group members to view full record precision depends on records being explicitly posted into the group. ' .
-              'If you choose to require records to be explicitly posted into the group, then make sure that you select at least 1 data entry form in the Group Pages section below ' .
-              'so that group members can easily post records into the group.'
+          'helpText' => 'This option defines whether members will be expected to use the group\'s recording forms to choose to post records into the group, or whether '.
+              'records are automatically included in the group\'s data if the recorder belongs to the group and the record is of interest to the group, i.e. the record '.
+              'is of the right species group and/or geographic area for the group. Note that some functionality such as allowing group members to view sensitive records '.
+              'at full record precision depends on records being explicitly posted into the group. If you choose to require records to be explicitly posted into the '.
+              'group, then make sure that you select at least 1 data entry form in the <strong>Group pages</strong> section below so that group members have a means to '.
+              'post records into the group.'
         ));
     }
     return $r;
@@ -478,7 +479,8 @@ $('#entry_form').submit(function() {
         'captionField'=>'person_name',
         'valueField'=>'id',
         'extraParams'=>$auth['read']+array('view'=>'detail'),
-        'helpText'=>lang::get('Search for users to make administrators of this group by typing a few characters of their surname'),
+        'helpText'=>lang::get('Search for users to make administrators of this group by typing a few characters of their surname. If you don\'t '.
+            'add any administrators then you will be automatically assigned as the group admin.'),
         'addToTable'=>false,
         'class' => $class
       ));
@@ -517,8 +519,8 @@ $('#entry_form').submit(function() {
     $r = '';
     $hiddenPopupDivs='';
     if ($args['include_report_filter']) {
+      $r .= '<fieldset><legend>' . lang::get('Records that are of interest to the {1}', lang::get(ucfirst(self::$groupType))) . '</legend>';
       $r .= '<p>' . lang::get('LANG_Filter_Instruct') . '</p>';
-      $r .= '<label>' . lang::get(ucfirst(self::$groupType).' parameters') . ':</label>';
       $r .= report_filter_panel($auth['read'], array(
         'allowLoad'=>false,
         'allowSave' => false,
@@ -530,6 +532,7 @@ $('#entry_form').submit(function() {
       $r .= '<input type="hidden" name="filter:title" id="filter-title-val"/>';
       $r .= '<input type="hidden" name="filter:definition" id="filter-def-val"/>';
       $r .= '<input type="hidden" name="filter:sharing" value="R"/>';
+      $r .= '</fieldset>';
     }
     return $r;
   }
