@@ -2026,6 +2026,8 @@ $('#$escaped').change(function(e) {
     }
     $r .= self::check_errors($options['fieldname']);
     self::$javascript .= "indiciaData.google_api_key='".self::$google_api_key."';\n";
+    self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.proxy='".
+        self::getRootFolder() . self::client_helper_path() . "proxy.php';\n\n";
     return $r;
   }
 
