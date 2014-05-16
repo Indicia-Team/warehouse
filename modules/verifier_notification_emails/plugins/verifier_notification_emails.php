@@ -52,13 +52,18 @@ function get_filters_without_existing_notification($db) {
  */
 function loop_through_filters_and_create_notifications($filters) {
   $report = 'library/occdelta/filterable_occdelta_count';
-  //Supply a config of which websites to take into account. Supply 1 as the user
-  //id to give the code maximum privileges
-  if (kohana::config('verifier_notification_emails.website_ids'))
+  //Supply a config of which websites to take into account.
+  try {
     $website_ids=kohana::config('verifier_notification_emails.website_ids');
-  else 
+  //Handle config file not present
+  } catch (Exception $e) {
     $website_ids=array();
-  $reportEngine = new ReportEngine(kohana::config('verifier_notification_emails.website_ids'), 1);
+  }
+  //handle if config file present but option is not supplied
+  if (empty($website_ids))
+    $website_ids=array();
+  //Supply 1 as the user id to give the code maximum privileges
+  $reportEngine = new ReportEngine($website_ids, 1);
   //When creating notifications keep a track of user's we have created notifications for, this allows us to 
   //avoid creating multiple notifications per user without having to check the database.
   $alreadyCreatedNotification=array();
