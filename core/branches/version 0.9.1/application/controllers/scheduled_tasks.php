@@ -33,6 +33,10 @@
  */
 class Scheduled_Tasks_Controller extends Controller {
   private $last_run_date;
+  private $occdeltaStartTimestamp='';
+  private $occdeltaEndTimestamp='';
+  private $occdeltaCount=0;
+  private $pluginMetadata;
 
   public function __construct()  {
     parent::__construct();
@@ -62,7 +66,7 @@ class Scheduled_Tasks_Controller extends Controller {
     }
     $tmtask = microtime(true) - $tm;
     if ($tmtask>5) 
-      kohana::log('alert', "Triggers & notifications scheduled task took $tmtask seconds.");
+      self::msg("Triggers & notifications scheduled task took $tmtask seconds.", 'alert');
     $this->runScheduledPlugins($system, $tasks);
     if (in_array('notifications', $tasks)) {
       $swift = email::connect();
@@ -71,10 +75,10 @@ class Scheduled_Tasks_Controller extends Controller {
     }
     // mark the time of the last scheduled task check, so we can get diffs next time
     $this->db->update('system', array('last_scheduled_task_check'=>"'" . date('c', $currentTime) . "'"), array('id' => 1));
-    echo "Ok!";
+    self::msg("Ok!");
     $tm = microtime(true) - $tm;
     if ($tm>30) 
-      kohana::log('alert', "Scheduled tasks for ".implode(', ', $tasks)." took $tm seconds.");
+      self::msg("Scheduled tasks for ".implode(', ', $tasks)." took $tm seconds.", 'alert');
   }
 
   /**
@@ -82,7 +86,7 @@ class Scheduled_Tasks_Controller extends Controller {
   * for matches. If found, then the notification's actions are fired.
   */
   protected function checkTriggers() {
-    echo "Checking triggers<br/>";
+    self::msg("Checking triggers");
     kohana::log('info', "Checking triggers");
     // Get a list of all the triggers that have at least one action
     $result = $this->getTriggerQuery();
@@ -99,7 +103,7 @@ class Scheduled_Tasks_Controller extends Controller {
       }
       if (count($data['content']['records']>0)) {
         $parsedData = $this->parseData($data);
-        echo $trigger->name . ": " . count($data['content']['records']) . " records found<br/>";
+        self::msg($trigger->name . ": " . count($data['content']['records']) . " records found");
         //Note escaping disabled in where clause to permit use of CAST expression
         $actions = $this->db
             ->select('trigger_actions.type, trigger_actions.param1, trigger_actions.param2, trigger_actions.param3, users.default_digest_mode, people.email_address, users.core_role_id')
@@ -156,8 +160,7 @@ class Scheduled_Tasks_Controller extends Controller {
   * Takes any notifications stored in the database and builds emails to send for any that are now due.
   */
   private function doDigestNotifications($swift) {
-    echo "<br/>Checking notifications<br/>";
-    kohana::log('info', "Checking notifications");
+    self::msg("Checking notifications");
     // First, build a list of the notifications we are going to do
     $digestTypes = array('I');
     $date = getdate();
@@ -177,9 +180,9 @@ class Scheduled_Tasks_Controller extends Controller {
       ->get();
     $nrNotifications = count($notifications);
     if($nrNotifications > 0)
-      echo "Found $nrNotifications notifications<br/>";
+      self::msg("Found $nrNotifications notifications");
     else 
-      echo "No notifications found<br/>";
+      self::msg("No notifications found");
     
     $currentUserId = null;
     $currentCc = null;
@@ -225,8 +228,7 @@ class Scheduled_Tasks_Controller extends Controller {
           ->limit(1)
           ->get();
       if (!isset($email_config['address'])) {
-        kohana::log('error', 'Address not provided in email configuration');
-        echo "Email not sent";
+        self::msg('Email address not provided in email configuration', 'error');
         return;
       }
       foreach($userResults as $user) {
@@ -422,8 +424,69 @@ class Scheduled_Tasks_Controller extends Controller {
    * @param array $tasks Array of plugin names to run, or array containing "all_modules" to run them all.
    */
   private function runScheduledPlugins($system, $tasks) {
-    $cacheId = 'indicia-scheduled-plugins';
+    // take 1 second off current time to use as the end of the scanned time period. Avoids possibilities of records
+    // being lost half way through the current second.
+    $t = time()-1;
+    $currentTime = date("Y-m-d H:i:s", $t);
+    $plugins = $this->getScheduledPlugins();
+    // Load the plugins and last run date info from the system table. Any not run before will start from the current timepoint.
+    // We need this to be sorted, so we can process the list of changed records for each group of plugins with the same timestamp together.
+    $pluginsFromDb = $this->db
+        ->select('name, last_scheduled_task_check')
+        ->from('system')
+        ->in('name', $plugins)
+        ->orderby('last_scheduled_task_check', 'ASC')
+        ->get();  
+    $sortedPlugins = array();
+    foreach ($pluginsFromDb as $plugin) {
+      $sortedPlugins[$plugin->name] = $plugin->last_scheduled_task_check===null ? $currentTime : $plugin->last_scheduled_task_check;
+    }
+    // Any new plugins not run before should also be included in the list
+    foreach ($plugins as $plugin) {
+      if (!isset($sortedPlugins[$plugin]))
+        $sortedPlugins[$plugin] = $currentTime;
+    }
+    echo '<br/>';
+    var_export($sortedPlugins);
+    echo '<br/>';    
+    //Make sure the cache_builder runs first as some other modules depend on the cache_occurrences table
+    if (array_key_exists('cache_builder', $sortedPlugins))
+      $sortedPlugins = array('cache_builder' => $sortedPlugins['cache_builder']) + $sortedPlugins;
+    // Now go through timestamps in order of time since they were run
+    foreach ($sortedPlugins as $plugin=>$timestamp) {
+      // allow the list of scheduled plugins we are running to be controlled from the URL parameters.
+      if (in_array('all_modules', $tasks) || in_array($plugin, $tasks)) {
+        require_once(MODPATH."$plugin/plugins/$plugin.php");
+        $this->loadPluginMetadata($plugin);
+        $this->loadOccurrencesDelta($plugin, $timestamp, $currentTime);
+        $tm = microtime(true);
+        if (!$this->pluginMetadata['requires_occurrences_delta'] || $this->occdeltaCount>0 || $this->pluginMetadata['always_run']) {
+          // call the plugin, only if there are records to process, or it doesn't care
+          self::msg("Running $plugin");
+          call_user_func($plugin.'_scheduled_task', $timestamp, $this->db, $currentTime); 
+        }
+        // log plugins which take more than 5 seconds
+        if (microtime(true) - $tm>5)
+          self::msg("Scheduled plugin $plugin took $tm seconds", 'alert');
+        // mark the time of the last scheduled task check so we can get the correct list of updates next time
+        $timestamp = $this->pluginMetadata['requires_occurrences_delta'] ? $this->occdeltaEndTimestamp : $currentTime;
+        if (!$this->db->update('system', array('last_scheduled_task_check'=>$timestamp), array('name' => $plugin))->count())
+          $this->db->insert('system', array(
+              'version' => '0.1.0',
+              'name' => $plugin,
+              'repository'=>'Not specified',
+              'release_date'=>date('Y-m-d', $t),
+              'last_scheduled_task_check'=>$timestamp,
+              'last_run_script'=>null
+          ));
+      }
+    }
+  }
+  
+  private function getScheduledPlugins() {
+    $cacheId = 'scheduled-plugin-names';
     $cache = Cache::instance();
+    // get list of plugins which integrate with scheduled tasks. Use cache so we avoid loading all module files unnecessarily.
     if (!($plugins = $cache->get($cacheId))) {
       $plugins = array();
       foreach (Kohana::config('config.modules') as $path) {
@@ -431,41 +494,92 @@ class Scheduled_Tasks_Controller extends Controller {
         if (file_exists("$path/plugins/$plugin.php")) {
           require_once("$path/plugins/$plugin.php");
           if (function_exists($plugin.'_scheduled_task')) {
-            $plugins[] = $path;
+            $plugins[] = $plugin;
           }
         }
       }
       $cache->set($cacheId, $plugins);
     }
-    // now we have just a list of plugins with scheduled tasks to run
-    foreach ($plugins as $path) {
-      $plugin = basename($path);
-      if (in_array('all_modules', $tasks) || in_array($plugin, $tasks)) {
-        $tm = microtime(true);
-        require_once("$path/plugins/$plugin.php");
-        $last_run_date = $system->getLastScheduledTaskCheck($plugin);
-        // grab the time before we start, so there is no chance of a record coming in while we run that is missed.
-        $currentTime = time();
-        kohana::log('info', "Calling " . $plugin . "_scheduled_task");
-        call_user_func($plugin.'_scheduled_task', $last_run_date, $this->db);
-        // mark the time of the last scheduled task check, so we can get diffs next time
-        // insert if not exists
-        if (!$this->db->update('system', array('last_scheduled_task_check'=>"'" . date("Ymd H:i:s", $currentTime) . "'"), array('name' => $plugin))->count())
-          $this->db->insert('system', array(
-              'version' => '0.1.0',
-              'name' => $plugin,
-              'repository'=>'Not specified',
-              'release_date'=>date('Y-m-d', $currentTime),
-              'last_scheduled_task_check'=>date("Ymd H:i:s", $currentTime),
-              'last_run_script'=>null
-          ));
-        $tm = microtime(true) - $tm;  
-        if ($tm>5) 
-          kohana::log('alert', "Scheduled plugin $plugin took $tm seconds");    
+    return $plugins;
+  }
+  
+  /**
+   * If a plugin needs a different occurrences delta table to the one we've got currently prepared, then
+   * build it.
+   * @param type $plugin
+   * @param type $timestamp
+   * @param string $currentTime Timepoint of the scheduled task run, so we can be absolutely clear about not including
+   * records added which overlap the scheduled task.
+   */
+  private function loadOccurrencesDelta($plugin, $timestamp, $currentTime) {
+    if ($this->pluginMetadata['requires_occurrences_delta']) {
+      if ($this->occdeltaStartTimestamp!==$timestamp) {
+        // This scheduled plugin wants to know about the changed occurrences, and the current occdelta table does
+        // not contain the records since the correct change point
+        $this->db->query('DROP TABLE IF EXISTS occdelta;');
+        $query = "select co.*,
+case when o.created_on>'$timestamp' then 'C' when o.deleted=true then 'D' else 'U' end as CUD,
+greatest(o.updated_on, s.updated_on, sp.updated_on) as timestamp,
+w.verification_checks_enabled
+into temporary occdelta 
+from cache_occurrences co
+join occurrences o on o.id=co.id
+inner join samples s on s.id=o.sample_id and s.deleted=false
+left join samples sp on sp.id=s.parent_id and sp.deleted=false
+inner join websites w on w.id=o.website_id and w.deleted=false
+where o.deleted=false
+and ((o.updated_on>'$timestamp' and o.updated_on<='$currentTime')
+or (s.updated_on>'$timestamp' and s.updated_on<='$currentTime')
+or (sp.updated_on>'$timestamp' and sp.updated_on<='$currentTime'))";
+        $this->db->query($query);
+        $this->occdeltaStartTimestamp=$timestamp;
+        $this->occdeltaEndTimestamp=$currentTime;
+        // if processing more than 200 records at a time, things will slow down. So we'll cut off the delta at the second which 
+        // the 200th record fell on.
+        $this->limitDeltaSize();
       }
-      
-      
     }
+  }
+  
+  /**
+   * if processing too many records, clear out the excess.
+   */
+  private function limitDeltaSize() {
+    $this->occdeltaCount=$this->db->count_records('occdelta');
+    $max = 200;
+    if ($this->occdeltaCount>$max) {
+      $qry = $this->db->query("select timestamp from occdelta order by timestamp asc limit 1 offset $max");
+      foreach ($qry as $t) {
+        self::msg("Scheduled tasks are delaying processing of ".$this->db->query("delete from occdelta where timestamp>'$t->timestamp'")->count()." records as too many to process", 'alert');
+        // remember where we are up to.
+        $this->occdeltaEndTimestamp = $t->timestamp;
+      }
+      $this->occdeltaCount=$this->db->count_records('occdelta');
+    }
+  }
+  
+  /**
+   * Loads the metadata for the given plugin name.
+   * @param string $plugin Name of the plugin
+   */
+  private function loadPluginMetadata($plugin) {
+    $this->pluginMetadata = function_exists($plugin.'_metadata') ? call_user_func($plugin.'_metadata') : array();
+    $this->pluginMetadata = array_merge(array(
+      'requires_occurrences_delta' => FALSE,
+      'always_run' => FALSE
+    ), $this->pluginMetadata);
+  }
+  
+  /**
+   * Echoes out a message and adds to the kohana log.
+   * @param string $msg Message text
+   * @param string $status Kohana log message status
+   */
+  private function msg($msg, $status='debug') {
+    echo "$msg<br/>";
+    if ($status==='error') 
+      kohana::log('error', 'Error occurred whilst running scheduled tasks.');
+    kohana::log($status, $msg);
   }
 
 }
