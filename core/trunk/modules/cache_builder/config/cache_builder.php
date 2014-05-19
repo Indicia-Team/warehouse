@@ -110,7 +110,7 @@ $config['taxa_taxon_lists']['get_missing_items_query']="
         or l.deleted or tpref.deleted or tg.deleted or lpref.deleted as deleted
       from taxon_lists tl
       join taxa_taxon_lists ttl on ttl.taxon_list_id=tl.id 
-      join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred='t' 
+      join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred='t' and ttlpref.taxon_list_id=ttl.taxon_list_id
       join taxa t on t.id=ttl.taxon_id 
       join languages l on l.id=t.language_id 
       join taxa tpref on tpref.id=ttlpref.taxon_id 
@@ -136,7 +136,7 @@ $config['taxa_taxon_lists']['get_changed_items_query']="
       union
       select ttl.id, ttl.deleted or ttlpref.deleted or tpref.deleted or lpref.deleted or tg.deleted
       from taxa_taxon_lists ttl
-      join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true
+      join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true and ttlpref.taxon_list_id=ttl.taxon_list_id
       join taxa tpref on tpref.id=ttlpref.taxon_id
       join languages lpref on lpref.id=tpref.language_id
       join taxon_groups tg on tg.id=tpref.taxon_group_id
@@ -174,7 +174,7 @@ $config['taxa_taxon_lists']['update'] = "update cache_taxa_taxon_lists cttl
     from taxon_lists tl
     join taxa_taxon_lists ttl on ttl.taxon_list_id=tl.id 
     #join_needs_update#
-    join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred='t' 
+    join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred='t' and ttlpref.taxon_list_id=ttl.taxon_list_id
     join taxa t on t.id=ttl.taxon_id 
     join languages l on l.id=t.language_id 
     join taxa tpref on tpref.id=ttlpref.taxon_id 
@@ -205,7 +205,7 @@ $config['taxa_taxon_lists']['insert']="insert into cache_taxa_taxon_lists (
     from taxon_lists tl
     join taxa_taxon_lists ttl on ttl.taxon_list_id=tl.id 
     left join cache_taxa_taxon_lists cttl on cttl.id=ttl.id
-    join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred='t' 
+    join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred='t' and ttlpref.taxon_list_id=ttl.taxon_list_id
     join taxa t on t.id=ttl.taxon_id and t.deleted=false
     join languages l on l.id=t.language_id and l.deleted=false
     join taxa tpref on tpref.id=ttlpref.taxon_id 
@@ -293,7 +293,7 @@ $config['taxon_searchterms']['get_changed_items_query']="
       union
       select ttl.id, ttl.allow_data_entry, ttl.deleted or ttlpref.deleted or tpref.deleted or lpref.deleted or tg.deleted
       from taxa_taxon_lists ttl
-      join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true
+      join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true and ttlpref.taxon_list_id=ttl.taxon_list_id
       join taxa tpref on tpref.id=ttlpref.taxon_id
       join languages lpref on lpref.id=tpref.language_id
       join taxon_groups tg on tg.id=tpref.taxon_group_id
@@ -521,7 +521,7 @@ select sum(count) as count from (
 select count(distinct(ttl.id))*2 as count
       from taxon_lists tl
       join taxa_taxon_lists ttl on ttl.taxon_list_id=tl.id 
-      join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=\'t\' 
+      join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=\'t\' and ttlpref.taxon_list_id=ttl.taxon_list_id
       join taxa t on t.id=ttl.taxon_id 
       join languages l on l.id=t.language_id 
       join taxa tpref on tpref.id=ttlpref.taxon_id 
@@ -534,7 +534,7 @@ union
 select count(distinct(ttl.id))
       from taxon_lists tl
       join taxa_taxon_lists ttl on ttl.taxon_list_id=tl.id 
-      join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=\'t\' 
+      join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=\'t\' and ttlpref.taxon_list_id=ttl.taxon_list_id
       join taxa t on t.id=ttl.taxon_id 
       join languages l on l.id=t.language_id and l.iso=\'lat\'
       join taxa tpref on tpref.id=ttlpref.taxon_id 
