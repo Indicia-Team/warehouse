@@ -680,7 +680,13 @@ class ReportEngine {
             $query = $this->mergeAttrListParam($query, 'taxa_taxon_list', $value);
           elseif ($paramDefs[$name]['datatype']=='psnattrs')
             $query = $this->mergeAttrListParam($query, 'person', $value);
-          else {
+          else
+            // sanitise
+            if ($paramDefs[$name]['datatype']==='text' || $paramDefs[$name]['datatype']==='string')
+              // ensure value is escaped for apostrophes
+              $value = pg_escape_string($value);
+            elseif (($paramDefs[$name]['datatype']==='integer' || $paramDefs[$name]['datatype']==='float') && !is_numeric($value))
+              throw new exception('Invalid numeric parameter value');
             $query = preg_replace("/#$name#/", $value, $query);
           }
         }
